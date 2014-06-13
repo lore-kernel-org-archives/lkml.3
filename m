@@ -1,261 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981AbaFMF7t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 01:59:49 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:47432 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492AbaFMF7s (ORCPT
+	id S1752089AbaFMGB4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 02:01:56 -0400
+Received: from g6t1524.atlanta.hp.com ([15.193.200.67]:22324 "EHLO
+	g6t1524.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864AbaFMGBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 01:59:48 -0400
-From: Chen Yucong <slaoub@gmail.com>
-To: akpm@linux-foundation.org
-Cc: mgorman@suse.de, hannes@cmpxchg.org, mhocko@suse.cz, riel@redhat.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Chen Yucong <slaoub@gmail.com>
-Subject: [RESEND PATCH v2] mm/vmscan.c: wrap five parameters into writeback_stats for reducing the stack consumption
-Date: Fri, 13 Jun 2014 13:58:08 +0800
-Message-Id: <1402639088-4845-1-git-send-email-slaoub@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 13 Jun 2014 02:01:55 -0400
+Message-ID: <1402639311.9617.84.camel@j-VirtualBox>
+Subject: Re: [PATCH] sched: Fast idling of CPU when system is partially
+ loaded
+From: Jason Low <jason.low2@hp.com>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Davidlohr Bueson <davidlohr@hp.com>, linux-kernel@vger.kernel.org
+Date: Thu, 12 Jun 2014 23:01:51 -0700
+In-Reply-To: <1402608359.2970.548.camel@schen9-DESK>
+References: <1402608359.2970.548.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-shrink_page_list() has too many arguments that have already reached ten.
-Some of those arguments and temporary variables introduces extra 80 bytes
-on the stack. This patch wraps five parameters into writeback_stats and removes
-some temporary variables, thus making the relative functions to consume fewer
-stack space.
+On Thu, 2014-06-12 at 14:25 -0700, Tim Chen wrote:
 
-Before mm/vmscan.c is changed:
-   text    data     bss     dec     hex filename
-6876698  957224  966656 8800578  864942 vmlinux-3.15
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> ---
+>  kernel/sched/core.c  | 12 ++++++++----
+>  kernel/sched/fair.c  | 23 +++++++++++++++++++++--
+>  kernel/sched/sched.h | 10 ++++++++--
+>  3 files changed, 37 insertions(+), 8 deletions(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index c6b9879..4f57221 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2630,7 +2630,7 @@ static inline struct task_struct *
+>  pick_next_task(struct rq *rq, struct task_struct *prev)
+>  {
+>  	const struct sched_class *class = &fair_sched_class;
+> -	struct task_struct *p;
+> +	struct task_struct *p = NULL;
+>  
+>  	/*
+>  	 * Optimization: we know that if all tasks are in
+> @@ -2638,9 +2638,13 @@ pick_next_task(struct rq *rq, struct task_struct *prev)
+>  	 */
+>  	if (likely(prev->sched_class == class &&
+>  		   rq->nr_running == rq->cfs.h_nr_running)) {
+> -		p = fair_sched_class.pick_next_task(rq, prev);
+> -		if (unlikely(p == RETRY_TASK))
+> -			goto again;
+> +
+> +		/* If no cpu has more than 1 task, skip */
+> +		if (rq->nr_running > 0 || rq->rd->overload) {
 
-After mm/vmscan.c is changed:
-   text    data     bss     dec     hex filename
-6876506  957224  966656 8800386  864882 vmlinux-3.15
+Hi Tim,
+
+If it is skipping if no cpu has more than 1 task, should the
+above have the additional check for (rq->nr_running > 1) instead
+of (rq->nr_running > 0)?
+
+> +			p = fair_sched_class.pick_next_task(rq, prev);
+> +			if (unlikely(p == RETRY_TASK))
+> +				goto again;
+> +		}
+>  
+>  		/* assumes fair_sched_class->next == idle_sched_class */
+>  		if (unlikely(!p))
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 9855e87..00ab38c 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -5863,7 +5863,8 @@ static inline int sg_capacity(struct lb_env *env, struct sched_group *group)
+>   */
+>  static inline void update_sg_lb_stats(struct lb_env *env,
+>  			struct sched_group *group, int load_idx,
+> -			int local_group, struct sg_lb_stats *sgs)
+> +			int local_group, struct sg_lb_stats *sgs,
+> +			bool *overload)
+>  {
+>  	unsigned long load;
+>  	int i;
+> @@ -5881,6 +5882,8 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+>  
+>  		sgs->group_load += load;
+>  		sgs->sum_nr_running += rq->nr_running;
+> +		if (overload && rq->nr_running > 1)
+> +			*overload = true;
+>  #ifdef CONFIG_NUMA_BALANCING
+>  		sgs->nr_numa_running += rq->nr_numa_running;
+>  		sgs->nr_preferred_running += rq->nr_preferred_running;
+> @@ -5991,6 +5994,7 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
+>  	struct sched_group *sg = env->sd->groups;
+>  	struct sg_lb_stats tmp_sgs;
+>  	int load_idx, prefer_sibling = 0;
+> +	bool overload = false;
+>  
+>  	if (child && child->flags & SD_PREFER_SIBLING)
+>  		prefer_sibling = 1;
+> @@ -6011,7 +6015,13 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
+>  				update_group_power(env->sd, env->dst_cpu);
+>  		}
+>  
+> -		update_sg_lb_stats(env, sg, load_idx, local_group, sgs);
+> +		if (env->sd->parent)
+> +			update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
+> +						NULL);
+> +		else
+> +			/* gather overload info if we are at root domain */
+> +			update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
+> +						&overload);
+
+Would it make the code cleaner if we always call:
+
++	update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
+				   &overload);
+
+and in update_sg_lb_stats():
+
++	bool is_root_domain = (env->sd->parent == NULL)
 
 
-scripts/checkstack.pl can be used for checking the change of the target function stack.
++		/* gather overload info if we are at root domain */
++		if (is_root_domain && rq->nr_running > 1)
++			*overload = true;
 
-Before mm/vmscan.c is changed:
+>  		if (local_group)
+>  			goto next_group;
+> @@ -6045,6 +6055,15 @@ next_group:
+>  
+>  	if (env->sd->flags & SD_NUMA)
+>  		env->fbq_type = fbq_classify_group(&sds->busiest_stat);
+> +
+> +	if (!env->sd->parent) {
+> +		/* update overload indicator if we are at root domain */
+> +		int i = cpumask_first(sched_domain_span(env->sd));
+> +		struct rq *rq = cpu_rq(i);
 
-0xffffffff810af103 shrink_inactive_list []:		152
-0xffffffff810af43d shrink_inactive_list []:		152
--------------------------------------------------------------
-0xffffffff810aede8 reclaim_clean_pages_from_list []:	184
-0xffffffff810aeef8 reclaim_clean_pages_from_list []:	184
--------------------------------------------------------------
-0xffffffff810ae582 shrink_page_list []:			232
-0xffffffff810aedb5 shrink_page_list []:			232
+Perhaps we could just use:
 
-After mm/vmscan.c is changed::
+struct rq *rq = env->dst_rq;
 
-0xffffffff810af078 shrink_inactive_list []:		120
-0xffffffff810af36d shrink_inactive_list []:		120
--------------------------------------------------------------
-With: struct writeback_stats dummy = {};
-0xffffffff810aed6c reclaim_clean_pages_from_list []:    152
-0xffffffff810aee68 reclaim_clean_pages_from_list []:    152
--------------------------------------------------------------
-With: static struct writeback_stats dummy ={};
-0xffffffff810aed69 reclaim_clean_pages_from_list []:    120
-0xffffffff810aee4d reclaim_clean_pages_from_list []:    120
---------------------------------------------------------------------------------------
-0xffffffff810ae586 shrink_page_list []:			184   ---> sub    $0xb8,%rsp
-0xffffffff810aed36 shrink_page_list []:			184   ---> add    $0xb8,%rsp
+> +		if (rq->rd->overload != overload)
+> +			rq->rd->overload = overload;
+> +	}
+> +
+>  }
+>  
+>  /**
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index e47679b..a0cd5c1 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -477,6 +477,9 @@ struct root_domain {
+>  	cpumask_var_t span;
+>  	cpumask_var_t online;
+>  
+> +	/* Indicate more than one runnable task for any CPU */
+> +	bool overload;
+> +
+>  	/*
+>  	 * The bit corresponding to a CPU gets set here if such CPU has more
+>  	 * than one runnable -deadline task (as it is below for RT tasks).
+> @@ -1212,15 +1215,18 @@ static inline void add_nr_running(struct rq *rq, unsigned count)
+>  
+>  	rq->nr_running = prev_nr + count;
+>  
+> -#ifdef CONFIG_NO_HZ_FULL
+>  	if (prev_nr < 2 && rq->nr_running >= 2) {
+> +		if (!rq->rd->overload)
+> +			rq->rd->overload = true;
+> +
+> +#ifdef CONFIG_NO_HZ_FULL
+>  		if (tick_nohz_full_cpu(rq->cpu)) {
+>  			/* Order rq->nr_running write against the IPI */
+>  			smp_wmb();
+>  			smp_send_reschedule(rq->cpu);
+>  		}
+> -       }
+>  #endif
+> +       }
+>  }
+>  
+>  static inline void sub_nr_running(struct rq *rq, unsigned count)
 
-Via the above figures, we can find that the difference value of the stack is 32 for
-shrink_inactive_list and reclaim_clean_pages_from_list, and this value is 48(232-184)
-for shrink_page_list. From the hierarchy of functions called, the total difference
-value is 80(32+48) for this change.
-
-Changes since v1: https://lkml.org/lkml/2014/6/12/159
-     * Rename arg_container to writeback_stats
-     * Change the the way of initializing writeback_stats object.
-
-Signed-off-by: Chen Yucong <slaoub@gmail.com>
----
- mm/vmscan.c |   62 ++++++++++++++++++++++++++---------------------------------
- 1 file changed, 27 insertions(+), 35 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index a8ffe4e..3f28e39 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -791,28 +791,31 @@ static void page_check_dirty_writeback(struct page *page,
- }
- 
- /*
-+ * Callers pass a prezeroed writeback_stats into the shrink functions to gather
-+ * statistics about how many pages of particular states were processed
-+ */
-+struct writeback_stats {
-+	unsigned long nr_dirty;
-+	unsigned long nr_unqueued_dirty;
-+	unsigned long nr_congested;
-+	unsigned long nr_writeback;
-+	unsigned long nr_immediate;
-+};
-+
-+/*
-  * shrink_page_list() returns the number of reclaimed pages
-  */
- static unsigned long shrink_page_list(struct list_head *page_list,
- 				      struct zone *zone,
- 				      struct scan_control *sc,
- 				      enum ttu_flags ttu_flags,
--				      unsigned long *ret_nr_dirty,
--				      unsigned long *ret_nr_unqueued_dirty,
--				      unsigned long *ret_nr_congested,
--				      unsigned long *ret_nr_writeback,
--				      unsigned long *ret_nr_immediate,
-+				      struct writeback_stats *ws,
- 				      bool force_reclaim)
- {
- 	LIST_HEAD(ret_pages);
- 	LIST_HEAD(free_pages);
- 	int pgactivate = 0;
--	unsigned long nr_unqueued_dirty = 0;
--	unsigned long nr_dirty = 0;
--	unsigned long nr_congested = 0;
- 	unsigned long nr_reclaimed = 0;
--	unsigned long nr_writeback = 0;
--	unsigned long nr_immediate = 0;
- 
- 	cond_resched();
- 
-@@ -858,10 +861,10 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 		 */
- 		page_check_dirty_writeback(page, &dirty, &writeback);
- 		if (dirty || writeback)
--			nr_dirty++;
-+			ws->nr_dirty++;
- 
- 		if (dirty && !writeback)
--			nr_unqueued_dirty++;
-+			ws->nr_unqueued_dirty++;
- 
- 		/*
- 		 * Treat this page as congested if the underlying BDI is or if
-@@ -872,7 +875,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 		mapping = page_mapping(page);
- 		if ((mapping && bdi_write_congested(mapping->backing_dev_info)) ||
- 		    (writeback && PageReclaim(page)))
--			nr_congested++;
-+			ws->nr_congested++;
- 
- 		/*
- 		 * If a page at the tail of the LRU is under writeback, there
-@@ -916,7 +919,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 			if (current_is_kswapd() &&
- 			    PageReclaim(page) &&
- 			    zone_is_reclaim_writeback(zone)) {
--				nr_immediate++;
-+				ws->nr_immediate++;
- 				goto keep_locked;
- 
- 			/* Case 2 above */
-@@ -934,7 +937,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 				 * and it's also appropriate in global reclaim.
- 				 */
- 				SetPageReclaim(page);
--				nr_writeback++;
-+				ws->nr_writeback++;
- 
- 				goto keep_locked;
- 
-@@ -1132,11 +1135,6 @@ keep:
- 	list_splice(&ret_pages, page_list);
- 	count_vm_events(PGACTIVATE, pgactivate);
- 	mem_cgroup_uncharge_end();
--	*ret_nr_dirty += nr_dirty;
--	*ret_nr_congested += nr_congested;
--	*ret_nr_unqueued_dirty += nr_unqueued_dirty;
--	*ret_nr_writeback += nr_writeback;
--	*ret_nr_immediate += nr_immediate;
- 	return nr_reclaimed;
- }
- 
-@@ -1148,7 +1146,8 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
- 		.priority = DEF_PRIORITY,
- 		.may_unmap = 1,
- 	};
--	unsigned long ret, dummy1, dummy2, dummy3, dummy4, dummy5;
-+	unsigned long ret;
-+	static struct writeback_stats dummy = { };
- 	struct page *page, *next;
- 	LIST_HEAD(clean_pages);
- 
-@@ -1161,8 +1160,7 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
- 	}
- 
- 	ret = shrink_page_list(&clean_pages, zone, &sc,
--			TTU_UNMAP|TTU_IGNORE_ACCESS,
--			&dummy1, &dummy2, &dummy3, &dummy4, &dummy5, true);
-+			TTU_UNMAP|TTU_IGNORE_ACCESS, &dummy, true);
- 	list_splice(&clean_pages, page_list);
- 	mod_zone_page_state(zone, NR_ISOLATED_FILE, -ret);
- 	return ret;
-@@ -1469,11 +1467,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 	unsigned long nr_scanned;
- 	unsigned long nr_reclaimed = 0;
- 	unsigned long nr_taken;
--	unsigned long nr_dirty = 0;
--	unsigned long nr_congested = 0;
--	unsigned long nr_unqueued_dirty = 0;
--	unsigned long nr_writeback = 0;
--	unsigned long nr_immediate = 0;
-+	struct writeback_stats ws = { };
- 	isolate_mode_t isolate_mode = 0;
- 	int file = is_file_lru(lru);
- 	struct zone *zone = lruvec_zone(lruvec);
-@@ -1515,9 +1509,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 		return 0;
- 
- 	nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_UNMAP,
--				&nr_dirty, &nr_unqueued_dirty, &nr_congested,
--				&nr_writeback, &nr_immediate,
--				false);
-+					&ws, false);
- 
- 	spin_lock_irq(&zone->lru_lock);
- 
-@@ -1554,7 +1546,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 	 * of pages under pages flagged for immediate reclaim and stall if any
- 	 * are encountered in the nr_immediate check below.
- 	 */
--	if (nr_writeback && nr_writeback == nr_taken)
-+	if (ws.nr_writeback && ws.nr_writeback == nr_taken)
- 		zone_set_flag(zone, ZONE_WRITEBACK);
- 
- 	/*
-@@ -1566,7 +1558,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 		 * Tag a zone as congested if all the dirty pages scanned were
- 		 * backed by a congested BDI and wait_iff_congested will stall.
- 		 */
--		if (nr_dirty && nr_dirty == nr_congested)
-+		if (ws.nr_dirty && ws.nr_dirty == ws.nr_congested)
- 			zone_set_flag(zone, ZONE_CONGESTED);
- 
- 		/*
-@@ -1576,7 +1568,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 		 * pages from reclaim context. It will forcibly stall in the
- 		 * next check.
- 		 */
--		if (nr_unqueued_dirty == nr_taken)
-+		if (ws.nr_unqueued_dirty == nr_taken)
- 			zone_set_flag(zone, ZONE_TAIL_LRU_DIRTY);
- 
- 		/*
-@@ -1585,7 +1577,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 		 * implies that pages are cycling through the LRU faster than
- 		 * they are written so also forcibly stall.
- 		 */
--		if ((nr_unqueued_dirty == nr_taken || nr_immediate) &&
-+		if ((ws.nr_unqueued_dirty == nr_taken || ws.nr_immediate) &&
- 		    current_may_throttle())
- 			congestion_wait(BLK_RW_ASYNC, HZ/10);
- 	}
--- 
-1.7.10.4
 
