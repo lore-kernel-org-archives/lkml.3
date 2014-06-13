@@ -1,100 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637AbaFMPd7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 11:33:59 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:48087 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaFMPd5 (ORCPT
+	id S1752979AbaFMPfN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 11:35:13 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:37336 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017AbaFMPfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 11:33:57 -0400
+	Fri, 13 Jun 2014 11:35:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALCETrU8N9EbnJ3=oQ1WQCG9Vunn3nR9Ba=J48wJm0SuH0YB4A@mail.gmail.com>
-References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
-	<CALCETrVoE+JO2rLsBUHAOJdvescEEjxikj8iQ339Nxfopfc7pw@mail.gmail.com>
-	<CANq1E4SaWLD=hNEc-CDJbNnrGfXE_PkxZFBhpW4tbK7wor7xPA@mail.gmail.com>
-	<CALCETrU8N9EbnJ3=oQ1WQCG9Vunn3nR9Ba=J48wJm0SuH0YB4A@mail.gmail.com>
-Date: Fri, 13 Jun 2014 17:33:56 +0200
-Message-ID: <CANq1E4QQUKHabheq18AzkVZk3WDtAeC-6W66tVNB+EKgYOx1Vg@mail.gmail.com>
-Subject: Re: [PATCH v3 0/7] File Sealing & memfd_create()
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
+In-Reply-To: <539A8EA8.9080901@zytor.com>
+References: <CALCETrVNiSUHok1xCfy9CMe=kDYsPy3i_NXm0_gcO1ckb9wdeQ@mail.gmail.com>
+ <539A8EA8.9080901@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 13 Jun 2014 08:34:50 -0700
+Message-ID: <CALCETrVya47r1j6YUHT4_=gb6Pb5qB4sGE5sfwmxievcjdTTUw@mail.gmail.com>
+Subject: Re: vdso feature requests from the Go people
+To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Hugh Dickins <hughd@google.com>,
-        Tony Battersby <tonyb@cybernetics.com>
+        X86 ML <x86@kernel.org>, Russ Cox <rsc@golang.org>,
+        Ian Taylor <iant@golang.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-On Fri, Jun 13, 2014 at 5:17 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Fri, Jun 13, 2014 at 8:15 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
->> Hi
+On Thu, Jun 12, 2014 at 10:39 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 06/12/2014 09:36 PM, Andy Lutomirski wrote:
 >>
->> On Fri, Jun 13, 2014 at 5:10 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> On Fri, Jun 13, 2014 at 3:36 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
->>>> Hi
->>>>
->>>> This is v3 of the File-Sealing and memfd_create() patches. You can find v1 with
->>>> a longer introduction at gmane:
->>>>   http://thread.gmane.org/gmane.comp.video.dri.devel/102241
->>>> An LWN article about memfd+sealing is available, too:
->>>>   https://lwn.net/Articles/593918/
->>>> v2 with some more discussions can be found here:
->>>>   http://thread.gmane.org/gmane.linux.kernel.mm/115713
->>>>
->>>> This series introduces two new APIs:
->>>>   memfd_create(): Think of this syscall as malloc() but it returns a
->>>>                   file-descriptor instead of a pointer. That file-descriptor is
->>>>                   backed by anon-memory and can be memory-mapped for access.
->>>>   sealing: The sealing API can be used to prevent a specific set of operations
->>>>            on a file-descriptor. You 'seal' the file and give thus the
->>>>            guarantee, that it cannot be modified in the specific ways.
->>>>
->>>> A short high-level introduction is also available here:
->>>>   http://dvdhrm.wordpress.com/2014/06/10/memfd_create2/
->>>
->>> Potentially silly question: is it guaranteed that mmapping and reading
->>> a SEAL_SHRINKed fd within size bounds will not SIGBUS?  If so, should
->>> this be documented?  (The particular issue here would be reading
->>> holes.  It should work by using the zero page, but, if so, we should
->>> probably make it a real documented guarantee.)
+>> 1. Parsing the vDSO is a PITA.  What if we bundled the reference
+>> parser inside the vdso?  Concretely, we could have AT_VDSO_FINDENTRY
+>> point to a function like:
 >>
->> No, this is not guaranteed. See the previous discussion in v2 on Patch
->> 2/4 between Hugh and me.
+>> void *vdso_find_entry(const char *name, const char *version)
 >>
->> Summary is: If you want mmap-reads to not fail, use mlock(). There are
->> many situations where a fault might fail (think: OOM) and sealing is
->> not meant to protect against that. Btw., holes are automatically
->> filled with fresh pages by shmem. So a read only fails in OOM
->> situations (or memcg limits, etc.).
+>> Then things like Go and maybe even musl (and klibc?) could just call
+>> that function.  And we'd never have to worry about maintaining
+>> compatibility with more and more weird vdso parsers.
+>>
+>> Implementing this could be as simple as shoving parse_vdso.c into the
+>> vdso, although vdso2c could help and allow a really simple in-vdso
+>> implementation.
 >>
 >
-> Isn't the point of SEAL_SHRINK to allow servers to mmap and read
-> safely without worrying about SIGBUS?
+> I'm not really sure how much of a win that is... you have to parse
+> *something*, and for the vast majority of all implementations there will
+> be a dynamic linker just sitting there, and that is what it *does*.
 
-No, I don't think so.
-The point of SEAL_SHRINK is to prevent a file from shrinking. SIGBUS
-is an effect, not a cause. It's only a coincidence that "OOM during
-reads" and "reading beyond file-boundaries" has the same effect:
-SIGBUS.
-We only protect against reading beyond file-boundaries due to
-shrinking. Therefore, OOM-SIGBUS is unrelated to SEAL_SHRINK.
+I'm only aware of two implementations that work like that: glibc and
+musl.  AFAIK neither one even tries to use the vdso when statically
+linked.  IIRC, Bionic doesn't support the vdso at all, and Go has the
+present issue.
 
-Anyone dealing with mmap() _has_ to use mlock() to protect against
-OOM-SIGBUS. Making SEAL_SHRINK protect against OOM-SIGBUS would be
-redundant, because you can achieve the same with SEAL_SHRINK+mlock().
+And ELF parsing is a giant mess.  Currently the vdso doesn't use
+DT_GNU_HASH (easy to fix) but no one can safely rely on DT_GNU_HASH
+being there, and DT_GNU_HASH isn't actually easier to parse.
 
-Thanks
-David
+My point is that, for things that otherwise need to carry around a
+full ELF loader, having a really easy, guaranteed-correct way to use
+the vdso would be useful.
+
+I can see how much text size it would add.  If the parser were part of
+the vdso, it could probably be trimmed down a lot.  For example, there
+is currently exactly one version definition, and it could be
+hard-coded.  If someone were to add another version definition, they
+could fix the parser at the same time.
+
+Basically, everything except for the vdso_sym function in my parser could go.
+
+>
+>> 2. Go uses a segmented stack, and the vdso is quite unfriendly for
+>> segmented stack.  If we can get compiler support, is there a
+>> reasonable way that we could advertise the maximum stack usage of each
+>> vdso entry point?
+>
+> I suspect an easier way to do that would just be to define a maximum
+> stack usage for *any* vdso entry point, and then enable the gcc stack
+> depth warning (perhaps even with Werror)... we can do this now.
+
+I can imagine this causing lots of pain when gcc 4.11 comes out with
+some issue that blows up the stack usage.  Or when akpm compiles on
+Fedora Core 6 using some ancient toolchain that spills every local
+variable three or four times and assigns every possible inline
+function its own non-overlapping stack range.
+
+My copy of gcc supports -fstack-usage, which seems like an easyish way
+to obtain the information.  I'm not entirely sure whether
+-fstack-usage refers to the whole call tree or just to the specific
+function.
+
+--Andy
