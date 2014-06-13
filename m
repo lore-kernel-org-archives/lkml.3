@@ -1,52 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaFMGvb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 02:51:31 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:62017 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653AbaFMGvZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 02:51:25 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <539A8FDF.90905@roeck-us.net>
-Date: Thu, 12 Jun 2014 22:45:03 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.10 00/18] 3.10.44-stable review
-References: <20140612232212.960235342@linuxfoundation.org>
-In-Reply-To: <20140612232212.960235342@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752927AbaFMGvr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 02:51:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:35619 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752897AbaFMGvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 02:51:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,470,1400050800"; 
+   d="scan'208";a="445043355"
+From: Lv Zheng <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
+Subject: [PATCH 4/7] ACPI/EC: Fix a race condition in ec_transaction_completed().
+Date: Fri, 13 Jun 2014 14:51:40 +0800
+Message-Id: <5e4475707be93ee91ef4f42a67556b070758673d.1402641700.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <cover.1402641700.git.lv.zheng@intel.com>
+References: <cover.1402641700.git.lv.zheng@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2014 04:22 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.44 release.
-> There are 18 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Sat Jun 14 23:22:02 UTC 2014.
-> Anything received after that time might be too late.
->
+There is a race condition in ec_transaction_completed().
 
-Build results:
-	total: 143 pass: 136 skipped: 6 fail: 1
-Failed builds:
-	unicore32:defconfig
+When ec_transaction_completed() is called in the GPE handler, it could
+return true because of (ec->curr == NULL). Then the wake_up() invocation
+could complete the next command unexpectedly since there is no lock between
+the 2 invocations. With the previous cleanup, we now needn't to handle
+IBF=0 waiter race. It's now safe for us to return a flag from
+advance_condition() to indicate the requirement of wakeup, the flag is
+returned from a locked context.
 
-Qemu tests all passed.
+The ec_transaction_completed() now is only invoked by the ec_poll() where
+the ec->curr is ensured to be !NULL.
 
-Results are as expected.
-Details are available at http://server.roeck-us.net:8010/builders.
+After cleaning up, the EVT_SCI=1 check should be moved out of the wakeup
+condition so that an EVT_SCI raised with (ec->curr == NULL) can trigger a
+QR_SC command.
 
-Guenter
+Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=70891
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Reported-and-tested-by: Gareth Williams <gareth@garethwilliams.me.uk>
+Tested-by: Steffen Weber <steffen.weber@gmail.com>
+[zetalog: first affected by:]
+Cc: <stable@vger.kernel.org> # 2.6.11: 7c6db4e0: ACPI: EC: do transaction from interrupt context
+[zetalog: cleanly applying to:]
+Cc: <stable@vger.kernel.org> # 3.14.x: 42b946bb: ACPI / EC: disable GPE before removing GPE handler
+---
+ drivers/acpi/ec.c |   30 ++++++++++++++++++------------
+ 1 file changed, 18 insertions(+), 12 deletions(-)
 
+diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+index d016ea3..f1fa899 100644
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -158,16 +158,17 @@ static int ec_transaction_completed(struct acpi_ec *ec)
+ 	unsigned long flags;
+ 	int ret = 0;
+ 	spin_lock_irqsave(&ec->lock, flags);
+-	if (!ec->curr || (ec->curr->flags & ACPI_EC_COMMAND_COMPLETE))
++	if (ec->curr && (ec->curr->flags & ACPI_EC_COMMAND_COMPLETE))
+ 		ret = 1;
+ 	spin_unlock_irqrestore(&ec->lock, flags);
+ 	return ret;
+ }
+ 
+-static void advance_transaction(struct acpi_ec *ec)
++static bool advance_transaction(struct acpi_ec *ec)
+ {
+ 	struct transaction *t;
+ 	u8 status;
++	bool wakeup = false;
+ 
+ 	pr_debug("===== %s =====\n", in_interrupt() ? "IRQ" : "TASK");
+ 	status = acpi_ec_read_status(ec);
+@@ -183,21 +184,25 @@ static void advance_transaction(struct acpi_ec *ec)
+ 		} else if (t->rlen > t->ri) {
+ 			if ((status & ACPI_EC_FLAG_OBF) == 1) {
+ 				t->rdata[t->ri++] = acpi_ec_read_data(ec);
+-				if (t->rlen == t->ri)
++				if (t->rlen == t->ri) {
+ 					t->flags |= ACPI_EC_COMMAND_COMPLETE;
++					wakeup = true;
++				}
+ 			} else
+ 				goto err;
+ 		} else if (t->wlen == t->wi &&
+-			   (status & ACPI_EC_FLAG_IBF) == 0)
++			   (status & ACPI_EC_FLAG_IBF) == 0) {
+ 			t->flags |= ACPI_EC_COMMAND_COMPLETE;
+-		return;
++			wakeup = true;
++		}
++		return wakeup;
+ 	} else {
+ 		if ((status & ACPI_EC_FLAG_IBF) == 0) {
+ 			acpi_ec_write_cmd(ec, t->command);
+ 			t->flags |= ACPI_EC_COMMAND_POLL;
+ 		} else
+ 			goto err;
+-		return;
++		return wakeup;
+ 	}
+ err:
+ 	/*
+@@ -208,13 +213,14 @@ err:
+ 		if (in_interrupt() && t)
+ 			++t->irq_count;
+ 	}
++	return wakeup;
+ }
+ 
+ static void start_transaction(struct acpi_ec *ec)
+ {
+ 	ec->curr->irq_count = ec->curr->wi = ec->curr->ri = 0;
+ 	ec->curr->flags = 0;
+-	advance_transaction(ec);
++	(void)advance_transaction(ec);
+ }
+ 
+ static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
+@@ -248,7 +254,7 @@ static int ec_poll(struct acpi_ec *ec)
+ 					return 0;
+ 			}
+ 			spin_lock_irqsave(&ec->lock, flags);
+-			advance_transaction(ec);
++			(void)advance_transaction(ec);
+ 			spin_unlock_irqrestore(&ec->lock, flags);
+ 		} while (time_before(jiffies, delay));
+ 		pr_debug("controller reset, restart transaction\n");
+@@ -625,14 +631,14 @@ static u32 acpi_ec_gpe_handler(acpi_handle gpe_device,
+ {
+ 	unsigned long flags;
+ 	struct acpi_ec *ec = data;
++	bool wakeup;
+ 
+ 	spin_lock_irqsave(&ec->lock, flags);
+-	advance_transaction(ec);
++	wakeup = advance_transaction(ec);
+ 	spin_unlock_irqrestore(&ec->lock, flags);
+-	if (ec_transaction_completed(ec)) {
++	if (wakeup)
+ 		wake_up(&ec->wait);
+-		ec_check_sci(ec, acpi_ec_read_status(ec));
+-	}
++	ec_check_sci(ec, acpi_ec_read_status(ec));
+ 	return ACPI_INTERRUPT_HANDLED | ACPI_REENABLE_GPE;
+ }
+ 
+-- 
+1.7.10
 
