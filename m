@@ -1,75 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752342AbaFMOTv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 10:19:51 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:55952 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495AbaFMOTt (ORCPT
+	id S1752599AbaFMOUc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 10:20:32 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:35682 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751835AbaFMOU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 10:19:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vinod Koul <vinod.koul@intel.com>
-Subject: Re: [PATCH] ALSA: compress: Fix the mismatch size of struc between share lib(32bit) and kernel(64bit)
-Date: Fri, 13 Jun 2014 16:19:32 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: Takashi Iwai <tiwai@suse.de>, "Wang, Xiaoming" <xiaoming.wang@intel.com>,
-        jeeja.kp@intel.com, dhowells@redhat.com, tglx@linutronix.de,
-        mtk.manpages@gmail.com, paulmck@linux.vnet.ibm.com, davej@redhat.com,
-        linux-kernel@vger.kernel.org, dongxing.zhang@intel.com
-References: <1402346792.30956.17.camel@wxm-ubuntu> <s5hwqcqwnne.wl%tiwai@suse.de> <20140609153544.GA25075@intel.com>
-In-Reply-To: <20140609153544.GA25075@intel.com>
+	Fri, 13 Jun 2014 10:20:28 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201406131619.32976.arnd@arndb.de>
-X-Provags-ID: V02:K0:/z5k9591NtwUTYAIOj98znAsk4AhlpGBBzU+Ryd2y20
- osNTQ1d/kCgAJDYFzZN59/k1OBHwrEL8RN0HoXaFoKjCGg8r1H
- PY//EEyGFSJHAbDcvcFY202brUIOvD9OCTty7FZrPY4oZT9VFx
- fdgNnN3Q/WxG4B6/QTrFQJDbPvSCp2cXuyR3gYRJ19XC6u71BC
- 8duK8hoohdj1kzUAW1h3WtjA80aztMak/6nCCGQ2s18fTFtxMg
- cYTwR2qWGlYcwShNmc/9/sWf+qWzVTqloKTPjc7s18tj+ibdiS
- XyMNl6xA+higwepIVpZSq3/B3tRMQC0QCkr3JcGdZgp9VIcJ+n
- 8bkROnRtRo40DCxwTd8w=
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <CANq1E4R2K+eq9AxtFewp4YUL2cujg+dg+sN19Anvf-zWuvgyWw@mail.gmail.com>
+References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
+ <1402655819-14325-4-git-send-email-dh.herrmann@gmail.com> <CAKgNAkgnnWjrbE+2KAETsmiyrnrMQu0h7-MrYLvkiwj--_nxcQ@mail.gmail.com>
+ <CANq1E4R2K+eq9AxtFewp4YUL2cujg+dg+sN19Anvf-zWuvgyWw@mail.gmail.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Fri, 13 Jun 2014 16:20:07 +0200
+Message-ID: <CAKgNAkgMA39AfoSoA5Pe1r9N+ZzfYQNvNPvcRN7tOvRb8+v06Q@mail.gmail.com>
+Subject: Re: [PATCH v3 3/7] shm: add memfd_create() syscall
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Hugh Dickins <hughd@google.com>,
+        Tony Battersby <tonyb@cybernetics.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 09 June 2014, Vinod Koul wrote:
-> On Mon, Jun 09, 2014 at 09:24:53AM +0200, Takashi Iwai wrote:
-> > At Mon, 09 Jun 2014 16:46:32 -0400,
-> > Wang, Xiaoming wrote:
-> > > 
-> > > 
-> > > The size of struct snd_compr_avail is 0x1c in 32bit kernel,
-> > > while it is 0x20 in 64bit kernel 0x4 bytes added because of
-> > > alignment. It is OK when 32bit kernel met 32bit user space.
-> > > There exist stack corruption if 64bit kernel met 32bit user
-> > > space, because the size of struct snd_compr_avail is 0x1c
-> > > in 32bit user space which is smaller than it will get from
-> > > kernel. The extra 4 bytes can corrupt the stack, and
-> > > introduce unpredictable error.
-> > > 
-> > > Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
-> > > Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
-> > 
-> > This would break the existing 32bit systems, so I don't think we can
-> > take this approach.
-> > 
-> > Either break the 64bit systems (which aren't deployed yet much, so
-> > far) by adding packed attribute, or implement 32/64 bit conversion in
-> > compat_ioctl fop.
-> I think former should be safe for now. Anyway we have only 1 driver using this
-> in mainline so fallout shouldn't be widespread!
+Hi David,
 
-I guess since the driver was only merged for 3.16, we don't
-really have to worry about the ABI breakage anyway, but you can
-still use that approach if you have reason to stay compatible with
-existing used space built against out-of-tree drivers.
+On Fri, Jun 13, 2014 at 2:41 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
+>
+> On Fri, Jun 13, 2014 at 2:27 PM, Michael Kerrisk (man-pages)
+> <mtk.manpages@gmail.com> wrote:
+>> Hi David,
+>>
+>> On Fri, Jun 13, 2014 at 12:36 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>>> memfd_create() is similar to mmap(MAP_ANON), but returns a file-descriptor
+>>> that you can pass to mmap(). It can support sealing and avoids any
+>>> connection to user-visible mount-points. Thus, it's not subject to quotas
+>>> on mounted file-systems, but can be used like malloc()'ed memory, but
+>>> with a file-descriptor to it.
+>>>
+>>> memfd_create() returns the raw shmem file, so calls like ftruncate() can
+>>> be used to modify the underlying inode. Also calls like fstat()
+>>> will return proper information and mark the file as regular file. If you
+>>> want sealing, you can specify MFD_ALLOW_SEALING. Otherwise, sealing is not
+>>> supported (like on all other regular files).
+>>>
+>>> Compared to O_TMPFILE, it does not require a tmpfs mount-point and is not
+>>> subject to quotas and alike. It is still properly accounted to memcg
+>>> limits, though.
+>>
+>> Where do I find / is there detailed documentation (ideally, a man
+>> page) for this new system call?
+>
+> I did write a man-page proposal for memfd_create() and a patch for
+> fcntl() for v1,
 
-Anyway, if you use the __packed attribute, best apply it only to
-the individual __u64 member(s), not the entire struct, otherwise
-you might change user space programs in a subtle way when the alignment
-changes from 4 to 1 byte. 
+Ahh -- that's why I had a recollection of such a page ;-).
 
-	Arnd
+> however, the API changed several times so I didn't
+> keep them up to date (the man-page patches are on LKML). However, I
+> wrote a short introduction to memfd+sealing v3, that I recommend
+> reading first:
+>   http://dvdhrm.wordpress.com/2014/06/10/memfd_create2/
+
+Yes, I saw it already. (It's good, but I want more.)
+
+> This explains the idea behind the new API and describes almost all
+> aspects of it. It's up-to-date to v3 and I will use it to write the
+> final man-pages once Hugh and Andrew ACKed the patches. Let me know if
+> anything is unclear.
+
+The general notion these days is that a (comprehensive) manual page
+_should_ come *with* the system call, rather than after the fact. And
+there's a lot of value in that. I've found no end of bugs and design
+errors while writing (comprehensive) man pages after the fact (by
+which time it's too late to fix the design errors), and also found
+quite a few of those issues when I've managed to work with folk at the
+same time as they write the syscall. Bottom line: you really should
+write formal documentation now, as part of the process of code
+submission. It improves the chance of finding implementation and
+design bugs, and may well widen your circle of reviewers.
+
+Cheers,
+
+Michael
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
