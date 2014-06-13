@@ -1,87 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733AbaFMWte (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 18:49:34 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:39621 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339AbaFMWtd (ORCPT
+	id S1754022AbaFMWuM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 18:50:12 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:44505 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753797AbaFMWuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 18:49:33 -0400
-Date: Fri, 13 Jun 2014 15:49:26 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH] rcu: Only pin GP kthread when full dynticks is actually
- used
-Message-ID: <20140613224926.GW4581@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140613012432.GH4581@linux.vnet.ibm.com>
- <20140613013515.GA9589@linux.vnet.ibm.com>
- <20140613124714.GC6635@localhost.localdomain>
- <20140613155233.GM4581@linux.vnet.ibm.com>
- <20140613160002.GL6635@localhost.localdomain>
- <20140613161630.GQ4581@linux.vnet.ibm.com>
- <20140613162130.GP6635@localhost.localdomain>
- <20140613164441.GA14232@thin>
- <20140613204822.GT4581@linux.vnet.ibm.com>
- <20140613211034.GA10651@jtriplet-mobl1>
+	Fri, 13 Jun 2014 18:50:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140613211034.GA10651@jtriplet-mobl1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061322-1542-0000-0000-0000028F3C77
+In-Reply-To: <20140613220421.GD5099@sirena.org.uk>
+References: <1402464739-19044-1-git-send-email-tushar.b@samsung.com>
+	<1402464739-19044-4-git-send-email-tushar.b@samsung.com>
+	<CAD=FV=XqqP7+xDOAKCixivzgaO0xvJX7L+CCN+unAEuf-6aUbQ@mail.gmail.com>
+	<20140613170511.GA20112@sirena.org.uk>
+	<CAD=FV=VvkvH1TPiKttm9VXbBRnBo7kmTVK8bZZvexK=bAvaO4Q@mail.gmail.com>
+	<CAD=FV=XCk9E-7VPV=LQrdLU5fKsFHviQf79MBmC8va3gsg=Ydw@mail.gmail.com>
+	<20140613220421.GD5099@sirena.org.uk>
+Date: Fri, 13 Jun 2014 15:50:07 -0700
+Message-ID: <CAD=FV=U06JioDvvSqHyC5BZp_sKppk4i=s7DERCXG7rGHBe=xQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ARM: dts: Enable audio support for Peach-pi board
+From: Doug Anderson <dianders@google.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Tushar Behera <tushar.b@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Kevin Hilman <khilman@linaro.org>, Tushar Behera <trblinux@gmail.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 02:10:35PM -0700, Josh Triplett wrote:
-> On Fri, Jun 13, 2014 at 01:48:22PM -0700, Paul E. McKenney wrote:
-> > On Fri, Jun 13, 2014 at 09:44:41AM -0700, Josh Triplett wrote:
-> > > On Fri, Jun 13, 2014 at 06:21:32PM +0200, Frederic Weisbecker wrote:
-> > > > On Fri, Jun 13, 2014 at 09:16:30AM -0700, Paul E. McKenney wrote:
-> > > > > > Is it because we have dynticks CPUs staying too long in the kernel without
-> > > > > > taking any quiescent states? Are we perhaps missing some rcu_user_enter() or
-> > > > > > things?
-> > > > > 
-> > > > > Sort of the former, but combined with the fact that in-kernel CPUs still
-> > > > > need scheduling-clock interrupts for RCU to make progress.  I could
-> > > > > move this to RCU's context-switch hook, but that could be very bad for
-> > > > > workloads that do lots of context switching.
-> > > > 
-> > > > Or I can restart the tick if the CPU stays in the kernel for too long without
-> > > > a tick. I think that's what we were doing before but we removed that because
-> > > > we never implemented it correctly (we sent scheduler IPI that did nothing...)
-> > > 
-> > > I wonder if timer slack would make sense here: when you have at least
-> > > one RCU callback pending, set a timer with a huge amount of timer slack,
-> > > and cancel it if you end up handling the callback via a trip through the
-> > > scheduler.
-> > 
-> > But in this case, we need the tick even if the current CPU has no callbacks
-> > because it might be in an RCU read-side critical section.
-> 
-> Don't we handle that case via the slowpath of rcu_read_unlock, and a
-> flag set via IPI?  ("Oh, that CPU has taken too long to note a quiescent
-> state; send it an IPI to set the special flag that makes unlock do the
-> work.")
+Mark,
 
-There was once such logic on the force-quiescent-state path, and making
-that handle this new case was my first proposal.  As Frederic pointed
-out, that change requires rcu_needs_cpu()'s cooperation, because otherwise
-the CPU will take the IPI, see that it still has but one runnable task,
-and then keep its scheduling-clock interrupt off.
+On Fri, Jun 13, 2014 at 3:04 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Fri, Jun 13, 2014 at 02:58:26PM -0700, Doug Anderson wrote:
+>
+>> Anyway, suffice to say that the i2c core needs to be extended to
+>> handle the idea that a single device has more than one "compatible"
+>> string.  I'll leave it to an eager reader of this thread to implement
+>> this since we can also fix our own problem by just listing "max98091"
+>> in "sound/soc/codecs/max98090.c" like has always been done in the
+>> past.
+>
+> Why do you need to register multiple compatible strings (I guess for
+> fallback purposes?).
 
-The thing that involves rcu_read_unlock_special() is a flag set
-by the scheduling-clock interrupt, which doesn't help here.  Also,
-if a CPU stays in the kernel for a very long time without passing
-through any RCU read-side critical sections, there is nothing that
-rcu_read_unlock_special() can do to help.
+I'm no expert, but I think that's part of device tree isn't it?
 
-							Thanx, Paul
+In the case of max98090 and max98091, they are incredibly similar
+pieces of hardware (I think the max98091 simply has more microphones).
+If you've got a driver for a max98090 it will work just fine for a
+max98091 but you just won't get the extra microphones.
 
+In cases like this then device tree theory says that you should list
+both compatible strings: max98091 and max98090, right?  If your OS has
+a driver for max98091 it will use it.  ...if it doesn't but it has a
+max98090 driver it will try that one.
+
+As far as I understand we _shouldn't_ lie and just say that we have a
+max98090 when we really have a max98091.  The device tree is supposed
+to describe the hardware and isn't support to care that the OS has a
+driver for max98090 but not max98091.
+
+Ironically in our case we have a driver that supports both the 98090
+and the 98091 via autodetect.  However, it doesn't know about the
+98091 compatible string so if you list yourself as compatible with
+98091 then it won't find the driver.
+
+> A quick fix that is about as good is to take the
+> first compatible only.
+
+That's how the code works today, actually.  ...but as per above the
+current 98090 driver doesn't know about the 98091 compatible string,
+so:
+
+compatible = "maxim,max98091", "maxim,max98090";
+
+...won't find the right driver.
+
+--
+
+The quick fix is to add max98091 to the max98090 driver and is what
+I'd suggest in this case.  ...but I still think that the above logic
+is valid and eventually the i2c core should be fixed.  Please correct
+me if I'm wrong.
+
+-Doug
