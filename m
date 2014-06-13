@@ -1,88 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375AbaFMNwj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 09:52:39 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:61139 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616AbaFMNwh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 09:52:37 -0400
+	id S1752134AbaFMNyO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 09:54:14 -0400
+Received: from mail.kernel.org ([198.145.19.201]:37244 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751295AbaFMNyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 09:54:12 -0400
+Date: Fri, 13 Jun 2014 15:54:02 +0200
+From: Robert Richter <rric@kernel.org>
+To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Cc: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@alien8.de,
+        m.chehab@samsung.com, bp@suse.de, linux-edac@vger.kernel.org,
+        x86@kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH v3 1/5] apei, mce: Factor out APEI architecture specific
+ MCE calls.
+Message-ID: <20140613135402.GD27560@rric.localhost>
+References: <1402657380-18539-1-git-send-email-tomasz.nowicki@linaro.org>
+ <1402657380-18539-2-git-send-email-tomasz.nowicki@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <539A91E2.7000606@gmail.com>
-References: <539A91E2.7000606@gmail.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Fri, 13 Jun 2014 08:52:16 -0500
-Message-ID: <CAL_JsqJ+f0CjwGnqTzXjMOAvbDOf0O3BZgcQwrzaWBy9Gwiw8A@mail.gmail.com>
-Subject: Re: [RFC PATCH] OF: fix of_find_node_by_path() assumption that
- of_allnodes is root
-To: Frank Rowand <frowand.list@gmail.com>
-Cc: Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402657380-18539-2-git-send-email-tomasz.nowicki@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 12:53 AM, Frank Rowand <frowand.list@gmail.com> wrote:
-> From: Frank Rowand <frank.rowand@sonymobile.com>
->
-> Pantelis Antoniou reports that of_find_node_by_path() is borked because
-> of_allnodes is not guaranteed to contain the root of the tree after using
-> any of the dynamic update functions because some other nodes ends up as
-> of_allnodes.
->
-> Fixes: c22e650e66b8 of: Make of_find_node_by_path() handle /aliases
-
-Is it not possible to do a fix in of_find_node_by_path instead? I just
-wonder if this could have any other unintended side-effects on
-of_attach_node's behavior.
-
-Rob
-
->
-> Signed-off-by: Frank Rowand <frank.rowand@sonymobile.com>
+On 13.06.14 13:02:56, Tomasz Nowicki wrote:
+> This commit abstracts MCE calls and provides weak corresponding default
+> implementation for those architectures which do not need arch specific
+> actions. Each platform willing to do additional architectural actions
+> should provides desired function definition. It allows us to avoid wrap
+> code into #ifdef in generic code and prevent new platform from introducing
+> dummy stub function too.
+> 
+> Initially, there are two APEI arch-specific calls:
+> - apei_arch_enable_cmcff()
+> - apei_arch_report_mem_error()
+> Both interact with MCE driver for X86 architecture.
+> 
+> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
 > ---
->
->
-> Pantelis,
->
-> Can you test whether the problem you reported in irc?
->
-> This patch has not been tested, not even compile tested.
->
->
->  drivers/of/base.c |    8       6 +     2 -     0 !
->  1 file changed, 6 insertions(+), 2 deletions(-)
->
-> Index: b/drivers/of/base.c
-> ===================================================================
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -1948,6 +1948,9 @@ int of_reconfig_notify(unsigned long act
->
->  /**
->   * of_attach_node - Plug a device node into the tree and global list.
-> + *
-> + * Put the device node after of_allnodes in the global list so that
-> + * of_allnodes remains the root.
->   */
->  int of_attach_node(struct device_node *np)
->  {
-> @@ -1958,11 +1961,12 @@ int of_attach_node(struct device_node *n
->         if (rc)
->                 return rc;
->
-> +       BUG_ON(!of_allnodes);
->         raw_spin_lock_irqsave(&devtree_lock, flags);
->         np->sibling = np->parent->child;
-> -       np->allnext = of_allnodes;
-> +       np->allnext = of_allnodes->allnext;
->         np->parent->child = np;
-> -       of_allnodes = np;
-> +       of_allnodes->allnext = np;
->         of_node_clear_flag(np, OF_DETACHED);
->         raw_spin_unlock_irqrestore(&devtree_lock, flags);
->
+>  arch/x86/kernel/acpi/Makefile |    1 +
+>  arch/x86/kernel/acpi/apei.c   |   56 +++++++++++++++++++++++++++++++++++++++++
+>  drivers/acpi/apei/apei-base.c |   13 ++++++++++
+>  drivers/acpi/apei/ghes.c      |    6 ++---
+>  drivers/acpi/apei/hest.c      |   29 +--------------------
+>  include/acpi/apei.h           |    3 +++
+>  6 files changed, 76 insertions(+), 32 deletions(-)
+>  create mode 100644 arch/x86/kernel/acpi/apei.c
+
+Looks fine to me.
+
+-Robert
