@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739AbaFMRKv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 13:10:51 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:17268 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753559AbaFMRKt (ORCPT
+	id S1753814AbaFMRLf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 13:11:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45864 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753615AbaFMRLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 13:10:49 -0400
-Date: Fri, 13 Jun 2014 13:10:47 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [patch V4 08/10] rtmutex: Confine deadlock logic to futex
-Message-ID: <20140613131047.6578fdf7@gandalf.local.home>
-In-Reply-To: <20140611183853.553977348@linutronix.de>
-References: <20140611182944.108526809@linutronix.de>
-	<20140611183853.553977348@linutronix.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Fri, 13 Jun 2014 13:11:34 -0400
+Date: Fri, 13 Jun 2014 10:15:26 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Cheng-Wei Lee <lee.rhapsody@gmail.com>
+Cc: Sherif Shehab Aldin <shehabaldin.sherif@gmail.com>,
+        Avinash Kumar <avi.kp.137@gmail.com>,
+        Peter Senna Tschudin <peter.senna@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: wlan-ng: fix Missing a blank line after
+ declarations warnings
+Message-ID: <20140613171526.GA19285@kroah.com>
+References: <CAJKoSVTafxWR3eLO=tLv1VSrdyuAp_-eEJWCGBJ+zTRqcp=VVw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJKoSVTafxWR3eLO=tLv1VSrdyuAp_-eEJWCGBJ+zTRqcp=VVw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jun 2014 18:44:08 -0000
-Thomas Gleixner <tglx@linutronix.de> wrote:
-  
-> +/*
-> + * Futex variant with full deadlock detection.
-> + */
-> +int __rt_mutex_timed_lock(struct rt_mutex *lock,
-> +			  struct hrtimer_sleeper *timeout)
+On Fri, Jun 13, 2014 at 10:58:14PM +0800, Cheng-Wei Lee wrote:
+> Signed-off-by: Quentin Lee <lee.rhapsody@gmail.com>
+> ---
+>  drivers/staging/wlan-ng/hfa384x_usb.c |    4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+> 
+> diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c
+> b/drivers/staging/wlan-ng/hfa384x_usb.c
+> index 98343ff7..b87cd6b 100644
+> --- a/drivers/staging/wlan-ng/hfa384x_usb.c
+> +++ b/drivers/staging/wlan-ng/hfa384x_usb.c
+> @@ -3533,7 +3533,6 @@ static void hfa384x_usbin_rx(wlandevice_t
+> *wlandev, struct sk_buff *skb)
+>  	}
+> 
+>  done:
+> -	return;
+>  }
 
-I hate underscores. Although it's commented, it's still rather awkward.
+That's a good thing to do, but it is not what you said you did up above
+in the changelog entry.
 
-What about calling it rt_mutex_timed_futex_lock() or something else
-with futex in its name?
+Please make up 2 patches here, one to remove the unneeded return; lines,
+and one to fix up the whitespace of variables.
 
-Rest looks good.
+thanks,
 
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
-
-> +{
-> +	might_sleep();
-> +
-> +	return rt_mutex_timed_fastlock(lock, TASK_INTERRUPTIBLE, timeout, 1,
-> +				       rt_mutex_slowlock);
-> +}
-> +
-
+greg k-h
