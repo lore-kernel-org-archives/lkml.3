@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942AbaFMVXI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 17:23:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55651 "EHLO mx2.suse.de"
+	id S1753966AbaFMVYO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 17:24:14 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:36949 "EHLO kanga.kvack.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753579AbaFMVXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 17:23:06 -0400
-Date: Fri, 13 Jun 2014 23:23:00 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: Christoph Jaeger <christophjaeger@linux.com>
-Cc: wsa@the-dreams.de, linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c-taos-evm: Use module_serio_driver()
-Message-ID: <20140613232300.45ebf96f@endymion.delvare>
-In-Reply-To: <1402689144-20259-1-git-send-email-christophjaeger@linux.com>
-References: <1402689144-20259-1-git-send-email-christophjaeger@linux.com>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751986AbaFMVYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 17:24:13 -0400
+Date: Fri, 13 Jun 2014 17:24:11 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: torvalds@linux-foundation.org
+Cc: linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] *** SUBJECT HERE ***
+Message-ID: <cover.1402694489.git.bcrl@kvack.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jun 2014 21:52:24 +0200, Christoph Jaeger wrote:
-> Get rid of some boilerplate code by using module_serio_driver().
-> 
-> Signed-off-by: Christoph Jaeger <christophjaeger@linux.com>
-> ---
->  drivers/i2c/busses/i2c-taos-evm.c | 13 +------------
->  1 file changed, 1 insertion(+), 12 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-taos-evm.c b/drivers/i2c/busses/i2c-taos-evm.c
-> index 0576026..10855a0 100644
-> --- a/drivers/i2c/busses/i2c-taos-evm.c
-> +++ b/drivers/i2c/busses/i2c-taos-evm.c
-> @@ -311,19 +311,8 @@ static struct serio_driver taos_drv = {
->  	.interrupt	= taos_interrupt,
->  };
->  
-> -static int __init taos_init(void)
-> -{
-> -	return serio_register_driver(&taos_drv);
-> -}
-> -
-> -static void __exit taos_exit(void)
-> -{
-> -	serio_unregister_driver(&taos_drv);
-> -}
-> +module_serio_driver(taos_drv);
->  
->  MODULE_AUTHOR("Jean Delvare <jdelvare@suse.de>");
->  MODULE_DESCRIPTION("TAOS evaluation module driver");
->  MODULE_LICENSE("GPL");
-> -
-> -module_init(taos_init);
-> -module_exit(taos_exit);
+Hello Linus,
 
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
+Please pull the following 3 changes from git://git.kvack.org/~bcrl/aio-next.git
+.  They consist of a couple of code cleanups plus a minor bug fix.  Thanks!
 
-Thanks,
+		-ben
+
+Benjamin LaHaise (2):
+  aio: report error from io_destroy() when threads race in io_destroy()
+  aio: cleanup: flatten kill_ioctx()
+
+Fabian Frederick (1):
+  fs/aio.c: Remove ctx parameter in kiocb_cancel
+
+ fs/aio.c | 70 +++++++++++++++++++++++++++++++++-------------------------------
+ 1 file changed, 36 insertions(+), 34 deletions(-)
+
 -- 
-Jean Delvare
-SUSE L3 Support
+1.8.2.1
+
+
+-- 
+"Thought is the essence of where you are now."
