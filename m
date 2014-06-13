@@ -1,53 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467AbaFMHuQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 03:50:16 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40155 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751082AbaFMHuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 03:50:14 -0400
-Date: Fri, 13 Jun 2014 09:50:11 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: WANG Chao <chaowang@redhat.com>, Dave Young <dyoung@redhat.com>,
-        mjg59@srcf.ucam.org, bhe@redhat.com, jkosina@suse.cz, greg@kroah.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, hpa@zytor.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 07/13] kexec: Implementation of new syscall
- kexec_file_load
-Message-ID: <20140613075011.GA4751@pd.tnic>
-References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
- <1401800822-27425-8-git-send-email-vgoyal@redhat.com>
- <20140606065605.GE2785@dhcp-17-89.nay.redhat.com>
- <20140606181859.GK1526@redhat.com>
- <20140609021122.GB1924@darkstar.nay.redhat.com>
- <20140609053538.GA2874@dhcp-17-89.nay.redhat.com>
- <20140609154137.GD22049@redhat.com>
+	id S1752653AbaFMHu6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 03:50:58 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:35435 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246AbaFMHu5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 03:50:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140609154137.GD22049@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1402367835-21295-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
+References: <1402367835-21295-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
+Date: Fri, 13 Jun 2014 09:50:56 +0200
+Message-ID: <CACRpkdZ9uaKuif8CZ0Xgd5f47-dGJq9A8xTVv=S2vasX5rjSBQ@mail.gmail.com>
+Subject: Re: [PATCH v2] pinctrl: sh-pfc: r8a7791: Add HSCIF pin support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 11:41:37AM -0400, Vivek Goyal wrote:
-> IIUC, COMMAND_LINE_SIZE gives max limits of running kernel and it does
-> not tell us anything about command line size supported by kernel being
-> loaded.
+On Tue, Jun 10, 2014 at 4:37 AM, Nobuhiro Iwamatsu
+<nobuhiro.iwamatsu.yj@renesas.com> wrote:
 
-Whatever you do, you do need a sane default because even querying the
-boot protocol is not reliable as the to-be-loaded kernel's boot protocol
-might be manipulated too, before signing (who knows what people do
-in the wild).
+> Signed-off-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> ---
+>  V2: - Add pin map for hscif2_data_d.
+>      - Add Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-So having a sane, unconditional fallback COMMAND_LINE_SIZE from the
-first kernel is a must, methinks.
+This v2 version applied for the v3.17 development cycle.
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Yours,
+Linus Walleij
