@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760AbaFMAxZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 20:53:25 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:49969 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742AbaFMAxX (ORCPT
+	id S1754728AbaFMAxU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 20:53:20 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:60387 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817AbaFMAxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 20:53:23 -0400
+	Thu, 12 Jun 2014 20:53:17 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: <hpa@zytor.com>, Kui Zhang <kuizhang@gmail.com>
 Cc: x86@kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v3 4/4] x86,vdso: Hack to keep 64-bit Go programs working
-Date: Thu, 12 Jun 2014 17:53:12 -0700
-Message-Id: <d10618176c4bd39b457a5e85c497295c90cab1bc.1402620737.git.luto@amacapital.net>
+Subject: [PATCH v3 1/4] doc,vdso: Rename vdso_test.c to vdso_standalone_test_x86.c
+Date: Thu, 12 Jun 2014 17:53:09 -0700
+Message-Id: <3efc170e0e166e15f0150c9fdb37d52488b9c0a4.1402620737.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1402620737.git.luto@amacapital.net>
 References: <cover.1402620737.git.luto@amacapital.net>
@@ -24,159 +24,251 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Go runtime has a buggy vDSO parser that currently segfaults.
-This writes an empty SHT_DYNSYM entry that causes Go's runtime to
-malfunction by thinking that the vDSO is empty rather than
-malfunctioning by running off the end and segfaulting.
-
-This is currently broken for big-endian build hosts.  The hack
-should also be disabled for x32, but I'm not sure what the right way
-to do that is.
+This thing is hopelessly x86_64-specific: it's an example of how to
+access the vDSO without any runtime support at all.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/vdso/Makefile            | 18 ++++++++++--------
- arch/x86/vdso/vdso-fakesections.c | 32 ++++++++++++++++++++++++++++++++
- arch/x86/vdso/vdso2c.h            | 23 ++++++++++++++++++-----
- 3 files changed, 60 insertions(+), 13 deletions(-)
- create mode 100644 arch/x86/vdso/vdso-fakesections.c
+ Documentation/vDSO/vdso_standalone_test_x86.c | 111 ++++++++++++++++++++++++++
+ Documentation/vDSO/vdso_test.c                | 111 --------------------------
+ 2 files changed, 111 insertions(+), 111 deletions(-)
+ create mode 100644 Documentation/vDSO/vdso_standalone_test_x86.c
+ delete mode 100644 Documentation/vDSO/vdso_test.c
 
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index 9769df0..ba6fc27 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -15,12 +15,8 @@ vdso-install-$(VDSO32-y)	+= $(vdso32-images)
- 
- 
- # files to link into the vdso
--vobjs-y := vdso-note.o vclock_gettime.o vgetcpu.o
--
--vobjs-$(VDSOX32-y) += $(vobjx32s-compat)
--
--# Filter out x32 objects.
--vobj64s := $(filter-out $(vobjx32s-compat),$(vobjs-y))
-+vobjs-y := vdso-note.o vclock_gettime.o vgetcpu.o vdso-fakesections.o
-+vobjs-nox32 := vdso-fakesections.o
- 
- # files to link into kernel
- obj-y				+= vma.o
-@@ -34,7 +30,7 @@ vdso_img-$(VDSO32-y)		+= 32-sysenter
- 
- obj-$(VDSO32-y)			+= vdso32-setup.o
- 
--vobjs := $(foreach F,$(vobj64s),$(obj)/$F)
-+vobjs := $(foreach F,$(vobjs-y),$(obj)/$F)
- 
- $(obj)/vdso.o: $(obj)/vdso.so
- 
-@@ -104,7 +100,13 @@ VDSO_LDFLAGS_vdsox32.lds = -Wl,-m,elf32_x86_64 \
- 			   -Wl,-z,max-page-size=4096 \
- 			   -Wl,-z,common-page-size=4096
- 
--vobjx32s-y := $(vobj64s:.o=-x32.o)
-+# 64-bit objects to re-brand as x32
-+vobjs64-for-x32 := $(filter-out $(vobjs-nox32),$(vobjs-y))
-+
-+# x32-rebranded versions
-+vobjx32s-y := $(vobjs64-for-x32:.o=-x32.o)
-+
-+# same thing, but in the output directory
- vobjx32s := $(foreach F,$(vobjx32s-y),$(obj)/$F)
- 
- # Convert 64bit object file to x32 for x32 vDSO.
-diff --git a/arch/x86/vdso/vdso-fakesections.c b/arch/x86/vdso/vdso-fakesections.c
+diff --git a/Documentation/vDSO/vdso_standalone_test_x86.c b/Documentation/vDSO/vdso_standalone_test_x86.c
 new file mode 100644
-index 0000000..cb8a8d7
+index 0000000..1523f5d
 --- /dev/null
-+++ b/arch/x86/vdso/vdso-fakesections.c
-@@ -0,0 +1,32 @@
++++ b/Documentation/vDSO/vdso_standalone_test_x86.c
+@@ -0,0 +1,111 @@
 +/*
-+ * Copyright 2014 Andy Lutomirski
-+ * Subject to the GNU Public License, v.2
++ * vdso_test.c: Sample code to test parse_vdso.c on x86_64
++ * Copyright (c) 2011 Andy Lutomirski
++ * Subject to the GNU General Public License, version 2
 + *
-+ * Hack to keep broken Go programs working.
-+ *
-+ * The Go runtime had a couple of bugs: it would read the section table to try
-+ * to figure out how many dynamic symbols there were (it shouldn't have looked
-+ * at the section table at all) and, if there were no SHT_SYNDYM section table
-+ * entry, it would use an uninitialized value for the number of symbols.  As a
-+ * workaround, we supply a minimal section table.  vdso2c will adjust the
-+ * in-memory image so that "vdso_fake_sections" becomes the section table.
-+ *
-+ * The bug was introduced by:
-+ * https://code.google.com/p/go/source/detail?r=56ea40aac72b (2012-08-31)
-+ * and is being addressed in the Go runtime in this issue:
-+ * https://code.google.com/p/go/issues/detail?id=8197
++ * You can amuse yourself by compiling with:
++ * gcc -std=gnu99 -nostdlib
++ *     -Os -fno-asynchronous-unwind-tables -flto
++ *      vdso_standalone_test_x86.c parse_vdso.c
++ * to generate a small binary with no dependencies at all.
 + */
 +
-+#ifndef __x86_64__
-+#error This hack is specific to the 64-bit vDSO
-+#endif
++#include <sys/syscall.h>
++#include <sys/time.h>
++#include <unistd.h>
++#include <stdint.h>
 +
-+#include <linux/elf.h>
++extern void *vdso_sym(const char *version, const char *name);
++extern void vdso_init_from_sysinfo_ehdr(uintptr_t base);
++extern void vdso_init_from_auxv(void *auxv);
 +
-+extern const __visible struct elf64_shdr vdso_fake_sections[];
-+const __visible struct elf64_shdr vdso_fake_sections[] = {
-+	{
-+		.sh_type = SHT_DYNSYM,
-+		.sh_entsize = sizeof(Elf64_Sym),
++/* We need a libc functions... */
++int strcmp(const char *a, const char *b)
++{
++	/* This implementation is buggy: it never returns -1. */
++	while (*a || *b) {
++		if (*a != *b)
++			return 1;
++		if (*a == 0 || *b == 0)
++			return 1;
++		a++;
++		b++;
 +	}
-+};
-diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
-index d9f6f61..c6eefaf 100644
---- a/arch/x86/vdso/vdso2c.h
-+++ b/arch/x86/vdso/vdso2c.h
-@@ -18,6 +18,8 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 	const char *secstrings;
- 	uint64_t syms[NSYMS] = {};
- 
-+	uint64_t fake_sections_value = 0, fake_sections_size = 0;
 +
- 	Elf_Phdr *pt = (Elf_Phdr *)(addr + GET_LE(&hdr->e_phoff));
- 
- 	/* Walk the segment table. */
-@@ -84,6 +86,7 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 			GET_LE(&symtab_hdr->sh_entsize) * i;
- 		const char *name = addr + GET_LE(&strtab_hdr->sh_offset) +
- 			GET_LE(&sym->st_name);
++	return 0;
++}
 +
- 		for (k = 0; k < NSYMS; k++) {
- 			if (!strcmp(name, required_syms[k])) {
- 				if (syms[k]) {
-@@ -93,6 +96,13 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 				syms[k] = GET_LE(&sym->st_value);
- 			}
- 		}
++/* ...and two syscalls.  This is x86_64-specific. */
++static inline long linux_write(int fd, const void *data, size_t len)
++{
 +
-+		if (!strcmp(name, "vdso_fake_sections")) {
-+			if (fake_sections_value)
-+				fail("duplicate vdso_fake_sections\n");
-+			fake_sections_value = GET_LE(&sym->st_value);
-+			fake_sections_size = GET_LE(&sym->st_size);
-+		}
- 	}
- 
- 	/* Validate mapping addresses. */
-@@ -112,11 +122,14 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 	if (syms[sym_end_mapping] % 4096)
- 		fail("end_mapping must be a multiple of 4096\n");
- 
--	/* Remove sections. */
--	hdr->e_shoff = 0;
--	hdr->e_shentsize = 0;
--	hdr->e_shnum = 0;
--	hdr->e_shstrndx = SHN_UNDEF; /* SHN_UNDEF == 0 */
-+	/* Remove sections or use fakes */
-+	if (fake_sections_size % sizeof(Elf_Shdr))
-+		fail("vdso_fake_sections size is not a multiple of %ld\n",
-+		     (long)sizeof(Elf_Shdr));
-+	PUT_LE(&hdr->e_shoff, fake_sections_value);
-+	PUT_LE(&hdr->e_shentsize, fake_sections_value ? sizeof(Elf_Shdr) : 0);
-+	PUT_LE(&hdr->e_shnum, fake_sections_size / sizeof(Elf_Shdr));
-+	PUT_LE(&hdr->e_shstrndx, SHN_UNDEF);
- 
- 	if (!name) {
- 		fwrite(addr, load_size, 1, outfile);
++	long ret;
++	asm volatile ("syscall" : "=a" (ret) : "a" (__NR_write),
++		      "D" (fd), "S" (data), "d" (len) :
++		      "cc", "memory", "rcx",
++		      "r8", "r9", "r10", "r11" );
++	return ret;
++}
++
++static inline void linux_exit(int code)
++{
++	asm volatile ("syscall" : : "a" (__NR_exit), "D" (code));
++}
++
++void to_base10(char *lastdig, uint64_t n)
++{
++	while (n) {
++		*lastdig = (n % 10) + '0';
++		n /= 10;
++		lastdig--;
++	}
++}
++
++__attribute__((externally_visible)) void c_main(void **stack)
++{
++	/* Parse the stack */
++	long argc = (long)*stack;
++	stack += argc + 2;
++
++	/* Now we're pointing at the environment.  Skip it. */
++	while(*stack)
++		stack++;
++	stack++;
++
++	/* Now we're pointing at auxv.  Initialize the vDSO parser. */
++	vdso_init_from_auxv((void *)stack);
++
++	/* Find gettimeofday. */
++	typedef long (*gtod_t)(struct timeval *tv, struct timezone *tz);
++	gtod_t gtod = (gtod_t)vdso_sym("LINUX_2.6", "__vdso_gettimeofday");
++
++	if (!gtod)
++		linux_exit(1);
++
++	struct timeval tv;
++	long ret = gtod(&tv, 0);
++
++	if (ret == 0) {
++		char buf[] = "The time is                     .000000\n";
++		to_base10(buf + 31, tv.tv_sec);
++		to_base10(buf + 38, tv.tv_usec);
++		linux_write(1, buf, sizeof(buf) - 1);
++	} else {
++		linux_exit(ret);
++	}
++
++	linux_exit(0);
++}
++
++/*
++ * This is the real entry point.  It passes the initial stack into
++ * the C entry point.
++ */
++asm (
++	".text\n"
++	".global _start\n"
++        ".type _start,@function\n"
++        "_start:\n\t"
++        "mov %rsp,%rdi\n\t"
++        "jmp c_main"
++	);
+diff --git a/Documentation/vDSO/vdso_test.c b/Documentation/vDSO/vdso_test.c
+deleted file mode 100644
+index fff6334..0000000
+--- a/Documentation/vDSO/vdso_test.c
++++ /dev/null
+@@ -1,111 +0,0 @@
+-/*
+- * vdso_test.c: Sample code to test parse_vdso.c on x86_64
+- * Copyright (c) 2011 Andy Lutomirski
+- * Subject to the GNU General Public License, version 2
+- *
+- * You can amuse yourself by compiling with:
+- * gcc -std=gnu99 -nostdlib
+- *     -Os -fno-asynchronous-unwind-tables -flto
+- *      vdso_test.c parse_vdso.c -o vdso_test
+- * to generate a small binary with no dependencies at all.
+- */
+-
+-#include <sys/syscall.h>
+-#include <sys/time.h>
+-#include <unistd.h>
+-#include <stdint.h>
+-
+-extern void *vdso_sym(const char *version, const char *name);
+-extern void vdso_init_from_sysinfo_ehdr(uintptr_t base);
+-extern void vdso_init_from_auxv(void *auxv);
+-
+-/* We need a libc functions... */
+-int strcmp(const char *a, const char *b)
+-{
+-	/* This implementation is buggy: it never returns -1. */
+-	while (*a || *b) {
+-		if (*a != *b)
+-			return 1;
+-		if (*a == 0 || *b == 0)
+-			return 1;
+-		a++;
+-		b++;
+-	}
+-
+-	return 0;
+-}
+-
+-/* ...and two syscalls.  This is x86_64-specific. */
+-static inline long linux_write(int fd, const void *data, size_t len)
+-{
+-
+-	long ret;
+-	asm volatile ("syscall" : "=a" (ret) : "a" (__NR_write),
+-		      "D" (fd), "S" (data), "d" (len) :
+-		      "cc", "memory", "rcx",
+-		      "r8", "r9", "r10", "r11" );
+-	return ret;
+-}
+-
+-static inline void linux_exit(int code)
+-{
+-	asm volatile ("syscall" : : "a" (__NR_exit), "D" (code));
+-}
+-
+-void to_base10(char *lastdig, uint64_t n)
+-{
+-	while (n) {
+-		*lastdig = (n % 10) + '0';
+-		n /= 10;
+-		lastdig--;
+-	}
+-}
+-
+-__attribute__((externally_visible)) void c_main(void **stack)
+-{
+-	/* Parse the stack */
+-	long argc = (long)*stack;
+-	stack += argc + 2;
+-
+-	/* Now we're pointing at the environment.  Skip it. */
+-	while(*stack)
+-		stack++;
+-	stack++;
+-
+-	/* Now we're pointing at auxv.  Initialize the vDSO parser. */
+-	vdso_init_from_auxv((void *)stack);
+-
+-	/* Find gettimeofday. */
+-	typedef long (*gtod_t)(struct timeval *tv, struct timezone *tz);
+-	gtod_t gtod = (gtod_t)vdso_sym("LINUX_2.6", "__vdso_gettimeofday");
+-
+-	if (!gtod)
+-		linux_exit(1);
+-
+-	struct timeval tv;
+-	long ret = gtod(&tv, 0);
+-
+-	if (ret == 0) {
+-		char buf[] = "The time is                     .000000\n";
+-		to_base10(buf + 31, tv.tv_sec);
+-		to_base10(buf + 38, tv.tv_usec);
+-		linux_write(1, buf, sizeof(buf) - 1);
+-	} else {
+-		linux_exit(ret);
+-	}
+-
+-	linux_exit(0);
+-}
+-
+-/*
+- * This is the real entry point.  It passes the initial stack into
+- * the C entry point.
+- */
+-asm (
+-	".text\n"
+-	".global _start\n"
+-        ".type _start,@function\n"
+-        "_start:\n\t"
+-        "mov %rsp,%rdi\n\t"
+-        "jmp c_main"
+-	);
 -- 
 1.9.3
 
