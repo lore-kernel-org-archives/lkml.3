@@ -1,92 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181AbaFMXKl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 19:10:41 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:51138 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401AbaFMXKj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 19:10:39 -0400
-Date: Sat, 14 Jun 2014 01:10:35 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH] rcu: Only pin GP kthread when full dynticks is actually
- used
-Message-ID: <20140613231033.GR6635@localhost.localdomain>
-References: <20140613013515.GA9589@linux.vnet.ibm.com>
- <20140613124714.GC6635@localhost.localdomain>
- <20140613155233.GM4581@linux.vnet.ibm.com>
- <20140613160002.GL6635@localhost.localdomain>
- <20140613161630.GQ4581@linux.vnet.ibm.com>
- <20140613162130.GP6635@localhost.localdomain>
- <20140613164441.GA14232@thin>
- <20140613204822.GT4581@linux.vnet.ibm.com>
- <20140613211034.GA10651@jtriplet-mobl1>
- <20140613224926.GW4581@linux.vnet.ibm.com>
+	id S1754243AbaFMXLM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 19:11:12 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51065 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751401AbaFMXLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 19:11:10 -0400
+Date: Fri, 13 Jun 2014 18:10:19 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Paul Walmsley <paul@pwsan.com>
+CC: Felipe Balbi <balbi@ti.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Sathya Prakash M R <sathyap@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Darren Etheridge <detheridge@ti.com>
+Subject: Re: [RESEND PATCH 1/2] ARM: AM43xx: hwmod: add DSS hwmod data
+Message-ID: <20140613231019.GA24121@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1402676147-3711-1-git-send-email-balbi@ti.com>
+ <1402676147-3711-2-git-send-email-balbi@ti.com>
+ <20140613162323.GH8319@saruman.home>
+ <alpine.DEB.2.02.1406131910060.340@utopia.booyaka.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k1lZvvs/B4yU6o8G"
 Content-Disposition: inline
-In-Reply-To: <20140613224926.GW4581@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.02.1406131910060.340@utopia.booyaka.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 03:49:26PM -0700, Paul E. McKenney wrote:
-> On Fri, Jun 13, 2014 at 02:10:35PM -0700, Josh Triplett wrote:
-> > On Fri, Jun 13, 2014 at 01:48:22PM -0700, Paul E. McKenney wrote:
-> > > On Fri, Jun 13, 2014 at 09:44:41AM -0700, Josh Triplett wrote:
-> > > > On Fri, Jun 13, 2014 at 06:21:32PM +0200, Frederic Weisbecker wrote:
-> > > > > On Fri, Jun 13, 2014 at 09:16:30AM -0700, Paul E. McKenney wrote:
-> > > > > > > Is it because we have dynticks CPUs staying too long in the kernel without
-> > > > > > > taking any quiescent states? Are we perhaps missing some rcu_user_enter() or
-> > > > > > > things?
-> > > > > > 
-> > > > > > Sort of the former, but combined with the fact that in-kernel CPUs still
-> > > > > > need scheduling-clock interrupts for RCU to make progress.  I could
-> > > > > > move this to RCU's context-switch hook, but that could be very bad for
-> > > > > > workloads that do lots of context switching.
-> > > > > 
-> > > > > Or I can restart the tick if the CPU stays in the kernel for too long without
-> > > > > a tick. I think that's what we were doing before but we removed that because
-> > > > > we never implemented it correctly (we sent scheduler IPI that did nothing...)
-> > > > 
-> > > > I wonder if timer slack would make sense here: when you have at least
-> > > > one RCU callback pending, set a timer with a huge amount of timer slack,
-> > > > and cancel it if you end up handling the callback via a trip through the
-> > > > scheduler.
-> > > 
-> > > But in this case, we need the tick even if the current CPU has no callbacks
-> > > because it might be in an RCU read-side critical section.
-> > 
-> > Don't we handle that case via the slowpath of rcu_read_unlock, and a
-> > flag set via IPI?  ("Oh, that CPU has taken too long to note a quiescent
-> > state; send it an IPI to set the special flag that makes unlock do the
-> > work.")
-> 
-> There was once such logic on the force-quiescent-state path, and making
-> that handle this new case was my first proposal.  As Frederic pointed
-> out, that change requires rcu_needs_cpu()'s cooperation, because otherwise
-> the CPU will take the IPI, see that it still has but one runnable task,
-> and then keep its scheduling-clock interrupt off.
+--k1lZvvs/B4yU6o8G
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Exactly. So that's what happens currently, we call rcu_kick_nohz_cpu()
-on extended grace periods but the IPI doesn't reconsider the tick.
+Hi,
 
-In fact it doesn't do anything at all because the scheduler IPI,
-when invoked without a reason, doesn't even call irq_enter()/irq_exit(),
-so rcu_needs_cpu() isn't quite called from there.
+On Fri, Jun 13, 2014 at 07:11:58PM +0000, Paul Walmsley wrote:
+> > > From: Sathya Prakash M R <sathyap@ti.com>
+> > >=20
+> > > Add DSS hwmod data for AM43xx.
+> > >=20
+> > > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > > Acked-by: Rajendra Nayak <rnayak@ti.com>
+> > > Signed-off-by: Sathya Prakash M R <sathyap@ti.com>
+> > > Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+> > > Signed-off-by: Felipe Balbi <balbi@ti.com>
+> > > ---
+> > >=20
+> > > Note that this patch was originally send on May 9th [1], changes were=
+ requested
+> > > and a new version was sent on May 19th [2], then on May 27th [3] Tomi=
+ pinged
+> > > maintainer again and go no response.
+> > >=20
+> > > Without this patch, we cannot get display working on any AM437x devic=
+es.
+> > >=20
+> > > [1] http://marc.info/?l=3Dlinux-arm-kernel&m=3D139963677925227&w=3D2
+> > > [2] http://marc.info/?l=3Dlinux-arm-kernel&m=3D140049799425512&w=3D2
+> > > [3] http://marc.info/?l=3Dlinux-arm-kernel&m=3D140117232826754&w=3D2
+> > >=20
+> > >  arch/arm/mach-omap2/omap_hwmod_43xx_data.c | 98 ++++++++++++++++++++=
+++++++++++
+> > >  arch/arm/mach-omap2/prcm43xx.h             |  1 +
+> > >  2 files changed, 99 insertions(+)
+>=20
+> Sorry for the delay on this.  Have been corresponding with TI management=
+=20
+> to figure out what to do about patches for AM43xx.  I don't have boards o=
+r=20
+> public documentation for these devices, so it's impossible for me to=20
+> meaningfully review the patches.  Looks like boards and/or public docs=20
+> won't be coming any time soon.
+>=20
+> So for my part, here's what I'll need to merge any hwmod or PRCM patches=
+=20
+> that involve AM437x:
+>=20
+> 1. A Reviewed-by: from one of the following folks (which should come from
+> a different person than who is submitting the patches):
+>=20
+> Roger Quadros
+> Nishanth Menon
+> Rajendra Nayak
+> Kevin Hilman
+> Tony Lindgren
+>=20
+> 2. A Tested-by: from one of the following folks (who can be the same as=
+=20
+> the person who is the same as the person who is submitting the patches):
+>=20
+> Nishanth Menon
+> Rajendra Nayak
+> Kevin Hilman=20
+> Tony Lindgren
 
-Now that's going to change with https://lwn.net/Articles/601836/ if
-we convert rcu_kick_nohz_cpu() to tick_nohz_full_kick_cpu().
+What you're saying here is that it's pointless for anybody else in TI to
+review and/or test patches because you will only accept such tags from
+this list of 4 ~ 5 people. It doesn't take a brain surgeon to note how
+this won't scale and, if you continue to ignore patches during the
+entire development cycle and only reply after it's too late for $this
+merge window, it won't help much.
 
-Then we have the choice between two options:
+Quite frankly, it's very upsetting to see an affirmation that all the
+work that I (personally) and many others do is seen as "pointless" from
+your side *unless* it gets the blessing from the few folks listed above.
 
-* We can add a check in tick_nohz_full_check() and restart the tick if
-necessary.
+This just makes it ever more difficult for anything, which is clearly
+*BROKEN* to be fixed upstream and will just contribute to people
+vanishing from mainline development.
 
-* Extend rcu_needs_cpu() to restore a similar periodic mode until the
-grace periods get some progress.
+The very fact that you will only accept patches blessed by the gang-of-4
+goes against the very foundations of open source development. Just
+because you don't have access to documentation - and granted, that
+_does_ make things a lot more difficult - does not mean you have to
+consider an entire company as a non-trust worthy organization. Specially
+when there are so many here who have been doing mainline development for
+quite some time.
+
+Anyway, whatever... I just hope that if we go through *another* merge
+window without $subject being merged, someone takes the patch because
+this already has a ridiculous amount of bureaucratic bariers to patches
+which are, to put it very bluntly, *CORRECT*.
+
+ps: $subject in particular, has been tested by 3 different people.
+Actually 4, if you consider Darren Etheridge who used $subject to help
+me get display working on AM437x SK.
+
+pps: Darren, can you reply with your (according to Paul) pointless
+Tested-by ?
+
+--=20
+balbi
+
+--k1lZvvs/B4yU6o8G
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTm4TbAAoJEIaOsuA1yqRE/HkP/0wjnnWQ8iRrv4a32Za8SYau
+nIlMDg7q5UmzXBUg7E26UoEgLe6RWD4Bg95BJqgWK8HS733GjRNehpUXQO9eTBJl
+eWr6vot9ooVuprVA8bKsOegeQXFthc5YCXBAM+VuuOEu9dolsD5S1s1KEgiXpZf7
+s0QQzf+oroQddLDUn4rkL8jWlsdUprLuzsEW57llOKwPCgfwdGlzdGeUVvyjPg9t
+k/r/Lgq41TfawsZTfj7w0VRLDLpC2QX2lGHgfGudctCmss0uZs8NPkf7jV7tqqfr
+RrUHa+yK5f2Raki+AYNNpIVsbrYh1h6B0fTlGS9h4HSw0lfvwXcm6BbS946jFxLW
+6ffL13fXA896sWTTLZmyQy93VmJm7CRUZqowasw6FCrMtM+OCq99baKuJiUMn/aU
+JQJa0yrRrBX3CELv7l2zma96X+cpoxaiTI6udR/zMith8LFJ1iX7r9cEEv7WkGD5
+0nnLqb5mxN6HFGfiBDZmOcrUov/8o9HK5XorvZHG2sLQ/x8/JSwfU9b6FNFbB3zK
+lcpDEsGprt+khqUcXNwngMhL5dePN+HH82+lKNc+w6SHzjXz0VYFp5W0Ll680xrd
+uLYmL6Zc3qmo6+cywEECzjTPt0drzIT+eyP5htzFGS9n0ydQMxlUuk9uKlhX1F9m
+3cYCz2Vhq081+dCohnCn
+=6YTc
+-----END PGP SIGNATURE-----
+
+--k1lZvvs/B4yU6o8G--
