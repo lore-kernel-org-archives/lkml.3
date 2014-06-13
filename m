@@ -1,88 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131AbaFMJZT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 05:25:19 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39295 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270AbaFMJZQ (ORCPT
+	id S1752666AbaFMJa1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 05:30:27 -0400
+Received: from smtprelay0227.hostedemail.com ([216.40.44.227]:59687 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751761AbaFMJa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 05:25:16 -0400
-Date: Fri, 13 Jun 2014 10:24:42 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Brian W Hart <hartb@linux.vnet.ibm.com>,
-        Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Christian Engelmayer <cengelma@gmx.at>,
-        Christopher Brannon <chris@the-brannons.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Jiri Kosina <jkosina@suse.cz>, Lindar Liu <lindar_liu@usish.com>,
-        Robert Jarzmik <robert.jarzmik@free.fr>,
-        Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        Simon Wood <simon@mungewell.org>
-Message-ID: <20140613092442.GB5099@sirena.org.uk>
-References: <877g4oau2s.fsf@rustcorp.com.au>
- <20140611105503.GG5099@sirena.org.uk>
- <87y4x2q5qr.fsf@rustcorp.com.au>
- <20140612112715.GX5099@sirena.org.uk>
- <87a99hpqnb.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GtM+3wSyc54Btfn2"
-Content-Disposition: inline
-In-Reply-To: <87a99hpqnb.fsf@rustcorp.com.au>
-X-Cookie: Ditat Deus.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PULL] modules-next
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Fri, 13 Jun 2014 05:30:26 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3743:3865:3866:3868:3870:3871:3872:3874:4321:4605:5007:7652:10004:10400:10848:11232:11233:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: stew48_77f1c90ebab1d
+X-Filterd-Recvd-Size: 2142
+Message-ID: <1402651822.12385.31.camel@joe-AO725>
+Subject: Re: [patch] checkpatch: warn on missing spaces in broken up quoted
+ strings
+From: Joe Perches <joe@perches.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Date: Fri, 13 Jun 2014 02:30:22 -0700
+In-Reply-To: <20140613065346.GA28134@mwanda>
+References: <20140613065346.GA28134@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2014-06-13 at 09:53 +0300, Dan Carpenter wrote:
+> Checkpatch already complains when people break up quoted strings but
+> it's still pretty common.  One mistake that people often make is they
+> leave out the space character between the two strings.
+> 
+> This check adds 453 new warnings.  There very few false positives, here
+> is what they look like:
+> 
+> 1) Most of the false positives are in crypto/testmgr.h where they just
+>    want a 10x10 block of sample text and don't care about the content.
+> 2) There one commented place like this:
+>   "das08-aoh"
+>   "das08-aol"
+> 3) There is one place which breaks the alphabet at the lower and upper
+>    case boundary.
+> 4) There is one person who broke quoted strings at the 80 character mark
+>    without considering the content (that's not really a false positive,
+>    now that I think about it).
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+[]
+> +# check for missing a space in a string concatination
+> +        if ($prevrawline =~ /[^\\][a-zA-Z]"$/ && $rawline =~ /^\+[\t ]+"[a-zA-Z]/) {
+> +            WARN('MISSING_SPACE',
+> +                 "break quoted strings at a space character\n" . $hereprev);
+> +        }
 
---GtM+3wSyc54Btfn2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Probably want digits too so maybe \w instead of "[a-zA-Z]/
 
-On Fri, Jun 13, 2014 at 10:33:20AM +0930, Rusty Russell wrote:
 
-> So, did you queue a patch to fix your email address in
-> drivers/regulator/virtual.c?
-
-No, that's more about giving credit to Wolfson for funding the code I
-guess - it's very rare for anyone to update the author information (and
-becoming more common for people to not put them in the file at all).
-Everyone uses get_maintainers.pl these days, it'll do a reasonable first
-pass at figuring out who's been working on the code and who the
-subsystem maintainers are.
-
---GtM+3wSyc54Btfn2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTmsNXAAoJELSic+t+oim9/JoP+gLUckUWjRjqff1J/3lXamNr
-eIRDS0pUow+rUBSinqYOGsMbLZAKvk1ADG3u57iBvn18u7Z9csJz8tBQMznwUK5f
-2iYlI/yXBOM/QDKBWTvhLb6gDpvnPLCzCqX+TbkgyByXPrkwxr14OBxntzBshCWA
-5vGA2LGHpnLapRDJm/S/LNXkVMf/BHWvGzYaaiPB8ZvhpxhrFCZOYD7bAyHBByz6
-zhUR0w5tsO4sNlHmdzNnlsP8lcjcELZ+jXv1p9lWlgzHc1Z8/ZW4htU9B3nqjVYY
-rVdBgxaSwu3u/mFyCTe/4VorIECZorcU+8wXUr8Tw6vG7NZYXik5coABPUyyJeu6
-BzrUHdsYVw01BJspFlleXJVgXuDRgLepa+zF14XQ9mwtfhT23UEgkEzmhq3Qz3Fs
-sY8R1s0joFZaDt1ZvUzKDEz0n42ZPTbs30diFjg35YEcPfD+/gutuuZrCdwEgcL0
-6wiI8OCMk6zeJmGdDbI8PzY+oL1ent9CmYkhUEyxz+MFdn9gy61mIn6ElwfG61Iv
-B+N++uQcCtxv1I1WfkLTQrxqqGmN8cPg1xZlH5GHV5Nm+45p+sDjZDcXCP5FZpBL
-kAQ6whQsQ4SfYPQwarpFh4xAkhCv5JklxxDQdIV/NFSN6mW3k9z1BzOmth/2UMA7
-6J/4M9TA1bi1Oj+d04V9
-=Nc8q
------END PGP SIGNATURE-----
-
---GtM+3wSyc54Btfn2--
