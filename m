@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218AbaFMHYN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 03:24:13 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:43002 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852AbaFMHYM (ORCPT
+	id S1752520AbaFMHZL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 03:25:11 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:56295 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751071AbaFMHZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 03:24:12 -0400
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 3/4] tracing: Improve message of empty set_ftrace_notrace file
-Date: Fri, 13 Jun 2014 16:24:06 +0900
-Message-Id: <1402644246-4649-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <20140612152759.40316084@gandalf.local.home>
-References: <20140612152759.40316084@gandalf.local.home>
+	Fri, 13 Jun 2014 03:25:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <1402320115-13171-1-git-send-email-x-linux@infra-silbe.de>
+References: <1402320115-13171-1-git-send-email-x-linux@infra-silbe.de>
+Date: Fri, 13 Jun 2014 09:25:07 +0200
+Message-ID: <CACRpkdbiob-2d4sTmj8bZxo5GVZ0TvF5CT_W94BDsSNiEfB7kQ@mail.gmail.com>
+Subject: Re: [PATCH] USB: ftdi_sio: add GPIO support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sascha Silbe <x-linux@infra-silbe.de>
+Cc: Johan Hovold <jhovold@gmail.com>, Alexandre Courbot <gnurou@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When there's no entry in set_ftrace_notrace, it'll print nothing, but
-it's better to print something like below like set_graph_notrace does:
+On Mon, Jun 9, 2014 at 3:21 PM, Sascha Silbe <x-linux@infra-silbe.de> wrote:
 
-  #### no functions disabled ####
+> The chips can operate either in regular or in bitbang mode. Care was
+> taken to prevent using GPIOs if the serial device is in use and vice
+> versa.
 
-Reported-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
-also updated the ftrace/nograph-v3 branch..
+Very interesting patch! I've seen USB-based GPIO things before
+but never a dual-mode thing.
 
- kernel/trace/ftrace.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+There was already a comment to move the implementation to a
+separate file, which I won't repeat.
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index b375cf2cd786..ff402e092df1 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2593,8 +2593,10 @@ static void *t_start(struct seq_file *m, loff_t *pos)
- 	 * off, we can short cut and just print out that all
- 	 * functions are enabled.
- 	 */
--	if (iter->flags & FTRACE_ITER_FILTER &&
--	    ftrace_hash_empty(ops->filter_hash)) {
-+	if ((iter->flags & FTRACE_ITER_FILTER &&
-+	     ftrace_hash_empty(ops->filter_hash)) ||
-+	    (iter->flags & FTRACE_ITER_NOTRACE &&
-+	     ftrace_hash_empty(ops->notrace_hash))) {
- 		if (*pos > 0)
- 			return t_hash_start(m, pos);
- 		iter->flags |= FTRACE_ITER_PRINTALL;
-@@ -2639,7 +2641,10 @@ static int t_show(struct seq_file *m, void *v)
- 		return t_hash_show(m, iter);
- 
- 	if (iter->flags & FTRACE_ITER_PRINTALL) {
--		seq_printf(m, "#### all functions enabled ####\n");
-+		if (iter->flags & FTRACE_ITER_NOTRACE)
-+			seq_printf(m, "#### no functions disabled ####\n");
-+		else
-+			seq_printf(m, "#### all functions enabled ####\n");
- 		return 0;
- 	}
- 
--- 
-1.7.9.2
+But I also want to bring the device model into question: normally
+when a mother device spawns children across different subsystems
+we model them as MFD devices (drivers/mfd) that instantiate
+children for the different subsystems. So you could spawn a
+serial and a GPIO device from a USB-based hub device there.
 
+I do not know if that is really apropriate in this case. It seems the
+device is first and foremost FTDI.
+
+But it could still spawn a child platform device for the GPIO stuff
+so that this can live as a separate driver under drivers/gpio/gpio-ftdi.c
+or similar.
+
+You could then use something like:
+
+struct platform_device *gdev;
+
+gdev = platform_device_alloc("gpio-ftdi", PLATFORM_DEVID_AUTO);
+/* pdata contains communication cookie for callbacks etc */
+ret = platform_device_add_data(gdev, pdata, sizeof(*pdata));
+ret = platform_device_add(gdev);
+
+Then we can probe that device normally in the GPIO subsystem
+like any other driver, just that it needs some
+<linux/usb/ftdi.h> header or similar to define the function
+calls to communicate with the FTDI driver.
+
+However Greg is device core maintainer and may have better
+ideas about this!
+
+Yours,
+Linus Walleij
