@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724AbaFMOTm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 10:19:42 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:46145 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750951AbaFMOTl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 10:19:41 -0400
-Message-ID: <539B0870.2020807@free-electrons.com>
-Date: Fri, 13 Jun 2014 16:19:28 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752111AbaFMOTq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 10:19:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59284 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751017AbaFMOTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 10:19:44 -0400
+Date: Fri, 13 Jun 2014 10:19:25 -0400
+From: Dave Jones <davej@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: xfs@oss.sgi.com, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: XFS WARN_ON in xfs_vm_writepage
+Message-ID: <20140613141925.GA24199@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Dave Chinner <david@fromorbit.com>, xfs@oss.sgi.com,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+References: <20140613051631.GA9394@redhat.com>
+ <20140613062645.GZ9508@dastard>
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] ARM: at91/dt: clock fixes
-References: <1402667001-11207-1-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1402667001-11207-1-git-send-email-alexandre.belloni@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140613062645.GZ9508@dastard>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 13, 2014 at 04:26:45PM +1000, Dave Chinner wrote:
 
-On 13/06/2014 15:43, Alexandre Belloni wrote:
-> Some clocks were not properly defined:
->  - ICPLL and OUT values for PLLA got mixed on sam9x5 and sam9n12
->  - mainck was not correctly defined on sam9261
-
-On the whole series:
-
-Acked-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-
-Thanks.
-
-Boris
+> >  970         if (WARN_ON_ONCE((current->flags & (PF_MEMALLOC|PF_KSWAPD)) ==
+> >  971                         PF_MEMALLOC))
 >
-> Alexandre Belloni (3):
->   ARM: at91/dt: sam9x5: correct PLLA ICPLL and OUT values
->   ARM: at91/dt: sam9n12: correct PLLA ICPLL and OUT values
->   ARM: at91/dt: sam9261: correctly define mainck
->
->  arch/arm/boot/dts/at91sam9261.dtsi | 10 ++++++++--
->  arch/arm/boot/dts/at91sam9n12.dtsi |  4 ++--
->  arch/arm/boot/dts/at91sam9x5.dtsi  |  4 ++--
->  3 files changed, 12 insertions(+), 6 deletions(-)
->
+> What were you running at the time? The XFS warning is there to
+> indicate that memory reclaim is doing something it shouldn't (i.e.
+> dirty page writeback from direct reclaim), so this is one for the mm
+> folk to work out...
 
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Trinity had driven the machine deeply into swap, and the oom killer was
+kicking in pretty often. Then this happened.
+
+	Dave
 
