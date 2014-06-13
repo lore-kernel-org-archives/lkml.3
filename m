@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303AbaFMKp1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 06:45:27 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:55669 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980AbaFMKpU (ORCPT
+	id S1753330AbaFMKpc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 06:45:32 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:35206 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753300AbaFMKp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 06:45:20 -0400
+	Fri, 13 Jun 2014 06:45:28 -0400
 From: David Herrmann <dh.herrmann@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
@@ -20,9 +20,9 @@ Cc: Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
         Tony Battersby <tonyb@cybernetics.com>,
         Andy Lutomirski <luto@amacapital.net>,
         David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH v3 2/7] shm: add sealing API
-Date: Fri, 13 Jun 2014 12:36:54 +0200
-Message-Id: <1402655819-14325-3-git-send-email-dh.herrmann@gmail.com>
+Subject: [PATCH v3 5/7] selftests: add memfd/sealing page-pinning tests
+Date: Fri, 13 Jun 2014 12:36:57 +0200
+Message-Id: <1402655819-14325-6-git-send-email-dh.herrmann@gmail.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
 References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
@@ -30,439 +30,508 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If two processes share a common memory region, they usually want some
-guarantees to allow safe access. This often includes:
-  - one side cannot overwrite data while the other reads it
-  - one side cannot shrink the buffer while the other accesses it
-  - one side cannot grow the buffer beyond previously set boundaries
-
-If there is a trust-relationship between both parties, there is no need
-for policy enforcement. However, if there's no trust relationship (eg.,
-for general-purpose IPC) sharing memory-regions is highly fragile and
-often not possible without local copies. Look at the following two
-use-cases:
-  1) A graphics client wants to share its rendering-buffer with a
-     graphics-server. The memory-region is allocated by the client for
-     read/write access and a second FD is passed to the server. While
-     scanning out from the memory region, the server has no guarantee that
-     the client doesn't shrink the buffer at any time, requiring rather
-     cumbersome SIGBUS handling.
-  2) A process wants to perform an RPC on another process. To avoid huge
-     bandwidth consumption, zero-copy is preferred. After a message is
-     assembled in-memory and a FD is passed to the remote side, both sides
-     want to be sure that neither modifies this shared copy, anymore. The
-     source may have put sensible data into the message without a separate
-     copy and the target may want to parse the message inline, to avoid a
-     local copy.
-
-While SIGBUS handling, POSIX mandatory locking and MAP_DENYWRITE provide
-ways to achieve most of this, the first one is unproportionally ugly to
-use in libraries and the latter two are broken/racy or even disabled due
-to denial of service attacks.
-
-This patch introduces the concept of SEALING. If you seal a file, a
-specific set of operations is blocked on that file forever.
-Unlike locks, seals can only be set, never removed. Hence, once you
-verified a specific set of seals is set, you're guaranteed that no-one can
-perform the blocked operations on this file, anymore.
-
-An initial set of SEALS is introduced by this patch:
-  - SHRINK: If SEAL_SHRINK is set, the file in question cannot be reduced
-            in size. This affects ftruncate() and open(O_TRUNC).
-  - GROW: If SEAL_GROW is set, the file in question cannot be increased
-          in size. This affects ftruncate(), fallocate() and write().
-  - WRITE: If SEAL_WRITE is set, no write operations (besides resizing)
-           are possible. This affects fallocate(PUNCH_HOLE), mmap() and
-           write().
-  - SEAL: If SEAL_SEAL is set, no further seals can be added to a file.
-          This basically prevents the F_ADD_SEAL operation on a file and
-          can be set to prevent others from adding further seals that you
-          don't want.
-
-The described use-cases can easily use these seals to provide safe use
-without any trust-relationship:
-  1) The graphics server can verify that a passed file-descriptor has
-     SEAL_SHRINK set. This allows safe scanout, while the client is
-     allowed to increase buffer size for window-resizing on-the-fly.
-     Concurrent writes are explicitly allowed.
-  2) For general-purpose IPC, both processes can verify that SEAL_SHRINK,
-     SEAL_GROW and SEAL_WRITE are set. This guarantees that neither
-     process can modify the data while the other side parses it.
-     Furthermore, it guarantees that even with writable FDs passed to the
-     peer, it cannot increase the size to hit memory-limits of the source
-     process (in case the file-storage is accounted to the source).
-
-The new API is an extension to fcntl(), adding two new commands:
-  F_GET_SEALS: Return a bitset describing the seals on the file. This
-               can be called on any FD if the underlying file supports
-               sealing.
-  F_ADD_SEALS: Change the seals of a given file. This requires WRITE
-               access to the file and F_SEAL_SEAL may not already be set.
-               Furthermore, the underlying file must support sealing and
-               there may not be any existing shared mapping of that file.
-               Otherwise, EBADF/EPERM is returned.
-               The given seals are _added_ to the existing set of seals
-               on the file. You cannot remove seals again.
-
-The fcntl() handler is currently specific to shmem and disabled on all
-files. A file needs to explicitly support sealing for this interface to
-work. A separate syscall is added in a follow-up, which creates files that
-support sealing. There is no intention to support this on other
-file-systems. Semantics are unclear for non-volatile files and we lack any
-use-case right now. Therefore, the implementation is specific to shmem.
+Setting SEAL_WRITE is not possible if there're pending GUP users. This
+commit adds selftests for memfd+sealing that use FUSE to create pending
+page-references. FUSE is very helpful here in that it allows us to delay
+direct-IO operations for an arbitrary amount of time. This way, we can
+force the kernel to pin pages and then run our normal selftests.
 
 Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
 ---
- fs/fcntl.c                 |   5 ++
- include/linux/shmem_fs.h   |  17 ++++
- include/uapi/linux/fcntl.h |  15 ++++
- mm/shmem.c                 | 189 ++++++++++++++++++++++++++++++++++++++++++++-
- 4 files changed, 223 insertions(+), 3 deletions(-)
+ tools/testing/selftests/memfd/.gitignore       |   2 +
+ tools/testing/selftests/memfd/Makefile         |  13 +-
+ tools/testing/selftests/memfd/fuse_mnt.c       | 110 +++++++++
+ tools/testing/selftests/memfd/fuse_test.c      | 311 +++++++++++++++++++++++++
+ tools/testing/selftests/memfd/run_fuse_test.sh |  14 ++
+ 5 files changed, 449 insertions(+), 1 deletion(-)
+ create mode 100755 tools/testing/selftests/memfd/fuse_mnt.c
+ create mode 100644 tools/testing/selftests/memfd/fuse_test.c
+ create mode 100755 tools/testing/selftests/memfd/run_fuse_test.sh
 
-diff --git a/fs/fcntl.c b/fs/fcntl.c
-index 72c82f6..22d1c3d 100644
---- a/fs/fcntl.c
-+++ b/fs/fcntl.c
-@@ -21,6 +21,7 @@
- #include <linux/rcupdate.h>
- #include <linux/pid_namespace.h>
- #include <linux/user_namespace.h>
-+#include <linux/shmem_fs.h>
+diff --git a/tools/testing/selftests/memfd/.gitignore b/tools/testing/selftests/memfd/.gitignore
+index bcc8ee2..afe87c4 100644
+--- a/tools/testing/selftests/memfd/.gitignore
++++ b/tools/testing/selftests/memfd/.gitignore
+@@ -1,2 +1,4 @@
++fuse_mnt
++fuse_test
+ memfd_test
+ memfd-test-file
+diff --git a/tools/testing/selftests/memfd/Makefile b/tools/testing/selftests/memfd/Makefile
+index 36653b9..77816620 100644
+--- a/tools/testing/selftests/memfd/Makefile
++++ b/tools/testing/selftests/memfd/Makefile
+@@ -25,5 +25,16 @@ ifeq ($(ARCH),X86)
+ endif
+ 	@./memfd_test || echo "memfd_test: [FAIL]"
  
- #include <asm/poll.h>
- #include <asm/siginfo.h>
-@@ -336,6 +337,10 @@ static long do_fcntl(int fd, unsigned int cmd, unsigned long arg,
- 	case F_GETPIPE_SZ:
- 		err = pipe_fcntl(filp, cmd, arg);
- 		break;
-+	case F_ADD_SEALS:
-+	case F_GET_SEALS:
-+		err = shmem_fcntl(filp, cmd, arg);
-+		break;
- 	default:
- 		break;
- 	}
-diff --git a/include/linux/shmem_fs.h b/include/linux/shmem_fs.h
-index 4d1771c..50777b5 100644
---- a/include/linux/shmem_fs.h
-+++ b/include/linux/shmem_fs.h
-@@ -1,6 +1,7 @@
- #ifndef __SHMEM_FS_H
- #define __SHMEM_FS_H
- 
-+#include <linux/file.h>
- #include <linux/swap.h>
- #include <linux/mempolicy.h>
- #include <linux/pagemap.h>
-@@ -11,6 +12,7 @@
- 
- struct shmem_inode_info {
- 	spinlock_t		lock;
-+	unsigned int		seals;		/* shmem seals */
- 	unsigned long		flags;
- 	unsigned long		alloced;	/* data pages alloced to file */
- 	union {
-@@ -65,4 +67,19 @@ static inline struct page *shmem_read_mapping_page(
- 					mapping_gfp_mask(mapping));
- }
- 
-+#ifdef CONFIG_TMPFS
++build_fuse:
++ifeq ($(ARCH),X86)
++	gcc $(CFLAGS) fuse_mnt.c `pkg-config fuse --cflags --libs` -o fuse_mnt
++	gcc $(CFLAGS) fuse_test.c -o fuse_test
++else
++	echo "Not an x86 target, can't build memfd selftest"
++endif
 +
-+extern int shmem_add_seals(struct file *file, unsigned int seals);
-+extern int shmem_get_seals(struct file *file);
-+extern long shmem_fcntl(struct file *file, unsigned int cmd, unsigned long arg);
++run_fuse: build_fuse
++	@./run_fuse_test.sh || echo "fuse_test: [FAIL]"
 +
-+#else
+ clean:
+-	$(RM) memfd_test
++	$(RM) memfd_test fuse_test
+diff --git a/tools/testing/selftests/memfd/fuse_mnt.c b/tools/testing/selftests/memfd/fuse_mnt.c
+new file mode 100755
+index 0000000..feacf12
+--- /dev/null
++++ b/tools/testing/selftests/memfd/fuse_mnt.c
+@@ -0,0 +1,110 @@
++/*
++ * memfd test file-system
++ * This file uses FUSE to create a dummy file-system with only one file /memfd.
++ * This file is read-only and takes 1s per read.
++ *
++ * This file-system is used by the memfd test-cases to force the kernel to pin
++ * pages during reads(). Due to the 1s delay of this file-system, this is a
++ * nice way to test race-conditions against get_user_pages() in the kernel.
++ *
++ * We use direct_io==1 to force the kernel to use direct-IO for this
++ * file-system.
++ */
 +
-+static inline long shmem_fcntl(struct file *f, unsigned int c, unsigned long a)
++#define FUSE_USE_VERSION 26
++
++#include <fuse.h>
++#include <stdio.h>
++#include <string.h>
++#include <errno.h>
++#include <fcntl.h>
++#include <unistd.h>
++
++static const char memfd_content[] = "memfd-example-content";
++static const char memfd_path[] = "/memfd";
++
++static int memfd_getattr(const char *path, struct stat *st)
 +{
-+	return -EINVAL;
++	memset(st, 0, sizeof(*st));
++
++	if (!strcmp(path, "/")) {
++		st->st_mode = S_IFDIR | 0755;
++		st->st_nlink = 2;
++	} else if (!strcmp(path, memfd_path)) {
++		st->st_mode = S_IFREG | 0444;
++		st->st_nlink = 1;
++		st->st_size = strlen(memfd_content);
++	} else {
++		return -ENOENT;
++	}
++
++	return 0;
 +}
 +
-+#endif
++static int memfd_readdir(const char *path,
++			 void *buf,
++			 fuse_fill_dir_t filler,
++			 off_t offset,
++			 struct fuse_file_info *fi)
++{
++	if (strcmp(path, "/"))
++		return -ENOENT;
 +
- #endif
-diff --git a/include/uapi/linux/fcntl.h b/include/uapi/linux/fcntl.h
-index 074b886..beed138 100644
---- a/include/uapi/linux/fcntl.h
-+++ b/include/uapi/linux/fcntl.h
-@@ -28,6 +28,21 @@
- #define F_GETPIPE_SZ	(F_LINUX_SPECIFIC_BASE + 8)
- 
- /*
-+ * Set/Get seals
-+ */
-+#define F_ADD_SEALS	(F_LINUX_SPECIFIC_BASE + 9)
-+#define F_GET_SEALS	(F_LINUX_SPECIFIC_BASE + 10)
++	filler(buf, ".", NULL, 0);
++	filler(buf, "..", NULL, 0);
++	filler(buf, memfd_path + 1, NULL, 0);
 +
++	return 0;
++}
++
++static int memfd_open(const char *path, struct fuse_file_info *fi)
++{
++	if (strcmp(path, memfd_path))
++		return -ENOENT;
++
++	if ((fi->flags & 3) != O_RDONLY)
++		return -EACCES;
++
++	/* force direct-IO */
++	fi->direct_io = 1;
++
++	return 0;
++}
++
++static int memfd_read(const char *path,
++		      char *buf,
++		      size_t size,
++		      off_t offset,
++		      struct fuse_file_info *fi)
++{
++	size_t len;
++
++	if (strcmp(path, memfd_path) != 0)
++		return -ENOENT;
++
++	sleep(1);
++
++	len = strlen(memfd_content);
++	if (offset < len) {
++		if (offset + size > len)
++			size = len - offset;
++
++		memcpy(buf, memfd_content + offset, size);
++	} else {
++		size = 0;
++	}
++
++	return size;
++}
++
++static struct fuse_operations memfd_ops = {
++	.getattr	= memfd_getattr,
++	.readdir	= memfd_readdir,
++	.open		= memfd_open,
++	.read		= memfd_read,
++};
++
++int main(int argc, char *argv[])
++{
++	return fuse_main(argc, argv, &memfd_ops, NULL);
++}
+diff --git a/tools/testing/selftests/memfd/fuse_test.c b/tools/testing/selftests/memfd/fuse_test.c
+new file mode 100644
+index 0000000..67908b1
+--- /dev/null
++++ b/tools/testing/selftests/memfd/fuse_test.c
+@@ -0,0 +1,311 @@
 +/*
-+ * Types of seals
++ * memfd GUP test-case
++ * This tests memfd interactions with get_user_pages(). We require the
++ * fuse_mnt.c program to provide a fake direct-IO FUSE mount-point for us. This
++ * file-system delays _all_ reads by 1s and forces direct-IO. This means, any
++ * read() on files in that file-system will pin the receive-buffer pages for at
++ * least 1s via get_user_pages().
++ *
++ * We use this trick to race ADD_SEALS against a write on a memfd object. The
++ * ADD_SEALS must fail if the memfd pages are still pinned. Note that we use
++ * the read() syscall with our memory-mapped memfd object as receive buffer to
++ * force the kernel to write into our memfd object.
 + */
-+#define F_SEAL_SEAL	0x0001	/* prevent further seals from being set */
-+#define F_SEAL_SHRINK	0x0002	/* prevent file from shrinking */
-+#define F_SEAL_GROW	0x0004	/* prevent file from growing */
-+#define F_SEAL_WRITE	0x0008	/* prevent writes */
-+/* (1U << 31) is reserved for signed error codes */
 +
-+/*
-  * Types of directory notifications that may be requested.
-  */
- #define DN_ACCESS	0x00000001	/* File accessed */
-diff --git a/mm/shmem.c b/mm/shmem.c
-index f484c27..1438b3e 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -66,6 +66,7 @@ static struct vfsmount *shm_mnt;
- #include <linux/highmem.h>
- #include <linux/seq_file.h>
- #include <linux/magic.h>
++#define _GNU_SOURCE
++#define __EXPORTED_HEADERS__
++
++#include <errno.h>
++#include <inttypes.h>
++#include <limits.h>
++#include <linux/falloc.h>
 +#include <linux/fcntl.h>
- 
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
-@@ -531,16 +532,23 @@ EXPORT_SYMBOL_GPL(shmem_truncate_range);
- static int shmem_setattr(struct dentry *dentry, struct iattr *attr)
- {
- 	struct inode *inode = dentry->d_inode;
-+	struct shmem_inode_info *info = SHMEM_I(inode);
-+	loff_t oldsize = inode->i_size;
-+	loff_t newsize = attr->ia_size;
- 	int error;
- 
- 	error = inode_change_ok(inode, attr);
- 	if (error)
- 		return error;
- 
--	if (S_ISREG(inode->i_mode) && (attr->ia_valid & ATTR_SIZE)) {
--		loff_t oldsize = inode->i_size;
--		loff_t newsize = attr->ia_size;
-+	/* protected by i_mutex */
-+	if (attr->ia_valid & ATTR_SIZE) {
-+		if ((newsize < oldsize && (info->seals & F_SEAL_SHRINK)) ||
-+		    (newsize > oldsize && (info->seals & F_SEAL_GROW)))
-+			return -EPERM;
-+	}
- 
-+	if (S_ISREG(inode->i_mode) && (attr->ia_valid & ATTR_SIZE)) {
- 		if (newsize != oldsize) {
- 			i_size_write(inode, newsize);
- 			inode->i_ctime = inode->i_mtime = CURRENT_TIME;
-@@ -1315,6 +1323,7 @@ static struct inode *shmem_get_inode(struct super_block *sb, const struct inode
- 		info = SHMEM_I(inode);
- 		memset(info, 0, (char *)inode - (char *)info);
- 		spin_lock_init(&info->lock);
-+		info->seals = F_SEAL_SEAL;
- 		info->flags = flags & VM_NORESERVE;
- 		INIT_LIST_HEAD(&info->swaplist);
- 		simple_xattrs_init(&info->xattrs);
-@@ -1374,7 +1383,15 @@ shmem_write_begin(struct file *file, struct address_space *mapping,
- {
- 	int ret;
- 	struct inode *inode = mapping->host;
-+	struct shmem_inode_info *info = SHMEM_I(inode);
- 	pgoff_t index = pos >> PAGE_CACHE_SHIFT;
++#include <linux/memfd.h>
++#include <sched.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <signal.h>
++#include <string.h>
++#include <sys/mman.h>
++#include <sys/stat.h>
++#include <sys/syscall.h>
++#include <sys/wait.h>
++#include <unistd.h>
 +
-+	/* i_mutex is held by caller */
-+	if (info->seals & F_SEAL_WRITE)
-+		return -EPERM;
-+	if ((info->seals & F_SEAL_GROW) && pos + len > inode->i_size)
-+		return -EPERM;
++#define MFD_DEF_SIZE 8192
++#define STACK_SIZE 65535
 +
- 	ret = shmem_getpage(inode, index, pagep, SGP_WRITE, NULL);
- 	if (ret == 0 && *pagep)
- 		init_page_accessed(*pagep);
-@@ -1715,11 +1732,166 @@ static loff_t shmem_file_llseek(struct file *file, loff_t offset, int whence)
- 	return offset;
- }
- 
-+/*
-+ * Setting SEAL_WRITE requires us to verify there's no pending writer. However,
-+ * via get_user_pages(), drivers might have some pending I/O without any active
-+ * user-space mappings (eg., direct-IO, AIO). Therefore, we look at all pages
-+ * and see whether it has an elevated ref-count. If so, we abort.
-+ * The caller must guarantee that no new user will acquire writable references
-+ * to those pages to avoid races.
-+ */
-+static int shmem_test_for_pins(struct address_space *mapping)
++static int sys_memfd_create(const char *name,
++			    unsigned int flags)
 +{
-+	struct radix_tree_iter iter;
-+	void **slot;
-+	pgoff_t start;
-+	struct page *page;
-+	int error;
-+
-+	/* flush additional refs in lru_add early */
-+	lru_add_drain_all();
-+
-+	error = 0;
-+	start = 0;
-+	rcu_read_lock();
-+
-+restart:
-+	radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, start) {
-+		page = radix_tree_deref_slot(slot);
-+		if (!page || radix_tree_exception(page)) {
-+			if (radix_tree_deref_retry(page))
-+				goto restart;
-+		} else if (page_count(page) - page_mapcount(page) > 1) {
-+			error = -EBUSY;
-+			break;
-+		}
-+
-+		if (need_resched()) {
-+			cond_resched_rcu();
-+			start = iter.index + 1;
-+			goto restart;
-+		}
-+	}
-+	rcu_read_unlock();
-+
-+	return error;
++	return syscall(__NR_memfd_create, name, flags);
 +}
 +
-+#define F_ALL_SEALS (F_SEAL_SEAL | \
-+		     F_SEAL_SHRINK | \
-+		     F_SEAL_GROW | \
-+		     F_SEAL_WRITE)
-+
-+int shmem_add_seals(struct file *file, unsigned int seals)
++static int mfd_assert_new(const char *name, loff_t sz, unsigned int flags)
 +{
-+	struct dentry *dentry = file->f_path.dentry;
-+	struct inode *inode = dentry->d_inode;
-+	struct shmem_inode_info *info = SHMEM_I(inode);
-+	int error;
++	int r, fd;
++
++	fd = sys_memfd_create(name, flags);
++	if (fd < 0) {
++		printf("memfd_create(\"%s\", %u) failed: %m\n",
++		       name, flags);
++		abort();
++	}
++
++	r = ftruncate(fd, sz);
++	if (r < 0) {
++		printf("ftruncate(%llu) failed: %m\n", (unsigned long long)sz);
++		abort();
++	}
++
++	return fd;
++}
++
++static __u64 mfd_assert_get_seals(int fd)
++{
++	long r;
++
++	r = fcntl(fd, F_GET_SEALS);
++	if (r < 0) {
++		printf("GET_SEALS(%d) failed: %m\n", fd);
++		abort();
++	}
++
++	return r;
++}
++
++static void mfd_assert_has_seals(int fd, __u64 seals)
++{
++	__u64 s;
++
++	s = mfd_assert_get_seals(fd);
++	if (s != seals) {
++		printf("%llu != %llu = GET_SEALS(%d)\n",
++		       (unsigned long long)seals, (unsigned long long)s, fd);
++		abort();
++	}
++}
++
++static void mfd_assert_add_seals(int fd, __u64 seals)
++{
++	long r;
++	__u64 s;
++
++	s = mfd_assert_get_seals(fd);
++	r = fcntl(fd, F_ADD_SEALS, seals);
++	if (r < 0) {
++		printf("ADD_SEALS(%d, %llu -> %llu) failed: %m\n",
++		       fd, (unsigned long long)s, (unsigned long long)seals);
++		abort();
++	}
++}
++
++static int mfd_busy_add_seals(int fd, __u64 seals)
++{
++	long r;
++	__u64 s;
++
++	r = fcntl(fd, F_GET_SEALS);
++	if (r < 0)
++		s = 0;
++	else
++		s = r;
++
++	r = fcntl(fd, F_ADD_SEALS, seals);
++	if (r < 0 && errno != EBUSY) {
++		printf("ADD_SEALS(%d, %llu -> %llu) didn't fail as expected with EBUSY: %m\n",
++		       fd, (unsigned long long)s, (unsigned long long)seals);
++		abort();
++	}
++
++	return r;
++}
++
++static void *mfd_assert_mmap_shared(int fd)
++{
++	void *p;
++
++	p = mmap(NULL,
++		 MFD_DEF_SIZE,
++		 PROT_READ | PROT_WRITE,
++		 MAP_SHARED,
++		 fd,
++		 0);
++	if (p == MAP_FAILED) {
++		printf("mmap() failed: %m\n");
++		abort();
++	}
++
++	return p;
++}
++
++static void *mfd_assert_mmap_private(int fd)
++{
++	void *p;
++
++	p = mmap(NULL,
++		 MFD_DEF_SIZE,
++		 PROT_READ | PROT_WRITE,
++		 MAP_PRIVATE,
++		 fd,
++		 0);
++	if (p == MAP_FAILED) {
++		printf("mmap() failed: %m\n");
++		abort();
++	}
++
++	return p;
++}
++
++static int global_mfd = -1;
++static void *global_p = NULL;
++
++static int sealing_thread_fn(void *arg)
++{
++	int sig, r;
 +
 +	/*
-+	 * SEALING
-+	 * Sealing allows multiple parties to share a shmem-file but restrict
-+	 * access to a specific subset of file operations. Seals can only be
-+	 * added, but never removed. This way, mutually untrusted parties can
-+	 * share common memory regions with a well-defined policy. A malicious
-+	 * peer can thus never perform unwanted operations on a shared object.
-+	 *
-+	 * Seals are only supported on special shmem-files and always affect
-+	 * the whole underlying inode. Once a seal is set, it may prevent some
-+	 * kinds of access to the file. Currently, the following seals are
-+	 * defined:
-+	 *   SEAL_SEAL: Prevent further seals from being set on this file
-+	 *   SEAL_SHRINK: Prevent the file from shrinking
-+	 *   SEAL_GROW: Prevent the file from growing
-+	 *   SEAL_WRITE: Prevent write access to the file
-+	 *
-+	 * As we don't require any trust relationship between two parties, we
-+	 * must prevent seals from being removed. Therefore, sealing a file
-+	 * only adds a given set of seals to the file, it never touches
-+	 * existing seals. Furthermore, the "setting seals"-operation can be
-+	 * sealed itself, which basically prevents any further seal from being
-+	 * added.
-+	 *
-+	 * Semantics of sealing are only defined on volatile files. Only
-+	 * anonymous shmem files support sealing. More importantly, seals are
-+	 * never written to disk. Therefore, there's no plan to support it on
-+	 * other file types.
++	 * This thread first waits 200ms so any pending operation in the parent
++	 * is correctly started. After that, it tries to seal @global_mfd as
++	 * SEAL_WRITE. This _must_ fail as the parent thread has a read() into
++	 * that memory mapped object still ongoing.
++	 * We then wait one more second and try sealing again. This time it
++	 * must succeed as there shouldn't be anyone else pinning the pages.
 +	 */
 +
-+	if (file->f_op != &shmem_file_operations)
-+		return -EINVAL;
-+	if (!(file->f_mode & FMODE_WRITE))
-+		return -EINVAL;
-+	if (seals & ~(unsigned int)F_ALL_SEALS)
-+		return -EINVAL;
++	/* wait 200ms for FUSE-request to be active */
++	usleep(200000);
 +
-+	mutex_lock(&inode->i_mutex);
++	/* unmount mapping before sealing to avoid i_mmap_writable failures */
++	munmap(global_p, MFD_DEF_SIZE);
 +
-+	if (info->seals & F_SEAL_SEAL) {
-+		error = -EPERM;
-+		goto unlock;
++	/* Try sealing the global file; expect EBUSY or success. Current
++	 * kernels will never succeed, but in the future, kernels might
++	 * implement page-replacements or other fancy ways to avoid racing
++	 * writes. */
++	r = mfd_busy_add_seals(global_mfd, F_SEAL_WRITE);
++	if (r >= 0) {
++		printf("HURRAY! This kernel fixed GUP races!\n");
++	} else {
++		/* wait 1s more so the FUSE-request is done */
++		sleep(1);
++
++		/* try sealing the global file again */
++		mfd_assert_add_seals(global_mfd, F_SEAL_WRITE);
 +	}
 +
-+	if ((seals & F_SEAL_WRITE) && !(info->seals & F_SEAL_WRITE)) {
-+		error = mapping_deny_writable(file->f_mapping);
-+		if (error)
-+			goto unlock;
-+
-+		error = shmem_test_for_pins(file->f_mapping);
-+		if (error) {
-+			mapping_allow_writable(file->f_mapping);
-+			goto unlock;
-+		}
-+	}
-+
-+	info->seals |= seals;
-+	error = 0;
-+
-+unlock:
-+	mutex_unlock(&inode->i_mutex);
-+	return error;
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(shmem_add_seals);
 +
-+int shmem_get_seals(struct file *file)
++static pid_t spawn_sealing_thread(void)
 +{
-+	if (file->f_op != &shmem_file_operations)
-+		return -EINVAL;
++	uint8_t *stack;
++	pid_t pid;
 +
-+	return SHMEM_I(file_inode(file))->seals & F_ALL_SEALS;
++	stack = malloc(STACK_SIZE);
++	if (!stack) {
++		printf("malloc(STACK_SIZE) failed: %m\n");
++		abort();
++	}
++
++	pid = clone(sealing_thread_fn,
++		    stack + STACK_SIZE,
++		    SIGCHLD | CLONE_FILES | CLONE_FS | CLONE_VM,
++		    NULL);
++	if (pid < 0) {
++		printf("clone() failed: %m\n");
++		abort();
++	}
++
++	return pid;
 +}
-+EXPORT_SYMBOL_GPL(shmem_get_seals);
 +
-+long shmem_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
++static void join_sealing_thread(pid_t pid)
 +{
-+	long error;
-+
-+	switch (cmd) {
-+	case F_ADD_SEALS:
-+		/* disallow upper 32bit */
-+		if (arg >> 32)
-+			return -EINVAL;
-+
-+		error = shmem_add_seals(file, arg);
-+		break;
-+	case F_GET_SEALS:
-+		error = shmem_get_seals(file);
-+		break;
-+	default:
-+		error = -EINVAL;
-+		break;
-+	}
-+
-+	return error;
++	waitpid(pid, NULL, 0);
 +}
 +
- static long shmem_fallocate(struct file *file, int mode, loff_t offset,
- 							 loff_t len)
- {
- 	struct inode *inode = file_inode(file);
- 	struct shmem_sb_info *sbinfo = SHMEM_SB(inode->i_sb);
-+	struct shmem_inode_info *info = SHMEM_I(inode);
- 	struct shmem_falloc shmem_falloc;
- 	pgoff_t start, index, end;
- 	int error;
-@@ -1731,6 +1903,12 @@ static long shmem_fallocate(struct file *file, int mode, loff_t offset,
- 		loff_t unmap_start = round_up(offset, PAGE_SIZE);
- 		loff_t unmap_end = round_down(offset + len, PAGE_SIZE) - 1;
- 
-+		/* protected by i_mutex */
-+		if (info->seals & F_SEAL_WRITE) {
-+			error = -EPERM;
-+			goto out;
-+		}
++int main(int argc, char **argv)
++{
++	static const char zero[MFD_DEF_SIZE];
++	int fd, mfd, r;
++	void *p;
++	int was_sealed;
++	pid_t pid;
 +
- 		if ((u64)unmap_end > (u64)unmap_start)
- 			unmap_mapping_range(mapping, unmap_start,
- 					    1 + unmap_end - unmap_start, 0);
-@@ -1745,6 +1923,11 @@ static long shmem_fallocate(struct file *file, int mode, loff_t offset,
- 	if (error)
- 		goto out;
- 
-+	if ((info->seals & F_SEAL_GROW) && offset + len > inode->i_size) {
-+		error = -EPERM;
-+		goto out;
++	if (argc < 2) {
++		printf("error: please pass path to file in fuse_mnt mount-point\n");
++		abort();
 +	}
 +
- 	start = offset >> PAGE_CACHE_SHIFT;
- 	end = (offset + len + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
- 	/* Try to avoid a swapstorm if len is impossible to satisfy */
++	/* open FUSE memfd file for GUP testing */
++	printf("opening: %s\n", argv[1]);
++	fd = open(argv[1], O_RDONLY | O_CLOEXEC);
++	if (fd < 0) {
++		printf("cannot open(\"%s\"): %m\n", argv[1]);
++		abort();
++	}
++
++	/* create new memfd-object */
++	mfd = mfd_assert_new("kern_memfd_fuse",
++			     MFD_DEF_SIZE,
++			     MFD_CLOEXEC | MFD_ALLOW_SEALING);
++
++	/* mmap memfd-object for writing */
++	p = mfd_assert_mmap_shared(mfd);
++
++	/* pass mfd+mapping to a separate sealing-thread which tries to seal
++	 * the memfd objects with SEAL_WRITE while we write into it */
++	global_mfd = mfd;
++	global_p = p;
++	pid = spawn_sealing_thread();
++
++	/* Use read() on the FUSE file to read into our memory-mapped memfd
++	 * object. This races the other thread which tries to seal the
++	 * memfd-object.
++	 * If @fd is on the memfd-fake-FUSE-FS, the read() is delayed by 1s.
++	 * This guarantees that the receive-buffer is pinned for 1s until the
++	 * data is written into it. The racing ADD_SEALS should thus fail as
++	 * the pages are still pinned. */
++	r = read(fd, p, MFD_DEF_SIZE);
++	if (r < 0) {
++		printf("read() failed: %m\n");
++		abort();
++	} else if (!r) {
++		printf("unexpected EOF on read()\n");
++		abort();
++	}
++
++	was_sealed = mfd_assert_get_seals(mfd) & F_SEAL_WRITE;
++
++	/* Wait for sealing-thread to finish and verify that it
++	 * successfully sealed the file after the second try. */
++	join_sealing_thread(pid);
++	mfd_assert_has_seals(mfd, F_SEAL_WRITE);
++
++	/* *IF* the memfd-object was sealed at the time our read() returned,
++	 * then the kernel did a page-replacement or canceled the read() (or
++	 * whatever magic it did..). In that case, the memfd object is still
++	 * all zero.
++	 * In case the memfd-object was *not* sealed, the read() was successfull
++	 * and the memfd object must *not* be all zero.
++	 * Note that in real scenarios, there might be a mixture of both, but
++	 * in this test-cases, we have explicit 200ms delays which should be
++	 * enough to avoid any in-flight writes. */
++
++	p = mfd_assert_mmap_private(mfd);
++	if (was_sealed && memcmp(p, zero, MFD_DEF_SIZE)) {
++		printf("memfd sealed during read() but data not discarded\n");
++		abort();
++	} else if (!was_sealed && !memcmp(p, zero, MFD_DEF_SIZE)) {
++		printf("memfd sealed after read() but data discarded\n");
++		abort();
++	}
++
++	close(mfd);
++	close(fd);
++
++	printf("fuse: DONE\n");
++
++	return 0;
++}
+diff --git a/tools/testing/selftests/memfd/run_fuse_test.sh b/tools/testing/selftests/memfd/run_fuse_test.sh
+new file mode 100755
+index 0000000..69b930e
+--- /dev/null
++++ b/tools/testing/selftests/memfd/run_fuse_test.sh
+@@ -0,0 +1,14 @@
++#!/bin/sh
++
++if test -d "./mnt" ; then
++	fusermount -u ./mnt
++	rmdir ./mnt
++fi
++
++set -e
++
++mkdir mnt
++./fuse_mnt ./mnt
++./fuse_test ./mnt/memfd
++fusermount -u ./mnt
++rmdir ./mnt
 -- 
 2.0.0
 
