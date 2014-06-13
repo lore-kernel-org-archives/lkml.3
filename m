@@ -1,336 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751715AbaFMMRV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 08:17:21 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:45412 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750817AbaFMMRT (ORCPT
+	id S1751811AbaFMM2P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 08:28:15 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:45025 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbaFMM2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 08:17:19 -0400
-Message-ID: <539AEBCB.8010605@free-electrons.com>
-Date: Fri, 13 Jun 2014 14:17:15 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 13 Jun 2014 08:28:13 -0400
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Thierry Reding <thierry.reding@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        David Airlie <airlied@linux.ie>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH v2 2/7] pwm: add support for atmel-hlcdc-pwm device
-References: <1402329860-27520-1-git-send-email-boris.brezillon@free-electrons.com> <1402329860-27520-3-git-send-email-boris.brezillon@free-electrons.com> <20140613114318.GR3429@piout.net>
-In-Reply-To: <20140613114318.GR3429@piout.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <1402655819-14325-4-git-send-email-dh.herrmann@gmail.com>
+References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com> <1402655819-14325-4-git-send-email-dh.herrmann@gmail.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Fri, 13 Jun 2014 14:27:52 +0200
+Message-ID: <CAKgNAkgnnWjrbE+2KAETsmiyrnrMQu0h7-MrYLvkiwj--_nxcQ@mail.gmail.com>
+Subject: Re: [PATCH v3 3/7] shm: add memfd_create() syscall
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Hugh Dickins <hughd@google.com>,
+        Tony Battersby <tonyb@cybernetics.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Alexandre,
+Hi David,
 
-On 13/06/2014 13:43, Alexandre Belloni wrote:
-> On 09/06/2014 at 18:04:15 +0200, Boris Brezillon wrote :
->> The HLCDC IP available in some Atmel SoCs (i.e. sam9x5i.e. at91sam9n12,
->> at91sam9x5 family or sama5d3 family) provide a PWM device.
->>
->> This driver add support for this PWM device.
->>
->> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
->> ---
->>  .../devicetree/bindings/pwm/atmel-hlcdc-pwm.txt    |  40 ++++
-> Please separate the DT bindings documentation from the driver code.
-
-I'll do it.
-
+On Fri, Jun 13, 2014 at 12:36 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> memfd_create() is similar to mmap(MAP_ANON), but returns a file-descriptor
+> that you can pass to mmap(). It can support sealing and avoids any
+> connection to user-visible mount-points. Thus, it's not subject to quotas
+> on mounted file-systems, but can be used like malloc()'ed memory, but
+> with a file-descriptor to it.
 >
->>  drivers/pwm/Kconfig                                |   9 +
->>  drivers/pwm/Makefile                               |   1 +
->>  drivers/pwm/pwm-atmel-hlcdc.c                      | 216 +++++++++++++++++++++
->>  4 files changed, 266 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/pwm/atmel-hlcdc-pwm.txt
->>  create mode 100644 drivers/pwm/pwm-atmel-hlcdc.c
->>
->> diff --git a/Documentation/devicetree/bindings/pwm/atmel-hlcdc-pwm.txt b/Documentation/devicetree/bindings/pwm/atmel-hlcdc-pwm.txt
->> new file mode 100644
->> index 0000000..5e2ba87
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/pwm/atmel-hlcdc-pwm.txt
->> @@ -0,0 +1,40 @@
->> +Device-Tree bindings for Atmel's HLCDC (High LCD Controller) PWM driver
->> +
->> +The Atmel HLCDC PWM is subdevice of the HLCDC MFD device.
->> +See Documentation/devicetree/bindings/mfd/atmel-hlcdc.txt for more details.
->> +
->> +Required properties:
->> + - compatible: value should be one of the following:
->> +   "atmel,hlcdc-pwm"
->> + - pinctr-names: the pin control state names. Should contain "default".
->> + - pinctrl-0: should contain the pinctrl states described by pinctrl
->> +   default.
->> + - #pwm-cells: should be set to 3.
->> +
->> +Example:
->> +
->> +	hlcdc: hlcdc@f0030000 {
->> +		compatible = "atmel,sama5d3-hlcdc";
->> +		reg = <0xf0030000 0x2000>;
->> +		clocks = <&lcdc_clk>, <&lcdck>, <&clk32k>;
->> +		clock-names = "periph_clk","sys_clk", "slow_clk";
->> +		status = "disabled";
->> +
->> +		hlcdc-display-controller {
->> +			compatible = "atmel,hlcdc-dc";
->> +			interrupts = <36 IRQ_TYPE_LEVEL_HIGH 0>;
->> +			pinctrl-names = "default", "rgb-444", "rgb-565", "rgb-666", "rgb-888";
->> +			pinctrl-0 = <&pinctrl_lcd_base>;
->> +			pinctrl-1 = <&pinctrl_lcd_base &pinctrl_lcd_rgb444>;
->> +			pinctrl-2 = <&pinctrl_lcd_base &pinctrl_lcd_rgb565>;
->> +			pinctrl-3 = <&pinctrl_lcd_base &pinctrl_lcd_rgb666>;
->> +			pinctrl-4 = <&pinctrl_lcd_base &pinctrl_lcd_rgb888>;
->> +		};
->> +
->> +		hlcdc_pwm: hlcdc-pwm {
->> +			compatible = "atmel,hlcdc-pwm";
->> +			pinctrl-names = "default";
->> +			pinctrl-0 = <&pinctrl_lcd_pwm>;
->> +			#pwm-cells = <3>;
->> +		};
->> +	};
->> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
->> index 5b34ff2..7186242 100644
->> --- a/drivers/pwm/Kconfig
->> +++ b/drivers/pwm/Kconfig
->> @@ -50,6 +50,15 @@ config PWM_ATMEL
->>  	  To compile this driver as a module, choose M here: the module
->>  	  will be called pwm-atmel.
->>  
->> +config PWM_ATMEL_HLCDC_PWM
->> +	tristate "Atmel HLCDC PWM support"
->> +	depends on MFD_ATMEL_HLCDC
->> +	help
->> +	  Generic PWM framework driver for Atmel HLCDC PWM.
->> +
->> +	  To compile this driver as a module, choose M here: the module
->> +	  will be called pwm-atmel.
->> +
->>  config PWM_ATMEL_TCB
->>  	tristate "Atmel TC Block PWM support"
->>  	depends on ATMEL_TCLIB && OF
->> diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
->> index e57d2c3..a245519 100644
->> --- a/drivers/pwm/Makefile
->> +++ b/drivers/pwm/Makefile
->> @@ -2,6 +2,7 @@ obj-$(CONFIG_PWM)		+= core.o
->>  obj-$(CONFIG_PWM_SYSFS)		+= sysfs.o
->>  obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
->>  obj-$(CONFIG_PWM_ATMEL)		+= pwm-atmel.o
->> +obj-$(CONFIG_PWM_ATMEL_HLCDC_PWM)	+= pwm-atmel-hlcdc.o
->>  obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
->>  obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
->>  obj-$(CONFIG_PWM_CLPS711X)	+= pwm-clps711x.o
->> diff --git a/drivers/pwm/pwm-atmel-hlcdc.c b/drivers/pwm/pwm-atmel-hlcdc.c
->> new file mode 100644
->> index 0000000..080e43e
->> --- /dev/null
->> +++ b/drivers/pwm/pwm-atmel-hlcdc.c
->> @@ -0,0 +1,216 @@
->> +/*
->> + * Copyright (C) 2014 Free Electrons
->> + * Copyright (C) 2014 Atmel
->> + *
->> + * Author: Boris BREZILLON <boris.brezillon@free-electrons.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify it
->> + * under the terms of the GNU General Public License version 2 as published by
->> + * the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope that it will be useful, but WITHOUT
->> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
->> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
->> + * more details.
->> + *
->> + * You should have received a copy of the GNU General Public License along with
->> + * this program.  If not, see <http://www.gnu.org/licenses/>.
->> + */
->> +
->> +#include <linux/mfd/atmel-hlcdc.h>
->> +#include <linux/module.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/pwm.h>
->> +
->> +#define ATMEL_HLCDC_PWMCVAL_MASK	(0xff << 8)
-> Maybe you could use GENMASK()
-
-IMHO this does not help in understanding the code (I even find it more
-tricky to figure out what the mask is), but if other people think we
-should use GENMASK, then I'll use to it.
-
+> memfd_create() returns the raw shmem file, so calls like ftruncate() can
+> be used to modify the underlying inode. Also calls like fstat()
+> will return proper information and mark the file as regular file. If you
+> want sealing, you can specify MFD_ALLOW_SEALING. Otherwise, sealing is not
+> supported (like on all other regular files).
 >
->> +#define ATMEL_HLCDC_PWMCVAL(x)		(((x) & 0xff) << 8)
-> Maybe use ATMEL_HLCDC_PWMCVAL_MASK here ?
+> Compared to O_TMPFILE, it does not require a tmpfs mount-point and is not
+> subject to quotas and alike. It is still properly accounted to memcg
+> limits, though.
 
-Absolutely, I'll replace 0xff by ATMEL_HLCDC_PWMCVAL_MASK.
+Where do I find / is there detailed documentation (ideally, a man
+page) for this new system call?
 
->
->> +#define ATMEL_HLCDC_PWMPOL		BIT(4)
->> +#define ATMEL_HLCDC_PWMPS_MASK		0x7
-> ditto
+Cheers,
+
+Michael
 
 
 >
->> +#define ATMEL_HLCDC_PWMPS_MAX		0x6
->> +#define ATMEL_HLCDC_PWMPS(x)		((x) & 0x7)
-> Why not using ATMEL_HLCDC_PWMPS_MASK here ?
+> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+> ---
+>  arch/x86/syscalls/syscall_32.tbl |  1 +
+>  arch/x86/syscalls/syscall_64.tbl |  1 +
+>  include/linux/syscalls.h         |  1 +
+>  include/uapi/linux/memfd.h       |  8 +++++
+>  kernel/sys_ni.c                  |  1 +
+>  mm/shmem.c                       | 72 ++++++++++++++++++++++++++++++++++++++++
+>  6 files changed, 84 insertions(+)
+>  create mode 100644 include/uapi/linux/memfd.h
 >
->> +
->> +struct atmel_hlcdc_pwm_chip {
->> +	struct pwm_chip chip;
->> +	struct atmel_hlcdc *hlcdc;
->> +	struct clk *cur_clk;
->> +};
->> +
->> +static inline struct atmel_hlcdc_pwm_chip *
->> +pwm_chip_to_atmel_hlcdc_pwm_chip(struct pwm_chip *chip)
->> +{
->> +	return container_of(chip, struct atmel_hlcdc_pwm_chip, chip);
->> +}
->> +
->> +static int atmel_hlcdc_pwm_config(struct pwm_chip *c,
->> +				  struct pwm_device *pwm,
->> +				  int duty_ns, int period_ns)
->> +{
->> +	struct atmel_hlcdc_pwm_chip *chip =
->> +				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
->> +	struct atmel_hlcdc *hlcdc = chip->hlcdc;
->> +	struct clk *new_clk = hlcdc->slow_clk;
->> +	u64 pwmcval = duty_ns * 256;
->> +	unsigned long clk_freq;
->> +	u64 clk_period_ns;
->> +	u32 pwmcfg;
->> +	int pres;
->> +
->> +	clk_freq = clk_get_rate(new_clk);
->> +	clk_period_ns = 1000000000;
->> +	clk_period_ns *= 256;
->> +	do_div(clk_period_ns, clk_freq);
->> +
->> +	if (clk_period_ns > period_ns) {
->> +		new_clk = hlcdc->sys_clk;
->> +		clk_freq = clk_get_rate(new_clk);
->> +		clk_period_ns = 1000000000;
->> +		clk_period_ns *= 256;
->> +		do_div(clk_period_ns, clk_freq);
->> +	}
->> +
->> +	for (pres = ATMEL_HLCDC_PWMPS_MAX; pres >= 0; pres--) {
->> +		if ((clk_period_ns << pres) <= period_ns)
->> +			break;
->> +	}
->> +
->> +	if (pres > ATMEL_HLCDC_PWMPS_MAX)
->> +		return -EINVAL;
->> +
->> +	pwmcfg = ATMEL_HLCDC_PWMPS(pres);
->> +
->> +	if (new_clk != chip->cur_clk) {
->> +		u32 gencfg = 0;
->> +
->> +		clk_prepare_enable(new_clk);
->> +		clk_disable_unprepare(chip->cur_clk);
->> +		chip->cur_clk = new_clk;
->> +
->> +		if (new_clk != hlcdc->slow_clk)
->> +			gencfg = ATMEL_HLCDC_CLKPWMSEL;
->> +		regmap_update_bits(hlcdc->regmap, ATMEL_HLCDC_CFG(0),
->> +				   ATMEL_HLCDC_CLKPWMSEL, gencfg);
->> +	}
->> +
->> +	do_div(pwmcval, period_ns);
->> +	if (pwmcval > 255)
->> +		pwmcval = 255;
->> +
->> +	pwmcfg |= ATMEL_HLCDC_PWMCVAL(pwmcval);
->> +
->> +	regmap_update_bits(hlcdc->regmap, ATMEL_HLCDC_CFG(6),
->> +			   ATMEL_HLCDC_PWMCVAL_MASK | ATMEL_HLCDC_PWMPS_MASK,
->> +			   pwmcfg);
->> +
->> +	return 0;
->> +}
->> +
->> +static int atmel_hlcdc_pwm_set_polarity(struct pwm_chip *c,
->> +					struct pwm_device *pwm,
->> +					enum pwm_polarity polarity)
->> +{
->> +	struct atmel_hlcdc_pwm_chip *chip =
->> +				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
->> +	struct atmel_hlcdc *hlcdc = chip->hlcdc;
->> +	u32 cfg = 0;
->> +
->> +	if (polarity == PWM_POLARITY_NORMAL)
->> +		cfg = ATMEL_HLCDC_PWMPOL;
->> +
->> +	regmap_update_bits(hlcdc->regmap, ATMEL_HLCDC_CFG(6),
->> +			   ATMEL_HLCDC_PWMPOL, cfg);
->> +
->> +	return 0;
->> +}
->> +
->> +static int atmel_hlcdc_pwm_enable(struct pwm_chip *c,
->> +				  struct pwm_device *pwm)
->> +{
->> +	struct atmel_hlcdc_pwm_chip *chip =
->> +				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
->> +	struct atmel_hlcdc *hlcdc = chip->hlcdc;
->> +	u32 status;
->> +
->> +	regmap_write(hlcdc->regmap, ATMEL_HLCDC_EN, ATMEL_HLCDC_PWM);
->> +	while (!regmap_read(hlcdc->regmap, ATMEL_HLCDC_SR, &status) &&
->> +	       !(status & ATMEL_HLCDC_PWM))
->> +		cpu_relax();
->> +
-> I'm not sure you have to wait here, it will be enabled at some point,
-> that is enough.
-
-Okay.
-
+> diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
+> index d6b8679..e7495b4 100644
+> --- a/arch/x86/syscalls/syscall_32.tbl
+> +++ b/arch/x86/syscalls/syscall_32.tbl
+> @@ -360,3 +360,4 @@
+>  351    i386    sched_setattr           sys_sched_setattr
+>  352    i386    sched_getattr           sys_sched_getattr
+>  353    i386    renameat2               sys_renameat2
+> +354    i386    memfd_create            sys_memfd_create
+> diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+> index ec255a1..28be0e1 100644
+> --- a/arch/x86/syscalls/syscall_64.tbl
+> +++ b/arch/x86/syscalls/syscall_64.tbl
+> @@ -323,6 +323,7 @@
+>  314    common  sched_setattr           sys_sched_setattr
+>  315    common  sched_getattr           sys_sched_getattr
+>  316    common  renameat2               sys_renameat2
+> +317    common  memfd_create            sys_memfd_create
 >
->> +	return 0;
->> +}
->> +
->> +static void atmel_hlcdc_pwm_disable(struct pwm_chip *c,
->> +				    struct pwm_device *pwm)
->> +{
->> +	struct atmel_hlcdc_pwm_chip *chip =
->> +				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
->> +	struct atmel_hlcdc *hlcdc = chip->hlcdc;
->> +	u32 status;
->> +
->> +	regmap_write(hlcdc->regmap, ATMEL_HLCDC_DIS, ATMEL_HLCDC_PWM);
->> +	while (!regmap_read(hlcdc->regmap, ATMEL_HLCDC_SR, &status) &&
->> +	       (status & ATMEL_HLCDC_PWM))
->> +		cpu_relax();
-> Ditto
+>  #
+>  # x32-specific system call numbers start at 512 to avoid cache impact
+> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+> index b0881a0..0be5d4d 100644
+> --- a/include/linux/syscalls.h
+> +++ b/include/linux/syscalls.h
+> @@ -802,6 +802,7 @@ asmlinkage long sys_timerfd_settime(int ufd, int flags,
+>  asmlinkage long sys_timerfd_gettime(int ufd, struct itimerspec __user *otmr);
+>  asmlinkage long sys_eventfd(unsigned int count);
+>  asmlinkage long sys_eventfd2(unsigned int count, int flags);
+> +asmlinkage long sys_memfd_create(const char *uname_ptr, unsigned int flags);
+>  asmlinkage long sys_fallocate(int fd, int mode, loff_t offset, loff_t len);
+>  asmlinkage long sys_old_readdir(unsigned int, struct old_linux_dirent __user *, unsigned int);
+>  asmlinkage long sys_pselect6(int, fd_set __user *, fd_set __user *,
+> diff --git a/include/uapi/linux/memfd.h b/include/uapi/linux/memfd.h
+> new file mode 100644
+> index 0000000..534e364
+> --- /dev/null
+> +++ b/include/uapi/linux/memfd.h
+> @@ -0,0 +1,8 @@
+> +#ifndef _UAPI_LINUX_MEMFD_H
+> +#define _UAPI_LINUX_MEMFD_H
+> +
+> +/* flags for memfd_create(2) (unsigned int) */
+> +#define MFD_CLOEXEC            0x0001U
+> +#define MFD_ALLOW_SEALING      0x0002U
+> +
+> +#endif /* _UAPI_LINUX_MEMFD_H */
+> diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+> index 36441b5..489a4e6 100644
+> --- a/kernel/sys_ni.c
+> +++ b/kernel/sys_ni.c
+> @@ -197,6 +197,7 @@ cond_syscall(compat_sys_timerfd_settime);
+>  cond_syscall(compat_sys_timerfd_gettime);
+>  cond_syscall(sys_eventfd);
+>  cond_syscall(sys_eventfd2);
+> +cond_syscall(sys_memfd_create);
 >
->> +}
->> +
->> +static const struct pwm_ops atmel_hlcdc_pwm_ops = {
->> +	.config = atmel_hlcdc_pwm_config,
+>  /* performance counters: */
+>  cond_syscall(sys_perf_event_open);
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index 1438b3e..e7c5fe1 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -66,7 +66,9 @@ static struct vfsmount *shm_mnt;
+>  #include <linux/highmem.h>
+>  #include <linux/seq_file.h>
+>  #include <linux/magic.h>
+> +#include <linux/syscalls.h>
+>  #include <linux/fcntl.h>
+> +#include <uapi/linux/memfd.h>
+>
+>  #include <asm/uaccess.h>
+>  #include <asm/pgtable.h>
+> @@ -2662,6 +2664,76 @@ static int shmem_show_options(struct seq_file *seq, struct dentry *root)
+>         shmem_show_mpol(seq, sbinfo->mpol);
+>         return 0;
+>  }
+> +
+> +#define MFD_NAME_PREFIX "memfd:"
+> +#define MFD_NAME_PREFIX_LEN (sizeof(MFD_NAME_PREFIX) - 1)
+> +#define MFD_NAME_MAX_LEN (NAME_MAX - MFD_NAME_PREFIX_LEN)
+> +
+> +#define MFD_ALL_FLAGS (MFD_CLOEXEC | MFD_ALLOW_SEALING)
+> +
+> +SYSCALL_DEFINE2(memfd_create,
+> +               const char*, uname,
+> +               unsigned int, flags)
+> +{
+> +       struct shmem_inode_info *info;
+> +       struct file *file;
+> +       int fd, error;
+> +       char *name;
+> +       long len;
+> +
+> +       if (flags & ~(unsigned int)MFD_ALL_FLAGS)
+> +               return -EINVAL;
+> +
+> +       /* length includes terminating zero */
+> +       len = strnlen_user(uname, MFD_NAME_MAX_LEN + 1);
+> +       if (len <= 0)
+> +               return -EFAULT;
+> +       if (len > MFD_NAME_MAX_LEN + 1)
+> +               return -EINVAL;
+> +
+> +       name = kmalloc(len + MFD_NAME_PREFIX_LEN, GFP_TEMPORARY);
+> +       if (!name)
+> +               return -ENOMEM;
+> +
+> +       strcpy(name, MFD_NAME_PREFIX);
+> +       if (copy_from_user(&name[MFD_NAME_PREFIX_LEN], uname, len)) {
+> +               error = -EFAULT;
+> +               goto err_name;
+> +       }
+> +
+> +       /* terminating-zero may have changed after strnlen_user() returned */
+> +       if (name[len + MFD_NAME_PREFIX_LEN - 1]) {
+> +               error = -EFAULT;
+> +               goto err_name;
+> +       }
+> +
+> +       fd = get_unused_fd_flags((flags & MFD_CLOEXEC) ? O_CLOEXEC : 0);
+> +       if (fd < 0) {
+> +               error = fd;
+> +               goto err_name;
+> +       }
+> +
+> +       file = shmem_file_setup(name, 0, VM_NORESERVE);
+> +       if (IS_ERR(file)) {
+> +               error = PTR_ERR(file);
+> +               goto err_fd;
+> +       }
+> +       info = SHMEM_I(file_inode(file));
+> +       file->f_mode |= FMODE_LSEEK | FMODE_PREAD | FMODE_PWRITE;
+> +       if (flags & MFD_ALLOW_SEALING)
+> +               info->seals &= ~F_SEAL_SEAL;
+> +
+> +       fd_install(fd, file);
+> +       kfree(name);
+> +       return fd;
+> +
+> +err_fd:
+> +       put_unused_fd(fd);
+> +err_name:
+> +       kfree(name);
+> +       return error;
+> +}
+> +
+>  #endif /* CONFIG_TMPFS */
+>
+>  static void shmem_put_super(struct super_block *sb)
+> --
+> 2.0.0
+>
 
-Thanks for your review.
 
-Best Regards,
-
-Boris
 
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
-
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
