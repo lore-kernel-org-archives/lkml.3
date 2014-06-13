@@ -1,39 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751208AbaFMNAh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 09:00:37 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59269 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902AbaFMNAf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 09:00:35 -0400
-Date: Fri, 13 Jun 2014 14:00:26 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Christoph Lameter <cl@gentwo.org>, Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: mm/fs: gpf when shrinking slab
-Message-ID: <20140613130026.GF18016@ZenIV.linux.org.uk>
-References: <539AF460.4000400@oracle.com>
- <539AF4A6.9060707@oracle.com>
+	id S1751175AbaFMNJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 09:09:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44567 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750784AbaFMNJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 09:09:55 -0400
+Date: Fri, 13 Jun 2014 15:08:17 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Michael Braun <michael-dev@fami-braun.de>
+Cc: Ivo van Doorn <IvDoorn@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>, netdev@vger.kernel.org,
+        users@rt2x00.serialmonkey.com, linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/2] rt2800usb: Fix support for USB 057c:8501
+Message-ID: <20140613130816.GA2211@redhat.com>
+References: <20140612173057.15935.14194.stgit@charlie.fem.tu-ilmenau.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <539AF4A6.9060707@oracle.com>
+In-Reply-To: <20140612173057.15935.14194.stgit@charlie.fem.tu-ilmenau.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 08:55:02AM -0400, Sasha Levin wrote:
-> Hand too fast on the trigger... sorry.
-> 
-> It happened while fuzzing inside a KVM tools guest on the latest -next kernel. Seems
-> to be pretty difficult to reproduce.
+On Thu, Jun 12, 2014 at 07:33:31PM +0200, Michael Braun wrote:
+> v2: fix endianness and coding style. Using rt2x00usb_register_read does not work for me.
 
-Does that kernel contain c2338f?
+I missed that it use USB_MULTI_READ request and you need
+USB_DEVICE_MODE instead, sorry.
+
+Stanislaw
