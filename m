@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983AbaFMUwP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 16:52:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44155 "EHLO mx1.redhat.com"
+	id S1753669AbaFMUzr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 16:55:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51922 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752116AbaFMUwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 16:52:14 -0400
-Date: Fri, 13 Jun 2014 16:52:05 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/1] kernel/audit.c: use ARRAY_SIZE instead of
- sizeof/sizeof[0]
-Message-ID: <20140613205205.GA19353@madcap2.tricolour.ca>
-References: <1401825910-8793-1-git-send-email-fabf@skynet.be>
+	id S1751401AbaFMUzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 16:55:45 -0400
+Date: Fri, 13 Jun 2014 16:55:35 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input - wacom: remove phys field in struct wacom
+Message-ID: <20140613205534.GB30355@mail.corp.redhat.com>
+References: <1402691344-26196-1-git-send-email-benjamin.tissoires@redhat.com>
+ <20140613203545.GA31651@core.coreip.homeip.net>
+ <20140613204826.GA30355@mail.corp.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1401825910-8793-1-git-send-email-fabf@skynet.be>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140613204826.GA30355@mail.corp.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/06/03, Fabian Frederick wrote:
-> Use kernel.h definition.
-
-Thanks Fabian, I'll queue it.
-
-> Cc: Eric Paris <eparis@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  kernel/audit.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+On Jun 13 2014 or thereabouts, Benjamin Tissoires wrote:
+> On Jun 13 2014 or thereabouts, Dmitry Torokhov wrote:
+> > On Fri, Jun 13, 2014 at 04:29:04PM -0400, Benjamin Tissoires wrote:
+> > > This field is not used, remove it.
+> > 
+> > We must have lost the assignment, but it should be assigned to phys of
+> > corresponding input device. 
 > 
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index 47845c5..48e6e5d 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -718,7 +718,7 @@ static int audit_set_feature(struct sk_buff *skb)
->  	struct audit_features *uaf;
->  	int i;
->  
-> -	BUILD_BUG_ON(AUDIT_LAST_FEATURE + 1 > sizeof(audit_feature_names)/sizeof(audit_feature_names[0]));
-> +	BUILD_BUG_ON(AUDIT_LAST_FEATURE + 1 > ARRAY_SIZE(audit_feature_names));
->  	uaf = nlmsg_data(nlmsg_hdr(skb));
->  
->  	/* if there is ever a version 2 we should handle that here */
-> -- 
-> 1.8.4.5
+> hehe. Even in 2007, when the files moved under drivers/input/tablet,
+> there is no mention of assigning input_dev->phys :)
+> 
+> I can send a patch to fix the other way around if you prefer (add
+> input_dev->phys).
+> 
 
-- RGB
+Actually, I found the culprit:
+$ git describe c5b7c7c395a34f12cdf246d66c1feeff2933d584
+v2.6.14-21-gc5b7c7c
+---> Thu Sep 15 02:01:47 2005
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+I should have wait one more year to fix it :)
+
+No one complain about it for nearly 10 years, so I am not sure it will
+help assigning the ->phys field of input_dev.
+
+It's your call, Dmitry.
+
+Cheers,
+Benjamin
