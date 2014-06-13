@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497AbaFMJUB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 05:20:01 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:39665 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818AbaFMJT6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752364AbaFMJUA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 05:20:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53008 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751071AbaFMJT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Jun 2014 05:19:58 -0400
-Date: Fri, 13 Jun 2014 18:19:03 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
-Cc: markh@compro.net, dan.carpenter@oracle.com,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/7 RESEND] staging: dgap: get rid of brd->firstminor because
- it is 0
-Message-ID: <20140613091903.GA3768@devel.8.8.4.4>
+Message-ID: <539AC237.40402@redhat.com>
+Date: Fri, 13 Jun 2014 11:19:51 +0200
+From: Michal Privoznik <mprivozn@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: David Miller <davem@davemloft.net>, jiri@resnulli.us
+CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] net-sysfs: Report link speed only when possible
+References: <771f792d4d4391c656305a522557c53c4e84a666.1402043894.git.mprivozn@redhat.com>	<20140606085733.GJ2984@minipsycho.orion> <20140606.125447.1665616708152334692.davem@davemloft.net>
+In-Reply-To: <20140606.125447.1665616708152334692.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-firstminor in struct borad_t is always zero, so it
-can be removed.
+On 06.06.2014 21:54, David Miller wrote:
+> From: Jiri Pirko <jiri@resnulli.us>
+> Date: Fri, 6 Jun 2014 10:57:33 +0200
+>
+>> Fri, Jun 06, 2014 at 10:40:30AM CEST, mprivozn@redhat.com wrote:
+>>> The link speed is available at /sys/class/net/$nic/speed.
+>>> However, in some cases, depending on the driver, if the link is
+>>> not plugged, -1 is reported (this is the case of e1000e for
+>>> instance). To make things worse, the value is printed out as an
+>>
+>> Actually, SPEED_UNKNOWN is also -1
+>> So e1000e is not any exception.
+>
+> And pity the person who is handling this by evaluating that unsigned
+> value, we'll break them.
+>
+> We can't keep changing behavior for the SPEED_UNKOWN case back and
+> forth.
+>
+> A program that wants to work with all kernels now has to handle three
+> different kinds of behavior if we apply this patch, that's not making
+> things better, it's making things worse.
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
-resend: reordering this series of patches
+I don't think this is a good reason to keep things broken. By the same 
+token we wouldn't need to fix any bug since there already might be an 
+application that learned how to deal with it.
 
- drivers/staging/dgap/dgap.c |    9 ++++-----
- drivers/staging/dgap/dgap.h |    1 -
- 2 files changed, 4 insertions(+), 6 deletions(-)
+This patch is not introducing any new class that applications need to 
+learn. It just barely removes the spurious one. And it's perfectly okay 
+in some ecosystems to require minimal version of some programs, 
+including kernel. So if I were developing brand new application I could 
+say: I'm dropping all this workaround code and have it clean and require 
+say 3.16 kernel at least. Moreover, using an older application would do, 
+as the workaround code will never be executed.
 
-diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index c1f2798..352eb1b 100644
---- a/drivers/staging/dgap/dgap.c
-+++ b/drivers/staging/dgap/dgap.c
-@@ -684,7 +684,6 @@ static int dgap_found_board(struct pci_dev *pdev, int id, int boardnum)
- 	/* store the info for the board we've found */
- 	brd->magic = DGAP_BOARD_MAGIC;
- 	brd->boardnum = boardnum;
--	brd->firstminor = 0;
- 	brd->vendor = dgap_pci_tbl[id].vendor;
- 	brd->device = dgap_pci_tbl[id].device;
- 	brd->pdev = pdev;
-@@ -4168,8 +4167,8 @@ static int dgap_tty_register_ports(struct board_t *brd)
- 		struct device *classp;
- 
- 		classp = tty_port_register_device(&brd->serial_ports[i],
--					brd->serial_driver,
--					brd->firstminor + i, NULL);
-+						  brd->serial_driver,
-+						  i, NULL);
- 
- 		if (IS_ERR(classp)) {
- 			ret = PTR_ERR(classp);
-@@ -4180,8 +4179,8 @@ static int dgap_tty_register_ports(struct board_t *brd)
- 		ch->ch_tun.un_sysfs = classp;
- 
- 		classp = tty_port_register_device(&brd->printer_ports[i],
--					brd->print_driver,
--					brd->firstminor + i, NULL);
-+						  brd->print_driver,
-+						  i, NULL);
- 
- 		if (IS_ERR(classp)) {
- 			ret = PTR_ERR(classp);
-diff --git a/drivers/staging/dgap/dgap.h b/drivers/staging/dgap/dgap.h
-index 03c020e..c00b2e2 100644
---- a/drivers/staging/dgap/dgap.h
-+++ b/drivers/staging/dgap/dgap.h
-@@ -529,7 +529,6 @@ struct macounter {
- struct board_t {
- 	int		magic;		/* Board Magic number.  */
- 	int		boardnum;	/* Board number: 0-3 */
--	int		firstminor;	/* First minor, e.g. 0, 30, 60 */
- 
- 	int		type;		/* Type of board */
- 	char		*name;		/* Product Name */
--- 
-1.7.1
+But okay, maybe for some reason you're hesitant to change net-sysfs.c. 
+Would it be more convenient to change the broken drivers instead? Yes, 
+some drivers don't report nor 0, nor -1, but rather random value. For 
+instance a tap device returns '10',  igb '65535', etc.
 
+Michal
