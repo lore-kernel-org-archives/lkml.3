@@ -1,55 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669AbaFMUzr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 16:55:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51922 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751401AbaFMUzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 16:55:45 -0400
-Date: Fri, 13 Jun 2014 16:55:35 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input - wacom: remove phys field in struct wacom
-Message-ID: <20140613205534.GB30355@mail.corp.redhat.com>
-References: <1402691344-26196-1-git-send-email-benjamin.tissoires@redhat.com>
- <20140613203545.GA31651@core.coreip.homeip.net>
- <20140613204826.GA30355@mail.corp.redhat.com>
+	id S1753854AbaFMU5X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 16:57:23 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:11077 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751339AbaFMU5W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 16:57:22 -0400
+Message-ID: <539B6577.503@fb.com>
+Date: Fri, 13 Jun 2014 14:56:23 -0600
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140613204826.GA30355@mail.corp.redhat.com>
+To: Keith Busch <keith.busch@intel.com>
+CC: =?ISO-8859-1?Q?Matias_Bj=F8rling?= <m@bjorling.me>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "sbradshaw@micron.com" <sbradshaw@micron.com>,
+        "tom.leiming@gmail.com" <tom.leiming@gmail.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nvme@lists.infradead.org" <linux-nvme@lists.infradead.org>
+Subject: Re: [PATCH v7] NVMe: conversion to blk-mq
+References: <1402392038-5268-2-git-send-email-m@bjorling.me> <alpine.LRH.2.03.1406100945250.4699@AMR> <A52B97CC-6D77-468B-9A9B-A5888AE63580@fb.com> <alpine.LRH.2.03.1406101140490.4699@AMR> <5397636F.9050209@fb.com> <alpine.LRH.2.03.1406101458470.4699@AMR> <5397753B.2020009@fb.com> <alpine.LRH.2.03.1406101515430.4699@AMR> <20140610213333.GA10055@linux.intel.com> <539889DC.7090704@fb.com> <20140611170917.GA12025@linux.intel.com> <CAOu_J6kocZZ1mRQeSidyqJ_Ew0F_POS30v2kgUZX2wDOOnuExg@mail.gmail.com> <alpine.LRH.2.03.1406111641180.4699@AMR> <5399BA00.7000705@bjorling.me> <alpine.LRH.2.03.1406121015130.4699@AMR> <alpine.LRH.2.03.1406121757130.4699@AMR> <539B05A1.7080700@fb.com> <alpine.LRH.2.03.1406130838210.4699@AMR> <539B14A9.8010204@fb.com> <alpine.LRH.2.03.1406130914110.4699@AMR> <539B3F75.7040700@fb.com> <alpine.LRH.2.03.1406131307330.4699@AMR> <539B5124.3090302@fb.com>
+In-Reply-To: <539B5124.3090302@fb.com>
+Content-Type: multipart/mixed;
+	boundary="------------070602060307020009060506"
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-13_07:2014-06-13,2014-06-13,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.03942965345993e-11 kscore.compositescore=0
+ circleOfTrustscore=0 compositescore=0.533125042697551
+ urlsuspect_oldscore=0.533125042697551 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=1996008
+ rbsscore=0.533125042697551 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1406130221
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jun 13 2014 or thereabouts, Benjamin Tissoires wrote:
-> On Jun 13 2014 or thereabouts, Dmitry Torokhov wrote:
-> > On Fri, Jun 13, 2014 at 04:29:04PM -0400, Benjamin Tissoires wrote:
-> > > This field is not used, remove it.
-> > 
-> > We must have lost the assignment, but it should be assigned to phys of
-> > corresponding input device. 
-> 
-> hehe. Even in 2007, when the files moved under drivers/input/tablet,
-> there is no mention of assigning input_dev->phys :)
-> 
-> I can send a patch to fix the other way around if you prefer (add
-> input_dev->phys).
-> 
+--------------070602060307020009060506
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Actually, I found the culprit:
-$ git describe c5b7c7c395a34f12cdf246d66c1feeff2933d584
-v2.6.14-21-gc5b7c7c
----> Thu Sep 15 02:01:47 2005
+On 2014-06-13 13:29, Jens Axboe wrote:
+> On 06/13/2014 01:22 PM, Keith Busch wrote:
+>> On Fri, 13 Jun 2014, Jens Axboe wrote:
+>>> OK, same setup as mine. The affinity hint is really screwing us over, no
+>>> question about it. We just need a:
+>>>
+>>> irq_set_affinity_hint(dev->entry[nvmeq->cq_vector].vector,
+>>> hctx->cpumask);
+>>>
+>>> in the ->init_hctx() methods to fix that up.
+>>>
+>>> That brings us to roughly the same performance, except for the cases
+>>> where the dd is run on the thread sibling of the core handling the
+>>> interrupt. And granted, with the 16 queues used, that'll happen on
+>>> blk-mq. But since you have 32 threads and just 31 IO queues, the non
+>>> blk-mq driver must end up sharing for some cases, too.
+>>>
+>>> So what do we care most about here? Consistency, or using all queues at
+>>> all costs?
+>>
+>> I think we want to use all h/w queues regardless of mismatched sharing. A
+>> 24 thread server shouldn't use more of the hardware than a 32.
+>>
+>> You're right, the current driver shares the queues on anything with 32
+>> or more cpus with this NVMe controller, but we wrote an algorithm that
+>> allocates the most and tries to group them with their nearest neighbors.
+>>
+>> One performance oddity we observe is that servicing the interrupt on the
+>> thread sibling of the core that submitted the I/O is the worst performing
+>> cpu you can chose; it's actually better to use a different core on the
+>> same node. At least that's true as long as you're not utilizing the cpus
+>> for other work, so YMMV.
+>
+> I played around with the mappings, and stumbled upon some pretty ugly
+> results. The back story is that on this test box, I limit max C state to
+> C1 to avoid having too much of a bad time with power management. Running
+> the dd on a specific core, yields somewhere around 52MB/sec for me.
+> That's with the right CPU affinity for the irq. If I purposely put it
+> somewhere else, I end up at 380-390MB/sec. Or if I leave it on the right
+> CPU but simply do:
+>
+> perf record -o /dev/null dd if= ...
+>
+> and run the same thing just traced, I get the high performance as well.
+>
+> Indeed... So I went to take a look at what is going on. For the slow
+> case, turbostat tells me I'm spending 80% in C1. For the fast case,
+> we're down to 20% in C1.
+>
+> I then turn off C1, but low and behold, it's still slow and sucky even
+> if turbostat now verifies that it's spending 0% time in C1.
+>
+> Now, this smells like scheduling artifacts. I'm going to turn off all
+> power junk and see what happens. Because at 8x differences between fast
+> and slow, irq mappings don't really matter at all here. In fact it shows
+> results contrary to what you'd like to see.
 
-I should have wait one more year to fix it :)
+OK, so I think I know what is going on here. If we slow down the next 
+issue just a little bit, the device will have cached the next read. 
+Essentially getting some parallellism out of a sync read, since it is 
+sequential. For random 4k reads, it behaves like expected.
 
-No one complain about it for nearly 10 years, so I am not sure it will
-help assigning the ->phys field of input_dev.
+For reference, the attached patch brings back the affinity to what we 
+want it to be.
 
-It's your call, Dmitry.
+We can always diddle with the utilization of the number of hardware 
+queues later, I don't see that as a huge issue at all.
 
-Cheers,
-Benjamin
+-- 
+Jens Axboe
+
+
+--------------070602060307020009060506
+Content-Type: text/x-patch; name="nvme-affinity-hint.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="nvme-affinity-hint.patch"
+
+diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
+index ee48ac5..8dc5d36 100644
+--- a/drivers/block/nvme-core.c
++++ b/drivers/block/nvme-core.c
+@@ -178,6 +178,9 @@ static int nvme_init_hctx(struct blk_mq_hw_ctx *hctx, void *data,
+ 		nvmeq->hctx = hctx;
+ 	else
+ 		WARN_ON(nvmeq->hctx->tags != hctx->tags);
++
++	irq_set_affinity_hint(dev->entry[nvmeq->cq_vector].vector,
++				hctx->cpumask);
+ 	hctx->driver_data = nvmeq;
+ 	return 0;
+ }
+@@ -581,6 +584,7 @@ static int nvme_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
+ 	enum dma_data_direction dma_dir;
+ 	int psegs = req->nr_phys_segments;
+ 	int result = BLK_MQ_RQ_QUEUE_BUSY;
++
+ 	/*
+ 	 * Requeued IO has already been prepped
+ 	 */
+@@ -1788,6 +1792,7 @@ static struct nvme_ns *nvme_alloc_ns(struct nvme_dev *dev, unsigned nsid,
+ 	queue_flag_set_unlocked(QUEUE_FLAG_DEFAULT, ns->queue);
+ 	queue_flag_set_unlocked(QUEUE_FLAG_NOMERGES, ns->queue);
+ 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, ns->queue);
++	queue_flag_set_unlocked(QUEUE_FLAG_VIRT_HOLE, ns->queue);
+ 	queue_flag_clear_unlocked(QUEUE_FLAG_IO_STAT, ns->queue);
+ 	ns->dev = dev;
+ 	ns->queue->queuedata = ns;
+@@ -1801,7 +1806,6 @@ static struct nvme_ns *nvme_alloc_ns(struct nvme_dev *dev, unsigned nsid,
+ 	lbaf = id->flbas & 0xf;
+ 	ns->lba_shift = id->lbaf[lbaf].ds;
+ 	ns->ms = le16_to_cpu(id->lbaf[lbaf].ms);
+-	blk_queue_max_segments(ns->queue, 1);
+ 	blk_queue_logical_block_size(ns->queue, 1 << ns->lba_shift);
+ 	if (dev->max_hw_sectors)
+ 		blk_queue_max_hw_sectors(ns->queue, dev->max_hw_sectors);
+
+--------------070602060307020009060506--
