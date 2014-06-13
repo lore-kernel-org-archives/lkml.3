@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478AbaFMU0i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 16:26:38 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40397 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811AbaFMU0g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 16:26:36 -0400
-Date: Fri, 13 Jun 2014 22:26:34 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Kees Cook <keescook@chromium.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 0/2] make kASLR vs hibernation boot-time selectable
-Message-ID: <20140613202633.GA24170@amd.pavel.ucw.cz>
-References: <1402602419-27934-1-git-send-email-keescook@chromium.org>
- <539A0422.9010000@zytor.com>
- <CAGXu5jLvAr=f2MRP4Ni86-jbM7h3Mx3RQo=7coveE8ZEt12N=Q@mail.gmail.com>
- <539A0DC2.1010203@zytor.com>
- <CAGXu5jKanRjK66P9dFYctXfQxT+da_9z8vqy8s+WqgW1cw17-Q@mail.gmail.com>
- <20140613105135.GA4876@amd.pavel.ucw.cz>
- <CAGXu5jJTSqtOMBNeOGEXfj_1iWGbE7p_YooeHT9wc4WRDjcGyQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jJTSqtOMBNeOGEXfj_1iWGbE7p_YooeHT9wc4WRDjcGyQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753633AbaFMU3J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 16:29:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46780 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752777AbaFMU3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 16:29:07 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Input - wacom: remove phys field in struct wacom
+Date: Fri, 13 Jun 2014 16:29:04 -0400
+Message-Id: <1402691344-26196-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2014-06-13 10:32:56, Kees Cook wrote:
-> On Fri, Jun 13, 2014 at 3:51 AM, Pavel Machek <pavel@ucw.cz> wrote:
-> > Hi!
-> >
-> >
-> >> >>> Any way we can make them work together instead?
-> >> >>
-> >> >> I'm sure there is, but I don't know the solution. :)
-> >> >>
-> >> >> At the very least this gets us one step closer (we can build them together).
-> >> >>
-> >> >
-> >> > But it is really invasive.
-> >>
-> >> Well, I don't agree there. I actually would like to be able to turn
-> >> off hibernation support on distro kernels regardless of kASLR, so I
-> >> think this is really killing two birds with one stone.
-> >>
-> >> > I have to admit to being somewhat fuzzy on what the core problem with
-> >> > hibernation and kASLR is... in both cases there is a set of pages that
-> >> > need to be installed, some of which will overlap the loader kernel.
-> >> > What am I missing?
-> >>
-> >> I don't know how resume works, but I have assumed that the newly
-> >> loaded kernel stays in memory and pulls in the vmalloc, kmalloc,
-> >> modules, and userspace memory maps from disk. Since these things can
-> >> easily contain references to kernel text, if the newly loaded kernel
-> >> has moved with regard to the hibernated image, everything breaks.
-> >> IIUC, this is similar why you can't rebuild your kernel and resume
-> >> from a different version.
-> >
-> > x86-64 can resume from different kernel that did the suspend. kASLR
-> > should not be too different from that. (You just include kernel text
-> > in the hibernation image. It is small enough to do that.)
-> 
-> Oooh, that's very exciting! How does that work (what happens to the
-> kernel that booted first, etc)? I assume physical memory layout can't
-> change between hibernation and resume? Or, where should I be reading
-> code that does this?
+This field is not used, remove it.
 
-I'm not sure what you mean by "physical memory layout can't
-change". You may not remove RAM between suspend/resume, no.
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+ drivers/input/tablet/wacom.h     | 1 -
+ drivers/input/tablet/wacom_sys.c | 2 --
+ 2 files changed, 3 deletions(-)
 
-It is Rafael's design, actually, you can see it in
-arch/x86/power/hibernate_asm_64.S .
-
-32bit version does have that ability, IIRC.
-
-									Pavel
+diff --git a/drivers/input/tablet/wacom.h b/drivers/input/tablet/wacom.h
+index 9ebf0ed..70b1e71 100644
+--- a/drivers/input/tablet/wacom.h
++++ b/drivers/input/tablet/wacom.h
+@@ -114,7 +114,6 @@ struct wacom {
+ 	struct mutex lock;
+ 	struct work_struct work;
+ 	bool open;
+-	char phys[32];
+ 	struct wacom_led {
+ 		u8 select[2]; /* status led selector (0..3) */
+ 		u8 llv;       /* status led brightness no button (1..127) */
+diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
+index 2c613cd..94096fd 100644
+--- a/drivers/input/tablet/wacom_sys.c
++++ b/drivers/input/tablet/wacom_sys.c
+@@ -1323,8 +1323,6 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
+ 	wacom->intf = intf;
+ 	mutex_init(&wacom->lock);
+ 	INIT_WORK(&wacom->work, wacom_wireless_work);
+-	usb_make_path(dev, wacom->phys, sizeof(wacom->phys));
+-	strlcat(wacom->phys, "/input0", sizeof(wacom->phys));
+ 
+ 	endpoint = &intf->cur_altsetting->endpoint[0].desc;
+ 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.9.0
+
