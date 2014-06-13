@@ -1,125 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982AbaFMIFe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 04:05:34 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:63870 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018AbaFMIF3 (ORCPT
+	id S1752877AbaFMII3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 04:08:29 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:58356 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750979AbaFMIIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 04:05:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <1402614493-12521-1-git-send-email-linux@roeck-us.net>
-References: <1402614493-12521-1-git-send-email-linux@roeck-us.net>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Fri, 13 Jun 2014 10:05:08 +0200
-Message-ID: <CAKfTPtAhykeqorg7SSbMYkHQ-bjoHQx4tCrxy+yubPxhSHThww@mail.gmail.com>
-Subject: Re: [PATCH] sched: Fix compiler warnings
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 13 Jun 2014 04:08:25 -0400
+Message-ID: <1402646902.28881.15.camel@x220>
+Subject: Re: [PATCH v3 5/7] mfd: cros_ec: Sync to the latest
+ cros_ec_commands.h from EC sources
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Bill Richardson <wfrichar@chromium.org>, Simon Glass <sjg@chromium.org>,
+        Lee Jones <lee.jones@linaro.org>, Stephen Warren <swarren@nvidia.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 13 Jun 2014 10:08:22 +0200
+In-Reply-To: <CAD=FV=XL9tnEqza8Zx8mt_Z7-bj8TCzdeyHMhnpewKp_1CR-ig@mail.gmail.com>
+References: <1398879850-9111-1-git-send-email-dianders@chromium.org>
+	 <1398879850-9111-6-git-send-email-dianders@chromium.org>
+	 <20140520084602.GF24991@lee--X1> <1402483068.3798.82.camel@x220>
+	 <CAD=FV=XL9tnEqza8Zx8mt_Z7-bj8TCzdeyHMhnpewKp_1CR-ig@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 Jun 2014 08:08:22.0518 (UTC) FILETIME=[A4F16960:01CF86DE]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+Doug,
 
-There are also such kind of function in ARM and powerpc architecture
+On Wed, 2014-06-11 at 08:11 -0700, Doug Anderson wrote:
+> On Wed, Jun 11, 2014 at 3:37 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> > On Tue, 2014-05-20 at 09:46 +0100, Lee Jones wrote:
+> >> On Wed, 30 Apr 2014, Doug Anderson wrote:
+> >> > From: Bill Richardson <wfrichar@chromium.org>
+> >> >
+> >> > This just updates include/linux/mfd/cros_ec_commands.h to match the
+> >> > latest EC version (which is the One True Source for such things).  See
+> >> > <https://chromium.googlesource.com/chromiumos/platform/ec>
+> 
+> I believe most of your questions are answered by checking out the git
+> tree referenced above.  ...but see below for details.  This header is
+> a common interface between the kernel and the EC.
 
-with the additional changes below, you can add my
-Acked-by Vincent Guittot <vincent.guittot@linaro.org>
+I didn't realize that this was a link to a tree.
 
-Vincent
+> > CONFIG_CHARGER_PROFILE_OVERRIDE doesn't match anything in linux-next. Is
+> > a Kconfig symbol CHARGER_PROFILE_OVERRIDE perhaps queued somewhere?
+> 
+> This is a config option on the ChromeOS EC
+> <https://chromium.googlesource.com/chromiumos/platform/ec>.  Doing a
+> grep there:
+> 
+> board/samus/board.h:#define CONFIG_CHARGER_PROFILE_OVERRIDE
+> common/charge_state_v2.c:#ifdef CONFIG_CHARGER_PROFILE_OVERRIDE
+> common/charge_state_v2.c:#ifdef CONFIG_CHARGER_PROFILE_OVERRIDE
+> common/charge_state_v2.c:#ifdef CONFIG_CHARGER_PROFILE_OVERRIDE
+> driver/battery/samus.c:#ifdef CONFIG_CHARGER_PROFILE_OVERRIDE
+> driver/battery/samus.c:#endif   /* CONFIG_CHARGER_PROFILE_OVERRIDE */
+> include/config.h:#undef CONFIG_CHARGER_PROFILE_OVERRIDE
+> include/ec_commands.h:  /* Range for CONFIG_CHARGER_PROFILE_OVERRIDE params */
+> test/test_config.h:#define CONFIG_CHARGER_PROFILE_OVERRIDE
 
-diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
-index 1576d05..7e56b2f 100644
---- a/arch/arm/kernel/topology.c
-+++ b/arch/arm/kernel/topology.c
-@@ -275,7 +275,7 @@ void store_cpu_topology(unsigned int cpuid)
-  cpu_topology[cpuid].socket_id, mpidr);
- }
+I see. So this is not a Kconfig macro but a general macro with a CONFIG_
+prefix. There are quite a bit of those in the tree already, but still,
+would another prefix also do?
 
--static inline const int cpu_corepower_flags(void)
-+static inline int cpu_corepower_flags(void)
- {
-  return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN;
- }
-diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
-index 10ffffe..49d5d4e 100644
---- a/arch/powerpc/kernel/smp.c
-+++ b/arch/powerpc/kernel/smp.c
-@@ -768,7 +768,7 @@ int setup_profiling_timer(unsigned int multiplier)
-
- #ifdef CONFIG_SCHED_SMT
- /* cpumask of CPUs with asymetric SMT dependancy */
--static const int powerpc_smt_flags(void)
-+static int powerpc_smt_flags(void)
- {
-  int flags = SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES;
+Thanks,
 
 
-On 13 June 2014 01:08, Guenter Roeck <linux@roeck-us.net> wrote:
-> Commit 143e1e28cb (sched: Rework sched_domain topology definition)
-> introduced a number of functions with a return value of 'const int'.
-> gcc doesn't know what to do with that and, if the kernel is compiled
-> with W=1, complains with the following warnings whenever sched.h
-> is included.
->
-> include/linux/sched.h:875:25: warning:
->         type qualifiers ignored on function return type
-> include/linux/sched.h:882:25: warning:
->         type qualifiers ignored on function return type
-> include/linux/sched.h:889:25: warning:
->         type qualifiers ignored on function return type
-> include/linux/sched.h:1002:21: warning:
->         type qualifiers ignored on function return type
->
-> Drop 'const' from the function declarations to fix the problem.
->
-> Cc: Vincent Guittot <vincent.guittot@linaro.org>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
->  include/linux/sched.h | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index ea74596..65046b3 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -872,21 +872,21 @@ enum cpu_idle_type {
->  #define SD_NUMA                        0x4000  /* cross-node balancing */
->
->  #ifdef CONFIG_SCHED_SMT
-> -static inline const int cpu_smt_flags(void)
-> +static inline int cpu_smt_flags(void)
->  {
->         return SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES;
->  }
->  #endif
->
->  #ifdef CONFIG_SCHED_MC
-> -static inline const int cpu_core_flags(void)
-> +static inline int cpu_core_flags(void)
->  {
->         return SD_SHARE_PKG_RESOURCES;
->  }
->  #endif
->
->  #ifdef CONFIG_NUMA
-> -static inline const int cpu_numa_flags(void)
-> +static inline int cpu_numa_flags(void)
->  {
->         return SD_NUMA;
->  }
-> @@ -999,7 +999,7 @@ void free_sched_domains(cpumask_var_t doms[], unsigned int ndoms);
->  bool cpus_share_cache(int this_cpu, int that_cpu);
->
->  typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
-> -typedef const int (*sched_domain_flags_f)(void);
-> +typedef int (*sched_domain_flags_f)(void);
->
->  #define SDTL_OVERLAP   0x01
->
-> --
-> 1.9.1
->
+Paul Bolle
+
