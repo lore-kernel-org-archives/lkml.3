@@ -1,112 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751468AbaFMLyW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 07:54:22 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:44191 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817AbaFMLyU (ORCPT
+	id S1751679AbaFMLyx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 07:54:53 -0400
+Received: from mailsender.cdac.in ([196.1.113.117]:52518 "EHLO
+	mailsender.cdac.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396AbaFMLyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 07:54:20 -0400
+	Fri, 13 Jun 2014 07:54:51 -0400
+X-Greylist: delayed 916 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Jun 2014 07:54:50 EDT
+Message-ID: <539AE266.70306@cdac.in>
+Date: Fri, 13 Jun 2014 17:07:10 +0530
+From: Varka Bhadram <varkab@cdac.in>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <5398758F.4080306@samsung.com>
-References: <1402090985-8061-1-git-send-email-dianders@chromium.org>
-	<20140607181221.GB25068@e102568-lin.cambridge.arm.com>
-	<CAD=FV=X17PeJ6JPE9Qyc1QT07AvA2PTE69Q87gz9a6MdUHgi4A@mail.gmail.com>
-	<20140609223831.GB16889@e102568-lin.cambridge.arm.com>
-	<CANuQgHHxAhTNYX-JAEdRkO=PMYT4A5GwXcuQfiqwE0CEkQyR+w@mail.gmail.com>
-	<CAD=FV=V5_RRNkgA7Rk7XbQw9m1qh6-RJA8arW7ZRU=QbWAPa+w@mail.gmail.com>
-	<alpine.LFD.2.11.1406101146140.25775@knanqh.ubzr>
-	<CADWw7OjqK3MAuqCHuv-WS3Bb2+2Q-FXth+7hqtwFoyAP6pyYhA@mail.gmail.com>
-	<CAD=FV=ULFx0GPp_mnEfouZF+m4h_RYE6WQu48N0WbFWrFv8-BA@mail.gmail.com>
-	<5398758F.4080306@samsung.com>
-Date: Fri, 13 Jun 2014 17:24:20 +0530
-X-Google-Sender-Auth: H9sAbocRfdeuCVCkNa8HAP0LIsQ
-Message-ID: <CADWw7Oh=A_cg_hqu8DZ1t_iacOGgWediLp3K3viFYHMNAPkqRw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: EXYNOS: mcpm: Don't rely on firmware's secondary_cpu_start
-From: Chander Kashyap <k.chander@samsung.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Doug Anderson <dianders@chromium.org>,
-        Chander Kashyap <k.chander@samsung.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@linaro.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Inderpal Singh <inderpal.s@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        "olof@lixom.net" <olof@lixom.net>, Tushar Behera <trblinux@gmail.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Thomas Abraham <thomas.ab@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: devicetree@vger.kernel.org
+CC: linux-arm-kernel@lists.infradead.org,
+        linux-kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: device tree: compilation of device tree sources
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-CDAC-PUNE-MailScanner-ID: s5DBc41L012036
+X-CDAC-PUNE-MailScanner: Found to be clean, Found to be clean
+X-CDAC-PUNE-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-3.801, required 6, autolearn=disabled, ALL_TRUSTED -1.00,
+	BAYES_40 -0.00, RP_MATCHES_RCVD -2.80), not spam, SpamAssassin (cached,
+	score=-5.3, required 6, autolearn=disabled, ALL_TRUSTED -1.80,
+	BAYES_00 -3.50)
+X-CDAC-PUNE-MailScanner-Information: Please contact npsfhelp@cdac.in/mailadmin@cdac.in for more information
+X-MailScanner-ID: s5DBc8Gc015338
+X-CDAC-PUNE-MailScanner-From: varkab@cdac.in
+X-CDAC-MailScanner-Spam-Status: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 8:58 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> On 06/12/14 00:19, Doug Anderson wrote:
->>
->> Chander,
->>
->> On Tue, Jun 10, 2014 at 9:52 PM, Chander Kashyap<k.chander@samsung.com>
->> wrote:
->>>
->>> Hi Doug,
->>>
->>> On Tue, Jun 10, 2014 at 9:19 PM, Nicolas Pitre<nicolas.pitre@linaro.org>
->>> wrote:
->>>>
->>>> On Tue, 10 Jun 2014, Doug Anderson wrote:
->>>>
->>>>> My S-state knowledge is not strong, but I believe that Lorenzo's
->>>>> questions matter if we're using S2 for CPUidle (where we actually turn
->>>>> off power and hot unplug CPUs) but not when we're using S1 for CPUidle
->>>>> (where we just enter WFI/WFE).
->>>>>
->>>
->>> No Its not plain WFI.
->>>
->>> All cores in Exynos5420 can be powered off independently.
->>> This functionality has been tested.
->>>
->>> Below is the link for the posted patches.
->>>
->>> https://lkml.org/lkml/2014/6/10/194
->>>
->>> And as Nicolas wrote, these patches need MCPM for that.
->>
->>
->> Most excellent!  I should have been more clear that I only knew about
->> how CPUidle worked in our local production kernel.  There I'm pretty
->> sure CPUidle is just WFI/WFE.  If you've got patches to do better then
->> that's great!
->>
->> ...can you confirm that my patch doesn't interfere with your improved
->> CPUidle?  It's been Acked by Nicolas (thanks!) so I'd imagine it will
->> land shortly.  Kukjin: I assume you'll be taking this?
->>
+Hi,
 
-This patch is effectively changing the mcpm_entry_point address from
-nsbase + 0x1c to nsbase + 0x8
+I cloned the device tree git from: 
+https://kernel.googlesource.com/pub/scm/linux/kernel/git/devicetree/devicetree-rebasing
 
-Hence while integrating with mainline u-boot we need to take care for
-new mcpm_entry_point address.
+When i try to compile the Makefile is throwing errors like this:
 
-With Chromebook it works straightforward.
+DTC     src/arc/abilis_tb100_dvk.dtb
+
+dtc: invalid option -- 'i'
+
+Usage:
+
+     dtc [options] <input file>
+
+Options:
+
+     -h
+
+         This help text
+
+     -q
+
+         Quiet: -q suppress warnings, -qq errors, -qqq all
+
+     -I <input format>
+
+         Input formats are:
+
+             dts - device tree source text
+
+             dtb - device tree blob
+
+             fs - /proc/device-tree style directory
+
+     -o <output file>
+
+     -O <output format>
+
+         Output formats are:
+
+             dts - device tree source text
+
+             dtb - device tree blob
+
+             asm - assembler source
+
+     -V <output version>
+
+         Blob version to produce, defaults to 17 (relevant for dtb
+
+         and asm output only)
+
+     -d <output dependency file>
+
+     -R <number>
+
+         Make space for <number> reserve map entries (relevant for
+
+         dtb and asm output only)
+
+     -S <bytes>
+
+         Make the blob at least <bytes> long (extra space)
+
+     -p <bytes>
+
+         Add padding to the blob of <bytes> long (extra space)
+
+     -b <number>
+
+         Set the physical boot cpu
+
+     -f
+
+         Force - try to produce output even if the input tree has errors
+
+     -s
+
+         Sort nodes and properties before outputting (only useful for
+
+         comparing trees)
+
+     -v
+
+         Print DTC version and exit
+
+     -H <phandle format>
+
+         phandle formats are:
+
+             legacy - "linux,phandle" properties only
+
+             epapr - "phandle" properties only
+
+             both - Both "linux,phandle" and "phandle" properties
+
+make[1]: *** [src/arc/abilis_tb100_dvk.dtb] Error 3
+
+make: *** [all_arc] Error 2
 
 
-> Sure, I will ;-)
->
-> Thanks,
-> Kukjin
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The way of using the dtc command is wrong.
+
+
+Thanks,
+Varka Bhadram
+
+-------------------------------------------------------------------------------------------------------------------------------
+[ C-DAC is on Social-Media too. Kindly follow us at:
+Facebook: https://www.facebook.com/CDACINDIA & Twitter: @cdacindia ]
+
+This e-mail is for the sole use of the intended recipient(s) and may
+contain confidential and privileged information. If you are not the
+intended recipient, please contact the sender by reply e-mail and destroy
+all copies and the original message. Any unauthorized review, use,
+disclosure, dissemination, forwarding, printing or copying of this email
+is strictly prohibited and appropriate legal action will be taken.
+-------------------------------------------------------------------------------------------------------------------------------
+
