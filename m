@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742AbaFMHmn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 03:42:43 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:35017 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784AbaFMHmm (ORCPT
+	id S1752803AbaFMHnR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 03:43:17 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:58434 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121AbaFMHnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 03:42:42 -0400
-Date: Fri, 13 Jun 2014 16:41:47 +0900
+	Fri, 13 Jun 2014 03:43:16 -0400
+Date: Fri, 13 Jun 2014 16:42:21 +0900
 From: Daeseok Youn <daeseok.youn@gmail.com>
 To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
 Cc: markh@compro.net, dan.carpenter@oracle.com,
         driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 5/9] staging: dgap: introduce dgap_tty_unregister()
-Message-ID: <20140613074147.GA31615@devel.8.8.4.4>
+Subject: [PATCH 6/9] staging: dgap: rename dgap_after_config_loaded() to
+ dgap_alloc_flipbuf()
+Message-ID: <20140613074221.GA31620@devel.8.8.4.4>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,41 +24,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dgap_tty_unregister() will unregister serial_driver
-and print_driver, and also free related variables.
+dgap_after_config_loaded() as function name doesn't tell
+what it does.
 
 Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
- drivers/staging/dgap/dgap.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+ drivers/staging/dgap/dgap.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index 497e6f3..4ea7a33 100644
+index 4ea7a33..db8c93b 100644
 --- a/drivers/staging/dgap/dgap.c
 +++ b/drivers/staging/dgap/dgap.c
-@@ -122,6 +122,7 @@ static int dgap_tty_put_char(struct tty_struct *tty, unsigned char c);
- static void dgap_tty_send_xchar(struct tty_struct *tty, char ch);
+@@ -189,7 +189,7 @@ static void dgap_do_fep_load(struct board_t *brd, const u8 *ufep, int len);
+ #ifdef DIGI_CONCENTRATORS_SUPPORTED
+ static void dgap_do_conc_load(struct board_t *brd, u8 *uaddr, int len);
+ #endif
+-static int dgap_after_config_loaded(struct board_t *brd);
++static int dgap_alloc_flipbuf(struct board_t *brd);
+ static int dgap_request_irq(struct board_t *brd);
+ static void dgap_free_irq(struct board_t *brd);
  
- static int dgap_tty_register(struct board_t *brd);
-+static void dgap_tty_unregister(struct board_t *brd);
- static int dgap_tty_init(struct board_t *);
- static void dgap_tty_free(struct board_t *);
- static void dgap_cleanup_tty(struct board_t *);
-@@ -1320,6 +1321,14 @@ free_serial_drv:
- 	return rc;
+@@ -866,7 +866,7 @@ static int dgap_firmware_load(struct pci_dev *pdev, int card_type)
+ 		kfree(dgap_config_buf);
+ 	}
+ 
+-	ret = dgap_after_config_loaded(brd);
++	ret = dgap_alloc_flipbuf(brd);
+ 	if (ret)
+ 		return ret;
+ 	/*
+@@ -4142,7 +4142,7 @@ static int dgap_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
+ 	}
  }
  
-+static void dgap_tty_unregister(struct board_t *brd)
-+{
-+	tty_unregister_driver(brd->print_driver);
-+	tty_unregister_driver(brd->serial_driver);
-+	put_tty_driver(brd->print_driver);
-+	put_tty_driver(brd->serial_driver);
-+}
-+
- /*
-  * dgap_tty_init()
-  *
+-static int dgap_after_config_loaded(struct board_t *brd)
++static int dgap_alloc_flipbuf(struct board_t *brd)
+ {
+ 	/*
+ 	 * Initialize KME waitqueues...
 -- 
 1.7.1
 
