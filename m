@@ -1,81 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697AbaFMG1D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 02:27:03 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:17984 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751537AbaFMG1A (ORCPT
+	id S1752740AbaFMG1H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 02:27:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44220 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537AbaFMG1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 02:27:00 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqcGAI+YmlN5LC2v/2dsb2JhbABagw2DRqc6BgaZHgGBBBd1hAMBAQUnExwjEAgDGAklDwUlAyEBEohB0kwXFoVGiH8HhEEEmjGLMYgjg04r
-Date: Fri, 13 Jun 2014 16:26:45 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Dave Jones <davej@redhat.com>, xfs@oss.sgi.com,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: linux-mm@kvack.org
-Subject: Re: XFS WARN_ON in xfs_vm_writepage
-Message-ID: <20140613062645.GZ9508@dastard>
-References: <20140613051631.GA9394@redhat.com>
+	Fri, 13 Jun 2014 02:27:05 -0400
+Date: Thu, 12 Jun 2014 23:26:48 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-0d8a5faaf5a1087c7212a6f0d81920a93396414a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@kernel.org, jolsa@kernel.org, a.p.zijlstra@chello.nl,
+        jean.pihet@linaro.org, acme@kernel.org, namhyung@kernel.org,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, jolsa@kernel.org, a.p.zijlstra@chello.nl,
+        jean.pihet@linaro.org, acme@kernel.org, namhyung@kernel.org,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com
+In-Reply-To: <1401892622-30848-11-git-send-email-jolsa@kernel.org>
+References: <1401892622-30848-11-git-send-email-jolsa@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tests: Spawn child for each test
+Git-Commit-ID: 0d8a5faaf5a1087c7212a6f0d81920a93396414a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140613051631.GA9394@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc linux-mm]
+Commit-ID:  0d8a5faaf5a1087c7212a6f0d81920a93396414a
+Gitweb:     http://git.kernel.org/tip/0d8a5faaf5a1087c7212a6f0d81920a93396414a
+Author:     Jiri Olsa <jolsa@kernel.org>
+AuthorDate: Sat, 10 May 2014 17:22:30 +0200
+Committer:  Jiri Olsa <jolsa@kernel.org>
+CommitDate: Thu, 12 Jun 2014 16:53:22 +0200
 
-On Fri, Jun 13, 2014 at 01:16:31AM -0400, Dave Jones wrote:
-> Just hit this on Linus' tree from earlier this afternoon..
-> 
-> WARNING: CPU: 3 PID: 19721 at fs/xfs/xfs_aops.c:971 xfs_vm_writepage+0x5ce/0x630 [xfs]()
-> CPU: 3 PID: 19721 Comm: trinity-c61 Not tainted 3.15.0+ #3
->  0000000000000009 000000004f70ab82 ffff8801d5ebf578 ffffffff8373215c
->  0000000000000000 ffff8801d5ebf5b0 ffffffff8306f7cd ffff88023dd543e0
->  ffffea000254a3c0 ffff8801d5ebf820 ffffea000254a3e0 ffff8801d5ebf728
-> Call Trace:
->  [<ffffffff8373215c>] dump_stack+0x4e/0x7a
->  [<ffffffff8306f7cd>] warn_slowpath_common+0x7d/0xa0
->  [<ffffffff8306f8fa>] warn_slowpath_null+0x1a/0x20
->  [<ffffffffc023068e>] xfs_vm_writepage+0x5ce/0x630 [xfs]
->  [<ffffffff8373f1ab>] ? preempt_count_sub+0xab/0x100
->  [<ffffffff83347315>] ? __percpu_counter_add+0x85/0xc0
->  [<ffffffff8316f759>] shrink_page_list+0x8f9/0xb90
->  [<ffffffff83170123>] shrink_inactive_list+0x253/0x510
->  [<ffffffff83170c93>] shrink_lruvec+0x563/0x6c0
->  [<ffffffff83170e2b>] shrink_zone+0x3b/0x100
->  [<ffffffff831710e1>] shrink_zones+0x1f1/0x3c0
->  [<ffffffff83171414>] try_to_free_pages+0x164/0x380
->  [<ffffffff83163e52>] __alloc_pages_nodemask+0x822/0xc90
->  [<ffffffff83169eb2>] ? pagevec_lru_move_fn+0x122/0x140
->  [<ffffffff831abeff>] alloc_pages_vma+0xaf/0x1c0
->  [<ffffffff8318a931>] handle_mm_fault+0xa31/0xc50
->  [<ffffffff831845c0>] ? follow_page_mask+0x1f0/0x320
->  [<ffffffff8318491b>] __get_user_pages+0x22b/0x660
->  [<ffffffff831b5093>] ? kmem_cache_alloc+0x183/0x210
->  [<ffffffff8318ce7e>] __mlock_vma_pages_range+0x9e/0xd0
->  [<ffffffff8318d6ba>] __mm_populate+0xca/0x180
->  [<ffffffff83179033>] vm_mmap_pgoff+0xd3/0xe0
->  [<ffffffff8318fbd6>] SyS_mmap_pgoff+0x116/0x2c0
->  [<ffffffff83011ced>] ? syscall_trace_enter+0x14d/0x2a0
->  [<ffffffff830084c2>] SyS_mmap+0x22/0x30
->  [<ffffffff837436ef>] tracesys+0xdd/0xe2
-> 
-> 
->  970         if (WARN_ON_ONCE((current->flags & (PF_MEMALLOC|PF_KSWAPD)) ==
->  971                         PF_MEMALLOC))
+perf tests: Spawn child for each test
 
-What were you running at the time? The XFS warning is there to
-indicate that memory reclaim is doing something it shouldn't (i.e.
-dirty page writeback from direct reclaim), so this is one for the mm
-folk to work out...
+In upcoming tests we will setup process limits, which
+might affect other tests. Spawning child for each test
+to prevent this.
 
-Cheers,
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Reviewed-by: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1401892622-30848-11-git-send-email-jolsa@kernel.org
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/tests/builtin-test.c | 32 +++++++++++++++++++++++++++++++-
+ 1 file changed, 31 insertions(+), 1 deletion(-)
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index 802e3cd..9677a5c 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -3,6 +3,8 @@
+  *
+  * Builtin regression testing command: ever growing number of sanity tests
+  */
++#include <unistd.h>
++#include <string.h>
+ #include "builtin.h"
+ #include "intlist.h"
+ #include "tests.h"
+@@ -172,6 +174,34 @@ static bool perf_test__matches(int curr, int argc, const char *argv[])
+ 	return false;
+ }
+ 
++static int run_test(struct test *test)
++{
++	int status, err = -1, child = fork();
++
++	if (child < 0) {
++		pr_err("failed to fork test: %s\n", strerror(errno));
++		return -1;
++	}
++
++	if (!child) {
++		pr_debug("test child forked, pid %d\n", getpid());
++		err = test->func();
++		exit(err);
++	}
++
++	wait(&status);
++
++	if (WIFEXITED(status)) {
++		err = WEXITSTATUS(status);
++		pr_debug("test child finished with %d\n", err);
++	} else if (WIFSIGNALED(status)) {
++		err = -1;
++		pr_debug("test child interrupted\n");
++	}
++
++	return err;
++}
++
+ static int __cmd_test(int argc, const char *argv[], struct intlist *skiplist)
+ {
+ 	int i = 0;
+@@ -200,7 +230,7 @@ static int __cmd_test(int argc, const char *argv[], struct intlist *skiplist)
+ 		}
+ 
+ 		pr_debug("\n--- start ---\n");
+-		err = tests[curr].func();
++		err = run_test(&tests[curr]);
+ 		pr_debug("---- end ----\n%s:", tests[curr].desc);
+ 
+ 		switch (err) {
