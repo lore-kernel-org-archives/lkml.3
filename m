@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090AbaFMQGO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 12:06:14 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:41576 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaFMQGN (ORCPT
+	id S1753391AbaFMQGc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 12:06:32 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:38081 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752473AbaFMQGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 12:06:13 -0400
+	Fri, 13 Jun 2014 12:06:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <1402603992-12466-2-git-send-email-davidriley@chromium.org>
-References: <1402603992-12466-1-git-send-email-davidriley@chromium.org>
-	<1402603992-12466-2-git-send-email-davidriley@chromium.org>
-Date: Fri, 13 Jun 2014 09:06:12 -0700
-Message-ID: <CALAqxLWv2ALgsc+XTyZdJVyk0GYrxnx+UW10HGpiU8q5yVa_zg@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] kernel: time: Add udelay_test module to validate udelay
-From: John Stultz <john.stultz@linaro.org>
-To: David Riley <davidriley@chromium.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Doug Anderson <dianders@chromium.org>,
-        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <CACVXFVMQYk=k8fONkoHVHo7wELK7TgWVQpKeCMAZaTyXHZgePQ@mail.gmail.com>
+References: <CACVXFVPn4muw+zD+TPAJh2miB5R326iFT4ZBS-Tdehz0XrsyDQ@mail.gmail.com>
+	<cover.1402672110.git.d.kasatkin@samsung.com>
+	<248c69602c96d68aea1ffb4cb75e77ec38b6b75f.1402672110.git.d.kasatkin@samsung.com>
+	<CACVXFVMQYk=k8fONkoHVHo7wELK7TgWVQpKeCMAZaTyXHZgePQ@mail.gmail.com>
+Date: Fri, 13 Jun 2014 19:06:29 +0300
+Message-ID: <CACE9dm8AR_0S9gB13T_tydBcYtJEtXmEOc_GRx_Qtfbw+pKM2w@mail.gmail.com>
+Subject: Re: [PATCH v2 1/1] firmware: read firmware size using i_size_read()
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 1:13 PM, David Riley <davidriley@chromium.org> wrote:
-> Create a module that allows udelay() to be executed to ensure that
-> it is delaying at least as long as requested (with a little bit of
-> error allowed).
+On 13 June 2014 19:03, Ming Lei <ming.lei@canonical.com> wrote:
+> On Fri, Jun 13, 2014 at 11:09 PM, Dmitry Kasatkin
+> <d.kasatkin@samsung.com> wrote:
+>> There is no need to read attr because inode structure contains size
+>> of the file. Use i_size_read() instead.
+>>
+>> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 >
-> There are some configurations which don't have reliably udelay
-> due to using a loop delay with cpufreq changes which should use
-> a counter time based delay instead.  This test aims to identify
-> those configurations where timing is unreliable.
+> Acked-by: Ming Lei <ming.lei@canonical.com>
 >
-> Signed-off-by: David Riley <davidriley@chromium.org>
-> ---
->  kernel/time/Kconfig       |   7 ++
->  kernel/time/Makefile      |   1 +
->  kernel/time/udelay_test.c | 170 ++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 178 insertions(+)
->  create mode 100644 kernel/time/udelay_test.c
 >
-> diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
-> index f448513..c6af048 100644
-> --- a/kernel/time/Kconfig
-> +++ b/kernel/time/Kconfig
-> @@ -202,3 +202,10 @@ config HIGH_RES_TIMERS
->
->  endmenu
->  endif
-> +
-> +config UDELAY_TEST
-> +       tristate "udelay test driver"
-> +       default n
-> +       help
-> +         This builds the "udelay_test" module that helps to make sure
-> +         that udelay() is working properly.
+> Thanks,
+> --
+> Ming Lei
+
+Thanks.
 
 
-Thanks for resubmitting! So I've queued this for my testing.
 
-My only thoughts playing with it now, is that the Kconfig entry is
-just in an awkward spot. There isn't really a udelay, or really
-general timekeeping specific area in the menus, so it just shows up in
-"General Setup" between the "Timer Subsystem" and "Cpu/task time.."
-submenus.
-
-I suspect this would be better added in lib/Kconfig.debug near
-TEST_MODULE.  Any objections to me changing that?
-
-Also I'd probably rename the config option to TEST_UDELAY, as well as
-tweak the option string to be more consistent with those similar test
-driver options.
-
-thanks
--john
+-- 
+Thanks,
+Dmitry
