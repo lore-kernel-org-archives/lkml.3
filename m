@@ -1,60 +1,369 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678AbaFMAts (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 20:49:48 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:51176 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199AbaFMAtp (ORCPT
+	id S1754726AbaFMAuy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 20:50:54 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57168 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754633AbaFMAtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 20:49:45 -0400
+	Thu, 12 Jun 2014 20:49:47 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: <hpa@zytor.com>, Kui Zhang <kuizhang@gmail.com>
 Cc: x86@kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v2 0/3] vDSO reference parser updates and Go workaround
-Date: Thu, 12 Jun 2014 17:49:38 -0700
-Message-Id: <cover.1402620327.git.luto@amacapital.net>
+        Andy Lutomirski <luto@amacapital.net>,
+        Stefani Seibold <stefani@seibold.net>
+Subject: [PATCH v2 1/3] doc,vdso: Make vDSO examples more portable
+Date: Thu, 12 Jun 2014 17:49:39 -0700
+Message-Id: <62b701fc44b79f118ac2b2d64d19965fc5c291fb.1402620327.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <cover.1402620327.git.luto@amacapital.net>
+References: <cover.1402620327.git.luto@amacapital.net>
+In-Reply-To: <cover.1402620327.git.luto@amacapital.net>
+References: <cover.1402620327.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patches 1 and 2 update the vDSO reference parser.
+This adds a new vdso_test.c that's written entirely in C.  It also
+makes all of the vDSO examples work on 32-bit x86.
 
-Despite the late submission, this might be 3.16 material: it's just
-documentation.  If I'd been more on top of this, I would have done it
-for 3.15.  It's also probably worthwhile given that there is at least
-one rather buggy vDSO parser in the wild.
-
-Patch 3 makes "Hello world" as built by Go stop segfaulting.  It's
-a performance regression for Go programs: it causes them to stop
-finding any symbols in the vDSO, but that's a lot better than
-segfaulting.
-
-Changes from v1:
- - Improve portability of the vdso parser.
- - Add an explicit ELFCLASS check in the vdso parser (why not?).
- - Fix x32 build.
- - Add a comment describing what the hack works around, why, and where the
-   Go bug was introduced.
-
-Andy Lutomirski (3):
-  doc,vdso: Make vDSO examples more portable
-  x86,vdso: Add PUT_LE to store little-endian values
-  x86,vdso: Hack to keep 64-bit Go programs working
-
+Cc: Stefani Seibold <stefani@seibold.net>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
  Documentation/vDSO/parse_vdso.c               | 67 ++++++++++++++++-----------
  Documentation/vDSO/vdso_standalone_test_x86.c | 45 ++++++++++++------
  Documentation/vDSO/vdso_test.c                | 52 +++++++++++++++++++++
- arch/x86/vdso/Makefile                        | 18 +++----
- arch/x86/vdso/vdso-fakesections.c             | 32 +++++++++++++
- arch/x86/vdso/vdso2c.c                        | 19 ++++++--
- arch/x86/vdso/vdso2c.h                        | 23 +++++++--
- 7 files changed, 199 insertions(+), 57 deletions(-)
+ 3 files changed, 123 insertions(+), 41 deletions(-)
  create mode 100644 Documentation/vDSO/vdso_test.c
- create mode 100644 arch/x86/vdso/vdso-fakesections.c
 
+diff --git a/Documentation/vDSO/parse_vdso.c b/Documentation/vDSO/parse_vdso.c
+index 8587020..1dbb4b8 100644
+--- a/Documentation/vDSO/parse_vdso.c
++++ b/Documentation/vDSO/parse_vdso.c
+@@ -1,6 +1,6 @@
+ /*
+  * parse_vdso.c: Linux reference vDSO parser
+- * Written by Andrew Lutomirski, 2011.
++ * Written by Andrew Lutomirski, 2011-2014.
+  *
+  * This code is meant to be linked in to various programs that run on Linux.
+  * As such, it is available with as few restrictions as possible.  This file
+@@ -11,13 +11,14 @@
+  * it starts a program.  It works equally well in statically and dynamically
+  * linked binaries.
+  *
+- * This code is tested on x86_64.  In principle it should work on any 64-bit
++ * This code is tested on x86.  In principle it should work on any
+  * architecture that has a vDSO.
+  */
+ 
+ #include <stdbool.h>
+ #include <stdint.h>
+ #include <string.h>
++#include <limits.h>
+ #include <elf.h>
+ 
+ /*
+@@ -45,11 +46,18 @@ extern void *vdso_sym(const char *version, const char *name);
+ 
+ 
+ /* And here's the code. */
+-
+-#ifndef __x86_64__
+-# error Not yet ported to non-x86_64 architectures
++#ifndef ELF_BITS
++# if ULONG_MAX > 0xffffffffUL
++#  define ELF_BITS 64
++# else
++#  define ELF_BITS 32
++# endif
+ #endif
+ 
++#define ELF_BITS_XFORM2(bits, x) Elf##bits##_##x
++#define ELF_BITS_XFORM(bits, x) ELF_BITS_XFORM2(bits, x)
++#define ELF(x) ELF_BITS_XFORM(ELF_BITS, x)
++
+ static struct vdso_info
+ {
+ 	bool valid;
+@@ -59,14 +67,14 @@ static struct vdso_info
+ 	uintptr_t load_offset;  /* load_addr - recorded vaddr */
+ 
+ 	/* Symbol table */
+-	Elf64_Sym *symtab;
++	ELF(Sym) *symtab;
+ 	const char *symstrings;
+-	Elf64_Word *bucket, *chain;
+-	Elf64_Word nbucket, nchain;
++	ELF(Word) *bucket, *chain;
++	ELF(Word) nbucket, nchain;
+ 
+ 	/* Version table */
+-	Elf64_Versym *versym;
+-	Elf64_Verdef *verdef;
++	ELF(Versym) *versym;
++	ELF(Verdef) *verdef;
+ } vdso_info;
+ 
+ /* Straight from the ELF specification. */
+@@ -92,9 +100,14 @@ void vdso_init_from_sysinfo_ehdr(uintptr_t base)
+ 
+ 	vdso_info.load_addr = base;
+ 
+-	Elf64_Ehdr *hdr = (Elf64_Ehdr*)base;
+-	Elf64_Phdr *pt = (Elf64_Phdr*)(vdso_info.load_addr + hdr->e_phoff);
+-	Elf64_Dyn *dyn = 0;
++	ELF(Ehdr) *hdr = (ELF(Ehdr)*)base;
++	if (hdr->e_ident[EI_CLASS] !=
++	    (ELF_BITS == 32 ? ELFCLASS32 : ELFCLASS64)) {
++		return;  /* Wrong ELF class -- check ELF_BITS */
++	}
++
++	ELF(Phdr) *pt = (ELF(Phdr)*)(vdso_info.load_addr + hdr->e_phoff);
++	ELF(Dyn) *dyn = 0;
+ 
+ 	/*
+ 	 * We need two things from the segment table: the load offset
+@@ -108,7 +121,7 @@ void vdso_init_from_sysinfo_ehdr(uintptr_t base)
+ 				+ (uintptr_t)pt[i].p_offset
+ 				- (uintptr_t)pt[i].p_vaddr;
+ 		} else if (pt[i].p_type == PT_DYNAMIC) {
+-			dyn = (Elf64_Dyn*)(base + pt[i].p_offset);
++			dyn = (ELF(Dyn)*)(base + pt[i].p_offset);
+ 		}
+ 	}
+ 
+@@ -118,7 +131,7 @@ void vdso_init_from_sysinfo_ehdr(uintptr_t base)
+ 	/*
+ 	 * Fish out the useful bits of the dynamic table.
+ 	 */
+-	Elf64_Word *hash = 0;
++	ELF(Word) *hash = 0;
+ 	vdso_info.symstrings = 0;
+ 	vdso_info.symtab = 0;
+ 	vdso_info.versym = 0;
+@@ -131,22 +144,22 @@ void vdso_init_from_sysinfo_ehdr(uintptr_t base)
+ 				 + vdso_info.load_offset);
+ 			break;
+ 		case DT_SYMTAB:
+-			vdso_info.symtab = (Elf64_Sym *)
++			vdso_info.symtab = (ELF(Sym) *)
+ 				((uintptr_t)dyn[i].d_un.d_ptr
+ 				 + vdso_info.load_offset);
+ 			break;
+ 		case DT_HASH:
+-			hash = (Elf64_Word *)
++			hash = (ELF(Word) *)
+ 				((uintptr_t)dyn[i].d_un.d_ptr
+ 				 + vdso_info.load_offset);
+ 			break;
+ 		case DT_VERSYM:
+-			vdso_info.versym = (Elf64_Versym *)
++			vdso_info.versym = (ELF(Versym) *)
+ 				((uintptr_t)dyn[i].d_un.d_ptr
+ 				 + vdso_info.load_offset);
+ 			break;
+ 		case DT_VERDEF:
+-			vdso_info.verdef = (Elf64_Verdef *)
++			vdso_info.verdef = (ELF(Verdef) *)
+ 				((uintptr_t)dyn[i].d_un.d_ptr
+ 				 + vdso_info.load_offset);
+ 			break;
+@@ -168,8 +181,8 @@ void vdso_init_from_sysinfo_ehdr(uintptr_t base)
+ 	vdso_info.valid = true;
+ }
+ 
+-static bool vdso_match_version(Elf64_Versym ver,
+-			       const char *name, Elf64_Word hash)
++static bool vdso_match_version(ELF(Versym) ver,
++			       const char *name, ELF(Word) hash)
+ {
+ 	/*
+ 	 * This is a helper function to check if the version indexed by
+@@ -188,7 +201,7 @@ static bool vdso_match_version(Elf64_Versym ver,
+ 
+ 	/* First step: find the version definition */
+ 	ver &= 0x7fff;  /* Apparently bit 15 means "hidden" */
+-	Elf64_Verdef *def = vdso_info.verdef;
++	ELF(Verdef) *def = vdso_info.verdef;
+ 	while(true) {
+ 		if ((def->vd_flags & VER_FLG_BASE) == 0
+ 		    && (def->vd_ndx & 0x7fff) == ver)
+@@ -197,11 +210,11 @@ static bool vdso_match_version(Elf64_Versym ver,
+ 		if (def->vd_next == 0)
+ 			return false;  /* No definition. */
+ 
+-		def = (Elf64_Verdef *)((char *)def + def->vd_next);
++		def = (ELF(Verdef) *)((char *)def + def->vd_next);
+ 	}
+ 
+ 	/* Now figure out whether it matches. */
+-	Elf64_Verdaux *aux = (Elf64_Verdaux*)((char *)def + def->vd_aux);
++	ELF(Verdaux) *aux = (ELF(Verdaux)*)((char *)def + def->vd_aux);
+ 	return def->vd_hash == hash
+ 		&& !strcmp(name, vdso_info.symstrings + aux->vda_name);
+ }
+@@ -213,10 +226,10 @@ void *vdso_sym(const char *version, const char *name)
+ 		return 0;
+ 
+ 	ver_hash = elf_hash(version);
+-	Elf64_Word chain = vdso_info.bucket[elf_hash(name) % vdso_info.nbucket];
++	ELF(Word) chain = vdso_info.bucket[elf_hash(name) % vdso_info.nbucket];
+ 
+ 	for (; chain != STN_UNDEF; chain = vdso_info.chain[chain]) {
+-		Elf64_Sym *sym = &vdso_info.symtab[chain];
++		ELF(Sym) *sym = &vdso_info.symtab[chain];
+ 
+ 		/* Check for a defined global or weak function w/ right name. */
+ 		if (ELF64_ST_TYPE(sym->st_info) != STT_FUNC)
+@@ -243,7 +256,7 @@ void *vdso_sym(const char *version, const char *name)
+ 
+ void vdso_init_from_auxv(void *auxv)
+ {
+-	Elf64_auxv_t *elf_auxv = auxv;
++	ELF(auxv_t) *elf_auxv = auxv;
+ 	for (int i = 0; elf_auxv[i].a_type != AT_NULL; i++)
+ 	{
+ 		if (elf_auxv[i].a_type == AT_SYSINFO_EHDR) {
+diff --git a/Documentation/vDSO/vdso_standalone_test_x86.c b/Documentation/vDSO/vdso_standalone_test_x86.c
+index 1523f5d..d462402 100644
+--- a/Documentation/vDSO/vdso_standalone_test_x86.c
++++ b/Documentation/vDSO/vdso_standalone_test_x86.c
+@@ -1,13 +1,14 @@
+ /*
+- * vdso_test.c: Sample code to test parse_vdso.c on x86_64
+- * Copyright (c) 2011 Andy Lutomirski
++ * vdso_test.c: Sample code to test parse_vdso.c on x86
++ * Copyright (c) 2011-2014 Andy Lutomirski
+  * Subject to the GNU General Public License, version 2
+  *
+  * You can amuse yourself by compiling with:
+  * gcc -std=gnu99 -nostdlib
+- *     -Os -fno-asynchronous-unwind-tables -flto
++ *     -Os -fno-asynchronous-unwind-tables -flto -lgcc_s
+  *      vdso_standalone_test_x86.c parse_vdso.c
+- * to generate a small binary with no dependencies at all.
++ * to generate a small binary.  On x86_64, you can omit -lgcc_s
++ * if you want the binary to be completely standalone.
+  */
+ 
+ #include <sys/syscall.h>
+@@ -35,21 +36,31 @@ int strcmp(const char *a, const char *b)
+ 	return 0;
+ }
+ 
+-/* ...and two syscalls.  This is x86_64-specific. */
+-static inline long linux_write(int fd, const void *data, size_t len)
++/* ...and two syscalls.  This is x86-specific. */
++static inline long x86_syscall3(long nr, long a0, long a1, long a2)
+ {
+-
+ 	long ret;
+-	asm volatile ("syscall" : "=a" (ret) : "a" (__NR_write),
+-		      "D" (fd), "S" (data), "d" (len) :
++#ifdef __x86_64__
++	asm volatile ("syscall" : "=a" (ret) : "a" (nr),
++		      "D" (a0), "S" (a1), "d" (a2) :
+ 		      "cc", "memory", "rcx",
+ 		      "r8", "r9", "r10", "r11" );
++#else
++	asm volatile ("int $0x80" : "=a" (ret) : "a" (nr),
++		      "b" (a0), "c" (a1), "d" (a2) :
++		      "cc", "memory" );
++#endif
+ 	return ret;
+ }
+ 
++static inline long linux_write(int fd, const void *data, size_t len)
++{
++	return x86_syscall3(__NR_write, fd, (long)data, (long)len);
++}
++
+ static inline void linux_exit(int code)
+ {
+-	asm volatile ("syscall" : : "a" (__NR_exit), "D" (code));
++	x86_syscall3(__NR_exit, code, 0, 0);
+ }
+ 
+ void to_base10(char *lastdig, uint64_t n)
+@@ -104,8 +115,14 @@ __attribute__((externally_visible)) void c_main(void **stack)
+ asm (
+ 	".text\n"
+ 	".global _start\n"
+-        ".type _start,@function\n"
+-        "_start:\n\t"
+-        "mov %rsp,%rdi\n\t"
+-        "jmp c_main"
++	".type _start,@function\n"
++	"_start:\n\t"
++#ifdef __x86_64__
++	"mov %rsp,%rdi\n\t"
++	"jmp c_main"
++#else
++	"push %esp\n\t"
++	"call c_main\n\t"
++	"int $3"
++#endif
+ 	);
+diff --git a/Documentation/vDSO/vdso_test.c b/Documentation/vDSO/vdso_test.c
+new file mode 100644
+index 0000000..8daeb7d
+--- /dev/null
++++ b/Documentation/vDSO/vdso_test.c
+@@ -0,0 +1,52 @@
++/*
++ * vdso_test.c: Sample code to test parse_vdso.c
++ * Copyright (c) 2014 Andy Lutomirski
++ * Subject to the GNU General Public License, version 2
++ *
++ * Compile with:
++ * gcc -std=gnu99 vdso_test.c parse_vdso.c
++ *
++ * Tested on x86, 32-bit and 64-bit.  It may work on other architectures, too.
++ */
++
++#include <stdint.h>
++#include <elf.h>
++#include <stdio.h>
++#include <sys/auxv.h>
++#include <sys/time.h>
++
++extern void *vdso_sym(const char *version, const char *name);
++extern void vdso_init_from_sysinfo_ehdr(uintptr_t base);
++extern void vdso_init_from_auxv(void *auxv);
++
++int main(int argc, char **argv)
++{
++	unsigned long sysinfo_ehdr = getauxval(AT_SYSINFO_EHDR);
++	if (!sysinfo_ehdr) {
++		printf("AT_SYSINFO_EHDR is not present!\n");
++		return 0;
++	}
++
++	vdso_init_from_sysinfo_ehdr(getauxval(AT_SYSINFO_EHDR));
++
++	/* Find gettimeofday. */
++	typedef long (*gtod_t)(struct timeval *tv, struct timezone *tz);
++	gtod_t gtod = (gtod_t)vdso_sym("LINUX_2.6", "__vdso_gettimeofday");
++
++	if (!gtod) {
++		printf("Could not find __vdso_gettimeofday\n");
++		return 1;
++	}
++
++	struct timeval tv;
++	long ret = gtod(&tv, 0);
++
++	if (ret == 0) {
++		printf("The time is %lld.%06lld\n",
++		       (long long)tv.tv_sec, (long long)tv.tv_usec);
++	} else {
++		printf("__vdso_gettimeofday failed\n");
++	}
++
++	return 0;
++}
 -- 
 1.9.3
 
