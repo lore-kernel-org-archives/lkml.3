@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161AbaFMXHE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 19:07:04 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53842 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751262AbaFMXHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 19:07:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,474,1400050800"; 
-   d="scan'208";a="557301304"
-From: Andi Kleen <andi@firstfloor.org>
-To: jolsa@redhat.com
-Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 6/9] perf, tools: Allow events with dot
-Date: Fri, 13 Jun 2014 16:02:57 -0700
-Message-Id: <1402700580-26939-7-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1402700580-26939-1-git-send-email-andi@firstfloor.org>
-References: <1402700580-26939-1-git-send-email-andi@firstfloor.org>
+	id S1754288AbaFMXHp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 19:07:45 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:51181 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753502AbaFMXHo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 19:07:44 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Randy Dunlap <rdunlap@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Len Brown <len.brown@intel.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>, linux-doc@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH v3 0/2] make kASLR vs hibernation boot-time selectable
+Date: Sat, 14 Jun 2014 01:25:11 +0200
+Message-ID: <2113876.sBNaASbVKF@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1402691436-20138-1-git-send-email-keescook@chromium.org>
+References: <1402691436-20138-1-git-send-email-keescook@chromium.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Friday, June 13, 2014 01:30:34 PM Kees Cook wrote:
+> Distros want to be able to offer CONFIG_RANDOMIZE_BASE as well as
+> CONFIG_HIBERNATION in a single kernel. Instead of making kASLR depend on
+> !HIBERNATION at compile time, allow kaslr to be selectable at boot time
+> (via "kaslr" kernel command line), which will disable hibernation in the
+> kernel. In this way the end user can choose which feature they want more
+> with hibernation continuing to stay enabled by default (no surprises).
+> 
+> This also has the benefit of being able to entirely disable hibernation
+> from the kernel command line, regardless of kASLR, which is a separately
+> desired feature as well.
+> 
+> v3:
+> - switch from EINVAL to EPERM (pavel, jwboyer)
+> v2:
+> - rework using kernel command line instead of hibernation_mode (rjw)
 
-The Intel events use a dot to separate event name and unit mask.
-Allow dot in names in the scanner, and remove special handling
-of dot as EOF. Also remove the hack in jevents to replace dot
-with underscore. This way dotted events can be specified
-directly by the user.
+That looks kind of OK.
 
-I'm not fully sure this change to the scanner is correct
-(what was the dot special case good for?), but I haven't
-found anything that breaks with it so far at least.
+Do you want me to push this through my tree?
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/util/jevents.c      | 9 +--------
- tools/perf/util/parse-events.l | 3 +--
- 2 files changed, 2 insertions(+), 10 deletions(-)
-
-diff --git a/tools/perf/util/jevents.c b/tools/perf/util/jevents.c
-index 1fae0b7..43550f7 100644
---- a/tools/perf/util/jevents.c
-+++ b/tools/perf/util/jevents.c
-@@ -100,15 +100,8 @@ static void addfield(char *map, char **dst, const char *sep,
- 
- static void fixname(char *s)
- {
--	for (; *s; s++) {
-+	for (; *s; s++)
- 		*s = tolower(*s);
--		/*
--		 * Remove '.' for now, until the parser
--		 * can deal with it.
--		 */
--		if (*s == '.')
--			*s = '_';
--	}
- }
- 
- static void fixdesc(char *s)
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index 3432995..709fa3b 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -81,7 +81,7 @@ num_dec		[0-9]+
- num_hex		0x[a-fA-F0-9]+
- num_raw_hex	[a-fA-F0-9]+
- name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
--name_minus	[a-zA-Z_*?][a-zA-Z0-9\-_*?]*
-+name_minus	[a-zA-Z_*?][a-zA-Z0-9\-_*?.]*
- /* If you add a modifier you need to update check_modifier() */
- modifier_event	[ukhpGHSD]+
- modifier_bp	[rwx]{1,3}
-@@ -119,7 +119,6 @@ modifier_bp	[rwx]{1,3}
- 			return PE_EVENT_NAME;
- 		}
- 
--.		|
- <<EOF>>		{
- 			BEGIN(INITIAL); yyless(0);
- 		}
--- 
-1.9.3
+Rafael
 
