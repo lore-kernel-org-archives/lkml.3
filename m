@@ -1,81 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176AbaFMIny (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 04:43:54 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:43804 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852AbaFMInu (ORCPT
+	id S1753211AbaFMIoo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 04:44:44 -0400
+Received: from fgwmail.fujitsu.co.jp ([164.71.1.133]:39682 "EHLO
+	fgwmail.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753151AbaFMIol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 04:43:50 -0400
+	Fri, 13 Jun 2014 04:44:41 -0400
+Subject: [PATCH v2] perf/x86/intel: ignore CondChgd bit to avoid false NMI
+ handling
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+To: matt@console-pimps.org, peterz@infradead.org, acme@kernel.org,
+        d.hatayama@jp.fujitsu.com, mingo@redhat.com, paulus@samba.org,
+        hpa@zytor.com, tglx@linutronix.de
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 13 Jun 2014 17:44:37 +0900
+Message-ID: <20140613084437.12424.62294.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1406130111280.1551@tomh.mtv.corp.google.com>
-References: <alpine.DEB.2.02.1406130111280.1551@tomh.mtv.corp.google.com>
-Date: Fri, 13 Jun 2014 10:43:47 +0200
-X-Google-Sender-Auth: Npb1rtJ7yrjjhKwYRbHVkDMEQ70
-Message-ID: <CAMuHMdW4kYeqEby3iABzdbjyAkPKq=x4dyopokFbHWT0Q4fjcw@mail.gmail.com>
-Subject: Re: [-next] Regression: ssh log in slowdown
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Tom Herbert <therbert@google.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tom,
+Currently, a NMI handler for NMI watchdog may falsely handle any NMI
+signaled for different purpose if CondChgd bit in
+MSR_CORE_PERF_GLOBAL_STATUS MSR is set.
 
-On Fri, Jun 13, 2014 at 10:21 AM, Tom Herbert <therbert@google.com> wrote:
->> I assume this is the series "[PATCH 0/4] Checksum fixes"
->> (marc.info/?l=linux-netdev&m=140261417832399&w=2)?
->>
-> Yes.
->
->> As I'm not subscribed to netdev, I cannot reply to that thread.
->>
->> "[PATCH 1/4] net: Fix save software checksum complete" fixes the issue
->> for me.
->> However, "[PATCH 2/4] udp: call __skb_checksum_complete when doing full
->> checksum" reintroduces the exact same bad behavior :-(
->>
-> This implies the problem is happening in UDP path. AFAICT skb->csum is
-> correct, and I don't seem to be able to reproduce the issue on my setup.
-> It is possible that an skb copy is happening in which case we don't copy
-> csum_valid so that checksum_unnecessary would fail in this case.
->
-> Can you try with the patch below. Thanks!
->
-> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> index bf92824..9cd5344 100644
-> --- a/net/core/skbuff.c
-> +++ b/net/core/skbuff.c
-> @@ -689,6 +689,9 @@ static void __copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
->         new->ooo_okay           = old->ooo_okay;
->         new->no_fcs             = old->no_fcs;
->         new->encapsulation      = old->encapsulation;
-> +       new->encap_hdr_csum     = old->encap_hdr_csum;
-> +       new->csum_valid         = old->csum_valid;
-> +       new->csum_complete_sw   = old->csum_complete_sw;
->  #ifdef CONFIG_XFRM
->         new->sp                 = secpath_get(old->sp);
->  #endif
+This commit deals with the issue simply by ignoring CondChgd bit.
 
-Thanks, I applied the series "[PATCH 0/4] Checksum fixes", and the fix
-above, but it doesn't help.
+Here is explanation in detail.
 
-Note that I'm also using NFS root, which doesn't seem to be affected.
-I can happily run "ls -R /" on the serial console during the 10 s delay in ssh.
+On x86 NMI watchdog uses performance monitoring feature to
+periodically signal NMI each time performance counter gets overflowed.
 
-Gr{oetje,eeting}s,
+intel_pmu_handle_irq() is called as a NMI_LOCAL handler from a NMI
+handler of NMI watchdog, perf_event_nmi_handler(). It identifies an
+owner of a given NMI by looking at overflow status bits in
+MSR_CORE_PERF_GLOBAL_STATUS MSR. If some of the bits are set, then it
+handles the given NMI as its own NMI.
 
-                        Geert
+The problem is that the intel_pmu_handle_irq() doesn't distinguish
+CondChgd bit from other bits. Unlike the other status bits, CondChgd
+bit doesn't represent overflow status for performance counters. Thus,
+CondChgd bit cannot be thought of as a mark indicating a given NMI is
+NMI watchdog's. As a result, if CondChgd bit is set, any NMI is
+falsely handled by the NMI handler of NMI watchdog. Also, if type of
+the falsely handled NMI is either NMI_UNKNOWN, NMI_SERR or
+NMI_IO_CHECK, the corresponding action is never performed until
+CondChgd bit is cleared.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+I noticed this behavior on systems with Ivy Bridge processors: Intel
+Xeon CPU E5-2630 v2 and Intel Xeon CPU E7-8890 v2. On both systems,
+CondChgd bit in MSR_CORE_PERF_GLOBAL_STATUS MSR has already been set
+in the beginning at boot. Then the CondChgd bit is immediately cleared
+by next wrmsr to MSR_CORE_PERF_GLOBAL_CTRL MSR and appears to remain
+0.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+On the other hand, on older processors such as Nehalem, Xeon E7540,
+CondChgd bit is not set in the beginning at boot.
+
+I'm not sure about exact behavior of CondChgd bit, in particular when
+this bit is set. Although I read Intel System Programmer's Manual to
+figure out that, the descriptions I found are:
+
+  In 18.9.1:
+
+  "The MSR_PERF_GLOBAL_STATUS MSR also provides a ‘sticky bit’ to
+   indicate changes to the state of performancmonitoring hardware"
+
+  In Table 35-2 IA-32 Architectural MSRs
+
+  63 CondChg: status bits of this register has changed.
+
+These are different from the bahviour I see on the actual system as I
+explained above.
+
+At least, I think ignoring CondChgd bit should be enough for NMI
+watchdog perspective.
+
+Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index adb02aa..07846d7 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1382,6 +1382,15 @@ again:
+ 	intel_pmu_lbr_read();
+ 
+ 	/*
++	 * CondChgd bit 63 doesn't mean any overflow status. Ignore
++	 * and clear the bit.
++	 */
++	if (__test_and_clear_bit(63, (unsigned long *)&status)) {
++		if (!status)
++			goto done;
++	}
++
++	/*
+ 	 * PEBS overflow sets bit 62 in the global status register
+ 	 */
+ 	if (__test_and_clear_bit(62, (unsigned long *)&status)) {
+
