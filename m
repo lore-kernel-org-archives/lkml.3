@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792AbaFMJUv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 05:20:51 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:52275 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458AbaFMJUu (ORCPT
+	id S1752862AbaFMJWA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 05:22:00 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:46184 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458AbaFMJV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 05:20:50 -0400
-Date: Fri, 13 Jun 2014 18:19:55 +0900
+	Fri, 13 Jun 2014 05:21:59 -0400
+Date: Fri, 13 Jun 2014 18:21:04 +0900
 From: Daeseok Youn <daeseok.youn@gmail.com>
 To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
 Cc: markh@compro.net, dan.carpenter@oracle.com,
         driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/7 RESEND] staging: dgap: introduce dgap_tty_free() for
- freeing channels.
-Message-ID: <20140613091955.GA3775@devel.8.8.4.4>
+Subject: [PATCH 4/7 RESEND] staging: dgap: introduce dgap_free_irq()
+Message-ID: <20140613092104.GA3785@devel.8.8.4.4>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,59 +23,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It should be called after dgap_tty_register_ports() is failed.
-So channels which are allocated in dgap_tty_init() will be freed.
+dgap_free_irq() will free the irq which is requested in
+dgap_request_irq().
 
 Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
-resend: reordering this series of patches
+resend: reordering this series of patches, because some patches are
+merged to one.
 
- drivers/staging/dgap/dgap.c |   17 ++++++++++++++++-
- 1 files changed, 16 insertions(+), 1 deletions(-)
+ drivers/staging/dgap/dgap.c |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index 352eb1b..eab8fd5 100644
+index eab8fd5..497e6f3 100644
 --- a/drivers/staging/dgap/dgap.c
 +++ b/drivers/staging/dgap/dgap.c
-@@ -123,6 +123,7 @@ static void dgap_tty_send_xchar(struct tty_struct *tty, char ch);
+@@ -190,6 +190,7 @@ static void dgap_do_conc_load(struct board_t *brd, u8 *uaddr, int len);
+ #endif
+ static int dgap_after_config_loaded(struct board_t *brd);
+ static int dgap_request_irq(struct board_t *brd);
++static void dgap_free_irq(struct board_t *brd);
  
- static int dgap_tty_register(struct board_t *brd);
- static int dgap_tty_init(struct board_t *);
-+static void dgap_tty_free(struct board_t *);
- static void dgap_cleanup_tty(struct board_t *);
- static void dgap_carrier(struct channel_t *ch);
- static void dgap_input(struct channel_t *ch);
-@@ -960,8 +961,10 @@ static int dgap_firmware_load(struct pci_dev *pdev, int card_type)
- 		return ret;
+ static void dgap_get_vpd(struct board_t *brd);
+ static void dgap_do_reset_board(struct board_t *brd);
+@@ -634,8 +635,7 @@ static void dgap_cleanup_board(struct board_t *brd)
+ 	if (!brd || brd->magic != DGAP_BOARD_MAGIC)
+ 		return;
  
- 	ret = dgap_tty_register_ports(brd);
--	if (ret)
-+	if (ret) {
-+		dgap_tty_free(brd);
- 		return ret;
-+	}
+-	if (brd->intr_used && brd->irq)
+-		free_irq(brd->irq, brd);
++	dgap_free_irq(brd);
  
- 	brd->state = BOARD_READY;
- 	brd->dpastatus = BD_RUNNING;
-@@ -1488,6 +1491,18 @@ free_chan:
+ 	tasklet_kill(&brd->helper_tasklet);
+ 
+@@ -816,6 +816,12 @@ static int dgap_request_irq(struct board_t *brd)
+ 	return 0;
  }
  
- /*
-+ * dgap_tty_free()
-+ *
-+ * Free the channles which are allocated in dgap_tty_init().
-+ */
-+static void dgap_tty_free(struct board_t *brd)
++static void dgap_free_irq(struct board_t *brd)
 +{
-+	int i;
-+
-+	for (i = 0; i < brd->nasync; i++)
-+		kfree(brd->channels[i]);
++	if (brd->intr_used && brd->irq)
++		free_irq(brd->irq, brd);
 +}
-+/*
-  * dgap_cleanup_tty()
-  *
-  * Uninitialize the TTY portion of this driver.  Free all memory and
++
+ static int dgap_firmware_load(struct pci_dev *pdev, int card_type)
+ {
+ 	struct board_t *brd = dgap_board[dgap_numboards - 1];
 -- 
 1.7.1
 
