@@ -1,96 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818AbaFMU3y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 16:29:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22728 "EHLO mx1.redhat.com"
+	id S1753847AbaFMUbr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 16:31:47 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:35904 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753151AbaFMU3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 16:29:52 -0400
-Message-ID: <539B5F1F.8000105@redhat.com>
-Date: Fri, 13 Jun 2014 16:29:19 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Linux kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, Karen Noel <knoel@redhat.com>,
-        Hai Huang <hhuang@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: NUMA: untangling workloads on undersubscribed systems
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751741AbaFMUbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 16:31:42 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>, Pavel Machek <pavel@ucw.cz>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Randy Dunlap <rdunlap@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>, linux-doc@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: [PATCH v3 2/2] x86, kaslr: boot-time selectable with hibernation
+Date: Fri, 13 Jun 2014 13:30:36 -0700
+Message-Id: <1402691436-20138-3-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1402691436-20138-1-git-send-email-keescook@chromium.org>
+References: <1402691436-20138-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am still running into a long-standing system with the NUMA code, and
-I am out of obvious ideas on how to fix it...
+Changes kASLR from being compile-time selectable (blocked by
+CONFIG_HIBERNATION), to being boot-time selectable (with hibernation
+available by default) via the "kaslr" kernel command line.
 
-The scenario:
-- a larger NUMA system, in this case an 8 core system with 8
-  15-core/32-thread CPUs (ns->capacity == 18)
-- 8 16-warehouse SPECjbb2005 instances
-- two SPECjbb2005 instances getting stuck largely on the same node
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ Documentation/kernel-parameters.txt |   11 +++++++----
+ arch/x86/Kconfig                    |    1 -
+ arch/x86/boot/compressed/aslr.c     |    9 ++++++++-
+ kernel/power/hibernate.c            |    6 ++++++
+ 4 files changed, 21 insertions(+), 6 deletions(-)
 
-er-node process memory usage (in MBs)
-PID                        Node 0          Node 1          Node 2	   Node 3
-        Node 4          Node 5          Node 6          Node 7
- Total
-----------------  --------------- --------------- ---------------
---------------- -
--------------- --------------- --------------- ---------------
----------------
-42765 (java)                16.90          580.37            6.95
-     5.44       2632.76            1.88            7.12            3.46
-        3254.89
-42761 (java)                 8.72           23.09           46.19
-    12.64       3126.64           14.61            2.96            3.76
-        3238.60
-
-
-The latter process is nicely concentrated on node 5. The first process
-merely has most of its memory on node 5, but a good amount on node 1
-as well.
-
-The total number of threads that would like to run on node 5 is 32,
-which exceeds both the number of threads node 5 has (30), as well as
-ns->capacity for the node (18).
-
-Node 1 is mostly idle, with about 4 of the task's 16 threads.
-Numatop reports around a .4-.5 ratio of remote to local memory
-accesses.
-
-The question is, how do we decide to move more tasks from node 5 to
-node 1, especially ones that have a decent group/task_score elsewhere?
-
-We can detect some things:
-1) ns->nr_running > ns->capacity on node 5
-2) ns->nr_running < ns->capacity on node 1
-3) ns->load on node 5 >> ns->load on node 1
-4) group/task_score on node 5 >> group/task_score on node 1
-
-A few quick things I can see is:
-
-Node 5 is overloaded by a ratio of (16+14)/18, or about 1.7
-
-Node 5 has about a 4.5x higher group/task_score than node 1
-
-Node 5 has about a 7.5x higher load than node 1
-
-Maybe task_numa_compare can take the load into account not just
-to prohibit moves between nodes, but to actively encourage it when
-the load difference significantly outweighs the difference in NUMA
-score between nodes?
-
-Would it make sense to compare these things?
-
-score(node5)    score(node1)
------------- vs ------------
-load(node5)     load(node1)
-
-Maybe only if one node is overloaded?
-
-Do you guys have any other ideas?
-
-
-
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index f8f0466b8b1d..884904975d0b 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1474,6 +1474,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	js=		[HW,JOY] Analog joystick
+ 			See Documentation/input/joystick.txt.
+ 
++	kaslr/nokaslr	[X86]
++			Enable/disable kernel and module base offset ASLR
++			(Address Space Layout Randomization) if built into
++			the kernel. When CONFIG_HIBERNATION is selected,
++			kASLR is disabled by default. When kASLR is enabled,
++			hibernation will be disabled.
++
+ 	keepinitrd	[HW,ARM]
+ 
+ 	kernelcore=nn[KMG]	[KNL,X86,IA-64,PPC] This parameter
+@@ -2110,10 +2117,6 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	noapic		[SMP,APIC] Tells the kernel to not make use of any
+ 			IOAPICs that may be present in the system.
+ 
+-	nokaslr		[X86]
+-			Disable kernel and module base offset ASLR (Address
+-			Space Layout Randomization) if built into the kernel.
+-
+ 	noautogroup	Disable scheduler automatic task group creation.
+ 
+ 	nobats		[PPC] Do not use BATs for mapping kernel lowmem
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index b660088c220d..7fdb639f1b63 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1671,7 +1671,6 @@ config RELOCATABLE
+ config RANDOMIZE_BASE
+ 	bool "Randomize the address of the kernel image"
+ 	depends on RELOCATABLE
+-	depends on !HIBERNATION
+ 	default n
+ 	---help---
+ 	   Randomizes the physical and virtual address at which the
+diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+index 4dbf967da50d..fc6091abedb7 100644
+--- a/arch/x86/boot/compressed/aslr.c
++++ b/arch/x86/boot/compressed/aslr.c
+@@ -289,10 +289,17 @@ unsigned char *choose_kernel_location(unsigned char *input,
+ 	unsigned long choice = (unsigned long)output;
+ 	unsigned long random;
+ 
++#ifdef CONFIG_HIBERNATION
++	if (!cmdline_find_option_bool("kaslr")) {
++		debug_putstr("KASLR disabled by default...\n");
++		goto out;
++	}
++#else
+ 	if (cmdline_find_option_bool("nokaslr")) {
+-		debug_putstr("KASLR disabled...\n");
++		debug_putstr("KASLR disabled by cmdline...\n");
+ 		goto out;
+ 	}
++#endif
+ 
+ 	/* Record the various known unsafe memory ranges. */
+ 	mem_avoid_init((unsigned long)input, input_size,
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index 258f492f0347..fcc2611d3f14 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -1153,6 +1153,11 @@ static int __init nohibernate_setup(char *str)
+ 	return 1;
+ }
+ 
++static int __init kaslr_nohibernate_setup(char *str)
++{
++	return nohibernate_setup(str);
++}
++
+ __setup("noresume", noresume_setup);
+ __setup("resume_offset=", resume_offset_setup);
+ __setup("resume=", resume_setup);
+@@ -1160,3 +1165,4 @@ __setup("hibernate=", hibernate_setup);
+ __setup("resumewait", resumewait_setup);
+ __setup("resumedelay=", resumedelay_setup);
+ __setup("nohibernate", nohibernate_setup);
++__setup("kaslr", kaslr_nohibernate_setup);
+-- 
+1.7.9.5
 
