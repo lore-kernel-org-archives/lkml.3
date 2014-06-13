@@ -1,134 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496AbaFMSEF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 14:04:05 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:57374 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751044AbaFMSED (ORCPT
+	id S1751817AbaFMSIH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 14:08:07 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:46271 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456AbaFMSIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 14:04:03 -0400
-Date: Fri, 13 Jun 2014 23:33:56 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH v2] net/nxp/lpc_eth: use devm_ functions
-Message-ID: <20140613180356.GA8582@himangi-Dell>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 13 Jun 2014 14:08:05 -0400
+Message-ID: <1402682868.16525.18.camel@haakon3.risingtidesystems.com>
+Subject: Re: [GIT PULL] target updates for v3.16-rc1
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Quinn Tran <quinn.tran@qlogic.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Date: Fri, 13 Jun 2014 11:07:48 -0700
+In-Reply-To: <20140613133901.GC7371@lst.de>
+References: <1402607116.18202.46.camel@haakon3.risingtidesystems.com>
+	 <20140613133901.GC7371@lst.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The various devm_ functions allocate memory that is released when a
-driver detaches. This patch uses dmam_alloc_coherent, devm_ioremap
-devm_clk_get etc. for data that is allocated in the probe function of
-platform device and is only freed in the remove function. The
-corresponding free functions are removed and many labels are done
-away with.
+On Fri, 2014-06-13 at 15:39 +0200, Christoph Hellwig wrote:
+> On Thu, Jun 12, 2014 at 02:05:16PM -0700, Nicholas A. Bellinger wrote:
+> > The first is with virtio-scsi between what has been merged in scsi.git
+> > for "virtio_scsi: use cmd_size", and the "virtio-scsi: Enable DIF/DIX
+> > modes in SCSI host LLD" below.  (Adding Paolo + hch CC')
+> 
+> Just curious, why did we decide to take the virtio-scsi patches
+> through the target tree?  Seems like taking them through the scsi
+> tree would have been a lot simpler.
+> 
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
-v2: undo use of devm_request_irq
-Not compile tested
-To send to: netdev@vger.kernel.org,linux-kernel@vger.kernel.org
- drivers/net/ethernet/nxp/lpc_eth.c | 31 ++++++++-----------------------
- 1 file changed, 8 insertions(+), 23 deletions(-)
+It's a matter of keeping changes together so they could be run from a
+single branch, without having to merge the entirety of scsi.git in order
+to test a new target features involving some manner of LLD changes.
 
-diff --git a/drivers/net/ethernet/nxp/lpc_eth.c b/drivers/net/ethernet/nxp/lpc_eth.c
-index 422d9b5..35bdbad9 100644
---- a/drivers/net/ethernet/nxp/lpc_eth.c
-+++ b/drivers/net/ethernet/nxp/lpc_eth.c
-@@ -1350,7 +1350,7 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
- 	ndev->irq = irq;
- 
- 	/* Get clock for the device */
--	pldat->clk = clk_get(&pdev->dev, NULL);
-+	pldat->clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(pldat->clk)) {
- 		dev_err(&pdev->dev, "error getting clock.\n");
- 		ret = PTR_ERR(pldat->clk);
-@@ -1361,7 +1361,8 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
- 	__lpc_eth_clock_enable(pldat, true);
- 
- 	/* Map IO space */
--	pldat->net_base = ioremap(res->start, res->end - res->start + 1);
-+	pldat->net_base = devm_ioremap(&pdev->dev, res->start,
-+				       resource_size(res));
- 	if (!pldat->net_base) {
- 		dev_err(&pdev->dev, "failed to map registers\n");
- 		ret = -ENOMEM;
-@@ -1371,7 +1372,7 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
- 			  ndev->name, ndev);
- 	if (ret) {
- 		dev_err(&pdev->dev, "error requesting interrupt.\n");
--		goto err_out_iounmap;
-+		goto err_out_disable_clocks;
- 	}
- 
- 	/* Fill in the fields of the device structure with ethernet values. */
-@@ -1407,9 +1408,9 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
- 		/* Allocate a chunk of memory for the DMA ethernet buffers
- 		   and descriptors */
- 		pldat->dma_buff_base_v =
--			dma_alloc_coherent(&pldat->pdev->dev,
--					   pldat->dma_buff_size, &dma_handle,
--					   GFP_KERNEL);
-+			dmam_alloc_coherent(&pldat->pdev->dev,
-+					    pldat->dma_buff_size, &dma_handle,
-+					    GFP_KERNEL);
- 		if (pldat->dma_buff_base_v == NULL) {
- 			ret = -ENOMEM;
- 			goto err_out_free_irq;
-@@ -1465,7 +1466,7 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
- 	ret = register_netdev(ndev);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Cannot register net device, aborting.\n");
--		goto err_out_dma_unmap;
-+		goto err_out_free_irq;
- 	}
- 	platform_set_drvdata(pdev, ndev);
- 
-@@ -1485,19 +1486,10 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
- 
- err_out_unregister_netdev:
- 	unregister_netdev(ndev);
--err_out_dma_unmap:
--	if (!use_iram_for_net(&pldat->pdev->dev) ||
--	    pldat->dma_buff_size > lpc32xx_return_iram_size())
--		dma_free_coherent(&pldat->pdev->dev, pldat->dma_buff_size,
--				  pldat->dma_buff_base_v,
--				  pldat->dma_buff_base_p);
- err_out_free_irq:
- 	free_irq(ndev->irq, ndev);
--err_out_iounmap:
--	iounmap(pldat->net_base);
- err_out_disable_clocks:
- 	clk_disable(pldat->clk);
--	clk_put(pldat->clk);
- err_out_free_dev:
- 	free_netdev(ndev);
- err_exit:
-@@ -1512,17 +1504,10 @@ static int lpc_eth_drv_remove(struct platform_device *pdev)
- 
- 	unregister_netdev(ndev);
- 
--	if (!use_iram_for_net(&pldat->pdev->dev) ||
--	    pldat->dma_buff_size > lpc32xx_return_iram_size())
--		dma_free_coherent(&pldat->pdev->dev, pldat->dma_buff_size,
--				  pldat->dma_buff_base_v,
--				  pldat->dma_buff_base_p);
- 	free_irq(ndev->irq, ndev);
--	iounmap(pldat->net_base);
- 	mdiobus_unregister(pldat->mii_bus);
- 	mdiobus_free(pldat->mii_bus);
- 	clk_disable(pldat->clk);
--	clk_put(pldat->clk);
- 	free_netdev(ndev);
- 
- 	return 0;
--- 
-1.9.1
+Stuff like the qla2xxx target T10 PI where OK to go through scsi.git,
+because they really didn't depend on target changes, but for things like
+virtio-scsi + vhost-scsi T10 PI, or the iser-initiator + iser-target T10
+PI data_length changes where one can't function without the other,
+breaking up initiator / target patches across trees will just end up
+making my work-flow unnecessarily more difficult.
+
+I'd say identifying these types of merge conflicts is what linux-next is
+supposed to be for, and at least this time around the conflicts ended up
+being straight-forward to resolve with srf's patches.
+
+--nab
 
