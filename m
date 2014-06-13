@@ -1,180 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839AbaFMG1m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 02:27:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44260 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674AbaFMG1k (ORCPT
+	id S1752868AbaFMG2k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 02:28:40 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:25481 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752509AbaFMGZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 02:27:40 -0400
-Date: Thu, 12 Jun 2014 23:27:22 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-45dc1bb5c1d47f9519e2101f6b073bb4bb1d1f99@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@kernel.org, jolsa@kernel.org, a.p.zijlstra@chello.nl,
-        jean.pihet@linaro.org, acme@kernel.org, namhyung@kernel.org,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, jolsa@kernel.org, a.p.zijlstra@chello.nl,
-        jean.pihet@linaro.org, acme@kernel.org, namhyung@kernel.org,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com
-In-Reply-To: <1401892622-30848-14-git-send-email-jolsa@kernel.org>
-References: <1401892622-30848-14-git-send-email-jolsa@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tests:
-  Add test for closing dso objects on EMFILE error
-Git-Commit-ID: 45dc1bb5c1d47f9519e2101f6b073bb4bb1d1f99
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Fri, 13 Jun 2014 02:25:58 -0400
+X-AuditID: cbfee690-b7fb56d000003439-c4-539a9974c3e4
+From: Shahina Shaik <shahina.s@samsung.com>
+To: lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Cc: Shahina Shaik <sharab.shaik@gmail.com>
+Subject: [PATCH 4/4] Sound: tlv320aic31xx: Fixed Coding Style Issues
+Date: Fri, 13 Jun 2014 11:56:54 +0530
+Message-id: <1402640814-7037-1-git-send-email-shahina.s@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsWyRsSkWrdk5qxgg86jphZXLh5ispj68Amb
+	xbcrHUwWl3fNYbPo3NXPavHt+ARGi5eb3zA5sHts+NzE5rFz1l12j02rOtk89r1dxuax+XS1
+	x+dNcgFsUVw2Kak5mWWpRfp2CVwZ057cZym4ylGxc/ExxgbGmexdjJwcEgImEjv23GaEsMUk
+	Ltxbz9bFyMUhJLCUUWL3idtwRbd/7GCCSExnlOh6epgRwullkji04hhzFyMHB5uAtsT7eU4g
+	DSIC7YwSDx+CTWUW0JL4f30NE4gtLOAisa/hMCuIzSKgKrHx6FmwGl6g+P6Fb5lAxkgIKEjM
+	mWQDsbebXeLP0lqIcgGJb5MPsUCUyEpsOsAMUSIpcXDFDZYJjIILGBlWMYqmFiQXFCelF5no
+	FSfmFpfmpesl5+duYgSG7ul/zybsYLx3wPoQYzLQuInMUqLJ+cDQzyuJNzQ2M7IwNTE1NjK3
+	NCNNWEmcV+1RUpCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxnS/1aLfVl55nCGweqH3Xh3r
+	uyoPtrZ/99MUEN/Qf0pyvreMVISBm8O6F7OW6nc5sm9IfGHS9v18JPcJ+YDuPfOElp06ILjz
+	ypu8eSslTr6+rOLOM8NhQ9Ly8k9qN5d/rBD+e/FG+l6vfCUV/t+uos5dK61qLryJPbNnzqUn
+	77UOd+9ImfuadboSS3FGoqEWc1FxIgAlpWAXcwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t9jQd2SmbOCDVqua1lcuXiIyWLqwyds
+	Ft+udDBZXN41h82ic1c/q8W34xMYLV5ufsPkwO6x4XMTm8fOWXfZPTat6mTz2Pd2GZvH5tPV
+	Hp83yQWwRTUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6
+	ZeYA3aKkUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxhzJj25D5LwVWOip2L
+	jzE2MM5k72Lk5JAQMJG4/WMHE4QtJnHh3nq2LkYuDiGB6YwSXU8PM0I4vUwSh1YcY+5i5OBg
+	E9CWeD/PCaRBRKCdUeLhQ0YQm1lAS+L/9TVgg4QFXCT2NRxmBbFZBFQlNh49C1bDCxTfv/At
+	E8gYCQEFiTmTbCYwci9gZFjFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERwbz6R3MK5qsDjE
+	KMDBqMTDG/B+ZrAQa2JZcWXuIUYJDmYlEd57DbOChXhTEiurUovy44tKc1KLDzEmAy2fyCwl
+	mpwPjNu8knhDYxNzU2NTSxMLEzNL0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamAUWi/Y
+	lXLA7nVFxOIPs9X8r97eHZA864ZtzcSitz8XOllHX6l1O3Bcryz8tEiKSZJMfdWz3qUPvu8+
+	xVuZPUevTv3d3/713Hc3To3boz2jsn3H+rI7N2Yf/fus8L9RfueHDO3jEz9MlZkfu+l3ntX1
+	YDO7b9Xz8oMunxC89FSISWKn6ULOo/yHlViKMxINtZiLihMB8XlUQ9ECAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  45dc1bb5c1d47f9519e2101f6b073bb4bb1d1f99
-Gitweb:     http://git.kernel.org/tip/45dc1bb5c1d47f9519e2101f6b073bb4bb1d1f99
-Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Mon, 12 May 2014 14:50:03 +0200
-Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Thu, 12 Jun 2014 16:53:23 +0200
+From: Shahina Shaik <sharab.shaik@gmail.com>
 
-perf tests: Add test for closing dso objects on EMFILE error
-
-Testing that perf properly closes opened dso objects
-and tries to reopen in case we run out of allowed file
-descriptors for dso data.
-
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Reviewed by: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1401892622-30848-14-git-send-email-jolsa@kernel.org
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Fixed coding style issues of "Missing Blank line after declaration"
+Signed-off-by: Shahina Shaik <sharab.shaik@gmail.com>
 ---
- tools/perf/tests/builtin-test.c |  4 +++
- tools/perf/tests/dso-data.c     | 73 +++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h        |  1 +
- 3 files changed, 78 insertions(+)
+ sound/soc/codecs/tlv320aic31xx.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index b8a6358..6f8b01b 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -60,6 +60,10 @@ static struct test {
- 		.func = test__dso_data_cache,
- 	},
- 	{
-+		.desc = "Test dso data reopen",
-+		.func = test__dso_data_reopen,
-+	},
-+	{
- 		.desc = "roundtrip evsel->name check",
- 		.func = test__perf_evsel__roundtrip_name_test,
- 	},
-diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
-index 2d30014..630808c 100644
---- a/tools/perf/tests/dso-data.c
-+++ b/tools/perf/tests/dso-data.c
-@@ -283,3 +283,76 @@ int test__dso_data_cache(void)
- 	TEST_ASSERT_VAL("failed leadking files", nr == nr_end);
- 	return 0;
- }
+diff --git a/sound/soc/codecs/tlv320aic31xx.c b/sound/soc/codecs/tlv320aic31xx.c
+index 2341910..a9c4a8b 100644
+--- a/sound/soc/codecs/tlv320aic31xx.c
++++ b/sound/soc/codecs/tlv320aic31xx.c
+@@ -329,6 +329,7 @@ static int aic31xx_wait_bits(struct aic31xx_priv *aic31xx, unsigned int reg,
+ 	unsigned int bits;
+ 	int counter = count;
+ 	int ret = regmap_read(aic31xx->regmap, reg, &bits);
 +
-+int test__dso_data_reopen(void)
-+{
-+	struct machine machine;
-+	long nr_end, nr = open_files_cnt();
-+	int fd, fd_extra;
+ 	while ((bits & mask) != wbits && counter && !ret) {
+ 		usleep_range(sleep, sleep * 2);
+ 		ret = regmap_read(aic31xx->regmap, reg, &bits);
+@@ -435,6 +436,7 @@ static int mic_bias_event(struct snd_soc_dapm_widget *w,
+ {
+ 	struct snd_soc_codec *codec = w->codec;
+ 	struct aic31xx_priv *aic31xx = snd_soc_codec_get_drvdata(codec);
 +
-+#define dso_0 (dsos[0])
-+#define dso_1 (dsos[1])
-+#define dso_2 (dsos[2])
-+
-+	memset(&machine, 0, sizeof(machine));
-+
-+	/*
-+	 * Test scenario:
-+	 * - create 3 dso objects
-+	 * - set process file descriptor limit to current
-+	 *   files count + 3
-+	 * - test that the first dso gets closed when we
-+	 *   reach the files count limit
-+	 */
-+
-+	/* Make sure we are able to open 3 fds anyway */
-+	TEST_ASSERT_VAL("failed to set file limit",
-+			!set_fd_limit((nr + 3)));
-+
-+	TEST_ASSERT_VAL("failed to create dsos\n", !dsos__create(3, TEST_FILE_SIZE));
-+
-+	/* open dso_0 */
-+	fd = dso__data_fd(dso_0, &machine);
-+	TEST_ASSERT_VAL("failed to get fd", fd > 0);
-+
-+	/* open dso_1 */
-+	fd = dso__data_fd(dso_1, &machine);
-+	TEST_ASSERT_VAL("failed to get fd", fd > 0);
-+
-+	/*
-+	 * open extra file descriptor and we just
-+	 * reached the files count limit
-+	 */
-+	fd_extra = open("/dev/null", O_RDONLY);
-+	TEST_ASSERT_VAL("failed to open extra fd", fd_extra > 0);
-+
-+	/* open dso_2 */
-+	fd = dso__data_fd(dso_2, &machine);
-+	TEST_ASSERT_VAL("failed to get fd", fd > 0);
-+
-+	/*
-+	 * dso_0 should get closed, because we reached
-+	 * the file descriptor limit
-+	 */
-+	TEST_ASSERT_VAL("failed to close dso_0", dso_0->data.fd == -1);
-+
-+	/* open dso_0 */
-+	fd = dso__data_fd(dso_0, &machine);
-+	TEST_ASSERT_VAL("failed to get fd", fd > 0);
-+
-+	/*
-+	 * dso_1 should get closed, because we reached
-+	 * the file descriptor limit
-+	 */
-+	TEST_ASSERT_VAL("failed to close dso_1", dso_1->data.fd == -1);
-+
-+	/* cleanup everything */
-+	close(fd_extra);
-+	dsos__delete(3);
-+
-+	/* Make sure we did not leak any file descriptor. */
-+	nr_end = open_files_cnt();
-+	pr_debug("nr start %ld, nr stop %ld\n", nr, nr_end);
-+	TEST_ASSERT_VAL("failed leadking files", nr == nr_end);
-+	return 0;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index ccc4deb..ed64790 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -29,6 +29,7 @@ int test__pmu(void);
- int test__attr(void);
- int test__dso_data(void);
- int test__dso_data_cache(void);
-+int test__dso_data_reopen(void);
- int test__parse_events(void);
- int test__hists_link(void);
- int test__python_use(void);
+ 	switch (event) {
+ 	case SND_SOC_DAPM_POST_PMU:
+ 		/* change mic bias voltage to user defined */
+-- 
+1.7.9.5
+
