@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740AbaFMCGo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 22:06:44 -0400
-Received: from ozlabs.org ([103.22.144.67]:45081 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751160AbaFMCGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 22:06:42 -0400
-Date: Fri, 13 Jun 2014 12:06:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: <linux-next@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: time to start cleaning up
-Message-ID: <20140613120629.68527777@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1752492AbaFMCMB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 22:12:01 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:47094 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751401AbaFMCL6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 22:11:58 -0400
+Message-Id: <20140613021156.878720045@goodmis.org>
+User-Agent: quilt/0.63-1
+Date: Thu, 12 Jun 2014 22:10:03 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+Subject: [PATCH 1/4] tools lib traceevent: Report unknown VMX exit reasons with code
+References: <20140613021002.444608350@goodmis.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/G.k8irYGqjYt4wnznDBgQYB"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0001-tools-lib-traceevent-Report-unknown-VMX-exit-reasons.patch
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/G.k8irYGqjYt4wnznDBgQYB
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+From: Jan Kiszka <jan.kiszka@siemens.com>
 
-Hi all,
+Allows to parse the result even if the KVM plugin does not yet
+understand a specific exit code.
 
-See $subject.  Especially those of you who sent Linus something
-different to what you have sent me :-(
+Link: http://lkml.kernel.org/r/5207446F.1090703@web.de
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ tools/lib/traceevent/plugin_kvm.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---Sig_/G.k8irYGqjYt4wnznDBgQYB
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+diff --git a/tools/lib/traceevent/plugin_kvm.c b/tools/lib/traceevent/plugin_kvm.c
+index 9e0e8c61b43b..3e6122067d67 100644
+--- a/tools/lib/traceevent/plugin_kvm.c
++++ b/tools/lib/traceevent/plugin_kvm.c
+@@ -240,9 +240,8 @@ static const char *find_exit_reason(unsigned isa, int val)
+ 	for (i = 0; strings[i].val >= 0; i++)
+ 		if (strings[i].val == val)
+ 			break;
+-	if (strings[i].str)
+-		return strings[i].str;
+-	return "UNKNOWN";
++
++	return strings[i].str;
+ }
+ 
+ static int kvm_exit_handler(struct trace_seq *s, struct pevent_record *record,
+@@ -251,6 +250,7 @@ static int kvm_exit_handler(struct trace_seq *s, struct pevent_record *record,
+ 	unsigned long long isa;
+ 	unsigned long long val;
+ 	unsigned long long info1 = 0, info2 = 0;
++	const char *reason;
+ 
+ 	if (pevent_get_field_val(s, event, "exit_reason", record, &val, 1) < 0)
+ 		return -1;
+@@ -258,7 +258,11 @@ static int kvm_exit_handler(struct trace_seq *s, struct pevent_record *record,
+ 	if (pevent_get_field_val(s, event, "isa", record, &isa, 0) < 0)
+ 		isa = 1;
+ 
+-	trace_seq_printf(s, "reason %s", find_exit_reason(isa, val));
++	reason = find_exit_reason(isa, val);
++	if (reason)
++		trace_seq_printf(s, "reason %s", reason);
++	else
++		trace_seq_printf(s, "reason UNKNOWN (%llu)", val);
+ 
+ 	pevent_print_num_field(s, " rip 0x%lx", event, "guest_rip", record, 1);
+ 
+-- 
+2.0.0.rc2
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
 
-iQIcBAEBCAAGBQJTmlywAAoJEMDTa8Ir7ZwVEZcP/3D2V9CXB4fSLtH2YR+6C5tC
-QHR6pM2rrWDJuOQz/D9SkVUQw+4evY6O3N3kI1pQDwR8tAN311Bd1MoDtqq4m/cw
-difNaCcJZ7at3jY6jZLfT0a/+YlKxpV0INoEhMp/1Us1uHg2Nk0BotujgUnKgFG/
-tx4LmakHvAnrk8nbTsr0V1HqP63VnokKjJjvNYwPPmWk2GeemH/rcC2rglbvASNe
-Wq9i0HvFFY+pkF+DDNwYwv4VIJtmJQ+hABA8AL64eC1KW01VLkl7bIYMDDtCuSyu
-FTraBqya61q5PKti19+nW9/1Q36tDibZQybf/JeTikGOjotcqog3IKXe1KUSKXdy
-TQTlDJi25n/5WxJfLVKFaI9eoqroa6j/B/53zwuCsEE+2OdXop9kQUjUWYysxTd3
-QLSO7vBOPCcAPl8tjhfP1Nrn9BH0gMOYoo1q4eAWgkHgryzRUBQ07aoJ3X/haoG8
-d7kyzzEHN/BKeYPatwebwKIqdKmEGwAJnWpiAJHKVluCequdtLJFfQWZxasPKB5W
-jawvrvi2Yq94cS2fi3U+0qCS5c9vpWsKDupohNhE4cLift3PQe9V3SzHQchX6BlF
-At95Y8bX/3kDzFrz3nZomYcH+P+nz9oTalX27DrTdofjw5FcYjS0GMbgIfGVKv4l
-Ov8mdnFFo/33Y+VwuZiB
-=XmVD
------END PGP SIGNATURE-----
-
---Sig_/G.k8irYGqjYt4wnznDBgQYB--
