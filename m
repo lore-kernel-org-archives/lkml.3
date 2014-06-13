@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973AbaFMTqT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 15:46:19 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50255 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190AbaFMTqS (ORCPT
+	id S1752839AbaFMTwa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 15:52:30 -0400
+Received: from smtprelay0012.hostedemail.com ([216.40.44.12]:44975 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751172AbaFMTw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 15:46:18 -0400
-Date: Fri, 13 Jun 2014 21:46:15 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: [patch V4 10/10] rtmutex: Avoid pointless requeueing in the
- deadlock detection chain walk
-In-Reply-To: <20140613132810.3d59fdc0@gandalf.local.home>
-Message-ID: <alpine.DEB.2.10.1406132143480.5170@nanos>
-References: <20140611182944.108526809@linutronix.de> <20140611183853.734541303@linutronix.de> <20140613132810.3d59fdc0@gandalf.local.home>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 13 Jun 2014 15:52:29 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1714:1730:1747:1777:1792:2110:2393:2553:2559:2562:2736:2828:3138:3139:3140:3141:3142:3350:3622:3743:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:4605:5007:7652:7903:10004:10400:10848:11232:11233:11658:11914:12043:12517:12519:12663:12679:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: crack59_1579ba92ffe40
+X-Filterd-Recvd-Size: 2308
+Message-ID: <1402689145.4462.13.camel@joe-AO725>
+Subject: Re: [patch] checkpatch: warn on missing spaces in broken up quoted
+ strings
+From: Joe Perches <joe@perches.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Date: Fri, 13 Jun 2014 12:52:25 -0700
+In-Reply-To: <20140613094651.GF5015@mwanda>
+References: <20140613065346.GA28134@mwanda>
+	 <1402651822.12385.31.camel@joe-AO725> <20140613094651.GF5015@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jun 2014, Steven Rostedt wrote:
-> On Wed, 11 Jun 2014 18:44:09 -0000
-> Thomas Gleixner <tglx@linutronix.de> wrote:
-> Nit pick, but we should be consistent.
+On Fri, 2014-06-13 at 12:46 +0300, Dan Carpenter wrote:
+> On Fri, Jun 13, 2014 at 02:30:22AM -0700, Joe Perches wrote:
 > 
-> The requeue path does:
-> 
->         next_lock = task_blocked_on_lock(task);
->         /*
->          * Store the top waiter of @lock for the end of chain walk
->          * decision below.
->          */
->         top_waiter = rt_mutex_top_waiter(lock);
-> 
-> I know the order is not important, but we should keep the two the same,
-> helps in review and making sure changes to one implementation still
-> make it to the other, without confusing those making the changes
-> (like you in a few years ;)
+> > > +# check for missing a space in a string concatination
+> > > +        if ($prevrawline =~ /[^\\][a-zA-Z]"$/ && $rawline =~ /^\+[\t ]+"[a-zA-Z]/) {
+> > > +            WARN('MISSING_SPACE',
+> > > +                 "break quoted strings at a space character\n" . $hereprev);
+> > > +        }
+> > 
+> > Probably want digits too so maybe \w instead of "[a-zA-Z]/
 
-The timespan for forgetting about that is measured in weeks, if at
-all. No sane brain will keep itself exposed to this longer than
-absolutely necessary.
+Couple nits:
+
+The indentation isn't right here.
+
+And this check is probably better placed immediately
+after the "SPLIT_STRING" test.
+
+[]
+
+> ./drivers/scsi/pm8001/pm8001_ctl.c:297 			       "0x%08x 0x%08x\n",
+> ./drivers/scsi/pm8001/pm8001_ctl.c:432 			       "0x%08x 0x%08x\n",
+> ./drivers/scsi/qla2xxx/qla_nx2.c:1457 	    "0x%X 0x%X 0x%X 0x%X 0x%X 0x%X\n"
+> 	- hex false positives
+
+These look more like defects to me.
+
+> I thought about doing that when I wrote my original patch but I was
+> worried about more hex false positives.  If there are only those 3 then
+> it's probably not a big deal.  What do you think?
+
+I know it works on files, but I'm not sure it works on patches.
+
+What happens when checking a single line replacement patch?
+
+Likely the \\[a-zA-Z] check should include
+all the tests that the multiple line string exceptions use.
+
+(?:\\(?:[ntr]|[0-7]{1,3}|x[0-9a-fA-F]{1,2})|;\s*|\{\s*)"\s*$
+
+cheers, Joe
+
