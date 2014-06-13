@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923AbaFMFYI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 01:24:08 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:33963 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751535AbaFMFYF (ORCPT
+	id S1751985AbaFMF0g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 01:26:36 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:41018 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963AbaFMF0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 01:24:05 -0400
+	Fri, 13 Jun 2014 01:26:35 -0400
+Date: Fri, 13 Jun 2014 08:26:30 +0300
+From: Dan Aloni <dan@kernelim.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: mm/sched/net: BUG when running simple code
+Message-ID: <20140613052630.GA23945@gmail.com>
+References: <539A6850.4090408@oracle.com>
+ <20140613032754.GA20729@gmail.com>
+ <539A77A1.60700@oracle.com>
+ <20140613045555.GB20729@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <539A890A.5090206@zytor.com>
-References: <CALCETrVNiSUHok1xCfy9CMe=kDYsPy3i_NXm0_gcO1ckb9wdeQ@mail.gmail.com>
- <539A890A.5090206@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 12 Jun 2014 22:23:44 -0700
-Message-ID: <CALCETrX9Og2LR3d8HZrcn4uGAgLfxbv51LK4Tsq-gDZKGpsjYw@mail.gmail.com>
-Subject: Re: vdso feature requests from the Go people
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Russ Cox <rsc@golang.org>,
-        Ian Taylor <iant@golang.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140613045555.GB20729@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 10:15 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 06/12/2014 09:36 PM, Andy Lutomirski wrote:
->>
->> If we were to implement both, maybe we'd actually want to provide
->> something like:
->>
->> struct vdso_entry {
->>   unsigned long vdso_entry_struct_size;  /* so we can add fields later on */
->>   void *func;
->>   unsigned int max_stack;  /* zero if not known */
->> };
->>
->
-> How different is this really from the .dynsym table -- other than that
-> you have to find the latter via the dynamic segment?
->
-> The hash part is just to speed up lookup...
+On Fri, Jun 13, 2014 at 07:55:55AM +0300, Dan Aloni wrote:
+> > that theory went away. (also confirmed by not finding a netlink module.)
+> > 
+> > What about the kernel .text overflowing into the modules space? The loader
+> > checks for that, but can something like that happen after everything is
+> > up and running? I'll look into that tomorrow.
+> 
+> The kernel .text needs to be more than 512MB for the overlap to happen. 
+> 
+>     ffffffff80000000 - ffffffffa0000000 (=512 MB)  kernel text mapping, from phys 0
+> 
+> Also, it is bizarre that symbol resolution resolved ffffffffa0f12560 to 
+> a symbol that is in module space where af_netlink.o is surely not because of 
+> "obj-y := af_netlink.o" in the Makefile. 
+> 
+> What does your /proc/kallsyms show when sorted with regards to the symbols
+> in question?
+> 
+> Also curious are the addresses you have on the stack:
+> 
+> > [  516.309720] Stack:
+> > [  516.309720]  ffff8803fc85ff18 ffff8803fc85ff18 ffff8803fc85fef8 8900200549908020
+> > [  516.309720]  ffff8803fc85ff18 ffffffff9ff66470 ffff8803fc85ff18 0000000000000037
+> > [  516.309720]  ffff8803fc85ff78 ffffffff9ff69d26 0000000000000037 0000000000000004
+>[..]
 
-As far as I know, there's no reliable way to just read the dynsym
-table -- the thing doesn't have a specified length, which is what
-broke Go in the first place.
+Oh, just figured about the new kASLR feature that got enabled
+recently, it explains the addresses, but there was supposed to be a
+line for it in the Oops, so I'm puzzled.
 
-Parsing the ELF dynamic tables is kind of annoyingly complicated, and
-understanding the format is a real PITA -- the documentation I've been
-able to find is outright terrible.
-
---Andy
+-- 
+Dan Aloni
