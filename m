@@ -1,72 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006AbaFMNNc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 09:13:32 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:38021 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750870AbaFMNNa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 09:13:30 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+MsH02ANXs5D5QIfzzbdkXs+f6OJ8FVYs=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 21C2858EC0B
-Date: Fri, 13 Jun 2014 09:13:21 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sricharan R <r.sricharan@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tony@atomide.com, santosh.shilimkar@ti.com, nm@ti.com, rnayak@ti.com,
-        linux@arm.linux.org.uk, tglx@linutronix.de
-Subject: Re: [PATCH V2 05/19] irqchip: crossbar: Change allocation logic by
- reversing search for free irqs
-Message-ID: <20140613131321.GG8664@titan.lakedaemon.net>
-References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
- <1402574007-13987-6-git-send-email-r.sricharan@ti.com>
- <20140612125615.GT8664@titan.lakedaemon.net>
- <539A95A3.1010301@ti.com>
+	id S1751534AbaFMNOO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 09:14:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35447 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750862AbaFMNON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 09:14:13 -0400
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, x86@kernel.org,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH] xenpv: don't BUG when failing to setup NMI callback
+References: <1402658788-24477-1-git-send-email-vkuznets@redhat.com>
+	<20140613124534.GA21873@laptop.dumpdata.com>
+Date: Fri, 13 Jun 2014 15:14:00 +0200
+In-Reply-To: <20140613124534.GA21873@laptop.dumpdata.com> (Konrad Rzeszutek
+	Wilk's message of "Fri, 13 Jun 2014 08:45:34 -0400")
+Message-ID: <87ppidar53.fsf@vitty.brq.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <539A95A3.1010301@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 11:39:39AM +0530, Sricharan R wrote:
-> Hi Jason,
-> 
-> On Thursday 12 June 2014 06:26 PM, Jason Cooper wrote:
-> > On Thu, Jun 12, 2014 at 05:23:13PM +0530, Sricharan R wrote:
-> >> From: Nishanth Menon <nm@ti.com>
-> >>
-> >> Reverse the search algorithm to ensure that address mapping and IRQ
-> >> allocation logics are proper. This can open up new bugs which are
-> >> easily fixable rather than wait till allocation logic approaches
-> >> the limit to find new bugs.
-> > 
-> > Could you expand on this logic some more?  What class of bugs are you
-> > hoping to discover more easily?
-> > 
-> 
-> class 1. address space errors -> example:
-> reg = <a size_b>
-> ti,max-irqs =  is a wrong parameter
-> 
-> class 2: irq-reserved list - which decides which entries in the
-> address space is not actually wired in
-> 
-> class 3: wrong list of routable-irqs.
-> 
-> in general allocating from max to min tends to have benefits in
-> ensuring the different issues that may be present in dts is easily
-> caught at definition time, rather than at a later point in time.
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
 
-Perfect, thanks for clarifying.  Please add this to the commit log when
-you respin.
+> On Fri, Jun 13, 2014 at 01:26:28PM +0200, Vitaly Kuznetsov wrote:
+>> some old Xen hypervisors (prior to 3.2) forbid DomUs to register
+>> NMI callbacks. E.g. we have the following code in xen-3.1:
+>> 
+>>     if ( (d->domain_id != 0) || (v->vcpu_id != 0) )
+>>         return -EINVAL;
+>> 
+>> Commit 6efa20e49b9cb1db1ab66870cc37323474a75a13 introduced kernel
+>> crash in case PV guest fails to register NMI callback. All x86_64
+>> PV guests will fail to boot on top of such hypervisors (RHEL5
+>> example):
+>> 
+>> (XEN) traps.c:405:d7 Unhandled invalid opcode fault/trap [#6] in domain 7 on VCPU 0 [ec=0000]
+>> (XEN) domain_crash_sync called from entry.S
+>> (XEN) Domain 7 (vcpu#0) crashed on cpu#3:
+>> (XEN) ----[ Xen-3.1.2-389.el5  x86_64  debug=n  Not tainted ]----
+>> (XEN) CPU:    3
+>> (XEN) RIP:    e033:[<ffffffff81004d96>]
+>> (XEN) RFLAGS: 0000000000000282   CONTEXT: guest
+>> (XEN) rax: ffffffffffffffea   rbx: 0000000000000000   rcx: 0000000000000002
+>> (XEN) rdx: 0000000000000001   rsi: ffffffff81b0fe28   rdi: 0000000000000000
+>> (XEN) rbp: ffffffff81b0fe40   rsp: ffffffff81b0fde8   r8:  0000000000000000
+>> (XEN) r9:  ffffffff81b0fdd0   r10: 0000000000007ff0   r11: 00000000ffffffff
+>> (XEN) r12: ffffffff81d65900   r13: 0000000000000000   r14: 0000000000000000
+>> (XEN) r15: 0000000000000000   cr0: 0000000080050033   cr4: 00000000000026b0
+>> (XEN) cr3: 000000013a263000   cr2: 0000000000000000
+>> (XEN) ds: 0000   es: 0000   fs: 0000   gs: 0000   ss: e02b   cs: e033
+>> ...
+>> 
+>> However it is possible to proceed without NMI callback registered.
+>> Change BUG() with warning in case of -EINVAL.
+>> 
+>> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+>
+> Oh, we had a similar patch - somebody reported it earlier - and we
+> just checked the version of Xen:
+>
+> http://lists.xenproject.org/archives/html/xen-devel/2014-05/msg01474.html
+>
+> But I can't remember why I didn't post it.
+>
+> However I do like your path of checking the 'ret'.
+>
+> Vitaly, could expand your patch to also do a check in cvt_gate_to_trap
+> so that it won't enable the NMI handler and then lets pick your
+> patch?
 
-thx,
+Sure,
 
-Jason.
+I also suggest we lower the required xen version to 3.2 instead of 4.0
+as 3.2 has the following:
+
+commit a2308fa704a40f23916a176d9e06bbc0e3469caf
+Author: Keir Fraser <keir@xensource.com>
+Date:   Mon Oct 22 13:04:32 2007 +0100
+
+    x86: Allow NMI callback CS to be specified via set_trap_table()
+    hypercall.
+    Based on a patch by Jan Beulich.
+    Signed-off-by: Keir Fraser <keir@xensource.com>
+
+I'll update my patch and re-send it.
+
+>
+>> ---
+>>  arch/x86/xen/setup.c | 11 ++++++++++-
+>>  1 file changed, 10 insertions(+), 1 deletion(-)
+>> 
+>> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+>> index 821a11a..5b8b180 100644
+>> --- a/arch/x86/xen/setup.c
+>> +++ b/arch/x86/xen/setup.c
+>> @@ -593,8 +593,17 @@ void xen_enable_syscall(void)
+>>  void xen_enable_nmi(void)
+>>  {
+>>  #ifdef CONFIG_X86_64
+>> -	if (register_callback(CALLBACKTYPE_nmi, (char *)nmi))
+>> +	int ret;
+>> +
+>> +	ret = register_callback(CALLBACKTYPE_nmi, (char *)nmi);
+>> +	if (ret == -EINVAL) {
+>> +		/* Hypervisor probably forbids us to register NMI callback,
+>> +		   that is expected when running on top of Xen-3.1 and older */
+>> +		pr_warn("xen: failed to register NMI callback\n");
+>> +	} else if (ret != 0) {
+>> +		/* Other hypervisor failure */
+>>  		BUG();
+>> +	}
+>>  #endif
+>>  }
+>>  void __init xen_pvmmu_arch_setup(void)
+>> -- 
+>> 1.9.3
+>> 
+
+-- 
+  Vitaly
