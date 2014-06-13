@@ -1,79 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296AbaFMPNZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 11:13:25 -0400
-Received: from ozlabs.org ([103.22.144.67]:57463 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752788AbaFMPNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 11:13:24 -0400
-Date: Sat, 14 Jun 2014 01:13:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-next list <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: time to start cleaning up
-Message-ID: <20140614011316.03c37c1b@canb.auug.org.au>
-In-Reply-To: <CAErSpo5JdQ2xZ1bnvFt2chb2jTUzBHGig4imFj3C+Yn7Ux6nZg@mail.gmail.com>
-References: <20140613120629.68527777@canb.auug.org.au>
-	<CAErSpo5JdQ2xZ1bnvFt2chb2jTUzBHGig4imFj3C+Yn7Ux6nZg@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1753254AbaFMPOG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 11:14:06 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:60416 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752637AbaFMPOF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 11:14:05 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <539B1534.5020603@roeck-us.net>
+Date: Fri, 13 Jun 2014 08:13:56 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/gKNZ+.zRaX7Hx08lmEiCRAa"; protocol="application/pgp-signature"
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] sched: Fix compiler warnings
+References: <1402614493-12521-1-git-send-email-linux@roeck-us.net> <CAKfTPtAhykeqorg7SSbMYkHQ-bjoHQx4tCrxy+yubPxhSHThww@mail.gmail.com>
+In-Reply-To: <CAKfTPtAhykeqorg7SSbMYkHQ-bjoHQx4tCrxy+yubPxhSHThww@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/gKNZ+.zRaX7Hx08lmEiCRAa
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-
-Hi Bjorn,
-
-On Fri, 13 Jun 2014 08:56:26 -0600 Bjorn Helgaas <bhelgaas@google.com> wrot=
-e:
+On 06/13/2014 01:05 AM, Vincent Guittot wrote:
+> Hi Guenter,
 >
-> On Thu, Jun 12, 2014 at 8:06 PM, Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
-\> >
-> > See $subject.  Especially those of you who sent Linus something
-> > different to what you have sent me :-(
->=20
-> Sorry to be dense here, but do you have something in particular in
-> mind?  As far as I know, everything I've sent to Linus is in
-> linux-next, but if there's something else you'd like me to clean up,
-> let me know what it is.
+> There are also such kind of function in ARM and powerpc architecture
+>
+> with the additional changes below, you can add my
+> Acked-by Vincent Guittot <vincent.guittot@linaro.org>
+>
 
-There is nothing for you (in particular) to do.  My comments were
-mainly aimed at those who rebased (or otherwise rewrote) the commits in
-their branch just before sending it to Linus, but then neglected to
-update the branch in linux-next.  I see this as conflicts some of the
-time ...
+I'd prefer to fix those instances with separate patches, since they
+will normally be handled by different maintainers. That simplifies
+acceptance.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Guenter
 
---Sig_/gKNZ+.zRaX7Hx08lmEiCRAa
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+> Vincent
+>
+> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+> index 1576d05..7e56b2f 100644
+> --- a/arch/arm/kernel/topology.c
+> +++ b/arch/arm/kernel/topology.c
+> @@ -275,7 +275,7 @@ void store_cpu_topology(unsigned int cpuid)
+>    cpu_topology[cpuid].socket_id, mpidr);
+>   }
+>
+> -static inline const int cpu_corepower_flags(void)
+> +static inline int cpu_corepower_flags(void)
+>   {
+>    return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN;
+>   }
+> diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
+> index 10ffffe..49d5d4e 100644
+> --- a/arch/powerpc/kernel/smp.c
+> +++ b/arch/powerpc/kernel/smp.c
+> @@ -768,7 +768,7 @@ int setup_profiling_timer(unsigned int multiplier)
+>
+>   #ifdef CONFIG_SCHED_SMT
+>   /* cpumask of CPUs with asymetric SMT dependancy */
+> -static const int powerpc_smt_flags(void)
+> +static int powerpc_smt_flags(void)
+>   {
+>    int flags = SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES;
+>
+>
+> On 13 June 2014 01:08, Guenter Roeck <linux@roeck-us.net> wrote:
+>> Commit 143e1e28cb (sched: Rework sched_domain topology definition)
+>> introduced a number of functions with a return value of 'const int'.
+>> gcc doesn't know what to do with that and, if the kernel is compiled
+>> with W=1, complains with the following warnings whenever sched.h
+>> is included.
+>>
+>> include/linux/sched.h:875:25: warning:
+>>          type qualifiers ignored on function return type
+>> include/linux/sched.h:882:25: warning:
+>>          type qualifiers ignored on function return type
+>> include/linux/sched.h:889:25: warning:
+>>          type qualifiers ignored on function return type
+>> include/linux/sched.h:1002:21: warning:
+>>          type qualifiers ignored on function return type
+>>
+>> Drop 'const' from the function declarations to fix the problem.
+>>
+>> Cc: Vincent Guittot <vincent.guittot@linaro.org>
+>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>> ---
+>>   include/linux/sched.h | 8 ++++----
+>>   1 file changed, 4 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/include/linux/sched.h b/include/linux/sched.h
+>> index ea74596..65046b3 100644
+>> --- a/include/linux/sched.h
+>> +++ b/include/linux/sched.h
+>> @@ -872,21 +872,21 @@ enum cpu_idle_type {
+>>   #define SD_NUMA                        0x4000  /* cross-node balancing */
+>>
+>>   #ifdef CONFIG_SCHED_SMT
+>> -static inline const int cpu_smt_flags(void)
+>> +static inline int cpu_smt_flags(void)
+>>   {
+>>          return SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES;
+>>   }
+>>   #endif
+>>
+>>   #ifdef CONFIG_SCHED_MC
+>> -static inline const int cpu_core_flags(void)
+>> +static inline int cpu_core_flags(void)
+>>   {
+>>          return SD_SHARE_PKG_RESOURCES;
+>>   }
+>>   #endif
+>>
+>>   #ifdef CONFIG_NUMA
+>> -static inline const int cpu_numa_flags(void)
+>> +static inline int cpu_numa_flags(void)
+>>   {
+>>          return SD_NUMA;
+>>   }
+>> @@ -999,7 +999,7 @@ void free_sched_domains(cpumask_var_t doms[], unsigned int ndoms);
+>>   bool cpus_share_cache(int this_cpu, int that_cpu);
+>>
+>>   typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
+>> -typedef const int (*sched_domain_flags_f)(void);
+>> +typedef int (*sched_domain_flags_f)(void);
+>>
+>>   #define SDTL_OVERLAP   0x01
+>>
+>> --
+>> 1.9.1
+>>
+>
+>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTmxURAAoJEMDTa8Ir7ZwVCowQAJUNx5t1b/OwRayIQrcLheSa
-Us9j3+8RM3XPDEVpmvTEoKsW4dxA34pFc9WXXBIgoNSyPl7bVyg3TD5H8BkER+QS
-CfrxAaKVuv0qPls/QNDk/MgOgv/xY2KHNGiziRjtNwH7feqCIF5H2aEzYVdLoAhD
-tL5qIilw/02CsJr/KISlc8pvN+AVAENhD1SlXrg+aLzsIDNPhLAWmGsM6aA+RttH
-fgdeZdpTZczlHhXJA4d/9jwIs2Rg9DxeBbtfPQGv1NIED2/lixaCYsq4KLPaLVcH
-GqUrNnZB/xSnprv36AIa18kN9cwGDWlHO6vIYaTm9HKGlHFmUHcwu/1b7DaVoPTI
-ta1dq39JMx7XvW2IvUaXkuEPJ9UA5pfq3CwQoTs6e1BZwBNkWkR8yntq75hRPXkA
-/8+MVSPdMS+B6EuAXzFx/TTLEvpV7CW5H72aI4hRtNa8yqNHk0WEJRBPNUOIY3E4
-FeGJTa1Vck+zOIj2TK8pI9M2EqVv729MRR9IVeA8LjWwaWTuWdNUGy5/N5kK3+Qn
-/XB8rsO5NZekuBTUJLD0FqKmGqWyMkdWdH03n8v2fX7IDvfydsLc610ObMDYcAXl
-YW8TnMNvmKO39fAmiQSN+SGypf5gE5gaxSZBI5GET7bwfimUlDDV8HFan8+QY3Vx
-lo63QMfnC0QxPG/iQPp+
-=uLeR
------END PGP SIGNATURE-----
-
---Sig_/gKNZ+.zRaX7Hx08lmEiCRAa--
