@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520AbaFMHZL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 03:25:11 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:56295 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071AbaFMHZI (ORCPT
+	id S1752729AbaFMHZY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 03:25:24 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:15861 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752513AbaFMHZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 03:25:08 -0400
+	Fri, 13 Jun 2014 03:25:19 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 13 Jun 2014 00:19:57 -0700
+Date: Fri, 13 Jun 2014 10:25:14 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Use Tegra's microsecond counter for udelay()
+Message-ID: <20140613072514.GL5961@tbergstrom-lnx.Nvidia.com>
+References: <1402588713-18766-1-git-send-email-pdeschrijver@nvidia.com>
+ <539A01B4.3050503@wwwdotorg.org>
 MIME-Version: 1.0
-In-Reply-To: <1402320115-13171-1-git-send-email-x-linux@infra-silbe.de>
-References: <1402320115-13171-1-git-send-email-x-linux@infra-silbe.de>
-Date: Fri, 13 Jun 2014 09:25:07 +0200
-Message-ID: <CACRpkdbiob-2d4sTmj8bZxo5GVZ0TvF5CT_W94BDsSNiEfB7kQ@mail.gmail.com>
-Subject: Re: [PATCH] USB: ftdi_sio: add GPIO support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sascha Silbe <x-linux@infra-silbe.de>
-Cc: Johan Hovold <jhovold@gmail.com>, Alexandre Courbot <gnurou@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <539A01B4.3050503@wwwdotorg.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 9, 2014 at 3:21 PM, Sascha Silbe <x-linux@infra-silbe.de> wrote:
+On Thu, Jun 12, 2014 at 09:38:28PM +0200, Stephen Warren wrote:
+> On 06/12/2014 09:58 AM, Peter De Schrijver wrote:
+> > This patchset introduces support for Tegra's microsecond counter as the
+> > udelay() timer. This is useful on Tegra SoCs which do not have an arch timer
+> > such as Tegra20 and Tegra30. Using the microsecond counter instead of a delay
+> > based loop avoids potential problems during cpu frequency changes.
+> > 
+> > The set consists of 3 patches:
+> > 
+> > Patch 1 introduces a new call which is used by the ARM architecture delay
+> > timer code to prevent changing the delay timer after calibration is finished
+> > and thus can be in use.
+> > 
+> > Patch 2 adds logic to choose the delay timer with the highest resolution. This
+> > allows the same registration code to be used on all Tegra SoCs and yet use the
+> > higher resolution arch timer when available (eg on Tegra114 or Tegra124).
+> > 
+> > Patch 3 adds the actual delay timer code.
+> > 
+> > Patch set has been verified on ventana (Tegra20), beaver (Tegra30),
+> > dalmore (Tegra114) and jetson TK1 (Tegra124).
+> 
+> Russell, Paul, do patches 1 and 2 look good to you? If so, if you can
+> ack them, I'd be happy to queue this series in the Tegra git tree. If
+> that doesn't work for you, please let me know who will apply these
+> patches. Thanks.
+> 
+> > Changes since v1:
+> > * Address review comments
+> 
+> That's not a very useful description of the changes, and there's no "V2"
+> in the subject...
 
-> The chips can operate either in regular or in bitbang mode. Care was
-> taken to prevent using GPIOs if the serial device is in use and vice
-> versa.
-
-Very interesting patch! I've seen USB-based GPIO things before
-but never a dual-mode thing.
-
-There was already a comment to move the implementation to a
-separate file, which I won't repeat.
-
-But I also want to bring the device model into question: normally
-when a mother device spawns children across different subsystems
-we model them as MFD devices (drivers/mfd) that instantiate
-children for the different subsystems. So you could spawn a
-serial and a GPIO device from a USB-based hub device there.
-
-I do not know if that is really apropriate in this case. It seems the
-device is first and foremost FTDI.
-
-But it could still spawn a child platform device for the GPIO stuff
-so that this can live as a separate driver under drivers/gpio/gpio-ftdi.c
-or similar.
-
-You could then use something like:
-
-struct platform_device *gdev;
-
-gdev = platform_device_alloc("gpio-ftdi", PLATFORM_DEVID_AUTO);
-/* pdata contains communication cookie for callbacks etc */
-ret = platform_device_add_data(gdev, pdata, sizeof(*pdata));
-ret = platform_device_add(gdev);
-
-Then we can probe that device normally in the GPIO subsystem
-like any other driver, just that it needs some
-<linux/usb/ftdi.h> header or similar to define the function
-calls to communicate with the FTDI driver.
-
-However Greg is device core maintainer and may have better
-ideas about this!
-
-Yours,
-Linus Walleij
+Yes... something went wrong it seems...
