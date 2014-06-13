@@ -1,76 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861AbaFMBrj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 21:47:39 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:20594 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751078AbaFMBri (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 21:47:38 -0400
-X-IronPort-AV: E=Sophos;i="5.00,699,1396972800"; 
-   d="scan'208";a="31839707"
-From: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-btrfs@vger.kernel.org>, <akpm@linux-foundation.org>,
-        Gui Hecheng <guihc.fnst@cn.fujitsu.com>
-Subject: [PATCH v4] lib: add size unit t/p/e to memparse
-Date: Fri, 13 Jun 2014 09:42:26 +0800
-Message-ID: <1402623746-1171-1-git-send-email-guihc.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.1.4
+	id S1752013AbaFMBt4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 21:49:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42079 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751171AbaFMBtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jun 2014 21:49:55 -0400
+Message-ID: <539A58AD.4030404@zytor.com>
+Date: Thu, 12 Jun 2014 18:49:33 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.111]
+To: Andy Lutomirski <luto@amacapital.net>, Kui Zhang <kuizhang@gmail.com>
+CC: x86@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 4/4] x86,vdso: Hack to keep 64-bit Go programs working
+References: <cover.1402620737.git.luto@amacapital.net> <d10618176c4bd39b457a5e85c497295c90cab1bc.1402620737.git.luto@amacapital.net>
+In-Reply-To: <d10618176c4bd39b457a5e85c497295c90cab1bc.1402620737.git.luto@amacapital.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For modern filesystems such as btrfs, t/p/e size level operations
-are common.
-add size unit t/p/e parsing to memparse
+On 06/12/2014 05:53 PM, Andy Lutomirski wrote:
+> 
+> This is currently broken for big-endian build hosts.  The hack
+> should also be disabled for x32, but I'm not sure what the right way
+> to do that is.
+> 
 
-Signed-off-by: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
----
-changelog
-	v1->v2: replace kilobyte with kibibyte, and others
-	v2->v3: add missing unit "bytes" in comment
-	v3->v4: remove idiotic name for K,M,G,P,T,E
----
- lib/cmdline.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+This comment is obsolete, no?
 
-diff --git a/lib/cmdline.c b/lib/cmdline.c
-index d4932f7..76a712e 100644
---- a/lib/cmdline.c
-+++ b/lib/cmdline.c
-@@ -121,11 +121,7 @@ EXPORT_SYMBOL(get_options);
-  *	@retptr: (output) Optional pointer to next char after parse completes
-  *
-  *	Parses a string into a number.  The number stored at @ptr is
-- *	potentially suffixed with %K (for kilobytes, or 1024 bytes),
-- *	%M (for megabytes, or 1048576 bytes), or %G (for gigabytes, or
-- *	1073741824).  If the number is suffixed with K, M, or G, then
-- *	the return value is the number multiplied by one kilobyte, one
-- *	megabyte, or one gigabyte, respectively.
-+ *	potentially suffixed with K, M, G, T, P, E.
-  */
- 
- unsigned long long memparse(const char *ptr, char **retptr)
-@@ -135,6 +131,15 @@ unsigned long long memparse(const char *ptr, char **retptr)
- 	unsigned long long ret = simple_strtoull(ptr, &endptr, 0);
- 
- 	switch (*endptr) {
-+	case 'E':
-+	case 'e':
-+		ret <<= 10;
-+	case 'P':
-+	case 'p':
-+		ret <<= 10;
-+	case 'T':
-+	case 't':
-+		ret <<= 10;
- 	case 'G':
- 	case 'g':
- 		ret <<= 10;
--- 
-1.8.1.4
+	-hpa
+
 
