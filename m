@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590AbaFMHsr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 03:48:47 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:50372 "EHLO bear.ext.ti.com"
+	id S1752467AbaFMHuQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 03:50:16 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:40155 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751008AbaFMHsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 03:48:45 -0400
-Message-ID: <539AACB9.5080105@ti.com>
-Date: Fri, 13 Jun 2014 10:48:09 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751082AbaFMHuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 03:50:14 -0400
+Date: Fri, 13 Jun 2014 09:50:11 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: WANG Chao <chaowang@redhat.com>, Dave Young <dyoung@redhat.com>,
+        mjg59@srcf.ucam.org, bhe@redhat.com, jkosina@suse.cz, greg@kroah.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, hpa@zytor.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 07/13] kexec: Implementation of new syscall
+ kexec_file_load
+Message-ID: <20140613075011.GA4751@pd.tnic>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <1401800822-27425-8-git-send-email-vgoyal@redhat.com>
+ <20140606065605.GE2785@dhcp-17-89.nay.redhat.com>
+ <20140606181859.GK1526@redhat.com>
+ <20140609021122.GB1924@darkstar.nay.redhat.com>
+ <20140609053538.GA2874@dhcp-17-89.nay.redhat.com>
+ <20140609154137.GD22049@redhat.com>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: <dwmw2@infradead.org>, <computersforpeace@gmail.com>,
-        <kyungmin.park@samsung.com>, <pekon@ti.com>,
-        <ezequiel.garcia@free-electrons.com>, <javier@dowhile0.org>,
-        <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 15/36] ARM: OMAP2+: gpmc: Allow drivers to query GPMC_CLK
- period
-References: <1402477001-31132-1-git-send-email-rogerq@ti.com> <1402477001-31132-16-git-send-email-rogerq@ti.com> <20140613072645.GN17845@atomide.com>
-In-Reply-To: <20140613072645.GN17845@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140609154137.GD22049@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2014 10:26 AM, Tony Lindgren wrote:
-> * Roger Quadros <rogerq@ti.com> [140611 01:59]:
->> GPMC_CLK is the external clock output pin that is used for syncronous
->> accesses.
->>
->> Device drivers need to know the fastest possible GPMC_CLK period in order
->> to calculate the most optimal device timings. Add the function
->> omap_gpmc_get_clk_period() to allow drivers to get the nearset possible
->> (equal to or greater than) GPMC_CLK period given the minimum
->> clock period supported by the attached device.
->>
->> This is especially needed by the onenand driver as it calculates
->> device timings on the fly for various onenand speed grades.
-> 
-> Here too this should probably still be done by the gpmc to driver
-> glue layer, not by the actual driver that shoud be Linux generic.
+On Mon, Jun 09, 2014 at 11:41:37AM -0400, Vivek Goyal wrote:
+> IIUC, COMMAND_LINE_SIZE gives max limits of running kernel and it does
+> not tell us anything about command line size supported by kernel being
+> loaded.
 
-Well, this is only needed by the omap-onenand driver to perform the timing calculations at run-time.
-Other option is to model the GPMC_CLK (external) as a clock and request the rate using the clock framework.
-But since this and the retime() is only used by 2 OMAP specific drivers, I'm not sure if it is worth the effort.
+Whatever you do, you do need a sane default because even querying the
+boot protocol is not reliable as the to-be-loaded kernel's boot protocol
+might be manipulated too, before signing (who knows what people do
+in the wild).
 
-cheers,
--roger
+So having a sane, unconditional fallback COMMAND_LINE_SIZE from the
+first kernel is a must, methinks.
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
