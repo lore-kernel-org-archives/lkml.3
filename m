@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461AbaFMSY3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 14:24:29 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:58625 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080AbaFMSY2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 14:24:28 -0400
-Date: Fri, 13 Jun 2014 14:24:17 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 02/12] percpu: introduce arch_raw_cpu_ptr()
-Message-ID: <20140613182417.GA3723@htj.dyndns.org>
-References: <1402590209-31610-1-git-send-email-tj@kernel.org>
- <1402590209-31610-3-git-send-email-tj@kernel.org>
- <alpine.DEB.2.10.1406131209540.1717@gentwo.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1406131209540.1717@gentwo.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753546AbaFMSYw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 14:24:52 -0400
+Received: from skprod3.natinst.com ([130.164.80.24]:41129 "EHLO ni.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752216AbaFMSYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 14:24:50 -0400
+From: Vicentiu Neagoe <vicentiu.neagoe@ni.com>
+To: balbi@ti.com
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Westfahl <jeff.westfahl@ni.com>
+Subject: [PATCH] usb: gadget: u_ether: synchronize with transmit when stopping queue
+Date: Fri, 13 Jun 2014 21:23:21 +0300
+Message-Id: <1402683801-27782-1-git-send-email-vicentiu.neagoe@ni.com>
+X-Mailer: git-send-email 1.7.9.5
+X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut1/AUS/H/NIC(Release 8.5.3FP5|July 31, 2013) at
+ 06/13/2014 01:24:49 PM,
+	Serialize by Router on US-AUS-MGWOut1/AUS/H/NIC(Release 8.5.3FP5|July 31, 2013) at
+ 06/13/2014 01:24:49 PM,
+	Serialize complete at 06/13/2014 01:24:49 PM
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-13_07:2014-06-13,2014-06-13,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 12:10:36PM -0500, Christoph Lameter wrote:
-> On Thu, 12 Jun 2014, Tejun Heo wrote:
-> 
-> > Currently, archs can override raw_cpu_ptr() directly; however, we
-> > wanna build a layer of indirection in the generic part of percpu so
-> > that we can implement generic features there without affecting archs.
-> 
-> Not sure why one would do this. We already have this_cpu_ptr() (arch
-> independant) and the lower level raw_cpu_ptr() which can be modified by
-> the arch code.
+From: Jeff Westfahl <jeff.westfahl@ni.com>
 
-So that there's separate between generic part of definition and
-arch-specific part.  This allows the generic portion of definition to
-be handled in the generic code.  e.g. arch no longer has to worry
-about verifying arguments or having a data dependency barrier.  It
-just has to worry about the core implementation.  The generic layer
-can handle the boilerplates.
+When disconnecting, it's possible that another thread has already made it
+into eth_start_xmit before we call netif_stop_queue. This can lead to a
+crash as eth_start_xmit tries to use resources that gether_disconnect is
+freeing. Use netif_tx_lock/unlock around netif_stop_queue to ensure no
+threads are executing during the remainder of gether_disconnect.
 
-Thanks.
+Signed-off-by: Jeff Westfahl <jeff.westfahl@ni.com>
+Tested-by: Jaeden Amero <jaeden.amero@ni.com>
+---
+ drivers/usb/gadget/u_ether.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
+diff --git a/drivers/usb/gadget/u_ether.c b/drivers/usb/gadget/u_ether.c
+index b7d4f82..085a76e 100644
+--- a/drivers/usb/gadget/u_ether.c
++++ b/drivers/usb/gadget/u_ether.c
+@@ -1120,7 +1120,10 @@ void gether_disconnect(struct gether *link)
+ 
+ 	DBG(dev, "%s\n", __func__);
+ 
++	netif_tx_lock(dev->net);
+ 	netif_stop_queue(dev->net);
++	netif_tx_unlock(dev->net);
++
+ 	netif_carrier_off(dev->net);
+ 
+ 	/* disable endpoints, forcing (synchronous) completion
 -- 
-tejun
+1.7.9.5
+
