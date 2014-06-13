@@ -1,43 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564AbaFMHUd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 03:20:33 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:50947 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300AbaFMHUc (ORCPT
+	id S1752605AbaFMHVK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 03:21:10 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:35833 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855AbaFMHVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 03:20:32 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+Ptjmr7Gh+zbXMIaPAJX9u
-Date: Fri, 13 Jun 2014 00:20:23 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: dwmw2@infradead.org, computersforpeace@gmail.com,
-        kyungmin.park@samsung.com, pekon@ti.com,
-        ezequiel.garcia@free-electrons.com, javier@dowhile0.org,
-        nsekhar@ti.com, linux-omap@vger.kernel.org,
-        linux-mtd@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/36] mtd: nand: omap: Move NAND write protect code from
- GPMC to NAND driver
-Message-ID: <20140613072023.GK17845@atomide.com>
-References: <1402477001-31132-1-git-send-email-rogerq@ti.com>
- <1402477001-31132-8-git-send-email-rogerq@ti.com>
+	Fri, 13 Jun 2014 03:21:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402477001-31132-8-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1402642787.4478.5.camel@jlt4.sipsolutions.net>
+References: <20140612.121445.484288603919840829.davem@davemloft.net>
+	<CA+55aFy=CThoSKAJ6J3Jt-SJDkiGzwg=5tdF7_g+vyTEoPFzMQ@mail.gmail.com>
+	<1402642787.4478.5.camel@jlt4.sipsolutions.net>
+Date: Fri, 13 Jun 2014 09:21:04 +0200
+X-Google-Sender-Auth: tQOoUVkdt85x9v8x06uFJJZEb1c
+Message-ID: <CAMuHMdX-42jwGBwjGkCnGj+NT5vsa-b7U5-xgh7RMCc-nm82pg@mail.gmail.com>
+Subject: Re: [GIT] Networking
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        Tom Herbert <therbert@google.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [140611 01:58]:
-> The write protect (WP) pin is only used for NAND devices. So move
-> the code into the NAND driver.
+On Fri, Jun 13, 2014 at 8:59 AM, Johannes Berg
+<johannes@sipsolutions.net> wrote:
+> On Fri, 2014-06-13 at 06:48 +0000, Linus Torvalds wrote:
+>> On Thu, Jun 12, 2014 at 12:14 PM, David Miller <davem@davemloft.net> wrote:
+>> >
+>> >   git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git master
+>>
+>> Hmm. I get *lots* of the appended messages from iwlwifi now. Things
+>> still seem to work, but ...
+>>
+>> This is a Haswell laptop with bog-standard intel wireless:
+>>
+>>   01:00.0 Network controller: Intel Corporation Wireless 7260 (rev 6b)
+>>
+>> Any ideas?
+>
+> Looks odd.
+>
+> If the stacktrace/message
+>
+>> [  273.783438] <unknown>: hw csum failure
+>> [  273.783449] CPU: 2 PID: 2199 Comm: Chrome_IOThread Not tainted 3.15.0-11906-g6d87c225f5d8 #8
+>> [  273.783451] Hardware name: Sony Corporation SVP11213CXB/VAIO, BIOS R0270V7 05/17/2013
+>> [  273.783461] Call Trace:
+>> [  273.783477]  [<ffffffff8159d199>] ? dump_stack+0x41/0x51
+>> [  273.783488]  [<ffffffff814a4f1d>] ? skb_copy_and_csum_datagram_iovec+0xfd/0x110
+>> [  273.783494]  [<ffffffff8150e2ea>] ? udp_recvmsg+0x1ca/0x390
+>> [  273.783500]  [<ffffffff81518e95>] ? inet_recvmsg+0x65/0x80
+>> [  273.783506]  [<ffffffff814971f5>] ? sock_recvmsg+0x95/0xd0
+>> [  273.783511]  [<ffffffff81197862>] ? ep_send_events_proc+0xa2/0x1b0
+>> [  273.783513]  [<ffffffff811977c0>] ? ep_read_events_proc+0xb0/0xb0
+>> [  273.783516]  [<ffffffff81497325>] ? SYSC_recvfrom+0xb5/0x110
+>> [  273.783521]  [<ffffffff8108bdc0>] ? wake_up_state+0x10/0x10
+>> [  273.783527]  [<ffffffff815a3d92>] ? system_call_fastpath+0x16/0x1b
+>
+> is to be believed, then I'm not sure why you think iwlwifi is involved
+> though.
+>
+> Either way, iwlwifi doesn't support HW checksumming, so it failing makes
+> no sense, it's not there to start with.
+>
+> The only thing that touched this seems to be Tom's patch:
+>
+> commit 7e3cead5172927732f51fde77fef6f521e22f209
+> Author: Tom Herbert <therbert@google.com>
+> Date:   Tue Jun 10 18:54:19 2014 -0700
+>
+>     net: Save software checksum complete
+>
+> but I'm not familiar enough to say where this leads.
+>
+> If it's iwlwifi, then maybe that commit broke something with devices
+> that don't support checksumming?
 
-Eek, noooo!
+Tom posted some fixes for this:
+http://marc.info/?l=linux-netdev&m=140261417832399&w=2
 
-Tony
+I can confirm the first one fixes the issue I was having (10s delay in
+ssh login), cfr. http://marc.info/?l=linux-netdev&m=140257250715322&w=2
+
+However, the second patch reintroduces the bad behavior again?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
