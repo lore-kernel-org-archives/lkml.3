@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129AbaFMVqU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 17:46:20 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:49155 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754096AbaFMVqO (ORCPT
+	id S1754151AbaFMVqd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 17:46:33 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:46585 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754096AbaFMVq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 17:46:14 -0400
-Date: Fri, 13 Jun 2014 14:46:11 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Lan Tianyu <tianyu.lan@intel.com>
-cc: rjw@rjwysocki.net, lenb@kernel.org, naszar@ya.ru,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] ACPI/Battery: Retry to get Battery information if failed
- during probing
-In-Reply-To: <539A60FC.1050301@intel.com>
-Message-ID: <alpine.DEB.2.02.1406131445130.31981@chino.kir.corp.google.com>
-References: <1402552946-14704-1-git-send-email-tianyu.lan@intel.com> <alpine.DEB.2.02.1406112354070.23724@chino.kir.corp.google.com> <53995488.20308@intel.com> <alpine.DEB.2.02.1406120025050.23724@chino.kir.corp.google.com> <53996152.2000407@intel.com>
- <alpine.DEB.2.02.1406121415150.8305@chino.kir.corp.google.com> <539A60FC.1050301@intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 13 Jun 2014 17:46:27 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Fri, 13 Jun 2014 23:46:26 +0200
+Message-ID: <CACRpkdYYbmGaLYOpMhcOBEO5Z-4f+j8AVrG7odu39MdZqtcJyg@mail.gmail.com>
+Subject: [GIT PULL] GPIO fix for the v3.16 series
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        ext Tony Lindgren <tony@atomide.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jun 2014, Lan Tianyu wrote:
+Hi Linus,
 
-> How about this?
-> 
-> -       result = acpi_battery_update(battery, false);
-> -       if (result)
-> +
-> +       /*
-> +        * Some machines'(E,G Lenovo Z480) ECs are not stable
-> +        * during boot up and this causes battery driver fails to be
-> +        * probed due to failure of getting battery information
-> +        * from EC sometimes. After several retries, the operation
-> +        * may work. So add retry code here and 20ms sleep between
-> +        * every retries.
-> +        */
-> +       while (acpi_battery_update(battery, false) && retry--)
-> +               msleep(20);
-> +       if (!retry) {
-> +               result = -ENODEV;
->                 goto fail;
-> +       }
-> +
+sending you this vital fix before leaving for a short vacation so it
+does not sit collecting dust in my tree for no good reason.
 
-I think you want --retry and not retry--.  Otherwise it's possible for the 
-final call to acpi_battery_update() to succeed and now it's returning 
--ENODEV.
+Apart from this, our v3.16 cycle looks like a good start.
+
+Please pull it in!
+
+Yours,
+Linus Walleij
+
+
+The following changes since commit 963649d735c8b6eb0f97e82c54f02426ff3f1f45:
+
+  Merge tag 'for-linus-3.16-merge-window' of
+git://git.kernel.org/pub/scm/linux/kernel/git/ericvh/v9fs (2014-06-08
+14:35:19 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
+tags/gpio-v3.16-2
+
+for you to fetch changes up to 06fc3b70f1dc9c53070fa63a528830f54afc3c38:
+
+  gpio: of: Fix handling for deferred probe for -gpio suffix
+(2014-06-12 09:57:00 +0200)
+
+----------------------------------------------------------------
+A first GPIO fix for the v3.16 series, this was serious since
+it blocks the OMAP boot.
+
+----------------------------------------------------------------
+Tony Lindgren (1):
+      gpio: of: Fix handling for deferred probe for -gpio suffix
+
+ drivers/gpio/gpiolib.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
