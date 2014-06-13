@@ -1,69 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736AbaFMF2z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 01:28:55 -0400
-Received: from ozlabs.org ([103.22.144.67]:38434 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750828AbaFMF2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 01:28:53 -0400
-Date: Fri, 13 Jun 2014 15:28:46 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: Re: linux-next: build failure after merge of the akpm-current tree
-Message-ID: <20140613152846.3c9bd9b1@canb.auug.org.au>
-In-Reply-To: <20140613150550.7b2e2c4c@canb.auug.org.au>
-References: <20140613150550.7b2e2c4c@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1751681AbaFMFbN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 01:31:13 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:58714 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072AbaFMFbM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 01:31:12 -0400
+Date: Fri, 13 Jun 2014 08:31:07 +0300
+From: Dan Aloni <dan@kernelim.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: mm/sched/net: BUG when running simple code
+Message-ID: <20140613053107.GA24200@gmail.com>
+References: <539A6850.4090408@oracle.com>
+ <20140613032754.GA20729@gmail.com>
+ <539A77A1.60700@oracle.com>
+ <20140613045555.GB20729@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/NkonlRImtHtsobQhaAuANvu"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140613045555.GB20729@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/NkonlRImtHtsobQhaAuANvu
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jun 13, 2014 at 07:55:55AM +0300, Dan Aloni wrote:
+> And also, the Oops code of 0003 (PF_WRITE and PF_USER) might hint at
+> what Dave wrote.
 
-On Fri, 13 Jun 2014 15:05:50 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> The reference to HPAGE_PMD_SIZE (which contains a BUILD_BUG() when
-> CONFIG_TRANSPARENT_HUGEPAGE is not defined) used to be protected by a
-> call to pmd_trans_huge_lock() (a static inline function that was
-> contact 0 when CONFIG_TRANSPARENT_HUGEPAGE is not defined) so gcc did
-  ^^^^^^^
-constant
+Scrape what I wrote about that, it's PF_PROT | PF_WRITE.
 
-> not see the reference and the BUG_ON.  That protection has been
-> removed ...
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/NkonlRImtHtsobQhaAuANvu
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIbBAEBCAAGBQJTmowTAAoJEMDTa8Ir7ZwVNnAP9i5uNY5HsBloZYKbMRXqe5ez
-Vi+um2oNC9tCJ32wand4TBpJDKxP6nGPQXy9zSLEsXBPFLUeOlrbkDF15GhZZoF5
-/sDus7GQyntHcnKmIDtrdpqNu9pco3JqossX0lUT7+Ci4U2NCopmjV14hCiI+zA+
-GYQhogx84z/fW7M9kcWfpUFr6P6OTOdk68GZS6zJZYIDCywVT9RrFx5yexy/TRIL
-8KUao3cIt5nW4iy08u7f/DoFfaniZS9PxcJM5vsF3WUQs2FcO136SWxgRtlv7kRH
-NWEO+zA07Y9lSxKlcpm1Rh1KNlYG6MbIHp0l5qtpCIjjxFfrDB8qSOVD1RC2KuA8
-RDwxNL/cKn2MyzuVVlL/hZuwGdZsUEAwfgpPOiJtblJcwIjmzLnbHr7gFznPNIW8
-hWMbia/jOjqN6W8RHs7OZtH0+e4WWiSTx2+emyr22M8BS48/6lXRVRjfz7aZ+XoI
-/fxc3ZFoJIY/SabQ6eK1wOcez9OuiihWW71OwV+jz2nrTiAkiQ/4zvIBZrA1jz8E
-9jMMSLrBt0RlpMIGa3In6uqWv8EiIJQV8uEKFiDUSIr5ol54kjLvooeYAk6vGEQO
-vjQeixucAyUH1uINfUCcZxUBwaQJBuBJKeKO6U2GI1sMlofrmDPf9EoUpHFhralI
-1OqHN180fzNsrcyGBtc=
-=wuU6
------END PGP SIGNATURE-----
-
---Sig_/NkonlRImtHtsobQhaAuANvu--
+-- 
+Dan Aloni
