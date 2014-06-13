@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751257AbaFMG6f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 02:58:35 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47089 "EHLO arroyo.ext.ti.com"
+	id S1751439AbaFMHAG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 03:00:06 -0400
+Received: from s3.sipsolutions.net ([5.9.151.49]:37391 "EHLO sipsolutions.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750817AbaFMG6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 02:58:33 -0400
-Message-ID: <539AA08A.7010001@ti.com>
-Date: Fri, 13 Jun 2014 12:26:10 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <santosh.shilimkar@ti.com>,
-        <nm@ti.com>, <rnayak@ti.com>, <linux@arm.linux.org.uk>,
-        <tglx@linutronix.de>
-Subject: Re: [PATCH V2 03/19] irqchip: crossbar: Skip some irqs from getting
- mapped to crossbar
-References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com> <1402574007-13987-4-git-send-email-r.sricharan@ti.com> <20140612125134.GS8664@titan.lakedaemon.net> <20140612135715.GE17845@atomide.com> <20140612140508.GC8664@titan.lakedaemon.net>
-In-Reply-To: <20140612140508.GC8664@titan.lakedaemon.net>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1750852AbaFMHAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 03:00:04 -0400
+Message-ID: <1402642787.4478.5.camel@jlt4.sipsolutions.net>
+Subject: Re: [GIT] Networking
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>,
+        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        Tom Herbert <therbert@google.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Date: Fri, 13 Jun 2014 08:59:47 +0200
+In-Reply-To: <CA+55aFy=CThoSKAJ6J3Jt-SJDkiGzwg=5tdF7_g+vyTEoPFzMQ@mail.gmail.com>
+References: <20140612.121445.484288603919840829.davem@davemloft.net>
+	 <CA+55aFy=CThoSKAJ6J3Jt-SJDkiGzwg=5tdF7_g+vyTEoPFzMQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
-
-On Thursday 12 June 2014 07:35 PM, Jason Cooper wrote:
-> On Thu, Jun 12, 2014 at 06:57:15AM -0700, Tony Lindgren wrote:
->> * Jason Cooper <jason@lakedaemon.net> [140612 05:52]:
->>> On Thu, Jun 12, 2014 at 05:23:11PM +0530, Sricharan R wrote:
->>>> From: Nishanth Menon <nm@ti.com>
->>>>
->>>> When, in the system due to varied reasons, interrupts might be unusable
->>>> due to hardware behavior, but register maps do exist, then those interrupts
->>>> should be skipped while mapping irq to crossbars.
->>>>
->>>> Signed-off-by: Nishanth Menon <nm@ti.com>
->>>> Signed-off-by: Sricharan R <r.sricharan@ti.com>
->>>> Signed-off-by: Tony Lindgren <tony@atomide.com>
->>>
->>> Tony, have you applied these somewhere already?
->>
->> I think some of these I had applied into a branch ready for
->> merging but then it was discovered that further changes
->> were needed and the branch was dropped.
+On Fri, 2014-06-13 at 06:48 +0000, Linus Torvalds wrote:
+> On Thu, Jun 12, 2014 at 12:14 PM, David Miller <davem@davemloft.net> wrote:
+> >
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git master
 > 
-> Ok.
+> Hmm. I get *lots* of the appended messages from iwlwifi now. Things
+> still seem to work, but ...
 > 
->> Sricharan, please remove my Signed-off-by from this series.
->> If I end up applying it for merging my scripts will add it
->> automatically.
+> This is a Haswell laptop with bog-standard intel wireless:
 > 
-> Do you have other changes outside of irqchip depending on this series?
-> If so, I can set up a topic branch for you guys to base off of.
-> Otherwise, I'll just apply them to irqchip/core when they're ready.
+>   01:00.0 Network controller: Intel Corporation Wireless 7260 (rev 6b)
 > 
- There are dts changes which are dependent upon this series.
+> Any ideas?
 
-  http://www.spinics.net/lists/linux-omap/msg108116.html
+Looks odd.
 
-> Also, Sricharan, when you respin this, please clearly identify (in the
-> comment section) those patches that need to be flagged for stable.  It
-> would be helpful if they were the first patches in the series as well.
+If the stacktrace/message
 
-Ok, i will point this out clearly.
+> [  273.783438] <unknown>: hw csum failure
+> [  273.783449] CPU: 2 PID: 2199 Comm: Chrome_IOThread Not tainted 3.15.0-11906-g6d87c225f5d8 #8
+> [  273.783451] Hardware name: Sony Corporation SVP11213CXB/VAIO, BIOS R0270V7 05/17/2013
+> [  273.783461] Call Trace:
+> [  273.783477]  [<ffffffff8159d199>] ? dump_stack+0x41/0x51
+> [  273.783488]  [<ffffffff814a4f1d>] ? skb_copy_and_csum_datagram_iovec+0xfd/0x110
+> [  273.783494]  [<ffffffff8150e2ea>] ? udp_recvmsg+0x1ca/0x390
+> [  273.783500]  [<ffffffff81518e95>] ? inet_recvmsg+0x65/0x80
+> [  273.783506]  [<ffffffff814971f5>] ? sock_recvmsg+0x95/0xd0
+> [  273.783511]  [<ffffffff81197862>] ? ep_send_events_proc+0xa2/0x1b0
+> [  273.783513]  [<ffffffff811977c0>] ? ep_read_events_proc+0xb0/0xb0
+> [  273.783516]  [<ffffffff81497325>] ? SYSC_recvfrom+0xb5/0x110
+> [  273.783521]  [<ffffffff8108bdc0>] ? wake_up_state+0x10/0x10
+> [  273.783527]  [<ffffffff815a3d92>] ? system_call_fastpath+0x16/0x1b
 
-Regards,
- Sricharan
+is to be believed, then I'm not sure why you think iwlwifi is involved
+though.
+
+Either way, iwlwifi doesn't support HW checksumming, so it failing makes
+no sense, it's not there to start with.
+
+The only thing that touched this seems to be Tom's patch:
+
+commit 7e3cead5172927732f51fde77fef6f521e22f209
+Author: Tom Herbert <therbert@google.com>
+Date:   Tue Jun 10 18:54:19 2014 -0700
+
+    net: Save software checksum complete
+
+but I'm not familiar enough to say where this leads.
+
+If it's iwlwifi, then maybe that commit broke something with devices
+that don't support checksumming?
+
+johannes
+
