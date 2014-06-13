@@ -1,84 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672AbaFMUG2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 16:06:28 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:51099 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074AbaFMUG0 (ORCPT
+	id S1752907AbaFMUJO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 16:09:14 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:42534 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172AbaFMUJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 16:06:26 -0400
-From: Julius Werner <jwerner@chromium.org>
-To: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <stephen.r.warren@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olofj@chromium.org>,
-        Stefan Reinauer <stefan.reinauer@coreboot.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Julius Werner <jwerner@chromium.org>
-Subject: [PATCH] firmware: Add device tree binding for coreboot
-Date: Fri, 13 Jun 2014 13:06:05 -0700
-Message-Id: <1402689965-19397-1-git-send-email-jwerner@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
+	Fri, 13 Jun 2014 16:09:11 -0400
+Date: Fri, 13 Jun 2014 22:09:05 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Christoph Jaeger <christophjaeger@linux.com>
+Cc: daniel.vetter@ffwll.ch, jani.nikula@linux.intel.com, airlied@linux.ie,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm/i915: Fix memory leak in intel_dsi_init() error path
+Message-ID: <20140613200904.GX5821@phenom.ffwll.local>
+Mail-Followup-To: Christoph Jaeger <christophjaeger@linux.com>,
+	jani.nikula@linux.intel.com, airlied@linux.ie,
+	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org
+References: <1402689082-20211-1-git-send-email-christophjaeger@linux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402689082-20211-1-git-send-email-christophjaeger@linux.com>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds documentation describing a device tree binding for the
-coreboot firmware project (www.coreboot.org). It is meant to be
-dynamically added during boot and contains address definitions for the
-coreboot table (a list of variable-sized descriptors providing
-information about various compile- and run-time generated firmware
-parameters) and the CBMEM area (the structure containing most run-time
-resident memory regions set up by coreboot).
+On Fri, Jun 13, 2014 at 09:51:22PM +0200, Christoph Jaeger wrote:
+> intel_dsi_init() bails out without freeing the memory 'intel_dsi' and
+> 'intel_connector' point to. Simply bail out before allocating memory.
+> 
+> Picked up by Coverity - CID 1222750.
+> 
+> Signed-off-by: Christoph Jaeger <christophjaeger@linux.com>
 
-These definitions allow kernel drivers to easily access data contained
-in and pointed to by these regions (such as coreboot's in-memory log).
-(An example implementation can be seen at http://crosreview.com/203371,
-which will be submitted at a later point.)
+Queued for -next, thanks for the patch. I've had to rebase the patch a
+bit to resolve conflicts. Imo also not for -fixes because of this conflict
+potential, so will land in 3.17.
+-Daniel
+> ---
+>  drivers/gpu/drm/i915/intel_dsi.c | 14 +++++++-------
+>  1 file changed, 7 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_dsi.c b/drivers/gpu/drm/i915/intel_dsi.c
+> index 02f99d7..6965627 100644
+> --- a/drivers/gpu/drm/i915/intel_dsi.c
+> +++ b/drivers/gpu/drm/i915/intel_dsi.c
+> @@ -675,6 +675,13 @@ bool intel_dsi_init(struct drm_device *dev)
+>  	if (!dev_priv->vbt.has_mipi)
+>  		return false;
+>  
+> +	if (IS_VALLEYVIEW(dev)) {
+> +		dev_priv->mipi_mmio_base = VLV_MIPI_BASE;
+> +	} else {
+> +		DRM_ERROR("Unsupported Mipi device to reg base");
+> +		return false;
+> +	}
+> +
+>  	intel_dsi = kzalloc(sizeof(*intel_dsi), GFP_KERNEL);
+>  	if (!intel_dsi)
+>  		return false;
+> @@ -689,13 +696,6 @@ bool intel_dsi_init(struct drm_device *dev)
+>  	encoder = &intel_encoder->base;
+>  	intel_dsi->attached_connector = intel_connector;
+>  
+> -	if (IS_VALLEYVIEW(dev)) {
+> -		dev_priv->mipi_mmio_base = VLV_MIPI_BASE;
+> -	} else {
+> -		DRM_ERROR("Unsupported Mipi device to reg base");
+> -		return false;
+> -	}
+> -
+>  	connector = &intel_connector->base;
+>  
+>  	drm_encoder_init(dev, encoder, &intel_dsi_funcs, DRM_MODE_ENCODER_DSI);
+> -- 
+> 1.9.3
+> 
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
----
- .../devicetree/bindings/firmware/coreboot.txt      | 28 ++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/firmware/coreboot.txt
-
-diff --git a/Documentation/devicetree/bindings/firmware/coreboot.txt b/Documentation/devicetree/bindings/firmware/coreboot.txt
-new file mode 100644
-index 0000000..89d7bf3
---- /dev/null
-+++ b/Documentation/devicetree/bindings/firmware/coreboot.txt
-@@ -0,0 +1,28 @@
-+COREBOOT firmware information
-+
-+The device tree node to communicate the location of coreboot's memory-resident
-+bookkeeping structures to the kernel. Since coreboot itself cannot boot a
-+device-tree-based kernel (yet), this node needs to be inserted by a
-+second-stage bootloader (a coreboot "payload").
-+
-+Required properties:
-+ - compatible: Should be "coreboot"
-+ - reg: Address and length of the following two memory regions, in order:
-+	1.) The coreboot table. This is a list of variable-sized descriptors
-+	that contain various compile- and run-time generated firmware
-+	parameters. It is identified by the magic string "LBIO" in its first
-+	four bytes. See coreboot's src/include/boot/coreboot_tables.h for
-+	details.
-+	2.) The CBMEM area. This is a downward-growing memory region used by
-+	coreboot to dynamically allocate data structures that remain resident.
-+	It may or may not include the coreboot table as one of its members. It
-+	is identified by a root node descriptor with the magic number
-+	0xc0389479 that resides in the topmost 8 bytes of the area. See
-+	coreboot's src/lib/dynamic_cbmem.c for details.
-+
-+Example:
-+	firmware {
-+		compatible = "coreboot";
-+		reg = <0xfdfea000 0x264>,
-+		      <0xfdfea000 0x16000>;
-+	};
 -- 
-1.8.3.2
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
