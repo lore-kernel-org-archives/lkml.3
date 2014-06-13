@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074AbaFMJyH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 05:54:07 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:59436 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752973AbaFMJyD (ORCPT
+	id S1753164AbaFMJzo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 05:55:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63373 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752716AbaFMJzn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 05:54:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1725C134@AcuExch.aculab.com>
-References: <alpine.DEB.2.02.1406130111280.1551@tomh.mtv.corp.google.com>
-	<CAMuHMdW4kYeqEby3iABzdbjyAkPKq=x4dyopokFbHWT0Q4fjcw@mail.gmail.com>
-	<063D6719AE5E284EB5DD2968C1650D6D1725C134@AcuExch.aculab.com>
-Date: Fri, 13 Jun 2014 11:54:00 +0200
-X-Google-Sender-Auth: jsmMr0njVXrJtlFWh2TzsQQdprA
-Message-ID: <CAMuHMdXOY8NF78gnpqHdNueDKDs5kTZ+xqV+dVXCYCu8MkSFng@mail.gmail.com>
-Subject: Re: [-next] Regression: ssh log in slowdown
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Laight <David.Laight@aculab.com>
-Cc: Tom Herbert <therbert@google.com>, "David S. Miller" <davem@davemloft.net>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 13 Jun 2014 05:55:43 -0400
+Subject: Re: [PATCH 4/4] tools lib traceevent: Fix and cleanup
+ kvm_nested_vmexit tracepoints
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+In-Reply-To: <20140613021157.484318137@goodmis.org>
+References: <20140613021002.444608350@goodmis.org>
+	 <20140613021157.484318137@goodmis.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 13 Jun 2014 18:55:37 +0900
+Message-ID: <1402653337.2178.6.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+Hi Steve,
 
-On Fri, Jun 13, 2014 at 10:49 AM, David Laight <David.Laight@aculab.com> wrote:
-> From: Of Geert Uytterhoeven
-> ...
->> Note that I'm also using NFS root, which doesn't seem to be affected.
->> I can happily run "ls -R /" on the serial console during the 10 s delay in ssh.
->
-> Are you sure that the delay during ssh login isn't just
-> a reverse DNS timeout?
+2014-06-12 (목), 22:10 -0400, Steven Rostedt:
+> From: Jan Kiszka <jan.kiszka@siemens.com>
+> 
+> Fix several issues of kvm_nested_vmexit[_inject]: field width aren't
+> supported with pevent_print, rip was printed twice/incorrectly, SVM ISA
+> was hard-coded, we don't use ':' to separate field names.
+> 
+> Link: http://lkml.kernel.org/r/8e6c02b22ea8136c139a91c69d6cc73b8c5c184b.1388855989.git.jan.kiszka@web.de
+> 
+> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  tools/lib/traceevent/plugin_kvm.c | 18 ++++++------------
+>  1 file changed, 6 insertions(+), 12 deletions(-)
+> 
+> diff --git a/tools/lib/traceevent/plugin_kvm.c b/tools/lib/traceevent/plugin_kvm.c
+> index 0d437837569f..0575e59c65f0 100644
+> --- a/tools/lib/traceevent/plugin_kvm.c
+> +++ b/tools/lib/traceevent/plugin_kvm.c
+> @@ -330,19 +330,13 @@ static int kvm_emulate_insn_handler(struct trace_seq *s,
+>  static int kvm_nested_vmexit_inject_handler(struct trace_seq *s, struct pevent_record *record,
+>  					    struct event_format *event, void *context)
+>  {
+> -	unsigned long long val;
+> -
+> -	pevent_print_num_field(s, " rip %0x016llx", event, "rip", record, 1);
+> -
+> -	if (pevent_get_field_val(s, event, "exit_code", record, &val, 1) < 0)
+> +	if (print_exit_reason(s, record, event, "exit_code") < 0)
+>  		return -1;
+>  
+> -	trace_seq_printf(s, "reason %s", find_exit_reason(2, val));
+> -
+> -	pevent_print_num_field(s, " ext_inf1: %0x016llx", event, "exit_info1", record, 1);
+> -	pevent_print_num_field(s, " ext_inf2: %0x016llx", event, "exit_info2", record, 1);
+> -	pevent_print_num_field(s, " ext_int: %0x016llx", event, "exit_int_info", record, 1);
+> -	pevent_print_num_field(s, " ext_int_err: %0x016llx", event, "exit_int_info_err", record, 1);
+> +	pevent_print_num_field(s, " info1 %llx", event, "exit_info1", record, 1);
+> +	pevent_print_num_field(s, " info2 %llx", event, "exit_info2", record, 1);
+> +	pevent_print_num_field(s, " int_info %llx", event, "exit_int_info", record, 1);
+> +	pevent_print_num_field(s, " int_info_err %llx", event, "exit_int_info_err", record, 1);
+>  
+>  	return 0;
+>  }
+> @@ -350,7 +344,7 @@ static int kvm_nested_vmexit_inject_handler(struct trace_seq *s, struct pevent_r
+>  static int kvm_nested_vmexit_handler(struct trace_seq *s, struct pevent_record *record,
+>  				     struct event_format *event, void *context)
+>  {
+> -	pevent_print_num_field(s, " rip %0x016llx", event, "rip", record, 1);
+> +	pevent_print_num_field(s, "rip %lx ", event, "rip", record, 1);
 
-Indeed, the ssh server sends a reverse DNS request twice, with 5s in between:
+s/%lx/%llx/
 
-01:01:16.334257 2e:09:0a:00:6d:85 > 00:0c:42:12:75:1d, ethertype IPv4
-(0x0800), length 86: <ssh-server-ip>.55318 > <dns-server-ip>.53: 2907+
-PTR? <ssh-client-rev-ip>.in-addr.arpa. (44)
-01:01:16.337282 00:0c:42:12:75:1d > 2e:09:0a:00:6d:85, ethertype IPv4
-(0x0800), length 114: <dns-server-ip>.53 > <ssh-server-ip>.55318:
-2907* 1/0/0 PTR <ssh-client-name>. (72)
-01:01:16.356440 2e:09:0a:00:6d:85 > 74:d0:2b:c8:05:49, ethertype IPv4
-(0x0800), length 66: <ssh-server-ip>.22 > <ssh-client-ip>.53536: Flags
-[.], ack 2194, win 272, options [nop,nop,TS val 4294938665 ecr
-480138541], length 0
+Otherwise this series and previous two cleanup patches look good to me.
 
-01:01:21.342072 2e:09:0a:00:6d:85 > 00:0c:42:12:75:1d, ethertype IPv4
-(0x0800), length 86: <ssh-server-ip>.55318 > <dns-server-ip>.53: 2907+
-PTR? <ssh-client-rev-ip>.in-addr.arpa. (44)
-01:01:21.344844 00:0c:42:12:75:1d > 2e:09:0a:00:6d:85, ethertype IPv4
-(0x0800), length 114: <dns-server-ip>.53 > <ssh-server-ip>.55318:
-2907* 1/0/0 PTR <ssh-client-name>. (72)
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 
-01:01:26.353667 2e:09:0a:00:6d:85 > 74:d0:2b:c8:05:49, ethertype IPv4
-(0x0800), length 118: <ssh-server-ip>.22 > <ssh-client-ip>.53536:
-Flags [P.], seq 1999:2051, ack 2194, win 272, options [nop,nop,TS val
-4294939944 ecr 480138541], length 52
+Thanks,
+Namhyung
 
-Interestingly, I don't see the forward DNS request after that, which
-does happen in the
-good case.
 
-Gr{oetje,eeting}s,
+>  
+>  	return kvm_nested_vmexit_inject_handler(s, record, event, context);
+>  }
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
