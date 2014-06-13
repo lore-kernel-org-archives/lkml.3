@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872AbaFML4h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 07:56:37 -0400
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:53602 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750828AbaFML4f (ORCPT
+	id S1751964AbaFML5S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 07:57:18 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:49685 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788AbaFML5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 07:56:35 -0400
-Message-ID: <1402660592.28881.22.camel@x220>
-Subject: Re: [PATCH] IBM Akebono: Remove obsolete config select
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Alistair Popple <alistair@popple.id.au>
-Cc: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Date: Fri, 13 Jun 2014 13:56:32 +0200
-In-Reply-To: <1399018005-23136-1-git-send-email-alistair@popple.id.au>
-References: <1398998002.2925.15.camel@pasglop>
-	 <1399018005-23136-1-git-send-email-alistair@popple.id.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+	Fri, 13 Jun 2014 07:57:15 -0400
+Date: Fri, 13 Jun 2014 13:56:50 +0200
+From: Michael Mueller <mimu@linux.vnet.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Romain Francoise <romain@orebokech.com>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, borntraeger@de.ibm.com,
+        cornelia.huck@de.ibm.com, ddongch@cn.ibm.com
+Subject: Re: [PATCH v1] vhost: avoid large order allocations
+Message-ID: <20140613135650.582f9f46@bee>
+In-Reply-To: <20140513151527.GA28517@redhat.com>
+References: <1399970133-46783-1-git-send-email-mimu@linux.vnet.ibm.com>
+	<1399970133-46783-2-git-send-email-mimu@linux.vnet.ibm.com>
+	<20140513084049.GE29442@redhat.com>
+	<87tx8tg3a1.fsf@kima.orebokech.com>
+	<20140513151527.GA28517@redhat.com>
+Organization: IBM
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Jun 2014 11:56:32.0687 (UTC) FILETIME=[84EB6BF0:01CF86FE]
-X-RcptDomain: vger.kernel.org
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061311-0542-0000-0000-000009795F04
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-02 at 18:06 +1000, Alistair Popple wrote:
-> The original implementation of MMC support for Akebono introduced a
-> new configuration symbol (MMC_SDHCI_OF_476GTR). This symbol has been
-> dropped in favour of using the generic platform driver however the
-> select for this symbol was mistakenly left in the platform
-> configuration.
+On Tue, 13 May 2014 18:15:27 +0300
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
+
+> On Tue, May 13, 2014 at 04:29:58PM +0200, Romain Francoise wrote:
+> > "Michael S. Tsirkin" <mst@redhat.com> writes:
+> > 
+> > > Please dont' do this, extra indirection hurts performance.
+> > > Instead, please change vhost_net_open and scsi to allocate the whole
+> > > structure with vmalloc if kmalloc fails, along the lines of
+> > > 74d332c13b2148ae934ea94dac1745ae92efe8e5
+> > 
+> > Back in January 2013, you didn't seem to think it was a good idea:
+> > 
+> > https://lkml.org/lkml/2013/1/23/492
 > 
-> This patch removes the obsolete symbol selection.
+> Hmm true, and Dave thought the structure's too large.
+> I'll have to do some benchmarks to see what the effect
+> of Michael's patch is, performance-wise.
+> If it's too expensive I can pick up your patch, no need to
+> repost.
 > 
-> Signed-off-by: Alistair Popple <alistair@popple.id.au>
 
-This patch hasn't yet entered linux-next nor Linus' tree. Is it queued
-somewhere? If not, would a
-    Acked-by: Paul Bolle <pebolle@tiscali.nl>
+Hi Michael,
 
-help to get this trivial patch queued for either of those trees?
+do you have any update in this case for us?
 
-
-Paul Bolle
-
-> ---
->  arch/powerpc/platforms/44x/Kconfig | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/arch/powerpc/platforms/44x/Kconfig b/arch/powerpc/platforms/44x/Kconfig
-> index 8beec7d..908bf11 100644
-> --- a/arch/powerpc/platforms/44x/Kconfig
-> +++ b/arch/powerpc/platforms/44x/Kconfig
-> @@ -220,7 +220,6 @@ config AKEBONO
->  	select USB_EHCI_HCD_PLATFORM
->  	select MMC_SDHCI
->  	select MMC_SDHCI_PLTFM
-> -	select MMC_SDHCI_OF_476GTR
->  	select ATA
->  	select SATA_AHCI_PLATFORM
->  	help
+Michael
 
