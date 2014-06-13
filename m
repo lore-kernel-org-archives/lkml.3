@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904AbaFMNpZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 09:45:25 -0400
-Received: from mail-we0-f202.google.com ([74.125.82.202]:54874 "EHLO
-	mail-we0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062AbaFMNpY (ORCPT
+	id S1752320AbaFMNqc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 09:46:32 -0400
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:38643 "EHLO
+	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025AbaFMNqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 09:45:24 -0400
+	Fri, 13 Jun 2014 09:46:31 -0400
+X-Greylist: delayed 498 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Jun 2014 09:46:31 EDT
 From: Michal Nazarewicz <mina86@mina86.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        Krzysztof Opasiak <k.opasiak@samsung.com>, <stable@vger.kernel.org>,
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
         Michal Nazarewicz <mina86@mina86.com>
-Subject: [PATCHv4 1/6] usb: gadget: f_fs: resurect usb_functionfs_descs_head structure
-Date: Fri, 13 Jun 2014 15:38:04 +0200
-Message-Id: <1402666689-4971-2-git-send-email-mina86@mina86.com>
+Subject: [PATCH] scripts: modpost: fix compilation warning
+Date: Fri, 13 Jun 2014 15:39:14 +0200
+Message-Id: <1402666754-5325-1-git-send-email-mina86@mina86.com>
 X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <1402666689-4971-1-git-send-email-mina86@mina86.com>
-References: <1402666689-4971-1-git-send-email-mina86@mina86.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -26,40 +23,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even though usb_functionfs_descs_head structure is now deprecated,
-it has been used by some user space tools.  Its removel in commit
-[ac8dde1: “Add flags to descriptors block”] was an oversight
-leading to build breakage for such tools.
+The scripts/mod/modpost.c triggers the following warning:
 
-Bring it back so that old user space tools can still be build
-without problems on newer kernel versions.
+scripts/mod/modpost.c: In function ‘remove_dot’:
+scripts/mod/modpost.c:1710:10: warning: ignoring return value of ‘strtoul’, declared with attribute warn_unused_result [-Wunused-result]
 
-Cc: <stable@vger.kernel.org>  # 3.14
-Reported-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Reported-by: Krzysztof Opasiak <k.opasiak@samsung.com>
+The remove_dot function that calls strtoul does not care about the
+numeric value of the string that is parsed but only looks for the
+end of the numeric sequence.  As such, it's equivalent to just skip
+over all digits.
+
 Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 ---
- include/uapi/linux/usb/functionfs.h | 7 +++++++
- 1 file changed, 7 insertions(+)
+ scripts/mod/modpost.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/include/uapi/linux/usb/functionfs.h b/include/uapi/linux/usb/functionfs.h
-index 2a4b4a7..24b68c5 100644
---- a/include/uapi/linux/usb/functionfs.h
-+++ b/include/uapi/linux/usb/functionfs.h
-@@ -33,6 +33,13 @@ struct usb_endpoint_descriptor_no_audio {
- 	__u8  bInterval;
- } __attribute__((packed));
+diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+index 0663556..c710651 100644
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -1703,12 +1703,11 @@ static void check_sec_ref(struct module *mod, const char *modname,
  
-+/* Legacy format, deprecated as of 3.14. */
-+struct usb_functionfs_descs_head {
-+	__le32 magic;
-+	__le32 length;
-+	__le32 fs_count;
-+	__le32 hs_count;
-+} __attribute__((packed, deprecated));
+ static char *remove_dot(char *s)
+ {
+-	char *end;
+-	int n = strcspn(s, ".");
++	size_t n = strcspn(s, ".");
  
- /*
-  * Descriptors format:
+-	if (n > 0 && s[n] != 0) {
+-		strtoul(s + n + 1, &end, 10);
+-		if  (end > s + n + 1 && (*end == '.' || *end == 0))
++	if (n && s[n]) {
++		size_t m = strspn(s + n + 1, "0123456789");
++		if (m && (s[n + m] == '.' || s[n + m] == 0))
+ 			s[n] = 0;
+ 	}
+ 	return s;
 -- 
 2.0.0.526.g5318336
 
