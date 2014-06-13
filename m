@@ -1,78 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaFMQUZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 12:20:25 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:53099 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751533AbaFMQUX (ORCPT
+	id S1753434AbaFMQUf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 12:20:35 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:38568 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533AbaFMQUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 12:20:23 -0400
+	Fri, 13 Jun 2014 12:20:33 -0400
+Date: Fri, 13 Jun 2014 09:20:26 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH] rcu: Only pin GP kthread when full dynticks is actually
+ used
+Message-ID: <20140613162026.GR4581@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1402618619-32630-1-git-send-email-fweisbec@gmail.com>
+ <20140613012432.GH4581@linux.vnet.ibm.com>
+ <20140613020554.GA9974@linux.vnet.ibm.com>
+ <20140613125543.GD6635@localhost.localdomain>
+ <20140613155548.GN4581@linux.vnet.ibm.com>
+ <20140613160318.GM6635@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <CAKgNAkgMA39AfoSoA5Pe1r9N+ZzfYQNvNPvcRN7tOvRb8+v06Q@mail.gmail.com>
-References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
-	<1402655819-14325-4-git-send-email-dh.herrmann@gmail.com>
-	<CAKgNAkgnnWjrbE+2KAETsmiyrnrMQu0h7-MrYLvkiwj--_nxcQ@mail.gmail.com>
-	<CANq1E4R2K+eq9AxtFewp4YUL2cujg+dg+sN19Anvf-zWuvgyWw@mail.gmail.com>
-	<CAKgNAkgMA39AfoSoA5Pe1r9N+ZzfYQNvNPvcRN7tOvRb8+v06Q@mail.gmail.com>
-Date: Fri, 13 Jun 2014 09:20:22 -0700
-Message-ID: <CALAqxLUDDYhDbU-fa50ZHVe+yOmv0m3aOO3WmGpRrk-cPzsMAg@mail.gmail.com>
-Subject: Re: [PATCH v3 3/7] shm: add memfd_create() syscall
-From: John Stultz <john.stultz@linaro.org>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: David Herrmann <dh.herrmann@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>, Ryan Lortie <desrt@desrt.ca>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Hugh Dickins <hughd@google.com>,
-        Tony Battersby <tonyb@cybernetics.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140613160318.GM6635@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061316-0928-0000-0000-000002A19CA4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 7:20 AM, Michael Kerrisk (man-pages)
-<mtk.manpages@gmail.com> wrote:
->
-> The general notion these days is that a (comprehensive) manual page
-> _should_ come *with* the system call, rather than after the fact. And
-> there's a lot of value in that. I've found no end of bugs and design
-> errors while writing (comprehensive) man pages after the fact (by
-> which time it's too late to fix the design errors), and also found
-> quite a few of those issues when I've managed to work with folk at the
-> same time as they write the syscall. Bottom line: you really should
-> write formal documentation now, as part of the process of code
-> submission. It improves the chance of finding implementation and
-> design bugs, and may well widen your circle of reviewers.
+On Fri, Jun 13, 2014 at 06:03:20PM +0200, Frederic Weisbecker wrote:
+> On Fri, Jun 13, 2014 at 08:55:48AM -0700, Paul E. McKenney wrote:
+> > On Fri, Jun 13, 2014 at 02:55:45PM +0200, Frederic Weisbecker wrote:
+> > > On Thu, Jun 12, 2014 at 07:05:54PM -0700, Paul E. McKenney wrote:
+> > > > On Thu, Jun 12, 2014 at 06:24:32PM -0700, Paul E. McKenney wrote:
+> > > > > On Fri, Jun 13, 2014 at 02:16:59AM +0200, Frederic Weisbecker wrote:
+> > > > > > CONFIG_NO_HZ_FULL may be enabled widely on distros nowadays but actual
+> > > > > > users should be a tiny minority, if actually any.
+> > > > > > 
+> > > > > > Also there is a risk that affining the GP kthread to a single CPU could
+> > > > > > end up noticeably reducing RCU performances and increasing energy
+> > > > > > consumption.
+> > > > > > 
+> > > > > > So lets affine the GP kthread only when nohz full is actually used
+> > > > > > (ie: when the nohz_full= parameter is filled or CONFIG_NO_HZ_FULL_ALL=y)
+> > > > > > 
+> > > > > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > > > > > Cc: Josh Triplett <josh@joshtriplett.org>
+> > > > > > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > > > > > Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > > > > > ---
+> > > > > >  kernel/rcu/tree_plugin.h | 10 +++++++---
+> > > > > >  1 file changed, 7 insertions(+), 3 deletions(-)
+> > > > > > 
+> > > > > > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> > > > > > index cbc2c45..726f52c 100644
+> > > > > > --- a/kernel/rcu/tree_plugin.h
+> > > > > > +++ b/kernel/rcu/tree_plugin.h
+> > > > > > @@ -2843,12 +2843,16 @@ static bool rcu_nohz_full_cpu(struct rcu_state *rsp)
+> > > > > >   */
+> > > > > >  static void rcu_bind_gp_kthread(void)
+> > > > > >  {
+> > > > > > -#ifdef CONFIG_NO_HZ_FULL
+> > > > > > -	int cpu = ACCESS_ONCE(tick_do_timer_cpu);
+> > > > > > +	int cpu;
+> > > > > > +
+> > > > > > +	if (!tick_nohz_full_enabled())
+> > > > > > +		return;
+> > > > > > +
+> > > > > > +	cpu = ACCESS_ONCE(tick_do_timer_cpu);
+> > > > > > 
+> > > > > >  	if (cpu < 0 || cpu >= nr_cpu_ids)
+> > > > > >  		return;
+> > > > > > +
+> > > > > >  	if (raw_smp_processor_id() != cpu)
+> > > > > >  		set_cpus_allowed_ptr(current, cpumask_of(cpu));
+> > > > > > -#endif /* #ifdef CONFIG_NO_HZ_FULL */
+> > > > > >  }
+> > > > > 
+> > > > > Hello, Frederic,
+> > > > > 
+> > > > > I have the following queued.  Shall I port yours on top of mine, or is
+> > > > > there an issue with mine?
+> > > > 
+> > > > OK, I suppose I should show you what it looks like ported on top of mine.
+> > > 
+> > > No need to keep my patch as long as yours goes in. It fixes all the issue.
+> > > 
+> > > > 
+> > > > I didn't understand the removal of "#ifdef CONFIG_NO_HZ_FULL", so I
+> > > > left that.
+> > > 
+> > > Yeah that's because the:
+> > > 
+> > >       if (!tick_nohz_full_enabled())
+> > >            return;
+> > > 
+> > > returns unconditionally if CONFIG_NO_HZ_FULL=n. So the whole function
+> > > becomes dead code that should be detected and removed by gcc. So same
+> > > result as with the ifdef.
+> > 
+> > Well, that part of your patch is worthwhile, then!  And I do therefore
+> > need to restructure to invoke tick_nohz_full_enabled() at the very
+> > beginning of the function.
+> 
+> Well if no CPU is full dynticks, the sole effect of this is that the kthread
+> will be re-affined globally... So no big issue.
+> 
+> Although that can make you spare a call to set_cpus_allowed_ptr(), which can
+> be worthwile after all :)
 
-I very much agree here. One practical issue I've noticed is that
-having separate targets for both the code changes and the manpages can
-be an extra barrier for folks getting changes correctly documented as
-the change is being submitted. Reviewers may say "be sure to send
-updates to the man pages" but its not always easy to remember to
-follow up and make sure the submitter got the changes (which match the
-merged patches) to you as well.
+Good point, I must keep the #ifdef, but can also add the call.
 
-I've been thinking it might be nice to have the kernel syscall man
-pages included in the kernel source tree, then have them
-copied/imported over to the man-pages project (similar to how glibc
-imports uapi kernel headers).  They could even be kept in the
-include/uapi directory, and checkpatch could ensure that changes that
-touch include/uapi also have modifications to something in the
-manpages directory. This way folks would be able to include the man
-page change with the code change, making it easier for developers to
-do the right thing, making it easier for reviewers to ensure its
-correct, and making it easier for maintainers to ensure man page
-documentation is properly in sync.
+								Thanx, Paul
 
-Or is this something that has been hashed over already? I do admit
-this would disrupt your process a bit.
+> > > > I also didn't understand how dumping the GP kthreads onto
+> > > > a single CPU could affect energy efficiency all that much, so I omitted
+> > > > that from the commit log.  If I am missing something, please enlighten me.
+> > > 
+> > > Because if the kthread is pinned to CPU 0 and a grace period is in progress,
+> > > the kthread is going to disturb the CPU 0 regardless of its possibly deep sleep
+> > > state. OTOH if the kthread is widely affine, it can be scheduled to idle CPUs
+> > > that are less cold and thus wake them from less deep power state.
+> > > 
+> > > Well that all assuming that the scheduler takes care of these deep idle state.
+> > > But I believe it does iirc...
+> > 
+> > My guess is that enough stuff gets dumped on CPU 0 to make this a non-issue,
+> > but point taken nonetheless.
+> 
+> Ok.
+> 
 
-thanks
--john
