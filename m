@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000AbaFMGwB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 02:52:01 -0400
-Received: from mga03.intel.com ([143.182.124.21]:35651 "EHLO mga03.intel.com"
+	id S1753039AbaFMGwK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 02:52:10 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18296 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752972AbaFMGv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 02:51:59 -0400
+	id S1753009AbaFMGwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 02:52:06 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,470,1400050800"; 
-   d="scan'208";a="445043489"
+   d="scan'208";a="547318502"
 From: Lv Zheng <lv.zheng@intel.com>
 To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Len Brown <len.brown@intel.com>
 Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
         <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
-Subject: [PATCH 6/7] ACPICA: Events: Fix edge-triggered GPE by disabling before acknowledging it.
-Date: Fri, 13 Jun 2014 14:51:54 +0800
-Message-Id: <1bae7754d30f72caaedcddd9fb2f1f90bbd9c630.1402641700.git.lv.zheng@intel.com>
+Subject: [PATCH 7/7] ACPI/EC: Add detailed fields debugging support of EC_SC(R).
+Date: Fri, 13 Jun 2014 14:52:00 +0800
+Message-Id: <149c57ea501e591be5cb83b60cef3c35d2799735.1402641700.git.lv.zheng@intel.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <cover.1402641700.git.lv.zheng@intel.com>
 References: <cover.1402641700.git.lv.zheng@intel.com>
@@ -24,67 +24,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to ACPI specificiation 5, chapter 5.6.4 General-Purpose Event Hnadling,
-OSPMs need to disable GPE before clearing the status bit for edge-triggered
-GPEs.
+Developers really don't need to translate EC_SC(R) in mind as long as the
+field details are decoded in the debugging message.
 
 Signed-off-by: Lv Zheng <lv.zheng@intel.com>
 Tested-by: Gareth Williams <gareth@garethwilliams.me.uk>
 Tested-by: Steffen Weber <steffen.weber@gmail.com>
 ---
- drivers/acpi/acpica/evgpe.c |   32 +++++++++++++++++---------------
- 1 file changed, 17 insertions(+), 15 deletions(-)
+ drivers/acpi/ec.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/acpi/acpica/evgpe.c b/drivers/acpi/acpica/evgpe.c
-index 48f7001..e4ba4de 100644
---- a/drivers/acpi/acpica/evgpe.c
-+++ b/drivers/acpi/acpica/evgpe.c
-@@ -698,21 +698,6 @@ acpi_ev_gpe_dispatch(struct acpi_namespace_node *gpe_device,
- 	}
+diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+index 7726adc..9aa9d6a 100644
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -55,6 +55,7 @@
+ /* EC status register */
+ #define ACPI_EC_FLAG_OBF	0x01	/* Output buffer full */
+ #define ACPI_EC_FLAG_IBF	0x02	/* Input buffer full */
++#define ACPI_EC_FLAG_CMD	0x08	/* Input buffer contains a command */
+ #define ACPI_EC_FLAG_BURST	0x10	/* burst mode */
+ #define ACPI_EC_FLAG_SCI	0x20	/* EC-SCI occurred */
  
- 	/*
--	 * If edge-triggered, clear the GPE status bit now. Note that
--	 * level-triggered events are cleared after the GPE is serviced.
--	 */
--	if ((gpe_event_info->flags & ACPI_GPE_XRUPT_TYPE_MASK) ==
--	    ACPI_GPE_EDGE_TRIGGERED) {
--		status = acpi_hw_clear_gpe(gpe_event_info);
--		if (ACPI_FAILURE(status)) {
--			ACPI_EXCEPTION((AE_INFO, status,
--					"Unable to clear GPE %02X",
--					gpe_number));
--			return_UINT32(ACPI_INTERRUPT_NOT_HANDLED);
--		}
--	}
--
--	/*
- 	 * Always disable the GPE so that it does not keep firing before
- 	 * any asynchronous activity completes (either from the execution
- 	 * of a GPE method or an asynchronous GPE handler.)
-@@ -729,6 +714,23 @@ acpi_ev_gpe_dispatch(struct acpi_namespace_node *gpe_device,
- 	}
+@@ -133,26 +134,33 @@ static int EC_FLAGS_CLEAR_ON_RESUME; /* Needs acpi_ec_clear() on boot/resume */
+ static inline u8 acpi_ec_read_status(struct acpi_ec *ec)
+ {
+ 	u8 x = inb(ec->command_addr);
+-	pr_debug("---> status = 0x%2.2x\n", x);
++	pr_debug("EC_SC(R) = 0x%2.2x "
++		 "SCI_EVT=%d BURST=%d CMD=%d IBF=%d OBF=%d\n",
++		 x,
++		 !!(x & ACPI_EC_FLAG_SCI),
++		 !!(x & ACPI_EC_FLAG_BURST),
++		 !!(x & ACPI_EC_FLAG_CMD),
++		 !!(x & ACPI_EC_FLAG_IBF),
++		 !!(x & ACPI_EC_FLAG_OBF));
+ 	return x;
+ }
  
- 	/*
-+	 * If edge-triggered, clear the GPE status bit now. Note that
-+	 * level-triggered events are cleared after the GPE is serviced.
-+	 */
-+	if ((gpe_event_info->flags & ACPI_GPE_XRUPT_TYPE_MASK) ==
-+	    ACPI_GPE_EDGE_TRIGGERED) {
-+		status = acpi_hw_clear_gpe(gpe_event_info);
-+		if (ACPI_FAILURE(status)) {
-+			ACPI_EXCEPTION((AE_INFO, status,
-+					"Unable to clear GPE %02X",
-+					gpe_number));
-+			(void)acpi_hw_low_set_gpe(gpe_event_info,
-+						  ACPI_GPE_CONDITIONAL_ENABLE);
-+			return_UINT32(ACPI_INTERRUPT_NOT_HANDLED);
-+		}
-+	}
-+
-+	/*
- 	 * Dispatch the GPE to either an installed handler or the control
- 	 * method associated with this GPE (_Lxx or _Exx). If a handler
- 	 * exists, we invoke it and do not attempt to run the method.
+ static inline u8 acpi_ec_read_data(struct acpi_ec *ec)
+ {
+ 	u8 x = inb(ec->data_addr);
+-	pr_debug("---> data = 0x%2.2x\n", x);
++	pr_debug("EC_DATA(R) = 0x%2.2x\n", x);
+ 	return x;
+ }
+ 
+ static inline void acpi_ec_write_cmd(struct acpi_ec *ec, u8 command)
+ {
+-	pr_debug("<--- command = 0x%2.2x\n", command);
++	pr_debug("EC_SC(W) = 0x%2.2x\n", command);
+ 	outb(command, ec->command_addr);
+ }
+ 
+ static inline void acpi_ec_write_data(struct acpi_ec *ec, u8 data)
+ {
+-	pr_debug("<--- data = 0x%2.2x\n", data);
++	pr_debug("EC_DATA(W) = 0x%2.2x\n", data);
+ 	outb(data, ec->data_addr);
+ }
+ 
 -- 
 1.7.10
 
