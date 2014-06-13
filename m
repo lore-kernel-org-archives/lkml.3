@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163AbaFMIke (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 04:40:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57068 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753117AbaFMIkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 04:40:31 -0400
-Message-ID: <539AB8F1.2040608@redhat.com>
-Date: Fri, 13 Jun 2014 10:40:17 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753176AbaFMIny (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 04:43:54 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:43804 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaFMInu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 04:43:50 -0400
 MIME-Version: 1.0
-To: suravee.suthikulpanit@amd.com, tj@kernel.org, b.zolnierkie@samsung.com
-CC: lho@apm.com, tphan@apm.com, stripathi@apm.com, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ahci: Check and set 64-bit DMA mask for platform
- AHCI driver
-References: <1402594824-4151-1-git-send-email-suravee.suthikulpanit@amd.com> <1402594824-4151-2-git-send-email-suravee.suthikulpanit@amd.com>
-In-Reply-To: <1402594824-4151-2-git-send-email-suravee.suthikulpanit@amd.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.02.1406130111280.1551@tomh.mtv.corp.google.com>
+References: <alpine.DEB.2.02.1406130111280.1551@tomh.mtv.corp.google.com>
+Date: Fri, 13 Jun 2014 10:43:47 +0200
+X-Google-Sender-Auth: Npb1rtJ7yrjjhKwYRbHVkDMEQ70
+Message-ID: <CAMuHMdW4kYeqEby3iABzdbjyAkPKq=x4dyopokFbHWT0Q4fjcw@mail.gmail.com>
+Subject: Re: [-next] Regression: ssh log in slowdown
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Tom Herbert <therbert@google.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Tom,
 
-On 06/12/2014 07:40 PM, suravee.suthikulpanit@amd.com wrote:
-> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> 
-> The current platform AHCI driver does not set the dma_mask correctly
-> for 64-bit DMA capable AHCI controller. This patch checks the AHCI
-> capability bit and set the dma_mask and coherent_dma_mask accordingly.
-> 
-> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+On Fri, Jun 13, 2014 at 10:21 AM, Tom Herbert <therbert@google.com> wrote:
+>> I assume this is the series "[PATCH 0/4] Checksum fixes"
+>> (marc.info/?l=linux-netdev&m=140261417832399&w=2)?
+>>
+> Yes.
+>
+>> As I'm not subscribed to netdev, I cannot reply to that thread.
+>>
+>> "[PATCH 1/4] net: Fix save software checksum complete" fixes the issue
+>> for me.
+>> However, "[PATCH 2/4] udp: call __skb_checksum_complete when doing full
+>> checksum" reintroduces the exact same bad behavior :-(
+>>
+> This implies the problem is happening in UDP path. AFAICT skb->csum is
+> correct, and I don't seem to be able to reproduce the issue on my setup.
+> It is possible that an skb copy is happening in which case we don't copy
+> csum_valid so that checksum_unnecessary would fail in this case.
+>
+> Can you try with the patch below. Thanks!
+>
+> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> index bf92824..9cd5344 100644
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -689,6 +689,9 @@ static void __copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
+>         new->ooo_okay           = old->ooo_okay;
+>         new->no_fcs             = old->no_fcs;
+>         new->encapsulation      = old->encapsulation;
+> +       new->encap_hdr_csum     = old->encap_hdr_csum;
+> +       new->csum_valid         = old->csum_valid;
+> +       new->csum_complete_sw   = old->csum_complete_sw;
+>  #ifdef CONFIG_XFRM
+>         new->sp                 = secpath_get(old->sp);
+>  #endif
 
-I did not review this patch, just because you CC-ed me does not mean
-I've reviewed it. Please don't add my Reviewed-by unless you've gotten
-a mail from me saying something along these lines:
+Thanks, I applied the series "[PATCH 0/4] Checksum fixes", and the fix
+above, but it doesn't help.
 
-This patch is:
-Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+Note that I'm also using NFS root, which doesn't seem to be affected.
+I can happily run "ls -R /" on the serial console during the 10 s delay in ssh.
 
-More in general please do not add any tags, other then Cc or your own
-Signed-off-by, unless you've actually received those tags in an email
-from people.
+Gr{oetje,eeting}s,
 
-Regards,
+                        Geert
 
-Hans
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-p.s.
-
-About the patch itself, I'll try to test this on sunxi devices to
-make sure that it does not break anything this weekend.
-
-
-
-> ---
->  drivers/ata/libahci_platform.c | 13 +++++++++++++
->  1 file changed, 13 insertions(+)
-> 
-> diff --git a/drivers/ata/libahci_platform.c b/drivers/ata/libahci_platform.c
-> index 3a5b4ed..a958a2b 100644
-> --- a/drivers/ata/libahci_platform.c
-> +++ b/drivers/ata/libahci_platform.c
-> @@ -364,6 +364,19 @@ int ahci_platform_init_host(struct platform_device *pdev,
->  			ap->ops = &ata_dummy_port_ops;
->  	}
->  
-> +	if (hpriv->cap & HOST_CAP_64) {
-> +		rc = dma_coerce_mask_and_coherent(dev, DMA_BIT_MASK(64));
-> +		if (rc) {
-> +			rc = dma_coerce_mask_and_coherent(dev,
-> +							  DMA_BIT_MASK(32));
-> +			if (rc) {
-> +				dev_err(dev, "Failed to enable 64-bit DMA.\n");
-> +				return rc;
-> +			}
-> +			dev_warn(dev, "Enable 32-bit DMA instead of 64-bit.\n");
-> +		}
-> +	}
-> +
->  	rc = ahci_reset_controller(host);
->  	if (rc)
->  		return rc;
-> 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
