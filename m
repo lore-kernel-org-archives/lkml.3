@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422AbaFMUpL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 16:45:11 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:40422 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401AbaFMUpJ (ORCPT
+	id S1753643AbaFMUs3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 16:48:29 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:45926 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121AbaFMUs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 16:45:09 -0400
+	Fri, 13 Jun 2014 16:48:28 -0400
+Date: Fri, 13 Jun 2014 13:48:22 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH] rcu: Only pin GP kthread when full dynticks is actually
+ used
+Message-ID: <20140613204822.GT4581@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1402618619-32630-1-git-send-email-fweisbec@gmail.com>
+ <20140613012432.GH4581@linux.vnet.ibm.com>
+ <20140613013515.GA9589@linux.vnet.ibm.com>
+ <20140613124714.GC6635@localhost.localdomain>
+ <20140613155233.GM4581@linux.vnet.ibm.com>
+ <20140613160002.GL6635@localhost.localdomain>
+ <20140613161630.GQ4581@linux.vnet.ibm.com>
+ <20140613162130.GP6635@localhost.localdomain>
+ <20140613164441.GA14232@thin>
 MIME-Version: 1.0
-In-Reply-To: <1402691813.27369.0.camel@buesod1.americas.hpqcorp.net>
-References: <1402684097-5731-1-git-send-email-mcgrof@do-not-panic.com> <1402691813.27369.0.camel@buesod1.americas.hpqcorp.net>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Fri, 13 Jun 2014 13:44:47 -0700
-X-Google-Sender-Auth: hUm9UkzamVzp141eiEWPcDWSe6E
-Message-ID: <CAB=NE6VaVEUTDVmavvdKSJzq-2pKSd3ohwGZmSA61-65gVhKYQ@mail.gmail.com>
-Subject: Re: [PATCH v3] printk: allow increasing the ring buffer depending on
- the number of CPUs
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: hpa@linux.intel.com, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Petr Mladek <pmladek@suse.cz>,
-        Joe Perches <joe@perches.com>, Arun KS <arunks.linux@gmail.com>,
-        Kees Cook <keescook@chromium.org>, Chris Metcalf <cmetcalf@tilera.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140613164441.GA14232@thin>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061320-9332-0000-0000-0000011750B0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 1:36 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> On Fri, 2014-06-13 at 11:28 -0700, Luis R. Rodriguez wrote:
->> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
->> index 7228258..3f3356b 100644
->> --- a/kernel/printk/printk.c
->> +++ b/kernel/printk/printk.c
->> @@ -246,6 +246,7 @@ static u32 clear_idx;
->>  #define LOG_ALIGN __alignof__(struct printk_log)
->>  #endif
->>  #define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
->> +#define __LOG_CPU_MIN_BUF_LEN (1 << CONFIG_LOG_CPU_MIN_BUF_SHIFT)
->>  static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
->>  static char *log_buf = __log_buf;
->>  static u32 log_buf_len = __LOG_BUF_LEN;
->> @@ -752,6 +753,17 @@ void __init setup_log_buf(int early)
->>       unsigned long flags;
->>       char *new_log_buf;
->>       int free;
->> +     int cpu_extra = (num_possible_cpus() - 1) *  __LOG_CPU_MIN_BUF_LEN;
->
-> I think you forgot to drop the - 1 here.
+On Fri, Jun 13, 2014 at 09:44:41AM -0700, Josh Triplett wrote:
+> On Fri, Jun 13, 2014 at 06:21:32PM +0200, Frederic Weisbecker wrote:
+> > On Fri, Jun 13, 2014 at 09:16:30AM -0700, Paul E. McKenney wrote:
+> > > > Is it because we have dynticks CPUs staying too long in the kernel without
+> > > > taking any quiescent states? Are we perhaps missing some rcu_user_enter() or
+> > > > things?
+> > > 
+> > > Sort of the former, but combined with the fact that in-kernel CPUs still
+> > > need scheduling-clock interrupts for RCU to make progress.  I could
+> > > move this to RCU's context-switch hook, but that could be very bad for
+> > > workloads that do lots of context switching.
+> > 
+> > Or I can restart the tick if the CPU stays in the kernel for too long without
+> > a tick. I think that's what we were doing before but we removed that because
+> > we never implemented it correctly (we sent scheduler IPI that did nothing...)
+> 
+> I wonder if timer slack would make sense here: when you have at least
+> one RCU callback pending, set a timer with a huge amount of timer slack,
+> and cancel it if you end up handling the callback via a trip through the
+> scheduler.
 
-Actually that was on purpose as I had noticed in your suggestion on
-the other thread to fix the minimum number of CPUs required for this
-patch to be > 64 rather than >= 64 (with the defaults of 18 for log
-shift, and 12 for min cpu log shift). Minor difference, but it was
-intentional. Even though we do require SMP now the -1 can take effect,
-and it seems safer for now to only require this for > 64 CPU
-configurations for the defaults set. I'm happy to remove that as well,
-but bumping the CPU configuration mark for this to > 64 might be
-better for starters unless we do know for sure we also need this for
-64.
+But in this case, we need the tick even if the current CPU has no callbacks
+because it might be in an RCU read-side critical section.
 
-  Luis
+							Thanx, Paul
+
