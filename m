@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726AbaFMOIG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 10:08:06 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:64957 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750901AbaFMOIE (ORCPT
+	id S1752179AbaFMOKw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 10:10:52 -0400
+Received: from smtprelay4.synopsys.com ([198.182.44.111]:38382 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752026AbaFMOKt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 10:08:04 -0400
-Message-ID: <539B05A1.7080700@fb.com>
-Date: Fri, 13 Jun 2014 08:07:29 -0600
-From: Jens Axboe <axboe@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Keith Busch <keith.busch@intel.com>
-CC: =?UTF-8?B?TWF0aWFzIEJqw7hybGluZw==?= <m@bjorling.me>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "sbradshaw@micron.com" <sbradshaw@micron.com>,
-        "tom.leiming@gmail.com" <tom.leiming@gmail.com>,
-        "hch@infradead.org" <hch@infradead.org>,
+	Fri, 13 Jun 2014 10:10:49 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Rob Herring <robherring2@gmail.com>
+CC: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Jiri Slaby" <jslaby@suse.cz>, Paul Bolle <pebolle@tiscali.nl>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nvme@lists.infradead.org" <linux-nvme@lists.infradead.org>
-Subject: Re: [PATCH v7] NVMe: conversion to blk-mq
-References: <1402392038-5268-2-git-send-email-m@bjorling.me> <alpine.LRH.2.03.1406100945250.4699@AMR> <A52B97CC-6D77-468B-9A9B-A5888AE63580@fb.com> <alpine.LRH.2.03.1406101140490.4699@AMR> <5397636F.9050209@fb.com> <alpine.LRH.2.03.1406101458470.4699@AMR> <5397753B.2020009@fb.com> <alpine.LRH.2.03.1406101515430.4699@AMR> <20140610213333.GA10055@linux.intel.com> <539889DC.7090704@fb.com> <20140611170917.GA12025@linux.intel.com> <CAOu_J6kocZZ1mRQeSidyqJ_Ew0F_POS30v2kgUZX2wDOOnuExg@mail.gmail.com> <alpine.LRH.2.03.1406111641180.4699@AMR> <5399BA00.7000705@bjorling.me> <alpine.LRH.2.03.1406121015130.4699@AMR> <alpine.LRH.2.03.1406121757130.4699@AMR>
-In-Reply-To: <alpine.LRH.2.03.1406121757130.4699@AMR>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-13_05:2014-06-13,2014-06-13,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=1.74343317560499e-11 kscore.compositescore=0
- circleOfTrustscore=0 compositescore=0.533125042697551
- urlsuspect_oldscore=0.533125042697551 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=1996008
- rbsscore=0.533125042697551 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1406130158
-X-FB-Internal: deliver
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "Francois.Bedard@synopsys.com" <Francois.Bedard@synopsys.com>
+Subject: Re: [PATCH 9/9] serial/arc: Add DT based earlycon support
+Thread-Topic: [PATCH 9/9] serial/arc: Add DT based earlycon support
+Thread-Index: AQHPhinUnAXEFucMI0aUKI8MUvq0Qg==
+Date: Fri, 13 Jun 2014 14:10:41 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA230751A6B772C@IN01WEMBXA.internal.synopsys.com>
+References: <1402569099-9900-1-git-send-email-vgupta@synopsys.com>
+ <1402569099-9900-10-git-send-email-vgupta@synopsys.com>
+ <CAL_Jsq+wf-nwzw_sYk4FiZxRr2advvjkd7i32arqVAFptDeVGA@mail.gmail.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.196.93]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2014 06:06 PM, Keith Busch wrote:
-> When cancelling IOs, we have to check if the hwctx has a valid tags
-> for some reason. I have 32 cores in my system and as many queues, but
+On Friday 13 June 2014 06:57 AM, Rob Herring wrote:
+> On Thu, Jun 12, 2014 at 5:31 AM, Vineet Gupta
+> <Vineet.Gupta1@synopsys.com> wrote:
+>> > Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+>> > ---
+> Nice series!
+>
+>> >  arch/arc/boot/dts/angel4.dts  | 3 ++-
+>> >  drivers/tty/serial/arc_uart.c | 1 +
+>> >  2 files changed, 3 insertions(+), 1 deletion(-)
+>> >
+>> > diff --git a/arch/arc/boot/dts/angel4.dts b/arch/arc/boot/dts/angel4.dts
+>> > index 6b57475967a6..e9fc270d1e0b 100644
+>> > --- a/arch/arc/boot/dts/angel4.dts
+>> > +++ b/arch/arc/boot/dts/angel4.dts
+>> > @@ -17,7 +17,8 @@
+>> >         interrupt-parent = <&intc>;
+>> >
+>> >         chosen {
+>> > -               bootargs = "earlycon=arc_uart,mmio32,0xc0fc1000,115200n8 console=ttyARC0,115200n8";
+>> > +               bootargs = "earlycon console=ttyARC0,115200n8";
+>> > +               stdout-path = &arcuart0;
+> Just FYI, Grant has a series to pickup the normal console from
+> stdout-path which would mean you can remove console param as well.
+> I've kicked him to respin it.
 
-It's because unused queues are torn down, to save memory.
+OK ! I can split up 9/9 into driver chg and DT change.
 
-> blk-mq is only using half of those queues and freed the "tags" for the
-> rest after they'd been initialized without telling the driver. Why is
-> blk-mq not making utilizing all my queues?
+In the mean time could you take a look at the driver patches which switch to
+earlycon and DT earlycon
+and possibly provide Ack/Reviewed by.
 
-You have 31 + 1 queues, so only 31 mappable queues. blk-mq symmetrically
-distributes these, so you should have a core + thread sibling on 16
-queues. And yes, that leaves 15 idle hardware queues for this specific
-case. I like the symmetry, it makes it more predictable if things are
-spread out evenly.
-
-But it is a policy decision that could be changed. The logic is in the
-50 lines of code in block/blk-mq-cpumap.c:blk_mq_update_queue_map().
-
-Thanks for the abort and completion fixes, looks a lot better now. It
-might be cleaner to have blk_mq_tag_busy_iter() just work for
-!hctx->tags, since this is actually the 2nd time I've run into this now.
-
-
+Thx,
+-Vineet
