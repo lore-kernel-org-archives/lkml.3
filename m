@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039AbaFMGwK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 02:52:10 -0400
-Received: from mga11.intel.com ([192.55.52.93]:18296 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753009AbaFMGwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 02:52:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,470,1400050800"; 
-   d="scan'208";a="547318502"
-From: Lv Zheng <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
-Subject: [PATCH 7/7] ACPI/EC: Add detailed fields debugging support of EC_SC(R).
-Date: Fri, 13 Jun 2014 14:52:00 +0800
-Message-Id: <149c57ea501e591be5cb83b60cef3c35d2799735.1402641700.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1402641700.git.lv.zheng@intel.com>
-References: <cover.1402641700.git.lv.zheng@intel.com>
+	id S1753092AbaFMGyH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 02:54:07 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:38083 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066AbaFMGyF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 02:54:05 -0400
+Date: Fri, 13 Jun 2014 09:53:46 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
+Subject: [patch] checkpatch: warn on missing spaces in broken up quoted
+ strings
+Message-ID: <20140613065346.GA28134@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Developers really don't need to translate EC_SC(R) in mind as long as the
-field details are decoded in the debugging message.
+Checkpatch already complains when people break up quoted strings but
+it's still pretty common.  One mistake that people often make is they
+leave out the space character between the two strings.
 
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Tested-by: Gareth Williams <gareth@garethwilliams.me.uk>
-Tested-by: Steffen Weber <steffen.weber@gmail.com>
----
- drivers/acpi/ec.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+This check adds 453 new warnings.  There very few false positives, here
+is what they look like:
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index 7726adc..9aa9d6a 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -55,6 +55,7 @@
- /* EC status register */
- #define ACPI_EC_FLAG_OBF	0x01	/* Output buffer full */
- #define ACPI_EC_FLAG_IBF	0x02	/* Input buffer full */
-+#define ACPI_EC_FLAG_CMD	0x08	/* Input buffer contains a command */
- #define ACPI_EC_FLAG_BURST	0x10	/* burst mode */
- #define ACPI_EC_FLAG_SCI	0x20	/* EC-SCI occurred */
- 
-@@ -133,26 +134,33 @@ static int EC_FLAGS_CLEAR_ON_RESUME; /* Needs acpi_ec_clear() on boot/resume */
- static inline u8 acpi_ec_read_status(struct acpi_ec *ec)
- {
- 	u8 x = inb(ec->command_addr);
--	pr_debug("---> status = 0x%2.2x\n", x);
-+	pr_debug("EC_SC(R) = 0x%2.2x "
-+		 "SCI_EVT=%d BURST=%d CMD=%d IBF=%d OBF=%d\n",
-+		 x,
-+		 !!(x & ACPI_EC_FLAG_SCI),
-+		 !!(x & ACPI_EC_FLAG_BURST),
-+		 !!(x & ACPI_EC_FLAG_CMD),
-+		 !!(x & ACPI_EC_FLAG_IBF),
-+		 !!(x & ACPI_EC_FLAG_OBF));
- 	return x;
- }
- 
- static inline u8 acpi_ec_read_data(struct acpi_ec *ec)
- {
- 	u8 x = inb(ec->data_addr);
--	pr_debug("---> data = 0x%2.2x\n", x);
-+	pr_debug("EC_DATA(R) = 0x%2.2x\n", x);
- 	return x;
- }
- 
- static inline void acpi_ec_write_cmd(struct acpi_ec *ec, u8 command)
- {
--	pr_debug("<--- command = 0x%2.2x\n", command);
-+	pr_debug("EC_SC(W) = 0x%2.2x\n", command);
- 	outb(command, ec->command_addr);
- }
- 
- static inline void acpi_ec_write_data(struct acpi_ec *ec, u8 data)
- {
--	pr_debug("<--- data = 0x%2.2x\n", data);
-+	pr_debug("EC_DATA(W) = 0x%2.2x\n", data);
- 	outb(data, ec->data_addr);
- }
- 
--- 
-1.7.10
+1) Most of the false positives are in crypto/testmgr.h where they just
+   want a 10x10 block of sample text and don't care about the content.
+2) There one commented place like this:
+  "das08-aoh"
+  "das08-aol"
+3) There is one place which breaks the alphabet at the lower and upper
+   case boundary.
+4) There is one person who broke quoted strings at the 80 character mark
+   without considering the content (that's not really a false positive,
+   now that I think about it).
 
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 010b18e..c50eee2 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -4009,6 +4009,12 @@ sub process {
+ 			}
+ 		}
+ 
++# check for missing a space in a string concatination
++        if ($prevrawline =~ /[^\\][a-zA-Z]"$/ && $rawline =~ /^\+[\t ]+"[a-zA-Z]/) {
++            WARN('MISSING_SPACE',
++                 "break quoted strings at a space character\n" . $hereprev);
++        }
++
+ # check for bad placement of section $InitAttribute (e.g.: __initdata)
+ 		if ($line =~ /(\b$InitAttribute\b)/) {
+ 			my $attr = $1;
