@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751844AbaFMBiM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jun 2014 21:38:12 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:31411 "EHLO
+	id S1751861AbaFMBrj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jun 2014 21:47:39 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:20594 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750913AbaFMBiK (ORCPT
+	with ESMTP id S1751078AbaFMBri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jun 2014 21:38:10 -0400
+	Thu, 12 Jun 2014 21:47:38 -0400
 X-IronPort-AV: E=Sophos;i="5.00,699,1396972800"; 
-   d="scan'208";a="31839340"
-Message-ID: <1402623184.818.1.camel@localhost.localdomain>
-Subject: Re: [PATCH v3] lib: add size unit t/p/e to memparse
+   d="scan'208";a="31839707"
 From: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-btrfs@vger.kernel.org>,
-        <1i5t5.duncan@cox.net>
-Date: Fri, 13 Jun 2014 09:33:04 +0800
-In-Reply-To: <20140612141516.219f8c6b95f0d4f97332b8c7@linux-foundation.org>
-References: <1396428877-24089-1-git-send-email-guihc.fnst@cn.fujitsu.com>
-	 <20140612141516.219f8c6b95f0d4f97332b8c7@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-btrfs@vger.kernel.org>, <akpm@linux-foundation.org>,
+        Gui Hecheng <guihc.fnst@cn.fujitsu.com>
+Subject: [PATCH v4] lib: add size unit t/p/e to memparse
+Date: Fri, 13 Jun 2014 09:42:26 +0800
+Message-ID: <1402623746-1171-1-git-send-email-guihc.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.1.4
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 X-Originating-IP: [10.167.226.111]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-12 at 14:15 -0700, Andrew Morton wrote:
-> On Wed, 2 Apr 2014 16:54:37 +0800 Gui Hecheng <guihc.fnst@cn.fujitsu.com> wrote:
-> 
-> > For modern filesystems such as btrfs, t/p/e size level operations
-> > are common.
-> > add size unit t/p/e parsing to memparse
-> > 
-> > Signed-off-by: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
-> > ---
-> > changelog
-> > 	v1->v2: replace kilobyte with kibibyte, and others
-> > 	v2->v3: add missing unit "bytes" in comment
-> > ---
-> >  lib/cmdline.c | 25 ++++++++++++++++++++-----
-> >  1 file changed, 20 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/lib/cmdline.c b/lib/cmdline.c
-> > index eb67911..511b9be 100644
-> > --- a/lib/cmdline.c
-> > +++ b/lib/cmdline.c
-> > @@ -119,11 +119,17 @@ char *get_options(const char *str, int nints, int *ints)
-> >   *	@retptr: (output) Optional pointer to next char after parse completes
-> >   *
-> >   *	Parses a string into a number.  The number stored at @ptr is
-> > - *	potentially suffixed with %K (for kilobytes, or 1024 bytes),
-> > - *	%M (for megabytes, or 1048576 bytes), or %G (for gigabytes, or
-> > - *	1073741824).  If the number is suffixed with K, M, or G, then
-> > - *	the return value is the number multiplied by one kilobyte, one
-> > - *	megabyte, or one gigabyte, respectively.
-> > + *	potentially suffixed with
-> > + *	%K (for kibibytes, or 1024 bytes),
-> > + *	%M (for mebibytes, or 1048576 bytes),
-> > + *	%G (for gibibytes, or 1073741824 bytes),
-> > + *	%T (for tebibytes, or 1099511627776 bytes),
-> > + *	%P (for pebibytes, or 1125899906842624 bytes),
-> > + *	%E (for exbibytes, or 1152921504606846976 bytes).
-> 
-> I'm afraid I find these names quite idiotic - we all know what the
-> traditional terms mean so why go and muck with it.
-> 
-> Also, kibibytes sounds like cat food.
+For modern filesystems such as btrfs, t/p/e size level operations
+are common.
+add size unit t/p/e parsing to memparse
 
-Yes, I will cleanup this part, Thanks very much.
+Signed-off-by: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
+---
+changelog
+	v1->v2: replace kilobyte with kibibyte, and others
+	v2->v3: add missing unit "bytes" in comment
+	v3->v4: remove idiotic name for K,M,G,P,T,E
+---
+ lib/cmdline.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
--Gui
-
-> > @@ -133,6 +139,15 @@ unsigned long long memparse(const char *ptr, char **retptr)
-> >  	unsigned long long ret = simple_strtoull(ptr, &endptr, 0);
-> >  
-> >  	switch (*endptr) {
-> > +	case 'E':
-> > +	case 'e':
-> > +		ret <<= 10;
-> > +	case 'P':
-> > +	case 'p':
-> > +		ret <<= 10;
-> > +	case 'T':
-> > +	case 't':
-> > +		ret <<= 10;
-> >  	case 'G':
-> >  	case 'g':
-> >  		ret <<= 10;
-> 
-> That bit makes sense.
-
+diff --git a/lib/cmdline.c b/lib/cmdline.c
+index d4932f7..76a712e 100644
+--- a/lib/cmdline.c
++++ b/lib/cmdline.c
+@@ -121,11 +121,7 @@ EXPORT_SYMBOL(get_options);
+  *	@retptr: (output) Optional pointer to next char after parse completes
+  *
+  *	Parses a string into a number.  The number stored at @ptr is
+- *	potentially suffixed with %K (for kilobytes, or 1024 bytes),
+- *	%M (for megabytes, or 1048576 bytes), or %G (for gigabytes, or
+- *	1073741824).  If the number is suffixed with K, M, or G, then
+- *	the return value is the number multiplied by one kilobyte, one
+- *	megabyte, or one gigabyte, respectively.
++ *	potentially suffixed with K, M, G, T, P, E.
+  */
+ 
+ unsigned long long memparse(const char *ptr, char **retptr)
+@@ -135,6 +131,15 @@ unsigned long long memparse(const char *ptr, char **retptr)
+ 	unsigned long long ret = simple_strtoull(ptr, &endptr, 0);
+ 
+ 	switch (*endptr) {
++	case 'E':
++	case 'e':
++		ret <<= 10;
++	case 'P':
++	case 'p':
++		ret <<= 10;
++	case 'T':
++	case 't':
++		ret <<= 10;
+ 	case 'G':
+ 	case 'g':
+ 		ret <<= 10;
+-- 
+1.8.1.4
 
