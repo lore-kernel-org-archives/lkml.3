@@ -1,37 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751888AbaFMN1S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 09:27:18 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:42676 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172AbaFMN1R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 09:27:17 -0400
-Date: Fri, 13 Jun 2014 06:27:04 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Matias Bj??rling <m@bjorling.me>
-Cc: willy@linux.intel.com, keith.busch@intel.com, sbradshaw@micron.com,
-        axboe@fb.com, tom.leiming@gmail.com, hch@infradead.org,
-        linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org
-Subject: Re: [PATCH v8] convert nvme driver to blk-mq
-Message-ID: <20140613132704.GA26689@infradead.org>
-References: <1402661396-19207-1-git-send-email-m@bjorling.me>
+	id S1752086AbaFMN3h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 09:29:37 -0400
+Received: from mail.kernel.org ([198.145.19.201]:35338 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751007AbaFMN3f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 09:29:35 -0400
+Date: Fri, 13 Jun 2014 15:29:24 +0200
+From: Robert Richter <rric@kernel.org>
+To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Cc: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@alien8.de,
+        m.chehab@samsung.com, bp@suse.de, linux-edac@vger.kernel.org,
+        x86@kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH v3 4/5] apei, ghes, nmi: Factor out NMI arch-specific
+ calls.
+Message-ID: <20140613132924.GA27560@rric.localhost>
+References: <1402657380-18539-1-git-send-email-tomasz.nowicki@linaro.org>
+ <1402657380-18539-5-git-send-email-tomasz.nowicki@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1402661396-19207-1-git-send-email-m@bjorling.me>
+In-Reply-To: <1402657380-18539-5-git-send-email-tomasz.nowicki@linaro.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 02:09:55PM +0200, Matias Bj??rling wrote:
-> Matthew master up to:
+On 13.06.14 13:02:59, Tomasz Nowicki wrote:
+> Similar to MCE related patch, all NMI architectural calls are abstracted.
+> Also, we are providing corresponding X86 functions' content.
+
+We don't need to abstract nmi calls for archs that don't support
+nmis. Just disable the code with #ifdefs depending on
+ARCH_HAS_ACPI_APEI_NMI. Most changes in this patch, esp. all __weak
+functions are obsolete then.
+
+The remainings of this patch could probably merged with earlier
+patches.
+
+-Robert
+
 > 
->   bd67608a6127c994e897c49cc4f72d9095925301
->   NVMe: Rename io_timeout to nvme_io_timeout
-
-Willy, is do you plan to send these updates to Linus for 3.16?
-
+> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+> ---
+>  arch/x86/kernel/acpi/apei.c   |   25 +++++++++++++++++++++++++
+>  drivers/acpi/apei/apei-base.c |   19 +++++++++++++++++++
+>  drivers/acpi/apei/ghes.c      |   14 ++++++--------
+>  include/acpi/apei.h           |    7 +++++++
+>  4 files changed, 57 insertions(+), 8 deletions(-)
