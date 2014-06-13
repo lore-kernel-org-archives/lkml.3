@@ -1,137 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237AbaFMK5W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 06:57:22 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54767 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750874AbaFMK5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 06:57:20 -0400
-Message-ID: <539AD87C.8000004@ti.com>
-Date: Fri, 13 Jun 2014 16:24:52 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tony@atomide.com>, <santosh.shilimkar@ti.com>, <nm@ti.com>,
-        <rnayak@ti.com>, <linux@arm.linux.org.uk>, <tglx@linutronix.de>
-Subject: Re: [PATCH V2 16/19] irqchip: crossbar: introduce ti,max-crossbar-sources
- to identify valid crossbar mapping
-References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com> <1402574007-13987-17-git-send-email-r.sricharan@ti.com> <20140612135453.GB8664@titan.lakedaemon.net>
-In-Reply-To: <20140612135453.GB8664@titan.lakedaemon.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1753023AbaFMLDZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 07:03:25 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:46258 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788AbaFMLDW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 07:03:22 -0400
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+To: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@alien8.de,
+        m.chehab@samsung.com, bp@suse.de
+Cc: linux-edac@vger.kernel.org, x86@kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
+        rric@kernel.org, Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: [PATCH v3 0/5] APEI: Make APEI architecture independent.
+Date: Fri, 13 Jun 2014 13:02:55 +0200
+Message-Id: <1402657380-18539-1-git-send-email-tomasz.nowicki@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+APEI is currently implemented so that it depends on x86 hardware.
+The primary dependency is that GHES uses the x86 NMI for hardware
+error notification and MCE for memory error handling. These patches
+remove that dependency.
 
-On Thursday 12 June 2014 07:24 PM, Jason Cooper wrote:
-> On Thu, Jun 12, 2014 at 05:23:24PM +0530, Sricharan R wrote:
->> From: Nishanth Menon <nm@ti.com>
->>
->> Currently we attempt to map any crossbar value to an IRQ, however,
->> this is not correct from hardware perspective. There is a max crossbar
->> event number upto which hardware supports. So describe the same in
->> device tree using 'ti,max-crossbar-sources' property and use it to
->> validate requests.
->>
->> Signed-off-by: Nishanth Menon <nm@ti.com>
->> ---
->>  .../devicetree/bindings/arm/omap/crossbar.txt      |    2 ++
->>  drivers/irqchip/irq-crossbar.c                     |   21 ++++++++++++++++++--
->>  2 files changed, 21 insertions(+), 2 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/arm/omap/crossbar.txt b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
->> index fb88585..6d2e2f5 100644
->> --- a/Documentation/devicetree/bindings/arm/omap/crossbar.txt
->> +++ b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
->> @@ -10,6 +10,7 @@ Required properties:
->>  - compatible : Should be "ti,irq-crossbar"
->>  - reg: Base address and the size of the crossbar registers.
->>  - ti,max-irqs: Total number of irqs available at the interrupt controller.
->> +- ti,max-crossbar-sources: Maximum number of crossbar sources that can be routed.
->>  - ti,reg-size: Size of a individual register in bytes. Every individual
->>  	    register is assumed to be of same size. Valid sizes are 1, 2, 4.
->>  - ti,irqs-reserved: List of the reserved irq lines that are not muxed using
->> @@ -22,6 +23,7 @@ Examples:
->>  			compatible = "ti,irq-crossbar";
->>  			reg = <0x4a002a48 0x130>;
->>  			ti,max-irqs = <160>;
->> +			ti,max-crossbar-sources = <400>;
->>  			ti,reg-size = <2>;
->>  			ti,irqs-reserved = <0 1 2 3 5 6 131 132 139 140>;
->>  		};
->> diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
->> index 2a73a66..cf69c4d 100644
->> --- a/drivers/irqchip/irq-crossbar.c
->> +++ b/drivers/irqchip/irq-crossbar.c
->> @@ -26,6 +26,7 @@
->>  /**
->>   * struct crossbar_device - crossbar device descriptio
->>   * @int_max: maximum number of supported interrupts
->> + * @max_crossbar_sources: Maximum number of crossbar sources
->>   * @irq_map: array of interrupts to crossbar number mapping
->>   * @crossbar_base: crossbar base address
->>   * @register_offsets: offsets for each irq number
->> @@ -33,6 +34,7 @@
->>   */
->>  struct crossbar_device {
->>  	uint int_max;
->> +	uint max_crossbar_sources;
->>  	uint *irq_map;
->>  	void __iomem *crossbar_base;
->>  	int *register_offsets;
->> @@ -126,12 +128,19 @@ static int crossbar_domain_xlate(struct irq_domain *d,
->>  				 unsigned int *out_type)
->>  {
->>  	int ret;
->> +	int req_num = intspec[1];
->>  
->> -	ret = get_prev_map_irq(intspec[1]);
->> +	if (req_num >= cb->max_crossbar_sources) {
->> +		pr_err("%s: requested crossbar number %d > max %d\n",
->> +		       __func__, req_num, cb->max_crossbar_sources);
->> +		return -EINVAL;
->> +	}
->> +
->> +	ret = get_prev_map_irq(req_num);
->>  	if (ret >= 0)
->>  		goto found;
->>  
->> -	ret = allocate_free_irq(intspec[1]);
->> +	ret = allocate_free_irq(req_num);
->>  
->>  	if (ret < 0)
->>  		return ret;
->> @@ -164,6 +173,14 @@ static int __init crossbar_of_init(struct device_node *node,
->>  	if (!cb->crossbar_base)
->>  		goto err_cb;
->>  
->> +	of_property_read_u32(node, "ti,max-crossbar-sources",
->> +			     &cb->max_crossbar_sources);
->> +	if (!cb->max_crossbar_sources) {
->> +		pr_err("missing 'ti,max-crossbar-sources' property\n");
->> +		ret = -EINVAL;
->> +		goto err_base;
->> +	}
-> 
-> This completely breaks all boards using old dtbs.  Please set
-> max_crossbar_sources to a sane value (400) when the property is missing.
-> 
->> +
->>  	of_property_read_u32(node, "ti,max-irqs", &max);
->>  	if (!max) {
->>  		pr_err("missing 'ti,max-irqs' property\n");
-> 
-> I know this is context, but you may want to look at this property as
-> well and set it to a sane value instead of erroring out.
-> 
- crossbar dts node itself is not there in any dts yet. So this is not applicable
- for any old boards. Any future dts with crossbar node should have this property
- defined.
+Other APEI features such as error reporting via external IRQ, error
+serialization, or error injection, do not require changes to use them
+on non-x86 architectures.
 
-Regards,
- Sricharan
+The following patch set eliminates the APEI Kconfig x86 dependency
+by making these changes:
+- treat NMI notification as GHES feature - ARCH_HAS_ACPI_APEI_NMI
+- reorganize GHES notification type init/deinitialization
+  so that we can decide in run time whether NMI is supported or not
+- identify architectural boxes and abstract it accordingly (NMI and MCE)
+- rework ioremap for both IRQ and NMI context
+
+NMI code is kept in ghes.c file since NMI and IRQ context are tightly coupled.
+
+Note, these patches introduce no functional changes for x86. The NMI notification
+feature is hard selected for x86. Architectures that want to use this
+feature should also provide NMI code infrastructure.
+
+V1->V2
+- address Borislav's comment
+- abstract arch-specific calls instead of wrapping into the #ifdef
+
+V2->V3
+- address Robert's comment
+- disable ACPI_APEI_NMI selection so that it is hard selected by arch Kconfig
+- rename ACPI_APEI_NMI to ARCH_HAS_ACPI_APEI_NMI
+
+Tomasz Nowicki (5):
+  apei, mce: Factor out APEI architecture specific MCE calls.
+  acpi, apei, ghes: Introduce ARCH_HAS_ACPI_APEI_NMI to make NMI error
+    notification a GHES feature.
+  acpi, apei, ghes: Introduce more generic mechanism to init/deinit
+    GHES error notifications.
+  apei, ghes, nmi: Factor out NMI arch-specific calls.
+  acpi, apei, ghes: Factor out ioremap virtual memory for IRQ and NMI
+    context.
+
+ arch/x86/Kconfig              |    1 +
+ arch/x86/kernel/acpi/Makefile |    1 +
+ arch/x86/kernel/acpi/apei.c   |   87 ++++++++++++
+ drivers/acpi/apei/Kconfig     |    8 +-
+ drivers/acpi/apei/apei-base.c |   32 +++++
+ drivers/acpi/apei/ghes.c      |  301 +++++++++++++++++++++++++----------------
+ drivers/acpi/apei/hest.c      |   29 +---
+ include/acpi/apei.h           |   11 ++
+ 8 files changed, 327 insertions(+), 143 deletions(-)
+ create mode 100644 arch/x86/kernel/acpi/apei.c
+
+-- 
+1.7.9.5
+
