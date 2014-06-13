@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752164AbaFMJTC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 05:19:02 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:39539 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449AbaFMJTA (ORCPT
+	id S1752497AbaFMJUB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 05:20:01 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:39665 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818AbaFMJT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 05:19:00 -0400
-Date: Fri, 13 Jun 2014 18:18:04 +0900
+	Fri, 13 Jun 2014 05:19:58 -0400
+Date: Fri, 13 Jun 2014 18:19:03 +0900
 From: Daeseok Youn <daeseok.youn@gmail.com>
 To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
 Cc: markh@compro.net, dan.carpenter@oracle.com,
         driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/7 RESEND] staging: dgap: remove unused paramter in
- dgap_parsefile()
-Message-ID: <20140613091804.GA3760@devel.8.8.4.4>
+Subject: [PATCH 2/7 RESEND] staging: dgap: get rid of brd->firstminor because
+ it is 0
+Message-ID: <20140613091903.GA3768@devel.8.8.4.4>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,46 +24,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"remove" parameter is not used in dgap_parsefile().
+firstminor in struct borad_t is always zero, so it
+can be removed.
 
 Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
-resend: reorder this series of patches
+resend: reordering this series of patches
 
- drivers/staging/dgap/dgap.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/dgap/dgap.c |    9 ++++-----
+ drivers/staging/dgap/dgap.h |    1 -
+ 2 files changed, 4 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index 38749d0..c1f2798 100644
+index c1f2798..352eb1b 100644
 --- a/drivers/staging/dgap/dgap.c
 +++ b/drivers/staging/dgap/dgap.c
-@@ -174,7 +174,7 @@ static void dgap_remove_tty_sysfs(struct device *c);
- /*
-  * Function prototypes from dgap_parse.h
-  */
--static int dgap_parsefile(char **in, int remove);
-+static int dgap_parsefile(char **in);
- static struct cnode *dgap_find_config(int type, int bus, int slot);
- static uint dgap_config_get_num_prts(struct board_t *bd);
- static char *dgap_create_config_string(struct board_t *bd, char *string);
-@@ -852,7 +852,7 @@ static int dgap_firmware_load(struct pci_dev *pdev, int card_type)
- 		 */
- 		tmp_ptr = dgap_config_buf;
+@@ -684,7 +684,6 @@ static int dgap_found_board(struct pci_dev *pdev, int id, int boardnum)
+ 	/* store the info for the board we've found */
+ 	brd->magic = DGAP_BOARD_MAGIC;
+ 	brd->boardnum = boardnum;
+-	brd->firstminor = 0;
+ 	brd->vendor = dgap_pci_tbl[id].vendor;
+ 	brd->device = dgap_pci_tbl[id].device;
+ 	brd->pdev = pdev;
+@@ -4168,8 +4167,8 @@ static int dgap_tty_register_ports(struct board_t *brd)
+ 		struct device *classp;
  
--		if (dgap_parsefile(&tmp_ptr, TRUE) != 0) {
-+		if (dgap_parsefile(&tmp_ptr) != 0) {
- 			kfree(dgap_config_buf);
- 			return -EINVAL;
- 		}
-@@ -6427,7 +6427,7 @@ static void dgap_remove_tty_sysfs(struct device *c)
- /*
-  * Parse a configuration file read into memory as a string.
-  */
--static int dgap_parsefile(char **in, int remove)
-+static int dgap_parsefile(char **in)
- {
- 	struct cnode *p, *brd, *line, *conc;
- 	int rc;
+ 		classp = tty_port_register_device(&brd->serial_ports[i],
+-					brd->serial_driver,
+-					brd->firstminor + i, NULL);
++						  brd->serial_driver,
++						  i, NULL);
+ 
+ 		if (IS_ERR(classp)) {
+ 			ret = PTR_ERR(classp);
+@@ -4180,8 +4179,8 @@ static int dgap_tty_register_ports(struct board_t *brd)
+ 		ch->ch_tun.un_sysfs = classp;
+ 
+ 		classp = tty_port_register_device(&brd->printer_ports[i],
+-					brd->print_driver,
+-					brd->firstminor + i, NULL);
++						  brd->print_driver,
++						  i, NULL);
+ 
+ 		if (IS_ERR(classp)) {
+ 			ret = PTR_ERR(classp);
+diff --git a/drivers/staging/dgap/dgap.h b/drivers/staging/dgap/dgap.h
+index 03c020e..c00b2e2 100644
+--- a/drivers/staging/dgap/dgap.h
++++ b/drivers/staging/dgap/dgap.h
+@@ -529,7 +529,6 @@ struct macounter {
+ struct board_t {
+ 	int		magic;		/* Board Magic number.  */
+ 	int		boardnum;	/* Board number: 0-3 */
+-	int		firstminor;	/* First minor, e.g. 0, 30, 60 */
+ 
+ 	int		type;		/* Type of board */
+ 	char		*name;		/* Product Name */
 -- 
 1.7.1
 
