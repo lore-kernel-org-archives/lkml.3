@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987AbaFMRc7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 13:32:59 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:62507 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753775AbaFMRc5 (ORCPT
+	id S1753830AbaFMRfR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 13:35:17 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:49309 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753300AbaFMRfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 13:32:57 -0400
+	Fri, 13 Jun 2014 13:35:15 -0400
+Message-ID: <539B3653.6040408@kernel.dk>
+Date: Fri, 13 Jun 2014 11:35:15 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140613105135.GA4876@amd.pavel.ucw.cz>
-References: <1402602419-27934-1-git-send-email-keescook@chromium.org>
-	<539A0422.9010000@zytor.com>
-	<CAGXu5jLvAr=f2MRP4Ni86-jbM7h3Mx3RQo=7coveE8ZEt12N=Q@mail.gmail.com>
-	<539A0DC2.1010203@zytor.com>
-	<CAGXu5jKanRjK66P9dFYctXfQxT+da_9z8vqy8s+WqgW1cw17-Q@mail.gmail.com>
-	<20140613105135.GA4876@amd.pavel.ucw.cz>
-Date: Fri, 13 Jun 2014 10:32:56 -0700
-X-Google-Sender-Auth: HusOvnzKxofoqxff37AaygcNxMA
-Message-ID: <CAGXu5jJTSqtOMBNeOGEXfj_1iWGbE7p_YooeHT9wc4WRDjcGyQ@mail.gmail.com>
-Subject: Re: [PATCH 0/2] make kASLR vs hibernation boot-time selectable
-From: Kees Cook <keescook@chromium.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-pm@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Ming Lei <ming.lei@canonical.com>, linux-kernel@vger.kernel.org
+CC: Rusty Russell <rusty@rustcorp.com.au>, linux-api@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [RFC PATCH 0/2] block: virtio-blk: support multi vq per virtio-blk
+References: <1402680562-8328-1-git-send-email-ming.lei@canonical.com>
+In-Reply-To: <1402680562-8328-1-git-send-email-ming.lei@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 3:51 AM, Pavel Machek <pavel@ucw.cz> wrote:
-> Hi!
->
->
->> >>> Any way we can make them work together instead?
->> >>
->> >> I'm sure there is, but I don't know the solution. :)
->> >>
->> >> At the very least this gets us one step closer (we can build them together).
->> >>
->> >
->> > But it is really invasive.
->>
->> Well, I don't agree there. I actually would like to be able to turn
->> off hibernation support on distro kernels regardless of kASLR, so I
->> think this is really killing two birds with one stone.
->>
->> > I have to admit to being somewhat fuzzy on what the core problem with
->> > hibernation and kASLR is... in both cases there is a set of pages that
->> > need to be installed, some of which will overlap the loader kernel.
->> > What am I missing?
->>
->> I don't know how resume works, but I have assumed that the newly
->> loaded kernel stays in memory and pulls in the vmalloc, kmalloc,
->> modules, and userspace memory maps from disk. Since these things can
->> easily contain references to kernel text, if the newly loaded kernel
->> has moved with regard to the hibernated image, everything breaks.
->> IIUC, this is similar why you can't rebuild your kernel and resume
->> from a different version.
->
-> x86-64 can resume from different kernel that did the suspend. kASLR
-> should not be too different from that. (You just include kernel text
-> in the hibernation image. It is small enough to do that.)
+On 06/13/2014 11:29 AM, Ming Lei wrote:
+> Hi,
+> 
+> This patches try to support multi virtual queues(multi-vq) in one
+> virtio-blk device, and maps each virtual queue(vq) to blk-mq's
+> hardware queue.
+> 
+> With this approach, both scalability and performance problems on
+> virtio-blk device get improved.
+> 
+> For verifying the improvement, I implements virtio-blk multi-vq over
+> qemu's dataplane feature, and both handling host notification
+> from each vq and processing host I/O are still kept in the per-device
+> iothread context, the changes are based on qemu v2.0.0 release, and
+> can be accessed from below tree:
+> 
+> 	git://kernel.ubuntu.com/ming/qemu.git #v2.0.0-virtblk-dataplane-mq
+> 
+> For enabling the multi-vq feature, 'num_queues=N' need to be added into
+> '-device virtio-blk-pci ...' of qemu command line, and suggest to pass
+> 'vectors=N+1' to keep one MSI irq vector per each vq, and the feature
+> depends on x-data-plane.
+> 
+> Fio(libaio, randread, iodepth=64, bs=4K, jobs=N) is run inside VM to
+> verify the improvement.
+> 
+> I just create a small quadcore VM and run fio inside the VM, and
+> num_queues of the virtio-blk device is set as 2, but looks the
+> improvement is still obvious.
+> 
+> 1), about scalability
+> - without mutli-vq feature
+> 	-- jobs=2, thoughput: 145K iops
+> 	-- jobs=4, thoughput: 100K iops
+> - without mutli-vq feature
+> 	-- jobs=2, thoughput: 186K iops
+> 	-- jobs=4, thoughput: 199K iops
 
-Oooh, that's very exciting! How does that work (what happens to the
-kernel that booted first, etc)? I assume physical memory layout can't
-change between hibernation and resume? Or, where should I be reading
-code that does this?
-
--Kees
+Awesome! I was hoping someone would do that, and make virtio-blk take
+full advantage of blk-mq.
 
 -- 
-Kees Cook
-Chrome OS Security
+Jens Axboe
+
