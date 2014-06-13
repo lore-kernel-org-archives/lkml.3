@@ -1,106 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751366AbaFMMpr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 08:45:47 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:43356 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292AbaFMMpq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 08:45:46 -0400
-Date: Fri, 13 Jun 2014 08:45:34 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Vitaly Kuznetsov <vkuznets@redhat.com>
-Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>, x86@kernel.org,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH] xenpv: don't BUG when failing to setup NMI callback
-Message-ID: <20140613124534.GA21873@laptop.dumpdata.com>
-References: <1402658788-24477-1-git-send-email-vkuznets@redhat.com>
+	id S1751398AbaFMMqw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 08:46:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44037 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750862AbaFMMqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 08:46:51 -0400
+Date: Fri, 13 Jun 2014 08:46:09 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: WANG Chao <chaowang@redhat.com>, Dave Young <dyoung@redhat.com>,
+        mjg59@srcf.ucam.org, bhe@redhat.com, jkosina@suse.cz, greg@kroah.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, hpa@zytor.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 07/13] kexec: Implementation of new syscall
+ kexec_file_load
+Message-ID: <20140613124609.GC5871@redhat.com>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <1401800822-27425-8-git-send-email-vgoyal@redhat.com>
+ <20140606065605.GE2785@dhcp-17-89.nay.redhat.com>
+ <20140606181859.GK1526@redhat.com>
+ <20140609021122.GB1924@darkstar.nay.redhat.com>
+ <20140609053538.GA2874@dhcp-17-89.nay.redhat.com>
+ <20140609154137.GD22049@redhat.com>
+ <20140613075011.GA4751@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1402658788-24477-1-git-send-email-vkuznets@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20140613075011.GA4751@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 01:26:28PM +0200, Vitaly Kuznetsov wrote:
-> some old Xen hypervisors (prior to 3.2) forbid DomUs to register
-> NMI callbacks. E.g. we have the following code in xen-3.1:
+On Fri, Jun 13, 2014 at 09:50:11AM +0200, Borislav Petkov wrote:
+> On Mon, Jun 09, 2014 at 11:41:37AM -0400, Vivek Goyal wrote:
+> > IIUC, COMMAND_LINE_SIZE gives max limits of running kernel and it does
+> > not tell us anything about command line size supported by kernel being
+> > loaded.
 > 
->     if ( (d->domain_id != 0) || (v->vcpu_id != 0) )
->         return -EINVAL;
-> 
-> Commit 6efa20e49b9cb1db1ab66870cc37323474a75a13 introduced kernel
-> crash in case PV guest fails to register NMI callback. All x86_64
-> PV guests will fail to boot on top of such hypervisors (RHEL5
-> example):
-> 
-> (XEN) traps.c:405:d7 Unhandled invalid opcode fault/trap [#6] in domain 7 on VCPU 0 [ec=0000]
-> (XEN) domain_crash_sync called from entry.S
-> (XEN) Domain 7 (vcpu#0) crashed on cpu#3:
-> (XEN) ----[ Xen-3.1.2-389.el5  x86_64  debug=n  Not tainted ]----
-> (XEN) CPU:    3
-> (XEN) RIP:    e033:[<ffffffff81004d96>]
-> (XEN) RFLAGS: 0000000000000282   CONTEXT: guest
-> (XEN) rax: ffffffffffffffea   rbx: 0000000000000000   rcx: 0000000000000002
-> (XEN) rdx: 0000000000000001   rsi: ffffffff81b0fe28   rdi: 0000000000000000
-> (XEN) rbp: ffffffff81b0fe40   rsp: ffffffff81b0fde8   r8:  0000000000000000
-> (XEN) r9:  ffffffff81b0fdd0   r10: 0000000000007ff0   r11: 00000000ffffffff
-> (XEN) r12: ffffffff81d65900   r13: 0000000000000000   r14: 0000000000000000
-> (XEN) r15: 0000000000000000   cr0: 0000000080050033   cr4: 00000000000026b0
-> (XEN) cr3: 000000013a263000   cr2: 0000000000000000
-> (XEN) ds: 0000   es: 0000   fs: 0000   gs: 0000   ss: e02b   cs: e033
-> ...
-> 
-> However it is possible to proceed without NMI callback registered.
-> Change BUG() with warning in case of -EINVAL.
-> 
-> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+> Whatever you do, you do need a sane default because even querying the
+> boot protocol is not reliable as the to-be-loaded kernel's boot protocol
+> might be manipulated too, before signing (who knows what people do
+> in the wild).
 
-Oh, we had a similar patch - somebody reported it earlier - and we
-just checked the version of Xen:
+If signature verification is on, that should catch any manipulation to
+to protocol headers.
 
-http://lists.xenproject.org/archives/html/xen-devel/2014-05/msg01474.html
+If not, then we really can't do anything about it. A large memory
+allocation will fail and user will get error. 
 
-But I can't remember why I didn't post it.
+This is not different than length of kernel or length of initrd. Somebody
+might prepare a very huge file and pass that fd to kernel and kernel will
+try to read the whole thing in. If file is too large, memory allocation
+will fail and user space will get error. We don't try to put an upper
+limit on size of kernel image or initrd.
 
-However I do like your path of checking the 'ret'.
-
-Vitaly, could expand your patch to also do a check in cvt_gate_to_trap
-so that it won't enable the NMI handler and then lets pick your
-patch?
-
-> ---
->  arch/x86/xen/setup.c | 11 ++++++++++-
->  1 file changed, 10 insertions(+), 1 deletion(-)
 > 
-> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-> index 821a11a..5b8b180 100644
-> --- a/arch/x86/xen/setup.c
-> +++ b/arch/x86/xen/setup.c
-> @@ -593,8 +593,17 @@ void xen_enable_syscall(void)
->  void xen_enable_nmi(void)
->  {
->  #ifdef CONFIG_X86_64
-> -	if (register_callback(CALLBACKTYPE_nmi, (char *)nmi))
-> +	int ret;
-> +
-> +	ret = register_callback(CALLBACKTYPE_nmi, (char *)nmi);
-> +	if (ret == -EINVAL) {
-> +		/* Hypervisor probably forbids us to register NMI callback,
-> +		   that is expected when running on top of Xen-3.1 and older */
-> +		pr_warn("xen: failed to register NMI callback\n");
-> +	} else if (ret != 0) {
-> +		/* Other hypervisor failure */
->  		BUG();
-> +	}
->  #endif
->  }
->  void __init xen_pvmmu_arch_setup(void)
-> -- 
-> 1.9.3
-> 
+> So having a sane, unconditional fallback COMMAND_LINE_SIZE from the
+> first kernel is a must, methinks.
+
+I disagree here. What if new kernel supports (2 * COMMAND_LINE_SIZE) length
+command line. We don't want to truncate command line to smaller size
+because running kernel does not support that long a command line.
+
+Thanks
+Vivek
+
