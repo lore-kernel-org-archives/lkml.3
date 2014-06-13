@@ -1,456 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751460AbaFMHKf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 03:10:35 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:35937 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817AbaFMHKd (ORCPT
+	id S1751600AbaFMHML (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 03:12:11 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:41964 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaFMHMJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 03:10:33 -0400
-X-Auth-Info: uRiF0QnEBRhMg+sIUNT2akqFVdlAVEP7RPfJOKVT61I=
-From: Heiko Schocher <hs@denx.de>
-To: lm-sensors@lm-sensors.org
-Cc: Heiko Schocher <hs@denx.de>, Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: [PATCH v2] hwmon: Driver for TI TMP103 temperature sensor
-Date: Fri, 13 Jun 2014 09:10:21 +0200
-Message-Id: <1402643421-9102-1-git-send-email-hs@denx.de>
-X-Mailer: git-send-email 1.8.3.1
+	Fri, 13 Jun 2014 03:12:09 -0400
 MIME-Version: 1.0
+X-Originating-IP: [5.35.52.78]
+In-Reply-To: <20140612143916.GB8970@arm.com>
+References: <CAOJe8K3fy3XFxDdVc3y1hiMAqUCPmkUhECU7j5TT=E=gxwBqHg@mail.gmail.com>
+	<20140611173851.GA5556@MacBook-Pro.local>
+	<CAOJe8K1TgTDX5=LdE9r6c0ami7TRa7zr0hL_uu6YpiWrsePAgQ@mail.gmail.com>
+	<B01EB0A1-992B-49F4-93AE-71E4BA707795@arm.com>
+	<CAOJe8K3LDhhPWbtdaWt23mY+2vnw5p05+eyk2D8fovOxC10cgA@mail.gmail.com>
+	<CAOJe8K2WaJUP9_buwgKw89fxGe56mGP1Mn8rDUO9W48KZzmybA@mail.gmail.com>
+	<20140612143916.GB8970@arm.com>
+Date: Fri, 13 Jun 2014 11:12:08 +0400
+Message-ID: <CAOJe8K3zN+fFWumKaGx3Tmv5JRZu10_FZ6R3Tjjc+nc-KVB0hg@mail.gmail.com>
+Subject: Re: kmemleak: Unable to handle kernel paging request
+From: Denis Kirjanov <kda@linux-powerpc.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver for the TI TMP103.
+On 6/12/14, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> On Thu, Jun 12, 2014 at 01:00:57PM +0100, Denis Kirjanov wrote:
+>> On 6/12/14, Denis Kirjanov <kda@linux-powerpc.org> wrote:
+>> > On 6/12/14, Catalin Marinas <catalin.marinas@arm.com> wrote:
+>> >> On 11 Jun 2014, at 21:04, Denis Kirjanov <kda@linux-powerpc.org>
+>> >> wrote:
+>> >>> On 6/11/14, Catalin Marinas <catalin.marinas@arm.com> wrote:
+>> >>>> On Wed, Jun 11, 2014 at 04:13:07PM +0400, Denis Kirjanov wrote:
+>> >>>>> I got a trace while running 3.15.0-08556-gdfb9454:
+>> >>>>>
+>> >>>>> [  104.534026] Unable to handle kernel paging request for data at
+>> >>>>> address 0xc00000007f000000
+>> >>>>
+>> >>>> Were there any kmemleak messages prior to this, like "kmemleak
+>> >>>> disabled"? There could be a race when kmemleak is disabled because
+>> >>>> of
+>> >>>> some fatal (for kmemleak) error while the scanning is taking place
+>> >>>> (which needs some more thinking to fix properly).
+>> >>>
+>> >>> No. I checked for the similar problem and didn't find anything
+>> >>> relevant.
+>> >>> I'll try to bisect it.
+>> >>
+>> >> Does this happen soon after boot? I guess it’s the first scan
+>> >> (scheduled at around 1min after boot). Something seems to be telling
+>> >> kmemleak that there is a valid memory block at 0xc00000007f000000.
+>> >
+>> > Yeah, it happens after a while with a booted system so that's the
+>> > first kmemleak scan.
+>> >
+>>
+>> I've bisected to this commit: d4c54919ed86302094c0ca7d48a8cbd4ee753e92
+>> "mm: add !pte_present() check on existing hugetlb_entry callbacks".
+>> Reverting the commit fixes the issue
+>
+> I can't figure how this causes the problem but I have more questions. Is
+> 0xc00000007f000000 address always the same in all crashes? If yes, you
+> could comment out start_scan_thread() in kmemleak_late_init() to avoid
+> the scanning thread starting. Once booted, you can run:
+>
+>   echo dump=0xc00000007f000000 > /sys/kernel/debug/kmemleak
+>
+> and check the dmesg for what kmemleak knows about that address, when it
+> was allocated and whether it should be mapped or not.
 
-The TI TMP103 is similar to the TMP102.  It differs from the TMP102
-by having only 8 bit registers.
+The address is always the same.
 
-Signed-off-by: Heiko Schocher <hs@denx.de>
+[  179.466239] kmemleak: Object 0xc00000007f000000 (size 16777216):
+[  179.466503] kmemleak:   comm "swapper/0", pid 0, jiffies 4294892300
+[  179.466508] kmemleak:   min_count = 0
+[  179.466512] kmemleak:   count = 0
+[  179.466517] kmemleak:   flags = 0x1
+[  179.466522] kmemleak:   checksum = 0
+[  179.466526] kmemleak:   backtrace:
+[  179.466531]      [<c000000000afc3dc>] .memblock_alloc_range_nid+0x68/0x88
+[  179.466544]      [<c000000000afc444>] .memblock_alloc_base+0x20/0x58
+[  179.466553]      [<c000000000ae96cc>] .alloc_dart_table+0x5c/0xb0
+[  179.466561]      [<c000000000aea300>] .pmac_probe+0x38/0xa0
+[  179.466569]      [<000000000002166c>] 0x2166c
+[  179.466579]      [<0000000000ae0e68>] 0xae0e68
+[  179.466587]      [<0000000000009bc4>] 0x9bc4
 
----
 
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org
-Cc: devicetree@vger.kernel.org
-Cc: linux-doc@vger.kernel.org
-
-- change for v2:
-  - add comments from GuenterRoeck:
-    - remove Cc from commit subject
-    - add devicetree mailinglist
-    - move Documentation to Documentation/hwmon/tmp103
-    - remove devicetree bindings from Documentation
-    - add compatible string to
-      "Documentation/devicetree/bindings/i2c/trivial-devices.txt"
-    - remove CamelCase
-    - fix Codingstyle issues
-    - use ATTRIBUTE_GROUPS and devm_hwmon_device_register_with_groups()
-    - remove unsused define TMP103_CONFIG_RD_ONLY
-    - restore config register when exit()
-    - use regmap
-
- .../devicetree/bindings/i2c/trivial-devices.txt    |   1 +
- Documentation/hwmon/tmp103                         |  28 ++
- drivers/hwmon/Kconfig                              |  10 +
- drivers/hwmon/Makefile                             |   1 +
- drivers/hwmon/tmp103.c                             | 304 +++++++++++++++++++++
- 5 files changed, 344 insertions(+)
- create mode 100644 Documentation/hwmon/tmp103
- create mode 100644 drivers/hwmon/tmp103.c
-
-diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-index bef86e5..fc944e0 100644
---- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-+++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-@@ -83,5 +83,6 @@ stm,m41t80		M41T80 - SERIAL ACCESS RTC WITH ALARMS
- taos,tsl2550		Ambient Light Sensor with SMBUS/Two Wire Serial Interface
- ti,tsc2003		I2C Touch-Screen Controller
- ti,tmp102		Low Power Digital Temperature Sensor with SMBUS/Two Wire Serial Interface
-+ti,tmp103		Low Power Digital Temperature Sensor with SMBUS/Two Wire Serial Interface
- ti,tmp275		Digital Temperature Sensor
- winbond,wpct301		i2c trusted platform module (TPM)
-diff --git a/Documentation/hwmon/tmp103 b/Documentation/hwmon/tmp103
-new file mode 100644
-index 0000000..559fea5
---- /dev/null
-+++ b/Documentation/hwmon/tmp103
-@@ -0,0 +1,28 @@
-+Kernel driver tmp103
-+====================
-+
-+Supported chips:
-+  * Texas Instruments TMP103
-+    Prefix: 'tmp103'
-+    Addresses scanned: none
-+    Product info and datasheet: http://www.ti.com/product/tmp103
-+
-+Author:
-+	Heiko Schocher <hs@denx.de>
-+
-+Description
-+-----------
-+
-+The TMP103 is a digital output temperature sensor in a four-ball
-+wafer chip-scale package (WCSP). The TMP103 is capable of reading
-+temperatures to a resolution of 1°C. The TMP103 is specified for
-+operation over a temperature range of –40°C to +125°C.
-+
-+Resolution: 8 Bits
-+Accuracy: ±1°C Typ (–10°C to +100°C)
-+
-+The driver provides the common sysfs-interface for temperatures (see
-+Documentation/hwmon/sysfs-interface under Temperatures).
-+
-+please refer how to instantiate this driver:
-+Documentation/i2c/instantiating-devices
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 0034316..0f44dbb 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -1381,6 +1381,16 @@ config SENSORS_TMP102
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called tmp102.
- 
-+config SENSORS_TMP103
-+	tristate "Texas Instruments TMP103"
-+	depends on I2C
-+	help
-+	  If you say yes here you get support for Texas Instruments TMP103
-+	  sensor chips.
-+
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called tmp103.
-+
- config SENSORS_TMP401
- 	tristate "Texas Instruments TMP401 and compatibles"
- 	depends on I2C
-diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 11798ad..8e2f6a2 100644
---- a/drivers/hwmon/Makefile
-+++ b/drivers/hwmon/Makefile
-@@ -134,6 +134,7 @@ obj-$(CONFIG_SENSORS_SMSC47M192)+= smsc47m192.o
- obj-$(CONFIG_SENSORS_AMC6821)	+= amc6821.o
- obj-$(CONFIG_SENSORS_THMC50)	+= thmc50.o
- obj-$(CONFIG_SENSORS_TMP102)	+= tmp102.o
-+obj-$(CONFIG_SENSORS_TMP103)	+= tmp103.o
- obj-$(CONFIG_SENSORS_TMP401)	+= tmp401.o
- obj-$(CONFIG_SENSORS_TMP421)	+= tmp421.o
- obj-$(CONFIG_SENSORS_TWL4030_MADC)+= twl4030-madc-hwmon.o
-diff --git a/drivers/hwmon/tmp103.c b/drivers/hwmon/tmp103.c
-new file mode 100644
-index 0000000..01119a6
---- /dev/null
-+++ b/drivers/hwmon/tmp103.c
-@@ -0,0 +1,304 @@
-+/*
-+ * Texas Instruments TMP103 SMBus temperature sensor driver
-+ * Copyright (C) 2014 Heiko Schocher <hs@denx.de>
-+ *
-+ * Based on:
-+ * Texas Instruments TMP102 SMBus temperature sensor driver
-+ *
-+ * Copyright (C) 2010 Steven King <sfking@fdwdc.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/i2c.h>
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
-+#include <linux/err.h>
-+#include <linux/mutex.h>
-+#include <linux/device.h>
-+#include <linux/jiffies.h>
-+#include <linux/regmap.h>
-+
-+#define	DRIVER_NAME "tmp103"
-+
-+#define	TMP103_TEMP_REG			0x00
-+#define	TMP103_CONF_REG			0x01
-+#define	TMP103_TLOW_REG			0x02
-+#define	TMP103_THIGH_REG		0x03
-+
-+#define		TMP103_CONF_M0		0x01
-+#define		TMP103_CONF_M1		0x02
-+#define		TMP103_CONF_LC		0x04
-+#define		TMP103_CONF_FL		0x08
-+#define		TMP103_CONF_FH		0x10
-+#define		TMP103_CONF_CR0		0x20
-+#define		TMP103_CONF_CR1		0x40
-+#define		TMP103_CONF_ID		0x80
-+#define		TMP103_CONF_SD		(TMP103_CONF_M0 | TMP103_CONF_M1)
-+
-+struct tmp103 {
-+	struct i2c_client *client;
-+	struct device *hwmon_dev;
-+	struct regmap *regmap;
-+	struct mutex lock;
-+	unsigned int config_orig;
-+	unsigned long last_update;
-+	int temp[3];
-+};
-+
-+static inline int tmp103_reg_to_mc(s8 val)
-+{
-+	return val * 1000;
-+}
-+
-+static inline u8 tmp103_mc_to_reg(int val)
-+{
-+	return DIV_ROUND_CLOSEST(val, 1000);
-+}
-+
-+static const u8 tmp103_reg[] = {
-+	TMP103_TEMP_REG,
-+	TMP103_TLOW_REG,
-+	TMP103_THIGH_REG,
-+};
-+
-+#define TMP103_INVALID	0xffff
-+
-+static ssize_t tmp103_show_temp(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	struct sensor_device_attribute *sda = to_sensor_dev_attr(attr);
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct tmp103 *tmp103 = i2c_get_clientdata(client);
-+	unsigned int status;
-+	int ret;
-+
-+	mutex_lock(&tmp103->lock);
-+	if (time_after(jiffies, tmp103->last_update + HZ / 3)) {
-+		int i;
-+
-+		for (i = 0; i < ARRAY_SIZE(tmp103->temp); ++i) {
-+			ret = regmap_read(tmp103->regmap, tmp103_reg[i],
-+					  &status);
-+			if (ret < 0)
-+				tmp103->temp[i] = TMP103_INVALID;
-+			else
-+				tmp103->temp[i] = tmp103_reg_to_mc(status);
-+		}
-+		tmp103->last_update = jiffies;
-+	}
-+	mutex_unlock(&tmp103->lock);
-+
-+	if (tmp103->temp[sda->index] != TMP103_INVALID)
-+		return sprintf(buf, "%d\n", tmp103->temp[sda->index]);
-+
-+	return sprintf(buf, "invalid\n");
-+}
-+
-+static ssize_t tmp103_set_temp(struct device *dev,
-+			       struct device_attribute *attr,
-+			       const char *buf, size_t count)
-+{
-+	struct sensor_device_attribute *sda = to_sensor_dev_attr(attr);
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct tmp103 *tmp103 = i2c_get_clientdata(client);
-+	long val;
-+	int ret;
-+
-+	if (kstrtol(buf, 10, &val) < 0)
-+		return -EINVAL;
-+
-+	val = clamp_val(val, -55000, 127000);
-+	mutex_lock(&tmp103->lock);
-+	tmp103->temp[sda->index] = val;
-+	ret = regmap_write(tmp103->regmap, tmp103_reg[sda->index],
-+			   tmp103_mc_to_reg(val));
-+	mutex_unlock(&tmp103->lock);
-+	return ret ? : count;
-+}
-+
-+static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, tmp103_show_temp, NULL , 0);
-+
-+static SENSOR_DEVICE_ATTR(temp1_min, S_IWUSR | S_IRUGO, tmp103_show_temp,
-+			  tmp103_set_temp, 1);
-+
-+static SENSOR_DEVICE_ATTR(temp1_max, S_IWUSR | S_IRUGO, tmp103_show_temp,
-+			  tmp103_set_temp, 2);
-+
-+static struct attribute *tmp103_attrs[] = {
-+	&sensor_dev_attr_temp1_input.dev_attr.attr,
-+	&sensor_dev_attr_temp1_min.dev_attr.attr,
-+	&sensor_dev_attr_temp1_max.dev_attr.attr,
-+	NULL
-+};
-+ATTRIBUTE_GROUPS(tmp103);
-+
-+static struct regmap_config tmp103_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+	.max_register = TMP103_THIGH_REG,
-+};
-+
-+#define TMP103_CONFIG		(TMP103_CONF_CR1 | TMP103_CONF_M1)
-+
-+static int tmp103_probe(struct i2c_client *client,
-+			const struct i2c_device_id *id)
-+{
-+	struct device *dev = &client->dev;
-+	struct device *hwmon_dev;
-+	struct tmp103 *tmp103;
-+	int ret;
-+	unsigned int status;
-+
-+	if (!i2c_check_functionality(client->adapter,
-+				     I2C_FUNC_SMBUS_BYTE_DATA)) {
-+		dev_err(&client->dev,
-+			"adapter doesn't support SMBus byte transactions\n");
-+		return -ENODEV;
-+	}
-+
-+	tmp103 = devm_kzalloc(&client->dev, sizeof(*tmp103), GFP_KERNEL);
-+	if (!tmp103)
-+		return -ENOMEM;
-+
-+	i2c_set_clientdata(client, tmp103);
-+	tmp103->client = client;
-+
-+	tmp103->regmap = devm_regmap_init_i2c(client, &tmp103_regmap_config);
-+	if (IS_ERR(tmp103->regmap)) {
-+		dev_err(dev, "failed to allocate register map\n");
-+		return PTR_ERR(tmp103->regmap);
-+	}
-+
-+	ret = regmap_read(tmp103->regmap, TMP103_CONF_REG, &status);
-+	if (ret < 0)
-+		goto fail_init_regmap;
-+
-+	tmp103->config_orig = status;
-+	ret = regmap_write(tmp103->regmap, TMP103_CONF_REG, TMP103_CONFIG);
-+	if (ret < 0) {
-+		dev_err(&client->dev, "error writing config register\n");
-+		goto fail_restore_config;
-+	}
-+
-+	ret = regmap_read(tmp103->regmap, TMP103_CONF_REG, &status);
-+	if (ret < 0) {
-+		dev_err(&client->dev, "error reading config register\n");
-+		goto fail_restore_config;
-+	}
-+	if (status != TMP103_CONFIG) {
-+		dev_err(&client->dev, "config settings did not stick\n");
-+		ret = -ENODEV;
-+		goto fail_restore_config;
-+	}
-+	tmp103->last_update = jiffies - HZ;
-+	mutex_init(&tmp103->lock);
-+
-+	hwmon_dev = hwmon_device_register_with_groups(dev, client->name,
-+						      tmp103, tmp103_groups);
-+	if (IS_ERR(hwmon_dev)) {
-+		dev_dbg(dev, "unable to register hwmon device\n");
-+		status = PTR_ERR(hwmon_dev);
-+		goto fail_restore_config;
-+	}
-+	tmp103->hwmon_dev = hwmon_dev;
-+
-+	return 0;
-+
-+fail_restore_config:
-+	regmap_write(tmp103->regmap, TMP103_CONF_REG, tmp103->config_orig);
-+fail_init_regmap:
-+	regmap_exit(tmp103->regmap);
-+	return ret;
-+}
-+
-+static int tmp103_remove(struct i2c_client *client)
-+{
-+	struct tmp103 *tmp103 = i2c_get_clientdata(client);
-+	int ret;
-+
-+	ret = regmap_write(tmp103->regmap, TMP103_CONF_REG,
-+			   tmp103->config_orig);
-+	if (ret < 0)
-+		dev_err(&client->dev, "error writing config register\n");
-+
-+	hwmon_device_unregister(tmp103->hwmon_dev);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM
-+static int tmp103_suspend(struct device *dev)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct tmp103 *tmp103 = i2c_get_clientdata(client);
-+	unsigned int config;
-+	int ret;
-+
-+	ret = regmap_read(tmp103->regmap, TMP103_CONF_REG, &config);
-+	if (ret < 0)
-+		return ret;
-+
-+	config &= ~TMP103_CONF_SD;
-+	return regmap_write(tmp103->regmap, TMP103_CONF_REG, config);
-+}
-+
-+static int tmp103_resume(struct device *dev)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct tmp103 *tmp103 = i2c_get_clientdata(client);
-+	unsigned int config;
-+	int ret;
-+
-+	ret = regmap_read(tmp103->regmap, TMP103_CONF_REG, &config);
-+	if (ret < 0)
-+		return ret;
-+
-+	config |= TMP103_CONF_SD;
-+	return regmap_write(tmp103->regmap, TMP103_CONF_REG, config);
-+}
-+
-+static const struct dev_pm_ops tmp103_dev_pm_ops = {
-+	.suspend	= tmp103_suspend,
-+	.resume		= tmp103_resume,
-+};
-+
-+#define TMP103_DEV_PM_OPS (&tmp103_dev_pm_ops)
-+#else
-+#define	TMP103_DEV_PM_OPS NULL
-+#endif /* CONFIG_PM */
-+
-+static const struct i2c_device_id tmp103_id[] = {
-+	{ DRIVER_NAME, 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, tmp103_id);
-+
-+static struct i2c_driver tmp103_driver = {
-+	.driver = {
-+		.name	= DRIVER_NAME,
-+		.pm	= TMP103_DEV_PM_OPS,
-+	},
-+	.probe		= tmp103_probe,
-+	.remove		= tmp103_remove,
-+	.id_table	= tmp103_id,
-+};
-+
-+module_i2c_driver(tmp103_driver);
-+
-+MODULE_AUTHOR("Heiko Schocher <hs@denx.de>");
-+MODULE_DESCRIPTION("Texas Instruments TMP103 temperature sensor driver");
-+MODULE_LICENSE("GPL");
--- 
-1.8.3.1
-
+> --
+> Catalin
+>
