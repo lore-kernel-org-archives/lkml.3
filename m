@@ -1,76 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452AbaFMErF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 00:47:05 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:50396 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279AbaFMErE (ORCPT
+	id S1751523AbaFMEwY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 00:52:24 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:64852 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224AbaFMEwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 00:47:04 -0400
+	Fri, 13 Jun 2014 00:52:23 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALCETrVNiSUHok1xCfy9CMe=kDYsPy3i_NXm0_gcO1ckb9wdeQ@mail.gmail.com>
-References: <CALCETrVNiSUHok1xCfy9CMe=kDYsPy3i_NXm0_gcO1ckb9wdeQ@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 12 Jun 2014 21:46:42 -0700
-Message-ID: <CALCETrUsV9A9P1D5Au8jOf4ERun92MhLjK5hNhkfQNKHPaFhLQ@mail.gmail.com>
-Subject: Re: vdso feature requests from the Go people
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russ Cox <rsc@golang.org>, Ian Taylor <iant@golang.org>
+In-Reply-To: <1402634191-3442-1-git-send-email-slaoub@gmail.com>
+References: <1402634191-3442-1-git-send-email-slaoub@gmail.com>
+Date: Fri, 13 Jun 2014 08:52:22 +0400
+Message-ID: <CALYGNiMENJ014dELVS8Ej+RP=WVkt8rF0=bxs5yDXO4+hr6B_Q@mail.gmail.com>
+Subject: Re: [PATCH v2] mm/vmscan.c: wrap five parameters into shrink_result
+ for reducing the stack consumption
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Chen Yucong <slaoub@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, mhocko@suse.cz,
+        Rik van Riel <riel@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 9:36 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> I was talking to some of the Go people, and they have a couple of IMO
-> reasonable feature requests.
->
-> 1. Parsing the vDSO is a PITA.  What if we bundled the reference
-> parser inside the vdso?  Concretely, we could have AT_VDSO_FINDENTRY
-> point to a function like:
->
-> void *vdso_find_entry(const char *name, const char *version)
->
-> Then things like Go and maybe even musl (and klibc?) could just call
-> that function.  And we'd never have to worry about maintaining
-> compatibility with more and more weird vdso parsers.
->
-> Implementing this could be as simple as shoving parse_vdso.c into the
-> vdso, although vdso2c could help and allow a really simple in-vdso
-> implementation.
->
-> 2. Go uses a segmented stack, and the vdso is quite unfriendly for
-> segmented stack.  If we can get compiler support, is there a
-> reasonable way that we could advertise the maximum stack usage of each
-> vdso entry point?
->
->
-> If we were to implement both, maybe we'd actually want to provide
-> something like:
->
-> struct vdso_entry {
->   unsigned long vdso_entry_struct_size;  /* so we can add fields later on */
->   void *func;
->   unsigned int max_stack;  /* zero if not known */
-> };
->
-> vdso_entry *vdso_find_entry(const char *name, const char *version);
->
-> AT_VDSO_FINDENTRY would be set to &vdso_find_entry.
->
-> This shouldn't even break CRIU :)
->
+On Fri, Jun 13, 2014 at 8:36 AM, Chen Yucong <slaoub@gmail.com> wrote:
+> shrink_page_list() has too many arguments that have already reached ten.
+> Some of those arguments and temporary variables introduces extra 80 bytes
+> on the stack. This patch wraps five parameters into shrink_result and removes
+> some temporary variables, thus making the relative functions to consume fewer
+> stack space.
 
-Alternatively we could just assign each entry a stable index and
-supply a table: AT_VDSO_ENTRIES would point to:
+I think it's better to put them into struct scan_control.
+Reset them before calling shrinker or take a snapshot to get delta.
 
-struct {
-  unsigned long nentries;
-  vdso_entry entries[];
-}
-
-Simpler, faster, but less flexible.  This version wouldn't even need
-help from vdso2c.
-
---Andy
+>
+> Before mm/vmscan.c is changed:
+>    text    data     bss     dec     hex filename
+> 6876698  957224  966656 8800578  864942 vmlinux-3.15
+>
+> After mm/vmscan.c is changed:
+>    text    data     bss     dec     hex filename
+> 6876506  957224  966656 8800386  864882 vmlinux-3.15
+>
+>
+> scripts/checkstack.pl can be used for checking the change of the target function stack.
+>
+> Before mm/vmscan.c is changed:
+>
+> 0xffffffff810af103 shrink_inactive_list []:             152
+> 0xffffffff810af43d shrink_inactive_list []:             152
+> -------------------------------------------------------------
+> 0xffffffff810aede8 reclaim_clean_pages_from_list []:    184
+> 0xffffffff810aeef8 reclaim_clean_pages_from_list []:    184
+> -------------------------------------------------------------
+> 0xffffffff810ae582 shrink_page_list []:                 232
+> 0xffffffff810aedb5 shrink_page_list []:                 232
+>
+> After mm/vmscan.c is changed::
+>
+> 0xffffffff810af078 shrink_inactive_list []:             120
+> 0xffffffff810af36d shrink_inactive_list []:             120
+> -------------------------------------------------------------
+> 0xffffffff810aed6c reclaim_clean_pages_from_list []:    152
+> 0xffffffff810aee68 reclaim_clean_pages_from_list []:    152
+> --------------------------------------------------------------------------------------
+> 0xffffffff810ae586 shrink_page_list []:                 184   ---> sub    $0xb8,%rsp
+> 0xffffffff810aed36 shrink_page_list []:                 184   ---> add    $0xb8,%rsp
+>
+> Via the above figures, we can find that the difference value of the stack is 32 for
+> shrink_inactive_list and reclaim_clean_pages_from_list, and this value is 48(232-184)
+> for shrink_page_list. From the hierarchy of functions called, the total difference
+> value is 80(32+48) for this change.
+>
+> Changes since v1: https://lkml.org/lkml/2014/6/12/159
+>      * Rename arg_container to shrink_result
+>      * Change the the way of initializing shrink_result object.
+>
+> Signed-off-by: Chen Yucong <slaoub@gmail.com>
+> ---
+>  mm/vmscan.c |   62 ++++++++++++++++++++++++++---------------------------------
+>  1 file changed, 27 insertions(+), 35 deletions(-)
+>
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index a8ffe4e..3f28e39 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -791,28 +791,31 @@ static void page_check_dirty_writeback(struct page *page,
+>  }
+>
+>  /*
+> + * Callers pass a prezeroed shrink_result into the shrink functions to gather
+> + * statistics about how many pages of particular states were processed
+> + */
+> +struct shrink_result {
+> +       unsigned long nr_dirty;
+> +       unsigned long nr_unqueued_dirty;
+> +       unsigned long nr_congested;
+> +       unsigned long nr_writeback;
+> +       unsigned long nr_immediate;
+> +};
+> +
+> +/*
+>   * shrink_page_list() returns the number of reclaimed pages
+>   */
+>  static unsigned long shrink_page_list(struct list_head *page_list,
+>                                       struct zone *zone,
+>                                       struct scan_control *sc,
+>                                       enum ttu_flags ttu_flags,
+> -                                     unsigned long *ret_nr_dirty,
+> -                                     unsigned long *ret_nr_unqueued_dirty,
+> -                                     unsigned long *ret_nr_congested,
+> -                                     unsigned long *ret_nr_writeback,
+> -                                     unsigned long *ret_nr_immediate,
+> +                                     struct shrink_result *sr,
+>                                       bool force_reclaim)
+>  {
+>         LIST_HEAD(ret_pages);
+>         LIST_HEAD(free_pages);
+>         int pgactivate = 0;
+> -       unsigned long nr_unqueued_dirty = 0;
+> -       unsigned long nr_dirty = 0;
+> -       unsigned long nr_congested = 0;
+>         unsigned long nr_reclaimed = 0;
+> -       unsigned long nr_writeback = 0;
+> -       unsigned long nr_immediate = 0;
+>
+>         cond_resched();
+>
+> @@ -858,10 +861,10 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>                  */
+>                 page_check_dirty_writeback(page, &dirty, &writeback);
+>                 if (dirty || writeback)
+> -                       nr_dirty++;
+> +                       sr->nr_dirty++;
+>
+>                 if (dirty && !writeback)
+> -                       nr_unqueued_dirty++;
+> +                       sr->nr_unqueued_dirty++;
+>
+>                 /*
+>                  * Treat this page as congested if the underlying BDI is or if
+> @@ -872,7 +875,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>                 mapping = page_mapping(page);
+>                 if ((mapping && bdi_write_congested(mapping->backing_dev_info)) ||
+>                     (writeback && PageReclaim(page)))
+> -                       nr_congested++;
+> +                       sr->nr_congested++;
+>
+>                 /*
+>                  * If a page at the tail of the LRU is under writeback, there
+> @@ -916,7 +919,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>                         if (current_is_kswapd() &&
+>                             PageReclaim(page) &&
+>                             zone_is_reclaim_writeback(zone)) {
+> -                               nr_immediate++;
+> +                               sr->nr_immediate++;
+>                                 goto keep_locked;
+>
+>                         /* Case 2 above */
+> @@ -934,7 +937,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>                                  * and it's also appropriate in global reclaim.
+>                                  */
+>                                 SetPageReclaim(page);
+> -                               nr_writeback++;
+> +                               sr->nr_writeback++;
+>
+>                                 goto keep_locked;
+>
+> @@ -1132,11 +1135,6 @@ keep:
+>         list_splice(&ret_pages, page_list);
+>         count_vm_events(PGACTIVATE, pgactivate);
+>         mem_cgroup_uncharge_end();
+> -       *ret_nr_dirty += nr_dirty;
+> -       *ret_nr_congested += nr_congested;
+> -       *ret_nr_unqueued_dirty += nr_unqueued_dirty;
+> -       *ret_nr_writeback += nr_writeback;
+> -       *ret_nr_immediate += nr_immediate;
+>         return nr_reclaimed;
+>  }
+>
+> @@ -1148,7 +1146,8 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+>                 .priority = DEF_PRIORITY,
+>                 .may_unmap = 1,
+>         };
+> -       unsigned long ret, dummy1, dummy2, dummy3, dummy4, dummy5;
+> +       unsigned long ret;
+> +       struct shrink_result dummy = { };
+>         struct page *page, *next;
+>         LIST_HEAD(clean_pages);
+>
+> @@ -1161,8 +1160,7 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+>         }
+>
+>         ret = shrink_page_list(&clean_pages, zone, &sc,
+> -                       TTU_UNMAP|TTU_IGNORE_ACCESS,
+> -                       &dummy1, &dummy2, &dummy3, &dummy4, &dummy5, true);
+> +                       TTU_UNMAP|TTU_IGNORE_ACCESS, &dummy, true);
+>         list_splice(&clean_pages, page_list);
+>         mod_zone_page_state(zone, NR_ISOLATED_FILE, -ret);
+>         return ret;
+> @@ -1469,11 +1467,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+>         unsigned long nr_scanned;
+>         unsigned long nr_reclaimed = 0;
+>         unsigned long nr_taken;
+> -       unsigned long nr_dirty = 0;
+> -       unsigned long nr_congested = 0;
+> -       unsigned long nr_unqueued_dirty = 0;
+> -       unsigned long nr_writeback = 0;
+> -       unsigned long nr_immediate = 0;
+> +       struct shrink_result sr = { };
+>         isolate_mode_t isolate_mode = 0;
+>         int file = is_file_lru(lru);
+>         struct zone *zone = lruvec_zone(lruvec);
+> @@ -1515,9 +1509,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+>                 return 0;
+>
+>         nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_UNMAP,
+> -                               &nr_dirty, &nr_unqueued_dirty, &nr_congested,
+> -                               &nr_writeback, &nr_immediate,
+> -                               false);
+> +                                       &sr, false);
+>
+>         spin_lock_irq(&zone->lru_lock);
+>
+> @@ -1554,7 +1546,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+>          * of pages under pages flagged for immediate reclaim and stall if any
+>          * are encountered in the nr_immediate check below.
+>          */
+> -       if (nr_writeback && nr_writeback == nr_taken)
+> +       if (sr.nr_writeback && sr.nr_writeback == nr_taken)
+>                 zone_set_flag(zone, ZONE_WRITEBACK);
+>
+>         /*
+> @@ -1566,7 +1558,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+>                  * Tag a zone as congested if all the dirty pages scanned were
+>                  * backed by a congested BDI and wait_iff_congested will stall.
+>                  */
+> -               if (nr_dirty && nr_dirty == nr_congested)
+> +               if (sr.nr_dirty && sr.nr_dirty == sr.nr_congested)
+>                         zone_set_flag(zone, ZONE_CONGESTED);
+>
+>                 /*
+> @@ -1576,7 +1568,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+>                  * pages from reclaim context. It will forcibly stall in the
+>                  * next check.
+>                  */
+> -               if (nr_unqueued_dirty == nr_taken)
+> +               if (sr.nr_unqueued_dirty == nr_taken)
+>                         zone_set_flag(zone, ZONE_TAIL_LRU_DIRTY);
+>
+>                 /*
+> @@ -1585,7 +1577,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+>                  * implies that pages are cycling through the LRU faster than
+>                  * they are written so also forcibly stall.
+>                  */
+> -               if ((nr_unqueued_dirty == nr_taken || nr_immediate) &&
+> +               if ((sr.nr_unqueued_dirty == nr_taken || sr.nr_immediate) &&
+>                     current_may_throttle())
+>                         congestion_wait(BLK_RW_ASYNC, HZ/10);
+>         }
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
