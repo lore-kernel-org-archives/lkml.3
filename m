@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092AbaFMGyH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 02:54:07 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:38083 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066AbaFMGyF (ORCPT
+	id S1750979AbaFMGzg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 02:55:36 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:63662 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707AbaFMGze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 02:54:05 -0400
-Date: Fri, 13 Jun 2014 09:53:46 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
-Subject: [patch] checkpatch: warn on missing spaces in broken up quoted
- strings
-Message-ID: <20140613065346.GA28134@mwanda>
+	Fri, 13 Jun 2014 02:55:34 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <539A906E.90402@roeck-us.net>
+Date: Thu, 12 Jun 2014 22:47:26 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.14 00/19] 3.14.8-stable review
+References: <20140612232138.561318739@linuxfoundation.org>
+In-Reply-To: <20140612232138.561318739@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checkpatch already complains when people break up quoted strings but
-it's still pretty common.  One mistake that people often make is they
-leave out the space character between the two strings.
+On 06/12/2014 04:21 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.14.8 release.
+> There are 19 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sat Jun 14 23:21:28 UTC 2014.
+> Anything received after that time might be too late.
+>
+Build results:
+	total: 143 pass: 136 skipped: 4 fail: 3
+Failed builds:
+	powerpc:allmodconfig (binutils 2.3, 2.4)
+	unicore32:defconfig
 
-This check adds 453 new warnings.  There very few false positives, here
-is what they look like:
+Qemu tests all passed.
 
-1) Most of the false positives are in crypto/testmgr.h where they just
-   want a 10x10 block of sample text and don't care about the content.
-2) There one commented place like this:
-  "das08-aoh"
-  "das08-aol"
-3) There is one place which breaks the alphabet at the lower and upper
-   case boundary.
-4) There is one person who broke quoted strings at the 80 character mark
-   without considering the content (that's not really a false positive,
-   now that I think about it).
+Results are as expected.
+Details are available at http://server.roeck-us.net:8010/builders.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Guenter
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 010b18e..c50eee2 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -4009,6 +4009,12 @@ sub process {
- 			}
- 		}
- 
-+# check for missing a space in a string concatination
-+        if ($prevrawline =~ /[^\\][a-zA-Z]"$/ && $rawline =~ /^\+[\t ]+"[a-zA-Z]/) {
-+            WARN('MISSING_SPACE',
-+                 "break quoted strings at a space character\n" . $hereprev);
-+        }
-+
- # check for bad placement of section $InitAttribute (e.g.: __initdata)
- 		if ($line =~ /(\b$InitAttribute\b)/) {
- 			my $attr = $1;
