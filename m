@@ -1,78 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753618AbaFMQaK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 12:30:10 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:15675 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753355AbaFMQaI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 12:30:08 -0400
-Date: Fri, 13 Jun 2014 12:30:05 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [patch V4 04/10] rtmutex: No need to keep task ref for lock
- owner check
-Message-ID: <20140613123005.5c309e98@gandalf.local.home>
-In-Reply-To: <20140611183853.208557255@linutronix.de>
-References: <20140611182944.108526809@linutronix.de>
-	<20140611183853.208557255@linutronix.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1753664AbaFMQbT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 12:31:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27126 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751520AbaFMQbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 12:31:18 -0400
+Subject: [PATCH v2] iommu/intel: Exclude devices using RMRRs from IOMMU API
+ domains
+From: Alex Williamson <alex.williamson@redhat.com>
+To: iommu@lists.linux-foundation.org, dwmw2@infradead.org
+Cc: chegu_vinod@hp.com, linux-kernel@vger.kernel.org
+Date: Fri, 13 Jun 2014 10:30:38 -0600
+Message-ID: <20140613162901.4550.94476.stgit@bling.home>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jun 2014 18:44:05 -0000
-Thomas Gleixner <tglx@linutronix.de> wrote:
+The user of the IOMMU API domain expects to have full control of
+the IOVA space for the domain.  RMRRs are fundamentally incompatible
+with that idea.  We can neither map the RMRR into the IOMMU API
+domain, nor can we guarantee that the device won't continue DMA with
+the area described by the RMRR as part of the new domain.  Therefore
+we must prevent such devices from being used by the IOMMU API.
 
-> There is no point to keep the task ref across the check for lock
-> owner. Drop the ref before that, so the protection context is clear.
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: stable@vger.kernel.org
+---
 
-You mean you deobfuscated the code ;-)
+v2: consolidate test to a single, well documented function.
 
-(No, patch #3 could have been called "deobfuscate the code")
+ drivers/iommu/intel-iommu.c |   49 ++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 39 insertions(+), 10 deletions(-)
 
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
-
-> 
-> Found while documenting the chain walk.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  kernel/locking/rtmutex.c |    5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> Index: tip/kernel/locking/rtmutex.c
-> ===================================================================
-> --- tip.orig/kernel/locking/rtmutex.c
-> +++ tip/kernel/locking/rtmutex.c
-> @@ -463,6 +463,8 @@ static int rt_mutex_adjust_prio_chain(st
->  
->  	/* Release the task */
->  	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-> +	put_task_struct(task);
-> +
->  	if (!rt_mutex_owner(lock)) {
->  		/*
->  		 * If the requeue above changed the top waiter, then we need
-> @@ -472,9 +474,8 @@ static int rt_mutex_adjust_prio_chain(st
->  		if (top_waiter != rt_mutex_top_waiter(lock))
->  			wake_up_process(rt_mutex_top_waiter(lock)->task);
->  		raw_spin_unlock(&lock->wait_lock);
-> -		goto out_put_task;
-> +		return 0;
->  	}
-> -	put_task_struct(task);
->  
->  	/* Grab the next task */
->  	task = rt_mutex_owner(lock);
-> 
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index c4f11c0..253d598 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -2511,22 +2511,46 @@ static bool device_has_rmrr(struct device *dev)
+ 	return false;
+ }
+ 
++/*
++ * There are a couple cases where we need to restrict the functionality of
++ * devices associated with RMRRs.  The first is when evaluating a device for
++ * identity mapping because problems exist when devices are moved in and out
++ * of domains and their respective RMRR information is lost.  This means that
++ * a device with associated RMRRs will never be in a "passthrough" domain.
++ * The second is use of the device through the IOMMU API.  This interface
++ * expects to have full control of the IOVA space for the device.  We cannot
++ * satisfy both the requirement that RMRR access is maintained and have an
++ * unencumbered IOVA space.  We also have no ability to quiesce the device's
++ * use of the RMRR space or even inform the IOMMU API user of the restriction.
++ * We therefore prevent devices associated with an RMRR from participating in
++ * the IOMMU API, which eliminates them from device assignment.
++ *
++ * In both cases we assume that PCI USB devices with RMRRs have them largely
++ * for historical reasons and that the RMRR space is not actively used post
++ * boot.  This exclusion may change if vendors begin to abuse it.
++ */
++static bool device_is_rmrr_locked(struct device *dev)
++{
++	if (!device_has_rmrr(dev))
++		return false;
++
++	if (dev_is_pci(dev)) {
++		struct pci_dev *pdev = to_pci_dev(dev);
++
++		if ((pdev->class >> 8) == PCI_CLASS_SERIAL_USB)
++			return false;
++	}
++
++	return true;
++}
++
+ static int iommu_should_identity_map(struct device *dev, int startup)
+ {
+ 
+ 	if (dev_is_pci(dev)) {
+ 		struct pci_dev *pdev = to_pci_dev(dev);
+ 
+-		/*
+-		 * We want to prevent any device associated with an RMRR from
+-		 * getting placed into the SI Domain. This is done because
+-		 * problems exist when devices are moved in and out of domains
+-		 * and their respective RMRR info is lost. We exempt USB devices
+-		 * from this process due to their usage of RMRRs that are known
+-		 * to not be needed after BIOS hand-off to OS.
+-		 */
+-		if (device_has_rmrr(dev) &&
+-		    (pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
++		if (device_is_rmrr_locked(dev))
+ 			return 0;
+ 
+ 		if ((iommu_identity_mapping & IDENTMAP_AZALIA) && IS_AZALIA(pdev))
+@@ -4171,6 +4195,11 @@ static int intel_iommu_attach_device(struct iommu_domain *domain,
+ 	int addr_width;
+ 	u8 bus, devfn;
+ 
++	if (device_is_rmrr_locked(dev)) {
++		dev_warn(dev, "Device is ineligible for IOMMU domain attach due to platform RMRR requirement.  Contact your platform vendor.\n");
++		return -EPERM;
++	}
++
+ 	/* normally dev is not mapped */
+ 	if (unlikely(domain_context_mapped(dev))) {
+ 		struct dmar_domain *old_domain;
 
