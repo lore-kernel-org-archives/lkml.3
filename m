@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179AbaFMOKw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 10:10:52 -0400
-Received: from smtprelay4.synopsys.com ([198.182.44.111]:38382 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752026AbaFMOKt convert rfc822-to-8bit (ORCPT
+	id S1752404AbaFMOLG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 10:11:06 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:62402 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752026AbaFMOLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 10:10:49 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Rob Herring <robherring2@gmail.com>
-CC: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Jiri Slaby" <jslaby@suse.cz>, Paul Bolle <pebolle@tiscali.nl>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "Francois.Bedard@synopsys.com" <Francois.Bedard@synopsys.com>
-Subject: Re: [PATCH 9/9] serial/arc: Add DT based earlycon support
-Thread-Topic: [PATCH 9/9] serial/arc: Add DT based earlycon support
-Thread-Index: AQHPhinUnAXEFucMI0aUKI8MUvq0Qg==
-Date: Fri, 13 Jun 2014 14:10:41 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA230751A6B772C@IN01WEMBXA.internal.synopsys.com>
-References: <1402569099-9900-1-git-send-email-vgupta@synopsys.com>
- <1402569099-9900-10-git-send-email-vgupta@synopsys.com>
- <CAL_Jsq+wf-nwzw_sYk4FiZxRr2advvjkd7i32arqVAFptDeVGA@mail.gmail.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.196.93]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 13 Jun 2014 10:11:04 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Marcel Ziswiler <marcel@ziswiler.com>
+Subject: Re: [PATCH v2 1/3] arm: multi_v7: enable igb, stmpe, lm95245, pwm leds
+Date: Fri, 13 Jun 2014 16:10:17 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com, arm@kernel.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, stefan@agner.ch
+References: <1741a33cd88cd5525f3c50c0e0cacc0853a3512a.1402350905.git.marcel@ziswiler.com>
+In-Reply-To: <1741a33cd88cd5525f3c50c0e0cacc0853a3512a.1402350905.git.marcel@ziswiler.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201406131610.18048.arnd@arndb.de>
+X-Provags-ID: V02:K0:fVBo8vrdcujOURFpFhkI68OLbA+m/D2ET5lki3vCCIB
+ ZxMuC04jVi4GwZxYkSg23uXJOMcF7m6gsozdqycTvfaiMeCs54
+ 817xIsDvRZ/FluJ1saJ1ECyueBtGbvjXW4zliAlvDQU12CcZht
+ 25q9ehplqYYOq9/KJM15W22F/D9wqAWl5eX3jij9sPuFsFVMYP
+ 3S/0pk7fMaLVvJn52TeJCooooXdo7i8MtnOAWpckY/EggC8Gra
+ QJ9A/RoBDKJDwWmVI9lu56a0PKikrHQMyNRU60hvx+IVQPhMhA
+ HX3rBwakQI07dzT0imFHqV/A5r2GbI3T3C4a5FN9ZJV7LWGv9m
+ dYqp0zBnxZODJfp8ljec=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 13 June 2014 06:57 AM, Rob Herring wrote:
-> On Thu, Jun 12, 2014 at 5:31 AM, Vineet Gupta
-> <Vineet.Gupta1@synopsys.com> wrote:
->> > Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
->> > ---
-> Nice series!
->
->> >  arch/arc/boot/dts/angel4.dts  | 3 ++-
->> >  drivers/tty/serial/arc_uart.c | 1 +
->> >  2 files changed, 3 insertions(+), 1 deletion(-)
->> >
->> > diff --git a/arch/arc/boot/dts/angel4.dts b/arch/arc/boot/dts/angel4.dts
->> > index 6b57475967a6..e9fc270d1e0b 100644
->> > --- a/arch/arc/boot/dts/angel4.dts
->> > +++ b/arch/arc/boot/dts/angel4.dts
->> > @@ -17,7 +17,8 @@
->> >         interrupt-parent = <&intc>;
->> >
->> >         chosen {
->> > -               bootargs = "earlycon=arc_uart,mmio32,0xc0fc1000,115200n8 console=ttyARC0,115200n8";
->> > +               bootargs = "earlycon console=ttyARC0,115200n8";
->> > +               stdout-path = &arcuart0;
-> Just FYI, Grant has a series to pickup the normal console from
-> stdout-path which would mean you can remove console param as well.
-> I've kicked him to respin it.
+On Tuesday 10 June 2014, Marcel Ziswiler wrote:
+> The NVIDIA Tegra 3 based Apalis T30 module contains an Intel i210 resp.
+> i211 gigabit Ethernet controller, an STMPE811 ADC/touch controller, PWM
+> LEDs generically accessible from user space and an LM95245 temperature
+> sensor chip. The later three can also be found on the Colibri T30
+> module.
+> 
+> While at it move the NEON entry down to its proper place to have it all
+> nicely ordered again.
+> 
+> Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
 
-OK ! I can split up 9/9 into driver chg and DT change.
+Stephen, Thierry,
 
-In the mean time could you take a look at the driver patches which switch to
-earlycon and DT earlycon
-and possibly provide Ack/Reviewed by.
+do you want me to queue it up directly, or do you want to put it into
+a tegra fixes branch?
 
-Thx,
--Vineet
+	Arnd
