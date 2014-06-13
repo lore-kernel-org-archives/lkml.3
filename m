@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960AbaFMFQq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 01:16:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34704 "EHLO mx1.redhat.com"
+	id S1751998AbaFMFRV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 01:17:21 -0400
+Received: from ozlabs.org ([103.22.144.67]:57380 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750886AbaFMFQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 01:16:44 -0400
-Date: Fri, 13 Jun 2014 01:16:31 -0400
-From: Dave Jones <davej@redhat.com>
-To: xfs@oss.sgi.com
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: XFS WARN_ON in xfs_vm_writepage
-Message-ID: <20140613051631.GA9394@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, xfs@oss.sgi.com,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1750886AbaFMFRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 01:17:20 -0400
+Date: Fri, 13 Jun 2014 15:16:52 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: linux-next: build failure after merge of the akpm-current tree
+Message-ID: <20140613151652.69bb6961@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/S.itoS1wE4mYrbk5B0niN5n"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just hit this on Linus' tree from earlier this afternoon..
+--Sig_/S.itoS1wE4mYrbk5B0niN5n
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-WARNING: CPU: 3 PID: 19721 at fs/xfs/xfs_aops.c:971 xfs_vm_writepage+0x5ce/0x630 [xfs]()
-CPU: 3 PID: 19721 Comm: trinity-c61 Not tainted 3.15.0+ #3
- 0000000000000009 000000004f70ab82 ffff8801d5ebf578 ffffffff8373215c
- 0000000000000000 ffff8801d5ebf5b0 ffffffff8306f7cd ffff88023dd543e0
- ffffea000254a3c0 ffff8801d5ebf820 ffffea000254a3e0 ffff8801d5ebf728
-Call Trace:
- [<ffffffff8373215c>] dump_stack+0x4e/0x7a
- [<ffffffff8306f7cd>] warn_slowpath_common+0x7d/0xa0
- [<ffffffff8306f8fa>] warn_slowpath_null+0x1a/0x20
- [<ffffffffc023068e>] xfs_vm_writepage+0x5ce/0x630 [xfs]
- [<ffffffff8373f1ab>] ? preempt_count_sub+0xab/0x100
- [<ffffffff83347315>] ? __percpu_counter_add+0x85/0xc0
- [<ffffffff8316f759>] shrink_page_list+0x8f9/0xb90
- [<ffffffff83170123>] shrink_inactive_list+0x253/0x510
- [<ffffffff83170c93>] shrink_lruvec+0x563/0x6c0
- [<ffffffff83170e2b>] shrink_zone+0x3b/0x100
- [<ffffffff831710e1>] shrink_zones+0x1f1/0x3c0
- [<ffffffff83171414>] try_to_free_pages+0x164/0x380
- [<ffffffff83163e52>] __alloc_pages_nodemask+0x822/0xc90
- [<ffffffff83169eb2>] ? pagevec_lru_move_fn+0x122/0x140
- [<ffffffff831abeff>] alloc_pages_vma+0xaf/0x1c0
- [<ffffffff8318a931>] handle_mm_fault+0xa31/0xc50
- [<ffffffff831845c0>] ? follow_page_mask+0x1f0/0x320
- [<ffffffff8318491b>] __get_user_pages+0x22b/0x660
- [<ffffffff831b5093>] ? kmem_cache_alloc+0x183/0x210
- [<ffffffff8318ce7e>] __mlock_vma_pages_range+0x9e/0xd0
- [<ffffffff8318d6ba>] __mm_populate+0xca/0x180
- [<ffffffff83179033>] vm_mmap_pgoff+0xd3/0xe0
- [<ffffffff8318fbd6>] SyS_mmap_pgoff+0x116/0x2c0
- [<ffffffff83011ced>] ? syscall_trace_enter+0x14d/0x2a0
- [<ffffffff830084c2>] SyS_mmap+0x22/0x30
- [<ffffffff837436ef>] tracesys+0xdd/0xe2
+Hi Andrew,
 
+After merging the akpm-current tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
- 970         if (WARN_ON_ONCE((current->flags & (PF_MEMALLOC|PF_KSWAPD)) ==
- 971                         PF_MEMALLOC))
+mm/memcontrol.c:6674:3: note: each undeclared identifier is reported only o=
+nce for each function it appears in
+mm/memcontrol.c: In function 'mem_cgroup_move_charge_pmd':
+mm/memcontrol.c:6906:37: error: 'ptl' undeclared (first use in this functio=
+n)
+  if (pmd_trans_huge_lock(pmd, vma, &ptl) =3D=3D 1) {
+                                     ^
 
+Caused by commit ce1c26c7ca47 ("memcg: separate
+mem_cgroup_move_charge_pte_range()") - uncovered by my previous reverts.
+
+I have reverted that commit and commit 2fba70f78e45
+("memcg-separate-mem_cgroup_move_charge_pte_range-checkpatch-fixes")
+that depends on it for today.
+
+Which lead to:
+
+mm/memcontrol.c: In function 'mem_cgroup_count_precharge_pmd':
+mm/memcontrol.c:6674:3: error: 'skip' undeclared (first use in this functio=
+n)
+   skip->control =3D PTWALK_DOWN;
+   ^
+
+Caused by commit 7170d5e9623b ("mm/pagewalk: replace mm_walk->skip with
+more general mm_walk->control").
+
+At this point I got fed up and just dropped the akpm trees completely for t=
+oday.
+
+Was this stuff really meant for v3.16?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/S.itoS1wE4mYrbk5B0niN5n
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTmolNAAoJEMDTa8Ir7ZwVzjYP/i+QPlcDgq3rFA59G6/9l39d
+btB2K7BFphLQt6WS/wUFBXmkeR6W8zRZvUZzBx0yGpElODOHS0PDq+QvKItqDrNC
+YZQX1eTlpDuir58Y2wFvRFFFnzmyN7mdzc+Jaf1tQd3JWfZWPfk8W+g+fiP8uXU8
+Fx9xgv2oIuZjspkxcz66Z/sqHTtFHWgYYpjoYUEfNotiQCq5MIdjbtgHptnO+wQ6
+iScJ5fZ2xQlEhLItHIYOxe7GvPHXy206/eSjvylfKr8VZVFA3vJpCAuxgFPWb67I
+aBdwYm+nzZGJUZvr5BMOVQieW99kWgwoXsQhy3tzUT02dMcZbBDAPz2r6D3oczBQ
++CO26XQHUgWo7oTZOlYZ0OePSLgKalH1ENY1NIN5plbFtlPBydlRSlvxN3WYv9XS
+mnlN/jWqeAX00gpeOMx6dlF714uTy5ycTXj6cXDJud6tOqTenAgSs0qGu6XlX+f2
+M96EfcNrX52X2MzsGKcCkOdFYH9pWSkqGpep4CGshy1IM4iLTGBv3EwhdRCNOD8u
+d+ooHgN1qJsXv5UjwGRTRC/zXN+AEr+IvHus9wtbFxIKzOMRHfzRtK2WFyoVOsMW
++jYNJeDtqrMJ9X4YFh5NRfQhzoXAQr79kydg5JRF6LlFSBUF4wtaxOEbi/Y/OBaW
+XcR3fN1HhoevTwyvSZsr
+=vYnd
+-----END PGP SIGNATURE-----
+
+--Sig_/S.itoS1wE4mYrbk5B0niN5n--
