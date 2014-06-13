@@ -1,39 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960AbaFMNM3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 09:12:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5005 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784AbaFMNM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 09:12:28 -0400
-Date: Fri, 13 Jun 2014 15:10:35 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Michael Braun <michael-dev@fami-braun.de>
-Cc: Ivo van Doorn <IvDoorn@gmail.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>, netdev@vger.kernel.org,
-        users@rt2x00.serialmonkey.com, linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] rt2800usb:fix hang during firmware load
-Message-ID: <20140613131035.GC2211@redhat.com>
-References: <20140612173057.15935.14194.stgit@charlie.fem.tu-ilmenau.de>
- <20140612173341.15935.7058.stgit@charlie.fem.tu-ilmenau.de>
+	id S1752006AbaFMNNc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 09:13:32 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:38021 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750870AbaFMNNa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 09:13:30 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+MsH02ANXs5D5QIfzzbdkXs+f6OJ8FVYs=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 21C2858EC0B
+Date: Fri, 13 Jun 2014 09:13:21 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sricharan R <r.sricharan@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tony@atomide.com, santosh.shilimkar@ti.com, nm@ti.com, rnayak@ti.com,
+        linux@arm.linux.org.uk, tglx@linutronix.de
+Subject: Re: [PATCH V2 05/19] irqchip: crossbar: Change allocation logic by
+ reversing search for free irqs
+Message-ID: <20140613131321.GG8664@titan.lakedaemon.net>
+References: <1402574007-13987-1-git-send-email-r.sricharan@ti.com>
+ <1402574007-13987-6-git-send-email-r.sricharan@ti.com>
+ <20140612125615.GT8664@titan.lakedaemon.net>
+ <539A95A3.1010301@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140612173341.15935.7058.stgit@charlie.fem.tu-ilmenau.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <539A95A3.1010301@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 07:33:41PM +0200, Michael Braun wrote:
-> The device 057c:8501 (AVM Fritz! WLAN v2 rev. B) boots into a state that does
-> not actually require loading a firmware file. The vendors driver finds out
-> about this by checking a firmware state register, so this patch adds this here.
+On Fri, Jun 13, 2014 at 11:39:39AM +0530, Sricharan R wrote:
+> Hi Jason,
 > 
-> Finally, with this patch applied, my wifi dongle actually becomes
-> useful (scan + connect to wpa network works).
+> On Thursday 12 June 2014 06:26 PM, Jason Cooper wrote:
+> > On Thu, Jun 12, 2014 at 05:23:13PM +0530, Sricharan R wrote:
+> >> From: Nishanth Menon <nm@ti.com>
+> >>
+> >> Reverse the search algorithm to ensure that address mapping and IRQ
+> >> allocation logics are proper. This can open up new bugs which are
+> >> easily fixable rather than wait till allocation logic approaches
+> >> the limit to find new bugs.
+> > 
+> > Could you expand on this logic some more?  What class of bugs are you
+> > hoping to discover more easily?
+> > 
 > 
-> Signed-off-by: Michael Braun <michael-dev@fami-braun.de>
-Acked-by: Stanislaw Gruszka <sgruszka@redhat.com>
+> class 1. address space errors -> example:
+> reg = <a size_b>
+> ti,max-irqs =  is a wrong parameter
+> 
+> class 2: irq-reserved list - which decides which entries in the
+> address space is not actually wired in
+> 
+> class 3: wrong list of routable-irqs.
+> 
+> in general allocating from max to min tends to have benefits in
+> ensuring the different issues that may be present in dts is easily
+> caught at definition time, rather than at a later point in time.
+
+Perfect, thanks for clarifying.  Please add this to the commit log when
+you respin.
+
+thx,
+
+Jason.
