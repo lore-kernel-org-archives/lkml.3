@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614AbaFMOfa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 10:35:30 -0400
-Received: from mail-db3hn0246.outbound.protection.outlook.com ([157.55.234.246]:3200
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751430AbaFMOf3 convert rfc822-to-8bit (ORCPT
+	id S1752661AbaFMOgY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 10:36:24 -0400
+Received: from cmta8.telus.net ([209.171.16.81]:34372 "EHLO cmta8.telus.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751456AbaFMOgX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 10:35:29 -0400
-Content-Type: text/plain; charset="iso-8859-1"
+	Fri, 13 Jun 2014 10:36:23 -0400
+X-Authority-Analysis: v=2.0 cv=ffdzPTsF c=1 sm=2
+ a=zJWegnE7BH9C0Gl4FFgQyA==:17 a=1chCufcSjPwA:10 a=LGgl8L9ij00A:10
+ a=IkcTkHD0fZMA:10 a=aatUQebYAAAA:8 a=Pyq9K9CWowscuQLKlpiwfMBGOR0=:19
+ a=6q6oBa1Ie56Ef3e0WqYA:9 a=QEXdDO2ut3YA:10 a=zJWegnE7BH9C0Gl4FFgQyA==:117
+X-Telus-Outbound-IP: 173.180.45.4
+From: "Doug Smythies" <dsmythies@telus.net>
+To: "'Dirk Brandewie'" <dirk.brandewie@gmail.com>,
+        "'Rafael J. Wysocki'" <rjw@rjwysocki.net>,
+        "'Stratos Karafotis'" <stratosk@semaphore.gr>
+Cc: <viresh.kumar@linaro.org>, <dirk.j.brandewie@intel.com>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <1402490012-19969-1-git-send-email-stratosk@semaphore.gr> <00b301cf85ba$40fe4290$c2fac7b0$@net> <5399BACF.6060201@semaphore.gr> <1815178.vjJU51ubGD@vostro.rjw.lan> <539B0147.8020407@gmail.com>
+In-Reply-To: <539B0147.8020407@gmail.com>
+Subject: RE: [PATCH] cpufreq: intel_pstate: Fix rounding of core_pct
+Date: Fri, 13 Jun 2014 07:36:21 -0700
+Message-ID: <002201cf8714$d933cca0$8b9b65e0$@net>
 MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Vorschlag
-To: Recipients <pewon7@wepog.onmicrosoft.com>
-From: Peter <pewon7@wepog.onmicrosoft.com>
-Date: Fri, 13 Jun 2014 16:20:20 +0200
-Reply-To: <wwpong12@aol.jp>
-Message-ID: <94f7dcf0-39d5-48f0-8420-15144b6b84ae@DB3PR05MB217.eurprd05.prod.outlook.com>
-X-Originating-IP: [81.17.21.90]
-X-ClientProxiedBy: DB3PR04CA009.eurprd04.prod.outlook.com (10.242.134.29) To
- DB3PR05MB217.eurprd05.prod.outlook.com (10.242.133.17)
-X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-X-Forefront-PRVS: 0241D5F98C
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(6009001)(6049001)(428001)(199002)(189002)(76482001)(33646001)(92726001)(50466002)(42186004)(21056001)(221733001)(1496007)(80022001)(87976001)(66066001)(105586001)(46102001)(74316001)(85852003)(83072002)(83322001)(77982001)(76576001)(74502001)(74662001)(86442001)(31696002)(53256004)(99396002)(79102001)(47776003)(101416001)(102836001)(20776003)(86362001)(64706001)(53806999)(43066003)(89136004)(64872006)(54356999)(50986999)(19580405001)(81342001)(325944007)(4396001)(86902001)(23756003)(19580395003)(86632001)(81542001)(62346011);DIR:OUT;SFP:1501;SCL:5;SRVR:DB3PR05MB217;H:[192.168.1.15];FPR:;MLV:spm;PTR:InfoNoRecords;A:0;MX:1;LANG:de;
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=pewon7@wepog.onmicrosoft.com; 
-X-OriginatorOrg: wepog.onmicrosoft.com
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Ac+HDjoJmo05+LrzQhG7A2ef47PsAwAA/5Xg
+Content-Language: en-ca
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hallo
 
-Ich habe ein Investment-Portfolio, die Geld in der Bank in China hinterlegt, die ich leicht auf Sie übertragen als Begünstigter bringt. Die Transaktion ist ohne Risiko, da es strategisch geplant abgeschlossen erfolgreich. 
- 
-Kontaktieren Sie mich auf meiner E-Mail-Adresse unten für weitere Details. 
- 
-Mit freundlichen Grüßen, 
- 
-Peter Wong 
-E-Mail: wwpong12@aol.jp
+On 2014.06.12 06:49 Dirk Brandewie wrote:
+> On 06/12/2014 01:03 PM, Rafael J. Wysocki wrote:
+>> On Thursday, June 12, 2014 05:35:59 PM Stratos Karafotis wrote:
+>>> On 12/06/2014 12:15 Ï€Î¼, Doug Smythies wrote:
+
+>>>>> Could you please elaborate a little bit more what we need these 2 lines below?
+>>>>>
+
+> Sorry for being MIA on this thread I have been up to my eyeballs.
+
+>>>>         if ((rem << 1) >= int_tofp(sample->mperf))
+>>>>                 core_pct += 1;
+
+> The rounding should have been
+>        core_pct += (1 << (FRAC_BITS-1));
+> Since core_pct is is in fixeded point notation at this point. Adding .5 to
+> core_pct to round up.
+
+> As Stratos pointed out the the current code only adds 1/256 to core_pct
+
+> Since core_pct_busy stays in fixed point through out the rest of the
+> calculations ans we only do the rounding when the PID is returning an
+> int I think we can safely remove these two lines.
+
+Absolutely, no.
+
+That code was doing exactly what I wanted it to do.
+But, as and I have already admitted, it was overkill, and yes the entire thing
+can be changed to use div_64 instead.
+
+We do not want to add 1/2 to core percent here at this spot.
+You would just be bringing back the arbitrary and incorrect biasing
+of core_pct upwards that used to be there in two spots before.
+
+You would add 1/2 when you want to convert to an integer, not before (and we don't right now, for the call to trace_pstate_sample).
+
+... Doug
+
+
