@@ -1,66 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891AbaFMVxk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 17:53:40 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:47136 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751986AbaFMVxh (ORCPT
+	id S1754047AbaFMV5H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 17:57:07 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57553 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751741AbaFMV5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 17:53:37 -0400
+	Fri, 13 Jun 2014 17:57:04 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Kees Cook <keescook@chromium.org>
+Cc: Pavel Machek <pavel@ucw.cz>, "H. Peter Anvin" <hpa@zytor.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>, Len Brown <len.brown@intel.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 0/2] make kASLR vs hibernation boot-time selectable
+Date: Sat, 14 Jun 2014 00:14:31 +0200
+Message-ID: <9502843.K96nxmtL8f@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAGXu5jJTSqtOMBNeOGEXfj_1iWGbE7p_YooeHT9wc4WRDjcGyQ@mail.gmail.com>
+References: <1402602419-27934-1-git-send-email-keescook@chromium.org> <20140613105135.GA4876@amd.pavel.ucw.cz> <CAGXu5jJTSqtOMBNeOGEXfj_1iWGbE7p_YooeHT9wc4WRDjcGyQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMEtUuwKRUYN_qdnCj42G3Z1UT3vMYPoJqXd2_PjV+_J3WA+8w@mail.gmail.com>
-References: <1402457121-8410-1-git-send-email-keescook@chromium.org>
-	<1402457121-8410-7-git-send-email-keescook@chromium.org>
-	<CAMEtUuwKRUYN_qdnCj42G3Z1UT3vMYPoJqXd2_PjV+_J3WA+8w@mail.gmail.com>
-Date: Fri, 13 Jun 2014 14:53:37 -0700
-X-Google-Sender-Auth: sexcRDaW_cNzEnCzgNZJNOiBu1I
-Message-ID: <CAGXu5jJjq=Yw4+fax6nEKyLxKR4N9wd5ReNgU+bUb266GFUEgw@mail.gmail.com>
-Subject: Re: [PATCH v6 6/9] seccomp: add "seccomp" syscall
-From: Kees Cook <keescook@chromium.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-api@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>, Oleg Nesterov <oleg@redhat.com>,
-        Will Drewry <wad@chromium.org>, Julien Tinnes <jln@chromium.org>,
-        David Drysdale <drysdale@google.com>,
-        John Johansen <john.johansen@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, linux-arch <linux-arch@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 2:22 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Tue, Jun 10, 2014 at 8:25 PM, Kees Cook <keescook@chromium.org> wrote:
->> This adds the new "seccomp" syscall with both an "operation" and "flags"
->> parameter for future expansion. The third argument is a pointer value,
->> used with the SECCOMP_SET_MODE_FILTER operation. Currently, flags must
->> be 0. This is functionally equivalent to prctl(PR_SET_SECCOMP, ...).
->>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> Cc: linux-api@vger.kernel.org
->> ---
->> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
->> index b0881a0ed322..1713977ee26f 100644
->> --- a/include/linux/syscalls.h
->> +++ b/include/linux/syscalls.h
->> @@ -866,4 +866,6 @@ asmlinkage long sys_process_vm_writev(pid_t pid,
->>  asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
->>                          unsigned long idx1, unsigned long idx2);
->>  asmlinkage long sys_finit_module(int fd, const char __user *uargs, int flags);
->> +asmlinkage long sys_seccomp(unsigned int op, unsigned int flags,
->> +                           const char __user *uargs);
->
-> It looks odd to add 'flags' argument to syscall that is not even used.
+On Friday, June 13, 2014 10:32:56 AM Kees Cook wrote:
+> On Fri, Jun 13, 2014 at 3:51 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> > Hi!
+> >
+> >
+> >> >>> Any way we can make them work together instead?
+> >> >>
+> >> >> I'm sure there is, but I don't know the solution. :)
+> >> >>
+> >> >> At the very least this gets us one step closer (we can build them together).
+> >> >>
+> >> >
+> >> > But it is really invasive.
+> >>
+> >> Well, I don't agree there. I actually would like to be able to turn
+> >> off hibernation support on distro kernels regardless of kASLR, so I
+> >> think this is really killing two birds with one stone.
+> >>
+> >> > I have to admit to being somewhat fuzzy on what the core problem with
+> >> > hibernation and kASLR is... in both cases there is a set of pages that
+> >> > need to be installed, some of which will overlap the loader kernel.
+> >> > What am I missing?
+> >>
+> >> I don't know how resume works, but I have assumed that the newly
+> >> loaded kernel stays in memory and pulls in the vmalloc, kmalloc,
+> >> modules, and userspace memory maps from disk. Since these things can
+> >> easily contain references to kernel text, if the newly loaded kernel
+> >> has moved with regard to the hibernated image, everything breaks.
+> >> IIUC, this is similar why you can't rebuild your kernel and resume
+> >> from a different version.
+> >
+> > x86-64 can resume from different kernel that did the suspend. kASLR
+> > should not be too different from that. (You just include kernel text
+> > in the hibernation image. It is small enough to do that.)
+> 
+> Oooh, that's very exciting! How does that work (what happens to the
+> kernel that booted first, etc)? I assume physical memory layout can't
+> change between hibernation and resume? Or, where should I be reading
+> code that does this?
 
-FWIW, "flags" is given use in the next patch to support the tsync option.
+I guess it would help if you were a bit less sarcastic, but perhaps that's
+just me.
 
--Kees
+Anyway, the core hibernation code actually works with page frames rather
+than with virtual addresses.  Essentially, it creates a bitmap where each
+page frame is represented by a single bit and the bits representing free
+page frames are unset.  It then allocates as many new pages as there are
+set bits in the bitmap and copies the entire contents of the page frames
+represented by those bits to new pages it's just allocated. That covers
+the entire kernel with its data and all process memory and is saved to
+disk storage along with the PFNs of the page frames whose contents have
+been copied.
 
--- 
-Kees Cook
-Chrome OS Security
+During resume it simply restores the contents of the saved page frames
+into those same page frames if they are available at that time.  For the
+page frames that aren't free then it allocates memory to store their
+contents temporarily and creates a list of PFNs where that contents should
+be moved eventually.  Then, it quiesces all activity of the system and
+jumps to arch-specific code that copies data from the temporary memory to
+the target page frames (that generally overwrites the boot kernel, so there's
+no way back from it).  Finally, it jumps to a specific address where the
+hibernated kernel trampoline code should be present.
+
+I think what fails with kASLR is that last step, because everything else
+should be entirely agnostic to the way the virtual addresses are laid out.
+I'm not sure how to fix that at the moment, but it should be fixable at
+least on x86_64.
+
+Rafael
+
