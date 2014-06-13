@@ -1,100 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825AbaFMFF7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 01:05:59 -0400
-Received: from ozlabs.org ([103.22.144.67]:33472 "EHLO ozlabs.org"
+	id S1751680AbaFMFKo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 01:10:44 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:35201 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751629AbaFMFF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 01:05:57 -0400
-Date: Fri, 13 Jun 2014 15:05:50 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: linux-next: build failure after merge of the akpm-current tree
-Message-ID: <20140613150550.7b2e2c4c@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1750998AbaFMFKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 01:10:43 -0400
+Date: Fri, 13 Jun 2014 01:10:33 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Chen Yucong <slaoub@gmail.com>
+Cc: akpm@linux-foundation.org, mgorman@suse.de, mhocko@suse.cz,
+        riel@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] mm/vmscan.c: wrap five parameters into shrink_result
+ for reducing the stack consumption
+Message-ID: <20140613051033.GM2878@cmpxchg.org>
+References: <1402634191-3442-1-git-send-email-slaoub@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_//9tE.7nrX3cRPAfk9D_Ce_y"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402634191-3442-1-git-send-email-slaoub@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_//9tE.7nrX3cRPAfk9D_Ce_y
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jun 13, 2014 at 12:36:31PM +0800, Chen Yucong wrote:
+> shrink_page_list() has too many arguments that have already reached ten.
+> Some of those arguments and temporary variables introduces extra 80 bytes
+> on the stack. This patch wraps five parameters into shrink_result and removes
+> some temporary variables, thus making the relative functions to consume fewer
+> stack space.
+> 
+> Before mm/vmscan.c is changed:
+>    text    data     bss     dec     hex filename
+> 6876698  957224  966656 8800578  864942 vmlinux-3.15
+> 
+> After mm/vmscan.c is changed:
+>    text    data     bss     dec     hex filename
+> 6876506  957224  966656 8800386  864882 vmlinux-3.15
+> 
+> 
+> scripts/checkstack.pl can be used for checking the change of the target function stack.
+> 
+> Before mm/vmscan.c is changed:
+> 
+> 0xffffffff810af103 shrink_inactive_list []:		152
+> 0xffffffff810af43d shrink_inactive_list []:		152
+> -------------------------------------------------------------
+> 0xffffffff810aede8 reclaim_clean_pages_from_list []:	184
+> 0xffffffff810aeef8 reclaim_clean_pages_from_list []:	184
+> -------------------------------------------------------------
+> 0xffffffff810ae582 shrink_page_list []:			232
+> 0xffffffff810aedb5 shrink_page_list []:			232
+> 
+> After mm/vmscan.c is changed::
+> 
+> 0xffffffff810af078 shrink_inactive_list []:		120
+> 0xffffffff810af36d shrink_inactive_list []:		120
+> -------------------------------------------------------------
+> 0xffffffff810aed6c reclaim_clean_pages_from_list []:	152
+> 0xffffffff810aee68 reclaim_clean_pages_from_list []:	152
+> --------------------------------------------------------------------------------------
+> 0xffffffff810ae586 shrink_page_list []:			184   ---> sub    $0xb8,%rsp
+> 0xffffffff810aed36 shrink_page_list []:			184   ---> add    $0xb8,%rsp
+> 
+> Via the above figures, we can find that the difference value of the stack is 32 for
+> shrink_inactive_list and reclaim_clean_pages_from_list, and this value is 48(232-184)
+> for shrink_page_list. From the hierarchy of functions called, the total difference
+> value is 80(32+48) for this change.
 
-Hi Andrew,
+We just increased the stack size by 8k.  I'm not saying that we
+shouldn't work on our stack footprint, but is this really worth it?
+It doesn't make that code easier to follow exactly.
 
-After merging the akpm-current tree, today's linux-next build (powerpc ppc6=
-4_defconfig)
-failed like this:
+> Changes since v1: https://lkml.org/lkml/2014/6/12/159
+>      * Rename arg_container to shrink_result
+>      * Change the the way of initializing shrink_result object.
+> 
+> Signed-off-by: Chen Yucong <slaoub@gmail.com>
+> ---
+>  mm/vmscan.c |   62 ++++++++++++++++++++++++++---------------------------------
+>  1 file changed, 27 insertions(+), 35 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index a8ffe4e..3f28e39 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -791,28 +791,31 @@ static void page_check_dirty_writeback(struct page *page,
+>  }
+>  
+>  /*
+> + * Callers pass a prezeroed shrink_result into the shrink functions to gather
+> + * statistics about how many pages of particular states were processed
+> + */
+> +struct shrink_result {
+> +	unsigned long nr_dirty;
+> +	unsigned long nr_unqueued_dirty;
+> +	unsigned long nr_congested;
+> +	unsigned long nr_writeback;
+> +	unsigned long nr_immediate;
+> +};
 
-fs/proc/task_mmu.c: In function 'smaps_pmd':
-include/linux/compiler.h:363:38: error: call to '__compiletime_assert_505' =
-declared with attribute error: BUILD_BUG failed
-  _compiletime_assert(condition, msg, __compiletime_assert_, __LINE__)
-                                      ^
-include/linux/compiler.h:346:4: note: in definition of macro '__compiletime=
-_assert'
-    prefix ## suffix();    \
-    ^
-include/linux/compiler.h:363:2: note: in expansion of macro '_compiletime_a=
-ssert'
-  _compiletime_assert(condition, msg, __compiletime_assert_, __LINE__)
-  ^
-include/linux/bug.h:50:37: note: in expansion of macro 'compiletime_assert'
- #define BUILD_BUG_ON_MSG(cond, msg) compiletime_assert(!(cond), msg)
-                                     ^
-include/linux/bug.h:84:21: note: in expansion of macro 'BUILD_BUG_ON_MSG'
- #define BUILD_BUG() BUILD_BUG_ON_MSG(1, "BUILD_BUG failed")
-                     ^
-include/linux/huge_mm.h:167:27: note: in expansion of macro 'BUILD_BUG'
- #define HPAGE_PMD_SIZE ({ BUILD_BUG(); 0; })
-                           ^
-fs/proc/task_mmu.c:505:39: note: in expansion of macro 'HPAGE_PMD_SIZE'
-  smaps_pte((pte_t *)pmd, addr, addr + HPAGE_PMD_SIZE, walk);
-                                       ^
-
-Caused by commit b0e08c526179 ("mm/pagewalk: move pmd_trans_huge_lock()
-from callbacks to common code").
-
-The reference to HPAGE_PMD_SIZE (which contains a BUILD_BUG() when
-CONFIG_TRANSPARENT_HUGEPAGE is not defined) used to be protected by a
-call to pmd_trans_huge_lock() (a static inline function that was
-contact 0 when CONFIG_TRANSPARENT_HUGEPAGE is not defined) so gcc did
-not see the reference and the BUG_ON.  That protection has been
-removed ...
-
-I have reverted that commit and commit 2dc554765dd1
-("mm-pagewalk-move-pmd_trans_huge_lock-from-callbacks-to-common-code-checkp=
-atch-fixes")
-that depend on it for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_//9tE.7nrX3cRPAfk9D_Ce_y
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTmoazAAoJEMDTa8Ir7ZwVmKUP+wdKLyKvb5SWKGktBgL4EHV+
-eLIfOazdrKirriEdVBdJ5abd8kMC4slplFyk1I86+z2zTd72OA1r1yJY7X/9yujc
-CFNlOZeximBqp0YZiRPlTuDEDE81xc8No365zYIGyXSMvFNPdbkr5AxixOSsB7Ts
-ECfWzBal+3dv21Lih3x9eYi7k47QNGi6shKd+NZWWgaZsS5Hd90GDqDr42u9osqV
-eoWu71Z8qAISHJIXAk+6GDgl2Z/+Kn/w/uunHWYXHtCwYGjQtK2dzCTnu8OWIhnW
-W9lknAaasU8+fj6SvuKxlb3ze/j9Cf4NKmnQ4xTPJiG2n/4W6bGRmOD9HFRsT21d
-Mhtthu5HrIEO9EiuaQ9yGCrBmRBd+nyUD6/n8XLo1poTjyVIpz8rysTcSKe01o8p
-1mLpyAlB9S9iAdDhKeMZkSKKQe/TaxFbhBzSnhrj+ZxSpc4fAVP697G28i9HkCiz
-ep7jrt2Z+mChI20H4yqI/drNNhEdF2Qmel6tcrzXJDadOCCX/GLyUw3dy0VVJq7Y
-kri/JUCEGz8AWJLuHERIhTLZ7EOA3wz7NSrcNGhB65CnmdpmzEOqtXa2VyyWF3CU
-gAQIEXvUy7FAXSU+tr3N+074WLYBvXUOMtxLSNJ6Q0SfV2Gu5OzbM+XTTwLxBW+9
-bH45v5a0Bkb/fZigsz3P
-=NLx9
------END PGP SIGNATURE-----
-
---Sig_//9tE.7nrX3cRPAfk9D_Ce_y--
+This exclusively contains statistics on the writeback states of the
+scanned pages.  struct writeback_stats?
