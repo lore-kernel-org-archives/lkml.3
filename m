@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658AbaFMQYJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 12:24:09 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36906 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753635AbaFMQYH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 12:24:07 -0400
-Date: Fri, 13 Jun 2014 11:23:23 -0500
+	id S1753695AbaFMQYV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 12:24:21 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39837 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753667AbaFMQYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 12:24:18 -0400
+Date: Fri, 13 Jun 2014 11:23:34 -0500
 From: Felipe Balbi <balbi@ti.com>
 To: Felipe Balbi <balbi@ti.com>
 CC: Tony Lindgren <tony@atomide.com>, Benoit Cousson <bcousson@baylibre.com>,
@@ -16,203 +15,626 @@ CC: Tony Lindgren <tony@atomide.com>, Benoit Cousson <bcousson@baylibre.com>,
         Linux ARM Kernel Mailing List 
 	<linux-arm-kernel@lists.infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Sathya Prakash M R <sathyap@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: Re: [RESEND PATCH 1/2] ARM: AM43xx: hwmod: add DSS hwmod data
-Message-ID: <20140613162323.GH8319@saruman.home>
+        Josh Elliot <jelliott@ti.com>, Darren Etheridge <detheridge@ti.com>
+Subject: Re: [PATCH 2/2] arm: dts: add support for AM437x StarterKit
+Message-ID: <20140613162334.GI8319@saruman.home>
 Reply-To: <balbi@ti.com>
 References: <1402676147-3711-1-git-send-email-balbi@ti.com>
- <1402676147-3711-2-git-send-email-balbi@ti.com>
+ <1402676147-3711-3-git-send-email-balbi@ti.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XbHSybK3LHOYQtWI"
+	protocol="application/pgp-signature"; boundary="v541l457l4DThMFo"
 Content-Disposition: inline
-In-Reply-To: <1402676147-3711-2-git-send-email-balbi@ti.com>
+In-Reply-To: <1402676147-3711-3-git-send-email-balbi@ti.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---XbHSybK3LHOYQtWI
+--v541l457l4DThMFo
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, Jun 13, 2014 at 11:15:46AM -0500, Felipe Balbi wrote:
-> From: Sathya Prakash M R <sathyap@ti.com>
+On Fri, Jun 13, 2014 at 11:15:47AM -0500, Felipe Balbi wrote:
+> Add support for TI's AM437x StarterKit Evaluation
+> Module.
 >=20
-> Add DSS hwmod data for AM43xx.
->=20
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Acked-by: Rajendra Nayak <rnayak@ti.com>
-> Signed-off-by: Sathya Prakash M R <sathyap@ti.com>
-> Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+> Cc: Josh Elliot <jelliott@ti.com>
+> Cc: Darren Etheridge <detheridge@ti.com>
 > Signed-off-by: Felipe Balbi <balbi@ti.com>
 > ---
 >=20
-> Note that this patch was originally send on May 9th [1], changes were req=
-uested
-> and a new version was sent on May 19th [2], then on May 27th [3] Tomi pin=
-ged
-> maintainer again and go no response.
+> Thanks to Josh and Darren for helping out with Audio and Display parts of=
+ this
+> DTS.
 >=20
-> Without this patch, we cannot get display working on any AM437x devices.
->=20
-> [1] http://marc.info/?l=3Dlinux-arm-kernel&m=3D139963677925227&w=3D2
-> [2] http://marc.info/?l=3Dlinux-arm-kernel&m=3D140049799425512&w=3D2
-> [3] http://marc.info/?l=3Dlinux-arm-kernel&m=3D140117232826754&w=3D2
->=20
->  arch/arm/mach-omap2/omap_hwmod_43xx_data.c | 98 ++++++++++++++++++++++++=
+>  .../devicetree/bindings/arm/omap/omap.txt          |   3 +
+>  arch/arm/boot/dts/Makefile                         |   1 +
+>  arch/arm/boot/dts/am437x-sk-evm.dts                | 539 +++++++++++++++=
 ++++++
->  arch/arm/mach-omap2/prcm43xx.h             |  1 +
->  2 files changed, 99 insertions(+)
+>  3 files changed, 543 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/am437x-sk-evm.dts
 >=20
-> diff --git a/arch/arm/mach-omap2/omap_hwmod_43xx_data.c b/arch/arm/mach-o=
-map2/omap_hwmod_43xx_data.c
-> index 5c2cc80..d2a7b6d 100644
-> --- a/arch/arm/mach-omap2/omap_hwmod_43xx_data.c
-> +++ b/arch/arm/mach-omap2/omap_hwmod_43xx_data.c
-> @@ -19,6 +19,8 @@
->  #include "omap_hwmod.h"
->  #include "omap_hwmod_33xx_43xx_common_data.h"
->  #include "prcm43xx.h"
-> +#include "omap_hwmod_common_data.h"
-> +
+> diff --git a/Documentation/devicetree/bindings/arm/omap/omap.txt b/Docume=
+ntation/devicetree/bindings/arm/omap/omap.txt
+> index d22b216..0edc903 100644
+> --- a/Documentation/devicetree/bindings/arm/omap/omap.txt
+> +++ b/Documentation/devicetree/bindings/arm/omap/omap.txt
+> @@ -129,6 +129,9 @@ Boards:
+>  - AM437x GP EVM
+>    compatible =3D "ti,am437x-gp-evm", "ti,am4372", "ti,am43"
 > =20
->  /* IP blocks */
->  static struct omap_hwmod am43xx_l4_hs_hwmod =3D {
-> @@ -415,6 +417,70 @@ static struct omap_hwmod am43xx_qspi_hwmod =3D {
->  	},
->  };
+> +- AM437x SK EVM: AM437x StarterKit Evaluation Module
+> +  compatible =3D "ti,am437x-sk-evm", "ti,am4372", "ti,am43"
+> +
+>  - DRA742 EVM:  Software Development Board for DRA742
+>    compatible =3D "ti,dra7-evm", "ti,dra742", "ti,dra74", "ti,dra7"
 > =20
-> +/* Display sub system - DSS */
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index 0f1e8be..749cdc8 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -306,6 +306,7 @@ dtb-$(CONFIG_ARCH_OMAP4) +=3D omap4-duovero-parlor.dt=
+b \
+>  	omap4-var-dvk-om44.dtb \
+>  	omap4-var-stk-om44.dtb
+>  dtb-$(CONFIG_SOC_AM43XX) +=3D am43x-epos-evm.dtb \
+> +	am437x-sk-evm.dtb \
+>  	am437x-gp-evm.dtb
+>  dtb-$(CONFIG_SOC_OMAP5) +=3D omap5-cm-t54.dtb \
+>  	omap5-sbc-t54.dtb \
+> diff --git a/arch/arm/boot/dts/am437x-sk-evm.dts b/arch/arm/boot/dts/am43=
+7x-sk-evm.dts
+> new file mode 100644
+> index 0000000..51ffab1
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/am437x-sk-evm.dts
+> @@ -0,0 +1,539 @@
+> +/*
+> + * Copyright (C) 2014 Texas Instruments Incorporated - http://www.ti.com/
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
 > +
-> +struct omap_dss_dispc_dev_attr am43xx_dss_dispc_dev_attr =3D {
-> +	.manager_count		=3D 1,
-> +	.has_framedonetv_irq	=3D 0
+> +/* AM437x SK EVM */
+> +
+> +/dts-v1/;
+> +
+> +#include "am4372.dtsi"
+> +#include <dt-bindings/pinctrl/am43xx.h>
+> +#include <dt-bindings/pwm/pwm.h>
+> +#include <dt-bindings/gpio/gpio.h>
+> +#include <dt-bindings/input/input.h>
+> +
+> +/ {
+> +	model =3D "TI AM437x SK EVM";
+> +	compatible =3D "ti,am437x-sk-evm","ti,am4372","ti,am43";
+> +
+> +	aliases {
+> +		display0 =3D &lcd0;
+> +	};
+> +
+> +	vmmcsd_fixed: fixedregulator-sd {
+> +		compatible =3D "regulator-fixed";
+> +		regulator-name =3D "vmmcsd_fixed";
+> +		regulator-min-microvolt =3D <3300000>;
+> +		regulator-max-microvolt =3D <3300000>;
+> +		enable-active-high;
+> +	};
+> +
+> +	v33_fixed: fixedregulator-v33 {
+> +		compatible =3D "regulator-fixed";
+> +		regulator-name =3D "v33_fixed";
+> +		regulator-min-microvolt =3D <3300000>;
+> +		regulator-max-microvolt =3D <3300000>;
+> +		enable-active-high;
+> +	};
+> +
+> +	v18_fixed: fixedregulator-v18 {
+> +		compatible =3D "regulator-fixed";
+> +		regulator-name =3D "v18_fixed";
+> +		regulator-min-microvolt =3D <1800000>;
+> +		regulator-max-microvolt =3D <1800000>;
+> +		enable-active-high;
+> +	};
+> +
+> +	backlight {
+> +		compatible =3D "pwm-backlight";
+> +		pwms =3D <&ecap0 0 50000 PWM_POLARITY_INVERTED>;
+> +		brightness-levels =3D <0 51 53 56 62 75 101 152 255>;
+> +		default-brightness-level =3D <8>;
+> +	};
+> +
+> +	sound {
+> +		compatible =3D "ti,da830-evm-audio";
+> +		ti,model =3D "AM437x-SK-EVM";
+> +		ti,audio-codec =3D <&tlv320aic3106>;
+> +		ti,mcasp-controller =3D <&mcasp1>;
+> +		ti,codec-clock-rate =3D <24000000>;
+> +		ti,audio-routing =3D
+> +			"Headphone Jack",       "HPLOUT",
+> +			"Headphone Jack",       "HPROUT";
+> +	};
+> +
+> +	matrix_keypad: matrix_keypad@0 {
+> +		compatible =3D "gpio-matrix-keypad";
+> +
+> +		debounce-delay-ms =3D <5>;
+> +		col-scan-delay-us =3D <1500>;
+> +
+> +		row-gpios =3D <&gpio5 5 GPIO_ACTIVE_HIGH		/* Bank5, pin5 */
+> +				&gpio5 6 GPIO_ACTIVE_HIGH>;	/* Bank5, pin6 */
+> +
+> +		col-gpios =3D <&gpio5 13 GPIO_ACTIVE_HIGH		/* Bank5, pin13 */
+> +				&gpio5 4 GPIO_ACTIVE_HIGH>;	/* Bank5, pin4 */
+> +
+> +		linux,keymap =3D <
+> +				MATRIX_KEY(0, 0, KEY_DOWN)
+> +				MATRIX_KEY(0, 1, KEY_RIGHT)
+> +				MATRIX_KEY(1, 0, KEY_LEFT)
+> +				MATRIX_KEY(1, 1, KEY_UP)
+> +			>;
+> +	};
+> +
+> +	leds {
+> +		compatible =3D "gpio-leds";
+> +
+> +		led@0 {
+> +			label =3D "am437x-sk:red:heartbeat";
+> +			gpios =3D <&gpio5 0 GPIO_ACTIVE_HIGH>;	/* Bank 5, pin 0 */
+> +			linux,default-trigger =3D "heartbeat";
+> +			default-state =3D "off";
+> +		};
+> +
+> +		led@1 {
+> +			label =3D "am437x-sk:green:mmc1";
+> +			gpios =3D <&gpio5 1 GPIO_ACTIVE_HIGH>;	/* Bank 5, pin 1 */
+> +			linux,default-trigger =3D "mmc0";
+> +			default-state =3D "off";
+> +		};
+> +
+> +		led@2 {
+> +			label =3D "am437x-sk:blue:cpu0";
+> +			gpios =3D <&gpio5 2 GPIO_ACTIVE_HIGH>;	/* Bank 5, pin 2 */
+> +			linux,default-trigger =3D "cpu0";
+> +			default-state =3D "off";
+> +		};
+> +
+> +		led@3 {
+> +			label =3D "am437x-sk:blue:usr3";
+> +			gpios =3D <&gpio5 3 GPIO_ACTIVE_HIGH>;	/* Bank 5, pin 3 */
+> +			default-state =3D "off";
+> +		};
+> +	};
+> +
+> +	lcd0: display {
+> +		compatible =3D "osddisplays,osd057T0559-34ts", "panel-dpi";
+> +		label =3D "lcd";
+> +
+> +		pinctrl-names =3D "default";
+> +		pinctrl-0 =3D <&lcd_pins>;
+> +
+> +		enable-gpios =3D <&gpio1 7 GPIO_ACTIVE_HIGH>;
+> +
+> +		panel-timing {
+> +			clock-frequency =3D <9000000>;
+> +			hactive =3D <480>;
+> +			vactive =3D <272>;
+> +			hfront-porch =3D <8>;
+> +			hback-porch =3D <43>;
+> +			hsync-len =3D <4>;
+> +			vback-porch =3D <12>;
+> +			vfront-porch =3D <4>;
+> +			vsync-len =3D <10>;
+> +			hsync-active =3D <0>;
+> +			vsync-active =3D <0>;
+> +			de-active =3D <1>;
+> +			pixelclk-active =3D <1>;
+> +		};
+> +
+> +		port {
+> +			lcd_in: endpoint {
+> +				remote-endpoint =3D <&dpi_out>;
+> +			};
+> +		};
+> +	};
 > +};
 > +
+> +&am43xx_pinmux {
+> +	i2c0_pins: i2c0_pins {
+> +		pinctrl-single,pins =3D <
+> +			0x188 (PIN_INPUT_PULLUP | SLEWCTRL_FAST | MUX_MODE0)  /* i2c0_sda.i2c=
+0_sda */
+> +			0x18c (PIN_INPUT_PULLUP | SLEWCTRL_FAST | MUX_MODE0)  /* i2c0_scl.i2c=
+0_scl */
+> +		>;
+> +	};
 > +
-> +static struct omap_hwmod_class_sysconfig am43xx_dispc_sysc =3D {
-> +	.rev_offs	=3D 0x0000,
-> +	.sysc_offs	=3D 0x0010,
-> +	.syss_offs	=3D 0x0014,
-> +	.sysc_flags	=3D (SYSC_HAS_SIDLEMODE | SYSC_HAS_MIDLEMODE),
-> +	.idlemodes	=3D (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
-> +	.sysc_fields	=3D &omap_hwmod_sysc_type1,
+> +	i2c1_pins: i2c1_pins {
+> +		pinctrl-single,pins =3D <
+> +			0x15c (PIN_INPUT_PULLUP | SLEWCTRL_FAST | MUX_MODE2)  /* spi0_cs0.i2c=
+1_scl */
+> +			0x158 (PIN_INPUT_PULLUP | SLEWCTRL_FAST | MUX_MODE2)  /* spi0_d1.i2c1=
+_sda  */
+> +		>;
+> +	};
+> +
+> +	mmc1_pins: pinmux_mmc1_pins {
+> +		pinctrl-single,pins =3D <
+> +			0x160 (PIN_INPUT | MUX_MODE7) /* spi0_cs1.gpio0_6 */
+> +		>;
+> +	};
+> +
+> +	ecap0_pins: backlight_pins {
+> +		pinctrl-single,pins =3D <
+> +			0x164 MUX_MODE0       /* eCAP0_in_PWM0_out.eCAP0_in_PWM0_out MODE0 */
+> +		>;
+> +	};
+> +
+> +	edt_ft5306_ts_pins: edt_ft5306_ts_pins {
+> +		pinctrl-single,pins =3D <
+> +			0x74 (PIN_INPUT | MUX_MODE7)	/* gpmc_wpn.gpio0_31 */
+> +			0x78 (PIN_OUTPUT | MUX_MODE7)	/* gpmc_be1n.gpio1_28 */
+> +		>;
+> +	};
+> +
+> +	cpsw_default: cpsw_default {
+> +		pinctrl-single,pins =3D <
+> +			/* Slave 1 */
+> +			0x12c (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* mii1_txclk.rmii1_tclk */
+> +			0x114 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* mii1_txen.rgmii1_tctl */
+> +			0x128 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* mii1_txd0.rgmii1_td0 */
+> +			0x124 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* mii1_txd1.rgmii1_td1 */
+> +			0x120 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* mii1_txd0.rgmii1_td2 */
+> +			0x11c (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* mii1_txd1.rgmii1_td3 */
+> +			0x130 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* mii1_rxclk.rmii1_rclk */
+> +			0x118 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* mii1_rxdv.rgmii1_rctl */
+> +			0x140 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* mii1_rxd0.rgmii1_rd0 */
+> +			0x13c (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* mii1_rxd1.rgmii1_rd1 */
+> +			0x138 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* mii1_rxd0.rgmii1_rd2 */
+> +			0x134 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* mii1_rxd1.rgmii1_rd3 */
+> +
+> +			/* Slave 2 */
+> +			0x58 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a6.rgmii2_tclk */
+> +			0x40 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a0.rgmii2_tctl */
+> +			0x54 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a5.rgmii2_td0 */
+> +			0x50 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a4.rgmii2_td1 */
+> +			0x4c (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a3.rgmii2_td2 */
+> +			0x48 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a2.rgmii2_td3 */
+> +			0x5c (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a7.rgmii2_rclk */
+> +			0x44 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a1.rgmii2_rtcl */
+> +			0x6c (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a11.rgmii2_rd0 */
+> +			0x68 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a10.rgmii2_rd1 */
+> +			0x64 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a9.rgmii2_rd2 */
+> +			0x60 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* gpmc_a8.rgmii2_rd3 */
+> +		>;
+> +	};
+> +
+> +	cpsw_sleep: cpsw_sleep {
+> +		pinctrl-single,pins =3D <
+> +			/* Slave 1 reset value */
+> +			0x12c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x114 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x128 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x124 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x120 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x11c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x130 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x118 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x140 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x13c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x138 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x134 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +
+> +			/* Slave 2 reset value */
+> +			0x58 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x40 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x54 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x50 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x4c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x48 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x5c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x44 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x6c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x68 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x64 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x60 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +		>;
+> +	};
+> +
+> +	davinci_mdio_default: davinci_mdio_default {
+> +		pinctrl-single,pins =3D <
+> +			/* MDIO */
+> +			0x148 (PIN_INPUT_PULLUP | SLEWCTRL_FAST | MUX_MODE0)	/* mdio_data.mdi=
+o_data */
+> +			0x14c (PIN_OUTPUT_PULLUP | MUX_MODE0)			/* mdio_clk.mdio_clk */
+> +		>;
+> +	};
+> +
+> +	davinci_mdio_sleep: davinci_mdio_sleep {
+> +		pinctrl-single,pins =3D <
+> +			/* MDIO reset value */
+> +			0x148 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +			0x14c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> +		>;
+> +	};
+> +
+> +	dss_pins: dss_pins {
+> +		pinctrl-single,pins =3D <
+> +			0x020 (PIN_OUTPUT_PULLUP | MUX_MODE1)	/* gpmc ad 8 -> DSS DATA 23 */
+> +			0x024 (PIN_OUTPUT_PULLUP | MUX_MODE1)
+> +			0x028 (PIN_OUTPUT_PULLUP | MUX_MODE1)
+> +			0x02c (PIN_OUTPUT_PULLUP | MUX_MODE1)
+> +			0x030 (PIN_OUTPUT_PULLUP | MUX_MODE1)
+> +			0x034 (PIN_OUTPUT_PULLUP | MUX_MODE1)
+> +			0x038 (PIN_OUTPUT_PULLUP | MUX_MODE1)
+> +			0x03c (PIN_OUTPUT_PULLUP | MUX_MODE1)	/* gpmc ad 15 -> DSS DATA 16 */
+> +			0x0a0 (PIN_OUTPUT_PULLUP | MUX_MODE0)	/* DSS DATA 0 */
+> +			0x0a4 (PIN_OUTPUT_PULLUP | MUX_MODE0)
+> +			0x0a8 (PIN_OUTPUT_PULLUP | MUX_MODE0)
+> +			0x0ac (PIN_OUTPUT_PULLUP | MUX_MODE0)
+> +			0x0b0 (PIN_OUTPUT_PULLUP | MUX_MODE0)
+> +			0x0b4 (PIN_OUTPUT_PULLUP | MUX_MODE0)
+> +			0x0b8 (PIN_OUTPUT_PULLUP | MUX_MODE0)
+> +			0x0bc (PIN_OUTPUT_PULLUP | MUX_MODE0)
+> +			0x0c0 (PIN_OUTPUT_PULLUP | MUX_MODE0)
+> +			0x0c4 (PIN_OUTPUT_PULLUP | MUX_MODE0)
+> +			0x0c8 (PIN_OUTPUT_PULLUP | MUX_MODE0)
+> +			0x0cc (PIN_OUTPUT_PULLUP | MUX_MODE0)
+> +			0x0d0 (PIN_OUTPUT_PULLUP | MUX_MODE0)
+> +			0x0d4 (PIN_OUTPUT_PULLUP | MUX_MODE0)
+> +			0x0d8 (PIN_OUTPUT_PULLUP | MUX_MODE0)
+> +			0x0dc (PIN_OUTPUT_PULLUP | MUX_MODE0)	/* DSS DATA 15 */
+> +			0x0e0 (PIN_OUTPUT_PULLUP | MUX_MODE0)	/* DSS VSYNC */
+> +			0x0e4 (PIN_OUTPUT_PULLUP | MUX_MODE0)	/* DSS HSYNC */
+> +			0x0e8 (PIN_OUTPUT_PULLUP | MUX_MODE0)	/* DSS PCLK */
+> +			0x0ec (PIN_OUTPUT_PULLUP | MUX_MODE0)	/* DSS AC BIAS EN */
+> +
+> +		>;
+> +	};
+> +
+> +	qspi_pins: qspi_pins {
+> +		pinctrl-single,pins =3D <
+> +			0x7c (PIN_OUTPUT_PULLUP | MUX_MODE3)	/* gpmc_csn0.qspi_csn */
+> +			0x88 (PIN_OUTPUT | MUX_MODE2)		/* gpmc_csn3.qspi_clk */
+> +			0x90 (PIN_INPUT_PULLUP | MUX_MODE3)	/* gpmc_advn_ale.qspi_d0 */
+> +			0x94 (PIN_INPUT_PULLUP | MUX_MODE3)	/* gpmc_oen_ren.qspi_d1 */
+> +			0x98 (PIN_INPUT_PULLUP | MUX_MODE3)	/* gpmc_wen.qspi_d2 */
+> +			0x9c (PIN_INPUT_PULLUP | MUX_MODE3)	/* gpmc_be0n_cle.qspi_d3 */
+> +		>;
+> +	};
+> +
+> +	mcasp1_pins: mcasp1_pins {
+> +		pinctrl-single,pins =3D <
+> +			0x10c (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* mii1_crs.mcasp1_aclkx */
+> +			0x110 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* mii1_rxerr.mcasp1_fsx */
+> +			0x108 (PIN_OUTPUT_PULLDOWN | MUX_MODE4)	/* mii1_col.mcasp1_axr2 */
+> +			0x144 (PIN_INPUT_PULLDOWN | MUX_MODE4)	/* rmii1_ref_clk.mcasp1_axr3 */
+> +		>;
+> +	};
+> +
+> +	lcd_pins: lcd_pins {
+> +		pinctrl-single,pins =3D <
+> +			/* GPIO 5_8 to select LCD / HDMI */
+> +			0x238 (PIN_OUTPUT_PULLUP | MUX_MODE7)
+> +		>;
+> +	};
 > +};
 > +
-> +static struct omap_hwmod_class am43xx_dispc_hwmod_class =3D {
-> +	.name	=3D "dispc",
-> +	.sysc	=3D &am43xx_dispc_sysc,
+> +&i2c0 {
+> +        status =3D "okay";
+> +        pinctrl-names =3D "default";
+> +        pinctrl-0 =3D <&i2c0_pins>;
+> +
+> +	tps@2d {
+> +		compatible =3D "ti,tps65218";
+> +		reg =3D <0x2d>;
+> +	};
+> +
+> +	at24@50 {
+> +		compatible =3D "at24,24c256";
+> +		pagesize =3D <64>;
+> +		reg =3D <0x50>;
+> +	};
 > +};
 > +
-> +static struct omap_hwmod am43xx_dss_core_hwmod =3D {
-> +	.name		=3D "dss_core",
-> +	.class		=3D &omap2_dss_hwmod_class,
-> +	.clkdm_name	=3D "dss_clkdm",
-> +	.main_clk	=3D "disp_clk",
-> +	.prcm =3D {
-> +		.omap4 =3D {
-> +			.clkctrl_offs =3D AM43XX_CM_PER_DSS_CLKCTRL_OFFSET,
-> +			.modulemode   =3D MODULEMODE_SWCTRL,
-> +		},
-> +	},
+> +&i2c1 {
+> +        status =3D "okay";
+> +        pinctrl-names =3D "default";
+> +        pinctrl-0 =3D <&i2c1_pins>;
+> +
+> +	edt-ft5306@38 {
+> +		status =3D "okay";
+> +		compatible =3D "edt,edt-ft5306", "edt,edt-ft5x06";
+> +		pinctrl-names =3D "default";
+> +		pinctrl-0 =3D <&edt_ft5306_ts_pins>;
+> +		reg =3D <0x38>;
+> +		interrupt-parent =3D <&gpio0>;
+> +		interrupts =3D <31 0>;
+> +
+> +		wake-gpios =3D <&gpio1 28 GPIO_ACTIVE_HIGH>;
+> +
+> +		touchscreen-size-x =3D <800>;
+> +		touchscreen-size-y =3D <600>;
+> +	};
+> +
+> +	tlv320aic3106: tlv320aic3106@1b {
+> +		compatible =3D "ti,tlv320aic3106";
+> +		reg =3D <0x1b>;
+> +		status =3D "okay";
+> +
+> +		/* Regulators */
+> +		AVDD-supply =3D <&v33_fixed>;
+> +		IOVDD-supply =3D <&v33_fixed>;
+> +		DRVDD-supply =3D <&v33_fixed>;
+> +		DVDD-supply =3D <&v18_fixed>;
+> +	};
 > +};
 > +
-> +/* display controller -dispc*/
-> +
-> +static struct omap_hwmod am43xx_dss_dispc_hwmod =3D {
-> +	.name		=3D "dss_dispc",
-> +	.class		=3D &am43xx_dispc_hwmod_class,
-> +	.clkdm_name	=3D "dss_clkdm",
-> +	.main_clk	=3D "disp_clk",
-> +	.prcm =3D {
-> +		.omap4 =3D {
-> +			.clkctrl_offs =3D AM43XX_CM_PER_DSS_CLKCTRL_OFFSET,
-> +		},
-> +	},
-> +	.dev_attr	=3D &am43xx_dss_dispc_dev_attr,
+> +&epwmss0 {
+> +	status =3D "okay";
 > +};
 > +
-> +/*RFBI*/
-> +
-> +static struct omap_hwmod am43xx_dss_rfbi_hwmod =3D {
-> +	.name		=3D "dss_rfbi",
-> +	.class		=3D &omap2_rfbi_hwmod_class,
-> +	.clkdm_name	=3D "dss_clkdm",
-> +	.main_clk	=3D "disp_clk",
-> +	.prcm =3D {
-> +		.omap4 =3D {
-> +			.clkctrl_offs =3D AM43XX_CM_PER_DSS_CLKCTRL_OFFSET,
-> +		},
-> +	},
+> +&ecap0 {
+> +	status =3D "okay";
+> +	pinctrl-names =3D "default";
+> +	pinctrl-0 =3D <&ecap0_pins>;
 > +};
 > +
->  /* Interfaces */
->  static struct omap_hwmod_ocp_if am43xx_l3_main__l4_hs =3D {
->  	.master		=3D &am33xx_l3_main_hwmod,
-> @@ -654,6 +720,34 @@ static struct omap_hwmod_ocp_if am43xx_l3_s__qspi =
-=3D {
->  	.user           =3D OCP_USER_MPU | OCP_USER_SDMA,
->  };
-> =20
-> +static struct omap_hwmod_ocp_if am43xx_dss__l3_main =3D {
-> +	.master		=3D &am43xx_dss_core_hwmod,
-> +	.slave		=3D &am33xx_l3_main_hwmod,
-> +	.clk		=3D "l3_gclk",
-> +	.user		=3D OCP_USER_MPU | OCP_USER_SDMA,
+> +&gpio0 {
+> +	status =3D "okay";
 > +};
 > +
-> +static struct omap_hwmod_ocp_if am43xx_l4_ls__dss =3D {
-> +	.master		=3D &am33xx_l4_ls_hwmod,
-> +	.slave		=3D &am43xx_dss_core_hwmod,
-> +	.clk		=3D "l4ls_gclk",
-> +	.user		=3D OCP_USER_MPU | OCP_USER_SDMA,
+> +&gpio1 {
+> +	status =3D "okay";
 > +};
 > +
-> +static struct omap_hwmod_ocp_if am43xx_l4_ls__dss_dispc =3D {
-> +	.master		=3D &am33xx_l4_ls_hwmod,
-> +	.slave		=3D &am43xx_dss_dispc_hwmod,
-> +	.clk		=3D "l4ls_gclk",
-> +	.user		=3D OCP_USER_MPU | OCP_USER_SDMA,
+> +&gpio5 {
+> +	status =3D "okay";
 > +};
 > +
-> +static struct omap_hwmod_ocp_if am43xx_l4_ls__dss_rfbi =3D {
-> +	.master		=3D &am33xx_l4_ls_hwmod,
-> +	.slave		=3D &am43xx_dss_rfbi_hwmod,
-> +	.clk		=3D "l4ls_gclk",
-> +	.user		=3D OCP_USER_MPU | OCP_USER_SDMA,
+> +&mmc1 {
+> +	status =3D "okay";
+> +	vmmc-supply =3D <&vmmcsd_fixed>;
+> +	bus-width =3D <4>;
+> +	pinctrl-names =3D "default";
+> +	pinctrl-0 =3D <&mmc1_pins>;
+> +	cd-gpios =3D <&gpio0 6 GPIO_ACTIVE_HIGH>;
 > +};
 > +
->  static struct omap_hwmod_ocp_if *am43xx_hwmod_ocp_ifs[] __initdata =3D {
->  	&am33xx_l4_wkup__synctimer,
->  	&am43xx_l4_ls__timer8,
-> @@ -748,6 +842,10 @@ static struct omap_hwmod_ocp_if *am43xx_hwmod_ocp_if=
-s[] __initdata =3D {
->  	&am43xx_l4_ls__ocp2scp1,
->  	&am43xx_l3_s__usbotgss0,
->  	&am43xx_l3_s__usbotgss1,
-> +	&am43xx_dss__l3_main,
-> +	&am43xx_l4_ls__dss,
-> +	&am43xx_l4_ls__dss_dispc,
-> +	&am43xx_l4_ls__dss_rfbi,
->  	NULL,
->  };
-> =20
-> diff --git a/arch/arm/mach-omap2/prcm43xx.h b/arch/arm/mach-omap2/prcm43x=
-x.h
-> index 7785be9..ad7b3e9 100644
-> --- a/arch/arm/mach-omap2/prcm43xx.h
-> +++ b/arch/arm/mach-omap2/prcm43xx.h
-> @@ -142,5 +142,6 @@
->  #define AM43XX_CM_PER_USBPHYOCP2SCP0_CLKCTRL_OFFSET	0x05B8
->  #define AM43XX_CM_PER_USB_OTG_SS1_CLKCTRL_OFFSET        0x0268
->  #define AM43XX_CM_PER_USBPHYOCP2SCP1_CLKCTRL_OFFSET	0x05C0
-> +#define AM43XX_CM_PER_DSS_CLKCTRL_OFFSET		0x0a20
-> =20
->  #endif
+> +&usb2_phy1 {
+> +	status =3D "okay";
+> +};
+> +
+> +&usb1 {
+> +	dr_mode =3D "peripheral";
+> +	status =3D "okay";
+> +};
+> +
+> +&usb2_phy2 {
+> +	status =3D "okay";
+> +};
+> +
+> +&usb2 {
+> +	dr_mode =3D "host";
+> +	status =3D "okay";
+> +};
+> +
+> +&qspi {
+> +	status =3D "okay";
+> +	pinctrl-names =3D "default";
+> +	pinctrl-0 =3D <&qspi_pins>;
+> +
+> +	spi-max-frequency =3D <48000000>;
+> +	m25p80@0 {
+> +		compatible =3D "mx66l51235l";
+> +		spi-max-frequency =3D <48000000>;
+> +		reg =3D <0>;
+> +		spi-cpol;
+> +		spi-cpha;
+> +		spi-tx-bus-width =3D <1>;
+> +		spi-rx-bus-width =3D <4>;
+> +		#address-cells =3D <1>;
+> +		#size-cells =3D <1>;
+> +
+> +		/* MTD partition table.
+> +		 * The ROM checks the first 512KiB
+> +		 * for a valid file to boot(XIP).
+> +		 */
+> +		partition@0 {
+> +			label =3D "QSPI.U_BOOT";
+> +			reg =3D <0x00000000 0x000080000>;
+> +		};
+> +		partition@1 {
+> +			label =3D "QSPI.U_BOOT.backup";
+> +			reg =3D <0x00080000 0x00080000>;
+> +		};
+> +		partition@2 {
+> +			label =3D "QSPI.U-BOOT-SPL_OS";
+> +			reg =3D <0x00100000 0x00010000>;
+> +		};
+> +		partition@3 {
+> +			label =3D "QSPI.U_BOOT_ENV";
+> +			reg =3D <0x00110000 0x00010000>;
+> +		};
+> +		partition@4 {
+> +			label =3D "QSPI.U-BOOT-ENV.backup";
+> +			reg =3D <0x00120000 0x00010000>;
+> +		};
+> +		partition@5 {
+> +			label =3D "QSPI.KERNEL";
+> +			reg =3D <0x00130000 0x0800000>;
+> +		};
+> +		partition@6 {
+> +			label =3D "QSPI.FILESYSTEM";
+> +			reg =3D <0x00930000 0x36D0000>;
+> +		};
+> +	};
+> +};
+> +
+> +&mac {
+> +	pinctrl-names =3D "default", "sleep";
+> +	pinctrl-0 =3D <&cpsw_default>;
+> +	pinctrl-1 =3D <&cpsw_sleep>;
+> +	dual_emac =3D <1>;
+> +	status =3D "okay";
+> +};
+> +
+> +&davinci_mdio {
+> +	pinctrl-names =3D "default", "sleep";
+> +	pinctrl-0 =3D <&davinci_mdio_default>;
+> +	pinctrl-1 =3D <&davinci_mdio_sleep>;
+> +	status =3D "okay";
+> +};
+> +
+> +&cpsw_emac0 {
+> +	phy_id =3D <&davinci_mdio>, <4>;
+> +	phy-mode =3D "rgmii";
+> +	dual_emac_res_vlan =3D <1>;
+> +};
+> +
+> +&cpsw_emac1 {
+> +	phy_id =3D <&davinci_mdio>, <5>;
+> +	phy-mode =3D "rgmii";
+> +	dual_emac_res_vlan =3D <2>;
+> +};
+> +
+> +&elm {
+> +	status =3D "okay";
+> +};
+> +
+> +&mcasp1 {
+> +	pinctrl-names =3D "default";
+> +	pinctrl-0 =3D <&mcasp1_pins>;
+> +
+> +	status =3D "okay";
+> +
+> +	op-mode =3D <0>;
+> +	tdm-slots =3D <2>;
+> +	serial-dir =3D <
+> +		0 0 1 2
+> +	>;
+> +
+> +	tx-num-evt =3D <1>;
+> +	rx-num-evt =3D <1>;
+> +};
+> +
+> +&dss {
+> +	status =3D "okay";
+> +
+> +	pinctrl-names =3D "default";
+> +	pinctrl-0 =3D <&dss_pins>;
+> +
+> +	port {
+> +		dpi_out: endpoint@0 {
+> +			remote-endpoint =3D <&lcd_in>;
+> +			data-lines =3D <24>;
+> +		};
+> +	};
+> +};
 > --=20
 > 2.0.0.rc1
 >=20
@@ -220,26 +642,26 @@ x.h
 --=20
 balbi
 
---XbHSybK3LHOYQtWI
+--v541l457l4DThMFo
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTmyV7AAoJEIaOsuA1yqREehwP/2vBRXSXhkVIlInOHoQGJHvL
-bWg3r4ToFvcFkpU3e9sL8L8kwiQ4w2Mjru5e2D3TcRnxrtQeuNg8xepU6Pla7j7P
-tRuCcwRu9A7WvAaDtUnXX1UEQQWcJReyplRcTGIBuCkbKc5fklZtUlCZVKm9mhfg
-t5nbge/eAUGGAUnZq1fpxMPeRj7NkLH+A4MOPuU2YtFfIvpAbgxXelNheIUPbaVL
-FOe6J861URZtThfMEG3Ke9aawAR2fapRdBvQwzk4u+GEeu37c7OUY3aIwUMZAnjE
-kjP1oL6LLdCmLa2uPDeambKn2LRAYFit35mADfGn/VRinI+JvQdEvqUVUCZKNrb2
-D5Egn55hfk7n9FFKv93QfnACeojlnDG39f799uSAlkReHsejQnhxnV0ALl83Q7HJ
-C8Qp8xVXbzoo8xPrCj0XxiyAwDWHB+ozk0DYKa4+tdoHCAySULlabc0ncAxDvC/1
-qFcZvVp/KVs3R+7Hranl7Wm/g6Nr5HeNrUi19X4krfhn5jPYXanew4a390alAv2Z
-BqlAfGEl8FFWHBMZwL5+tp9/1B4HIiqCGyecDn5BsNoaXLzgFyKQ0gy7mB4u/DEA
-ciGbmTlXjD1DIS5tlQCR2NVJEwcBZ2gRtEOc2mgIrAiemsLKAbARGS5BeaGx+c7f
-Cfft+oJ0EMq6F0UH3AJW
-=GMFX
+iQIcBAEBAgAGBQJTmyWGAAoJEIaOsuA1yqRErMYP/Rxvt8ijMaSlM2Lh7bNsFR1i
+xKvyFGav5DKKjPu3v21Ofh6E9x7dhppDy5gbfDtZkE4bRUqcY3xRuB+PsQksLVPT
+t3BD7ck5QUvBqivi5VNBemy64Y5LNNjN++UaUlqYgrBpVqKYDotS4qhDPUWMoebX
+w2TsdMXmBXo51nLNbMeeK3NM2SOFxm/MmRvza4jg5qyMa7dsTLLq6ozg6AXt37l9
+iyXz5YJjGCO4CzdnrRPR0L0xvRHLbpJP+0+EmZsckCCBbdR6gNrtIRvjlWJM2qLU
+LnGSsvhZd8kiB4UZf3HEgc49Xko09mAyJTbVr7XHWUcpbuBTSZfwinRfFXO/srft
+cPKxFHmhzA61irhgsv7ArNQj4u01YhIUHW+tz2xSiq66P42MIvnsqxp/dE0X8ZS+
+yqenAnhNaSHdGAvhPd07bfUrg+KHZqy76SuItyaPYONEXkXZY+DsbuxbgSUvHwwS
+hL7/EeKrRKyBz88ZO+QD01bD0xVBXcJf7dLRUDSVwLT4+7I+ubZFO9ByyJVwXAhI
+yTspD+HhG2e2n6S/Z3L1sFeTrx66c8VgG59FrdUuHPqlkxqnJ1CxvYzFhrxC5Dnq
+sKaob/Z2Gp+7wa9PtEjuUmnCtiw3VTDlyy1s7H+TT7H0I/biaPVIWydPluUl4mJV
+ZfmaGtYwSFttCc+LOV9N
+=nrt6
 -----END PGP SIGNATURE-----
 
---XbHSybK3LHOYQtWI--
+--v541l457l4DThMFo--
