@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343AbaFNDG2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 23:06:28 -0400
-Received: from imap.thunk.org ([74.207.234.97]:38590 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753722AbaFNDG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 23:06:27 -0400
-Date: Fri, 13 Jun 2014 23:06:21 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: George Spelvin <linux@horizon.com>
-Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        price@mit.edu
-Subject: Re: random: Benchamrking fast_mix2
-Message-ID: <20140614030621.GB6447@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	George Spelvin <linux@horizon.com>, hpa@linux.intel.com,
-	linux-kernel@vger.kernel.org, mingo@kernel.org, price@mit.edu
-References: <20140613155241.GA4265@thunk.org>
- <20140614021014.1863.qmail@ns.horizon.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140614021014.1863.qmail@ns.horizon.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1754269AbaFNDbq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 23:31:46 -0400
+Received: from smtprelay0046.hostedemail.com ([216.40.44.46]:35526 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753722AbaFNDbo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 23:31:44 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:4321:5007:6119:7652:7903:10004:10400:10848:11232:11657:11658:11914:12043:12296:12517:12519:12740:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: vein84_663404017740b
+X-Filterd-Recvd-Size: 1983
+Message-ID: <1402716700.2756.3.camel@joe-AO725>
+Subject: Re: [PATCH 2/2] staging: tidspbridge: Fix function pointer spacing
+ in struct definition
+From: Joe Perches <joe@perches.com>
+To: Jeff Oczek <jeffoczek@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 13 Jun 2014 20:31:40 -0700
+In-Reply-To: <1402714093-15404-2-git-send-email-jeffoczek@gmail.com>
+References: <1402714093-15404-1-git-send-email-jeffoczek@gmail.com>
+	 <1402714093-15404-2-git-send-email-jeffoczek@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 10:10:14PM -0400, George Spelvin wrote:
-> > Unrolling doesn't make much difference; which isn't surprising given
-> > that almost all of the differences go away when I commented out the
-> > udelay().  Basically, at this point what we're primarily measuring is
-> > how good various CPU's caches work, especially across context switches
-> > where other code gets to run in between.
-> 
-> Huh.  As I was referring to when I talked about the branch
-> predictor, I was hoping the removing *conditional* branches would
-> help.
+On Fri, 2014-06-13 at 22:48 -0400, Jeff Oczek wrote:
+> Simple coding style changes
+[]
+> diff --git a/drivers/staging/tidspbridge/include/dspbridge/dblldefs.h b/drivers/staging/tidspbridge/include/dspbridge/dblldefs.h
+[]
+> @@ -168,11 +168,11 @@ struct dbll_attrs {
+[]
+> -	 s32(*fread) (void *, size_t, size_t, void *);
+> -	 s32(*fseek) (void *, long, int);
+> -	 s32(*ftell) (void *);
+> -	 s32(*fclose) (void *);
+> -	void *(*fopen) (const char *, const char *);
+> +	 s32 (*fread)(void *, size_t, size_t, void *);
+> +	 s32 (*fseek)(void *, long, int);
+> +	 s32 (*ftell)(void *);
+> +	 s32 (*fclose)(void *);
+> +	void *(*fopen)(const char *, const char *);
+>  };
 
-At least for Intel, between its branch predictor and speculative
-execution engine, it doesn't make a difference.  
+Better would be to describe the arguments with
+variable names and align all the return values
 
-> Are you trying for an XOR to memory, or is the idea to remain in
-> registers for the entire operation?
->
-> I'm not sure an XOR to memory is that much better; it's 2 pool loads
-> and 1 pool store either way.  Currently, the store is first (to
-> input[]) and then both it and the fast_pool are fetched in fast_mix.
-> 
-> With an XOR to memory, it's load-store-load, but is that really better?
+	void *(*fopen
 
-The second load can be optimized away.  If the compiler isn't smart
-enough, the store means that the data is almost certainly still in the
-D-cache.  But with a smart compiler (and gcc should be smart enough),
-if fast_mix is a static function, gcc will inline fast_mix, and then
-it should be able to optimize out the load.  In fact, it might be
-smart enough to optimize out the first store, since it should be able
-to realize that first store to the pool[] array will get overwritten
-by the final store to the pool[] array.
+	s32 (*fread)(void *arg1, size_t val1, size_t val2, void *ptr1);
+	s32 (*fseek)(void *ptr1, long arg2, int arg3);
+	s32 (*ftell)(void * ptr);
+	s32 (*fclose)(void *ptr);
+	void *(*fopen)(const char *ptr1, const char *ptr2);
 
-So hopefully, it will remain in registers for the entire operation,
-and the compilers will hopefully be smart enough to make the right
-hting happy without the code having to be really ugly.
+where arg, val, ptr are actually useful descriptors
 
-> In case it's useful, below is a small patch I made to
-> add_interrupt_randomness to take advantage of 64-bit processors and make
-> it a bit clearer what it's doing.  Not submitted officially because:
-> 1) I haven't examined the consequences on 32-bit processors carefully yet.
-
-When I did a quick comparison of your 64-bit fast_mix2 variant, it's
-much slower than either the 32-bit fast_mix2, or the original fast_mix
-alrogithm.  So given that 32-bit processors tend to be slower, I'm
-pretty sure if we want to add a 64-bit optimization, we'll have to
-conditionalize it on BITS_PER_LONG == 64 and include both the original
-code and the 64-bit optimized code.
-
-						- Ted
