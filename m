@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925AbaFNRWi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 13:22:38 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:35296 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754752AbaFNRWg (ORCPT
+	id S1754905AbaFNRdn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 13:33:43 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:31665 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754749AbaFNRdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 13:22:36 -0400
-Message-ID: <539C84E2.6060209@cogentembedded.com>
-Date: Sat, 14 Jun 2014 21:22:42 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Sat, 14 Jun 2014 13:33:41 -0400
+Date: Sat, 14 Jun 2014 19:32:58 +0200
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, hpa@zytor.com, jbeulich@suse.com,
+        konrad.wilk@oracle.com, matt.fleming@intel.com, mingo@redhat.com,
+        tglx@linutronix.de
+Subject: Re: Why efi_set_rtc_mmss() is never used?
+Message-ID: <20140614173258.GF3463@olila.local.net-space.pl>
+References: <20140609110800.GJ15989@olila.local.net-space.pl>
+ <20140609134635.26abc019@alan.etchedpixels.co.uk>
 MIME-Version: 1.0
-To: Nick <xerofoify@gmail.com>, emilio@elopez.com.ar
-CC: maxime.ripard@free-electrons.com, mturquette@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] Fixes two memory leaks in drivers/clk/sunxi/clk-sunxi.c
-References: <1402710473-3295-1-git-send-email-nickkrause@sympatico.ca>
-In-Reply-To: <1402710473-3295-1-git-send-email-nickkrause@sympatico.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140609134635.26abc019@alan.etchedpixels.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 06/14/2014 05:47 AM, Nick wrote:
-
-   Please sign off on your patches, they can't applied otherwise.
-
-> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-> index 4264834..07b45d1 100644
-> --- a/drivers/clk/sunxi/clk-sunxi.c
-> +++ b/drivers/clk/sunxi/clk-sunxi.c
-> @@ -41,9 +41,11 @@ static void __init sun4i_osc_clk_setup(struct device_node *node)
->   	const char *clk_name = node->name;
->   	u32 rate;
+On Mon, Jun 09, 2014 at 01:46:35PM +0100, One Thousand Gnomes wrote:
+> On Mon, 9 Jun 2014 13:08:00 +0200
+> Daniel Kiper <daniel.kiper@oracle.com> wrote:
 >
-> -	if (of_property_read_u32(node, "clock-frequency", &rate))
-> +	if (of_property_read_u32(node, "clock-frequency", &rate)) {
-> +		kfree(fixed);
+> > Hi,
+> >
+> > As I can see efi_set_rtc_mmss() is never used to set RTC.
+> > Even on EFI platform mach_set_rtc_mmss() is called and does
+> > that thing. Why it is done in that way? It is a bug or it was
+> > done intentionally. Am I missing something?
+>
+> EFI services generally don't work properly. The less they are used the
+> better. We can realistically only make an EFI call with the same
+> parameters windows does under the same kind of circumstances because the
+> firmware on many motherboards is complete sh*te.
 
-    Eh, we only allocate 'fixed' after this point, no?
+Thanks. Sadly it makes sens.
 
-> +		kfree(gate);
->   		return;
-> -
-> +	}
->   	/* allocate fixed-rate and gate clock structs */
->   	fixed = kzalloc(sizeof(struct clk_fixed_rate), GFP_KERNEL);
->   	if (!fixed)
-
-WBR, Sergei
-
+Daniel
