@@ -1,49 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302AbaFNUnu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 16:43:50 -0400
-Received: from 1wt.eu ([62.212.114.60]:42855 "EHLO 1wt.eu"
+	id S1753655AbaFNUoB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 16:44:01 -0400
+Received: from 1wt.eu ([62.212.114.60]:42865 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752630AbaFNUnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 16:43:49 -0400
-Message-Id: <20140614191250.106515056@1wt.eu>
+	id S1753365AbaFNUn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 16:43:58 -0400
+Message-Id: <20140614191250.169302421@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Sat, 14 Jun 2014 21:12:50 +0200
+Date: Sat, 14 Jun 2014 21:12:51 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [ 0/9] 2.6.32.63-longterm review
-Message-ID: <57d1129d02f4fc14423dd66474950cb7@local>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Wang Weidong <wangweidong1@huawei.com>, Willy Tarreau <w@1wt.eu>
+Subject: [ 1/9] ethtool: Report link-down while interface is down
+In-Reply-To: <57d1129d02f4fc14423dd66474950cb7@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ sorry for those who receive this series twice, I had an issue with
-  the first attempt that prevented it from reaches the mailing lists ]
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
-This is the start of the longterm review cycle for the 2.6.32.63 release.
-All patches will be posted as a response to this one. If anyone has any
-issue with these being applied, please let me know. If anyone is a
-maintainer of the proper subsystem, and wants to add a Signed-off-by: line
-to the patch, please respond with it.
+------------------
 
-Responses should be made within 72 hours. Anything received after that time
-might be too late. If someone wants a bit more time for a deeper review,
-please let me know.
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-The whole patch series can be found in one patch at :
-     kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.63-rc1.gz
+While an interface is down, many implementations of
+ethtool_ops::get_link, including the default, ethtool_op_get_link(),
+will report the last link state seen while the interface was up.  In
+general the current physical link state is not available if the
+interface is down.
 
-The shortlog and diffstat are appended below.
+Define ETHTOOL_GLINK to reflect whether the interface *and* any
+physical port have a working link, and consistently return 0 when the
+interface is down.
 
-Thanks,
-Willy
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+(cherry picked from commit e596e6e4d578f2639416e620d367a3af34814a40)
+Cc: Wang Weidong <wangweidong1@huawei.com>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+---
+ include/linux/ethtool.h |  4 +++-
+ net/core/ethtool.c      | 17 +++++++++++++++--
+ 2 files changed, 18 insertions(+), 3 deletions(-)
 
- include/linux/ethtool.h    |   4 +-
- kernel/auditsc.c           |  25 +++--
- kernel/futex.c             | 243 +++++++++++++++++++++++++++++++++++----------
- net/core/ethtool.c         |  17 +++-
- net/core/sysctl_net_core.c |   3 +-
- net/ipv4/sysctl_net_ipv4.c |   3 +-
- 6 files changed, 228 insertions(+), 67 deletions(-)
+diff --git a/include/linux/ethtool.h b/include/linux/ethtool.h
+index 7ffab7cb..3a0fae6 100644
+--- a/include/linux/ethtool.h
++++ b/include/linux/ethtool.h
+@@ -517,7 +517,9 @@ struct ethtool_ops {
+ #define ETHTOOL_GMSGLVL		0x00000007 /* Get driver message level */
+ #define ETHTOOL_SMSGLVL		0x00000008 /* Set driver msg level. */
+ #define ETHTOOL_NWAY_RST	0x00000009 /* Restart autonegotiation. */
+-#define ETHTOOL_GLINK		0x0000000a /* Get link status (ethtool_value) */
++/* Get link status for host, i.e. whether the interface *and* the
++ * physical port (if there is one) are up (ethtool_value). */
++#define ETHTOOL_GLINK		0x0000000a
+ #define ETHTOOL_GEEPROM		0x0000000b /* Get EEPROM data */
+ #define ETHTOOL_SEEPROM		0x0000000c /* Set EEPROM data. */
+ #define ETHTOOL_GCOALESCE	0x0000000e /* Get coalesce config */
+diff --git a/net/core/ethtool.c b/net/core/ethtool.c
+index abbe8fa..f9e7179 100644
+--- a/net/core/ethtool.c
++++ b/net/core/ethtool.c
+@@ -365,6 +365,20 @@ static int ethtool_nway_reset(struct net_device *dev)
+ 	return dev->ethtool_ops->nway_reset(dev);
+ }
+ 
++static int ethtool_get_link(struct net_device *dev, char __user *useraddr)
++{
++	struct ethtool_value edata = { .cmd = ETHTOOL_GLINK };
++
++	if (!dev->ethtool_ops->get_link)
++		return -EOPNOTSUPP;
++
++	edata.data = netif_running(dev) && dev->ethtool_ops->get_link(dev);
++
++	if (copy_to_user(useraddr, &edata, sizeof(edata)))
++		return -EFAULT;
++	return 0;
++}
++
+ static int ethtool_get_eeprom(struct net_device *dev, void __user *useraddr)
+ {
+ 	struct ethtool_eeprom eeprom;
+@@ -1016,8 +1030,7 @@ int dev_ethtool(struct net *net, struct ifreq *ifr)
+ 		rc = ethtool_nway_reset(dev);
+ 		break;
+ 	case ETHTOOL_GLINK:
+-		rc = ethtool_get_value(dev, useraddr, ethcmd,
+-				       dev->ethtool_ops->get_link);
++		rc = ethtool_get_link(dev, useraddr);
+ 		break;
+ 	case ETHTOOL_GEEPROM:
+ 		rc = ethtool_get_eeprom(dev, useraddr);
+-- 
+1.7.12.2.21.g234cd45.dirty
+
 
 
