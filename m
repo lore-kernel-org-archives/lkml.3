@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750962AbaFNVoY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 17:44:24 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:58507 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750823AbaFNVoX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 17:44:23 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AswIAHXBnFNXQyDr/2dsb2JhbABagw2rDgUBAQEBAQEFAZkkgQMXdYQxLyOBGjeIRgHPQheFY4kTHYQtBJpDizCIKINCOw
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Gleb Natapov <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 1/1] arch/x86/kvm/vmx.c: use PAGE_ALIGNED instead of IS_ALIGNED(PAGE_SIZE
-Date: Sat, 14 Jun 2014 23:44:29 +0200
-Message-Id: <1402782269-10495-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	id S1751064AbaFNVsA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 17:48:00 -0400
+Received: from mout.gmx.net ([212.227.15.15]:64913 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750823AbaFNVr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 17:47:59 -0400
+From: Christian Engelmayer <cengelma@gmx.at>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Russell King <linux@arm.linux.org.uk>, Jon Medhurst <tixy@linaro.org>,
+        dave.long@linaro.org, Ben Dooks <ben.dooks@codethink.co.uk>,
+        linux-kernel@vger.kernel.org, Christian Engelmayer <cengelma@gmx.at>
+Subject: [PATCH] ARM: kprobes: Fix non-ANSI declaration of arch_init_kprobes()
+Date: Sat, 14 Jun 2014 23:46:38 +0200
+Message-Id: <1402782398-7602-1-git-send-email-cengelma@gmx.at>
+X-Mailer: git-send-email 1.9.1
+X-Provags-ID: V03:K0:WqwV+mHYUdbeOYnzka/hp7yCQRJ3laPJbRoYFkswgwhAUrSrVGf
+ 8DWkJDQhhJUDqE+gzoV8GAT9IHCcC2llxPSDohoB8Inlv6AWRMGgAa3as3D8HVFrdS+mTNB
+ 4hUSKlJqNBCL/zllX+se3+DCtv2EY6wVQYY1yUfjfRO1/nXVci6P2Dr1BG1NsQBBcA73TaN
+ PgYxwE3VYaKpVrV1eTCZA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use mm.h definition
+Fix sparse warning "non-ANSI function declaration of function
+'arch_init_kprobes'".
 
-Cc: Gleb Natapov <gleb@kernel.org>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
 ---
- arch/x86/kvm/vmx.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ arch/arm/kernel/kprobes.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 801332e..4f84be0 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -5918,7 +5918,7 @@ static int nested_vmx_check_vmptr(struct kvm_vcpu *vcpu, int exit_reason,
- 		 * which replaces physical address width with 32
- 		 *
- 		 */
--		if (!IS_ALIGNED(vmptr, PAGE_SIZE) || (vmptr >> maxphyaddr)) {
-+		if (!PAGE_ALIGNED(vmptr) || (vmptr >> maxphyaddr)) {
- 			nested_vmx_failInvalid(vcpu);
- 			skip_emulated_instruction(vcpu);
- 			return 1;
-@@ -5936,7 +5936,7 @@ static int nested_vmx_check_vmptr(struct kvm_vcpu *vcpu, int exit_reason,
- 		vmx->nested.vmxon_ptr = vmptr;
- 		break;
- 	case EXIT_REASON_VMCLEAR:
--		if (!IS_ALIGNED(vmptr, PAGE_SIZE) || (vmptr >> maxphyaddr)) {
-+		if (!PAGE_ALIGNED(vmptr) || (vmptr >> maxphyaddr)) {
- 			nested_vmx_failValid(vcpu,
- 					     VMXERR_VMCLEAR_INVALID_ADDRESS);
- 			skip_emulated_instruction(vcpu);
-@@ -5951,7 +5951,7 @@ static int nested_vmx_check_vmptr(struct kvm_vcpu *vcpu, int exit_reason,
- 		}
- 		break;
- 	case EXIT_REASON_VMPTRLD:
--		if (!IS_ALIGNED(vmptr, PAGE_SIZE) || (vmptr >> maxphyaddr)) {
-+		if (!PAGE_ALIGNED(vmptr) || (vmptr >> maxphyaddr)) {
- 			nested_vmx_failValid(vcpu,
- 					     VMXERR_VMPTRLD_INVALID_ADDRESS);
- 			skip_emulated_instruction(vcpu);
-@@ -8113,14 +8113,14 @@ static int nested_vmx_run(struct kvm_vcpu *vcpu, bool launch)
- 	}
+diff --git a/arch/arm/kernel/kprobes.c b/arch/arm/kernel/kprobes.c
+index 6d64420..18b79a7 100644
+--- a/arch/arm/kernel/kprobes.c
++++ b/arch/arm/kernel/kprobes.c
+@@ -615,7 +615,7 @@ static struct undef_hook kprobes_arm_break_hook = {
  
- 	if ((vmcs12->cpu_based_vm_exec_control & CPU_BASED_USE_MSR_BITMAPS) &&
--			!IS_ALIGNED(vmcs12->msr_bitmap, PAGE_SIZE)) {
-+			!PAGE_ALIGNED(vmcs12->msr_bitmap)) {
- 		/*TODO: Also verify bits beyond physical address width are 0*/
- 		nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
- 		return 1;
- 	}
+ #endif /* !CONFIG_THUMB2_KERNEL */
  
- 	if (nested_cpu_has2(vmcs12, SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES) &&
--			!IS_ALIGNED(vmcs12->apic_access_addr, PAGE_SIZE)) {
-+			!PAGE_ALIGNED(vmcs12->apic_access_addr)) {
- 		/*TODO: Also verify bits beyond physical address width are 0*/
- 		nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
- 		return 1;
+-int __init arch_init_kprobes()
++int __init arch_init_kprobes(void)
+ {
+ 	arm_probes_decode_init();
+ #ifdef CONFIG_THUMB2_KERNEL
 -- 
-1.8.4.5
+1.9.1
 
