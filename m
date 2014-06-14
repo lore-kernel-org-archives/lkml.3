@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751388AbaFNWVs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 18:21:48 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:46902 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747AbaFNWVq (ORCPT
+	id S1751675AbaFNWYW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 18:24:22 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:43531 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750861AbaFNWYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 18:21:46 -0400
-Date: Sun, 15 Jun 2014 00:21:22 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Nishanth Menon <nm@ti.com>
-Cc: dbaryshkov@gmail.com, tony@atomide.com, balbi@ti.com,
-        linux@arm.linux.org.uk, dwmw2@infradead.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH V2 2/2] power: twl4030_charger: attempt to power off in
- case of critical events
-Message-ID: <20140614222122.GA1389@xo-6d-61-c0.localdomain>
-References: <1401313610-14252-1-git-send-email-nm@ti.com>
- <1401313610-14252-3-git-send-email-nm@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401313610-14252-3-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 14 Jun 2014 18:24:21 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AswIACXKnFNXQyDr/2dsb2JhbABagw2rDgUBAQEBAQEFAZkkgQMXdYRgI4ECGDeILgMVAckuDYV+F4VjhnCBP2QdhC0EmEqBeYswgiiGAIF+gUQ7gTE
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, David Airlie <airlied@linux.ie>,
+        Rob Clark <robdclark@gmail.com>
+Subject: [PATCH 1/1] drivers/gpu/drm/msm/msm_iommu.c: use PAGE_ALIGNED instead of IS_ALIGNED(PAGE_SIZE
+Date: Sun, 15 Jun 2014 00:24:26 +0200
+Message-Id: <1402784666-20300-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+use mm.h definition
 
-> +	if (irqs2 & TWL4030_ACCHGOV) {
->  		dev_crit(bci->dev, "Ac charger overvoltage\n");
-> +		power_off = true;
-> +	}
-> +
-> +	/* Try to shutdown the system */
-> +	if (power_off)
-> +		orderly_poweroff(true);
->  
->  	return IRQ_HANDLED;
->  }
+Cc: David Airlie <airlied@linux.ie>
+Cc: Rob Clark <robdclark@gmail.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/gpu/drm/msm/msm_iommu.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Userland can make orderly_poweroff take long time, or even forever. (Think disconnected
-network with nfsroot).
-
-Should we do something more forceful here? Userland has to handle sudden poweroffs, anyway...
-
-(You could invent new function "give userland 5 seconds to shut system down" if you
-really wanted...)
-
-										Pavel
+diff --git a/drivers/gpu/drm/msm/msm_iommu.c b/drivers/gpu/drm/msm/msm_iommu.c
+index 92b7459..198ed84 100644
+--- a/drivers/gpu/drm/msm/msm_iommu.c
++++ b/drivers/gpu/drm/msm/msm_iommu.c
+@@ -110,7 +110,7 @@ static int msm_iommu_unmap(struct msm_mmu *mmu, uint32_t iova,
+ 
+ 		VERB("unmap[%d]: %08x(%x)", i, iova, bytes);
+ 
+-		BUG_ON(!IS_ALIGNED(bytes, PAGE_SIZE));
++		BUG_ON(!PAGE_ALIGNED(bytes));
+ 
+ 		da += bytes;
+ 	}
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.8.4.5
+
