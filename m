@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755095AbaFNQTZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 12:19:25 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:43855 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755005AbaFNQTJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 12:19:09 -0400
-From: Namhyung Kim <namhyung@kernel.org>
-To: Paul Moore <paul@paul-moore.com>, Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@parisplace.org>
-Cc: selinux@tycho.nsa.gov, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] selinux: fix a possible memory leak in cond_read_node()
-Date: Sun, 15 Jun 2014 01:19:02 +0900
-Message-Id: <1402762742-2808-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1402762742-2808-1-git-send-email-namhyung@kernel.org>
-References: <1402762742-2808-1-git-send-email-namhyung@kernel.org>
+	id S1755140AbaFNQXV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 12:23:21 -0400
+Received: from ns.horizon.com ([71.41.210.147]:32626 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755125AbaFNQXU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 12:23:20 -0400
+Date: 14 Jun 2014 12:23:19 -0400
+Message-ID: <20140614162319.17191.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, tytso@mit.edu
+Subject: Re: [PATCH-v2 4/4] random: clean up interrupt entropy accounting for archs w/o cycle counters
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20140614160041.GI6447@thunk.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cond_read_node() should free the given node on error path as it's
-not linked to p->cond_list yet.  This is done via cond_node_destroy()
-but it's not called when next_entry() fails before the expr loop.
+I agree with your points, with one exception.  Which may be
+me misunderstanding.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- security/selinux/ss/conditional.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> Also note that the question is not whether the non-timer interrupt
+> rate is less than 32 seconds, but rather out of the last 64
+> interrupts, how many of the interrupts come from non-timer sources?
+> That's not the same thing, especially if you are running in tickless
+> mode, which most modern kernels for mobile handsets would want to do
+> for the obvious power savings reason.  Indeed the main concern on most
+> mobile handsets is that there aren't that many interrupts to begin
+> with, because they've been optimized out as much as possible.
 
-diff --git a/security/selinux/ss/conditional.c b/security/selinux/ss/conditional.c
-index 4766a38fae9a..470d5cca8d14 100644
---- a/security/selinux/ss/conditional.c
-+++ b/security/selinux/ss/conditional.c
-@@ -404,7 +404,7 @@ static int cond_read_node(struct policydb *p, struct cond_node *node, void *fp)
- 
- 	rc = next_entry(buf, fp, sizeof(buf));
- 	if (rc)
--		return rc;
-+		goto err;
- 
- 	node->cur_state = le32_to_cpu(buf[0]);
- 
--- 
-2.0.0
+When you say "the question is", do you mean that's what you eant
+the code to do?  Because that's not what it does right now.
 
+The condition for not spilling is
+
+	if ((fast_pool->count & 63) && !time_after(now, fast_pool->last + HZ))
+		return;
+
+In other words, spill if there have been 64 samples *or* 1 second since
+the last spill.
+
+> The real answer is that ARM manufacuters have to get off their !@#!@?
+> duff and give us either a real clock cycle counter, or a real hardware
+> randum number generator, or both...
+
+I've thought of beating the RTC against the main oscillator.
+But which I know a lot of SoCs have an battery-backed RTC, I don't
+know how universal an RTC is.
+
+The other nice source is an otherwise unused ADC.  Even if the input
+is shorted out, there's lsbit noise.  but again, not everything has
+an audio ADC.
