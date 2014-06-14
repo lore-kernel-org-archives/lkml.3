@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897AbaFNPNT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 11:13:19 -0400
-Received: from ns.horizon.com ([71.41.210.147]:49375 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754711AbaFNPNR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 11:13:17 -0400
-Date: 14 Jun 2014 11:13:14 -0400
-Message-ID: <20140614151314.2721.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, tytso@mit.edu
-Subject: Re: random: Benchamrking fast_mix2
-Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        price@mit.edu
-In-Reply-To: <20140614111405.9630.qmail@ns.horizon.com>
+	id S1754877AbaFNPSC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 11:18:02 -0400
+Received: from mail.kernel.org ([198.145.19.201]:44340 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754710AbaFNPR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 11:17:57 -0400
+Date: Sat, 14 Jun 2014 17:17:47 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] HSI fixes for 3.16
+Message-ID: <20140614151734.GA10835@earth.universe>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="YZ5djTAD1cGYuMQK"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unfortunately, my test suite is not particularly lightweight.
-Here are some figures (idle at full speed, and doing a parallel
-kernel compile) for a 2.5 GHz Phenom.
 
-Quite different numbers compared to the Ivy Bridge.  When the processor is
-bust, fast_mix takes longer, instead.  And even the rolled up fast_mix2 is
-(slightly) faster than the original fast_mix.  The 64-bit code is basically
-the same speed as the 2x unrolled 32-bit code.
+--YZ5djTAD1cGYuMQK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Presented in the same strange order as the Ivy Bridge, even though it's
-not fastest-to-slowest this time.
+Hi Linus,
 
+The following changes since commit eafaebd987fcd001e2c123c050939a29c625d673:
 
-Rolled up, 3x:
-30748 5432	49066 24126
-30583 6526	50271 23788
-28621 4541	52966 25610
-28017 3425	54181 25733
-30425 5213	54441 25878
-28556 3895	48969 26499
-27853 3057	50813 25431
-27471 2396	54065 27685
-30328 5053	55931 27500
-28702 3821	50811 24877
+  HSI: Introduce Nokia N900 modem driver (2014-05-16 00:55:42 +0200)
 
-Unrolled, 3x:
-26785 4278	40386 12695
-25617 3302	41349 16593
-25154 2357	41166 15904
-24816 1886	40571 17449
-27537 4927	41716 15723
-28128 6657	42085 18098
-25640 3410	41453 16486
-25087 2199	39964 12193
-27750 5384	38960 13672
-26584 4699	38280 13697
+are available in the git repository at:
 
-Original:
-35291 10362	82640 37663
-32043 7848	81887 44853
-32968 8994	80527 44847
-31087 7207	84894 47535
-29904 5602	81426 45401
-34312 9824	54889 29060
-36471 12948	65112 34232
-31622 8539	63531 33871
-31570 7745	57946 29070
-30074 6116	62829 34393
+  git://git.kernel.org/pub/scm/linux/kernel/git/sre/linux-hsi.git tags/hsi-for-3.16-fixes1
 
-Unrolled, 2x:
-24491 2411	40335 16992
-27644 6721	38981 16068
-25473 4347	35260 10750
-24784 3372	34211 10360
-24326 2689	34178 11200
-26404 4896	34498 10483
-24905 3517	33793 10409
-24107 2150	35321 11330
-23968 1903	33818 11301
-26254 4671	32728 9547
+for you to fetch changes up to b357d7b58f379ebe8038cd97b6204f2f5c52220d:
 
-64-bit:
-26877 7949	52258 25946
-24862 5940	55765 27634
-24528 5032	56568 28142
-24844 5223	55007 27671
-27115 8018	55754 27873
-25504 6504	54286 27471
-24772 5673	52717 26609
-24427 4889	51362 27109
-27219 8276	51431 22619
-25640 6718	52835 26329
+  hsi: omap_ssi_port: use normal module refcounting (2014-06-05 00:59:05 +0200)
+
+----------------------------------------------------------------
+HSI Fixes for the v3.16 series:
+
+* Tighten Dependency between ssi-protocol and omap-ssi
+  to fix build failures with randconfig.
+* Use normal module refcounting in omap driver to fix
+  build with disabled module support.
+
+----------------------------------------------------------------
+Arnd Bergmann (2):
+      HSI: fix omap ssi driver dependency
+      hsi: omap_ssi_port: use normal module refcounting
+
+ drivers/hsi/clients/Kconfig             | 2 +-
+ drivers/hsi/controllers/omap_ssi_port.c | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+-- Sebastian
+
+--YZ5djTAD1cGYuMQK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJTnGeOAAoJENju1/PIO/qaDr8QAJL7hLKsuiAZod7tJ2rJj4ca
+GbGGr7WSdEHHdqonzt9fVjTLWY6T4KJAiGdo/1cE140WoFnYcGaUENrlLeLAy4ui
+9CKAJtTZRZDTo3DM4nqE/aL4lM2OGQ42naid9VQ4R4Dh246YG0ww/OYAPaeFY0KR
+Tl/vbfm21jpUxb5MuEWc3tw6/ELQCEteYHfdDuR/jzTb/FdjsjViCOXQehtJX6bm
+cJETuGt+s8RPAtXXiKARtXbmbH5k89VGxHs/85+sSE3pTlOlvIToVhN5b9co0CSn
+5sFIRPNA5E5f/SuusNwficR+UtNCiSUNqjCoq3iqKFstws93N+OLH4GCRDjtEfaO
+GSJYdk4zesjKYZllXWjy6KUG6TjgwB3W5fErSfGAFXZjKRAqgMexdMEEhz1qSRoR
+SmI3A+yNSB+uT8WOrMA+nSUrUOokyX1m+4RlUrhmkHT7d7r6eCixfGJAaJcrtrL8
+hjC2QzLyaRe+tlJB3ojN2nWzc55w+U+dnxwq2JKRRbdISZLUPGWUn1GCb+Styjc4
+aeBVJcU03fesKUlaHMTU5oEPhQ2lYzOCiLxkm5c7Y7jdBFLlh3DCB0VVYcY6HY54
+Yk8p0VuWScq9hnkBxors8vaRzmGGp+PLQGWW0tDNOddM5YhndcNtiIEdyBwsfme5
+6QzYCGYl4hd1NnSK+dhM
+=gLSf
+-----END PGP SIGNATURE-----
+
+--YZ5djTAD1cGYuMQK--
