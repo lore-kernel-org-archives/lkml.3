@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589AbaFNHSm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 03:18:42 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:44514 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754132AbaFNHSj (ORCPT
+	id S1754435AbaFNHUU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 03:20:20 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:48071 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868AbaFNHUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 03:18:39 -0400
+	Sat, 14 Jun 2014 03:20:18 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -22,51 +22,107 @@ Cc: Minchan Kim <minchan@kernel.org>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH v2 08/10] mm, cma: clean-up cma allocation error path
-In-Reply-To: <1402543307-29800-9-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com> <1402543307-29800-9-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH v2 09/10] mm, cma: move output param to the end of param list
+In-Reply-To: <1402543307-29800-10-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com> <1402543307-29800-10-git-send-email-iamjoonsoo.kim@lge.com>
 User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Sat, 14 Jun 2014 12:48:30 +0530
-Message-ID: <87y4x0ez7d.fsf@linux.vnet.ibm.com>
+Date: Sat, 14 Jun 2014 12:50:09 +0530
+Message-ID: <87tx7oez4m.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061407-2674-0000-0000-00000069DD8D
+x-cbid: 14061407-5564-0000-0000-00000E5BA671
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 
-> We can remove one call sites for clear_cma_bitmap() if we first
-> call it before checking error number.
+> Conventionally, we put output param to the end of param list.
+> cma_declare_contiguous() doesn't look like that, so change it.
+>
+> Additionally, move down cma_areas reference code to the position
+> where it is really needed.
 >
 > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
 Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
 >
+> diff --git a/arch/powerpc/kvm/book3s_hv_builtin.c b/arch/powerpc/kvm/book3s_hv_builtin.c
+> index 28ec226..97613ea 100644
+> --- a/arch/powerpc/kvm/book3s_hv_builtin.c
+> +++ b/arch/powerpc/kvm/book3s_hv_builtin.c
+> @@ -184,7 +184,7 @@ void __init kvm_cma_reserve(void)
+>
+>  		align_size = max(kvm_rma_pages << PAGE_SHIFT, align_size);
+>  		cma_declare_contiguous(selected_size, 0, 0, align_size,
+> -			KVM_CMA_CHUNK_ORDER - PAGE_SHIFT, &kvm_cma, false);
+> +			KVM_CMA_CHUNK_ORDER - PAGE_SHIFT, false, &kvm_cma);
+>  	}
+>  }
+>
+> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
+> index f177f73..bfd4553 100644
+> --- a/drivers/base/dma-contiguous.c
+> +++ b/drivers/base/dma-contiguous.c
+> @@ -149,7 +149,7 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+>  {
+>  	int ret;
+>
+> -	ret = cma_declare_contiguous(size, base, limit, 0, 0, res_cma, fixed);
+> +	ret = cma_declare_contiguous(size, base, limit, 0, 0, fixed, res_cma);
+>  	if (ret)
+>  		return ret;
+>
+> diff --git a/include/linux/cma.h b/include/linux/cma.h
+> index e38efe9..e53eead 100644
+> --- a/include/linux/cma.h
+> +++ b/include/linux/cma.h
+> @@ -6,7 +6,7 @@ struct cma;
+>  extern int __init cma_declare_contiguous(phys_addr_t size,
+>  				phys_addr_t base, phys_addr_t limit,
+>  				phys_addr_t alignment, int order_per_bit,
+> -				struct cma **res_cma, bool fixed);
+> +				bool fixed, struct cma **res_cma);
+>  extern struct page *cma_alloc(struct cma *cma, int count, unsigned int align);
+>  extern bool cma_release(struct cma *cma, struct page *pages, int count);
+>  #endif
 > diff --git a/mm/cma.c b/mm/cma.c
-> index 1e1b017..01a0713 100644
+> index 01a0713..22a5b23 100644
 > --- a/mm/cma.c
 > +++ b/mm/cma.c
-> @@ -282,11 +282,12 @@ struct page *cma_alloc(struct cma *cma, int count, unsigned int align)
->  		if (ret == 0) {
->  			page = pfn_to_page(pfn);
->  			break;
-> -		} else if (ret != -EBUSY) {
-> -			clear_cma_bitmap(cma, pfn, count);
-> -			break;
->  		}
-> +
->  		clear_cma_bitmap(cma, pfn, count);
-> +		if (ret != -EBUSY)
-> +			break;
-> +
->  		pr_debug("%s(): memory range at %p is busy, retrying\n",
->  			 __func__, pfn_to_page(pfn));
->  		/* try again with a bit different memory target */
+> @@ -142,8 +142,8 @@ core_initcall(cma_init_reserved_areas);
+>   * @limit: End address of the reserved memory (optional, 0 for any).
+>   * @alignment: Alignment for the contiguous memory area, should be power of 2
+>   * @order_per_bit: Order of pages represented by one bit on bitmap.
+> - * @res_cma: Pointer to store the created cma region.
+>   * @fixed: hint about where to place the reserved area
+> + * @res_cma: Pointer to store the created cma region.
+>   *
+>   * This function reserves memory from early allocator. It should be
+>   * called by arch specific code once the early allocator (memblock or bootmem)
+> @@ -156,9 +156,9 @@ core_initcall(cma_init_reserved_areas);
+>  int __init cma_declare_contiguous(phys_addr_t size,
+>  				phys_addr_t base, phys_addr_t limit,
+>  				phys_addr_t alignment, int order_per_bit,
+> -				struct cma **res_cma, bool fixed)
+> +				bool fixed, struct cma **res_cma)
+>  {
+> -	struct cma *cma = &cma_areas[cma_area_count];
+> +	struct cma *cma;
+>  	int ret = 0;
+>
+>  	pr_debug("%s(size %lx, base %08lx, limit %08lx alignment %08lx)\n",
+> @@ -214,6 +214,7 @@ int __init cma_declare_contiguous(phys_addr_t size,
+>  	 * Each reserved area must be initialised later, when more kernel
+>  	 * subsystems (like slab allocator) are available.
+>  	 */
+> +	cma = &cma_areas[cma_area_count];
+>  	cma->base_pfn = PFN_DOWN(base);
+>  	cma->count = size >> PAGE_SHIFT;
+>  	cma->order_per_bit = order_per_bit;
 > -- 
 > 1.7.9.5
 
