@@ -1,110 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303AbaFMX6A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 19:58:00 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46605 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753222AbaFMX56 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 19:57:58 -0400
-Message-ID: <1402703876.2224.112.camel@dabdike.int.hansenpartnership.com>
-Subject: [GIT PULL] Final round of SCSI updates for the 3.15+ merge window
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 13 Jun 2014 16:57:56 -0700
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754369AbaFNADP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 20:03:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62156 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754235AbaFNADN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 20:03:13 -0400
+Date: Fri, 13 Jun 2014 20:02:58 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-ima-user <linux-ima-user@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-audit@redhat.com
+Subject: Re: oraphaned keywords in audit log text [was: Re: [PATCH]
+ integrity: get comm using lock to avoid race in string] printing
+Message-ID: <20140614000258.GA14900@madcap2.tricolour.ca>
+References: <11db0d126ef0ec7506ef5cb6f2f21c926d206436.1396455228.git.rgb@redhat.com>
+ <1396460387.20325.22.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <6292885.20TorKeRiK@x2>
+ <1396462368.20325.26.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <1396462716.2608.1.camel@localhost>
+ <1396463260.20325.28.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <20140402185250.GB24814@madcap2.tricolour.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140402185250.GB24814@madcap2.tricolour.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is just a couple of drivers (hpsa and lpfc) that got left out for
-further testing in linux-next.  We also have one fix to a prior
-submission (qla2xxx sparse).
+On 14/04/02, Richard Guy Briggs wrote:
+> On 14/04/02, Mimi Zohar wrote:
+> > On Wed, 2014-04-02 at 14:18 -0400, Eric Paris wrote: 
+> > > On Wed, 2014-04-02 at 14:12 -0400, Mimi Zohar wrote:
+> > > > On Wed, 2014-04-02 at 14:00 -0400, Steve Grubb wrote: 
+> > > > > Hello Mimi,
+> > > > > 
+> > > > > On Wednesday, April 02, 2014 01:39:47 PM Mimi Zohar wrote:
+> > > > > > This change is already being upstreamed as commit 73a6b44 "Integrity:
+> > > > > > Pass commname via get_task_comm()".
+> > > > > 
+> > > > > While I was looking at Richard's patch, I noticed a few places where cause and 
+> > > > > op are logged and the string isn't tied together with a _ or -. These are in 
+> > > > > ima/ima_appraise.c line 383, and ima/ima_policy.c lines 333, 657, and 683. Are 
+> > > > > these fixed upstream? Or should a patch be made?
+> > > > 
+> > > > Nothing has changed in terms of 'cause' and 'op'.  I would suggest
+> > > > making the changes in integrity_audit.c: integrity_audit_msg().
+> 
+> That function could massage incoming text fields and convert spaces to
+> hyphens or underscores, but I'd assume the right place to do it would be
+> in the original text.  If you suggest the former, it could just be done
+> in audit_log_string(), but then grepping the source for error messages
+> would not be nearly as useful.  Is this what you were suggesting?
+> 
+> > > The question is actually, do you know of anyone who is expecting the
+> > > space, instead of a more 'audit standard' - or _ ?  If not, we'll change
+> > > it.  If so, we'll discuss more   :)
+> > 
+> > CC'ing linux-ima-user as well.
+> 
+> Thanks.
 
-The patch is available here:
+Was there any response from linux-ima-user?
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-for-linus
+> > Mimi
+> 
+> - RGB
 
-The short changelog is:
+- RGB
 
-James Smart (16):
-      lpfc: Update lpfc version to driver version 10.2.8001.0
-      lpfc: Fix ExpressLane priority setup
-      lpfc: mark old devices as obsolete
-      lpfc: Fix for initializing RRQ bitmap
-      lpfc: Fix for cleaning up stale ring flag and sp_queue_event entries
-      lpfc: Update lpfc version to driver version 10.2.8000.0
-      lpfc: Update Copyright on changed files from 8.3.45 patches
-      lpfc: Update Copyright on changed files
-      lpfc: Fixed locking for scsi task management commands
-      lpfc: Convert runtime references to old xlane cfg param to fof cfg param
-      lpfc: Fix FW dump using sysfs
-      lpfc: Fix SLI4 s abort loop to process all FCP rings and under ring_lock
-      lpfc: Fixed kernel panic in lpfc_abort_handler
-      lpfc: Fix locking for postbufq when freeing
-      lpfc: Fix locking for lpfc_hba_down_post
-      lpfc: Fix dynamic transitions of FirstBurst from on to off
-
-Justin Lindley (1):
-      hpsa: change doorbell reset delay to ten seconds
-
-Quinn Tran (1):
-      qla2xxx: fix sparse warnings introduced by previous target mode t10-dif patch
-
-Stephen M. Cameron (18):
-      hpsa: fix handling of hpsa_volume_offline return value
-      hpsa: return -ENOMEM not -1 on kzalloc failure in hpsa_get_device_id
-      hpsa: remove messages about volume status VPD inquiry page not supported
-      hpsa: report check condition even if no sense data present for ioaccel2 mode
-      hpsa: remove bad unlikely annotation from device list updating code
-      hpsa: fix event filtering to prevent excessive rescans with old firmware
-      hpsa: kill annoying messages about SSD Smart Path retries
-      hpsa: define extended_report_lun_entry data structure
-      hpsa: Rearrange start_io to avoid one unlock/lock sequence in main io path
-      hpsa: avoid unnecessary readl on every command submission
-      hpsa: use per-cpu variable for lockup_detected
-      hpsa: set irq affinity hints to route MSI-X vectors across CPUs
-      hpsa: allocate reply queues individually
-      hpsa: choose number of reply queues more intelligently.
-      hpsa: remove dev_dbg() calls from hot paths
-      hpsa: use gcc aligned attribute instead of manually padding structs
-      hpsa: allow passthru ioctls to work with bidirectional commands
-      hpsa: remove unused fields from struct ctlr_info
-
-And the diffstat
-
- drivers/scsi/hpsa.c               | 266 ++++++++++++++++++++--------------
- drivers/scsi/hpsa.h               |  42 +++---
- drivers/scsi/hpsa_cmd.h           |  49 +++----
- drivers/scsi/lpfc/lpfc.h          |   3 +-
- drivers/scsi/lpfc/lpfc_attr.c     |  23 +--
- drivers/scsi/lpfc/lpfc_bsg.c      |   2 +-
- drivers/scsi/lpfc/lpfc_bsg.h      |   2 +-
- drivers/scsi/lpfc/lpfc_crtn.h     |   6 +-
- drivers/scsi/lpfc/lpfc_debugfs.c  |   4 +-
- drivers/scsi/lpfc/lpfc_els.c      |   2 +-
- drivers/scsi/lpfc/lpfc_hbadisc.c  |   5 +-
- drivers/scsi/lpfc/lpfc_hw.h       |   2 +-
- drivers/scsi/lpfc/lpfc_hw4.h      |   2 +-
- drivers/scsi/lpfc/lpfc_init.c     | 258 +++++++++++++++++++++++----------
- drivers/scsi/lpfc/lpfc_mem.c      |   2 +-
- drivers/scsi/lpfc/lpfc_scsi.c     |  60 ++++++--
- drivers/scsi/lpfc/lpfc_scsi.h     |   2 +-
- drivers/scsi/lpfc/lpfc_sli.c      | 297 +++++++++++++++++++++++++++++---------
- drivers/scsi/lpfc/lpfc_sli.h      |   2 +-
- drivers/scsi/lpfc/lpfc_sli4.h     |   2 +-
- drivers/scsi/lpfc/lpfc_version.h  |   6 +-
- drivers/scsi/qla2xxx/qla_def.h    |  16 +-
- drivers/scsi/qla2xxx/qla_target.c |  15 +-
- drivers/scsi/qla2xxx/qla_target.h |  16 +-
- 24 files changed, 715 insertions(+), 369 deletions(-)
-
-James
-
-
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
