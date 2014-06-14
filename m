@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817AbaFNQmV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 12:42:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60519 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754713AbaFNQmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 12:42:18 -0400
-Message-ID: <539C7B2F.9070800@zytor.com>
-Date: Sat, 14 Jun 2014 09:41:19 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754822AbaFNQ7h (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 12:59:37 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:65332 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754728AbaFNQ7g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 12:59:36 -0400
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Kees Cook <keescook@chromium.org>
-CC: Pavel Machek <pavel@ucw.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>, Len Brown <len.brown@intel.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 0/2] make kASLR vs hibernation boot-time selectable
-References: <1402602419-27934-1-git-send-email-keescook@chromium.org> <1517175.iyVMqh7r2z@vostro.rjw.lan> <CAGXu5jJSqV2MeuofJP4OEiDytQBqKMgC3cj+tguiwTmpRX1wSQ@mail.gmail.com> <13135927.OjVm86GPrt@vostro.rjw.lan>
-In-Reply-To: <13135927.OjVm86GPrt@vostro.rjw.lan>
-X-Enigmail-Version: 1.6
+In-Reply-To: <1402761183.8165.57.camel@shinybook.infradead.org>
+References: <20140516183812.GA17752@earth.universe>
+	<1946020.rieJTheGae@vostro.rjw.lan>
+	<20140614153658.GA13614@earth.universe>
+	<1402761183.8165.57.camel@shinybook.infradead.org>
+Date: Sat, 14 Jun 2014 20:59:35 +0400
+Message-ID: <CALT56yNi9aqmRWCsBRuMLnLxcOP=1dHuEWWVpViT04vCurTNdA@mail.gmail.com>
+Subject: Re: Status of Power Supply Subsystem
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Sebastian Reichel <sre@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        kernel list <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2014 05:39 PM, Rafael J. Wysocki wrote:
->  
-> -#define RESTORE_MAGIC	0x0123456789ABCDEFUL
-> +#define RESTORE_MAGIC	0x0123456789ABCDF0UL
->  
+Hello, colleagues,
 
-<bikeshed>
+On Sat, Jun 14, 2014 at 7:53 PM, David Woodhouse <dwmw2@infradead.org> wrote:
+> On Sat, 2014-06-14 at 17:36 +0200, Sebastian Reichel wrote:
+>>
+>> I waited a bit to see if maybe Dmitry or David want to give feedback.
+>> But I haven't received anything, so I volunteer to take this subsystem
+>> over.
 
-Please don't pick numbers like this for magic numbers... *everyone else
-does, too.*  In general, picking a random number is a good starting
-point; for extra bonus make sure it has at least one invalid UTF-8
-sequence in it (so it cannot be confused with either ASCII or UTF-8 text.)
+I'm sorry, I had too much trouble on my work to be able to think about
+community projects. My work load is now getting back to normal,
+so I will probably have more time.
 
-</bikeshed>
+>
+> I've never really done much with the subsystem except getting Dmitry set
+> up to maintain it. I certainly have no objection if you want to take it
+> over and Dmitry isn't objecting.
 
-	-hpa
+I'd welcome any help, team or co-maintenance of any kind. What do you
+think about patchwork?
 
+BTW, David, I remember several people (including myself) asking for
+a separate power-related ML to be set up on the infradead.org. Could you
+please set it up? I think it might help all of us.
+
+> If you like, you can send me a SSH public key and I'll give you access
+> to the existing git tree on git.infradead.org to take it over.
+>
+> You can work in coordination with Dmitry if he comes back to life, that
+> way.
+
+I'm doing a scan over my patches inbox during next few days (yes, huge
+task after so long time). I'll just base it on your kernel. After -rc1 we
+can think about something sane.
+
+-- 
+With best wishes
+Dmitry
