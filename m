@@ -1,84 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887AbaFNOlM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 10:41:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54499 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754802AbaFNOlL (ORCPT
+	id S1754844AbaFNOys (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 10:54:48 -0400
+Received: from smtp04.smtpout.orange.fr ([80.12.242.126]:30644 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754734AbaFNOyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 10:41:11 -0400
-Date: Sat, 14 Jun 2014 07:41:02 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.15 00/12] 3.15.1-stable review
-Message-ID: <20140614144102.GB21303@kroah.com>
-References: <20140612232044.886466924@linuxfoundation.org>
- <539B15B2.9080205@roeck-us.net>
- <87lhsz3hqf.wl%satoru.takeuchi@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87lhsz3hqf.wl%satoru.takeuchi@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 14 Jun 2014 10:54:46 -0400
+X-ME-Helo: beldin.home
+X-ME-Date: Sat, 14 Jun 2014 16:54:42 +0200
+X-ME-IP: 109.222.192.163
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        devicetree@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Robert Jarzmik <robert.jarzmik@free.fr>
+Subject: [PATCH 1/2] regulator: max1586 add device-tree support
+Date: Sat, 14 Jun 2014 16:54:24 +0200
+Message-Id: <1402757665-15102-1-git-send-email-robert.jarzmik@free.fr>
+X-Mailer: git-send-email 2.0.0.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 14, 2014 at 07:31:20PM +0900, Satoru Takeuchi wrote:
-> At Fri, 13 Jun 2014 08:16:02 -0700,
-> Guenter Roeck wrote:
-> > 
-> > On 06/12/2014 04:21 PM, Greg Kroah-Hartman wrote:
-> > > This is the start of the stable review cycle for the 3.15.1 release.
-> > > There are 12 patches in this series, all will be posted as a response
-> > > to this one.  If anyone has any issues with these being applied, please
-> > > let me know.
-> > > 
-> > > Responses should be made by Sat Jun 14 23:20:28 UTC 2014.
-> > > Anything received after that time might be too late.
-> > > 
-> > 
-> > Build results:
-> > 	total: 143 pass: 135 skipped: 5 fail: 3
-> > Failed builds:
-> > 	powerpc:allmodconfig (binutils 2.23)
-> > 	powerpc:allmodconfig (binutils 2.24)
-> > 	unicore32:defconfig
-> > 
-> > Qemu tests all passed.
-> > 
-> > Results are as expected.
-> > Details are available at http://server.roeck-us.net:8010/builders.
-> 
-> 3.15.1-rc1, 3.14.8-rc1, 3.10.44-rc1, and 3.4.94-rc1 passed my test.
-> 
->  - Test Cases:
->    - Build this kernel.
->    - Boot this kernel.
->    - Build the latest mainline kernel with this kernel.
-> 
->  - Test Tool:
->    https://github.com/satoru-takeuchi/test-linux-stable
-> 
->  - Test Result (kernel .config, ktest config and test log):
->    http://satoru-takeuchi.org/test-linux-stable/results/<version>-<test datetime>.tar.xz
-> 
->  - Build Environment:
->    - OS: Debian Jessy x86_64
->    - CPU: Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz x 4
->    - memory: 8GB
-> 
->  - Test Target Environment:
->    - Debian Jessy x86_64 (KVM guest on the Build Environment)
->    - # of vCPU: 2
->    - memory: 2GB
-> 
-> Thanks,
-> Satoru
+Add device-tree support to max1586.
+The driver can still be used with the legacy platform data, or the new
+device-tree way.
 
-Thanks for testing all of these and letting me know.
+This work is heavily inspired by the device-tree support of its cousin
+max8660 driver.
 
-greg k-h
+Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+---
+ drivers/regulator/max1586.c       | 74 +++++++++++++++++++++++++++++++++++++--
+ include/linux/regulator/max1586.h |  2 +-
+ 2 files changed, 73 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/regulator/max1586.c b/drivers/regulator/max1586.c
+index d23d057..0b04602 100644
+--- a/drivers/regulator/max1586.c
++++ b/drivers/regulator/max1586.c
+@@ -24,6 +24,8 @@
+ #include <linux/regulator/driver.h>
+ #include <linux/slab.h>
+ #include <linux/regulator/max1586.h>
++#include <linux/of_device.h>
++#include <linux/regulator/of_regulator.h>
+ 
+ #define MAX1586_V3_MAX_VSEL 31
+ #define MAX1586_V6_MAX_VSEL 3
+@@ -157,13 +159,80 @@ static struct regulator_desc max1586_reg[] = {
+ 	},
+ };
+ 
++int of_get_max1586_platform_data(struct device *dev,
++				 struct max1586_platform_data *pdata)
++{
++	struct max1586_subdev_data *sub;
++	struct of_regulator_match rmatch[ARRAY_SIZE(max1586_reg)];
++	struct device_node *np = dev->of_node;
++	int i, matched;
++
++	if (of_property_read_u32(np, "v3-gain",
++				 &pdata->v3_gain) < 0) {
++		dev_err(dev, "%s has no 'v3-gain' property\n", np->full_name);
++		return -EINVAL;
++	}
++
++	np = of_get_child_by_name(np, "regulators");
++	if (!np) {
++		dev_err(dev, "missing 'regulators' subnode in DT\n");
++		return -EINVAL;
++	}
++
++	for (i = 0; i < ARRAY_SIZE(rmatch); i++)
++		rmatch[i].name = max1586_reg[i].name;
++
++	matched = of_regulator_match(dev, np, rmatch, ARRAY_SIZE(rmatch));
++	of_node_put(np);
++	if (matched <= 0)
++		return matched;
++
++	pdata->subdevs = devm_kzalloc(dev, sizeof(struct max1586_subdev_data) *
++						matched, GFP_KERNEL);
++	if (!pdata->subdevs)
++		return -ENOMEM;
++
++	pdata->num_subdevs = matched;
++	sub = pdata->subdevs;
++
++	for (i = 0; i < matched; i++) {
++		sub->id = i;
++		sub->name = rmatch[i].of_node->name;
++		sub->platform_data = rmatch[i].init_data;
++		sub++;
++	}
++
++	return 0;
++}
++
++static const struct of_device_id max1586_of_match[] = {
++	{ .compatible = "maxim,max1586", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, max1586_of_match);
++
+ static int max1586_pmic_probe(struct i2c_client *client,
+ 					const struct i2c_device_id *i2c_id)
+ {
+-	struct max1586_platform_data *pdata = dev_get_platdata(&client->dev);
++	struct max1586_platform_data *pdata, pdata_of;
+ 	struct regulator_config config = { };
+ 	struct max1586_data *max1586;
+-	int i, id;
++	int i, id, ret;
++	const struct of_device_id *match;
++
++	pdata = dev_get_platdata(&client->dev);
++	if (client->dev.of_node && !pdata) {
++		match = of_match_device(of_match_ptr(max1586_of_match),
++					&client->dev);
++		if (!match) {
++			dev_err(&client->dev, "Error: No device match found\n");
++			return -ENODEV;
++		}
++		ret = of_get_max1586_platform_data(&client->dev, &pdata_of);
++		if (ret < 0)
++			return ret;
++		pdata = &pdata_of;
++	}
+ 
+ 	max1586 = devm_kzalloc(&client->dev, sizeof(struct max1586_data),
+ 			GFP_KERNEL);
+@@ -229,6 +298,7 @@ static struct i2c_driver max1586_pmic_driver = {
+ 	.driver		= {
+ 		.name	= "max1586",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(max1586_of_match),
+ 	},
+ 	.id_table	= max1586_id,
+ };
+diff --git a/include/linux/regulator/max1586.h b/include/linux/regulator/max1586.h
+index de9a7fa..cedd0fe 100644
+--- a/include/linux/regulator/max1586.h
++++ b/include/linux/regulator/max1586.h
+@@ -40,7 +40,7 @@
+  */
+ struct max1586_subdev_data {
+ 	int				id;
+-	char				*name;
++	const char			*name;
+ 	struct regulator_init_data	*platform_data;
+ };
+ 
+-- 
+2.0.0.rc2
+
