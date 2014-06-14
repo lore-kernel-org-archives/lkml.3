@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754980AbaFNRu7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 13:50:59 -0400
-Received: from 1wt.eu ([62.212.114.60]:42771 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754758AbaFNRu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 13:50:58 -0400
-Date: Sat, 14 Jun 2014 19:50:47 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Michal Tesar <mtesar@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, tyler.hicks@canonical.com
-Subject: Re: [ 059/143] sysctl net: Keep tcp_syn_retries inside the boundary
-Message-ID: <20140614175047.GH15102@1wt.eu>
-References: <f07e5fe6d87f172fc73580b9c86ba9a2@local> <20140512003203.088027167@1wt.eu> <20140611184644.GA5442@hercules> <20140611194657.GU28551@1wt.eu> <87sinanv6u.fsf@canonical.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+	id S1754938AbaFNSKL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 14:10:11 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:40036 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754758AbaFNSKJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 14:10:09 -0400
+Message-ID: <539C8FFD.9030607@semaphore.gr>
+Date: Sat, 14 Jun 2014 21:10:05 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Doug Smythies <dsmythies@telus.net>,
+        "'Dirk Brandewie'" <dirk.brandewie@gmail.com>,
+        "'Rafael J. Wysocki'" <rjw@rjwysocki.net>,
+        "'Viresh Kumar'" <viresh.kumar@linaro.org>,
+        "'Dirk Brandewie'" <dirk.j.brandewie@intel.com>
+CC: linux-pm@vger.kernel.org, "'LKML'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/7] cpufreq: intel_pstate: Avoid duplicate call of intel_pstate_get_scaled_busy
+References: <53962067.4060504@semaphore.gr> <53972CE1.1060209@gmail.com> <539731D1.6040504@semaphore.gr> <000b01cf87e7$b06afb30$1140f190$@net>
+In-Reply-To: <000b01cf87e7$b06afb30$1140f190$@net>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <87sinanv6u.fsf@canonical.com>
-User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Luis,
-
-On Thu, Jun 12, 2014 at 01:55:53PM +0100, Luis Henriques wrote:
-> I was finally able to spend some more time with this and tried (a
-> modified) Tyler's patch on top of 2.6.32.62, and it seems to work.
-> Although I haven't done any extended testing, I don't see the two
-> stack traces and the /proc/sys/net/ipv4/ directory seems to be
-> correctly populated.
+On 14/06/2014 06:45 μμ, Doug Smythies wrote:
+> I am sorry to be late chiming in on this one.
 > 
-> I'm attaching the patch I've used, based on Tyler's.
+> On 2014.06.10 09:27 Stratos Karafotis wrote:
+>> On 10/06/2014 07:05 μμ, Dirk Brandewie wrote:
+>> On 06/09/2014 02:00 PM, Stratos Karafotis wrote:
+>>> Store busy_scaled value to avoid to duplicate call of
+>>> intel_pstate_get_scaled_busy on every sampling interval.
+>>>
+>>>
+>>> The second call *only* happens if the tracepoint is being used otherwise
+>>> the whole function call to  trace_pstate_sample() is a noop.
+> 
+>> Yes, I'm sorry, I forgot to add this in my changelog. I have written this
+>> in cover letter.
+>> I made this change mostly to support patch 3/7.
+> 
+>>> This makes the code less readable IMHO the reader is left wondering
+>>> how cpu->sample.busy_scaled was set in intel_pstate_adjust_busy_pstate()
+>>>
+> 
+>> I agree that the the original code is more readable. If we don't care
+>> about the small overhead when tracing is on and forget patch 3/7,
+>> of course the original code is by far better.
+> 
+> Actually, when reading the code, I found it odd to call the function
+> twice.
+> 
+> However by far the much more important issue here, in my opinion,
+> is that if one is using the tracepoint stuff, then the second call
+> to intel_pstate_get_scaled_busy can give a different result than
+> the first call. Why? Because "cpu->pstate.current_pstate" may have
+> changed between the two calls.
+> 
+> In the end the user (me in this case) of the tracepoint stuff can
+> end up pulling (what's left of) their hair out and going around in
+> circles attempting to figure out why doing the so simple math by
+> hand doesn't seem to agree with the tracepoint data.
 
-Would any of you or Tyler please kindly pass me a signed-off-by with
-a commit message ? That would be great. Alternately I'd do it myself
-and mention you authored them.
+:)
 
-> Cheers,
-> -- 
-> Lu�s
+> As a side note: I am now pulling the tracepoint data into a
+> spreadsheet and calculating what "scaled" should be myself.
+> 
 
-Thanks,
-Willy
+I think you are right. Tracepoint data might be inconsistent.
+I will re-submit this patch in v2 series, updating the changelog.
 
-> diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
-> index e2eaf29..e6bf72c 100644
-> --- a/net/core/sysctl_net_core.c
-> +++ b/net/core/sysctl_net_core.c
-> @@ -121,7 +121,8 @@ static struct ctl_table netns_core_table[] = {
->  		.mode		= 0644,
->  		.extra1		= &zero,
->  		.extra2		= &ushort_max,
-> -		.proc_handler	= proc_dointvec_minmax
-> +		.proc_handler	= proc_dointvec_minmax,
-> +		.strategy	= &sysctl_intvec
->  	},
->  	{ .ctl_name = 0 }
->  };
-> diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
-> index 910fa54..d957371 100644
-> --- a/net/ipv4/sysctl_net_ipv4.c
-> +++ b/net/ipv4/sysctl_net_ipv4.c
-> @@ -241,7 +241,8 @@ static struct ctl_table ipv4_table[] = {
->  		.mode		= 0644,
->  		.proc_handler	= proc_dointvec_minmax,
->  		.extra1		= &tcp_syn_retries_min,
-> -		.extra2		= &tcp_syn_retries_max
-> +		.extra2		= &tcp_syn_retries_max,
-> +		.strategy	= &sysctl_intvec
->  	},
->  	{
->  		.ctl_name	= NET_IPV4_NONLOCAL_BIND,
+Thanks for pointing this out!
+
+Stratos
+
