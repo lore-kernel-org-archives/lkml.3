@@ -1,84 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877AbaFNPSC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 11:18:02 -0400
-Received: from mail.kernel.org ([198.145.19.201]:44340 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754710AbaFNPR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 11:17:57 -0400
-Date: Sat, 14 Jun 2014 17:17:47 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] HSI fixes for 3.16
-Message-ID: <20140614151734.GA10835@earth.universe>
+	id S1754911AbaFNPSh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 11:18:37 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:44214 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754710AbaFNPSf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 11:18:35 -0400
+Date: Sat, 14 Jun 2014 20:48:27 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Li Yang <leoli@freescale.com>, Felipe Balbi <balbi@ti.com>,
+        GregKroah-Hartman@himangi-Dell, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] usb: gadget: fsl_qe_udc: Introduce use of managed version of
+ kzalloc
+Message-ID: <20140614151827.GA2910@himangi-Dell>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="YZ5djTAD1cGYuMQK"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch moves data allocated using kzalloc to managed data allocated
+using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
+functions. Also, the unnecesary labels are removed and some labels are
+renamed to preserve ordering.
 
---YZ5djTAD1cGYuMQK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The following Coccinelle semantic patch was used for making the change:
 
-Hi Linus,
+@platform@
+identifier p, probefn, removefn;
+@@
+struct platform_driver p = {
+  .probe = probefn,
+  .remove = removefn,
+};
 
-The following changes since commit eafaebd987fcd001e2c123c050939a29c625d673:
+@prb@
+identifier platform.probefn, pdev;
+expression e, e1, e2;
+@@
+probefn(struct platform_device *pdev, ...) {
+  <+...
+- e = kzalloc(e1, e2)
++ e = devm_kzalloc(&pdev->dev, e1, e2)
+  ...
+?-kfree(e);
+  ...+>
+}
 
-  HSI: Introduce Nokia N900 modem driver (2014-05-16 00:55:42 +0200)
+@rem depends on prb@
+identifier platform.removefn;
+expression e;
+@@
+removefn(...) {
+  <...
+- kfree(e);
+  ...>
+}
 
-are available in the git repository at:
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+---
+Not compile tested due to incompatible architecture.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sre/linux-hsi.git tags/hsi-for-3.16-fixes1
+ drivers/usb/gadget/fsl_qe_udc.c | 19 +++++++------------
+ 1 file changed, 7 insertions(+), 12 deletions(-)
 
-for you to fetch changes up to b357d7b58f379ebe8038cd97b6204f2f5c52220d:
+diff --git a/drivers/usb/gadget/fsl_qe_udc.c b/drivers/usb/gadget/fsl_qe_udc.c
+index ad54833..7324308 100644
+--- a/drivers/usb/gadget/fsl_qe_udc.c
++++ b/drivers/usb/gadget/fsl_qe_udc.c
+@@ -2539,7 +2539,7 @@ static int qe_udc_probe(struct platform_device *ofdev)
+ 		goto err2;
+ 
+ 	/* create a buf for ZLP send, need to remain zeroed */
+-	udc->nullbuf = kzalloc(256, GFP_KERNEL);
++	udc->nullbuf = devm_kzalloc(&ofdev->dev, 256, GFP_KERNEL);
+ 	if (udc->nullbuf == NULL) {
+ 		dev_err(udc->dev, "cannot alloc nullbuf\n");
+ 		ret = -ENOMEM;
+@@ -2547,10 +2547,10 @@ static int qe_udc_probe(struct platform_device *ofdev)
+ 	}
+ 
+ 	/* buffer for data of get_status request */
+-	udc->statusbuf = kzalloc(2, GFP_KERNEL);
++	udc->statusbuf = devm_kzalloc(&ofdev->dev, 2, GFP_KERNEL);
+ 	if (udc->statusbuf == NULL) {
+ 		ret = -ENOMEM;
+-		goto err4;
++		goto err3;
+ 	}
+ 
+ 	udc->nullp = virt_to_phys((void *)udc->nullbuf);
+@@ -2581,13 +2581,13 @@ static int qe_udc_probe(struct platform_device *ofdev)
+ 	if (ret) {
+ 		dev_err(udc->dev, "cannot request irq %d err %d\n",
+ 				udc->usb_irq, ret);
+-		goto err5;
++		goto err4;
+ 	}
+ 
+ 	ret = usb_add_gadget_udc_release(&ofdev->dev, &udc->gadget,
+ 			qe_udc_release);
+ 	if (ret)
+-		goto err6;
++		goto err5;
+ 
+ 	platform_set_drvdata(ofdev, udc);
+ 	dev_info(udc->dev,
+@@ -2595,9 +2595,9 @@ static int qe_udc_probe(struct platform_device *ofdev)
+ 			(udc->soc_type == PORT_QE) ? "QE" : "CPM");
+ 	return 0;
+ 
+-err6:
+-	free_irq(udc->usb_irq, udc);
+ err5:
++	free_irq(udc->usb_irq, udc);
++err4:
+ 	irq_dispose_mapping(udc->usb_irq);
+ err_noirq:
+ 	if (udc->nullmap) {
+@@ -2610,9 +2610,6 @@ err_noirq:
+ 			udc->nullp, 256,
+ 				DMA_TO_DEVICE);
+ 	}
+-	kfree(udc->statusbuf);
+-err4:
+-	kfree(udc->nullbuf);
+ err3:
+ 	ep = &udc->eps[0];
+ 	cpm_muram_free(cpm_muram_offset(ep->rxbase));
+@@ -2660,8 +2657,6 @@ static int qe_udc_remove(struct platform_device *ofdev)
+ 			udc->nullp, 256,
+ 				DMA_TO_DEVICE);
+ 	}
+-	kfree(udc->statusbuf);
+-	kfree(udc->nullbuf);
+ 
+ 	ep = &udc->eps[0];
+ 	cpm_muram_free(cpm_muram_offset(ep->rxbase));
+-- 
+1.9.1
 
-  hsi: omap_ssi_port: use normal module refcounting (2014-06-05 00:59:05 +0200)
-
-----------------------------------------------------------------
-HSI Fixes for the v3.16 series:
-
-* Tighten Dependency between ssi-protocol and omap-ssi
-  to fix build failures with randconfig.
-* Use normal module refcounting in omap driver to fix
-  build with disabled module support.
-
-----------------------------------------------------------------
-Arnd Bergmann (2):
-      HSI: fix omap ssi driver dependency
-      hsi: omap_ssi_port: use normal module refcounting
-
- drivers/hsi/clients/Kconfig             | 2 +-
- drivers/hsi/controllers/omap_ssi_port.c | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
--- Sebastian
-
---YZ5djTAD1cGYuMQK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJTnGeOAAoJENju1/PIO/qaDr8QAJL7hLKsuiAZod7tJ2rJj4ca
-GbGGr7WSdEHHdqonzt9fVjTLWY6T4KJAiGdo/1cE140WoFnYcGaUENrlLeLAy4ui
-9CKAJtTZRZDTo3DM4nqE/aL4lM2OGQ42naid9VQ4R4Dh246YG0ww/OYAPaeFY0KR
-Tl/vbfm21jpUxb5MuEWc3tw6/ELQCEteYHfdDuR/jzTb/FdjsjViCOXQehtJX6bm
-cJETuGt+s8RPAtXXiKARtXbmbH5k89VGxHs/85+sSE3pTlOlvIToVhN5b9co0CSn
-5sFIRPNA5E5f/SuusNwficR+UtNCiSUNqjCoq3iqKFstws93N+OLH4GCRDjtEfaO
-GSJYdk4zesjKYZllXWjy6KUG6TjgwB3W5fErSfGAFXZjKRAqgMexdMEEhz1qSRoR
-SmI3A+yNSB+uT8WOrMA+nSUrUOokyX1m+4RlUrhmkHT7d7r6eCixfGJAaJcrtrL8
-hjC2QzLyaRe+tlJB3ojN2nWzc55w+U+dnxwq2JKRRbdISZLUPGWUn1GCb+Styjc4
-aeBVJcU03fesKUlaHMTU5oEPhQ2lYzOCiLxkm5c7Y7jdBFLlh3DCB0VVYcY6HY54
-Yk8p0VuWScq9hnkBxors8vaRzmGGp+PLQGWW0tDNOddM5YhndcNtiIEdyBwsfme5
-6QzYCGYl4hd1NnSK+dhM
-=gLSf
------END PGP SIGNATURE-----
-
---YZ5djTAD1cGYuMQK--
