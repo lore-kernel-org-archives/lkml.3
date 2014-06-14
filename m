@@ -1,1235 +1,668 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527AbaFNAu3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 20:50:29 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:47296 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754352AbaFNAtE (ORCPT
+	id S1754204AbaFNBHW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 21:07:22 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:51208 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811AbaFNBHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 20:49:04 -0400
-From: =?UTF-8?q?J=C3=A9r=C3=B4me=20Glisse?= <j.glisse@gmail.com>
-To: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Cc: mgorman@suse.de, hpa@zytor.com, peterz@infraread.org,
-        torvalds@linux-foundation.org, aarcange@redhat.com, riel@redhat.com,
-        jweiner@redhat.com,
-        =?UTF-8?q?J=C3=A9r=C3=B4me=20Glisse?= <jglisse@redhat.com>
-Subject: [PATCH 2/5] mmu_notifier: add action information to address invalidation.
-Date: Fri, 13 Jun 2014 20:48:30 -0400
-Message-Id: <1402706913-7432-3-git-send-email-j.glisse@gmail.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1402706913-7432-2-git-send-email-j.glisse@gmail.com>
-References: <1402706913-7432-1-git-send-email-j.glisse@gmail.com>
- <1402706913-7432-2-git-send-email-j.glisse@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Fri, 13 Jun 2014 21:07:19 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Rashika Kheria <rashika.kheria@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Kyungsik Lee <kyungsik.lee@lge.com>, P J P <ppandit@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        "Daniel M. Weeks" <dan@danweeks.net>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Jan Beulich <JBeulich@suse.com>, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] initramfs: Support initramfs that is more than 2G
+Date: Fri, 13 Jun 2014 18:06:15 -0700
+Message-Id: <1402707975-19892-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.4.5
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jérôme Glisse <jglisse@redhat.com>
+Now with 64bit bzImage and kexec tools, we support ramdisk that size
+is bigger than 2g, as we could put it above 4G.
 
-The action information will be usefull for new user of mmu_notifier API.
-The action argument differentiate between a vma disappearing, a page
-being write protected or simply a page being unmaped. This allow new
-user to take different action for instance on unmap the resource used
-to track a vma are still valid and should stay around if need be.
-While if the action is saying that a vma is being destroy it means that
-that any resources used to track this vma can be free.
+Found compressed initramfs image could not be decompressed
+properly. It turns out that image length is int during decompress
+detection, and it will become < 0 when length is more than 2G.
+Furthermore, during decompressing len as int is used for inbuf count,
+that has problem too.
 
-Signed-off-by: Jérôme Glisse <jglisse@redhat.com>
+Change len to long, that should be ok as on 32 bit platform long is
+32bits.
+
+Tested with following compressed initramfs image as root with kexec.
+	gzip, bzip2, xz, lzma, lzop, lz4.
+run time for populate_rootfs():
+   size        name       Nehalem-EX  Westmere-EX  Ivybridge-EX
+ 9034400256 root_img     :   26s           24s          30s
+ 3561095057 root_img.lz4 :   28s           27s          27s
+ 3459554629 root_img.lzo :   29s           29s          28s
+ 3219399480 root_img.gz  :   64s           62s          49s
+ 2251594592 root_img.xz  :  262s          260s         183s
+ 2226366598 root_img.lzma:  386s          376s         277s
+ 2901482513 root_img.bz2 :  635s          599s
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
 ---
- drivers/gpu/drm/i915/i915_gem_userptr.c |   3 +-
- drivers/iommu/amd_iommu_v2.c            |  14 ++--
- drivers/misc/sgi-gru/grutlbpurge.c      |   9 ++-
- drivers/xen/gntdev.c                    |   9 ++-
- fs/proc/task_mmu.c                      |   4 +-
- include/linux/hugetlb.h                 |   7 +-
- include/linux/mmu_notifier.h            | 109 +++++++++++++++++++++++++-------
- kernel/events/uprobes.c                 |   6 +-
- mm/filemap_xip.c                        |   2 +-
- mm/fremap.c                             |   4 +-
- mm/huge_memory.c                        |  26 ++++----
- mm/hugetlb.c                            |  19 +++---
- mm/ksm.c                                |  12 ++--
- mm/memory.c                             |  23 +++----
- mm/mempolicy.c                          |   2 +-
- mm/migrate.c                            |   6 +-
- mm/mmu_notifier.c                       |  26 +++++---
- mm/mprotect.c                           |  30 ++++++---
- mm/mremap.c                             |   4 +-
- mm/rmap.c                               |  31 +++++++--
- virt/kvm/kvm_main.c                     |  12 ++--
- 21 files changed, 241 insertions(+), 117 deletions(-)
+ fs/isofs/compress.c                |    4 ++--
+ include/linux/decompress/bunzip2.h |    8 ++++----
+ include/linux/decompress/generic.h |   10 +++++-----
+ include/linux/decompress/inflate.h |    8 ++++----
+ include/linux/decompress/unlz4.h   |    8 ++++----
+ include/linux/decompress/unlzma.h  |    8 ++++----
+ include/linux/decompress/unlzo.h   |    8 ++++----
+ include/linux/decompress/unxz.h    |    8 ++++----
+ include/linux/zlib.h               |    4 ++--
+ init/do_mounts_rd.c                |   10 +++++-----
+ init/initramfs.c                   |   22 +++++++++++-----------
+ lib/decompress.c                   |    2 +-
+ lib/decompress_bunzip2.c           |   26 +++++++++++++-------------
+ lib/decompress_inflate.c           |   12 ++++++------
+ lib/decompress_unlz4.c             |   18 +++++++++---------
+ lib/decompress_unlzma.c            |   28 ++++++++++++++--------------
+ lib/decompress_unlzo.c             |   12 ++++++------
+ lib/decompress_unxz.c              |   10 +++++-----
+ 18 files changed, 103 insertions(+), 103 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_gem_userptr.c b/drivers/gpu/drm/i915/i915_gem_userptr.c
-index 21ea928..7f7b4f3 100644
---- a/drivers/gpu/drm/i915/i915_gem_userptr.c
-+++ b/drivers/gpu/drm/i915/i915_gem_userptr.c
-@@ -56,7 +56,8 @@ struct i915_mmu_object {
- static void i915_gem_userptr_mn_invalidate_range_start(struct mmu_notifier *_mn,
- 						       struct mm_struct *mm,
- 						       unsigned long start,
--						       unsigned long end)
-+						       unsigned long end,
-+						       enum mmu_action action)
+Index: linux-2.6/include/linux/decompress/generic.h
+===================================================================
+--- linux-2.6.orig/include/linux/decompress/generic.h
++++ linux-2.6/include/linux/decompress/generic.h
+@@ -1,11 +1,11 @@
+ #ifndef DECOMPRESS_GENERIC_H
+ #define DECOMPRESS_GENERIC_H
+ 
+-typedef int (*decompress_fn) (unsigned char *inbuf, int len,
+-			      int(*fill)(void*, unsigned int),
+-			      int(*flush)(void*, unsigned int),
++typedef int (*decompress_fn) (unsigned char *inbuf, long len,
++			      long(*fill)(void*, unsigned long),
++			      long(*flush)(void*, unsigned long),
+ 			      unsigned char *outbuf,
+-			      int *posp,
++			      long *posp,
+ 			      void(*error)(char *x));
+ 
+ /* inbuf   - input buffer
+@@ -33,7 +33,7 @@ typedef int (*decompress_fn) (unsigned c
+ 
+ 
+ /* Utility routine to detect the decompression method */
+-decompress_fn decompress_method(const unsigned char *inbuf, int len,
++decompress_fn decompress_method(const unsigned char *inbuf, long len,
+ 				const char **name);
+ 
+ #endif
+Index: linux-2.6/init/initramfs.c
+===================================================================
+--- linux-2.6.orig/init/initramfs.c
++++ linux-2.6/init/initramfs.c
+@@ -174,7 +174,7 @@ static __initdata enum state {
+ } state, next_state;
+ 
+ static __initdata char *victim;
+-static __initdata unsigned count;
++static __initdata unsigned long count;
+ static __initdata loff_t this_header, next_header;
+ 
+ static inline void __init eat(unsigned n)
+@@ -186,7 +186,7 @@ static inline void __init eat(unsigned n
+ 
+ static __initdata char *vcollected;
+ static __initdata char *collected;
+-static __initdata int remains;
++static __initdata long remains;
+ static __initdata char *collect;
+ 
+ static void __init read_into(char *buf, unsigned size, enum state next)
+@@ -213,7 +213,7 @@ static int __init do_start(void)
+ 
+ static int __init do_collect(void)
  {
- 	struct i915_mmu_notifier *mn = container_of(_mn, struct i915_mmu_notifier, mn);
- 	struct interval_tree_node *it = NULL;
-diff --git a/drivers/iommu/amd_iommu_v2.c b/drivers/iommu/amd_iommu_v2.c
-index d4daa05..81ff80b 100644
---- a/drivers/iommu/amd_iommu_v2.c
-+++ b/drivers/iommu/amd_iommu_v2.c
-@@ -413,21 +413,25 @@ static int mn_clear_flush_young(struct mmu_notifier *mn,
- static void mn_change_pte(struct mmu_notifier *mn,
- 			  struct mm_struct *mm,
- 			  unsigned long address,
--			  pte_t pte)
-+			  pte_t pte,
-+			  enum mmu_action action)
- {
- 	__mn_flush_page(mn, address);
- }
- 
- static void mn_invalidate_page(struct mmu_notifier *mn,
- 			       struct mm_struct *mm,
--			       unsigned long address)
-+			       unsigned long address,
-+			       enum mmu_action action)
- {
- 	__mn_flush_page(mn, address);
- }
- 
- static void mn_invalidate_range_start(struct mmu_notifier *mn,
- 				      struct mm_struct *mm,
--				      unsigned long start, unsigned long end)
-+				      unsigned long start,
-+				      unsigned long end,
-+				      enum mmu_action action)
- {
- 	struct pasid_state *pasid_state;
- 	struct device_state *dev_state;
-@@ -444,7 +448,9 @@ static void mn_invalidate_range_start(struct mmu_notifier *mn,
- 
- static void mn_invalidate_range_end(struct mmu_notifier *mn,
- 				    struct mm_struct *mm,
--				    unsigned long start, unsigned long end)
-+				    unsigned long start,
-+				    unsigned long end,
-+				    enum mmu_action action)
- {
- 	struct pasid_state *pasid_state;
- 	struct device_state *dev_state;
-diff --git a/drivers/misc/sgi-gru/grutlbpurge.c b/drivers/misc/sgi-gru/grutlbpurge.c
-index 2129274..3427bfc 100644
---- a/drivers/misc/sgi-gru/grutlbpurge.c
-+++ b/drivers/misc/sgi-gru/grutlbpurge.c
-@@ -221,7 +221,8 @@ void gru_flush_all_tlb(struct gru_state *gru)
-  */
- static void gru_invalidate_range_start(struct mmu_notifier *mn,
- 				       struct mm_struct *mm,
--				       unsigned long start, unsigned long end)
-+				       unsigned long start, unsigned long end,
-+				       enum mmu_action action)
- {
- 	struct gru_mm_struct *gms = container_of(mn, struct gru_mm_struct,
- 						 ms_notifier);
-@@ -235,7 +236,8 @@ static void gru_invalidate_range_start(struct mmu_notifier *mn,
- 
- static void gru_invalidate_range_end(struct mmu_notifier *mn,
- 				     struct mm_struct *mm, unsigned long start,
--				     unsigned long end)
-+				     unsigned long end,
-+				     enum mmu_action action)
- {
- 	struct gru_mm_struct *gms = container_of(mn, struct gru_mm_struct,
- 						 ms_notifier);
-@@ -248,7 +250,8 @@ static void gru_invalidate_range_end(struct mmu_notifier *mn,
- }
- 
- static void gru_invalidate_page(struct mmu_notifier *mn, struct mm_struct *mm,
--				unsigned long address)
-+				unsigned long address,
-+				enum mmu_action action)
- {
- 	struct gru_mm_struct *gms = container_of(mn, struct gru_mm_struct,
- 						 ms_notifier);
-diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
-index 073b4a1..84aa5a7 100644
---- a/drivers/xen/gntdev.c
-+++ b/drivers/xen/gntdev.c
-@@ -428,7 +428,9 @@ static void unmap_if_in_range(struct grant_map *map,
- 
- static void mn_invl_range_start(struct mmu_notifier *mn,
- 				struct mm_struct *mm,
--				unsigned long start, unsigned long end)
-+				unsigned long start,
-+				unsigned long end,
-+				enum mmu_action action)
- {
- 	struct gntdev_priv *priv = container_of(mn, struct gntdev_priv, mn);
- 	struct grant_map *map;
-@@ -445,9 +447,10 @@ static void mn_invl_range_start(struct mmu_notifier *mn,
- 
- static void mn_invl_page(struct mmu_notifier *mn,
- 			 struct mm_struct *mm,
--			 unsigned long address)
-+			 unsigned long address,
-+			 enum mmu_action action)
- {
--	mn_invl_range_start(mn, mm, address, address + PAGE_SIZE);
-+	mn_invl_range_start(mn, mm, address, address + PAGE_SIZE, action);
- }
- 
- static void mn_release(struct mmu_notifier *mn,
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index cfa63ee..24255de 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -830,7 +830,7 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
- 		};
- 		down_read(&mm->mmap_sem);
- 		if (type == CLEAR_REFS_SOFT_DIRTY)
--			mmu_notifier_invalidate_range_start(mm, 0, -1);
-+			mmu_notifier_invalidate_range_start(mm, 0, -1, MMU_SOFT_DIRTY);
- 		for (vma = mm->mmap; vma; vma = vma->vm_next) {
- 			cp.vma = vma;
- 			if (is_vm_hugetlb_page(vma))
-@@ -858,7 +858,7 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
- 					&clear_refs_walk);
- 		}
- 		if (type == CLEAR_REFS_SOFT_DIRTY)
--			mmu_notifier_invalidate_range_end(mm, 0, -1);
-+			mmu_notifier_invalidate_range_end(mm, 0, -1, MMU_SOFT_DIRTY);
- 		flush_tlb_mm(mm);
- 		up_read(&mm->mmap_sem);
- 		mmput(mm);
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 255cd5c..08b8ac7 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -6,6 +6,7 @@
- #include <linux/fs.h>
- #include <linux/hugetlb_inline.h>
- #include <linux/cgroup.h>
-+#include <linux/mmu_notifier.h>
- #include <linux/list.h>
- #include <linux/kref.h>
- 
-@@ -105,7 +106,8 @@ struct page *follow_huge_pud(struct mm_struct *mm, unsigned long address,
- int pmd_huge(pmd_t pmd);
- int pud_huge(pud_t pmd);
- unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
--		unsigned long address, unsigned long end, pgprot_t newprot);
-+		unsigned long address, unsigned long end, pgprot_t newprot,
-+		enum mmu_action action);
- 
- #else /* !CONFIG_HUGETLB_PAGE */
- 
-@@ -155,7 +157,8 @@ static inline bool isolate_huge_page(struct page *page, struct list_head *list)
- #define is_hugepage_active(x)	false
- 
- static inline unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
--		unsigned long address, unsigned long end, pgprot_t newprot)
-+		unsigned long address, unsigned long end, pgprot_t newprot,
-+		enum mmu_action action)
- {
- 	return 0;
- }
-diff --git a/include/linux/mmu_notifier.h b/include/linux/mmu_notifier.h
-index deca874..3ef6a20 100644
---- a/include/linux/mmu_notifier.h
-+++ b/include/linux/mmu_notifier.h
-@@ -9,6 +9,42 @@
- struct mmu_notifier;
- struct mmu_notifier_ops;
- 
-+/* Action report finer information to the callback allowing the event listener
-+ * to take better action. For instance WP means that the page are still valid
-+ * and can be use as read only.
-+ *
-+ * UNMAP means the vma is still valid and that only pages are unmaped and thus
-+ * they should no longer be read or written to.
-+ *
-+ * ZAP means vma is disappearing and that any resource that were use to track
-+ * this vma can be freed.
-+ *
-+ * In doubt when adding a new notifier caller use ZAP it will always trigger
-+ * right thing but won't be optimal.
-+ */
-+enum mmu_action {
-+	MMU_MPROT_NONE = 0,
-+	MMU_MPROT_RONLY,
-+	MMU_MPROT_RANDW,
-+	MMU_MPROT_WONLY,
-+	MMU_COW,
-+	MMU_KSM,
-+	MMU_KSM_RONLY,
-+	MMU_SOFT_DIRTY,
-+	MMU_UNMAP,
-+	MMU_VMSCAN,
-+	MMU_POISON,
-+	MMU_FREMAP,
-+	MMU_MREMAP,
-+	MMU_MUNMAP,
-+	MMU_MUNLOCK,
-+	MMU_MIGRATE,
-+	MMU_FILE_WB,
-+	MMU_FAULT_WP,
-+	MMU_THP_SPLIT,
-+	MMU_THP_FAULT_WP,
-+};
-+
- #ifdef CONFIG_MMU_NOTIFIER
- 
- /*
-@@ -79,7 +115,8 @@ struct mmu_notifier_ops {
- 	void (*change_pte)(struct mmu_notifier *mn,
- 			   struct mm_struct *mm,
- 			   unsigned long address,
--			   pte_t pte);
-+			   pte_t pte,
-+			   enum mmu_action action);
- 
- 	/*
- 	 * Before this is invoked any secondary MMU is still ok to
-@@ -90,7 +127,8 @@ struct mmu_notifier_ops {
- 	 */
- 	void (*invalidate_page)(struct mmu_notifier *mn,
- 				struct mm_struct *mm,
--				unsigned long address);
-+				unsigned long address,
-+				enum mmu_action action);
- 
- 	/*
- 	 * invalidate_range_start() and invalidate_range_end() must be
-@@ -137,10 +175,14 @@ struct mmu_notifier_ops {
- 	 */
- 	void (*invalidate_range_start)(struct mmu_notifier *mn,
- 				       struct mm_struct *mm,
--				       unsigned long start, unsigned long end);
-+				       unsigned long start,
-+				       unsigned long end,
-+				       enum mmu_action action);
- 	void (*invalidate_range_end)(struct mmu_notifier *mn,
- 				     struct mm_struct *mm,
--				     unsigned long start, unsigned long end);
-+				     unsigned long start,
-+				     unsigned long end,
-+				     enum mmu_action action);
+-	unsigned n = remains;
++	unsigned long n = remains;
+ 	if (count < n)
+ 		n = count;
+ 	memcpy(collect, victim, n);
+@@ -384,7 +384,7 @@ static __initdata int (*actions[])(void)
+ 	[Reset]		= do_reset,
  };
  
- /*
-@@ -177,13 +219,20 @@ extern int __mmu_notifier_clear_flush_young(struct mm_struct *mm,
- extern int __mmu_notifier_test_young(struct mm_struct *mm,
- 				     unsigned long address);
- extern void __mmu_notifier_change_pte(struct mm_struct *mm,
--				      unsigned long address, pte_t pte);
-+				      unsigned long address,
-+				      pte_t pte,
-+				      enum mmu_action action);
- extern void __mmu_notifier_invalidate_page(struct mm_struct *mm,
--					  unsigned long address);
-+					   unsigned long address,
-+					   enum mmu_action action);
- extern void __mmu_notifier_invalidate_range_start(struct mm_struct *mm,
--				  unsigned long start, unsigned long end);
-+						  unsigned long start,
-+						  unsigned long end,
-+						  enum mmu_action action);
- extern void __mmu_notifier_invalidate_range_end(struct mm_struct *mm,
--				  unsigned long start, unsigned long end);
-+						unsigned long start,
-+						unsigned long end,
-+						enum mmu_action action);
- 
- static inline void mmu_notifier_release(struct mm_struct *mm)
+-static int __init write_buffer(char *buf, unsigned len)
++static long __init write_buffer(char *buf, unsigned long len)
  {
-@@ -208,31 +257,38 @@ static inline int mmu_notifier_test_young(struct mm_struct *mm,
+ 	count = len;
+ 	victim = buf;
+@@ -394,11 +394,11 @@ static int __init write_buffer(char *buf
+ 	return len - count;
  }
  
- static inline void mmu_notifier_change_pte(struct mm_struct *mm,
--					   unsigned long address, pte_t pte)
-+					   unsigned long address,
-+					   pte_t pte,
-+					   enum mmu_action action)
+-static int __init flush_buffer(void *bufv, unsigned len)
++static long __init flush_buffer(void *bufv, unsigned long len)
  {
- 	if (mm_has_notifiers(mm))
--		__mmu_notifier_change_pte(mm, address, pte);
-+		__mmu_notifier_change_pte(mm, address, pte, action);
+ 	char *buf = (char *) bufv;
+-	int written;
+-	int origLen = len;
++	long written;
++	long origLen = len;
+ 	if (message)
+ 		return -1;
+ 	while ((written = write_buffer(buf, len)) < len && !message) {
+@@ -417,13 +417,13 @@ static int __init flush_buffer(void *buf
+ 	return origLen;
  }
  
- static inline void mmu_notifier_invalidate_page(struct mm_struct *mm,
--					  unsigned long address)
-+						unsigned long address,
-+						enum mmu_action action)
+-static unsigned my_inptr;   /* index of next byte to be processed in inbuf */
++static unsigned long my_inptr; /* index of next byte to be processed in inbuf */
+ 
+ #include <linux/decompress/generic.h>
+ 
+-static char * __init unpack_to_rootfs(char *buf, unsigned len)
++static char * __init unpack_to_rootfs(char *buf, unsigned long len)
  {
- 	if (mm_has_notifiers(mm))
--		__mmu_notifier_invalidate_page(mm, address);
-+		__mmu_notifier_invalidate_page(mm, address, action);
+-	int written, res;
++	long written;
+ 	decompress_fn decompress;
+ 	const char *compress_name;
+ 	static __initdata char msg_buf[64];
+@@ -457,7 +457,7 @@ static char * __init unpack_to_rootfs(ch
+ 		decompress = decompress_method(buf, len, &compress_name);
+ 		pr_debug("Detected %s compressed data\n", compress_name);
+ 		if (decompress) {
+-			res = decompress(buf, len, NULL, flush_buffer, NULL,
++			int res = decompress(buf, len, NULL, flush_buffer, NULL,
+ 				   &my_inptr, error);
+ 			if (res)
+ 				error("decompressor failed");
+Index: linux-2.6/lib/decompress_bunzip2.c
+===================================================================
+--- linux-2.6.orig/lib/decompress_bunzip2.c
++++ linux-2.6/lib/decompress_bunzip2.c
+@@ -92,8 +92,8 @@ struct bunzip_data {
+ 	/* State for interrupting output loop */
+ 	int writeCopies, writePos, writeRunCountdown, writeCount, writeCurrent;
+ 	/* I/O tracking data (file handles, buffers, positions, etc.) */
+-	int (*fill)(void*, unsigned int);
+-	int inbufCount, inbufPos /*, outbufPos*/;
++	long (*fill)(void*, unsigned long);
++	long inbufCount, inbufPos /*, outbufPos*/;
+ 	unsigned char *inbuf /*,*outbuf*/;
+ 	unsigned int inbufBitCount, inbufBits;
+ 	/* The CRC values stored in the block header and calculated from the
+@@ -617,7 +617,7 @@ decode_next_byte:
+ 	goto decode_next_byte;
  }
  
- static inline void mmu_notifier_invalidate_range_start(struct mm_struct *mm,
--				  unsigned long start, unsigned long end)
-+						       unsigned long start,
-+						       unsigned long end,
-+						       enum mmu_action action)
+-static int INIT nofill(void *buf, unsigned int len)
++static long INIT nofill(void *buf, unsigned long len)
  {
- 	if (mm_has_notifiers(mm))
--		__mmu_notifier_invalidate_range_start(mm, start, end);
-+		__mmu_notifier_invalidate_range_start(mm, start, end, action);
+ 	return -1;
+ }
+@@ -625,8 +625,8 @@ static int INIT nofill(void *buf, unsign
+ /* Allocate the structure, read file header.  If in_fd ==-1, inbuf must contain
+    a complete bunzip file (len bytes long).  If in_fd!=-1, inbuf and len are
+    ignored, and data is read from file handle into temporary buffer. */
+-static int INIT start_bunzip(struct bunzip_data **bdp, void *inbuf, int len,
+-			     int (*fill)(void*, unsigned int))
++static int INIT start_bunzip(struct bunzip_data **bdp, void *inbuf, long len,
++			     long (*fill)(void*, unsigned long))
+ {
+ 	struct bunzip_data *bd;
+ 	unsigned int i, j, c;
+@@ -675,11 +675,11 @@ static int INIT start_bunzip(struct bunz
+ 
+ /* Example usage: decompress src_fd to dst_fd.  (Stops at end of bzip2 data,
+    not end of file.) */
+-STATIC int INIT bunzip2(unsigned char *buf, int len,
+-			int(*fill)(void*, unsigned int),
+-			int(*flush)(void*, unsigned int),
++STATIC int INIT bunzip2(unsigned char *buf, long len,
++			long(*fill)(void*, unsigned long),
++			long(*flush)(void*, unsigned long),
+ 			unsigned char *outbuf,
+-			int *pos,
++			long *pos,
+ 			void(*error)(char *x))
+ {
+ 	struct bunzip_data *bd;
+@@ -743,11 +743,11 @@ exit_0:
  }
  
- static inline void mmu_notifier_invalidate_range_end(struct mm_struct *mm,
--				  unsigned long start, unsigned long end)
-+						     unsigned long start,
-+						     unsigned long end,
-+						     enum mmu_action action)
+ #ifdef PREBOOT
+-STATIC int INIT decompress(unsigned char *buf, int len,
+-			int(*fill)(void*, unsigned int),
+-			int(*flush)(void*, unsigned int),
++STATIC int INIT decompress(unsigned char *buf, long len,
++			long(*fill)(void*, unsigned long),
++			long(*flush)(void*, unsigned long),
+ 			unsigned char *outbuf,
+-			int *pos,
++			long *pos,
+ 			void(*error)(char *x))
  {
- 	if (mm_has_notifiers(mm))
--		__mmu_notifier_invalidate_range_end(mm, start, end);
-+		__mmu_notifier_invalidate_range_end(mm, start, end, action);
+ 	return bunzip2(buf, len - 4, fill, flush, outbuf, pos, error);
+Index: linux-2.6/lib/decompress_unlzma.c
+===================================================================
+--- linux-2.6.orig/lib/decompress_unlzma.c
++++ linux-2.6/lib/decompress_unlzma.c
+@@ -65,11 +65,11 @@ static long long INIT read_int(unsigned
+ #define LZMA_IOBUF_SIZE	0x10000
+ 
+ struct rc {
+-	int (*fill)(void*, unsigned int);
++	long (*fill)(void*, unsigned long);
+ 	uint8_t *ptr;
+ 	uint8_t *buffer;
+ 	uint8_t *buffer_end;
+-	int buffer_size;
++	long buffer_size;
+ 	uint32_t code;
+ 	uint32_t range;
+ 	uint32_t bound;
+@@ -82,7 +82,7 @@ struct rc {
+ #define RC_MODEL_TOTAL_BITS 11
+ 
+ 
+-static int INIT nofill(void *buffer, unsigned int len)
++static long INIT nofill(void *buffer, unsigned long len)
+ {
+ 	return -1;
+ }
+@@ -99,8 +99,8 @@ static void INIT rc_read(struct rc *rc)
+ 
+ /* Called once */
+ static inline void INIT rc_init(struct rc *rc,
+-				       int (*fill)(void*, unsigned int),
+-				       char *buffer, int buffer_size)
++				       long (*fill)(void*, unsigned long),
++				       char *buffer, long buffer_size)
+ {
+ 	if (fill)
+ 		rc->fill = fill;
+@@ -280,7 +280,7 @@ struct writer {
+ 	size_t buffer_pos;
+ 	int bufsize;
+ 	size_t global_pos;
+-	int(*flush)(void*, unsigned int);
++	long(*flush)(void*, unsigned long);
+ 	struct lzma_header *header;
+ };
+ 
+@@ -534,11 +534,11 @@ static inline int INIT process_bit1(stru
+ 
+ 
+ 
+-STATIC inline int INIT unlzma(unsigned char *buf, int in_len,
+-			      int(*fill)(void*, unsigned int),
+-			      int(*flush)(void*, unsigned int),
++STATIC inline int INIT unlzma(unsigned char *buf, long in_len,
++			      long(*fill)(void*, unsigned long),
++			      long(*flush)(void*, unsigned long),
+ 			      unsigned char *output,
+-			      int *posp,
++			      long *posp,
+ 			      void(*error)(char *x)
+ 	)
+ {
+@@ -667,11 +667,11 @@ exit_0:
  }
  
- static inline void mmu_notifier_mm_init(struct mm_struct *mm)
-@@ -278,13 +334,13 @@ static inline void mmu_notifier_mm_destroy(struct mm_struct *mm)
-  * old page would remain mapped readonly in the secondary MMUs after the new
-  * page is already writable by some CPU through the primary MMU.
+ #ifdef PREBOOT
+-STATIC int INIT decompress(unsigned char *buf, int in_len,
+-			      int(*fill)(void*, unsigned int),
+-			      int(*flush)(void*, unsigned int),
++STATIC int INIT decompress(unsigned char *buf, long in_len,
++			      long(*fill)(void*, unsigned long),
++			      long(*flush)(void*, unsigned long),
+ 			      unsigned char *output,
+-			      int *posp,
++			      long *posp,
+ 			      void(*error)(char *x)
+ 	)
+ {
+Index: linux-2.6/include/linux/zlib.h
+===================================================================
+--- linux-2.6.orig/include/linux/zlib.h
++++ linux-2.6/include/linux/zlib.h
+@@ -83,11 +83,11 @@ struct internal_state;
+ 
+ typedef struct z_stream_s {
+     const Byte *next_in;   /* next input byte */
+-    uInt     avail_in;  /* number of bytes available at next_in */
++    uLong     avail_in;  /* number of bytes available at next_in */
+     uLong    total_in;  /* total nb of input bytes read so far */
+ 
+     Byte    *next_out;  /* next output byte should be put there */
+-    uInt     avail_out; /* remaining free space at next_out */
++    uLong     avail_out; /* remaining free space at next_out */
+     uLong    total_out; /* total nb of bytes output so far */
+ 
+     char     *msg;      /* last error message, NULL if no error */
+Index: linux-2.6/lib/decompress.c
+===================================================================
+--- linux-2.6.orig/lib/decompress.c
++++ linux-2.6/lib/decompress.c
+@@ -54,7 +54,7 @@ static const struct compress_format comp
+ 	{ {0, 0}, NULL, NULL }
+ };
+ 
+-decompress_fn __init decompress_method(const unsigned char *inbuf, int len,
++decompress_fn __init decompress_method(const unsigned char *inbuf, long len,
+ 				const char **name)
+ {
+ 	const struct compress_format *cf;
+Index: linux-2.6/lib/decompress_inflate.c
+===================================================================
+--- linux-2.6.orig/lib/decompress_inflate.c
++++ linux-2.6/lib/decompress_inflate.c
+@@ -27,17 +27,17 @@
+ 
+ #define GZIP_IOBUF_SIZE (16*1024)
+ 
+-static int INIT nofill(void *buffer, unsigned int len)
++static long INIT nofill(void *buffer, unsigned long len)
+ {
+ 	return -1;
+ }
+ 
+ /* Included from initramfs et al code */
+-STATIC int INIT gunzip(unsigned char *buf, int len,
+-		       int(*fill)(void*, unsigned int),
+-		       int(*flush)(void*, unsigned int),
++STATIC int INIT gunzip(unsigned char *buf, long len,
++		       long(*fill)(void*, unsigned long),
++		       long(*flush)(void*, unsigned long),
+ 		       unsigned char *out_buf,
+-		       int *pos,
++		       long *pos,
+ 		       void(*error)(char *x)) {
+ 	u8 *zbuf;
+ 	struct z_stream_s *strm;
+@@ -142,7 +142,7 @@ STATIC int INIT gunzip(unsigned char *bu
+ 
+ 		/* Write any data generated */
+ 		if (flush && strm->next_out > out_buf) {
+-			int l = strm->next_out - out_buf;
++			long l = strm->next_out - out_buf;
+ 			if (l != flush(out_buf, l)) {
+ 				rc = -1;
+ 				error("write error");
+Index: linux-2.6/lib/decompress_unlz4.c
+===================================================================
+--- linux-2.6.orig/lib/decompress_unlz4.c
++++ linux-2.6/lib/decompress_unlz4.c
+@@ -31,10 +31,10 @@
+ #define LZ4_DEFAULT_UNCOMPRESSED_CHUNK_SIZE (8 << 20)
+ #define ARCHIVE_MAGICNUMBER 0x184C2102
+ 
+-STATIC inline int INIT unlz4(u8 *input, int in_len,
+-				int (*fill) (void *, unsigned int),
+-				int (*flush) (void *, unsigned int),
+-				u8 *output, int *posp,
++STATIC inline int INIT unlz4(u8 *input, long in_len,
++				long (*fill) (void *, unsigned long),
++				long (*flush) (void *, unsigned long),
++				u8 *output, long *posp,
+ 				void (*error) (char *x))
+ {
+ 	int ret = -1;
+@@ -43,7 +43,7 @@ STATIC inline int INIT unlz4(u8 *input,
+ 	u8 *inp;
+ 	u8 *inp_start;
+ 	u8 *outp;
+-	int size = in_len;
++	long size = in_len;
+ #ifdef PREBOOT
+ 	size_t out_len = get_unaligned_le32(input + in_len);
+ #endif
+@@ -175,11 +175,11 @@ exit_0:
+ }
+ 
+ #ifdef PREBOOT
+-STATIC int INIT decompress(unsigned char *buf, int in_len,
+-			      int(*fill)(void*, unsigned int),
+-			      int(*flush)(void*, unsigned int),
++STATIC int INIT decompress(unsigned char *buf, long in_len,
++			      long(*fill)(void*, unsigned long),
++			      long(*flush)(void*, unsigned long),
+ 			      unsigned char *output,
+-			      int *posp,
++			      long *posp,
+ 			      void(*error)(char *x)
+ 	)
+ {
+Index: linux-2.6/lib/decompress_unlzo.c
+===================================================================
+--- linux-2.6.orig/lib/decompress_unlzo.c
++++ linux-2.6/lib/decompress_unlzo.c
+@@ -51,7 +51,7 @@ static const unsigned char lzop_magic[]
+ #define HEADER_SIZE_MIN       (9 + 7     + 4 + 8     + 1       + 4)
+ #define HEADER_SIZE_MAX       (9 + 7 + 1 + 8 + 8 + 4 + 1 + 255 + 4)
+ 
+-STATIC inline int INIT parse_header(u8 *input, int *skip, int in_len)
++STATIC inline long INIT parse_header(u8 *input, long *skip, long in_len)
+ {
+ 	int l;
+ 	u8 *parse = input;
+@@ -108,14 +108,14 @@ STATIC inline int INIT parse_header(u8 *
+ 	return 1;
+ }
+ 
+-STATIC inline int INIT unlzo(u8 *input, int in_len,
+-				int (*fill) (void *, unsigned int),
+-				int (*flush) (void *, unsigned int),
+-				u8 *output, int *posp,
++STATIC int INIT unlzo(u8 *input, long in_len,
++				long (*fill) (void *, unsigned long),
++				long (*flush) (void *, unsigned long),
++				u8 *output, long *posp,
+ 				void (*error) (char *x))
+ {
+ 	u8 r = 0;
+-	int skip = 0;
++	long skip = 0;
+ 	u32 src_len, dst_len;
+ 	size_t tmp;
+ 	u8 *in_buf, *in_buf_save, *out_buf;
+Index: linux-2.6/lib/decompress_unxz.c
+===================================================================
+--- linux-2.6.orig/lib/decompress_unxz.c
++++ linux-2.6/lib/decompress_unxz.c
+@@ -248,10 +248,10 @@ void *memmove(void *dest, const void *sr
+  * both input and output buffers are available as a single chunk, i.e. when
+  * fill() and flush() won't be used.
   */
--#define set_pte_at_notify(__mm, __address, __ptep, __pte)		\
-+#define set_pte_at_notify(__mm, __address, __ptep, __pte, __action)	\
- ({									\
- 	struct mm_struct *___mm = __mm;					\
- 	unsigned long ___address = __address;				\
- 	pte_t ___pte = __pte;						\
- 									\
--	mmu_notifier_change_pte(___mm, ___address, ___pte);		\
-+	mmu_notifier_change_pte(___mm, ___address, ___pte, __action);	\
- 	set_pte_at(___mm, ___address, __ptep, ___pte);			\
- })
- 
-@@ -307,22 +363,29 @@ static inline int mmu_notifier_test_young(struct mm_struct *mm,
- }
- 
- static inline void mmu_notifier_change_pte(struct mm_struct *mm,
--					   unsigned long address, pte_t pte)
-+					   unsigned long address,
-+					   pte_t pte,
-+					   enum mmu_action action)
+-STATIC int INIT unxz(unsigned char *in, int in_size,
+-		     int (*fill)(void *dest, unsigned int size),
+-		     int (*flush)(void *src, unsigned int size),
+-		     unsigned char *out, int *in_used,
++STATIC int INIT unxz(unsigned char *in, long in_size,
++		     long (*fill)(void *dest, unsigned long size),
++		     long (*flush)(void *src, unsigned long size),
++		     unsigned char *out, long *in_used,
+ 		     void (*error)(char *x))
  {
- }
+ 	struct xz_buf b;
+@@ -329,7 +329,7 @@ STATIC int INIT unxz(unsigned char *in,
+ 				 * returned by xz_dec_run(), but probably
+ 				 * it's not too bad.
+ 				 */
+-				if (flush(b.out, b.out_pos) != (int)b.out_pos)
++				if (flush(b.out, b.out_pos) != (long)b.out_pos)
+ 					ret = XZ_BUF_ERROR;
  
- static inline void mmu_notifier_invalidate_page(struct mm_struct *mm,
--					  unsigned long address)
-+						unsigned long address,
-+						enum mmu_action action)
+ 				b.out_pos = 0;
+Index: linux-2.6/init/do_mounts_rd.c
+===================================================================
+--- linux-2.6.orig/init/do_mounts_rd.c
++++ linux-2.6/init/do_mounts_rd.c
+@@ -311,9 +311,9 @@ static int exit_code;
+ static int decompress_error;
+ static int crd_infd, crd_outfd;
+ 
+-static int __init compr_fill(void *buf, unsigned int len)
++static long __init compr_fill(void *buf, unsigned long len)
  {
+-	int r = sys_read(crd_infd, buf, len);
++	long r = sys_read(crd_infd, buf, len);
+ 	if (r < 0)
+ 		printk(KERN_ERR "RAMDISK: error while reading compressed data");
+ 	else if (r == 0)
+@@ -321,13 +321,13 @@ static int __init compr_fill(void *buf,
+ 	return r;
  }
  
- static inline void mmu_notifier_invalidate_range_start(struct mm_struct *mm,
--				  unsigned long start, unsigned long end)
-+						       unsigned long start,
-+						       unsigned long end,
-+						       enum mmu_action action)
+-static int __init compr_flush(void *window, unsigned int outcnt)
++static long __init compr_flush(void *window, unsigned long outcnt)
  {
- }
- 
- static inline void mmu_notifier_invalidate_range_end(struct mm_struct *mm,
--				  unsigned long start, unsigned long end)
-+						     unsigned long start,
-+						     unsigned long end,
-+						     enum mmu_action action)
- {
- }
- 
-@@ -336,7 +399,7 @@ static inline void mmu_notifier_mm_destroy(struct mm_struct *mm)
- 
- #define ptep_clear_flush_young_notify ptep_clear_flush_young
- #define pmdp_clear_flush_young_notify pmdp_clear_flush_young
--#define set_pte_at_notify set_pte_at
-+#define set_pte_at_notify(__mm, __address, __ptep, __pte, __action) set_pte_at(__mm, __address, __ptep, __pte)
- 
- #endif /* CONFIG_MMU_NOTIFIER */
- 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index c445e39..3e2308f 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -171,7 +171,7 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
- 	/* For try_to_free_swap() and munlock_vma_page() below */
- 	lock_page(page);
- 
--	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end, MMU_UNMAP);
- 	err = -EAGAIN;
- 	ptep = page_check_address(page, mm, addr, &ptl, 0);
- 	if (!ptep)
-@@ -187,7 +187,7 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
- 
- 	flush_cache_page(vma, addr, pte_pfn(*ptep));
- 	ptep_clear_flush(vma, addr, ptep);
--	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
-+	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot), MMU_UNMAP);
- 
- 	page_remove_rmap(page);
- 	if (!page_mapped(page))
-@@ -200,7 +200,7 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
- 
- 	err = 0;
-  unlock:
--	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end, MMU_UNMAP);
- 	unlock_page(page);
- 	return err;
- }
-diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
-index d8d9fe3..d529ab9 100644
---- a/mm/filemap_xip.c
-+++ b/mm/filemap_xip.c
-@@ -198,7 +198,7 @@ retry:
- 			BUG_ON(pte_dirty(pteval));
- 			pte_unmap_unlock(pte, ptl);
- 			/* must invalidate_page _before_ freeing the page */
--			mmu_notifier_invalidate_page(mm, address);
-+			mmu_notifier_invalidate_page(mm, address, MMU_UNMAP);
- 			page_cache_release(page);
- 		}
- 	}
-diff --git a/mm/fremap.c b/mm/fremap.c
-index 72b8fa3..f324a84 100644
---- a/mm/fremap.c
-+++ b/mm/fremap.c
-@@ -258,9 +258,9 @@ get_write_lock:
- 		vma->vm_flags = vm_flags;
- 	}
- 
--	mmu_notifier_invalidate_range_start(mm, start, start + size);
-+	mmu_notifier_invalidate_range_start(mm, start, start + size, MMU_FREMAP);
- 	err = vma->vm_ops->remap_pages(vma, start, size, pgoff);
--	mmu_notifier_invalidate_range_end(mm, start, start + size);
-+	mmu_notifier_invalidate_range_end(mm, start, start + size, MMU_FREMAP);
- 
- 	/*
- 	 * We can't clear VM_NONLINEAR because we'd have to do
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index e60837d..086e0db 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -993,7 +993,7 @@ static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
- 
- 	mmun_start = haddr;
- 	mmun_end   = haddr + HPAGE_PMD_SIZE;
--	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end, MMU_THP_FAULT_WP);
- 
- 	ptl = pmd_lock(mm, pmd);
- 	if (unlikely(!pmd_same(*pmd, orig_pmd)))
-@@ -1023,7 +1023,7 @@ static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
- 	page_remove_rmap(page);
- 	spin_unlock(ptl);
- 
--	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end, MMU_THP_FAULT_WP);
- 
- 	ret |= VM_FAULT_WRITE;
- 	put_page(page);
-@@ -1033,7 +1033,7 @@ out:
- 
- out_free_pages:
- 	spin_unlock(ptl);
--	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end, MMU_THP_FAULT_WP);
- 	mem_cgroup_uncharge_start();
- 	for (i = 0; i < HPAGE_PMD_NR; i++) {
- 		mem_cgroup_uncharge_page(pages[i]);
-@@ -1123,7 +1123,7 @@ alloc:
- 
- 	mmun_start = haddr;
- 	mmun_end   = haddr + HPAGE_PMD_SIZE;
--	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end, MMU_THP_FAULT_WP);
- 
- 	spin_lock(ptl);
- 	if (page)
-@@ -1153,7 +1153,7 @@ alloc:
- 	}
- 	spin_unlock(ptl);
- out_mn:
--	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end, MMU_THP_FAULT_WP);
- out:
- 	return ret;
- out_unlock:
-@@ -1588,7 +1588,7 @@ static int __split_huge_page_splitting(struct page *page,
- 	const unsigned long mmun_start = address;
- 	const unsigned long mmun_end   = address + HPAGE_PMD_SIZE;
- 
--	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end, MMU_THP_SPLIT);
- 	pmd = page_check_address_pmd(page, mm, address,
- 			PAGE_CHECK_ADDRESS_PMD_NOTSPLITTING_FLAG, &ptl);
- 	if (pmd) {
-@@ -1603,7 +1603,7 @@ static int __split_huge_page_splitting(struct page *page,
- 		ret = 1;
- 		spin_unlock(ptl);
- 	}
--	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end, MMU_THP_SPLIT);
- 
- 	return ret;
- }
-@@ -2402,7 +2402,7 @@ static void collapse_huge_page(struct mm_struct *mm,
- 
- 	mmun_start = address;
- 	mmun_end   = address + HPAGE_PMD_SIZE;
--	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end, MMU_THP_SPLIT);
- 	pmd_ptl = pmd_lock(mm, pmd); /* probably unnecessary */
- 	/*
- 	 * After this gup_fast can't run anymore. This also removes
-@@ -2412,7 +2412,7 @@ static void collapse_huge_page(struct mm_struct *mm,
- 	 */
- 	_pmd = pmdp_clear_flush(vma, address, pmd);
- 	spin_unlock(pmd_ptl);
--	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end, MMU_THP_SPLIT);
- 
- 	spin_lock(pte_ptl);
- 	isolated = __collapse_huge_page_isolate(vma, address, pte);
-@@ -2801,24 +2801,24 @@ void __split_huge_page_pmd(struct vm_area_struct *vma, unsigned long address,
- 	mmun_start = haddr;
- 	mmun_end   = haddr + HPAGE_PMD_SIZE;
- again:
--	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end, MMU_THP_SPLIT);
- 	ptl = pmd_lock(mm, pmd);
- 	if (unlikely(!pmd_trans_huge(*pmd))) {
- 		spin_unlock(ptl);
--		mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-+		mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end, MMU_THP_SPLIT);
- 		return;
- 	}
- 	if (is_huge_zero_pmd(*pmd)) {
- 		__split_huge_zero_page_pmd(vma, haddr, pmd);
- 		spin_unlock(ptl);
--		mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-+		mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end, MMU_THP_SPLIT);
- 		return;
- 	}
- 	page = pmd_page(*pmd);
- 	VM_BUG_ON_PAGE(!page_count(page), page);
- 	get_page(page);
- 	spin_unlock(ptl);
--	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end, MMU_THP_SPLIT);
- 
- 	split_huge_page(page);
- 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 226910c..fdfcded 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2539,7 +2539,7 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
- 	mmun_start = vma->vm_start;
- 	mmun_end = vma->vm_end;
- 	if (cow)
--		mmu_notifier_invalidate_range_start(src, mmun_start, mmun_end);
-+		mmu_notifier_invalidate_range_start(src, mmun_start, mmun_end, MMU_COW);
- 
- 	for (addr = vma->vm_start; addr < vma->vm_end; addr += sz) {
- 		spinlock_t *src_ptl, *dst_ptl;
-@@ -2573,7 +2573,7 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
- 	}
- 
- 	if (cow)
--		mmu_notifier_invalidate_range_end(src, mmun_start, mmun_end);
-+		mmu_notifier_invalidate_range_end(src, mmun_start, mmun_end, MMU_COW);
- 
- 	return ret;
- }
-@@ -2625,7 +2625,7 @@ void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 	BUG_ON(end & ~huge_page_mask(h));
- 
- 	tlb_start_vma(tlb, vma);
--	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end, MMU_UNMAP);
- again:
- 	for (address = start; address < end; address += sz) {
- 		ptep = huge_pte_offset(mm, address);
-@@ -2696,7 +2696,7 @@ unlock:
- 		if (address < end && !ref_page)
- 			goto again;
- 	}
--	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end, MMU_UNMAP);
- 	tlb_end_vma(tlb, vma);
- }
- 
-@@ -2883,7 +2883,7 @@ retry_avoidcopy:
- 
- 	mmun_start = address & huge_page_mask(h);
- 	mmun_end = mmun_start + huge_page_size(h);
--	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end, MMU_UNMAP);
- 	/*
- 	 * Retake the page table lock to check for racing updates
- 	 * before the page tables are altered
-@@ -2903,7 +2903,7 @@ retry_avoidcopy:
- 		new_page = old_page;
- 	}
- 	spin_unlock(ptl);
--	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end, MMU_UNMAP);
- 	page_cache_release(new_page);
- 	page_cache_release(old_page);
- 
-@@ -3328,7 +3328,8 @@ same_page:
- }
- 
- unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
--		unsigned long address, unsigned long end, pgprot_t newprot)
-+		unsigned long address, unsigned long end, pgprot_t newprot,
-+		enum mmu_action action)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	unsigned long start = address;
-@@ -3340,7 +3341,7 @@ unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
- 	BUG_ON(address >= end);
- 	flush_cache_range(vma, address, end);
- 
--	mmu_notifier_invalidate_range_start(mm, start, end);
-+	mmu_notifier_invalidate_range_start(mm, start, end, action);
- 	mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
- 	for (; address < end; address += huge_page_size(h)) {
- 		spinlock_t *ptl;
-@@ -3370,7 +3371,7 @@ unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
- 	 */
- 	flush_tlb_range(vma, start, end);
- 	mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
--	mmu_notifier_invalidate_range_end(mm, start, end);
-+	mmu_notifier_invalidate_range_end(mm, start, end, action);
- 
- 	return pages << h->order;
- }
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 68710e8..6a32bc4 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -872,7 +872,7 @@ static int write_protect_page(struct vm_area_struct *vma, struct page *page,
- 
- 	mmun_start = addr;
- 	mmun_end   = addr + PAGE_SIZE;
--	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end, MMU_KSM_RONLY);
- 
- 	ptep = page_check_address(page, mm, addr, &ptl, 0);
- 	if (!ptep)
-@@ -904,7 +904,7 @@ static int write_protect_page(struct vm_area_struct *vma, struct page *page,
- 		if (pte_dirty(entry))
- 			set_page_dirty(page);
- 		entry = pte_mkclean(pte_wrprotect(entry));
--		set_pte_at_notify(mm, addr, ptep, entry);
-+		set_pte_at_notify(mm, addr, ptep, entry, MMU_KSM_RONLY);
- 	}
- 	*orig_pte = *ptep;
- 	err = 0;
-@@ -912,7 +912,7 @@ static int write_protect_page(struct vm_area_struct *vma, struct page *page,
- out_unlock:
- 	pte_unmap_unlock(ptep, ptl);
- out_mn:
--	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end, MMU_KSM_RONLY);
- out:
- 	return err;
- }
-@@ -949,7 +949,7 @@ static int replace_page(struct vm_area_struct *vma, struct page *page,
- 
- 	mmun_start = addr;
- 	mmun_end   = addr + PAGE_SIZE;
--	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end, MMU_KSM);
- 
- 	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
- 	if (!pte_same(*ptep, orig_pte)) {
-@@ -962,7 +962,7 @@ static int replace_page(struct vm_area_struct *vma, struct page *page,
- 
- 	flush_cache_page(vma, addr, pte_pfn(*ptep));
- 	ptep_clear_flush(vma, addr, ptep);
--	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
-+	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot), MMU_KSM);
- 
- 	page_remove_rmap(page);
- 	if (!page_mapped(page))
-@@ -972,7 +972,7 @@ static int replace_page(struct vm_area_struct *vma, struct page *page,
- 	pte_unmap_unlock(ptep, ptl);
- 	err = 0;
- out_mn:
--	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end, MMU_KSM);
- out:
- 	return err;
- }
-diff --git a/mm/memory.c b/mm/memory.c
-index d67fd9f..d175dcf 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1050,7 +1050,7 @@ int copy_page_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 	mmun_end   = end;
- 	if (is_cow)
- 		mmu_notifier_invalidate_range_start(src_mm, mmun_start,
--						    mmun_end);
-+						    mmun_end, MMU_COW);
- 
- 	ret = 0;
- 	dst_pgd = pgd_offset(dst_mm, addr);
-@@ -1067,7 +1067,8 @@ int copy_page_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 	} while (dst_pgd++, src_pgd++, addr = next, addr != end);
- 
- 	if (is_cow)
--		mmu_notifier_invalidate_range_end(src_mm, mmun_start, mmun_end);
-+		mmu_notifier_invalidate_range_end(src_mm, mmun_start, mmun_end,
-+						  MMU_COW);
- 	return ret;
- }
- 
-@@ -1373,10 +1374,10 @@ void unmap_vmas(struct mmu_gather *tlb,
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 
--	mmu_notifier_invalidate_range_start(mm, start_addr, end_addr);
-+	mmu_notifier_invalidate_range_start(mm, start_addr, end_addr, MMU_MUNMAP);
- 	for ( ; vma && vma->vm_start < end_addr; vma = vma->vm_next)
- 		unmap_single_vma(tlb, vma, start_addr, end_addr, NULL);
--	mmu_notifier_invalidate_range_end(mm, start_addr, end_addr);
-+	mmu_notifier_invalidate_range_end(mm, start_addr, end_addr, MMU_MUNMAP);
- }
- 
- /**
-@@ -1398,10 +1399,10 @@ void zap_page_range(struct vm_area_struct *vma, unsigned long start,
- 	lru_add_drain();
- 	tlb_gather_mmu(&tlb, mm, start, end);
- 	update_hiwater_rss(mm);
--	mmu_notifier_invalidate_range_start(mm, start, end);
-+	mmu_notifier_invalidate_range_start(mm, start, end, MMU_MUNMAP);
- 	for ( ; vma && vma->vm_start < end; vma = vma->vm_next)
- 		unmap_single_vma(&tlb, vma, start, end, details);
--	mmu_notifier_invalidate_range_end(mm, start, end);
-+	mmu_notifier_invalidate_range_end(mm, start, end, MMU_MUNMAP);
- 	tlb_finish_mmu(&tlb, start, end);
- }
- 
-@@ -1424,9 +1425,9 @@ static void zap_page_range_single(struct vm_area_struct *vma, unsigned long addr
- 	lru_add_drain();
- 	tlb_gather_mmu(&tlb, mm, address, end);
- 	update_hiwater_rss(mm);
--	mmu_notifier_invalidate_range_start(mm, address, end);
-+	mmu_notifier_invalidate_range_start(mm, address, end, MMU_MUNMAP);
- 	unmap_single_vma(&tlb, vma, address, end, details);
--	mmu_notifier_invalidate_range_end(mm, address, end);
-+	mmu_notifier_invalidate_range_end(mm, address, end, MMU_MUNMAP);
- 	tlb_finish_mmu(&tlb, address, end);
- }
- 
-@@ -2209,7 +2210,7 @@ gotten:
- 
- 	mmun_start  = address & PAGE_MASK;
- 	mmun_end    = mmun_start + PAGE_SIZE;
--	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end, MMU_FAULT_WP);
- 
- 	/*
- 	 * Re-check the pte - we dropped the lock
-@@ -2239,7 +2240,7 @@ gotten:
- 		 * mmu page tables (such as kvm shadow page tables), we want the
- 		 * new page to be mapped directly into the secondary page table.
- 		 */
--		set_pte_at_notify(mm, address, page_table, entry);
-+		set_pte_at_notify(mm, address, page_table, entry, MMU_FAULT_WP);
- 		update_mmu_cache(vma, address, page_table);
- 		if (old_page) {
- 			/*
-@@ -2278,7 +2279,7 @@ gotten:
- unlock:
- 	pte_unmap_unlock(page_table, ptl);
- 	if (mmun_end > mmun_start)
--		mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-+		mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end, MMU_FAULT_WP);
- 	if (old_page) {
- 		/*
- 		 * Don't let another task, with possibly unlocked vma,
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 2849742..d0e08d5 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -635,7 +635,7 @@ unsigned long change_prot_numa(struct vm_area_struct *vma,
- {
- 	int nr_updated;
- 
--	nr_updated = change_protection(vma, addr, end, vma->vm_page_prot, 0, 1);
-+	nr_updated = change_protection(vma, addr, end, vma->vm_page_prot, 0, 1, 0);
- 	if (nr_updated)
- 		count_vm_numa_events(NUMA_PTE_UPDATES, nr_updated);
- 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 63f0cd5..01cd98a 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1827,12 +1827,12 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
- 	WARN_ON(PageLRU(new_page));
- 
- 	/* Recheck the target PMD */
--	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end, MMU_MIGRATE);
- 	ptl = pmd_lock(mm, pmd);
- 	if (unlikely(!pmd_same(*pmd, entry) || page_count(page) != 2)) {
- fail_putback:
- 		spin_unlock(ptl);
--		mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-+		mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end, MMU_MIGRATE);
- 
- 		/* Reverse changes made by migrate_page_copy() */
- 		if (TestClearPageActive(new_page))
-@@ -1898,7 +1898,7 @@ fail_putback:
- 	 */
- 	mem_cgroup_end_migration(memcg, page, new_page, true);
- 	spin_unlock(ptl);
--	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end, MMU_MIGRATE);
- 
- 	/* Take an "isolate" reference and put new page on the LRU. */
- 	get_page(new_page);
-diff --git a/mm/mmu_notifier.c b/mm/mmu_notifier.c
-index 41cefdf..a906744 100644
---- a/mm/mmu_notifier.c
-+++ b/mm/mmu_notifier.c
-@@ -122,8 +122,10 @@ int __mmu_notifier_test_young(struct mm_struct *mm,
- 	return young;
- }
- 
--void __mmu_notifier_change_pte(struct mm_struct *mm, unsigned long address,
--			       pte_t pte)
-+void __mmu_notifier_change_pte(struct mm_struct *mm,
-+			       unsigned long address,
-+			       pte_t pte,
-+			       enum mmu_action action)
- {
- 	struct mmu_notifier *mn;
- 	int id;
-@@ -131,13 +133,14 @@ void __mmu_notifier_change_pte(struct mm_struct *mm, unsigned long address,
- 	id = srcu_read_lock(&srcu);
- 	hlist_for_each_entry_rcu(mn, &mm->mmu_notifier_mm->list, hlist) {
- 		if (mn->ops->change_pte)
--			mn->ops->change_pte(mn, mm, address, pte);
-+			mn->ops->change_pte(mn, mm, address, pte, action);
- 	}
- 	srcu_read_unlock(&srcu, id);
- }
- 
- void __mmu_notifier_invalidate_page(struct mm_struct *mm,
--					  unsigned long address)
-+				    unsigned long address,
-+				    enum mmu_action action)
- {
- 	struct mmu_notifier *mn;
- 	int id;
-@@ -145,13 +148,16 @@ void __mmu_notifier_invalidate_page(struct mm_struct *mm,
- 	id = srcu_read_lock(&srcu);
- 	hlist_for_each_entry_rcu(mn, &mm->mmu_notifier_mm->list, hlist) {
- 		if (mn->ops->invalidate_page)
--			mn->ops->invalidate_page(mn, mm, address);
-+			mn->ops->invalidate_page(mn, mm, address, action);
- 	}
- 	srcu_read_unlock(&srcu, id);
- }
- 
- void __mmu_notifier_invalidate_range_start(struct mm_struct *mm,
--				  unsigned long start, unsigned long end)
-+					   unsigned long start,
-+					   unsigned long end,
-+					   enum mmu_action action)
-+
- {
- 	struct mmu_notifier *mn;
- 	int id;
-@@ -159,14 +165,16 @@ void __mmu_notifier_invalidate_range_start(struct mm_struct *mm,
- 	id = srcu_read_lock(&srcu);
- 	hlist_for_each_entry_rcu(mn, &mm->mmu_notifier_mm->list, hlist) {
- 		if (mn->ops->invalidate_range_start)
--			mn->ops->invalidate_range_start(mn, mm, start, end);
-+			mn->ops->invalidate_range_start(mn, mm, start, end, action);
- 	}
- 	srcu_read_unlock(&srcu, id);
- }
- EXPORT_SYMBOL_GPL(__mmu_notifier_invalidate_range_start);
- 
- void __mmu_notifier_invalidate_range_end(struct mm_struct *mm,
--				  unsigned long start, unsigned long end)
-+					 unsigned long start,
-+					 unsigned long end,
-+					 enum mmu_action action)
- {
- 	struct mmu_notifier *mn;
- 	int id;
-@@ -174,7 +182,7 @@ void __mmu_notifier_invalidate_range_end(struct mm_struct *mm,
- 	id = srcu_read_lock(&srcu);
- 	hlist_for_each_entry_rcu(mn, &mm->mmu_notifier_mm->list, hlist) {
- 		if (mn->ops->invalidate_range_end)
--			mn->ops->invalidate_range_end(mn, mm, start, end);
-+			mn->ops->invalidate_range_end(mn, mm, start, end, action);
- 	}
- 	srcu_read_unlock(&srcu, id);
- }
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index c43d557..6c2846f 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -137,7 +137,8 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 
- static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 		pud_t *pud, unsigned long addr, unsigned long end,
--		pgprot_t newprot, int dirty_accountable, int prot_numa)
-+		pgprot_t newprot, int dirty_accountable, int prot_numa,
-+		enum mmu_action action)
- {
- 	pmd_t *pmd;
- 	struct mm_struct *mm = vma->vm_mm;
-@@ -157,7 +158,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 		/* invoke the mmu notifier if the pmd is populated */
- 		if (!mni_start) {
- 			mni_start = addr;
--			mmu_notifier_invalidate_range_start(mm, mni_start, end);
-+			mmu_notifier_invalidate_range_start(mm, mni_start, end, action);
- 		}
- 
- 		if (pmd_trans_huge(*pmd)) {
-@@ -185,7 +186,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 	} while (pmd++, addr = next, addr != end);
- 
- 	if (mni_start)
--		mmu_notifier_invalidate_range_end(mm, mni_start, end);
-+		mmu_notifier_invalidate_range_end(mm, mni_start, end, action);
- 
- 	if (nr_huge_updates)
- 		count_vm_numa_events(NUMA_HUGE_PTE_UPDATES, nr_huge_updates);
-@@ -194,7 +195,8 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 
- static inline unsigned long change_pud_range(struct vm_area_struct *vma,
- 		pgd_t *pgd, unsigned long addr, unsigned long end,
--		pgprot_t newprot, int dirty_accountable, int prot_numa)
-+		pgprot_t newprot, int dirty_accountable, int prot_numa,
-+		enum mmu_action action)
- {
- 	pud_t *pud;
- 	unsigned long next;
-@@ -206,7 +208,7 @@ static inline unsigned long change_pud_range(struct vm_area_struct *vma,
- 		if (pud_none_or_clear_bad(pud))
- 			continue;
- 		pages += change_pmd_range(vma, pud, addr, next, newprot,
--				 dirty_accountable, prot_numa);
-+				 dirty_accountable, prot_numa, action);
- 	} while (pud++, addr = next, addr != end);
- 
- 	return pages;
-@@ -214,7 +216,7 @@ static inline unsigned long change_pud_range(struct vm_area_struct *vma,
- 
- static unsigned long change_protection_range(struct vm_area_struct *vma,
- 		unsigned long addr, unsigned long end, pgprot_t newprot,
--		int dirty_accountable, int prot_numa)
-+		int dirty_accountable, int prot_numa, enum mmu_action action)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	pgd_t *pgd;
-@@ -231,7 +233,7 @@ static unsigned long change_protection_range(struct vm_area_struct *vma,
- 		if (pgd_none_or_clear_bad(pgd))
- 			continue;
- 		pages += change_pud_range(vma, pgd, addr, next, newprot,
--				 dirty_accountable, prot_numa);
-+				 dirty_accountable, prot_numa, action);
- 	} while (pgd++, addr = next, addr != end);
- 
- 	/* Only flush the TLB if we actually modified any entries: */
-@@ -247,11 +249,21 @@ unsigned long change_protection(struct vm_area_struct *vma, unsigned long start,
- 		       int dirty_accountable, int prot_numa)
- {
- 	unsigned long pages;
-+	enum mmu_action action = MMU_MPROT_NONE;
-+
-+	/* At this points vm_flags is updated. */
-+	if ((vma->vm_flags & VM_READ) && (vma->vm_flags & VM_WRITE)) {
-+		action = MMU_MPROT_RANDW;
-+	} else if (vma->vm_flags & VM_WRITE) {
-+		action = MMU_MPROT_WONLY;
-+	} else if (vma->vm_flags & VM_READ) {
-+		action = MMU_MPROT_RONLY;
-+	}
- 
- 	if (is_vm_hugetlb_page(vma))
--		pages = hugetlb_change_protection(vma, start, end, newprot);
-+		pages = hugetlb_change_protection(vma, start, end, newprot, action);
- 	else
--		pages = change_protection_range(vma, start, end, newprot, dirty_accountable, prot_numa);
-+		pages = change_protection_range(vma, start, end, newprot, dirty_accountable, prot_numa, action);
- 
- 	return pages;
- }
-diff --git a/mm/mremap.c b/mm/mremap.c
-index 05f1180..ceb8a47 100644
---- a/mm/mremap.c
-+++ b/mm/mremap.c
-@@ -177,7 +177,7 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
- 
- 	mmun_start = old_addr;
- 	mmun_end   = old_end;
--	mmu_notifier_invalidate_range_start(vma->vm_mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_start(vma->vm_mm, mmun_start, mmun_end, MMU_MREMAP);
- 
- 	for (; old_addr < old_end; old_addr += extent, new_addr += extent) {
- 		cond_resched();
-@@ -228,7 +228,7 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
- 	if (likely(need_flush))
- 		flush_tlb_range(vma, old_end-len, old_addr);
- 
--	mmu_notifier_invalidate_range_end(vma->vm_mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_end(vma->vm_mm, mmun_start, mmun_end, MMU_MREMAP);
- 
- 	return len + old_addr - old_end;	/* how much done */
- }
-diff --git a/mm/rmap.c b/mm/rmap.c
-index bf05fc8..723f754 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -840,7 +840,7 @@ static int page_mkclean_one(struct page *page, struct vm_area_struct *vma,
- 	pte_unmap_unlock(pte, ptl);
- 
- 	if (ret) {
--		mmu_notifier_invalidate_page(mm, address);
-+		mmu_notifier_invalidate_page(mm, address, MMU_FILE_WB);
- 		(*cleaned)++;
- 	}
- out:
-@@ -1148,6 +1148,15 @@ static int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
- 	spinlock_t *ptl;
- 	int ret = SWAP_AGAIN;
- 	enum ttu_flags flags = (enum ttu_flags)arg;
-+	enum mmu_action action = MMU_VMSCAN;
-+
-+	if (flags & TTU_MIGRATION) {
-+		action = MMU_MIGRATE;
-+	} else if (flags & TTU_MUNLOCK) {
-+		action = MMU_MUNLOCK;
-+	} else if (unlikely(flags & TTU_POISON)) {
-+		action = MMU_POISON;
-+	}
- 
- 	pte = page_check_address(page, mm, address, &ptl, 0);
- 	if (!pte)
-@@ -1253,7 +1262,7 @@ static int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
- out_unmap:
- 	pte_unmap_unlock(pte, ptl);
- 	if (ret != SWAP_FAIL && !(flags & TTU_MUNLOCK))
--		mmu_notifier_invalidate_page(mm, address);
-+		mmu_notifier_invalidate_page(mm, address, action);
- out:
- 	return ret;
- 
-@@ -1307,7 +1316,8 @@ out_mlock:
- #define CLUSTER_MASK	(~(CLUSTER_SIZE - 1))
- 
- static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
--		struct vm_area_struct *vma, struct page *check_page)
-+				struct vm_area_struct *vma, struct page *check_page,
-+				enum ttu_flags flags)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	pmd_t *pmd;
-@@ -1321,6 +1331,15 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
- 	unsigned long end;
- 	int ret = SWAP_AGAIN;
- 	int locked_vma = 0;
-+	enum mmu_action action = MMU_VMSCAN;
-+
-+	if (flags & TTU_MIGRATION) {
-+		action = MMU_MIGRATE;
-+	} else if (flags & TTU_MUNLOCK) {
-+		action = MMU_MUNLOCK;
-+	} else if (unlikely(flags & TTU_POISON)) {
-+		action = MMU_POISON;
-+	}
- 
- 	address = (vma->vm_start + cursor) & CLUSTER_MASK;
- 	end = address + CLUSTER_SIZE;
-@@ -1335,7 +1354,7 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
- 
- 	mmun_start = address;
- 	mmun_end   = end;
--	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end, action);
- 
- 	/*
- 	 * If we can acquire the mmap_sem for read, and vma is VM_LOCKED,
-@@ -1400,7 +1419,7 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
- 		(*mapcount)--;
- 	}
- 	pte_unmap_unlock(pte - 1, ptl);
--	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-+	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end, action);
- 	if (locked_vma)
- 		up_read(&vma->vm_mm->mmap_sem);
- 	return ret;
-@@ -1456,7 +1475,7 @@ static int try_to_unmap_nonlinear(struct page *page,
- 			while (cursor < max_nl_cursor &&
- 				cursor < vma->vm_end - vma->vm_start) {
- 				if (try_to_unmap_cluster(cursor, &mapcount,
--						vma, page) == SWAP_MLOCK)
-+						vma, page, (enum ttu_flags)arg) == SWAP_MLOCK)
- 					ret = SWAP_MLOCK;
- 				cursor += CLUSTER_SIZE;
- 				vma->vm_private_data = (void *) cursor;
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 4b6c01b..eb5a635 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -262,7 +262,8 @@ static inline struct kvm *mmu_notifier_to_kvm(struct mmu_notifier *mn)
- 
- static void kvm_mmu_notifier_invalidate_page(struct mmu_notifier *mn,
- 					     struct mm_struct *mm,
--					     unsigned long address)
-+					     unsigned long address,
-+					     enum mmu_action action)
- {
- 	struct kvm *kvm = mmu_notifier_to_kvm(mn);
- 	int need_tlb_flush, idx;
-@@ -301,7 +302,8 @@ static void kvm_mmu_notifier_invalidate_page(struct mmu_notifier *mn,
- static void kvm_mmu_notifier_change_pte(struct mmu_notifier *mn,
- 					struct mm_struct *mm,
- 					unsigned long address,
--					pte_t pte)
-+					pte_t pte,
-+					enum mmu_action action)
- {
- 	struct kvm *kvm = mmu_notifier_to_kvm(mn);
- 	int idx;
-@@ -317,7 +319,8 @@ static void kvm_mmu_notifier_change_pte(struct mmu_notifier *mn,
- static void kvm_mmu_notifier_invalidate_range_start(struct mmu_notifier *mn,
- 						    struct mm_struct *mm,
- 						    unsigned long start,
--						    unsigned long end)
-+						    unsigned long end,
-+						    enum mmu_action action)
- {
- 	struct kvm *kvm = mmu_notifier_to_kvm(mn);
- 	int need_tlb_flush = 0, idx;
-@@ -343,7 +346,8 @@ static void kvm_mmu_notifier_invalidate_range_start(struct mmu_notifier *mn,
- static void kvm_mmu_notifier_invalidate_range_end(struct mmu_notifier *mn,
- 						  struct mm_struct *mm,
- 						  unsigned long start,
--						  unsigned long end)
-+						  unsigned long end,
-+						  enum mmu_action action)
- {
- 	struct kvm *kvm = mmu_notifier_to_kvm(mn);
- 
--- 
-1.9.0
-
+-	int written = sys_write(crd_outfd, window, outcnt);
++	long written = sys_write(crd_outfd, window, outcnt);
+ 	if (written != outcnt) {
+ 		if (decompress_error == 0)
+ 			printk(KERN_ERR
+-			       "RAMDISK: incomplete write (%d != %d)\n",
++			       "RAMDISK: incomplete write (%ld != %ld)\n",
+ 			       written, outcnt);
+ 		decompress_error = 1;
+ 		return -1;
+Index: linux-2.6/fs/isofs/compress.c
+===================================================================
+--- linux-2.6.orig/fs/isofs/compress.c
++++ linux-2.6/fs/isofs/compress.c
+@@ -158,8 +158,8 @@ static loff_t zisofs_uncompress_block(st
+ 					       "zisofs: zisofs_inflate returned"
+ 					       " %d, inode = %lu,"
+ 					       " page idx = %d, bh idx = %d,"
+-					       " avail_in = %d,"
+-					       " avail_out = %d\n",
++					       " avail_in = %ld,"
++					       " avail_out = %ld\n",
+ 					       zerr, inode->i_ino, curpage,
+ 					       curbh, stream.avail_in,
+ 					       stream.avail_out);
+Index: linux-2.6/include/linux/decompress/bunzip2.h
+===================================================================
+--- linux-2.6.orig/include/linux/decompress/bunzip2.h
++++ linux-2.6/include/linux/decompress/bunzip2.h
+@@ -1,10 +1,10 @@
+ #ifndef DECOMPRESS_BUNZIP2_H
+ #define DECOMPRESS_BUNZIP2_H
+ 
+-int bunzip2(unsigned char *inbuf, int len,
+-	    int(*fill)(void*, unsigned int),
+-	    int(*flush)(void*, unsigned int),
++int bunzip2(unsigned char *inbuf, long len,
++	    long(*fill)(void*, unsigned long),
++	    long(*flush)(void*, unsigned long),
+ 	    unsigned char *output,
+-	    int *pos,
++	    long *pos,
+ 	    void(*error)(char *x));
+ #endif
+Index: linux-2.6/include/linux/decompress/inflate.h
+===================================================================
+--- linux-2.6.orig/include/linux/decompress/inflate.h
++++ linux-2.6/include/linux/decompress/inflate.h
+@@ -1,10 +1,10 @@
+ #ifndef LINUX_DECOMPRESS_INFLATE_H
+ #define LINUX_DECOMPRESS_INFLATE_H
+ 
+-int gunzip(unsigned char *inbuf, int len,
+-	   int(*fill)(void*, unsigned int),
+-	   int(*flush)(void*, unsigned int),
++int gunzip(unsigned char *inbuf, long len,
++	   long(*fill)(void*, unsigned long),
++	   long(*flush)(void*, unsigned long),
+ 	   unsigned char *output,
+-	   int *pos,
++	   long *pos,
+ 	   void(*error_fn)(char *x));
+ #endif
+Index: linux-2.6/include/linux/decompress/unlzma.h
+===================================================================
+--- linux-2.6.orig/include/linux/decompress/unlzma.h
++++ linux-2.6/include/linux/decompress/unlzma.h
+@@ -1,11 +1,11 @@
+ #ifndef DECOMPRESS_UNLZMA_H
+ #define DECOMPRESS_UNLZMA_H
+ 
+-int unlzma(unsigned char *, int,
+-	   int(*fill)(void*, unsigned int),
+-	   int(*flush)(void*, unsigned int),
++int unlzma(unsigned char *, long,
++	   long(*fill)(void*, unsigned long),
++	   long(*flush)(void*, unsigned long),
+ 	   unsigned char *output,
+-	   int *posp,
++	   long *posp,
+ 	   void(*error)(char *x)
+ 	);
+ 
+Index: linux-2.6/include/linux/decompress/unxz.h
+===================================================================
+--- linux-2.6.orig/include/linux/decompress/unxz.h
++++ linux-2.6/include/linux/decompress/unxz.h
+@@ -10,10 +10,10 @@
+ #ifndef DECOMPRESS_UNXZ_H
+ #define DECOMPRESS_UNXZ_H
+ 
+-int unxz(unsigned char *in, int in_size,
+-	 int (*fill)(void *dest, unsigned int size),
+-	 int (*flush)(void *src, unsigned int size),
+-	 unsigned char *out, int *in_used,
++int unxz(unsigned char *in, long in_size,
++	 long (*fill)(void *dest, unsigned long size),
++	 long (*flush)(void *src, unsigned long size),
++	 unsigned char *out, long *in_used,
+ 	 void (*error)(char *x));
+ 
+ #endif
+Index: linux-2.6/include/linux/decompress/unlz4.h
+===================================================================
+--- linux-2.6.orig/include/linux/decompress/unlz4.h
++++ linux-2.6/include/linux/decompress/unlz4.h
+@@ -1,10 +1,10 @@
+ #ifndef DECOMPRESS_UNLZ4_H
+ #define DECOMPRESS_UNLZ4_H
+ 
+-int unlz4(unsigned char *inbuf, int len,
+-	int(*fill)(void*, unsigned int),
+-	int(*flush)(void*, unsigned int),
++int unlz4(unsigned char *inbuf, long len,
++	long(*fill)(void*, unsigned long),
++	long(*flush)(void*, unsigned long),
+ 	unsigned char *output,
+-	int *pos,
++	long *pos,
+ 	void(*error)(char *x));
+ #endif
+Index: linux-2.6/include/linux/decompress/unlzo.h
+===================================================================
+--- linux-2.6.orig/include/linux/decompress/unlzo.h
++++ linux-2.6/include/linux/decompress/unlzo.h
+@@ -1,10 +1,10 @@
+ #ifndef DECOMPRESS_UNLZO_H
+ #define DECOMPRESS_UNLZO_H
+ 
+-int unlzo(unsigned char *inbuf, int len,
+-	int(*fill)(void*, unsigned int),
+-	int(*flush)(void*, unsigned int),
++int unlzo(unsigned char *inbuf, long len,
++	long(*fill)(void*, unsigned long),
++	long(*flush)(void*, unsigned long),
+ 	unsigned char *output,
+-	int *pos,
++	long *pos,
+ 	void(*error)(char *x));
+ #endif
