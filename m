@@ -1,128 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249AbaFNGrS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 02:47:18 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:40483 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649AbaFNGrQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 02:47:16 -0400
-X-AuditID: 85900ec0-d312bb9000001514-da-539beff017d2
-Subject: [PATCH -tip ] [Bugfix] x86/kprobes: Fix build errors and blacklist
- context_track_user
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>
-Cc: Borislav Petkov <bp@suse.de>, Kees Cook <keescook@chromium.org>,
-        Jiri Kosina <jkosina@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
-        x86@kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>, Ingo Molnar <mingo@kernel.org>
-Date: Sat, 14 Jun 2014 06:47:12 +0000
-Message-ID: <20140614064711.7865.45957.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <539BE132.2080008@hitachi.com>
-References: <539BE132.2080008@hitachi.com>
-User-Agent: StGit/0.17-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	id S1754240AbaFNHP2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 03:15:28 -0400
+Received: from imap.thunk.org ([74.207.234.97]:38704 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750808AbaFNHPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 03:15:24 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, George Spelvin <linux@horizon.com>
+Subject: [PATCH-v2 1/4] random: always update the entropy pool under the spinlock
+Date: Sat, 14 Jun 2014 03:15:15 -0400
+Message-Id: <1402730118-23122-1-git-send-email-tytso@mit.edu>
+X-Mailer: git-send-email 2.0.0
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit ecd50f714c421c759354632dd00f70c718c95b10
-since it causes build errors with CONFIG_CONTEXT_TRACKING and
-that has been made from misunderstandings; context_track_user_*()
-don't involve much in interrupt context, it just returns
-if in_interrupt() is true.
+Instead of using lockless techniques introduced in commit
+902c098a3663, use spin_trylock to try to grab entropy pool's lock.  If
+we can't get the lock, then just try again on the next interrupt.
 
-Instead of changing the do_debug/int3(), this just adds
-context_track_user_*() to kprobes blacklist, since those are
-still can be called right before kprobes handles int3 and debug
-exceptions, and probing those will cause infinit loop.
+Based on discussions with George Spelvin.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Cc: George Spelvin <linux@horizon.com>
 ---
- arch/x86/kernel/traps.c   |    7 ++++---
- kernel/context_tracking.c |    3 +++
- 2 files changed, 7 insertions(+), 3 deletions(-)
+ drivers/char/random.c | 44 +++++++++++++++++++++++---------------------
+ 1 file changed, 23 insertions(+), 21 deletions(-)
 
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index c6eb418..0d0e922 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -343,6 +343,7 @@ dotraplinkage void notrace do_int3(struct pt_regs *regs, long error_code)
- 	if (poke_int3_handler(regs))
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 102c50d..01538b4 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -495,9 +495,8 @@ static void _mix_pool_bytes(struct entropy_store *r, const void *in,
+ 	tap4 = r->poolinfo->tap4;
+ 	tap5 = r->poolinfo->tap5;
+ 
+-	smp_rmb();
+-	input_rotate = ACCESS_ONCE(r->input_rotate);
+-	i = ACCESS_ONCE(r->add_ptr);
++	input_rotate = r->input_rotate;
++	i = r->add_ptr;
+ 
+ 	/* mix one byte at a time to simplify size handling and churn faster */
+ 	while (nbytes--) {
+@@ -524,9 +523,8 @@ static void _mix_pool_bytes(struct entropy_store *r, const void *in,
+ 		input_rotate = (input_rotate + (i ? 7 : 14)) & 31;
+ 	}
+ 
+-	ACCESS_ONCE(r->input_rotate) = input_rotate;
+-	ACCESS_ONCE(r->add_ptr) = i;
+-	smp_wmb();
++	r->input_rotate = input_rotate;
++	r->add_ptr = i;
+ 
+ 	if (out)
+ 		for (j = 0; j < 16; j++)
+@@ -845,7 +843,7 @@ void add_interrupt_randomness(int irq, int irq_flags)
+ 	__u32			input[4], c_high, j_high;
+ 	__u64			ip;
+ 	unsigned long		seed;
+-	int			credit;
++	int			credit = 0;
+ 
+ 	c_high = (sizeof(cycles) > 4) ? cycles >> 32 : 0;
+ 	j_high = (sizeof(now) > 4) ? now >> 32 : 0;
+@@ -860,36 +858,40 @@ void add_interrupt_randomness(int irq, int irq_flags)
+ 	if ((fast_pool->count & 63) && !time_after(now, fast_pool->last + HZ))
  		return;
  
-+	prev_state = exception_enter();
- #ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
- 	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
- 				SIGTRAP) == NOTIFY_STOP)
-@@ -351,9 +352,8 @@ dotraplinkage void notrace do_int3(struct pt_regs *regs, long error_code)
+-	fast_pool->last = now;
+-
+ 	r = nonblocking_pool.initialized ? &input_pool : &nonblocking_pool;
++	if (!spin_trylock(&r->lock)) {
++		fast_pool->count--;
++		return;
++	}
++	fast_pool->last = now;
+ 	__mix_pool_bytes(r, &fast_pool->pool, sizeof(fast_pool->pool), NULL);
  
- #ifdef CONFIG_KPROBES
- 	if (kprobe_int3_handler(regs))
--		return;
-+		goto exit;
- #endif
--	prev_state = exception_enter();
- 
- 	if (notify_die(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
- 			SIGTRAP) == NOTIFY_STOP)
-@@ -433,6 +433,8 @@ dotraplinkage void do_debug(struct pt_regs *regs, long error_code)
- 	unsigned long dr6;
- 	int si_code;
- 
-+	prev_state = exception_enter();
+ 	/*
++	 * If we have architectural seed generator, produce a seed and
++	 * add it to the pool.  For the sake of paranoia count it as
++	 * 50% entropic.
++	 */
++	if (arch_get_random_seed_long(&seed)) {
++		__mix_pool_bytes(r, &seed, sizeof(seed), NULL);
++		credit += sizeof(seed) * 4;
++	}
++	spin_unlock(&r->lock);
 +
- 	get_debugreg(dr6, 6);
- 
- 	/* Filter out all the reserved bits which are preset to 1 */
-@@ -465,7 +467,6 @@ dotraplinkage void do_debug(struct pt_regs *regs, long error_code)
- 	if (kprobe_debug_handler(regs))
- 		goto exit;
- #endif
--	prev_state = exception_enter();
- 
- 	if (notify_die(DIE_DEBUG, "debug", regs, (long)&dr6, error_code,
- 							SIGTRAP) == NOTIFY_STOP)
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 019d450..5664985 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -19,6 +19,7 @@
- #include <linux/sched.h>
- #include <linux/hardirq.h>
- #include <linux/export.h>
-+#include <linux/kprobes.h>
- 
- #define CREATE_TRACE_POINTS
- #include <trace/events/context_tracking.h>
-@@ -104,6 +105,7 @@ void context_tracking_user_enter(void)
++	/*
+ 	 * If we don't have a valid cycle counter, and we see
+ 	 * back-to-back timer interrupts, then skip giving credit for
+ 	 * any entropy, otherwise credit 1 bit.
+ 	 */
+-	credit = 1;
++	credit++;
+ 	if (cycles == 0) {
+ 		if (irq_flags & __IRQF_TIMER) {
+ 			if (fast_pool->last_timer_intr)
+-				credit = 0;
++				credit--;
+ 			fast_pool->last_timer_intr = 1;
+ 		} else
+ 			fast_pool->last_timer_intr = 0;
  	}
- 	local_irq_restore(flags);
- }
-+NOKPROBE_SYMBOL(context_tracking_user_enter);
  
- #ifdef CONFIG_PREEMPT
- /**
-@@ -181,6 +183,7 @@ void context_tracking_user_exit(void)
- 	}
- 	local_irq_restore(flags);
+-	/*
+-	 * If we have architectural seed generator, produce a seed and
+-	 * add it to the pool.  For the sake of paranoia count it as
+-	 * 50% entropic.
+-	 */
+-	if (arch_get_random_seed_long(&seed)) {
+-		__mix_pool_bytes(r, &seed, sizeof(seed), NULL);
+-		credit += sizeof(seed) * 4;
+-	}
+-
+ 	credit_entropy_bits(r, credit);
  }
-+NOKPROBE_SYMBOL(context_tracking_user_exit);
  
- /**
-  * __context_tracking_task_switch - context switch the syscall callbacks
+-- 
+2.0.0
 
