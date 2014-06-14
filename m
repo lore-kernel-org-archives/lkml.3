@@ -1,424 +1,449 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675AbaFNLsf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 07:48:35 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:33190 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754077AbaFNLsc (ORCPT
+	id S1754700AbaFNLsq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 07:48:46 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:27667 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754077AbaFNLsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 07:48:32 -0400
-Date: Sat, 14 Jun 2014 21:47:21 +1000
-From: Vitaly Osipov <vitaly.osipov@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] staging: rtl8712: replace kmalloc(..., sizeof(T))
-Message-ID: <20140614114721.GA8454@witts-MacBook-Pro.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 14 Jun 2014 07:48:41 -0400
+X-AuditID: cbfee61a-b7fef6d00000200b-f6-539c36964bfb
+From: Chao Yu <chao2.yu@samsung.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [f2fs-dev][PATCH] f2fs: refactor flush_nat_entries codes for reducing
+ NAT writes
+Date: Sat, 14 Jun 2014 19:47:48 +0800
+Message-id: <001201cf87c6$92b9fad0$b82df070$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac+HxaJHz6D4ZeTdRpuTPk+SxpP0vw==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jQd1pZnOCDRasNLV4sn4Ws8WlRe4W
+	e/aeZLG4vGsOmwOLx6ZVnWweuxd8ZvL4vEkugDmKyyYlNSezLLVI3y6BK2PKux2sBRMSK2Zv
+	ecncwLjar4uRk0NCwERi6/F3bBC2mMSFe+uBbC4OIYHpjBI7z11nBkkICfxglJi9lh/EZhNQ
+	kVje8Z8JxBYBsg8tuswOYjMLZErca5oBVi8sEC2x78U+MJtFQFXiZu8ZsAW8ApYSb66uYYew
+	BSV+TL7HAtGrJbF+53EmCFteYvOat8wQBylI7Dj7mhFil57E5ytvGCFqxCU2HrnFMoFRYBaS
+	UbOQjJqFZNQsJC0LGFlWMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgQH8jOpHYwrGywOMQpw
+	MCrx8K6QnR0sxJpYVlyZe4hRgoNZSYT3jMGcYCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8B1qt
+	A4UE0hNLUrNTUwtSi2CyTBycUg2MGYwM4gpf10uuitNed3Bazym+jUHmqvb5227MLrjR/uHG
+	8ss77W/qvFpQfXTfSxYJ3rqDspEJZiyreXk/pL47uzG1TPL/x9k/738r0fz22X0nw1SbQk6J
+	kHniPonmzyZN5bVaKdXBsN/g94yTYT2JGic2GgcwLizZef/UZFuLm+Lz9wrcWtnBqsRSnJFo
+	qMVcVJwIAEXHhZZgAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As suggested by Andy Shevchenko on driverdev-devel, replace
-v = ... sizeof(struct type_of_v) -> sizeof(*v)
+Although building NAT journal in cursum reduce the read/write work for NAT
+block, but previous design leave us lower performance when write checkpoint
+frequently for these cases:
+1. if journal in cursum has already full, it's a bit of waste that we flush all
+   nat entries to page for persistence, but not to cache any entries.
+2. if journal in cursum is not full, we fill nat entries to journal util
+   journal is full, then flush the left dirty entries to disk without merge
+   journaled entries, so these journaled entries may be flushed to disk at next
+   checkpoint but lost chance to flushed last time.
 
-Based on a cocci patch along the lines of
+In this patch we merge dirty entries located in same NAT block to nat entry set,
+and linked all set to list, sorted ascending order by entries' count of set.
+Later we flush entries in sparse set into journal as many as we can, and then
+flush merged entries to disk.
 
-@@
-type T;
-expression E;
-identifier V;
-@@
+In my testing environment, it shows this patch can help to reduce NAT block
+writes.
 
-T *V;
-...
-- V = kmalloc(sizeof(T), E);
-+ V = kmalloc(sizeof(*V), E);
+1. virtual machine + hard disk:
+fsstress -p 20 -n 200 -l 5
+		node num	cp count	nodes/cp
+based		4599.6		1803.0		2.551
+patched		2714.6		1829.6		1.483
 
-@@
-type T;
-expression E;
-identifier V;
-@@
+2. virtual machine + 32g micro SD card:
+fsstress -p 20 -n 200 -l 1 -w -f chown=0 -f creat=4 -f dwrite=0
+-f fdatasync=4 -f fsync=4 -f link=0 -f mkdir=4 -f mknod=4 -f rename=5
+-f rmdir=5 -f symlink=0 -f truncate=4 -f unlink=5 -f write=0 -S
 
-T *V;
-...
-- V = kzalloc(sizeof(T), E);
-+ V = kzalloc(sizeof(*V), E);
+		node num	cp count	nodes/cp
+based		84.5		43.7		1.933
+patched		49.2		40.0		1.23
 
-Signed-off-by: Vitaly Osipov <vitaly.osipov@gmail.com>
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
 ---
- drivers/staging/rtl8712/rtl871x_cmd.c  | 94 ++++++++++++++++------------------
- drivers/staging/rtl8712/rtl871x_io.c   |  2 +-
- drivers/staging/rtl8712/rtl871x_mlme.c |  8 +--
- drivers/staging/rtl8712/rtl871x_mp.c   |  4 +-
- 4 files changed, 51 insertions(+), 57 deletions(-)
+ fs/f2fs/f2fs.h |    2 +
+ fs/f2fs/node.c |  254 ++++++++++++++++++++++++++++++++++++++------------------
+ fs/f2fs/node.h |    7 ++
+ 3 files changed, 183 insertions(+), 80 deletions(-)
 
-diff --git a/drivers/staging/rtl8712/rtl871x_cmd.c b/drivers/staging/rtl8712/rtl871x_cmd.c
-index 7a25220..1775462 100644
---- a/drivers/staging/rtl8712/rtl871x_cmd.c
-+++ b/drivers/staging/rtl8712/rtl871x_cmd.c
-@@ -227,10 +227,10 @@ u8 r8712_sitesurvey_cmd(struct _adapter *padapter,
- 	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
- 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 58df97e..a55f67d 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -256,6 +256,8 @@ struct f2fs_nm_info {
+ 	unsigned int nat_cnt;		/* the # of cached nat entries */
+ 	struct list_head nat_entries;	/* cached nat entry list (clean) */
+ 	struct list_head dirty_nat_entries; /* cached nat entry list (dirty) */
++	struct list_head nat_entry_set;	/* nat entry set list */
++	unsigned int dirty_nat_cnt;	/* total num of nat entries in set */
  
--	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	ph2c = kmalloc(sizeof(*ph2c), GFP_ATOMIC);
- 	if (ph2c == NULL)
- 		return _FAIL;
--	psurveyPara = kmalloc(sizeof(struct sitesurvey_parm), GFP_ATOMIC);
-+	psurveyPara = kmalloc(sizeof(*psurveyPara), GFP_ATOMIC);
- 	if (psurveyPara == NULL) {
- 		kfree((unsigned char *) ph2c);
- 		return _FAIL;
-@@ -259,11 +259,10 @@ u8 r8712_setdatarate_cmd(struct _adapter *padapter, u8 *rateset)
- 	struct setdatarate_parm	*pbsetdataratepara;
- 	struct cmd_priv		*pcmdpriv = &padapter->cmdpriv;
+ 	/* free node ids management */
+ 	struct radix_tree_root free_nid_root;/* root of the free_nid cache */
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index a0a1f25..a4d1d56 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -25,6 +25,7 @@
  
--	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	ph2c = kmalloc(sizeof(*ph2c), GFP_ATOMIC);
- 	if (ph2c == NULL)
- 		return _FAIL;
--	pbsetdataratepara = kmalloc(sizeof(struct setdatarate_parm),
--				    GFP_ATOMIC);
-+	pbsetdataratepara = kmalloc(sizeof(*pbsetdataratepara), GFP_ATOMIC);
- 	if (pbsetdataratepara == NULL) {
- 		kfree((u8 *) ph2c);
- 		return _FAIL;
-@@ -282,11 +281,10 @@ u8 r8712_set_chplan_cmd(struct _adapter *padapter, int chplan)
- 	struct SetChannelPlan_param *psetchplanpara;
- 	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+ static struct kmem_cache *nat_entry_slab;
+ static struct kmem_cache *free_nid_slab;
++static struct kmem_cache *nat_entry_set_slab;
  
--	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	ph2c = kmalloc(sizeof(*ph2c), GFP_ATOMIC);
- 	if (ph2c == NULL)
- 		return _FAIL;
--	psetchplanpara = kmalloc(sizeof(struct SetChannelPlan_param),
--				 GFP_ATOMIC);
-+	psetchplanpara = kmalloc(sizeof(*psetchplanpara), GFP_ATOMIC);
- 	if (psetchplanpara == NULL) {
- 		kfree((u8 *) ph2c);
- 		return _FAIL;
-@@ -304,11 +302,10 @@ u8 r8712_setbasicrate_cmd(struct _adapter *padapter, u8 *rateset)
- 	struct setbasicrate_parm *pssetbasicratepara;
- 	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+ bool available_free_memory(struct f2fs_sb_info *sbi, int type)
+ {
+@@ -88,12 +89,8 @@ static struct page *get_next_nat_page(struct f2fs_sb_info *sbi, nid_t nid)
  
--	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	ph2c = kmalloc(sizeof(*ph2c), GFP_ATOMIC);
- 	if (ph2c == NULL)
- 		return _FAIL;
--	pssetbasicratepara = kmalloc(sizeof(struct setbasicrate_parm),
--				     GFP_ATOMIC);
-+	pssetbasicratepara = kmalloc(sizeof(*pssetbasicratepara), GFP_ATOMIC);
- 	if (pssetbasicratepara == NULL) {
- 		kfree((u8 *) ph2c);
- 		return _FAIL;
-@@ -327,10 +324,10 @@ u8 r8712_setptm_cmd(struct _adapter *padapter, u8 type)
- 	struct writePTM_parm	*pwriteptmparm;
- 	struct cmd_priv		*pcmdpriv = &padapter->cmdpriv;
+ 	/* get current nat block page with lock */
+ 	src_page = get_meta_page(sbi, src_off);
+-
+-	/* Dirty src_page means that it is already the new target NAT page. */
+-	if (PageDirty(src_page))
+-		return src_page;
+-
+ 	dst_page = grab_meta_page(sbi, dst_off);
++	f2fs_bug_on(PageDirty(src_page));
  
--	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	ph2c = kmalloc(sizeof(*ph2c), GFP_ATOMIC);
- 	if (ph2c == NULL)
- 		return _FAIL;
--	pwriteptmparm = kmalloc(sizeof(struct writePTM_parm), GFP_ATOMIC);
-+	pwriteptmparm = kmalloc(sizeof(*pwriteptmparm), GFP_ATOMIC);
- 	if (pwriteptmparm == NULL) {
- 		kfree((u8 *) ph2c);
- 		return _FAIL;
-@@ -347,10 +344,10 @@ u8 r8712_setfwdig_cmd(struct _adapter *padapter, u8 type)
- 	struct writePTM_parm *pwriteptmparm;
- 	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+ 	src_addr = page_address(src_page);
+ 	dst_addr = page_address(dst_page);
+@@ -1744,7 +1741,90 @@ skip:
+ 	return err;
+ }
  
--	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	ph2c = kmalloc(sizeof(*ph2c), GFP_ATOMIC);
- 	if (ph2c == NULL)
- 		return _FAIL;
--	pwriteptmparm = kmalloc(sizeof(struct writePTM_parm), GFP_ATOMIC);
-+	pwriteptmparm = kmalloc(sizeof(*pwriteptmparm), GFP_ATOMIC);
- 	if (pwriteptmparm == NULL) {
- 		kfree((u8 *) ph2c);
- 		return _FAIL;
-@@ -367,10 +364,10 @@ u8 r8712_setfwra_cmd(struct _adapter *padapter, u8 type)
- 	struct writePTM_parm *pwriteptmparm;
- 	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+-static bool flush_nats_in_journal(struct f2fs_sb_info *sbi)
++static struct nat_entry_set *grab_nat_entry_set(void)
++{
++	struct nat_entry_set *nes =
++			f2fs_kmem_cache_alloc(nat_entry_set_slab, GFP_NOFS);
++
++	nes->entry_cnt = 0;
++	INIT_LIST_HEAD(&nes->set_list);
++	INIT_LIST_HEAD(&nes->entry_list);
++	return nes;
++}
++
++static void release_nat_entry_set(struct nat_entry_set *nes,
++						struct f2fs_nm_info *nm_i)
++{
++	f2fs_bug_on(!list_empty(nes->entry_list));
++
++	nm_i->dirty_nat_cnt -= nes->entry_cnt;
++	list_del(&nes->set_list);
++	kmem_cache_free(nat_entry_set_slab, nes);
++}
++
++static void adjust_nat_entry_set(struct nat_entry_set *nes,
++						struct list_head *head)
++{
++	struct nat_entry_set *next = nes;
++
++	if (list_is_last(&nes->set_list, head))
++		return;
++
++	list_for_each_entry_continue(next, head, set_list)
++		if (nes->entry_cnt <= next->entry_cnt)
++			break;
++
++	list_move_tail(&nes->set_list, &next->set_list);
++}
++
++static void add_nat_entry(struct nat_entry *ne, struct list_head *head)
++{
++	struct nat_entry_set *nes;
++	nid_t start_nid = START_NID(ne->ni.nid);
++
++	list_for_each_entry(nes, head, set_list) {
++		if (nes->start_nid == start_nid) {
++			list_move_tail(&ne->list, &nes->entry_list);
++			nes->entry_cnt++;
++			adjust_nat_entry_set(nes, head);
++			return;
++		}
++	}
++
++	nes = grab_nat_entry_set();
++
++	nes->start_nid = START_NID(ne->ni.nid);
++	list_move_tail(&ne->list, &nes->entry_list);
++	nes->entry_cnt++;
++	list_add_tail(&nes->set_list, head);
++}
++
++static void merge_nats_in_set(struct f2fs_sb_info *sbi)
++{
++	struct f2fs_nm_info *nm_i = NM_I(sbi);
++	struct list_head *dirty_list = &nm_i->dirty_nat_entries;
++	struct list_head *set_list = &nm_i->nat_entry_set;
++	struct nat_entry *ne, *tmp;
++
++	write_lock(&nm_i->nat_tree_lock);
++	list_for_each_entry_safe(ne, tmp, dirty_list, list) {
++		if (nat_get_blkaddr(ne) == NEW_ADDR)
++			continue;
++		add_nat_entry(ne, set_list);
++		nm_i->dirty_nat_cnt++;
++	}
++	write_unlock(&nm_i->nat_tree_lock);
++}
++
++static bool __has_cursum_space(struct f2fs_summary_block *sum, int size)
++{
++	if (nats_in_cursum(sum) + size <= NAT_JOURNAL_ENTRIES)
++		return true;
++	else
++		return false;
++}
++
++static void remove_nats_in_journal(struct f2fs_sb_info *sbi)
+ {
+ 	struct f2fs_nm_info *nm_i = NM_I(sbi);
+ 	struct curseg_info *curseg = CURSEG_I(sbi, CURSEG_HOT_DATA);
+@@ -1752,12 +1832,6 @@ static bool flush_nats_in_journal(struct f2fs_sb_info *sbi)
+ 	int i;
  
--	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	ph2c = kmalloc(sizeof(*ph2c), GFP_ATOMIC);
- 	if (ph2c == NULL)
- 		return _FAIL;
--	pwriteptmparm = kmalloc(sizeof(struct writePTM_parm), GFP_ATOMIC);
-+	pwriteptmparm = kmalloc(sizeof(*pwriteptmparm), GFP_ATOMIC);
- 	if (pwriteptmparm == NULL) {
- 		kfree((u8 *) ph2c);
- 		return _FAIL;
-@@ -387,10 +384,10 @@ u8 r8712_setrfreg_cmd(struct _adapter  *padapter, u8 offset, u32 val)
- 	struct writeRF_parm *pwriterfparm;
- 	struct cmd_priv	*pcmdpriv = &padapter->cmdpriv;
- 
--	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	ph2c = kmalloc(sizeof(*ph2c), GFP_ATOMIC);
- 	if (ph2c == NULL)
- 		return _FAIL;
--	pwriterfparm = kmalloc(sizeof(struct writeRF_parm), GFP_ATOMIC);
-+	pwriterfparm = kmalloc(sizeof(*pwriterfparm), GFP_ATOMIC);
- 	if (pwriterfparm == NULL) {
- 		kfree((u8 *) ph2c);
- 		return _FAIL;
-@@ -408,10 +405,10 @@ u8 r8712_getrfreg_cmd(struct _adapter *padapter, u8 offset, u8 *pval)
- 	struct readRF_parm *prdrfparm;
- 	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
- 
--	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	ph2c = kmalloc(sizeof(*ph2c), GFP_ATOMIC);
- 	if (ph2c == NULL)
- 		return _FAIL;
--	prdrfparm = kmalloc(sizeof(struct readRF_parm), GFP_ATOMIC);
-+	prdrfparm = kmalloc(sizeof(*prdrfparm), GFP_ATOMIC);
- 	if (prdrfparm == NULL) {
- 		kfree((u8 *) ph2c);
- 		return _FAIL;
-@@ -452,7 +449,7 @@ u8 r8712_createbss_cmd(struct _adapter *padapter)
- 				 &padapter->registrypriv.dev_network;
- 
- 	padapter->ledpriv.LedControlHandler(padapter, LED_CTL_START_TO_LINK);
--	pcmd = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	pcmd = kmalloc(sizeof(*pcmd), GFP_ATOMIC);
- 	if (pcmd == NULL)
- 		return _FAIL;
- 	_init_listhead(&pcmd->list);
-@@ -486,7 +483,7 @@ u8 r8712_joinbss_cmd(struct _adapter  *padapter, struct wlan_network *pnetwork)
- 						network.InfrastructureMode;
- 
- 	padapter->ledpriv.LedControlHandler(padapter, LED_CTL_START_TO_LINK);
--	pcmd = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	pcmd = kmalloc(sizeof(*pcmd), GFP_ATOMIC);
- 	if (pcmd == NULL)
- 		return _FAIL;
- 	t_len = sizeof(u32) + 6 * sizeof(unsigned char) + 2 +
-@@ -624,10 +621,10 @@ u8 r8712_disassoc_cmd(struct _adapter *padapter) /* for sta_mode */
- 	struct disconnect_parm *pdisconnect;
- 	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
- 
--	pdisconnect_cmd = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	pdisconnect_cmd = kmalloc(sizeof(*pdisconnect_cmd), GFP_ATOMIC);
- 	if (pdisconnect_cmd == NULL)
- 		return _FAIL;
--	pdisconnect = kmalloc(sizeof(struct disconnect_parm), GFP_ATOMIC);
-+	pdisconnect = kmalloc(sizeof(*pdisconnect), GFP_ATOMIC);
- 	if (pdisconnect == NULL) {
- 		kfree((u8 *)pdisconnect_cmd);
- 		return _FAIL;
-@@ -646,10 +643,10 @@ u8 r8712_setopmode_cmd(struct _adapter *padapter,
- 
- 	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
- 
--	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	ph2c = kmalloc(sizeof(*ph2c), GFP_ATOMIC);
- 	if (ph2c == NULL)
- 		return _FAIL;
--	psetop = kmalloc(sizeof(struct setopmode_parm), GFP_ATOMIC);
-+	psetop = kmalloc(sizeof(*psetop), GFP_ATOMIC);
- 	if (psetop == NULL) {
- 		kfree((u8 *) ph2c);
- 		return _FAIL;
-@@ -670,15 +667,15 @@ u8 r8712_setstakey_cmd(struct _adapter *padapter, u8 *psta, u8 unicast_key)
- 	struct security_priv *psecuritypriv = &padapter->securitypriv;
- 	struct sta_info *sta = (struct sta_info *)psta;
- 
--	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	ph2c = kmalloc(sizeof(*ph2c), GFP_ATOMIC);
- 	if (ph2c == NULL)
- 		return _FAIL;
--	psetstakey_para = kmalloc(sizeof(struct set_stakey_parm), GFP_ATOMIC);
-+	psetstakey_para = kmalloc(sizeof(*psetstakey_para), GFP_ATOMIC);
- 	if (psetstakey_para == NULL) {
- 		kfree((u8 *) ph2c);
- 		return _FAIL;
+ 	mutex_lock(&curseg->curseg_mutex);
+-
+-	if (nats_in_cursum(sum) < NAT_JOURNAL_ENTRIES) {
+-		mutex_unlock(&curseg->curseg_mutex);
+-		return false;
+-	}
+-
+ 	for (i = 0; i < nats_in_cursum(sum); i++) {
+ 		struct nat_entry *ne;
+ 		struct f2fs_nat_entry raw_ne;
+@@ -1767,23 +1841,21 @@ static bool flush_nats_in_journal(struct f2fs_sb_info *sbi)
+ retry:
+ 		write_lock(&nm_i->nat_tree_lock);
+ 		ne = __lookup_nat_cache(nm_i, nid);
+-		if (ne) {
+-			__set_nat_cache_dirty(nm_i, ne);
+-			write_unlock(&nm_i->nat_tree_lock);
+-			continue;
+-		}
++		if (ne)
++			goto found;
++
+ 		ne = grab_nat_entry(nm_i, nid);
+ 		if (!ne) {
+ 			write_unlock(&nm_i->nat_tree_lock);
+ 			goto retry;
+ 		}
+ 		node_info_from_raw_nat(&ne->ni, &raw_ne);
++found:
+ 		__set_nat_cache_dirty(nm_i, ne);
+ 		write_unlock(&nm_i->nat_tree_lock);
  	}
--	psetstakey_rsp = kmalloc(sizeof(struct set_stakey_rsp), GFP_ATOMIC);
-+	psetstakey_rsp = kmalloc(sizeof(*psetstakey_rsp), GFP_ATOMIC);
- 	if (psetstakey_rsp == NULL) {
- 		kfree((u8 *) ph2c);
- 		kfree((u8 *) psetstakey_para);
-@@ -710,10 +707,10 @@ u8 r8712_setrfintfs_cmd(struct _adapter *padapter, u8 mode)
- 	struct setrfintfs_parm *psetrfintfsparm;
- 	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+ 	update_nats_in_cursum(sum, -i);
+ 	mutex_unlock(&curseg->curseg_mutex);
+-	return true;
+ }
  
--	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	ph2c = kmalloc(sizeof(*ph2c), GFP_ATOMIC);
- 	if (ph2c == NULL)
- 		return _FAIL;
--	psetrfintfsparm = kmalloc(sizeof(struct setrfintfs_parm), GFP_ATOMIC);
-+	psetrfintfsparm = kmalloc(sizeof(*psetrfintfsparm), GFP_ATOMIC);
- 	if (psetrfintfsparm == NULL) {
- 		kfree((unsigned char *) ph2c);
- 		return _FAIL;
-@@ -732,10 +729,10 @@ u8 r8712_setrttbl_cmd(struct _adapter *padapter,
- 	struct setratable_parm *psetrttblparm;
- 	struct cmd_priv	*pcmdpriv = &padapter->cmdpriv;
+ /*
+@@ -1794,80 +1866,87 @@ void flush_nat_entries(struct f2fs_sb_info *sbi)
+ 	struct f2fs_nm_info *nm_i = NM_I(sbi);
+ 	struct curseg_info *curseg = CURSEG_I(sbi, CURSEG_HOT_DATA);
+ 	struct f2fs_summary_block *sum = curseg->sum_blk;
+-	struct nat_entry *ne, *cur;
+-	struct page *page = NULL;
+-	struct f2fs_nat_block *nat_blk = NULL;
+-	nid_t start_nid = 0, end_nid = 0;
+-	bool flushed;
+-
+-	flushed = flush_nats_in_journal(sbi);
+-
+-	if (!flushed)
+-		mutex_lock(&curseg->curseg_mutex);
+-
+-	/* 1) flush dirty nat caches */
+-	list_for_each_entry_safe(ne, cur, &nm_i->dirty_nat_entries, list) {
+-		nid_t nid;
+-		struct f2fs_nat_entry raw_ne;
+-		int offset = -1;
+-
+-		if (nat_get_blkaddr(ne) == NEW_ADDR)
+-			continue;
++	struct nat_entry_set *nes, *tmp;
++	struct list_head *head = &nm_i->nat_entry_set;
++	bool to_journal = true;
  
--	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	ph2c = kmalloc(sizeof(*ph2c), GFP_ATOMIC);
- 	if (ph2c == NULL)
- 		return _FAIL;
--	psetrttblparm = kmalloc(sizeof(struct setratable_parm), GFP_ATOMIC);
-+	psetrttblparm = kmalloc(sizeof(*psetrttblparm), GFP_ATOMIC);
- 	if (psetrttblparm == NULL) {
- 		kfree((unsigned char *)ph2c);
- 		return _FAIL;
-@@ -753,10 +750,10 @@ u8 r8712_gettssi_cmd(struct _adapter *padapter, u8 offset, u8 *pval)
- 	struct cmd_obj *ph2c;
- 	struct readTSSI_parm *prdtssiparm;
+-		nid = nat_get_nid(ne);
++	/* merge nat entries of dirty list to nat entry set temporarily */
++	merge_nats_in_set(sbi);
  
--	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	ph2c = kmalloc(sizeof(*ph2c), GFP_ATOMIC);
- 	if (ph2c == NULL)
- 		return _FAIL;
--	prdtssiparm = kmalloc(sizeof(struct readTSSI_parm), GFP_ATOMIC);
-+	prdtssiparm = kmalloc(sizeof(*prdtssiparm), GFP_ATOMIC);
- 	if (prdtssiparm == NULL) {
- 		kfree((unsigned char *) ph2c);
- 		return _FAIL;
-@@ -779,11 +776,10 @@ u8 r8712_setMacAddr_cmd(struct _adapter *padapter, u8 *mac_addr)
- 	struct cmd_obj *ph2c;
- 	struct SetMacAddr_param	*psetMacAddr_para;
+-		if (flushed)
+-			goto to_nat_page;
++	if (!__has_cursum_space(sum, nm_i->dirty_nat_cnt)) {
++		/*
++		 * if there are no enough space in journal to store dirty nat
++		 * entries, remove all entries from journal and merge them
++		 * into nat entry set.
++		 */
++		remove_nats_in_journal(sbi);
++		merge_nats_in_set(sbi);
++	}
  
--	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	ph2c = kmalloc(sizeof(*ph2c), GFP_ATOMIC);
- 	if (ph2c == NULL)
- 		return _FAIL;
--	psetMacAddr_para = kmalloc(sizeof(struct SetMacAddr_param),
--				   GFP_ATOMIC);
-+	psetMacAddr_para = kmalloc(sizeof(*psetMacAddr_para), GFP_ATOMIC);
- 	if (psetMacAddr_para == NULL) {
- 		kfree((u8 *) ph2c);
- 		return _FAIL;
-@@ -802,17 +798,15 @@ u8 r8712_setassocsta_cmd(struct _adapter *padapter, u8 *mac_addr)
- 	struct set_assocsta_parm	*psetassocsta_para;
- 	struct set_assocsta_rsp		*psetassocsta_rsp = NULL;
+-		/* if there is room for nat enries in curseg->sumpage */
+-		offset = lookup_journal_in_cursum(sum, NAT_JOURNAL, nid, 1);
+-		if (offset >= 0) {
+-			raw_ne = nat_in_journal(sum, offset);
+-			goto flush_now;
+-		}
+-to_nat_page:
+-		if (!page || (start_nid > nid || nid > end_nid)) {
+-			if (page) {
+-				f2fs_put_page(page, 1);
+-				page = NULL;
+-			}
+-			start_nid = START_NID(nid);
+-			end_nid = start_nid + NAT_ENTRY_PER_BLOCK - 1;
++	if (!nm_i->dirty_nat_cnt)
++		return;
  
--	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	ph2c = kmalloc(sizeof(*ph2c), GFP_ATOMIC);
- 	if (ph2c == NULL)
- 		return _FAIL;
--	psetassocsta_para = kmalloc(sizeof(struct set_assocsta_parm),
--				    GFP_ATOMIC);
-+	psetassocsta_para = kmalloc(sizeof(*psetassocsta_para), GFP_ATOMIC);
- 	if (psetassocsta_para == NULL) {
- 		kfree((u8 *) ph2c);
- 		return _FAIL;
+-			/*
+-			 * get nat block with dirty flag, increased reference
+-			 * count, mapped and lock
+-			 */
++	/*
++	 * there are two steps to flush nat entries:
++	 * #1, flush nat entries to journal in current hot data summary block.
++	 * #2, flush nat entries to nat page.
++	 */
++	list_for_each_entry_safe(nes, tmp, head, set_list) {
++		struct f2fs_nat_block *nat_blk;
++		struct nat_entry *ne, *cur;
++		struct page *page;
++		nid_t start_nid = nes->start_nid;
++
++		if (to_journal && !__has_cursum_space(sum, nes->entry_cnt))
++			to_journal = false;
++
++		if (to_journal) {
++			mutex_lock(&curseg->curseg_mutex);
++		} else {
+ 			page = get_next_nat_page(sbi, start_nid);
+ 			nat_blk = page_address(page);
++			f2fs_bug_on(!nat_blk);
+ 		}
+ 
+-		f2fs_bug_on(!nat_blk);
+-		raw_ne = nat_blk->entries[nid - start_nid];
+-flush_now:
+-		raw_nat_from_node_info(&raw_ne, &ne->ni);
+-
+-		if (offset < 0) {
+-			nat_blk->entries[nid - start_nid] = raw_ne;
+-		} else {
+-			nat_in_journal(sum, offset) = raw_ne;
+-			nid_in_journal(sum, offset) = cpu_to_le32(nid);
+-		}
++		/* flush dirty nats in nat entry set */
++		list_for_each_entry_safe(ne, cur, &nes->entry_list, list) {
++			struct f2fs_nat_entry *raw_ne;
++			nid_t nid = nat_get_nid(ne);
++			int offset;
++
++			if (to_journal) {
++				offset = lookup_journal_in_cursum(sum,
++							NAT_JOURNAL, nid, 1);
++				f2fs_bug_on(offset < 0);
++				raw_ne = &nat_in_journal(sum, offset);
++				nid_in_journal(sum, offset) = cpu_to_le32(nid);
++			} else {
++				raw_ne = &nat_blk->entries[nid - start_nid];
++			}
++			raw_nat_from_node_info(raw_ne, &ne->ni);
+ 
+-		if (nat_get_blkaddr(ne) == NULL_ADDR &&
++			if (nat_get_blkaddr(ne) == NULL_ADDR &&
+ 				add_free_nid(sbi, nid, false) <= 0) {
+-			write_lock(&nm_i->nat_tree_lock);
+-			__del_from_nat_cache(nm_i, ne);
+-			write_unlock(&nm_i->nat_tree_lock);
+-		} else {
+-			write_lock(&nm_i->nat_tree_lock);
+-			__clear_nat_cache_dirty(nm_i, ne);
+-			write_unlock(&nm_i->nat_tree_lock);
++				write_lock(&nm_i->nat_tree_lock);
++				__del_from_nat_cache(nm_i, ne);
++				write_unlock(&nm_i->nat_tree_lock);
++			} else {
++				write_lock(&nm_i->nat_tree_lock);
++				__clear_nat_cache_dirty(nm_i, ne);
++				write_unlock(&nm_i->nat_tree_lock);
++			}
+ 		}
++
++		if (to_journal)
++			mutex_unlock(&curseg->curseg_mutex);
++		else
++			f2fs_put_page(page, 1);
++
++		release_nat_entry_set(nes, nm_i);
  	}
--	psetassocsta_rsp = kmalloc(sizeof(struct set_assocsta_rsp),
--				   GFP_ATOMIC);
-+	psetassocsta_rsp = kmalloc(sizeof(*psetassocsta_rsp), GFP_ATOMIC);
- 	if (psetassocsta_rsp == NULL) {
- 		kfree((u8 *)ph2c);
- 		kfree((u8 *)psetassocsta_para);
-@@ -832,10 +826,10 @@ u8 r8712_addbareq_cmd(struct _adapter *padapter, u8 tid)
- 	struct cmd_obj		*ph2c;
- 	struct addBaReq_parm	*paddbareq_parm;
+-	if (!flushed)
+-		mutex_unlock(&curseg->curseg_mutex);
+-	f2fs_put_page(page, 1);
++
++	f2fs_bug_on(!list_empty(head));
++	f2fs_bug_on(nm_i->dirty_nat_cnt);
+ }
  
--	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	ph2c = kmalloc(sizeof(*ph2c), GFP_ATOMIC);
- 	if (ph2c == NULL)
- 		return _FAIL;
--	paddbareq_parm = kmalloc(sizeof(struct addBaReq_parm), GFP_ATOMIC);
-+	paddbareq_parm = kmalloc(sizeof(*paddbareq_parm), GFP_ATOMIC);
- 	if (paddbareq_parm == NULL) {
- 		kfree((unsigned char *)ph2c);
- 		return _FAIL;
-@@ -853,10 +847,10 @@ u8 r8712_wdg_wk_cmd(struct _adapter *padapter)
- 	struct drvint_cmd_parm  *pdrvintcmd_param;
- 	struct cmd_priv	*pcmdpriv = &padapter->cmdpriv;
+ static int init_node_manager(struct f2fs_sb_info *sbi)
+@@ -1896,6 +1975,7 @@ static int init_node_manager(struct f2fs_sb_info *sbi)
+ 	INIT_RADIX_TREE(&nm_i->nat_root, GFP_ATOMIC);
+ 	INIT_LIST_HEAD(&nm_i->nat_entries);
+ 	INIT_LIST_HEAD(&nm_i->dirty_nat_entries);
++	INIT_LIST_HEAD(&nm_i->nat_entry_set);
  
--	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	ph2c = kmalloc(sizeof(*ph2c), GFP_ATOMIC);
- 	if (ph2c == NULL)
- 		return _FAIL;
--	pdrvintcmd_param = kmalloc(sizeof(struct drvint_cmd_parm), GFP_ATOMIC);
-+	pdrvintcmd_param = kmalloc(sizeof(*pdrvintcmd_param), GFP_ATOMIC);
- 	if (pdrvintcmd_param == NULL) {
- 		kfree((unsigned char *)ph2c);
- 		return _FAIL;
-@@ -1027,10 +1021,10 @@ u8 r8712_disconnectCtrlEx_cmd(struct _adapter *adapter, u32 enableDrvCtrl,
- 	struct DisconnectCtrlEx_param *param;
- 	struct cmd_priv *pcmdpriv = &adapter->cmdpriv;
+ 	mutex_init(&nm_i->build_lock);
+ 	spin_lock_init(&nm_i->free_nid_list_lock);
+@@ -1992,3 +2072,17 @@ void destroy_node_manager_caches(void)
+ 	kmem_cache_destroy(free_nid_slab);
+ 	kmem_cache_destroy(nat_entry_slab);
+ }
++
++int __init create_nat_set_caches(void)
++{
++	nat_entry_set_slab = f2fs_kmem_cache_create("f2fs_nat_entry_set",
++					sizeof(struct nat_entry_set));
++	if (!nat_entry_set_slab)
++		return -ENOMEM;
++	return 0;
++}
++
++void destroy_nat_set_caches(void)
++{
++	kmem_cache_destroy(nat_entry_set_slab);
++}
+diff --git a/fs/f2fs/node.h b/fs/f2fs/node.h
+index 7281112..8a116a4 100644
+--- a/fs/f2fs/node.h
++++ b/fs/f2fs/node.h
+@@ -89,6 +89,13 @@ enum mem_type {
+ 	DIRTY_DENTS	/* indicates dirty dentry pages */
+ };
  
--	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	ph2c = kmalloc(sizeof(*ph2c), GFP_ATOMIC);
- 	if (ph2c == NULL)
- 		return _FAIL;
--	param = kzalloc(sizeof(struct DisconnectCtrlEx_param), GFP_ATOMIC);
-+	param = kzalloc(sizeof(*param), GFP_ATOMIC);
- 	if (param == NULL) {
- 		kfree((unsigned char *) ph2c);
- 		return _FAIL;
-diff --git a/drivers/staging/rtl8712/rtl871x_io.c b/drivers/staging/rtl8712/rtl871x_io.c
-index 37a841a..e881b0d 100644
---- a/drivers/staging/rtl8712/rtl871x_io.c
-+++ b/drivers/staging/rtl8712/rtl871x_io.c
-@@ -112,7 +112,7 @@ uint r8712_alloc_io_queue(struct _adapter *adapter)
- 	struct io_queue *pio_queue;
- 	struct io_req *pio_req;
- 
--	pio_queue = kmalloc(sizeof(struct io_queue), GFP_ATOMIC);
-+	pio_queue = kmalloc(sizeof(*pio_queue), GFP_ATOMIC);
- 	if (pio_queue == NULL)
- 		goto alloc_io_queue_fail;
- 	_init_listhead(&pio_queue->free_ioreqs);
-diff --git a/drivers/staging/rtl8712/rtl871x_mlme.c b/drivers/staging/rtl8712/rtl871x_mlme.c
-index 02339e1..26b8f37 100644
---- a/drivers/staging/rtl8712/rtl871x_mlme.c
-+++ b/drivers/staging/rtl8712/rtl871x_mlme.c
-@@ -1212,11 +1212,11 @@ sint r8712_set_auth(struct _adapter *adapter,
- 	struct cmd_obj *pcmd;
- 	struct setauth_parm *psetauthparm;
- 
--	pcmd = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	pcmd = kmalloc(sizeof(*pcmd), GFP_ATOMIC);
- 	if (pcmd == NULL)
- 		return _FAIL;
- 
--	psetauthparm = kzalloc(sizeof(struct setauth_parm), GFP_ATOMIC);
-+	psetauthparm = kzalloc(sizeof(*psetauthparm), GFP_ATOMIC);
- 	if (psetauthparm == NULL) {
- 		kfree((unsigned char *)pcmd);
- 		return _FAIL;
-@@ -1242,10 +1242,10 @@ sint r8712_set_key(struct _adapter *adapter,
- 	u8 keylen;
- 	sint ret = _SUCCESS;
- 
--	pcmd = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	pcmd = kmalloc(sizeof(*pcmd), GFP_ATOMIC);
- 	if (pcmd == NULL)
- 		return _FAIL;
--	psetkeyparm = kzalloc(sizeof(struct setkey_parm), GFP_ATOMIC);
-+	psetkeyparm = kzalloc(sizeof(*psetkeyparm), GFP_ATOMIC);
- 	if (psetkeyparm == NULL) {
- 		ret = _FAIL;
- 		goto err_free_cmd;
-diff --git a/drivers/staging/rtl8712/rtl871x_mp.c b/drivers/staging/rtl8712/rtl871x_mp.c
-index 389062f..e48486c 100644
---- a/drivers/staging/rtl8712/rtl871x_mp.c
-+++ b/drivers/staging/rtl8712/rtl871x_mp.c
-@@ -281,10 +281,10 @@ void r8712_SetChannel(struct _adapter *pAdapter)
- 	struct SetChannel_parm *pparm = NULL;
- 	u16 code = GEN_CMD_CODE(_SetChannel);
- 
--	pcmd = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
-+	pcmd = kmalloc(sizeof(*pcmd), GFP_ATOMIC);
- 	if (pcmd == NULL)
- 		return;
--	pparm = kmalloc(sizeof(struct SetChannel_parm), GFP_ATOMIC);
-+	pparm = kmalloc(sizeof(*pparm), GFP_ATOMIC);
- 	if (pparm == NULL) {
- 		kfree(pcmd);
- 		return;
++struct nat_entry_set {
++	struct list_head set_list;	/* link with all nat sets */
++	struct list_head entry_list;	/* link with dirty nat entries */
++	nid_t start_nid;		/* start nid of nats in set */
++	unsigned int entry_cnt;		/* the # of nat entries in set */
++};
++
+ /*
+  * For free nid mangement
+  */
 -- 
-1.9.1
+1.7.9.5
+
 
