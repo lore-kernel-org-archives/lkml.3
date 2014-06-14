@@ -1,46 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751733AbaFNSe0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 14:34:26 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:36872 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884AbaFNSeZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 14:34:25 -0400
-From: Nick <xerofoify@gmail.com>
-To: cody@linux.vnet.ibm.com
-Cc: akpm@linux-foundation.org, sjenning@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix comments in rbtree.c
-Date: Sat, 14 Jun 2014 14:34:20 -0400
-Message-Id: <1402770860-4504-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1751836AbaFNSsM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 14:48:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35216 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751082AbaFNSsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 14:48:11 -0400
+Date: Sat, 14 Jun 2014 20:48:07 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, hpa@linux.intel.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        Joe Perches <joe@perches.com>, Arun KS <arunks.linux@gmail.com>,
+        Kees Cook <keescook@chromium.org>, Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH v3] printk: allow increasing the ring buffer depending
+	on the number of CPUs
+Message-ID: <20140614184807.GE4841@wotan.suse.de>
+References: <1402684097-5731-1-git-send-email-mcgrof@do-not-panic.com> <1402695712.27369.10.camel@buesod1.americas.hpqcorp.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402695712.27369.10.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nick <xerofoify@gmail.com>
----
- lib/rbtree.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+It turns out we can't use num_possible_cpus() that early on boot, as
+it hasn't yet been properly set, nor other helpers, a late setup for
+big CPUs is therefore needed in order to use num_possible_cpus().
+That also means we can use kzalloc() instead. I'll send a v4 and
+I think we should test this a bit so will send as RFT.
 
-diff --git a/lib/rbtree.c b/lib/rbtree.c
-index 65f4eff..c66370c 100644
---- a/lib/rbtree.c
-+++ b/lib/rbtree.c
-@@ -101,11 +101,10 @@ __rb_insert(struct rb_node *node, struct rb_root *root,
- 				 *      / \          / \
- 				 *     p   u  -->   P   U
- 				 *    /            /
--				 *   n            N
-+				 *   n            n
- 				 *
- 				 * However, since g's parent might be red, and
- 				 * 4) does not allow this, we need to recurse
--				 * at g.
- 				 */
- 				rb_set_parent_color(tmp, gparent, RB_BLACK);
- 				rb_set_parent_color(parent, gparent, RB_BLACK);
--- 
-1.9.1
-
+  Luis
