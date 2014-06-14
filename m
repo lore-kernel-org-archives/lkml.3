@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486AbaFNHPl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 03:15:41 -0400
-Received: from imap.thunk.org ([74.207.234.97]:38705 "EHLO imap.thunk.org"
+	id S1754544AbaFNHPo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 03:15:44 -0400
+Received: from imap.thunk.org ([74.207.234.97]:38709 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751652AbaFNHPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 03:15:24 -0400
+	id S1751882AbaFNHPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 03:15:25 -0400
 From: "Theodore Ts'o" <tytso@mit.edu>
 To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
 Cc: "Theodore Ts'o" <tytso@mit.edu>, George Spelvin <linux@horizon.com>
-Subject: [PATCH-v2 3/4] random: only update the last_pulled time if we actually transferred entropy
-Date: Sat, 14 Jun 2014 03:15:17 -0400
-Message-Id: <1402730118-23122-3-git-send-email-tytso@mit.edu>
+Subject: [PATCH-v2 4/4] random: clean up interrupt entropy accounting for archs w/o cycle counters
+Date: Sat, 14 Jun 2014 03:15:18 -0400
+Message-Id: <1402730118-23122-4-git-send-email-tytso@mit.edu>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1402730118-23122-1-git-send-email-tytso@mit.edu>
 References: <1402730118-23122-1-git-send-email-tytso@mit.edu>
@@ -22,45 +22,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In xfer_secondary_pull(), check to make sure we need to pull from the
-secondary pool before checking and potentially updating the
-last_pulled time.
+For architectures that don't have cycle counters, the algorithm for
+deciding when to avoid giving entropy credit due to back-to-back timer
+interrupts didn't make any sense, since we were checking every 64
+interrupts.  Change it so that we only give an entropy credit if the
+majority of the interrupts are not based on the timer.
 
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Cc: George Spelvin <linux@horizon.com>
 ---
- drivers/char/random.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/char/random.c | 26 ++++++++++++--------------
+ 1 file changed, 12 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index a74c92a..9a59101 100644
+index 9a59101..60eecfc 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -919,6 +919,11 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
- static void _xfer_secondary_pool(struct entropy_store *r, size_t nbytes);
- static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- {
-+	if (!r->pull ||
-+	    r->entropy_count >= (nbytes << (ENTROPY_SHIFT + 3)) ||
-+	    r->entropy_count > r->poolinfo->poolfracbits)
-+		return;
-+
- 	if (r->limit == 0 && random_min_urandom_seed) {
- 		unsigned long now = jiffies;
+@@ -548,9 +548,9 @@ static void mix_pool_bytes(struct entropy_store *r, const void *in,
+ struct fast_pool {
+ 	__u32		pool[4];
+ 	unsigned long	last;
+-	unsigned short	count;
++	unsigned char	count;
++	unsigned char	notimer_count;
+ 	unsigned char	rotate;
+-	unsigned char	last_timer_intr;
+ };
  
-@@ -927,10 +932,8 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- 			return;
- 		r->last_pulled = now;
- 	}
--	if (r->pull &&
--	    r->entropy_count < (nbytes << (ENTROPY_SHIFT + 3)) &&
--	    r->entropy_count < r->poolinfo->poolfracbits)
--		_xfer_secondary_pool(r, nbytes);
+ /*
+@@ -850,6 +850,8 @@ void add_interrupt_randomness(int irq, int irq_flags)
+ 	input[3] = ip >> 32;
+ 
+ 	fast_mix(fast_pool, input);
++	if ((irq_flags & __IRQF_TIMER) == 0)
++		fast_pool->notimer_count++;
+ 
+ 	if ((fast_pool->count & 63) && !time_after(now, fast_pool->last + HZ))
+ 		return;
+@@ -874,19 +876,15 @@ void add_interrupt_randomness(int irq, int irq_flags)
+ 	spin_unlock(&r->lock);
+ 
+ 	/*
+-	 * If we don't have a valid cycle counter, and we see
+-	 * back-to-back timer interrupts, then skip giving credit for
+-	 * any entropy, otherwise credit 1 bit.
++	 * If we have a valid cycle counter or if the majority of
++	 * interrupts collected were non-timer interrupts, then give
++	 * an entropy credit of 1 bit.  Yes, this is being very
++	 * conservative.
+ 	 */
+-	credit++;
+-	if (cycles == 0) {
+-		if (irq_flags & __IRQF_TIMER) {
+-			if (fast_pool->last_timer_intr)
+-				credit--;
+-			fast_pool->last_timer_intr = 1;
+-		} else
+-			fast_pool->last_timer_intr = 0;
+-	}
++	if (cycles || (fast_pool->notimer_count >= 32))
++		credit++;
 +
-+	_xfer_secondary_pool(r, nbytes);
++	fast_pool->count = fast_pool->notimer_count = 0;
+ 
+ 	credit_entropy_bits(r, credit);
  }
- 
- static void _xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
 -- 
 2.0.0
 
