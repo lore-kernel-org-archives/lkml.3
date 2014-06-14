@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754470AbaFNCLc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 22:11:32 -0400
-Received: from yotta.elopez.com.ar ([31.220.24.173]:50645 "EHLO
-	yotta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754236AbaFNCLb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 22:11:31 -0400
-Message-ID: <539BAF40.4060800@elopez.com.ar>
-Date: Fri, 13 Jun 2014 23:11:12 -0300
-From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754407AbaFNCdG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 22:33:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55130 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754106AbaFNCdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 22:33:05 -0400
+Message-ID: <539BB414.9030107@zytor.com>
+Date: Fri, 13 Jun 2014 19:31:48 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Nick <xerofoify@gmail.com>
-CC: mturquette@linaro.org, maxime.ripard@free-electrons.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] Fixes two memory leaks in drivers/clk/sunxi/clk-sunxi.c
-References: <1402710473-3295-1-git-send-email-nickkrause@sympatico.ca>
-In-Reply-To: <1402710473-3295-1-git-send-email-nickkrause@sympatico.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Kees Cook <keescook@chromium.org>
+CC: Pavel Machek <pavel@ucw.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>, Len Brown <len.brown@intel.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 0/2] make kASLR vs hibernation boot-time selectable
+References: <1402602419-27934-1-git-send-email-keescook@chromium.org> <1737131.VlQuirUC3S@vostro.rjw.lan> <CAGXu5j+BTYup-9cbwSJsKNW4R1e2QY4wVubfpC3s2LVkE4Amow@mail.gmail.com> <1517175.iyVMqh7r2z@vostro.rjw.lan>
+In-Reply-To: <1517175.iyVMqh7r2z@vostro.rjw.lan>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 06/13/2014 05:14 PM, Rafael J. Wysocki wrote:
+> 
+> How can I obtain a kernel address of the beginning of a given page
+> (as represented by struct page) on x86_64 today?
+> 
 
-El 13/06/14 22:47, Nick escribió:
-> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-> index 4264834..07b45d1 100644
-> --- a/drivers/clk/sunxi/clk-sunxi.c
-> +++ b/drivers/clk/sunxi/clk-sunxi.c
-> @@ -41,9 +41,11 @@ static void __init sun4i_osc_clk_setup(struct device_node *node)
->   	const char *clk_name = node->name;
->   	u32 rate;
->
-> -	if (of_property_read_u32(node, "clock-frequency", &rate))
-> +	if (of_property_read_u32(node, "clock-frequency", &rate)) {
-> +		kfree(fixed);
-> +		kfree(gate);
+page_to_virt()
 
-Why are you trying to free these two, when they haven't been allocated yet?
+	-hpa
 
->   		return;
-> -
-> +	}
->   	/* allocate fixed-rate and gate clock structs */
->   	fixed = kzalloc(sizeof(struct clk_fixed_rate), GFP_KERNEL);
->   	if (!fixed)
->
 
-fixed is allocated here. gate follows suit after it.
-
-Cheers,
-
-Emilio
-
-PS: For next time, please use a proper prefix on your patch subject 
-("clk: sunxi: " in this case) as well as add a description to your patch 
-and a signoff line.
