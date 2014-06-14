@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751209AbaFNWzl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 18:55:41 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:58113 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852AbaFNWzh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 18:55:37 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Monam Agarwal <monamagarwal123@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: ced1401: userspace: use1401.c:  Cleaning up if statement that always evaluates to true
-Date: Sun, 15 Jun 2014 00:56:32 +0200
-Message-Id: <1402786592-13308-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	id S1750961AbaFNXIl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 19:08:41 -0400
+Received: from mx02.posteo.de ([89.146.194.165]:34129 "EHLO posteo.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750818AbaFNXIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 19:08:40 -0400
+From: Martin Kepplinger <martink@posteo.de>
+To: drbd-dev@lists.linbit.com
+Cc: drbd-user@lists.linbit.com, linux-kernel@vger.kernel.org,
+        Martin Kepplinger <martink@posteo.de>
+Subject: [PATCH] drbd: change one-bit bitfield to be an unsigned int
+Date: Sun, 15 Jun 2014 01:07:55 +0200
+Message-Id: <1402787275-12258-1-git-send-email-martink@posteo.de>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1402786592-13308-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1402786592-13308-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unsigned variable can't be negative so it is unnecessary to test it.
+The one-bit bitfield has no negative values and thus becomes an
+unsigned int.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Signed-off-by: Martin Kepplinger <martink@posteo.de>
 ---
- drivers/staging/ced1401/userspace/use1401.c |    9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+No idea if you take such small changes. Please ignore if not.
+This applies to next-20140613 and fixes a sparse error.
 
-diff --git a/drivers/staging/ced1401/userspace/use1401.c b/drivers/staging/ced1401/userspace/use1401.c
-index 7b8a222..9ebddbd 100644
---- a/drivers/staging/ced1401/userspace/use1401.c
-+++ b/drivers/staging/ced1401/userspace/use1401.c
-@@ -1744,13 +1744,8 @@ U14API(short) U14GetString(short hand, char* pBuffer, unsigned short wMaxLen)
-                                     &dwBytes, NULL);
-                     if (iOK)                        /* Device IO control OK ? */
-                     {
--                        if (dwBytes >= 0)           /* If driver OK */
--                        {
--                            strcpy(pBuffer, tstr);
--                            sErr = U14ERR_NOERROR;
--                        }
--                        else
--                            sErr = U14ERR_DRIVCOMMS;
-+                        strcpy(pBuffer, tstr);
-+                        sErr = U14ERR_NOERROR;
-                     }
-                     else
-                     {
+
+ drivers/block/drbd/drbd_interval.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/block/drbd/drbd_interval.h b/drivers/block/drbd/drbd_interval.h
+index f38fcb0..68b4301 100644
+--- a/drivers/block/drbd/drbd_interval.h
++++ b/drivers/block/drbd/drbd_interval.h
+@@ -9,8 +9,8 @@ struct drbd_interval {
+ 	sector_t sector;	/* start sector of the interval */
+ 	unsigned int size;	/* size in bytes */
+ 	sector_t end;		/* highest interval end in subtree */
+-	int local:1		/* local or remote request? */;
+-	int waiting:1;
++	unsigned int local:1		/* local or remote request? */;
++	unsigned int waiting:1;
+ };
+ 
+ static inline void drbd_clear_interval(struct drbd_interval *i)
 -- 
 1.7.10.4
 
