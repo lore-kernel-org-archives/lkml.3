@@ -1,59 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195AbaFNWjL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 18:39:11 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:34966 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128AbaFNWjJ (ORCPT
+	id S1752429AbaFNWkw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 18:40:52 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:36256 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995AbaFNWku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 18:39:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140614213000.GO179@brightrain.aerifal.cx>
-References: <cover.1402769596.git.luto@amacapital.net> <20140614213000.GO179@brightrain.aerifal.cx>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sat, 14 Jun 2014 15:38:48 -0700
-Message-ID: <CALCETrX3Kv7VAfYau-79odKtRvME0-AzZB_xGUMPEHeas8AkaQ@mail.gmail.com>
-Subject: Re: [RFC 0/2] __vdso_findsym
-To: Rich Felker <dalias@libc.org>
-Cc: Russ Cox <rsc@golang.org>, Linux API <linux-api@vger.kernel.org>,
-        Ian Taylor <iant@golang.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 14 Jun 2014 18:40:50 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Monam Agarwal <monamagarwal123@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: ced1401: userspace: use1401.c:  Cleaning up potential strncpy missing null-terminate 
+Date: Sun, 15 Jun 2014 00:41:46 +0200
+Message-Id: <1402785707-12383-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 14, 2014 at 2:30 PM, Rich Felker <dalias@libc.org> wrote:
-> On Sat, Jun 14, 2014 at 11:16:42AM -0700, Andy Lutomirski wrote:
->> The idea is to add AT_VDSO_FINDSYM pointing at __vdso_findsym.  This
->> implements __vdso_findsym.
->>
->> This would make it easier for runtimes that don't otherwise implement
->> ELF loaders to use the vdso.
->>
->> Thoughts?
->>
->> If people like the basic concept, I'll finish it, write up
->> documentation and a selftest.  If people don't like it, I'll drop it.
->
-> I like the idea. I don't think it's immediately useful, since
-> libraries wanting to use vdso will likely want to support older
-> kernels that don't yet have this, and thus need to include their own
-> vdso parsing code. However, if we could get this in now, it would be
-> very useful a few years down the line where optimizing for old kernels
-> is not an important goal. I'd certainly like to be able to drop the
-> ELF parsing code from musl to reduce static binary size. And I could
-> see other projects possibly using it just to avoid the issue of ever
-> adding ELF parsing code in the first place.
->
+Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+There is also a wrong use of strncat, it should have used sizeof - strlen.
 
-Hmm.  I hadn't thought of this as a size win, but I guess it could be
-if there are static binaries around.
+This was found using a static code analysis program called cppcheck.
 
-This patch currently generates 488 bytes on text with my toolchain.
-More than half of that is garbage needed to deal with the symbol
-version tables, and I should be able to move a decent fraction of it
-to vdso2c and therefore out of the kernel and vdso images.
+Rickard Strandqvist (1):
+  staging: ced1401: userspace: use1401.c:  Cleaning up potential strncpy missing null-terminate
 
---Andy
+ drivers/staging/ced1401/userspace/use1401.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
+
+-- 
+1.7.10.4
+
