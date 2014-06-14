@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569AbaFNWMf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 18:12:35 -0400
-Received: from avasout05.plus.net ([84.93.230.250]:58324 "EHLO
-	avasout05.plus.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013AbaFNWMd (ORCPT
+	id S1751154AbaFNWTn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 18:19:43 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:18213 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750888AbaFNWTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 18:12:33 -0400
-X-Greylist: delayed 363 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Jun 2014 18:12:33 EDT
-X-CM-Score: 0.00
-X-CNFS-Analysis: v=2.1 cv=DIIB4k9b c=1 sm=1 tr=0
- a=fkd5KTHJFGKPA0tsLFcInQ==:117 a=fkd5KTHJFGKPA0tsLFcInQ==:17 a=gJibsqi4AAAA:8
- a=0Bzu9jTXAAAA:8 a=MvqziL5F8ecA:10 a=iYpfILVWdnsA:10 a=8nJEP1OIZ-IA:10
- a=pGLkceISAAAA:8 a=Vf6cYym6wm6hfEkr848A:9 a=wPNLvfGTeEIA:10 a=MSl-tDqOz04A:10
-Message-ID: <539CC75F.2080105@baker-net.org.uk>
-Date: Sat, 14 Jun 2014 23:06:23 +0100
-From: Adam Baker <linux@baker-net.org.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Nick <xerofoify@gmail.com>, emilio@elopez.com.ar
-CC: maxime.ripard@free-electrons.com, mturquette@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] Frees gate after if statement in clk-sunxi.c
-References: <1402769508-3821-1-git-send-email-xerofoify@gmail.com>
-In-Reply-To: <1402769508-3821-1-git-send-email-xerofoify@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 14 Jun 2014 18:19:42 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AswIADHJnFNXQyDr/2dsb2JhbABagw2rDgUBAQEBAQEFAZkkgQMXdYQxLyOBGjeIRgHPNxeFY4kTHYQtBJpDizCIKIF+gUQ7
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Arvind Kumar <arvindkumar@vmware.com>,
+        VMware PV-Drivers <pv-drivers@vmware.com>
+Subject: [PATCH 1/1] drivers/scsi/vmw_pvscsi.c: use PAGE_ALIGNED instead of IS_ALIGNED(PAGE_SIZE
+Date: Sun, 15 Jun 2014 00:19:49 +0200
+Message-Id: <1402784389-19065-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/06/14 19:11, Nick wrote:
-> Signed-off-by: Nick <xerofoify@gmail.com>
-> ---
->   drivers/clk/sunxi/clk-sunxi.c | 1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-> index 4264834..6f4fc51 100644
-> --- a/drivers/clk/sunxi/clk-sunxi.c
-> +++ b/drivers/clk/sunxi/clk-sunxi.c
-> @@ -42,6 +42,7 @@ static void __init sun4i_osc_clk_setup(struct device_node *node)
->   	u32 rate;
->
->   	if (of_property_read_u32(node, "clock-frequency", &rate))
-> +		kree(gate);
->   		return;
+use mm.h definition
 
-There are no braces around this so the function of this code as written 
-is an unconditional return and the return shouldn't be indented. I 
-suspect, without reading the rest of the file, that that isn't what you 
-intended.
+Cc: Arvind Kumar <arvindkumar@vmware.com>
+Cc: VMware PV-Drivers <pv-drivers@vmware.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/scsi/vmw_pvscsi.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
->
->   	/* allocate fixed-rate and gate clock structs */
->
+diff --git a/drivers/scsi/vmw_pvscsi.c b/drivers/scsi/vmw_pvscsi.c
+index c88e146..07dc492 100644
+--- a/drivers/scsi/vmw_pvscsi.c
++++ b/drivers/scsi/vmw_pvscsi.c
+@@ -439,9 +439,9 @@ static int pvscsi_allocate_rings(struct pvscsi_adapter *adapter)
+ 	if (!adapter->cmp_ring)
+ 		return -ENOMEM;
+ 
+-	BUG_ON(!IS_ALIGNED(adapter->ringStatePA, PAGE_SIZE));
+-	BUG_ON(!IS_ALIGNED(adapter->reqRingPA, PAGE_SIZE));
+-	BUG_ON(!IS_ALIGNED(adapter->cmpRingPA, PAGE_SIZE));
++	BUG_ON(!PAGE_ALIGNED(adapter->ringStatePA));
++	BUG_ON(!PAGE_ALIGNED(adapter->reqRingPA));
++	BUG_ON(!PAGE_ALIGNED(adapter->cmpRingPA));
+ 
+ 	if (!adapter->use_msg)
+ 		return 0;
+@@ -453,7 +453,7 @@ static int pvscsi_allocate_rings(struct pvscsi_adapter *adapter)
+ 						 &adapter->msgRingPA);
+ 	if (!adapter->msg_ring)
+ 		return -ENOMEM;
+-	BUG_ON(!IS_ALIGNED(adapter->msgRingPA, PAGE_SIZE));
++	BUG_ON(!PAGE_ALIGNED(adapter->msgRingPA));
+ 
+ 	return 0;
+ }
+@@ -1280,7 +1280,7 @@ static int pvscsi_allocate_sg(struct pvscsi_adapter *adapter)
+ 		ctx->sgl = (void *)__get_free_pages(GFP_KERNEL,
+ 						    get_order(SGL_SIZE));
+ 		ctx->sglPA = 0;
+-		BUG_ON(!IS_ALIGNED(((unsigned long)ctx->sgl), PAGE_SIZE));
++		BUG_ON(!PAGE_ALIGNED((ctx->sgl)));
+ 		if (!ctx->sgl) {
+ 			for (; i >= 0; --i, --ctx) {
+ 				free_pages((unsigned long)ctx->sgl,
+-- 
+1.8.4.5
 
-Adam
