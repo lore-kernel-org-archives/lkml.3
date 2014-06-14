@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755045AbaFNSL4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 14:11:56 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:61240 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754955AbaFNSLz (ORCPT
+	id S1755026AbaFNSQz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 14:16:55 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:59905 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754762AbaFNSQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 14:11:55 -0400
-From: Nick <xerofoify@gmail.com>
-To: emilio@elopez.com.ar
-Cc: mturquette@linaro.org, maxime.ripard@free-electrons.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] Frees gate after if statement in clk-sunxi.c
-Date: Sat, 14 Jun 2014 14:11:48 -0400
-Message-Id: <1402769508-3821-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sat, 14 Jun 2014 14:16:53 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: Russ Cox <rsc@golang.org>, linux-api@vger.kernel.org,
+        Ian Taylor <iant@golang.org>, linux-kernel@vger.kernel.org
+Cc: X86 ML <x86@kernel.org>, dalias@libc.org,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [RFC 0/2] __vdso_findsym
+Date: Sat, 14 Jun 2014 11:16:42 -0700
+Message-Id: <cover.1402769596.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nick <xerofoify@gmail.com>
----
- drivers/clk/sunxi/clk-sunxi.c | 1 +
- 1 file changed, 1 insertion(+)
+The idea is to add AT_VDSO_FINDSYM pointing at __vdso_findsym.  This
+implements __vdso_findsym.
 
-diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-index 4264834..6f4fc51 100644
---- a/drivers/clk/sunxi/clk-sunxi.c
-+++ b/drivers/clk/sunxi/clk-sunxi.c
-@@ -42,6 +42,7 @@ static void __init sun4i_osc_clk_setup(struct device_node *node)
- 	u32 rate;
- 
- 	if (of_property_read_u32(node, "clock-frequency", &rate))
-+		kree(gate);
- 		return;
- 
- 	/* allocate fixed-rate and gate clock structs */
+This would make it easier for runtimes that don't otherwise implement
+ELF loaders to use the vdso.
+
+Thoughts?
+
+If people like the basic concept, I'll finish it, write up
+documentation and a selftest.  If people don't like it, I'll drop it.
+
+Andy Lutomirski (2):
+  uapi: Add some missing dynamic table-related definitions to elf.h
+  [NOT READY] x86/vdso: Add __vdso_findsym
+
+ arch/x86/vdso/Makefile          |   3 +
+ arch/x86/vdso/vdso-findsym.c    | 136 ++++++++++++++++++++++++++++++++++++++++
+ arch/x86/vdso/vdso-layout.lds.S |  11 ++--
+ arch/x86/vdso/vdso.lds.S        |   1 +
+ arch/x86/vdso/vdso2c.h          |   2 +-
+ include/uapi/linux/elf.h        | 121 +++++++++++++++++++++++++++++++++++
+ 6 files changed, 268 insertions(+), 6 deletions(-)
+ create mode 100644 arch/x86/vdso/vdso-findsym.c
+
 -- 
-1.9.1
+1.9.3
 
