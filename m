@@ -1,115 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289AbaFNA3A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 20:29:00 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:46395 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753196AbaFNA26 (ORCPT
+	id S1754265AbaFNAtA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 20:49:00 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:65226 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753132AbaFNAs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 20:28:58 -0400
+	Fri, 13 Jun 2014 20:48:59 -0400
+From: =?UTF-8?q?J=C3=A9r=C3=B4me=20Glisse?= <j.glisse@gmail.com>
+To: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Cc: mgorman@suse.de, hpa@zytor.com, peterz@infraread.org,
+        torvalds@linux-foundation.org, aarcange@redhat.com, riel@redhat.com,
+        jweiner@redhat.com
+Subject: HMM (Heterogeneous Memory Management) v3
+Date: Fri, 13 Jun 2014 20:48:28 -0400
+Message-Id: <1402706913-7432-1-git-send-email-j.glisse@gmail.com>
+X-Mailer: git-send-email 1.9.3
 MIME-Version: 1.0
-In-Reply-To: <1402691372-26282-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1402691372-26282-1-git-send-email-benjamin.tissoires@redhat.com>
-Date: Fri, 13 Jun 2014 17:28:56 -0700
-Message-ID: <CAF8JNhKBodDC0=M0evsN4xSn7+qPvQZ52XF+mfusgT_1L3Ks8w@mail.gmail.com>
-Subject: Re: [PATCH] Input - wacom: put a flag when the led are initialized
-From: Ping Cheng <pinglinux@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jason Gerecke <killertofu@gmail.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+This v3 of HMM patchset previous discussion can be found at :
+http://comments.gmane.org/gmane.linux.kernel.mm/116584
 
-On Fri, Jun 13, 2014 at 1:29 PM, Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
-> This solves a bug with the wireless receiver:
+We would like to see this included especialy all preparatory patches are
+they are cumberstone to rebase. They do not change any behavior except a
+slightly increased stack consumption by adding new argument to mmu notifier
+callback. I believe that those added argument might be of value not only
+to HMM but also to other user of the mmu_notifier API.
 
-Your patch does get rid of the crash. But, it does not fix it at the
-root cause.
+I hide the HMM core function behind staging so people understand this is
+not production ready but a base onto which we want to build support for all
+HMM features.
 
-> - at plug, the wireless receiver does not know which Wacom device it is
->   connected to, so it does not actually creates all the LEDs
+In nutshell HMM is an API to simplify mirroring a process address space on
+a secondary MMU that has its own page table (and most likely a different
+page table format incompatible with the architecture page table). To ensure
+that at all time CPU and mirroring device use the same page for the same
+address for a process the use of the mmu notifier API is the only sane way.
+This is because each CPU page table update is preceded or followed by a call
+to the mmu notifier.
 
-This is the root cause - LEDs are not created for wireless devices.
-Neither here, nor later when a real device is connected.
+Andrew if you fear this feature will not be use by anyone i can ask NVidia
+and/or AMD to public state their interest in it. So far HMM have been
+developed in a close collaboration with NVidia but at Red Hat (and NVidia
+is on board here) we want to make this as usefull as possible to other
+consumer too and not only for GPU. So any one who has hardware with its
+own MMU and its own page table and who wish to mirror a process address
+space is welcome to join the discussion and to ask for features or to
+discuss the API we expose to the device driver.
 
-> - when the tablet connects, wacom->wacom_wac.features.type is set to the
->   proper device so that wacom_wac can understand the packets
+Like i said in v2, i stripped the remote memory support from this patchset
+in order to make it easier to get the foundation in so that the remote
+memory support is easier and less painfull to work on.
 
-LEDs are not created for any wireless devices since we don't call
-wacom_initialize_leds() when real tablets are connected.
+Changed since v2:
+  - Hide core hmm behind staging
+  - Fixed up all checkpatch.pl issues
+  - Rebase on top of lastest linux-next
 
-> - when the receiver is unplugged, it detects that a LED should have been
->   created (based on wacom->wacom_wac.features.type) and tries to remove
->   it: crash when removing the sysfs group.
+Note that the dummy driver is not necesarily to be included i added it
+here so people can see an example driver. I however intend to grow the
+functionalities of the hmm dummy driver in order to make a test and
+regression suite for the core hmm.
 
-When receiver is unplugged, it remembers the last tablet that
-connected to it. If that tablet supports LEDs, wacom_destroy_leds() is
-called. But, no LEDs were initialized. That's why it crashes.
-
-> Side effect, we can now safely call several times wacom_destroy_leds().
-
-led_initialized will never be true if we keep wacom_initialize_leds()
-inside probe().
-
-To make initialize_leds() and desctroy_leds() work for wireless
-devices, we need to move them to wacom_wireless_work() where we know
-what type of tablet is connected/disconnected.
-
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-
-Thank you for your support. But, sorry
-
-NAKed-by: Ping Cheng <pingc@wacom.com>
-
-Ping
-
-> ---
->  drivers/input/tablet/wacom.h     | 1 +
->  drivers/input/tablet/wacom_sys.c | 6 ++++++
->  2 files changed, 7 insertions(+)
->
-> diff --git a/drivers/input/tablet/wacom.h b/drivers/input/tablet/wacom.h
-> index 70b1e71..f13ad31 100644
-> --- a/drivers/input/tablet/wacom.h
-> +++ b/drivers/input/tablet/wacom.h
-> @@ -120,6 +120,7 @@ struct wacom {
->                 u8 hlv;       /* status led brightness button pressed (1..127) */
->                 u8 img_lum;   /* OLED matrix display brightness */
->         } led;
-> +       bool led_initialized;
->         struct power_supply battery;
->  };
->
-> diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
-> index 94096fd..7087b33 100644
-> --- a/drivers/input/tablet/wacom_sys.c
-> +++ b/drivers/input/tablet/wacom_sys.c
-> @@ -1016,12 +1016,18 @@ static int wacom_initialize_leds(struct wacom *wacom)
->                 return error;
->         }
->         wacom_led_control(wacom);
-> +       wacom->led_initialized = true;
->
->         return 0;
->  }
->
->  static void wacom_destroy_leds(struct wacom *wacom)
->  {
-> +       if (!wacom->led_initialized)
-> +               return;
-> +
-> +       wacom->led_initialized = false;
-> +
->         switch (wacom->wacom_wac.features.type) {
->         case INTUOS4S:
->         case INTUOS4:
-> --
-> 1.9.0
->
+Cheers,
+Jérôme Glisse
