@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988AbaFNQdm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 12:33:42 -0400
-Received: from imap.thunk.org ([74.207.234.97]:39009 "EHLO imap.thunk.org"
+	id S1754817AbaFNQmV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 12:42:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60519 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754748AbaFNQdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 12:33:41 -0400
-Date: Sat, 14 Jun 2014 12:33:34 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: George Spelvin <linux@horizon.com>
-Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        price@mit.edu
-Subject: Re: random: Benchamrking fast_mix2
-Message-ID: <20140614163334.GJ6447@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	George Spelvin <linux@horizon.com>, hpa@linux.intel.com,
-	linux-kernel@vger.kernel.org, mingo@kernel.org, price@mit.edu
-References: <20140614111405.9630.qmail@ns.horizon.com>
- <20140614151314.2721.qmail@ns.horizon.com>
+	id S1754713AbaFNQmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 12:42:18 -0400
+Message-ID: <539C7B2F.9070800@zytor.com>
+Date: Sat, 14 Jun 2014 09:41:19 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140614151314.2721.qmail@ns.horizon.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Kees Cook <keescook@chromium.org>
+CC: Pavel Machek <pavel@ucw.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>, Len Brown <len.brown@intel.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 0/2] make kASLR vs hibernation boot-time selectable
+References: <1402602419-27934-1-git-send-email-keescook@chromium.org> <1517175.iyVMqh7r2z@vostro.rjw.lan> <CAGXu5jJSqV2MeuofJP4OEiDytQBqKMgC3cj+tguiwTmpRX1wSQ@mail.gmail.com> <13135927.OjVm86GPrt@vostro.rjw.lan>
+In-Reply-To: <13135927.OjVm86GPrt@vostro.rjw.lan>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK, using your averaging scheme, on a 32-bit KVM kernel, running at
-idle, here are my quick results:
+On 06/13/2014 05:39 PM, Rafael J. Wysocki wrote:
+>  
+> -#define RESTORE_MAGIC	0x0123456789ABCDEFUL
+> +#define RESTORE_MAGIC	0x0123456789ABCDF0UL
+>  
 
-Original
+<bikeshed>
 
-48028 51419
-46021 50065
-44750 49231
+Please don't pick numbers like this for magic numbers... *everyone else
+does, too.*  In general, picking a random number is a good starting
+point; for extra bonus make sure it has at least one invalid UTF-8
+sequence in it (so it cannot be confused with either ASCII or UTF-8 text.)
 
-Fastmix 2, 3 interations
+</bikeshed>
 
-95956 58313    
-97295 57599
-97242 56942
+	-hpa
 
-Fastmix 2, 2 iterations
-
-68998 41496
-68940 41471
-68619 41576
-
-Fastmix 2, 2 iterations, unrolled
-
-48725 39281
-48313 38424
-47349 37847
-
-So with two iterations are at least no worse than before (and in fact
-the deviation is less, which makes sense since we don't have the
-twist_array memory accesses), and I can easily believe there will be
-architectures/microarchitectures where it will be better.
-
-I'll need to do a bit more looking to convince myself that 2
-iterations is better from a mixing perspective, but this looks like it
-might be a promising replacement for the 32-bit mixer.
-
-      	   	     		     	 	- Ted
