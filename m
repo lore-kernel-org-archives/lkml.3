@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755053AbaFNQAr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 12:00:47 -0400
-Received: from imap.thunk.org ([74.207.234.97]:38979 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754800AbaFNQAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 12:00:45 -0400
-Date: Sat, 14 Jun 2014 12:00:41 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: George Spelvin <linux@horizon.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH-v2 4/4] random: clean up interrupt entropy accounting for
- archs w/o cycle counters
-Message-ID: <20140614160041.GI6447@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	George Spelvin <linux@horizon.com>, linux-kernel@vger.kernel.org
-References: <1402730118-23122-4-git-send-email-tytso@mit.edu>
- <20140614072849.27887.qmail@ns.horizon.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140614072849.27887.qmail@ns.horizon.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1755013AbaFNQGH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 12:06:07 -0400
+Received: from smtprelay0203.hostedemail.com ([216.40.44.203]:36581 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754875AbaFNQGF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 12:06:05 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:968:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3865:3866:3868:3870:3871:3872:4321:4605:5007:7652:10004:10400:10848:11026:11232:11658:11914:12296:12438:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: land09_8c147a5f6633e
+X-Filterd-Recvd-Size: 1509
+Message-ID: <1402761961.2756.12.camel@joe-AO725>
+Subject: Re: [PATCH] Coccinelle : Script to detect cast after memory
+ allocation
+From: Joe Perches <joe@perches.com>
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>, Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>, Michal Marek <mmarek@suse.cz>,
+        cocci@systeme.lip6.fr, linux-kernel@vger.kernel.org
+Date: Sat, 14 Jun 2014 09:06:01 -0700
+In-Reply-To: <20140614154541.GA4179@himangi-Dell>
+References: <20140614154541.GA4179@himangi-Dell>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 14, 2014 at 03:28:49AM -0400, George Spelvin wrote:
-> +	if (cycles || (fast_pool->notimer_count >= 32))
-> +		credit++;
-> 
-> Ah, this addresses my concern about too few interrupts, too.  If the
-> (non-timer) interrupt rate is less than 32/second, you'll never get any
-> credit.
+On Sat, 2014-06-14 at 21:15 +0530, Himangi Saraogi wrote:
+> This script detects cases of use of cast for the value returned by
+> kmalloc, kzalloc, kcalloc, kmem_cache_alloc, kmem_cache_zalloc,
+> kmem_cache_alloc_node, kmalloc_node and kzalloc_node and removes
+> the cast as it is not useful. This Coccinelle script replaces
+> drop_kmalloc_cast.cocci as it removes the casting in more limited
+> cases of kmalloc, kzalloc and kcalloc.
 
-I'll want to measure the interrupt rate on things like a mobile
-handset to see if this is a real problem or not, but the real question
-is if you don't have a cycle counter, and the system is largely idle,
-*and* all of the clocks are driven off of the same master oscillator,
-how much entropy do you really get from measuring timing interrupts
-where your time measurement has a granularity of 1/HZ seconds?  
+Perhaps make this more generic for any void *?
 
-Basically, at that point, you're getting most of your entorpy from
-instruction_pointer(regs), and whatever the value of irq is --- and if
-irq is mostly TIMER_IRQ, there's not much entropy there either.
+Something like:
 
-Also note that the question is not whether the non-timer interrupt
-rate is less than 32 seconds, but rather out of the last 64
-interrupts, how many of the interrupts come from non-timer sources?
-That's not the same thing, especially if you are running in tickless
-mode, which most modern kernels for mobile handsets would want to do
-for the obvious power savings reason.  Indeed the main concern on most
-mobile handsets is that there aren't that many interrupts to begin
-with, because they've been optimized out as much as possible.
+@@
+void *t;
+type other;
+@@
 
-The real answer is that ARM manufacuters have to get off their !@#!@?
-duff and give us either a real clock cycle counter, or a real hardware
-randum number generator, or both...
+-       (other *)t
++       t
 
-						- Ted
+
