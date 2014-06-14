@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135AbaFNKId (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 06:08:33 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:39096 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585AbaFNKIa (ORCPT
+	id S1754601AbaFNKJM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 06:09:12 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:50196 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754242AbaFNKJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 06:08:30 -0400
+	Sat, 14 Jun 2014 06:09:10 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -26,13 +26,13 @@ Subject: Re: [PATCH v2 06/10] CMA: generalize CMA reserved area management funct
 In-Reply-To: <1402543307-29800-7-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com> <1402543307-29800-7-git-send-email-iamjoonsoo.kim@lge.com>
 User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Sat, 14 Jun 2014 15:38:13 +0530
-Message-ID: <87fvj7g5wy.fsf@linux.vnet.ibm.com>
+Date: Sat, 14 Jun 2014 15:36:44 +0530
+Message-ID: <87ha3ng5zf.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061410-2000-0000-0000-000000889494
+x-cbid: 14061410-7014-0000-0000-000005129301
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
