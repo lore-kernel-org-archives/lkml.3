@@ -1,39 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583AbaFNHk4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 03:40:56 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:4353 "EHLO
-	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754207AbaFNHkz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 03:40:55 -0400
-X-IronPort-AV: E=Sophos;i="5.01,476,1400018400"; 
-   d="scan'208";a="67150544"
-Date: Sat, 14 Jun 2014 09:40:52 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Joe Perches <joe@perches.com>
-cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>,
-        Julia Lawall <julia.lawall@lip6.fr>, benoit.taine@lip6.fr
-Subject: Re: [RFC PATCH] checkpatch: Attempt to find unnecessary 'out of
- memory' messages
-In-Reply-To: <1402502500.6169.5.camel@joe-AO725>
-Message-ID: <alpine.DEB.2.02.1406140937370.2003@localhost6.localdomain6>
-References: <1402419340.30479.18.camel@joe-AO725>  <20140611074704.GS5015@mwanda> <1402502500.6169.5.camel@joe-AO725>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754523AbaFNIDg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 04:03:36 -0400
+Received: from ns.horizon.com ([71.41.210.147]:52385 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751911AbaFNIDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 04:03:30 -0400
+Date: 14 Jun 2014 04:03:29 -0400
+Message-ID: <20140614080329.29871.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, tytso@mit.edu
+Subject: Re: random: Benchamrking fast_mix2
+Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        price@mit.edu
+In-Reply-To: <20140614062458.GC6447@thunk.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With a semantic patch that searches for the various calls and then a 
-string containing the letters "emory", I get removals of the messages 
-below.  Do any of these messages look useful?  For example, some are 
-generated with specific functions, such as IRDA_ERROR or BT_ERR.  If none 
-of the messages look useful, should just one big patch go to trivial, or 
-should the patches go to the individual maintainers?
+> Want to give this patch a try on your collection of machines?
 
-julia
+Not until I fix it to 
+
++#if ADD_INTERRUPT_BENCH
++static unsigned long avg_cycles;
++
++#define AVG_SHIFT 8	/* Exponential average factor k=1/256 */
++#define FIXED_1_2 (1 << (AVG_SHIFT-1))
++
++static void add_interrupt_bench(cycles_t start)
++{
++	cycles_t duration = random_get_entropy() - start;
++
++	/* Use a weighted moving average */
++	avg_cycles += ((avg_cycles + FIXED_1_2) >> AVG_SHIFT) - duration;
++}
++#else
++#define add_interrupt_bench(x)
++#endif
++
+
+... because the way you did it was just silly.
+
+See net/ipv4/tcp_input.c:tcp_rtt_estimator().
+
+That also shows you how to add a mean deviation estimator, too.
+I'll go do that now...
