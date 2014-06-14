@@ -1,157 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844AbaFNOys (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 10:54:48 -0400
-Received: from smtp04.smtpout.orange.fr ([80.12.242.126]:30644 "EHLO
+	id S1754883AbaFNOzE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 10:55:04 -0400
+Received: from smtp04.smtpout.orange.fr ([80.12.242.126]:43381 "EHLO
 	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754734AbaFNOyq (ORCPT
+	with ESMTP id S1754802AbaFNOyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 14 Jun 2014 10:54:46 -0400
 X-ME-Helo: beldin.home
-X-ME-Date: Sat, 14 Jun 2014 16:54:42 +0200
+X-ME-Date: Sat, 14 Jun 2014 16:54:45 +0200
 X-ME-IP: 109.222.192.163
 From: Robert Jarzmik <robert.jarzmik@free.fr>
 To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
         devicetree@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Robert Jarzmik <robert.jarzmik@free.fr>
-Subject: [PATCH 1/2] regulator: max1586 add device-tree support
-Date: Sat, 14 Jun 2014 16:54:24 +0200
-Message-Id: <1402757665-15102-1-git-send-email-robert.jarzmik@free.fr>
+Subject: [PATCH 2/2] regulator: max1586 add device-tree support
+Date: Sat, 14 Jun 2014 16:54:25 +0200
+Message-Id: <1402757665-15102-2-git-send-email-robert.jarzmik@free.fr>
 X-Mailer: git-send-email 2.0.0.rc2
+In-Reply-To: <1402757665-15102-1-git-send-email-robert.jarzmik@free.fr>
+References: <1402757665-15102-1-git-send-email-robert.jarzmik@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device-tree support to max1586.
-The driver can still be used with the legacy platform data, or the new
-device-tree way.
-
-This work is heavily inspired by the device-tree support of its cousin
-max8660 driver.
+Add max1586 regulator device-tree bindings documentation.
 
 Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
 ---
- drivers/regulator/max1586.c       | 74 +++++++++++++++++++++++++++++++++++++--
- include/linux/regulator/max1586.h |  2 +-
- 2 files changed, 73 insertions(+), 3 deletions(-)
+ .../bindings/regulator/max1586-regulator.txt       | 28 ++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/regulator/max1586-regulator.txt
 
-diff --git a/drivers/regulator/max1586.c b/drivers/regulator/max1586.c
-index d23d057..0b04602 100644
---- a/drivers/regulator/max1586.c
-+++ b/drivers/regulator/max1586.c
-@@ -24,6 +24,8 @@
- #include <linux/regulator/driver.h>
- #include <linux/slab.h>
- #include <linux/regulator/max1586.h>
-+#include <linux/of_device.h>
-+#include <linux/regulator/of_regulator.h>
- 
- #define MAX1586_V3_MAX_VSEL 31
- #define MAX1586_V6_MAX_VSEL 3
-@@ -157,13 +159,80 @@ static struct regulator_desc max1586_reg[] = {
- 	},
- };
- 
-+int of_get_max1586_platform_data(struct device *dev,
-+				 struct max1586_platform_data *pdata)
-+{
-+	struct max1586_subdev_data *sub;
-+	struct of_regulator_match rmatch[ARRAY_SIZE(max1586_reg)];
-+	struct device_node *np = dev->of_node;
-+	int i, matched;
+diff --git a/Documentation/devicetree/bindings/regulator/max1586-regulator.txt b/Documentation/devicetree/bindings/regulator/max1586-regulator.txt
+new file mode 100644
+index 0000000..c050c17
+--- /dev/null
++++ b/Documentation/devicetree/bindings/regulator/max1586-regulator.txt
+@@ -0,0 +1,28 @@
++Maxim MAX1586 voltage regulator
 +
-+	if (of_property_read_u32(np, "v3-gain",
-+				 &pdata->v3_gain) < 0) {
-+		dev_err(dev, "%s has no 'v3-gain' property\n", np->full_name);
-+		return -EINVAL;
-+	}
++Required properties:
++- compatible: must be "maxim,max1586"
++- reg: I2C slave address, usually 0x14
++- v3-gain: integer specifying the V3 gain as per datasheet
++           (1 + R24/R25 + R24/185.5kOhm)
++- any required generic properties defined in regulator.txt
 +
-+	np = of_get_child_by_name(np, "regulators");
-+	if (!np) {
-+		dev_err(dev, "missing 'regulators' subnode in DT\n");
-+		return -EINVAL;
-+	}
++Example:
 +
-+	for (i = 0; i < ARRAY_SIZE(rmatch); i++)
-+		rmatch[i].name = max1586_reg[i].name;
++	i2c_master {
++		max1586@14 {
++			compatible = "maxim,max1586";
++			reg = <0x14>;
++			v3-gain = <1000000>;
 +
-+	matched = of_regulator_match(dev, np, rmatch, ARRAY_SIZE(rmatch));
-+	of_node_put(np);
-+	if (matched <= 0)
-+		return matched;
-+
-+	pdata->subdevs = devm_kzalloc(dev, sizeof(struct max1586_subdev_data) *
-+						matched, GFP_KERNEL);
-+	if (!pdata->subdevs)
-+		return -ENOMEM;
-+
-+	pdata->num_subdevs = matched;
-+	sub = pdata->subdevs;
-+
-+	for (i = 0; i < matched; i++) {
-+		sub->id = i;
-+		sub->name = rmatch[i].of_node->name;
-+		sub->platform_data = rmatch[i].init_data;
-+		sub++;
-+	}
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id max1586_of_match[] = {
-+	{ .compatible = "maxim,max1586", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, max1586_of_match);
-+
- static int max1586_pmic_probe(struct i2c_client *client,
- 					const struct i2c_device_id *i2c_id)
- {
--	struct max1586_platform_data *pdata = dev_get_platdata(&client->dev);
-+	struct max1586_platform_data *pdata, pdata_of;
- 	struct regulator_config config = { };
- 	struct max1586_data *max1586;
--	int i, id;
-+	int i, id, ret;
-+	const struct of_device_id *match;
-+
-+	pdata = dev_get_platdata(&client->dev);
-+	if (client->dev.of_node && !pdata) {
-+		match = of_match_device(of_match_ptr(max1586_of_match),
-+					&client->dev);
-+		if (!match) {
-+			dev_err(&client->dev, "Error: No device match found\n");
-+			return -ENODEV;
-+		}
-+		ret = of_get_max1586_platform_data(&client->dev, &pdata_of);
-+		if (ret < 0)
-+			return ret;
-+		pdata = &pdata_of;
-+	}
- 
- 	max1586 = devm_kzalloc(&client->dev, sizeof(struct max1586_data),
- 			GFP_KERNEL);
-@@ -229,6 +298,7 @@ static struct i2c_driver max1586_pmic_driver = {
- 	.driver		= {
- 		.name	= "max1586",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(max1586_of_match),
- 	},
- 	.id_table	= max1586_id,
- };
-diff --git a/include/linux/regulator/max1586.h b/include/linux/regulator/max1586.h
-index de9a7fa..cedd0fe 100644
---- a/include/linux/regulator/max1586.h
-+++ b/include/linux/regulator/max1586.h
-@@ -40,7 +40,7 @@
-  */
- struct max1586_subdev_data {
- 	int				id;
--	char				*name;
-+	const char			*name;
- 	struct regulator_init_data	*platform_data;
- };
- 
++			regulators {
++				vcc_core: v3 {
++					regulator-name = "vcc_core";
++					regulator-compatible = "Output_V3";
++					regulator-min-microvolt = <1000000>;
++					regulator-max-microvolt = <1705000>;
++					regulator-always-on;
++				};
++			};
++		};
++	};
 -- 
 2.0.0.rc2
 
