@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655AbaFNUoB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 16:44:01 -0400
-Received: from 1wt.eu ([62.212.114.60]:42865 "EHLO 1wt.eu"
+	id S1754012AbaFNUoO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 16:44:14 -0400
+Received: from 1wt.eu ([62.212.114.60]:42882 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753365AbaFNUn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 16:43:58 -0400
-Message-Id: <20140614191250.169302421@1wt.eu>
+	id S1753700AbaFNUoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 16:44:12 -0400
+Message-Id: <20140614191250.294887894@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Sat, 14 Jun 2014 21:12:51 +0200
+Date: Sat, 14 Jun 2014 21:12:54 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Ben Hutchings <bhutchings@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Wang Weidong <wangweidong1@huawei.com>, Willy Tarreau <w@1wt.eu>
-Subject: [ 1/9] ethtool: Report link-down while interface is down
+Cc: Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 4/9] futex-prevent-requeue-pi-on-same-futex.patch futex:
 In-Reply-To: <57d1129d02f4fc14423dd66474950cb7@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,79 +24,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
+ Forbid uaddr == uaddr2 in futex_requeue(...,
+ requeue_pi=1)
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-While an interface is down, many implementations of
-ethtool_ops::get_link, including the default, ethtool_op_get_link(),
-will report the last link state seen while the interface was up.  In
-general the current physical link state is not available if the
-interface is down.
+If uaddr == uaddr2, then we have broken the rule of only requeueing from
+a non-pi futex to a pi futex with this call.  If we attempt this, then
+dangling pointers may be left for rt_waiter resulting in an exploitable
+condition.
 
-Define ETHTOOL_GLINK to reflect whether the interface *and* any
-physical port have a working link, and consistently return 0 when the
-interface is down.
+This change brings futex_requeue() in line with futex_wait_requeue_pi()
+which performs the same check as per commit 6f7b0a2a5c0f ("futex: Forbid
+uaddr == uaddr2 in futex_wait_requeue_pi()")
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-(cherry picked from commit e596e6e4d578f2639416e620d367a3af34814a40)
-Cc: Wang Weidong <wangweidong1@huawei.com>
+[ tglx: Compare the resulting keys as well, as uaddrs might be
+  	different depending on the mapping ]
+
+Fixes CVE-2014-3153.
+
+Reported-by: Pinkie Pie
+Signed-off-by: Will Drewry <wad@chromium.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: stable@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Darren Hart <dvhart@linux.intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+(cherry picked from commit e9c243a5a6de0be8e584c604d353412584b592f8)
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- include/linux/ethtool.h |  4 +++-
- net/core/ethtool.c      | 17 +++++++++++++++--
- 2 files changed, 18 insertions(+), 3 deletions(-)
+ kernel/futex.c | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-diff --git a/include/linux/ethtool.h b/include/linux/ethtool.h
-index 7ffab7cb..3a0fae6 100644
---- a/include/linux/ethtool.h
-+++ b/include/linux/ethtool.h
-@@ -517,7 +517,9 @@ struct ethtool_ops {
- #define ETHTOOL_GMSGLVL		0x00000007 /* Get driver message level */
- #define ETHTOOL_SMSGLVL		0x00000008 /* Set driver msg level. */
- #define ETHTOOL_NWAY_RST	0x00000009 /* Restart autonegotiation. */
--#define ETHTOOL_GLINK		0x0000000a /* Get link status (ethtool_value) */
-+/* Get link status for host, i.e. whether the interface *and* the
-+ * physical port (if there is one) are up (ethtool_value). */
-+#define ETHTOOL_GLINK		0x0000000a
- #define ETHTOOL_GEEPROM		0x0000000b /* Get EEPROM data */
- #define ETHTOOL_SEEPROM		0x0000000c /* Set EEPROM data. */
- #define ETHTOOL_GCOALESCE	0x0000000e /* Get coalesce config */
-diff --git a/net/core/ethtool.c b/net/core/ethtool.c
-index abbe8fa..f9e7179 100644
---- a/net/core/ethtool.c
-+++ b/net/core/ethtool.c
-@@ -365,6 +365,20 @@ static int ethtool_nway_reset(struct net_device *dev)
- 	return dev->ethtool_ops->nway_reset(dev);
- }
+diff --git a/kernel/futex.c b/kernel/futex.c
+index c00b6e4..c894eab 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -1217,6 +1217,13 @@ static int futex_requeue(u32 __user *uaddr1, int fshared, u32 __user *uaddr2,
  
-+static int ethtool_get_link(struct net_device *dev, char __user *useraddr)
-+{
-+	struct ethtool_value edata = { .cmd = ETHTOOL_GLINK };
+ 	if (requeue_pi) {
+ 		/*
++		 * Requeue PI only works on two distinct uaddrs. This
++		 * check is only valid for private futexes. See below.
++		 */
++		if (uaddr1 == uaddr2)
++			return -EINVAL;
 +
-+	if (!dev->ethtool_ops->get_link)
-+		return -EOPNOTSUPP;
++		/*
+ 		 * requeue_pi requires a pi_state, try to allocate it now
+ 		 * without any locks in case it fails.
+ 		 */
+@@ -1254,6 +1261,15 @@ retry:
+ 	if (unlikely(ret != 0))
+ 		goto out_put_key1;
+ 
++	/*
++	 * The check above which compares uaddrs is not sufficient for
++	 * shared futexes. We need to compare the keys:
++	 */
++	if (requeue_pi && match_futex(&key1, &key2)) {
++		ret = -EINVAL;
++		goto out_put_keys;
++	}
 +
-+	edata.data = netif_running(dev) && dev->ethtool_ops->get_link(dev);
+ 	hb1 = hash_futex(&key1);
+ 	hb2 = hash_futex(&key2);
+ 
+@@ -2311,6 +2327,15 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, int fshared,
+ 	if (ret)
+ 		goto out_key2;
+ 
++	/*
++	 * The check above which compares uaddrs is not sufficient for
++	 * shared futexes. We need to compare the keys:
++	 */
++	if (match_futex(&q.key, &key2)) {
++		ret = -EINVAL;
++		goto out_put_keys;
++	}
 +
-+	if (copy_to_user(useraddr, &edata, sizeof(edata)))
-+		return -EFAULT;
-+	return 0;
-+}
-+
- static int ethtool_get_eeprom(struct net_device *dev, void __user *useraddr)
- {
- 	struct ethtool_eeprom eeprom;
-@@ -1016,8 +1030,7 @@ int dev_ethtool(struct net *net, struct ifreq *ifr)
- 		rc = ethtool_nway_reset(dev);
- 		break;
- 	case ETHTOOL_GLINK:
--		rc = ethtool_get_value(dev, useraddr, ethcmd,
--				       dev->ethtool_ops->get_link);
-+		rc = ethtool_get_link(dev, useraddr);
- 		break;
- 	case ETHTOOL_GEEPROM:
- 		rc = ethtool_get_eeprom(dev, useraddr);
+ 	/* Queue the futex_q, drop the hb lock, wait for wakeup. */
+ 	futex_wait_queue_me(hb, &q, to);
+ 
 -- 
 1.7.12.2.21.g234cd45.dirty
 
