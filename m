@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555AbaFNHXO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 03:23:14 -0400
-Received: from ns.horizon.com ([71.41.210.147]:24561 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754448AbaFNHXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 03:23:13 -0400
-Date: 14 Jun 2014 03:23:12 -0400
-Message-ID: <20140614072312.27656.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, tytso@mit.edu
-Subject: Re: [RFC] random: is the IRQF_TIMER test working as intended?
-Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        price@mit.edu
-In-Reply-To: <20140614064330.GE6447@thunk.org>
+	id S1754517AbaFNHZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 03:25:56 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:60333 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071AbaFNHZw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 03:25:52 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Alexander Graf <agraf@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH v2 00/10] CMA: generalize CMA reserved area management code
+In-Reply-To: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
+Date: Sat, 14 Jun 2014 12:55:39 +0530
+Message-ID: <87r42seyvg.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061407-7014-0000-0000-000005128380
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> In general, yes.  It's intended this way.  I'm trying to be extremely
-> conservative with my entropy measurements, and part of it is because
-> there is generally a huge amount of interrupts available, at least on
-> desktop systems, and I'd much rather be very conservative than not.
+Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 
-To be absolutely clear: being more aggressive is not the point.
+> Currently, there are two users on CMA functionality, one is the DMA
+> subsystem and the other is the kvm on powerpc. They have their own code
+> to manage CMA reserved area even if they looks really similar.
+> From my guess, it is caused by some needs on bitmap management. Kvm side
+> wants to maintain bitmap not for 1 page, but for more size. Eventually it
+> use bitmap where one bit represents 64 pages.
+>
+> When I implement CMA related patches, I should change those two places
+> to apply my change and it seem to be painful to me. I want to change
+> this situation and reduce future code management overhead through
+> this patch.
+>
+> This change could also help developer who want to use CMA in their
+> new feature development, since they can use CMA easily without
+> copying & pasting this reserved area management code.
+>
+> v2:
+>   Although this patchset looks very different with v1, the end result,
+>   that is, mm/cma.c is same with v1's one. So I carry Ack to patch 6-7.
+>
+> Patch 1-5 prepare some features to cover ppc kvm's requirements.
+> Patch 6-7 generalize CMA reserved area management code and change users
+> to use it.
+> Patch 8-10 clean-up minor things.
 
-Using 1/8 of a bit per sample was simply for convenience, to keep the
-patch smaller.  It can be easily adapted to be strictly more conservative.
 
-Consider the changes that make it more conservative:
-- Allow credit of less than 1 bit
-- If we get interrupts very rarely, credit *less* entropy.
-- Only allow credit for one side of a timer interrupt, not both.  If t2-t1
-  is too predictable, then x-t1 has all of the entropy that's available.
-  t2-x provides no new information.
+I wanted to test the ppc changes and found that the patch series doesn't apply
+against v3.15 . Do you have a kernel tree which I can clone to test this
+series ?
 
-> What I'd probably do instead is to count the number of timer
-> interrupts, and if it's more than 50% time interrupts, give 0 bits of
-> credit, else give 1 bit of credit each time we push from the fast pool
-> to the input pool.  Yes, that's being super conservative.
-
-If we're down in the 0/1 range, I really like the idea of allowing
-fractional credit.  How about crediting 1/64 of a bit per non-timer
-interrupt?  Equivalent result, but more linear.
-
-(Sorry if my digression about the sanity of 1/8 bit per sample confused
-things.  I was just trying to say "it's not totally crazy", not "you should
-do this".)
-
->> 1) Since the number of samples between spills to the input pool is
->>    variable (with > 64 samples now possible due to the trylock), wouldn't
->>    it make more sense to accumulate an entropy estimate?
-
-> In general, we probably will only retry a few times, so it's not
-> worth it.
-
-I'm not actually worrying about the "too many samples" case, but the
-"too few".  The worrisome case is when someone on an energy-saving quest
-succeeds in tuning the kernel (or just this particular processor) so it
-gets less than 1 interrupt per second.  Every interrupt credits 1 bit
-of entropy.  Is *that* super-conservative?
-
-I agree that longer delays have more jitter, so it's worth a little
-bit more, but shouldn't we try to get a curve the same shape as reality
-and *then* apply the safety factors?  Surely the presence or absence of
-intermediate samples makes *some* difference?
