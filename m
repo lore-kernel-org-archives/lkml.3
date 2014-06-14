@@ -1,128 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435AbaFNHUU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 03:20:20 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:48071 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868AbaFNHUS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 03:20:18 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH v2 09/10] mm, cma: move output param to the end of param list
-In-Reply-To: <1402543307-29800-10-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com> <1402543307-29800-10-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Sat, 14 Jun 2014 12:50:09 +0530
-Message-ID: <87tx7oez4m.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061407-5564-0000-0000-00000E5BA671
+	id S1754555AbaFNHXO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 03:23:14 -0400
+Received: from ns.horizon.com ([71.41.210.147]:24561 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754448AbaFNHXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 03:23:13 -0400
+Date: 14 Jun 2014 03:23:12 -0400
+Message-ID: <20140614072312.27656.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, tytso@mit.edu
+Subject: Re: [RFC] random: is the IRQF_TIMER test working as intended?
+Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        price@mit.edu
+In-Reply-To: <20140614064330.GE6447@thunk.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+> In general, yes.  It's intended this way.  I'm trying to be extremely
+> conservative with my entropy measurements, and part of it is because
+> there is generally a huge amount of interrupts available, at least on
+> desktop systems, and I'd much rather be very conservative than not.
 
-> Conventionally, we put output param to the end of param list.
-> cma_declare_contiguous() doesn't look like that, so change it.
->
-> Additionally, move down cma_areas reference code to the position
-> where it is really needed.
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To be absolutely clear: being more aggressive is not the point.
 
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Using 1/8 of a bit per sample was simply for convenience, to keep the
+patch smaller.  It can be easily adapted to be strictly more conservative.
 
->
-> diff --git a/arch/powerpc/kvm/book3s_hv_builtin.c b/arch/powerpc/kvm/book3s_hv_builtin.c
-> index 28ec226..97613ea 100644
-> --- a/arch/powerpc/kvm/book3s_hv_builtin.c
-> +++ b/arch/powerpc/kvm/book3s_hv_builtin.c
-> @@ -184,7 +184,7 @@ void __init kvm_cma_reserve(void)
->
->  		align_size = max(kvm_rma_pages << PAGE_SHIFT, align_size);
->  		cma_declare_contiguous(selected_size, 0, 0, align_size,
-> -			KVM_CMA_CHUNK_ORDER - PAGE_SHIFT, &kvm_cma, false);
-> +			KVM_CMA_CHUNK_ORDER - PAGE_SHIFT, false, &kvm_cma);
->  	}
->  }
->
-> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-> index f177f73..bfd4553 100644
-> --- a/drivers/base/dma-contiguous.c
-> +++ b/drivers/base/dma-contiguous.c
-> @@ -149,7 +149,7 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
->  {
->  	int ret;
->
-> -	ret = cma_declare_contiguous(size, base, limit, 0, 0, res_cma, fixed);
-> +	ret = cma_declare_contiguous(size, base, limit, 0, 0, fixed, res_cma);
->  	if (ret)
->  		return ret;
->
-> diff --git a/include/linux/cma.h b/include/linux/cma.h
-> index e38efe9..e53eead 100644
-> --- a/include/linux/cma.h
-> +++ b/include/linux/cma.h
-> @@ -6,7 +6,7 @@ struct cma;
->  extern int __init cma_declare_contiguous(phys_addr_t size,
->  				phys_addr_t base, phys_addr_t limit,
->  				phys_addr_t alignment, int order_per_bit,
-> -				struct cma **res_cma, bool fixed);
-> +				bool fixed, struct cma **res_cma);
->  extern struct page *cma_alloc(struct cma *cma, int count, unsigned int align);
->  extern bool cma_release(struct cma *cma, struct page *pages, int count);
->  #endif
-> diff --git a/mm/cma.c b/mm/cma.c
-> index 01a0713..22a5b23 100644
-> --- a/mm/cma.c
-> +++ b/mm/cma.c
-> @@ -142,8 +142,8 @@ core_initcall(cma_init_reserved_areas);
->   * @limit: End address of the reserved memory (optional, 0 for any).
->   * @alignment: Alignment for the contiguous memory area, should be power of 2
->   * @order_per_bit: Order of pages represented by one bit on bitmap.
-> - * @res_cma: Pointer to store the created cma region.
->   * @fixed: hint about where to place the reserved area
-> + * @res_cma: Pointer to store the created cma region.
->   *
->   * This function reserves memory from early allocator. It should be
->   * called by arch specific code once the early allocator (memblock or bootmem)
-> @@ -156,9 +156,9 @@ core_initcall(cma_init_reserved_areas);
->  int __init cma_declare_contiguous(phys_addr_t size,
->  				phys_addr_t base, phys_addr_t limit,
->  				phys_addr_t alignment, int order_per_bit,
-> -				struct cma **res_cma, bool fixed)
-> +				bool fixed, struct cma **res_cma)
->  {
-> -	struct cma *cma = &cma_areas[cma_area_count];
-> +	struct cma *cma;
->  	int ret = 0;
->
->  	pr_debug("%s(size %lx, base %08lx, limit %08lx alignment %08lx)\n",
-> @@ -214,6 +214,7 @@ int __init cma_declare_contiguous(phys_addr_t size,
->  	 * Each reserved area must be initialised later, when more kernel
->  	 * subsystems (like slab allocator) are available.
->  	 */
-> +	cma = &cma_areas[cma_area_count];
->  	cma->base_pfn = PFN_DOWN(base);
->  	cma->count = size >> PAGE_SHIFT;
->  	cma->order_per_bit = order_per_bit;
-> -- 
-> 1.7.9.5
+Consider the changes that make it more conservative:
+- Allow credit of less than 1 bit
+- If we get interrupts very rarely, credit *less* entropy.
+- Only allow credit for one side of a timer interrupt, not both.  If t2-t1
+  is too predictable, then x-t1 has all of the entropy that's available.
+  t2-x provides no new information.
 
+> What I'd probably do instead is to count the number of timer
+> interrupts, and if it's more than 50% time interrupts, give 0 bits of
+> credit, else give 1 bit of credit each time we push from the fast pool
+> to the input pool.  Yes, that's being super conservative.
+
+If we're down in the 0/1 range, I really like the idea of allowing
+fractional credit.  How about crediting 1/64 of a bit per non-timer
+interrupt?  Equivalent result, but more linear.
+
+(Sorry if my digression about the sanity of 1/8 bit per sample confused
+things.  I was just trying to say "it's not totally crazy", not "you should
+do this".)
+
+>> 1) Since the number of samples between spills to the input pool is
+>>    variable (with > 64 samples now possible due to the trylock), wouldn't
+>>    it make more sense to accumulate an entropy estimate?
+
+> In general, we probably will only retry a few times, so it's not
+> worth it.
+
+I'm not actually worrying about the "too many samples" case, but the
+"too few".  The worrisome case is when someone on an energy-saving quest
+succeeds in tuning the kernel (or just this particular processor) so it
+gets less than 1 interrupt per second.  Every interrupt credits 1 bit
+of entropy.  Is *that* super-conservative?
+
+I agree that longer delays have more jitter, so it's worth a little
+bit more, but shouldn't we try to get a curve the same shape as reality
+and *then* apply the safety factors?  Surely the presence or absence of
+intermediate samples makes *some* difference?
