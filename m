@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751338AbaFNXeb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 19:34:31 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:48964 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861AbaFNXe0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 19:34:26 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Rob Herring <robh+dt@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Valentina Manea <valentina.manea.m@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH] staging: imx-drm: ipu-v3: ipu-common.c:  Cleaning up return of uninitialized variable
-Date: Sun, 15 Jun 2014 01:35:21 +0200
-Message-Id: <1402788921-15458-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1402788921-15458-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1402788921-15458-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	id S1751533AbaFNXgn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 19:36:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34762 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750888AbaFNXgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 19:36:41 -0400
+Message-ID: <539CDC6F.6010501@zytor.com>
+Date: Sat, 14 Jun 2014 16:36:15 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Andy Lutomirski <luto@amacapital.net>, Rich Felker <dalias@libc.org>
+CC: Russ Cox <rsc@golang.org>, Linux API <linux-api@vger.kernel.org>,
+        Ian Taylor <iant@golang.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>
+Subject: Re: [RFC 0/2] __vdso_findsym
+References: <cover.1402769596.git.luto@amacapital.net> <20140614213000.GO179@brightrain.aerifal.cx> <CALCETrX3Kv7VAfYau-79odKtRvME0-AzZB_xGUMPEHeas8AkaQ@mail.gmail.com>
+In-Reply-To: <CALCETrX3Kv7VAfYau-79odKtRvME0-AzZB_xGUMPEHeas8AkaQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before when there was an error a uninitialized variable would be returnd.
-Now it returns -ENODEV
+On 06/14/2014 03:38 PM, Andy Lutomirski wrote:
+> 
+> Hmm.  I hadn't thought of this as a size win, but I guess it could be
+> if there are static binaries around.
+> 
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/staging/imx-drm/ipu-v3/ipu-common.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+That pretty much *is* the win, because this is in effect treating the
+kernel vdso as a shared library.
 
-diff --git a/drivers/staging/imx-drm/ipu-v3/ipu-common.c b/drivers/staging/imx-drm/ipu-v3/ipu-common.c
-index ca85d3d..468e364 100644
---- a/drivers/staging/imx-drm/ipu-v3/ipu-common.c
-+++ b/drivers/staging/imx-drm/ipu-v3/ipu-common.c
-@@ -1002,7 +1002,7 @@ static int ipu_add_client_devices(struct ipu_soc *ipu)
- {
- 	struct device *dev = ipu->dev;
- 	unsigned i;
--	int id, ret;
-+	int id;
- 
- 	mutex_lock(&ipu_client_id_mutex);
- 	id = ipu_client_id;
-@@ -1025,7 +1025,7 @@ static int ipu_add_client_devices(struct ipu_soc *ipu)
- err_register:
- 	platform_device_unregister_children(to_platform_device(dev));
- 
--	return ret;
-+	return -ENODEV;
- }
- 
- 
--- 
-1.7.10.4
+> This patch currently generates 488 bytes on text with my toolchain.
+> More than half of that is garbage needed to deal with the symbol
+> version tables, and I should be able to move a decent fraction of it
+> to vdso2c and therefore out of the kernel and vdso images.
+
+Now, if we can do this without adding another page then that becomes
+much more compelling IMO.  I suspect we can if you are already down to
+488 bytes.
+
+	-hpa
+
 
