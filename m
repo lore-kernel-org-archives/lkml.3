@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012AbaFNUoO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 16:44:14 -0400
-Received: from 1wt.eu ([62.212.114.60]:42882 "EHLO 1wt.eu"
+	id S1753858AbaFNUoK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 16:44:10 -0400
+Received: from 1wt.eu ([62.212.114.60]:42877 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753700AbaFNUoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 16:44:12 -0400
-Message-Id: <20140614191250.294887894@1wt.eu>
+	id S1753693AbaFNUoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 16:44:06 -0400
+Message-Id: <20140614191250.499750488@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Sat, 14 Jun 2014 21:12:54 +0200
+Date: Sat, 14 Jun 2014 21:12:59 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 4/9] futex-prevent-requeue-pi-on-same-futex.patch futex:
+Cc: tyler.hicks@canonical.com, luis.henriques@canonical.com,
+        Michal Tesar <mtesar@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 9/9] net: fix regression introduced in 2.6.32.62 by sysctl
 In-Reply-To: <57d1129d02f4fc14423dd66474950cb7@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,90 +23,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- Forbid uaddr == uaddr2 in futex_requeue(...,
- requeue_pi=1)
+ fixes
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Willy Tarreau <w@1wt.eu>
 
-If uaddr == uaddr2, then we have broken the rule of only requeueing from
-a non-pi futex to a pi futex with this call.  If we attempt this, then
-dangling pointers may be left for rt_waiter resulting in an exploitable
-condition.
+Commits b7c9e4ee1 ("sysctl net: Keep tcp_syn_retries inside the boundary")
+and eedcafdc ("net: check net.core.somaxconn sysctl values") were missing
+a .strategy entry which is still required in 2.6.32. Because of this, the
+Ubuntu kernel team has faced kernel dumps during their testing.
 
-This change brings futex_requeue() in line with futex_wait_requeue_pi()
-which performs the same check as per commit 6f7b0a2a5c0f ("futex: Forbid
-uaddr == uaddr2 in futex_wait_requeue_pi()")
+Tyler Hicks and Luis Henriques proposed this patch to fix the issue,
+which properly sets .strategy as needed in 2.6.32.
 
-[ tglx: Compare the resulting keys as well, as uaddrs might be
-  	different depending on the mapping ]
-
-Fixes CVE-2014-3153.
-
-Reported-by: Pinkie Pie
-Signed-off-by: Will Drewry <wad@chromium.org>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: stable@vger.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Darren Hart <dvhart@linux.intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-(cherry picked from commit e9c243a5a6de0be8e584c604d353412584b592f8)
+Reported-by: Luis Henriques <luis.henriques@canonical.com>
+Cc: tyler.hicks@canonical.com
+Cc: Michal Tesar <mtesar@redhat.com>
+Cc: David S. Miller <davem@davemloft.net>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- kernel/futex.c | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ net/core/sysctl_net_core.c | 3 ++-
+ net/ipv4/sysctl_net_ipv4.c | 3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index c00b6e4..c894eab 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -1217,6 +1217,13 @@ static int futex_requeue(u32 __user *uaddr1, int fshared, u32 __user *uaddr2,
- 
- 	if (requeue_pi) {
- 		/*
-+		 * Requeue PI only works on two distinct uaddrs. This
-+		 * check is only valid for private futexes. See below.
-+		 */
-+		if (uaddr1 == uaddr2)
-+			return -EINVAL;
-+
-+		/*
- 		 * requeue_pi requires a pi_state, try to allocate it now
- 		 * without any locks in case it fails.
- 		 */
-@@ -1254,6 +1261,15 @@ retry:
- 	if (unlikely(ret != 0))
- 		goto out_put_key1;
- 
-+	/*
-+	 * The check above which compares uaddrs is not sufficient for
-+	 * shared futexes. We need to compare the keys:
-+	 */
-+	if (requeue_pi && match_futex(&key1, &key2)) {
-+		ret = -EINVAL;
-+		goto out_put_keys;
-+	}
-+
- 	hb1 = hash_futex(&key1);
- 	hb2 = hash_futex(&key2);
- 
-@@ -2311,6 +2327,15 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, int fshared,
- 	if (ret)
- 		goto out_key2;
- 
-+	/*
-+	 * The check above which compares uaddrs is not sufficient for
-+	 * shared futexes. We need to compare the keys:
-+	 */
-+	if (match_futex(&q.key, &key2)) {
-+		ret = -EINVAL;
-+		goto out_put_keys;
-+	}
-+
- 	/* Queue the futex_q, drop the hb lock, wait for wakeup. */
- 	futex_wait_queue_me(hb, &q, to);
- 
+diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
+index e2eaf29..e6bf72c 100644
+--- a/net/core/sysctl_net_core.c
++++ b/net/core/sysctl_net_core.c
+@@ -121,7 +121,8 @@ static struct ctl_table netns_core_table[] = {
+ 		.mode		= 0644,
+ 		.extra1		= &zero,
+ 		.extra2		= &ushort_max,
+-		.proc_handler	= proc_dointvec_minmax
++		.proc_handler	= proc_dointvec_minmax,
++		.strategy	= &sysctl_intvec
+ 	},
+ 	{ .ctl_name = 0 }
+ };
+diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
+index 910fa54..d957371 100644
+--- a/net/ipv4/sysctl_net_ipv4.c
++++ b/net/ipv4/sysctl_net_ipv4.c
+@@ -241,7 +241,8 @@ static struct ctl_table ipv4_table[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec_minmax,
+ 		.extra1		= &tcp_syn_retries_min,
+-		.extra2		= &tcp_syn_retries_max
++		.extra2		= &tcp_syn_retries_max,
++		.strategy	= &sysctl_intvec
+ 	},
+ 	{
+ 		.ctl_name	= NET_IPV4_NONLOCAL_BIND,
 -- 
 1.7.12.2.21.g234cd45.dirty
+
 
 
 
