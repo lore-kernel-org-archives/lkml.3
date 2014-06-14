@@ -1,89 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755AbaFNNKU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 09:10:20 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:40417 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754679AbaFNNKT (ORCPT
+	id S1754773AbaFNNKi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 09:10:38 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:32979 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754679AbaFNNKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 09:10:19 -0400
-Date: Sat, 14 Jun 2014 15:10:15 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH] rcu: Only pin GP kthread when full dynticks is actually
- used
-Message-ID: <20140614131013.GD16504@localhost.localdomain>
-References: <20140613162130.GP6635@localhost.localdomain>
- <20140613164441.GA14232@thin>
- <20140613204822.GT4581@linux.vnet.ibm.com>
- <20140613211034.GA10651@jtriplet-mobl1>
- <20140613224926.GW4581@linux.vnet.ibm.com>
- <20140613231033.GR6635@localhost.localdomain>
- <20140613232715.GB4581@linux.vnet.ibm.com>
- <20140613233933.GT6635@localhost.localdomain>
- <20140614050606.GD4581@linux.vnet.ibm.com>
- <20140614112639.GA11022@linux.vnet.ibm.com>
+	Sat, 14 Jun 2014 09:10:37 -0400
+Message-ID: <539C49B3.7000606@windriver.com>
+Date: Sat, 14 Jun 2014 21:10:11 +0800
+From: "Yang,Wei" <Wei.Yang@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140614112639.GA11022@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: <balbi@ti.com>, <mina86@mina86.com>, <andrzej.p@samsung.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] USB:gadget: Fix a warning while loading g_mass_storage
+References: <Pine.LNX.4.44L0.1406130935500.1059-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1406130935500.1059-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.162.170]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 14, 2014 at 04:26:39AM -0700, Paul E. McKenney wrote:
-> On Fri, Jun 13, 2014 at 10:06:06PM -0700, Paul E. McKenney wrote:
-> > On Sat, Jun 14, 2014 at 01:39:36AM +0200, Frederic Weisbecker wrote:
-> > > On Fri, Jun 13, 2014 at 04:27:15PM -0700, Paul E. McKenney wrote:
-> 
-> [ . . . ]
-> 
-> > > > If I was to extend rcu_needs_cpu(), I would add a flag and another counter
-> > > > to the rcu_data structure.  If rcu_needs_cpu() saw the flag set and the
-> > > > counter equal to the current ->completed value, it would return true.
-> > > > 
-> > > > I already have the rcu_kick_nohz_cpu() in rcu_implicit_dynticks_qs(),
-> > > > so it is just a matter of also setting the flag and copying ->completed
-> > > > to the new counter at that point.  I currently get to this point if the
-> > > > CPU has managed to run for more than one jiffy without hitting either
-> > > > idle or userspace execution.  Fair enough?
-> > > 
-> > > Perfect for me!
-> > 
-> > One complication...  So if the grace period has gone on for a long time,
-> > and you are returning to kernel mode, RCU will need the scheduling-clock
-> > tick.  However, in that very same situation, if you are returning to
-> > idle or to NO_HZ_FULL userspace execution, RCU does -not- need the
-> > scheduling-clock tick set.
-> > 
-> > One way I could do this is to have rcu_needs_cpu() return three values:
-> > Zero for RCU doesn't need a scheduling-clock tick for any reason,
-> > one if RCU needs a scheduling-clock tick only if returning to kernel
-> > mode, and two if RCU unconditionally needs the scheduling-clock tick.
-> > Would that work, or is there a better approach?
-> 
-> You know, it just feels like RCU -should- be able to solve this
-> internally.
+On 06/13/2014 09:39 PM, Alan Stern wrote:
+> On Fri, 13 Jun 2014, Yang,Wei wrote:
+>
+>> On 06/09/2014 02:19 PM, Wei.Yang@windriver.com wrote:
+>>> From: Yang Wei <Wei.Yang@windriver.com>
+>>>
+>>> While loading g_mass_storage module, the following warning
+>>> is triggered.
+>>>
+>>> WARNING: at drivers/usb/gadget/composite.c:
+>>> usb_composite_setup_continue: Unexpected call
+>>> Modules linked in: fat vfat minix nls_cp437 nls_iso8859_1 g_mass_storage
+>>> [<800179cc>] (unwind_backtrace+0x0/0x104) from [<80619608>] (dump_stack+0x20/0x24)
+>>> [<80619608>] (dump_stack+0x20/0x24) from [<80025100>] (warn_slowpath_common+0x64/0x74)
+>>> [<80025100>] (warn_slowpath_common+0x64/0x74) from [<800251cc>] (warn_slowpath_fmt+0x40/0x48)
+>>> [<800251cc>] (warn_slowpath_fmt+0x40/0x48) from [<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage])
+>>> [<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage]) from [<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage])
+>>> [<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage]) from [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage])
+>>> [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage]) from [<8004bc90>] (kthread+0x98/0x9c)
+>>> [<8004bc90>] (kthread+0x98/0x9c) from [<8000faec>] (kernel_thread_exit+0x0/0x8)
+>>>
+>>> The root cause is that the existing code fails to take into
+>>> account the possibility that common->new_fsg can change while
+>>> do_set_interface() is running, because the spinlock isn't held
+>>> at this point.
+>>>
+>>> Signed-off-by: Yang Wei <Wei.Yang@windriver.com>
+>>> Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+>>> ---
+>>>    drivers/usb/gadget/f_mass_storage.c |    6 ++++--
+>>>    1 file changed, 4 insertions(+), 2 deletions(-)
+>>>
+>>> Hi Alan,
+>>>
+>>> Thanks for your review, there are a few changes in v3:
+>>>
+>>> 1) Fix a coding style issue.
+>>> 2) Refine the commit log
+>>>
+>>> Regards
+>>> Wei
+>> Ping, Alan, What do you think of it?
+> You should not have added my "Signed-off-by:"; I did not give you
+> permission to do that.
 
-Right, I should have read all emails before answering :)
+Sorry for it, I considered that you give me a few advice and hep me to 
+refine the commit log,
+so I added your signed off. Sorry again!
 
-> So if determining that you are returning to kernel mode is
-> at all inconvenient, give me a couple days to think this through.
+>
+> Michal's comment about common->new_fsg not being protected by the lock
+> is a good one.  It would be better for the patch description to say:
+>
+> 	The value of common->new_fsg that gets tested after
+> 	do_set_interface() returns needs to be the same as the value
+> 	used by do_set_interface().
+>
+> With that change, you may add
+>
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
-Right so context_tracking_in_user() is probably what you need. Its semantics
-are:
+Okay, I would use the above description in v4.
 
-1) If we are in syscall or exception, it says we are in the kernel
-2) If we are in interrupt, it says where we return (kernel or userspace).
+Regards
+Wei
+>
+> Alan Stern
+>
+>
+>
 
-Or course that's all subject to tiny error margin (soft versus hard userspace
-detection) but that shouldn't matter much as even with true hard detection,
-things can change quickly.
-
-> 
-> 							Thanx, Paul
-> 
