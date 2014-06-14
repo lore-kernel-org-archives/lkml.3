@@ -1,30 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316AbaFNUos (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 16:44:48 -0400
-Received: from 1wt.eu ([62.212.114.60]:42906 "EHLO 1wt.eu"
+	id S1754632AbaFNUqR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 16:46:17 -0400
+Received: from 1wt.eu ([62.212.114.60]:42867 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754242AbaFNUoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 16:44:46 -0400
-Message-Id: <20140614191250.253462412@1wt.eu>
+	id S1753420AbaFNUn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 16:43:59 -0400
+Message-Id: <20140614191250.459281089@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Sat, 14 Jun 2014 21:12:53 +0200
+Date: Sat, 14 Jun 2014 21:12:58 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
+Cc: Andy Lutomirski <luto@amacapital.net>, Eric Paris <eparis@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Darren Hart <darren@dvhart.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Clark Williams <williams@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 3/9] futex: Prevent attaching to kernel threads
+Subject: [ 8/9] auditsc: audit_krule mask accesses need bounds checking
 In-Reply-To: <57d1129d02f4fc14423dd66474950cb7@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,57 +24,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Andy Lutomirski <luto@amacapital.net>
 
-We happily allow userspace to declare a random kernel thread to be the
-owner of a user space PI futex.
+Fixes an easy DoS and possible information disclosure.
 
-Found while analysing the fallout of Dave Jones syscall fuzzer.
+This does nothing about the broken state of x32 auditing.
 
-We also should validate the thread group for private futexes and find
-some fast way to validate whether the "alleged" owner has RW access on
-the file which backs the SHM, but that's a separate issue.
+eparis: If the admin has enabled auditd and has specifically loaded
+audit rules.  This bug has been around since before git.  Wow...
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Darren Hart <darren@dvhart.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Clark Williams <williams@redhat.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Roland McGrath <roland@hack.frob.com>
-Cc: Carlos ODonell <carlos@redhat.com>
-Cc: Jakub Jelinek <jakub@redhat.com>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Link: http://lkml.kernel.org/r/20140512201701.194824402@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: stable@vger.kernel.org
-(cherry picked from commit f0d71b3dcb8332f7971b5f2363632573e6d9486a)
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+(cherry picked from commit a3c54931199565930d6d84f4c3456f6440aefd41)
+[wt: no audit_filter_inode_name(), applied to audit_filter_inodes() instead]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- kernel/futex.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ kernel/auditsc.c | 25 ++++++++++++++++++-------
+ 1 file changed, 18 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 731b271..c00b6e4 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -610,6 +610,11 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
- 	if (!p)
- 		return -ESRCH;
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index 267e484..b6998ef 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -680,6 +680,22 @@ static enum audit_state audit_filter_task(struct task_struct *tsk, char **key)
+ 	return AUDIT_BUILD_CONTEXT;
+ }
  
-+	if (!p->mm) {
-+		put_task_struct(p);
-+		return -EPERM;
-+	}
++static int audit_in_mask(const struct audit_krule *rule, unsigned long val)
++{
++	int word, bit;
 +
- 	/*
- 	 * We need to look at the task state flags to figure out,
- 	 * whether the task is exiting. To protect against the do_exit
++	if (val > 0xffffffff)
++		return false;
++
++	word = AUDIT_WORD(val);
++	if (word >= AUDIT_BITMASK_SIZE)
++		return false;
++
++	bit = AUDIT_BIT(val);
++
++	return rule->mask[word] & bit;
++}
++
+ /* At syscall entry and exit time, this filter is called if the
+  * audit_state is not low enough that auditing cannot take place, but is
+  * also not high enough that we already know we have to write an audit
+@@ -697,11 +713,8 @@ static enum audit_state audit_filter_syscall(struct task_struct *tsk,
+ 
+ 	rcu_read_lock();
+ 	if (!list_empty(list)) {
+-		int word = AUDIT_WORD(ctx->major);
+-		int bit  = AUDIT_BIT(ctx->major);
+-
+ 		list_for_each_entry_rcu(e, list, list) {
+-			if ((e->rule.mask[word] & bit) == bit &&
++			if (audit_in_mask(&e->rule, ctx->major) &&
+ 			    audit_filter_rules(tsk, &e->rule, ctx, NULL,
+ 					       &state)) {
+ 				rcu_read_unlock();
+@@ -730,8 +743,6 @@ void audit_filter_inodes(struct task_struct *tsk, struct audit_context *ctx)
+ 
+ 	rcu_read_lock();
+ 	for (i = 0; i < ctx->name_count; i++) {
+-		int word = AUDIT_WORD(ctx->major);
+-		int bit  = AUDIT_BIT(ctx->major);
+ 		struct audit_names *n = &ctx->names[i];
+ 		int h = audit_hash_ino((u32)n->ino);
+ 		struct list_head *list = &audit_inode_hash[h];
+@@ -740,7 +751,7 @@ void audit_filter_inodes(struct task_struct *tsk, struct audit_context *ctx)
+ 			continue;
+ 
+ 		list_for_each_entry_rcu(e, list, list) {
+-			if ((e->rule.mask[word] & bit) == bit &&
++			if (audit_in_mask(&e->rule, ctx->major) &&
+ 			    audit_filter_rules(tsk, &e->rule, ctx, n, &state)) {
+ 				rcu_read_unlock();
+ 				ctx->current_state = state;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
