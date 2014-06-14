@@ -1,79 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369AbaFNADP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jun 2014 20:03:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62156 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754235AbaFNADN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jun 2014 20:03:13 -0400
-Date: Fri, 13 Jun 2014 20:02:58 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-ima-user <linux-ima-user@lists.sourceforge.net>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-audit@redhat.com
-Subject: Re: oraphaned keywords in audit log text [was: Re: [PATCH]
- integrity: get comm using lock to avoid race in string] printing
-Message-ID: <20140614000258.GA14900@madcap2.tricolour.ca>
-References: <11db0d126ef0ec7506ef5cb6f2f21c926d206436.1396455228.git.rgb@redhat.com>
- <1396460387.20325.22.camel@dhcp-9-2-203-236.watson.ibm.com>
- <6292885.20TorKeRiK@x2>
- <1396462368.20325.26.camel@dhcp-9-2-203-236.watson.ibm.com>
- <1396462716.2608.1.camel@localhost>
- <1396463260.20325.28.camel@dhcp-9-2-203-236.watson.ibm.com>
- <20140402185250.GB24814@madcap2.tricolour.ca>
+	id S1754413AbaFNADt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jun 2014 20:03:49 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:46224 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754390AbaFNADs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jun 2014 20:03:48 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Rafael Tinoco <rafael.tinoco@canonical.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Dave Chiluk <chiluk@canonical.com>, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, Christopher Arges <chris.j.arges@canonical.com>,
+        Jay Vosburgh <jay.vosburgh@canonical.com>
+References: <CAJE_dJyfq5zWcs2y52siXRruCCA1Dk_=Ds=rZ8BrBZLa7FCbuQ@mail.gmail.com>
+	<20140611133919.GZ4581@linux.vnet.ibm.com>
+	<CAJE_dJwfaUkop=XZxD-BfDPwKDjnfF1bvmD6XWaqVA4Xt2E6bQ@mail.gmail.com>
+	<539879B8.4010204@canonical.com>
+	<20140611161857.GC4581@linux.vnet.ibm.com>
+	<53989F7B.6000004@canonical.com>
+	<874mzr41kf.fsf@x220.int.ebiederm.org>
+	<20140611225228.GO4581@linux.vnet.ibm.com>
+	<87ioo7vy5s.fsf@x220.int.ebiederm.org>
+	<20140611234902.GQ4581@linux.vnet.ibm.com>
+	<87bntzt24g.fsf@x220.int.ebiederm.org>
+	<CAJE_dJzzj2uf+YEXhAngJDKev=Lc4O6fyKfHoO2PbzD90VuuVw@mail.gmail.com>
+	<874mzrszlk.fsf@x220.int.ebiederm.org>
+	<CAJE_dJzShXxjsywRo_kwa0ez6Seu7+dModbz2Lvha5iuJw7FTw@mail.gmail.com>
+	<CAJE_dJzjcWP=e_CPM1M64URVHiEFFb+fP6g2YKZVdoFntkQMZg@mail.gmail.com>
+Date: Fri, 13 Jun 2014 17:02:37 -0700
+In-Reply-To: <CAJE_dJzjcWP=e_CPM1M64URVHiEFFb+fP6g2YKZVdoFntkQMZg@mail.gmail.com>
+	(Rafael Tinoco's message of "Fri, 13 Jun 2014 15:14:10 -0300")
+Message-ID: <87wqckqrxe.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140402185250.GB24814@madcap2.tricolour.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+vO87tPFW7LslFPjfCJCTlRsuDRNaFVoc=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4981]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Rafael Tinoco <rafael.tinoco@canonical.com>
+X-Spam-Relay-Country: 
+Subject: Re: Possible netns creation and execution performance/scalability regression since v3.8 due to rcu callbacks being offloaded to multiple cpus
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/04/02, Richard Guy Briggs wrote:
-> On 14/04/02, Mimi Zohar wrote:
-> > On Wed, 2014-04-02 at 14:18 -0400, Eric Paris wrote: 
-> > > On Wed, 2014-04-02 at 14:12 -0400, Mimi Zohar wrote:
-> > > > On Wed, 2014-04-02 at 14:00 -0400, Steve Grubb wrote: 
-> > > > > Hello Mimi,
-> > > > > 
-> > > > > On Wednesday, April 02, 2014 01:39:47 PM Mimi Zohar wrote:
-> > > > > > This change is already being upstreamed as commit 73a6b44 "Integrity:
-> > > > > > Pass commname via get_task_comm()".
-> > > > > 
-> > > > > While I was looking at Richard's patch, I noticed a few places where cause and 
-> > > > > op are logged and the string isn't tied together with a _ or -. These are in 
-> > > > > ima/ima_appraise.c line 383, and ima/ima_policy.c lines 333, 657, and 683. Are 
-> > > > > these fixed upstream? Or should a patch be made?
-> > > > 
-> > > > Nothing has changed in terms of 'cause' and 'op'.  I would suggest
-> > > > making the changes in integrity_audit.c: integrity_audit_msg().
-> 
-> That function could massage incoming text fields and convert spaces to
-> hyphens or underscores, but I'd assume the right place to do it would be
-> in the original text.  If you suggest the former, it could just be done
-> in audit_log_string(), but then grepping the source for error messages
-> would not be nearly as useful.  Is this what you were suggesting?
-> 
-> > > The question is actually, do you know of anyone who is expecting the
-> > > space, instead of a more 'audit standard' - or _ ?  If not, we'll change
-> > > it.  If so, we'll discuss more   :)
-> > 
-> > CC'ing linux-ima-user as well.
-> 
-> Thanks.
+Rafael Tinoco <rafael.tinoco@canonical.com> writes:
 
-Was there any response from linux-ima-user?
+> Okay,
+>
+> Tests with the same script were done. 
+> I'm comparing : master + patch vs 3.15.0-rc5 (last sync'ed rcu commit)
+> and 3.9 last bisect good.
+>
+> Same tests were made. I'm comparing the following versions:
+>
+> 1) master + suggested patch
+> 2) 3.15.0-rc5 (last rcu commit in my clone)
+> 3) 3.9-rc2 (last bisect good)
 
-> > Mimi
-> 
-> - RGB
+I am having a hard time making sense of your numbers.
 
-- RGB
+If I have read your email correctly my suggested patch caused:
+"ip netns add" numbers to improve
+1x "ip netns exec" to improve some
+2x "ip netns exec" to show no improvement
+"ip link add" to show no effect (after the 2x ip netns exec)
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+This is interesting in a lot of ways.
+- This seems to confirm that the only rcu usage in ip netns add
+  was switch_task_namespaces.  Which is convinient as that rules
+  out most of the network stack when looking for performance oddities.
+
+- "ip netns exec" had an expected performance improvement
+- "ip netns exec" is still slow (so something odd is still going on)
+
+- "ip link add" appears immaterial to the performance problem.
+
+It would be interesting to switch the "ip link add" and "ip netns exec"
+in your test case to confirm that there is nothing interesting/slow
+going on in "ip link add"
+
+Which leaves me with the question what ip "ip netns exec" remains
+that is using rcu and is slowing all of this down.
+
+Eric
+
+
+> master + sug patch 3.15.0-rc5 (last rcu) 3.9-rc2 (bisec good)
+> mark no none all no none all no 
+>
+> # (netns add) / sec 
+>
+> 250  125.00 250.00 250.00   20.83 22.73 50.00   83.33
+> 500  250.00 250.00 250.00   22.73 22.73 50.00  125.00
+> 750  250.00 125.00 125.00   20.83 22.73 62.50  125.00
+> 1000 125.00 250.00 125.00   20.83 20.83 50.00  250.00
+> 1250 125.00 125.00 250.00   22.73 22.73 50.00  125.00
+> 1500 125.00 125.00 125.00   22.73 22.73 41.67  125.00
+> 1750 125.00 125.00  83.33   22.73 22.73 50.00   83.33
+> 2000 125.00  83.33 125.00   22.73 25.00 50.00  125.00
+>
+> -> From 3.15 to patched tree, netns add performance was ***
+> restored/improved *** OK
+>
+> # (netns add + 1 x exec) / sec
+>
+> 250  11.90 14.71 31.25 5.00 6.76 15.63 62.50
+> 500  11.90 13.89 31.25 5.10 7.14 15.63 41.67
+> 750  11.90 13.89 27.78 5.10 7.14 15.63 50.00
+> 1000 11.90 13.16 25.00 4.90 6.41 15.63 35.71
+> 1250 11.90 13.89 25.00 4.90 6.58 15.63 27.78
+> 1500 11.36 13.16 25.00 4.72 6.25 15.63 25.00
+> 1750 11.90 12.50 22.73 4.63 5.56 14.71 20.83
+> 2000 11.36 12.50 22.73 4.55 5.43 13.89 17.86
+>
+> -> From 3.15 to patched tree, performance improves +100% but still -
+> 50% of 3.9-rc2
+>
+> # (netns add + 2 x exec) / sec
+>
+> 250 6.58 8.62 16.67 2.81 3.97 9.26 41.67
+> 500 6.58 8.33 15.63 2.78 4.10 9.62 31.25
+> 750 5.95 7.81 15.63 2.69 3.85 8.93 25.00
+> 1000 5.95 7.35 13.89 2.60 3.73 8.93 20.83
+> 1250 5.81 7.35 13.89 2.55 3.52 8.62 16.67
+> 1500 5.81 7.35 13.16 0.00 3.47 8.62 13.89
+> 1750 5.43 6.76 13.16 0.00 3.47 8.62 11.36
+> 2000 5.32 6.58 12.50 0.00 3.38 8.33 9.26
+>
+> -> Same as before.
+>
+> # netns add + 2 x exec + 1 x ip link to netns
+>
+> 250 7.14 8.33 14.71 2.87 3.97 8.62 35.71
+> 500 6.94 8.33 13.89 2.91 3.91 8.93 25.00
+> 750 6.10 7.58 13.89 2.75 3.79 8.06 19.23
+> 1000 5.56 6.94 12.50 2.69 3.85 8.06 14.71
+> 1250 5.68 6.58 11.90 2.58 3.57 7.81 11.36
+> 1500 5.56 6.58 10.87 0.00 3.73 7.58 10.00
+> 1750 5.43 6.41 10.42 0.00 3.57 7.14 8.62
+> 2000 5.21 6.25 10.00 0.00 3.33 7.14 6.94
+>
+> -> Ip link add to netns did not change performance proportion much.
+>
+> # netns add + 2 x exec + 2 x ip link to netns
+>
+> 250 7.35 8.62 13.89 2.94 4.03 8.33 31.25
+> 500 7.14 8.06 12.50 2.94 4.03 8.06 20.83
+> 750 6.41 7.58 11.90 2.81 3.85 7.81 15.63
+> 1000 5.95 7.14 10.87 2.69 3.79 7.35 12.50
+> 1250 5.81 6.76 10.00 2.66 3.62 7.14 10.00
+> 1500 5.68 6.41 9.62 3.73 6.76 8.06
+> 1750 5.32 6.25 8.93 3.68 6.58 7.35
+> 2000 5.43 6.10 8.33 3.42 6.10 6.41
+>
+> -> Same as before.
+>
+> OBS:
+>
+> 1) It seems that performance got improved for network namespace
+> addiction but maybe there can be some improvement also on netns
+> execution. This way we might achieve same performance as 3.9.0-rc2
+> (good bisect) had. 
+>
+> 2) These tests were made with 4 cpu only. 
+>
+> 3) Initial charts showed that 1 cpu case with all cpus as no-cb
+> (without this patch) had something like 50% of bisect good. The 4 cpu
+> (nocball) case had 26% of bisect good (like showed above in the last
+> case -> 31.25 -- 8.33). 
+>
+> 4) With the patch, using 4 cpus and nocball, we now have 44% of bisect
+> good performance (against 26% we had).
+>
+> 5) NOCB_* is still an issue. It is clear that only NOCB_CPU_ALL option
+> is giving us something near last good commit performance.
+>
+> Thank you
+>
+> Rafael
