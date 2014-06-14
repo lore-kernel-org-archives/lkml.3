@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113AbaFNQYV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 12:24:21 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:35039 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754961AbaFNQYQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 12:24:16 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Arnd Bergmann <arnd@arndb.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        cbe-oss-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] arch: powerpc: platforms: cell: cbe_thermal.c:  Cleaning up a variable is of the wrong type
-Date: Sat, 14 Jun 2014 18:25:11 +0200
-Message-Id: <1402763111-23458-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1402763111-23458-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1402763111-23458-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	id S1754988AbaFNQdm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 12:33:42 -0400
+Received: from imap.thunk.org ([74.207.234.97]:39009 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754748AbaFNQdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 12:33:41 -0400
+Date: Sat, 14 Jun 2014 12:33:34 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: George Spelvin <linux@horizon.com>
+Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        price@mit.edu
+Subject: Re: random: Benchamrking fast_mix2
+Message-ID: <20140614163334.GJ6447@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	George Spelvin <linux@horizon.com>, hpa@linux.intel.com,
+	linux-kernel@vger.kernel.org, mingo@kernel.org, price@mit.edu
+References: <20140614111405.9630.qmail@ns.horizon.com>
+ <20140614151314.2721.qmail@ns.horizon.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140614151314.2721.qmail@ns.horizon.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This variable is of the wrong type, everywhere it is used it
-should be an unsigned int rather than a int.
+OK, using your averaging scheme, on a 32-bit KVM kernel, running at
+idle, here are my quick results:
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- arch/powerpc/platforms/cell/cbe_thermal.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Original
 
-diff --git a/arch/powerpc/platforms/cell/cbe_thermal.c b/arch/powerpc/platforms/cell/cbe_thermal.c
-index 94560db..2c15ff0 100644
---- a/arch/powerpc/platforms/cell/cbe_thermal.c
-+++ b/arch/powerpc/platforms/cell/cbe_thermal.c
-@@ -125,7 +125,7 @@ static ssize_t show_throttle(struct cbe_pmd_regs __iomem *pmd_regs, char *buf, i
- static ssize_t store_throttle(struct cbe_pmd_regs __iomem *pmd_regs, const char *buf, size_t size, int pos)
- {
- 	u64 reg_value;
--	int temp;
-+	unsigned int temp;
- 	u64 new_value;
- 	int ret;
- 
--- 
-1.7.10.4
+48028 51419
+46021 50065
+44750 49231
 
+Fastmix 2, 3 interations
+
+95956 58313    
+97295 57599
+97242 56942
+
+Fastmix 2, 2 iterations
+
+68998 41496
+68940 41471
+68619 41576
+
+Fastmix 2, 2 iterations, unrolled
+
+48725 39281
+48313 38424
+47349 37847
+
+So with two iterations are at least no worse than before (and in fact
+the deviation is less, which makes sense since we don't have the
+twist_array memory accesses), and I can easily believe there will be
+architectures/microarchitectures where it will be better.
+
+I'll need to do a bit more looking to convince myself that 2
+iterations is better from a mixing perspective, but this looks like it
+might be a promising replacement for the 32-bit mixer.
+
+      	   	     		     	 	- Ted
