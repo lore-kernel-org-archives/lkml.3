@@ -1,52 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640AbaFNTfh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 15:35:37 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:49827 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330AbaFNTfg (ORCPT
+	id S1753485AbaFNThe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 15:37:34 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:4976 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751292AbaFNThd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 15:35:36 -0400
-Message-ID: <539CA40E.10800@cogentembedded.com>
-Date: Sat, 14 Jun 2014 23:35:42 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Sat, 14 Jun 2014 15:37:33 -0400
+X-IronPort-AV: E=Sophos;i="5.01,478,1400018400"; 
+   d="scan'208";a="80080408"
+Date: Sat, 14 Jun 2014 21:37:23 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Himangi Saraogi <himangi774@gmail.com>
+cc: Joe Perches <joe@perches.com>, Julia Lawall <Julia.Lawall@lip6.fr>,
+        Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>, Michal Marek <mmarek@suse.cz>,
+        cocci@systeme.lip6.fr, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Coccinelle : Script to detect cast after memory
+ allocation
+In-Reply-To: <CAB78YHwDpK988sKk5pzXWhuMszyyS=wtk5ETP-B-JBGdwRPxhw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1406142136480.2018@localhost6.localdomain6>
+References: <20140614154541.GA4179@himangi-Dell> <1402761961.2756.12.camel@joe-AO725> <alpine.DEB.2.02.1406141809050.1962@localhost6.localdomain6> <1402765314.2756.20.camel@joe-AO725> <CAB78YHwDpK988sKk5pzXWhuMszyyS=wtk5ETP-B-JBGdwRPxhw@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Nick <xerofoify@gmail.com>, emilio@elopez.com.ar
-CC: maxime.ripard@free-electrons.com, mturquette@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] Frees gate after if statement in clk-sunxi.c
-References: <1402769508-3821-1-git-send-email-xerofoify@gmail.com>
-In-Reply-To: <1402769508-3821-1-git-send-email-xerofoify@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-315456137-1402774644=:2018"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2014 10:11 PM, Nick wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> Signed-off-by: Nick <xerofoify@gmail.com>
-> ---
->   drivers/clk/sunxi/clk-sunxi.c | 1 +
->   1 file changed, 1 insertion(+)
+--8323328-315456137-1402774644=:2018
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 
-> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-> index 4264834..6f4fc51 100644
-> --- a/drivers/clk/sunxi/clk-sunxi.c
-> +++ b/drivers/clk/sunxi/clk-sunxi.c
-> @@ -42,6 +42,7 @@ static void __init sun4i_osc_clk_setup(struct device_node *node)
->   	u32 rate;
->
->   	if (of_property_read_u32(node, "clock-frequency", &rate))
-> +		kree(gate);
+On Sun, 15 Jun 2014, Himangi Saraogi wrote:
 
-    'gate' is not allocated at this point either... at least not in Linus' tree.
+> Hi,
+> 
+> I have run the generic rule but it does not detect the cases of
+> cast where the k[mzc]alloc or the kmem functions are used. I have used
+> flags like recursive-includes, as suggested by Julia, but not any of the
+> cases covered by the original script are detected.
 
->   		return;
+Are other things detected?  You could always expand the rule to be more 
+comprehensive.
 
-    And you forgot {} around these 2 statements.
+julia
 
-WBR, Sergei
 
+> Thanks
+> Himangi
+> 
+> 
+> On 14 June 2014 22:31, Joe Perches <joe@perches.com> wrote:
+>       On Sat, 2014-06-14 at 18:11 +0200, Julia Lawall wrote:
+>       > On Sat, 14 Jun 2014, Joe Perches wrote:
+> []
+> > > Perhaps make this more generic for any void *?
+> > >
+> > > Something like:
+> > >
+> > > @@
+> > > void *t;
+> > > type other;
+> > > @@
+> > >
+> > > -       (other *)t
+> > > +       t
+> []
+> > Perhaps it would be reasonable to add this among the specific
+> functions.
+> > That is, t could be part of the disjunctions.
+> 
+> You do have to make sure that the
+> "casted to" type is not dereferenced.
+> 
+> ie: don't transform
+> 
+> void func(void *foo)
+> {
+>         unsigned long bar = *(unsigned long *)foo;
+> }
+> 
+> Also there may be some __user cast types and
+> such that may be necessary to exclude too.
+> 
+> 
+> 
+> 
+> 
+> 
+--8323328-315456137-1402774644=:2018--
