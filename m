@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751708AbaFOS4m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 14:56:42 -0400
-Received: from asavdk3.altibox.net ([109.247.116.14]:44399 "EHLO
-	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993AbaFOS4l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 14:56:41 -0400
-Date: Sun, 15 Jun 2014 20:56:35 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, David Miller <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Seth Bollinger <sethb@digi.com>,
-        LinusTorvaldstorvalds@linux-foundation.org
-Subject: Re: Linux 3.15: SPARC serial console regression
-Message-ID: <20140615185635.GA22577@ravnborg.org>
-References: <20140609205917.GA913@drone.musicnaut.iki.fi>
- <1402357697-20976-1-git-send-email-peter@hurleysoftware.com>
- <20140610192438.GA6846@ravnborg.org>
- <53977688.5080802@hurleysoftware.com>
+	id S1751511AbaFOTOn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 15:14:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41509 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750979AbaFOTOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jun 2014 15:14:39 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CALCETrV-ocpugRwL7rd4GDX-Y89L7So8_6BBjOUDeR4V8RSPEA@mail.gmail.com>
+References: <cover.1402769596.git.luto@amacapital.net> <21405.44257.742122.786960@gargle.gargle.HOWL> <20140615143500.GP179@brightrain.aerifal.cx> <539DD26B.3060709@zytor.com> <CALCETrXTpkto2gJBiFC4CR5D=Lqf2YfP5BBH02f8hFW+TUGqeA@mail.gmail.com> <539DDE9C.3010903@zytor.com> <CALCETrWLBCNiJArMRPuHbfhj6=ytnx_YqykzgCgZ+DYu34M1Mg@mail.gmail.com> <4ab91a07-c46c-485b-895d-b074d36624d6@email.android.com> <CALCETrV-ocpugRwL7rd4GDX-Y89L7So8_6BBjOUDeR4V8RSPEA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53977688.5080802@hurleysoftware.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [RFC 0/2] __vdso_findsym
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sun, 15 Jun 2014 12:14:04 -0700
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Andi Kleen <andi@firstfloor.org>, Rich Felker <dalias@libc.org>,
+        Mikael Pettersson <mikpelinux@gmail.com>, Russ Cox <rsc@golang.org>,
+        Linux API <linux-api@vger.kernel.org>, Ian Taylor <iant@golang.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>
+Message-ID: <90c597c5-f77d-491e-b0b8-dde2027155b5@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter.
+If it doesn't, then you incur an additional indirection penalty.  The strong __vdso symbol allows the libc wrapper to fall back to the vdso implementation, the weak symbol allows three to be no wrapper at all.  This is good.
 
-On Tue, Jun 10, 2014 at 05:20:08PM -0400, Peter Hurley wrote:
-> Hi Sam,
-> 
-> On 06/10/2014 03:24 PM, Sam Ravnborg wrote:
-> >>From: Peter Hurley <peter@hurleysoftware.com>
-> >>Date: Mon, 9 Jun 2014 19:21:43 -0400
-> >>Subject: [PATCH] serial: sunsab: Test for no tx data on tx restart
-> >>
-> >>Commit 717f3bbab3c7628736ef738fdbf3d9a28578c26c,
-> >>'serial_core: Fix conditional start_tx on ring buffer not empty'
-> >>exposes an incorrect assumption in sunsab's start_tx method; the
-> >>tx ring buffer can, in fact, be empty when restarting tx when
-> >>performing flow control.
+The reason for changing ABI would be shifting types.  This is very much how glibc manages transitions.
 
-We have a report that commit 717f3bbab3c7628736ef738fdbf3d9a28578c26c
-("serial_core: Fix conditional start_tx on ring buffer not empty")
-broke at least one more driver:
 
-    Aaro Koskinen <aaro.koskinen@iki.fi> reported:
-    The same problem is present also on PowerPC G5 Xserve (pmac_zilog driver)
 
-And based on code review a third driver is broken:
+On June 15, 2014 11:54:10 AM PDT, Andy Lutomirski <luto@amacapital.net> wrote:
+>On Sun, Jun 15, 2014 at 11:39 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> Symbol versioning so we can rev the ABI and still provide backwards
+>compatibility.  Weak symbols so the libc can override symbols if it
+>considers it appropriate.  This is a good thing.
+>
+>Are we ever going to change, say, the __vdso_clock_gettime ABI without
+>renaming the function?  If we want to preserve that ability, I can
+>keep support for versions, but it seems odd.
+>
+>I don't buy the weak symbol argument at all.  We currently expose a
+>strong symbol __vdso_clock_gettime and a weak alias clock_gettime.  I
+>agree that, if glibc treats us as a real DSO, then clock_gettime can't
+>be strong, but I don't see why it should exist at all (other than for
+>backwards compatibility).
+>
+>--Andy
 
-    Sam Ravnborg <sam@ravnborg.org> reported:
-    Can you please take a look at sunzilog.c.
-    It looks like the same test is missing in sunzilog_start_tx():
-
-This is a regression so we should either revert the above commit
-or review and fix the remaining drivers.
-
-	Sam
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
