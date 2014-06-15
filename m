@@ -1,74 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128AbaFOR6O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 13:58:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41043 "EHLO mail.zytor.com"
+	id S1752156AbaFOR7J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 13:59:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29667 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751740AbaFOR6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 13:58:11 -0400
-Message-ID: <539DDE9C.3010903@zytor.com>
-Date: Sun, 15 Jun 2014 10:57:48 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751723AbaFOR7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jun 2014 13:59:04 -0400
+Date: Sun, 15 Jun 2014 19:58:49 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 15/17] perf tools: Add debug prints for ordered events
+ queue
+Message-ID: <20140615175849.GF1159@krava.brq.redhat.com>
+References: <1402610913-19059-1-git-send-email-jolsa@kernel.org>
+ <1402610913-19059-16-git-send-email-jolsa@kernel.org>
+ <1402661543.2178.25.camel@leonhard>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Rich Felker <dalias@libc.org>, Mikael Pettersson <mikpelinux@gmail.com>,
-        Russ Cox <rsc@golang.org>, Linux API <linux-api@vger.kernel.org>,
-        Ian Taylor <iant@golang.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>
-Subject: Re: [RFC 0/2] __vdso_findsym
-References: <cover.1402769596.git.luto@amacapital.net> <21405.44257.742122.786960@gargle.gargle.HOWL> <20140615143500.GP179@brightrain.aerifal.cx> <539DD26B.3060709@zytor.com> <CALCETrXTpkto2gJBiFC4CR5D=Lqf2YfP5BBH02f8hFW+TUGqeA@mail.gmail.com>
-In-Reply-To: <CALCETrXTpkto2gJBiFC4CR5D=Lqf2YfP5BBH02f8hFW+TUGqeA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1402661543.2178.25.camel@leonhard>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2014 10:40 AM, Andy Lutomirski wrote:
+On Fri, Jun 13, 2014 at 09:12:23PM +0900, Namhyung Kim wrote:
+> 2014-06-13 (금), 00:08 +0200, Jiri Olsa:
+> > Adding some prints for ordered events queue, to help
+> > debug issues.
+> > 
+> > Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> > Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> > Cc: David Ahern <dsahern@gmail.com>
+> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Ingo Molnar <mingo@kernel.org>
+> > Cc: Jean Pihet <jean.pihet@linaro.org>
+> > Cc: Namhyung Kim <namhyung@kernel.org>
+> > Cc: Paul Mackerras <paulus@samba.org>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+> > ---
+> >  tools/perf/builtin-report.c      |  4 +++
+> >  tools/perf/util/ordered-events.c | 54 ++++++++++++++++++++++++++++++++++++++++
+> >  tools/perf/util/ordered-events.h |  2 ++
+> >  3 files changed, 60 insertions(+)
+> > 
+> > diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+> > index 09b9d0c..130ab5c 100644
+> > --- a/tools/perf/builtin-report.c
+> > +++ b/tools/perf/builtin-report.c
+> > @@ -82,6 +82,10 @@ static int report__config(const char *var, const char *value, void *cb)
+> >  		rep->queue_size = perf_config_u64(var, value);
+> >  		return 0;
+> >  	}
+> > +	if (!strcmp(var, "report.queue-debug")) {
+> > +		debug_sample_queue = perf_config_int(var, value);
+> > +		return 0;
+> > +	}
 > 
-> To be clear, I have no desire whatsoever to give the vdso an actual
-> ELF parser or anything else that userspace should be providing itself.
-> I think that a special-purpose vdso parser in the vdso makes some
-> sense, though, since userspace might otherwise provide one for the
-> sole purpose of parsing the vdso.
+> Again, config option only?
+
+same reason as for the previous one
+
+> > +
+> > +#define pr_N(n, fmt, ...) \
+> > +	pr_level(n, fmt, ##__VA_ARGS__)
+> > +#define pr(fmt, ...)  pr_N(1, pr_fmt(fmt), ##__VA_ARGS__)
+> > +
+> > +static int pr_time(const char *str, u64 time)
+> > +{
+> > +	u64 secs, usecs, nsecs = time;
+> > +
+> > +	secs = nsecs / NSECS_PER_SEC;
+> > +	nsecs -= secs * NSECS_PER_SEC;
+> > +	usecs = nsecs / NSECS_PER_USEC;
+> > +	return fprintf(stderr, "\t[%13lu.%06lu] %s\n", secs, usecs, str);
+> > +}
 > 
-> And there's plenty of reasons that having the vdso be an ELF image is
-> useful.  For one thing, gdb can take advantage of it.  For another,
-> CRIU is parsing it for a rather different reason, and something like
-> __vdso_findsym won't fill that need.
-> 
-> Also, given the general lack of a comprehensible specification of what
-> the GNU flavor of the ELF format actually is [1], there's something to
-> be said for reducing the proliferation of ELF parsers.  glibc and
-> binutils are quite unlikely to become incompatible with each other,
-> but I sincerely doubt that anyone from binutils land is likely to
-> review (and maintain!) my ELF parser, Go's, or a hypothetical future
-> ELF parser from any of the other glibc-less things.  If those things
-> use one that's in the kernel, then it's easy for the kernel to
-> guarantee that each vdso image can successfully parse itself.
-> 
-> [1] The only comprehensible description of the GNU hash extension that
-> I could find is on Oracle's blog (!)
-> 
+> It'd be better if these functions somehow reuse existing pr_* functions
+> or at least honor the use_browser value IMHO.
 
-Yes, but that is why we provide the standard SysV hash.  The GNU hash is
-not too bad, but you're absolutely right the documentation stinks.
+I wanted to separate this output so I could have it not
+mixed with standard debug messages.. it could get messy
 
-Providing a simple symbol lookup is an opportunistic thing, and might be
-useful that way, and only because (as you say) the version in the vdso
-would only need to be guaranteed to parse a single data structure --
-that same vdso.
+I was thinking maybe we want some smart debug/verbose system
+that would allow this.. separate debug messages based on the
+config/subsystem/option/objects/whatever implemented via
+generic code
 
-On the other hand, it better work, correctly, in every version of the
-kernel, so I believe it will need to be done such that it is either
-correct by construction or gets self-tested during the build process so
-it errors out on failure.  One simple way to do correct by construction
-would be to do the "vdso entry point by index" -- a new kind of system
-call numbers, in effect, as much as it has shades of Windows DLL with
-their "ordinal numbers".
-
-	-hpa
-
+thanks,
+jirka
