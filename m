@@ -1,349 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751219AbaFOJAR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 05:00:17 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:43084 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128AbaFOJAL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 05:00:11 -0400
-Message-ID: <539D5F24.1020304@traphandler.com>
-Date: Sun, 15 Jun 2014 10:53:56 +0200
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Reply-To: jjhiblot@traphandler.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        David Airlie <airlied@linux.ie>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>
-CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH v2 1/7] mfd: add atmel-hlcdc driver
-References: <1402329860-27520-1-git-send-email-boris.brezillon@free-electrons.com> <1402329860-27520-2-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1402329860-27520-2-git-send-email-boris.brezillon@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751108AbaFOJHc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 05:07:32 -0400
+Received: from ns.horizon.com ([71.41.210.147]:58401 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750845AbaFOJHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jun 2014 05:07:31 -0400
+Date: 15 Jun 2014 05:07:29 -0400
+Message-ID: <20140615090729.12350.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux-kernel@vger.kernel.org, linux@horizon.com, tytso@mit.edu
+Subject: Re: Surprising 64-bit performance anomaly (was Re: [PATCH] random: use an improved fast_mix() function)
+In-Reply-To: <20140615031913.GB8111@thunk.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2014 06:04 PM, Boris BREZILLON wrote:
-> The HLCDC IP available on some Atmel SoCs (i.e. at91sam9n12, at91sam9x5
-> family or sama5d3 family) exposes 2 subdevices:
-> - a display controller (controlled by a DRM driver)
-> - a PWM chip
-> 
-> Add support for the MFD device which will just retrieve HLCDC clocks and
-> create a regmap so that subdevices can access the HLCDC register range
-> concurrently.
-> 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> ---
->  .../devicetree/bindings/mfd/atmel-hlcdc.txt        |  41 ++++++++
->  drivers/mfd/Kconfig                                |  11 ++
->  drivers/mfd/Makefile                               |   1 +
->  drivers/mfd/atmel-hlcdc.c                          | 116 +++++++++++++++++++++
->  include/linux/mfd/atmel-hlcdc.h                    |  78 ++++++++++++++
->  5 files changed, 247 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mfd/atmel-hlcdc.txt
->  create mode 100644 drivers/mfd/atmel-hlcdc.c
->  create mode 100644 include/linux/mfd/atmel-hlcdc.h
-> 
-> diff --git a/Documentation/devicetree/bindings/mfd/atmel-hlcdc.txt b/Documentation/devicetree/bindings/mfd/atmel-hlcdc.txt
-> new file mode 100644
-> index 0000000..f5b69cb
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mfd/atmel-hlcdc.txt
-> @@ -0,0 +1,41 @@
-> +Device-Tree bindings for Atmel's HLCDC (High LCD Controller) MFD driver
-> +
-> +Required properties:
-> + - compatible: value should be one of the following:
-> +   "atmel,sama5d3-hlcdc"
-> + - reg: base address and size of the HLCDC device registers.
-> + - clock-names: the name of the 3 clocks requested by the HLCDC device.
-> +   Should contain "periph_clk", "sys_clk" and "slow_clk".
-> + - clocks: should contain the 3 clocks requested by the HLCDC device.
-> +
-> +The HLCDC IP exposes two subdevices:
-> + - a PWM chip: see Documentation/devicetree/bindings/pwm/atmel-hlcdc-pwm.txt
-> + - a Display Controller: see Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt
-> +
-> +Example:
-> +
-> +	hlcdc: hlcdc@f0030000 {
-> +		compatible = "atmel,sama5d3-hlcdc";
-> +		reg = <0xf0030000 0x2000>;
-> +		clocks = <&lcdc_clk>, <&lcdck>, <&clk32k>;
-> +		clock-names = "periph_clk","sys_clk", "slow_clk";
-> +		status = "disabled";
-> +
-> +		hlcdc-display-controller {
-> +			compatible = "atmel,hlcdc-dc";
-> +			interrupts = <36 IRQ_TYPE_LEVEL_HIGH 0>;
-> +			pinctrl-names = "default", "rgb-444", "rgb-565", "rgb-666", "rgb-888";
-> +			pinctrl-0 = <&pinctrl_lcd_base>;
-> +			pinctrl-1 = <&pinctrl_lcd_base &pinctrl_lcd_rgb444>;
-> +			pinctrl-2 = <&pinctrl_lcd_base &pinctrl_lcd_rgb565>;
-> +			pinctrl-3 = <&pinctrl_lcd_base &pinctrl_lcd_rgb666>;
-> +			pinctrl-4 = <&pinctrl_lcd_base &pinctrl_lcd_rgb888>;
-> +		};
-> +
-> +		hlcdc_pwm: hlcdc-pwm {
-> +			compatible = "atmel,hlcdc-pwm";
-> +			pinctrl-names = "default";
-> +			pinctrl-0 = <&pinctrl_lcd_pwm>;
-> +			#pwm-cells = <3>;
-> +		};
-> +	};
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index ee8204c..82777f6 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -59,6 +59,17 @@ config MFD_AAT2870_CORE
->  	  additional drivers must be enabled in order to use the
->  	  functionality of the device.
->  
-> +config MFD_ATMEL_HLCDC
-> +	tristate "Atmel HLCDC (High LCD Controller)"
-> +	select MFD_CORE
-> +	select REGMAP_MMIO
-> +	help
-> +	  Choose this option if you have an ATMEL SoC with an HLCDC (High
-> +	  LCD Controller) IP (i.e. at91sam9n12, at91sam9x5 family or sama5d3
-> +	  family).
-> +	  This MFD device exposes two subdevices: a PWM chip and a Display
-> +	  Controller.
-> +
->  config MFD_BCM590XX
->  	tristate "Broadcom BCM590xx PMUs"
->  	select MFD_CORE
-> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index 8afedba..5f25b0d 100644
-> --- a/drivers/mfd/Makefile
-> +++ b/drivers/mfd/Makefile
-> @@ -156,6 +156,7 @@ obj-$(CONFIG_MFD_PM8921_CORE) 	+= pm8921-core.o ssbi.o
->  obj-$(CONFIG_TPS65911_COMPARATOR)	+= tps65911-comparator.o
->  obj-$(CONFIG_MFD_TPS65090)	+= tps65090.o
->  obj-$(CONFIG_MFD_AAT2870_CORE)	+= aat2870-core.o
-> +obj-$(CONFIG_MFD_ATMEL_HLCDC)	+= atmel-hlcdc.o
->  obj-$(CONFIG_MFD_INTEL_MSIC)	+= intel_msic.o
->  obj-$(CONFIG_MFD_PALMAS)	+= palmas.o
->  obj-$(CONFIG_MFD_VIPERBOARD)    += viperboard.o
-> diff --git a/drivers/mfd/atmel-hlcdc.c b/drivers/mfd/atmel-hlcdc.c
-> new file mode 100644
-> index 0000000..e4636e8
-> --- /dev/null
-> +++ b/drivers/mfd/atmel-hlcdc.c
-> @@ -0,0 +1,116 @@
-> +/*
-> + * Copyright (C) 2014 Free Electrons
-> + * Copyright (C) 2014 Atmel
-> + *
-> + * Author: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published by
-> + * the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along with
-> + * this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#include <linux/mfd/atmel-hlcdc.h>
-> +#include <linux/mfd/core.h>
-> +#include <linux/module.h>
-> +#include <linux/platform_device.h>
-> +
-> +static const struct mfd_cell atmel_hlcdc_cells[] = {
-> +	{
-> +		.name = "atmel-hlcdc-pwm",
-> +		.of_compatible = "atmel,hlcdc-pwm",
-> +	},
-> +	{
-> +		.name = "atmel-hlcdc-dc",
-> +		.of_compatible = "atmel,hlcdc-dc",
-> +	},
-> +};
-> +
-> +static int atmel_hlcdc_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct regmap_config config;
-> +	struct atmel_hlcdc *hlcdc;
-> +	struct resource *res;
-> +	void __iomem *regs;
-> +
-> +	hlcdc = devm_kzalloc(dev, sizeof(*hlcdc), GFP_KERNEL);
-> +	if (!hlcdc)
-> +		return -ENOMEM;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	regs = devm_ioremap_resource(dev, res);
-> +	if (IS_ERR(regs))
-> +		return PTR_ERR(regs);
-> +
-> +	hlcdc->periph_clk = devm_clk_get(dev, "periph_clk");
-> +	if (IS_ERR(hlcdc->periph_clk)) {
-> +		dev_err(dev, "failed to get functional clock\n");
-> +		return PTR_ERR(hlcdc->periph_clk);
-> +	}
-> +
-> +	hlcdc->sys_clk = devm_clk_get(dev, "sys_clk");
-> +	if (IS_ERR(hlcdc->sys_clk)) {
-> +		dev_err(dev, "failed to get functional clock\n");
-> +		return PTR_ERR(hlcdc->sys_clk);
-> +	}
-> +
-> +	hlcdc->slow_clk = devm_clk_get(dev, "slow_clk");
-> +	if (IS_ERR(hlcdc->slow_clk)) {
-> +		dev_err(dev, "failed to get slow clock\n");
-> +		return PTR_ERR(hlcdc->slow_clk);
-> +	}
-> +
-> +	memset(&config, 0, sizeof(config));
-> +	config.reg_bits = 32;
-> +	config.val_bits = 32;
-> +	config.reg_stride = 4;
-> +	config.max_register = (resource_size(res) / 4) - 1;
-> +	hlcdc->regmap = devm_regmap_init_mmio_clk(dev, "periph_clk", regs,
-> +						  &config);
-I don't think it's necessary to use "periph_clk" here. This clock will
-always be running because the HLCDC needs it to work (it's not just an
-interface clock). In the end it's just some extra work for each register
-access.
-> +	if (IS_ERR(hlcdc->regmap))
-> +		return PTR_ERR(hlcdc->regmap);
-> +
-> +	dev_set_drvdata(dev, hlcdc);
-> +
-> +	return mfd_add_devices(dev, -1, atmel_hlcdc_cells,
-> +			       ARRAY_SIZE(atmel_hlcdc_cells),
-> +			       NULL, 0, NULL);
-> +}
-> +
-> +static int atmel_hlcdc_remove(struct platform_device *pdev)
-> +{
-> +	mfd_remove_devices(&pdev->dev);
-> +
-> +	dev_set_drvdata(&pdev->dev, NULL);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id atmel_hlcdc_match[] = {
-> +	{ .compatible = "atmel,sama5d3-hlcdc" },
-> +	{ },
-> +};
-> +
-> +static struct platform_driver atmel_hlcdc_driver = {
-> +	.probe = atmel_hlcdc_probe,
-> +	.remove = atmel_hlcdc_remove,
-> +	.driver = {
-> +		.name = "atmel-hlcdc",
-> +		.owner = THIS_MODULE,
-> +		.of_match_table = atmel_hlcdc_match,
-> +	},
-> +};
-> +module_platform_driver(atmel_hlcdc_driver);
-> +
-> +MODULE_ALIAS("platform:atmel-hlcdc");
-> +MODULE_AUTHOR("Boris Brezillon <boris.brezillon@free-electrons.com>");
-> +MODULE_DESCRIPTION("Atmel HLCDC driver");
-> +MODULE_LICENSE("GPL");
-> diff --git a/include/linux/mfd/atmel-hlcdc.h b/include/linux/mfd/atmel-hlcdc.h
-> new file mode 100644
-> index 0000000..d7a5589
-> --- /dev/null
-> +++ b/include/linux/mfd/atmel-hlcdc.h
-> @@ -0,0 +1,78 @@
-> +/*
-> + * Copyright (C) 2014 Free Electrons
-> + * Copyright (C) 2014 Atmel
-> + *
-> + * Author: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published by
-> + * the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along with
-> + * this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#ifndef __LINUX_MFD_HLCDC_H
-> +#define __LINUX_MFD_HLCDC_H
-> +
-> +#include <linux/clk.h>
-> +#include <linux/regmap.h>
-> +
-> +#define ATMEL_HLCDC_CFG(i)		((i) * 0x4)
-> +#define ATMEL_HLCDC_SIG_CFG		LCDCFG(5)
-> +#define		ATMEL_HLCDC_HSPOL		BIT(0)
-> +#define		ATMEL_HLCDC_VSPOL		BIT(1)
-> +#define		ATMEL_HLCDC_VSPDLYS		BIT(2)
-> +#define		ATMEL_HLCDC_VSPDLYE		BIT(3)
-> +#define		ATMEL_HLCDC_DISPPOL		BIT(4)
-> +#define		ATMEL_HLCDC_DITHER		BIT(6)
-> +#define		ATMEL_HLCDC_DISPDLY		BIT(7)
-> +#define		ATMEL_HLCDC_MODE_MASK		0x300
-> +#define		ATMEL_HLCDC_PP			BIT(10)
-> +#define		ATMEL_HLCDC_VSPSU		BIT(12)
-> +#define		ATMEL_HLCDC_VSPHO		BIT(13)
-> +#define		ATMEL_HLCDC_GUARDTIME_MASK	0x1f0000
-> +
-> +#define ATMEL_HLCDC_EN			0x20
-> +#define ATMEL_HLCDC_DIS			0x24
-> +#define ATMEL_HLCDC_SR			0x28
-> +#define ATMEL_HLCDC_IER			0x2c
-> +#define ATMEL_HLCDC_IDR			0x30
-> +#define ATMEL_HLCDC_IMR			0x34
-> +#define ATMEL_HLCDC_ISR			0x38
-> +
-> +#define ATMEL_HLCDC_CLKPOL		BIT(0)
-> +#define ATMEL_HLCDC_CLKSEL		BIT(2)
-> +#define ATMEL_HLCDC_CLKPWMSEL		BIT(3)
-> +#define ATMEL_HLCDC_CGDIS(i)		BIT(8 + (i))
-> +#define ATMEL_HLCDC_CLKDIV_SHFT		16
-> +#define ATMEL_HLCDC_CLKDIV_MASK		(0xff << ATMEL_HLCDC_CLKDIV_SHFT)
-> +#define ATMEL_HLCDC_CLKDIV(div)		((div - 2) << ATMEL_HLCDC_CLKDIV_SHFT)
-> +
-> +#define ATMEL_HLCDC_PIXEL_CLK		BIT(0)
-> +#define ATMEL_HLCDC_SYNC		BIT(1)
-> +#define ATMEL_HLCDC_DISP		BIT(2)
-> +#define ATMEL_HLCDC_PWM			BIT(3)
-> +#define ATMEL_HLCDC_SIP			BIT(4)
-> +
-> +/**
-> + * Structure shared by the MFD device and its subdevices.
-> + *
-> + * @regmap: register map used to access HLCDC IP registers
-> + * @periph_clk: the hlcdc peripheral clock
-> + * @sys_clk: the hlcdc system clock
-> + * @slow_clk: the system slow clk
-> + */
-> +struct atmel_hlcdc {
-> +	struct regmap *regmap;
-> +	struct clk *periph_clk;
-> +	struct clk *sys_clk;
-> +	struct clk *slow_clk;
-> +};
-> +
-> +#endif /* __LINUX_MFD_HLCDC_H */
-> 
+That is just *weird*.  I'm testing on bare metal, and I keep measuring
+significantly better performance for the 64-bit code.  Here's an i7-2700K
+@ 3.50GHz.  (I added a "rolled x2" measurement just for interest's sake.)
+
+The idle performance is very similar for the original and unrolled x2
+versions, but under load the original degrades far more. (174.5 cycles
+vs. 132.1 for fast_mix3.)
+
+And the 64-bit code is less than 2/3 the time of the 32-bit code
+under load. (84.3 cycles average = 132.1 * 63.8%)
+
+
+Idle		make -j9
+
+Rolled x3:
+27043 1212	62897 28037
+26910 1547	58415 25790
+27095 1302	59158 26083
+30684 6233	37242 15848
+26979 1339	59683 24658
+27042 1534	61609 27537
+27069 1402	56379 25877
+27301 1162	56782 26379
+27300 1535	55344 25003
+26873 1507	48627 22207
+
+Rolled x2:
+25697 2859	34779 11771
+27097 5065	31805 12125
+25564 2646	54448 22853
+25123 2191	57469 29098
+24931 2106	57621 27855
+25223 2207	63852 31484
+24956 2112	74393 34080
+25889 2340	65434 33316
+25170 2031	68246 31109
+25541 2296	70891 34294
+
+Unrolled x3:
+23066 1358	50698 29156
+22990 1569	59566 28935
+22797 1269	58363 28813
+22321 1004	54652 30148
+23122 1545	52651 29113
+22704 875	57904 33033
+22793 979	51882 28880
+22413 891	55537 30635
+22814 997	52760 27188
+22998 1020	59592 30133
+
+Original:
+22038 2303	26656 18045
+21209 2082	37559 22256
+21134 1626	40082 23261
+20689 1436	34227 19133
+20804 1503	48391 28563
+20979 1617	48235 28095
+20752 1427	52101 29817
+21046 1830	56703 30179
+20828 1362	51196 28658
+20865 1659	51641 29680
+
+Unrolled x2:
+21051 1667	29000 17989
+20889 1381	28328 16046
+21244 1664	33015 21364
+21130 1628	32588 21417
+20753 1497	42376 25412
+21943 2917	39879 24932
+20880 1279	24064 15512
+21303 1389	38724 24107
+21416 1712	36570 23549
+20956 1652	33578 22983
+
+64-bit, unrolled x2:
+16037 1031	16651 9740
+16664 2094	19199 12689
+16129 1057	20216 8590
+16211 905	18382 9964
+16637 2056	20125 8495
+16229 1218	24190 13176
+16515 1632	28717 18022
+16220 1096	23762 13147
+16307 1103	19599 5382
+16326 1145	24844 12837
