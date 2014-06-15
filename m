@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751548AbaFOPag (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 11:30:36 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:38104 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198AbaFOPaf (ORCPT
+	id S1751714AbaFOPbp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 11:31:45 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:53350 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649AbaFOPbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 11:30:35 -0400
-Message-ID: <1402846229.6673.1.camel@phoenix>
-Subject: [PATCH RESEND] clk: s2mps11: Simplify s2mps11_clk_probe unwind paths
+	Sun, 15 Jun 2014 11:31:42 -0400
+Message-ID: <1402846298.6673.2.camel@phoenix>
+Subject: [PATCH RESEND] clk: twl6040: Convert to use devm_clk_register
 From: Axel Lin <axel.lin@ingics.com>
 To: Mike Turquette <mturquette@linaro.org>
-Cc: Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        linux-kernel@vger.kernel.org
-Date: Sun, 15 Jun 2014 23:30:29 +0800
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, linux-kernel@vger.kernel.org
+Date: Sun, 15 Jun 2014 23:31:38 +0800
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
@@ -23,50 +21,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The devm_clk_unregister() in .probe error case is not necessary as it will be
-automatically called when probe fails.
+Use devm_clk_register() to simplify the code by removing twl6040_clk_remove().
 
 Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
-This patch was sent on https://lkml.org/lkml/2014/5/18/96 with Krzysztof's
-review.
- drivers/clk/clk-s2mps11.c | 14 ++++----------
- 1 file changed, 4 insertions(+), 10 deletions(-)
+This patch was sent on https://lkml.org/lkml/2014/5/18/75 with Peter's Ack.
+ drivers/clk/clk-twl6040.c | 12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
 
-diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
-index f2f62a1b..aeaa61c 100644
---- a/drivers/clk/clk-s2mps11.c
-+++ b/drivers/clk/clk-s2mps11.c
-@@ -210,7 +210,7 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
- 					sizeof(struct clk_lookup), GFP_KERNEL);
- 		if (!s2mps11_clk->lookup) {
- 			ret = -ENOMEM;
--			goto err_lup;
-+			goto err_reg;
- 		}
+diff --git a/drivers/clk/clk-twl6040.c b/drivers/clk/clk-twl6040.c
+index 1ada79a..9e996b4 100644
+--- a/drivers/clk/clk-twl6040.c
++++ b/drivers/clk/clk-twl6040.c
+@@ -91,7 +91,7 @@ static int twl6040_clk_probe(struct platform_device *pdev)
+ 	clkdata->twl6040 = twl6040;
  
- 		s2mps11_clk->lookup->con_id = s2mps11_name(s2mps11_clk);
-@@ -231,16 +231,10 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, s2mps11_clks);
+ 	clkdata->mcpdm_fclk.init = &wm831x_clkout_init;
+-	clkdata->clk = clk_register(&pdev->dev, &clkdata->mcpdm_fclk);
++	clkdata->clk = devm_clk_register(&pdev->dev, &clkdata->mcpdm_fclk);
+ 	if (IS_ERR(clkdata->clk))
+ 		return PTR_ERR(clkdata->clk);
  
- 	return ret;
--err_lup:
--	devm_clk_unregister(&pdev->dev, s2mps11_clk->clk);
-+
- err_reg:
--	while (s2mps11_clk > s2mps11_clks) {
--		if (s2mps11_clk->lookup) {
--			clkdev_drop(s2mps11_clk->lookup);
--			devm_clk_unregister(&pdev->dev, s2mps11_clk->clk);
--		}
--		s2mps11_clk--;
--	}
-+	while (--i >= 0)
-+		clkdev_drop(s2mps11_clks[i].lookup);
- 
- 	return ret;
+@@ -100,22 +100,12 @@ static int twl6040_clk_probe(struct platform_device *pdev)
+ 	return 0;
  }
+ 
+-static int twl6040_clk_remove(struct platform_device *pdev)
+-{
+-	struct twl6040_clk *clkdata = platform_get_drvdata(pdev);
+-
+-	clk_unregister(clkdata->clk);
+-
+-	return 0;
+-}
+-
+ static struct platform_driver twl6040_clk_driver = {
+ 	.driver = {
+ 		.name = "twl6040-clk",
+ 		.owner = THIS_MODULE,
+ 	},
+ 	.probe = twl6040_clk_probe,
+-	.remove = twl6040_clk_remove,
+ };
+ 
+ module_platform_driver(twl6040_clk_driver);
 -- 
 1.8.3.2
 
