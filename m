@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752951AbaFOF7w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 01:59:52 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:36030 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752390AbaFOF7v (ORCPT
+	id S1753136AbaFOGAv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 02:00:51 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:64120 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628AbaFOGAt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 01:59:51 -0400
+	Sun, 15 Jun 2014 02:00:49 -0400
 From: Vince Weaver <vincent.weaver@maine.edu>
 X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Sun, 15 Jun 2014 02:04:25 -0400 (EDT)
+Date: Sun, 15 Jun 2014 02:05:23 -0400 (EDT)
 To: linux-kernel@vger.kernel.org
 cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH 4/6] powerpc,perf: Use common PMU interrupt disabled code
-Message-ID: <alpine.DEB.2.10.1406150203210.16738@vincent-weaver-1.umelst.maine.edu>
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [PATCH 5/6] s390,perf: Use common PMU interrupt disabled code
+Message-ID: <alpine.DEB.2.10.1406150204290.16738@vincent-weaver-1.umelst.maine.edu>
 User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -30,51 +30,33 @@ failing a sampling event when no PMU interrupt is available.
 
 Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
 
-diff --git a/arch/powerpc/perf/hv-24x7.c b/arch/powerpc/perf/hv-24x7.c
-index e0766b8..3de7920 100644
---- a/arch/powerpc/perf/hv-24x7.c
-+++ b/arch/powerpc/perf/hv-24x7.c
-@@ -387,8 +387,7 @@ static int h_24x7_event_init(struct perf_event *event)
- 	    event->attr.exclude_hv     ||
- 	    event->attr.exclude_idle   ||
- 	    event->attr.exclude_host   ||
--	    event->attr.exclude_guest  ||
--	    is_sampling_event(event)) /* no sampling */
-+	    event->attr.exclude_guest
- 		return -EINVAL;
- 
- 	/* no branch sampling */
-@@ -513,6 +512,9 @@ static int hv_24x7_init(void)
- 	if (!hv_page_cache)
- 		return -ENOMEM;
- 
-+	/* sampling not supported */
-+	h_24x7_pmu.capabilities |= PERF_PMU_CAP_NO_INTERRUPT;
-+
- 	r = perf_pmu_register(&h_24x7_pmu, h_24x7_pmu.name, -1);
- 	if (r)
- 		return r;
-diff --git a/arch/powerpc/perf/hv-gpci.c b/arch/powerpc/perf/hv-gpci.c
-index c9d399a..6d9c8e4 100644
---- a/arch/powerpc/perf/hv-gpci.c
-+++ b/arch/powerpc/perf/hv-gpci.c
-@@ -210,8 +210,7 @@ static int h_gpci_event_init(struct perf_event *event)
- 	    event->attr.exclude_hv     ||
- 	    event->attr.exclude_idle   ||
- 	    event->attr.exclude_host   ||
--	    event->attr.exclude_guest  ||
--	    is_sampling_event(event)) /* no sampling */
-+	    event->attr.exclude_guest
- 		return -EINVAL;
- 
- 	/* no branch sampling */
-@@ -284,6 +283,9 @@ static int hv_gpci_init(void)
- 		return -ENODEV;
+diff --git a/arch/s390/kernel/perf_cpum_cf.c b/arch/s390/kernel/perf_cpum_cf.c
+index ea75d01..d3194de 100644
+--- a/arch/s390/kernel/perf_cpum_cf.c
++++ b/arch/s390/kernel/perf_cpum_cf.c
+@@ -411,12 +411,6 @@ static int cpumf_pmu_event_init(struct perf_event *event)
+ 	case PERF_TYPE_HARDWARE:
+ 	case PERF_TYPE_HW_CACHE:
+ 	case PERF_TYPE_RAW:
+-		/* The CPU measurement counter facility does not have overflow
+-		 * interrupts to do sampling.  Sampling must be provided by
+-		 * external means, for example, by timers.
+-		 */
+-		if (is_sampling_event(event))
+-			return -ENOENT;
+ 		err = __hw_perf_event_init(event);
+ 		break;
+ 	default:
+@@ -681,6 +675,12 @@ static int __init cpumf_pmu_init(void)
+ 		goto out;
  	}
  
-+	/* sampling not supported */
-+	h_gpci_pmu.capabilities |= PERF_PMU_CAP_NO_INTERRUPT;
++	/* The CPU measurement counter facility does not have overflow
++	 * interrupts to do sampling.  Sampling must be provided by
++	 * external means, for example, by timers.
++	 */
++	cpumf_pmu.capabilities |= PERF_PMU_CAP_NO_INTERRUPT;
 +
- 	r = perf_pmu_register(&h_gpci_pmu, h_gpci_pmu.name, -1);
- 	if (r)
- 		return r;
+ 	cpumf_pmu.attr_groups = cpumf_cf_event_group();
+ 	rc = perf_pmu_register(&cpumf_pmu, "cpum_cf", PERF_TYPE_RAW);
+ 	if (rc) {
