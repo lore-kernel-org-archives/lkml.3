@@ -1,93 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122AbaFOUS1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 16:18:27 -0400
-Received: from mail.kernel.org ([198.145.19.201]:39919 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993AbaFOUSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 16:18:23 -0400
-Message-ID: <539E0001.60005@kernel.org>
-Date: Sun, 15 Jun 2014 21:20:17 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751867AbaFOUZx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 16:25:53 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:47842 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993AbaFOUZv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jun 2014 16:25:51 -0400
+Date: Sun, 15 Jun 2014 13:24:30 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm v2 02/11] madvise: cleanup swapin_walk_pmd_entry()
+In-Reply-To: <1402609691-13950-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+Message-ID: <alpine.LSU.2.11.1406151252400.1241@eggly.anvils>
+References: <1402609691-13950-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1402609691-13950-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-To: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-iio@vger.kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, support.opensource@diasemi.com
-Subject: Re: [PATCH 3/8] iio: of_iio_channel_get_by_name() returns non-null
- pointers for error legs
-References: <cover.1402484954.git.Adam.Thomson.Opensource@diasemi.com> <0e7c03b0467ae1eace9dafebe6946d01d48e72f2.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
-In-Reply-To: <0e7c03b0467ae1eace9dafebe6946d01d48e72f2.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/14 12:11, Adam Thomson wrote:
-> Currently in the inkern.c code for IIO framework, the function
-> of_iio_channel_get_by_name() will return a non-NULL pointer when
-> it cannot find a channel using of_iio_channel_get() and when it
-> tries to search for 'io-channel-ranges' property and fails. This
-> is incorrect behaviour as the function which calls this expects
-> a NULL pointer for failure. This patch rectifies the issue.
->
-> Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Hi Adam,
+On Thu, 12 Jun 2014, Naoya Horiguchi wrote:
 
-Good find.  I've only recently sent a pull request for fixes upstream,
-so I'll pick this up in a day or so once that has gone.
+> With the recent update on page table walker, we can use common code for
+> the walking more. Unlike many other users, this swapin_walk expects to
+> handle swap entries. As a result we should be careful about ptl locking.
+> Swapin operation, read_swap_cache_async(), could cause page reclaim, so
+> we can't keep holding ptl throughout this pte loop.
+> In order to properly handle ptl in pte_entry(), this patch adds two new
+> members on struct mm_walk.
+> 
+> This cleanup is necessary to get to the final form of page table walker,
+> where we should do all caller's specific work on leaf entries (IOW, all
+> pmd_entry() should be used for trans_pmd.)
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Hugh Dickins <hughd@google.com>
 
-J
+Sorry, I believe this (and probably several other of your conversions)
+is badly flawed.
+
+You have a pattern of doing pte_offset_map_lock() inside the page walker,
+then dropping and regetting map and lock inside your pte handler.
+
+But on, say, x86_32 with CONFIG_HIGHMEM, CONFIG_SMP and CONFIG_PREEMPT,
+you may be preempted then run on a different cpu while atomic kmap and
+lock are dropped: so that the pte pointer then used on return to
+walk_pte_range() will no longer correspond to the right mapping.
+
+Presumably that can be fixed by keeping the pte pointer in the mm_walk
+structure; but I'm not at all sure that's the right thing to do.
+
+I am not nearly so keen as you to reduce all these to per-pte callouts,
+which seem inefficient to me.  It can be argued both ways on the less
+important functions (like this madvise one); but I hope you don't try
+to make this kind of conversion to fast paths like those in memory.c.
+
+Hugh
+
 > ---
->   drivers/iio/inkern.c | 6 ++++--
->   1 file changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
-> index 0cf5f8e..1e8e94d 100644
-> --- a/drivers/iio/inkern.c
-> +++ b/drivers/iio/inkern.c
-> @@ -183,7 +183,7 @@ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
->   		else if (name && index >= 0) {
->   			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
->   				np->full_name, name ? name : "", index);
-> -			return chan;
-> +			return NULL;
->   		}
->
->   		/*
-> @@ -193,8 +193,9 @@ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
->   		 */
->   		np = np->parent;
->   		if (np && !of_get_property(np, "io-channel-ranges", NULL))
-> -			break;
-> +			return NULL;
->   	}
-> +
->   	return chan;
->   }
->
-> @@ -317,6 +318,7 @@ struct iio_channel *iio_channel_get(struct device *dev,
->   		if (channel != NULL)
->   			return channel;
->   	}
-> +
->   	return iio_channel_get_sys(name, channel_name);
->   }
->   EXPORT_SYMBOL_GPL(iio_channel_get);
-> --
+>  include/linux/mm.h |  4 ++++
+>  mm/madvise.c       | 54 +++++++++++++++++++++++-------------------------------
+>  mm/pagewalk.c      | 11 +++++------
+>  3 files changed, 32 insertions(+), 37 deletions(-)
+> 
+> diff --git mmotm-2014-05-21-16-57.orig/include/linux/mm.h mmotm-2014-05-21-16-57/include/linux/mm.h
+> index b4aa6579f2b1..aa832161a1ff 100644
+> --- mmotm-2014-05-21-16-57.orig/include/linux/mm.h
+> +++ mmotm-2014-05-21-16-57/include/linux/mm.h
+> @@ -1108,6 +1108,8 @@ void unmap_vmas(struct mmu_gather *tlb, struct vm_area_struct *start_vma,
+>   * @vma:       vma currently walked
+>   * @skip:      internal control flag which is set when we skip the lower
+>   *             level entries.
+> + * @pmd:       current pmd entry
+> + * @ptl:       page table lock associated with current entry
+>   * @private:   private data for callbacks' use
+>   *
+>   * (see the comment on walk_page_range() for more details)
+> @@ -1126,6 +1128,8 @@ struct mm_walk {
+>  	struct mm_struct *mm;
+>  	struct vm_area_struct *vma;
+>  	int skip;
+> +	pmd_t *pmd;
+> +	spinlock_t *ptl;
+>  	void *private;
+>  };
+>  
+> diff --git mmotm-2014-05-21-16-57.orig/mm/madvise.c mmotm-2014-05-21-16-57/mm/madvise.c
+> index a402f8fdc68e..06b390a6fbbd 100644
+> --- mmotm-2014-05-21-16-57.orig/mm/madvise.c
+> +++ mmotm-2014-05-21-16-57/mm/madvise.c
+> @@ -135,38 +135,31 @@ static long madvise_behavior(struct vm_area_struct *vma,
+>  }
+>  
+>  #ifdef CONFIG_SWAP
+> -static int swapin_walk_pmd_entry(pmd_t *pmd, unsigned long start,
+> +/*
+> + * Assuming that page table walker holds page table lock.
+> + */
+> +static int swapin_walk_pte_entry(pte_t *pte, unsigned long start,
+>  	unsigned long end, struct mm_walk *walk)
+>  {
+> -	pte_t *orig_pte;
+> -	struct vm_area_struct *vma = walk->private;
+> -	unsigned long index;
+> -
+> -	if (pmd_none_or_trans_huge_or_clear_bad(pmd))
+> -		return 0;
+> -
+> -	for (index = start; index != end; index += PAGE_SIZE) {
+> -		pte_t pte;
+> -		swp_entry_t entry;
+> -		struct page *page;
+> -		spinlock_t *ptl;
+> -
+> -		orig_pte = pte_offset_map_lock(vma->vm_mm, pmd, start, &ptl);
+> -		pte = *(orig_pte + ((index - start) / PAGE_SIZE));
+> -		pte_unmap_unlock(orig_pte, ptl);
+> -
+> -		if (pte_present(pte) || pte_none(pte) || pte_file(pte))
+> -			continue;
+> -		entry = pte_to_swp_entry(pte);
+> -		if (unlikely(non_swap_entry(entry)))
+> -			continue;
+> -
+> -		page = read_swap_cache_async(entry, GFP_HIGHUSER_MOVABLE,
+> -								vma, index);
+> -		if (page)
+> -			page_cache_release(page);
+> -	}
+> +	pte_t ptent;
+> +	pte_t *orig_pte = pte - ((start & (PMD_SIZE - 1)) >> PAGE_SHIFT);
+> +	swp_entry_t entry;
+> +	struct page *page;
+>  
+> +	ptent = *pte;
+> +	pte_unmap_unlock(orig_pte, walk->ptl);
+> +	if (pte_present(ptent) || pte_none(ptent) || pte_file(ptent))
+> +		goto lock;
+> +	entry = pte_to_swp_entry(ptent);
+> +	if (unlikely(non_swap_entry(entry)))
+> +		goto lock;
+> +	page = read_swap_cache_async(entry, GFP_HIGHUSER_MOVABLE,
+> +				     walk->vma, start);
+> +	if (page)
+> +		page_cache_release(page);
+> +lock:
+> +	pte_offset_map(walk->pmd, start & PMD_MASK);
+> +	spin_lock(walk->ptl);
+>  	return 0;
+>  }
+>  
+> @@ -175,8 +168,7 @@ static void force_swapin_readahead(struct vm_area_struct *vma,
+>  {
+>  	struct mm_walk walk = {
+>  		.mm = vma->vm_mm,
+> -		.pmd_entry = swapin_walk_pmd_entry,
+> -		.private = vma,
+> +		.pte_entry = swapin_walk_pte_entry,
+>  	};
+>  
+>  	walk_page_range(start, end, &walk);
+> diff --git mmotm-2014-05-21-16-57.orig/mm/pagewalk.c mmotm-2014-05-21-16-57/mm/pagewalk.c
+> index e734f63276c2..24311d6f5c20 100644
+> --- mmotm-2014-05-21-16-57.orig/mm/pagewalk.c
+> +++ mmotm-2014-05-21-16-57/mm/pagewalk.c
+> @@ -27,10 +27,10 @@ static int walk_pte_range(pmd_t *pmd, unsigned long addr,
+>  	struct mm_struct *mm = walk->mm;
+>  	pte_t *pte;
+>  	pte_t *orig_pte;
+> -	spinlock_t *ptl;
+>  	int err = 0;
+>  
+> -	orig_pte = pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
+> +	walk->pmd = pmd;
+> +	orig_pte = pte = pte_offset_map_lock(mm, pmd, addr, &walk->ptl);
+>  	do {
+>  		if (pte_none(*pte)) {
+>  			if (walk->pte_hole)
+> @@ -48,7 +48,7 @@ static int walk_pte_range(pmd_t *pmd, unsigned long addr,
+>  		if (err)
+>  		       break;
+>  	} while (pte++, addr += PAGE_SIZE, addr < end);
+> -	pte_unmap_unlock(orig_pte, ptl);
+> +	pte_unmap_unlock(orig_pte, walk->ptl);
+>  	cond_resched();
+>  	return addr == end ? 0 : err;
+>  }
+> @@ -172,7 +172,6 @@ static int walk_hugetlb_range(unsigned long addr, unsigned long end,
+>  	unsigned long hmask = huge_page_mask(h);
+>  	pte_t *pte;
+>  	int err = 0;
+> -	spinlock_t *ptl;
+>  
+>  	do {
+>  		next = hugetlb_entry_end(h, addr, end);
+> @@ -186,14 +185,14 @@ static int walk_hugetlb_range(unsigned long addr, unsigned long end,
+>  				break;
+>  			continue;
+>  		}
+> -		ptl = huge_pte_lock(h, mm, pte);
+> +		walk->ptl = huge_pte_lock(h, mm, pte);
+>  		/*
+>  		 * Callers should have their own way to handle swap entries
+>  		 * in walk->hugetlb_entry().
+>  		 */
+>  		if (walk->hugetlb_entry)
+>  			err = walk->hugetlb_entry(pte, addr, next, walk);
+> -		spin_unlock(ptl);
+> +		spin_unlock(walk->ptl);
+>  		if (err)
+>  			break;
+>  	} while (addr = next, addr != end);
+> -- 
 > 1.9.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
+> 
+> 
