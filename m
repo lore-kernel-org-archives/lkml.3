@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200AbaFOVl1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 17:41:27 -0400
-Received: from mail.phunq.net ([184.71.0.62]:53954 "EHLO starbase.phunq.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752015AbaFOVlZ convert rfc822-to-8bit (ORCPT
+	id S1752274AbaFOVvS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 17:51:18 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:44005 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752139AbaFOVvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 17:41:25 -0400
-From: Daniel Phillips <daniel@phunq.net>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Dave Chinner <david@fromorbit.com>, <linux-kernel@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC] Tux3 for review
-Date: Sun, 15 Jun 2014 14:41:16 -0700
-User-Agent: Trojita/0.4.1; Qt/4.8.6; X11; Linux; Ubuntu 14.04 LTS
-MIME-Version: 1.0
-Message-ID: <b67e55e1-af54-4f34-802c-95749771aca4@phunq.net>
-In-Reply-To: <20140613202039.GA23872@amd.pavel.ucw.cz>
-References: <5376B273.7000800@partner.samsung.com>
- <20140518235555.GC18954@dastard> <537AA802.408@phunq.net>
- <20140520031802.GF18954@dastard> <20140613103216.GA4589@amd.pavel.ucw.cz>
- <02d3b094-808c-4b17-903d-1280d451704b@phunq.net>
- <20140613202039.GA23872@amd.pavel.ucw.cz>
-Organization: tux3.org
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+	Sun, 15 Jun 2014 17:51:14 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Rob Clark <robdclark@gmail.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] video: fbdev: sis: init301.c:  Cleaning up useless if statement  
+Date: Sun, 15 Jun 2014 23:52:09 +0200
+Message-Id: <1402869130-4962-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 13, 2014 1:20:39 PM PDT, Pavel Machek wrote:
-> Hi!
->
-> On Fri 2014-06-13 10:49:39, Daniel Phillips wrote:
->> Hi Pavel, On Friday, June 13, 2014 3:32:16 AM PDT, Pavel Machek wrote:
->  ...
->
-> Actually, would it make sense to have staging/fs/?
+The same code regardless of the outcome of the if statement. This may of
+course be a miss and there should be a difference in the code.
+And sets a variable that is missed, a probable cut and paste mistake.
 
-That makes sense to me, if a suitably expert and nonaligned maintainer can 
-be found to sign up for a ridiculous amount of largely thankless, but 
-perhaps fascinating work. Any volunteers?
+This was partly found using a static code analysis program called cppcheck.
 
-Regards,
+Rickard Strandqvist (1):
+  video: fbdev: sis: init301.c:  Cleaning up useless if statement
 
-Daniel							
+ drivers/video/fbdev/sis/init301.c |   19 +++++--------------
+ 1 file changed, 5 insertions(+), 14 deletions(-)
+
+-- 
+1.7.10.4
 
