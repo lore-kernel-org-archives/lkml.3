@@ -1,103 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752164AbaFOU1c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 16:27:32 -0400
-Received: from mail-vc0-f193.google.com ([209.85.220.193]:56811 "EHLO
-	mail-vc0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829AbaFOU1Y (ORCPT
+	id S1752207AbaFOU3M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 16:29:12 -0400
+Received: from mail-yk0-f172.google.com ([209.85.160.172]:44480 "EHLO
+	mail-yk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176AbaFOU3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 16:27:24 -0400
+	Sun, 15 Jun 2014 16:29:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140614.235300.1228145928404410306.davem@davemloft.net>
-References: <1402805139-6363-1-git-send-email-xerofoify@gmail.com>
-	<20140614.235300.1228145928404410306.davem@davemloft.net>
-Date: Sun, 15 Jun 2014 16:27:23 -0400
-Message-ID: <CAPDOMVgV8V8fPpZupwQaDERiK-0OMLt66LULR6Biw1=8LJhOKw@mail.gmail.com>
-Subject: Re: [PATCH] Missing return check against Null for return value of netdev_alloc_dev_skb()
-From: Nick Krause <xerofoify@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: andriy.shevchenko@linux.intel.com, dvhart@linux.intel.com,
-        jeffrey.t.kirsher@intel.com, ast@plumgrid.com, dborkman@redhat.com,
-        bhutchings@solarflare.com, netdev@vger.kernel.org,
+In-Reply-To: <1402604734.2627.10.camel@buesod1.americas.hpqcorp.net>
+References: <1402569338-5709-1-git-send-email-wahibfaizi@gmail.com>
+ <1402602019-12819-1-git-send-email-wahibfaizi@gmail.com> <1402604734.2627.10.camel@buesod1.americas.hpqcorp.net>
+From: Wahib <wahibfaizi@gmail.com>
+Date: Mon, 16 Jun 2014 00:28:49 +0400
+Message-ID: <CABFmzrO=LP+=HHp7xGGvoPqNxKLmWbqWApvwxPN-unAH2CZekg@mail.gmail.com>
+Subject: Re: [PATCH v3 0/2] Fix subject line
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Valentina Manea <valentina.manea.m@gmail.com>,
+        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 62b0d77a1430f74b7f5c008c5e8bec11604b33b0 Mon Sep 17 00:00:00 2001
-From: Nick <xerofoify@gmail.com>
-Date: Sun, 15 Jun 2014 16:16:14 -0400
-Subject: [PATCHv2] Fixes return logic of function of pch_gbe_alloc_tx_buffers()
-Here is the fixed patch changed return type of function to int in
-order to use return -ENOMEM as with the function above it , seems to
-fit , otherwise returns 0.
- Report if it breaks anything related to this driver.
-Signed-off-by: Nick <xerofoify@gmail.com>
----
- drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Hi Davidlohr!
 
-diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-index 704cf63..7d5efd7 100644
---- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-+++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-@@ -1500,7 +1500,7 @@ pch_gbe_alloc_rx_buffers_pool(struct
-pch_gbe_adapter *adapter,
-  * @adapter:   Board private structure
-  * @tx_ring:   Tx descriptor ring
-  */
--static void pch_gbe_alloc_tx_buffers(struct pch_gbe_adapter *adapter,
-+static int pch_gbe_alloc_tx_buffers(struct pch_gbe_adapter *adapter
- struct pch_gbe_tx_ring *tx_ring)
- {
-     struct pch_gbe_buffer *buffer_info;
-@@ -1516,13 +1516,13 @@ static void pch_gbe_alloc_tx_buffers(struct
-pch_gbe_adapter *adapter,
-         buffer_info = &tx_ring->buffer_info[i];
-         skb = netdev_alloc_skb(adapter->netdev, bufsz);
-         if(!skb)
-+            return -ENOMEM;
-         skb_reserve(skb, PCH_GBE_DMA_ALIGN);
-         buffer_info->skb = skb;
-         tx_desc = PCH_GBE_TX_DESC(*tx_ring, i);
-         tx_desc->gbec_status = (DSC_INIT16);
-     }
--    return;
-+    return 0;
- }
+Don't worry. I am not discouraged. :)
 
- /**
--- 
-1.9.1
-Thanks for the Comments,
-Nick
+I understand your concern that the patch feels superficial. It's what the task
+asked us to do. I suspect the author(s) of the Eudyptula Challenge designed
+this task to get us involved with the Linux kernel community.
 
-On Sun, Jun 15, 2014 at 2:53 AM, David Miller <davem@davemloft.net> wrote:
-> From: Nick <xerofoify@gmail.com>
-> Date: Sun, 15 Jun 2014 00:05:39 -0400
+I have been looking for a bug in 'usbip' to bundle with my patch. The only bug
+that I could find (as of 16-Jun-2014) on bugzilla.kernel.org related
+to 'usbip' is Bug 77191.
+
+Bug 77191 - ftdi-sio (usbserial) over usbip hung after disconnect while in use
+(https://bugzilla.kernel.org/show_bug.cgi?id=77191)
+
+Sadly the bug doesn't seem to be newbie friendly as it requires special setup
+to reproduce and requires the developer to know about the intricacies of the
+'usbip' subsystem. I understand that people commiting their specialized
+knowledge is how the kernel development actually works. But USB is not my
+speciality (yet).
+
+Could you point me to more beginner friendly bugs which aren't superficial code
+cleanups?
+
+Can I bundle fixes to subsystems other than 'usbip' with the code cleanup patch
+for 'usbip'?
+
+Regards,
+Wahib
+
+On Fri, Jun 13, 2014 at 12:25 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> On Thu, 2014-06-12 at 23:40 +0400, Wahib Faizi wrote:
+>> Fix coding style issues detected by checkpatch.pl in usbip_host_driver.c.
 >
->> Signed-off-by: Nick <xerofoify@gmail.com>
->> ---
->>  drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c | 2 ++
->>  1 file changed, 2 insertions(+)
->>
->> diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
->> index 73e6683..704cf63 100644
->> --- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
->> +++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
->> @@ -1515,6 +1515,8 @@ static void pch_gbe_alloc_tx_buffers(struct pch_gbe_adapter *adapter,
->>       for (i = 0; i < tx_ring->count; i++) {
->>               buffer_info = &tx_ring->buffer_info[i];
->>               skb = netdev_alloc_skb(adapter->netdev, bufsz);
->> +             if (!skb)
->> +                     return NULL;
+> Sorry but unless bundled with something more meaningful, I really don't
+> see the value in these changes. I certainly don't want to discourage
+> folks or anything, but just testing other patches is a lot more helpful
+> than this.
 >
-> You didn't even compile test this.
+> I haven't followed much about the Eudyptula Challenge, but I hope other
+> assignments are more involved than this.
 >
-> The function has a void return type, you can't return NULL.
+> Thanks,
+> Davidlohr
 >
-> Furthermore, you have to adjust things so that the caller knows that
-> this operation failed, because the device cannot be brought up
-> successfully unless all the TX buffer slots get allocated properly.
