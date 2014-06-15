@@ -1,119 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902AbaFPG06 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 02:26:58 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:33617 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824AbaFPG04 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 02:26:56 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Mon, 16 Jun 2014 15:27:19 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v3 -next 1/9] DMA, CMA: fix possible memory leak
-Message-ID: <20140616062719.GA18790@bbox>
-References: <1402897251-23639-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1402897251-23639-2-git-send-email-iamjoonsoo.kim@lge.com>
-MIME-Version: 1.0
+	id S1753929AbaFPGaH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 02:30:07 -0400
+Received: from plane.gmane.org ([80.91.229.3]:38081 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753734AbaFPGaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 02:30:05 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Felix Deichmann <felix.deichmann@gmail.com>
+Subject: Re: [PATCH v3 0/6] acerhdf/thermal: adding new models, appropriate         governor and minor clean up
+Date: Sun, 15 Jun 2014 22:39:52 +0000 (UTC)
+Message-ID: <loom.20140616T003453-202@post.gmane.org>
+References: <1398561815-22033-1-git-send-email-peter@piie.net> <1399139966-10625-1-git-send-email-peter@piie.net> <20140515160508.GA27909@developer> <cone.1400194431.560139.1402.1000@galar>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402897251-23639-2-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 62.178.231.14 (Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Joonsoo
+Hello Peter,
+is there a newer version of acerhdf than 'acerhdf_kmod-0.5.30b-linux-3.8' 
+which includes all your recent patches?
+I am struggeling to get the fan of my Aspire V5 under control. 
+Is there a way to determine the adresses of the bios for the fans, so I can 
+add my model to the acerhdf.c? Maybe under windows (?), as I suceeded to turn 
+it down there.
+I would really appreciate any help!
+Best,
+Felix
 
-On Mon, Jun 16, 2014 at 02:40:43PM +0900, Joonsoo Kim wrote:
-> We should free memory for bitmap when we find zone mis-match,
-> otherwise this memory will leak.
-> 
-> Additionally, I copy code comment from PPC KVM's CMA code to inform
-> why we need to check zone mis-match.
-> 
-> * Note
-> Minchan suggested to add a tag for the stable, but, I don't do it,
-> because I found this possibility during code-review and, IMO,
-> this patch isn't suitable for stable tree.
+ 
 
-Nice idea to put the comment in here. Thanks Joonsoo.
-
-It seems you obey "It must fix a real bug that bothers people"
-on Documentation/stable_kernel_rules.txt but it's a really obvious
-bug and hard to get a report from people because limited user and
-hard to detect small such small memory leak.
-
-In my experince, Andrew perfered stable marking for such a obvious
-problem but simple fix like this but not sure so let's pass the decision
-to him and will learn a lesson from him and will follow the decision
-from now on.
-
-Thanks.
-
-Acked-by: Minchan Kim <minchan@kernel.org>
-
-> 
-> Acked-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> Reviewed-by: Michal Nazarewicz <mina86@mina86.com>
-> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> 
-> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-> index 83969f8..6467c91 100644
-> --- a/drivers/base/dma-contiguous.c
-> +++ b/drivers/base/dma-contiguous.c
-> @@ -176,14 +176,24 @@ static int __init cma_activate_area(struct cma *cma)
->  		base_pfn = pfn;
->  		for (j = pageblock_nr_pages; j; --j, pfn++) {
->  			WARN_ON_ONCE(!pfn_valid(pfn));
-> +			/*
-> +			 * alloc_contig_range requires the pfn range
-> +			 * specified to be in the same zone. Make this
-> +			 * simple by forcing the entire CMA resv range
-> +			 * to be in the same zone.
-> +			 */
->  			if (page_zone(pfn_to_page(pfn)) != zone)
-> -				return -EINVAL;
-> +				goto err;
->  		}
->  		init_cma_reserved_pageblock(pfn_to_page(base_pfn));
->  	} while (--i);
->  
->  	mutex_init(&cma->lock);
->  	return 0;
-> +
-> +err:
-> +	kfree(cma->bitmap);
-> +	return -EINVAL;
->  }
->  
->  static struct cma cma_areas[MAX_CMA_AREAS];
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
