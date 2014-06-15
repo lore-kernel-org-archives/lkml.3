@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433AbaFOAmz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 20:42:55 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:61984 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340AbaFOAmx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 20:42:53 -0400
-From: Lv Zheng <zetalog@gmail.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <zetalog@gmail.com>, Lv Zheng <lv.zheng@intel.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 7/7] ACPI/EC: Add detailed fields debugging support of EC_SC(R).
-Date: Sun, 15 Jun 2014 08:42:42 +0800
-Message-Id: <2a8af368df76ec52e4114c23e685a10c4eeb8a3e.1402792240.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1402792240.git.lv.zheng@intel.com>
-References: <cover.1402543079.git.lv.zheng@intel.com> <cover.1402792240.git.lv.zheng@intel.com>
+	id S1751395AbaFOAqd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 20:46:33 -0400
+Received: from mx02.posteo.de ([89.146.194.165]:38270 "EHLO posteo.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750889AbaFOAqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 20:46:32 -0400
+From: Martin Kepplinger <martink@posteo.de>
+To: drbd-dev@lists.linbit.com
+Cc: drbd-user@lists.linbit.com, linux-kernel@vger.kernel.org,
+        Martin Kepplinger <martink@posteo.de>
+Subject: [PATCH v2] drbd: change one-bit bitfield to be an unsigned int
+Date: Sun, 15 Jun 2014 02:45:21 +0200
+Message-Id: <1402793121-17181-1-git-send-email-martink@posteo.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1402787275-12258-1-git-send-email-martink@posteo.de>
+References: <1402787275-12258-1-git-send-email-martink@posteo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lv Zheng <lv.zheng@intel.com>
+The one-bit bitfield has no negative values and thus becomes an
+unsigned int.
 
-Developers really don't need to translate EC_SC(R) in mind as long as the
-field details are decoded in the debugging message.
-
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Tested-by: Gareth Williams <gareth@garethwilliams.me.uk>
-Tested-by: Steffen Weber <steffen.weber@gmail.com>
+Signed-off-by: Martin Kepplinger <martink@posteo.de>
 ---
- drivers/acpi/ec.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+Sorry for the visually ugly first patch. Take this one, if any.
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index 051ac47..c3299f6 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -55,6 +55,7 @@
- /* EC status register */
- #define ACPI_EC_FLAG_OBF	0x01	/* Output buffer full */
- #define ACPI_EC_FLAG_IBF	0x02	/* Input buffer full */
-+#define ACPI_EC_FLAG_CMD	0x08	/* Input buffer contains a command */
- #define ACPI_EC_FLAG_BURST	0x10	/* burst mode */
- #define ACPI_EC_FLAG_SCI	0x20	/* EC-SCI occurred */
+thanks,
+                     martin
+
+
+ drivers/block/drbd/drbd_interval.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/block/drbd/drbd_interval.h b/drivers/block/drbd/drbd_interval.h
+index f38fcb0..8d670e6 100644
+--- a/drivers/block/drbd/drbd_interval.h
++++ b/drivers/block/drbd/drbd_interval.h
+@@ -9,8 +9,8 @@ struct drbd_interval {
+ 	sector_t sector;	/* start sector of the interval */
+ 	unsigned int size;	/* size in bytes */
+ 	sector_t end;		/* highest interval end in subtree */
+-	int local:1		/* local or remote request? */;
+-	int waiting:1;
++	unsigned int local:1;	/* local or remote request? */
++	unsigned int waiting:1;
+ };
  
-@@ -133,26 +134,33 @@ static int EC_FLAGS_CLEAR_ON_RESUME; /* Needs acpi_ec_clear() on boot/resume */
- static inline u8 acpi_ec_read_status(struct acpi_ec *ec)
- {
- 	u8 x = inb(ec->command_addr);
--	pr_debug("---> status = 0x%2.2x\n", x);
-+	pr_debug("EC_SC(R) = 0x%2.2x "
-+		 "SCI_EVT=%d BURST=%d CMD=%d IBF=%d OBF=%d\n",
-+		 x,
-+		 !!(x & ACPI_EC_FLAG_SCI),
-+		 !!(x & ACPI_EC_FLAG_BURST),
-+		 !!(x & ACPI_EC_FLAG_CMD),
-+		 !!(x & ACPI_EC_FLAG_IBF),
-+		 !!(x & ACPI_EC_FLAG_OBF));
- 	return x;
- }
- 
- static inline u8 acpi_ec_read_data(struct acpi_ec *ec)
- {
- 	u8 x = inb(ec->data_addr);
--	pr_debug("---> data = 0x%2.2x\n", x);
-+	pr_debug("EC_DATA(R) = 0x%2.2x\n", x);
- 	return x;
- }
- 
- static inline void acpi_ec_write_cmd(struct acpi_ec *ec, u8 command)
- {
--	pr_debug("<--- command = 0x%2.2x\n", command);
-+	pr_debug("EC_SC(W) = 0x%2.2x\n", command);
- 	outb(command, ec->command_addr);
- }
- 
- static inline void acpi_ec_write_data(struct acpi_ec *ec, u8 data)
- {
--	pr_debug("<--- data = 0x%2.2x\n", data);
-+	pr_debug("EC_DATA(W) = 0x%2.2x\n", data);
- 	outb(data, ec->data_addr);
- }
- 
+ static inline void drbd_clear_interval(struct drbd_interval *i)
 -- 
-1.7.10
+1.7.10.4
 
