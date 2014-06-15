@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbaFOVcP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 17:32:15 -0400
-Received: from marmot.wormnet.eu ([188.246.204.87]:55455 "EHLO
-	marmot.wormnet.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751990AbaFOVcK (ORCPT
+	id S1752359AbaFOVer (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 17:34:47 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:53448 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752056AbaFOVem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 17:32:10 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1402864790-7478-1-git-send-email-jm@lentin.co.uk>
-References: <1402864790-7478-1-git-send-email-jm@lentin.co.uk>
+	Sun, 15 Jun 2014 17:34:42 -0400
+Message-ID: <539E116D.6030002@linaro.org>
+Date: Sun, 15 Jun 2014 23:34:37 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Matthias Brugger <matthias.bgg@gmail.com>
+CC: linux-kernel@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rdunlap@infradead.org, linux@arm.linux.org.uk,
+        grant.likely@linaro.org, thierry.reding@gmail.com,
+        florian.vaussard@epfl.ch, jic23@kernel.org, jason@lakedaemon.net,
+        andrew@lunn.ch, silvio.fricke@gmail.com, heiko.stuebner@bq.com,
+        olof@lixom.net, sebastian.hesselbarth@gmail.com, sboyd@codeaurora.org,
+        gregory.clement@free-electrons.com, arnd@arndb.de,
+        robherring2@gmail.com, marc.zyngier@arm.com,
+        maxime.ripard@free-electrons.com, soren.brinkmann@xilinx.com,
+        shawn.guo@freescale.com, anders.berg@lsi.com, linus.walleij@linaro.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v8 2/7] clocksource: Add support for the Mediatek SoCs
+References: <1402490055-15197-1-git-send-email-matthias.bgg@gmail.com> <1402490055-15197-3-git-send-email-matthias.bgg@gmail.com> <alpine.DEB.2.10.1406112012460.5170@nanos>
+In-Reply-To: <alpine.DEB.2.10.1406112012460.5170@nanos>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH v3 0/2] Add support for Lenovo Compact Keyboard
-From: Alexander Clouter <alex@digriz.org.uk>
-Date: Sun, 15 Jun 2014 22:32:06 +0100
-To: Jamie Lentin <jm@lentin.co.uk>, Jiri Kosina <jkosina@suse.cz>,
-        Antonio Ospite <ao2@ao2.it>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <b2a949a6-cd86-437c-a746-d71394f228d6@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tested-by: Alexander Clouter <alex@digriz.org.uk>
+On 06/11/2014 08:14 PM, Thomas Gleixner wrote:
+> On Wed, 11 Jun 2014, Matthias Brugger wrote:
+>> +static void mtk_clkevt_mode(enum clock_event_mode mode,
+>> +				struct clock_event_device *clk)
+>> +{
+>> +	struct mtk_clock_event_device *evt = to_mtk_clk(clk);
+>> +
+>> +	mtk_clkevt_time_stop(evt, GPT_CLK_EVT);
+>> +
+>> +	switch (mode) {
+>> +	case CLOCK_EVT_MODE_PERIODIC:
+>> +		mtk_clkevt_time_setup(evt, evt->ticks_per_jiffy, GPT_CLK_EVT);
+>> +		mtk_clkevt_time_start(evt, true, GPT_CLK_EVT);
+>> +		break;
+>> +	case CLOCK_EVT_MODE_ONESHOT:
+>> +		mtk_clkevt_time_start(evt, false, GPT_CLK_EVT);
+>
+> Why start the timer here? The code will call set next event right away.
+>
+>> +		break;
+>> +	case CLOCK_EVT_MODE_UNUSED:
+>> +	case CLOCK_EVT_MODE_SHUTDOWN:
+>> +	default:
+>> +		/* No more interrupts will occur as source is disabled */
+>> +		break;
+>> +	}
+>> +}
+>
+> Looks good otherwise.
 
-On 15 June 2014 21:39:48 GMT+01:00, Jamie Lentin <jm@lentin.co.uk> wrote:
->This patchset follows on from my previous attempts to add support for
->these keyboards from Lenovo.
->
->Changes since v2: https://lkml.org/lkml/2014/6/10/730
->* Rename hid-lenovo-tpkbd to hid-lenovo, to make it obvious this is
->  for any Lenovo-manufactured device [Antonio Ospite, Jiri Kosina]
->* Style fixes: function calls in conditions, combine checks for 
->  both USB & BT keyboards [Antonio Ospite]
->
->Changes since v1: https://lkml.org/lkml/2014/3/25/535
->* Merge driver into hid-lenovo-tpkbd.c instead of creating our own
->  driver for the hardware [Jiri Kosina]
->* Remove key mappings which are now supported by standard
->* Use KEY_FILE for Fn-F12 (opens My Computer on Windows)
->* Support the USB variant as well as Bluetooth
->* Expose the Fn Lock setting as a sysfs attribute instead of trying to
->  build a mechanism to toggle into the kernel
->
->Applies against 3.14.5, tested with Bluetooth and USB variants of the
->Compact Keyboard with Trackpoint, as well as the original Thinkpad USB
->keyboard (thanks to Alexander Clouter).
->
->Cheers,
->
->Jamie Lentin (2):
->  Rename hid-lenovo-tpkbd to hid-lenovo, so we can add other keyboards
->  Add support for Compact (Bluetooth|USB) keyboard with Trackpoint
->
-> drivers/hid/Kconfig            |  16 +-
-> drivers/hid/Makefile           |   2 +-
-> drivers/hid/hid-core.c         |   2 +
-> drivers/hid/hid-ids.h          |   2 +
-> drivers/hid/hid-lenovo-tpkbd.c | 462 ---------------------------
->drivers/hid/hid-lenovo.c       | 697
->+++++++++++++++++++++++++++++++++++++++++
-> include/linux/hid.h            |   1 +
-> 7 files changed, 712 insertions(+), 470 deletions(-)
-> delete mode 100644 drivers/hid/hid-lenovo-tpkbd.c
-> create mode 100644 drivers/hid/hid-lenovo.c
+Hi Thomas,
+
+Can I consider the 8.1 patch (the one taking into account your comment) 
+as acked-by ?
+
+Thanks
+
+   -- Daniel
+
 
 -- 
-Alexander Clouter
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
