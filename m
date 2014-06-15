@@ -1,24 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730AbaFOUjA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 16:39:00 -0400
-Received: from smtprelay0039.hostedemail.com ([216.40.44.39]:54029 "EHLO
+	id S1752636AbaFOUit (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 16:38:49 -0400
+Received: from smtprelay0202.hostedemail.com ([216.40.44.202]:37044 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752656AbaFOUiz (ORCPT
+	by vger.kernel.org with ESMTP id S1752465AbaFOUio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 16:38:55 -0400
+	Sun, 15 Jun 2014 16:38:44 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:1:41:69:355:379:541:800:960:966:973:988:989:1260:1345:1359:1437:1605:1730:1747:1777:1792:2196:2199:2393:2559:2562:2637:3138:3139:3140:3141:3142:3865:3866:3867:3868:3871:4250:4321:4385:4605:5007:6119:6261:7903:9592:10004:10026:10848:11026:11233:11473:11658:11914:12043:12296:12438:12517:12519:12555:12683:14110:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: watch43_6aae3e0db1609
-X-Filterd-Recvd-Size: 11810
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::,RULES_HIT:41:355:379:541:800:960:966:973:988:989:1260:1345:1359:1437:1534:1541:1711:1714:1730:1747:1777:1792:2194:2196:2199:2200:2393:2559:2562:3138:3139:3140:3141:3142:3350:3865:3866:4321:4385:5007:6261:8603:9592:10004:10026:10848:11026:11657:11658:11914:12043:12296:12438:12517:12519:12555:13311:
+X-HE-Tag: waves96_68e0d9b13df5a
+X-Filterd-Recvd-Size: 2197
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Cc: Eddie Wai <eddie.wai@broadcom.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Subject: [PATCH -next 16/26] bnx2fc: Use dma_zalloc_coherent
-Date: Sun, 15 Jun 2014 13:37:45 -0700
-Message-Id: <ee35c91cf0dae28fb60d46d675c7d672dd069eee.1402863905.git.joe@perches.com>
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Mitch Williams <mitch.a.williams@intel.com>,
+        Linux NICS <linux.nics@intel.com>, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org
+Subject: [PATCH -next 12/26] intel: Use dma_zalloc_coherent
+Date: Sun, 15 Jun 2014 13:37:41 -0700
+Message-Id: <98cd6b066087e10da2dbf2a92080197a40a5e4ec.1402863905.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1402863904.git.joe@perches.com>
 References: <cover.1402863904.git.joe@perches.com>
@@ -30,305 +38,30 @@ Use the zeroing function instead of dma_alloc_coherent & memset(,0,)
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/scsi/bnx2fc/bnx2fc_hwi.c | 59 +++++++++++++++++-----------------------
- drivers/scsi/bnx2fc/bnx2fc_tgt.c | 51 ++++++++++++++--------------------
- 2 files changed, 46 insertions(+), 64 deletions(-)
+ drivers/net/ethernet/intel/ixgb/ixgb_main.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/scsi/bnx2fc/bnx2fc_hwi.c b/drivers/scsi/bnx2fc/bnx2fc_hwi.c
-index 512aed3..96f2586 100644
---- a/drivers/scsi/bnx2fc/bnx2fc_hwi.c
-+++ b/drivers/scsi/bnx2fc/bnx2fc_hwi.c
-@@ -1854,16 +1854,15 @@ int bnx2fc_setup_task_ctx(struct bnx2fc_hba *hba)
- 	 * entries. Hence the limit with one page is 8192 task context
- 	 * entries.
- 	 */
--	hba->task_ctx_bd_tbl = dma_alloc_coherent(&hba->pcidev->dev,
--						  PAGE_SIZE,
--						  &hba->task_ctx_bd_dma,
--						  GFP_KERNEL);
-+	hba->task_ctx_bd_tbl = dma_zalloc_coherent(&hba->pcidev->dev,
-+						   PAGE_SIZE,
-+						   &hba->task_ctx_bd_dma,
-+						   GFP_KERNEL);
- 	if (!hba->task_ctx_bd_tbl) {
- 		printk(KERN_ERR PFX "unable to allocate task context BDT\n");
- 		rc = -1;
- 		goto out;
- 	}
--	memset(hba->task_ctx_bd_tbl, 0, PAGE_SIZE);
+diff --git a/drivers/net/ethernet/intel/ixgb/ixgb_main.c b/drivers/net/ethernet/intel/ixgb/ixgb_main.c
+index 6080127..b02cc72 100644
+--- a/drivers/net/ethernet/intel/ixgb/ixgb_main.c
++++ b/drivers/net/ethernet/intel/ixgb/ixgb_main.c
+@@ -795,14 +795,12 @@ ixgb_setup_rx_resources(struct ixgb_adapter *adapter)
+ 	rxdr->size = rxdr->count * sizeof(struct ixgb_rx_desc);
+ 	rxdr->size = ALIGN(rxdr->size, 4096);
  
- 	/*
- 	 * Allocate task_ctx which is an array of pointers pointing to
-@@ -1892,16 +1891,15 @@ int bnx2fc_setup_task_ctx(struct bnx2fc_hba *hba)
- 	task_ctx_bdt = (struct regpair *)hba->task_ctx_bd_tbl;
- 	for (i = 0; i < task_ctx_arr_sz; i++) {
- 
--		hba->task_ctx[i] = dma_alloc_coherent(&hba->pcidev->dev,
--						      PAGE_SIZE,
--						      &hba->task_ctx_dma[i],
--						      GFP_KERNEL);
-+		hba->task_ctx[i] = dma_zalloc_coherent(&hba->pcidev->dev,
-+						       PAGE_SIZE,
-+						       &hba->task_ctx_dma[i],
-+						       GFP_KERNEL);
- 		if (!hba->task_ctx[i]) {
- 			printk(KERN_ERR PFX "unable to alloc task context\n");
- 			rc = -1;
- 			goto out3;
- 		}
--		memset(hba->task_ctx[i], 0, PAGE_SIZE);
- 		addr = (u64)hba->task_ctx_dma[i];
- 		task_ctx_bdt->hi = cpu_to_le32((u64)addr >> 32);
- 		task_ctx_bdt->lo = cpu_to_le32((u32)addr);
-@@ -2031,27 +2029,23 @@ static int bnx2fc_allocate_hash_table(struct bnx2fc_hba *hba)
- 
- 	for (i = 0; i < segment_count; ++i) {
- 		hba->hash_tbl_segments[i] =
--			dma_alloc_coherent(&hba->pcidev->dev,
--					   BNX2FC_HASH_TBL_CHUNK_SIZE,
--					   &dma_segment_array[i],
--					   GFP_KERNEL);
-+			dma_zalloc_coherent(&hba->pcidev->dev,
-+					    BNX2FC_HASH_TBL_CHUNK_SIZE,
-+					    &dma_segment_array[i],
-+					    GFP_KERNEL);
- 		if (!hba->hash_tbl_segments[i]) {
- 			printk(KERN_ERR PFX "hash segment alloc failed\n");
- 			goto cleanup_dma;
- 		}
--		memset(hba->hash_tbl_segments[i], 0,
--		       BNX2FC_HASH_TBL_CHUNK_SIZE);
- 	}
- 
--	hba->hash_tbl_pbl = dma_alloc_coherent(&hba->pcidev->dev,
--					       PAGE_SIZE,
--					       &hba->hash_tbl_pbl_dma,
--					       GFP_KERNEL);
-+	hba->hash_tbl_pbl = dma_zalloc_coherent(&hba->pcidev->dev, PAGE_SIZE,
-+						&hba->hash_tbl_pbl_dma,
-+						GFP_KERNEL);
- 	if (!hba->hash_tbl_pbl) {
- 		printk(KERN_ERR PFX "hash table pbl alloc failed\n");
- 		goto cleanup_dma;
- 	}
--	memset(hba->hash_tbl_pbl, 0, PAGE_SIZE);
- 
- 	pbl = hba->hash_tbl_pbl;
- 	for (i = 0; i < segment_count; ++i) {
-@@ -2108,27 +2102,26 @@ int bnx2fc_setup_fw_resc(struct bnx2fc_hba *hba)
- 		return -ENOMEM;
- 
- 	mem_size = BNX2FC_NUM_MAX_SESS * sizeof(struct regpair);
--	hba->t2_hash_tbl_ptr = dma_alloc_coherent(&hba->pcidev->dev, mem_size,
--						  &hba->t2_hash_tbl_ptr_dma,
--						  GFP_KERNEL);
-+	hba->t2_hash_tbl_ptr = dma_zalloc_coherent(&hba->pcidev->dev,
-+						   mem_size,
-+						   &hba->t2_hash_tbl_ptr_dma,
-+						   GFP_KERNEL);
- 	if (!hba->t2_hash_tbl_ptr) {
- 		printk(KERN_ERR PFX "unable to allocate t2 hash table ptr\n");
- 		bnx2fc_free_fw_resc(hba);
- 		return -ENOMEM;
- 	}
--	memset(hba->t2_hash_tbl_ptr, 0x00, mem_size);
- 
- 	mem_size = BNX2FC_NUM_MAX_SESS *
- 				sizeof(struct fcoe_t2_hash_table_entry);
--	hba->t2_hash_tbl = dma_alloc_coherent(&hba->pcidev->dev, mem_size,
--					      &hba->t2_hash_tbl_dma,
--					      GFP_KERNEL);
-+	hba->t2_hash_tbl = dma_zalloc_coherent(&hba->pcidev->dev, mem_size,
-+					       &hba->t2_hash_tbl_dma,
-+					       GFP_KERNEL);
- 	if (!hba->t2_hash_tbl) {
- 		printk(KERN_ERR PFX "unable to allocate t2 hash table\n");
- 		bnx2fc_free_fw_resc(hba);
- 		return -ENOMEM;
- 	}
--	memset(hba->t2_hash_tbl, 0x00, mem_size);
- 	for (i = 0; i < BNX2FC_NUM_MAX_SESS; i++) {
- 		addr = (unsigned long) hba->t2_hash_tbl_dma +
- 			 ((i+1) * sizeof(struct fcoe_t2_hash_table_entry));
-@@ -2145,16 +2138,14 @@ int bnx2fc_setup_fw_resc(struct bnx2fc_hba *hba)
- 		return -ENOMEM;
- 	}
- 
--	hba->stats_buffer = dma_alloc_coherent(&hba->pcidev->dev,
--					       PAGE_SIZE,
--					       &hba->stats_buf_dma,
--					       GFP_KERNEL);
-+	hba->stats_buffer = dma_zalloc_coherent(&hba->pcidev->dev, PAGE_SIZE,
-+						&hba->stats_buf_dma,
-+						GFP_KERNEL);
- 	if (!hba->stats_buffer) {
- 		printk(KERN_ERR PFX "unable to alloc Stats Buffer\n");
- 		bnx2fc_free_fw_resc(hba);
- 		return -ENOMEM;
- 	}
--	memset(hba->stats_buffer, 0x00, PAGE_SIZE);
- 
- 	return 0;
- }
-diff --git a/drivers/scsi/bnx2fc/bnx2fc_tgt.c b/drivers/scsi/bnx2fc/bnx2fc_tgt.c
-index 6870cf6..76155b8 100644
---- a/drivers/scsi/bnx2fc/bnx2fc_tgt.c
-+++ b/drivers/scsi/bnx2fc/bnx2fc_tgt.c
-@@ -677,56 +677,53 @@ static int bnx2fc_alloc_session_resc(struct bnx2fc_hba *hba,
- 	tgt->sq_mem_size = (tgt->sq_mem_size + (CNIC_PAGE_SIZE - 1)) &
- 			   CNIC_PAGE_MASK;
- 
--	tgt->sq = dma_alloc_coherent(&hba->pcidev->dev, tgt->sq_mem_size,
--				     &tgt->sq_dma, GFP_KERNEL);
-+	tgt->sq = dma_zalloc_coherent(&hba->pcidev->dev, tgt->sq_mem_size,
-+				      &tgt->sq_dma, GFP_KERNEL);
- 	if (!tgt->sq) {
- 		printk(KERN_ERR PFX "unable to allocate SQ memory %d\n",
- 			tgt->sq_mem_size);
- 		goto mem_alloc_failure;
- 	}
--	memset(tgt->sq, 0, tgt->sq_mem_size);
- 
- 	/* Allocate and map CQ */
- 	tgt->cq_mem_size = tgt->max_cqes * BNX2FC_CQ_WQE_SIZE;
- 	tgt->cq_mem_size = (tgt->cq_mem_size + (CNIC_PAGE_SIZE - 1)) &
- 			   CNIC_PAGE_MASK;
- 
--	tgt->cq = dma_alloc_coherent(&hba->pcidev->dev, tgt->cq_mem_size,
--				     &tgt->cq_dma, GFP_KERNEL);
-+	tgt->cq = dma_zalloc_coherent(&hba->pcidev->dev, tgt->cq_mem_size,
-+				      &tgt->cq_dma, GFP_KERNEL);
- 	if (!tgt->cq) {
- 		printk(KERN_ERR PFX "unable to allocate CQ memory %d\n",
- 			tgt->cq_mem_size);
- 		goto mem_alloc_failure;
- 	}
--	memset(tgt->cq, 0, tgt->cq_mem_size);
- 
- 	/* Allocate and map RQ and RQ PBL */
- 	tgt->rq_mem_size = tgt->max_rqes * BNX2FC_RQ_WQE_SIZE;
- 	tgt->rq_mem_size = (tgt->rq_mem_size + (CNIC_PAGE_SIZE - 1)) &
- 			   CNIC_PAGE_MASK;
- 
--	tgt->rq = dma_alloc_coherent(&hba->pcidev->dev, tgt->rq_mem_size,
--					&tgt->rq_dma, GFP_KERNEL);
-+	tgt->rq = dma_zalloc_coherent(&hba->pcidev->dev, tgt->rq_mem_size,
-+				      &tgt->rq_dma, GFP_KERNEL);
- 	if (!tgt->rq) {
- 		printk(KERN_ERR PFX "unable to allocate RQ memory %d\n",
- 			tgt->rq_mem_size);
- 		goto mem_alloc_failure;
- 	}
--	memset(tgt->rq, 0, tgt->rq_mem_size);
- 
- 	tgt->rq_pbl_size = (tgt->rq_mem_size / CNIC_PAGE_SIZE) * sizeof(void *);
- 	tgt->rq_pbl_size = (tgt->rq_pbl_size + (CNIC_PAGE_SIZE - 1)) &
- 			   CNIC_PAGE_MASK;
- 
--	tgt->rq_pbl = dma_alloc_coherent(&hba->pcidev->dev, tgt->rq_pbl_size,
--					 &tgt->rq_pbl_dma, GFP_KERNEL);
-+	tgt->rq_pbl = dma_zalloc_coherent(&hba->pcidev->dev,
-+					  tgt->rq_pbl_size, &tgt->rq_pbl_dma,
-+					  GFP_KERNEL);
- 	if (!tgt->rq_pbl) {
- 		printk(KERN_ERR PFX "unable to allocate RQ PBL %d\n",
- 			tgt->rq_pbl_size);
- 		goto mem_alloc_failure;
- 	}
- 
--	memset(tgt->rq_pbl, 0, tgt->rq_pbl_size);
- 	num_pages = tgt->rq_mem_size / CNIC_PAGE_SIZE;
- 	page = tgt->rq_dma;
- 	pbl = (u32 *)tgt->rq_pbl;
-@@ -744,44 +741,41 @@ static int bnx2fc_alloc_session_resc(struct bnx2fc_hba *hba,
- 	tgt->xferq_mem_size = (tgt->xferq_mem_size + (CNIC_PAGE_SIZE - 1)) &
- 			       CNIC_PAGE_MASK;
- 
--	tgt->xferq = dma_alloc_coherent(&hba->pcidev->dev, tgt->xferq_mem_size,
--					&tgt->xferq_dma, GFP_KERNEL);
-+	tgt->xferq = dma_zalloc_coherent(&hba->pcidev->dev, tgt->xferq_mem_size,
-+					 &tgt->xferq_dma, GFP_KERNEL);
- 	if (!tgt->xferq) {
- 		printk(KERN_ERR PFX "unable to allocate XFERQ %d\n",
- 			tgt->xferq_mem_size);
- 		goto mem_alloc_failure;
- 	}
--	memset(tgt->xferq, 0, tgt->xferq_mem_size);
- 
- 	/* Allocate and map CONFQ & CONFQ PBL */
- 	tgt->confq_mem_size = tgt->max_sqes * BNX2FC_CONFQ_WQE_SIZE;
- 	tgt->confq_mem_size = (tgt->confq_mem_size + (CNIC_PAGE_SIZE - 1)) &
- 			       CNIC_PAGE_MASK;
- 
--	tgt->confq = dma_alloc_coherent(&hba->pcidev->dev, tgt->confq_mem_size,
--					&tgt->confq_dma, GFP_KERNEL);
-+	tgt->confq = dma_zalloc_coherent(&hba->pcidev->dev, tgt->confq_mem_size,
-+					 &tgt->confq_dma, GFP_KERNEL);
- 	if (!tgt->confq) {
- 		printk(KERN_ERR PFX "unable to allocate CONFQ %d\n",
- 			tgt->confq_mem_size);
- 		goto mem_alloc_failure;
- 	}
--	memset(tgt->confq, 0, tgt->confq_mem_size);
- 
- 	tgt->confq_pbl_size =
- 		(tgt->confq_mem_size / CNIC_PAGE_SIZE) * sizeof(void *);
- 	tgt->confq_pbl_size =
- 		(tgt->confq_pbl_size + (CNIC_PAGE_SIZE - 1)) & CNIC_PAGE_MASK;
- 
--	tgt->confq_pbl = dma_alloc_coherent(&hba->pcidev->dev,
--					    tgt->confq_pbl_size,
--					    &tgt->confq_pbl_dma, GFP_KERNEL);
-+	tgt->confq_pbl = dma_zalloc_coherent(&hba->pcidev->dev,
-+					     tgt->confq_pbl_size,
-+					     &tgt->confq_pbl_dma, GFP_KERNEL);
- 	if (!tgt->confq_pbl) {
- 		printk(KERN_ERR PFX "unable to allocate CONFQ PBL %d\n",
- 			tgt->confq_pbl_size);
- 		goto mem_alloc_failure;
- 	}
- 
--	memset(tgt->confq_pbl, 0, tgt->confq_pbl_size);
- 	num_pages = tgt->confq_mem_size / CNIC_PAGE_SIZE;
- 	page = tgt->confq_dma;
- 	pbl = (u32 *)tgt->confq_pbl;
-@@ -797,31 +791,28 @@ static int bnx2fc_alloc_session_resc(struct bnx2fc_hba *hba,
- 	/* Allocate and map ConnDB */
- 	tgt->conn_db_mem_size = sizeof(struct fcoe_conn_db);
- 
--	tgt->conn_db = dma_alloc_coherent(&hba->pcidev->dev,
--					  tgt->conn_db_mem_size,
--					  &tgt->conn_db_dma, GFP_KERNEL);
-+	tgt->conn_db = dma_zalloc_coherent(&hba->pcidev->dev,
-+					   tgt->conn_db_mem_size,
-+					   &tgt->conn_db_dma, GFP_KERNEL);
- 	if (!tgt->conn_db) {
- 		printk(KERN_ERR PFX "unable to allocate conn_db %d\n",
- 						tgt->conn_db_mem_size);
- 		goto mem_alloc_failure;
- 	}
--	memset(tgt->conn_db, 0, tgt->conn_db_mem_size);
+-	rxdr->desc = dma_alloc_coherent(&pdev->dev, rxdr->size, &rxdr->dma,
+-					GFP_KERNEL);
 -
- 
- 	/* Allocate and map LCQ */
- 	tgt->lcq_mem_size = (tgt->max_sqes + 8) * BNX2FC_SQ_WQE_SIZE;
- 	tgt->lcq_mem_size = (tgt->lcq_mem_size + (CNIC_PAGE_SIZE - 1)) &
- 			     CNIC_PAGE_MASK;
- 
--	tgt->lcq = dma_alloc_coherent(&hba->pcidev->dev, tgt->lcq_mem_size,
--				      &tgt->lcq_dma, GFP_KERNEL);
-+	tgt->lcq = dma_zalloc_coherent(&hba->pcidev->dev, tgt->lcq_mem_size,
-+				       &tgt->lcq_dma, GFP_KERNEL);
- 
- 	if (!tgt->lcq) {
- 		printk(KERN_ERR PFX "unable to allocate lcq %d\n",
- 		       tgt->lcq_mem_size);
- 		goto mem_alloc_failure;
++	rxdr->desc = dma_zalloc_coherent(&pdev->dev, rxdr->size, &rxdr->dma,
++					 GFP_KERNEL);
+ 	if (!rxdr->desc) {
+ 		vfree(rxdr->buffer_info);
+ 		return -ENOMEM;
  	}
--	memset(tgt->lcq, 0, tgt->lcq_mem_size);
+-	memset(rxdr->desc, 0, rxdr->size);
  
- 	tgt->conn_db->rq_prod = 0x8000;
- 
+ 	rxdr->next_to_clean = 0;
+ 	rxdr->next_to_use = 0;
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
