@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026AbaFOTyJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 15:54:09 -0400
-Received: from mail.kernel.org ([198.145.19.201]:39460 "EHLO mail.kernel.org"
+	id S1752181AbaFOT5b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 15:57:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41782 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751090AbaFOTyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 15:54:05 -0400
-Message-ID: <539DFA4E.5030203@kernel.org>
-Date: Sun, 15 Jun 2014 20:55:58 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751176AbaFOT52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jun 2014 15:57:28 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAKOQZ8z9r4Kw=0MNn29CMzD0-ZF=yCL2QfQp-oh==5MUcMQmuA@mail.gmail.com>
+References: <cover.1402769596.git.luto@amacapital.net> <21405.44257.742122.786960@gargle.gargle.HOWL> <20140615143500.GP179@brightrain.aerifal.cx> <539DD26B.3060709@zytor.com> <CALCETrXTpkto2gJBiFC4CR5D=Lqf2YfP5BBH02f8hFW+TUGqeA@mail.gmail.com> <539DDE9C.3010903@zytor.com> <CALCETrWLBCNiJArMRPuHbfhj6=ytnx_YqykzgCgZ+DYu34M1Mg@mail.gmail.com> <4ab91a07-c46c-485b-895d-b074d36624d6@email.android.com> <CALCETrV-ocpugRwL7rd4GDX-Y89L7So8_6BBjOUDeR4V8RSPEA@mail.gmail.com> <90c597c5-f77d-491e-b0b8-dde2027155b5@email.android.com> <CAKOQZ8zD7kyEmujCtTA8pm=wrM6vDJ5Yspfn1AkSydffhBus2g@mail.gmail.com> <9a4fb9c9-4b1c-4593-a99e-a2ef2325d55d@email.android.com> <CAKOQZ8z9r4Kw=0MNn29CMzD0-ZF=yCL2QfQp-oh==5MUcMQmuA@mail.gmail.com>
 MIME-Version: 1.0
-To: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Support Opensource <Support.Opensource@diasemi.com>
-Subject: Re: [PATCH 4/8] iio: Add support for DA9150 GPADC
-References: <cover.1402484954.git.Adam.Thomson.Opensource@diasemi.com> <3c1a7551c7deaeccdca731fa95f4349c57e04249.1402484954.git.Adam.Thomson.Opensource@diasemi.com> <ba29cc7f-7586-430c-8947-763510e04212@email.android.com> <2E89032DDAA8B9408CB92943514A0337A56F5455@SW-EX-MBX01.diasemi.com>
-In-Reply-To: <2E89032DDAA8B9408CB92943514A0337A56F5455@SW-EX-MBX01.diasemi.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [RFC 0/2] __vdso_findsym
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sun, 15 Jun 2014 12:56:39 -0700
+To: Ian Lance Taylor <iant@golang.org>
+CC: Andy Lutomirski <luto@amacapital.net>, Andi Kleen <andi@firstfloor.org>,
+        Rich Felker <dalias@libc.org>,
+        Mikael Pettersson <mikpelinux@gmail.com>, Russ Cox <rsc@golang.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>
+Message-ID: <8607961d-b42a-4dba-a736-d3a8586ee42d@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/14 17:56, Opensource [Adam Thomson] wrote:
-> On June 11, 2014 17:35, Jonathon Cameron wrote:
+You can link against vdso.so if you want to; the kernel build provides an option to install that image.  Doesn't mean that any particular libc uses it.
+
+On June 15, 2014 12:50:36 PM PDT, Ian Lance Taylor <iant@golang.org> wrote:
+>On Sun, Jun 15, 2014 at 12:31 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> The weak symbols are well-known names.  The __vdso symbols are
+>strong.
 >
->> Hi Adam. Silly question but what are the _ channels?
+>I see.  But I don't understand how this is supposed to work.  When I
+>link a program against gettimeofday, I get a reference to gettimeofday
+>with version GLIBC_2.2.5.  After all, I only link against libc.so; I
+>don't link against the vDSO.  The VDSO provides gettimeofday with
+>version LINUX_2.6.  Since those versions don't match, the gettimeofday
+>reference in my executable will not be satisfied by the definition in
+>the vDSO.  So at dynamic link time my program is always going to be
+>linked with the gettimeofday in libc.so, which will in turn call the
+>gettimeofday in the vDSO.
+>
+>Am I missing something that makes the definition of gettimeofday with
+>version LINUX_2.6 in the vDSO useful?
+>
+>Ian
+>
+>
+>
+>> On June 15, 2014 12:22:17 PM PDT, Ian Lance Taylor <iant@golang.org>
+>wrote:
+>>>On Sun, Jun 15, 2014 at 12:14 PM, H. Peter Anvin <hpa@zytor.com>
+>wrote:
+>>>>
+>>>> If it doesn't, then you incur an additional indirection penalty. 
+>The
+>>>strong __vdso symbol allows the libc wrapper to fall back to the vdso
+>>>implementation, the weak symbol allows three to be no wrapper at all.
+>>>This is good.
+>>>>
+>>>> The reason for changing ABI would be shifting types.  This is very
+>>>much how glibc manages transitions.
+>>>
+>>>The purpose of symbol versioning is so that symbols with well known
+>>>names, like stat, can continue to use those same names while changing
+>>>types.  Both old and new programs can continue to use the name stat
+>>>and continue to work even though they use different types.
+>>>
+>>>I don't see how this applies to the kernel VDSO.  Those symbols do
+>not
+>>>use well-known names; they use names like __vdso_time.  If you change
+>>>the types used by those symbols, you can change the name as well.
+>>>What is the downside?
+>>>
+>>>Ian
 >>
->> I have put in a perhaps optimistic data sheet request via the website, throwing in
->> your name. Hope you don't mind!
->>
->> Jonathan
->
-> Hi Jonathon. Some of the _channels are a different representation of the reading
-> (e.g. different scale - one would be 0-6V range, and one would be 0-21V for
-> example).
-Why? That is, why present the data twice with the different scales?
+>> --
+>> Sent from my mobile phone.  Please pardon brevity and lack of
+>formatting.
 
-
-> Others provide identical readings to the non _channel but have left
-> those in to keep the channel numbering sane and easy to reference.
-If there is a reason to support this functionality, this is not a sensible
-way to do it!
->
-> No problem regarding the request.
-> N�����r��y���b�X��ǧv�^�)޺{.n�+����{��*"��^n�r���z���h����&���G���h�(�階�ݢj"���m�����z�ޖ���f���h���~�mml==
->
-
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
