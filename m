@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751119AbaFOAXh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 20:23:37 -0400
-Received: from ns.horizon.com ([71.41.210.147]:22811 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750861AbaFOAXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 20:23:36 -0400
-Date: 14 Jun 2014 20:23:33 -0400
-Message-ID: <20140615002333.24750.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, tytso@mit.edu
-Subject: Re: random: Benchamrking fast_mix2
-Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        price@mit.edu
-In-Reply-To: <20140614163334.GJ6447@thunk.org>
+	id S1751352AbaFOAlR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 20:41:17 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:33923 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895AbaFOAlO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 20:41:14 -0400
+From: Lv Zheng <zetalog@gmail.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Lv Zheng <zetalog@gmail.com>, Lv Zheng <lv.zheng@intel.com>,
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
+Subject: [PATCH v2 0/7] ACPI/EC: Critical bug fixes related to EC and event handling.
+Date: Sun, 15 Jun 2014 08:40:56 +0800
+Message-Id: <cover.1402792240.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <cover.1402543079.git.lv.zheng@intel.com>
+References: <cover.1402543079.git.lv.zheng@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I'll need to do a bit more looking to convince myself that 2
-> iterations is better from a mixing perspective, but this looks like it
-> might be a promising replacement for the 32-bit mixer.
+From: Lv Zheng <lv.zheng@intel.com>
 
-This was tested with a hacked-up copy of Bob Jenkins' testing code.
+History:
+v1:
+ The collection of bug-fixes from kernel bugzilla bug 70891.
+v2:
+ 1. Improves the patch descriptions to make the root cause of the 70891 bug
+    more correct.
+ 2. Improves a race fix to make it more robust.
 
-It tests a few random starting values, and finds the minimum number of
-outputs bits affected by an input delta for:
+This patchset fixes the following issues:
+1. There are 2 race conditions in current EC driver.
+2. Cleanup the first command byte write as one of the race condition fix
+   requires additional cleanup for first command byte write. And this also
+   helps us to do improvements in the BURST mode in the future.
+3. ACPICA event not handled in the correct way.
 
-- Each input bit or pair of bits
-- The function run forward or in reverse
-- XOR, subtraction and addtion delta metrics.  (5x2 = 10 in total)
+This patchset also improves debugging message, register details can be
+enabled by defining DEBUG. And bug fixes and reports are based on this
+improvement.
 
-The example I posted:
+All patches are tested to be valid fixes for the following bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=70891
 
-// (29/66353) score = 49/121/123:  6 27 16 14
+The EC driver version is upgraded to 2.2.
 
-	a += b;			c += d;
-	b = rol32(a, 6);	d = rol32(c, 27);
-	d ^= a;			b ^= c;
+The first 4 patches are useful stable materials. But the culprit of the bug
+appears so long time ago that patches cannot be applied cleanly any more.
+Thus 2 commit IDs are listed for the stable reviewers, one for the culprit,
+the other for the kernel versions that can have these stable materials
+cleanly applied.
 
-	a += b;			c += d;
-	b = rol32(a, 16);	d = rol32(c, 14);
-	d ^= a;			b ^= c;
+Lv Zheng (7):
+  ACPI/EC: Fix an issue that advance_transaction() processes stale
+    hardware status.
+  ACPI/EC: Add asynchronous command byte write support.
+  ACPI/EC: Remove duplicated ec_wait_ibf0() waiter.
+  ACPI/EC: Fix a race condition in ec_transaction_completed().
+  ACPI/EC: Update revision due to full asynchrnous command support.
+  ACPICA: Events: Fix edge-triggered GPE by disabling before
+    acknowledging it.
+  ACPI/EC: Add detailed fields debugging support of EC_SC(R).
 
-has, after 2 rounds, a minimum avalanche of 49 bits, taken over all of
-the variables just mentioned.  The only thing maximized over is the
-different starting values.
+ drivers/acpi/acpica/evgpe.c |   32 +++++----
+ drivers/acpi/ec.c           |  159 ++++++++++++++++++++++---------------------
+ 2 files changed, 98 insertions(+), 93 deletions(-)
 
-That seems adequate for something that's only being asked to preserve
-1 bit of entropy.
+-- 
+1.7.10
 
-(BTW, the way the deltas are defined, the maximum possibe score is 124.)
