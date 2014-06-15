@@ -1,155 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339AbaFOKaM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 06:30:12 -0400
-Received: from wind.enjellic.com ([76.10.64.91]:58333 "EHLO wind.enjellic.com"
+	id S1751257AbaFOKuW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 06:50:22 -0400
+Received: from thejh.net ([37.221.195.125]:46354 "EHLO thejh.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751007AbaFOKaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 06:30:09 -0400
-X-Greylist: delayed 1039 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 Jun 2014 06:30:08 EDT
-Date: Sun, 15 Jun 2014 05:12:37 -0500
-From: "Dr. Greg Wettstein" <greg@wind.enjellic.com>
-Message-Id: <201406151012.s5FACb3t001981@wind.enjellic.com>
-Reply-To: greg@enjellic.com
-X-Mailer: Mail User's Shell (7.2.6-ESD1.0 03/31/2012)
-To: linux-kernel@vger.kernel.org, scst-devel@lists.sourceforge.net,
-        linux-bcache@vger.kernel.org
-Subject: ANNOUNCE: Hugepage (HPD) block device driver.
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.2.3 (wind.enjellic.com [0.0.0.0]); Sun, 15 Jun 2014 05:12:38 -0500 (CDT)
+	id S1750889AbaFOKuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jun 2014 06:50:21 -0400
+Date: Sun, 15 Jun 2014 12:50:14 +0200
+From: Jann Horn <jann@thejh.net>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        Greg Kroah-Hartman <greg@kroah.com>, john.stultz@linaro.org,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Hugh Dickins <hughd@google.com>,
+        Tony Battersby <tonyb@cybernetics.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [PATCH v3 3/7] shm: add memfd_create() syscall
+Message-ID: <20140615105014.GA8856@debjann.fritz.box>
+References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
+ <1402655819-14325-4-git-send-email-dh.herrmann@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="d6Gm4EdcadzBjdND"
+Content-Disposition: inline
+In-Reply-To: <1402655819-14325-4-git-send-email-dh.herrmann@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good morning, I hope this note finds the weekend going well for
-everyone.
 
-Izzy, our Golden Retriever, and I headed out to our lake place last
-weekend.  I was fighting off a miserable early summer cold so I didn't
-feel up to cycling and the fish weren't biting so Izzy suggested we
-catch up on our backlogged projects by getting our HPD driver ready
-for a release.
+--d6Gm4EdcadzBjdND
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-So while Izzy intensely monitored the family of geese that
-periodically swim by the cabin I got the driver into reasonable shape
-for people to start testing.  It is now a week later and Izzy thought
-that given the work schedule coming up I had better get the package
-out on the FTP server.
+On Fri, Jun 13, 2014 at 12:36:55PM +0200, David Herrmann wrote:
+> +asmlinkage long sys_memfd_create(const char *uname_ptr, unsigned int flags);
+[...]
+> +SYSCALL_DEFINE2(memfd_create,
+> +		const char*, uname,
+> +		unsigned int, flags)
+> +{
 
-So without further ado, on behalf of Izzy and Enjellic Systems
-Development, I would like to announce the first testing release of the
-HupgePage Block Device (HPD) driver.  Source is available at the
-following URL:
+Shouldn't uname_ptr and uname be "const char __user *" instead of "const char *"?
 
-	ftp://ftp.enjellic.com/pub/hpd/hpd_driver-1.0beta.tar.gz
+--d6Gm4EdcadzBjdND
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-The HPD driver implements a dynamically configurable RAM based block
-device which uses the kernel hugepage infrastructure and magazines to
-provide the memory based backing for the block devices.  It borrows
-heritage from the existing brd ramdisk code with the primary
-differences being dynamic configurability and the backing methodology.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Izzy has watched the discussion of the relevancy of hugepages with
-some interest.  It is his contention that the HPD driver may offer one
-of the most useful applications of this infrastructure.  There are
-obvious advantages in a ramdisk to handling the backing store in
-larger size units and NUMA support falls out naturally since the
-hugepage infrastructure is NUMA aware.
+iQIcBAEBAgAGBQJTnXpmAAoJED4KNFJOeCOopPYQALj+Vm8+Sg6YXj6/wAsznNN4
+DwlnBNIt6mUTlXAMEpHonnEcSGE/YlaUQfwWLaVXvE++YosBqic4vA59PxFpAOvM
+kX+JULj1e9lVtklp88jk8ZFC98mc0/mndLQkLceurnGDoOPTtT0qD2DkO+bdJP8Z
+n+V3zqYp8Nv1gRpGnI37l07RGAyfCgI3nAmy/bA+O0jOh6EqX0OGP5HCRatCWrcN
+Xk3Ojx/3MUQWnRH5sR734F77L1znE+7SBGyvsA7orAQeKygEXqh+CKKyrvedG41i
+uKQcmBdrzlteyWB0GRkUnreiZ9GAc6P0MFOXwRZOgMGqQsRnPpY5Nrecigfi/XDi
+shQq++85x38wUXu4UJ3RKftqTJGSIrNeBTjdxfcCtRzDL1y3QUoDs4fdaMAHTlHi
+4vcrEQQ1aDMsZN6phL/NJ4Jg2q0xYIdbPOgiRSVL6UWtqdukyQIwIQhznpPOqsAf
+9yYov31M5VzCngJhejwwvX1KtNuAa6AeyTOYobP0Ek0BSDkEUCQdBufbELBSrpnY
+fGJ4HCEvoPUhZ8qVrFgpvLytz5h6/+Z8KHvMol8Rr/yC8pSusLcZO4L2EdF5eIAT
+q/xxJzblX4KgIDVpLRIlgoUG8+tVZk5ItsCTajfOVte5P6xYajwdebPP8XkqeKk0
+UmifGhoTM2F4xdNiTzH3
+=H7oB
+-----END PGP SIGNATURE-----
 
-Block devices are created by writing the desired size of the block
-device, in bytes, to the following pseudo-file:
-
-	/sys/fs/hpd/create
-
-On a NUMA capable platform there will be additional pseudo-files of
-the following form:
-
-	/sys/fs/hpd/create_nodeN
-
-Which will constrain the ramdisk to use memory from only the specified
-node.  On NUMA platforms a request through the /sys/fs/hpd/create file
-will interleave the ramdisk allocation across all memory capable
-nodes.
-
-Prior to creating an HPD device there must be an allocation of
-hugepages made to the freepage pool.  This can be done by writing the
-number of pages desired to the following pseudo-file:
-
-	/sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
-
-The following pseudo-files can be used to implement allocations which
-are pinned to a specific memory capable NUMA node:
-
-	/sys/devices/system/node/nodeN/hugepages/hugepages-2048kB/nr_hugepages
-
-A hugepage allocation can also be specified by specifying the
-following argument on the kernel command-line:
-
-	nr_hugepages=N
-
-Depending on the activity of your machine this may be needed since
-memory fragmentation may limit the number of order 9 pages which are
-available.
-
-A ramdisk is deleted by writing the value 1 to the following
-pseudo-file:
-
-	/sys/block/hpdN/device/delete
-
-We have found the driver to be particularly useful in testing our SCST
-implementation, extensions and infrastructure.  It is capable of
-sustaining line-rate 10+ GBPS throughput which allows target
-infrastructure to be tested and verified with FIO running in verify
-mode.  The NULLIO target, while fast of course, does not allow
-verification of I/O since there is no persistent backing.
-
-Measured I/O latency on 4K block sizes is approximately five
-micro-seconds.  Based on that Izzy thought we should get this released
-for our fellow brethren in the storage appliance industry.  He
-suggests that pretty impressive appliance benchmark numbers can be
-obtained by using an HPD based cache device with bcache in writeback
-mode..... :-)
-
-The driver includes a small patch to the mm/hugetlb.c to add two
-exported functions for allocation and release of generic hugepages.
-This was needed since there was not a suitable API for
-allocating/released extended size pages in a NUMA aware fashion.
-
->From an architectural perspective the HPD driver differs from the
-current ramdisk driver by using a single extended size page to hold
-the array of page pointers for the backing store rather then a radix
-tree mapping sectors to pages.  This limits the size of an individual
-block device to one-half of a terrabyte.
-
-A single major with 128 minors is supported.  Izzy recommends using
-RAID0 if single block device semantics are needed and you have a
-machine with 64 terrabytes of RAM handy.  Hopefully this won't be a
-major limitation for other then the SGI boys.
-
-The driver has been tested pretty extensively but public releases are
-legendary for brown bag issues.  Please let us know if you test this
-and run into any issues.
-
-Finally, thanks and kudos should go to Izzy for prompting all the work
-on this.  Anyone who has been snooted by a Golden Retriever will tell
-you how difficult they are to resist once they put their mind to
-something.  Anyone who finds this driver useful should note that he
-enjoys the large Milk Bone (tm) dog biscuits.... :-)
-
-Best wishes for a productive week.
-
-Dr Greg and Izzy.
-
-As always,
-Dr. G.W. Wettstein, Ph.D.   Enjellic Systems Development, LLC.
-4206 N. 19th Ave.           Specializing in information infra-structure
-Fargo, ND  58102            development.
-PH: 701-281-1686
-FAX: 701-281-3949           EMAIL: greg@enjellic.com
-------------------------------------------------------------------------------
-"One problem with monolithic business structures is losing sight
- of the fundamental importance of mathematics.  Consider committees;
- commonly forgotten is the relationship that given a projection of N
- individuals to complete an assignment the most effective number of
- people to assign to the committee is given by f(N) = N - (N-1)."
-                                -- Dr. G.W. Wettstein
-                                   Guerrilla Tactics for Corporate Survival
+--d6Gm4EdcadzBjdND--
