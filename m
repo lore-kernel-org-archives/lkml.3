@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207AbaFOU3M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 16:29:12 -0400
-Received: from mail-yk0-f172.google.com ([209.85.160.172]:44480 "EHLO
-	mail-yk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176AbaFOU3K (ORCPT
+	id S1752072AbaFOUfH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 16:35:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51432 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750993AbaFOUfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 16:29:10 -0400
+	Sun, 15 Jun 2014 16:35:04 -0400
+Date: Sun, 15 Jun 2014 22:30:58 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Nick <xerofoify@gmail.com>
+Cc: emilio@elopez.com.ar, mturquette@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] Frees gate after if statement in clk-sunxi.c
+Message-ID: <20140615203058.GA22265@lukather>
+References: <1402769508-3821-1-git-send-email-xerofoify@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1402604734.2627.10.camel@buesod1.americas.hpqcorp.net>
-References: <1402569338-5709-1-git-send-email-wahibfaizi@gmail.com>
- <1402602019-12819-1-git-send-email-wahibfaizi@gmail.com> <1402604734.2627.10.camel@buesod1.americas.hpqcorp.net>
-From: Wahib <wahibfaizi@gmail.com>
-Date: Mon, 16 Jun 2014 00:28:49 +0400
-Message-ID: <CABFmzrO=LP+=HHp7xGGvoPqNxKLmWbqWApvwxPN-unAH2CZekg@mail.gmail.com>
-Subject: Re: [PATCH v3 0/2] Fix subject line
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Valentina Manea <valentina.manea.m@gmail.com>,
-        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fdj2RfSjLxBAspz7"
+Content-Disposition: inline
+In-Reply-To: <1402769508-3821-1-git-send-email-xerofoify@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Davidlohr!
 
-Don't worry. I am not discouraged. :)
+--fdj2RfSjLxBAspz7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I understand your concern that the patch feels superficial. It's what the task
-asked us to do. I suspect the author(s) of the Eudyptula Challenge designed
-this task to get us involved with the Linux kernel community.
+On Sat, Jun 14, 2014 at 02:11:48PM -0400, Nick wrote:
+> Signed-off-by: Nick <xerofoify@gmail.com>
 
-I have been looking for a bug in 'usbip' to bundle with my patch. The only bug
-that I could find (as of 16-Jun-2014) on bugzilla.kernel.org related
-to 'usbip' is Bug 77191.
+This should be your full real name here.
 
-Bug 77191 - ftdi-sio (usbserial) over usbip hung after disconnect while in use
-(https://bugzilla.kernel.org/show_bug.cgi?id=77191)
+> ---
+>  drivers/clk/sunxi/clk-sunxi.c | 1 +
+>  1 file changed, 1 insertion(+)
+>=20
+> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
+> index 4264834..6f4fc51 100644
+> --- a/drivers/clk/sunxi/clk-sunxi.c
+> +++ b/drivers/clk/sunxi/clk-sunxi.c
+> @@ -42,6 +42,7 @@ static void __init sun4i_osc_clk_setup(struct device_no=
+de *node)
+>  	u32 rate;
+> =20
+>  	if (of_property_read_u32(node, "clock-frequency", &rate))
+> +		kree(gate);
 
-Sadly the bug doesn't seem to be newbie friendly as it requires special setup
-to reproduce and requires the developer to know about the intricacies of the
-'usbip' subsystem. I understand that people commiting their specialized
-knowledge is how the kernel development actually works. But USB is not my
-speciality (yet).
+There's a typo in kfree. How does that even compile?
 
-Could you point me to more beginner friendly bugs which aren't superficial code
-cleanups?
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-Can I bundle fixes to subsystems other than 'usbip' with the code cleanup patch
-for 'usbip'?
+--fdj2RfSjLxBAspz7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Regards,
-Wahib
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-On Fri, Jun 13, 2014 at 12:25 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> On Thu, 2014-06-12 at 23:40 +0400, Wahib Faizi wrote:
->> Fix coding style issues detected by checkpatch.pl in usbip_host_driver.c.
->
-> Sorry but unless bundled with something more meaningful, I really don't
-> see the value in these changes. I certainly don't want to discourage
-> folks or anything, but just testing other patches is a lot more helpful
-> than this.
->
-> I haven't followed much about the Eudyptula Challenge, but I hope other
-> assignments are more involved than this.
->
-> Thanks,
-> Davidlohr
->
+iQIcBAEBAgAGBQJTngKCAAoJEBx+YmzsjxAg2dAP/j2liYVmpxPFlTv2MrHOM6c8
+/0JCEeLG0Usr9zZZtf/TzFOP0gNU2KOswfycUcwkx5MLHSehJG7HDj8P5KfHT8i5
+2VHrMG2pY4L6w3qDUlMO7vCHIkdJFqNe3IBmcmyjnu+8sZwE3e4nvet9Xx7l6awK
+yMtqcEWd/yF868T6t/wh8VZR1xniSheRI4ZyrL9831zHDAfo5rhKYo86+TUWeUMs
+ueRAAk+n66ZzRuZdB1Rj/8QeHfzz9perOCBVnLWjGymYJO2S6tdRAGbFSJ84Nzgp
+2Cz2XzTwYGBLnv03G1TZ5AUwPy45LsHg/StqTjrF9TbTEXyP78MJ1jTHjPL3QNEf
+kB1agr134dBdjmXkA/klKoEzBI+bUFp7MGvNh/epbqm5yYAO0p0h4F5i4+w8f0AV
+6lBiF+J3eoEUkXGTNVDOcwGKIsjNFKKNuYLZKOwSwBEkWsT67Zvemue/imuhIvN5
+m1a2ftEdtMycIdlpG41EXP1w/avprnGlGxWJG6Vea4KwB6AGph8lrDXfoQbRSCUC
+GIxeFX3DcBkwAKlaB5q+M73Sd6lHGOVwld6hkMpwY1P9gdpJEeR7xyyVbWxK8P9u
+uStvFMCtPzfTxyERCWKWiJjK4HLTc/niVN0f88c7FmTHBTmoHb/q1SFLzuJaM9PR
+TjoDRfOzshc4NW8pzvUP
+=qxJv
+-----END PGP SIGNATURE-----
+
+--fdj2RfSjLxBAspz7--
