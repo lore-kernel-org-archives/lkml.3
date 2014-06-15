@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117AbaFOVC4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 17:02:56 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:45593 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176AbaFOVCz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 17:02:55 -0400
-From: Mathias Krause <minipli@googlemail.com>
-To: David Airlie <airlied@linux.ie>
-Cc: linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH] agp: remove read/write stubs
-Date: Sun, 15 Jun 2014 23:02:45 +0200
-Message-Id: <1402866165-17408-1-git-send-email-minipli@googlemail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752107AbaFOVOI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 17:14:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42272 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751176AbaFOVOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jun 2014 17:14:03 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CALCETrVoOS913rUo288c6PhNtrWBZa9tSA6Ec=WUw1+SAU9ALw@mail.gmail.com>
+References: <cover.1402769596.git.luto@amacapital.net> <21405.44257.742122.786960@gargle.gargle.HOWL> <20140615143500.GP179@brightrain.aerifal.cx> <539DD26B.3060709@zytor.com> <CALCETrXTpkto2gJBiFC4CR5D=Lqf2YfP5BBH02f8hFW+TUGqeA@mail.gmail.com> <539DDE9C.3010903@zytor.com> <CALCETrWLBCNiJArMRPuHbfhj6=ytnx_YqykzgCgZ+DYu34M1Mg@mail.gmail.com> <4ab91a07-c46c-485b-895d-b074d36624d6@email.android.com> <CALCETrV-ocpugRwL7rd4GDX-Y89L7So8_6BBjOUDeR4V8RSPEA@mail.gmail.com> <90c597c5-f77d-491e-b0b8-dde2027155b5@email.android.com> <CAKOQZ8zD7kyEmujCtTA8pm=wrM6vDJ5Yspfn1AkSydffhBus2g@mail.gmail.com> <9a4fb9c9-4b1c-4593-a99e-a2ef2325d55d@email.android.com> <CAKOQZ8z9r4Kw=0MNn29CMzD0-ZF=yCL2QfQp-oh==5MUcMQmuA@mail.gmail.com> <8607961d-b42a-4dba-a736-d3a8586ee42d@email.android.com> <CALCETrVoOS913rUo288c6PhNtrWBZa9tSA6Ec=WUw1+SAU9ALw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [RFC 0/2] __vdso_findsym
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sun, 15 Jun 2014 14:13:26 -0700
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Ian Lance Taylor <iant@golang.org>, Andi Kleen <andi@firstfloor.org>,
+        Rich Felker <dalias@libc.org>,
+        Mikael Pettersson <mikpelinux@gmail.com>, Russ Cox <rsc@golang.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>
+Message-ID: <73ed6c36-299b-4348-81e1-8a98b8baf2e5@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The VFS layer handles those in the very same way, if unset. No need for
-additional stubs.
+Yes, but the option exists.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
----
- drivers/char/agp/frontend.c |   15 ---------------
- 1 file changed, 15 deletions(-)
+On June 15, 2014 1:53:17 PM PDT, Andy Lutomirski <luto@amacapital.net> wrote:
+>On Sun, Jun 15, 2014 at 12:56 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> You can link against vdso.so if you want to; the kernel build
+>provides an option to install that image.  Doesn't mean that any
+>particular libc uses it.
+>
+>I'd be rather surprised if anyone does this, given the generally
+>spotty state of vdso.so installation and that there's no such thing as
+>an ELF import library.
+>
+>Also, the vdso's clock_gettime isn't actually compatible with
+>glibc/POSIX -- the return value and errno handling don't match.
+>
+>--Andy
 
-diff --git a/drivers/char/agp/frontend.c b/drivers/char/agp/frontend.c
-index b29703324e..09f17eb734 100644
---- a/drivers/char/agp/frontend.c
-+++ b/drivers/char/agp/frontend.c
-@@ -710,19 +710,6 @@ static int agp_open(struct inode *inode, struct file *file)
- 	return 0;
- }
- 
--
--static ssize_t agp_read(struct file *file, char __user *buf,
--			size_t count, loff_t * ppos)
--{
--	return -EINVAL;
--}
--
--static ssize_t agp_write(struct file *file, const char __user *buf,
--			 size_t count, loff_t * ppos)
--{
--	return -EINVAL;
--}
--
- static int agpioc_info_wrap(struct agp_file_private *priv, void __user *arg)
- {
- 	struct agp_info userinfo;
-@@ -1047,8 +1034,6 @@ static const struct file_operations agp_fops =
- {
- 	.owner		= THIS_MODULE,
- 	.llseek		= no_llseek,
--	.read		= agp_read,
--	.write		= agp_write,
- 	.unlocked_ioctl	= agp_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl	= compat_agp_ioctl,
 -- 
-1.7.10.4
-
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
