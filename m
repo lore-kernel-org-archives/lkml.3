@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428AbaFOGxG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 02:53:06 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:38638 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900AbaFOGxF (ORCPT
+	id S1752771AbaFOGya (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 02:54:30 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:36101 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163AbaFOGy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 02:53:05 -0400
-Date: Sat, 14 Jun 2014 23:53:00 -0700 (PDT)
-Message-Id: <20140614.235300.1228145928404410306.davem@davemloft.net>
-To: xerofoify@gmail.com
-Cc: andriy.shevchenko@linux.intel.com, dvhart@linux.intel.com,
-        jeffrey.t.kirsher@intel.com, ast@plumgrid.com, dborkman@redhat.com,
-        bhutchings@solarflare.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Missing return check against Null for return value of
- netdev_alloc_dev_skb()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1402805139-6363-1-git-send-email-xerofoify@gmail.com>
-References: <1402805139-6363-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sat, 14 Jun 2014 23:53:03 -0700 (PDT)
+	Sun, 15 Jun 2014 02:54:29 -0400
+Date: Sun, 15 Jun 2014 08:54:23 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, Vineet Gupta <vgupta@synopsys.com>,
+        Steven Miao <realmz6@gmail.com>, James Hogan <james.hogan@imgtec.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>, linux-sh@vger.kernel.org,
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH 0/6] perf: Use common PMU interrupt disabled code on all
+ architectures
+Message-ID: <20140615065423.GA20028@gmail.com>
+References: <alpine.DEB.2.10.1406150156510.16738@vincent-weaver-1.umelst.maine.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1406150156510.16738@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nick <xerofoify@gmail.com>
-Date: Sun, 15 Jun 2014 00:05:39 -0400
 
-> Signed-off-by: Nick <xerofoify@gmail.com>
-> ---
->  drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c | 2 ++
->  1 file changed, 2 insertions(+)
+* Vince Weaver <vincent.weaver@maine.edu> wrote:
+
 > 
-> diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-> index 73e6683..704cf63 100644
-> --- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-> +++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-> @@ -1515,6 +1515,8 @@ static void pch_gbe_alloc_tx_buffers(struct pch_gbe_adapter *adapter,
->  	for (i = 0; i < tx_ring->count; i++) {
->  		buffer_info = &tx_ring->buffer_info[i];
->  		skb = netdev_alloc_skb(adapter->netdev, bufsz);
-> +		if (!skb)
-> +			return NULL;
+> Now that "perf/x86: Use common PMU interrupt disabled code"
+> (c184c980de30dc) was merged, I went and audited all of the
+> architectures.  The following patchset attempts to move
+> all of the ones that have code disabling sampled events
+> due to lack of overflow interrupt to the new common code.
+> 
+> ARM and x86 were already updated with the original changeset.
+> 
+> Note that this is an ABI change in some cases, as many
+> architectures returned EINVAL previously rather than
+> EOPNOTSUPP.
+> 
+> Unfortunately these patches are not tested at all, as I don't have
+> access to the hardware.
 
-You didn't even compile test this.
+Looks good to me, for v3.17. Peter, what do you think?
 
-The function has a void return type, you can't return NULL.
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
 
-Furthermore, you have to adjust things so that the caller knows that
-this operation failed, because the device cannot be brought up
-successfully unless all the TX buffer slots get allocated properly.
+Thanks,
+
+	Ingo
