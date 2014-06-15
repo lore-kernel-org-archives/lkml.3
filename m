@@ -1,93 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921AbaFOCmu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 22:42:50 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:38345 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088AbaFOCmt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 22:42:49 -0400
-Message-ID: <539D0817.2080402@windriver.com>
-Date: Sun, 15 Jun 2014 10:42:31 +0800
-From: "Yang,Wei" <Wei.Yang@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752040AbaFOCpx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 22:45:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55379 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751231AbaFOCpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 22:45:51 -0400
+Date: Sat, 14 Jun 2014 22:45:28 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
+        linux-ima-user <linux-ima-user@lists.sourceforge.net>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-audit@redhat.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Linux-ima-user] oraphaned keywords in audit log text [was: Re:
+ [PATCH] integrity: get comm using lock to avoid race in string] printing
+Message-ID: <20140615024528.GB14900@madcap2.tricolour.ca>
+References: <11db0d126ef0ec7506ef5cb6f2f21c926d206436.1396455228.git.rgb@redhat.com>
+ <1396460387.20325.22.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <6292885.20TorKeRiK@x2>
+ <1396462368.20325.26.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <1396462716.2608.1.camel@localhost>
+ <1396463260.20325.28.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <20140402185250.GB24814@madcap2.tricolour.ca>
+ <20140614000258.GA14900@madcap2.tricolour.ca>
+ <CACE9dm83Kxbc3krVkCR9-Wy1Kq+YpEWRkLdbHDivwcxFtGjYmg@mail.gmail.com>
+ <1402796767.2651.2.camel@dhcp-9-2-203-236.watson.ibm.com>
 MIME-Version: 1.0
-To: <Wei.Yang@windriver.com>, <stern@rowland.harvard.edu>, <mina86@mina86.com>
-CC: <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] USB:gadget: Fix a warning while loading g_mass_storage
-References: <1401856367-12553-1-git-send-email-Wei.Yang@windriver.com> <1402800030-17078-1-git-send-email-Wei.Yang@windriver.com>
-In-Reply-To: <1402800030-17078-1-git-send-email-Wei.Yang@windriver.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.162.170]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402796767.2651.2.camel@dhcp-9-2-203-236.watson.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Its v4, sorry for missing it in subject.
+On 14/06/14, Mimi Zohar wrote:
+> On Sat, 2014-06-14 at 12:43 +0300, Dmitry Kasatkin wrote: 
+> > On 14 June 2014 03:02, Richard Guy Briggs <rgb@redhat.com> wrote:
+> > > On 14/04/02, Richard Guy Briggs wrote:
+> > >> On 14/04/02, Mimi Zohar wrote:
+> > >> > On Wed, 2014-04-02 at 14:18 -0400, Eric Paris wrote:
+> > >> > > On Wed, 2014-04-02 at 14:12 -0400, Mimi Zohar wrote:
+> > >> > > > On Wed, 2014-04-02 at 14:00 -0400, Steve Grubb wrote:
+> > >> > > > > Hello Mimi,
+> > >> > > > >
+> > >> > > > > On Wednesday, April 02, 2014 01:39:47 PM Mimi Zohar wrote:
+> > >> > > > > > This change is already being upstreamed as commit 73a6b44 "Integrity:
+> > >> > > > > > Pass commname via get_task_comm()".
+> > >> > > > >
+> > >> > > > > While I was looking at Richard's patch, I noticed a few places where cause and
+> > >> > > > > op are logged and the string isn't tied together with a _ or -. These are in
+> > >> > > > > ima/ima_appraise.c line 383, and ima/ima_policy.c lines 333, 657, and 683. Are
+> > >> > > > > these fixed upstream? Or should a patch be made?
+> > >> > > >
+> > >> > > > Nothing has changed in terms of 'cause' and 'op'.  I would suggest
+> > >> > > > making the changes in integrity_audit.c: integrity_audit_msg().
+> > >>
+> > >> That function could massage incoming text fields and convert spaces to
+> > >> hyphens or underscores, but I'd assume the right place to do it would be
+> > >> in the original text.  If you suggest the former, it could just be done
+> > >> in audit_log_string(), but then grepping the source for error messages
+> > >> would not be nearly as useful.  Is this what you were suggesting?
+> > >>
+> > >> > > The question is actually, do you know of anyone who is expecting the
+> > >> > > space, instead of a more 'audit standard' - or _ ?  If not, we'll change
+> > >> > > it.  If so, we'll discuss more   :)
+> > >> >
+> > >> > CC'ing linux-ima-user as well.
+> > >>
+> > >> Thanks.
+> > >
+> > > Was there any response from linux-ima-user?
+> > >
+> > >> > Mimi
+> > >>
+> > >> - RGB
+> > >
+> > 
+> > Hi,
+> > 
+> > I will find this patch and have a look.
+> 
+> As nobody has responded, I would assume it is safe to change.
 
-Regards
-Wei
-On 06/15/2014 10:40 AM, Wei.Yang@windriver.com wrote:
-> From: Yang Wei <Wei.Yang@windriver.com>
->
-> While loading g_mass_storage module, the following warning
-> is triggered.
->
-> WARNING: at drivers/usb/gadget/composite.c:
-> usb_composite_setup_continue: Unexpected call
-> Modules linked in: fat vfat minix nls_cp437 nls_iso8859_1 g_mass_storage
-> [<800179cc>] (unwind_backtrace+0x0/0x104) from [<80619608>] (dump_stack+0x20/0x24)
-> [<80619608>] (dump_stack+0x20/0x24) from [<80025100>] (warn_slowpath_common+0x64/0x74)
-> [<80025100>] (warn_slowpath_common+0x64/0x74) from [<800251cc>] (warn_slowpath_fmt+0x40/0x48)
-> [<800251cc>] (warn_slowpath_fmt+0x40/0x48) from [<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage])
-> [<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage]) from [<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage])
-> [<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage]) from [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage])
-> [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage]) from [<8004bc90>] (kthread+0x98/0x9c)
-> [<8004bc90>] (kthread+0x98/0x9c) from [<8000faec>] (kernel_thread_exit+0x0/0x8)
->
-> The root cause is that the existing code fails to take into
-> account the possibility that common->new_fsg can change while
-> do_set_interface() is running, so the value of common->new_fsg
-> that gets tested after do_set_interface returns needs to be
-> the same as the value used by do_set_interface.
->
-> Signed-off-by: Yang Wei <Wei.Yang@windriver.com>
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
-> ---
->   drivers/usb/gadget/f_mass_storage.c |    6 ++++--
->   1 file changed, 4 insertions(+), 2 deletions(-)
->
-> Changes in v3 ----> v4
->
-> move "new_fsg = common->new_fsg" out of comm->lock protection, and refine the commit log.
->
-> Thanks
-> Wei
->
-> diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-> index b963939..a7e24c8 100644
-> --- a/drivers/usb/gadget/f_mass_storage.c
-> +++ b/drivers/usb/gadget/f_mass_storage.c
-> @@ -2342,6 +2342,7 @@ static void handle_exception(struct fsg_common *common)
->   	struct fsg_buffhd	*bh;
->   	enum fsg_state		old_state;
->   	struct fsg_lun		*curlun;
-> +	struct fsg_dev		*new_fsg;
->   	unsigned int		exception_req_tag;
->   
->   	/*
-> @@ -2460,8 +2461,9 @@ static void handle_exception(struct fsg_common *common)
->   		break;
->   
->   	case FSG_STATE_CONFIG_CHANGE:
-> -		do_set_interface(common, common->new_fsg);
-> -		if (common->new_fsg)
-> +		new_fsg = common->new_fsg;
-> +		do_set_interface(common, new_fsg);
-> +		if (new_fsg)
->   			usb_composite_setup_continue(common->cdev);
->   		break;
->   
+Thanks!  :)
 
+> Mimi
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
