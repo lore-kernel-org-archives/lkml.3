@@ -1,85 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359AbaFOVer (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 17:34:47 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:53448 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056AbaFOVem (ORCPT
+	id S1752200AbaFOVl1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 17:41:27 -0400
+Received: from mail.phunq.net ([184.71.0.62]:53954 "EHLO starbase.phunq.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752015AbaFOVlZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 17:34:42 -0400
-Message-ID: <539E116D.6030002@linaro.org>
-Date: Sun, 15 Jun 2014 23:34:37 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Sun, 15 Jun 2014 17:41:25 -0400
+From: Daniel Phillips <daniel@phunq.net>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Dave Chinner <david@fromorbit.com>, <linux-kernel@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC] Tux3 for review
+Date: Sun, 15 Jun 2014 14:41:16 -0700
+User-Agent: Trojita/0.4.1; Qt/4.8.6; X11; Linux; Ubuntu 14.04 LTS
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Matthias Brugger <matthias.bgg@gmail.com>
-CC: linux-kernel@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rdunlap@infradead.org, linux@arm.linux.org.uk,
-        grant.likely@linaro.org, thierry.reding@gmail.com,
-        florian.vaussard@epfl.ch, jic23@kernel.org, jason@lakedaemon.net,
-        andrew@lunn.ch, silvio.fricke@gmail.com, heiko.stuebner@bq.com,
-        olof@lixom.net, sebastian.hesselbarth@gmail.com, sboyd@codeaurora.org,
-        gregory.clement@free-electrons.com, arnd@arndb.de,
-        robherring2@gmail.com, marc.zyngier@arm.com,
-        maxime.ripard@free-electrons.com, soren.brinkmann@xilinx.com,
-        shawn.guo@freescale.com, anders.berg@lsi.com, linus.walleij@linaro.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v8 2/7] clocksource: Add support for the Mediatek SoCs
-References: <1402490055-15197-1-git-send-email-matthias.bgg@gmail.com> <1402490055-15197-3-git-send-email-matthias.bgg@gmail.com> <alpine.DEB.2.10.1406112012460.5170@nanos>
-In-Reply-To: <alpine.DEB.2.10.1406112012460.5170@nanos>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Message-ID: <b67e55e1-af54-4f34-802c-95749771aca4@phunq.net>
+In-Reply-To: <20140613202039.GA23872@amd.pavel.ucw.cz>
+References: <5376B273.7000800@partner.samsung.com>
+ <20140518235555.GC18954@dastard> <537AA802.408@phunq.net>
+ <20140520031802.GF18954@dastard> <20140613103216.GA4589@amd.pavel.ucw.cz>
+ <02d3b094-808c-4b17-903d-1280d451704b@phunq.net>
+ <20140613202039.GA23872@amd.pavel.ucw.cz>
+Organization: tux3.org
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2014 08:14 PM, Thomas Gleixner wrote:
-> On Wed, 11 Jun 2014, Matthias Brugger wrote:
->> +static void mtk_clkevt_mode(enum clock_event_mode mode,
->> +				struct clock_event_device *clk)
->> +{
->> +	struct mtk_clock_event_device *evt = to_mtk_clk(clk);
->> +
->> +	mtk_clkevt_time_stop(evt, GPT_CLK_EVT);
->> +
->> +	switch (mode) {
->> +	case CLOCK_EVT_MODE_PERIODIC:
->> +		mtk_clkevt_time_setup(evt, evt->ticks_per_jiffy, GPT_CLK_EVT);
->> +		mtk_clkevt_time_start(evt, true, GPT_CLK_EVT);
->> +		break;
->> +	case CLOCK_EVT_MODE_ONESHOT:
->> +		mtk_clkevt_time_start(evt, false, GPT_CLK_EVT);
+On Friday, June 13, 2014 1:20:39 PM PDT, Pavel Machek wrote:
+> Hi!
 >
-> Why start the timer here? The code will call set next event right away.
+> On Fri 2014-06-13 10:49:39, Daniel Phillips wrote:
+>> Hi Pavel, On Friday, June 13, 2014 3:32:16 AM PDT, Pavel Machek wrote:
+>  ...
 >
->> +		break;
->> +	case CLOCK_EVT_MODE_UNUSED:
->> +	case CLOCK_EVT_MODE_SHUTDOWN:
->> +	default:
->> +		/* No more interrupts will occur as source is disabled */
->> +		break;
->> +	}
->> +}
->
-> Looks good otherwise.
+> Actually, would it make sense to have staging/fs/?
 
-Hi Thomas,
+That makes sense to me, if a suitably expert and nonaligned maintainer can 
+be found to sign up for a ridiculous amount of largely thankless, but 
+perhaps fascinating work. Any volunteers?
 
-Can I consider the 8.1 patch (the one taking into account your comment) 
-as acked-by ?
+Regards,
 
-Thanks
-
-   -- Daniel
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Daniel							
 
