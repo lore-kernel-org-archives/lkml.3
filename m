@@ -1,90 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298AbaFOFMG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 01:12:06 -0400
-Received: from imap.thunk.org ([74.207.234.97]:39381 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751386AbaFOFME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 01:12:04 -0400
-Date: Sun, 15 Jun 2014 01:11:46 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Torsten Duwe <duwe@lst.de>, Andy Lutomirski <luto@amacapital.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        ingo.tuchscherer@de.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hans-Georg Markgraf <MGRF@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Joe Perches <joe@perches.com>
-Subject: Re: [Patch v5.1 03/03]: hwrng: khwrngd derating per device
-Message-ID: <20140615051146.GA2180@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	"H. Peter Anvin" <hpa@zytor.com>, Torsten Duwe <duwe@lst.de>,
-	Andy Lutomirski <luto@amacapital.net>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Matt Mackall <mpm@selenic.com>,
-	Herbert Xu <herbert@gondor.apana.org.au>,
-	Arnd Bergmann <arnd@arndb.de>,
-	Rusty Russell <rusty@rustcorp.com.au>,
-	Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-	ingo.tuchscherer@de.ibm.com,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Hans-Georg Markgraf <MGRF@de.ibm.com>,
-	Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-	Martin Schwidefsky <schwidefsky@de.ibm.com>,
-	Heiko Carstens <heiko.carstens@de.ibm.com>,
-	Joe Perches <joe@perches.com>
-References: <CALCETrUmFdrGExKB+tKSMVK1yWAw6KWU1tpgjnoFe=+XhJdtTw@mail.gmail.com>
- <20140415085126.GA17327@lst.de>
- <CALCETrXrHOJkEvYv8VGaNNJSFarAaD7E7G7myOvWo5SG4m4qKg@mail.gmail.com>
- <20140527134156.GA14099@lst.de>
- <20140527134645.GD14099@lst.de>
- <20140527141144.GE14099@lst.de>
- <53990165.3070505@zytor.com>
- <20140612100954.GA26943@lst.de>
- <20140614024050.GA6447@thunk.org>
- <26a6d3cf-d327-4089-bdef-f48d3163e3bc@email.android.com>
+	id S1752432AbaFOFQU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 01:16:20 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:33539 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913AbaFOFQS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jun 2014 01:16:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <26a6d3cf-d327-4089-bdef-f48d3163e3bc@email.android.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <CACRpkdZvANiXp2S134jmcsFDr1m=dqGkpsf3Y6ZAg6mvd6RHOQ@mail.gmail.com>
+References: <1402189798-7665-1-git-send-email-houcheng@gmail.com>
+	<CACRpkdZvANiXp2S134jmcsFDr1m=dqGkpsf3Y6ZAg6mvd6RHOQ@mail.gmail.com>
+Date: Sun, 15 Jun 2014 13:16:17 +0800
+Message-ID: <CAL8JtxAhx9R2XC11d_eAObnjxFVKQ6R7auvUd_=Uw40HYH3UyQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] gpio: Add a defer reset object to send board specific reset
+From: Houcheng Lin <houcheng@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK, I've merged these changes into the random.git tree.
+Hi Linus, please see my replies below,
 
-I had to make a few minor changes.
+2014-06-12 20:35 GMT+08:00 Linus Walleij <linus.walleij@linaro.org>:
+>
+> OK this is interesting stuff..
+>
+> But this driver *MUST* live under drivers/power/reset/*, as it
+> has absolutely *nothing* to do with GPIO except for being a consumer
+> of it. I won't merge it.
+>
+> And you should discuss it with Dmitry and David W.
+>
+> But I will review it nevertheless :-D
 
-1)  Changes so it would compile on 3.15.  (random_write_wakeup_thresh
-got renamed to random_write_wakeup_bits).  I'm guessing the patch was
-massaged so that it would apply, but it was never compile tested.
+Thanks for this information, I changed source to under drivers/
+power/reset.
 
-2)  Fixed a bug in patch #2 so that it would work correctly if the rng
-driver doesn't have an init function (which happens to be the case for
-the tpm-rng driver, which I used for my testing).
+>
+> OK so reset init and reset end is a way to specify when reset
+> is asserted (as one or zero).
+>
+> DON'T do this. The GPIO bindings already know a way to define
+> if GPIOs are active high or low, and the gpiod interface will invert
+> the signal for you if this is specified as active low.
+>
+> This way you get rid of both strange properties.
+>
 
-There are also a few minor rough edges that I've noted, but not yet
-fixed.  The main one is that if you've compiled the hw_random's
-rng_core into the kernel, changes to
-/sys/modules/rng_core/parameters/* won't actually cause the hwrngd
-kerenl thread to get started.  You have to set the parameters before
-you load the rng module in order for them to be activated.  And if
-you've compiled the rng module into the kernel, that trick won't work.
+May I reserve the "reset-init" and ""reset-end" properties? As
+some boards use power line off to reset device. The power line
+is active high when as power but active low when as a reset signal.
 
-Fixing this probably means that we need to set up a formal sysfs tree
-under /sys/kernel/hw_random.
+>
+> You forgot to free the deferred_reset_list here. Fix that.
+>
 
-						- Ted
+Thank a lot for your reviews :) Here are fixed of version 2:
+    - change location to drivers/power/reset
+    - remove unused #include
+    - change to use GPIO descriptor interface and use customer.h
+    - free resources after issue reset. However, if a enclosing
+      chip is not probled, the correpsonding reset will not send
+      and memeory is still not free in this case.
+    - other minor fixs
+
+Best regards,
+Houcheng Lin
