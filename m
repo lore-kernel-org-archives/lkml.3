@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751814AbaFONMI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 09:12:08 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:60387 "EHLO
+	id S1752106AbaFONNF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 09:13:05 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60416 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343AbaFONMD (ORCPT
+	with ESMTP id S1751803AbaFONMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 09:12:03 -0400
-Message-Id: <20140615130153.196728583@chello.nl>
+	Sun, 15 Jun 2014 09:12:08 -0400
+Message-Id: <20140615130154.400698797@chello.nl>
 User-Agent: quilt/0.61-1
-Date: Sun, 15 Jun 2014 14:47:00 +0200
+Date: Sun, 15 Jun 2014 14:47:08 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Waiman.Long@hp.com, tglx@linutronix.de, mingo@kernel.org
 Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -21,223 +21,120 @@ Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
         raghavendra.kt@linux.vnet.ibm.com, david.vrabel@citrix.com,
         oleg@redhat.com, gleb@redhat.com, scott.norton@hp.com,
         chegu_vinod@hp.com, Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 03/11] qspinlock: Add pending bit
+Subject: [PATCH 11/11] qspinlock, kvm: Add paravirt support
 References: <20140615124657.264658593@chello.nl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=peter_zijlstra-qspinlock-add_pending_bit.patch
+Content-Disposition: inline; filename=peterz-qspinlock-kvm.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because the qspinlock needs to touch a second cacheline; add a pending
-bit and allow a single in-word spinner before we punt to the second
-cacheline.
+
 
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- include/asm-generic/qspinlock_types.h |   12 ++-
- kernel/locking/qspinlock.c            |  109 +++++++++++++++++++++++++++-------
- 2 files changed, 97 insertions(+), 24 deletions(-)
+ arch/x86/kernel/kvm.c |   58 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/Kconfig.locks  |    2 -
+ 2 files changed, 59 insertions(+), 1 deletion(-)
 
---- a/include/asm-generic/qspinlock_types.h
-+++ b/include/asm-generic/qspinlock_types.h
-@@ -39,8 +39,9 @@ typedef struct qspinlock {
-  * Bitfields in the atomic value:
-  *
-  *  0- 7: locked byte
-- *  8- 9: tail index
-- * 10-31: tail cpu (+1)
-+ *     8: pending
-+ *  9-10: tail index
-+ * 11-31: tail cpu (+1)
-  */
- #define	_Q_SET_MASK(type)	(((1U << _Q_ ## type ## _BITS) - 1)\
- 				      << _Q_ ## type ## _OFFSET)
-@@ -48,7 +49,11 @@ typedef struct qspinlock {
- #define _Q_LOCKED_BITS		8
- #define _Q_LOCKED_MASK		_Q_SET_MASK(LOCKED)
- 
--#define _Q_TAIL_IDX_OFFSET	(_Q_LOCKED_OFFSET + _Q_LOCKED_BITS)
-+#define _Q_PENDING_OFFSET	(_Q_LOCKED_OFFSET + _Q_LOCKED_BITS)
-+#define _Q_PENDING_BITS		1
-+#define _Q_PENDING_MASK		_Q_SET_MASK(PENDING)
-+
-+#define _Q_TAIL_IDX_OFFSET	(_Q_PENDING_OFFSET + _Q_PENDING_BITS)
- #define _Q_TAIL_IDX_BITS	2
- #define _Q_TAIL_IDX_MASK	_Q_SET_MASK(TAIL_IDX)
- 
-@@ -57,5 +62,6 @@ typedef struct qspinlock {
- #define _Q_TAIL_CPU_MASK	_Q_SET_MASK(TAIL_CPU)
- 
- #define _Q_LOCKED_VAL		(1U << _Q_LOCKED_OFFSET)
-+#define _Q_PENDING_VAL		(1U << _Q_PENDING_OFFSET)
- 
- #endif /* __ASM_GENERIC_QSPINLOCK_TYPES_H */
---- a/kernel/locking/qspinlock.c
-+++ b/kernel/locking/qspinlock.c
-@@ -83,24 +83,28 @@ static inline struct mcs_spinlock *decod
- 	return per_cpu_ptr(&mcs_nodes[idx], cpu);
+Index: linux-2.6/arch/x86/kernel/kvm.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/kvm.c
++++ linux-2.6/arch/x86/kernel/kvm.c
+@@ -569,6 +569,7 @@ static void kvm_kick_cpu(int cpu)
+ 	kvm_hypercall2(KVM_HC_KICK_CPU, flags, apicid);
  }
  
-+#define _Q_LOCKED_PENDING_MASK	(_Q_LOCKED_MASK | _Q_PENDING_MASK)
++#ifndef CONFIG_QUEUE_SPINLOCK
+ enum kvm_contention_stat {
+ 	TAKEN_SLOW,
+ 	TAKEN_SLOW_PICKUP,
+@@ -796,6 +797,51 @@ static void kvm_unlock_kick(struct arch_
+ 		}
+ 	}
+ }
++#else /* QUEUE_SPINLOCK */
 +
- /**
-  * queue_spin_lock_slowpath - acquire the queue spinlock
-  * @lock: Pointer to queue spinlock structure
-  * @val: Current value of the queue spinlock 32-bit word
-  *
-- * (queue tail, lock bit)
-- *
-- *              fast      :    slow                                  :    unlock
-- *                        :                                          :
-- * uncontended  (0,0)   --:--> (0,1) --------------------------------:--> (*,0)
-- *                        :       | ^--------.                    /  :
-- *                        :       v           \                   |  :
-- * uncontended            :    (n,x) --+--> (n,0)                 |  :
-- *   queue                :       | ^--'                          |  :
-- *                        :       v                               |  :
-- * contended              :    (*,x) --+--> (*,0) -----> (*,1) ---'  :
-- *   queue                :         ^--'                             :
-+ * (queue tail, pending bit, lock bit)
-  *
-+ *              fast     :    slow                                  :    unlock
-+ *                       :                                          :
-+ * uncontended  (0,0,0) -:--> (0,0,1) ------------------------------:--> (*,*,0)
-+ *                       :       | ^--------.------.             /  :
-+ *                       :       v           \      \            |  :
-+ * pending               :    (0,1,1) +--> (0,1,0)   \           |  :
-+ *                       :       | ^--'              |           |  :
-+ *                       :       v                   |           |  :
-+ * uncontended           :    (n,x,y) +--> (n,0,0) --'           |  :
-+ *   queue               :       | ^--'                          |  :
-+ *                       :       v                               |  :
-+ * contended             :    (*,x,y) +--> (*,0,0) ---> (*,0,1) -'  :
-+ *   queue               :         ^--'                             :
-  */
- void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
- {
-@@ -110,6 +114,65 @@ void queue_spin_lock_slowpath(struct qsp
- 
- 	BUILD_BUG_ON(CONFIG_NR_CPUS >= (1U << _Q_TAIL_CPU_BITS));
- 
-+	/*
-+	 * trylock || pending
-+	 *
-+	 * 0,0,0 -> 0,0,1 ; trylock
-+	 * 0,0,1 -> 0,1,1 ; pending
-+	 */
-+	for (;;) {
-+		/*
-+		 * If we observe any contention; queue.
-+		 */
-+		if (val & ~_Q_LOCKED_MASK)
-+			goto queue;
++#include <asm-generic/qspinlock.h>
 +
-+		new = _Q_LOCKED_VAL;
-+		if (val == new)
-+			new |= _Q_PENDING_VAL;
++PV_CALLEE_SAVE_REGS_THUNK(__pv_init_node);
++PV_CALLEE_SAVE_REGS_THUNK(__pv_link_and_wait_node);
++PV_CALLEE_SAVE_REGS_THUNK(__pv_kick_node);
 +
-+		old = atomic_cmpxchg(&lock->val, val, new);
-+		if (old == val)
-+			break;
++PV_CALLEE_SAVE_REGS_THUNK(__pv_wait_head);
++PV_CALLEE_SAVE_REGS_THUNK(__pv_queue_unlock);
 +
-+		val = old;
-+	}
++void kvm_wait(int *ptr, int val)
++{
++	unsigned long flags;
 +
-+	/*
-+	 * we won the trylock
-+	 */
-+	if (new == _Q_LOCKED_VAL)
++	if (in_nmi())
 +		return;
 +
 +	/*
-+	 * we're pending, wait for the owner to go away.
-+	 *
-+	 * *,1,1 -> *,1,0
++	 * Make sure an interrupt handler can't upset things in a
++	 * partially setup state.
 +	 */
-+	while ((val = atomic_read(&lock->val)) & _Q_LOCKED_MASK)
-+		cpu_relax();
++	local_irq_save(flags);
 +
 +	/*
-+	 * take ownership and clear the pending bit.
-+	 *
-+	 * *,1,0 -> *,0,1
++	 * check again make sure it didn't become free while
++	 * we weren't looking.
 +	 */
-+	for (;;) {
-+		new = (val & ~_Q_PENDING_MASK) | _Q_LOCKED_VAL;
-+
-+		old = atomic_cmpxchg(&lock->val, val, new);
-+		if (old == val)
-+			break;
-+
-+		val = old;
-+	}
-+	return;
++	if (ACCESS_ONCE(*ptr) != val)
++		goto out;
 +
 +	/*
-+	 * End of pending bit optimistic spinning and beginning of MCS
-+	 * queuing.
++	 * halt until it's our turn and kicked. Note that we do safe halt
++	 * for irq enabled case to avoid hang when lock info is overwritten
++	 * in irq spinlock slowpath and no spurious interrupt occur to save us.
 +	 */
-+queue:
- 	node = this_cpu_ptr(&mcs_nodes[0]);
- 	idx = node->count++;
- 	tail = encode_tail(smp_processor_id(), idx);
-@@ -119,15 +182,18 @@ void queue_spin_lock_slowpath(struct qsp
- 	node->next = NULL;
++	if (arch_irqs_disabled_flags(flags))
++		halt();
++	else
++		safe_halt();
++
++out:
++	local_irq_restore(flags);
++}
++#endif /* QUEUE_SPINLOCK */
  
- 	/*
-+	 * we already touched the queueing cacheline; don't bother with pending
-+	 * stuff.
-+	 *
- 	 * trylock || xchg(lock, node)
- 	 *
--	 * 0,0 -> 0,1 ; trylock
--	 * p,x -> n,x ; prev = xchg(lock, node)
-+	 * 0,0,0 -> 0,0,1 ; trylock
-+	 * p,y,x -> n,y,x ; prev = xchg(lock, node)
- 	 */
- 	for (;;) {
- 		new = _Q_LOCKED_VAL;
- 		if (val)
--			new = tail | (val & _Q_LOCKED_MASK);
-+			new = tail | (val & _Q_LOCKED_PENDING_MASK);
+ /*
+  * Setup pv_lock_ops to exploit KVM_FEATURE_PV_UNHALT if present.
+@@ -808,8 +854,20 @@ void __init kvm_spinlock_init(void)
+ 	if (!kvm_para_has_feature(KVM_FEATURE_PV_UNHALT))
+ 		return;
  
- 		old = atomic_cmpxchg(&lock->val, val, new);
- 		if (old == val)
-@@ -145,7 +211,7 @@ void queue_spin_lock_slowpath(struct qsp
- 	/*
- 	 * if there was a previous node; link it and wait.
- 	 */
--	if (old & ~_Q_LOCKED_MASK) {
-+	if (old & ~_Q_LOCKED_PENDING_MASK) {
- 		prev = decode_tail(old);
- 		ACCESS_ONCE(prev->next) = node;
++#ifdef CONFIG_QUEUE_SPINLOCK
++	pv_lock_ops.init_node = PV_CALLEE_SAVE(__pv_init_node);
++	pv_lock_ops.link_and_wait_node = PV_CALLEE_SAVE(__pv_link_and_wait_node);
++	pv_lock_ops.kick_node = PV_CALLEE_SAVE(__pv_kick_node);
++
++	pv_lock_ops.wait_head = PV_CALLEE_SAVE(__pv_wait_head);
++	pv_lock_ops.queue_unlock = PV_CALLEE_SAVE(__pv_queue_unlock);
++
++	pv_lock_ops.wait = kvm_wait;
++	pv_lock_ops.kick = kvm_kick_cpu;
++#else
+ 	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(kvm_lock_spinning);
+ 	pv_lock_ops.unlock_kick = kvm_unlock_kick;
++#endif
+ }
  
-@@ -153,18 +219,19 @@ void queue_spin_lock_slowpath(struct qsp
- 	}
+ static __init int kvm_spinlock_init_jump(void)
+Index: linux-2.6/kernel/Kconfig.locks
+===================================================================
+--- linux-2.6.orig/kernel/Kconfig.locks
++++ linux-2.6/kernel/Kconfig.locks
+@@ -229,7 +229,7 @@ config ARCH_USE_QUEUE_SPINLOCK
  
- 	/*
--	 * we're at the head of the waitqueue, wait for the owner to go away.
-+	 * we're at the head of the waitqueue, wait for the owner & pending to
-+	 * go away.
- 	 *
--	 * *,x -> *,0
-+	 * *,x,y -> *,0,0
- 	 */
--	while ((val = atomic_read(&lock->val)) & _Q_LOCKED_MASK)
-+	while ((val = atomic_read(&lock->val)) & _Q_LOCKED_PENDING_MASK)
- 		cpu_relax();
+ config QUEUE_SPINLOCK
+ 	def_bool y if ARCH_USE_QUEUE_SPINLOCK
+-	depends on SMP && !PARAVIRT_SPINLOCKS
++	depends on SMP && !(PARAVIRT_SPINLOCKS && XEN)
  
- 	/*
- 	 * claim the lock:
- 	 *
--	 * n,0 -> 0,1 : lock, uncontended
--	 * *,0 -> *,1 : lock, contended
-+	 * n,0,0 -> 0,0,1 : lock, uncontended
-+	 * *,0,0 -> *,0,1 : lock, contended
- 	 */
- 	for (;;) {
- 		new = _Q_LOCKED_VAL;
+ config ARCH_USE_QUEUE_RWLOCK
+ 	bool
 
 
