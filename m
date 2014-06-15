@@ -1,618 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226AbaFOUlM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 16:41:12 -0400
-Received: from marmot.wormnet.eu ([188.246.204.87]:54903 "EHLO
-	marmot.wormnet.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753049AbaFOUkN (ORCPT
+	id S1753241AbaFOUlh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 16:41:37 -0400
+Received: from smtprelay0025.hostedemail.com ([216.40.44.25]:47810 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752793AbaFOUjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 16:40:13 -0400
-From: Jamie Lentin <jm@lentin.co.uk>
-To: Jiri Kosina <jkosina@suse.cz>, Antonio Ospite <ao2@ao2.it>
-Cc: Alexander Clouter <alex@digriz.org.uk>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jamie Lentin <jm@lentin.co.uk>
-Subject: [PATCH v3 1/2] Rename hid-lenovo-tpkbd to hid-lenovo, so we can add other keyboards
-Date: Sun, 15 Jun 2014 21:39:49 +0100
-Message-Id: <1402864790-7478-2-git-send-email-jm@lentin.co.uk>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1402864790-7478-1-git-send-email-jm@lentin.co.uk>
-References: <1402864790-7478-1-git-send-email-jm@lentin.co.uk>
+	Sun, 15 Jun 2014 16:39:10 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3865:3866:3867:4321:5007:6261:10004:10026:10848:11026:11473:11658:11914:12043:12438:12517:12519:12555:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: size24_6ce98ad3b2120
+X-Filterd-Recvd-Size: 2447
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: qla2xxx-upstream@qlogic.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH -next 22/26] qla2xxx: Use dma_zalloc_coherent
+Date: Sun, 15 Jun 2014 13:37:51 -0700
+Message-Id: <5e845f43a014ad7dd4ab3a4fdcd95b879bc496ef.1402863905.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <cover.1402863904.git.joe@perches.com>
+References: <cover.1402863904.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jamie Lentin <jm@lentin.co.uk>
----
- drivers/hid/Kconfig                              |  14 +-
- drivers/hid/Makefile                             |   2 +-
- drivers/hid/hid-core.c                           |   2 +-
- drivers/hid/{hid-lenovo-tpkbd.c => hid-lenovo.c} | 233 +++++++++++++----------
- 4 files changed, 142 insertions(+), 109 deletions(-)
- rename drivers/hid/{hid-lenovo-tpkbd.c => hid-lenovo.c} (59%)
+Use the zeroing function instead of dma_alloc_coherent & memset(,0,)
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index f722001..dd07d59 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -322,18 +322,18 @@ config HID_LCPOWER
- 	---help---
- 	Support for LC-Power RC1000MCE RF remote control.
- 
--config HID_LENOVO_TPKBD
--	tristate "Lenovo ThinkPad USB Keyboard with TrackPoint"
-+config HID_LENOVO
-+	tristate "Lenovo / Thinkpad devices"
- 	depends on HID
- 	select NEW_LEDS
- 	select LEDS_CLASS
- 	---help---
--	Support for the Lenovo ThinkPad USB Keyboard with TrackPoint.
-+	Support for Lenovo devices that are not fully compliant with HID standard.
- 
--	Say Y here if you have a Lenovo ThinkPad USB Keyboard with TrackPoint
--	and would like to use device-specific features like changing the
--	sensitivity of the trackpoint, using the microphone mute button or
--	controlling the mute and microphone mute LEDs.
-+	Say Y if you want support for the non-compliant features of the Lenovo
-+	Thinkpad standalone keyboards, e.g:
-+	- ThinkPad USB Keyboard with TrackPoint (supports extra LEDs and trackpoint
-+	  configuration)
- 
- config HID_LOGITECH
- 	tristate "Logitech devices" if EXPERT
-diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-index 30e4431..384f981 100644
---- a/drivers/hid/Makefile
-+++ b/drivers/hid/Makefile
-@@ -58,7 +58,7 @@ obj-$(CONFIG_HID_KENSINGTON)	+= hid-kensington.o
- obj-$(CONFIG_HID_KEYTOUCH)	+= hid-keytouch.o
- obj-$(CONFIG_HID_KYE)		+= hid-kye.o
- obj-$(CONFIG_HID_LCPOWER)       += hid-lcpower.o
--obj-$(CONFIG_HID_LENOVO_TPKBD)	+= hid-lenovo-tpkbd.o
-+obj-$(CONFIG_HID_LENOVO)	+= hid-lenovo.o
- obj-$(CONFIG_HID_LOGITECH)	+= hid-logitech.o
- obj-$(CONFIG_HID_LOGITECH_DJ)	+= hid-logitech-dj.o
- obj-$(CONFIG_HID_MAGICMOUSE)    += hid-magicmouse.o
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 8a5384c..e8ce932 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1736,7 +1736,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_EASYPEN_M610X) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LABTEC, USB_DEVICE_ID_LABTEC_WIRELESS_KEYBOARD) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LCPOWER, USB_DEVICE_ID_LCPOWER_LC1000 ) },
--#if IS_ENABLED(CONFIG_HID_LENOVO_TPKBD)
-+#if IS_ENABLED(CONFIG_HID_LENOVO)
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LENOVO, USB_DEVICE_ID_LENOVO_TPKBD) },
- #endif
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_MX3000_RECEIVER) },
-diff --git a/drivers/hid/hid-lenovo-tpkbd.c b/drivers/hid/hid-lenovo.c
-similarity index 59%
-rename from drivers/hid/hid-lenovo-tpkbd.c
-rename to drivers/hid/hid-lenovo.c
-index 2d25b6c..aabf084 100644
---- a/drivers/hid/hid-lenovo-tpkbd.c
-+++ b/drivers/hid/hid-lenovo.c
-@@ -1,5 +1,6 @@
- /*
-- *  HID driver for Lenovo ThinkPad USB Keyboard with TrackPoint
-+ *  HID driver for Lenovo:-
-+ *  - ThinkPad USB Keyboard with TrackPoint (tpkbd)
-  *
-  *  Copyright (c) 2012 Bernhard Seibold
-  */
-@@ -20,8 +21,7 @@
- 
- #include "hid-ids.h"
- 
--/* This is only used for the trackpoint part of the driver, hence _tp */
--struct tpkbd_data_pointer {
-+struct lenovo_drvdata_tpkbd {
- 	int led_state;
- 	struct led_classdev led_mute;
- 	struct led_classdev led_micmute;
-@@ -35,7 +35,7 @@ struct tpkbd_data_pointer {
- 
- #define map_key_clear(c) hid_map_usage_clear(hi, usage, bit, max, EV_KEY, (c))
- 
--static int tpkbd_input_mapping(struct hid_device *hdev,
-+static int lenovo_input_mapping_tpkbd(struct hid_device *hdev,
- 		struct hid_input *hi, struct hid_field *field,
- 		struct hid_usage *usage, unsigned long **bit, int *max)
- {
-@@ -48,12 +48,26 @@ static int tpkbd_input_mapping(struct hid_device *hdev,
- 	return 0;
- }
- 
-+static int lenovo_input_mapping(struct hid_device *hdev,
-+		struct hid_input *hi, struct hid_field *field,
-+		struct hid_usage *usage, unsigned long **bit, int *max)
-+{
-+	switch (hdev->product) {
-+	case USB_DEVICE_ID_LENOVO_TPKBD:
-+		return lenovo_input_mapping_tpkbd(hdev, hi, field,
-+							usage, bit, max);
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
- #undef map_key_clear
- 
--static int tpkbd_features_set(struct hid_device *hdev)
-+static int lenovo_features_set_tpkbd(struct hid_device *hdev)
- {
- 	struct hid_report *report;
--	struct tpkbd_data_pointer *data_pointer = hid_get_drvdata(hdev);
-+	struct lenovo_drvdata_tpkbd *data_pointer = hid_get_drvdata(hdev);
- 
- 	report = hdev->report_enum[HID_FEATURE_REPORT].report_id_hash[4];
- 
-@@ -69,23 +83,23 @@ static int tpkbd_features_set(struct hid_device *hdev)
- 	return 0;
- }
- 
--static ssize_t pointer_press_to_select_show(struct device *dev,
-+static ssize_t attr_press_to_select_show_tpkbd(struct device *dev,
- 		struct device_attribute *attr,
- 		char *buf)
- {
- 	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
--	struct tpkbd_data_pointer *data_pointer = hid_get_drvdata(hdev);
-+	struct lenovo_drvdata_tpkbd *data_pointer = hid_get_drvdata(hdev);
- 
- 	return snprintf(buf, PAGE_SIZE, "%u\n", data_pointer->press_to_select);
- }
- 
--static ssize_t pointer_press_to_select_store(struct device *dev,
-+static ssize_t attr_press_to_select_store_tpkbd(struct device *dev,
- 		struct device_attribute *attr,
- 		const char *buf,
- 		size_t count)
- {
- 	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
--	struct tpkbd_data_pointer *data_pointer = hid_get_drvdata(hdev);
-+	struct lenovo_drvdata_tpkbd *data_pointer = hid_get_drvdata(hdev);
- 	int value;
- 
- 	if (kstrtoint(buf, 10, &value))
-@@ -94,28 +108,28 @@ static ssize_t pointer_press_to_select_store(struct device *dev,
- 		return -EINVAL;
- 
- 	data_pointer->press_to_select = value;
--	tpkbd_features_set(hdev);
-+	lenovo_features_set_tpkbd(hdev);
- 
- 	return count;
- }
- 
--static ssize_t pointer_dragging_show(struct device *dev,
-+static ssize_t attr_dragging_show_tpkbd(struct device *dev,
- 		struct device_attribute *attr,
- 		char *buf)
- {
- 	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
--	struct tpkbd_data_pointer *data_pointer = hid_get_drvdata(hdev);
-+	struct lenovo_drvdata_tpkbd *data_pointer = hid_get_drvdata(hdev);
- 
- 	return snprintf(buf, PAGE_SIZE, "%u\n", data_pointer->dragging);
- }
- 
--static ssize_t pointer_dragging_store(struct device *dev,
-+static ssize_t attr_dragging_store_tpkbd(struct device *dev,
- 		struct device_attribute *attr,
- 		const char *buf,
- 		size_t count)
- {
- 	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
--	struct tpkbd_data_pointer *data_pointer = hid_get_drvdata(hdev);
-+	struct lenovo_drvdata_tpkbd *data_pointer = hid_get_drvdata(hdev);
- 	int value;
- 
- 	if (kstrtoint(buf, 10, &value))
-@@ -124,28 +138,28 @@ static ssize_t pointer_dragging_store(struct device *dev,
- 		return -EINVAL;
- 
- 	data_pointer->dragging = value;
--	tpkbd_features_set(hdev);
-+	lenovo_features_set_tpkbd(hdev);
- 
- 	return count;
- }
- 
--static ssize_t pointer_release_to_select_show(struct device *dev,
-+static ssize_t attr_release_to_select_show_tpkbd(struct device *dev,
- 		struct device_attribute *attr,
- 		char *buf)
- {
- 	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
--	struct tpkbd_data_pointer *data_pointer = hid_get_drvdata(hdev);
-+	struct lenovo_drvdata_tpkbd *data_pointer = hid_get_drvdata(hdev);
- 
- 	return snprintf(buf, PAGE_SIZE, "%u\n", data_pointer->release_to_select);
- }
- 
--static ssize_t pointer_release_to_select_store(struct device *dev,
-+static ssize_t attr_release_to_select_store_tpkbd(struct device *dev,
- 		struct device_attribute *attr,
- 		const char *buf,
- 		size_t count)
- {
- 	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
--	struct tpkbd_data_pointer *data_pointer = hid_get_drvdata(hdev);
-+	struct lenovo_drvdata_tpkbd *data_pointer = hid_get_drvdata(hdev);
- 	int value;
- 
- 	if (kstrtoint(buf, 10, &value))
-@@ -154,28 +168,28 @@ static ssize_t pointer_release_to_select_store(struct device *dev,
- 		return -EINVAL;
- 
- 	data_pointer->release_to_select = value;
--	tpkbd_features_set(hdev);
-+	lenovo_features_set_tpkbd(hdev);
- 
- 	return count;
- }
- 
--static ssize_t pointer_select_right_show(struct device *dev,
-+static ssize_t attr_select_right_show_tpkbd(struct device *dev,
- 		struct device_attribute *attr,
- 		char *buf)
- {
- 	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
--	struct tpkbd_data_pointer *data_pointer = hid_get_drvdata(hdev);
-+	struct lenovo_drvdata_tpkbd *data_pointer = hid_get_drvdata(hdev);
- 
- 	return snprintf(buf, PAGE_SIZE, "%u\n", data_pointer->select_right);
- }
- 
--static ssize_t pointer_select_right_store(struct device *dev,
-+static ssize_t attr_select_right_store_tpkbd(struct device *dev,
- 		struct device_attribute *attr,
- 		const char *buf,
- 		size_t count)
- {
- 	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
--	struct tpkbd_data_pointer *data_pointer = hid_get_drvdata(hdev);
-+	struct lenovo_drvdata_tpkbd *data_pointer = hid_get_drvdata(hdev);
- 	int value;
- 
- 	if (kstrtoint(buf, 10, &value))
-@@ -184,119 +198,119 @@ static ssize_t pointer_select_right_store(struct device *dev,
- 		return -EINVAL;
- 
- 	data_pointer->select_right = value;
--	tpkbd_features_set(hdev);
-+	lenovo_features_set_tpkbd(hdev);
- 
- 	return count;
- }
- 
--static ssize_t pointer_sensitivity_show(struct device *dev,
-+static ssize_t attr_sensitivity_show_tpkbd(struct device *dev,
- 		struct device_attribute *attr,
- 		char *buf)
- {
- 	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
--	struct tpkbd_data_pointer *data_pointer = hid_get_drvdata(hdev);
-+	struct lenovo_drvdata_tpkbd *data_pointer = hid_get_drvdata(hdev);
- 
- 	return snprintf(buf, PAGE_SIZE, "%u\n",
- 		data_pointer->sensitivity);
- }
- 
--static ssize_t pointer_sensitivity_store(struct device *dev,
-+static ssize_t attr_sensitivity_store_tpkbd(struct device *dev,
- 		struct device_attribute *attr,
- 		const char *buf,
- 		size_t count)
- {
- 	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
--	struct tpkbd_data_pointer *data_pointer = hid_get_drvdata(hdev);
-+	struct lenovo_drvdata_tpkbd *data_pointer = hid_get_drvdata(hdev);
- 	int value;
- 
- 	if (kstrtoint(buf, 10, &value) || value < 1 || value > 255)
- 		return -EINVAL;
- 
- 	data_pointer->sensitivity = value;
--	tpkbd_features_set(hdev);
-+	lenovo_features_set_tpkbd(hdev);
- 
- 	return count;
- }
- 
--static ssize_t pointer_press_speed_show(struct device *dev,
-+static ssize_t attr_press_speed_show_tpkbd(struct device *dev,
- 		struct device_attribute *attr,
- 		char *buf)
- {
- 	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
--	struct tpkbd_data_pointer *data_pointer = hid_get_drvdata(hdev);
-+	struct lenovo_drvdata_tpkbd *data_pointer = hid_get_drvdata(hdev);
- 
- 	return snprintf(buf, PAGE_SIZE, "%u\n",
- 		data_pointer->press_speed);
- }
- 
--static ssize_t pointer_press_speed_store(struct device *dev,
-+static ssize_t attr_press_speed_store_tpkbd(struct device *dev,
- 		struct device_attribute *attr,
- 		const char *buf,
- 		size_t count)
- {
- 	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
--	struct tpkbd_data_pointer *data_pointer = hid_get_drvdata(hdev);
-+	struct lenovo_drvdata_tpkbd *data_pointer = hid_get_drvdata(hdev);
- 	int value;
- 
- 	if (kstrtoint(buf, 10, &value) || value < 1 || value > 255)
- 		return -EINVAL;
- 
- 	data_pointer->press_speed = value;
--	tpkbd_features_set(hdev);
-+	lenovo_features_set_tpkbd(hdev);
- 
- 	return count;
- }
- 
--static struct device_attribute dev_attr_pointer_press_to_select =
-+static struct device_attribute dev_attr_press_to_select_tpkbd =
- 	__ATTR(press_to_select, S_IWUSR | S_IRUGO,
--			pointer_press_to_select_show,
--			pointer_press_to_select_store);
-+			attr_press_to_select_show_tpkbd,
-+			attr_press_to_select_store_tpkbd);
- 
--static struct device_attribute dev_attr_pointer_dragging =
-+static struct device_attribute dev_attr_dragging_tpkbd =
- 	__ATTR(dragging, S_IWUSR | S_IRUGO,
--			pointer_dragging_show,
--			pointer_dragging_store);
-+			attr_dragging_show_tpkbd,
-+			attr_dragging_store_tpkbd);
- 
--static struct device_attribute dev_attr_pointer_release_to_select =
-+static struct device_attribute dev_attr_release_to_select_tpkbd =
- 	__ATTR(release_to_select, S_IWUSR | S_IRUGO,
--			pointer_release_to_select_show,
--			pointer_release_to_select_store);
-+			attr_release_to_select_show_tpkbd,
-+			attr_release_to_select_store_tpkbd);
- 
--static struct device_attribute dev_attr_pointer_select_right =
-+static struct device_attribute dev_attr_select_right_tpkbd =
- 	__ATTR(select_right, S_IWUSR | S_IRUGO,
--			pointer_select_right_show,
--			pointer_select_right_store);
-+			attr_select_right_show_tpkbd,
-+			attr_select_right_store_tpkbd);
- 
--static struct device_attribute dev_attr_pointer_sensitivity =
-+static struct device_attribute dev_attr_sensitivity_tpkbd =
- 	__ATTR(sensitivity, S_IWUSR | S_IRUGO,
--			pointer_sensitivity_show,
--			pointer_sensitivity_store);
-+			attr_sensitivity_show_tpkbd,
-+			attr_sensitivity_store_tpkbd);
- 
--static struct device_attribute dev_attr_pointer_press_speed =
-+static struct device_attribute dev_attr_press_speed_tpkbd =
- 	__ATTR(press_speed, S_IWUSR | S_IRUGO,
--			pointer_press_speed_show,
--			pointer_press_speed_store);
--
--static struct attribute *tpkbd_attributes_pointer[] = {
--	&dev_attr_pointer_press_to_select.attr,
--	&dev_attr_pointer_dragging.attr,
--	&dev_attr_pointer_release_to_select.attr,
--	&dev_attr_pointer_select_right.attr,
--	&dev_attr_pointer_sensitivity.attr,
--	&dev_attr_pointer_press_speed.attr,
-+			attr_press_speed_show_tpkbd,
-+			attr_press_speed_store_tpkbd);
-+
-+static struct attribute *lenovo_attributes_tpkbd[] = {
-+	&dev_attr_press_to_select_tpkbd.attr,
-+	&dev_attr_dragging_tpkbd.attr,
-+	&dev_attr_release_to_select_tpkbd.attr,
-+	&dev_attr_select_right_tpkbd.attr,
-+	&dev_attr_sensitivity_tpkbd.attr,
-+	&dev_attr_press_speed_tpkbd.attr,
- 	NULL
- };
- 
--static const struct attribute_group tpkbd_attr_group_pointer = {
--	.attrs = tpkbd_attributes_pointer,
-+static const struct attribute_group lenovo_attr_group_tpkbd = {
-+	.attrs = lenovo_attributes_tpkbd,
- };
- 
--static enum led_brightness tpkbd_led_brightness_get(
-+static enum led_brightness lenovo_led_brightness_get_tpkbd(
- 			struct led_classdev *led_cdev)
- {
- 	struct device *dev = led_cdev->dev->parent;
- 	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
--	struct tpkbd_data_pointer *data_pointer = hid_get_drvdata(hdev);
-+	struct lenovo_drvdata_tpkbd *data_pointer = hid_get_drvdata(hdev);
- 	int led_nr = 0;
- 
- 	if (led_cdev == &data_pointer->led_micmute)
-@@ -307,12 +321,12 @@ static enum led_brightness tpkbd_led_brightness_get(
- 				: LED_OFF;
- }
- 
--static void tpkbd_led_brightness_set(struct led_classdev *led_cdev,
-+static void lenovo_led_brightness_set_tpkbd(struct led_classdev *led_cdev,
- 			enum led_brightness value)
- {
- 	struct device *dev = led_cdev->dev->parent;
- 	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
--	struct tpkbd_data_pointer *data_pointer = hid_get_drvdata(hdev);
-+	struct lenovo_drvdata_tpkbd *data_pointer = hid_get_drvdata(hdev);
- 	struct hid_report *report;
- 	int led_nr = 0;
- 
-@@ -330,13 +344,24 @@ static void tpkbd_led_brightness_set(struct led_classdev *led_cdev,
- 	hid_hw_request(hdev, report, HID_REQ_SET_REPORT);
- }
- 
--static int tpkbd_probe_tp(struct hid_device *hdev)
-+static int lenovo_probe_tpkbd(struct hid_device *hdev,
-+			const struct hid_device_id *id)
- {
- 	struct device *dev = &hdev->dev;
--	struct tpkbd_data_pointer *data_pointer;
-+	struct lenovo_drvdata_tpkbd *data_pointer;
- 	size_t name_sz = strlen(dev_name(dev)) + 16;
- 	char *name_mute, *name_micmute;
--	int i;
-+	int i, ret;
-+
-+	/*
-+	 * If this is the pointer half of the keyboard, input_mapping should
-+	 * have set drvdata to 1. Otherwise, it's the keyboard which needs
-+	 * nothing special doing to it.
-+	 */
-+	if (!hid_get_drvdata(hdev))
-+		return 0;
-+
-+	hid_set_drvdata(hdev, NULL);
- 
- 	/* Validate required reports. */
- 	for (i = 0; i < 4; i++) {
-@@ -346,13 +371,12 @@ static int tpkbd_probe_tp(struct hid_device *hdev)
- 	if (!hid_validate_values(hdev, HID_OUTPUT_REPORT, 3, 0, 2))
- 		return -ENODEV;
- 
--	if (sysfs_create_group(&hdev->dev.kobj,
--				&tpkbd_attr_group_pointer)) {
-+	ret = sysfs_create_group(&hdev->dev.kobj, &lenovo_attr_group_tpkbd);
-+	if (ret)
- 		hid_warn(hdev, "Could not create sysfs group\n");
--	}
- 
- 	data_pointer = devm_kzalloc(&hdev->dev,
--				    sizeof(struct tpkbd_data_pointer),
-+				    sizeof(struct lenovo_drvdata_tpkbd),
- 				    GFP_KERNEL);
- 	if (data_pointer == NULL) {
- 		hid_err(hdev, "Could not allocate memory for driver data\n");
-@@ -375,23 +399,25 @@ static int tpkbd_probe_tp(struct hid_device *hdev)
- 	hid_set_drvdata(hdev, data_pointer);
- 
- 	data_pointer->led_mute.name = name_mute;
--	data_pointer->led_mute.brightness_get = tpkbd_led_brightness_get;
--	data_pointer->led_mute.brightness_set = tpkbd_led_brightness_set;
-+	data_pointer->led_mute.brightness_get = lenovo_led_brightness_get_tpkbd;
-+	data_pointer->led_mute.brightness_set = lenovo_led_brightness_set_tpkbd;
- 	data_pointer->led_mute.dev = dev;
- 	led_classdev_register(dev, &data_pointer->led_mute);
- 
- 	data_pointer->led_micmute.name = name_micmute;
--	data_pointer->led_micmute.brightness_get = tpkbd_led_brightness_get;
--	data_pointer->led_micmute.brightness_set = tpkbd_led_brightness_set;
-+	data_pointer->led_micmute.brightness_get =
-+		lenovo_led_brightness_get_tpkbd;
-+	data_pointer->led_micmute.brightness_set =
-+		lenovo_led_brightness_set_tpkbd;
- 	data_pointer->led_micmute.dev = dev;
- 	led_classdev_register(dev, &data_pointer->led_micmute);
- 
--	tpkbd_features_set(hdev);
-+	lenovo_features_set_tpkbd(hdev);
- 
- 	return 0;
- }
- 
--static int tpkbd_probe(struct hid_device *hdev,
-+static int lenovo_probe(struct hid_device *hdev,
- 		const struct hid_device_id *id)
- {
- 	int ret;
-@@ -408,12 +434,13 @@ static int tpkbd_probe(struct hid_device *hdev,
- 		goto err;
- 	}
- 
--	if (hid_get_drvdata(hdev)) {
--		hid_set_drvdata(hdev, NULL);
--		ret = tpkbd_probe_tp(hdev);
--		if (ret)
--			goto err_hid;
-+	switch (hdev->product) {
-+	case USB_DEVICE_ID_LENOVO_TPKBD:
-+		ret = lenovo_probe_tpkbd(hdev, id);
-+		break;
- 	}
-+	if (ret)
-+		goto err_hid;
- 
- 	return 0;
- err_hid:
-@@ -422,12 +449,15 @@ err:
- 	return ret;
- }
- 
--static void tpkbd_remove_tp(struct hid_device *hdev)
-+static void lenovo_remove_tpkbd(struct hid_device *hdev)
- {
--	struct tpkbd_data_pointer *data_pointer = hid_get_drvdata(hdev);
-+	struct lenovo_drvdata_tpkbd *data_pointer = hid_get_drvdata(hdev);
- 
- 	sysfs_remove_group(&hdev->dev.kobj,
--			&tpkbd_attr_group_pointer);
-+			&lenovo_attr_group_tpkbd);
-+
-+	if (data_pointer == NULL)
-+		return;
- 
- 	led_classdev_unregister(&data_pointer->led_micmute);
- 	led_classdev_unregister(&data_pointer->led_mute);
-@@ -435,28 +465,31 @@ static void tpkbd_remove_tp(struct hid_device *hdev)
- 	hid_set_drvdata(hdev, NULL);
- }
- 
--static void tpkbd_remove(struct hid_device *hdev)
-+static void lenovo_remove(struct hid_device *hdev)
- {
--	if (hid_get_drvdata(hdev))
--		tpkbd_remove_tp(hdev);
-+	switch (hdev->product) {
-+	case USB_DEVICE_ID_LENOVO_TPKBD:
-+		lenovo_remove_tpkbd(hdev);
-+		break;
-+	}
- 
- 	hid_hw_stop(hdev);
- }
- 
--static const struct hid_device_id tpkbd_devices[] = {
-+static const struct hid_device_id lenovo_devices[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LENOVO, USB_DEVICE_ID_LENOVO_TPKBD) },
- 	{ }
- };
- 
--MODULE_DEVICE_TABLE(hid, tpkbd_devices);
-+MODULE_DEVICE_TABLE(hid, lenovo_devices);
- 
--static struct hid_driver tpkbd_driver = {
-+static struct hid_driver lenovo_driver = {
- 	.name = "lenovo_tpkbd",
--	.id_table = tpkbd_devices,
--	.input_mapping = tpkbd_input_mapping,
--	.probe = tpkbd_probe,
--	.remove = tpkbd_remove,
-+	.id_table = lenovo_devices,
-+	.input_mapping = lenovo_input_mapping,
-+	.probe = lenovo_probe,
-+	.remove = lenovo_remove,
- };
--module_hid_driver(tpkbd_driver);
-+module_hid_driver(lenovo_driver);
- 
- MODULE_LICENSE("GPL");
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/scsi/qla2xxx/qla_init.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/scsi/qla2xxx/qla_init.c b/drivers/scsi/qla2xxx/qla_init.c
+index e218441..46990f4 100644
+--- a/drivers/scsi/qla2xxx/qla_init.c
++++ b/drivers/scsi/qla2xxx/qla_init.c
+@@ -1526,8 +1526,8 @@ try_fce:
+ 			    FCE_SIZE, ha->fce, ha->fce_dma);
+ 
+ 		/* Allocate memory for Fibre Channel Event Buffer. */
+-		tc = dma_alloc_coherent(&ha->pdev->dev, FCE_SIZE, &tc_dma,
+-		    GFP_KERNEL);
++		tc = dma_zalloc_coherent(&ha->pdev->dev, FCE_SIZE, &tc_dma,
++					 GFP_KERNEL);
+ 		if (!tc) {
+ 			ql_log(ql_log_warn, vha, 0x00be,
+ 			    "Unable to allocate (%d KB) for FCE.\n",
+@@ -1535,7 +1535,6 @@ try_fce:
+ 			goto try_eft;
+ 		}
+ 
+-		memset(tc, 0, FCE_SIZE);
+ 		rval = qla2x00_enable_fce_trace(vha, tc_dma, FCE_NUM_BUFFERS,
+ 		    ha->fce_mb, &ha->fce_bufs);
+ 		if (rval) {
+@@ -1560,8 +1559,8 @@ try_eft:
+ 			    EFT_SIZE, ha->eft, ha->eft_dma);
+ 
+ 		/* Allocate memory for Extended Trace Buffer. */
+-		tc = dma_alloc_coherent(&ha->pdev->dev, EFT_SIZE, &tc_dma,
+-		    GFP_KERNEL);
++		tc = dma_zalloc_coherent(&ha->pdev->dev, EFT_SIZE, &tc_dma,
++					 GFP_KERNEL);
+ 		if (!tc) {
+ 			ql_log(ql_log_warn, vha, 0x00c1,
+ 			    "Unable to allocate (%d KB) for EFT.\n",
+@@ -1569,7 +1568,6 @@ try_eft:
+ 			goto cont_alloc;
+ 		}
+ 
+-		memset(tc, 0, EFT_SIZE);
+ 		rval = qla2x00_enable_eft_trace(vha, tc_dma, EFT_NUM_BUFFERS);
+ 		if (rval) {
+ 			ql_log(ql_log_warn, vha, 0x00c2,
 -- 
-2.0.0.rc2
+1.8.1.2.459.gbcd45b4.dirty
 
