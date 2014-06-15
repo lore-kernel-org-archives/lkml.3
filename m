@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751714AbaFOPbp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 11:31:45 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:53350 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649AbaFOPbm (ORCPT
+	id S1751555AbaFOPrn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 11:47:43 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:35783 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246AbaFOPrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 11:31:42 -0400
-Message-ID: <1402846298.6673.2.camel@phoenix>
-Subject: [PATCH RESEND] clk: twl6040: Convert to use devm_clk_register
-From: Axel Lin <axel.lin@ingics.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, linux-kernel@vger.kernel.org
-Date: Sun, 15 Jun 2014 23:31:38 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 15 Jun 2014 11:47:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140615143500.GP179@brightrain.aerifal.cx>
+References: <cover.1402769596.git.luto@amacapital.net> <21405.44257.742122.786960@gargle.gargle.HOWL>
+ <20140615143500.GP179@brightrain.aerifal.cx>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sun, 15 Jun 2014 08:47:19 -0700
+Message-ID: <CALCETrXqcO_Jz_9P5bHW7yBcxOXgTFveL9r4G8PO4XiHC8JhAg@mail.gmail.com>
+Subject: Re: [RFC 0/2] __vdso_findsym
+To: Rich Felker <dalias@libc.org>
+Cc: Mikael Pettersson <mikpelinux@gmail.com>, Russ Cox <rsc@golang.org>,
+        Linux API <linux-api@vger.kernel.org>, Ian Taylor <iant@golang.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_clk_register() to simplify the code by removing twl6040_clk_remove().
+On Sun, Jun 15, 2014 at 7:35 AM, Rich Felker <dalias@libc.org> wrote:
+> On Sun, Jun 15, 2014 at 04:25:37PM +0200, Mikael Pettersson wrote:
+>> Andy Lutomirski writes:
+>>  > The idea is to add AT_VDSO_FINDSYM pointing at __vdso_findsym.  This
+>>  > implements __vdso_findsym.
+>>  >
+>>  > This would make it easier for runtimes that don't otherwise implement
+>>  > ELF loaders to use the vdso.
+>>  >
+>>  > Thoughts?
+>>
+>> I'm opposed to this based on the principle that the kernel should NOT
+>> be a dumping ground for random code that user-space can and should
+>> implement for itself.  As long as the vdso is correctly formatted ELF,
+>> then parsing it is easy, and the kernel should not care at all if or
+>> how user-space accesses it.
+>
+> Arguably, it was a mistake for the kernel to expose a virtual ELF to
+> begin with, and it should just have exposed a "lookup function by
+> name" operation to begin with. Yes this can be done in userspace, but
+> I see it more as a matter of "fixing a broken API design".
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
-This patch was sent on https://lkml.org/lkml/2014/5/18/75 with Peter's Ack.
- drivers/clk/clk-twl6040.c | 12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
+Is the __vdso_findsym(name, version) approach good?  I don't know why
+the vdso uses symbol versions at all, nor do I know why it uses weak
+symbol aliases.  The vdso's "clock_gettime" isn't a drop-in
+replacement for glibc's: it doesn't touch error, and it returns
+negative error codes.
 
-diff --git a/drivers/clk/clk-twl6040.c b/drivers/clk/clk-twl6040.c
-index 1ada79a..9e996b4 100644
---- a/drivers/clk/clk-twl6040.c
-+++ b/drivers/clk/clk-twl6040.c
-@@ -91,7 +91,7 @@ static int twl6040_clk_probe(struct platform_device *pdev)
- 	clkdata->twl6040 = twl6040;
- 
- 	clkdata->mcpdm_fclk.init = &wm831x_clkout_init;
--	clkdata->clk = clk_register(&pdev->dev, &clkdata->mcpdm_fclk);
-+	clkdata->clk = devm_clk_register(&pdev->dev, &clkdata->mcpdm_fclk);
- 	if (IS_ERR(clkdata->clk))
- 		return PTR_ERR(clkdata->clk);
- 
-@@ -100,22 +100,12 @@ static int twl6040_clk_probe(struct platform_device *pdev)
- 	return 0;
- }
- 
--static int twl6040_clk_remove(struct platform_device *pdev)
--{
--	struct twl6040_clk *clkdata = platform_get_drvdata(pdev);
--
--	clk_unregister(clkdata->clk);
--
--	return 0;
--}
--
- static struct platform_driver twl6040_clk_driver = {
- 	.driver = {
- 		.name = "twl6040-clk",
- 		.owner = THIS_MODULE,
- 	},
- 	.probe = twl6040_clk_probe,
--	.remove = twl6040_clk_remove,
- };
- 
- module_platform_driver(twl6040_clk_driver);
--- 
-1.8.3.2
+It might make more sense to promise that the vdso will never export to
+functions with the same name but different versions and to just get
+rid of the version field from __vdso_findsym.  I tried implementing
+this; it's untested, but the text size is only 230 bytes :)
 
+It might also make sense to look up by number.  Yes, it smells like
+Windows DLLs, but it also looks awfully like Linux syscalls, which do
+just fine using a call-by-number scheme.
 
-
+--Andy
