@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242AbaFOGBn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 02:01:43 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:50921 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752693AbaFOGBm (ORCPT
+	id S1752693AbaFOGMv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 02:12:51 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:49073 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752495AbaFOGMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 02:01:42 -0400
-From: Vince Weaver <vincent.weaver@maine.edu>
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Sun, 15 Jun 2014 02:06:15 -0400 (EDT)
+	Sun, 15 Jun 2014 02:12:50 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuEGADU5nVNXQzGY/2dsb2JhbABagw2rDgYBAwEGmSSBAxd1hDEvI4EaN4hGAc8LF4VjiRMdhC0BA5pDizCIKIF+gUQ7
+From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        linux-sh@vger.kernel.org
-Subject: [PATCH 6/6] sh,perf: Use common PMU interrupt disabled code
-Message-ID: <alpine.DEB.2.10.1406150205300.16738@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Joe Perches <joe@perches.com>
+Subject: [PATCH V4 RESEND] drivers/scsi/bfa/bfad_debugfs.c: replace 2 kzalloc/copy_from_user by memdup_user
+Date: Sun, 15 Jun 2014 08:11:26 +0200
+Message-Id: <1402812686-2264-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch also removes unnecessary printk(KERN_INFO
 
-Transition to using the new generic PERF_PMU_CAP_NO_INTERRUPT method for
-failing a sampling event when no PMU interrupt is available.
+Cc: Anil Gurumurthy <anil.gurumurthy@qlogic.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Joe Perches <joe@perches.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+V4: remove blank line after memdup_user
+V3: memdup_user first argument is already void __user * (thanks to Joe Perches)
+    typo in title
+V2: Remove printk(KERN_INFO (suggested by Alan)
 
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
+ drivers/scsi/bfa/bfad_debugfs.c | 30 ++++++------------------------
+ 1 file changed, 6 insertions(+), 24 deletions(-)
 
-diff --git a/arch/sh/kernel/perf_event.c b/arch/sh/kernel/perf_event.c
-index 0233167..7cfd7f1 100644
---- a/arch/sh/kernel/perf_event.c
-+++ b/arch/sh/kernel/perf_event.c
-@@ -129,14 +129,6 @@ static int __hw_perf_event_init(struct perf_event *event)
- 		return -ENODEV;
+diff --git a/drivers/scsi/bfa/bfad_debugfs.c b/drivers/scsi/bfa/bfad_debugfs.c
+index 8e83d04..74a307c 100644
+--- a/drivers/scsi/bfa/bfad_debugfs.c
++++ b/drivers/scsi/bfa/bfad_debugfs.c
+@@ -260,18 +260,9 @@ bfad_debugfs_write_regrd(struct file *file, const char __user *buf,
+ 	unsigned long flags;
+ 	void *kern_buf;
  
- 	/*
--	 * All of the on-chip counters are "limited", in that they have
--	 * no interrupts, and are therefore unable to do sampling without
--	 * further work and timer assistance.
--	 */
--	if (hwc->sample_period)
--		return -EINVAL;
+-	kern_buf = kzalloc(nbytes, GFP_KERNEL);
 -
--	/*
- 	 * See if we need to reserve the counter.
- 	 *
- 	 * If no events are currently in use, then we have to take a
-@@ -392,6 +384,13 @@ int register_sh_pmu(struct sh_pmu *_pmu)
+-	if (!kern_buf) {
+-		printk(KERN_INFO "bfad[%d]: Failed to allocate buffer\n",
+-				bfad->inst_no);
+-		return -ENOMEM;
+-	}
+-
+-	if (copy_from_user(kern_buf, (void  __user *)buf, nbytes)) {
+-		kfree(kern_buf);
+-		return -ENOMEM;
+-	}
++	kern_buf = memdup_user(buf, nbytes);
++	if (IS_ERR(kern_buf))
++		return PTR_ERR(kern_buf);
  
- 	pr_info("Performance Events: %s support registered\n", _pmu->name);
+ 	rc = sscanf(kern_buf, "%x:%x", &addr, &len);
+ 	if (rc < 2) {
+@@ -336,18 +327,9 @@ bfad_debugfs_write_regwr(struct file *file, const char __user *buf,
+ 	unsigned long flags;
+ 	void *kern_buf;
  
-+	/*
-+	 * All of the on-chip counters are "limited", in that they have
-+	 * no interrupts, and are therefore unable to do sampling without
-+	 * further work and timer assistance.
-+	 */
-+	pmu.capabilities |= PERF_PMU_CAP_NO_INTERRUPT;
-+
- 	WARN_ON(_pmu->num_events > MAX_HWEVENTS);
+-	kern_buf = kzalloc(nbytes, GFP_KERNEL);
+-
+-	if (!kern_buf) {
+-		printk(KERN_INFO "bfad[%d]: Failed to allocate buffer\n",
+-				bfad->inst_no);
+-		return -ENOMEM;
+-	}
+-
+-	if (copy_from_user(kern_buf, (void  __user *)buf, nbytes)) {
+-		kfree(kern_buf);
+-		return -ENOMEM;
+-	}
++	kern_buf = memdup_user(buf, nbytes);
++	if (IS_ERR(kern_buf))
++		return PTR_ERR(kern_buf);
  
- 	perf_pmu_register(&pmu, "cpu", PERF_TYPE_RAW);
+ 	rc = sscanf(kern_buf, "%x:%x", &addr, &val);
+ 	if (rc < 2) {
+-- 
+1.8.4.5
+
