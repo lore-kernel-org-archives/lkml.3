@@ -1,101 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752156AbaFOR7J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 13:59:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29667 "EHLO mx1.redhat.com"
+	id S1752102AbaFOSU4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 14:20:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41168 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751723AbaFOR7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 13:59:04 -0400
-Date: Sun, 15 Jun 2014 19:58:49 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 15/17] perf tools: Add debug prints for ordered events
- queue
-Message-ID: <20140615175849.GF1159@krava.brq.redhat.com>
-References: <1402610913-19059-1-git-send-email-jolsa@kernel.org>
- <1402610913-19059-16-git-send-email-jolsa@kernel.org>
- <1402661543.2178.25.camel@leonhard>
+	id S1751723AbaFOSUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jun 2014 14:20:54 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CALCETrXTpkto2gJBiFC4CR5D=Lqf2YfP5BBH02f8hFW+TUGqeA@mail.gmail.com>
+References: <cover.1402769596.git.luto@amacapital.net> <21405.44257.742122.786960@gargle.gargle.HOWL> <20140615143500.GP179@brightrain.aerifal.cx> <539DD26B.3060709@zytor.com> <CALCETrXTpkto2gJBiFC4CR5D=Lqf2YfP5BBH02f8hFW+TUGqeA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1402661543.2178.25.camel@leonhard>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [RFC 0/2] __vdso_findsym
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sun, 15 Jun 2014 11:20:31 -0700
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Rich Felker <dalias@libc.org>, Mikael Pettersson <mikpelinux@gmail.com>,
+        Russ Cox <rsc@golang.org>, Linux API <linux-api@vger.kernel.org>,
+        Ian Taylor <iant@golang.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>
+Message-ID: <f420daee-9a06-414b-911f-5db7b7b37abe@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 09:12:23PM +0900, Namhyung Kim wrote:
-> 2014-06-13 (금), 00:08 +0200, Jiri Olsa:
-> > Adding some prints for ordered events queue, to help
-> > debug issues.
-> > 
-> > Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-> > Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> > Cc: David Ahern <dsahern@gmail.com>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Jean Pihet <jean.pihet@linaro.org>
-> > Cc: Namhyung Kim <namhyung@kernel.org>
-> > Cc: Paul Mackerras <paulus@samba.org>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-> > ---
-> >  tools/perf/builtin-report.c      |  4 +++
-> >  tools/perf/util/ordered-events.c | 54 ++++++++++++++++++++++++++++++++++++++++
-> >  tools/perf/util/ordered-events.h |  2 ++
-> >  3 files changed, 60 insertions(+)
-> > 
-> > diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-> > index 09b9d0c..130ab5c 100644
-> > --- a/tools/perf/builtin-report.c
-> > +++ b/tools/perf/builtin-report.c
-> > @@ -82,6 +82,10 @@ static int report__config(const char *var, const char *value, void *cb)
-> >  		rep->queue_size = perf_config_u64(var, value);
-> >  		return 0;
-> >  	}
-> > +	if (!strcmp(var, "report.queue-debug")) {
-> > +		debug_sample_queue = perf_config_int(var, value);
-> > +		return 0;
-> > +	}
-> 
-> Again, config option only?
 
-same reason as for the previous one
 
-> > +
-> > +#define pr_N(n, fmt, ...) \
-> > +	pr_level(n, fmt, ##__VA_ARGS__)
-> > +#define pr(fmt, ...)  pr_N(1, pr_fmt(fmt), ##__VA_ARGS__)
-> > +
-> > +static int pr_time(const char *str, u64 time)
-> > +{
-> > +	u64 secs, usecs, nsecs = time;
-> > +
-> > +	secs = nsecs / NSECS_PER_SEC;
-> > +	nsecs -= secs * NSECS_PER_SEC;
-> > +	usecs = nsecs / NSECS_PER_USEC;
-> > +	return fprintf(stderr, "\t[%13lu.%06lu] %s\n", secs, usecs, str);
-> > +}
-> 
-> It'd be better if these functions somehow reuse existing pr_* functions
-> or at least honor the use_browser value IMHO.
+On June 15, 2014 10:40:03 AM PDT, Andy Lutomirski <luto@amacapital.net> wrote:
+>On Sun, Jun 15, 2014 at 10:05 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 06/15/2014 07:35 AM, Rich Felker wrote:
+>>>
+>>> Arguably, it was a mistake for the kernel to expose a virtual ELF to
+>>> begin with, and it should just have exposed a "lookup function by
+>>> name" operation to begin with. Yes this can be done in userspace,
+>but
+>>> I see it more as a matter of "fixing a broken API design".
+>>>
+>>
+>> What the fsck are you smoking?  There is immense value in providing a
+>> stable and very well-defined data structure, which also happens to be
+>> what dynamic linkers already want to consume.  Providing a helper for
+>> crippled libc applications has potential value.  Shaving a few
+>hundred
+>> bytes off static applications is a very weak argument, simply because
+>it
+>> is such a small fraction of the enormous cost of a static
+>application,
+>> and static applications are problematic in a number of other ways,
+>> especially the lack of ability to fix bugs.
+>>
+>> Treating the kernel as an ersatz dynamic library for "static"
+>> applications is kind of silly -- after all, why not provide an entire
+>> libc in the vdso?  I have actually seen people advocate for doing
+>that.
+>
+>To be clear, I have no desire whatsoever to give the vdso an actual
+>ELF parser or anything else that userspace should be providing itself.
+>I think that a special-purpose vdso parser in the vdso makes some
+>sense, though, since userspace might otherwise provide one for the
+>sole purpose of parsing the vdso.
+>
+>And there's plenty of reasons that having the vdso be an ELF image is
+>useful.  For one thing, gdb can take advantage of it.  For another,
+>CRIU is parsing it for a rather different reason, and something like
+>__vdso_findsym won't fill that need.
+>
+>Also, given the general lack of a comprehensible specification of what
+>the GNU flavor of the ELF format actually is [1], there's something to
+>be said for reducing the proliferation of ELF parsers.  glibc and
+>binutils are quite unlikely to become incompatible with each other,
+>but I sincerely doubt that anyone from binutils land is likely to
+>review (and maintain!) my ELF parser, Go's, or a hypothetical future
+>ELF parser from any of the other glibc-less things.  If those things
+>use one that's in the kernel, then it's easy for the kernel to
+>guarantee that each vdso image can successfully parse itself.
+>
+>[1] The only comprehensible description of the GNU hash extension that
+>I could find is on Oracle's blog (!)
+>
 
-I wanted to separate this output so I could have it not
-mixed with standard debug messages.. it could get messy
+Curious about this blog.  We do have a GNU hash implementation in Syslinux, too, for another reference.
 
-I was thinking maybe we want some smart debug/verbose system
-that would allow this.. separate debug messages based on the
-config/subsystem/option/objects/whatever implemented via
-generic code
-
-thanks,
-jirka
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
