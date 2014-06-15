@@ -1,168 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499AbaFOWTu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 18:19:50 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:58965 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752098AbaFOWTr (ORCPT
+	id S1751719AbaFOWjY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 18:39:24 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:63931 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751067AbaFOWjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 18:19:47 -0400
+	Sun, 15 Jun 2014 18:39:21 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        rdunlap@infradead.org, viresh.kumar@linaro.org,
+        "Srivatsa S. Bhat" <srivatsa@mit.edu>, linux-pm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: company copyrights. Re: [PATCH] PM / Documentation: Update Srivatsa S. Bhat's email address
+Date: Mon, 16 Jun 2014 00:56:52 +0200
+Message-ID: <2113679.6ZdJDAD0Zn@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140614223611.GD1389@xo-6d-61-c0.localdomain>
+References: <20140609102426.26530.15670.stgit@srivatsabhat.in.ibm.com> <1465703.Zlfm9gi0xo@vostro.rjw.lan> <20140614223611.GD1389@xo-6d-61-c0.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <1402305728-2155-1-git-send-email-linus.walleij@linaro.org>
-References: <1402305728-2155-1-git-send-email-linus.walleij@linaro.org>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Mon, 16 Jun 2014 07:19:26 +0900
-Message-ID: <CAAVeFuJmrqtcPqJ5q+jV6v1yS1mO_W_DUBKehMf9JaVSTF3cgg@mail.gmail.com>
-Subject: Re: [PATCH] power: poweroff: gpio: convert to use descriptors
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 9, 2014 at 6:22 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> This switches the GPIO poweroff driver to use GPIO descriptors
-> rather than numeral GPIOs. We get rid of the specific inversion
-> handling as GPIO descriptors know if they are active low or
-> high and can assert the line properly, so we do not need to
-> check the flag OF_GPIO_ACTIVE_LOW returned from the old call
-> of_get_gpio_flags() anymore.
->
-> Also convert to use managed resources and use dev_* message
-> printing while we're at it.
->
-> Cc: Alexandre Courbot <acourbot@nvidia.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  drivers/power/reset/gpio-poweroff.c | 52 ++++++++++++++-----------------------
->  1 file changed, 19 insertions(+), 33 deletions(-)
->
-> diff --git a/drivers/power/reset/gpio-poweroff.c b/drivers/power/reset/gpio-poweroff.c
-> index e290d48ddd99..41e1594589d5 100644
-> --- a/drivers/power/reset/gpio-poweroff.c
-> +++ b/drivers/power/reset/gpio-poweroff.c
-> @@ -15,31 +15,29 @@
->  #include <linux/init.h>
->  #include <linux/delay.h>
->  #include <linux/platform_device.h>
-> -#include <linux/gpio.h>
-> +#include <linux/gpio/consumer.h>
->  #include <linux/of_platform.h>
-> -#include <linux/of_gpio.h>
->  #include <linux/module.h>
->
->  /*
->   * Hold configuration here, cannot be more than one instance of the driver
->   * since pm_power_off itself is global.
->   */
-> -static int gpio_num = -1;
-> -static int gpio_active_low;
-> +static struct gpio_desc *reset_gpio;
->
->  static void gpio_poweroff_do_poweroff(void)
->  {
-> -       BUG_ON(!gpio_is_valid(gpio_num));
-> +       BUG_ON(!reset_gpio);
->
->         /* drive it active, also inactive->active edge */
-> -       gpio_direction_output(gpio_num, !gpio_active_low);
-> +       gpiod_direction_output(reset_gpio, 1);
->         mdelay(100);
->         /* drive inactive, also active->inactive edge */
-> -       gpio_set_value(gpio_num, gpio_active_low);
-> +       gpiod_set_value(reset_gpio, 0);
->         mdelay(100);
->
->         /* drive it active, also inactive->active edge */
-> -       gpio_set_value(gpio_num, !gpio_active_low);
-> +       gpiod_set_value(reset_gpio, 1);
->
->         /* give it some time */
->         mdelay(3000);
-> @@ -49,54 +47,42 @@ static void gpio_poweroff_do_poweroff(void)
->
->  static int gpio_poweroff_probe(struct platform_device *pdev)
->  {
-> -       enum of_gpio_flags flags;
->         bool input = false;
-> -       int ret;
->
->         /* If a pm_power_off function has already been added, leave it alone */
->         if (pm_power_off != NULL) {
-> -               pr_err("%s: pm_power_off function already registered",
-> +               dev_err(&pdev->dev,
-> +                       "%s: pm_power_off function already registered",
->                        __func__);
->                 return -EBUSY;
->         }
->
-> -       gpio_num = of_get_gpio_flags(pdev->dev.of_node, 0, &flags);
-> -       if (!gpio_is_valid(gpio_num))
-> -               return gpio_num;
-> -
-> -       gpio_active_low = flags & OF_GPIO_ACTIVE_LOW;
-> +       reset_gpio = devm_gpiod_get(&pdev->dev, NULL);
-> +       if (!reset_gpio)
-> +               return -ENODEV;
+On Sunday, June 15, 2014 12:36:11 AM Pavel Machek wrote:
+> On Mon 2014-06-09 13:28:36, Rafael J. Wysocki wrote:
+> > On Monday, June 09, 2014 03:54:49 PM Srivatsa S. Bhat wrote:
+> > > My @linux.vnet.ibm.com email address is going to disappear soon, as I will be
+> > > beginning my M.S./PhD studies at MIT in a few months.
+> > 
+> > Congratulations!
+> > 
+> > > So update my email address in the documentation.
+> > > 
+> > > Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> > > Signed-off-by: Srivatsa S. Bhat <srivatsa@mit.edu>
+> > > ---
+> > > 
+> > >  Documentation/power/suspend-and-cpuhotplug.txt |    2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > diff --git a/Documentation/power/suspend-and-cpuhotplug.txt b/Documentation/power/suspend-and-cpuhotplug.txt
+> > > index e13dafc..3813703 100644
+> > > --- a/Documentation/power/suspend-and-cpuhotplug.txt
+> > > +++ b/Documentation/power/suspend-and-cpuhotplug.txt
+> > > @@ -1,6 +1,6 @@
+> > >  Interaction of Suspend code (S3) with the CPU hotplug infrastructure
+> > >  
+> > > -     (C) 2011 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> > > +     (C) 2011-2014 Srivatsa S. Bhat <srivatsa@mit.edu>
+> > 
+> > I'm actually unsure if updating copyright notices like that is OK.
+> > 
+> > Yes, you're moving, but the address in the notice documents the status at
+> > the time you added it.
+> 
+> Well, invalid addresses in the comments are useless.
+> 
+> If copyright is _yours_, updating the address is ok.
 
-IIRC gpiod_get() can never return NULL and will always return an error
-code. This should probably be
+It may be OK from the legal standpoint, but only as long as you change it to
+your private address (that is, one that you own personally).  Also it is
+changing history retroactively which I don't really find helpful.
 
-if (IS_ERR(reset_gpio))
-        return PTR_ERR(reset_gpio);
+> If copyright is your company's, you should probably say that plainly, not
+> just by email address.
+> 
+> 	(C) 2011 IBM (Srivatsa...) 
+> 
+> is what people do.
 
->
->         input = of_property_read_bool(pdev->dev.of_node, "input");
->
-> -       ret = gpio_request(gpio_num, "poweroff-gpio");
-> -       if (ret) {
-> -               pr_err("%s: Could not get GPIO %d", __func__, gpio_num);
-> -               return ret;
-> -       }
->         if (input) {
-> -               if (gpio_direction_input(gpio_num)) {
-> -                       pr_err("Could not set direction of GPIO %d to input",
-> -                              gpio_num);
-> -                       goto err;
-> +               if (gpiod_direction_input(reset_gpio)) {
-> +                       dev_err(&pdev->dev,
-> +                               "Could not set direction of reset GPIO to input\n");
-> +                       return -ENODEV;
->                 }
->         } else {
-> -               if (gpio_direction_output(gpio_num, gpio_active_low)) {
-> -                       pr_err("Could not set direction of GPIO %d", gpio_num);
-> -                       goto err;
-> +               if (gpiod_direction_output(reset_gpio, 0)) {
-> +                       dev_err(&pdev->dev,
-> +                               "Could not set direction of reset GPIO\n");
-> +                       return -ENODEV;
->                 }
->         }
->
->         pm_power_off = &gpio_poweroff_do_poweroff;
->         return 0;
-> -
-> -err:
-> -       gpio_free(gpio_num);
-> -       return -ENODEV;
->  }
->
->  static int gpio_poweroff_remove(struct platform_device *pdev)
->  {
-> -       gpio_free(gpio_num);
->         if (pm_power_off == &gpio_poweroff_do_poweroff)
->                 pm_power_off = NULL;
->
-> --
-> 1.9.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-gpio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Yes, that's the preferred way to do that.
+
+Rafael
+
