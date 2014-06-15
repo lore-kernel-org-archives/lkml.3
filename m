@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896AbaFOQxt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 12:53:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8084 "EHLO mx1.redhat.com"
+	id S1751975AbaFOQxv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 12:53:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19235 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751690AbaFOQxl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 12:53:41 -0400
+	id S1751833AbaFOQxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jun 2014 12:53:46 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,21 +15,23 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 3/4] perf tools: Fix scrollbar refresh row index
-Date: Sun, 15 Jun 2014 18:53:22 +0200
-Message-Id: <1402851203-3083-4-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 4/4] perf tools tui: Display columns header text on 'H' press
+Date: Sun, 15 Jun 2014 18:53:23 +0200
+Message-Id: <1402851203-3083-5-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1402851203-3083-1-git-send-email-jolsa@kernel.org>
 References: <1402851203-3083-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ui_browser__gotorc function needs offset from 'y' member,
-so the row index has to begin with 0, which happens by accident
-in current code, because we display only one header line.
+Displaying columns header text whenever 'H' is pressed,
+and hiding it on on another press.
 
-The bug shows when we want to display more than 1 header lines
-like columns headers in following patches.
+Note I removed the original width setup pcode code in
+hist_browser__refresh_dimensions function, because it
+was never used and overwritten by ui_browser setup.
+Also all the TUI output expect width ot be the current
+terminal width.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -41,22 +43,133 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/ui/browser.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/ui/browsers/hists.c | 78 ++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 75 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
-index e6f96be..6792efb 100644
---- a/tools/perf/ui/browser.c
-+++ b/tools/perf/ui/browser.c
-@@ -285,7 +285,7 @@ static void ui_browser__scrollbar_set(struct ui_browser *browser)
- {
- 	int height = browser->height, h = 0, pct = 0,
- 	    col = browser->width,
--	    row = browser->y - 1;
-+	    row = 0;
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 6aeed29..88adbbe 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -26,6 +26,7 @@ struct hist_browser {
+ 	struct map_symbol   *selection;
+ 	int		     print_seq;
+ 	bool		     show_dso;
++	bool		     show_headers;
+ 	float		     min_pcnt;
+ 	u64		     nr_non_filtered_entries;
+ 	u64		     nr_callchain_rows;
+@@ -58,9 +59,13 @@ static u32 hist_browser__nr_entries(struct hist_browser *hb)
  
- 	if (browser->nr_entries > 1) {
- 		pct = ((browser->index * (browser->height - 1)) /
+ static void hist_browser__refresh_dimensions(struct hist_browser *browser)
+ {
+-	/* 3 == +/- toggle symbol before actual hist_entry rendering */
+-	browser->b.width = 3 + (hists__sort_list_width(browser->hists) +
+-			     sizeof("[k]"));
++	u16 header = browser->show_headers ? 1 : 0;
++
++	ui_browser__refresh_dimensions(&browser->b);
++
++	/* shrink view size if there are headers displayed */
++	browser->b.height = SLtt_Screen_Rows - 2 - header;
++	browser->b.y      = 1 + header;
+ }
+ 
+ static void hist_browser__reset(struct hist_browser *browser)
+@@ -409,6 +414,10 @@ static int hist_browser__run(struct hist_browser *browser,
+ 			/* Expand the whole world. */
+ 			hist_browser__set_folding(browser, true);
+ 			break;
++		case 'H':
++			browser->show_headers = !browser->show_headers;
++			hist_browser__refresh_dimensions(browser);
++			continue;
+ 		case K_ENTER:
+ 			if (hist_browser__toggle_fold(browser))
+ 				break;
+@@ -787,6 +796,65 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+ 	return printed;
+ }
+ 
++static int advance_hpp_check(struct perf_hpp *hpp, int inc)
++{
++	advance_hpp(hpp, inc);
++	return hpp->size <= 0;
++}
++
++static int hists__scnprintf_headers(char *buf, size_t size, struct hists *hists)
++{
++	struct perf_hpp dummy_hpp = {
++		.buf    = buf,
++		.size   = size,
++	};
++	struct perf_hpp_fmt *fmt;
++	size_t ret = 0;
++
++	if (symbol_conf.use_callchain) {
++		ret = scnprintf(buf, size, "  ");
++		if (advance_hpp_check(&dummy_hpp, ret))
++			return ret;
++	}
++
++	perf_hpp__for_each_format(fmt) {
++		if (perf_hpp__should_skip(fmt))
++			continue;
++
++		/* We need to add the length of the columns header. */
++		perf_hpp__reset_width(fmt, hists);
++
++		ret = fmt->header(fmt, &dummy_hpp, hists_to_evsel(hists));
++		if (advance_hpp_check(&dummy_hpp, ret))
++			break;
++
++		ret = scnprintf(dummy_hpp.buf, dummy_hpp.size, "  ");
++		if (advance_hpp_check(&dummy_hpp, ret))
++			break;
++	}
++
++	return ret;
++}
++
++static void ui_browser__show_headers(struct ui_browser *b, char *headers)
++{
++	SLsmg_gotorc(1, 0);
++	ui_browser__set_color(b, HE_COLORSET_ROOT);
++	slsmg_write_nstring(headers, b->width + 1);
++}
++
++static void hist_browser__show_headers(struct hist_browser *hb)
++{
++	static char buf[1024], *headers;
++
++	if (!headers) {
++		hists__scnprintf_headers(buf, sizeof(buf), hb->hists);
++		headers = buf;
++	}
++
++	ui_browser__show_headers(&hb->b, headers);
++}
++
+ static void ui_browser__hists_init_top(struct ui_browser *browser)
+ {
+ 	if (browser->top == NULL) {
+@@ -803,6 +871,9 @@ static unsigned int hist_browser__refresh(struct ui_browser *browser)
+ 	struct rb_node *nd;
+ 	struct hist_browser *hb = container_of(browser, struct hist_browser, b);
+ 
++	if (hb->show_headers)
++		hist_browser__show_headers(hb);
++
+ 	ui_browser__hists_init_top(browser);
+ 
+ 	for (nd = browser->top; nd; nd = rb_next(nd)) {
+@@ -1421,6 +1492,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 	"d             Zoom into current DSO\n"				\
+ 	"E             Expand all callchains\n"				\
+ 	"F             Toggle percentage of filtered entries\n"		\
++	"H             Display column headers\n"			\
+ 
+ 	/* help messages are sorted by lexical order of the hotkey */
+ 	const char report_help[] = HIST_BROWSER_HELP_COMMON
 -- 
 1.8.3.1
 
