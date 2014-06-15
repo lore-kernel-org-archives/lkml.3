@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751674AbaFOQLk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 12:11:40 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:36007 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758AbaFOQLj (ORCPT
+	id S1751835AbaFOQL4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 12:11:56 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:42927 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727AbaFOQLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 12:11:39 -0400
-Date: Sun, 15 Jun 2014 18:11:38 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, jolsa@redhat.com,
-        linux-kernel@vger.kernel.org, acme@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 9/9] perf, tools: Add a --quiet flag to perf list
-Message-ID: <20140615161138.GH5714@two.firstfloor.org>
-References: <1402700580-26939-1-git-send-email-andi@firstfloor.org>
- <1402700580-26939-10-git-send-email-andi@firstfloor.org>
- <1402838261.1684.39.camel@leonhard>
+	Sun, 15 Jun 2014 12:11:53 -0400
+Date: Sun, 15 Jun 2014 12:11:42 -0400
+From: Bob Copeland <me@bobcopeland.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH V2] fs/omfs/inode.c: use ULLONG_MAX instead of ~0ULL
+Message-ID: <20140615161142.GC15404@localhost>
+References: <1402814360-3122-1-git-send-email-fabf@skynet.be>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1402838261.1684.39.camel@leonhard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1402814360-3122-1-git-send-email-fabf@skynet.be>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 15, 2014 at 10:17:41PM +0900, Namhyung Kim wrote:
-> > It's still default to print descriptions as that is the more useful
-> > default for most users.  Requested by Namhyung Kim.
-> 
-> Did I request the --quiet thing?  It seems like there's a
-> miscommunication.. :-/
+On Sun, Jun 15, 2014 at 08:39:20AM +0200, Fabian Frederick wrote:
+> Use more explicit kernel.h definition
+>  	array_size = DIV_ROUND_UP(bitmap_size, sb->s_blocksize);
+>  
+> -	if (sbi->s_bitmap_ino == ~0ULL)
+> +	if (sbi->s_bitmap_ino == ULLONG_MAX)
+>  		goto out;
 
-Well it was done based on your feedback, and gets the closest
-to your original request as possible.
+So I agree they are the same, but is there a good reason for the
+change?
 
-> Btw, it'd better if it can support event glob on the pmu events (or
-> simply all events) too as this will increase the number of events
-> significantly.  But this can be a further work.
+Semantically, I think of ~0ULL as "all ones" whereas ULLONG_MAX
+as a maximum of a magnitude comparison, which this is not really.
 
-That already works.
-
-% perf list icache*
-List of pre-defined events (to be used in -e):
-  icache.ifetch_stall                                [Cycles where a code-fetch
-                                                      stalled due to L1
-                                                      instruction-cache miss
-                                                      or an iTLB miss]
-  icache.misses                                      [Number of Instruction
-                                                      Cache, Streaming Buffer
-                                                      and Victim Cache
-                                                      Misses. Includes
-                                                      Uncacheable accesses]
-%
-
--Andi
+-- 
+Bob Copeland %% www.bobcopeland.com
