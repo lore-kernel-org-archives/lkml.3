@@ -1,315 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194AbaFOVSM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 17:18:12 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:39358 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649AbaFOVSI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 17:18:08 -0400
-From: Michael Welling <mwelling@ieee.org>
-To: Lars-Peter Clausen <lars@metafoo.de>, Jonathan Cameron <jic23@kernel.org>,
-        Peter Meerwald <pmeerw@pmeerw.net>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Michael Welling <mwelling@ieee.org>
-Subject: [PATCH v5] iio: dac: mcp4902/mcp4912/mcp4922 dac driver
-Date: Sun, 15 Jun 2014 16:17:58 -0500
-Message-Id: <1402867078-32416-1-git-send-email-mwelling@ieee.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <5392ECF2.9020103@kernel.org>
-References: <5392ECF2.9020103@kernel.org>
+	id S1752395AbaFOVTj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 17:19:39 -0400
+Received: from imap.thunk.org ([74.207.234.97]:39933 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752015AbaFOVTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jun 2014 17:19:37 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
+Cc: linux@horizon.com, "Theodore Ts'o" <tytso@mit.edu>,
+        =?UTF-8?q?J=C3=B6rn=20Engel?= <joern@logfs.org>
+Subject: [PATCH] random: use registers from interrupted code for CPU's w/o a cycle counter
+Date: Sun, 15 Jun 2014 17:19:25 -0400
+Message-Id: <1402867165-15464-1-git-send-email-tytso@mit.edu>
+X-Mailer: git-send-email 2.0.0
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides an iio device driver for the Microchip
-MCP49x2 series DACs.
+For CPU's that don't have a cycle counter, or something equivalent
+which can be used for random_get_entropy(), random_get_entropy() will
+always return 0.  In that case, substitute with the saved interrupt
+registers to add a bit more unpredictability.
 
-v5:
-- Removes wildcard naming in filename and variables.
-- Switches to using iio_device_register/unregister to avoid race condition.
-- Removes --- around help in the Kconfig entry.
-- Removes unused variable.
-- Adds checking for val2 in write_raw function.
+Some folks have suggested hashing all of the registers
+unconditionally, but this would increase the overhead of
+add_interrupt_randomness() by at least an order of magnitude, and this
+would very likely be unacceptable.
 
-v4:
-- Removes use of old IIO_ST macro.
-- Moves mosi variable to the state struct.
-- Removes default vref of 2.5v.
+The changes in this commit have been benchmarked as mostly unaffecting
+the overhead of add_interrupt_randomness() if the entropy counter is
+present, and doubling the overhead if it is not present.
 
-v3:
-- Removes MCP49X2_RES_MASK and uses GENMASK directly.
-- Switch from using address to channel in functions.
-
-v2:
-- Switched to using GENMASK instead of creating a mask directly.
-- Switched from using address to channel.
-- Removed unnecessary feilds from channel macro.
-- Made SPI buffer cachline aligned.
-- Removed some uncessary bounds checking.
-- Report -EINVAL when writing a value beyond the range to DAC.
-- Switched to devm_iio_device_alloc.
-- Created a constant for the number of channels.
-- Switched to devm_ioo_device_register.
-
-Signed-off-by: Michael Welling <mwelling@ieee.org>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Cc: Jörn Engel <joern@logfs.org>
 ---
- drivers/iio/dac/Kconfig   |   10 +++
- drivers/iio/dac/Makefile  |    1 +
- drivers/iio/dac/mcp4922.c |  216 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 227 insertions(+)
- create mode 100644 drivers/iio/dac/mcp4922.c
+ drivers/char/random.c | 47 ++++++++++++++++++++++-------------------------
+ 1 file changed, 22 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/iio/dac/Kconfig b/drivers/iio/dac/Kconfig
-index f378ca8..f278eff 100644
---- a/drivers/iio/dac/Kconfig
-+++ b/drivers/iio/dac/Kconfig
-@@ -163,4 +163,14 @@ config MCP4725
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called mcp4725.
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 07b82cb..13c4da4 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -551,9 +551,8 @@ static void mix_pool_bytes(struct entropy_store *r, const void *in,
+ struct fast_pool {
+ 	__u32		pool[4];
+ 	unsigned long	last;
++	unsigned short	reg_idx;
+ 	unsigned char	count;
+-	unsigned char	notimer_count;
+-	unsigned char	rotate;
+ };
  
-+config MCP4922
-+	tristate "MCP4902, MCP4912, MCP4922 DAC driver"
-+	depends on SPI
-+	help
-+	  Say yes here to build the driver for the Microchip MCP4902
-+	  MCP4912, and MCP4922 DAC devices.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called mcp4922.
-+
- endmenu
-diff --git a/drivers/iio/dac/Makefile b/drivers/iio/dac/Makefile
-index bb84ad6..1010764 100644
---- a/drivers/iio/dac/Makefile
-+++ b/drivers/iio/dac/Makefile
-@@ -18,3 +18,4 @@ obj-$(CONFIG_AD5686) += ad5686.o
- obj-$(CONFIG_AD7303) += ad7303.o
- obj-$(CONFIG_MAX517) += max517.o
- obj-$(CONFIG_MCP4725) += mcp4725.o
-+obj-$(CONFIG_MCP4922) += mcp4922.o
-diff --git a/drivers/iio/dac/mcp4922.c b/drivers/iio/dac/mcp4922.c
-new file mode 100644
-index 0000000..92cf4ca
---- /dev/null
-+++ b/drivers/iio/dac/mcp4922.c
-@@ -0,0 +1,216 @@
-+/*
-+ * mcp4922.c
-+ *
-+ * Driver for Microchip Digital to Analog Converters.
-+ * Supports MCP4902, MCP4912, and MCP4922.
-+ *
-+ * Copyright (c) 2014 EMAC Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/spi/spi.h>
-+#include <linux/iio/iio.h>
-+#include <linux/iio/sysfs.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/bitops.h>
-+
-+#define MCP4922_NUM_CHANNELS	2
-+
-+enum mcp4922_supported_device_ids {
-+	ID_MCP4902,
-+	ID_MCP4912,
-+	ID_MCP4922,
-+};
-+
-+struct mcp4922_state {
-+	struct spi_device *spi;
-+	unsigned int value[MCP4922_NUM_CHANNELS];
-+	unsigned int vref_mv;
-+	struct regulator *vref_reg;
-+	u8 mosi[2] ____cacheline_aligned;
-+};
-+
-+#define MCP4922_CHAN(chan, bits) {			\
-+	.type = IIO_VOLTAGE,				\
-+	.output = 1,					\
-+	.indexed = 1,					\
-+	.channel = chan,				\
-+	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),	\
-+	.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),	\
-+	.scan_type = {					\
-+		.sign = 'u',				\
-+		.realbits = (bits),			\
-+		.storagebits = 16,			\
-+		.shift = 12 - (bits),			\
-+	},						\
-+}
-+
-+static int mcp4922_spi_write(struct mcp4922_state *state, u8 addr, u32 val)
+ /*
+@@ -857,6 +856,17 @@ static void add_interrupt_bench(cycles_t start)
+ #define add_interrupt_bench(x)
+ #endif
+ 
++static __u32 get_reg(struct fast_pool *f, struct pt_regs *regs)
 +{
-+	state->mosi[1] = val & 0xff;
-+	state->mosi[0] = (addr == 0) ? 0x00 : 0x80;
-+	state->mosi[0] |= 0x30 | ((val >> 8) & 0x0f);
++	__u32 *ptr = (__u32 *) regs;
 +
-+	return spi_write(state->spi, state->mosi, 2);
++	if (regs == 0)
++		return 0;
++	if (f->reg_idx >= sizeof(struct pt_regs) / sizeof(__u32))
++		f->reg_idx = 0;
++	return *(ptr + f->reg_idx++);
 +}
 +
-+static int mcp4922_read_raw(struct iio_dev *indio_dev,
-+		struct iio_chan_spec const *chan,
-+		int *val,
-+		int *val2,
-+		long mask)
-+{
-+	struct mcp4922_state *state = iio_priv(indio_dev);
-+
-+	switch (mask) {
-+	case IIO_CHAN_INFO_RAW:
-+		*val = state->value[chan->channel];
-+		return IIO_VAL_INT;
-+	case IIO_CHAN_INFO_SCALE:
-+		*val = state->vref_mv;
-+		*val2 = chan->scan_type.realbits;
-+		return IIO_VAL_FRACTIONAL_LOG2;
-+	default:
-+		return -EINVAL;
-+	}
-+}
-+
-+static int mcp4922_write_raw(struct iio_dev *indio_dev,
-+		struct iio_chan_spec const *chan,
-+		int val,
-+		int val2,
-+		long mask)
-+{
-+	struct mcp4922_state *state = iio_priv(indio_dev);
-+
-+	if (val2 != 0)
-+		return -EINVAL;
-+
-+	switch (mask) {
-+	case IIO_CHAN_INFO_RAW:
-+		if (val > GENMASK(chan->scan_type.realbits-1, 0))
-+			return -EINVAL;
-+		val <<= chan->scan_type.shift;
-+		state->value[chan->channel] = val;
-+		return mcp4922_spi_write(state, chan->channel, val);
-+	default:
-+		return -EINVAL;
-+	}
-+}
-+
-+static const struct iio_chan_spec mcp4922_channels[3][MCP4922_NUM_CHANNELS] = {
-+	[ID_MCP4902] = { MCP4922_CHAN(0, 8),	MCP4922_CHAN(1, 8) },
-+	[ID_MCP4912] = { MCP4922_CHAN(0, 10),	MCP4922_CHAN(1, 10) },
-+	[ID_MCP4922] = { MCP4922_CHAN(0, 12),	MCP4922_CHAN(1, 12) },
-+};
-+
-+static const struct iio_info mcp4922_info = {
-+	.read_raw = &mcp4922_read_raw,
-+	.write_raw = &mcp4922_write_raw,
-+	.driver_module = THIS_MODULE,
-+};
-+
-+static int mcp4922_probe(struct spi_device *spi)
-+{
-+	struct iio_dev *indio_dev;
-+	struct mcp4922_state *state;
-+	const struct spi_device_id *id;
-+	int ret;
-+
-+	indio_dev = devm_iio_device_alloc(&spi->dev, sizeof(*state));
-+	if (indio_dev == NULL)
-+		return -ENOMEM;
-+
-+	state = iio_priv(indio_dev);
-+	state->spi = spi;
-+	state->vref_reg = devm_regulator_get(&spi->dev, "vref");
-+	if (IS_ERR(state->vref_reg)) {
-+		dev_err(&spi->dev, "Vref regulator not specified\n");
-+		return PTR_ERR(state->vref_reg);
-+	}
-+
-+	ret = regulator_enable(state->vref_reg);
-+	if (ret) {
-+		dev_err(&spi->dev, "Failed to enable vref regulator: %d\n",
-+				ret);
-+		return ret;
-+	}
-+
-+	ret = regulator_get_voltage(state->vref_reg);
-+	if (ret < 0) {
-+		dev_err(&spi->dev, "Failed to read vref regulator: %d\n",
-+				ret);
-+		goto error_disable_reg;
-+	}
-+	state->vref_mv = ret / 1000;
-+
-+	spi_set_drvdata(spi, indio_dev);
-+	id = spi_get_device_id(spi);
-+	indio_dev->dev.parent = &spi->dev;
-+	indio_dev->info = &mcp4922_info;
-+	indio_dev->modes = INDIO_DIRECT_MODE;
-+	indio_dev->channels = mcp4922_channels[id->driver_data];
-+	indio_dev->num_channels = MCP4922_NUM_CHANNELS;
-+	indio_dev->name = id->name;
-+
-+	ret = iio_device_register(indio_dev);
-+	if (ret) {
-+		dev_err(&spi->dev, "Failed to register iio device: %d\n",
-+				ret);
-+		goto error_disable_reg;
-+	}
-+
-+	return 0;
-+
-+error_disable_reg:
-+	regulator_disable(state->vref_reg);
-+
-+	return ret;
-+}
-+
-+static int mcp4922_remove(struct spi_device *spi)
-+{
-+	struct iio_dev *indio_dev = spi_get_drvdata(spi);
-+	struct mcp4922_state *state;
-+
-+	iio_device_unregister(indio_dev);
-+	state = iio_priv(indio_dev);
-+	regulator_disable(state->vref_reg);
-+
-+	return 0;
-+}
-+
-+static const struct spi_device_id mcp4922_id[] = {
-+	{"mcp4902", ID_MCP4902},
-+	{"mcp4912", ID_MCP4912},
-+	{"mcp4922", ID_MCP4922},
-+	{}
-+};
-+MODULE_DEVICE_TABLE(spi, mcp4922_id);
-+
-+static struct spi_driver mcp4922_driver = {
-+	.driver = {
-+		   .name = "mcp4922",
-+		   .owner = THIS_MODULE,
-+		   },
-+	.probe = mcp4922_probe,
-+	.remove = mcp4922_remove,
-+	.id_table = mcp4922_id,
-+};
-+module_spi_driver(mcp4922_driver);
-+
-+MODULE_AUTHOR("Michael Welling <mwelling@ieee.org>");
-+MODULE_DESCRIPTION("Microchip MCP4902, MCP4912, MCP4922 DAC");
-+MODULE_LICENSE("GPL v2");
+ void add_interrupt_randomness(int irq, int irq_flags)
+ {
+ 	struct entropy_store	*r;
+@@ -869,28 +879,23 @@ void add_interrupt_randomness(int irq, int irq_flags)
+ 	unsigned long		seed;
+ 	int			credit = 0;
+ 
++	if (cycles == 0)
++		cycles = get_reg(fast_pool, regs);
+ 	c_high = (sizeof(cycles) > 4) ? cycles >> 32 : 0;
+ 	j_high = (sizeof(now) > 4) ? now >> 32 : 0;
+ 	fast_pool->pool[0] ^= cycles ^ j_high ^ irq;
+ 	fast_pool->pool[1] ^= now ^ c_high;
+ 	ip = regs ? instruction_pointer(regs) : _RET_IP_;
+ 	fast_pool->pool[2] ^= ip;
+-	fast_pool->pool[3] ^= ip >> 32;
++	fast_pool->pool[3] ^= (sizeof(ip) > 4) ? ip >> 32 :
++		get_reg(fast_pool, regs);
+ 
+ 	fast_mix(fast_pool);
+-	if ((irq_flags & __IRQF_TIMER) == 0)
+-		fast_pool->notimer_count++;
+ 	add_interrupt_bench(cycles);
+ 
+-	if (cycles) {
+-		if ((fast_pool->count < 64) &&
+-		    !time_after(now, fast_pool->last + HZ))
+-			return;
+-	} else {
+-		/* CPU does not have a cycle counting register :-( */
+-		if (fast_pool->count < 64)
+-			return;
+-	}
++	if ((fast_pool->count < 64) &&
++	    !time_after(now, fast_pool->last + HZ))
++		return;
+ 
+ 	r = nonblocking_pool.initialized ? &input_pool : &nonblocking_pool;
+ 	if (!spin_trylock(&r->lock))
+@@ -910,18 +915,10 @@ void add_interrupt_randomness(int irq, int irq_flags)
+ 	}
+ 	spin_unlock(&r->lock);
+ 
+-	/*
+-	 * If we have a valid cycle counter or if the majority of
+-	 * interrupts collected were non-timer interrupts, then give
+-	 * an entropy credit of 1 bit.  Yes, this is being very
+-	 * conservative.
+-	 */
+-	if (cycles || (fast_pool->notimer_count >= 32))
+-		credit++;
+-
+-	fast_pool->count = fast_pool->notimer_count = 0;
++	fast_pool->count = 0;
+ 
+-	credit_entropy_bits(r, credit);
++	/* award one bit for the contents of the fast pool */
++	credit_entropy_bits(r, credit + 1);
+ }
+ 
+ #ifdef CONFIG_BLOCK
 -- 
-1.7.9.5
+2.0.0
 
