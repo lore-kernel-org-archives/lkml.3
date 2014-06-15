@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167AbaFOXZB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 19:25:01 -0400
-Received: from ozlabs.org ([103.22.144.67]:42977 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751182AbaFOXZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 19:25:00 -0400
-Date: Mon, 16 Jun 2014 09:24:53 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: Sebastian Reichel <sre@kernel.org>, Sebastian Reichel <sre@ring0.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        David Woodhouse <dwmw2@infradead.org>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Anton Vorontsov <anton@enomsg.org>
-Subject: Re: [PATCH] MAINTAINERS: power_supply: update maintainership
-Message-ID: <20140616092453.165e0c3d@canb.auug.org.au>
-In-Reply-To: <CALT56yP-iFHq4o633r0_nYZAd0E3rBsOSLNzxfhvnfSm4FqGJg@mail.gmail.com>
-References: <1946020.rieJTheGae@vostro.rjw.lan>
-	<1402759929-15418-1-git-send-email-sre@kernel.org>
-	<20140615112042.4e72c1f8@canb.auug.org.au>
-	<CALT56yP-iFHq4o633r0_nYZAd0E3rBsOSLNzxfhvnfSm4FqGJg@mail.gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/4AKIt=Ntzdif04mL=UhBK46"; protocol="application/pgp-signature"
+	id S1752348AbaFOXcs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 19:32:48 -0400
+Received: from smtprelay0021.hostedemail.com ([216.40.44.21]:47070 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752146AbaFOXcm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jun 2014 19:32:42 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:857:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2198:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3871:3872:3876:4321:4605:5007:7652:9149:10004:10400:10848:11026:11232:11233:11658:11914:12043:12296:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: crime93_1766647f16907
+X-Filterd-Recvd-Size: 2157
+Message-ID: <1402875159.2750.4.camel@joe-AO725>
+Subject: Re: [PATCH -next 25/26] fbdev: Use dma_zalloc_coherent
+From: Joe Perches <joe@perches.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
+Date: Sun, 15 Jun 2014 16:32:39 -0700
+In-Reply-To: <CAMuHMdWHJ1LY0r1aMZViQW_ZZYrbGkHb4Hpkt+YZfRbERfyE3Q@mail.gmail.com>
+References: <cover.1402863904.git.joe@perches.com>
+	 <881b8f8d85c96b6e9d8735aa10bbf18468688b9d.1402863905.git.joe@perches.com>
+	 <CAMuHMdWHJ1LY0r1aMZViQW_ZZYrbGkHb4Hpkt+YZfRbERfyE3Q@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/4AKIt=Ntzdif04mL=UhBK46
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-
-Hi Dmitry,
-
-On Sun, 15 Jun 2014 13:31:24 +0400 Dmitry Eremin-Solenikov <dbaryshkov@gmai=
-l.com> wrote:
->
-> On Sun, Jun 15, 2014 at 5:20 AM, Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
+On Mon, 2014-06-16 at 00:16 +0200, Geert Uytterhoeven wrote:
+> On Sun, Jun 15, 2014 at 10:37 PM, Joe Perches <joe@perches.com> wrote:
+> > diff --git a/drivers/video/fbdev/da8xx-fb.c b/drivers/video/fbdev/da8xx-fb.c
+[]
+> > @@ -1447,18 +1447,15 @@ static int fb_probe(struct platform_device *device)
+> >                 da8xx_fb_fix.line_length - 1;
 > >
-> > OK, the master branch of that tree is in linux-next as the "battery"
-> > tree.  My contact for that tree is Anton Vorontsov (cc'd) and its
-> > latest commit is from January.  So should I dump that tree in favour of
-> > the one below with you as the contact?  If so, whatr branch of that
-> > tree should I fetch?  (And should I change its linux-next name?)
->=20
-> Not at this point, we will reconsider after -rc1.
+> >         /* allocate palette buffer */
+> > -       par->v_palette_base = dma_alloc_coherent(NULL,
+> > -                                              PALETTE_SIZE,
+> > -                                              (resource_size_t *)
+> > -                                              &par->p_palette_base,
+> > -                                              GFP_KERNEL | GFP_DMA);
+> > +       par->v_palette_base = dma_zalloc_coherent(NULL, PALETTE_SIZE,
+> > +                                                 (resource_size_t *)&par->p_palette_base,
+> 
+> Suggestion for further cleanup: It seems this cast is no longer needed.
 
-I have just changed the conact for the battery tree to you.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Sure, but after this is applied.
 
---Sig_/4AKIt=Ntzdif04mL=UhBK46
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTnitKAAoJEMDTa8Ir7ZwV6l0P/1PpJPBwuNCL5e4qpBtlNDqw
-qvwfnLenNVPl/b6k2pL4zC1cVhzcmfMsWuUvdONMphNCJfFtWXqwtm1dS0e8qhuz
-ypVf+VeQ7Q3KFQgZN/5vwNXkyKRApfKM3+LQBJPXV3hhWs4UHj8WkIGU4JhU0Qko
-sh/MhMAiUYJgVYdau2OkFvR0hKe5vvg9yoyAMZQ+ZNmelP+wN7VPw7Akz+1+ZA/l
-Jgna2NdIW1X3b6Jr1YPM4J3fe1UcCq32e9EHe3heKMgOWNxlJ0kIka76fPwgEERZ
-K82O6t+DaFnhxDz9+S3sCp17GX8iQ8M08ZbfFawEDSjV6IduTYFxL/BFU06zu1+h
-DphZKQ0qrp8ZBtjae29bKH+pLEsgDszD6aQhx3iIcNAKdT4g37FGlBSPXG9BDVjp
-5BAsr7lAp0URVz5CDI5XxUZ3kOs4Fj8rLBjysEn9QzhHiEngmk2ogyRaXg06Yb0Y
-RF9xxI34lMG2ZEQPhaxjXP9vKlJQt0SfRsDqmZBxafsUPPMLfD4B8xzQ5YHoL/H5
-NVlhEAm5HV69cHNPF21afCA92/fIppVLyYznpNxvUnvn7jj0AjQ5OHJ39R2XWo6t
-etLpx8wp6DFaxWFyyMBqpFwSmaP3zgzX+aCxrRHU2RIECNdkZB4FJam6lgmXwAvQ
-o8lipgFbnRn1P89GmPi7
-=kuuJ
------END PGP SIGNATURE-----
-
---Sig_/4AKIt=Ntzdif04mL=UhBK46--
