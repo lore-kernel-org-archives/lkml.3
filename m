@@ -1,225 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867AbaFOUZx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 16:25:53 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:47842 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993AbaFOUZv (ORCPT
+	id S1752164AbaFOU1c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 16:27:32 -0400
+Received: from mail-vc0-f193.google.com ([209.85.220.193]:56811 "EHLO
+	mail-vc0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829AbaFOU1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 16:25:51 -0400
-Date: Sun, 15 Jun 2014 13:24:30 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm v2 02/11] madvise: cleanup swapin_walk_pmd_entry()
-In-Reply-To: <1402609691-13950-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-Message-ID: <alpine.LSU.2.11.1406151252400.1241@eggly.anvils>
-References: <1402609691-13950-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1402609691-13950-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Sun, 15 Jun 2014 16:27:24 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20140614.235300.1228145928404410306.davem@davemloft.net>
+References: <1402805139-6363-1-git-send-email-xerofoify@gmail.com>
+	<20140614.235300.1228145928404410306.davem@davemloft.net>
+Date: Sun, 15 Jun 2014 16:27:23 -0400
+Message-ID: <CAPDOMVgV8V8fPpZupwQaDERiK-0OMLt66LULR6Biw1=8LJhOKw@mail.gmail.com>
+Subject: Re: [PATCH] Missing return check against Null for return value of netdev_alloc_dev_skb()
+From: Nick Krause <xerofoify@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: andriy.shevchenko@linux.intel.com, dvhart@linux.intel.com,
+        jeffrey.t.kirsher@intel.com, ast@plumgrid.com, dborkman@redhat.com,
+        bhutchings@solarflare.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jun 2014, Naoya Horiguchi wrote:
+>From 62b0d77a1430f74b7f5c008c5e8bec11604b33b0 Mon Sep 17 00:00:00 2001
+From: Nick <xerofoify@gmail.com>
+Date: Sun, 15 Jun 2014 16:16:14 -0400
+Subject: [PATCHv2] Fixes return logic of function of pch_gbe_alloc_tx_buffers()
+Here is the fixed patch changed return type of function to int in
+order to use return -ENOMEM as with the function above it , seems to
+fit , otherwise returns 0.
+ Report if it breaks anything related to this driver.
+Signed-off-by: Nick <xerofoify@gmail.com>
+---
+ drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-> With the recent update on page table walker, we can use common code for
-> the walking more. Unlike many other users, this swapin_walk expects to
-> handle swap entries. As a result we should be careful about ptl locking.
-> Swapin operation, read_swap_cache_async(), could cause page reclaim, so
-> we can't keep holding ptl throughout this pte loop.
-> In order to properly handle ptl in pte_entry(), this patch adds two new
-> members on struct mm_walk.
-> 
-> This cleanup is necessary to get to the final form of page table walker,
-> where we should do all caller's specific work on leaf entries (IOW, all
-> pmd_entry() should be used for trans_pmd.)
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Hugh Dickins <hughd@google.com>
+diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+index 704cf63..7d5efd7 100644
+--- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
++++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+@@ -1500,7 +1500,7 @@ pch_gbe_alloc_rx_buffers_pool(struct
+pch_gbe_adapter *adapter,
+  * @adapter:   Board private structure
+  * @tx_ring:   Tx descriptor ring
+  */
+-static void pch_gbe_alloc_tx_buffers(struct pch_gbe_adapter *adapter,
++static int pch_gbe_alloc_tx_buffers(struct pch_gbe_adapter *adapter
+ struct pch_gbe_tx_ring *tx_ring)
+ {
+     struct pch_gbe_buffer *buffer_info;
+@@ -1516,13 +1516,13 @@ static void pch_gbe_alloc_tx_buffers(struct
+pch_gbe_adapter *adapter,
+         buffer_info = &tx_ring->buffer_info[i];
+         skb = netdev_alloc_skb(adapter->netdev, bufsz);
+         if(!skb)
++            return -ENOMEM;
+         skb_reserve(skb, PCH_GBE_DMA_ALIGN);
+         buffer_info->skb = skb;
+         tx_desc = PCH_GBE_TX_DESC(*tx_ring, i);
+         tx_desc->gbec_status = (DSC_INIT16);
+     }
+-    return;
++    return 0;
+ }
 
-Sorry, I believe this (and probably several other of your conversions)
-is badly flawed.
+ /**
+-- 
+1.9.1
+Thanks for the Comments,
+Nick
 
-You have a pattern of doing pte_offset_map_lock() inside the page walker,
-then dropping and regetting map and lock inside your pte handler.
-
-But on, say, x86_32 with CONFIG_HIGHMEM, CONFIG_SMP and CONFIG_PREEMPT,
-you may be preempted then run on a different cpu while atomic kmap and
-lock are dropped: so that the pte pointer then used on return to
-walk_pte_range() will no longer correspond to the right mapping.
-
-Presumably that can be fixed by keeping the pte pointer in the mm_walk
-structure; but I'm not at all sure that's the right thing to do.
-
-I am not nearly so keen as you to reduce all these to per-pte callouts,
-which seem inefficient to me.  It can be argued both ways on the less
-important functions (like this madvise one); but I hope you don't try
-to make this kind of conversion to fast paths like those in memory.c.
-
-Hugh
-
-> ---
->  include/linux/mm.h |  4 ++++
->  mm/madvise.c       | 54 +++++++++++++++++++++++-------------------------------
->  mm/pagewalk.c      | 11 +++++------
->  3 files changed, 32 insertions(+), 37 deletions(-)
-> 
-> diff --git mmotm-2014-05-21-16-57.orig/include/linux/mm.h mmotm-2014-05-21-16-57/include/linux/mm.h
-> index b4aa6579f2b1..aa832161a1ff 100644
-> --- mmotm-2014-05-21-16-57.orig/include/linux/mm.h
-> +++ mmotm-2014-05-21-16-57/include/linux/mm.h
-> @@ -1108,6 +1108,8 @@ void unmap_vmas(struct mmu_gather *tlb, struct vm_area_struct *start_vma,
->   * @vma:       vma currently walked
->   * @skip:      internal control flag which is set when we skip the lower
->   *             level entries.
-> + * @pmd:       current pmd entry
-> + * @ptl:       page table lock associated with current entry
->   * @private:   private data for callbacks' use
->   *
->   * (see the comment on walk_page_range() for more details)
-> @@ -1126,6 +1128,8 @@ struct mm_walk {
->  	struct mm_struct *mm;
->  	struct vm_area_struct *vma;
->  	int skip;
-> +	pmd_t *pmd;
-> +	spinlock_t *ptl;
->  	void *private;
->  };
->  
-> diff --git mmotm-2014-05-21-16-57.orig/mm/madvise.c mmotm-2014-05-21-16-57/mm/madvise.c
-> index a402f8fdc68e..06b390a6fbbd 100644
-> --- mmotm-2014-05-21-16-57.orig/mm/madvise.c
-> +++ mmotm-2014-05-21-16-57/mm/madvise.c
-> @@ -135,38 +135,31 @@ static long madvise_behavior(struct vm_area_struct *vma,
->  }
->  
->  #ifdef CONFIG_SWAP
-> -static int swapin_walk_pmd_entry(pmd_t *pmd, unsigned long start,
-> +/*
-> + * Assuming that page table walker holds page table lock.
-> + */
-> +static int swapin_walk_pte_entry(pte_t *pte, unsigned long start,
->  	unsigned long end, struct mm_walk *walk)
->  {
-> -	pte_t *orig_pte;
-> -	struct vm_area_struct *vma = walk->private;
-> -	unsigned long index;
-> -
-> -	if (pmd_none_or_trans_huge_or_clear_bad(pmd))
-> -		return 0;
-> -
-> -	for (index = start; index != end; index += PAGE_SIZE) {
-> -		pte_t pte;
-> -		swp_entry_t entry;
-> -		struct page *page;
-> -		spinlock_t *ptl;
-> -
-> -		orig_pte = pte_offset_map_lock(vma->vm_mm, pmd, start, &ptl);
-> -		pte = *(orig_pte + ((index - start) / PAGE_SIZE));
-> -		pte_unmap_unlock(orig_pte, ptl);
-> -
-> -		if (pte_present(pte) || pte_none(pte) || pte_file(pte))
-> -			continue;
-> -		entry = pte_to_swp_entry(pte);
-> -		if (unlikely(non_swap_entry(entry)))
-> -			continue;
-> -
-> -		page = read_swap_cache_async(entry, GFP_HIGHUSER_MOVABLE,
-> -								vma, index);
-> -		if (page)
-> -			page_cache_release(page);
-> -	}
-> +	pte_t ptent;
-> +	pte_t *orig_pte = pte - ((start & (PMD_SIZE - 1)) >> PAGE_SHIFT);
-> +	swp_entry_t entry;
-> +	struct page *page;
->  
-> +	ptent = *pte;
-> +	pte_unmap_unlock(orig_pte, walk->ptl);
-> +	if (pte_present(ptent) || pte_none(ptent) || pte_file(ptent))
-> +		goto lock;
-> +	entry = pte_to_swp_entry(ptent);
-> +	if (unlikely(non_swap_entry(entry)))
-> +		goto lock;
-> +	page = read_swap_cache_async(entry, GFP_HIGHUSER_MOVABLE,
-> +				     walk->vma, start);
-> +	if (page)
-> +		page_cache_release(page);
-> +lock:
-> +	pte_offset_map(walk->pmd, start & PMD_MASK);
-> +	spin_lock(walk->ptl);
->  	return 0;
->  }
->  
-> @@ -175,8 +168,7 @@ static void force_swapin_readahead(struct vm_area_struct *vma,
->  {
->  	struct mm_walk walk = {
->  		.mm = vma->vm_mm,
-> -		.pmd_entry = swapin_walk_pmd_entry,
-> -		.private = vma,
-> +		.pte_entry = swapin_walk_pte_entry,
->  	};
->  
->  	walk_page_range(start, end, &walk);
-> diff --git mmotm-2014-05-21-16-57.orig/mm/pagewalk.c mmotm-2014-05-21-16-57/mm/pagewalk.c
-> index e734f63276c2..24311d6f5c20 100644
-> --- mmotm-2014-05-21-16-57.orig/mm/pagewalk.c
-> +++ mmotm-2014-05-21-16-57/mm/pagewalk.c
-> @@ -27,10 +27,10 @@ static int walk_pte_range(pmd_t *pmd, unsigned long addr,
->  	struct mm_struct *mm = walk->mm;
->  	pte_t *pte;
->  	pte_t *orig_pte;
-> -	spinlock_t *ptl;
->  	int err = 0;
->  
-> -	orig_pte = pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
-> +	walk->pmd = pmd;
-> +	orig_pte = pte = pte_offset_map_lock(mm, pmd, addr, &walk->ptl);
->  	do {
->  		if (pte_none(*pte)) {
->  			if (walk->pte_hole)
-> @@ -48,7 +48,7 @@ static int walk_pte_range(pmd_t *pmd, unsigned long addr,
->  		if (err)
->  		       break;
->  	} while (pte++, addr += PAGE_SIZE, addr < end);
-> -	pte_unmap_unlock(orig_pte, ptl);
-> +	pte_unmap_unlock(orig_pte, walk->ptl);
->  	cond_resched();
->  	return addr == end ? 0 : err;
->  }
-> @@ -172,7 +172,6 @@ static int walk_hugetlb_range(unsigned long addr, unsigned long end,
->  	unsigned long hmask = huge_page_mask(h);
->  	pte_t *pte;
->  	int err = 0;
-> -	spinlock_t *ptl;
->  
->  	do {
->  		next = hugetlb_entry_end(h, addr, end);
-> @@ -186,14 +185,14 @@ static int walk_hugetlb_range(unsigned long addr, unsigned long end,
->  				break;
->  			continue;
->  		}
-> -		ptl = huge_pte_lock(h, mm, pte);
-> +		walk->ptl = huge_pte_lock(h, mm, pte);
->  		/*
->  		 * Callers should have their own way to handle swap entries
->  		 * in walk->hugetlb_entry().
->  		 */
->  		if (walk->hugetlb_entry)
->  			err = walk->hugetlb_entry(pte, addr, next, walk);
-> -		spin_unlock(ptl);
-> +		spin_unlock(walk->ptl);
->  		if (err)
->  			break;
->  	} while (addr = next, addr != end);
-> -- 
-> 1.9.3
-> 
-> 
+On Sun, Jun 15, 2014 at 2:53 AM, David Miller <davem@davemloft.net> wrote:
+> From: Nick <xerofoify@gmail.com>
+> Date: Sun, 15 Jun 2014 00:05:39 -0400
+>
+>> Signed-off-by: Nick <xerofoify@gmail.com>
+>> ---
+>>  drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c | 2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+>> index 73e6683..704cf63 100644
+>> --- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+>> +++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+>> @@ -1515,6 +1515,8 @@ static void pch_gbe_alloc_tx_buffers(struct pch_gbe_adapter *adapter,
+>>       for (i = 0; i < tx_ring->count; i++) {
+>>               buffer_info = &tx_ring->buffer_info[i];
+>>               skb = netdev_alloc_skb(adapter->netdev, bufsz);
+>> +             if (!skb)
+>> +                     return NULL;
+>
+> You didn't even compile test this.
+>
+> The function has a void return type, you can't return NULL.
+>
+> Furthermore, you have to adjust things so that the caller knows that
+> this operation failed, because the device cannot be brought up
+> successfully unless all the TX buffer slots get allocated properly.
