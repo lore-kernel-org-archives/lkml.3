@@ -1,96 +1,484 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811AbaFOG5h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 02:57:37 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:51627 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751249AbaFOG5g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 02:57:36 -0400
-Date: Sun, 15 Jun 2014 08:57:31 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: David Lang <david@lang.hm>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Seth Jennings <sjenning@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-Message-ID: <20140615065731.GB20028@gmail.com>
-References: <20140506140516.GF2099@localhost.localdomain>
- <20140506145010.GA6702@treble.redhat.com>
- <20140507122444.GB12234@gmail.com>
- <20140507154114.GA31555@treble.redhat.com>
- <20140507155754.GA15221@gmail.com>
- <alpine.DEB.2.02.1405071552520.5876@nftneq.ynat.uz>
- <20140508061220.GB31184@gmail.com>
- <alpine.DEB.2.02.1405072348580.17457@nftneq.ynat.uz>
- <20140508070814.GA31856@gmail.com>
- <20140614203138.GA3853@xo-6d-61-c0.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140614203138.GA3853@xo-6d-61-c0.localdomain>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753092AbaFOG6K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 02:58:10 -0400
+Received: from ns.horizon.com ([71.41.210.147]:11058 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750834AbaFOG6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jun 2014 02:58:08 -0400
+Date: 15 Jun 2014 02:58:03 -0400
+Message-ID: <20140615065803.6175.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, tytso@mit.edu
+Subject: Re: random: Benchamrking fast_mix2
+Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        price@mit.edu
+In-Reply-To: <20140615011713.GK6447@thunk.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Actually, could you hold off merging that for a bit?  Or if you really
+want to, add a comment that the rotate constants are preliminary and
+will be further optimized.
 
-* Pavel Machek <pavel@ucw.cz> wrote:
+I posted that as WIP, just as evidence that something with better
+avalanche could be as fast or faster, and I'd like to go back and do a
+careful re-check of the analysis software, then do an exhaustive search
+for good rotate constants (there are only 1M possibilities, after all).
 
-> Hi!
-> 
-> > > in terms of hit-patching kernels you are correct.
-> > > 
-> > > but that's a far cry from what it sounded like you were demanding 
-> > > (that it must handle any kernel patch)
-> > 
-> > No, I was not demanding that at all, my suggestion was:
-> > 
-> >    > My claim is that if a patch is correct/safe in the old fashioned 
-> >    > way, then a fundamental principle is that a live patching 
-> >    > subsystem must either safely apply, or safely reject the live 
-> >    > patching attempt, independently from any user input.
-> > 
-> > Note the 'if'. It could start simple and stupid, and only allow 
-> > cases where we know the patch must be trivially safe (because it 
-> > does not do much in terms of disturbing globally visible state). 
-> > That needs some tooling help, but apparently tooling help is in 
-> > place already.
-> 
-> Actually, even if patch is very trivial, it will be difficult to 
-> determine if it is safe. Consider adding error check:
-> 
-> int
-> do_something(void)
-> {
-> #if 0
->   if (1)
->     return -1;
-> #endif
->   return 0;
-> }
-> 
-> void
-> main(void)
-> {
->   if (do_something())
->     printf("error happened\n");
-> }
-> 
-> Imagine changing that #if 0 to #if 1. But gcc at -O3 already 
-> optimized out the error message. So... do we compile whole second 
-> kernel and compare the binaries? I think I seen remark "don't try to 
-> do binary compares" somewhere...
+I believe the basic structure is solid, and you appear to be persuaded
+too, but this is an area littered with embarrassing failures by
+cryptographic amateurs and I'd like to be *very* careful before attaching
+my S-o-b to it.
 
-Fair enough.
+Also, credit for inspiration and the analysis techniques: Bob
+Jenkins.  I actually started with his analysis software for SpookyHash
+(http://www.burtleburtle.net/bob/hash/spooky.html) and then converted
+it back to "block function" form.
 
-Thanks,
+Appended is the software I'm using.  It began life as
+http://www.burtleburtle.net/bob/c/screen.cpp but was translated into
+plain C and heavily hacked up.  It's not pretty, but youuld you either
+look at it for mistakes or tell me to pretty it up so you can look at it?
 
-	Ingo
+
+The one thing I notice is that your analyze() function is measuring
+something totally different than what I'm measuring.
+
+Considering fast_mix as a 128->128 bit function (i.e. ignoring
+the input XOR), you appear to be considering
+popcount(input[] ^ output[]), and then *minimizing* over a
+variety of inputs.
+
+I'm doing basically the following:
+
+	min_score = 128
+	for (each 1- or 2-bit delta[]) {
+		avalanche[] = 0
+		for (5 random arrays input[]) {
+			output1[] = fast_mix3(input[])
+			output2[] = fast_mix3(input[] ^ delta[])
+			avalanche[] |= output1[] ^ output2[]
+		}
+		score = popcount(avalanche[])
+		min_score = min(score, min_score)
+	}
+
+For each input delta, consider several random inputs and find
+all of the output bits that that input delta can cause to toggle.
+
+The addition carries make the operation non-linear and so the output
+delta depends on the input state.  I'm interested in all the bits that
+can *possibly* be toggled.
+
+Bob's code considers output deltas other than xor (minimizing over
+all of theose), and both forward and reverse mixing functions.
+
+One of the deltas considered is ~(output1[] ^ output2[]), the set of bits
+sometimes *not* toggled by an input delta.   If an input delta
+*always* changes most of the bits, that's not as interesting either.
+(Simple parity and replication can do that.)
+
+More discussion of his analysis ideas here:
+http://www.burtleburtle.net/bob/hash/avalanche.html
+http://www.burtleburtle.net/bob/hash/evahash.html
+
+
+The following rotate constants achieve 57 bits of avalanche after
+2 iterations:
+// (91/238891) score(4/5/6) = 57/87/116: 26 14 19  9
+// (113/269149) score(4/5/6) = 57/84/115: 28 29 20  8
+// (118/277648) score(4/5/6) = 57/89/121:  4 27  9 24
+// (179/462783) score(4/5/6) = 57/93/117: 11 27 14 22
+
+This one does 58 bits after 2 iteration, but later scores (for 2.5
+and 3 iterations) are a bit low:
+// (191/488173) score(4/5/6) = 58/78/113:  9 23  8 15
+
+This one has high scores for 2, 2.5 and 3 iterations:
+// (22/48296) score(4/5/6) = 56/98/122:  8 10 22 15
+
+I might go with that one pending further work (like a proper
+exhaustive search; the current code is random).
+
+
+I'm also experimenting to see if swapping + for - helps, e.g.:
+	a ^= b;		c ^= d;
+	b = Rotl(b, K1); d = Rotl(d, K2);
+	d += a;		b -= c;
+	a ^= b;		c ^= d;
+	b = Rotl(b, K3); d = Rotl(d, K4);
+	d += a;		b -= c;
+
+That has rotate sets like
+// (13/484210) score(4/5/6) = 57/90/118:  6 25 16 21
+// (14/490774) score(4/5/6) = 56/99/122: 25  9 19  7
+// (23/804540) score(4/5/6) = 56/98/122: 17 20 10  4
+// (35/1014495) score(4/5/6) = 57/94/119:  7 27  4 20
+// (46/1254928) score(4/5/6) = 56/100/120: 20 18  5 10
+// (47/1260723) score(4/5/6) = 56/97/120: 13 22  8  5
+// (62/1627276) score(4/5/6) = 57/94/120:  6  5 10 20
+// (74/1943366) score(4/5/6) = 58/92/121: 12 11 18 26
+// (77/2097408) score(4/5/6) = 57/96/119: 19 18  5 11
+
+
+
+
+(The following code was recently hacked up to operate in "half-iterations"
+where not every rotate constant is used an equal number of times.
+You'll still see residue of the old semantics in places.)
+
+#include <stdio.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <assert.h>
+
+#if 1
+#define BITS 32
+typedef uint32_t word_t;
+#define Count(x) __builtin_popcount(x)
+
+#else
+#define BITS 64
+typedef uint64_t word_t;
+#define Count(x) __builtin_popcountll(x)
+
+#endif
+
+static word_t Rotl(word_t x, int k)
+{
+	return (x << k) | (x >> (BITS-k));
+}
+
+static word_t Rotr(word_t x, int k)
+{
+	return (x << (BITS-k)) | (x >> k);
+}
+
+static uint64_t Rotl64(uint64_t x, int k)
+{
+	return (x << k) | (x >> (64 - k));
+}
+
+
+//
+// try to find an adequate long-message mixing function for SpookyHash
+//
+
+struct Random {
+	uint64_t a, b, c, d;
+};
+
+static uint64_t RandValue(struct Random *r)
+{
+	uint64_t e = r->a - Rotl64(r->b, 23);
+	r->a = r->b ^ Rotl64(r->c, 16);
+	r->b = r->c + Rotl64(r->d, 11);
+	r->c = r->d + e;
+	return r->d = e + r->a;
+}
+
+static void RandInit(struct Random *r, uint64_t seed)
+{
+	int i;
+
+	r->a = 0xdeadbeef; 
+        r->b = r->c = r->d = seed;
+        for (i = 0; i < 20; ++i) 
+		(void)RandValue(r);
+}
+
+#define VARS 4
+#define ROTS 4
+
+struct Sieve {
+	int sh[ROTS];
+	struct Random r;
+};
+
+void
+SieveInit(struct Sieve *s, int seed)
+{
+	RandInit(&s->r, seed);
+}
+
+void
+SievePrint(struct Sieve const *s, FILE *f)
+{
+	int i;
+
+	for (i = 0; i < ROTS; i++)
+		fprintf(f, " %2d", s->sh[i]);
+	putc('\n', f);
+}
+
+// generate a new function at random
+static void SieveGenerate(struct Sieve *s)
+{
+	uint64_t v = RandValue(&s->r);
+	int i;
+
+	/* Fill in the shift amounts */
+	for (i = 0; i < ROTS; i++) {
+		s->sh[i] = v % BITS;
+		v /= BITS;
+	}
+}
+
+#if 1
+/* Quick option */
+#define DO_ROT(a, b, s) (a = Rotl(a, s))
+#else
+#define DO_ROT(a, b, s) (b = Rotl(b, s))
+#endif
+
+#if VARS == 4
+// evaluate the function
+static void
+Fun(int const sh[VARS], word_t state[VARS], int iter)
+{
+	int i;
+	word_t a = state[0];
+	word_t b = state[1];
+	word_t c = state[2];
+	word_t d = state[3];
+
+	for (i = 0; i < 2*iter; i += 2)  {
+#if 1
+		a ^= b;             c ^= d;
+		b = Rotl(b, sh[i%ROTS]); d = Rotl(d, sh[(i+1)%ROTS]);
+		d += a;             b += c;
+#elif 1
+		a += b;		c += d;		d = Rotl(d, sh[i%ROTS]);
+		d ^= a;		b ^= c;		c = Rotl(c, sh[(i+1)%ROTS]);
+#elif 1
+		a += b; b ^= c; c -= d; d = Rotl(d, sh[i%ROTS]);
+		c += d; d ^= a; a -= b; b = Rotl(b, sh[(i+1)%ROTS]);
+#else
+		a += b; c += d; d = Rotl(d, sh[i%ROTS]);
+		d ^= a; b ^= c; c = Rotl(c, sh[(2*i+1)%ROTS1]);
+#endif
+	}
+
+	state[0] = a;
+	state[1] = b;
+	state[2] = c;
+	state[3] = d;
+}
+
+static void
+RFun(int const sh[VARS], word_t state[VARS], int iter)
+{
+	int i;
+	word_t a = state[0];
+	word_t b = state[1];
+	word_t c = state[2];
+	word_t d = state[3];
+
+	while (iter) {
+		i = 2 * --iter;
+#if 1
+		d -= a;			b -= c;
+		b = Rotr(b, sh[i%ROTS]); d = Rotr(d, sh[(i+1)%ROTS]);
+		a ^= b;			c ^= d;
+#elif 1
+		c -= d; d ^= a; a += b; b = Rotr(b, sh[(i+1) % ROTS]);
+		a -= b; b ^= c; c += d; d = Rotr(d, sh[i % ROTS]);
+#else
+		d ^= a; b ^= c; a = Rotr(a, sh[(i+1)%ROTS]);
+		a -= b; c -= d; b = Rotr(b, sh[i%ROTS]);
+#endif
+	}
+
+	state[0] = a;
+	state[1] = b;
+	state[2] = c;
+	state[3] = d;
+}
+#elif VARS == 2
+// evaluate the function
+static void
+Fun(int const sh[VARS], word_t state[VARS], int iter)
+{
+	int i;
+	word_t a = state[0];
+	word_t b = state[1];
+
+	for (i = 0; i < iter; i++) {
+		a += b;	b = Rotl(b, sh[0]);
+		b ^= a;	a = Rotl(a, sh[1]);
+#if ROTS > 2
+		a += b;	b = Rotl(b, sh[2]);
+		b ^= a;	a = Rotl(a, sh[3]);
+#endif
+	}
+
+	state[0] = a;
+	state[1] = b;
+}
+
+static void
+RFun(int const sh[VARS], word_t state[VARS], int iter)
+{
+	int i;
+	word_t a = state[0];
+	word_t b = state[1];
+
+	for (i = 0; i < iter; i++) {
+		a = Rotr(a, sh[3]);	b ^= a;
+		b = Rotr(b, sh[2]);	a -= b;
+#if ROTS > 2
+		a = Rotr(a, sh[1]);	b ^= a;
+		b = Rotr(b, sh[0]);	a -= b;
+#endif
+	}
+	state[0] = a;
+	state[1] = b;
+}
+#endif
+
+#define TRIALS 8
+#define MEASURES 10
+
+static int
+OneTest(struct Sieve *s, bool forward, int limit, int iter)
+{
+    int minVal = VARS*BITS;
+    int i, j, k, l;
+
+    for (i = 0; i < VARS*BITS; i++) {
+	for (j = i; j < VARS*BITS; j++) {
+	    word_t total[MEASURES][VARS] = { { 0 } };
+
+	    for (k = 0; k < TRIALS; k++) {
+		word_t a[VARS], b[VARS];
+
+		for (l = 0; l < VARS; l++)
+		    b[l] = a[l] = RandValue(&s->r);
+		/* Alter the second one */
+		b[i/BITS] ^= (word_t)1 << (i % BITS);
+		if (i != j)
+		    b[j/BITS] ^= (word_t)1 << (j % BITS);
+		/* Run the function */
+		if (forward) {
+		    Fun(s->sh, a, iter);
+		    Fun(s->sh, b, iter);
+		} else {
+		    RFun(s->sh, a, iter);
+		    RFun(s->sh, b, iter);
+		}
+		/* Now compute differences */
+		for (l = 0; l < VARS; l++) {
+		    word_t t;
+
+		    total[0][l] |= a[l]; total[5][l] |= ~a[l];
+		    total[1][l] |= b[l]; total[6][l] |= ~b[l];
+
+		    t = a[l] ^ b[l];
+		    total[2][l] |= t; total[7][l] |= ~t;
+
+		    t = a[l] - b[l];
+		    t ^= t >> 1;	/* Gray-code it */
+		    total[3][l] |= t; total[8][l] |= ~t;
+
+		    t = a[l] + b[l];
+		    t ^= t >> 1;	/* Gray-code it */
+		    total[4][l] |= t; total[9][l] |= ~t;
+		}
+	    }
+	    /* Find minimum weight by all measures */
+	    for (k = 0; k < MEASURES; k++) {
+		int counter = 0;
+		for (l = 0; l < VARS; l++)
+		    counter += Count(total[k][l]);
+		if (counter < minVal) {
+		    minVal = counter;
+		    if (counter < limit)
+			return counter;
+		}
+	    }
+	} /* j = second bit */
+    } /* i = first bit */
+
+    return minVal;
+}
+
+static int
+TwoTest(struct Sieve *s, int limit, int iter)
+{
+	int score1, score2;
+	word_t a[VARS], b[VARS];
+	int i;
+
+	/* Quick sanity test */
+	for (i = 0; i <= iter; i++) {
+		int j;
+		for (j = 0; j < VARS; j++)
+		    b[j] = a[j] = RandValue(&s->r);
+		Fun(s->sh, a, i);
+		RFun(s->sh, a, i);
+		for (j = 0; j < VARS; j++)
+		    assert(a[j] == b[j]);
+		RFun(s->sh, a, i);
+		Fun(s->sh, a, i);
+		for (j = 0; j < VARS; j++)
+		    assert(a[j] == b[j]);
+	}
+
+	score1 = OneTest(s, true, limit, iter);
+	if (score1 < limit)
+		return score1;
+	score2 = OneTest(s, false, limit, iter);
+
+	return score1 < score2 ? score1 : score2;
+}
+
+static void
+driver(int seed, FILE *f, unsigned n, int iter, int limit, int limit2)
+{
+	unsigned i, found = 0;
+	struct Sieve s;
+	int best = 0;
+
+	SieveInit(&s, seed);
+
+	for (i = 0; found < n; i++) {
+		int score0, score, score2;
+
+		if (i % 1000 == 0) {
+			printf("%u\r", i);
+			fflush(stdout);
+		}
+
+		SieveGenerate(&s);
+		
+		score0 = TwoTest(&s, limit, iter-1);
+		if (score0 < limit)
+			continue;
+		score = TwoTest(&s, limit2, iter);
+		if (score < limit2)
+			continue;
+		if (score > best)
+			best = score;
+
+		score2 = TwoTest(&s, 0, iter+1);
+		fprintf(f, "// (%u/%u) score(%d/%d/%d) = %d/%d/%d:", found,
+			i, iter-1, iter, iter+1, score0, score, score2);
+		SievePrint(&s, f);
+		found++;
+	}
+	printf("Best score: %d\n", best);
+}
+
+int
+main(void)
+{
+//	driver(21, stdout, 200, 6, 108);
+//	driver(21, stdout, 200, 5, 70);
+//	driver(21, stdout, 200, 2, 42);
+	driver(21, stdout, 200, 5, 45, 70);
+//	driver(21, stdout, 200, 4, 72, 90);
+	return 0;
+}
