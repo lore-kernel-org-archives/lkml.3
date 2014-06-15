@@ -1,132 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751286AbaFODdZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 23:33:25 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:59368 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493AbaFODdX (ORCPT
+	id S1752226AbaFODgr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 23:36:47 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:39781 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751493AbaFODgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 23:33:23 -0400
-Date: Sun, 15 Jun 2014 03:33:22 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Roger Quadros <rogerq@ti.com>
-cc: tony@atomide.com, kishon@ti.com, george.cherian@ti.com, balbi@ti.com,
-        balajitk@ti.com, hdegoede@redhat.com, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Nikhil Devshatwar <nikhil.nd@ti.com>,
-        Benoit Cousson <bcousson@baylibre.com>
-Subject: Re: [PATCH v4 3/4] ARM: DRA7: hwmod: Add ocp2scp3 and sata hwmods
-In-Reply-To: <alpine.DEB.2.02.1406131901340.340@utopia.booyaka.com>
-Message-ID: <alpine.DEB.2.02.1406150331530.659@utopia.booyaka.com>
-References: <1398274237-24510-1-git-send-email-rogerq@ti.com> <1398274559-24777-1-git-send-email-rogerq@ti.com> <alpine.DEB.2.02.1406131901340.340@utopia.booyaka.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sat, 14 Jun 2014 23:36:45 -0400
+Message-ID: <539D14CA.1060105@gmail.com>
+Date: Sat, 14 Jun 2014 20:36:42 -0700
+From: Frank Rowand <frowand.list@gmail.com>
+Reply-To: frowand.list@gmail.com
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Grant Likely <grant.likely@linaro.org>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+CC: Rob Herring <robherring2@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] OF: fix of_find_node_by_path() assumption that of_allnodes
+ is root
+References: <539A91E2.7000606@gmail.com> <CAL_JsqJ+f0CjwGnqTzXjMOAvbDOf0O3BZgcQwrzaWBy9Gwiw8A@mail.gmail.com> <CACxGe6sG+h7j9Npd-xR4-E13i=_p8OtbisgJv1PUzf981nGHUw@mail.gmail.com> <CACxGe6tv8H8yUYCs9N959T3KKDUDiDqJQ1LRfO5RJE3bxw5r5A@mail.gmail.com>
+In-Reply-To: <CACxGe6tv8H8yUYCs9N959T3KKDUDiDqJQ1LRfO5RJE3bxw5r5A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jun 2014, Paul Walmsley wrote:
-
-> Hi Roger,
+On 6/14/2014 8:00 AM, Grant Likely wrote:
+> On Fri, Jun 13, 2014 at 4:06 PM, Grant Likely <grant.likely@linaro.org> wrote:
+>> On Fri, Jun 13, 2014 at 2:52 PM, Rob Herring <robherring2@gmail.com> wrote:
+>>> On Fri, Jun 13, 2014 at 12:53 AM, Frank Rowand <frowand.list@gmail.com> wrote:
+>>>> From: Frank Rowand <frank.rowand@sonymobile.com>
+>>>>
+>>>> Pantelis Antoniou reports that of_find_node_by_path() is borked because
+>>>> of_allnodes is not guaranteed to contain the root of the tree after using
+>>>> any of the dynamic update functions because some other nodes ends up as
+>>>> of_allnodes.
+>>>>
+>>>> Fixes: c22e650e66b8 of: Make of_find_node_by_path() handle /aliases
+>>>
+>>> Is it not possible to do a fix in of_find_node_by_path instead? I just
+>>> wonder if this could have any other unintended side-effects on
+>>> of_attach_node's behavior.
+>>
+>> Given that I'm going to replace the custom list with list_head which
+>> makes this problem go away, I think this solution is fine.
+>>
+>> Acked-by: Grant Likely <grant.likely@linaro.org>
 > 
-> On Wed, 23 Apr 2014, Roger Quadros wrote:
-> 
-> > From: Nikhil Devshatwar <nikhil.nd@ti.com>
-> > 
-> > Add hwmods for ocp2scp3 and sata modules.
-> > 
-> > [Roger Q] Clean up.
-> 
-> Sorry for the delay on this.  Have been corresponding with TI to figure 
-> out what to do about these DRA7xx/AM43xx patches, since I don't have 
-> boards or public documentation for these devices, so it's impossible for 
-> me to meaningfully review the patches.  Looks like boards and/or public 
-> docs won't be coming any time soon.
-> 
-> So for my part, here's what I'll need to merge any hwmod patches that 
-> involve AM437x or DRA7xx:
-> 
-> 1. A Reviewed-by: from one of the following folks (which should come from 
-> a different person than who is submitting the patches):
-> 
-> Roger Quadros
-> Nishanth Menon
-> Rajendra Nayak
-> Kevin Hilman
-> Tony Lindgren
-> 
-> 2. A Tested-by: from one of the following folks (who can be the same as 
-> the person who is the same as the person who is submitting the patches):
-> 
-> Nishanth Menon
-> Rajendra Nayak
-> Kevin Hilman 
-> Tony Lindgren
-> 
-> Once these are in place, I'd be happy to queue it for 3.16.
+> That said, the following might be better because it would guarantee
+> that children always appear after parents...
 
-I've tried to clarify this a bit.  The update is below.
+< snip >
 
+I agree, I like that better.  Patch respun, v2 will be sent as a reply
+to this email.
 
-- Paul
+Pantelis, can you test v2 please?
 
+Thanks,
 
-
-For boards that I don't have access to, that I don't have 
-documentation for, such as the AM43xx and DRA7xx), for me to merge or ack 
-SoC infrastructure or PM-related patches, I want to have:
-
-1. a Reviewed-by: from people who:
-
-a. I think know something about SoC integration or PM in general, and 
-about OMAP-style integration specifically; and
-
-b. who have a track record of doing strong and detailed reviews of that 
-code, or who have contributed significantly to that code in the past.
-
-My initial list of those reviewers is listed above, and I am happy to 
-consider extending it or modifying that list.
-
-
-2. confidence that the patch or series has been tested against a mainline 
-commit and isn't obviously breaking other things, like PM, and confidence 
-that it's not adding new runtime warnings.
-
-I've listed an initial set of people above who I feel have proven track 
-records in testing who I'm happy to accept Tested-by:s without further 
-explanation.  I'm sure I've missed some folks and if anyone who should be 
-on that list is offended that I didn't mention them, please accept my 
-apologies.  For other folks, like yourself, who aren't on that list (yet), 
-please just specifically state:
-
-a. what mainline commit they've tested the patch against,
-
-b. what other prerequisite patches were needed for the patch to apply,
-
-c. and a cut-and-paste of the serial console boot log from the boot 
-portion of the test.
-
-in such a way that myself or someone else can easily doublecheck it. 
-
-And frankly, I'll probably be happy to merge it.
-
-After someone has done these three things a few times, and I gain 
-confidence that they're doing the right thing, I'm happy to add them to 
-my list.
-
-The testing doesn't have to be expressed via a Tested-by: tag in cases 
-where you're testing as part of a Signed-off-by:.  Just be sure to state 
-those three things above as part of the patch or series message.  The boot 
-log can either be placed on a different page and linked to, or sent in 
-another public E-mail.
-
-If you can get two or three people to do the above, that's great - the 
-more, the better.
-
-...
-
-These two steps do not apply to boards that I have in my testbed or which 
-I have documentation for (although they would definitely be very welcome 
-in those cases too).
+Frank
 
