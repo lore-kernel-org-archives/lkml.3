@@ -1,96 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751173AbaFOALO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 20:11:14 -0400
-Received: from mx02.posteo.de ([89.146.194.165]:58798 "EHLO posteo.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750888AbaFOALN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 20:11:13 -0400
-From: Martin Kepplinger <martink@posteo.de>
-To: airlied@linux.ie
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Martin Kepplinger <martink@posteo.de>
-Subject: [PATCH] ttm: use NULL instead of 0 for ttm_bo_reserve()'s pointer arg.
-Date: Sun, 15 Jun 2014 02:10:39 +0200
-Message-Id: <1402791039-16062-1-git-send-email-martink@posteo.de>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751119AbaFOAXh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 20:23:37 -0400
+Received: from ns.horizon.com ([71.41.210.147]:22811 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750861AbaFOAXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 20:23:36 -0400
+Date: 14 Jun 2014 20:23:33 -0400
+Message-ID: <20140615002333.24750.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, tytso@mit.edu
+Subject: Re: random: Benchamrking fast_mix2
+Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        price@mit.edu
+In-Reply-To: <20140614163334.GJ6447@thunk.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a sparse warning: ttm_bo_reserve()'s last argument is a
-pointer to a struct, so use NULL as nullpointer.
+> I'll need to do a bit more looking to convince myself that 2
+> iterations is better from a mixing perspective, but this looks like it
+> might be a promising replacement for the 32-bit mixer.
 
-Signed-off-by: Martin Kepplinger <martink@posteo.de>
----
-this applies to next-20140613. Please ignore if annoyingly irrelevant.
+This was tested with a hacked-up copy of Bob Jenkins' testing code.
 
- drivers/gpu/drm/ttm/ttm_bo.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+It tests a few random starting values, and finds the minimum number of
+outputs bits affected by an input delta for:
 
-diff --git a/drivers/gpu/drm/ttm/ttm_bo.c b/drivers/gpu/drm/ttm/ttm_bo.c
-index 4ab9f71..cd0e15e 100644
---- a/drivers/gpu/drm/ttm/ttm_bo.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo.c
-@@ -412,7 +412,7 @@ static void ttm_bo_cleanup_refs_or_queue(struct ttm_buffer_object *bo)
- 	int ret;
- 
- 	spin_lock(&glob->lru_lock);
--	ret = __ttm_bo_reserve(bo, false, true, false, 0);
-+	ret = __ttm_bo_reserve(bo, false, true, false, NULL);
- 
- 	spin_lock(&bdev->fence_lock);
- 	(void) ttm_bo_wait(bo, false, false, true);
-@@ -514,7 +514,7 @@ static int ttm_bo_cleanup_refs_and_unlock(struct ttm_buffer_object *bo,
- 			return ret;
- 
- 		spin_lock(&glob->lru_lock);
--		ret = __ttm_bo_reserve(bo, false, true, false, 0);
-+		ret = __ttm_bo_reserve(bo, false, true, false, NULL);
- 
- 		/*
- 		 * We raced, and lost, someone else holds the reservation now,
-@@ -577,11 +577,11 @@ static int ttm_bo_delayed_delete(struct ttm_bo_device *bdev, bool remove_all)
- 			kref_get(&nentry->list_kref);
- 		}
- 
--		ret = __ttm_bo_reserve(entry, false, true, false, 0);
-+		ret = __ttm_bo_reserve(entry, false, true, false, NULL);
- 		if (remove_all && ret) {
- 			spin_unlock(&glob->lru_lock);
- 			ret = __ttm_bo_reserve(entry, false, false,
--					       false, 0);
-+					       false, NULL);
- 			spin_lock(&glob->lru_lock);
- 		}
- 
-@@ -726,7 +726,7 @@ static int ttm_mem_evict_first(struct ttm_bo_device *bdev,
- 
- 	spin_lock(&glob->lru_lock);
- 	list_for_each_entry(bo, &man->lru, lru) {
--		ret = __ttm_bo_reserve(bo, false, true, false, 0);
-+		ret = __ttm_bo_reserve(bo, false, true, false, NULL);
- 		if (!ret)
- 			break;
- 	}
-@@ -1595,7 +1595,7 @@ int ttm_bo_synccpu_write_grab(struct ttm_buffer_object *bo, bool no_wait)
- 	 * Using ttm_bo_reserve makes sure the lru lists are updated.
- 	 */
- 
--	ret = ttm_bo_reserve(bo, true, no_wait, false, 0);
-+	ret = ttm_bo_reserve(bo, true, no_wait, false, NULL);
- 	if (unlikely(ret != 0))
- 		return ret;
- 	spin_lock(&bdev->fence_lock);
-@@ -1630,7 +1630,7 @@ static int ttm_bo_swapout(struct ttm_mem_shrink *shrink)
- 
- 	spin_lock(&glob->lru_lock);
- 	list_for_each_entry(bo, &glob->swap_lru, swap) {
--		ret = __ttm_bo_reserve(bo, false, true, false, 0);
-+		ret = __ttm_bo_reserve(bo, false, true, false, NULL);
- 		if (!ret)
- 			break;
- 	}
--- 
-1.7.10.4
+- Each input bit or pair of bits
+- The function run forward or in reverse
+- XOR, subtraction and addtion delta metrics.  (5x2 = 10 in total)
 
+The example I posted:
+
+// (29/66353) score = 49/121/123:  6 27 16 14
+
+	a += b;			c += d;
+	b = rol32(a, 6);	d = rol32(c, 27);
+	d ^= a;			b ^= c;
+
+	a += b;			c += d;
+	b = rol32(a, 16);	d = rol32(c, 14);
+	d ^= a;			b ^= c;
+
+has, after 2 rounds, a minimum avalanche of 49 bits, taken over all of
+the variables just mentioned.  The only thing maximized over is the
+different starting values.
+
+That seems adequate for something that's only being asked to preserve
+1 bit of entropy.
+
+(BTW, the way the deltas are defined, the maximum possibe score is 124.)
