@@ -1,32 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636AbaFOUit (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 16:38:49 -0400
-Received: from smtprelay0202.hostedemail.com ([216.40.44.202]:37044 "EHLO
+	id S1752786AbaFOUjG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 16:39:06 -0400
+Received: from smtprelay0038.hostedemail.com ([216.40.44.38]:47799 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752465AbaFOUio (ORCPT
+	by vger.kernel.org with ESMTP id S1752656AbaFOUjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 16:38:44 -0400
+	Sun, 15 Jun 2014 16:39:01 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::,RULES_HIT:41:355:379:541:800:960:966:973:988:989:1260:1345:1359:1437:1534:1541:1711:1714:1730:1747:1777:1792:2194:2196:2199:2200:2393:2559:2562:3138:3139:3140:3141:3142:3350:3865:3866:4321:4385:5007:6261:8603:9592:10004:10026:10848:11026:11657:11658:11914:12043:12296:12438:12517:12519:12555:13311:
-X-HE-Tag: waves96_68e0d9b13df5a
-X-Filterd-Recvd-Size: 2197
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:69:355:379:541:800:960:966:973:988:989:1260:1345:1359:1437:1534:1542:1711:1730:1747:1777:1792:2196:2199:2393:2559:2562:3138:3139:3140:3141:3142:3353:3865:3866:4385:4605:5007:6248:6261:8957:10004:10026:10848:11026:11473:11658:11914:12043:12438:12517:12519:12555,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: park02_6b6a5f9d94c12
+X-Filterd-Recvd-Size: 3720
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Mitch Williams <mitch.a.williams@intel.com>,
-        Linux NICS <linux.nics@intel.com>, e1000-devel@lists.sourceforge.net,
-        netdev@vger.kernel.org
-Subject: [PATCH -next 12/26] intel: Use dma_zalloc_coherent
-Date: Sun, 15 Jun 2014 13:37:41 -0700
-Message-Id: <98cd6b066087e10da2dbf2a92080197a40a5e4ec.1402863905.git.joe@perches.com>
+Cc: Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH -next 18/26] dpt_i2o: Use dma_zalloc_coherent
+Date: Sun, 15 Jun 2014 13:37:47 -0700
+Message-Id: <b2c26276658da8d1363f7b1eb9d93e70d5eb811b.1402863905.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1402863904.git.joe@perches.com>
 References: <cover.1402863904.git.joe@perches.com>
@@ -38,30 +30,79 @@ Use the zeroing function instead of dma_alloc_coherent & memset(,0,)
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/ethernet/intel/ixgb/ixgb_main.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/scsi/dpt_i2o.c | 19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/ixgb/ixgb_main.c b/drivers/net/ethernet/intel/ixgb/ixgb_main.c
-index 6080127..b02cc72 100644
---- a/drivers/net/ethernet/intel/ixgb/ixgb_main.c
-+++ b/drivers/net/ethernet/intel/ixgb/ixgb_main.c
-@@ -795,14 +795,12 @@ ixgb_setup_rx_resources(struct ixgb_adapter *adapter)
- 	rxdr->size = rxdr->count * sizeof(struct ixgb_rx_desc);
- 	rxdr->size = ALIGN(rxdr->size, 4096);
+diff --git a/drivers/scsi/dpt_i2o.c b/drivers/scsi/dpt_i2o.c
+index c0ae8fa..a58970e 100644
+--- a/drivers/scsi/dpt_i2o.c
++++ b/drivers/scsi/dpt_i2o.c
+@@ -1376,13 +1376,12 @@ static s32 adpt_i2o_reset_hba(adpt_hba* pHba)
+ 		schedule_timeout_uninterruptible(1);
+ 	} while (m == EMPTY_QUEUE);
  
--	rxdr->desc = dma_alloc_coherent(&pdev->dev, rxdr->size, &rxdr->dma,
--					GFP_KERNEL);
--
-+	rxdr->desc = dma_zalloc_coherent(&pdev->dev, rxdr->size, &rxdr->dma,
-+					 GFP_KERNEL);
- 	if (!rxdr->desc) {
- 		vfree(rxdr->buffer_info);
+-	status = dma_alloc_coherent(&pHba->pDev->dev, 4, &addr, GFP_KERNEL);
++	status = dma_zalloc_coherent(&pHba->pDev->dev, 4, &addr, GFP_KERNEL);
+ 	if(status == NULL) {
+ 		adpt_send_nop(pHba, m);
+ 		printk(KERN_ERR"IOP reset failed - no free memory.\n");
  		return -ENOMEM;
  	}
--	memset(rxdr->desc, 0, rxdr->size);
+-	memset(status,0,4);
  
- 	rxdr->next_to_clean = 0;
- 	rxdr->next_to_use = 0;
+ 	msg[0]=EIGHT_WORD_MSG_SIZE|SGL_OFFSET_0;
+ 	msg[1]=I2O_CMD_ADAPTER_RESET<<24|HOST_TID<<12|ADAPTER_TID;
+@@ -2830,14 +2829,13 @@ static s32 adpt_i2o_init_outbound_q(adpt_hba* pHba)
+ 
+ 	msg=(u32 __iomem *)(pHba->msg_addr_virt+m);
+ 
+-	status = dma_alloc_coherent(&pHba->pDev->dev, 4, &addr, GFP_KERNEL);
++	status = dma_zalloc_coherent(&pHba->pDev->dev, 4, &addr, GFP_KERNEL);
+ 	if (!status) {
+ 		adpt_send_nop(pHba, m);
+ 		printk(KERN_WARNING"%s: IOP reset failed - no free memory.\n",
+ 			pHba->name);
+ 		return -ENOMEM;
+ 	}
+-	memset(status, 0, 4);
+ 
+ 	writel(EIGHT_WORD_MSG_SIZE| SGL_OFFSET_6, &msg[0]);
+ 	writel(I2O_CMD_OUTBOUND_INIT<<24 | HOST_TID<<12 | ADAPTER_TID, &msg[1]);
+@@ -2884,14 +2882,14 @@ static s32 adpt_i2o_init_outbound_q(adpt_hba* pHba)
+ 			pHba->reply_pool, pHba->reply_pool_pa);
+ 	}
+ 
+-	pHba->reply_pool = dma_alloc_coherent(&pHba->pDev->dev,
+-				pHba->reply_fifo_size * REPLY_FRAME_SIZE * 4,
+-				&pHba->reply_pool_pa, GFP_KERNEL);
++	pHba->reply_pool =
++		dma_zalloc_coherent(&pHba->pDev->dev,
++				    pHba->reply_fifo_size * REPLY_FRAME_SIZE * 4,
++				    &pHba->reply_pool_pa, GFP_KERNEL);
+ 	if (!pHba->reply_pool) {
+ 		printk(KERN_ERR "%s: Could not allocate reply pool\n", pHba->name);
+ 		return -ENOMEM;
+ 	}
+-	memset(pHba->reply_pool, 0 , pHba->reply_fifo_size * REPLY_FRAME_SIZE * 4);
+ 
+ 	for(i = 0; i < pHba->reply_fifo_size; i++) {
+ 		writel(pHba->reply_pool_pa + (i * REPLY_FRAME_SIZE * 4),
+@@ -3120,13 +3118,12 @@ static int adpt_i2o_build_sys_table(void)
+ 	sys_tbl_len = sizeof(struct i2o_sys_tbl) +	// Header + IOPs
+ 				(hba_count) * sizeof(struct i2o_sys_tbl_entry);
+ 
+-	sys_tbl = dma_alloc_coherent(&pHba->pDev->dev,
+-				sys_tbl_len, &sys_tbl_pa, GFP_KERNEL);
++	sys_tbl = dma_zalloc_coherent(&pHba->pDev->dev, sys_tbl_len,
++				      &sys_tbl_pa, GFP_KERNEL);
+ 	if (!sys_tbl) {
+ 		printk(KERN_WARNING "SysTab Set failed. Out of memory.\n");	
+ 		return -ENOMEM;
+ 	}
+-	memset(sys_tbl, 0, sys_tbl_len);
+ 
+ 	sys_tbl->num_entries = hba_count;
+ 	sys_tbl->version = I2OVERSION;
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
