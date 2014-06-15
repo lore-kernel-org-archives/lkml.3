@@ -1,98 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040AbaFOCpx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 22:45:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55379 "EHLO mx1.redhat.com"
+	id S1751893AbaFODEq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 23:04:46 -0400
+Received: from imap.thunk.org ([74.207.234.97]:39320 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751231AbaFOCpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 22:45:51 -0400
-Date: Sat, 14 Jun 2014 22:45:28 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-        linux-ima-user <linux-ima-user@lists.sourceforge.net>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-audit@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Linux-ima-user] oraphaned keywords in audit log text [was: Re:
- [PATCH] integrity: get comm using lock to avoid race in string] printing
-Message-ID: <20140615024528.GB14900@madcap2.tricolour.ca>
-References: <11db0d126ef0ec7506ef5cb6f2f21c926d206436.1396455228.git.rgb@redhat.com>
- <1396460387.20325.22.camel@dhcp-9-2-203-236.watson.ibm.com>
- <6292885.20TorKeRiK@x2>
- <1396462368.20325.26.camel@dhcp-9-2-203-236.watson.ibm.com>
- <1396462716.2608.1.camel@localhost>
- <1396463260.20325.28.camel@dhcp-9-2-203-236.watson.ibm.com>
- <20140402185250.GB24814@madcap2.tricolour.ca>
- <20140614000258.GA14900@madcap2.tricolour.ca>
- <CACE9dm83Kxbc3krVkCR9-Wy1Kq+YpEWRkLdbHDivwcxFtGjYmg@mail.gmail.com>
- <1402796767.2651.2.camel@dhcp-9-2-203-236.watson.ibm.com>
+	id S1751231AbaFODEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jun 2014 23:04:44 -0400
+Date: Sat, 14 Jun 2014 23:04:41 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
+Cc: George Spelvin <linux@horizon.com>
+Subject: Surprising 64-bit performance anomaly (was Re: [PATCH] random: use
+ an improved fast_mix() function)
+Message-ID: <20140615030441.GA8111@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+	George Spelvin <linux@horizon.com>
+References: <1402798797-26251-1-git-send-email-tytso@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1402796767.2651.2.camel@dhcp-9-2-203-236.watson.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1402798797-26251-1-git-send-email-tytso@mit.edu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/06/14, Mimi Zohar wrote:
-> On Sat, 2014-06-14 at 12:43 +0300, Dmitry Kasatkin wrote: 
-> > On 14 June 2014 03:02, Richard Guy Briggs <rgb@redhat.com> wrote:
-> > > On 14/04/02, Richard Guy Briggs wrote:
-> > >> On 14/04/02, Mimi Zohar wrote:
-> > >> > On Wed, 2014-04-02 at 14:18 -0400, Eric Paris wrote:
-> > >> > > On Wed, 2014-04-02 at 14:12 -0400, Mimi Zohar wrote:
-> > >> > > > On Wed, 2014-04-02 at 14:00 -0400, Steve Grubb wrote:
-> > >> > > > > Hello Mimi,
-> > >> > > > >
-> > >> > > > > On Wednesday, April 02, 2014 01:39:47 PM Mimi Zohar wrote:
-> > >> > > > > > This change is already being upstreamed as commit 73a6b44 "Integrity:
-> > >> > > > > > Pass commname via get_task_comm()".
-> > >> > > > >
-> > >> > > > > While I was looking at Richard's patch, I noticed a few places where cause and
-> > >> > > > > op are logged and the string isn't tied together with a _ or -. These are in
-> > >> > > > > ima/ima_appraise.c line 383, and ima/ima_policy.c lines 333, 657, and 683. Are
-> > >> > > > > these fixed upstream? Or should a patch be made?
-> > >> > > >
-> > >> > > > Nothing has changed in terms of 'cause' and 'op'.  I would suggest
-> > >> > > > making the changes in integrity_audit.c: integrity_audit_msg().
-> > >>
-> > >> That function could massage incoming text fields and convert spaces to
-> > >> hyphens or underscores, but I'd assume the right place to do it would be
-> > >> in the original text.  If you suggest the former, it could just be done
-> > >> in audit_log_string(), but then grepping the source for error messages
-> > >> would not be nearly as useful.  Is this what you were suggesting?
-> > >>
-> > >> > > The question is actually, do you know of anyone who is expecting the
-> > >> > > space, instead of a more 'audit standard' - or _ ?  If not, we'll change
-> > >> > > it.  If so, we'll discuss more   :)
-> > >> >
-> > >> > CC'ing linux-ima-user as well.
-> > >>
-> > >> Thanks.
-> > >
-> > > Was there any response from linux-ima-user?
-> > >
-> > >> > Mimi
-> > >>
-> > >> - RGB
-> > >
-> > 
-> > Hi,
-> > 
-> > I will find this patch and have a look.
-> 
-> As nobody has responded, I would assume it is safe to change.
+Hi George,
 
-Thanks!  :)
+On top of the above patch, I applied the following to add 64-bit pool
+support.  I had to use a union to avoid type punning warnings.
 
-> Mimi
+When building a 64-bit kernel and running under under KVM, I'm finding
+that the 64-bit mix function which you suggested is twice as slow.
 
-- RGB
+Using the (new) 32-bit function:
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+31821 23970
+31629 24366
+30856 24182
+
+Using the 64-bit mixing function:
+
+60438 44369
+60820 45402
+58778 45419
+
+				- Ted
+
+
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index b19edad..0685413 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -257,6 +257,7 @@
+ #include <linux/kmemcheck.h>
+ #include <linux/workqueue.h>
+ #include <linux/irq.h>
++#include <linux/bitops.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/uaccess.h>
+@@ -267,7 +268,8 @@
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/random.h>
+ 
+-/* #define ADD_INTERRUPT_BENCH */
++#define ADD_INTERRUPT_BENCH
++/* #define FORCE_32_VERSION */
+ 
+ /*
+  * Configuration information
+@@ -548,7 +550,10 @@ static void mix_pool_bytes(struct entropy_store *r, const void *in,
+ }
+ 
+ struct fast_pool {
+-	__u32		pool[4];
++	union {
++		__u32	pool32[4];
++		__u64	pool64[2];
++	} pool;
+ 	unsigned long	last;
+ 	unsigned char	count;
+ 	unsigned char	notimer_count;
+@@ -560,10 +565,32 @@ struct fast_pool {
+  * collector.  It's hardcoded for an 128 bit pool and assumes that any
+  * locks that might be needed are taken by the caller.
+  */
++#if (BITS_PER_LONG == 64) && !defined(FORCE_32_VERSION)
++#warning Building 64 bit fast_mix
+ static void fast_mix(struct fast_pool *f)
+ {
+-	__u32 a = f->pool[0],	b = f->pool[1];
+-	__u32 c = f->pool[2],	d = f->pool[3];
++	__u64 a = f->pool.pool64[0], b = f->pool.pool64[1];
++
++	a += b; b = rol64(b, 52);
++	b ^= a; a = rol64(a, 10);
++	a += b; b = rol64(b, 47);
++	b ^= a; a = rol64(a, 17);
++
++	a += b; b = rol64(b, 52);
++	b ^= a; a = rol64(a, 10);
++	a += b; b = rol64(b, 47);
++	b ^= a; a = rol64(a, 17);
++
++	f->pool.pool64[0] = a;  f->pool.pool64[1] = b;
++	f->count++;
++}
++
++#else
++#warning Building 32 bit fast_mix
++static void fast_mix(struct fast_pool *f)
++{
++	__u32 a = f->pool.pool32[0], b = f->pool.pool32[1];
++	__u32 c = f->pool.pool32[2], d = f->pool.pool32[3];
+ 
+ 	a += b;			c += d;
+ 	b = rol32(a, 6);	d = rol32(c, 27);
+@@ -581,10 +608,11 @@ static void fast_mix(struct fast_pool *f)
+ 	b = rol32(a, 16);	d = rol32(c, 14);
+ 	d ^= a;			b ^= c;
+ 
+-	f->pool[0] = a;  f->pool[1] = b;
+-	f->pool[2] = c;  f->pool[3] = d;
++	f->pool.pool32[0] = a;  f->pool.pool32[1] = b;
++	f->pool.pool32[2] = c;  f->pool.pool32[3] = d;
+ 	f->count++;
+ }
++#endif
+ 
+ /*
+  * Credit (or debit) the entropy store with n bits of entropy.
+@@ -870,11 +898,11 @@ void add_interrupt_randomness(int irq, int irq_flags)
+ 
+ 	c_high = (sizeof(cycles) > 4) ? cycles >> 32 : 0;
+ 	j_high = (sizeof(now) > 4) ? now >> 32 : 0;
+-	fast_pool->pool[0] ^= cycles ^ j_high ^ irq;
+-	fast_pool->pool[1] ^= now ^ c_high;
++	fast_pool->pool.pool32[0] ^= cycles ^ j_high ^ irq;
++	fast_pool->pool.pool32[1] ^= now ^ c_high;
+ 	ip = regs ? instruction_pointer(regs) : _RET_IP_;
+-	fast_pool->pool[2] ^= ip;
+-	fast_pool->pool[3] ^= ip >> 32;
++	fast_pool->pool.pool32[2] ^= ip;
++	fast_pool->pool.pool32[3] ^= ip >> 32;
+ 
+ 	fast_mix(fast_pool);
+ 	if ((irq_flags & __IRQF_TIMER) == 0)
