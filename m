@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751285AbaFOGkl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 02:40:41 -0400
-Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:35481 "EHLO
-	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750774AbaFOGkk (ORCPT
+	id S1752028AbaFOGpq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 02:45:46 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:54748 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751282AbaFOGpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 02:40:40 -0400
+	Sun, 15 Jun 2014 02:45:45 -0400
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av8GAN8+nVNXQzGY/2dsb2JhbABagw2rDgYBAwEGlGeEPYEDF3WEMS8jgRo3iEYBzwwXhWOJEx2ELQSPbIpXizCIKINCOw
+X-IronPort-Anti-Spam-Result: AuEGADtAnVNXQzGY/2dsb2JhbABagw2rDgYBAwEGmSSBAxd1hDEvI4EaN4hGAc8LF4VjiC9kHYQtBJpDizCIKINCO4Ex
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Bob Copeland <me@bobcopeland.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH V2] fs/omfs/inode.c: use ULLONG_MAX instead of ~0ULL
-Date: Sun, 15 Jun 2014 08:39:20 +0200
-Message-Id: <1402814360-3122-1-git-send-email-fabf@skynet.be>
+Cc: Fabian Frederick <fabf@skynet.be>, Yehuda Sadeh <yehuda@inktank.com>,
+        Sage Weil <sage@inktank.com>
+Subject: [PATCH 1/1 RESEND] drivers/block/rbd.c: use PTR_ERR_OR_ZERO
+Date: Sun, 15 Jun 2014 08:44:24 +0200
+Message-Id: <1402814664-3270-1-git-send-email-fabf@skynet.be>
 X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use more explicit kernel.h definition
+replace IS_ERR/PTR_ERR
 
-Cc: Bob Copeland <me@bobcopeland.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Yehuda Sadeh <yehuda@inktank.com>
+Cc: Sage Weil <sage@inktank.com>
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
-V2:
-   Fix Cc list
+ drivers/block/rbd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- fs/omfs/inode.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/fs/omfs/inode.c b/fs/omfs/inode.c
-index ec58c76..40c0707 100644
---- a/fs/omfs/inode.c
-+++ b/fs/omfs/inode.c
-@@ -317,7 +317,7 @@ static int omfs_get_imap(struct super_block *sb)
- 	bitmap_size = DIV_ROUND_UP(sbi->s_num_blocks, 8);
- 	array_size = DIV_ROUND_UP(bitmap_size, sb->s_blocksize);
+diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
+index 4c95b50..552a2ed 100644
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -4752,7 +4752,7 @@ static int rbd_dev_image_id(struct rbd_device *rbd_dev)
  
--	if (sbi->s_bitmap_ino == ~0ULL)
-+	if (sbi->s_bitmap_ino == ULLONG_MAX)
- 		goto out;
- 
- 	sbi->s_imap_size = array_size;
-@@ -516,7 +516,7 @@ static int omfs_fill_super(struct super_block *sb, void *data, int silent)
- 		goto out_brelse_bh2;
- 	}
- 
--	if (sbi->s_bitmap_ino != ~0ULL &&
-+	if (sbi->s_bitmap_ino != ULLONG_MAX &&
- 	    sbi->s_bitmap_ino > sbi->s_num_blocks) {
- 		printk(KERN_ERR "omfs: free space bitmap location is corrupt "
- 			"(%llx, total blocks %llx)\n",
+ 		image_id = ceph_extract_encoded_string(&p, p + ret,
+ 						NULL, GFP_NOIO);
+-		ret = IS_ERR(image_id) ? PTR_ERR(image_id) : 0;
++		ret = PTR_ERR_OR_ZERO(image_id);
+ 		if (!ret)
+ 			rbd_dev->image_format = 2;
+ 	} else {
 -- 
 1.8.4.5
 
