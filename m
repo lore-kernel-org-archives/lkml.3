@@ -1,69 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785AbaFOBb4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jun 2014 21:31:56 -0400
-Received: from yotta.elopez.com.ar ([31.220.24.173]:54291 "EHLO
-	yotta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890AbaFOBbz (ORCPT
+	id S1751531AbaFOBqO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jun 2014 21:46:14 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:51306 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889AbaFOBqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jun 2014 21:31:55 -0400
-Message-ID: <539CF77C.4010500@elopez.com.ar>
-Date: Sat, 14 Jun 2014 22:31:40 -0300
-From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Nick <xerofoify@gmail.com>
-CC: mturquette@linaro.org, maxime.ripard@free-electrons.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHV2]Fixes memory leak in clk-sunxi.c
-References: <1402794944-3357-1-git-send-email-xerofoify@gmail.com>
-In-Reply-To: <1402794944-3357-1-git-send-email-xerofoify@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	Sat, 14 Jun 2014 21:46:13 -0400
+Message-ID: <1402796767.2651.2.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [Linux-ima-user] oraphaned keywords in audit log text [was: Re:
+ [PATCH] integrity: get comm using lock to avoid race in string] printing
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Cc: Richard Guy Briggs <rgb@redhat.com>,
+        linux-ima-user <linux-ima-user@lists.sourceforge.net>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-audit@redhat.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sat, 14 Jun 2014 21:46:07 -0400
+In-Reply-To: <CACE9dm83Kxbc3krVkCR9-Wy1Kq+YpEWRkLdbHDivwcxFtGjYmg@mail.gmail.com>
+References: <11db0d126ef0ec7506ef5cb6f2f21c926d206436.1396455228.git.rgb@redhat.com>
+	 <1396460387.20325.22.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <6292885.20TorKeRiK@x2>
+	 <1396462368.20325.26.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <1396462716.2608.1.camel@localhost>
+	 <1396463260.20325.28.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <20140402185250.GB24814@madcap2.tricolour.ca>
+	 <20140614000258.GA14900@madcap2.tricolour.ca>
+	 <CACE9dm83Kxbc3krVkCR9-Wy1Kq+YpEWRkLdbHDivwcxFtGjYmg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061501-3532-0000-0000-0000027B8CBD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, 2014-06-14 at 12:43 +0300, Dmitry Kasatkin wrote: 
+> On 14 June 2014 03:02, Richard Guy Briggs <rgb@redhat.com> wrote:
+> > On 14/04/02, Richard Guy Briggs wrote:
+> >> On 14/04/02, Mimi Zohar wrote:
+> >> > On Wed, 2014-04-02 at 14:18 -0400, Eric Paris wrote:
+> >> > > On Wed, 2014-04-02 at 14:12 -0400, Mimi Zohar wrote:
+> >> > > > On Wed, 2014-04-02 at 14:00 -0400, Steve Grubb wrote:
+> >> > > > > Hello Mimi,
+> >> > > > >
+> >> > > > > On Wednesday, April 02, 2014 01:39:47 PM Mimi Zohar wrote:
+> >> > > > > > This change is already being upstreamed as commit 73a6b44 "Integrity:
+> >> > > > > > Pass commname via get_task_comm()".
+> >> > > > >
+> >> > > > > While I was looking at Richard's patch, I noticed a few places where cause and
+> >> > > > > op are logged and the string isn't tied together with a _ or -. These are in
+> >> > > > > ima/ima_appraise.c line 383, and ima/ima_policy.c lines 333, 657, and 683. Are
+> >> > > > > these fixed upstream? Or should a patch be made?
+> >> > > >
+> >> > > > Nothing has changed in terms of 'cause' and 'op'.  I would suggest
+> >> > > > making the changes in integrity_audit.c: integrity_audit_msg().
+> >>
+> >> That function could massage incoming text fields and convert spaces to
+> >> hyphens or underscores, but I'd assume the right place to do it would be
+> >> in the original text.  If you suggest the former, it could just be done
+> >> in audit_log_string(), but then grepping the source for error messages
+> >> would not be nearly as useful.  Is this what you were suggesting?
+> >>
+> >> > > The question is actually, do you know of anyone who is expecting the
+> >> > > space, instead of a more 'audit standard' - or _ ?  If not, we'll change
+> >> > > it.  If so, we'll discuss more   :)
+> >> >
+> >> > CC'ing linux-ima-user as well.
+> >>
+> >> Thanks.
+> >
+> > Was there any response from linux-ima-user?
+> >
+> >> > Mimi
+> >>
+> >> - RGB
+> >
+> 
+> Hi,
+> 
+> I will find this patch and have a look.
 
-El 14/06/14 22:15, Nick escribió:
-> Signed-off-by: Nick <xerofoify@gmail.com>
-> ---
->   drivers/clk/sunxi/clk-sunxi.c | 4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-> index 6f4fc51..c2ce538 100644
-> --- a/drivers/clk/sunxi/clk-sunxi.c
-> +++ b/drivers/clk/sunxi/clk-sunxi.c
-> @@ -41,10 +41,10 @@ static void __init sun4i_osc_clk_setup(struct device_node *node)
->   	const char *clk_name = node->name;
->   	u32 rate;
->
-> -	if (of_property_read_u32(node, "clock-frequency", &rate))
-> +	if (of_property_read_u32(node, "clock-frequency", &rate)) {
->   		kree(gate);
->   		return;
-> -
-> +	}
->   	/* allocate fixed-rate and gate clock structs */
->   	fixed = kzalloc(sizeof(struct clk_fixed_rate), GFP_KERNEL);
->   	if (!fixed)
->
+As nobody has responded, I would assume it is safe to change.
 
-There is no memory leak there, and I think the message was pretty clear 
-when I mentioned it[1] and then Sergei mentioned it[2] twice[3]. As for 
-the bug report[4] you linked in a private email, it has been closed as 
-resolved by the original reporter.
+Mimi
 
-Cheers,
-
-Emilio
-
-[1] 
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/263631.html
-[2] 
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/263677.html
-[3] 
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/263683.html
-[4] https://bugzilla.kernel.org/show_bug.cgi?id=59961
