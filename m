@@ -1,409 +1,336 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932623AbaFPSD6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 14:03:58 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:54691 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932545AbaFPSDc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 14:03:32 -0400
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v2 10/10] ARM: dts: Add max77802 device node for exynos5420-peach-pit
-Date: Mon, 16 Jun 2014 20:02:38 +0200
-Message-Id: <1402941758-11216-11-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1402941758-11216-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1402941758-11216-1-git-send-email-javier.martinez@collabora.co.uk>
+	id S932604AbaFPSDm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 14:03:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35886 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932239AbaFPSDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 14:03:39 -0400
+Date: Mon, 16 Jun 2014 20:03:36 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, hpa@linux.intel.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>, Joe Perches <joe@perches.com>,
+        Arun KS <arunks.linux@gmail.com>, Kees Cook <keescook@chromium.org>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [RFT v4] printk: allow increasing the ring buffer depending on
+	the number of CPUs
+Message-ID: <20140616180336.GF4841@wotan.suse.de>
+References: <1402771965-7515-1-git-send-email-mcgrof@do-not-panic.com> <20140616163253.GA17672@pathway.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140616163253.GA17672@pathway.suse.cz>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peach pit board uses a Maxim 77802 power management IC to
-drive regulators and its Real Time Clock. This patch adds
-support for this chip.
+On Mon, Jun 16, 2014 at 06:32:53PM +0200, Petr Mládek wrote:
+> On Sat 2014-06-14 11:52:45, Luis R. Rodriguez wrote:
+> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> > 
+> > The default size of the ring buffer is too small for machines
+> > with a large amount of CPUs under heavy load. What ends up
+> > happening when debugging is the ring buffer overlaps and chews
+> > up old messages making debugging impossible unless the size is
+> > passed as a kernel parameter. An idle system upon boot up will
+> > on average spew out only about one or two extra lines but where
+> > this really matters is on heavy load and that will vary widely
+> > depending on the system and environment.
+> > 
+> > There are mechanisms to help increase the kernel ring buffer
+> > for tracing through debugfs, and those interfaces even allow growing
+> > the kernel ring buffer per CPU. We also have a static value which
+> > can be passed upon boot. Relying on debugfs however is not ideal
+> > for production, and relying on the value passed upon bootup is
+> > can only used *after* an issue has creeped up. Instead of being
+> > reactive this adds a proactive measure which lets you scale the
+> > amount of contributions you'd expect to the kernel ring buffer
+> > under load by each CPU in the worst case scenario.
+> > 
+> > We use num_possible_cpus() to avoid complexities which could be
+> > introduced by dynamically changing the ring buffer size at run
+> > time, num_possible_cpus() lets us use the upper limit on possible
+> > number of CPUs therefore avoiding having to deal with hotplugging
+> > CPUs on and off. This introduces the kernel configuration option
+> > LOG_CPU_MIN_BUF_SHIFT which is used to specify the maximum amount
+> > of contributions to the kernel ring buffer in the worst case before
+> > the kernel ring buffer flips over, the size is specified as a power
+> > of 2. The total amount of contributions made by each CPU must be
+> > greater than half of the default kernel ring buffer size
+> > (1 << LOG_BUF_SHIFT bytes) in order to trigger an increase upon
+> > bootup. For example if LOG_BUF_SHIFT is 18 (256 KB) you'd require at
+> > least 128 KB contributions by other CPUs in order to trigger an
+> > increase. With a LOG_CPU_BUF_SHIFT of 12 (4 KB) you'd require at
+> > least anything over > 64 possible CPUs to trigger an increase. If
+> > you had 128 possible CPUs your kernel buffer size would be:
+> > 
+> >    ((1 << 18) + ((128 - 1) * (1 << 12))) / 1024 = 764 KB
+> > 
+> > This value is ignored when "log_buf_len" kernel parameter is used
+> > as it forces the exact size of the ring buffer to an expected value.
+> > 
+> > In order to use num_possible_cpus() we need to make this a late call
+> > on the init process but that also means we cannot share __init code,
+> > the late_setup_log_buf() provided is therefore very similar to the
+> > setup_log_buf() but just modified slightly, in particular since we're
+> > at late boot we can now also use kzalloc().
+> > 
+> > Cc: Michal Hocko <mhocko@suse.cz>
+> > Cc: Petr Mladek <pmladek@suse.cz>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Joe Perches <joe@perches.com>
+> > Cc: Arun KS <arunks.linux@gmail.com>
+> > Cc: Kees Cook <keescook@chromium.org>
+> > Cc: Davidlohr Bueso <davidlohr@hp.com>
+> > Cc: Chris Metcalf <cmetcalf@tilera.com>
+> > Cc: linux-kernel@vger.kernel.org
+> > Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> > ---
+> > 
+> > This doesn't kfree() at halt but do we need to do it ?
+> > 
+> >  Documentation/kernel-parameters.txt |  8 ++++--
+> >  include/linux/printk.h              |  5 ++++
+> >  init/Kconfig                        | 45 +++++++++++++++++++++++++++++++-
+> >  init/main.c                         |  1 +
+> >  kernel/printk/printk.c              | 51 +++++++++++++++++++++++++++++++++++++
+> >  5 files changed, 107 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> > index 6eaa9cd..229d031 100644
+> > --- a/Documentation/kernel-parameters.txt
+> > +++ b/Documentation/kernel-parameters.txt
+> > @@ -1685,8 +1685,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+> >  			7 (KERN_DEBUG)		debug-level messages
+> >  
+> >  	log_buf_len=n[KMG]	Sets the size of the printk ring buffer,
+> > -			in bytes.  n must be a power of two.  The default
+> > -			size is set in the kernel config file.
+> > +			in bytes.  n must be a power of two and greater
+> > +			than the minimal size. The minimal size is defined
+> > +			by LOG_BUF_SHIFT kernel config parameter. There is
+> > +			also CONFIG_LOG_CPU_MIN_BUF_SHIFT config parameter
+> > +			that allows to increase the default size depending on
+> > +			the number of CPUs. See init/Kconfig for more details.
+> >  
+> >  	logo.nologo	[FB] Disables display of the built-in Linux logo.
+> >  			This may be used to provide more screen space for
+> > diff --git a/include/linux/printk.h b/include/linux/printk.h
+> > index 319ff7e..315a0b7 100644
+> > --- a/include/linux/printk.h
+> > +++ b/include/linux/printk.h
+> > @@ -161,6 +161,7 @@ extern void wake_up_klogd(void);
+> >  
+> >  void log_buf_kexec_setup(void);
+> >  void __init setup_log_buf(int early);
+> > +void late_setup_log_buf(void);
+> >  void dump_stack_set_arch_desc(const char *fmt, ...);
+> >  void dump_stack_print_info(const char *log_lvl);
+> >  void show_regs_print_info(const char *log_lvl);
+> > @@ -202,6 +203,10 @@ static inline void setup_log_buf(int early)
+> >  {
+> >  }
+> >  
+> > +static inline void late_setup_log_buf(void)
+> > +{
+> > +}
+> > +
+> >  static inline void dump_stack_set_arch_desc(const char *fmt, ...)
+> >  {
+> >  }
+> > diff --git a/init/Kconfig b/init/Kconfig
+> > index 9d76b99..f0607d0 100644
+> > --- a/init/Kconfig
+> > +++ b/init/Kconfig
+> > @@ -807,7 +807,11 @@ config LOG_BUF_SHIFT
+> >  	range 12 21
+> >  	default 17
+> >  	help
+> > -	  Select kernel log buffer size as a power of 2.
+> > +	  Select the minimal kernel log buffer size as a power of 2.
+> > +	  The final size is affected by LOG_CPU_MIN_BUF_SHIFT config
+> > +	  parameter, see below. Any higher size also might be forced
+> > +	  by "log_buf_len" boot parameter.
+> > +
+> >  	  Examples:
+> >  	  	     17 => 128 KB
+> >  		     16 => 64 KB
+> > @@ -816,6 +820,45 @@ config LOG_BUF_SHIFT
+> >  		     13 =>  8 KB
+> >  		     12 =>  4 KB
+> >  
+> > +config LOG_CPU_MIN_BUF_SHIFT
+> > +	int "CPU kernel log buffer size contribution (13 => 8 KB, 17 => 128KB)"
+> > +	range 0 21
+> > +	default 12
+> > +	depends on SMP
+> > +	depends on !BASE_SMALL
+> > +	help
+> > +	  The kernel ring buffer will get additional data logged onto it
+> > +	  when multiple CPUs are supported. Typically the contributions are
+> > +	  only a few lines when idle however under under load this can vary
+> > +	  and in the worst case it can mean losing logging information. You
+> > +	  can use this to set the maximum expected mount of amount of logging
+> > +	  contribution under load by each CPU in the worst case scenario, as
+> > +	  a power of 2. The total amount of contributions made by each CPU
+> > +	  must be greater than half of the default kernel ring buffer size
+> > +	  (1 << LOG_BUF_SHIFT bytes) in order to trigger an increase upon
+> > +	  bootup. For example if LOG_BUF_SHIFT is 18 (256 KB) you're require
+> > +	  at least 128 KB contributions by other CPUs in order to trigger
+> > +	  an increase. With a LOG_CPU_BUF_SHIFT of 12 (4 KB) you'd require
+> > +	  at least anything over > 64 possible CPUs to trigger an increase.
+> > +	  If you had 128 possible CPUs your kernel buffer size would be:
+> > +
+> > +	     ((1 << 18) + ((128 - 1) * (1 << 12))) / 1024 = 764 KB
+> > +
+> > +	  This value is ignored when "log_buf_len" kernel parameter is used
+> > +	  as it forces the exact size of the ring buffer to an expected value.
+> > +
+> > +	  The number of possible CPUs is used for this computation ignoring
+> > +	  hotplugging making the compuation optimal for the the worst case
+> > +	  scenerio while allowing a simple algorithm to be used from bootup.
+> > +
+> > +	  Examples shift values and their meaning:
+> > +		     17 => 128 KB for each CPU
+> > +		     16 =>  64 KB for each CPU
+> > +		     15 =>  32 KB for each CPU
+> > +		     14 =>  16 KB for each CPU
+> > +		     13 =>   8 KB for each CPU
+> > +		     12 =>   4 KB for each CPU
+> > +
+> >  #
+> >  # Architectures with an unreliable sched_clock() should select this:
+> >  #
+> > diff --git a/init/main.c b/init/main.c
+> > index e8ae1fe..8b472c6 100644
+> > --- a/init/main.c
+> > +++ b/init/main.c
+> > @@ -940,6 +940,7 @@ static int __ref kernel_init(void *unused)
+> >  	numa_default_policy();
+> >  
+> >  	flush_delayed_fput();
+> > +	late_setup_log_buf();
+> >  
+> >  	if (ramdisk_execute_command) {
+> >  		ret = run_init_process(ramdisk_execute_command);
+> > diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+> > index ea2d5f6..9cf919f 100644
+> > --- a/kernel/printk/printk.c
+> > +++ b/kernel/printk/printk.c
+> > @@ -266,6 +266,7 @@ static u32 clear_idx;
+> >  #define LOG_ALIGN __alignof__(struct printk_log)
+> >  #endif
+> >  #define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
+> > +#define __LOG_CPU_MIN_BUF_LEN (1 << CONFIG_LOG_CPU_MIN_BUF_SHIFT)
+> >  static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
+> >  static char *log_buf = __log_buf;
+> >  static u32 log_buf_len = __LOG_BUF_LEN;
+> > @@ -842,6 +843,12 @@ static int __init log_buf_len_setup(char *str)
+> >  }
+> >  early_param("log_buf_len", log_buf_len_setup);
+> >  
+> > +/*
+> > + * The log buffer is by default set using static memory unless
+> > + * you either set the log_buf_len=n kernel parameter or use a
+> > + * LOG_CPU_MIN_BUF_SHIFT that triggers a required increase
+> > + * via late_setup_log_buf().
+> > + */
+> >  void __init setup_log_buf(int early)
+> >  {
+> >  	unsigned long flags;
+> > @@ -877,6 +884,50 @@ void __init setup_log_buf(int early)
+> >  		free, (free * 100) / __LOG_BUF_LEN);
+> >  }
+> >  
+> > +/*
+> > + * If you set log_buf_len=n kernel parameter LOG_CPU_MIN_BUF_SHIFT will
+> > + * be ignored. LOG_CPU_MIN_BUF_SHIFT is a proactive measure for large
+> > + * systems. With a LOG_BUF_SHIFT of 18 and LOG_CPU_MIN_BUF_SHIFT 12 at
+> > + * we'd require more than 64 CPUs to trigger an increase from the
+> > + * default. Since we need num_possible_cpus() we do this allocation
+> > + * later in the boot process.
+> > + */
+> > +void late_setup_log_buf(void)
+> > +{
+> > +	unsigned long flags;
+> > +	char *new_log_buf;
+> > +	int free;
+> > +	int cpu_extra = (num_possible_cpus() - 1) *  __LOG_CPU_MIN_BUF_LEN;
+> > +	size_t new_log_size;
+> > +
+> > +	/* The log_buf_len=n kernel parameter was passed */
+> > +	if (log_buf_len > __LOG_BUF_LEN)
+> > +		return;
+> > +
+> > +	/* Extra CPU contribution penalty not incurred */
+> > +	if (cpu_extra < __LOG_BUF_LEN / 2)
+> > +		return;
+> > +
+> > +	new_log_size = __LOG_BUF_LEN + cpu_extra;
+> > +	new_log_buf = kzalloc(new_log_size, GFP_KERNEL);
+> > +
+> > +	if (unlikely(!new_log_buf)) {
+> > +		pr_err("log_buf_len: %ld bytes not available\n", new_log_size);
+> > +		return;
+> > +	}
+> > +
+> > +	raw_spin_lock_irqsave(&logbuf_lock, flags);
+> > +	log_buf_len = new_log_size;
+> > +	log_buf = new_log_buf;
+> > +	free = __LOG_BUF_LEN - log_next_idx;
+> 
+> I wonder if the ring buffer could be already rotated at this late boot
+> stage.
 
-These are the device nodes and pinctrl configuration that
-is present on the Peach pit DeviceTree source file in the
-the Chrome OS kernel 3.8 tree.
+I was a bit concerned over this so I did more digging just now. The earliest
+num_possible_cpus() should have been available to us is right after
+setup_arch() which is where all archs deal with prefilling the possible CPU map
+with set_cpu_possible() for each detected valid possible CPU. For example on
+x86 and ia64 this is done via prefill_possible_map(). Note that the current
+placement of setup_log_buf() is after setup_arch() *but* there is a special
+excemption for x86 -- its the only architecture that makes use of calling
+calls setup_log_buf(1) for an early setup on its own setup_arch() before
+it sets the number of possible CPU map via prefill_possible_map(). This would
+explain why I ran into the issue with the original patch. Even when early
+is used the later non-early call will reallocate the buffer for x86 though
+so I think I can fix the original patch then to only account for
+num_possible_cpus() if the call is not early -- and I just document the
+requirement on setup_arch() on setup_log_buf().
 
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
----
+This should take care of the concern you've expressed, I'll respin.
 
-Changes since v1:
- - Use "regulators" for child node instead of "voltage-regulators" to be
-   consistent with other PMIC. Suggested by Mark Brown.
- - Use regulators node names instead of the deprecated "regulator-compatible"
-   property. Suggested by Mark Brown.
+> This "free" space computation is valid only when
+> "log_first_idx" is still zero. As simple solution would be to use:
+> 
+> 	int free = 0;
+> 
+> 	if (log_first_idx == 0)
+> 		free = __LOG_BUF_LEN - log_next_idx;
 
- arch/arm/boot/dts/exynos5420-peach-pit.dts | 320 +++++++++++++++++++++++++++++
- 1 file changed, 320 insertions(+)
+OK thanks, will amend, but now that I think we can move this back to __init
+this should not be an issue and we can share all the code.
 
-diff --git a/arch/arm/boot/dts/exynos5420-peach-pit.dts b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-index 1c5b8f9..e6dc972 100644
---- a/arch/arm/boot/dts/exynos5420-peach-pit.dts
-+++ b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-@@ -111,6 +111,13 @@
- 		samsung,pin-drv = <0>;
- 	};
- 
-+	max77802_irq: max77802-irq {
-+		samsung,pins = "gpx3-1";
-+		samsung,pin-function = <0>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
-+
- 	hdmi_hpd_irq: hdmi-hpd-irq {
- 		samsung,pins = "gpx3-7";
- 		samsung,pin-function = <0>;
-@@ -124,6 +131,29 @@
- 		samsung,pin-pud = <3>;
- 		samsung,pin-drv = <0>;
- 	};
-+
-+	pmic_dvs_1: pmic-dvs-1 {
-+		samsung,pins = "gpy7-6";
-+		samsung,pin-function = <1>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
-+};
-+
-+&pinctrl_2 {
-+	pmic_dvs_2: pmic-dvs-2 {
-+		samsung,pins = "gpj4-2";
-+		samsung,pin-function = <1>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
-+
-+	pmic_dvs_3: pmic-dvs-3 {
-+		samsung,pins = "gpj4-3";
-+		samsung,pin-function = <1>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
- };
- 
- &pinctrl_3 {
-@@ -140,6 +170,14 @@
- 		samsung,pin-pud = <0>;
- 		samsung,pin-drv = <0>;
- 	};
-+
-+	pmic_selb: pmic-selb {
-+		samsung,pins = "gph0-2", "gph0-3", "gph0-4", "gph0-5",
-+			       "gph0-6";
-+		samsung,pin-function = <1>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
- };
- 
- &rtc {
-@@ -189,6 +227,288 @@
- 	};
- };
- 
-+&hsi2c_4 {
-+	status = "okay";
-+	clock-frequency = <400000>;
-+
-+	max77802-pmic@9 {
-+		compatible = "maxim,max77802";
-+		interrupt-parent = <&gpx3>;
-+		interrupts = <1 0>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&max77802_irq>, <&pmic_selb>,
-+			    <&pmic_dvs_1>, <&pmic_dvs_2>, <&pmic_dvs_3>;
-+		wakeup-source;
-+		reg = <0x9>;
-+		#clock-cells = <1>;
-+
-+		/* Using idx 1 means warm reset will get good voltage */
-+		max77802,pmic-buck-default-dvs-idx = <1>;
-+		max77802,pmic-buck-dvs-gpios = <&gpy7 6 0>,
-+					       <&gpj4 2 0>,
-+					       <&gpj4 3 0>;
-+		max77802,pmic-buck-selb-gpios = <&gph0 2 0>,
-+						<&gph0 3 0>,
-+						<&gph0 4 0>,
-+						<&gph0 5 0>,
-+						<&gph0 6 0>;
-+
-+		regulators {
-+			ldo1_reg: LDO1 {
-+				regulator-name = "vdd_1v0";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+				regulator-always-on;
-+			};
-+			ldo2_reg: LDO2 {
-+				regulator-name = "vdd_1v2_2";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+			};
-+			ldo3_reg: LDO3 {
-+				regulator-name = "vdd_1v8_3";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			vqmmc_sdcard: ldo4_reg: LDO4 {
-+				regulator-name = "vdd_sd";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <2800000>;
-+				regulator-always-on;
-+			};
-+			ldo5_reg: LDO5 {
-+				regulator-name = "vdd_1v8_5";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo6_reg: LDO6 {
-+				regulator-name = "vdd_1v8_6";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo7_reg: LDO7 {
-+				regulator-name = "vdd_1v8_7";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+			ldo8_reg: LDO8 {
-+				regulator-name = "vdd_ldo8";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+				regulator-always-on;
-+			};
-+			ldo9_reg: LDO9 {
-+				regulator-name = "vdd_ldo9";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo10_reg: LDO10 {
-+				regulator-name = "vdd_ldo10";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo11_reg: LDO11 {
-+				regulator-name = "vdd_ldo11";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo12_reg: LDO12 {
-+				regulator-name = "vdd_ldo12";
-+				regulator-min-microvolt = <3000000>;
-+				regulator-max-microvolt = <3000000>;
-+				regulator-always-on;
-+			};
-+			ldo13_reg: LDO13 {
-+				regulator-name = "vdd_ldo13";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo14_reg: LDO14 {
-+				regulator-name = "vdd_ldo14";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo15_reg: LDO15 {
-+				regulator-name = "vdd_ldo15";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+				regulator-always-on;
-+			};
-+			ldo17_reg: LDO17 {
-+				regulator-name = "vdd_g3ds";
-+				regulator-min-microvolt = <900000>;
-+				regulator-max-microvolt = <1400000>;
-+				regulator-always-on;
-+			};
-+			ldo18_reg: LDO18 {
-+				regulator-name = "ldo_18";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+			ldo19_reg: LDO19 {
-+				regulator-name = "ldo_19";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+			ldo20_reg: LDO20 {
-+				regulator-name = "ldo_20";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+			};
-+			ldo21_reg: LDO21 {
-+				regulator-name = "ldo_21";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+			};
-+			ldo23_reg: LDO23 {
-+				regulator-name = "ld0_23";
-+				regulator-min-microvolt = <3300000>;
-+				regulator-max-microvolt = <3300000>;
-+			};
-+			ldo24_reg: LDO24 {
-+				regulator-name = "ldo_24";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+			};
-+			ldo25_reg: LDO25 {
-+				regulator-name = "ldo_25";
-+				regulator-min-microvolt = <3300000>;
-+				regulator-max-microvolt = <3300000>;
-+			};
-+			ldo26_reg: LDO26 {
-+				regulator-name = "ldo_26";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+			};
-+			ldo27_reg: LDO27 {
-+				regulator-name = "ldo_27";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+			};
-+			ldo28_reg: LDO28 {
-+				regulator-name = "ldo_28";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+			ldo29_reg: LDO29 {
-+				regulator-name = "ldo_29";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+			ldo30_reg: LDO30 {
-+				regulator-name = "vdd_mifs";
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+				regulator-always-on;
-+			};
-+			ldo32_reg: LDO32 {
-+				regulator-name = "ldo_32";
-+				regulator-min-microvolt = <3000000>;
-+				regulator-max-microvolt = <3000000>;
-+			};
-+			ldo33_reg: LDO33 {
-+				regulator-name = "ldo_33";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+			};
-+			ldo34_reg: LDO34 {
-+				regulator-name = "ldo_34";
-+				regulator-min-microvolt = <3000000>;
-+				regulator-max-microvolt = <3000000>;
-+			};
-+			ldo35_reg: LDO35 {
-+				regulator-name = "ldo_35";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+			};
-+			buck1_reg: BUCK1 {
-+				regulator-name = "vdd_mif";
-+				regulator-min-microvolt = <800000>;
-+				regulator-max-microvolt = <1300000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-ramp-delay = <12500>;
-+			};
-+			buck2_reg: BUCK2 {
-+				regulator-name = "vdd_arm_real";
-+				regulator-min-microvolt = <800000>;
-+				regulator-max-microvolt = <1500000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-ramp-delay = <12500>;
-+			};
-+			buck3_reg: BUCK3 {
-+				regulator-name = "vdd_int_real";
-+				regulator-min-microvolt = <800000>;
-+				regulator-max-microvolt = <1400000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-ramp-delay = <12500>;
-+			};
-+			buck4_reg: BUCK4 {
-+				regulator-name = "vdd_g3d";
-+				regulator-min-microvolt = <700000>;
-+				regulator-max-microvolt = <1400000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-ramp-delay = <12500>;
-+			};
-+			buck5_reg: BUCK5 {
-+				regulator-name = "vdd_1v2";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			buck6_reg: BUCK6 {
-+				regulator-name = "vdd_kfc";
-+				regulator-min-microvolt = <800000>;
-+				regulator-max-microvolt = <1500000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-ramp-delay = <12500>;
-+			};
-+			buck7_reg: BUCK7 {
-+				regulator-name = "vdd_1v35";
-+				regulator-min-microvolt = <1350000>;
-+				regulator-max-microvolt = <1350000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			buck8_reg: BUCK8 {
-+				regulator-name = "vdd_emmc";
-+				regulator-min-microvolt = <2850000>;
-+				regulator-max-microvolt = <2850000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			buck9_reg: BUCK9 {
-+				regulator-name = "vdd_2v";
-+				regulator-min-microvolt = <2000000>;
-+				regulator-max-microvolt = <2000000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+			buck10_reg: BUCK10 {
-+				regulator-name = "vdd_1v8";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+		};
-+	};
-+};
-+
- &hsi2c_7 {
- 	status = "okay";
- 
--- 
-2.0.0.rc2
+> > +	memcpy(log_buf, __log_buf, __LOG_BUF_LEN);
+> > +	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
+> > +
+> > +	pr_info("big CPU log_buf_len: %d\n", log_buf_len);
+> > +	pr_info("big CPU early log buf free: %d(%d%%)\n",
+> > +		free, (free * 100) / __LOG_BUF_LEN);
+> > +}
+> > +
+> >  static bool __read_mostly ignore_loglevel;
+> >  
+> >  static int __init ignore_loglevel_setup(char *str)
+> 
+> Otherwise, it looks fine to me. I wanted to do some testing but I have
+> got stucked by some other problems. I hope that I'll find some time
+> tomorrow.
 
+Thanks, I'll respin shortly.
+
+  Luis
