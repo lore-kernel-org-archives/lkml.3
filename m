@@ -1,515 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431AbaFPIMu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 04:12:50 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:40628 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754144AbaFPIMr (ORCPT
+	id S1754543AbaFPIOL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 04:14:11 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:29361 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754426AbaFPIOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 04:12:47 -0400
-Date: Mon, 16 Jun 2014 16:12:38 +0800
-From: Real Name <enjoymindful@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] delete unnecessary bootmem struct page array
-Message-ID: <20140616081238.GA1840@name>
-References: <1401773445-25256-1-git-send-email-enjoymindful@gmail.com>
- <539C1964.4050504@nod.at>
- <20140616032852.GA1763@name>
- <539E93B9.5070407@nod.at>
+	Mon, 16 Jun 2014 04:14:09 -0400
+Date: Mon, 16 Jun 2014 11:13:50 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Benedict Boerger <benedict.boerger@cs.tu-dortmund.de>,
+        matlackdavid@gmail.com, devel@driverdev.osuosl.org,
+        peter.p.waskiewicz.jr@intel.com, linux-kernel@vger.kernel.org,
+        liodot@gmail.com, charrer@alacritech.com,
+        Joe Perches <joe@perches.com>
+Subject: Re: [PATCH] staging: slicoss: Fix coding style issue
+Message-ID: <20140616081350.GC5500@mwanda>
+References: <1402674753-3466-1-git-send-email-benedict.boerger@cs.tu-dortmund.de>
+ <20140613170435.GA18608@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="FCuugMFkClbJLl1L"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <539E93B9.5070407@nod.at>
+In-Reply-To: <20140613170435.GA18608@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---FCuugMFkClbJLl1L
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Mon, Jun 16, 2014 at 08:50:33AM +0200, Richard Weinberger wrote:
+On Fri, Jun 13, 2014 at 10:04:35AM -0700, Greg KH wrote:
+> On Fri, Jun 13, 2014 at 05:52:33PM +0200, Benedict Boerger wrote:
+> > Fix a coding style issue found by checkpatch.pl.
+> > Use ether_addr_copy instead of memcpy.
+> > 
+> > Done to complete a eudyptula task.
+> > 
+> > Signed-off-by: Benedict Boerger <benedict.boerger@cs.tu-dortmund.de>
+> > 
+> > ---
+> >  drivers/staging/slicoss/slicoss.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
+> > index 48841e7..02807a3 100644
+> > --- a/drivers/staging/slicoss/slicoss.c
+> > +++ b/drivers/staging/slicoss/slicoss.c
+> > @@ -1790,7 +1790,7 @@ static int slic_mcast_add_list(struct adapter *adapter, char *address)
+> >  	if (mcaddr == NULL)
+> >  		return 1;
+> >  
+> > -	memcpy(mcaddr->address, address, ETH_ALEN);
+> > +	ether_addr_copy(mcaddr->address, address);
+> >  
+> >  	mcaddr->next = adapter->mcastaddrs;
+> >  	adapter->mcastaddrs = mcaddr;
 > 
-> 
-> Am 16.06.2014 05:28, schrieb Real Name:
-> > On Sat, Jun 14, 2014 at 11:44:04AM +0200, Richard Weinberger wrote:
-> >> Hi!
-> >>
-> >> Am 03.06.2014 07:30, schrieb Real Name:
-> >>> From: Honggang Li <enjoymindful@gmail.com>
-> >>>
-> >>> The patch based on linux-next-2014-06-02.
-> >>>
-> >>> The old init_maps function does two things:
-> >>> 1) allocates and initializes one struct page array for bootmem
-> >>> 2) count the number of total pages
-> >>>
-> >>> After removed the source code related to the unnecessary array, the name 
-> >>> 'init_maps' is some kind of improper named, as it just count the number of
-> >>> total page numbers. So, I renamed the function as 'mem_total_pages'.
-> >>>
-> >>> I tested the patch through repeat reboot the uml kernel many times.
-> >>> [real@name linux-next]$ make ARCH=um defconfig
-> >>> [real@name linux-next]$ make ARCH=um linux
-> >>> [real@name linux-next]$ file linux
-> >>> linux: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked (uses shared libs), for GNU/Linux 2.6.32, not stripped
-> >>> [real@name linux-next]$ ./linux ubda=/home/real/linux-next/Fedora20-AMD64-root_fs mem=256m && sync && echo 1
-> >>> [real@name linux-next]$ ./linux ubda=/home/real/linux-next/Fedora20-AMD64-root_fs mem=256m && sync && echo 2
-> >>> (repeat reboot the uml kernel many times..)
-> >>
-> >> Can you please include in the changelog the commit sha1 which made the old init_maps() obsolete?
-> >> I had a look at the pre-git linux tree, looks like init_maps() wasn't touched for more than 10 years.
-> > 
-> > hi, richard
-> > 
-> > what is the pre-git linux tree? I searched it with google, but failed.
-> > 
-> > The v2.6.12 kernel is the oldest one available from the linux-next git tree. And it has duplicated
-> > struct page arrays. So, any suggestion how to find the commit you wanted?
->
- 
-> https://git.kernel.org/cgit/linux/kernel/git/tglx/history.git
+> Are you sure this is correct?  It's not always a one-to-one replacement
+> from what I have been told.
 
-richard, geert, and paul
-thanks all of you for the git-pre info.
+I hate this checkpatch.pl warning because it just encourages people to
+add bugs.
 
-> 
-> > linux-2.4.20 + uml-patch-2.4.20-8 works on *old* redhat-9 virtual machine. And it seems has duplicated
-> > struct page array too.
-> >
-> 
-> And if you remove it here too UML still works?
+regards,
+dan carpenter
 
-yes, it works. I removed the code related struct page array in init_maps.
-
-Please check the attachments.
-
-[root@rht9 root]# /root/linux-2.4.20/linux ubda=/root/uml/root_fs.rh-7.2-server.pristine.20020312 mem=256m 2>&1 | tee /tmp/log.txt
-
-thanks
-
-> 
-> Thanks,
-> //richard
-> 
-> > The first struct page array
-> > ------------------------
-> > linux-2.4.20/arch/um/kernel/physmem.c
-> > 157 int init_maps(unsigned long len)
-> > 158 {
-> > 159         struct page *p, *map;
-> > 160         int i, n;
-> > 161 
-> > 162         n = len >> PAGE_SHIFT;
-> > 163         len = n * sizeof(struct page);
-> > 164 
-> > 165         if(kmalloc_ok){
-> > 166                 map = kmalloc(len, GFP_KERNEL);
-> > 167                 if(map == NULL) map = vmalloc(len);
-> > 168         }
-> > 169         else map = alloc_bootmem_low_pages(len);
-> > 170 
-> > 171         if(map == NULL)
-> > 172                 return(-ENOMEM);
-> > 173 
-> > 174         for(i = 0; i < n; i++){
-> > 175                 p = &map[i];
-> > 176                 set_page_count(p, 0);
-> > 177                 SetPageReserved(p);
-> > 178                 INIT_LIST_HEAD(&p->list);
-> > 179         }
-> > 180 
-> > 181         mem_map = map;
-> > 182         max_mapnr = n;
-> > 183         return(0);
-> > 184 }
-> > 
-> > 
-> > The second struct page array
-> > -----------------------
-> > mm/memory.c
-> > 73 mem_map_t * mem_map; // global define
-> > 
-> > mm/page_alloc.c
-> > 839 void __init free_area_init(unsigned long *zones_size)
-> > 840 {
-> > 841         free_area_init_core(0, &contig_page_data, &mem_map, zones_size, 0, 0, 0);
-> > 842 }
-> > 
-> > --------
-> > mm/page_alloc.c
-> > 685 void __init free_area_init_core(int nid, pg_data_t *pgdat, struct page **gmap,
-> > 686         unsigned long *zones_size, unsigned long zone_start_paddr,
-> > 687         unsigned long *zholes_size, struct page *lmem_map)
-> > 688 {
-> > ........
-> > 716         map_size = (totalpages + 1)*sizeof(struct page);
-> > 717         if (lmem_map == (struct page *)0) {
-> > 718                 lmem_map = (struct page *) alloc_bootmem_node(pgdat, map_size);
-> > 719                 lmem_map = (struct page *)(PAGE_OFFSET +
-> > 720                         MAP_ALIGN((unsigned long)lmem_map - PAGE_OFFSET));
-> > 721         }
-> > 722         *gmap = pgdat->node_mem_map = lmem_map;
-> > 
-> > 
-> >>
-> >> Thanks,
-> >> //richard
-> >>
-> >>> Honggang Li (1):
-> >>>   delete unnecessary bootmem struct page array
-> >>>
-> >>>  arch/um/include/shared/mem_user.h |  2 +-
-> >>>  arch/um/kernel/physmem.c          | 32 ++++++--------------------------
-> >>>  arch/um/kernel/um_arch.c          |  7 +------
-> >>>  3 files changed, 8 insertions(+), 33 deletions(-)
-> >>>
-
---FCuugMFkClbJLl1L
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="linux-2.4.20_uml_init_maps.patch"
-
---- physmem.c.old	2014-06-16 07:35:27.000000000 -0400
-+++ physmem.c	2014-06-16 07:40:38.000000000 -0400
-@@ -156,29 +156,10 @@
- 
- int init_maps(unsigned long len)
- {
--	struct page *p, *map;
--	int i, n;
-+	int n;
- 
- 	n = len >> PAGE_SHIFT;
--	len = n * sizeof(struct page);
- 
--	if(kmalloc_ok){
--		map = kmalloc(len, GFP_KERNEL);
--		if(map == NULL) map = vmalloc(len);
--	}
--	else map = alloc_bootmem_low_pages(len);
--
--	if(map == NULL)
--		return(-ENOMEM);
--
--	for(i = 0; i < n; i++){
--		p = &map[i];
--		set_page_count(p, 0);
--		SetPageReserved(p);
--		INIT_LIST_HEAD(&p->list);
--	}
--
--	mem_map = map;
- 	max_mapnr = n;
- 	return(0);
- }
-
---FCuugMFkClbJLl1L
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="log.txt"
-Content-Transfer-Encoding: quoted-printable
-
-Checking for the skas3 patch in the host...not found
-Checking for /proc/mm...not found
-Kernel virtual memory size shrunk to 243269632 bytes
-Linux version 2.4.20-8um (root@rht9) (gcc version 3.2.2 20030222 (Red Hat L=
-inux 3.2.2-5)) #2 Mon Jun 16 07:41:28 EDT 2014
-On node 0 totalpages: 65536
-zone(0): 65536 pages.
-zone(1): 0 pages.
-zone(2): 0 pages.
-Kernel command line: ubda=3D/root/uml/root_fs.rh-7.2-server.pristine.200203=
-12 mem=3D256m root=3D/dev/ubd0
-Calibrating delay loop... 6829.32 BogoMIPS
-Memory: 256152k available
-Dentry cache hash table entries: 32768 (order: 6, 262144 bytes)
-Inode cache hash table entries: 16384 (order: 5, 131072 bytes)
-Mount-cache hash table entries: 4096 (order: 3, 32768 bytes)
-Buffer-cache hash table entries: 16384 (order: 4, 65536 bytes)
-Page-cache hash table entries: 65536 (order: 6, 262144 bytes)
-Checking for host processor cmov support...Yes
-Checking for host processor xmm support...No
-Checking that ptrace can change system call numbers...OK
-Checking that host ptys support output SIGIO...Yes
-Checking that host ptys support SIGIO on close...No, enabling workaround
-POSIX conformance testing by UNIFIX
-Linux NET4.0 for Linux 2.4
-Based upon Swansea University Computer Society NET3.039
-Initializing RT netlink socket
-Starting kswapd
-VFS: Diskquotas version dquot_6.4.0 initialized
-devfs: v1.12c (20020818) Richard Gooch (rgooch@atnf.csiro.au)
-devfs: boot_options: 0x1
-JFFS version 1.0, (C) 1999, 2000  Axis Communications AB
-JFFS2 version 2.1. (C) 2001 Red Hat, Inc., designed by Axis Communications =
-AB.
-pty: 256 Unix98 ptys configured
-SLIP: version 0.8.4-NET3.019-NEWTTY (dynamic channels, max=3D256).
-RAMDISK driver initialized: 16 RAM disks of 4096K size 1024 blocksize
-loop: loaded (max 8 devices)
-PPP generic driver version 2.4.2
-Universal TUN/TAP device driver 1.5 (C)1999-2002 Maxim Krasnyansky
-SCSI subsystem driver Revision: 1.00
-scsi0 : scsi_debug, Version: 0.61 (20020815), num_devs=3D1, dev_size_mb=3D8=
-, opts=3D0x0
-  Vendor: Linux     Model: scsi_debug        Rev: 0004
-  Type:   Direct-Access                      ANSI SCSI revision: 03
-blkmtd: error, missing `device' name
-Initializing software serial port version 1
-mconsole (version 2) initialized on /root/.uml/rdspmA/mconsole
-Partition check:
- ubda: unknown partition table
-UML Audio Relay (host dsp =3D /dev/sound/dsp, host mixer =3D /dev/sound/mix=
-er)
-Initializing stdio console driver
-NET4: Linux TCP/IP 1.0 for NET4.0
-IP Protocols: ICMP, UDP, TCP
-IP: routing cache hash table of 2048 buckets, 16Kbytes
-TCP: Hash tables configured (established 16384 bind 32768)
-NET4: Unix domain sockets 1.0/SMP for Linux NET4.0.
-VFS: Mounted root (ext2 filesystem) readonly.
-Mounted devfs on /dev
-=0DINIT: version 2.78 booting=0D=0D
-			Welcome to Red Hat Linux=0D
-		Press 'I' to enter interactive startup.=0D
-Mounting proc filesystem:  [  OK  ]=0D=0D
-Configuring kernel parameters:  [  OK  ]=0D=0D
-Setting clock : Mon Jun 16 08:02:25 EDT 2014 [  OK  ]=0D=0D
-Activating swap partitions:  [  OK  ]=0D=0D
-Setting hostname redhat72.goober.org:  [  OK  ]=0D=0D
-Checking root filesystem=0D
-/dev/ubd/0: clean, 38751/64768 files, 212070/259072 blocks=0D
-[/sbin/fsck.ext2 (1) -- /] fsck.ext2 -a /dev/ubd/0 =0D
-[  OK  ]=0D=0D
-Remounting root filesystem in read-write mode:  [  OK  ]=0D=0D
-Finding module dependencies:  depmod: cannot read ELF header from /lib/modu=
-les/2.4.20-8um/modules.dep=0D
-depmod: cannot read ELF header from /lib/modules/2.4.20-8um/modules.generic=
-_string=0D
-depmod: /lib/modules/2.4.20-8um/modules.ieee1394map is not an ELF file=0D
-depmod: /lib/modules/2.4.20-8um/modules.isapnpmap is not an ELF file=0D
-depmod: cannot read ELF header from /lib/modules/2.4.20-8um/modules.parport=
-map=0D
-depmod: /lib/modules/2.4.20-8um/modules.pcimap is not an ELF file=0D
-depmod: cannot read ELF header from /lib/modules/2.4.20-8um/modules.pnpbios=
-map=0D
-depmod: /lib/modules/2.4.20-8um/modules.usbmap is not an ELF file=0D
-[FAILED]=0D=0D
-Checking filesystems=0D
-Checking all file systems.=0D
-[  OK  ]=0D=0D
-Mounting local filesystems:  [  OK  ]=0D=0D
-Enabling local filesystem quotas:  [  OK  ]=0D=0D
-swapon: cannot stat /dev/ubd/1: No such file or directory
-Enabling swap space:  [  OK  ]=0D
-=0DINIT: Entering runlevel: 3=0D=0D
-Entering non-interactive startup=0D
-Setting network parameters:  [  OK  ]=0D=0D
-Bringing up interface lo:  [  OK  ]=0D=0D
-SIOCADDRT: No such device=0D
-SIOCADDRT: Network is unreachable=0D
-Starting system logger: [  OK  ]=0D=0D
-Starting kernel logger: [  OK  ]=0D=0D
-Starting portmapper: [  OK  ]=0D=0D
-Initializing random number generator:  [  OK  ]=0D=0D
-Mounting other filesystems:  [  OK  ]=0D=0D
-Starting identd: [  OK  ]=0D=0D
-Starting snmpd: [  OK  ]=0D=0D
-Starting named: [  OK  ]=0D=0D
-Starting sshd:  [  OK  ]=0D=0D
-Starting xinetd: [  OK  ]=0D=0D
-Starting sendmail: [  OK  ]=0D=0D
-Starting httpd: [  OK  ]=0D=0D
-Starting crond: [  OK  ]=0D=0D
-Starting squid:  [  OK  ]=0D=0D
-Starting SMB services: [  OK  ]=0D=0D
-Starting NMB services: [  OK  ]=0D=0D
-Please run makehistory and/or makedbz before starting innd.=0D
-Running Linuxconf hooks:  [  OK  ]=0D=0D
-=1Bc=0D
-Unauthorized access to this system is strictly prohibited.=0D
-redhat72 login: Warning: This program is an suid-root program or is being r=
-un by the root user.
-The full text of the error or warning message cannot be safely formatted
-in this environment. You may get a more descriptive message by running the
-program as a non-root user or by removing the suid bit on the executable.
-xterm Xt error: Can't open display: %s
-Warning: This program is an suid-root program or is being run by the root u=
-ser.
-The full text of the error or warning message cannot be safely formatted
-in this environment. You may get a more descriptive message by running the
-program as a non-root user or by removing the suid bit on the executable.
-xterm Xt error: Can't open display: %s
-=0D
-=0D
-Unauthorized access to this system is strictly prohibited.=0D
-redhat72 login: =0D
-=0D
-Unauthorized access to this system is strictly prohibited.=0D
-redhat72 login: root=0D
-Password: =0D
-Last login: Mon Jun 16 08:00:06 on vc/0=0D
-bash-2.05# /sbin/poweroff =0D
-=07=0D=0D
-Broadcast message from root (vc/0) Mon Jun 16 08:03:17 2014...=0D=0D
-=0D=0D
-=0DThe system is going down for system halt NOW !!=0D=0D
-=0DINIT: Switching to runlevel: 0=0D=0D
-=0DINIT: Sending processes the TERM signal=0D=0D
-bash-2.05# =0DINIT: Sending processes the KILL signal=0D=0D
-=0DINIT: Pid 527 [id 1] seems to hang=0D=0D
-=0DINIT: Pid 528 [id 2] seems to hang=0D=0D
-Stopping httpd: [  OK  ]=0D=0D
-Stopping squid:  [  OK  ]=0D=0D
-Stopping sshd:[  OK  ]=0D=0D
-Shutting down sendmail: [  OK  ]=0D=0D
-Shutting down SMB services: [  OK  ]=0D=0D
-Shutting down NMB services: [FAILED]=0D=0D
-Stopping named: [  OK  ]=0D=0D
-Stopping snmpd: [  OK  ]=0D=0D
-Stopping xinetd: [  OK  ]=0D=0D
-Stopping crond: [  OK  ]=0D=0D
-Stopping identd: [  OK  ]=0D=0D
-Saving random seed:  [  OK  ]=0D=0D
-Stopping portmapper: [  OK  ]=0D=0D
-Shutting down kernel logger: [  OK  ]=0D=0D
-Shutting down system logger: [  OK  ]=0D=0D
-Starting killall:  Shutting down SMB services: [FAILED]=0D=0D
-Shutting down NMB services: [FAILED]=0D=0D
-[FAILED]=0D=0D
-Sending all processes the TERM signal... =0D
-Sending all processes the KILL signal... =0D
-Syncing hardware clock to system time =0D
-Turning off quotas:  =0D
-umount2: Device or resource busy=0D
-umount: devfs: not found=0D
-umount: /dev: Illegal seek=0D
-Halting system...=0D
-Power down.
-tracing thread pid =3D 11409
-
-
---FCuugMFkClbJLl1L
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="init_maps.s"
-
-[root@rht9 linux-2.4.20]# objdump -S -d linux > linux_source.s
-[root@rht9 linux-2.4.20]# vim linux_source.s	
-	 472789 a00d7acc <to_phys>:
-	 472790 a00d7acc:       55                      push   %ebp
-	 472791 a00d7acd:       89 e5                   mov    %esp,%ebp
-	 472792 a00d7acf:       8b 45 08                mov    0x8(%ebp),%eax
-	 472793 a00d7ad2:       2b 05 e0 60 25 a0       sub    0xa02560e0,%eax
-	 472794 a00d7ad8:       c9                      leave
-	 472795 a00d7ad9:       c3                      ret
-	 472796 a00d7ada:       89 f6                   mov    %esi,%esi
-	 472797
-	 472798 a00d7adc <init_maps>:
-	 472799 a00d7adc:       55                      push   %ebp
-	 472800 a00d7add:       89 e5                   mov    %esp,%ebp
-	 472801 a00d7adf:       8b 45 08                mov    0x8(%ebp),%eax
-	 472802 a00d7ae2:       c1 e8 0c                shr    $0xc,%eax
-	 472803 a00d7ae5:       a3 e0 43 23 a0          mov    %eax,0xa02343e0
-	 472804 a00d7aea:       31 c0                   xor    %eax,%eax
-	 472805 a00d7aec:       c9                      leave
-	 472806 a00d7aed:       c3                      ret
-	 472807 a00d7aee:       89 f6                   mov    %esi,%esi
-	 472808
-	 472809 a00d7af0 <__virt_to_page>:
-	 472810 a00d7af0:       55                      push   %ebp
-	 472811 a00d7af1:       89 e5                   mov    %esp,%ebp
-	 472812 a00d7af3:       8b 55 08                mov    0x8(%ebp),%edx
-	 472813 a00d7af6:       2b 15 e0 60 25 a0       sub    0xa02560e0,%edx
-	 472814 a00d7afc:       c1 ea 0c                shr    $0xc,%edx
-	
-
---FCuugMFkClbJLl1L
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="bash_history_tail.txt"
-
-[root@rht9 root]# 
-[root@rht9 root]# uname -a
-Linux rht9 2.4.25 #2 SMP Mon Jun 9 03:21:50 EDT 2014 i686 i686 i386 GNU/Linux
-
-
-
-Unauthorized access to this system is strictly prohibited.
-redhat72 login: Warning: This program is an suid-root program or is being run by the root user.
-The full text of the error or warning message cannot be safely formatted
-in this environment. You may get a more descriptive message by running the
-program as a non-root user or by removing the suid bit on the executable.
-xterm Xt error: Can't open display: %s
-Warning: This program is an suid-root program or is being run by the root user.
-The full text of the error or warning message cannot be safely formatted
-in this environment. You may get a more descriptive message by running the
-program as a non-root user or by removing the suid bit on the executable.
-xterm Xt error: Can't open display: %s
-
-
-Unauthorized access to this system is strictly prohibited.
-redhat72 login: 
-
-Unauthorized access to this system is strictly prohibited.
-redhat72 login: root
-Password: 
-Last login: Mon Jun 16 07:56:47 on vc/0
-bash-2.05#       
-bash-2.05# 
-bash-2.05# 
-bash-2.05# cat /proc/cpuinfo 
-processor  : 0
-vendor_id  : User Mode Linux
-model name : UML
-mode  	   : tt
-host	     : Linux rht9 2.4.25 #2 SMP Mon Jun 9 03:21:50 EDT 2014 i686
-bogomips     : 6816.66
-
-bash-2.05# 
-bash-2.05# 
-bash-2.05# uname -a
-Linux redhat72.goober.org 2.4.20-8um #2 Mon Jun 16 07:41:28 EDT 2014 i686 unknown
-bash-2.05# 
-bash-2.05# 
-bash-2.05# /sbin/poweroff 
-
-Broadcast message from root (vc/0) Mon Jun 16 08:00:23 2014...
-
-The system is going down for system halt NOW !!
-INIT: Switching to runlevel: 0
-INIT: Sending processes the TERM signal
-INIT: Sending processes the KILL signal
-INIT: Pid 520 [id 1] seems to hang
-INIT: Pid 521 [id 2] seems to hang
-Stopping httpd: [  OK  ]
-Stopping squid:  [  OK  ]
-Stopping sshd:[  OK  ]
-Shutting down sendmail: [  OK  ]
-Shutting down SMB services: [  OK  ]
-Shutting down NMB services: [FAILED]
-Stopping named: [  OK  ]
-Stopping snmpd: [  OK  ]
-Stopping xinetd: [  OK  ]
-Stopping crond: [  OK  ]
-Stopping identd: [  OK  ]
-Saving random seed:  [  OK  ]
-Stopping portmapper: [  OK  ]
-Shutting down kernel logger: [  OK  ]
-Shutting down system logger: [  OK  ]
-Starting killall:  Shutting down SMB services: [FAILED]
-Shutting down NMB services: [FAILED]
-[FAILED]
-Sending all processes the TERM signal... 
-Sending all processes the KILL signal... 
-Syncing hardware clock to system time 
-Turning off quotas:  
-umount2: Device or resource busy
-umount: devfs: not found
-umount: /dev: Illegal seek
-Halting system...
-Power down.
-
-[root@rht9 root]# 
-
---FCuugMFkClbJLl1L--
