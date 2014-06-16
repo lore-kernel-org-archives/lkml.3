@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116AbaFPHVJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 03:21:09 -0400
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:60552 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752775AbaFPHVH (ORCPT
+	id S1754130AbaFPHWR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 03:22:17 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:56227 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752775AbaFPHWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 03:21:07 -0400
-Message-ID: <1402903265.17230.4.camel@x220>
-Subject: Re: [uml-devel] [PATCH v2] delete unnecessary bootmem struct page
- array
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Real Name <enjoymindful@gmail.com>, Richard Weinberger <richard@nod.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>
-Date: Mon, 16 Jun 2014 09:21:05 +0200
-In-Reply-To: <CAMuHMdV7gGFERHA-f_LcAeGFOvnx39kEhf+q5_QLz+buu3WWRA@mail.gmail.com>
-References: <1401773445-25256-1-git-send-email-enjoymindful@gmail.com>
-	 <539C1964.4050504@nod.at> <20140616032852.GA1763@name>
-	 <CAMuHMdV7gGFERHA-f_LcAeGFOvnx39kEhf+q5_QLz+buu3WWRA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 16 Jun 2014 07:21:05.0704 (UTC) FILETIME=[894F3280:01CF8933]
-X-RcptDomain: vger.kernel.org
+	Mon, 16 Jun 2014 03:22:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPDyKFp022H9xryjVvGNEw_Xiyb0zccb8tjawBT1y0+JB=wZ9g@mail.gmail.com>
+References: <CALAqxLWAXU0hS8si-CmkOObBOHGv_skMVfPnUsdmLcZzkdUsWA@mail.gmail.com>
+	<CALAqxLUoc45535haDAuoNXSSmNqTZF1uiOMF8PyaDp_A+_dnWA@mail.gmail.com>
+	<CAPDyKFp022H9xryjVvGNEw_Xiyb0zccb8tjawBT1y0+JB=wZ9g@mail.gmail.com>
+Date: Mon, 16 Jun 2014 15:22:15 +0800
+Message-ID: <CAAJw_ZscH2Re5jytGeCcBE2jZO+xngZ-r_P5NuR=KsoB+QyaDA@mail.gmail.com>
+Subject: Re: [Regression] 3.15 mmc related ext4 corruption with qemu-system-arm
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: John Stultz <john.stultz@linaro.org>, Chris Ball <chris@printf.net>,
+        Peter Maydell <peter.maydell@linaro.org>,
+        Johan Rudholm <jrudholm@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "Theodore Ts'o" <tytso@mit.edu>, lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-16 at 08:58 +0200, Geert Uytterhoeven wrote:
-> On Mon, Jun 16, 2014 at 5:28 AM, Real Name <enjoymindful@gmail.com> wrote:
-> > what is the pre-git linux tree? I searched it with google, but failed.
-> 
-> E.g. git.kernel.org/cgit/linux/kernel/git/tglx/history.git/
+On Fri, Jun 13, 2014 at 8:28 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> On 13 June 2014 01:51, John Stultz <john.stultz@linaro.org> wrote:
+>> On Wed, Jun 11, 2014 at 10:35 PM, John Stultz john.stultz@linaro.org> wrote:
 
-The archive at https://archive.org/details/git-history-of-linux seems to
-be the most comprehensive. I use it regularly. It can even be made to
-track the current tree. The tags for pre-v2.6.12-rc2 releases need to be
-added manually, which is quite a bit of work.
+> I have quickly implemented my proposal 1). I am testing them on real
+> HW now, will post the patches as soon as I can and keep you on cc.
+>
+> I would also really appreciate if you could help out giving them a
+> quick try for your QEMU environment.
 
-Is there something better out there?
+Please cc me the patch. I'm seeing my host's reiserfs corrupted with
+qemu all over the places in linux-3.15.0 (linux-3.16-rc1). Pretty sure
+it's qemu as it doesn't seem to happen if I don't run qemu.
 
-
-Paul Bolle
-
+Thanks,
+Jeff
