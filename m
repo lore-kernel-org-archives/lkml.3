@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509AbaFPNAj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 09:00:39 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:43735 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092AbaFPNAi (ORCPT
+	id S1752804AbaFPNCE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 09:02:04 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:36764 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358AbaFPNCB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 09:00:38 -0400
-Message-ID: <1402923474.3958.34.camel@debian>
-Subject: Re: [PATCH] mm/vmscan.c: avoid recording the original scan targets
- in shrink_lruvec()
-From: Chen Yucong <slaoub@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: mhocko@suse.cz, hannes@cmpxchg.org, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Mon, 16 Jun 2014 20:57:54 +0800
-In-Reply-To: <1402320436-22270-1-git-send-email-slaoub@gmail.com>
-References: <1402320436-22270-1-git-send-email-slaoub@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 16 Jun 2014 09:02:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAAJw_ZscH2Re5jytGeCcBE2jZO+xngZ-r_P5NuR=KsoB+QyaDA@mail.gmail.com>
+References: <CALAqxLWAXU0hS8si-CmkOObBOHGv_skMVfPnUsdmLcZzkdUsWA@mail.gmail.com>
+	<CALAqxLUoc45535haDAuoNXSSmNqTZF1uiOMF8PyaDp_A+_dnWA@mail.gmail.com>
+	<CAPDyKFp022H9xryjVvGNEw_Xiyb0zccb8tjawBT1y0+JB=wZ9g@mail.gmail.com>
+	<CAAJw_ZscH2Re5jytGeCcBE2jZO+xngZ-r_P5NuR=KsoB+QyaDA@mail.gmail.com>
+Date: Mon, 16 Jun 2014 15:02:01 +0200
+Message-ID: <CAPDyKFqA4ZgS1eUpiDWv2WTigFoMFsEDT4T5ci6asWuNiOLF5Q@mail.gmail.com>
+Subject: Re: [Regression] 3.15 mmc related ext4 corruption with qemu-system-arm
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Cc: John Stultz <john.stultz@linaro.org>, Chris Ball <chris@printf.net>,
+        Peter Maydell <peter.maydell@linaro.org>,
+        Johan Rudholm <jrudholm@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "Theodore Ts'o" <tytso@mit.edu>, lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-09 at 21:27 +0800, Chen Yucong wrote:
-> Via https://lkml.org/lkml/2013/4/10/334 , we can find that recording the
-> original scan targets introduces extra 40 bytes on the stack. This patch
-> is able to avoid this situation and the call to memcpy(). At the same time,
-> it does not change the relative design idea.
-> 
-> ratio = original_nr_file / original_nr_anon;
-> 
-> If (nr_file > nr_anon), then ratio = (nr_file - x) / nr_anon.
->  x = nr_file - ratio * nr_anon;
-> 
-> if (nr_file <= nr_anon), then ratio = nr_file / (nr_anon - x).
->  x = nr_anon - nr_file / ratio;
-> 
-Hi Andrew Morton,
+On 16 June 2014 09:22, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+> On Fri, Jun 13, 2014 at 8:28 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+>> On 13 June 2014 01:51, John Stultz <john.stultz@linaro.org> wrote:
+>>> On Wed, Jun 11, 2014 at 10:35 PM, John Stultz john.stultz@linaro.org> wrote:
+>
+>> I have quickly implemented my proposal 1). I am testing them on real
+>> HW now, will post the patches as soon as I can and keep you on cc.
+>>
+>> I would also really appreciate if you could help out giving them a
+>> quick try for your QEMU environment.
+>
+> Please cc me the patch. I'm seeing my host's reiserfs corrupted with
+> qemu all over the places in linux-3.15.0 (linux-3.16-rc1). Pretty sure
+> it's qemu as it doesn't seem to happen if I don't run qemu.
+>
+> Thanks,
+> Jeff
 
-I think the patch
- 
-[PATCH]
-mm-vmscanc-avoid-recording-the-original-scan-targets-in-shrink_lruvec-fix.patch
+Hi Jeff,
 
-which I committed should be discarded. Because It have some critical
-defects.
-    1) If we want to solve the divide-by-zero and unfair problems, it
-needs to two variables for recording the ratios.
- 
-    2) For "x = nr_file - ratio * nr_anon", the "x" is likely to be a
-negative number. we can assume:
+I posted them prior I noticed this, sorry. There are three patches for
+the mmci driver, just search for "mmci".
 
-      nr[LRU_ACTIVE_FILE] = 30
-      nr[LRU_INACTIVE_FILE] = 30
-      nr[LRU_ACTIVE_ANON] = 0
-      nr[LRU_INACTIVE_ANON] = 40
-
-      ratio = 60/40 = 3/2
-
-When the value of (nr_reclaimed < nr_to_reclaim) become false, there are
-the following results:
-      nr[LRU_ACTIVE_FILE] = 15
-      nr[LRU_INACTIVE_FILE] = 15
-      nr[LRU_ACTIVE_ANON] = 0
-      nr[LRU_INACTIVE_ANON] = 25
- 
-      nr_file = 30
-      nr_anon = 25
-
-      x = 30 - 25 * (3/2) = 30 - 37.5 = -7.5.
-
-The result is too terrible. 
-   
-   3) This method is less accurate than the original, especially for the
-qualitative difference between FILE and ANON that is very small.
-
-thx!
-cyc  
-   
-
+Kind regards
+Uffe
