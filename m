@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932499AbaFPU6u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 16:58:50 -0400
-Received: from lekensteyn.nl ([178.21.112.251]:44603 "EHLO lekensteyn.nl"
+	id S1755765AbaFPVA3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 17:00:29 -0400
+Received: from mta-out1.inet.fi ([62.71.2.199]:46301 "EHLO jenni1.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755677AbaFPU6t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 16:58:49 -0400
-From: Peter Wu <peter@lekensteyn.nl>
-To: Don Zickus <dzickus@redhat.com>
-Cc: mhocko@suse.cz, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: Writing watchdog_thresh triggers BUG: sleeping function called from invalid context
-Date: Mon, 16 Jun 2014 22:58:44 +0200
-Message-ID: <1583331.cjuWMhE6Gz@al>
-User-Agent: KMail/4.13.2 (Linux/3.15.0-rc8-custom-00058-gd2cfd31; KDE/4.13.2; x86_64; ; )
-In-Reply-To: <20140616205245.GQ177152@redhat.com>
-References: <5704608.v8oGzytBA3@al> <20140616205245.GQ177152@redhat.com>
+	id S1751468AbaFPVA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 17:00:28 -0400
+Date: Mon, 16 Jun 2014 23:59:46 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH] mm, thp: move invariant bug check out of loop in
+ __split_huge_page_map
+Message-ID: <20140616205946.GB14208@node.dhcp.inet.fi>
+References: <1402947348-60655-1-git-send-email-Waiman.Long@hp.com>
+ <20140616204934.GA14208@node.dhcp.inet.fi>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Spam-Score: -0.0 (/)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140616204934.GA14208@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 16 June 2014 16:52:45 Don Zickus wrote:
-> On Mon, Jun 16, 2014 at 04:12:44PM +0200, Peter Wu wrote:
-> > Hi,
-> > 
-> > Writing to /proc/sys/kernel/watchdog_thresh causes the following BUG in
-> > at least v3.13-rc2-625-g06151db, v3.15 and v3.16-rc1. Kernel config is
-> > attached.
-> > 
-> > It was originally found on bare metal, since then reproduced in QEMU in
-> > init, and when directly executing it.
-> > 
-> > Regards,
-> > Peter
-> 
-> Hi Peter,
-> 
-> I assume the following patch will work?
+On Mon, Jun 16, 2014 at 11:49:34PM +0300, Kirill A. Shutemov wrote:
+> On Mon, Jun 16, 2014 at 03:35:48PM -0400, Waiman Long wrote:
+> > In the __split_huge_page_map() function, the check for
+> > page_mapcount(page) is invariant within the for loop. Because of the
+> > fact that the macro is implemented using atomic_read(), the redundant
+> > check cannot be optimized away by the compiler leading to unnecessary
+> > read to the page structure.
 
-Yes, the patch works (no more BUG). No idea whether it is
-(in)correct though.
+And atomic_read() is *not* atomic operation. It's implemented as
+dereferencing though cast to volatile, which suppress compiler
+optimization, but doesn't affect what CPU can do with the variable.
 
-Regards,
-Peter
+So I doubt difference will be measurable anywhere.
 
-> Michal, do you remember why we needed preempt here?  I wouldn't think it
-> mattered as we are not doing anything per-cpu specific.
-> 
-> Cheers,
-> Don
-> 
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> index 516203e..30e4822 100644
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -527,10 +527,8 @@ static void update_timers_all_cpus(void)
->  	int cpu;
->  
->  	get_online_cpus();
-> -	preempt_disable();
->  	for_each_online_cpu(cpu)
->  		update_timers(cpu);
-> -	preempt_enable();
->  	put_online_cpus();
->  }
->  
-
+-- 
+ Kirill A. Shutemov
