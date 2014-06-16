@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286AbaFPEm4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 00:42:56 -0400
+	id S1753350AbaFPEnK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 00:43:10 -0400
 Received: from mailout2.samsung.com ([203.254.224.25]:48519 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931AbaFPEmx (ORCPT
+	with ESMTP id S1753218AbaFPEmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 00:42:53 -0400
-X-AuditID: cbfee68d-b7fd46d000005f36-b3-539e75c1f652
+	Mon, 16 Jun 2014 00:42:55 -0400
+X-AuditID: cbfee691-b7f2f6d0000040c4-f8-539e75c33e7d
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: lee.jones@linaro.org, sbkim73@samsung.com, sameo@linux.intel.com
 Cc: k.kozlowski@samsung.com, myungjoo.ham@samsung.com,
         kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv5 1/3] mfd: sec-core: Add support for S2MPU02 device
-Date: Mon, 16 Jun 2014 13:42:35 +0900
-Message-id: <1402893757-18957-2-git-send-email-cw00.choi@samsung.com>
+        Chanwoo Choi <cw00.choi@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Mark Brown <broonie@linaro.org>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: [PATCHv5 3/3] dt-bindings: mfd: s2mps11: Add support S2MPU02 PMIC
+Date: Mon, 16 Jun 2014 13:42:37 +0900
+Message-id: <1402893757-18957-4-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1402893757-18957-1-git-send-email-cw00.choi@samsung.com>
 References: <1402893757-18957-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCLMWRmVeSWpSXmKPExsWyRsSkQPdg6bxgg5kd8hbXvzxntXj9wtDi
-	bNMbdov7X48yWlzeNYfN4nbjCjaL092sFhdXfGFy4PC4c20Pm8e8k4EefVtWMXp83iQXwBLF
-	ZZOSmpNZllqkb5fAlbG9+y1TwWz9itXfr7I2ME5Q62Lk5JAQMJE4fGMnM4QtJnHh3nq2LkYu
-	DiGBpYwSl05/Z4UpmrL8NlRiEaPExDWHoJwmJonXpzcxglSxCWhJ7H9xgw3EFhFwkVjS/Q6s
-	iFlgBqPEyVUrmUASwiCJ1lYWEJtFQFVi0vTDQDYHB6+Aq8SB4wYQ2+QkPux5xA5icwq4Sfzt
-	2wbWKgRUcutyFwvITAmByewST3dchZojIPFt8iGwORICshKbDkC9IylxcMUNlgmMwgsYGVYx
-	iqYWJBcUJ6UXGeoVJ+YWl+al6yXn525iBIb46X/Pencw3j5gfYgxGWjcRGYp0eR8YIzklcQb
-	GpsZWZiamBobmVuakSasJM6b9DApSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAPjXsG7DtLb
-	LzacjF9tHfad5ebHd48DXCVikvhWHuYQNgi5XXzzPPfJ7TkfVLO0VObNvfvI8Vvn5Fdbzvrs
-	uPF45tXy+JeHg69M2nPPOHDaoXNCvup3arYvCjzpyLZqpoSGWYqvdmzh4/fHuAXkkkXStvSu
-	e9i6MuT/+4MvrKTKj+4UXjrbhTGmXImlOCPRUIu5qDgRANZYFfiHAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t9jAd2DpfOCDc5dkrC4/uU5q8XrF4YW
-	Z5vesFvc/3qU0eLyrjlsFrcbV7BZnO5mtbi44guTA4fHnWt72DzmnQz06NuyitHj8ya5AJao
-	BkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKAjlBTK
-	EnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGENYwZ27vfMhXM1q9Y/f0qawPjBLUu
-	Rk4OCQETiSnLb7NB2GISF+6tB7K5OIQEFjFKTFxzCMppYpJ4fXoTI0gVm4CWxP4XN8A6RARc
-	JJZ0vwMrYhaYwShxctVKJpCEMEiitZUFxGYRUJWYNP0wkM3BwSvgKnHguAHENjmJD3sesYPY
-	nAJuEn/7toG1CgGV3LrcxTKBkXcBI8MqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjOAIeia9
-	g3FVg8UhRgEORiUe3gmO84KFWBPLiitzDzFKcDArifDa+wCFeFMSK6tSi/Lji0pzUosPMSYD
-	HTWRWUo0OR8Y3Xkl8YbGJmZGlkbmhhZGxuakCSuJ8x5stQ4UEkhPLEnNTk0tSC2C2cLEwSnV
-	wCi4LWpaksDTZNGNT1KVTvdVX251Xve2tKF5esS3jMlvWzsyHtnO0W1s6H5onncnV3CfiPfH
-	96o/xLZtnG6q4Kqx88ErWZYlIjGn5+it3q07y1fRODa+YdnBmOVHpLZZySzcznfx8bPdjtKf
-	k5r35X2ftPfjvkWV/x7/k8tn+7jX4tTiLBOmgPtKLMUZiYZazEXFiQCvCE5/5AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBIsWRmVeSWpSXmKPExsWyRsSkRPdw6bxgg90dbBabrl9ntbj+5Tmr
+	xfwj51gt+t8sZLU492olo8XrF4YWZ5vesFvc/3qU0WJh2xIWi8u75rBZLL1+kcniduMKNosJ
+	09eyWLy9M53FonXvEXaLk396GS1Od7NaXFzxhcli/YzXLBZzpr9jchDxWDNvDaPH5b5eJo+V
+	y7+weWxeoeWxaVUnm8eda3vYPOadDPTo27KK0ePzJrkAzigum5TUnMyy1CJ9uwSujPk//zMX
+	HBaqmDnpE2MD4yL+LkZODgkBE4mJn26yQdhiEhfurQeyuTiEBJYySiy79pAZpuhy71RWiMQi
+	RokL59azgySEBJqYJGZ1VoLYbAJaEvtf3ACbJCLgIrGk+x3YJGaByywSix/2sYAkhAW8JGZv
+	PwBmswioSkzadBlsA6+Aq8SOe/9ZILbJSXzY8whsAaeAm8Tfvm1MEMtcJW5d7mIBGSohMJVD
+	Ys+dH4wQgwQkvk0+BJTgAErISmw6AHW1pMTBFTdYJjAKL2BkWMUomlqQXFCclF5kqlecmFtc
+	mpeul5yfu4kRGIun/z2buIPx/gHrQ4zJQOMmMkuJJucDYzmvJN7Q2MzIwtTE1NjI3NKMNGEl
+	cd70R0lBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhh3P3FbGRN/+KxIWpJ9eeyTJZ8VdifX
+	bWTdJZV8/Xf45x3fv2dut5yi+DOtaeayjiuTj55ev1ZjB5fPwmsxK0St/y0U1wr8deGbsaqU
+	5/lv5+ftDUyQNLJWqt951k2A6YRq99K2LLv7iS2GBvM711XnTo2RuvHqTtuEo7rx4S1n9DqM
+	2wxNw+WUWIozEg21mIuKEwGhIok+2wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKKsWRmVeSWpSXmKPExsVy+t9jAd1DpfOCDXpfWVlsun6d1eL6l+es
+	FvOPnGO16H+zkNXi3KuVjBavXxhanG16w25x/+tRRouFbUtYLC7vmsNmsfT6RSaL240r2Cwm
+	TF/LYvH2znQWi9a9R9gtTv7pZbQ43c1qcXHFFyaL9TNes1jMmf6OyUHEY828NYwel/t6mTxW
+	Lv/C5rF5hZbHplWdbB53ru1h85h3MtCjb8sqRo/Pm+QCOKMaGG0yUhNTUosUUvOS81My89Jt
+	lbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgB5TUihLzCkFCgUkFhcr6dthmhAa4qZr
+	AdMYoesbEgTXY2SABhLWMGbM//mfueCwUMXMSZ8YGxgX8XcxcnJICJhIXO6dygphi0lcuLee
+	rYuRi0NIYBGjxIVz69lBEkICTUwSszorQWw2AS2J/S9usIHYIgIuEku634E1MAtcZpFY/LCP
+	BSQhLOAlMXv7ATCbRUBVYtKmy8wgNq+Aq8SOe/9ZILbJSXzY8whsAaeAm8Tfvm1MEMtcJW5d
+	7mKZwMi7gJFhFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZwpD+T3sG4qsHiEKMAB6MSD+8E
+	x3nBQqyJZcWVuYcYJTiYlUR47X2AQrwpiZVVqUX58UWlOanFhxiTga6ayCwlmpwPTEJ5JfGG
+	xiZmRpZG5oYWRsbmpAkrifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cCofGGXz6Nmz391TDmb
+	pnIZXGhdVLn9UqL0yp2yjw4unPlSL46xvvl629yYBXGVz8pUVHRz4gqS7Sac83xy4uFmFSu2
+	H58mCRu5Tmx6rKtxVZDjfNrzNeGyV/SLfWyCVB/+PHqc9+Lyv5e9T+q4OL8PM7oyg9VB+fQX
+	r+hTXO9OOYWrpBVY661SYinOSDTUYi4qTgQATVMEOzgDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -49,229 +61,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for Samsung S2MPU02 PMIC device to the MFD sec-core driver.
-The S2MPU02 device includes PMIC/RTC/Clock devices.
+This patch add documentation for S2MPU02 PMIC device. S2MPU02 has a little
+difference from S2MPS11/S2MPS14 PMIC and has LDO[1-28]/Buck[1-7].
 
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Lee Jones <lee.jones@linaro.org>
+Cc: Mark Brown <broonie@linaro.org>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Yadwinder Singh Brar <yadi.brar@samsung.com>
+Cc: Tomasz Figa <t.figa@samsung.com>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: devicetree@vger.kernel.org
+Cc: linux-doc@vger.kernel.org
 ---
- drivers/mfd/sec-core.c           | 19 +++++++++
- drivers/mfd/sec-irq.c            | 88 ++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/samsung/core.h |  1 +
- include/linux/mfd/samsung/irq.h  | 24 +++++++++++
- 4 files changed, 132 insertions(+)
+ Documentation/devicetree/bindings/mfd/s2mps11.txt | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-index be06d0a..5e8784b 100644
---- a/drivers/mfd/sec-core.c
-+++ b/drivers/mfd/sec-core.c
-@@ -89,6 +89,17 @@ static const struct mfd_cell s2mpa01_devs[] = {
- 	},
- };
+diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+index d81ba30..f7c9180 100644
+--- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
++++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+@@ -1,5 +1,5 @@
  
-+static const struct mfd_cell s2mpu02_devs[] = {
-+	{
-+		.name = "s2mpu02-pmic",
-+	}, {
-+		.name = "s2mpu02-rtc",
-+	}, {
-+		.name = "s2mpu02-clk",
-+		.of_compatible = "samsung,s2mpu02-clk",
-+	}
-+};
-+
- #ifdef CONFIG_OF
- static const struct of_device_id sec_dt_match[] = {
- 	{	.compatible = "samsung,s5m8767-pmic",
-@@ -103,6 +114,9 @@ static const struct of_device_id sec_dt_match[] = {
- 		.compatible = "samsung,s2mpa01-pmic",
- 		.data = (void *)S2MPA01,
- 	}, {
-+		.compatible = "samsung,s2mpu02-pmic",
-+		.data = (void *)S2MPU02,
-+	}, {
- 		/* Sentinel */
- 	},
- };
-@@ -342,6 +356,11 @@ static int sec_pmic_probe(struct i2c_client *i2c,
- 		ret = mfd_add_devices(sec_pmic->dev, -1, s2mps14_devs,
- 				      ARRAY_SIZE(s2mps14_devs), NULL, 0, NULL);
- 		break;
-+	case S2MPU02:
-+		ret = mfd_add_devices(sec_pmic->dev, -1, s2mpu02_devs,
-+				      ARRAY_SIZE(s2mpu02_devs), NULL, 0, NULL);
-+		break;
-+
- 	default:
- 		/* If this happens the probe function is problem */
- 		BUG();
-diff --git a/drivers/mfd/sec-irq.c b/drivers/mfd/sec-irq.c
-index 654e2c1..0cabd03 100644
---- a/drivers/mfd/sec-irq.c
-+++ b/drivers/mfd/sec-irq.c
-@@ -20,6 +20,7 @@
- #include <linux/mfd/samsung/irq.h>
- #include <linux/mfd/samsung/s2mps11.h>
- #include <linux/mfd/samsung/s2mps14.h>
-+#include <linux/mfd/samsung/s2mpu02.h>
- #include <linux/mfd/samsung/s5m8763.h>
- #include <linux/mfd/samsung/s5m8767.h>
+-* Samsung S2MPS11 and S2MPS14 Voltage and Current Regulator
++* Samsung S2MPS11, S2MPS14 and S2MPU02 Voltage and Current Regulator
  
-@@ -161,6 +162,77 @@ static const struct regmap_irq s2mps14_irqs[] = {
- 	},
- };
+ The Samsung S2MPS11 is a multi-function device which includes voltage and
+ current regulators, RTC, charger controller and other sub-blocks. It is
+@@ -7,7 +7,8 @@ interfaced to the host controller using an I2C interface. Each sub-block is
+ addressed by the host system using different I2C slave addresses.
  
-+static const struct regmap_irq s2mpu02_irqs[] = {
-+	[S2MPU02_IRQ_PWRONF] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_PWRONF_MASK,
-+	},
-+	[S2MPU02_IRQ_PWRONR] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_PWRONR_MASK,
-+	},
-+	[S2MPU02_IRQ_JIGONBF] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_JIGONBF_MASK,
-+	},
-+	[S2MPU02_IRQ_JIGONBR] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_JIGONBR_MASK,
-+	},
-+	[S2MPU02_IRQ_ACOKBF] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_ACOKBF_MASK,
-+	},
-+	[S2MPU02_IRQ_ACOKBR] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_ACOKBR_MASK,
-+	},
-+	[S2MPU02_IRQ_PWRON1S] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_PWRON1S_MASK,
-+	},
-+	[S2MPU02_IRQ_MRB] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_MRB_MASK,
-+	},
-+	[S2MPU02_IRQ_RTC60S] = {
-+		.reg_offset = 1,
-+		.mask = S2MPS11_IRQ_RTC60S_MASK,
-+	},
-+	[S2MPU02_IRQ_RTCA1] = {
-+		.reg_offset = 1,
-+		.mask = S2MPS11_IRQ_RTCA1_MASK,
-+	},
-+	[S2MPU02_IRQ_RTCA0] = {
-+		.reg_offset = 1,
-+		.mask = S2MPS11_IRQ_RTCA0_MASK,
-+	},
-+	[S2MPU02_IRQ_SMPL] = {
-+		.reg_offset = 1,
-+		.mask = S2MPS11_IRQ_SMPL_MASK,
-+	},
-+	[S2MPU02_IRQ_RTC1S] = {
-+		.reg_offset = 1,
-+		.mask = S2MPS11_IRQ_RTC1S_MASK,
-+	},
-+	[S2MPU02_IRQ_WTSR] = {
-+		.reg_offset = 1,
-+		.mask = S2MPS11_IRQ_WTSR_MASK,
-+	},
-+	[S2MPU02_IRQ_INT120C] = {
-+		.reg_offset = 2,
-+		.mask = S2MPS11_IRQ_INT120C_MASK,
-+	},
-+	[S2MPU02_IRQ_INT140C] = {
-+		.reg_offset = 2,
-+		.mask = S2MPS11_IRQ_INT140C_MASK,
-+	},
-+	[S2MPU02_IRQ_TSD] = {
-+		.reg_offset = 2,
-+		.mask = S2MPS14_IRQ_TSD_MASK,
-+	},
-+};
-+
- static const struct regmap_irq s5m8767_irqs[] = {
- 	[S5M8767_IRQ_PWRR] = {
- 		.reg_offset = 0,
-@@ -327,6 +399,16 @@ static const struct regmap_irq_chip s2mps14_irq_chip = {
- 	.ack_base = S2MPS14_REG_INT1,
- };
+ Required properties:
+-- compatible: Should be "samsung,s2mps11-pmic" or "samsung,s2mps14-pmic".
++- compatible: Should be "samsung,s2mps11-pmic" or "samsung,s2mps14-pmic"
++              or "samsung,s2mpu02-pmic".
+ - reg: Specifies the I2C slave address of the pmic block. It should be 0x66.
  
-+static const struct regmap_irq_chip s2mpu02_irq_chip = {
-+	.name = "s2mpu02",
-+	.irqs = s2mpu02_irqs,
-+	.num_irqs = ARRAY_SIZE(s2mpu02_irqs),
-+	.num_regs = 3,
-+	.status_base = S2MPU02_REG_INT1,
-+	.mask_base = S2MPU02_REG_INT1M,
-+	.ack_base = S2MPU02_REG_INT1,
-+};
-+
- static const struct regmap_irq_chip s5m8767_irq_chip = {
- 	.name = "s5m8767",
- 	.irqs = s5m8767_irqs,
-@@ -384,6 +466,12 @@ int sec_irq_init(struct sec_pmic_dev *sec_pmic)
- 				  sec_pmic->irq_base, &s2mps14_irq_chip,
- 				  &sec_pmic->irq_data);
- 		break;
-+	case S2MPU02:
-+		ret = regmap_add_irq_chip(sec_pmic->regmap_pmic, sec_pmic->irq,
-+				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-+				  sec_pmic->irq_base, &s2mpu02_irq_chip,
-+				  &sec_pmic->irq_data);
-+		break;
- 	default:
- 		dev_err(sec_pmic->dev, "Unknown device type %lu\n",
- 			sec_pmic->device_type);
-diff --git a/include/linux/mfd/samsung/core.h b/include/linux/mfd/samsung/core.h
-index 47d8424..b5f73de 100644
---- a/include/linux/mfd/samsung/core.h
-+++ b/include/linux/mfd/samsung/core.h
-@@ -21,6 +21,7 @@ enum sec_device_type {
- 	S2MPA01,
- 	S2MPS11X,
- 	S2MPS14X,
-+	S2MPU02,
- };
+ Optional properties:
+@@ -81,11 +82,13 @@ as per the datasheet of s2mps11.
+ 		  - valid values for n are:
+ 			- S2MPS11: 1 to 38
+ 			- S2MPS14: 1 to 25
++			- S2MPU02: 1 to 28
+ 		  - Example: LDO1, LD02, LDO28
+ 	- BUCKn
+ 		  - valid values for n are:
+ 			- S2MPS11: 1 to 10
+ 			- S2MPS14: 1 to 5
++			- S2MPU02: 1 to 7
+ 		  - Example: BUCK1, BUCK2, BUCK9
  
- /**
-diff --git a/include/linux/mfd/samsung/irq.h b/include/linux/mfd/samsung/irq.h
-index 1224f44..f35af73 100644
---- a/include/linux/mfd/samsung/irq.h
-+++ b/include/linux/mfd/samsung/irq.h
-@@ -129,6 +129,30 @@ enum s2mps14_irq {
- 	S2MPS14_IRQ_NR,
- };
- 
-+enum s2mpu02_irq {
-+	S2MPU02_IRQ_PWRONF,
-+	S2MPU02_IRQ_PWRONR,
-+	S2MPU02_IRQ_JIGONBF,
-+	S2MPU02_IRQ_JIGONBR,
-+	S2MPU02_IRQ_ACOKBF,
-+	S2MPU02_IRQ_ACOKBR,
-+	S2MPU02_IRQ_PWRON1S,
-+	S2MPU02_IRQ_MRB,
-+
-+	S2MPU02_IRQ_RTC60S,
-+	S2MPU02_IRQ_RTCA1,
-+	S2MPU02_IRQ_RTCA0,
-+	S2MPU02_IRQ_SMPL,
-+	S2MPU02_IRQ_RTC1S,
-+	S2MPU02_IRQ_WTSR,
-+
-+	S2MPU02_IRQ_INT120C,
-+	S2MPU02_IRQ_INT140C,
-+	S2MPU02_IRQ_TSD,
-+
-+	S2MPU02_IRQ_NR,
-+};
-+
- /* Masks for interrupts are the same as in s2mps11 */
- #define S2MPS14_IRQ_TSD_MASK		(1 << 2)
- 
+ Example:
 -- 
 1.8.0
 
