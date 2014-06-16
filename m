@@ -1,193 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207AbaFPMUn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 08:20:43 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:48433 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751249AbaFPMUk (ORCPT
+	id S1752817AbaFPMWV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 08:22:21 -0400
+Received: from mx0b-00176a03.pphosted.com ([67.231.157.48]:38289 "EHLO
+	mx0b-00176a03.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751216AbaFPMWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 08:20:40 -0400
-Date: Mon, 16 Jun 2014 13:20:32 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: micky_ching@realsil.com.cn
-Cc: sameo@linux.intel.com, chris@printf.net, ulf.hansson@linaro.org,
-        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, gregkh@linuxfoundation.org,
-        dan.carpenter@oracle.com, rogerable@realtek.com,
-        wei_wang@realsil.com.cn
-Subject: Re: [PATCH 1/2] mfd: rtsx: add dma transfer function
-Message-ID: <20140616122032.GS14323@lee--X1>
-References: <cover.1402037562.git.micky_ching@realsil.com.cn>
- <9021eae37d96aa027d00ae4a7b6cd84dbbd1b6b5.1402037564.git.micky_ching@realsil.com.cn>
+	Mon, 16 Jun 2014 08:22:20 -0400
+X-Greylist: delayed 9289 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Jun 2014 08:22:20 EDT
+Message-ID: <539EBD2D.9030504@ge.com>
+Date: Mon, 16 Jun 2014 10:47:25 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <9021eae37d96aa027d00ae4a7b6cd84dbbd1b6b5.1402037564.git.micky_ching@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: nick <nickkrause@sympatico.ca>
+CC: <manohar.vanga@gmail.com>, <gregkh@linuxfoundation.org>,
+        <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>,
+        <dan.carpenter@oracle.com>
+Subject: =?UTF-8?B?UmU6IFBBVENIW1t2bWUvYnJpZGdlcy92bWVfY2E5MWN4NDIuYzoxMzg=?=
+ =?UTF-8?B?MjogQmFkIGlmIHRlc3QgQnVnIEZpeF3igI/igI8=?=
+References: <BLU436-SMTP2404B87A72E455C1BDE2B43A52A0@phx.gbl>
+In-Reply-To: <BLU436-SMTP2404B87A72E455C1BDE2B43A52A0@phx.gbl>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [3.159.212.191]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-15_03:2014-06-13,2014-06-15,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1402240000 definitions=main-1406160097
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Micky Ching <micky_ching@realsil.com.cn>
-> 
-> rtsx driver using a single function for transfer data, dma map/unmap are
-> placed in one fix function. We need map/unmap dma in different place(for
-> mmc async driver), so add three function for dma map, dma transfer and
-> dma unmap.
-> 
-> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
-> ---
->  drivers/mfd/rtsx_pcr.c       |   76 ++++++++++++++++++++++++++----------------
->  include/linux/mfd/rtsx_pci.h |    6 ++++
->  2 files changed, 54 insertions(+), 28 deletions(-)
+Nick,
 
-I don't see any glaring issues with this patch.  Does it rely on the
-first patch, or vise versa, or can it just be applied?
+Sorry for the delay in responding.
 
-> diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-> index 1d15735..d01b8c2 100644
-> --- a/drivers/mfd/rtsx_pcr.c
-> +++ b/drivers/mfd/rtsx_pcr.c
-> @@ -337,40 +337,64 @@ static void rtsx_pci_add_sg_tbl(struct rtsx_pcr *pcr,
->  int rtsx_pci_transfer_data(struct rtsx_pcr *pcr, struct scatterlist *sglist,
->  		int num_sg, bool read, int timeout)
->  {
-> -	struct completion trans_done;
-> -	u8 dir;
-> -	int err = 0, i, count;
-> -	long timeleft;
-> -	unsigned long flags;
-> -	struct scatterlist *sg;
-> -	enum dma_data_direction dma_dir;
-> -	u32 val;
-> -	dma_addr_t addr;
-> -	unsigned int len;
-> +	int err = 0, count;
->  
->  	dev_dbg(&(pcr->pci->dev), "--> %s: num_sg = %d\n", __func__, num_sg);
-> +	count = rtsx_pci_dma_map_sg(pcr, sglist, num_sg, read);
-> +	if (count < 1)
-> +		return -EINVAL;
-> +	dev_dbg(&(pcr->pci->dev), "DMA mapping count: %d\n", count);
-> +
-> +	err = rtsx_pci_dma_transfer(pcr, sglist, count, read, timeout);
-> +
-> +	rtsx_pci_dma_unmap_sg(pcr, sglist, num_sg, read);
-> +
-> +	return err;
-> +}
-> +EXPORT_SYMBOL_GPL(rtsx_pci_transfer_data);
-> +
-> +int rtsx_pci_dma_map_sg(struct rtsx_pcr *pcr, struct scatterlist *sglist,
-> +		int num_sg, bool read)
-> +{
-> +	enum dma_data_direction dir = read ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
->  
-> -	/* don't transfer data during abort processing */
->  	if (pcr->remove_pci)
->  		return -EINVAL;
->  
->  	if ((sglist == NULL) || (num_sg <= 0))
->  		return -EINVAL;
->  
-> -	if (read) {
-> -		dir = DEVICE_TO_HOST;
-> -		dma_dir = DMA_FROM_DEVICE;
-> -	} else {
-> -		dir = HOST_TO_DEVICE;
-> -		dma_dir = DMA_TO_DEVICE;
-> -	}
-> +	return dma_map_sg(&(pcr->pci->dev), sglist, num_sg, dir);
-> +}
-> +EXPORT_SYMBOL_GPL(rtsx_pci_dma_map_sg);
->  
-> -	count = dma_map_sg(&(pcr->pci->dev), sglist, num_sg, dma_dir);
-> -	if (count < 1) {
-> -		dev_err(&(pcr->pci->dev), "scatterlist map failed\n");
-> +void rtsx_pci_dma_unmap_sg(struct rtsx_pcr *pcr, struct scatterlist *sglist,
-> +		int num_sg, bool read)
-> +{
-> +	enum dma_data_direction dir = read ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
-> +
-> +	dma_unmap_sg(&(pcr->pci->dev), sglist, num_sg, dir);
-> +}
-> +EXPORT_SYMBOL_GPL(rtsx_pci_dma_unmap_sg);
-> +
-> +int rtsx_pci_dma_transfer(struct rtsx_pcr *pcr, struct scatterlist *sglist,
-> +		int count, bool read, int timeout)
-> +{
-> +	struct completion trans_done;
-> +	struct scatterlist *sg;
-> +	dma_addr_t addr;
-> +	long timeleft;
-> +	unsigned long flags;
-> +	unsigned int len;
-> +	int i, err = 0;
-> +	u32 val;
-> +	u8 dir = read ? DEVICE_TO_HOST : HOST_TO_DEVICE;
-> +
-> +	if (pcr->remove_pci)
-> +		return -ENODEV;
-> +
-> +	if ((sglist == NULL) || (count < 1))
->  		return -EINVAL;
-> -	}
-> -	dev_dbg(&(pcr->pci->dev), "DMA mapping count: %d\n", count);
->  
->  	val = ((u32)(dir & 0x01) << 29) | TRIG_DMA | ADMA_MODE;
->  	pcr->sgi = 0;
-> @@ -400,12 +424,10 @@ int rtsx_pci_transfer_data(struct rtsx_pcr *pcr, struct scatterlist *sglist,
->  	}
->  
->  	spin_lock_irqsave(&pcr->lock, flags);
-> -
->  	if (pcr->trans_result == TRANS_RESULT_FAIL)
->  		err = -EINVAL;
->  	else if (pcr->trans_result == TRANS_NO_DEVICE)
->  		err = -ENODEV;
-> -
->  	spin_unlock_irqrestore(&pcr->lock, flags);
->  
->  out:
-> @@ -413,8 +435,6 @@ out:
->  	pcr->done = NULL;
->  	spin_unlock_irqrestore(&pcr->lock, flags);
->  
-> -	dma_unmap_sg(&(pcr->pci->dev), sglist, num_sg, dma_dir);
-> -
->  	if ((err < 0) && (err != -ENODEV))
->  		rtsx_pci_stop_cmd(pcr);
->  
-> @@ -423,7 +443,7 @@ out:
->  
->  	return err;
->  }
-> -EXPORT_SYMBOL_GPL(rtsx_pci_transfer_data);
-> +EXPORT_SYMBOL_GPL(rtsx_pci_dma_transfer);
->  
->  int rtsx_pci_read_ppbuf(struct rtsx_pcr *pcr, u8 *buf, int buf_len)
->  {
-> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-> index a383597..74346d5 100644
-> --- a/include/linux/mfd/rtsx_pci.h
-> +++ b/include/linux/mfd/rtsx_pci.h
-> @@ -943,6 +943,12 @@ void rtsx_pci_send_cmd_no_wait(struct rtsx_pcr *pcr);
->  int rtsx_pci_send_cmd(struct rtsx_pcr *pcr, int timeout);
->  int rtsx_pci_transfer_data(struct rtsx_pcr *pcr, struct scatterlist *sglist,
->  		int num_sg, bool read, int timeout);
-> +int rtsx_pci_dma_map_sg(struct rtsx_pcr *pcr, struct scatterlist *sglist,
-> +		int num_sg, bool read);
-> +void rtsx_pci_dma_unmap_sg(struct rtsx_pcr *pcr, struct scatterlist *sglist,
-> +		int num_sg, bool read);
-> +int rtsx_pci_dma_transfer(struct rtsx_pcr *pcr, struct scatterlist *sglist,
-> +		int count, bool read, int timeout);
->  int rtsx_pci_read_ppbuf(struct rtsx_pcr *pcr, u8 *buf, int buf_len);
->  int rtsx_pci_write_ppbuf(struct rtsx_pcr *pcr, u8 *buf, int buf_len);
->  int rtsx_pci_card_pull_ctl_enable(struct rtsx_pcr *pcr, int card);
+I'm staring at the manual for the ca91c142 and the relevant bits in the 
+VSIx_CTL registers definitely need to be set to 0 for A16, likewise with 
+the LM_CTL register. The pattern (3<<16) would enable one of the 
+"reserved" address spaces.
+
+Martyn
+
+On 12/06/14 15:33, nick wrote:
+> Here is the fixed patch. Having issues with using Thunderbird
+> so just used Evolution for now.
+> Nick
+> --- drivers/vme/bridges/vme_ca91cx42.h.orig	2014-06-11 22:50:29.339671939 -0400
+> +++ drivers/vme/bridges/vme_ca91cx42.h	2014-06-11 23:15:36.027685173 -0400
+> Fixes bug issues with wrong bus width in if statments in vme_ca91cx42.c
+> Signed-off-by: Nicholas Krause <nickkrause@sympatico.ca>
+> @@ -526,7 +526,7 @@ static const int CA91CX42_LINT_LM[] = {
+>   #define CA91CX42_VSI_CTL_SUPER_SUPR	(1<<21)
+>
+>   #define CA91CX42_VSI_CTL_VAS_M		(7<<16)
+> -#define CA91CX42_VSI_CTL_VAS_A16	0
+> +#define CA91CX42_VSI_CTL_VAS_A16	(3<<16)
+>   #define CA91CX42_VSI_CTL_VAS_A24	(1<<16)
+>   #define CA91CX42_VSI_CTL_VAS_A32	(1<<17)
+>   #define CA91CX42_VSI_CTL_VAS_USER1	(3<<17)
+> @@ -549,7 +549,7 @@ static const int CA91CX42_LINT_LM[] = {
+>   #define CA91CX42_LM_CTL_SUPR		(1<<21)
+>   #define CA91CX42_LM_CTL_NPRIV		(1<<20)
+>   #define CA91CX42_LM_CTL_AS_M		(5<<16)
+> -#define CA91CX42_LM_CTL_AS_A16		0
+> +#define CA91CX42_LM_CTL_AS_A16		(3<<16)
+>   #define CA91CX42_LM_CTL_AS_A24		(1<<16)
+>   #define CA91CX42_LM_CTL_AS_A32		(1<<17)
+>
+>
+>
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Martyn Welch (Lead Software Engineer)  | Registered in England and Wales
+GE Intelligent Platforms               | (3828642) at 100 Barbirolli Square
+T +44(0)1327322748                     | Manchester, M2 3AB
+E martyn.welch@ge.com                  | VAT:GB 927559189
