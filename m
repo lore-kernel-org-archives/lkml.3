@@ -1,101 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039AbaFPHCp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 03:02:45 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:36405 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753931AbaFPHCn (ORCPT
+	id S1754074AbaFPHD0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 03:03:26 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36926 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753865AbaFPHDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 03:02:43 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 07/10] PPC, KVM, CMA: use general CMA reserved area management framework
-In-Reply-To: <20140616053408.GH23210@js1304-P5Q-DELUXE>
-References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com> <1402543307-29800-8-git-send-email-iamjoonsoo.kim@lge.com> <87mwdfg9co.fsf@linux.vnet.ibm.com> <20140616053408.GH23210@js1304-P5Q-DELUXE>
-User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Mon, 16 Jun 2014 12:32:24 +0530
-Message-ID: <87wqchcp6n.fsf@linux.vnet.ibm.com>
+	Mon, 16 Jun 2014 03:03:25 -0400
+Date: Mon, 16 Jun 2014 08:58:24 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        rdunlap@infradead.org, viresh.kumar@linaro.org,
+        "Srivatsa S. Bhat" <srivatsa@mit.edu>, linux-pm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: company copyrights. Re: [PATCH] PM / Documentation: Update
+ Srivatsa S. Bhat's email address
+Message-ID: <20140616065824.GA11379@atrey.karlin.mff.cuni.cz>
+References: <20140609102426.26530.15670.stgit@srivatsabhat.in.ibm.com>
+ <1465703.Zlfm9gi0xo@vostro.rjw.lan>
+ <20140614223611.GD1389@xo-6d-61-c0.localdomain>
+ <2113679.6ZdJDAD0Zn@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061607-4790-0000-0000-0000021222AB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2113679.6ZdJDAD0Zn@vostro.rjw.lan>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+Hi!
+> On Sunday, June 15, 2014 12:36:11 AM Pavel Machek wrote:
+> > On Mon 2014-06-09 13:28:36, Rafael J. Wysocki wrote:
+> > > On Monday, June 09, 2014 03:54:49 PM Srivatsa S. Bhat wrote:
+> > > > My @linux.vnet.ibm.com email address is going to disappear soon, as I will be
+> > > > beginning my M.S./PhD studies at MIT in a few months.
+> > > 
+> > > Congratulations!
+> > > 
+> > > > So update my email address in the documentation.
+> > > > 
+> > > > Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> > > > Signed-off-by: Srivatsa S. Bhat <srivatsa@mit.edu>
+> > > > ---
+> > > > 
+> > > >  Documentation/power/suspend-and-cpuhotplug.txt |    2 +-
+> > > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > > 
+> > > > diff --git a/Documentation/power/suspend-and-cpuhotplug.txt b/Documentation/power/suspend-and-cpuhotplug.txt
+> > > > index e13dafc..3813703 100644
+> > > > --- a/Documentation/power/suspend-and-cpuhotplug.txt
+> > > > +++ b/Documentation/power/suspend-and-cpuhotplug.txt
+> > > > @@ -1,6 +1,6 @@
+> > > >  Interaction of Suspend code (S3) with the CPU hotplug infrastructure
+> > > >  
+> > > > -     (C) 2011 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> > > > +     (C) 2011-2014 Srivatsa S. Bhat <srivatsa@mit.edu>
+> > > 
+> > > I'm actually unsure if updating copyright notices like that is OK.
+> > > 
+> > > Yes, you're moving, but the address in the notice documents the status at
+> > > the time you added it.
+> > 
+> > Well, invalid addresses in the comments are useless.
+> > 
+> > If copyright is _yours_, updating the address is ok.
+> 
+> It may be OK from the legal standpoint, but only as long as you change it to
+> your private address (that is, one that you own personally).  Also it is
+> changing history retroactively which I don't really find helpful.
 
-> On Sat, Jun 14, 2014 at 02:23:59PM +0530, Aneesh Kumar K.V wrote:
->> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
->> 
->> > Now, we have general CMA reserved area management framework,
->> > so use it for future maintainabilty. There is no functional change.
->> >
->> > Acked-by: Michal Nazarewicz <mina86@mina86.com>
->> > Acked-by: Paolo Bonzini <pbonzini@redhat.com>
->> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->> 
->> Need this. We may want to keep the VM_BUG_ON by moving
->> KVM_CMA_CHUNK_ORDER around.
->> 
->> diff --git a/arch/powerpc/kvm/book3s_64_mmu_hv.c b/arch/powerpc/kvm/book3s_64_mmu_hv.c
->> index 8056107..1932e0e 100644
->> --- a/arch/powerpc/kvm/book3s_64_mmu_hv.c
->> +++ b/arch/powerpc/kvm/book3s_64_mmu_hv.c
->> @@ -37,8 +37,6 @@
->>  #include <asm/ppc-opcode.h>
->>  #include <asm/cputable.h>
->>  
->> -#include "book3s_hv_cma.h"
->> -
->>  /* POWER7 has 10-bit LPIDs, PPC970 has 6-bit LPIDs */
->>  #define MAX_LPID_970   63
->>  
->> @@ -64,7 +62,6 @@ long kvmppc_alloc_hpt(struct kvm *kvm, u32 *htab_orderp)
->>         }
->>  
->>         kvm->arch.hpt_cma_alloc = 0;
->> -       VM_BUG_ON(order < KVM_CMA_CHUNK_ORDER);
->>         page = kvm_alloc_hpt(1 << (order - PAGE_SHIFT));
->>         if (page) {
->>                 hpt = (unsigned long)pfn_to_kaddr(page_to_pfn(page));
->> 
->> 
->> 
->> -aneesh
->
-> Okay.
-> So do you also want this?
->
-> @@ -131,16 +135,18 @@ struct page *kvm_alloc_hpt(unsigned long nr_pages)
->  {
->         unsigned long align_pages = HPT_ALIGN_PAGES;
->
-> +       VM_BUG_ON(get_order(nr_pages) < KVM_CMA_CHUNK_ORDER - PAGE_SHIFT);
-> +
->         /* Old CPUs require HPT aligned on a multiple of its size */
->         if (!cpu_has_feature(CPU_FTR_ARCH_206))
->                 align_pages = nr_pages;
-> -       return kvm_alloc_cma(nr_pages, align_pages);
-> +       return cma_alloc(kvm_cma, nr_pages, get_order(align_pages));
->  }
+People do fix invalid email addresses. That's what normally done on
+lkml. If people want to credit the companies at the same time, its
+easy to add note "for IBM", "in cooperation with IBM" or something...
 
-That would also work.
+> > If copyright is your company's, you should probably say that plainly, not
+> > just by email address.
+> > 
+> > 	(C) 2011 IBM (Srivatsa...) 
+> > 
+> > is what people do.
+> 
+> Yes, that's the preferred way to do that.
 
-Thanks
--aneesh
-
+Agreed.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
