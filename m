@@ -1,82 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856AbaFPNZh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 09:25:37 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55377 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752082AbaFPNZF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 09:25:05 -0400
-Date: Mon, 16 Jun 2014 15:24:49 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Alexander Bersenev <bay@hackerdom.ru>
-Cc: linux-sunxi@googlegroups.com, david@hardeman.nu,
-        devicetree@vger.kernel.org, galak@codeaurora.org,
-        grant.likely@linaro.org, ijc+devicetree@hellion.org.uk,
-        james.hogan@imgtec.com, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, m.chehab@samsung.com, mark.rutland@arm.com,
-        pawel.moll@arm.com, rdunlap@infradead.org, robh+dt@kernel.org,
-        sean@mess.org, srinivas.kandagatla@st.com, wingrime@linux-sunxi.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH v9 3/5] ARM: sunxi: Add pins for IR controller on A20 to
- dtsi
-Message-ID: <20140616132449.GB9757@lukather>
-References: <1402250893-5412-1-git-send-email-bay@hackerdom.ru>
- <1402250893-5412-4-git-send-email-bay@hackerdom.ru>
+	id S1754884AbaFPN0F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 09:26:05 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:55893 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753042AbaFPNYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 09:24:06 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] serial: 8250_dw: add ability to handle the peripheral clock
+Date: Mon, 16 Jun 2014 15:25:17 +0200
+Message-ID: <3755576.qE86Ikox0a@diego>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="St7VIuEGZ6dlpu13"
-Content-Disposition: inline
-In-Reply-To: <1402250893-5412-4-git-send-email-bay@hackerdom.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+First try to find the named clock variants then fall back to the already
+existing handling of a nameless declared baudclk.
 
---St7VIuEGZ6dlpu13
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This also adds the missing documentation for this already existing variant.
 
-Hi,
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+---
+ .../bindings/serial/snps-dw-apb-uart.txt           | 31 ++++++++++++++++++++++
+ drivers/tty/serial/8250/8250_dw.c                  | 31 +++++++++++++++++++---
+ 2 files changed, 59 insertions(+), 3 deletions(-)
 
-On Mon, Jun 09, 2014 at 12:08:11AM +0600, Alexander Bersenev wrote:
-> This patch adds pins for two IR controllers on A20
->=20
-> Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
-> Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
+diff --git a/Documentation/devicetree/bindings/serial/snps-dw-apb-uart.txt b/Documentation/devicetree/bindings/serial/snps-dw-apb-uart.txt
+index f13f1c5..3601399 100644
+--- a/Documentation/devicetree/bindings/serial/snps-dw-apb-uart.txt
++++ b/Documentation/devicetree/bindings/serial/snps-dw-apb-uart.txt
+@@ -4,7 +4,15 @@ Required properties:
+ - compatible : "snps,dw-apb-uart"
+ - reg : offset and length of the register set for the device.
+ - interrupts : should contain uart interrupt.
++
++Clock handling:
++The clock rate of the input clock needs to be supplied by one of
+ - clock-frequency : the input clock frequency for the UART.
++- clocks : phandle to the input clock
++
++The supplying peripheral clock can also be handled, needing a second property
++- clock-names: tuple listing input clock names.
++	Required elements: "baudclk", "apb_pclk"
+ 
+ Optional properties:
+ - reg-shift : quantity to shift the register offsets by.  If this property is
+@@ -23,3 +31,26 @@ Example:
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+ 	};
++
++Example with one clock:
++
++	uart@80230000 {
++		compatible = "snps,dw-apb-uart";
++		reg = <0x80230000 0x100>;
++		clocks = <&baudclk>;
++		interrupts = <10>;
++		reg-shift = <2>;
++		reg-io-width = <4>;
++	};
++
++Example with two clocks:
++
++	uart@80230000 {
++		compatible = "snps,dw-apb-uart";
++		reg = <0x80230000 0x100>;
++		clocks = <&baudclk>, <&apb_pclk>;
++		clock-names = "baudclk", "apb_pclk";
++		interrupts = <10>;
++		reg-shift = <2>;
++		reg-io-width = <4>;
++	};
+diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
+index 51b307a..024cd58 100644
+--- a/drivers/tty/serial/8250/8250_dw.c
++++ b/drivers/tty/serial/8250/8250_dw.c
+@@ -59,6 +59,7 @@ struct dw8250_data {
+ 	int			last_mcr;
+ 	int			line;
+ 	struct clk		*clk;
++	struct clk		*pclk;
+ 	struct uart_8250_dma	dma;
+ };
+ 
+@@ -402,10 +403,25 @@ static int dw8250_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 
+ 	data->usr_reg = DW_UART_USR;
+-	data->clk = devm_clk_get(&pdev->dev, NULL);
++	data->clk = devm_clk_get(&pdev->dev, "baudclk");
++	if (IS_ERR(data->clk))
++		data->clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (!IS_ERR(data->clk)) {
+-		clk_prepare_enable(data->clk);
+-		uart.port.uartclk = clk_get_rate(data->clk);
++		err = clk_prepare_enable(data->clk);
++		if (err)
++			dev_warn(&pdev->dev, "could not enable optional baudclk: %d\n",
++				 err);
++		else
++			uart.port.uartclk = clk_get_rate(data->clk);
++	}
++
++	data->pclk = devm_clk_get(&pdev->dev, "apb_pclk");
++	if (!IS_ERR(data->pclk)) {
++		err = clk_prepare_enable(data->pclk);
++		if (err) {
++			dev_err(&pdev->dev, "could not enable apb_pclk\n");
++			return err;
++		}
+ 	}
+ 
+ 	data->dma.rx_chan_id = -1;
+@@ -451,6 +467,9 @@ static int dw8250_remove(struct platform_device *pdev)
+ 
+ 	serial8250_unregister_port(data->line);
+ 
++	if (!IS_ERR(data->pclk))
++		clk_disable_unprepare(data->pclk);
++
+ 	if (!IS_ERR(data->clk))
+ 		clk_disable_unprepare(data->clk);
+ 
+@@ -488,6 +507,9 @@ static int dw8250_runtime_suspend(struct device *dev)
+ 	if (!IS_ERR(data->clk))
+ 		clk_disable_unprepare(data->clk);
+ 
++	if (!IS_ERR(data->pclk))
++		clk_disable_unprepare(data->pclk);
++
+ 	return 0;
+ }
+ 
+@@ -495,6 +517,9 @@ static int dw8250_runtime_resume(struct device *dev)
+ {
+ 	struct dw8250_data *data = dev_get_drvdata(dev);
+ 
++	if (!IS_ERR(data->pclk))
++		clk_prepare_enable(data->pclk);
++
+ 	if (!IS_ERR(data->clk))
+ 		clk_prepare_enable(data->clk);
+ 
+-- 
+1.9.0
 
-Applied, thanks.
 
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---St7VIuEGZ6dlpu13
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTnvAhAAoJEBx+YmzsjxAg78wQALqdlNEEd22q4vzzKXpjUEUT
-X2PtTcd9fyVq5Y0SSXEO+1kGHe2fr2QmGrbxdmYoYA+o9r56PYTkYz+LCFcJWV8C
-Dzv4+H1+UFUwxm9IdyV1x1rkynTKLbEEx/xz0REHNJzA7ezDHIFLKh15/bE9wv32
-J+8x8mHEU+WSa10ygMRMFfJtLyu+2R6mPLYYvHLitxx5QyO56U5lbRcBetcGjnHW
-1SAo9UGZ6/ABguhwmWP/RuukWRgp1IGPC4xYt7gN2GF/euihnCohpzKx8KsrY5jf
-YqVsiSwAlzm1mLVbyG7odjeh9/mK6gO39jwKg7v8EeMptbd4mePmwS4uoc4V6LKT
-sTZwt12j/XT3sMU1ysMYaSICYx7caGONrAETORUsZSp4QY7C7/jhokxcEAlFAM+L
-kQL/cvolFV0J2yqaGyTgegpCAWGtyIQ7jVyXetDS0RKY2p3RVF8XOcfyv/EB5YDZ
-uPYG9rklAhobs2CocFHuigsHuJH5YCfyO+d8R4vNFjH+RdW+pky1jvHzdF4wMIbk
-DpWBX19JH7ynat7gdIpW4swv0/lnp8txlOzaGBrQhBTkNzGw5gNZo0LHyrgJriwe
-vcM1WOkXWvZeu1EITL4I8Jbvd0SFWs0aW68QZfeZgtBjchVHFId5p0oQ17yDfp68
-e80FbgHbzvZnAx0Cmovy
-=F9+U
------END PGP SIGNATURE-----
-
---St7VIuEGZ6dlpu13--
