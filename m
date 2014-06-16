@@ -1,65 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011AbaFPNU5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 09:20:57 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47006 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751895AbaFPNUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 09:20:55 -0400
-Date: Mon, 16 Jun 2014 15:20:45 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Michael Matz <matz@suse.de>, linux-kbuild@vger.kernel.org,
-        x86-ml <x86@kernel.org>
-Subject: [RFC] Turn off -Wmaybe-uninitialized completely and move it to W=1
-Message-ID: <20140616132045.GE8170@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753277AbaFPNV5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 09:21:57 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:55936 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750953AbaFPNVx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 09:21:53 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Sonic Zhang <sonic.zhang@analog.com>,
+        adi-buildroot-devel@lists.sourceforge.net
+Subject: [PATCH tty-next 13/22] serial: blackfin: Fix CTS flow control
+Date: Mon, 16 Jun 2014 09:17:10 -0400
+Message-Id: <1402924639-5164-14-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com>
+References: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+blackfin uart port drivers mistakenly set the struct uart_port
+flags bit UPF_BUG_THRE (which only has meaning to the 8250 core)
+while trying to set ASYNC_CTS_FLOW.
 
-so 3.16-rc1 adds this false positive from gcc, see below (triggers on
-4.9 and 4.8.2). Now, it is firing wrong and gcc people tell me there's
-no way for the compiler to know that the "from" and "to" values will NOT
-be used in the error case, i.e. thus the "maybe" aspect.
+Uart port drivers can override termios settings based on actual
+hardware support in their .set_termios method; the serial core
+sets the appropriate port flags based on the overrides.
+Overriding only the initial termios settings is accomplished
+by only perform those overrides if the old termios parameter is
+NULL.
 
-So, we've disabled it for -Os already:
-
-	e74fc973b6e5 ("Turn off -Wmaybe-uninitialized when building with -Os")
-
-maybe we want to disable it by default on all and move it to W=1. This
-way people can still have it fire but not by default. And from what I've
-seen so far, it is mostly firing wrong and it is becoming annoying.
-
-So what do people think, any reasons for keeping it enabled by default?
-
-Thanks.
-
+CC: Sonic Zhang <sonic.zhang@analog.com>
+CC: adi-buildroot-devel@lists.sourceforge.net
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
+ drivers/tty/serial/bfin_sport_uart.c | 11 ++++++++---
+ drivers/tty/serial/bfin_uart.c       | 13 ++++++++-----
+ 2 files changed, 16 insertions(+), 8 deletions(-)
 
-fs/direct-io.c: In function ‘__blockdev_direct_IO’:
-fs/direct-io.c:920:9: warning: ‘to’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-   while (from < to) {
-         ^
-fs/direct-io.c:913:16: note: ‘to’ was declared here
-   size_t from, to;
-                ^
-fs/direct-io.c:1034:9: warning: ‘from’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-    from += this_chunk_bytes;
-         ^
-fs/direct-io.c:913:10: note: ‘from’ was declared here
-   size_t from, to;
-
-
+diff --git a/drivers/tty/serial/bfin_sport_uart.c b/drivers/tty/serial/bfin_sport_uart.c
+index 4f22970..5a1342e 100644
+--- a/drivers/tty/serial/bfin_sport_uart.c
++++ b/drivers/tty/serial/bfin_sport_uart.c
+@@ -500,6 +500,13 @@ static void sport_set_termios(struct uart_port *port,
+ 
+ 	pr_debug("%s enter, c_cflag:%08x\n", __func__, termios->c_cflag);
+ 
++#ifdef CONFIG_SERIAL_BFIN_SPORT_CTSRTS
++	if (old == NULL && up->cts_pin != -1)
++		termios->c_cflag |= CRTSCTS;
++	else if (up->cts_pin == -1)
++		termios->c_cflag &= ~CRTSCTS;
++#endif
++
+ 	switch (termios->c_cflag & CSIZE) {
+ 	case CS8:
+ 		up->csize = 8;
+@@ -813,10 +820,8 @@ static int sport_uart_probe(struct platform_device *pdev)
+ 		res = platform_get_resource(pdev, IORESOURCE_IO, 0);
+ 		if (res == NULL)
+ 			sport->cts_pin = -1;
+-		else {
++		else
+ 			sport->cts_pin = res->start;
+-			sport->port.flags |= ASYNC_CTS_FLOW;
+-		}
+ 
+ 		res = platform_get_resource(pdev, IORESOURCE_IO, 1);
+ 		if (res == NULL)
+diff --git a/drivers/tty/serial/bfin_uart.c b/drivers/tty/serial/bfin_uart.c
+index 869ceba..c641064 100644
+--- a/drivers/tty/serial/bfin_uart.c
++++ b/drivers/tty/serial/bfin_uart.c
+@@ -793,6 +793,13 @@ bfin_serial_set_termios(struct uart_port *port, struct ktermios *termios,
+ 	unsigned int ier, lcr = 0;
+ 	unsigned long timeout;
+ 
++#ifdef CONFIG_SERIAL_BFIN_CTSRTS
++	if (old == NULL && uart->cts_pin != -1)
++		termios->c_cflag |= CRTSCTS;
++	else if (uart->cts_pin == -1)
++		termios->c_cflag &= ~CRTSCTS;
++#endif
++
+ 	switch (termios->c_cflag & CSIZE) {
+ 	case CS8:
+ 		lcr = WLS(8);
+@@ -1325,12 +1332,8 @@ static int bfin_serial_probe(struct platform_device *pdev)
+ 		res = platform_get_resource(pdev, IORESOURCE_IO, 0);
+ 		if (res == NULL)
+ 			uart->cts_pin = -1;
+-		else {
++		else
+ 			uart->cts_pin = res->start;
+-#ifdef CONFIG_SERIAL_BFIN_CTSRTS
+-			uart->port.flags |= ASYNC_CTS_FLOW;
+-#endif
+-		}
+ 
+ 		res = platform_get_resource(pdev, IORESOURCE_IO, 1);
+ 		if (res == NULL)
 -- 
-Regards/Gruss,
-    Boris.
+2.0.0
 
-Sent from a fat crate under my desk. Formatting is fine.
---
