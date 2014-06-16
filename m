@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249AbaFPXsz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 19:48:55 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:57466 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751628AbaFPXsx (ORCPT
+	id S1752012AbaFPXuw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 19:50:52 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50486 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160AbaFPXuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 19:48:53 -0400
-Date: Mon, 16 Jun 2014 16:48:51 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Josh Triplett <josh@joshtriplett.org>
-cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-sparse@vger.kernel.org
-Subject: Re: [PATCH] lib.c: skip --param parameters
-In-Reply-To: <20140616160238.GA2746@jtriplet-mobl1>
-Message-ID: <alpine.DEB.2.02.1406161647510.21018@chino.kir.corp.google.com>
-References: <1402915386-28210-1-git-send-email-andriy.shevchenko@linux.intel.com> <20140616160238.GA2746@jtriplet-mobl1>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 16 Jun 2014 19:50:51 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Tue, 17 Jun 2014 08:51:17 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Chen Yucong <slaoub@gmail.com>, mhocko@suse.cz, hannes@cmpxchg.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/vmscan.c: avoid recording the original scan targets
+ in shrink_lruvec()
+Message-ID: <20140616235117.GD18790@bbox>
+References: <1402320436-22270-1-git-send-email-slaoub@gmail.com>
+ <1402923474.3958.34.camel@debian>
+ <20140616164237.5fcba7baaec83d509c9683e0@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140616164237.5fcba7baaec83d509c9683e0@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jun 2014, Josh Triplett wrote:
-
-> On Mon, Jun 16, 2014 at 01:43:06PM +0300, Andy Shevchenko wrote:
-> > Very dumb patch to just skip --param allow-store-data-races=0 introduced in
-> > newest Linux kernel buildsystem.
-> > 
-> > Actually the option is present in few GCC versions and probably should be
-> > handled properly.
-> > 
-> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+On Mon, Jun 16, 2014 at 04:42:37PM -0700, Andrew Morton wrote:
+> On Mon, 16 Jun 2014 20:57:54 +0800 Chen Yucong <slaoub@gmail.com> wrote:
 > 
-> As far as I can tell, this seems to only handle "--param arg"; however,
-> according to the thread on LKML, GCC handles --param=arg as well.  Could
-> you please handle that variant too?
-> 
-
-This is only from linux-next and not Linus's tree, correct?
-
-Is this still necessary since the "./Makefile: tell gcc optimizer to never 
-introduce new data races" patch has been removed from -mm due to failures?
-
-See http://marc.info/?l=linux-mm-commits&m=140295825623471
-
-> >  lib.c | 7 +++++++
-> >  1 file changed, 7 insertions(+)
+> > On Mon, 2014-06-09 at 21:27 +0800, Chen Yucong wrote:
+> > > Via https://lkml.org/lkml/2013/4/10/334 , we can find that recording the
+> > > original scan targets introduces extra 40 bytes on the stack. This patch
+> > > is able to avoid this situation and the call to memcpy(). At the same time,
+> > > it does not change the relative design idea.
+> > > 
+> > > ratio = original_nr_file / original_nr_anon;
+> > > 
+> > > If (nr_file > nr_anon), then ratio = (nr_file - x) / nr_anon.
+> > >  x = nr_file - ratio * nr_anon;
+> > > 
+> > > if (nr_file <= nr_anon), then ratio = nr_file / (nr_anon - x).
+> > >  x = nr_anon - nr_file / ratio;
+> > > 
+> > Hi Andrew Morton,
 > > 
-> > diff --git a/lib.c b/lib.c
-> > index bf3e91c..e56037b 100644
-> > --- a/lib.c
-> > +++ b/lib.c
-> > @@ -673,6 +673,12 @@ static char **handle_version(char *arg, char **next)
-> >  	exit(0);
-> >  }
+> > I think the patch
 > >  
-> > +static char **handle_param(char *arg, char **next)
-> > +{
-> > +	++next;
-> > +	return ++next;
-> > +}
-> > +
-> >  struct switches {
-> >  	const char *name;
-> >  	char **(*fn)(char *, char **);
-> > @@ -681,6 +687,7 @@ struct switches {
-> >  static char **handle_long_options(char *arg, char **next)
-> >  {
-> >  	static struct switches cmd[] = {
-> > +		{ "param", handle_param },
-> >  		{ "version", handle_version },
-> >  		{ NULL, NULL }
-> >  	};
+> > [PATCH]
+> > mm-vmscanc-avoid-recording-the-original-scan-targets-in-shrink_lruvec-fix.patch
+> > 
+> > which I committed should be discarded.
+> 
+> OK, thanks.
+> 
+> I assume you're referring to
+> mm-vmscanc-avoid-recording-the-original-scan-targets-in-shrink_lruvec.patch
+
+True.
+
+-- 
+Kind regards,
+Minchan Kim
