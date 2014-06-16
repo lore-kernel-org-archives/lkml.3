@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666AbaFPXbY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 19:31:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46482 "EHLO
+	id S1752605AbaFPXf2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 19:35:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46748 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771AbaFPXbW (ORCPT
+	with ESMTP id S1751246AbaFPXf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 19:31:22 -0400
-Date: Mon, 16 Jun 2014 16:31:21 -0700
+	Mon, 16 Jun 2014 19:35:27 -0400
+Date: Mon, 16 Jun 2014 16:35:25 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org
-Subject: Re: linux-next: build failure after merge of the akpm-current tree
-Message-Id: <20140616163121.27e1cd1f4a90ab5c129df4d2@linux-foundation.org>
-In-Reply-To: <20140613151652.69bb6961@canb.auug.org.au>
-References: <20140613151652.69bb6961@canb.auug.org.au>
+To: David Rientjes <rientjes@google.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hagen Paul Pfeifer <hagen@jauu.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] include: kernel.h: rewrite min3, max3 and clamp using
+ min and max
+Message-Id: <20140616163525.46933b64320e220a6d806bb4@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.02.1406161621530.21018@chino.kir.corp.google.com>
+References: <1402952842-12886-1-git-send-email-mina86@mina86.com>
+	<20140616161804.bb06ed842f59371c031d1252@linux-foundation.org>
+	<alpine.DEB.2.02.1406161621530.21018@chino.kir.corp.google.com>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -24,60 +28,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jun 2014 15:16:52 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Mon, 16 Jun 2014 16:25:15 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
 
-> At this point I got fed up and just dropped the akpm trees completely for today.
+> On Mon, 16 Jun 2014, Andrew Morton wrote:
 > 
-> Was this stuff really meant for v3.16?
+> > > It appears that gcc is better at optimising a double call to min
+> > > and max rather than open coded min3 and max3.  This can be observed
+> > > here:
+> > > 
+> > > ...
+> > >
+> > > Furthermore, after ___make allmodconfig && make bzImage modules___ this is the
+> > > comparison of image and modules sizes:
+> > > 
+> > >     # Without this patch applied
+> > >     $ ls -l arch/x86/boot/bzImage **/*.ko |awk '{size += $5} END {print size}'
+> > >     350715800
+> > > 
+> > >     # With this patch applied
+> > >     $ ls -l arch/x86/boot/bzImage **/*.ko |awk '{size += $5} END {print size}'
+> > >     349856528
+> > 
+> > We saved nearly a megabyte by optimising min3(), max3() and clamp()? 
+> > 
+> > I'm counting a grand total of 182 callsites for those macros.  So the
+> > saving is 4700 bytes per invokation?  I don't believe it...
+> > 
+> 
+> I was checking just the instances of min3() in mm/ and gcc ends up 
+> inlining transfer_objects() in mm/slab.c as a result of this change and 
+> increases its text size:
+> 
+>    text	   data	    bss	    dec	    hex	filename
+>   28369	  21559	      4	  49932	   c30c	slab.o.before
+>   28399	  21559	      4	  49962	   c32a	slab.o.after
 
-3.14 actually.  Then 3.15.  Now 3.16.
+Maybe that's a good thing in disguise: gcc said "hey this thing is now
+small enough to inline it".
 
-It's been quiet a burden and seems to have been hitting more problems
-lately.  It's unclear than it does much for efficiency and while the
-end result may be clearer to a newcomer, there's a cost to existing
-developers in churning the code around.
-
-So...  I think I'll drop this version of the patchset.  Naoya, please
-grab all the patches as they fly past and ensure that nothing gets lost
-in any future version, thanks.
-
-I'll retain 
-
-mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff.patch
-mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff-v2.patch
-mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff-v3.patch
-mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff-v3-fix.patch
-
-and shall drop
-
-pagewalk-update-page-table-walker-core.patch
-pagewalk-update-page-table-walker-core-fix-end-address-calculation-in-walk_page_range.patch
-pagewalk-update-page-table-walker-core-fix-end-address-calculation-in-walk_page_range-fix.patch
-pagewalk-update-page-table-walker-core-fix.patch
-pagewalk-add-walk_page_vma.patch
-smaps-redefine-callback-functions-for-page-table-walker.patch
-clear_refs-redefine-callback-functions-for-page-table-walker.patch
-pagemap-redefine-callback-functions-for-page-table-walker.patch
-pagemap-redefine-callback-functions-for-page-table-walker-fix.patch
-numa_maps-redefine-callback-functions-for-page-table-walker.patch
-memcg-redefine-callback-functions-for-page-table-walker.patch
-arch-powerpc-mm-subpage-protc-use-walk_page_vma-instead-of-walk_page_range.patch
-pagewalk-remove-argument-hmask-from-hugetlb_entry.patch
-pagewalk-remove-argument-hmask-from-hugetlb_entry-fix.patch
-pagewalk-remove-argument-hmask-from-hugetlb_entry-fix-fix.patch
-mempolicy-apply-page-table-walker-on-queue_pages_range.patch
-mm-pagewalkc-move-pte-null-check.patch
-mm-prom-pid-clear_refs-avoid-split_huge_page.patch
-mm-pagewalk-remove-pgd_entry-and-pud_entry.patch
-mm-pagewalk-replace-mm_walk-skip-with-more-general-mm_walk-control.patch
-mm-pagewalk-replace-mm_walk-skip-with-more-general-mm_walk-control-fix.patch
-madvise-cleanup-swapin_walk_pmd_entry.patch
-madvise-cleanup-swapin_walk_pmd_entry-fix.patch
-memcg-separate-mem_cgroup_move_charge_pte_range.patch
-memcg-separate-mem_cgroup_move_charge_pte_range-checkpatch-fixes.patch
-arch-powerpc-mm-subpage-protc-cleanup-subpage_walk_pmd_entry.patch
-mm-pagewalk-move-pmd_trans_huge_lock-from-callbacks-to-common-code.patch
-mm-pagewalk-move-pmd_trans_huge_lock-from-callbacks-to-common-code-checkpatch-fixes.patch
-mincore-apply-page-table-walker-on-do_mincore.patch
-mincore-apply-page-table-walker-on-do_mincore-fix.patch
-
+> It also seems to use one additional temp variable of type typeof(x) on the 
+> stack, so I do think the old version was superior.
