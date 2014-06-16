@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752401AbaFPMDO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 08:03:14 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:14977 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039AbaFPMDM (ORCPT
+	id S1752478AbaFPMH4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 08:07:56 -0400
+Received: from mx0a-00176a03.pphosted.com ([67.231.149.52]:43026 "EHLO
+	mx0a-00176a03.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751249AbaFPMHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 08:03:12 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/G8QKzZoNISoz8/RXlHNdz
-Date: Mon, 16 Jun 2014 05:03:10 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: George Cherian <george.cherian@ti.com>, bcousson@baylibre.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] ARM: dts: am43x-epos-evm: Add Missing cpsw-phy-sel for
- am43x-epos-evm
-Message-ID: <20140616120310.GI17845@atomide.com>
-References: <1402035454-25676-1-git-send-email-george.cherian@ti.com>
- <53916556.10608@ti.com>
- <53918F75.1050000@ti.com>
- <5391DE01.2080600@ti.com>
+	Mon, 16 Jun 2014 08:07:55 -0400
+X-Greylist: delayed 7160 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Jun 2014 08:07:54 EDT
+Message-ID: <539EC21E.8030909@ge.com>
+Date: Mon, 16 Jun 2014 11:08:30 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5391DE01.2080600@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: nick <nickkrause@sympatico.ca>, <manohar.vanga@gmail.com>,
+        <gregkh@linuxfoundation.org>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: =?UTF-8?B?UmU6IFBBVENIW1t2bWUvYnJpZGdlcy92bWVfY2E5MWN4NDIuYzoxMzg=?=
+ =?UTF-8?B?MjogQmFkIGlmIHRlc3QgQnVnIEZpeF3igI/igI8=?=
+References: <BLU436-SMTP2404B87A72E455C1BDE2B43A52A0@phx.gbl> <539EBD2D.9030504@ge.com> <20140616095631.GN5015@mwanda>
+In-Reply-To: <20140616095631.GN5015@mwanda>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [3.159.212.192]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-15_03:2014-06-13,2014-06-15,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1402240000 definitions=main-1406160097
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [140606 08:30]:
-> On 06/06/2014 04:52 AM, George Cherian wrote:
-> > On 6/6/2014 12:23 PM, Nishanth Menon wrote:
-> >> On 06/06/2014 01:17 AM, George Cherian wrote:
-> >>> AM437x EPOS evm use external clock for RMII interface.
-> >>> Enable the same in DT.
-> >>>
-> >>> Signed-off-by: George Cherian <george.cherian@ti.com>
-> >>> Reported-by: Nishanth Menon <nm@ti.com>
-> >>> ---
-> >>>   arch/arm/boot/dts/am43x-epos-evm.dts | 4 ++++
-> >>>   1 file changed, 4 insertions(+)
-> >>>
-> >>> diff --git a/arch/arm/boot/dts/am43x-epos-evm.dts b/arch/arm/boot/dts/am43x-epos-evm.dts
-> >>> index 19f1f7e..90098f9 100644
-> >>> --- a/arch/arm/boot/dts/am43x-epos-evm.dts
-> >>> +++ b/arch/arm/boot/dts/am43x-epos-evm.dts
-> >>> @@ -319,6 +319,10 @@
-> >>>   	phy-mode = "rmii";
-> >>>   };
-> >>>   
-> >>> +&phy_sel {
-> >>> +	rmii-clock-ext;
-> >>> +};
-> >>> +
-> >>>   &i2c0 {
-> >>>   	status = "okay";
-> >>>   	pinctrl-names = "default";
-> >>>
-> >> Where does this apply on?
-> >> With linux-next next-20140506 tag, and this patch applied, I get the
-> > Is'nt next-20140506 a month old.
-> 
-> Uggh.. yeah - 1AM+migraine is not a good combination to try to do
-> testing. :( Apologies on the noise
-> 
-> 
-> > I tried the patch on next-20140604.
-> 
-> Tested on next-20140606 - applies clean, builds and works :)
-> 
-> am43xx-epos:  Boot PASS: http://slexy.org/raw/s2fT6zs45y
-> 
-> Tested-by: Nishanth Menon <nm@ti.com>
+On 16/06/14 10:56, Dan Carpenter wrote:
+> On Mon, Jun 16, 2014 at 10:47:25AM +0100, Martyn Welch wrote:
+>> Nick,
+>>
+>> Sorry for the delay in responding.
+>>
+>> I'm staring at the manual for the ca91c142 and the relevant bits in
+>> the VSIx_CTL registers definitely need to be set to 0 for A16,
+>> likewise with the LM_CTL register. The pattern (3<<16) would enable
+>> one of the "reserved" address spaces.
+>>
+>
+> Nick emailed me privately that this was a static checker warning.  These
+> warnings are often false positives...  But I'm worried about the test:
+>
+> 	if ((ctl & CA91CX42_VSI_CTL_VAS_M) == CA91CX42_VSI_CTL_VAS_A16)
+> 		*aspace = VME_A16;
+>
+> That could be true when we didn't intend it.
+>
 
-Applying into omap-for-v3.16/fixes thanks.
+If I'm not mistaken, CA91CX42_VSI_CTL_VAS_A16 is currently defined as 0.
 
-Tony
+So:
+	if ((ctl & (7<<16) == 0)
+		*aspace = VME_A16;
+
+Which looks right to me, it's checking to see if the relevant bits in 
+the register are all zero, am I missing something obvious?
+
+Martyn
+
+
+-- 
+Martyn Welch (Lead Software Engineer)  | Registered in England and Wales
+GE Intelligent Platforms               | (3828642) at 100 Barbirolli Square
+T +44(0)1327322748                     | Manchester, M2 3AB
+E martyn.welch@ge.com                  | VAT:GB 927559189
