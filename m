@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517AbaFPQXU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 12:23:20 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:43552 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755452AbaFPQXM (ORCPT
+	id S1755615AbaFPQYn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 12:24:43 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:43528 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755486AbaFPQXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 12:23:12 -0400
+	Mon, 16 Jun 2014 12:23:19 -0400
 From: Anil Belur <askb23@gmail.com>
 X-Google-Original-From: Anil Belur
 To: andreas.dilger@intel.com, oleg.drokin@intel.com, tao.peng@emc.com,
         gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, hpdd-discuss@ml01.01.org,
         Anil Belur <askb23@gmail.com>
-Subject: [PATCH v5 2/8] staging: lustre: lclient: glimpse.c fixing coding style issues
-Date: Tue, 17 Jun 2014 02:22:16 +1000
-Message-Id: <1402935742-18788-3-git-send-email-askb23@gmail.com>
+Subject: [PATCH v5 4/8] staging: lustre: lclient: lcommon_cl.c fixing coding style issues
+Date: Tue, 17 Jun 2014 02:22:18 +1000
+Message-Id: <1402935742-18788-5-git-send-email-askb23@gmail.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1402935742-18788-1-git-send-email-askb23@gmail.com>
 References: <1402935742-18788-1-git-send-email-askb23@gmail.com>
@@ -25,26 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Anil Belur <askb23@gmail.com>
 
-fixed "WARNING: labels should not be indented"
-
+fixed: WARNING: Missing a blank line after declarations
 Signed-off-by: Anil Belur <askb23@gmail.com>
 ---
- drivers/staging/lustre/lustre/lclient/glimpse.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/lustre/lustre/lclient/lcommon_cl.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/staging/lustre/lustre/lclient/glimpse.c b/drivers/staging/lustre/lustre/lclient/glimpse.c
-index f669645..a658116 100644
---- a/drivers/staging/lustre/lustre/lclient/glimpse.c
-+++ b/drivers/staging/lustre/lustre/lclient/glimpse.c
-@@ -204,7 +204,7 @@ int cl_glimpse_size0(struct inode *inode, int agl)
+diff --git a/drivers/staging/lustre/lustre/lclient/lcommon_cl.c b/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
+index 6907a16..f83e6f2 100644
+--- a/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
++++ b/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
+@@ -127,6 +127,7 @@ void ccc_key_fini(const struct lu_context *ctx,
+ 			 struct lu_context_key *key, void *data)
+ {
+ 	struct ccc_thread_info *info = data;
++
+ 	OBD_SLAB_FREE_PTR(info, ccc_thread_kmem);
+ }
  
- 	result = cl_io_get(inode, &env, &io, &refcheck);
- 	if (result > 0) {
--	again:
-+again:
- 		io->ci_verify_layout = 1;
- 		result = cl_io_init(env, io, CIT_MISC, io->ci_obj);
- 		if (result > 0)
+@@ -145,6 +146,7 @@ void ccc_session_key_fini(const struct lu_context *ctx,
+ 				 struct lu_context_key *key, void *data)
+ {
+ 	struct ccc_session *session = data;
++
+ 	OBD_SLAB_FREE_PTR(session, ccc_session_kmem);
+ }
+ 
+@@ -573,6 +575,7 @@ void ccc_lock_delete(const struct lu_env *env,
+ void ccc_lock_fini(const struct lu_env *env, struct cl_lock_slice *slice)
+ {
+ 	struct ccc_lock *clk = cl2ccc_lock(slice);
++
+ 	OBD_SLAB_FREE_PTR(clk, ccc_lock_kmem);
+ }
+ 
+@@ -753,6 +756,7 @@ int ccc_io_one_lock(const struct lu_env *env, struct cl_io *io,
+ 		    loff_t start, loff_t end)
+ {
+ 	struct cl_object *obj = io->ci_obj;
++
+ 	return ccc_io_one_lock_index(env, io, enqflags, mode,
+ 				     cl_index(obj, start), cl_index(obj, end));
+ }
 -- 
 1.9.0
 
