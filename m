@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115AbaFPHRr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 03:17:47 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:41854 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753924AbaFPHRp (ORCPT
+	id S1754116AbaFPHVJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 03:21:09 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:60552 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752775AbaFPHVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 03:17:45 -0400
-From: Hoang Tran <hoangtran.gwr@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan <alan@linux.intel.com>, Garret Kelly <garret.kelly@gmail.com>,
-        Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>,
-        Jun Tian <jun.j.tian@intel.com>
-Cc: Hoang Tran <hoangtran.gwr@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: goldfish: fix coding style.
-Date: Mon, 16 Jun 2014 15:18:37 +0800
-Message-Id: <1402903117-16073-1-git-send-email-hoangtran.gwr@gmail.com>
-X-Mailer: git-send-email 2.0.0
+	Mon, 16 Jun 2014 03:21:07 -0400
+Message-ID: <1402903265.17230.4.camel@x220>
+Subject: Re: [uml-devel] [PATCH v2] delete unnecessary bootmem struct page
+ array
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Real Name <enjoymindful@gmail.com>, Richard Weinberger <richard@nod.at>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>
+Date: Mon, 16 Jun 2014 09:21:05 +0200
+In-Reply-To: <CAMuHMdV7gGFERHA-f_LcAeGFOvnx39kEhf+q5_QLz+buu3WWRA@mail.gmail.com>
+References: <1401773445-25256-1-git-send-email-enjoymindful@gmail.com>
+	 <539C1964.4050504@nod.at> <20140616032852.GA1763@name>
+	 <CAMuHMdV7gGFERHA-f_LcAeGFOvnx39kEhf+q5_QLz+buu3WWRA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Jun 2014 07:21:05.0704 (UTC) FILETIME=[894F3280:01CF8933]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using an else following a break or return can unnecessarily
-indent code blocks.
+On Mon, 2014-06-16 at 08:58 +0200, Geert Uytterhoeven wrote:
+> On Mon, Jun 16, 2014 at 5:28 AM, Real Name <enjoymindful@gmail.com> wrote:
+> > what is the pre-git linux tree? I searched it with google, but failed.
+> 
+> E.g. git.kernel.org/cgit/linux/kernel/git/tglx/history.git/
 
-This patch fixes coding style reported by checkpatch.pl, a part
-of eudyptula challenge.
+The archive at https://archive.org/details/git-history-of-linux seems to
+be the most comprehensive. I use it regularly. It can even be made to
+track the current tree. The tags for pre-v2.6.12-rc2 releases need to be
+added manually, which is quite a bit of work.
 
-Signed-off-by: Hoang Tran <hoangtran.gwr@gmail.com>
----
- drivers/staging/goldfish/goldfish_audio.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+Is there something better out there?
 
-diff --git a/drivers/staging/goldfish/goldfish_audio.c b/drivers/staging/goldfish/goldfish_audio.c
-index cbd4567..a166424 100644
---- a/drivers/staging/goldfish/goldfish_audio.c
-+++ b/drivers/staging/goldfish/goldfish_audio.c
-@@ -203,10 +203,10 @@ static int goldfish_audio_open(struct inode *ip, struct file *fp)
- 					     AUDIO_INT_WRITE_BUFFER_2_EMPTY);
- 		AUDIO_WRITE(audio_data, AUDIO_INT_ENABLE, AUDIO_INT_MASK);
- 		return 0;
--	} else {
--		atomic_dec(&open_count);
--		return -EBUSY;
- 	}
-+
-+	atomic_dec(&open_count);
-+	return -EBUSY;
- }
- 
- static int goldfish_audio_release(struct inode *ip, struct file *fp)
-@@ -223,8 +223,8 @@ static long goldfish_audio_ioctl(struct file *fp, unsigned int cmd,
- 	/* temporary workaround, until we switch to the ALSA API */
- 	if (cmd == 315)
- 		return -1;
--	else
--		return 0;
-+
-+	return 0;
- }
- 
- static irqreturn_t goldfish_audio_interrupt(int irq, void *dev_id)
--- 
-2.0.0
+
+Paul Bolle
 
