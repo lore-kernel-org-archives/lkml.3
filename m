@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078AbaFPVLq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 17:11:46 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:52910 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752582AbaFPVLp (ORCPT
+	id S1756091AbaFPVMb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 17:12:31 -0400
+Received: from mail-pa0-f74.google.com ([209.85.220.74]:62165 "EHLO
+	mail-pa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754764AbaFPVM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 17:11:45 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Allen Yu <alleny@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] PM / Runtime: let rpm_resume fail if rpm disabled and device suspended.
-Date: Mon, 16 Jun 2014 23:29:17 +0200
-Message-ID: <1901328.MvkshKEuEq@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.44L0.1406161329350.1292-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1406161329350.1292-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 16 Jun 2014 17:12:29 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: broonie@kernel.org, Andrew Bresticker <abrestic@chromium.org>,
+        swarren@wwwdotorg.org, olof@lixom.net,
+        Sonny Rao <sonnyrao@chromium.org>, linux-samsung-soc@vger.kernel.org,
+        Prathyush K <prathyush.k@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mfd: cros_ec_spi: set wakeup capability
+Date: Mon, 16 Jun 2014 14:12:23 -0700
+Message-Id: <1402953143-24681-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 16, 2014 01:40:05 PM Alan Stern wrote:
-> On Sat, 14 Jun 2014, Allen Yu wrote:
-> 
-> > --- a/drivers/base/power/runtime.c
-> > +++ b/drivers/base/power/runtime.c
-> > @@ -608,7 +608,7 @@ static int rpm_resume(struct device *dev, int rpmflags)
-> >   repeat:
-> >  	if (dev->power.runtime_error)
-> >  		retval = -EINVAL;
-> > -	else if (dev->power.disable_depth == 1 && dev->power.is_suspended
-> > +	else if (dev->power.disable_depth == 1 && !dev->power.is_suspended
-> >  	    && dev->power.runtime_status == RPM_ACTIVE)
-> >  		retval = 1;
-> 
-> For reasons having nothing to do with Allen's suggested change, I
-> wonder if we shouldn't replace this line with something like:
-> 
-> -	else if (dev->power.disable_depth == 1 && dev->power.is_suspended
-> +	else if (dev->power.disable > 0 && !dev->power.is_suspended
-> 	    && dev->power.runtime_status == RPM_ACTIVE)
-> 		retval = 1;
-> 
-> It seems that I've been bitten by this several times in the past.  
-> When a device is disabled for runtime PM, and more or less permanently
-> stuck in the RPM_ACTIVE state, calls to pm_runtime_resume() or
-> pm_runtime_get_sync() shouldn't fail.
-> 
-> For example, suppose some devices of a certain type support runtime 
-> power management but others don't.  We naturally want to call 
-> pm_runtime_disable() for the ones that don't.  But we also want the 
-> same driver to work for all the devices, which means that 
-> pm_runtime_get_sync() should return success -- otherwise the driver 
-> will think that something has gone wrong.
-> 
-> Rafael, what do you think?
+From: Prathyush K <prathyush.k@samsung.com>
 
-That condition is there specifically to take care of the system suspend
-code path.  It means that if runtime PM is disabled, but it only has been
-disabled by the system suspend code path, we should treat the device as
-"active" (ie. return 1).  That won't work after the proposed change.
+Set the device as wakeup capable and register the wakeup source.
 
-I guess drivers that want to work with devices where runtime PM may be
-disabled can just check the return value of rpm_resume() for -EACCES?
+Note: Though it makes more sense to have the SPI framework do this,
+(either via device tree or by board_info)
+this change is as per an existing mail chain:
+https://lkml.org/lkml/2009/8/27/291
 
-Rafael
+Signed-off-by: Prathyush K <prathyush.k@samsung.com>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+Note that I don't have suspend/resume actually working upstream, but I
+see that /sys/bus/spi/drivers/cros-ec-spi/spi2.0/power/wakeup exists
+with this patch and doesn't exist without it.
+
+ drivers/mfd/cros_ec_spi.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
+index 0b8d328..ef22dd5 100644
+--- a/drivers/mfd/cros_ec_spi.c
++++ b/drivers/mfd/cros_ec_spi.c
+@@ -385,6 +385,8 @@ static int cros_ec_spi_probe(struct spi_device *spi)
+ 		return err;
+ 	}
+ 
++	device_init_wakeup(&spi->dev, true);
++
+ 	return 0;
+ }
+ 
+-- 
+2.0.0.526.g5318336
 
