@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293AbaFPPWG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 11:22:06 -0400
-Received: from 8bytes.org ([85.214.48.195]:40199 "EHLO mail.8bytes.org"
+	id S1755319AbaFPPWa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 11:22:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33305 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750804AbaFPPWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 11:22:03 -0400
-Date: Mon, 16 Jun 2014 17:21:58 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Christoffer Dall <christoffer.dall@linaro.org>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "tech@virtualopensystems.com" <tech@virtualopensystems.com>,
-        "a.rigo@virtualopensystems.com" <a.rigo@virtualopensystems.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "kim.phillips@freescale.com" <kim.phillips@freescale.com>,
-        "stuart.yoder@freescale.com" <stuart.yoder@freescale.com>,
-        "eric.auger@linaro.org" <eric.auger@linaro.org>,
-        "moderated list:ARM SMMU DRIVER" 
-	<linux-arm-kernel@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability
- IOMMU_CAP_INTR_REMAP
-Message-ID: <20140616152157.GB31771@8bytes.org>
-References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
- <1401987808-23596-5-git-send-email-a.motakis@virtualopensystems.com>
- <20140608103129.GC3279@lvm>
- <20140616145344.GD18986@8bytes.org>
- <20140616151329.GQ16758@arm.com>
+	id S1751448AbaFPPW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 11:22:29 -0400
+Date: Mon, 16 Jun 2014 11:21:47 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, acme@kernel.org,
+        mingo@redhat.com, paulus@samba.org, hpa@zytor.com, tglx@linutronix.de,
+        x86@kernel.org, linux-kernel@vger.kernel.org, matt@console-pimps.org
+Subject: Re: [PATCH] perf/x86/intel: ignore CondChgd bit to avoid false NMI
+ handling
+Message-ID: <20140616152147.GI177152@redhat.com>
+References: <20140611073028.9847.65622.stgit@localhost6.localdomain6>
+ <20140611085448.GI3213@twins.programming.kicks-ass.net>
+ <20140611115413.GE3588@twins.programming.kicks-ass.net>
+ <20140612.160011.167980216.d.hatayama@jp.fujitsu.com>
+ <20140612073716.GR6758@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140616151329.GQ16758@arm.com>
+In-Reply-To: <20140612073716.GR6758@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Mon Jun 16 17:22:01 2014
-X-DSPAM-Confidence: 0.9994
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 539f0b9920866113268035
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 04:13:29PM +0100, Will Deacon wrote:
-> MSIs look just like memory accesses made by the device, so the SMMU
-> will translate them to point at the GIC ITS (doorbell). The ITS then
-> has tables to work out how to route the MSI.
+On Thu, Jun 12, 2014 at 09:37:16AM +0200, Peter Zijlstra wrote:
+> On Thu, Jun 12, 2014 at 04:00:11PM +0900, HATAYAMA Daisuke wrote:
+> > Also, I checked cpuid on the system with Neharlem processor where I
+> > have never seen CondChg bit is set.
+> > 
+> > [root@localhost ~]# ./cpuid -r
+> > CPU 0:
+> >    0x00000000 0x00: eax=0x0000000b ebx=0x756e6547 ecx=0x6c65746e edx=0x49656e69
+> >    0x00000001 0x00: eax=0x000206e6 ebx=0x40200800 ecx=0x00bce3bd edx=0xbfebfbff
+> > <snip>
+> >    0x0000000a 0x00: eax=0x07300403 ebx=0x00000044 ecx=0x00000000 edx=0x00000603
+> >                     ^^^^^^^^^^^^^^
+> > So, cpuid tells that CondChg bit is supported on this processor, too.
 > 
-> So, if IOMMU_CAP_INTR_REMAP is simply supposed to indicate that the
-> SMMU can translate MSIs to point somewhere else, then the ARM SMMU can
-> always do it.  If it's supposed to indicate that the actual MSI
-> payload can be filtered/routed, then that requires the GIC ITS.
+> Yeah, I can't remember ever seeing that bit on nhm/wsm either. Weird
+> stuff that.
 > 
-> The part I'm unsure of is how VFIO knows where to map the MSIs to.
-> That requires knowledge of the physical and virtual doorbell pages --
-> is that discoverable in the API?
+> > > In any case, the proposed patch seems fine, just needs a better
+> > > changelog.
+> > > 
+> > 
+> > I see.
+> > 
+> > I'll write that the problem is that any NMI could be robbed by NMI
+> > watchdog explicitly. Now only patch title says this explicitly. This
+> > is your first comment.
+> 
+> Yeah, since that is the actual problem, its good to be clear on that.
+> 
+> > About CondChgd bit, I cannot write more than I see on actual
+> > system. If it's necessary to describe more about CondChgd bit, it
+> > would be appreciated if someone tell me more information about it.
+> 
+> I think we've found all 2 sentences the SDM has about that and unless
+> someone from Intel is going to come and explain why they wasted precious
+> silicon on this I suppose it will remain a mystery. No need to update on
+> that.
 
-VFIO does not care about the actual routing, it only cares that the
-device can not send interrupts it is not allowed to send (e.g.
-interrupts to vectors used by other devices or, on x86, exception vectors).
-If that is guaranteed by the SMMU or the GIC ITS hardware and driver
-then it is fine to set this flag.
+Just to add to the mix, we (Red Hat) has a customer with the same
+problem.  I told them to fight it out with Intel to figure out why that
+bit is non-zero at boot.  Partly because I didn't feel like send a patch
+upstream and feel the wrath of Peter Z. descend upon me. :-)
 
+So if this patch is acceptable, I would ack it as it fixes our customer's
+problem too.
 
-	Joerg
-
+Cheers,
+Don
 
