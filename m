@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484AbaFPNXr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 09:23:47 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:57796 "EHLO
+	id S1754545AbaFPNXx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 09:23:53 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:42830 "EHLO
 	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752774AbaFPNXo (ORCPT
+	with ESMTP id S1753536AbaFPNXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 09:23:44 -0400
+	Mon, 16 Jun 2014 09:23:50 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH tty-next 18/22] tty: Move tty hung up check from port->lock critical section
-Date: Mon, 16 Jun 2014 09:17:15 -0400
-Message-Id: <1402924639-5164-19-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH tty-next 21/22] serial: core: Remove superfluous ldisc flush from uart_close()
+Date: Mon, 16 Jun 2014 09:17:18 -0400
+Message-Id: <1402924639-5164-22-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com>
 References: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com>
@@ -24,34 +24,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The port->lock does not protect the filp->f_op field; move
-the tty_hung_up_p() test outside the port->lock critical section
-in tty_port_close_start().
+The tty_ldisc_flush() after port hardware shutdown is unnecessary;
+the ldisc flush was just performed before the hardware shutdown
+in tty_port_close_start() and the ldisc will be released when
+uart_close() returns (because the last port close implies the
+last tty close).
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_port.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/tty/serial/serial_core.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
-index 896eebf..be5deff 100644
---- a/drivers/tty/tty_port.c
-+++ b/drivers/tty/tty_port.c
-@@ -459,12 +459,10 @@ int tty_port_close_start(struct tty_port *port,
- {
- 	unsigned long flags;
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index 212ee07..15212d7 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -1351,9 +1351,6 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
  
--	spin_lock_irqsave(&port->lock, flags);
--	if (tty_hung_up_p(filp)) {
--		spin_unlock_irqrestore(&port->lock, flags);
-+	if (tty_hung_up_p(filp))
- 		return 0;
--	}
- 
-+	spin_lock_irqsave(&port->lock, flags);
- 	if (tty->count == 1 && port->count != 1) {
- 		printk(KERN_WARNING
- 		    "tty_port_close_start: tty->count = 1 port count = %d.\n",
+ 	mutex_lock(&port->mutex);
+ 	uart_shutdown(tty, state);
+-
+-	tty_ldisc_flush(tty);
+-
+ 	tty_port_tty_set(port, NULL);
+ 	tty->closing = 0;
+ 	spin_lock_irqsave(&port->lock, flags);
 -- 
 2.0.0
 
