@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442AbaFPQXM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 12:23:12 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:40705 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448AbaFPQXJ (ORCPT
+	id S1755564AbaFPQXY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 12:23:24 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:52091 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755535AbaFPQXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 12:23:09 -0400
+	Mon, 16 Jun 2014 12:23:22 -0400
 From: Anil Belur <askb23@gmail.com>
 X-Google-Original-From: Anil Belur
 To: andreas.dilger@intel.com, oleg.drokin@intel.com, tao.peng@emc.com,
         gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, hpdd-discuss@ml01.01.org,
         Anil Belur <askb23@gmail.com>
-Subject: [PATCH v5 1/8] staging: lustre: lclient: glimpse.c fixing coding style issues
-Date: Tue, 17 Jun 2014 02:22:15 +1000
-Message-Id: <1402935742-18788-2-git-send-email-askb23@gmail.com>
+Subject: [PATCH v5 5/8] staging: lustre: lclient: lcommon_cl.c fixing coding style issues
+Date: Tue, 17 Jun 2014 02:22:19 +1000
+Message-Id: <1402935742-18788-6-git-send-email-askb23@gmail.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1402935742-18788-1-git-send-email-askb23@gmail.com>
 References: <1402935742-18788-1-git-send-email-askb23@gmail.com>
@@ -25,26 +25,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Anil Belur <askb23@gmail.com>
 
-Fixed "ERROR: need consistent spacing around '+' (ctx:WxV)"
-
+fixed:  ERROR: do not initialise statics to 0 or NULL
 Signed-off-by: Anil Belur <askb23@gmail.com>
 ---
- drivers/staging/lustre/lustre/lclient/glimpse.c | 2 +-
+ drivers/staging/lustre/lustre/lclient/lcommon_cl.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/lustre/lustre/lclient/glimpse.c b/drivers/staging/lustre/lustre/lclient/glimpse.c
-index 7bbca4b..f669645 100644
---- a/drivers/staging/lustre/lustre/lclient/glimpse.c
-+++ b/drivers/staging/lustre/lustre/lclient/glimpse.c
-@@ -177,7 +177,7 @@ static int cl_io_get(struct inode *inode, struct lu_env **envout,
- 			io->ci_obj = clob;
- 			*envout = env;
- 			*ioout  = io;
--			result = +1;
-+			result = 1;
- 		} else
- 			result = PTR_ERR(env);
- 	} else
+diff --git a/drivers/staging/lustre/lustre/lclient/lcommon_cl.c b/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
+index f83e6f2..7be0a93 100644
+--- a/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
++++ b/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
+@@ -267,7 +267,7 @@ int ccc_req_init(const struct lu_env *env, struct cl_device *dev,
+  * fails. Access to this environment is serialized by ccc_inode_fini_guard
+  * mutex.
+  */
+-static struct lu_env *ccc_inode_fini_env = NULL;
++static struct lu_env *ccc_inode_fini_env;
+ 
+ /**
+  * A mutex serializing calls to slp_inode_fini() under extreme memory
 -- 
 1.9.0
 
