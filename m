@@ -1,112 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156AbaFPVlE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 17:41:04 -0400
-Received: from mail-qa0-f73.google.com ([209.85.216.73]:63064 "EHLO
-	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756032AbaFPVkU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 17:40:20 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Andrew Bresticker <abrestic@chromium.org>, swarren@wwwdotorg.org,
-        olof@lixom.net, Sonny Rao <sonnyrao@chromium.org>,
-        linux-samsung-soc@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Bill Richardson <wfrichar@chromium.org>, sjg@chromium.org,
-        Wolfram Sang <wsa@the-dreams.de>, broonie@kernel.org,
-        Doug Anderson <dianders@chromium.org>, sameo@linux.intel.com,
-        vpalatin@chromium.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 10/10] mfd: cros_ec: ec_dev->cmd_xfer() returns number of bytes received from EC
-Date: Mon, 16 Jun 2014 14:40:00 -0700
-Message-Id: <1402954800-28215-11-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <1402954800-28215-1-git-send-email-dianders@chromium.org>
-References: <1402954800-28215-1-git-send-email-dianders@chromium.org>
+	id S1756178AbaFPVn4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 17:43:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13292 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751521AbaFPVnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 17:43:55 -0400
+Date: Mon, 16 Jun 2014 17:43:13 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@alien8.de>, WANG Chao <chaowang@redhat.com>,
+        Dave Young <dyoung@redhat.com>, mjg59@srcf.ucam.org, bhe@redhat.com,
+        jkosina@suse.cz, greg@kroah.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, ebiederm@xmission.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 07/13] kexec: Implementation of new syscall
+ kexec_file_load
+Message-ID: <20140616214313.GB1870@redhat.com>
+References: <20140609053538.GA2874@dhcp-17-89.nay.redhat.com>
+ <20140609154137.GD22049@redhat.com>
+ <20140613075011.GA4751@pd.tnic>
+ <20140613124609.GC5871@redhat.com>
+ <20140613153620.GG4751@pd.tnic>
+ <20140616173823.GC4515@redhat.com>
+ <20140616200526.GF8170@pd.tnic>
+ <20140616205331.GA13257@redhat.com>
+ <20140616210927.GJ8170@pd.tnic>
+ <539F60B3.1040509@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <539F60B3.1040509@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bill Richardson <wfrichar@chromium.org>
+On Mon, Jun 16, 2014 at 02:25:07PM -0700, H. Peter Anvin wrote:
+> On 06/16/2014 02:09 PM, Borislav Petkov wrote:
+> > 
+> > Nah, I don't feel strongly about it - I just don't trust userspace and
+> > think that every value we get from it should be "sanitized".
+> > 
+> 
+> Borislav and I talked about this briefly over IRC.  A key part of that
+> is that if userspace could manipulate this system call to consume an
+> unreasonable amount of memory, we would have a problem, for example if
+> this code used vzalloc() instead of kzalloc().  However, since
+> kmalloc/kzalloc implies a relatively restrictive limit on the memory
+> allocation size anyway, well short of anything that could cause OOM
+> problems, that pretty much solves the problem.
 
-When communicating with the EC, the cmd_xfer() function should return the
-number of bytes it received from the EC, or negative on error.
+Actually currently I am using vzalloc() for command line buffer
+allocation.
 
-Signed-off-by: Bill Richardson <wfrichar@chromium.org>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- drivers/i2c/busses/i2c-cros-ec-tunnel.c | 2 +-
- drivers/mfd/cros_ec_i2c.c               | 2 +-
- drivers/mfd/cros_ec_spi.c               | 2 +-
- include/linux/mfd/cros_ec.h             | 8 ++++----
- 4 files changed, 7 insertions(+), 7 deletions(-)
+	image->cmdline_buf = vzalloc(cmdline_len);
+	if (!image->cmdline_buf)
+		goto out;
 
-diff --git a/drivers/i2c/busses/i2c-cros-ec-tunnel.c b/drivers/i2c/busses/i2c-cros-ec-tunnel.c
-index dd07818..05e033c 100644
---- a/drivers/i2c/busses/i2c-cros-ec-tunnel.c
-+++ b/drivers/i2c/busses/i2c-cros-ec-tunnel.c
-@@ -228,7 +228,7 @@ static int ec_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg i2c_msgs[],
- 	msg.insize = response_len;
- 
- 	result = bus->ec->cmd_xfer(bus->ec, &msg);
--	if (result)
-+	if (result < 0)
- 		goto exit;
- 
- 	result = ec_i2c_parse_response(response, i2c_msgs, &num);
-diff --git a/drivers/mfd/cros_ec_i2c.c b/drivers/mfd/cros_ec_i2c.c
-index 2276096..dc0ba29 100644
---- a/drivers/mfd/cros_ec_i2c.c
-+++ b/drivers/mfd/cros_ec_i2c.c
-@@ -120,7 +120,7 @@ static int cros_ec_cmd_xfer_i2c(struct cros_ec_device *ec_dev,
- 		goto done;
- 	}
- 
--	ret = 0;
-+	ret = i2c_msg[1].buf[1];
-  done:
- 	kfree(in_buf);
- 	kfree(out_buf);
-diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
-index 4d34f1c..beba1bc 100644
---- a/drivers/mfd/cros_ec_spi.c
-+++ b/drivers/mfd/cros_ec_spi.c
-@@ -333,7 +333,7 @@ static int cros_ec_cmd_xfer_spi(struct cros_ec_device *ec_dev,
- 		goto exit;
- 	}
- 
--	ret = 0;
-+	ret = len;
- exit:
- 	mutex_unlock(&ec_spi->lock);
- 	return ret;
-diff --git a/include/linux/mfd/cros_ec.h b/include/linux/mfd/cros_ec.h
-index 60c0880..7b65a75 100644
---- a/include/linux/mfd/cros_ec.h
-+++ b/include/linux/mfd/cros_ec.h
-@@ -41,7 +41,7 @@ enum {
-  * @outdata: Outgoing data to EC
-  * @outsize: Outgoing length in bytes
-  * @indata: Where to put the incoming data from EC
-- * @insize: Incoming length in bytes (filled in by EC)
-+ * @insize: Max number of bytes to accept from EC
-  * @result: EC's response to the command (separate from communication failure)
-  */
- struct cros_ec_command {
-@@ -64,9 +64,9 @@ struct cros_ec_command {
-  * sleep at the last suspend
-  * @event_notifier: interrupt event notifier for transport devices
-  * @cmd_xfer: send command to EC and get response
-- *     Returns 0 if the communication succeeded, but that doesn't mean the EC
-- *     was happy with the command it got. Caller should check msg.result for
-- *     the EC's result code.
-+ *     Returns the number of bytes received if the communication succeeded, but
-+ *     that doesn't mean the EC was happy with the command. The caller
-+ *     should check msg.result for the EC's result code.
-  *
-  * @priv: Private data
-  * @irq: Interrupt to use
--- 
-2.0.0.526.g5318336
+Should I switch to using kzalloc() instead?
 
+Thanks
+Vivek
