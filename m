@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087AbaFPHQB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 03:16:01 -0400
-Received: from donald.hachti.de ([188.40.85.216]:59589 "EHLO donald.hachti.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753924AbaFPHP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 03:15:59 -0400
-Message-ID: <539E99AB.9030907@hachti.de>
-Date: Mon, 16 Jun 2014 09:15:55 +0200
-From: Philipp Hachtmann <hachti@hachti.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Johan Hovold <johan@kernel.org>, Sascha Silbe <x-linux@infra-silbe.de>
-CC: Johan Hovold <jhovold@gmail.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-gpio@vger.kernel.org,
+	id S1754115AbaFPHRr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 03:17:47 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:41854 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753924AbaFPHRp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 03:17:45 -0400
+From: Hoang Tran <hoangtran.gwr@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan <alan@linux.intel.com>, Garret Kelly <garret.kelly@gmail.com>,
+        Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>,
+        Jun Tian <jun.j.tian@intel.com>
+Cc: Hoang Tran <hoangtran.gwr@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: ftdi_sio: add GPIO support
-References: <1402320115-13171-1-git-send-email-x-linux@infra-silbe.de> <20140610105631.GA10256@localhost>
-In-Reply-To: <20140610105631.GA10256@localhost>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH] staging: goldfish: fix coding style.
+Date: Mon, 16 Jun 2014 15:18:37 +0800
+Message-Id: <1402903117-16073-1-git-send-email-hoangtran.gwr@gmail.com>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Using an else following a break or return can unnecessarily
+indent code blocks.
 
-> Would this patch interfere with adding support for using the CBUS pins
-> as GPIOs while operating in normal UART mode?
+This patch fixes coding style reported by checkpatch.pl, a part
+of eudyptula challenge.
 
-Most interesting question!
+Signed-off-by: Hoang Tran <hoangtran.gwr@gmail.com>
+---
+ drivers/staging/goldfish/goldfish_audio.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
->> Care was taken to prevent using GPIOs if the serial device is in use
->> and vice versa.
+diff --git a/drivers/staging/goldfish/goldfish_audio.c b/drivers/staging/goldfish/goldfish_audio.c
+index cbd4567..a166424 100644
+--- a/drivers/staging/goldfish/goldfish_audio.c
++++ b/drivers/staging/goldfish/goldfish_audio.c
+@@ -203,10 +203,10 @@ static int goldfish_audio_open(struct inode *ip, struct file *fp)
+ 					     AUDIO_INT_WRITE_BUFFER_2_EMPTY);
+ 		AUDIO_WRITE(audio_data, AUDIO_INT_ENABLE, AUDIO_INT_MASK);
+ 		return 0;
+-	} else {
+-		atomic_dec(&open_count);
+-		return -EBUSY;
+ 	}
++
++	atomic_dec(&open_count);
++	return -EBUSY;
+ }
+ 
+ static int goldfish_audio_release(struct inode *ip, struct file *fp)
+@@ -223,8 +223,8 @@ static long goldfish_audio_ioctl(struct file *fp, unsigned int cmd,
+ 	/* temporary workaround, until we switch to the ALSA API */
+ 	if (cmd == 315)
+ 		return -1;
+-	else
+-		return 0;
++
++	return 0;
+ }
+ 
+ static irqreturn_t goldfish_audio_interrupt(int irq, void *dev_id)
+-- 
+2.0.0
 
-What about CBUS GPIO support?
-
-> Ok, so we're not extending the serial driver with support for
-> controlling some unused pins (e.g. CBUS) but rather implementing support
-> for a mutually exclusive mode.
-For bitbang mode (on the data lines) - yes. But for bitbang on CBUS - no.
-
-
-I have sent a proposal a few weeks ago but Greg did not like special 
-sysfs stuff :-P
-He asked me to use the GPIO subsystem for the CBUS pins. I am out of 
-time until july. But I still want and need CBUS support in parallel with 
-serial/FIFO operation.
-
-
-Regards
-
-Philipp
