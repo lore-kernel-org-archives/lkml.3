@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028AbaFPJws (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 05:52:48 -0400
-Received: from dcvr.yhbt.net ([64.71.152.64]:44928 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754655AbaFPJwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 05:52:47 -0400
-X-Greylist: delayed 494 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Jun 2014 05:52:47 EDT
-Date: Mon, 16 Jun 2014 09:44:32 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
-        edumazet@google.com, viro@zeniv.linux.org.uk, jbaron@akamai.com
-Subject: Re: eventpoll __list_del_entry corruption
-Message-ID: <20140616094432.GA28074@dcvr.yhbt.net>
-References: <5370EBE9.6@oracle.com>
- <20140515181102.GH11096@twins.programming.kicks-ass.net>
- <53750472.1040703@oracle.com>
+	id S1755227AbaFPJxJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 05:53:09 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:49437 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755191AbaFPJxG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 05:53:06 -0400
+Date: Mon, 16 Jun 2014 10:52:56 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: robh+dt@kernel.org, swarren@nvidia.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mark.rutland@arm.com,
+        linus.walleij@linaro.org
+Subject: Re: [PATCH] Doc: mfd: as3722: Add details of optional missing
+ property
+Message-ID: <20140616095256.GN14323@lee--X1>
+References: <1402297417-9338-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <53750472.1040703@oracle.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1402297417-9338-1-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin <sasha.levin@oracle.com> wrote:
-> On 05/15/2014 02:11 PM, Peter Zijlstra wrote:
-> > On Mon, May 12, 2014 at 11:42:33AM -0400, Sasha Levin wrote:
-> >> Hi all,
-> >>
-> >> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> >> kernel I've stumbled on the following spew. Maybe related to the very recent
-> >> change in freeing on task exit?
+CC'ing Linus as he had an opinion.
 
-> > [ 5823.690004]  [<ffffffff8109a544>] do_exit+0x2d4/0xa90
-> > [ 5823.690004]  [<ffffffff813825c4>] ? lockdep_sys_exit_thunk+0x35/0x67
-> > [ 5823.690004]  [<ffffffff8109ae2c>] do_group_exit+0x4c/0xc0
-> > [ 5823.690004]  [<ffffffff8109aeb7>] SyS_exit_group+0x17/0x20
-> > [ 5823.690004]  [<ffffffff8168a2c2>] system_call_fastpath+0x16/0x1b
-> > [ 5823.690004] ---[ end trace 515b7fa3169c0906 ]---
+On Mon, 09 Jun 2014, Laxman Dewangan wrote:
+> Add details of following properties which are used on driver but
+> not documented on DT binding document.
+> - ams,enable-internal-int-pullup
+> - ams,enable-internal-i2c-pullup
 > 
-> Dave reported something similar to that last year(!) and that never got fixed
-> AFAIK: https://lkml.org/lkml/2013/10/14/353.
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> Reported-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  Documentation/devicetree/bindings/mfd/as3722.txt | 8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/mfd/as3722.txt b/Documentation/devicetree/bindings/mfd/as3722.txt
+> index 8edcb9b..4f64b2a 100644
+> --- a/Documentation/devicetree/bindings/mfd/as3722.txt
+> +++ b/Documentation/devicetree/bindings/mfd/as3722.txt
+> @@ -13,6 +13,14 @@ Required properties:
+>    The second cell is the flags, encoded as the trigger masks from binding document
+>  	interrupts.txt, using dt-bindings/irq.
+>  
+> +Optional properties:
+> +--------------------
+> +- ams,enable-internal-int-pullup: Boolean property, to enable internal pullup on
+> +	interrupt pin. Missing this will disable internal pullup on INT pin.
+> +- ams,enable-internal-i2c-pullup: Boolean property, to enable internal pullup on
+> +	i2c scl/sda pins. Missing this will disable internal pullup on i2c
+> +	scl/sda lines.
+> +
+>  Optional submodule and their properties:
+>  =======================================
+>  
 
-Both stack traces happen during exit, so it may be a destruction
-ordering problem when the eventpoll and files it references are
-all released together.
-
-I've never seen this in normal use, perhaps because I'm in the habit of
-closing all descriptors before exit to keep valgrind happy :)
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
