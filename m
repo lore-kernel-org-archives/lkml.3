@@ -1,122 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751829AbaFPLHL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 07:07:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11731 "EHLO mx1.redhat.com"
+	id S1751922AbaFPLKP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 07:10:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61903 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751628AbaFPLHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 07:07:09 -0400
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Cc: x86@kernel.org, xen-devel@lists.xenproject.org,
-        linux-kernel@vger.kernel.org, Andrew Jones <drjones@redhat.com>
-Subject: [PATCH v2] xenpv: don't BUG when failing to setup NMI callback
-Date: Mon, 16 Jun 2014 13:07:00 +0200
-Message-Id: <1402916820-27500-1-git-send-email-vkuznets@redhat.com>
+	id S1750963AbaFPLKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 07:10:13 -0400
+Message-ID: <539ED084.2000906@redhat.com>
+Date: Mon, 16 Jun 2014 13:09:56 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Nadav Amit <nadav.amit@gmail.com>, Nadav Amit <namit@cs.technion.ac.il>
+CC: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] KVM: x86: check DR6/7 high-bits are clear only on
+ long-mode
+References: <1402837982-24959-1-git-send-email-namit@cs.technion.ac.il> <1402837982-24959-7-git-send-email-namit@cs.technion.ac.il> <539EC43F.607@redhat.com> <539EC7F7.2000208@gmail.com>
+In-Reply-To: <539EC7F7.2000208@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-some old Xen hypervisors (prior to 3.2) forbid DomUs to register
-NMI callbacks. E.g. we have the following code in xen-3.1:
+Il 16/06/2014 12:33, Nadav Amit ha scritto:
+>>
+>> Do you get this if the input register has bit 31 set?
+> No. To be frank, the scenario may be considered a bit synthetic: the
+> guest assigns a value to a general-purpose register in 64-bit mode,
+> setting the high 32-bits to some non-zero value. Then, later, in 32-bit
+> mode, the guest performs MOV DR instruction. In between the two
+> assignments, the general purpose register is unmodified, so the high
+> 32-bits of the general purpose registers are still set.
+>
+> Note that this scenario does not occur when MOV DR is emulated, but when
+> handle_dr() is called. In this case, the entire 64-bits of the general
+> purpose register used for MOV DR are read, regardless to the execution
+> mode of the guest.
 
-    if ( (d->domain_id != 0) || (v->vcpu_id != 0) )
-        return -EINVAL;
+I wonder if the same bug happens elsewhere.  For example, 
+kvm_emulate_hypercall doesn't look at CS.L/CS.DB, which is really a 
+corner case but arguably also a bug.  kvm_hv_hypercall instead does it 
+right.
 
-Commit 6efa20e49b9cb1db1ab66870cc37323474a75a13 introduced kernel
-crash in case PV guest fails to register NMI callback. All x86_64
-PV guests will fail to boot on top of such hypervisors (RHEL5
-example):
+Perhaps we need a variant of kvm_register_read that (on 64-bit hosts) 
+checks EFER/CS.L/CS.DB and masks the returned value accordingly.  You 
+could call it kvm_register_readl.
 
-(XEN) traps.c:405:d7 Unhandled invalid opcode fault/trap [#6] in domain 7 on VCPU 0 [ec=0000]
-(XEN) domain_crash_sync called from entry.S
-(XEN) Domain 7 (vcpu#0) crashed on cpu#3:
-(XEN) ----[ Xen-3.1.2-389.el5  x86_64  debug=n  Not tainted ]----
-(XEN) CPU:    3
-(XEN) RIP:    e033:[<ffffffff81004d96>]
-(XEN) RFLAGS: 0000000000000282   CONTEXT: guest
-(XEN) rax: ffffffffffffffea   rbx: 0000000000000000   rcx: 0000000000000002
-(XEN) rdx: 0000000000000001   rsi: ffffffff81b0fe28   rdi: 0000000000000000
-(XEN) rbp: ffffffff81b0fe40   rsp: ffffffff81b0fde8   r8:  0000000000000000
-(XEN) r9:  ffffffff81b0fdd0   r10: 0000000000007ff0   r11: 00000000ffffffff
-(XEN) r12: ffffffff81d65900   r13: 0000000000000000   r14: 0000000000000000
-(XEN) r15: 0000000000000000   cr0: 0000000080050033   cr4: 00000000000026b0
-(XEN) cr3: 000000013a263000   cr2: 0000000000000000
-(XEN) ds: 0000   es: 0000   fs: 0000   gs: 0000   ss: e02b   cs: e033
-...
-
-However it is possible to proceed without NMI callback registered.
-
-Changes in v2:
-- skip nmi in cvt_gate_to_trap() for Xen < 3.2
-- do not call xen_enable_nmi() when running under Xen < 3.2
-- never BUG() in xen_enable_nmi()
-
-Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
----
- arch/x86/xen/enlighten.c |  9 +++++----
- arch/x86/xen/setup.c     | 17 ++++++++++++++---
- 2 files changed, 19 insertions(+), 7 deletions(-)
-
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index f17b292..60ec5ef 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -746,12 +746,13 @@ static int cvt_gate_to_trap(int vector, const gate_desc *val,
- 		 */
- 		;
- #endif
--	} else if (addr == (unsigned long)nmi)
-+	} else if (addr == (unsigned long)nmi) {
- 		/*
--		 * Use the native version as well.
-+		 * Use the native version as well but require Xen >= 3.2
- 		 */
--		;
--	else {
-+		if (!xen_running_on_version_or_later(3, 2))
-+			return 0;
-+	} else {
- 		/* Some other trap using IST? */
- 		if (WARN_ON(val->ist != 0))
- 			return 0;
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 821a11a..fdc73d3 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -593,8 +593,14 @@ void xen_enable_syscall(void)
- void xen_enable_nmi(void)
- {
- #ifdef CONFIG_X86_64
--	if (register_callback(CALLBACKTYPE_nmi, (char *)nmi))
--		BUG();
-+	int ret;
-+
-+	ret = register_callback(CALLBACKTYPE_nmi, (char *)nmi);
-+	if (ret != 0) {
-+		/* Hypervisor probably forbids us to register NMI callback or
-+		   some other error happened */
-+		pr_warn("xen: failed to register NMI callback: %d\n", ret);
-+	}
- #endif
- }
- void __init xen_pvmmu_arch_setup(void)
-@@ -611,7 +617,12 @@ void __init xen_pvmmu_arch_setup(void)
- 
- 	xen_enable_sysenter();
- 	xen_enable_syscall();
--	xen_enable_nmi();
-+
-+	/* Xen versions prior to 3.2 forbid DomUs to register NMI callbacks */
-+	if (xen_running_on_version_or_later(3, 2))
-+		xen_enable_nmi();
-+	else
-+		pr_warn("xen: skipping NMI callback registration for Xen < 3.2");
- }
- 
- /* This function is not called for HVM domains */
--- 
-1.9.3
-
+Paolo
