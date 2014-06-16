@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111AbaFPVkZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 17:40:25 -0400
-Received: from mail-yh0-f74.google.com ([209.85.213.74]:56179 "EHLO
-	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752440AbaFPVkT (ORCPT
+	id S1756081AbaFPVkX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 17:40:23 -0400
+Received: from mail-oa0-f73.google.com ([209.85.219.73]:55975 "EHLO
+	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755356AbaFPVkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 Jun 2014 17:40:19 -0400
 From: Doug Anderson <dianders@chromium.org>
@@ -17,9 +17,9 @@ Cc: Andrew Bresticker <abrestic@chromium.org>, swarren@wwwdotorg.org,
         Wolfram Sang <wsa@the-dreams.de>, broonie@kernel.org,
         Doug Anderson <dianders@chromium.org>, sameo@linux.intel.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 01/10] mfd: cros_ec: Fix the comment on cros_ec_remove()
-Date: Mon, 16 Jun 2014 14:39:51 -0700
-Message-Id: <1402954800-28215-2-git-send-email-dianders@chromium.org>
+Subject: [PATCH 02/10] mfd: cros_ec: IRQs for cros_ec should be optional
+Date: Mon, 16 Jun 2014 14:39:52 -0700
+Message-Id: <1402954800-28215-3-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 2.0.0.526.g5318336
 In-Reply-To: <1402954800-28215-1-git-send-email-dianders@chromium.org>
 References: <1402954800-28215-1-git-send-email-dianders@chromium.org>
@@ -29,29 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bill Richardson <wfrichar@chromium.org>
 
-This comment was incorrect, so update it.
+Preparing the way for the LPC device, which is just a plaform_device without
+interrupts.
 
 Signed-off-by: Bill Richardson <wfrichar@chromium.org>
-Signed-off-by: Simon Glass <sjg@chromium.org>
 Signed-off-by: Doug Anderson <dianders@chromium.org>
 ---
- include/linux/mfd/cros_ec.h | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/mfd/cros_ec.c | 26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/include/linux/mfd/cros_ec.h b/include/linux/mfd/cros_ec.h
-index 887ef4f..7e9fe6e 100644
---- a/include/linux/mfd/cros_ec.h
-+++ b/include/linux/mfd/cros_ec.h
-@@ -148,8 +148,7 @@ int cros_ec_prepare_tx(struct cros_ec_device *ec_dev,
- /**
-  * cros_ec_remove - Remove a ChromeOS EC
-  *
-- * Call this to deregister a ChromeOS EC. After this you should call
-- * cros_ec_free().
-+ * Call this to deregister a ChromeOS EC, then clean up any private data.
-  *
-  * @ec_dev: Device to register
-  * @return 0 if ok, -ve on error
+diff --git a/drivers/mfd/cros_ec.c b/drivers/mfd/cros_ec.c
+index 38fe9bf..bd6f936 100644
+--- a/drivers/mfd/cros_ec.c
++++ b/drivers/mfd/cros_ec.c
+@@ -119,17 +119,15 @@ int cros_ec_register(struct cros_ec_device *ec_dev)
+ 			return -ENOMEM;
+ 	}
+ 
+-	if (!ec_dev->irq) {
+-		dev_dbg(dev, "no valid IRQ: %d\n", ec_dev->irq);
+-		return err;
+-	}
+-
+-	err = request_threaded_irq(ec_dev->irq, NULL, ec_irq_thread,
+-				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+-				   "chromeos-ec", ec_dev);
+-	if (err) {
+-		dev_err(dev, "request irq %d: error %d\n", ec_dev->irq, err);
+-		return err;
++	if (ec_dev->irq) {
++		err = request_threaded_irq(ec_dev->irq, NULL, ec_irq_thread,
++					IRQF_TRIGGER_LOW | IRQF_ONESHOT,
++					"chromeos-ec", ec_dev);
++		if (err) {
++			dev_err(dev, "request irq %d: error %d\n",
++				ec_dev->irq, err);
++			return err;
++		}
+ 	}
+ 
+ 	err = mfd_add_devices(dev, 0, cros_devs,
+@@ -145,7 +143,8 @@ int cros_ec_register(struct cros_ec_device *ec_dev)
+ 	return 0;
+ 
+ fail_mfd:
+-	free_irq(ec_dev->irq, ec_dev);
++	if (ec_dev->irq)
++		free_irq(ec_dev->irq, ec_dev);
+ 
+ 	return err;
+ }
+@@ -154,7 +153,8 @@ EXPORT_SYMBOL(cros_ec_register);
+ int cros_ec_remove(struct cros_ec_device *ec_dev)
+ {
+ 	mfd_remove_devices(ec_dev->dev);
+-	free_irq(ec_dev->irq, ec_dev);
++	if (ec_dev->irq)
++		free_irq(ec_dev->irq, ec_dev);
+ 
+ 	return 0;
+ }
 -- 
 2.0.0.526.g5318336
 
