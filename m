@@ -1,64 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421AbaFPRkJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 13:40:09 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:54314 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932243AbaFPRkG (ORCPT
+	id S1755651AbaFPRqM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 13:46:12 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:38743 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171AbaFPRqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 13:40:06 -0400
-Date: Mon, 16 Jun 2014 13:40:05 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Allen Yu <alleny@nvidia.com>
-cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] PM / Runtime: let rpm_resume fail if rpm disabled
- and device suspended.
-In-Reply-To: <1402740209-16432-1-git-send-email-alleny@nvidia.com>
-Message-ID: <Pine.LNX.4.44L0.1406161329350.1292-100000@iolanthe.rowland.org>
+	Mon, 16 Jun 2014 13:46:10 -0400
+Message-ID: <539F2D5F.9000708@cogentembedded.com>
+Date: Mon, 16 Jun 2014 21:46:07 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Chris Metcalf <cmetcalf@tilera.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: tile: fix unused variable warning
+References: <201406161716.s5GHGkKq026867@farm-0039.internal.tilera.com>
+In-Reply-To: <201406161716.s5GHGkKq026867@farm-0039.internal.tilera.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 14 Jun 2014, Allen Yu wrote:
+Hello.
 
-> --- a/drivers/base/power/runtime.c
-> +++ b/drivers/base/power/runtime.c
-> @@ -608,7 +608,7 @@ static int rpm_resume(struct device *dev, int rpmflags)
->   repeat:
->  	if (dev->power.runtime_error)
->  		retval = -EINVAL;
-> -	else if (dev->power.disable_depth == 1 && dev->power.is_suspended
-> +	else if (dev->power.disable_depth == 1 && !dev->power.is_suspended
->  	    && dev->power.runtime_status == RPM_ACTIVE)
->  		retval = 1;
+On 06/16/2014 09:14 PM, Chris Metcalf wrote:
 
-For reasons having nothing to do with Allen's suggested change, I
-wonder if we shouldn't replace this line with something like:
+> 'i' is unused in tile_net_dev_init() after commit d581ebf5a1f.
 
--	else if (dev->power.disable_depth == 1 && dev->power.is_suspended
-+	else if (dev->power.disable > 0 && !dev->power.is_suspended
-	    && dev->power.runtime_status == RPM_ACTIVE)
-		retval = 1;
+    Please also specify that commit's summary line in parens.
 
-It seems that I've been bitten by this several times in the past.  
-When a device is disabled for runtime PM, and more or less permanently
-stuck in the RPM_ACTIVE state, calls to pm_runtime_resume() or
-pm_runtime_get_sync() shouldn't fail.
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 
-For example, suppose some devices of a certain type support runtime 
-power management but others don't.  We naturally want to call 
-pm_runtime_disable() for the ones that don't.  But we also want the 
-same driver to work for all the devices, which means that 
-pm_runtime_get_sync() should return success -- otherwise the driver 
-will think that something has gone wrong.
-
-Rafael, what do you think?
-
-Alan Stern
+WBR, Sergei
 
