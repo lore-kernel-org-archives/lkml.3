@@ -1,109 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205AbaFPNRq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 09:17:46 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:40622 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751679AbaFPNRo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 09:17:44 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH tty-next 00/22] tty/serial fixes for 3.17
-Date: Mon, 16 Jun 2014 09:16:57 -0400
-Message-Id: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 2.0.0
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	id S1754011AbaFPNU5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 09:20:57 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:47006 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751895AbaFPNUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 09:20:55 -0400
+Date: Mon, 16 Jun 2014 15:20:45 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Michael Matz <matz@suse.de>, linux-kbuild@vger.kernel.org,
+        x86-ml <x86@kernel.org>
+Subject: [RFC] Turn off -Wmaybe-uninitialized completely and move it to W=1
+Message-ID: <20140616132045.GE8170@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Hi,
 
-These patches are the accumulation of fixes resulting from audits
-of the tty and serial cores; mostly cleanups of open() and close().
-Most of the changes remove condition testing and handling which
-cannot occur because the tty lock is held for the tty driver open()
-call.
+so 3.16-rc1 adds this false positive from gcc, see below (triggers on
+4.9 and 4.8.2). Now, it is firing wrong and gcc people tell me there's
+no way for the compiler to know that the "from" and "to" values will NOT
+be used in the error case, i.e. thus the "maybe" aspect.
 
-The exceptions are the last 3 patches which address API design and
-locking issues for uart drivers.
+So, we've disabled it for -Os already:
 
-At least 4 known bugs remain:
-1. Several drivers mishandle the start_tx() method; I hope to finish
-   an audit of these soon for fixing in 3.16.
-2. uart_open() mismanages the port count if an error occurs,
-   because uart_close() is always called even if open() returns
-   an error
-3. Most of the port->flags usage is SMP-unsafe; atomics are mixed
-   with spinlock-protected updates.
-4. uart_remove_one_port() is unsafe, as there is no provision for
-   preventing in-use port removal.
+	e74fc973b6e5 ("Turn off -Wmaybe-uninitialized when building with -Os")
 
-Regards,
+maybe we want to disable it by default on all and move it to W=1. This
+way people can still have it fire but not by default. And from what I've
+seen so far, it is mostly firing wrong and it is becoming annoying.
 
-Peter Hurley (22):
-  tty: Document locking for tty driver methods
-  tty: Document locking for tty_port_close{,start,end}()
-  tty: Document locking for tty_port_open()
-  tty: Document locking for tty_port_block_til_ready()
-  tty: Document locking for tty_port_hangup()
-  tty: Move tty->closing from port lock critical section
-  tty: ipwireless: Remove tty->closing abort from ipw_open()
-  serial: Use UPF_* constants with struct uart_port flags
-  tty: Remove tty_hung_up_p() tests from tty drivers' open()
-  char: synclink: Remove WARN_ON for bad port count
-  tty: Call hangup method in modern style
-  tty: serial: Fix termios/port flags mismatch
-  serial: blackfin: Fix CTS flow control
-  tty: Remove tty_wait_until_sent_from_close()
-  isdn: tty: Use private flag for ASYNC_CLOSING
-  tty: mxser: Use tty->closing for ASYNC_CLOSING
-  tty: Remove ASYNC_CLOSING
-  tty: Move tty hung up check from port->lock critical section
-  serial: Style fix
-  serial: Refactor uart_flush_buffer() from uart_close()
-  serial: core: Remove superfluous ldisc flush from uart_close()
-  serial: Fix locking for uart driver set_termios() method
+So what do people think, any reasons for keeping it enabled by default?
 
- Documentation/serial/driver          |  6 ++--
- drivers/char/pcmcia/synclink_cs.c    | 11 -------
- drivers/isdn/i4l/isdn_tty.c          | 16 +++++-----
- drivers/s390/char/con3215.c          |  3 +-
- drivers/staging/dgrp/dgrp_tty.c      | 10 -------
- drivers/tty/cyclades.c               |  9 ------
- drivers/tty/hvc/hvc_console.c        |  2 +-
- drivers/tty/hvc/hvcs.c               |  2 +-
- drivers/tty/ipwireless/tty.c         |  5 ----
- drivers/tty/mxser.c                  |  6 ++--
- drivers/tty/rocket.c                 | 14 +--------
- drivers/tty/serial/68328serial.c     |  2 --
- drivers/tty/serial/amba-pl011.c      |  1 +
- drivers/tty/serial/atmel_serial.c    |  2 ++
- drivers/tty/serial/bfin_sport_uart.c | 11 +++++--
- drivers/tty/serial/bfin_uart.c       | 13 ++++----
- drivers/tty/serial/crisv10.c         | 47 ++++-------------------------
- drivers/tty/serial/lantiq.c          |  2 +-
- drivers/tty/serial/mcf.c             |  4 +--
- drivers/tty/serial/serial-tegra.c    |  2 ++
- drivers/tty/serial/serial_core.c     | 31 ++++++++-----------
- drivers/tty/serial/timbuart.c        |  2 ++
- drivers/tty/synclink.c               | 26 ++++------------
- drivers/tty/synclink_gt.c            | 22 +++-----------
- drivers/tty/synclinkmp.c             | 23 +++-----------
- drivers/tty/tty_io.c                 |  2 +-
- drivers/tty/tty_port.c               | 58 ++++++++++++++++++++----------------
- include/linux/isdn.h                 |  1 +
- include/linux/tty.h                  | 18 -----------
- include/linux/tty_driver.h           |  8 +++--
- include/uapi/linux/tty_flags.h       |  2 --
- net/irda/ircomm/ircomm_tty.c         | 39 ++----------------------
- 32 files changed, 117 insertions(+), 283 deletions(-)
+Thanks.
+
+---
+
+fs/direct-io.c: In function ‘__blockdev_direct_IO’:
+fs/direct-io.c:920:9: warning: ‘to’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+   while (from < to) {
+         ^
+fs/direct-io.c:913:16: note: ‘to’ was declared here
+   size_t from, to;
+                ^
+fs/direct-io.c:1034:9: warning: ‘from’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+    from += this_chunk_bytes;
+         ^
+fs/direct-io.c:913:10: note: ‘from’ was declared here
+   size_t from, to;
+
 
 -- 
-2.0.0
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
