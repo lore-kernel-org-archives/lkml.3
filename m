@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457AbaFPNgB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 09:36:01 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:48453 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752834AbaFPNf6 (ORCPT
+	id S1753499AbaFPNgH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 09:36:07 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:54025 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753421AbaFPNgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 09:35:58 -0400
+	Mon, 16 Jun 2014 09:36:01 -0400
 From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 To: Stephen Warren <swarren@wwwdotorg.org>,
         Thierry Reding <thierry.reding@gmail.com>,
@@ -18,9 +18,9 @@ To: Stephen Warren <swarren@wwwdotorg.org>,
         linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
         dri-devel@lists.freedesktop.org
 Cc: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [RFC PATCH 2/4] ARM: tegra: Add Tegra124 EMC support
-Date: Mon, 16 Jun 2014 15:35:11 +0200
-Message-Id: <1402925713-25426-3-git-send-email-tomeu.vizoso@collabora.com>
+Subject: [RFC PATCH 3/4] drm/tegra: Request memory bandwidth for the display controller
+Date: Mon, 16 Jun 2014 15:35:12 +0200
+Message-Id: <1402925713-25426-4-git-send-email-tomeu.vizoso@collabora.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1402925713-25426-1-git-send-email-tomeu.vizoso@collabora.com>
 References: <1402925713-25426-1-git-send-email-tomeu.vizoso@collabora.com>
@@ -28,33 +28,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a device node for the EMC found on Tegra124.
+Request it based solely on the current mode's refresh rate. More
+accurate requirements can be requested in future patches.
 
 Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 ---
- arch/arm/boot/dts/tegra124.dtsi | 9 +++++++++
+ drivers/gpu/drm/tegra/dc.c | 9 +++++++++
  1 file changed, 9 insertions(+)
 
-diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
-index 6e6bc4e..5aa42ff 100644
---- a/arch/arm/boot/dts/tegra124.dtsi
-+++ b/arch/arm/boot/dts/tegra124.dtsi
-@@ -449,6 +449,15 @@
- 		clock-names = "pclk", "clk32k_in";
- 	};
+diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
+index ef40381..6739d69 100644
+--- a/drivers/gpu/drm/tegra/dc.c
++++ b/drivers/gpu/drm/tegra/dc.c
+@@ -10,6 +10,7 @@
+ #include <linux/clk.h>
+ #include <linux/debugfs.h>
+ #include <linux/reset.h>
++#include <linux/platform_data/tegra_emc.h>
  
-+	memory-controller@7001b000 {
-+		compatible = "nvidia,tegra124-emc";
-+		reg = <0x00 0x7001b000 0x00 0x1000>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		clocks = <&tegra_car 57>;
-+		clock-names = "emc";
-+	};
+ #include "dc.h"
+ #include "drm.h"
+@@ -683,6 +684,8 @@ static void tegra_crtc_disable(struct drm_crtc *crtc)
+ 	}
+ 
+ 	drm_vblank_off(drm, dc->pipe);
 +
- 	sdhci@0,700b0000 {
- 		compatible = "nvidia,tegra124-sdhci";
- 		reg = <0x0 0x700b0000 0x0 0x200>;
++	tegra124_emc_reserve_bandwidth(TEGRA_EMC_CONSUMER_DISP1, 0);
+ }
+ 
+ static bool tegra_crtc_mode_fixup(struct drm_crtc *crtc,
+@@ -769,6 +772,7 @@ static int tegra_crtc_mode_set(struct drm_crtc *crtc,
+ 	struct tegra_dc *dc = to_tegra_dc(crtc);
+ 	struct tegra_dc_window window;
+ 	u32 value;
++	unsigned long bandwidth;
+ 	int err;
+ 
+ 	drm_vblank_pre_modeset(crtc->dev, dc->pipe);
+@@ -809,6 +813,11 @@ static int tegra_crtc_mode_set(struct drm_crtc *crtc,
+ 	if (err < 0)
+ 		dev_err(dc->dev, "failed to enable root plane\n");
+ 
++	bandwidth = mode->clock * window.bits_per_pixel / 8;
++	err = tegra124_emc_reserve_bandwidth(TEGRA_EMC_CONSUMER_DISP1, bandwidth);
++	if (err)
++		dev_err(dc->dev, "failed to reserve EMC bandwidth: %d\n", err);
++
+ 	return 0;
+ }
+ 
 -- 
 1.9.3
 
