@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671AbaFPLyU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 07:54:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56937 "EHLO mx2.suse.de"
+	id S1753227AbaFPLy0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 07:54:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56941 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752245AbaFPLyT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 07:54:19 -0400
-Date: Mon, 16 Jun 2014 13:54:15 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH RESEND] mfd: Fix cs5535 dependencies
-Message-ID: <20140616135415.7f879f1e@endymion.delvare>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1752591AbaFPLyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 07:54:24 -0400
+Message-ID: <539EDAE9.7000605@suse.com>
+Date: Mon, 16 Jun 2014 13:54:17 +0200
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Daniel Kiper <daniel.kiper@oracle.com>
+CC: mjg59@srcf.ucam.org, jeremy@goop.org, linux-efi@vger.kernel.org,
+        ian.campbell@citrix.com, andrew.cooper3@citrix.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, matt.fleming@intel.com,
+        tglx@linutronix.de, david.vrabel@citrix.com, jbeulich@suse.com,
+        hpa@zytor.com, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, mingo@redhat.com, eshelton@pobox.com
+Subject: Re: [Xen-devel] [PATCH v5 7/7] arch/x86: Comment out efi_set_rtc_mmss()
+References: <1402678823-24589-1-git-send-email-daniel.kiper@oracle.com>	<1402678823-24589-8-git-send-email-daniel.kiper@oracle.com> <alpine.DEB.2.02.1406161242050.13771@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1406161242050.13771@kaball.uk.xensource.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As far as I know, the CS5535 and CS5536 chipsets are companions of the
-Geode series of processors, which are 32-bit only. So the CS5535
-drivers are not needed on x86-64, except for build testing purpose.
+On 06/16/2014 01:43 PM, Stefano Stabellini wrote:
+> On Fri, 13 Jun 2014, Daniel Kiper wrote:
+>> efi_set_rtc_mmss() is never used to set RTC due to bugs found
+>> on many EFI platforms. It is set directly by mach_set_rtc_mmss().
+>>
+>> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+>> ---
+>>   arch/x86/platform/efi/efi.c |    6 ++++++
+>>   1 file changed, 6 insertions(+)
+>>
+>> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+>> index deb4f05..bd3e080 100644
+>> --- a/arch/x86/platform/efi/efi.c
+>> +++ b/arch/x86/platform/efi/efi.c
+>> @@ -244,6 +244,11 @@ static efi_status_t __init phys_efi_set_virtual_address_map(
+>>   	return status;
+>>   }
+>>
+>> +#if 0
+>> +/*
+>> + * efi_set_rtc_mmss() is never used to set RTC due to bugs found
+>> + * on many EFI platforms. It is set directly by mach_set_rtc_mmss().
+>> + */
+>>   int efi_set_rtc_mmss(const struct timespec *now)
+>>   {
+>>   	unsigned long nowtime = now->tv_sec;
+>> @@ -279,6 +284,7 @@ int efi_set_rtc_mmss(const struct timespec *now)
+>>   	}
+>>   	return 0;
+>>   }
+>> +#endif
+>
+> "Commenting out" code like that is not a good idea: it leaves
+> dead-rotting functions in the middle of your source file.
+>
+> If the function is not used, just go ahead and remove it. We can use git
+> to get it back.
 
-This aligns the dependencies to what FB_GEODE already uses.
+And shouldn't it be removed from include/linux/efi.h as well?
 
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Lee Jones <lee.jones@linaro.org>
----
-Patch already sent on: 2014-03-07
+Juergen
 
- drivers/mfd/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- linux-3.14-rc5.orig/drivers/mfd/Kconfig	2014-03-07 21:43:13.739818995 +0100
-+++ linux-3.14-rc5/drivers/mfd/Kconfig	2014-03-07 21:43:59.262786389 +0100
-@@ -13,7 +13,7 @@ config MFD_CORE
- config MFD_CS5535
- 	tristate "AMD CS5535 and CS5536 southbridge core functions"
- 	select MFD_CORE
--	depends on PCI && X86
-+	depends on PCI && (X86_32 || (X86 && COMPILE_TEST))
- 	---help---
- 	  This is the core driver for CS5535/CS5536 MFD functions.  This is
-           necessary for using the board's GPIO and MFGPT functionality.
-
-
--- 
-Jean Delvare
-SUSE L3 Support
