@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102AbaFPVNk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 17:13:40 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:48809 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755356AbaFPVNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 17:13:39 -0400
-Date: Mon, 16 Jun 2014 23:13:28 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
-        greg@kroah.com, jkosina@suse.cz, dyoung@redhat.com,
-        chaowang@redhat.com, bhe@redhat.com, akpm@linux-foundation.org
-Subject: Re: [RFC PATCH 00/13][V3] kexec: A new system call to allow in
- kernel loading
-Message-ID: <20140616211328.GK8170@pd.tnic>
-References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+	id S1756116AbaFPVOM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 17:14:12 -0400
+Received: from asavdk4.altibox.net ([109.247.116.15]:57106 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755567AbaFPVOL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 17:14:11 -0400
+Date: Mon, 16 Jun 2014 23:14:05 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: lkml <linux-kernel@vger.kernel.org>, Michael Matz <matz@suse.de>,
+        linux-kbuild@vger.kernel.org, x86-ml <x86@kernel.org>
+Subject: Re: [RFC] Turn off -Wmaybe-uninitialized completely and move it to
+ W=1
+Message-ID: <20140616211405.GA7914@ravnborg.org>
+References: <20140616132045.GE8170@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <20140616132045.GE8170@pd.tnic>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 09:06:49AM -0400, Vivek Goyal wrote:
-> This patch series does not do kernel signature verification yet. I
-> plan to post another patch series for that. Now bzImage is already
-> signed with PKCS7 signature I plan to parse and verify those
-> signatures.
+On Mon, Jun 16, 2014 at 03:20:45PM +0200, Borislav Petkov wrote:
+> Hi,
+> 
+> so 3.16-rc1 adds this false positive from gcc, see below (triggers on
+> 4.9 and 4.8.2). Now, it is firing wrong and gcc people tell me there's
+> no way for the compiler to know that the "from" and "to" values will NOT
+> be used in the error case, i.e. thus the "maybe" aspect.
+> 
+> So, we've disabled it for -Os already:
+> 
+> 	e74fc973b6e5 ("Turn off -Wmaybe-uninitialized when building with -Os")
+> 
+> maybe we want to disable it by default on all and move it to W=1. This
+> way people can still have it fire but not by default. And from what I've
+> seen so far, it is mostly firing wrong and it is becoming annoying.
+> 
+> So what do people think, any reasons for keeping it enabled by default?
+Agreed.
+The noise ratio is too high - so move it to W=1.
 
-Btw, do you have a brief outline on how you are going to do the
-extension to signature verification? Nothing formal, just enough of an
-outline that I can see where in the flow it will be plugged in.
-
-I was wondering how the whole signature signing and verification will
-be done, i.e., where do I get the signature, how and who will verify it
-(I'm guessing the purgatory code), etc, etc.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+	Sam
