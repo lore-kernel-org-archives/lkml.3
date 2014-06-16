@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215AbaFPQY6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 12:24:58 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:58369 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755475AbaFPQXQ (ORCPT
+	id S1755080AbaFPQcT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 12:32:19 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:43557 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127AbaFPQcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 12:23:16 -0400
-From: Anil Belur <askb23@gmail.com>
-X-Google-Original-From: Anil Belur
-To: andreas.dilger@intel.com, oleg.drokin@intel.com, tao.peng@emc.com,
-        gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, hpdd-discuss@ml01.01.org,
-        Anil Belur <askb23@gmail.com>
-Subject: [PATCH v5 3/8] staging: lustre: lclient: lcommon_misc.c fixing coding style issues
-Date: Tue, 17 Jun 2014 02:22:17 +1000
-Message-Id: <1402935742-18788-4-git-send-email-askb23@gmail.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1402935742-18788-1-git-send-email-askb23@gmail.com>
-References: <1402935742-18788-1-git-send-email-askb23@gmail.com>
+	Mon, 16 Jun 2014 12:32:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <539F112F.7030303@linux.com>
+References: <1402932328-3732-1-git-send-email-xerofoify@gmail.com>
+	<539F0DAF.1020802@opengridcomputing.com>
+	<CAPDOMVjd9J=Kz4d88==UsbfjH13mhGzzmbc2NnxSOfqJs_aGpQ@mail.gmail.com>
+	<539F112F.7030303@linux.com>
+Date: Mon, 16 Jun 2014 12:32:16 -0400
+Message-ID: <CAPDOMVg8iHf5jrV4qPmvjmeZz_C51pT=ENW2Z_tJc-=6HAumbg@mail.gmail.com>
+Subject: Re: [PATCHv4]Checks for Null value in function *get_skub
+From: Nick Krause <xerofoify@gmail.com>
+To: Levente Kurusa <levex@linux.com>
+Cc: Steve Wise <swise@opengridcomputing.com>, swise@chelsio.com,
+        roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
+        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anil Belur <askb23@gmail.com>
+Hey Guys ,
+It states tot run cleanfile or cleanpatch script but it doesn't work
+how do I run these scripts.
+Thanks Nick
 
-fixed warning:
-* WARNING: min() should probably be min_t(__u32, desc.ld_tgt_count,
-LOV_MAX_STRIPE_COUNT)
-
-Signed-off-by: Anil Belur <askb23@gmail.com>
----
- drivers/staging/lustre/lustre/lclient/lcommon_misc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/lustre/lustre/lclient/lcommon_misc.c b/drivers/staging/lustre/lustre/lclient/lcommon_misc.c
-index e04c2d3..01ce5c1 100644
---- a/drivers/staging/lustre/lustre/lclient/lcommon_misc.c
-+++ b/drivers/staging/lustre/lustre/lclient/lcommon_misc.c
-@@ -63,7 +63,7 @@ int cl_init_ea_size(struct obd_export *md_exp, struct obd_export *dt_exp)
- 	if (rc)
- 		return rc;
- 
--	stripes = min(desc.ld_tgt_count, (__u32)LOV_MAX_STRIPE_COUNT);
-+	stripes = min_t(__u32, desc.ld_tgt_count, (__u32)LOV_MAX_STRIPE_COUNT);
- 	lsm.lsm_stripe_count = stripes;
- 	easize = obd_size_diskmd(dt_exp, &lsm);
- 
--- 
-1.9.0
-
+On Mon, Jun 16, 2014 at 11:45 AM, Levente Kurusa <levex@linux.com> wrote:
+> On 06/16/2014 05:37 PM, Nick Krause wrote:
+>>
+>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>> ---
+>>   drivers/infiniband/hw/cxgb4/
+>> cm.c | 8 +++-----
+>>   1 file changed, 3 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/infiniband/hw/cxgb4/cm.c
+>> b/drivers/infiniband/hw/cxgb4/cm.c
+>> index f9477e2..2d56983 100644
+>> --- a/drivers/infiniband/hw/cxgb4/cm.c
+>> +++ b/drivers/infiniband/hw/cxgb4/cm.c
+>> @@ -340,15 +340,13 @@ static int status2errno(int status)
+>>    */
+>>   static struct sk_buff *get_skb(struct sk_buff *skb, int len, gfp_t gfp)
+>>   {
+>>   if (skb && !skb_is_nonlinear(skb) && !skb_cloned(skb)) {
+>>                  skb_trim(skb, 0);
+>>                  skb_get(skb);
+>>                  skb_reset_transport_header(skb);
+>>          } else {
+>> +               if (skb)
+>> /* NULL is ignored */.
+>> +                       kfree_skb (skb);
+>>                  skb = alloc_skb(len, gfp);
+>>          }
+>>          t4_set_arp_err_handler(skb, NULL, NULL);
+>
+>
+> This patch is severely whitespace damaged. Can you fix your MUA
+> or try to use git-send-email?
+>
+> The changelog as well is of low quality. Maybe something like this:
+>
+> infiniband: cxgb4: fix memory skb memory leak
+>
+> ... would be better.
+>
+> Also, this fails the build, due to the extra dot character after
+> the comment. :-(
+>
+> Thanks,
+>     Levente Kurusa.
