@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160AbaFPK2I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 06:28:08 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:36618 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755351AbaFPK0s (ORCPT
+	id S1755323AbaFPK0j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 06:26:39 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54074 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755118AbaFPK0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 06:26:48 -0400
-From: Chander Kashyap <k.chander@samsung.com>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, daniel.lezcano@linaro.org,
-        lorenzo.pieralisi@arm.com, rjw@rjwysocki.net, kgene.kim@samsung.com,
-        tomasz.figa@gmail.com, Chander Kashyap <chander.kashyap@linaro.org>,
-        Chander Kashyap <k.chander@samsung.com>
-Subject: [Patch v7 2/6] arm: exynos: add generic function to calculate cpu number
-Date: Mon, 16 Jun 2014 15:56:19 +0530
-Message-Id: <1402914383-20471-3-git-send-email-k.chander@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1402914383-20471-1-git-send-email-k.chander@samsung.com>
-References: <1402914383-20471-1-git-send-email-k.chander@samsung.com>
+	Mon, 16 Jun 2014 06:26:36 -0400
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com, tj@kernel.org, kishon@ti.com
+Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v6 0/7] ARM: berlin: add AHCI support
+Date: Mon, 16 Jun 2014 12:26:25 +0200
+Message-Id: <1402914392-6028-1-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chander Kashyap <chander.kashyap@linaro.org>
+This series adds the support for Berlin SoC AHCI controller. The
+controller allows to use the SATA host interface and, for example, the
+eSATA port on the BG2Q.
 
-The address of cpu power registers in pmu is based on cpu number
-offsets. This function calculate the same. This is essentially
-required in case of multi-cluster SoC's e.g Exynos5420.
+The series adds a PHY driver to control the two SATA ports available,
+and adds a generic compatible to use the existing ahci_platform driver.
 
-Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
-Signed-off-by: Chander Kashyap <k.chander@samsung.com>
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
----
- arch/arm/mach-exynos/regs-pmu.h |    9 +++++++++
- 1 file changed, 9 insertions(+)
+Also enable the eSATA interface on the BG2Q DMP.
 
-diff --git a/arch/arm/mach-exynos/regs-pmu.h b/arch/arm/mach-exynos/regs-pmu.h
-index 1d13b08..aff23bd 100644
---- a/arch/arm/mach-exynos/regs-pmu.h
-+++ b/arch/arm/mach-exynos/regs-pmu.h
-@@ -323,4 +323,13 @@
- 
- #define EXYNOS5420_SWRESET_KFC_SEL				0x3
- 
-+#include <asm/cputype.h>
-+#define MAX_CPUS_IN_CLUSTER	4
-+
-+static inline unsigned int exynos_pmu_cpunr(unsigned int mpidr)
-+{
-+	return ((MPIDR_AFFINITY_LEVEL(mpidr, 1) * MAX_CPUS_IN_CLUSTER)
-+		 + MPIDR_AFFINITY_LEVEL(mpidr, 0));
-+}
-+
- #endif /* __ASM_ARCH_REGS_PMU_H */
+Changes sinve v5:
+	- rebased on top of v3.16-rc1
+	- added the clocks property in the sata node
+
+Changes since v4:
+        - updated PHY driver as tristate
+        - handled the case were no SATA port is enabled
+        - updated the compatible to a generic one
+        - cosmetic fixups
+
+Changes since v3:
+        - moved all PHY operations to the PHY driver
+        - removed PHY sub-nodes
+        - removed the custom Berlin AHCI driver and switched to
+          ahci_platform
+        - added multiple PHYs support to the libahci_platform
+
+Changes since v2:
+        - modeled each PHY as a sub-node
+        - cosmetic fixups
+
+Changes since v1:
+        - added a PHY driver, allowing to enable each port
+          individually and removed the 'force-port-map' property
+        - made the drivers a bit less magic :)
+        - wrote a function to select and configure registers in the
+          AHCI driver
+        - removed BG2 / BG2CD nodes
+
+Antoine Ténart (7):
+  phy: add a driver for the Berlin SATA PHY
+  Documentation: bindings: add the Berlin SATA PHY
+  ata: libahci: allow to use multiple PHYs
+  ata: ahci_platform: add a generic AHCI compatible
+  Documentation: bindings: document the sub-nodes AHCI bindings
+  ARM: berlin: add the AHCI node for the BG2Q
+  ARM: berlin: enable the eSATA interface on the BG2Q DMP
+
+ .../devicetree/bindings/ata/ahci-platform.txt      |  37 ++++
+ .../devicetree/bindings/phy/berlin-sata-phy.txt    |  14 ++
+ arch/arm/boot/dts/berlin2q-marvell-dmp.dts         |   8 +
+ arch/arm/boot/dts/berlin2q.dtsi                    |  28 +++
+ drivers/ata/ahci.h                                 |   3 +-
+ drivers/ata/ahci_platform.c                        |   2 +
+ drivers/ata/libahci.c                              |   7 +
+ drivers/ata/libahci_platform.c                     | 170 +++++++++++----
+ drivers/phy/Kconfig                                |   7 +
+ drivers/phy/Makefile                               |   1 +
+ drivers/phy/phy-berlin-sata.c                      | 232 +++++++++++++++++++++
+ 11 files changed, 473 insertions(+), 36 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
+ create mode 100644 drivers/phy/phy-berlin-sata.c
+
 -- 
-1.7.9.5
+1.9.1
 
