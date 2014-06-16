@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932816AbaFPSJK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 14:09:10 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:54676 "EHLO
+	id S932819AbaFPSJk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 14:09:40 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:54652 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932477AbaFPSD1 (ORCPT
+	with ESMTP id S932434AbaFPSDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 14:03:27 -0400
+	Mon, 16 Jun 2014 14:03:23 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
@@ -22,9 +22,9 @@ Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v2 08/10] clk: Add driver for Maxim 77802 PMIC clocks
-Date: Mon, 16 Jun 2014 20:02:36 +0200
-Message-Id: <1402941758-11216-9-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v2 06/10] mfd: Add driver for Maxim 77802 Power Management IC
+Date: Mon, 16 Jun 2014 20:02:34 +0200
+Message-Id: <1402941758-11216-7-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1402941758-11216-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1402941758-11216-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -32,252 +32,988 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MAX77802 PMIC has two 32.768kHz Buffered Clock Outputs with
-Low Jitter Mode. This patch adds support for these two clocks.
+Maxim MAX77802 is a power management chip that contains 10 high
+efficiency Buck regulators, 32 Low-dropout (LDO) regulators used
+to power up application processors and peripherals, a 2-channel
+32kHz clock outputs, a Real-Time-Clock (RTC) and a I2C interface
+to program the individual regulators, clocks outputs and the RTC.
+
+This patch adds the core support for MAX77802 PMIC and is based
+on a driver added by Simon Glass to the Chrome OS kernel 3.8 tree.
 
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
 
 Changes since v1:
- - Use module_platform_driver() instead of having init/exit functions.
-   Suggested by Mark Brown.
- - Use the generic maxim clock driver to reduce code duplication with
-   clk-max77686.c driver.
+ - Convert max77{686,802} to regmap irq API and get rid of max77{686,802}-irq.c
+   suggested by Krzysztof Kozlowski.
+ - Don't protect max77802 mfd_cells using Kconfig options since mfd core omits
+   devices that don't match. Suggested by Lee Jones.
+ - Change mfd driver to be tristate instead of boolean. Suggested by Mark Brown.
+ - Change binding "voltage-regulators" property to "regulators" to be consistent
+   with other PMIC drivers. Suggested by Mark Brown.
+ - Use regulators node names instead of the deprecated "regulator-compatible"
+   property. Suggested by Mark Brown. 
+ - Use the new descriptor-based GPIO interface instead of the deprecated
+   integer based GPIO one. Suggested by Mark Brown.
+ - Remove the type parameter from i2c_device_id table since was not used.
+ - Fix device not found error message and remove unneeded device found message.
 
- .../devicetree/bindings/clock/maxim,max77802.txt   | 42 +++++++++
- drivers/clk/Kconfig                                |  7 ++
- drivers/clk/Makefile                               |  1 +
- drivers/clk/clk-max77802.c                         | 99 ++++++++++++++++++++++
- drivers/mfd/max77802.c                             |  1 +
- include/dt-bindings/clock/maxim,max77802.h         | 22 +++++
- 6 files changed, 172 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/maxim,max77802.txt
- create mode 100644 drivers/clk/clk-max77802.c
- create mode 100644 include/dt-bindings/clock/maxim,max77802.h
+ Documentation/devicetree/bindings/mfd/max77802.txt |  87 +++++
+ drivers/mfd/Kconfig                                |  14 +
+ drivers/mfd/Makefile                               |   1 +
+ drivers/mfd/max77802.c                             | 362 +++++++++++++++++++++
+ include/linux/mfd/max77802-private.h               | 309 ++++++++++++++++++
+ include/linux/mfd/max77802.h                       | 124 +++++++
+ 6 files changed, 897 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/max77802.txt
+ create mode 100644 drivers/mfd/max77802.c
+ create mode 100644 include/linux/mfd/max77802-private.h
+ create mode 100644 include/linux/mfd/max77802.h
 
-diff --git a/Documentation/devicetree/bindings/clock/maxim,max77802.txt b/Documentation/devicetree/bindings/clock/maxim,max77802.txt
+diff --git a/Documentation/devicetree/bindings/mfd/max77802.txt b/Documentation/devicetree/bindings/mfd/max77802.txt
 new file mode 100644
-index 0000000..b2c2129
+index 0000000..e6c4860
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/maxim,max77802.txt
-@@ -0,0 +1,42 @@
-+Binding for Maxim MAX77802 32k clock generator block
++++ b/Documentation/devicetree/bindings/mfd/max77802.txt
+@@ -0,0 +1,87 @@
++Maxim MAX77802 multi-function device
 +
-+This is a part of device tree bindings of MAX77802 multi-function device.
-+More information can be found in bindings/mfd/max77802.txt file.
++MAX77802 is a Mulitifunction device with PMIC, RTC and Charger on chip. It is
++interfaced to host controller using i2c interface. PMIC, Charger and RTC
++submodules are addressed using same i2c slave address
 +
-+The MAX77802 contains two 32.768khz clock outputs that can be controlled
-+(gated/ungated) over I2C.
++This document describes the binding for mfd device and PMIC submodule.
 +
-+Following properties should be presend in main device node of the MFD chip.
++Binding for the built-in 32k clock generator block is defined separately
++in bindings/clk/maxim,max77802.txt file.
 +
 +Required properties:
++- compatible : Must be "maxim,max77802";
++- reg : Specifies the i2c slave address of PMIC block.
++- interrupts : This i2c device has an IRQ line connected to the main SoC.
++- interrupt-parent : The parent interrupt controller.
 +
-+- #clock-cells: from common clock binding; shall be set to 1.
++Optional properties:
++- max77802,pmic-buck-default-dvs-idx: We'll always write this DVS index in the
++  PMIC for BUCKs with DVS (Bucks 1-4, 6).
++  NOTE: at the moment these bindings don't include enough details for actual
++  GPIO-DVS--this just lets you choose which single slot to use.
 +
-+Each clock is assigned an identifier and client nodes can use this identifier
-+to specify the clock which they consume. Following indices are allowed:
-+     - 0: 32khz_ap clock,
-+     - 1: 32khz_cp clock.
++- max77802,pmic-buck-dvs-gpios: The DVS GPIOs. We'll try to set these GPIOs
++  to match pmic-buck-default-dvs-idx at probe time if they are defined. If
++  some or all of these GPIOs are not defined it's assumed that the board has
++  any missing GPIOs hardwired to match pmic-buck-default-dvs-idx.
 +
-+Clocks are defined as preprocessor macros in dt-bindings/clock/maxim,max77802.h
-+header and can be used in device tree sources.
++- max77802,pmic-buck-selb-gpios: GPIOs to enable DVS-GPIO for BUCKs.
++  Should be five values: 1, 2, 3, 4, 6.  It is strongly suggested to include
++  these GPIOs if there's any chance that changing DVS GPIOs one line at a
++  time might glitch your DVS values.
 +
-+Example: Node of the MFD chip
++Optional node:
++- regulators : The regulators of max77802 have to be instantiated
++  under subnode named "regulators" using the following format.
 +
-+	max77802: max77802@09 {
++	regulator_name {
++		standard regulator constraints....
++	};
++	refer Documentation/devicetree/bindings/regulator/regulator.txt
++
++  The regulator node name should be initialized with a string
++to get matched with their hardware counterparts as follow:
++
++	-LDOn 	:	for LDOs, where n can lie in range 1 to 35.
++			example: LDO1, LDO2, LDO35.
++	-BUCKn 	:	for BUCKs, where n can lie in range 1 to 10.
++			example: BUCK1, BUCK5, BUCK10.
++Example:
++
++	max77802@09 {
 +		compatible = "maxim,max77802";
 +		interrupt-parent = <&wakeup_eint>;
 +		interrupts = <26 0>;
 +		reg = <0x09>;
-+		#clock-cells = <1>;
++		#address-cells = <1>;
++		#size-cells = <0>;
 +
-+		/* ... */
++		max77802,pmic-buck-default-dvs-idx = <1>;
++		max77802,pmic-buck-dvs-gpios = <&gpy7 6 0>,
++					       <&gpj4 2 0>,
++					       <&gpj4 3 0>;
++		max77802,pmic-buck-selb-gpios = <&gph0 2 0>,
++						<&gph0 3 0>,
++						<&gph0 4 0>,
++						<&gph0 5 0>,
++						<&gph0 6 0>;
++
++		regulators {
++			ldo11_reg: LDO11 {
++				regulator-compatible = "LDO11";
++				regulator-name = "vdd_ldo11";
++				regulator-min-microvolt = <1900000>;
++				regulator-max-microvolt = <1900000>;
++				regulator-always-on;
++			};
++
++			buck1_reg {
++				regulator-compatible = "BUCK1";
++				regulator-name = "vdd_mif";
++				regulator-min-microvolt = <950000>;
++				regulator-max-microvolt = <1300000>;
++				regulator-always-on;
++				regulator-boot-on;
++			};
 +	};
-+
-+Example: Clock consumer node
-+
-+	foo@0 {
-+		compatible = "bar,foo";
-+		/* ... */
-+		clock-names = "32khz_ap";
-+		clocks = <&max77802 MAX77802_CLK_32K_AP>;
-+	};
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index 3fd4270..221260b 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -42,6 +42,13 @@ config COMMON_CLK_MAX77686
- 	---help---
- 	  This driver supports Maxim 77686 crystal oscillator clock. 
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 0916447..dcec3b7 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -393,6 +393,20 @@ config MFD_MAX77693
+ 	  additional drivers must be enabled in order to use the functionality
+ 	  of the device.
  
-+config COMMON_CLK_MAX77802
-+	tristate "Clock driver for Maxim 77802 MFD"
-+	depends on MFD_MAX77802
-+	select COMMON_CLK_MAX_GEN
-+	---help---
-+	  This driver supports Maxim 77802 crystal oscillator clock.
++config MFD_MAX77802
++	tristate "Maxim Integrated MAX77802 PMIC Support"
++	depends on I2C=y
++	select MFD_CORE
++	select REGMAP_I2C
++	select REGMAP_IRQ
++	select IRQ_DOMAIN
++	help
++	  Say yes here to support for Maxim Integrated MAX77802.
++	  This is a Power Management IC with RTC on chip.
++	  This driver provides common support for accessing the device;
++	  additional drivers must be enabled in order to use the functionality
++	  of the device.
 +
- config COMMON_CLK_SI5351
- 	tristate "Clock driver for SiLabs 5351A/B/C"
- 	depends on I2C
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 6c1aff6..520ff76 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -20,6 +20,7 @@ obj-$(CONFIG_ARCH_HIGHBANK)		+= clk-highbank.o
- obj-$(CONFIG_MACH_LOONGSON1)		+= clk-ls1x.o
- obj-$(CONFIG_COMMON_CLK_MAX_GEN)	+= clk-max-gen.o
- obj-$(CONFIG_COMMON_CLK_MAX77686)	+= clk-max77686.o
-+obj-$(CONFIG_COMMON_CLK_MAX77802)	+= clk-max77802.o
- obj-$(CONFIG_ARCH_MOXART)		+= clk-moxart.o
- obj-$(CONFIG_ARCH_NOMADIK)		+= clk-nomadik.o
- obj-$(CONFIG_ARCH_NSPIRE)		+= clk-nspire.o
-diff --git a/drivers/clk/clk-max77802.c b/drivers/clk/clk-max77802.c
+ config MFD_MAX8907
+ 	tristate "Maxim Semiconductor MAX8907 PMIC Support"
+ 	select MFD_CORE
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 3b3b408..8108ae6 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -117,6 +117,7 @@ obj-$(CONFIG_MFD_DA9063)	+= da9063.o
+ obj-$(CONFIG_MFD_MAX14577)	+= max14577.o
+ obj-$(CONFIG_MFD_MAX77686)	+= max77686.o
+ obj-$(CONFIG_MFD_MAX77693)	+= max77693.o max77693-irq.o
++obj-$(CONFIG_MFD_MAX77802)	+= max77802.o
+ obj-$(CONFIG_MFD_MAX8907)	+= max8907.o
+ max8925-objs			:= max8925-core.o max8925-i2c.o
+ obj-$(CONFIG_MFD_MAX8925)	+= max8925.o
+diff --git a/drivers/mfd/max77802.c b/drivers/mfd/max77802.c
 new file mode 100644
-index 0000000..4253b44
+index 0000000..c29fcdd
 --- /dev/null
-+++ b/drivers/clk/clk-max77802.c
-@@ -0,0 +1,99 @@
++++ b/drivers/mfd/max77802.c
+@@ -0,0 +1,362 @@
 +/*
-+ * clk-max77802.c - Clock driver for Maxim 77802
++ * max77802.c - mfd core driver for the Maxim 77802
 + *
-+ * Copyright (C) 2014 Google, Inc
++ * Copyright (C) 2013-2014 Google, Inc
++ * Simon Glass <sjg@chromium.org>
 + *
-+ * Copyright (C) 2012 Samsung Electornics
++ * Copyright (C) 2012 Samsung Electronics
++ * Chiwoong Byun <woong.byun@smasung.com>
 + * Jonghwa Lee <jonghwa3.lee@samsung.com>
 + *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
 + *
 + * This program is distributed in the hope that it will be useful,
 + * but WITHOUT ANY WARRANTY; without even the implied warranty of
 + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 + * GNU General Public License for more details.
 + *
-+ * This driver is based on clk-max77686.c
++ * This driver is based on max8997.c
 + */
 +
-+#include <linux/kernel.h>
++#include <linux/export.h>
 +#include <linux/slab.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
++#include <linux/i2c.h>
++#include <linux/irq.h>
++#include <linux/interrupt.h>
++#include <linux/pm_runtime.h>
++#include <linux/module.h>
++#include <linux/mfd/core.h>
++#include <linux/gpio/consumer.h>
 +#include <linux/mfd/max77802.h>
 +#include <linux/mfd/max77802-private.h>
-+#include <linux/clk-provider.h>
-+#include <linux/mutex.h>
-+#include <linux/clkdev.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
++#include <linux/err.h>
 +
-+#include <dt-bindings/clock/maxim,max77802.h>
-+#include "clk-max-gen.h"
-+
-+#define MAX77802_CLOCK_OPMODE_MASK	0x1
-+#define MAX77802_CLOCK_LOW_JITTER_SHIFT 0x3
-+
-+static struct clk_init_data max77802_clks_init[MAX77802_CLKS_NUM] = {
-+	[MAX77802_CLK_32K_AP] = {
-+		.name = "32khz_ap",
-+		.ops = &max_gen_clk_ops,
-+		.flags = CLK_IS_ROOT,
-+	},
-+	[MAX77802_CLK_32K_CP] = {
-+		.name = "32khz_cp",
-+		.ops = &max_gen_clk_ops,
-+		.flags = CLK_IS_ROOT,
-+	},
++static const struct mfd_cell max77802_devs[] = {
 +};
 +
-+static int max77802_clk_probe(struct platform_device *pdev)
++static bool max77802_pmic_is_accessible_reg(struct device *dev,
++					    unsigned int reg)
 +{
-+	struct max77802_dev *iodev = dev_get_drvdata(pdev->dev.parent);
-+	int ret;
++	return (reg >= MAX77802_REG_DEVICE_ID && reg < MAX77802_REG_PMIC_END);
++}
 +
-+	ret = max_gen_clk_probe(pdev, iodev->regmap, MAX77802_REG_32KHZ,
-+				max77802_clks_init, MAX77802_CLKS_NUM);
++static bool max77802_rtc_is_accessible_reg(struct device *dev,
++					   unsigned int reg)
++{
++	return (reg >= MAX77802_RTC_INT && reg < MAX77802_RTC_END);
++}
 +
-+	if (ret) {
-+		dev_err(&pdev->dev, "generic probe failed %d\n", ret);
++static bool max77802_is_accessible_reg(struct device *dev, unsigned int reg)
++{
++	return (max77802_pmic_is_accessible_reg(dev, reg) ||
++		max77802_rtc_is_accessible_reg(dev, reg));
++}
++
++static bool max77802_pmic_is_precious_reg(struct device *dev, unsigned int reg)
++{
++	return (reg == MAX77802_REG_INTSRC || reg == MAX77802_REG_INT1 ||
++		reg == MAX77802_REG_INT2);
++}
++
++static bool max77802_rtc_is_precious_reg(struct device *dev, unsigned int reg)
++{
++	return (reg == MAX77802_RTC_INT ||
++		reg == MAX77802_RTC_UPDATE0 ||
++		reg == MAX77802_RTC_UPDATE1);
++}
++
++static bool max77802_is_precious_reg(struct device *dev, unsigned int reg)
++{
++	return (max77802_pmic_is_precious_reg(dev, reg) ||
++		max77802_rtc_is_precious_reg(dev, reg));
++}
++
++static bool max77802_pmic_is_volatile_reg(struct device *dev, unsigned int reg)
++{
++	return (max77802_is_precious_reg(dev, reg) ||
++		reg == MAX77802_REG_STATUS1 || reg == MAX77802_REG_STATUS2 ||
++		reg == MAX77802_REG_PWRON);
++}
++
++static bool max77802_rtc_is_volatile_reg(struct device *dev, unsigned int reg)
++{
++	return (max77802_rtc_is_precious_reg(dev, reg) ||
++		reg == MAX77802_RTC_SEC ||
++		reg == MAX77802_RTC_MIN ||
++		reg == MAX77802_RTC_HOUR ||
++		reg == MAX77802_RTC_WEEKDAY ||
++		reg == MAX77802_RTC_MONTH ||
++		reg == MAX77802_RTC_YEAR ||
++		reg == MAX77802_RTC_DATE);
++}
++
++static bool max77802_is_volatile_reg(struct device *dev, unsigned int reg)
++{
++	return (max77802_pmic_is_volatile_reg(dev, reg) ||
++		max77802_rtc_is_volatile_reg(dev, reg));
++}
++
++static struct regmap_config max77802_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.writeable_reg = max77802_is_accessible_reg,
++	.readable_reg = max77802_is_accessible_reg,
++	.precious_reg = max77802_is_precious_reg,
++	.volatile_reg = max77802_is_volatile_reg,
++	.name = "max77802-pmic",
++	.cache_type = REGCACHE_RBTREE,
++};
++
++static const struct regmap_irq max77802_irqs[] = {
++	/* INT1 interrupts */
++	{ .reg_offset = 0, .mask = MAX77802_INT1_PWRONF_MSK, },
++	{ .reg_offset = 0, .mask = MAX77802_INT1_PWRONR_MSK, },
++	{ .reg_offset = 0, .mask = MAX77802_INT1_JIGONBF_MSK, },
++	{ .reg_offset = 0, .mask = MAX77802_INT1_JIGONBR_MSK, },
++	{ .reg_offset = 0, .mask = MAX77802_INT1_ACOKBF_MSK, },
++	{ .reg_offset = 0, .mask = MAX77802_INT1_ACOKBR_MSK, },
++	{ .reg_offset = 0, .mask = MAX77802_INT1_ONKEY1S_MSK, },
++	{ .reg_offset = 0, .mask = MAX77802_INT1_MRSTB_MSK, },
++	/* INT2 interrupts */
++	{ .reg_offset = 1, .mask = MAX77802_INT2_140C_MSK, },
++	{ .reg_offset = 1, .mask = MAX77802_INT2_120C_MSK, },
++};
++
++static const struct regmap_irq_chip max77802_irq_chip = {
++	.name			= "max77802-pmic",
++	.status_base		= MAX77802_REG_INT1,
++	.mask_base		= MAX77802_REG_INT1MSK,
++	.num_regs		= 2,
++	.irqs			= max77802_irqs,
++	.num_irqs		= ARRAY_SIZE(max77802_irqs),
++};
++
++static const struct regmap_irq max77802_rtc_irqs[] = {
++	/* RTC interrupts */
++	{ .reg_offset = 0, .mask = MAX77802_RTCINT_RTC60S_MSK, },
++	{ .reg_offset = 0, .mask = MAX77802_RTCINT_RTCA1_MSK, },
++	{ .reg_offset = 0, .mask = MAX77802_RTCINT_RTCA2_MSK, },
++	{ .reg_offset = 0, .mask = MAX77802_RTCINT_SMPL_MSK, },
++	{ .reg_offset = 0, .mask = MAX77802_RTCINT_RTC1S_MSK, },
++	{ .reg_offset = 0, .mask = MAX77802_RTCINT_WTSR_MSK, },
++};
++
++static const struct regmap_irq_chip max77802_rtc_irq_chip = {
++	.name			= "max77802-rtc",
++	.status_base		= MAX77802_RTC_INT,
++	.mask_base		= MAX77802_RTC_INTM,
++	.num_regs		= 1,
++	.irqs			= max77802_rtc_irqs,
++	.num_irqs		= ARRAY_SIZE(max77802_rtc_irqs),
++};
++
++#ifdef CONFIG_OF
++static struct of_device_id max77802_pmic_dt_match[] = {
++	{.compatible = "maxim,max77802", .data = NULL},
++	{},
++};
++
++static void max77802_dt_parse_dvs_gpio(struct device *dev,
++				       struct max77802_platform_data *pd,
++				       struct device_node *np)
++{
++	int i;
++
++	/*
++	 * NOTE: we don't consider GPIO errors fatal; board may have some lines
++	 * directly pulled high or low and thus doesn't specify them.
++	 */
++	for (i = 0; i < ARRAY_SIZE(pd->buck_gpio_dvs); i++)
++		pd->buck_gpio_dvs[i] =
++			devm_gpiod_get_index(dev, "max77802,pmic-buck-dvs", i);
++
++	for (i = 0; i < ARRAY_SIZE(pd->buck_gpio_selb); i++)
++		pd->buck_gpio_selb[i] =
++			devm_gpiod_get_index(dev, "max77802,pmic-buck-selb", i);
++}
++
++static struct max77802_platform_data *max77802_i2c_parse_dt_pdata(struct device
++								  *dev)
++{
++	struct device_node *np = dev->of_node;
++	struct max77802_platform_data *pd;
++
++	pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
++	if (!pd) {
++		dev_err(dev, "could not allocate memory for pdata\n");
++		return NULL;
++	}
++
++	/* Read default index and ignore errors, since default is 0 */
++	of_property_read_u32(np, "max77802,pmic-buck-default-dvs-idx",
++			     &pd->buck_default_idx);
++
++	max77802_dt_parse_dvs_gpio(dev, pd, np);
++
++	dev->platform_data = pd;
++	return pd;
++}
++#else
++static struct max77802_platform_data *max77802_i2c_parse_dt_pdata(struct device
++								  *dev)
++{
++	return 0;
++}
++#endif
++
++static int max77802_i2c_probe(struct i2c_client *i2c,
++			      const struct i2c_device_id *id)
++{
++	struct max77802_dev *max77802 = NULL;
++	struct max77802_platform_data *pdata = dev_get_platdata(&i2c->dev);
++	unsigned int data;
++	int ret = 0;
++
++	if (i2c->dev.of_node)
++		pdata = max77802_i2c_parse_dt_pdata(&i2c->dev);
++
++	if (!pdata) {
++		dev_err(&i2c->dev, "No platform data found.\n");
++		return -EIO;
++	}
++
++	max77802 = devm_kzalloc(&i2c->dev, sizeof(struct max77802_dev),
++				GFP_KERNEL);
++	if (max77802 == NULL)
++		return -ENOMEM;
++
++	i2c_set_clientdata(i2c, max77802);
++
++	max77802->dev = &i2c->dev;
++	max77802->i2c = i2c;
++	max77802->type = id->driver_data;
++
++	max77802->wakeup = pdata->wakeup;
++	max77802->irq = i2c->irq;
++
++	max77802->regmap = devm_regmap_init_i2c(i2c, &max77802_regmap_config);
++	if (IS_ERR(max77802->regmap)) {
++		ret = PTR_ERR(max77802->regmap);
++		dev_err(max77802->dev, "Failed to allocate register map: %d\n",
++			ret);
 +		return ret;
 +	}
 +
-+	/* Enable low-jitter mode on the 32khz clocks. */
-+	ret = regmap_update_bits(iodev->regmap, MAX77802_REG_32KHZ,
-+				 1 << MAX77802_CLOCK_LOW_JITTER_SHIFT,
-+				 1 << MAX77802_CLOCK_LOW_JITTER_SHIFT);
-+	if (ret < 0)
-+		dev_err(&pdev->dev, "failed to enable low-jitter mode\n");
++	if (regmap_read(max77802->regmap,
++			 MAX77802_REG_DEVICE_ID, &data) < 0) {
++		dev_err(max77802->dev,
++			"device not found on this channel\n");
++		return -ENODEV;
++	}
 +
++	ret = regmap_add_irq_chip(max77802->regmap, max77802->irq,
++				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT |
++				  IRQF_SHARED, 0, &max77802_irq_chip,
++				  &max77802->irq_data);
++	if (ret != 0) {
++		dev_err(&i2c->dev, "failed to add PMIC irq chip: %d\n", ret);
++		return ret;
++	}
++	ret = regmap_add_irq_chip(max77802->regmap, max77802->irq,
++				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT |
++				  IRQF_SHARED, 0, &max77802_rtc_irq_chip,
++				  &max77802->rtc_irq_data);
++	if (ret != 0) {
++		dev_err(&i2c->dev, "failed to add RTC irq chip: %d\n", ret);
++		goto err_del_irqc;
++	}
++
++	ret = mfd_add_devices(max77802->dev, -1, max77802_devs,
++			      ARRAY_SIZE(max77802_devs), NULL, 0, NULL);
++	if (ret < 0) {
++		dev_err(&i2c->dev, "failed to add MFD devices: %d\n", ret);
++		goto err_del_rtc_irqc;
++	}
++
++	return 0;
++
++err_del_rtc_irqc:
++	regmap_del_irq_chip(max77802->irq, max77802->rtc_irq_data);
++err_del_irqc:
++	regmap_del_irq_chip(max77802->irq, max77802->irq_data);
 +	return ret;
 +}
 +
-+static int max77802_clk_remove(struct platform_device *pdev)
++static int max77802_i2c_remove(struct i2c_client *i2c)
 +{
-+	return max_gen_clk_remove(pdev, MAX77802_CLKS_NUM);
++	struct max77802_dev *max77802 = i2c_get_clientdata(i2c);
++
++	mfd_remove_devices(max77802->dev);
++
++	return 0;
 +}
 +
-+static const struct platform_device_id max77802_clk_id[] = {
-+	{ "max77802-clk", 0},
-+	{ },
++static const struct i2c_device_id max77802_i2c_id[] = {
++	{ "max77802", 0 },
++	{ }
 +};
-+MODULE_DEVICE_TABLE(platform, max77802_clk_id);
++MODULE_DEVICE_TABLE(i2c, max77802_i2c_id);
 +
-+static struct platform_driver max77802_clk_driver = {
++#ifdef CONFIG_PM_SLEEP
++static int max77802_suspend(struct device *dev)
++{
++	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
++	struct max77802_dev *max77802 = i2c_get_clientdata(i2c);
++
++	if (device_may_wakeup(dev))
++		enable_irq_wake(max77802->irq);
++
++	disable_irq(max77802->irq);
++
++	return 0;
++}
++
++static int max77802_resume(struct device *dev)
++{
++	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
++	struct max77802_dev *max77802 = i2c_get_clientdata(i2c);
++
++	if (device_may_wakeup(dev))
++		disable_irq_wake(max77802->irq);
++
++	enable_irq(max77802->irq);
++
++	return 0;
++}
++#endif /* CONFIG_PM_SLEEP */
++
++static SIMPLE_DEV_PM_OPS(max77802_pm, max77802_suspend, max77802_resume);
++
++static struct i2c_driver max77802_i2c_driver = {
 +	.driver = {
-+		.name  = "max77802-clk",
-+		.owner = THIS_MODULE,
++		   .name = "max77802",
++		   .owner = THIS_MODULE,
++		   .pm = &max77802_pm,
++		   .of_match_table = of_match_ptr(max77802_pmic_dt_match),
 +	},
-+	.probe = max77802_clk_probe,
-+	.remove = max77802_clk_remove,
-+	.id_table = max77802_clk_id,
++	.probe = max77802_i2c_probe,
++	.remove = max77802_i2c_remove,
++	.id_table = max77802_i2c_id,
 +};
 +
-+module_platform_driver(max77802_clk_driver);
++static int __init max77802_i2c_init(void)
++{
++	return i2c_add_driver(&max77802_i2c_driver);
++}
++/* init early so consumer devices can complete system boot */
++subsys_initcall(max77802_i2c_init);
 +
-+MODULE_DESCRIPTION("MAXIM 77802 Clock Driver");
-+MODULE_AUTHOR("Javier Martinez Canillas <javier.martinez@collabora.co.uk>");
++static void __exit max77802_i2c_exit(void)
++{
++	i2c_del_driver(&max77802_i2c_driver);
++}
++module_exit(max77802_i2c_exit);
++
++MODULE_DESCRIPTION("MAXIM 77802 multi-function core driver");
++MODULE_AUTHOR("Simon Glass <sjg@chromium.org>");
 +MODULE_LICENSE("GPL");
-diff --git a/drivers/mfd/max77802.c b/drivers/mfd/max77802.c
-index c9dcbab..ae73bb4 100644
---- a/drivers/mfd/max77802.c
-+++ b/drivers/mfd/max77802.c
-@@ -38,6 +38,7 @@
- 
- static const struct mfd_cell max77802_devs[] = {
- 	{ .name = "max77802-pmic", },
-+	{ .name = "max77802-clk", },
- };
- 
- static bool max77802_pmic_is_accessible_reg(struct device *dev,
-diff --git a/include/dt-bindings/clock/maxim,max77802.h b/include/dt-bindings/clock/maxim,max77802.h
+diff --git a/include/linux/mfd/max77802-private.h b/include/linux/mfd/max77802-private.h
 new file mode 100644
-index 0000000..997312e
+index 0000000..81bc90d
 --- /dev/null
-+++ b/include/dt-bindings/clock/maxim,max77802.h
-@@ -0,0 +1,22 @@
++++ b/include/linux/mfd/max77802-private.h
+@@ -0,0 +1,309 @@
 +/*
-+ * Copyright (C) 2014 Google, Inc
++ * max77802-private.h - Voltage regulator driver for the Maxim 77802
++ *
++ *  Copyright (C) 2012 Samsung Electrnoics
++ *  Chiwoong Byun <woong.byun@samsung.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
 + *
-+ * Device Tree binding constants clocks for the Maxim 77802 PMIC.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
 + */
 +
-+#ifndef _DT_BINDINGS_CLOCK_MAXIM_MAX77802_CLOCK_H
-+#define _DT_BINDINGS_CLOCK_MAXIM_MAX77802_CLOCK_H
++#ifndef __LINUX_MFD_MAX77802_PRIV_H
++#define __LINUX_MFD_MAX77802_PRIV_H
 +
-+/* Fixed rate clocks. */
++#include <linux/i2c.h>
++#include <linux/regmap.h>
++#include <linux/module.h>
 +
-+#define MAX77802_CLK_32K_AP		0
-+#define MAX77802_CLK_32K_CP		1
++#define MAX77802_REG_INVALID		(0xff)
 +
-+/* Total number of clocks. */
-+#define MAX77802_CLKS_NUM		(MAX77802_CLK_32K_CP + 1)
++enum max77802_pmic_reg {
++	MAX77802_REG_DEVICE_ID		= 0x00,
++	MAX77802_REG_INTSRC		= 0x01,
++	MAX77802_REG_INT1		= 0x02,
++	MAX77802_REG_INT2		= 0x03,
 +
-+#endif /* _DT_BINDINGS_CLOCK_MAXIM_MAX77802_CLOCK_H */
++	MAX77802_REG_INT1MSK		= 0x04,
++	MAX77802_REG_INT2MSK		= 0x05,
++
++	MAX77802_REG_STATUS1		= 0x06,
++	MAX77802_REG_STATUS2		= 0x07,
++
++	MAX77802_REG_PWRON		= 0x08,
++	/* Reserved: 0x09 */
++	MAX77802_REG_MRSTB		= 0x0A,
++	MAX77802_REG_EPWRHOLD		= 0x0B,
++	/* Reserved: 0x0C-0x0D */
++	MAX77802_REG_BOOSTCTRL		= 0x0E,
++	MAX77802_REG_BOOSTOUT		= 0x0F,
++
++	MAX77802_REG_BUCK1CTRL		= 0x10,
++	MAX77802_REG_BUCK1DVS1		= 0x11,
++	MAX77802_REG_BUCK1DVS2		= 0x12,
++	MAX77802_REG_BUCK1DVS3		= 0x13,
++	MAX77802_REG_BUCK1DVS4		= 0x14,
++	MAX77802_REG_BUCK1DVS5		= 0x15,
++	MAX77802_REG_BUCK1DVS6		= 0x16,
++	MAX77802_REG_BUCK1DVS7		= 0x17,
++	MAX77802_REG_BUCK1DVS8		= 0x18,
++	/* Reserved: 0x19 */
++	MAX77802_REG_BUCK2CTRL1		= 0x1A,
++	MAX77802_REG_BUCK2CTRL2		= 0x1B,
++	MAX77802_REG_BUCK2PHTRAN	= 0x1C,
++	MAX77802_REG_BUCK2DVS1		= 0x1D,
++	MAX77802_REG_BUCK2DVS2		= 0x1E,
++	MAX77802_REG_BUCK2DVS3		= 0x1F,
++	MAX77802_REG_BUCK2DVS4		= 0x20,
++	MAX77802_REG_BUCK2DVS5		= 0x21,
++	MAX77802_REG_BUCK2DVS6		= 0x22,
++	MAX77802_REG_BUCK2DVS7		= 0x23,
++	MAX77802_REG_BUCK2DVS8		= 0x24,
++	/* Reserved: 0x25-0x26 */
++	MAX77802_REG_BUCK3CTRL1		= 0x27,
++	MAX77802_REG_BUCK3DVS1		= 0x28,
++	MAX77802_REG_BUCK3DVS2		= 0x29,
++	MAX77802_REG_BUCK3DVS3		= 0x2A,
++	MAX77802_REG_BUCK3DVS4		= 0x2B,
++	MAX77802_REG_BUCK3DVS5		= 0x2C,
++	MAX77802_REG_BUCK3DVS6		= 0x2D,
++	MAX77802_REG_BUCK3DVS7		= 0x2E,
++	MAX77802_REG_BUCK3DVS8		= 0x2F,
++	/* Reserved: 0x30-0x36 */
++	MAX77802_REG_BUCK4CTRL1		= 0x37,
++	MAX77802_REG_BUCK4DVS1		= 0x38,
++	MAX77802_REG_BUCK4DVS2		= 0x39,
++	MAX77802_REG_BUCK4DVS3		= 0x3A,
++	MAX77802_REG_BUCK4DVS4		= 0x3B,
++	MAX77802_REG_BUCK4DVS5		= 0x3C,
++	MAX77802_REG_BUCK4DVS6		= 0x3D,
++	MAX77802_REG_BUCK4DVS7		= 0x3E,
++	MAX77802_REG_BUCK4DVS8		= 0x3F,
++	/* Reserved: 0x40 */
++	MAX77802_REG_BUCK5CTRL		= 0x41,
++	MAX77802_REG_BUCK5OUT		= 0x42,
++	/* Reserved: 0x43 */
++	MAX77802_REG_BUCK6CTRL		= 0x44,
++	MAX77802_REG_BUCK6DVS1		= 0x45,
++	MAX77802_REG_BUCK6DVS2		= 0x46,
++	MAX77802_REG_BUCK6DVS3		= 0x47,
++	MAX77802_REG_BUCK6DVS4		= 0x48,
++	MAX77802_REG_BUCK6DVS5		= 0x49,
++	MAX77802_REG_BUCK6DVS6		= 0x4A,
++	MAX77802_REG_BUCK6DVS7		= 0x4B,
++	MAX77802_REG_BUCK6DVS8		= 0x4C,
++	/* Reserved: 0x4D */
++	MAX77802_REG_BUCK7CTRL		= 0x4E,
++	MAX77802_REG_BUCK7OUT		= 0x4F,
++	/* Reserved: 0x50 */
++	MAX77802_REG_BUCK8CTRL		= 0x51,
++	MAX77802_REG_BUCK8OUT		= 0x52,
++	/* Reserved: 0x53 */
++	MAX77802_REG_BUCK9CTRL		= 0x54,
++	MAX77802_REG_BUCK9OUT		= 0x55,
++	/* Reserved: 0x56 */
++	MAX77802_REG_BUCK10CTRL		= 0x57,
++	MAX77802_REG_BUCK10OUT		= 0x58,
++
++	/* Reserved: 0x59-0x5F */
++
++	MAX77802_REG_LDO1CTRL1		= 0x60,
++	MAX77802_REG_LDO2CTRL1		= 0x61,
++	MAX77802_REG_LDO3CTRL1		= 0x62,
++	MAX77802_REG_LDO4CTRL1		= 0x63,
++	MAX77802_REG_LDO5CTRL1		= 0x64,
++	MAX77802_REG_LDO6CTRL1		= 0x65,
++	MAX77802_REG_LDO7CTRL1		= 0x66,
++	MAX77802_REG_LDO8CTRL1		= 0x67,
++	MAX77802_REG_LDO9CTRL1		= 0x68,
++	MAX77802_REG_LDO10CTRL1		= 0x69,
++	MAX77802_REG_LDO11CTRL1		= 0x6A,
++	MAX77802_REG_LDO12CTRL1		= 0x6B,
++	MAX77802_REG_LDO13CTRL1		= 0x6C,
++	MAX77802_REG_LDO14CTRL1		= 0x6D,
++	MAX77802_REG_LDO15CTRL1		= 0x6E,
++	/* Reserved: 0x6F */
++	MAX77802_REG_LDO17CTRL1		= 0x70,
++	MAX77802_REG_LDO18CTRL1		= 0x71,
++	MAX77802_REG_LDO19CTRL1		= 0x72,
++	MAX77802_REG_LDO20CTRL1		= 0x73,
++	MAX77802_REG_LDO21CTRL1		= 0x74,
++	MAX77802_REG_LDO22CTRL1		= 0x75,
++	MAX77802_REG_LDO23CTRL1		= 0x76,
++	MAX77802_REG_LDO24CTRL1		= 0x77,
++	MAX77802_REG_LDO25CTRL1		= 0x78,
++	MAX77802_REG_LDO26CTRL1		= 0x79,
++	MAX77802_REG_LDO27CTRL1		= 0x7A,
++	MAX77802_REG_LDO28CTRL1		= 0x7B,
++	MAX77802_REG_LDO29CTRL1		= 0x7C,
++	MAX77802_REG_LDO30CTRL1		= 0x7D,
++	/* Reserved: 0x7E */
++	MAX77802_REG_LDO32CTRL1		= 0x7F,
++	MAX77802_REG_LDO33CTRL1		= 0x80,
++	MAX77802_REG_LDO34CTRL1		= 0x81,
++	MAX77802_REG_LDO35CTRL1		= 0x82,
++	/* Reserved: 0x83-0x8F */
++	MAX77802_REG_LDO1CTRL2		= 0x90,
++	MAX77802_REG_LDO2CTRL2		= 0x91,
++	MAX77802_REG_LDO3CTRL2		= 0x92,
++	MAX77802_REG_LDO4CTRL2		= 0x93,
++	MAX77802_REG_LDO5CTRL2		= 0x94,
++	MAX77802_REG_LDO6CTRL2		= 0x95,
++	MAX77802_REG_LDO7CTRL2		= 0x96,
++	MAX77802_REG_LDO8CTRL2		= 0x97,
++	MAX77802_REG_LDO9CTRL2		= 0x98,
++	MAX77802_REG_LDO10CTRL2		= 0x99,
++	MAX77802_REG_LDO11CTRL2		= 0x9A,
++	MAX77802_REG_LDO12CTRL2		= 0x9B,
++	MAX77802_REG_LDO13CTRL2		= 0x9C,
++	MAX77802_REG_LDO14CTRL2		= 0x9D,
++	MAX77802_REG_LDO15CTRL2		= 0x9E,
++	/* Reserved: 0x9F */
++	MAX77802_REG_LDO17CTRL2		= 0xA0,
++	MAX77802_REG_LDO18CTRL2		= 0xA1,
++	MAX77802_REG_LDO19CTRL2		= 0xA2,
++	MAX77802_REG_LDO20CTRL2		= 0xA3,
++	MAX77802_REG_LDO21CTRL2		= 0xA4,
++	MAX77802_REG_LDO22CTRL2		= 0xA5,
++	MAX77802_REG_LDO23CTRL2		= 0xA6,
++	MAX77802_REG_LDO24CTRL2		= 0xA7,
++	MAX77802_REG_LDO25CTRL2		= 0xA8,
++	MAX77802_REG_LDO26CTRL2		= 0xA9,
++	MAX77802_REG_LDO27CTRL2		= 0xAA,
++	MAX77802_REG_LDO28CTRL2		= 0xAB,
++	MAX77802_REG_LDO29CTRL2		= 0xAC,
++	MAX77802_REG_LDO30CTRL2		= 0xAD,
++	/* Reserved: 0xAE */
++	MAX77802_REG_LDO32CTRL2		= 0xAF,
++	MAX77802_REG_LDO33CTRL2		= 0xB0,
++	MAX77802_REG_LDO34CTRL2		= 0xB1,
++	MAX77802_REG_LDO35CTRL2		= 0xB2,
++	/* Reserved: 0xB3 */
++
++	MAX77802_REG_BBAT_CHG		= 0xB4,
++	MAX77802_REG_32KHZ		= 0xB5,
++
++	MAX77802_REG_PMIC_END		= 0xB6,
++};
++
++enum max77802_rtc_reg {
++	MAX77802_RTC_INT		= 0xC0,
++	MAX77802_RTC_INTM		= 0xC1,
++	MAX77802_RTC_CONTROLM		= 0xC2,
++	MAX77802_RTC_CONTROL		= 0xC3,
++	MAX77802_RTC_UPDATE0		= 0xC4,
++	MAX77802_RTC_UPDATE1		= 0xC5,
++	MAX77802_WTSR_SMPL_CNTL		= 0xC6,
++	MAX77802_RTC_SEC		= 0xC7,
++	MAX77802_RTC_MIN		= 0xC8,
++	MAX77802_RTC_HOUR		= 0xC9,
++	MAX77802_RTC_WEEKDAY		= 0xCA,
++	MAX77802_RTC_MONTH		= 0xCB,
++	MAX77802_RTC_YEAR		= 0xCC,
++	MAX77802_RTC_DATE		= 0xCD,
++	MAX77802_RTC_AE1		= 0xCE,
++	MAX77802_ALARM1_SEC		= 0xCF,
++	MAX77802_ALARM1_MIN		= 0xD0,
++	MAX77802_ALARM1_HOUR		= 0xD1,
++	MAX77802_ALARM1_WEEKDAY		= 0xD2,
++	MAX77802_ALARM1_MONTH		= 0xD3,
++	MAX77802_ALARM1_YEAR		= 0xD4,
++	MAX77802_ALARM1_DATE		= 0xD5,
++	MAX77802_RTC_AE2		= 0xD6,
++	MAX77802_ALARM2_SEC		= 0xD7,
++	MAX77802_ALARM2_MIN		= 0xD8,
++	MAX77802_ALARM2_HOUR		= 0xD9,
++	MAX77802_ALARM2_WEEKDAY		= 0xDA,
++	MAX77802_ALARM2_MONTH		= 0xDB,
++	MAX77802_ALARM2_YEAR		= 0xDC,
++	MAX77802_ALARM2_DATE		= 0xDD,
++
++	MAX77802_RTC_END		= 0xDF,
++};
++
++#define MAX77802_IRQSRC_PMIC            (0)
++#define MAX77802_IRQSRC_RTC	        BIT(0)
++
++enum max77802_irq_source {
++	PMIC_INT1 = 0,
++	PMIC_INT2,
++	RTC_INT,
++
++	MAX77802_IRQ_GROUP_NR,
++};
++
++enum max77802_irq {
++	MAX77802_PMICIRQ_PWRONF,
++	MAX77802_PMICIRQ_PWRONR,
++	MAX77802_PMICIRQ_JIGONBF,
++	MAX77802_PMICIRQ_JIGONBR,
++	MAX77802_PMICIRQ_ACOKBF,
++	MAX77802_PMICIRQ_ACOKBR,
++	MAX77802_PMICIRQ_ONKEY1S,
++	MAX77802_PMICIRQ_MRSTB,
++
++	MAX77802_PMICIRQ_140C,
++	MAX77802_PMICIRQ_120C,
++
++	MAX77802_RTCIRQ_RTC60S = 0,
++	MAX77802_RTCIRQ_RTCA1,
++	MAX77802_RTCIRQ_RTCA2,
++	MAX77802_RTCIRQ_SMPL,
++	MAX77802_RTCIRQ_RTC1S,
++	MAX77802_RTCIRQ_WTSR,
++
++	MAX77802_IRQ_NR,
++};
++
++#define MAX77802_INT1_PWRONF_MSK	BIT(0)
++#define MAX77802_INT1_PWRONR_MSK	BIT(1)
++#define MAX77802_INT1_JIGONBF_MSK	BIT(2)
++#define MAX77802_INT1_JIGONBR_MSK	BIT(3)
++#define MAX77802_INT1_ACOKBF_MSK	BIT(4)
++#define MAX77802_INT1_ACOKBR_MSK	BIT(5)
++#define MAX77802_INT1_ONKEY1S_MSK	BIT(6)
++#define MAX77802_INT1_MRSTB_MSK		BIT(7)
++
++#define MAX77802_INT2_140C_MSK		BIT(0)
++#define MAX77802_INT2_120C_MSK		BIT(1)
++
++#define MAX77802_RTCINT_RTC60S_MSK	BIT(0)
++#define MAX77802_RTCINT_RTCA1_MSK	BIT(1)
++#define MAX77802_RTCINT_RTCA2_MSK	BIT(2)
++#define MAX77802_RTCINT_SMPL_MSK	BIT(3)
++#define MAX77802_RTCINT_RTC1S_MSK	BIT(4)
++#define MAX77802_RTCINT_WTSR_MSK	BIT(5)
++
++struct max77802_dev {
++	struct device *dev;
++	struct i2c_client *i2c; /* 0x09 / PMIC, Battery Control and RTC */
++
++	int type;
++
++	struct regmap *regmap;		/* regmap for mfd and rtc devices */
++	struct regmap_irq_chip_data *irq_data;
++	struct regmap_irq_chip_data *rtc_irq_data;
++
++	int irq;
++	bool wakeup;
++	struct mutex irqlock;
++	int irq_masks_cur[MAX77802_IRQ_GROUP_NR];
++	int irq_masks_cache[MAX77802_IRQ_GROUP_NR];
++};
++
++enum max77802_types {
++	TYPE_MAX77802,
++};
++
++extern int max77802_irq_init(struct max77802_dev *max77802);
++extern void max77802_irq_exit(struct max77802_dev *max77802);
++extern int max77802_irq_resume(struct max77802_dev *max77802);
++
++#endif /*  __LINUX_MFD_MAX77802_PRIV_H */
+diff --git a/include/linux/mfd/max77802.h b/include/linux/mfd/max77802.h
+new file mode 100644
+index 0000000..86fb751
+--- /dev/null
++++ b/include/linux/mfd/max77802.h
+@@ -0,0 +1,124 @@
++/*
++ * max77802.h - Driver for the Maxim 77802
++ *
++ * Copyright (c) 2013-2014 Google, Inc
++ *
++ *  Copyright (C) 2012 Samsung Electrnoics
++ *  Chiwoong Byun <woong.byun@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * This driver is based on max8997.h
++ *
++ * MAX77802 has PMIC, RTC devices.
++ * The devices share the same I2C bus and included in
++ * this mfd driver.
++ */
++
++#ifndef __LINUX_MFD_MAX77802_H
++#define __LINUX_MFD_MAX77802_H
++
++#include <linux/regulator/consumer.h>
++
++/* MAX77802 regulator IDs - LDOS must come before BUCKs */
++enum max77802_regulators {
++	MAX77802_LDO1 = 0,
++	MAX77802_LDO2,
++	MAX77802_LDO3,
++	MAX77802_LDO4,
++	MAX77802_LDO5,
++	MAX77802_LDO6,
++	MAX77802_LDO7,
++	MAX77802_LDO8,
++	MAX77802_LDO9,
++	MAX77802_LDO10,
++	MAX77802_LDO11,
++	MAX77802_LDO12,
++	MAX77802_LDO13,
++	MAX77802_LDO14,
++	MAX77802_LDO15,
++	MAX77802_LDO16,
++	MAX77802_LDO17,
++	MAX77802_LDO18,
++	MAX77802_LDO19,
++	MAX77802_LDO20,
++	MAX77802_LDO21,
++	MAX77802_LDO22,
++	MAX77802_LDO23,
++	MAX77802_LDO24,
++	MAX77802_LDO25,
++	MAX77802_LDO26,
++	MAX77802_LDO27,
++	MAX77802_LDO28,
++	MAX77802_LDO29,
++	MAX77802_LDO30,
++	MAX77802_LDO31,
++	MAX77802_LDO32,
++	MAX77802_LDO33,
++	MAX77802_LDO34,
++	MAX77802_LDO35,
++	MAX77802_BUCK1,
++	MAX77802_BUCK2,
++	MAX77802_BUCK3,
++	MAX77802_BUCK4,
++	MAX77802_BUCK5,
++	MAX77802_BUCK6,
++	MAX77802_BUCK7,
++	MAX77802_BUCK8,
++	MAX77802_BUCK9,
++	MAX77802_BUCK10,
++
++	MAX77802_REG_MAX,
++};
++
++struct max77802_regulator_data {
++	int id;
++	int opmode;
++	struct regulator_init_data *initdata;
++	struct device_node *of_node;
++};
++
++enum max77802_opmode {
++	MAX77802_OPMODE_OFF,
++	MAX77802_OPMODE_STANDBY,
++	MAX77802_OPMODE_LP,
++	MAX77802_OPMODE_NORMAL,
++};
++
++struct max77802_opmode_data {
++	int id;
++	int mode;
++};
++
++struct max77802_platform_data {
++	/* IRQ */
++	int irq_gpio;
++	int ono;
++	int wakeup;
++
++	/* ---- PMIC ---- */
++	struct max77802_regulator_data *regulators;
++	int num_regulators;
++
++	struct max77802_opmode_data *opmode_data;
++
++	/*
++	 * GPIO-DVS feature is not fully enabled with the current version of
++	 * MAX77802 driver, but the driver does support using a DVS index other
++	 * than the default of 0.
++	 */
++	struct gpio_desc *buck_gpio_dvs[3]; /* GPIO of [0]DVS1, [1]DVS2, [2]DVS3 */
++	int buck_default_idx; /* Default value of DVS1, 2, 3 */
++
++	struct gpio_desc *buck_gpio_selb[5]; /* 77802: 1, 2, 3, 4, 6 */
++};
++
++#endif /* __LINUX_MFD_MAX77802_H */
 -- 
 2.0.0.rc2
 
