@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755360AbaFPKnN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 06:43:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:38730 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755332AbaFPKnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 06:43:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,486,1400050800"; 
-   d="scan'208";a="558158932"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: linux-kernel@vger.kernel.org, linux-sparse@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH] lib.c: skip --param parameters
-Date: Mon, 16 Jun 2014 13:43:06 +0300
-Message-Id: <1402915386-28210-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 2.0.0
+	id S1755394AbaFPKog (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 06:44:36 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:43400 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755104AbaFPKoe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 06:44:34 -0400
+Message-ID: <539ECA8C.4010007@gmail.com>
+Date: Mon, 16 Jun 2014 12:44:28 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>,
+        tj@kernel.org, kishon@ti.com
+CC: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, jszhang@marvell.com,
+        linux-arm-kernel@lists.infradead.org, linux-ide@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 6/7] ARM: berlin: add the AHCI node for the BG2Q
+References: <1402914392-6028-1-git-send-email-antoine.tenart@free-electrons.com> <1402914392-6028-7-git-send-email-antoine.tenart@free-electrons.com>
+In-Reply-To: <1402914392-6028-7-git-send-email-antoine.tenart@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Very dumb patch to just skip --param allow-store-data-races=0 introduced in
-newest Linux kernel buildsystem.
+On 06/16/2014 12:26 PM, Antoine Ténart wrote:
+> The BG2Q has an AHCI SATA controller. Add the corresponding nodes
+> (AHCI, PHY) into its device tree.
+>
+> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> ---
+>   arch/arm/boot/dts/berlin2q.dtsi | 28 ++++++++++++++++++++++++++++
+>   1 file changed, 28 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+> index 635a16a64cb4..3fb0d3935aec 100644
+> --- a/arch/arm/boot/dts/berlin2q.dtsi
+> +++ b/arch/arm/boot/dts/berlin2q.dtsi
+> @@ -303,6 +303,34 @@
+>   			clock-names = "refclk";
+>   		};
+>
+> +		ahci: sata@e90000 {
+> +			compatible = "generic-ahci";
+> +			reg = <0xe90000 0x1000>;
+> +			interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
+> +			clocks = <&chip CLKID_SATA>;
+> +			#address-cells = <1>;
+> +			#size-cells = <0>;
+> +
+> +			sata0: sata-port@0 {
+> +				reg = <0>;
+> +				phys = <&sata_phy 0>;
+> +				status = "disabled";
+> +			};
+> +
+> +			sata1: sata-port@1 {
+> +				reg = <1>;
+> +				phys = <&sata_phy 1>;
+> +				status = "disabled";
+> +			};
+> +		};
+> +
+> +		sata_phy: phy@e900a0 {
+> +			compatible = "marvell,berlin-sata-phy";
+> +			reg = <0xe900a0 0x200>;
 
-Actually the option is present in few GCC versions and probably should be
-handled properly.
+Antoine,
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- lib.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+I guess you'll also need
+	clocks = <&chip CLKID_SATA>;
+here and corresponding code in the PHY driver.
 
-diff --git a/lib.c b/lib.c
-index bf3e91c..e56037b 100644
---- a/lib.c
-+++ b/lib.c
-@@ -673,6 +673,12 @@ static char **handle_version(char *arg, char **next)
- 	exit(0);
- }
- 
-+static char **handle_param(char *arg, char **next)
-+{
-+	++next;
-+	return ++next;
-+}
-+
- struct switches {
- 	const char *name;
- 	char **(*fn)(char *, char **);
-@@ -681,6 +687,7 @@ struct switches {
- static char **handle_long_options(char *arg, char **next)
- {
- 	static struct switches cmd[] = {
-+		{ "param", handle_param },
- 		{ "version", handle_version },
- 		{ NULL, NULL }
- 	};
--- 
-2.0.0
+If SATA PHY is accessing SATA registers, disabling the clock will
+most likely lock-up the SoC.
+
+Sebastian
+
+> +			#phy-cells = <1>;
+> +			status = "disabled";
+> +		};
+> +
+>   		apb@fc0000 {
+>   			compatible = "simple-bus";
+>   			#address-cells = <1>;
+>
 
