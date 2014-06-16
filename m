@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749AbaFPNtt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 09:49:49 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51214 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752060AbaFPNts (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 09:49:48 -0400
-Date: Mon, 16 Jun 2014 14:49:08 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Wang Weidong <wangweidong1@huawei.com>
-Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "gregory.clement@free-electrons.com" 
-	<gregory.clement@free-electrons.com>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: Thumb-2: Fix out-of-range offset for Thumb-2 in,
- proc-macros.S
-Message-ID: <20140616134908.GI16758@arm.com>
-References: <5396ACF1.1020107@huawei.com>
+	id S1753308AbaFPNwb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 09:52:31 -0400
+Received: from bes.se.axis.com ([195.60.68.10]:49296 "EHLO bes.se.axis.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751890AbaFPNwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 09:52:30 -0400
+Date: Mon, 16 Jun 2014 15:52:23 +0200
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Mikael Starvik <starvik@axis.com>, Jesper Nilsson <jespern@axis.com>,
+        Samuel Ortiz <samuel@sortiz.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH tty-next 09/22] tty: Remove tty_hung_up_p() tests from
+ tty drivers' open()
+Message-ID: <20140616135223.GJ732@axis.com>
+References: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com>
+ <1402924639-5164-10-git-send-email-peter@hurleysoftware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5396ACF1.1020107@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1402924639-5164-10-git-send-email-peter@hurleysoftware.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 08:00:01AM +0100, Wang Weidong wrote:
-> The STR Instruction Encoding T4 points that the <imm> is in the
-> range 0-255.So split the instruction into two for Thumb-2. Just
-> like commit 874d5d3ccc("ARM: 6623/1: Thumb-2: Fix out-of-range
-> offset for Thumb-2 in proc-v7.S").
+On Mon, Jun 16, 2014 at 09:17:06AM -0400, Peter Hurley wrote:
+> Since at least before 2.6.30, it has not been possible to observe
+> a hung up file pointer in a tty driver's open() method unless/until
+> the driver open() releases the tty_lock() (eg., before blocking).
 > 
-> Signed-off-by: Wang Weidong <wangweidong1@huawei.com>
-> ---
->  arch/arm/mm/proc-macros.S | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+> This is because tty_open() adds the file pointer while holding
+> the tty_lock() _and_ doesn't release the lock until after calling
+> the tty driver's open() method. [ Before tty_lock(), this was
+> lock_kernel(). ]
 > 
-> diff --git a/arch/arm/mm/proc-macros.S b/arch/arm/mm/proc-macros.S
-> index ee1d805..63f710c 100644
-> --- a/arch/arm/mm/proc-macros.S
-> +++ b/arch/arm/mm/proc-macros.S
-> @@ -252,7 +252,9 @@
->  	tst	r3, #L_PTE_PRESENT | L_PTE_YOUNG	@ present and young?
->  	movne	r2, #0				@ no -> fault
->  
-> -	str	r2, [r0, #2048]!		@ hardware version
-> + ARM(	str	r2, [r0, #2048]! 		) @ hardware version
-> + THUMB( add	r0, r0, #2048 			)
-> + THUMB( str	r2, [r0] 			)
->  	mov	ip, #0
->  	mcr	p15, 0, r0, c7, c10, 1		@ clean L1 D line
->  	mcr	p15, 0, ip, c7, c10, 4		@ data write barrier
+> Since __tty_hangup() first waits on the tty_lock() before
+> enumerating and hanging up the open file pointers, either
+> __tty_hangup() will wait for the tty_lock() or tty_open() will
+> not yet have added the file pointer. For example,
+> 
+> CPU 0                          |  CPU 1
+>                                |
+> tty_open                       |  __tty_hangup
+>   ..                           |    ..
+>   tty_lock                     |    ..
+>   tty_reopen                   |    tty_lock  / blocks
+>   ..                           |
+>   tty_add_file(tty, filp)      |
+>   ..                           |
+>   tty->ops->open(tty, filp)    |
+>     tty_port_open              |
+>       tty_port_block_til_ready |
+>         ..                     |
+>         while (1)              |
+>           ..                   |
+>           tty_unlock           |    / unblocks
+>           schedule             |    for each filp on tty->tty_files
+>                                |      f_ops = tty_hung_up_fops;
+>                                |    ..
+>                                |    tty_unlock
+>           tty_lock             |
+>   ..                           |
+>   tty_unlock                   |
+> 
+> Note that since tty_port_block_til_ready() and similar drop
+> the tty_lock while blocking, when woken, the file pointer
+> must then be tested for having been hung up.
+> 
+> Also, fix bit-rotted drivers that used extra_count to track the
+> port->count bump.
+> 
+> CC: Mikael Starvik <starvik@axis.com>
 
-AFAICT this is in xscale_set_pte_ext_epilogue which should only be built as
-ARM. Are you seeing a real issue here?
+For the CRIS part:
 
-Will
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+
+> CC: Samuel Ortiz <samuel@sortiz.org>
+> CC: "David S. Miller" <davem@davemloft.net>
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
