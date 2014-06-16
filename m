@@ -1,142 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265AbaFPKEJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 06:04:09 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:63491 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755004AbaFPKEI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 06:04:08 -0400
-X-IronPort-AV: E=Sophos;i="5.00,716,1396972800"; 
-   d="scan'208";a="31965461"
-Message-ID: <539EC117.1040105@cn.fujitsu.com>
-Date: Mon, 16 Jun 2014 18:04:07 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
+	id S1755273AbaFPKGo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 06:06:44 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:34812 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755030AbaFPKGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 06:06:41 -0400
+Message-ID: <539EC12C.6080504@ti.com>
+Date: Mon, 16 Jun 2014 15:34:28 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Xishi Qiu <qiuxishi@huawei.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, <aquini@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH 0/8] mm: add page cache limit and reclaim feature
-References: <539EB7D6.8070401@huawei.com>
-In-Reply-To: <539EB7D6.8070401@huawei.com>
+To: Kumar Gala <galak@codeaurora.org>
+CC: <linux-ide@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 1/2] phy: qcom: Add driver for QCOM IPQ806x SATA PHY
+References: <1402600724-20651-1-git-send-email-galak@codeaurora.org>
+In-Reply-To: <1402600724-20651-1-git-send-email-galak@codeaurora.org>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.225.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On 06/16/2014 05:24 PM, Xishi Qiu wrote:
-> When system(e.g. smart phone) running for a long time, the cache often takes
-> a large memory, maybe the free memory is less than 50M, then OOM will happen
-> if APP allocate a large order pages suddenly and memory reclaim too slowly. 
+On Friday 13 June 2014 12:48 AM, Kumar Gala wrote:
+> Add a PHY driver for uses with AHCI based SATA controller driver on the
+> IPQ806x family of SoCs.
+> 
+> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+> ---
+>  drivers/phy/Kconfig                 |   6 ++
+>  drivers/phy/Makefile                |   1 +
+>  drivers/phy/phy-qcom-ipq806x-sata.c | 204 ++++++++++++++++++++++++++++++++++++
+>  3 files changed, 211 insertions(+)
+>  create mode 100644 drivers/phy/phy-qcom-ipq806x-sata.c
+> 
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index 16a2f06..52bfb93 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -178,4 +178,10 @@ config PHY_XGENE
+>  	help
+>  	  This option enables support for APM X-Gene SoC multi-purpose PHY.
+>  
+> +config PHY_QCOM_IPQ806X_SATA
+> +	tristate "Qualcomm IPQ806x SATA SerDes/PHY driver"
+> +	depends on ARCH_QCOM
+> +	depends on OF
+depends on HAS_IOMEM?
+> +	select GENERIC_PHY
+> +
+>  endmenu
+> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+> index b4f1d57..d950317 100644
+> --- a/drivers/phy/Makefile
+> +++ b/drivers/phy/Makefile
+> @@ -20,3 +20,4 @@ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS4X12_USB2)	+= phy-exynos4x12-usb2.o
+>  phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
+>  obj-$(CONFIG_PHY_EXYNOS5_USBDRD)	+= phy-exynos5-usbdrd.o
+>  obj-$(CONFIG_PHY_XGENE)			+= phy-xgene.o
+> +obj-$(CONFIG_PHY_QCOM_IPQ806X_SATA)	+= phy-qcom-ipq806x-sata.o
+> diff --git a/drivers/phy/phy-qcom-ipq806x-sata.c b/drivers/phy/phy-qcom-ipq806x-sata.c
+> new file mode 100644
+> index 0000000..fc57340
+> --- /dev/null
+> +++ b/drivers/phy/phy-qcom-ipq806x-sata.c
+> @@ -0,0 +1,204 @@
+> +/*
+> + * Copyright (c) 2014, The Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/time.h>
+> +#include <linux/delay.h>
+> +#include <linux/clk.h>
+> +#include <linux/slab.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/phy/phy.h>
+> +
+> +struct qcom_ipq806x_sata_phy {
+> +	struct device *dev;
 
-If there is really too many page caches, and the free memory is low. I think
-the page allocator will enter the slowpath to free more memory for allocation.
-And it the slowpath, there is indeed the direct reclaim operation, so is that
-really not enough to reclaim pagecaches?
+dev is not used anywhere. remove it.
+> +	void __iomem *mmio;
+> +	struct clk *cfg_clk;
+> +};
+> +
+> +#define __set(v, a, b)	(((v) << (b)) & GENMASK(a, b))
+> +
+> +#define SATA_PHY_P0_PARAM0		0x200
+> +#define SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN3(x)	__set(x, 17, 12)
+> +#define SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN3_MASK	GENMASK(17, 12)
+> +#define SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN2(x)	__set(x, 11, 6)
+> +#define SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN2_MASK	GENMASK(11, 6)
+> +#define SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN1(x)	__set(x, 5, 0)
+> +#define SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN1_MASK	GENMASK(5, 0)
+> +
+> +#define SATA_PHY_P0_PARAM1		0x204
+> +#define SATA_PHY_P0_PARAM1_RESERVED_BITS31_21(x)	__set(x, 31, 21)
+> +#define SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN3(x)	__set(x, 20, 14)
+> +#define SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN3_MASK	GENMASK(20, 14)
+> +#define SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN2(x)	__set(x, 13, 7)
+> +#define SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN2_MASK	GENMASK(13, 7)
+> +#define SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN1(x)	__set(x, 6, 0)
+> +#define SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN1_MASK	GENMASK(6, 0)
+> +
+> +#define SATA_PHY_P0_PARAM2		0x208
+> +#define SATA_PHY_P0_PARAM2_RX_EQ(x)	__set(x, 20, 18)
+> +#define SATA_PHY_P0_PARAM2_RX_EQ_MASK	GENMASK(20, 18)
+> +
+> +#define SATA_PHY_P0_PARAM3		0x20C
+> +#define SATA_PHY_SSC_EN			0x8
+> +#define SATA_PHY_P0_PARAM4		0x210
+> +#define SATA_PHY_REF_SSP_EN		0x2
+> +#define SATA_PHY_RESET			0x1
+> +
+> +static inline void qcom_ipq806x_sata_delay_us(unsigned int delay)
+> +{
+> +	/* sleep for max. 50us more to combine processor wakeups */
+> +	usleep_range(delay, delay + 50);
+> +}
+> +
+> +static int qcom_ipq806x_sata_phy_init(struct phy *generic_phy)
+> +{
+> +	struct qcom_ipq806x_sata_phy *phy = phy_get_drvdata(generic_phy);
+> +	u32 reg = 0;
+> +
+> +	/* Setting SSC_EN to 1 */
+> +	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM3);
 
-> 
-> Use "echo 3 > /proc/sys/vm/drop_caches" will drop the whole cache, this will
-> affect the performance, so it is used for debugging only. 
-> 
-> suse has this feature, I tested it before, but it can not limit the page cache
-> actually. So I rewrite the feature and add some parameters.
-> 
-> Christoph Lameter has written a patch "Limit the size of the pagecache"
-> http://marc.info/?l=linux-mm&m=116959990228182&w=2
-> It changes in zone fallback, this is not a good way.
-> 
-> The patchset is based on v3.15, it introduces two features, page cache limit
-> and page cache reclaim in circles.
-> 
-> Add four parameters in /proc/sys/vm
-> 
-> 1) cache_limit_mbytes
-> This is used to limit page cache amount.
-> The input unit is MB, value range is from 0 to totalram_pages.
-> If this is set to 0, it will not limit page cache.
-> When written to the file, cache_limit_ratio will be updated too.
-> The default value is 0.
-> 
-> 2) cache_limit_ratio
-> This is used to limit page cache amount.
-> The input unit is percent, value range is from 0 to 100.
-> If this is set to 0, it will not limit page cache.
-> When written to the file, cache_limit_mbytes will be updated too.
-> The default value is 0.
-> 
-> 3) cache_reclaim_s
-> This is used to reclaim page cache in circles.
-> The input unit is second, the minimum value is 0.
-> If this is set to 0, it will disable the feature.
-> The default value is 0.
-> 
-> 4) cache_reclaim_weight
-> This is used to speed up page cache reclaim.
-> It depend on enabling cache_limit_mbytes/cache_limit_ratio or cache_reclaim_s.
-> Value range is from 1(slow) to 100(fast).
-> The default value is 1.
-> 
-> I tested the two features on my system(x86_64), it seems to work right.
-> However, as it changes the hot path "add_to_page_cache_lru()", I don't know
-> how much it will the affect the performance,
+Why readl_relaxed?
+> +	reg = reg | SATA_PHY_SSC_EN;
+> +	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM3);
+> +
+> +	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM0) &
+> +			~(SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN3_MASK |
+> +			  SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN2_MASK |
+> +			  SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN1_MASK);
+> +	reg |= SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN3(0xf);
+> +	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM0);
+> +
+> +	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM1) &
+> +			~(SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN3_MASK |
+> +			  SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN2_MASK |
+> +			  SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN1_MASK);
+> +	reg |= SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN3(0x55) |
+> +		SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN2(0x55) |
+> +		SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN1(0x55);
+> +	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM1);
+> +
+> +	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM2) &
+> +		~SATA_PHY_P0_PARAM2_RX_EQ_MASK;
+> +	reg |= SATA_PHY_P0_PARAM2_RX_EQ(0x3);
+> +	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM2);
+> +
+> +	/* Setting PHY_RESET to 1 */
+> +	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM4);
+> +	reg = reg | SATA_PHY_RESET;
+> +	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM4);
+> +
+> +	/* Setting REF_SSP_EN to 1 */
+> +	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM4);
+> +	reg = reg | SATA_PHY_REF_SSP_EN | SATA_PHY_RESET;
+> +	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM4);
+> +	mb();
+> +	qcom_ipq806x_sata_delay_us(20);
+> +
+> +	/* Clearing PHY_RESET to 0 */
+> +	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM4);
+> +	reg = reg & ~SATA_PHY_RESET;
+> +	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM4);
+> +
+> +	return 0;
+> +}
+> +
+> +static int qcom_ipq806x_sata_phy_exit(struct phy *generic_phy)
+> +{
+> +	struct qcom_ipq806x_sata_phy *phy = phy_get_drvdata(generic_phy);
+> +	u32 reg = 0;
+> +
+> +	/* Setting PHY_RESET to 1 */
+> +	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM4);
+> +	reg = reg | SATA_PHY_RESET;
+> +	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM4);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct phy_ops qcom_ipq806x_sata_phy_ops = {
+> +	.init		= qcom_ipq806x_sata_phy_init,
+> +	.exit		= qcom_ipq806x_sata_phy_exit,
+> +	.owner		= THIS_MODULE,
+> +};
+> +
+> +static int qcom_ipq806x_sata_phy_probe(struct platform_device *pdev)
+> +{
+> +	struct qcom_ipq806x_sata_phy *phy;
+> +	struct device *dev = &pdev->dev;
+> +	struct resource *res;
+> +	struct phy_provider *phy_provider;
+> +	struct phy *generic_phy;
+> +	int ret;
+> +
+> +	phy = devm_kzalloc(dev, sizeof(*phy), GFP_KERNEL);
+> +	if (!phy) {
+> +		dev_err(dev, "%s: failed to allocate phy\n", __func__);
+> +		return -ENOMEM;
+> +	}
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	phy->mmio = devm_ioremap_resource(dev, res);
+> +	if (IS_ERR(phy->mmio)) {
+> +		dev_err(dev, "%s: phy mmio get resource failed\n", __func__);
+> +		return PTR_ERR(phy->mmio);
+> +	}
+> +
+> +	phy_provider = devm_of_phy_provider_register(dev, of_phy_simple_xlate);
+> +	if (IS_ERR(phy_provider)) {
+> +		dev_err(dev, "%s: failed to register phy\n", __func__);
+> +		return PTR_ERR(phy_provider);
+> +	}
 
-Yeah, at a quick glance, for every invoke of add_to_page_cache_lru(), there is the 
-newly added test:
+phy_provider_register should be the last step. Move it after phy_set_drvdata().
 
-if (vm_cache_limit_mbytes && page_cache_over_limit())
-
-and if the test is passed, shrink_page_cache()->do_try_to_free_pages() is called.
-And this is a sync operation. IMO, it is better to make such an operation async.
-(You've implemented async operation but I doubt if it is suitable to put the sync operation
-here.)
-
-Thanks.
-
- maybe there are some errors
-> in the patches too, RFC.
-> 
-> 
-> *** BLURB HERE ***
-> 
-> Xishi Qiu (8):
->   mm: introduce cache_limit_ratio and cache_limit_mbytes
->   mm: add shrink page cache core
->   mm: implement page cache limit feature
->   mm: introduce cache_reclaim_s
->   mm: implement page cache reclaim in circles
->   mm: introduce cache_reclaim_weight
->   mm: implement page cache reclaim speed
->   doc: update Documentation/sysctl/vm.txt
-> 
->  Documentation/sysctl/vm.txt |   43 +++++++++++++++++++
->  include/linux/swap.h        |   17 ++++++++
->  kernel/sysctl.c             |   35 +++++++++++++++
->  mm/filemap.c                |    3 +
->  mm/hugetlb.c                |    3 +
->  mm/page_alloc.c             |   51 ++++++++++++++++++++++
->  mm/vmscan.c                 |   97 ++++++++++++++++++++++++++++++++++++++++++-
->  7 files changed, 248 insertions(+), 1 deletions(-)
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> .
-> 
-
-
--- 
-Thanks.
-Zhang Yanfei
+Thanks
+Kishon
