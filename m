@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130AbaFPHWR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 03:22:17 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:56227 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775AbaFPHWQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 03:22:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPDyKFp022H9xryjVvGNEw_Xiyb0zccb8tjawBT1y0+JB=wZ9g@mail.gmail.com>
-References: <CALAqxLWAXU0hS8si-CmkOObBOHGv_skMVfPnUsdmLcZzkdUsWA@mail.gmail.com>
-	<CALAqxLUoc45535haDAuoNXSSmNqTZF1uiOMF8PyaDp_A+_dnWA@mail.gmail.com>
-	<CAPDyKFp022H9xryjVvGNEw_Xiyb0zccb8tjawBT1y0+JB=wZ9g@mail.gmail.com>
-Date: Mon, 16 Jun 2014 15:22:15 +0800
-Message-ID: <CAAJw_ZscH2Re5jytGeCcBE2jZO+xngZ-r_P5NuR=KsoB+QyaDA@mail.gmail.com>
-Subject: Re: [Regression] 3.15 mmc related ext4 corruption with qemu-system-arm
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: John Stultz <john.stultz@linaro.org>, Chris Ball <chris@printf.net>,
-        Peter Maydell <peter.maydell@linaro.org>,
-        Johan Rudholm <jrudholm@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "Theodore Ts'o" <tytso@mit.edu>, lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1754155AbaFPHXg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 03:23:36 -0400
+Received: from gate.crashing.org ([63.228.1.57]:41511 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754067AbaFPHXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 03:23:34 -0400
+Message-ID: <1402903388.7661.32.camel@pasglop>
+Subject: Re: [PATCH] offb: Fix little-endian support
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Cedric Le Goater <clg@fr.ibm.com>, Dinar Valeev <dvaleev@suse.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 16 Jun 2014 17:23:08 +1000
+In-Reply-To: <s5h8uq4qm3h.wl%tiwai@suse.de>
+References: <1400073709-15012-1-git-send-email-tiwai@suse.de>
+	 <5373772D.9060807@fr.ibm.com> <s5hha4sh20d.wl%tiwai@suse.de>
+	 <5373A200.6080301@fr.ibm.com> <s5h8uq4qm3h.wl%tiwai@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 8:28 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> On 13 June 2014 01:51, John Stultz <john.stultz@linaro.org> wrote:
->> On Wed, Jun 11, 2014 at 10:35 PM, John Stultz john.stultz@linaro.org> wrote:
 
-> I have quickly implemented my proposal 1). I am testing them on real
-> HW now, will post the patches as soon as I can and keep you on cc.
->
-> I would also really appreciate if you could help out giving them a
-> quick try for your QEMU environment.
+On Wed, 2014-05-14 at 19:57 +0200, Takashi Iwai wrote:
+> 
+> Hm, so it actually regressed on BE?
+> 
+> It's strange because fb_math_be() should be true and the patch won't
+> change the values in that case...
 
-Please cc me the patch. I'm seeing my host's reiserfs corrupted with
-qemu all over the places in linux-3.15.0 (linux-3.16-rc1). Pretty sure
-it's qemu as it doesn't seem to happen if I don't run qemu.
+Shouldn't the patch be based on foreign endian being set rather than
+just "be" anyway ?
 
-Thanks,
-Jeff
+IE. If the fb is LE and the host is LE we *also* don't want to change
+the ordering, which will be the case when we fix qemu...
+
+Cheers,
+Ben.
+
+
+
