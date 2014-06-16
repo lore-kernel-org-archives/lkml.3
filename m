@@ -1,63 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932365AbaFPRJE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 13:09:04 -0400
-Received: from linode.aoot.com ([69.164.194.13]:42100 "EHLO linode.aoot.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932309AbaFPRJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 13:09:02 -0400
-Message-ID: <539F24AA.1020406@opengridcomputing.com>
-Date: Mon, 16 Jun 2014 12:08:58 -0500
-From: Steve Wise <swise@opengridcomputing.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S932389AbaFPRJU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 13:09:20 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:56996 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752199AbaFPRJR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 13:09:17 -0400
+Message-ID: <539F24BA.3060808@free-electrons.com>
+Date: Mon, 16 Jun 2014 19:09:14 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Nicholas Krause <xerofoify@gmail.com>, swise@chelsio.com
-CC: roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
-        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [Patch Resend] infiniband:memory leak in get_skb function in
- file cm.c
-References: <1402938381-5882-1-git-send-email-xerofoify@gmail.com>
-In-Reply-To: <1402938381-5882-1-git-send-email-xerofoify@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Lee Jones <lee.jones@linaro.org>
+CC: Thierry Reding <thierry.reding@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        David Airlie <airlied@linux.ie>, Samuel Ortiz <sameo@linux.intel.com>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH v2 1/7] mfd: add atmel-hlcdc driver
+References: <1402329860-27520-1-git-send-email-boris.brezillon@free-electrons.com> <1402329860-27520-2-git-send-email-boris.brezillon@free-electrons.com> <20140616125030.GT14323@lee--X1> <539EEFD8.20703@free-electrons.com> <20140616170301.GC14323@lee--X1>
+In-Reply-To: <20140616170301.GC14323@lee--X1>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 6/16/2014 12:06 PM, Nicholas Krause wrote:
-> diff --git a/drivers/infiniband/hw/cxgb4/cm.c b/drivers/infiniband/hw/cxgb4/cm.c
-> index f9477e2..2d56983 100644
-> --- a/drivers/infiniband/hw/cxgb4/cm.c
-> +++ b/drivers/infiniband/hw/cxgb4/cm.c
-> @@ -340,15 +340,13 @@ static int status2errno(int status)
->    */
->   static struct sk_buff *get_skb(struct sk_buff *skb, int len, gfp_t gfp)
->   {
->   if (skb && !skb_is_nonlinear(skb) && !skb_cloned(skb)) {
->                  skb_trim(skb, 0);
->                  skb_get(skb);
->                  skb_reset_transport_header(skb);
->          } else {
-> +if (!skb)
-> +	skb_kfree(skb);
-> +	/*NULL is ignored */
->                  skb = alloc_skb(len, gfp);
-
-This is still incorrect and the formatting is screwy.
-
-As we discussed, you can call skb_kfree() with a NULL skb and it will 
-silently ignore it.  So you don't need th 'if (!skb)'...
-
-Perhaps you should read up more on submitting patches to get the 
-formatting correct, and how to use the various tools, etc.
-
-steve.
->          }
->          t4_set_arp_err_handler(skb, NULL, NULL);
+On 16/06/2014 19:03, Lee Jones wrote:
+> On Mon, 16 Jun 2014, Boris BREZILLON wrote:
+>> On 16/06/2014 14:50, Lee Jones wrote:
+>>>> The HLCDC IP available on some Atmel SoCs (i.e. at91sam9n12, at91sam9x5
+>>>> family or sama5d3 family) exposes 2 subdevices:
+>>>> - a display controller (controlled by a DRM driver)
+>>>> - a PWM chip
+>>>>
+>>>> Add support for the MFD device which will just retrieve HLCDC clocks and
+>>>> create a regmap so that subdevices can access the HLCDC register range
+>>>> concurrently.
+>>>>
+>>>> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+>>>> ---
+>>>>  .../devicetree/bindings/mfd/atmel-hlcdc.txt        |  41 ++++++++
+>>>>  drivers/mfd/Kconfig                                |  11 ++
+>>>>  drivers/mfd/Makefile                               |   1 +
+>>>>  drivers/mfd/atmel-hlcdc.c                          | 116 +++++++++++++++++++++
+>>>>  include/linux/mfd/atmel-hlcdc.h                    |  78 ++++++++++++++
+>>>>  5 files changed, 247 insertions(+)
+>>>>  create mode 100644 Documentation/devicetree/bindings/mfd/atmel-hlcdc.txt
+>>>>  create mode 100644 drivers/mfd/atmel-hlcdc.c
+>>>>  create mode 100644 include/linux/mfd/atmel-hlcdc.h
+>>>> diff --git a/Documentation/devicetree/bindings/mfd/atmel-hlcdc.txt b/Documentation/devicetree/bindings/mfd/atmel-hlcdc.txt
+>>>> new file mode 100644
+>>>> index 0000000..f5b69cb
+>>>> --- /dev/null
+>>>> +++ b/Documentation/devicetree/bindings/mfd/atmel-hlcdc.txt
+> [...]
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-rdma" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> +		hlcdc-display-controller {
+>>>> +			compatible = "atmel,hlcdc-dc";
+>>>> +			interrupts = <36 IRQ_TYPE_LEVEL_HIGH 0>;
+>>> I assume you're using the 3rd parameter for flags.  If so, please use
+>>> the defines.
+>> No, the third parameter encodes the irq priority (from 0 to 7 IIRC).
+> Ah okay.  Can you point me to the documentation for this IRQ
+> controller please?  I'd like to have a quick peek.  It might be worth
+> defining the priority to prevent confusion, also you definitely should
+> document it in your binding.
+
+Here's Atmel's irq chip DT bindings documentation:
+
+http://lxr.free-electrons.com/source/Documentation/devicetree/bindings/arm/atmel-aic.txt
+
+I'll describe interrupt fields in the HLCDC DT bindings doc.
+
+
+
+>
+> [...]
+>
+>>>> +static struct platform_driver atmel_hlcdc_driver = {
+>>>> +	.probe = atmel_hlcdc_probe,
+>>>> +	.remove = atmel_hlcdc_remove,
+>>>> +	.driver = {
+>>>> +		.name = "atmel-hlcdc",
+>>>> +		.owner = THIS_MODULE,
+>>>> +		.of_match_table = atmel_hlcdc_match,
+>>> Is this driver DT only?
+>> Yes it is.
+> So it should depend on OF in the Kconfig entry.
+>
+Absolutely, I'll add the dependency.
+
+Thanks,
+
+Boris
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
 
