@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367AbaFPK0u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 06:26:50 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54103 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755118AbaFPK0l (ORCPT
+	id S932098AbaFPK07 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 06:26:59 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:64358 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755231AbaFPK05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 06:26:41 -0400
-From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com, tj@kernel.org, kishon@ti.com
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v6 7/7] ARM: berlin: enable the eSATA interface on the BG2Q DMP
-Date: Mon, 16 Jun 2014 12:26:32 +0200
-Message-Id: <1402914392-6028-8-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1402914392-6028-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1402914392-6028-1-git-send-email-antoine.tenart@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 16 Jun 2014 06:26:57 -0400
+From: Chander Kashyap <k.chander@samsung.com>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, daniel.lezcano@linaro.org,
+        lorenzo.pieralisi@arm.com, rjw@rjwysocki.net, kgene.kim@samsung.com,
+        tomasz.figa@gmail.com, Chander Kashyap <chander.kashyap@linaro.org>,
+        Chander Kashyap <k.chander@samsung.com>
+Subject: [Patch v7 4/6] driver: cpuidle: cpuidle-big-little: init driver for Exynos5420
+Date: Mon, 16 Jun 2014 15:56:21 +0530
+Message-Id: <1402914383-20471-5-git-send-email-k.chander@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1402914383-20471-1-git-send-email-k.chander@samsung.com>
+References: <1402914383-20471-1-git-send-email-k.chander@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The BG2Q has an AHCI SATA controller with an eSATA interface. Enable it.
-Only enable the first port, the BG2Q DMP does not support the second one.
+From: Chander Kashyap <chander.kashyap@linaro.org>
 
-Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+Add "samsung,exynos5420" compatible string to initialize generic
+big-little cpuidle driver for Exynos5420.
+
+Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
+Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- arch/arm/boot/dts/berlin2q-marvell-dmp.dts | 8 ++++++++
- 1 file changed, 8 insertions(+)
+Changes in v5: None
+Changes in v4: None
+Changes in v3:
+	1. Add compatible string to of_device_id table insted comparing directoly
+Changes in v2: none
 
-diff --git a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-index 995150f93795..385f6af64d0c 100644
---- a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-+++ b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-@@ -37,3 +37,11 @@
- &uart0 {
- 	status = "okay";
+ drivers/cpuidle/cpuidle-big_little.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/cpuidle/cpuidle-big_little.c b/drivers/cpuidle/cpuidle-big_little.c
+index 4cd02bd..344d79fa 100644
+--- a/drivers/cpuidle/cpuidle-big_little.c
++++ b/drivers/cpuidle/cpuidle-big_little.c
+@@ -165,6 +165,7 @@ static int __init bl_idle_driver_init(struct cpuidle_driver *drv, int cpu_id)
+ 
+ static const struct of_device_id compatible_machine_match[] = {
+ 	{ .compatible = "arm,vexpress,v2p-ca15_a7" },
++	{ .compatible = "samsung,exynos5420" },
+ 	{},
  };
-+
-+&sata0 {
-+	status = "okay";
-+};
-+
-+&sata_phy {
-+	status = "okay";
-+};
+ 
 -- 
-1.9.1
+1.7.9.5
 
