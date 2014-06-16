@@ -1,114 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017AbaFPHLh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 03:11:37 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:40358 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752152AbaFPHLg convert rfc822-to-8bit (ORCPT
+	id S1754065AbaFPHMR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 03:12:17 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:43421 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752152AbaFPHMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 03:11:36 -0400
+	Mon, 16 Jun 2014 03:12:16 -0400
+From: Thomas Schwinge <thomas@codesourcery.com>
+To: Jerome Glisse <j.glisse@gmail.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
+        "Johannes Weiner" <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@surriel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Zlatko Calusic <zcalusic@bitsync.net>,
+        Minchan Kim <minchan@kernel.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Christian =?utf-8?Q?K=C3=B6nig?= <christian.koenig@amd.com>,
+        <dri-devel@lists.freedesktop.org>
+Subject: Re: radeon: screen garbled after page allocator change, was: Re: [patch v2 3/3] mm: page_alloc: fair zone allocator policy
+In-Reply-To: <87ppk1q3iq.fsf@schwinge.name>
+References: <1375457846-21521-1-git-send-email-hannes@cmpxchg.org> <1375457846-21521-4-git-send-email-hannes@cmpxchg.org> <87r45fajun.fsf@schwinge.name> <20140424133722.GD4107@cmpxchg.org> <20140427033110.GA15091@gmail.com> <20140427195527.GC9315@gmail.com> <87ppk1q3iq.fsf@schwinge.name>
+User-Agent: Notmuch/0.9-101-g81dad07 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 16 Jun 2014 09:11:52 +0200
+Message-ID: <87vbs1z5tz.fsf@schwinge.name>
 MIME-Version: 1.0
-Date: Mon, 16 Jun 2014 09:11:34 +0200
-X-Google-Sender-Auth: qxKw2XBj6zsuk-bJo_xzvc-GebM
-Message-ID: <CAMuHMdWx-+1WHQUXUZDGB1ZX9kpnyRALJB0NnhJddHD5X_Uo8g@mail.gmail.com>
-Subject: iter_file_splice_write() return value (was: Re: ->splice_write() via ->write_iter())
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; boundary="=-=-="; micalg=pgp-sha1;
+	protocol="application/pgp-signature"
+X-OriginalArrivalTime: 16 Jun 2014 07:11:56.0693 (UTC) FILETIME=[4212C450:01CF8932]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al,
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jun 12, 2014 at 8:14 PM, Linux Kernel Mailing List
-<linux-kernel@vger.kernel.org> wrote:
-> Gitweb:     http://git.kernel.org/linus/;a=commit;h=8d0207652cbe27d1f962050737848e5ad4671958
-> Commit:     8d0207652cbe27d1f962050737848e5ad4671958
+Hi!
 
->     ->splice_write() via ->write_iter()
->
->     iter_file_splice_write() - a ->splice_write() instance that gathers the
->     pipe buffers, builds a bio_vec-based iov_iter covering those and feeds
->     it to ->write_iter().  A bunch of simple cases coverted to that...
->
->     [AV: fixed the braino spotted by Cyrill]
->
->     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+On Mon, 28 Apr 2014 10:09:17 +0200, I wrote:
+> On Sun, 27 Apr 2014 15:55:29 -0400, Jerome Glisse <j.glisse@gmail.com> wr=
+ote:
+> > If my ugly patch works does this quirk also work ?
+>=20
+> Unfortunately they both don't; see my other email,
+> <http://news.gmane.org/find-root.php?message_id=3D%3C87sioxq3rx.fsf%40sch=
+winge.name%3E>.
 
-> @@ -1052,6 +1053,145 @@ generic_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
->
->  EXPORT_SYMBOL(generic_file_splice_write);
->
-> +/**
-> + * iter_file_splice_write - splice data from a pipe to a file
-> + * @pipe:      pipe info
-> + * @out:       file to write to
-> + * @ppos:      position in @out
-> + * @len:       number of bytes to splice
-> + * @flags:     splice modifier flags
-> + *
-> + * Description:
-> + *    Will either move or copy pages (determined by @flags options) from
-> + *    the given pipe inode to the given file.
-> + *    This one is ->write_iter-based.
+> [...] hacked around as follows: [...]
 
-What's the meaning of the return value? This is not documented.
+> If needed, I can try to capture more data, but someone who has knowledge
+> of PCI bus architecture and Linux kernel code (so, not me), might
+> probably already see what's wrong.
 
-> +ssize_t
-> +iter_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
-> +                         loff_t *ppos, size_t len, unsigned int flags)
-> +{
-> +       struct splice_desc sd = {
-> +               .total_len = len,
-> +               .flags = flags,
-> +               .pos = *ppos,
-> +               .u.file = out,
-> +       };
-> +       int nbufs = pipe->buffers;
-> +       struct bio_vec *array = kcalloc(nbufs, sizeof(struct bio_vec),
-> +                                       GFP_KERNEL);
-> +       ssize_t ret;
+The problem "solved itself": the machine recently died of hardware
+failure.  ;-|
 
-fs/splice.c:954: warning: ‘ret’ may be used uninitialized in this function
 
-> +
-> +       if (unlikely(!array))
-> +               return -ENOMEM;
-> +
-> +       pipe_lock(pipe);
-> +
-> +       splice_from_pipe_begin(&sd);
-> +       while (sd.total_len) {
+Gr=C3=BC=C3=9Fe,
+ Thomas
 
-If the "len" parameter is zero, this loop will be skipped, and "ret" will
-be uninitialized.
+--=-=-=
+Content-Type: application/pgp-signature
 
-What should it return? 0? -EINVAL?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-> +       }
-> +done:
-> +       kfree(array);
-> +       splice_from_pipe_end(pipe, &sd);
-> +
-> +       pipe_unlock(pipe);
-> +
-> +       if (sd.num_spliced)
-> +               ret = sd.num_spliced;
-> +
-> +       return ret;
-> +}
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+iQEcBAEBAgAGBQJTnpi4AAoJENuKOtuXzphJSy4H/iVeV8s9nQDKTRe0H+6VuyOa
+joqGgQkfanZ35xocDxEStKDD/HP5szeCE87m0dseuHqZusIH5Npeb5dNH8Ss5cZA
+4htw5IFTqDSOw5Dv2zfuAagPf0uCLAtqJv55FHlpI4kwWmeKISAkb9OAyUK/f1oA
+Wu1KbriIm9D2nFL1R1yTfvC9NYLuGDOvL4sis+4IqTRRIpeTZMAMDwwE/cBygPDE
+4+No5wYStNsqgu8uxQTU5arNtPFK8uDK/9+lKYkXU4TyFhpOEJEKQNStLRSNtq6s
+//0748KW1HdE2/9yfXbfDfrGtXNpWMFarvOXkOT4/iCvzfQ2nf1+9N1pF0VxnQg=
+=wH4w
+-----END PGP SIGNATURE-----
+--=-=-=--
