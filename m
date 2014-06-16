@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754358AbaFPL4G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 07:56:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56974 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751282AbaFPL4E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 07:56:04 -0400
-Date: Mon, 16 Jun 2014 13:56:01 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH RESEND] mfd: timberdale: Depend on X86_32
-Message-ID: <20140616135601.5f700de1@endymion.delvare>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1753717AbaFPMAg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 08:00:36 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:43253 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751420AbaFPMAe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 08:00:34 -0400
+X-IronPort-AV: E=Sophos;i="5.01,486,1400025600"; 
+   d="scan'208";a="143700221"
+Message-ID: <539EDC5D.4010207@citrix.com>
+Date: Mon, 16 Jun 2014 13:00:29 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Daniel Kiper <daniel.kiper@oracle.com>, <linux-efi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <x86@kernel.org>,
+        <xen-devel@lists.xenproject.org>
+CC: <andrew.cooper3@citrix.com>, <boris.ostrovsky@oracle.com>,
+        <eshelton@pobox.com>, <hpa@zytor.com>, <ian.campbell@citrix.com>,
+        <jbeulich@suse.com>, <jeremy@goop.org>, <konrad.wilk@oracle.com>,
+        <matt.fleming@intel.com>, <mingo@redhat.com>, <mjg59@srcf.ucam.org>,
+        <stefano.stabellini@eu.citrix.com>, <tglx@linutronix.de>
+Subject: Re: [PATCH v5 4/7] xen: Put EFI machinery in place
+References: <1402678823-24589-1-git-send-email-daniel.kiper@oracle.com> <1402678823-24589-5-git-send-email-daniel.kiper@oracle.com>
+In-Reply-To: <1402678823-24589-5-git-send-email-daniel.kiper@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As far as I know the Timberdale chip was only used as a companion for
-Intel Atom E600 series processors. As such, its drivers are only
-useful on X86_32.
+On 13/06/14 18:00, Daniel Kiper wrote:
+> 
+> v5 - suggestions/fixes:
 
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Lee Jones <lee.jones@linaro.org>
----
-Patch already sent on: 2014-04-03
+Put after a --- marker.
 
- drivers/mfd/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> +static efi_char16_t vendor[100] __initdata;
 
---- linux-3.16-rc1.orig/drivers/mfd/Kconfig	2014-06-16 13:00:58.359698968 +0200
-+++ linux-3.16-rc1/drivers/mfd/Kconfig	2014-06-16 13:02:12.995215489 +0200
-@@ -1055,7 +1055,7 @@ config MFD_LM3533
- config MFD_TIMBERDALE
- 	tristate "Timberdale FPGA"
- 	select MFD_CORE
--	depends on PCI && GPIOLIB
-+	depends on PCI && GPIOLIB && (X86_32 || COMPILE_TEST)
- 	---help---
- 	This is the core driver for the timberdale FPGA. This device is a
- 	multifunction device which exposes numerous platform devices.
+Why 100?
 
-
--- 
-Jean Delvare
-SUSE L3 Support
+David
