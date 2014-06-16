@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755684AbaFPRIN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 13:08:13 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:34980 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753498AbaFPRIL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 13:08:11 -0400
-Date: Mon, 16 Jun 2014 18:08:08 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Andrew Pinski <apinski@cavium.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 00/24] ILP32 Support in ARM64
-Message-ID: <20140616170808.GA5362@arm.com>
-References: <1400914939-9708-1-git-send-email-apinski@cavium.com>
+	id S932365AbaFPRJE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 13:09:04 -0400
+Received: from linode.aoot.com ([69.164.194.13]:42100 "EHLO linode.aoot.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932309AbaFPRJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 13:09:02 -0400
+Message-ID: <539F24AA.1020406@opengridcomputing.com>
+Date: Mon, 16 Jun 2014 12:08:58 -0500
+From: Steve Wise <swise@opengridcomputing.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400914939-9708-1-git-send-email-apinski@cavium.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nicholas Krause <xerofoify@gmail.com>, swise@chelsio.com
+CC: roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
+        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [Patch Resend] infiniband:memory leak in get_skb function in
+ file cm.c
+References: <1402938381-5882-1-git-send-email-xerofoify@gmail.com>
+In-Reply-To: <1402938381-5882-1-git-send-email-xerofoify@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew,
 
-On Sat, May 24, 2014 at 12:01:55AM -0700, Andrew Pinski wrote:
-> New version of the patches with documentation, signal changes are
-> simplified, using less compat syscalls and splitting up the patches so
-> it is easier to review.  I have tested LTP on both LP64 and ILP32.
-> There is a few LTP failures but they are due to LTP being incorrect
-> (sigaction structure in glibc is not the one which is used by the
-> kernel)
+On 6/16/2014 12:06 PM, Nicholas Krause wrote:
+> diff --git a/drivers/infiniband/hw/cxgb4/cm.c b/drivers/infiniband/hw/cxgb4/cm.c
+> index f9477e2..2d56983 100644
+> --- a/drivers/infiniband/hw/cxgb4/cm.c
+> +++ b/drivers/infiniband/hw/cxgb4/cm.c
+> @@ -340,15 +340,13 @@ static int status2errno(int status)
+>    */
+>   static struct sk_buff *get_skb(struct sk_buff *skb, int len, gfp_t gfp)
+>   {
+>   if (skb && !skb_is_nonlinear(skb) && !skb_cloned(skb)) {
+>                  skb_trim(skb, 0);
+>                  skb_get(skb);
+>                  skb_reset_transport_header(skb);
+>          } else {
+> +if (!skb)
+> +	skb_kfree(skb);
+> +	/*NULL is ignored */
+>                  skb = alloc_skb(len, gfp);
 
-Do you have more details about what's wrong here and where the fix
-should go? LTP? glibc? Kernel?
+This is still incorrect and the formatting is screwy.
 
-I'll give you more specific comments on the code in the next couple of
-days. But for cosmetics, please wrap the lines around 72 (or whatever)
-characters both in emails, commit logs and Documentation/* files (and
-you can drop the "Thanks" part in every commit log ;)).
+As we discussed, you can call skb_kfree() with a NULL skb and it will 
+silently ignore it.  So you don't need th 'if (!skb)'...
 
-> Andrew Pinski (24):
->   ARM64: Force LP64 to compile the kernel.
->   ARM64: Rename COMPAT to AARCH32_EL0 in Kconfig.
->   ARM64: Change some CONFIG_COMPAT over to use CONFIG_AARCH32_EL0
->     instead.
->   ARM64:ILP32: Set kernel_long to long long so we can reuse most of the
->     same syscalls as LP64.
->   ARM64:UAPI: Set the correct __BITS_PER_LONG for ILP32.
->   Allow for some signal structures to be the same between a 32bit ABI
->     and the 64bit ABI.
->   ARM64:ILP32: Use the same size and layout of the signal structures
->     for ILP32 as for LP64.
->   Allow a 32bit ABI to use the naming of the 64bit ABI syscalls to
->     avoid confusion of not splitting the registers.
->   ARM64:ILP32: Use the same syscall names as LP64.
->   ARM64: Introduce is_a32_task and is_a32_thread. Use them in the
->     correct locations.
->   ARM64: Add ARM64_ILP32 to Kconfig.
+Perhaps you should read up more on submitting patches to get the 
+formatting correct, and how to use the various tools, etc.
 
-Does this patch need to be in the middle of the series? It should come
-after the ILP32 support is complete.
+steve.
+>          }
+>          t4_set_arp_err_handler(skb, NULL, NULL);
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rdma" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Thanks.
-
--- 
-Catalin
