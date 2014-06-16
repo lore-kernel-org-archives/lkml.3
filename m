@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229AbaFPPOs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 11:14:48 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:54070 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754714AbaFPPOq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 11:14:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <539F096F.8020502@linux.com>
-References: <1402931337-3543-1-git-send-email-xerofoify@gmail.com>
-	<539F096F.8020502@linux.com>
-Date: Mon, 16 Jun 2014 11:14:45 -0400
-Message-ID: <CAPDOMVg8hthn2beTjHx94RRJeRHGGP1wyT0Y2KfscUtZGFfiCA@mail.gmail.com>
-Subject: Re: [PATCHv3]Checks for Null value in function *get_skub
-From: Nick Krause <xerofoify@gmail.com>
-To: Levente Kurusa <levex@linux.com>
-Cc: swise@chelsio.com, roland@kernel.org, sean.hefty@intel.com,
-        hal.rosenstock@gmail.com, linux-rdma@vger.kernel.org,
+	id S1755237AbaFPPQX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 11:16:23 -0400
+Received: from 8bytes.org ([85.214.48.195]:40164 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752098AbaFPPQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 11:16:22 -0400
+Date: Mon, 16 Jun 2014 17:16:19 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: iommu@lists.linux-foundation.org, dwmw2@infradead.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH 0/3] iommu: Expose IOMMU information in sysfs
+Message-ID: <20140616151619.GA31771@8bytes.org>
+References: <20140612215954.2754.30263.stgit@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140612215954.2754.30263.stgit@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Mon Jun 16 17:16:20 2014
+X-DSPAM-Confidence: 0.9978
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 539f0a4420861436816434
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From what I know yes so I would close the bug at the the link in
-my previous email and just void my patch.
-Cheers Nick
+On Thu, Jun 12, 2014 at 04:12:18PM -0600, Alex Williamson wrote:
+> Alex Williamson (3):
+>       iommu: Add sysfs support for IOMMUs
+>       iommu/intel: Make use of IOMMU sysfs support
+>       iommu/amd: Add sysfs support
 
-On Mon, Jun 16, 2014 at 11:12 AM, Levente Kurusa <levex@linux.com> wrote:
-> On 06/16/2014 05:08 PM, Nicholas Krause wrote:
->>
->> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->> ---
->>   drivers/infiniband/hw/cxgb4/cm.c | 8 +++-----
->>   1 file changed, 3 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/infiniband/hw/cxgb4/cm.c
->> b/drivers/infiniband/hw/cxgb4/cm.c
->> index f9477e2..2d56983 100644
->> --- a/drivers/infiniband/hw/cxgb4/cm.c
->> +++ b/drivers/infiniband/hw/cxgb4/cm.c
->> @@ -340,15 +340,13 @@ static int status2errno(int status)
->>    */
->>   static struct sk_buff *get_skb(struct sk_buff *skb, int len, gfp_t gfp)
->>   {
->>   if (skb && !skb_is_nonlinear(skb) && !skb_cloned(skb)) {
->>                  skb_trim(skb, 0);
->>                  skb_get(skb);
->>                  skb_reset_transport_header(skb);
->>         } else {
->> +               if (skb)
->> +                       kfree (skb);
->>                 skb = alloc_skb(len, gfp);
->>         }
->>         t4_set_arp_err_handler(skb, NULL, NULL);
->>
->
-> Isn't kfree(NULL) legal?
->
-> (i.e. the if statement is useless)
->
-> Thanks,
->     Levente Kurusa
+I like the general approach. But why do you only enable the x86 iommus?
+Some ARM IOMMUs and PAMU would certainly also benefit from a sysfs
+representation of which device is translated by which IOMMU.
+
+
+	Joerg
+
+
