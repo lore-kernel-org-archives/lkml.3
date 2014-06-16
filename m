@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756091AbaFPVMb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 17:12:31 -0400
-Received: from mail-pa0-f74.google.com ([209.85.220.74]:62165 "EHLO
-	mail-pa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754764AbaFPVM3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 17:12:29 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: broonie@kernel.org, Andrew Bresticker <abrestic@chromium.org>,
-        swarren@wwwdotorg.org, olof@lixom.net,
-        Sonny Rao <sonnyrao@chromium.org>, linux-samsung-soc@vger.kernel.org,
-        Prathyush K <prathyush.k@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mfd: cros_ec_spi: set wakeup capability
-Date: Mon, 16 Jun 2014 14:12:23 -0700
-Message-Id: <1402953143-24681-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
+	id S1756102AbaFPVNk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 17:13:40 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:48809 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755356AbaFPVNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 17:13:39 -0400
+Date: Mon, 16 Jun 2014 23:13:28 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, jkosina@suse.cz, dyoung@redhat.com,
+        chaowang@redhat.com, bhe@redhat.com, akpm@linux-foundation.org
+Subject: Re: [RFC PATCH 00/13][V3] kexec: A new system call to allow in
+ kernel loading
+Message-ID: <20140616211328.GK8170@pd.tnic>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Prathyush K <prathyush.k@samsung.com>
+On Tue, Jun 03, 2014 at 09:06:49AM -0400, Vivek Goyal wrote:
+> This patch series does not do kernel signature verification yet. I
+> plan to post another patch series for that. Now bzImage is already
+> signed with PKCS7 signature I plan to parse and verify those
+> signatures.
 
-Set the device as wakeup capable and register the wakeup source.
+Btw, do you have a brief outline on how you are going to do the
+extension to signature verification? Nothing formal, just enough of an
+outline that I can see where in the flow it will be plugged in.
 
-Note: Though it makes more sense to have the SPI framework do this,
-(either via device tree or by board_info)
-this change is as per an existing mail chain:
-https://lkml.org/lkml/2009/8/27/291
+I was wondering how the whole signature signing and verification will
+be done, i.e., where do I get the signature, how and who will verify it
+(I'm guessing the purgatory code), etc, etc.
 
-Signed-off-by: Prathyush K <prathyush.k@samsung.com>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-Note that I don't have suspend/resume actually working upstream, but I
-see that /sys/bus/spi/drivers/cros-ec-spi/spi2.0/power/wakeup exists
-with this patch and doesn't exist without it.
+Thanks.
 
- drivers/mfd/cros_ec_spi.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
-index 0b8d328..ef22dd5 100644
---- a/drivers/mfd/cros_ec_spi.c
-+++ b/drivers/mfd/cros_ec_spi.c
-@@ -385,6 +385,8 @@ static int cros_ec_spi_probe(struct spi_device *spi)
- 		return err;
- 	}
- 
-+	device_init_wakeup(&spi->dev, true);
-+
- 	return 0;
- }
- 
 -- 
-2.0.0.526.g5318336
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
