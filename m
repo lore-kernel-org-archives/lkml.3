@@ -1,268 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967AbaFPUPA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 16:15:00 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:46007 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199AbaFPUO4 convert rfc822-to-8bit (ORCPT
+	id S1756074AbaFPUPq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 16:15:46 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44049 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750953AbaFPUPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 16:14:56 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
-Subject: Re: [PATCH 1/2] phy: qcom: Add driver for QCOM IPQ806x SATA PHY
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <539EC12C.6080504@ti.com>
-Date: Mon, 16 Jun 2014 14:51:42 -0500
-Cc: linux-ide@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <A8CE5BD1-097E-416B-8D7C-D1CA84236C3E@codeaurora.org>
-References: <1402600724-20651-1-git-send-email-galak@codeaurora.org> <539EC12C.6080504@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-X-Mailer: Apple Mail (2.1878.2)
+	Mon, 16 Jun 2014 16:15:45 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: lee.jones@linaro.org
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: wm8994: Add a bunch of missing defaults/readables
+Date: Mon, 16 Jun 2014 21:15:31 +0100
+Message-Id: <1402949731-3344-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ever since this commit:
 
-On Jun 16, 2014, at 5:04 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+commit d4807ad2c4c0e17b6f00e3be9492c81de0804f40
+regmap: Check readable regs in _regmap_read
 
-> Hi,
-> 
-> On Friday 13 June 2014 12:48 AM, Kumar Gala wrote:
->> Add a PHY driver for uses with AHCI based SATA controller driver on the
->> IPQ806x family of SoCs.
->> 
->> Signed-off-by: Kumar Gala <galak@codeaurora.org>
->> ---
->> drivers/phy/Kconfig                 |   6 ++
->> drivers/phy/Makefile                |   1 +
->> drivers/phy/phy-qcom-ipq806x-sata.c | 204 ++++++++++++++++++++++++++++++++++++
->> 3 files changed, 211 insertions(+)
->> create mode 100644 drivers/phy/phy-qcom-ipq806x-sata.c
->> 
->> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
->> index 16a2f06..52bfb93 100644
->> --- a/drivers/phy/Kconfig
->> +++ b/drivers/phy/Kconfig
->> @@ -178,4 +178,10 @@ config PHY_XGENE
->> 	help
->> 	  This option enables support for APM X-Gene SoC multi-purpose PHY.
->> 
->> +config PHY_QCOM_IPQ806X_SATA
->> +	tristate "Qualcomm IPQ806x SATA SerDes/PHY driver"
->> +	depends on ARCH_QCOM
->> +	depends on OF
-> depends on HAS_IOMEM?
+Regmap will refuse to read a register which is not marked as readable,
+this has highlighted a number of controls in this driver which are not
+marked as readable/missing defaults.
 
-will add
+This patch corrects the situation, by adding the missing
+readables/defaults.
 
->> +	select GENERIC_PHY
->> +
->> endmenu
->> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
->> index b4f1d57..d950317 100644
->> --- a/drivers/phy/Makefile
->> +++ b/drivers/phy/Makefile
->> @@ -20,3 +20,4 @@ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS4X12_USB2)	+= phy-exynos4x12-usb2.o
->> phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
->> obj-$(CONFIG_PHY_EXYNOS5_USBDRD)	+= phy-exynos5-usbdrd.o
->> obj-$(CONFIG_PHY_XGENE)			+= phy-xgene.o
->> +obj-$(CONFIG_PHY_QCOM_IPQ806X_SATA)	+= phy-qcom-ipq806x-sata.o
->> diff --git a/drivers/phy/phy-qcom-ipq806x-sata.c b/drivers/phy/phy-qcom-ipq806x-sata.c
->> new file mode 100644
->> index 0000000..fc57340
->> --- /dev/null
->> +++ b/drivers/phy/phy-qcom-ipq806x-sata.c
->> @@ -0,0 +1,204 @@
->> +/*
->> + * Copyright (c) 2014, The Linux Foundation. All rights reserved.
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 and
->> + * only version 2 as published by the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +
->> +#include <linux/io.h>
->> +#include <linux/kernel.h>
->> +#include <linux/module.h>
->> +#include <linux/of.h>
->> +#include <linux/of_address.h>
->> +#include <linux/time.h>
->> +#include <linux/delay.h>
->> +#include <linux/clk.h>
->> +#include <linux/slab.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/phy/phy.h>
->> +
->> +struct qcom_ipq806x_sata_phy {
->> +	struct device *dev;
-> 
-> dev is not used anywhere. remove it.
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm8994-regmap.c |   64 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 64 insertions(+)
 
-already done in v2
-
->> +	void __iomem *mmio;
->> +	struct clk *cfg_clk;
->> +};
->> +
->> +#define __set(v, a, b)	(((v) << (b)) & GENMASK(a, b))
->> +
->> +#define SATA_PHY_P0_PARAM0		0x200
->> +#define SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN3(x)	__set(x, 17, 12)
->> +#define SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN3_MASK	GENMASK(17, 12)
->> +#define SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN2(x)	__set(x, 11, 6)
->> +#define SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN2_MASK	GENMASK(11, 6)
->> +#define SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN1(x)	__set(x, 5, 0)
->> +#define SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN1_MASK	GENMASK(5, 0)
->> +
->> +#define SATA_PHY_P0_PARAM1		0x204
->> +#define SATA_PHY_P0_PARAM1_RESERVED_BITS31_21(x)	__set(x, 31, 21)
->> +#define SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN3(x)	__set(x, 20, 14)
->> +#define SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN3_MASK	GENMASK(20, 14)
->> +#define SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN2(x)	__set(x, 13, 7)
->> +#define SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN2_MASK	GENMASK(13, 7)
->> +#define SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN1(x)	__set(x, 6, 0)
->> +#define SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN1_MASK	GENMASK(6, 0)
->> +
->> +#define SATA_PHY_P0_PARAM2		0x208
->> +#define SATA_PHY_P0_PARAM2_RX_EQ(x)	__set(x, 20, 18)
->> +#define SATA_PHY_P0_PARAM2_RX_EQ_MASK	GENMASK(20, 18)
->> +
->> +#define SATA_PHY_P0_PARAM3		0x20C
->> +#define SATA_PHY_SSC_EN			0x8
->> +#define SATA_PHY_P0_PARAM4		0x210
->> +#define SATA_PHY_REF_SSP_EN		0x2
->> +#define SATA_PHY_RESET			0x1
->> +
->> +static inline void qcom_ipq806x_sata_delay_us(unsigned int delay)
->> +{
->> +	/* sleep for max. 50us more to combine processor wakeups */
->> +	usleep_range(delay, delay + 50);
->> +}
->> +
->> +static int qcom_ipq806x_sata_phy_init(struct phy *generic_phy)
->> +{
->> +	struct qcom_ipq806x_sata_phy *phy = phy_get_drvdata(generic_phy);
->> +	u32 reg = 0;
->> +
->> +	/* Setting SSC_EN to 1 */
->> +	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM3);
-> 
-> Why readl_relaxed?
-
-because there is no need for readl’s memory barriers here.
-
->> +	reg = reg | SATA_PHY_SSC_EN;
->> +	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM3);
->> +
->> +	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM0) &
->> +			~(SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN3_MASK |
->> +			  SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN2_MASK |
->> +			  SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN1_MASK);
->> +	reg |= SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN3(0xf);
->> +	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM0);
->> +
->> +	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM1) &
->> +			~(SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN3_MASK |
->> +			  SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN2_MASK |
->> +			  SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN1_MASK);
->> +	reg |= SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN3(0x55) |
->> +		SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN2(0x55) |
->> +		SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN1(0x55);
->> +	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM1);
->> +
->> +	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM2) &
->> +		~SATA_PHY_P0_PARAM2_RX_EQ_MASK;
->> +	reg |= SATA_PHY_P0_PARAM2_RX_EQ(0x3);
->> +	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM2);
->> +
->> +	/* Setting PHY_RESET to 1 */
->> +	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM4);
->> +	reg = reg | SATA_PHY_RESET;
->> +	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM4);
->> +
->> +	/* Setting REF_SSP_EN to 1 */
->> +	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM4);
->> +	reg = reg | SATA_PHY_REF_SSP_EN | SATA_PHY_RESET;
->> +	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM4);
->> +	mb();
->> +	qcom_ipq806x_sata_delay_us(20);
->> +
->> +	/* Clearing PHY_RESET to 0 */
->> +	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM4);
->> +	reg = reg & ~SATA_PHY_RESET;
->> +	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM4);
->> +
->> +	return 0;
->> +}
->> +
->> +static int qcom_ipq806x_sata_phy_exit(struct phy *generic_phy)
->> +{
->> +	struct qcom_ipq806x_sata_phy *phy = phy_get_drvdata(generic_phy);
->> +	u32 reg = 0;
->> +
->> +	/* Setting PHY_RESET to 1 */
->> +	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM4);
->> +	reg = reg | SATA_PHY_RESET;
->> +	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM4);
->> +
->> +	return 0;
->> +}
->> +
->> +static struct phy_ops qcom_ipq806x_sata_phy_ops = {
->> +	.init		= qcom_ipq806x_sata_phy_init,
->> +	.exit		= qcom_ipq806x_sata_phy_exit,
->> +	.owner		= THIS_MODULE,
->> +};
->> +
->> +static int qcom_ipq806x_sata_phy_probe(struct platform_device *pdev)
->> +{
->> +	struct qcom_ipq806x_sata_phy *phy;
->> +	struct device *dev = &pdev->dev;
->> +	struct resource *res;
->> +	struct phy_provider *phy_provider;
->> +	struct phy *generic_phy;
->> +	int ret;
->> +
->> +	phy = devm_kzalloc(dev, sizeof(*phy), GFP_KERNEL);
->> +	if (!phy) {
->> +		dev_err(dev, "%s: failed to allocate phy\n", __func__);
->> +		return -ENOMEM;
->> +	}
->> +
->> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +	phy->mmio = devm_ioremap_resource(dev, res);
->> +	if (IS_ERR(phy->mmio)) {
->> +		dev_err(dev, "%s: phy mmio get resource failed\n", __func__);
->> +		return PTR_ERR(phy->mmio);
->> +	}
->> +
->> +	phy_provider = devm_of_phy_provider_register(dev, of_phy_simple_xlate);
->> +	if (IS_ERR(phy_provider)) {
->> +		dev_err(dev, "%s: failed to register phy\n", __func__);
->> +		return PTR_ERR(phy_provider);
->> +	}
-> 
-> phy_provider_register should be the last step. Move it after phy_set_drvdata().
-
-will fix
-
-> 
-> Thanks
-> Kishon
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+diff --git a/drivers/mfd/wm8994-regmap.c b/drivers/mfd/wm8994-regmap.c
+index 2fbce9c..770a256 100644
+--- a/drivers/mfd/wm8994-regmap.c
++++ b/drivers/mfd/wm8994-regmap.c
+@@ -123,14 +123,23 @@ static struct reg_default wm1811_defaults[] = {
+ 	{ 0x0402, 0x00C0 },    /* R1026 - AIF1 DAC1 Left Volume */
+ 	{ 0x0403, 0x00C0 },    /* R1027 - AIF1 DAC1 Right Volume */
+ 	{ 0x0410, 0x0000 },    /* R1040 - AIF1 ADC1 Filters */
++	{ 0x0411, 0x0000 },    /* R1041 - AIF1 ADC2 Filters */
+ 	{ 0x0420, 0x0200 },    /* R1056 - AIF1 DAC1 Filters (1) */
+ 	{ 0x0421, 0x0010 },    /* R1057 - AIF1 DAC1 Filters (2) */
++	{ 0x0422, 0x0200 },    /* R1058 - AIF1 DAC2 Filters (1) */
++	{ 0x0423, 0x0010 },    /* R1059 - AIF1 DAC2 Filters (2) */
+ 	{ 0x0430, 0x0068 },    /* R1072 - AIF1 DAC1 Noise Gate */
++	{ 0x0431, 0x0068 },    /* R1073 - AIF1 DAC2 Noise Gate */
+ 	{ 0x0440, 0x0098 },    /* R1088 - AIF1 DRC1 (1) */
+ 	{ 0x0441, 0x0845 },    /* R1089 - AIF1 DRC1 (2) */
+ 	{ 0x0442, 0x0000 },    /* R1090 - AIF1 DRC1 (3) */
+ 	{ 0x0443, 0x0000 },    /* R1091 - AIF1 DRC1 (4) */
+ 	{ 0x0444, 0x0000 },    /* R1092 - AIF1 DRC1 (5) */
++	{ 0x0450, 0x0098 },    /* R1104 - AIF1 DRC2 (1) */
++	{ 0x0451, 0x0845 },    /* R1105 - AIF1 DRC2 (2) */
++	{ 0x0452, 0x0000 },    /* R1106 - AIF1 DRC2 (3) */
++	{ 0x0453, 0x0000 },    /* R1107 - AIF1 DRC2 (4) */
++	{ 0x0454, 0x0000 },    /* R1108 - AIF1 DRC2 (5) */
+ 	{ 0x0480, 0x6318 },    /* R1152 - AIF1 DAC1 EQ Gains (1) */
+ 	{ 0x0481, 0x6300 },    /* R1153 - AIF1 DAC1 EQ Gains (2) */
+ 	{ 0x0482, 0x0FCA },    /* R1154 - AIF1 DAC1 EQ Band 1 A */
+@@ -152,6 +161,27 @@ static struct reg_default wm1811_defaults[] = {
+ 	{ 0x0492, 0x0559 },    /* R1170 - AIF1 DAC1 EQ Band 5 B */
+ 	{ 0x0493, 0x4000 },    /* R1171 - AIF1 DAC1 EQ Band 5 PG */
+ 	{ 0x0494, 0x0000 },    /* R1172 - AIF1 DAC1 EQ Band 1 C */
++	{ 0x04A0, 0x6318 },    /* R1184 - AIF1 DAC2 EQ Gains (1) */
++	{ 0x04A1, 0x6300 },    /* R1185 - AIF1 DAC2 EQ Gains (2) */
++	{ 0x04A2, 0x0FCA },    /* R1186 - AIF1 DAC2 EQ Band 1 A */
++	{ 0x04A3, 0x0400 },    /* R1187 - AIF1 DAC2 EQ Band 1 B */
++	{ 0x04A4, 0x00D8 },    /* R1188 - AIF1 DAC2 EQ Band 1 PG */
++	{ 0x04A5, 0x1EB5 },    /* R1189 - AIF1 DAC2 EQ Band 2 A */
++	{ 0x04A6, 0xF145 },    /* R1190 - AIF1 DAC2 EQ Band 2 B */
++	{ 0x04A7, 0x0B75 },    /* R1191 - AIF1 DAC2 EQ Band 2 C */
++	{ 0x04A8, 0x01C5 },    /* R1192 - AIF1 DAC2 EQ Band 2 PG */
++	{ 0x04A9, 0x1C58 },    /* R1193 - AIF1 DAC2 EQ Band 3 A */
++	{ 0x04AA, 0xF373 },    /* R1194 - AIF1 DAC2 EQ Band 3 B */
++	{ 0x04AB, 0x0A54 },    /* R1195 - AIF1 DAC2 EQ Band 3 C */
++	{ 0x04AC, 0x0558 },    /* R1196 - AIF1 DAC2 EQ Band 3 PG */
++	{ 0x04AD, 0x168E },    /* R1197 - AIF1 DAC2 EQ Band 4 A */
++	{ 0x04AE, 0xF829 },    /* R1198 - AIF1 DAC2 EQ Band 4 B */
++	{ 0x04AF, 0x07AD },    /* R1199 - AIF1 DAC2 EQ Band 4 C */
++	{ 0x04B0, 0x1103 },    /* R1200 - AIF1 DAC2 EQ Band 4 PG */
++	{ 0x04B1, 0x0564 },    /* R1201 - AIF1 DAC2 EQ Band 5 A */
++	{ 0x04B2, 0x0559 },    /* R1202 - AIF1 DAC2 EQ Band 5 B */
++	{ 0x04B3, 0x4000 },    /* R1203 - AIF1 DAC2 EQ Band 5 PG */
++	{ 0x04B4, 0x0000 },    /* R1204 - AIF1 DAC2 EQ Band 1 C */
+ 	{ 0x0500, 0x00C0 },    /* R1280 - AIF2 ADC Left Volume */
+ 	{ 0x0501, 0x00C0 },    /* R1281 - AIF2 ADC Right Volume */
+ 	{ 0x0502, 0x00C0 },    /* R1282 - AIF2 DAC Left Volume */
+@@ -194,6 +224,8 @@ static struct reg_default wm1811_defaults[] = {
+ 	{ 0x0605, 0x0000 },    /* R1541 - AIF2ADC Right Mixer Routing */
+ 	{ 0x0606, 0x0000 },    /* R1542 - AIF1 ADC1 Left Mixer Routing */
+ 	{ 0x0607, 0x0000 },    /* R1543 - AIF1 ADC1 Right Mixer Routing */
++	{ 0x0608, 0x0000 },    /* R1544 - AIF1 ADC2 Left Mixer Routing */
++	{ 0x0609, 0x0000 },    /* R1545 - AIF1 ADC2 Right Mixer Routing */
+ 	{ 0x0610, 0x02C0 },    /* R1552 - DAC1 Left Volume */
+ 	{ 0x0611, 0x02C0 },    /* R1553 - DAC1 Right Volume */
+ 	{ 0x0612, 0x02C0 },    /* R1554 - AIF2TX Left Volume */
+@@ -846,14 +878,23 @@ static bool wm1811_readable_register(struct device *dev, unsigned int reg)
+ 	case WM8994_AIF1_DAC1_LEFT_VOLUME:
+ 	case WM8994_AIF1_DAC1_RIGHT_VOLUME:
+ 	case WM8994_AIF1_ADC1_FILTERS:
++	case WM8994_AIF1_ADC2_FILTERS:
+ 	case WM8994_AIF1_DAC1_FILTERS_1:
+ 	case WM8994_AIF1_DAC1_FILTERS_2:
++	case WM8994_AIF1_DAC2_FILTERS_1:
++	case WM8994_AIF1_DAC2_FILTERS_2:
+ 	case WM8958_AIF1_DAC1_NOISE_GATE:
++	case WM8958_AIF1_DAC2_NOISE_GATE:
+ 	case WM8994_AIF1_DRC1_1:
+ 	case WM8994_AIF1_DRC1_2:
+ 	case WM8994_AIF1_DRC1_3:
+ 	case WM8994_AIF1_DRC1_4:
+ 	case WM8994_AIF1_DRC1_5:
++	case WM8994_AIF1_DRC2_1:
++	case WM8994_AIF1_DRC2_2:
++	case WM8994_AIF1_DRC2_3:
++	case WM8994_AIF1_DRC2_4:
++	case WM8994_AIF1_DRC2_5:
+ 	case WM8994_AIF1_DAC1_EQ_GAINS_1:
+ 	case WM8994_AIF1_DAC1_EQ_GAINS_2:
+ 	case WM8994_AIF1_DAC1_EQ_BAND_1_A:
+@@ -875,6 +916,27 @@ static bool wm1811_readable_register(struct device *dev, unsigned int reg)
+ 	case WM8994_AIF1_DAC1_EQ_BAND_5_B:
+ 	case WM8994_AIF1_DAC1_EQ_BAND_5_PG:
+ 	case WM8994_AIF1_DAC1_EQ_BAND_1_C:
++	case WM8994_AIF1_DAC2_EQ_GAINS_1:
++	case WM8994_AIF1_DAC2_EQ_GAINS_2:
++	case WM8994_AIF1_DAC2_EQ_BAND_1_A:
++	case WM8994_AIF1_DAC2_EQ_BAND_1_B:
++	case WM8994_AIF1_DAC2_EQ_BAND_1_PG:
++	case WM8994_AIF1_DAC2_EQ_BAND_2_A:
++	case WM8994_AIF1_DAC2_EQ_BAND_2_B:
++	case WM8994_AIF1_DAC2_EQ_BAND_2_C:
++	case WM8994_AIF1_DAC2_EQ_BAND_2_PG:
++	case WM8994_AIF1_DAC2_EQ_BAND_3_A:
++	case WM8994_AIF1_DAC2_EQ_BAND_3_B:
++	case WM8994_AIF1_DAC2_EQ_BAND_3_C:
++	case WM8994_AIF1_DAC2_EQ_BAND_3_PG:
++	case WM8994_AIF1_DAC2_EQ_BAND_4_A:
++	case WM8994_AIF1_DAC2_EQ_BAND_4_B:
++	case WM8994_AIF1_DAC2_EQ_BAND_4_C:
++	case WM8994_AIF1_DAC2_EQ_BAND_4_PG:
++	case WM8994_AIF1_DAC2_EQ_BAND_5_A:
++	case WM8994_AIF1_DAC2_EQ_BAND_5_B:
++	case WM8994_AIF1_DAC2_EQ_BAND_5_PG:
++	case WM8994_AIF1_DAC2_EQ_BAND_1_C:
+ 	case WM8994_AIF2_ADC_LEFT_VOLUME:
+ 	case WM8994_AIF2_ADC_RIGHT_VOLUME:
+ 	case WM8994_AIF2_DAC_LEFT_VOLUME:
+@@ -917,6 +979,8 @@ static bool wm1811_readable_register(struct device *dev, unsigned int reg)
+ 	case WM8994_DAC2_RIGHT_MIXER_ROUTING:
+ 	case WM8994_AIF1_ADC1_LEFT_MIXER_ROUTING:
+ 	case WM8994_AIF1_ADC1_RIGHT_MIXER_ROUTING:
++	case WM8994_AIF1_ADC2_LEFT_MIXER_ROUTING:
++	case WM8994_AIF1_ADC2_RIGHT_MIXER_ROUTING:
+ 	case WM8994_DAC1_LEFT_VOLUME:
+ 	case WM8994_DAC1_RIGHT_VOLUME:
+ 	case WM8994_DAC2_LEFT_VOLUME:
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+1.7.9.5
 
