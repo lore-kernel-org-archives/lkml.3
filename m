@@ -1,152 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754455AbaFPIG6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 04:06:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59845 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754279AbaFPIG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 04:06:57 -0400
-Date: Mon, 16 Jun 2014 10:06:49 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Simon Que <sque@chromium.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@google.com>,
-        Sonny Rao <sonnyrao@chromium.org>, linux-kernel@vger.kernel.org,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH] perf: Get kernel start address by symbol name
-Message-ID: <20140616080649.GB1148@krava.brq.redhat.com>
-References: <1402685121-32267-1-git-send-email-sque@chromium.org>
+	id S1754488AbaFPIIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 04:08:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46387 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754144AbaFPIIL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 04:08:11 -0400
+Date: Mon, 16 Jun 2014 01:06:38 -0700
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-27e35715df54cbc4f2d044f681802ae30479e7fb@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        rostedt@goodmis.org, peterz@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <20140611183852.937945560@linutronix.de>
+References: <20140611183852.937945560@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:locking/urgent] rtmutex: Plug slow unlock race
+Git-Commit-ID: 27e35715df54cbc4f2d044f681802ae30479e7fb
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1402685121-32267-1-git-send-email-sque@chromium.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 11:45:21AM -0700, Simon Que wrote:
-> The function machine__get_kernel_start_addr() was taking the first symbol
-> of kallsyms as the start address. This is incorrect in certain cases
-> where the first symbol is something at 0, while the actual kernel
-> functions begin at a later point (e.g. 0x80200000).
-> 
-> This patch fixes machine__get_kernel_start_addr() to search for the
-> symbol "_text" or "_stext", which marks the beginning of kernel mapping.
-> This was already being done in machine__create_kernel_maps(). Thus, this
-> patch is just a refactor, to move that code into
-> machine__get_kernel_start_addr().
-> 
-> Change-Id: I0c38c36f5e8b0f4fb92a6f57211fa45aabe545a6
-> Signed-off-by: Simon Que <sque@chromium.org>
+Commit-ID:  27e35715df54cbc4f2d044f681802ae30479e7fb
+Gitweb:     http://git.kernel.org/tip/27e35715df54cbc4f2d044f681802ae30479e7fb
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Wed, 11 Jun 2014 18:44:04 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 16 Jun 2014 10:03:09 +0200
 
-hi,
-looks good to me, adding Adrian to the loop
+rtmutex: Plug slow unlock race
 
-thanks,
-jirka
+When the rtmutex fast path is enabled the slow unlock function can
+create the following situation:
 
-> ---
->  tools/perf/util/machine.c | 54 +++++++++++++++++++----------------------------
->  1 file changed, 22 insertions(+), 32 deletions(-)
-> 
-> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-> index 620a198..acda3d2 100644
-> --- a/tools/perf/util/machine.c
-> +++ b/tools/perf/util/machine.c
-> @@ -484,18 +484,6 @@ struct process_args {
->  	u64 start;
->  };
->  
-> -static int symbol__in_kernel(void *arg, const char *name,
-> -			     char type __maybe_unused, u64 start)
-> -{
-> -	struct process_args *args = arg;
-> -
-> -	if (strchr(name, '['))
-> -		return 0;
-> -
-> -	args->start = start;
-> -	return 1;
-> -}
-> -
->  static void machine__get_kallsyms_filename(struct machine *machine, char *buf,
->  					   size_t bufsz)
->  {
-> @@ -505,27 +493,41 @@ static void machine__get_kallsyms_filename(struct machine *machine, char *buf,
->  		scnprintf(buf, bufsz, "%s/proc/kallsyms", machine->root_dir);
->  }
->  
-> -/* Figure out the start address of kernel map from /proc/kallsyms */
-> -static u64 machine__get_kernel_start_addr(struct machine *machine)
-> +const char *ref_reloc_sym_names[] = {"_text", "_stext", NULL};
-> +
-> +/* Figure out the start address of kernel map from /proc/kallsyms.
-> + * Returns the name of the start symbol in *symbol_name. Pass in NULL as
-> + * symbol_name if it's not that important.
-> + */
-> +static u64 machine__get_kernel_start_addr(struct machine *machine,
-> +					  const char** symbol_name)
->  {
->  	char filename[PATH_MAX];
-> -	struct process_args args;
-> +	int i;
-> +	const char* name;
-> +	u64 addr;
->  
->  	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
->  
->  	if (symbol__restricted_filename(filename, "/proc/kallsyms"))
->  		return 0;
->  
-> -	if (kallsyms__parse(filename, &args, symbol__in_kernel) <= 0)
-> -		return 0;
-> +	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
-> +		addr = kallsyms__get_function_start(filename, name);
-> +		if (addr)
-> +			break;
-> +	}
-> +
-> +	if (symbol_name)
-> +		*symbol_name = name;
->  
-> -	return args.start;
-> +	return addr;
->  }
->  
->  int __machine__create_kernel_maps(struct machine *machine, struct dso *kernel)
->  {
->  	enum map_type type;
-> -	u64 start = machine__get_kernel_start_addr(machine);
-> +	u64 start = machine__get_kernel_start_addr(machine, NULL);
->  
->  	for (type = 0; type < MAP__NR_TYPES; ++type) {
->  		struct kmap *kmap;
-> @@ -832,23 +834,11 @@ static int machine__create_modules(struct machine *machine)
->  	return 0;
->  }
->  
-> -const char *ref_reloc_sym_names[] = {"_text", "_stext", NULL};
-> -
->  int machine__create_kernel_maps(struct machine *machine)
->  {
->  	struct dso *kernel = machine__get_kernel(machine);
-> -	char filename[PATH_MAX];
->  	const char *name;
-> -	u64 addr = 0;
-> -	int i;
-> -
-> -	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
-> -
-> -	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
-> -		addr = kallsyms__get_function_start(filename, name);
-> -		if (addr)
-> -			break;
-> -	}
-> +	u64 addr = machine__get_kernel_start_addr(machine, &name);
->  	if (!addr)
->  		return -1;
->  
-> -- 
-> 1.8.3.2
-> 
+spin_lock(foo->m->wait_lock);
+foo->m->owner = NULL;
+	    			rt_mutex_lock(foo->m); <-- fast path
+				free = atomic_dec_and_test(foo->refcnt);
+				rt_mutex_unlock(foo->m); <-- fast path
+				if (free)
+				   kfree(foo);
+
+spin_unlock(foo->m->wait_lock); <--- Use after free.
+
+Plug the race by changing the slow unlock to the following scheme:
+
+     while (!rt_mutex_has_waiters(m)) {
+     	    /* Clear the waiters bit in m->owner */
+	    clear_rt_mutex_waiters(m);
+      	    owner = rt_mutex_owner(m);
+      	    spin_unlock(m->wait_lock);
+      	    if (cmpxchg(m->owner, owner, 0) == owner)
+      	       return;
+      	    spin_lock(m->wait_lock);
+     }
+
+So in case of a new waiter incoming while the owner tries the slow
+path unlock we have two situations:
+
+ unlock(wait_lock);
+					lock(wait_lock);
+ cmpxchg(p, owner, 0) == owner
+ 	    	   			mark_rt_mutex_waiters(lock);
+	 				acquire(lock);
+
+Or:
+
+ unlock(wait_lock);
+					lock(wait_lock);
+	 				mark_rt_mutex_waiters(lock);
+ cmpxchg(p, owner, 0) != owner
+					enqueue_waiter();
+					unlock(wait_lock);
+ lock(wait_lock);
+ wakeup_next waiter();
+ unlock(wait_lock);
+					lock(wait_lock);
+					acquire(lock);
+
+If the fast path is disabled, then the simple
+
+   m->owner = NULL;
+   unlock(m->wait_lock);
+
+is sufficient as all access to m->owner is serialized via
+m->wait_lock;
+
+Also document and clarify the wakeup_next_waiter function as suggested
+by Oleg Nesterov.
+
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140611183852.937945560@linutronix.de
+Cc: stable@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/locking/rtmutex.c | 115 ++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 109 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
+index a8a83a2..fc60594 100644
+--- a/kernel/locking/rtmutex.c
++++ b/kernel/locking/rtmutex.c
+@@ -83,6 +83,47 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
+ 		owner = *p;
+ 	} while (cmpxchg(p, owner, owner | RT_MUTEX_HAS_WAITERS) != owner);
+ }
++
++/*
++ * Safe fastpath aware unlock:
++ * 1) Clear the waiters bit
++ * 2) Drop lock->wait_lock
++ * 3) Try to unlock the lock with cmpxchg
++ */
++static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
++	__releases(lock->wait_lock)
++{
++	struct task_struct *owner = rt_mutex_owner(lock);
++
++	clear_rt_mutex_waiters(lock);
++	raw_spin_unlock(&lock->wait_lock);
++	/*
++	 * If a new waiter comes in between the unlock and the cmpxchg
++	 * we have two situations:
++	 *
++	 * unlock(wait_lock);
++	 *					lock(wait_lock);
++	 * cmpxchg(p, owner, 0) == owner
++	 *					mark_rt_mutex_waiters(lock);
++	 *					acquire(lock);
++	 * or:
++	 *
++	 * unlock(wait_lock);
++	 *					lock(wait_lock);
++	 *					mark_rt_mutex_waiters(lock);
++	 *
++	 * cmpxchg(p, owner, 0) != owner
++	 *					enqueue_waiter();
++	 *					unlock(wait_lock);
++	 * lock(wait_lock);
++	 * wake waiter();
++	 * unlock(wait_lock);
++	 *					lock(wait_lock);
++	 *					acquire(lock);
++	 */
++	return rt_mutex_cmpxchg(lock, owner, NULL);
++}
++
+ #else
+ # define rt_mutex_cmpxchg(l,c,n)	(0)
+ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
+@@ -90,6 +131,17 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
+ 	lock->owner = (struct task_struct *)
+ 			((unsigned long)lock->owner | RT_MUTEX_HAS_WAITERS);
+ }
++
++/*
++ * Simple slow path only version: lock->owner is protected by lock->wait_lock.
++ */
++static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
++	__releases(lock->wait_lock)
++{
++	lock->owner = NULL;
++	raw_spin_unlock(&lock->wait_lock);
++	return true;
++}
+ #endif
+ 
+ static inline int
+@@ -650,7 +702,8 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
+ /*
+  * Wake up the next waiter on the lock.
+  *
+- * Remove the top waiter from the current tasks waiter list and wake it up.
++ * Remove the top waiter from the current tasks pi waiter list and
++ * wake it up.
+  *
+  * Called with lock->wait_lock held.
+  */
+@@ -671,10 +724,23 @@ static void wakeup_next_waiter(struct rt_mutex *lock)
+ 	 */
+ 	rt_mutex_dequeue_pi(current, waiter);
+ 
+-	rt_mutex_set_owner(lock, NULL);
++	/*
++	 * As we are waking up the top waiter, and the waiter stays
++	 * queued on the lock until it gets the lock, this lock
++	 * obviously has waiters. Just set the bit here and this has
++	 * the added benefit of forcing all new tasks into the
++	 * slow path making sure no task of lower priority than
++	 * the top waiter can steal this lock.
++	 */
++	lock->owner = (void *) RT_MUTEX_HAS_WAITERS;
+ 
+ 	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
+ 
++	/*
++	 * It's safe to dereference waiter as it cannot go away as
++	 * long as we hold lock->wait_lock. The waiter task needs to
++	 * acquire it in order to dequeue the waiter.
++	 */
+ 	wake_up_process(waiter->task);
+ }
+ 
+@@ -928,12 +994,49 @@ rt_mutex_slowunlock(struct rt_mutex *lock)
+ 
+ 	rt_mutex_deadlock_account_unlock(current);
+ 
+-	if (!rt_mutex_has_waiters(lock)) {
+-		lock->owner = NULL;
+-		raw_spin_unlock(&lock->wait_lock);
+-		return;
++	/*
++	 * We must be careful here if the fast path is enabled. If we
++	 * have no waiters queued we cannot set owner to NULL here
++	 * because of:
++	 *
++	 * foo->lock->owner = NULL;
++	 *			rtmutex_lock(foo->lock);   <- fast path
++	 *			free = atomic_dec_and_test(foo->refcnt);
++	 *			rtmutex_unlock(foo->lock); <- fast path
++	 *			if (free)
++	 *				kfree(foo);
++	 * raw_spin_unlock(foo->lock->wait_lock);
++	 *
++	 * So for the fastpath enabled kernel:
++	 *
++	 * Nothing can set the waiters bit as long as we hold
++	 * lock->wait_lock. So we do the following sequence:
++	 *
++	 *	owner = rt_mutex_owner(lock);
++	 *	clear_rt_mutex_waiters(lock);
++	 *	raw_spin_unlock(&lock->wait_lock);
++	 *	if (cmpxchg(&lock->owner, owner, 0) == owner)
++	 *		return;
++	 *	goto retry;
++	 *
++	 * The fastpath disabled variant is simple as all access to
++	 * lock->owner is serialized by lock->wait_lock:
++	 *
++	 *	lock->owner = NULL;
++	 *	raw_spin_unlock(&lock->wait_lock);
++	 */
++	while (!rt_mutex_has_waiters(lock)) {
++		/* Drops lock->wait_lock ! */
++		if (unlock_rt_mutex_safe(lock) == true)
++			return;
++		/* Relock the rtmutex and try again */
++		raw_spin_lock(&lock->wait_lock);
+ 	}
+ 
++	/*
++	 * The wakeup next waiter path does not suffer from the above
++	 * race. See the comments there.
++	 */
+ 	wakeup_next_waiter(lock);
+ 
+ 	raw_spin_unlock(&lock->wait_lock);
