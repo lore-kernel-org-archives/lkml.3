@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932246AbaFPQGj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 12:06:39 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:65495 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932191AbaFPQGg (ORCPT
+	id S932282AbaFPQGy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 12:06:54 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:39787 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932266AbaFPQGw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 12:06:36 -0400
+	Mon, 16 Jun 2014 12:06:52 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 3/9] staging: rtl8188eu: Remove function nat25_db_cleanup()
-Date: Mon, 16 Jun 2014 21:35:40 +0530
-Message-Id: <1402934746-29422-4-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 5/9] staging: rtl8188eu: Remove function nat25_db_expire()
+Date: Mon, 16 Jun 2014 21:35:42 +0530
+Message-Id: <1402934746-29422-6-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1402934746-29422-1-git-send-email-navin.patidar@gmail.com>
 References: <1402934746-29422-1-git-send-email-navin.patidar@gmail.com>
@@ -22,91 +22,55 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 We've removed the code which was responsible for building NAT table,
-so no use of keeping nat_db_cleanup().
+so no use of keeping nat_db_expire().
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_br_ext.c    |   26 ------------------------
- drivers/staging/rtl8188eu/core/rtw_cmd.c       |    3 +--
- drivers/staging/rtl8188eu/include/rtw_br_ext.h |    2 --
- drivers/staging/rtl8188eu/os_dep/os_intfs.c    |    2 --
- 4 files changed, 1 insertion(+), 32 deletions(-)
+ drivers/staging/rtl8188eu/core/rtw_mlme.c      |   11 -----------
+ drivers/staging/rtl8188eu/include/usb_osintf.h |    1 -
+ 2 files changed, 12 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_br_ext.c b/drivers/staging/rtl8188eu/core/rtw_br_ext.c
-index 8689912..b0b1af9 100644
---- a/drivers/staging/rtl8188eu/core/rtw_br_ext.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_br_ext.c
-@@ -247,32 +247,6 @@ static inline void __network_hash_unlink(struct nat25_network_db_entry *ent)
-  *	NAT2.5 interface
-  */
+diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme.c b/drivers/staging/rtl8188eu/core/rtw_mlme.c
+index e0e119c..e73a784 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_mlme.c
++++ b/drivers/staging/rtl8188eu/core/rtw_mlme.c
+@@ -1516,7 +1516,6 @@ static void rtw_auto_scan_handler(struct adapter *padapter)
  
--void nat25_db_cleanup(struct adapter *priv)
--{
--	int i;
--
--	spin_lock_bh(&priv->br_ext_lock);
--
--	for (i = 0; i < NAT25_HASH_SIZE; i++) {
--		struct nat25_network_db_entry *f;
--		f = priv->nethash[i];
--		while (f != NULL) {
--			struct nat25_network_db_entry *g;
--
--			g = f->next_hash;
--			if (priv->scdb_entry == f) {
--				memset(priv->scdb_mac, 0, ETH_ALEN);
--				memset(priv->scdb_ip, 0, 4);
--				priv->scdb_entry = NULL;
--			}
--			__network_hash_unlink(f);
--			kfree(f);
--			f = g;
--		}
--	}
--	spin_unlock_bh(&priv->br_ext_lock);
--}
--
- void nat25_db_expire(struct adapter *priv)
+ void rtw_dynamic_check_timer_handlder(struct adapter *adapter)
  {
- 	int i;
-diff --git a/drivers/staging/rtl8188eu/core/rtw_cmd.c b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-index 25f1c36..bb4c703 100644
---- a/drivers/staging/rtl8188eu/core/rtw_cmd.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-@@ -2059,8 +2059,7 @@ void rtw_disassoc_cmd_callback(struct adapter *padapter, struct cmd_obj *pcmd)
+-	struct mlme_priv *pmlmepriv = &adapter->mlmepriv;
+ 	struct registry_priv *pregistrypriv = &adapter->registrypriv;
  
- 		RT_TRACE(_module_rtl871x_cmd_c_, _drv_err_, ("\n ***Error: disconnect_cmd_callback Fail ***\n."));
- 		return;
--	} else /* clear bridge database */
--		nat25_db_cleanup(padapter);
-+	}
- 
- 	/*  free cmd */
- 	rtw_free_cmd_obj(pcmd);
-diff --git a/drivers/staging/rtl8188eu/include/rtw_br_ext.h b/drivers/staging/rtl8188eu/include/rtw_br_ext.h
-index f21e7a4..f0b2a20 100644
---- a/drivers/staging/rtl8188eu/include/rtw_br_ext.h
-+++ b/drivers/staging/rtl8188eu/include/rtw_br_ext.h
-@@ -61,6 +61,4 @@ struct br_ext_info {
- 	unsigned int	nat25sc_disable;
- };
- 
--void nat25_db_cleanup(struct adapter *priv);
--
- #endif /*  _RTW_BR_EXT_H_ */
-diff --git a/drivers/staging/rtl8188eu/os_dep/os_intfs.c b/drivers/staging/rtl8188eu/os_dep/os_intfs.c
-index 34f7370..43eaba0 100644
---- a/drivers/staging/rtl8188eu/os_dep/os_intfs.c
-+++ b/drivers/staging/rtl8188eu/os_dep/os_intfs.c
-@@ -1228,8 +1228,6 @@ int netdev_close(struct net_device *pnetdev)
- 		rtw_led_control(padapter, LED_CTL_POWER_OFF);
+ 	if (!adapter)
+@@ -1539,16 +1538,6 @@ void rtw_dynamic_check_timer_handlder(struct adapter *adapter)
+ 			rtw_auto_scan_handler(adapter);
+ 		}
  	}
- 
--	nat25_db_cleanup(padapter);
 -
- #ifdef CONFIG_88EU_P2P
- 	rtw_p2p_enable(padapter, P2P_ROLE_DISABLE);
- #endif /* CONFIG_88EU_P2P */
+-	rcu_read_lock();
+-
+-	if (rcu_dereference(adapter->pnetdev->rx_handler_data) &&
+-	    (check_fwstate(pmlmepriv, WIFI_STATION_STATE|WIFI_ADHOC_STATE) == true)) {
+-		/*  expire NAT2.5 entry */
+-		nat25_db_expire(adapter);
+-	}
+-
+-	rcu_read_unlock();
+ }
+ 
+ #define RTW_SCAN_RESULT_EXPIRE 2000
+diff --git a/drivers/staging/rtl8188eu/include/usb_osintf.h b/drivers/staging/rtl8188eu/include/usb_osintf.h
+index 8036c38..484411f 100644
+--- a/drivers/staging/rtl8188eu/include/usb_osintf.h
++++ b/drivers/staging/rtl8188eu/include/usb_osintf.h
+@@ -33,7 +33,6 @@ void netdev_br_init(struct net_device *netdev);
+ void dhcp_flag_bcast(struct adapter *priv, struct sk_buff *skb);
+ void *scdb_findEntry(struct adapter *priv, unsigned char *macAddr,
+ 		     unsigned char *ipAddr);
+-void nat25_db_expire(struct adapter *priv);
+ 
+ int rtw_resume_process(struct adapter *padapter);
+ 
 -- 
 1.7.10.4
 
