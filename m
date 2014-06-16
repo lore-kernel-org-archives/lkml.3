@@ -1,58 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932618AbaFPSec (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 14:34:32 -0400
-Received: from linode.aoot.com ([69.164.194.13]:56925 "EHLO linode.aoot.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932195AbaFPSeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 14:34:31 -0400
-Message-ID: <539F38B3.2020405@opengridcomputing.com>
-Date: Mon, 16 Jun 2014 13:34:27 -0500
-From: Steve Wise <swise@opengridcomputing.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S932760AbaFPSfZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 14:35:25 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:36078 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147AbaFPSfW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 14:35:22 -0400
 MIME-Version: 1.0
-To: Nicholas Krause <xerofoify@gmail.com>, swise@chelsio.com
-CC: roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
-        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] infinibad: fix memory leak in function send_flowc
-References: <1402943456-7532-1-git-send-email-xerofoify@gmail.com>
-In-Reply-To: <1402943456-7532-1-git-send-email-xerofoify@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5398758F.4080306@samsung.com>
+References: <1402090985-8061-1-git-send-email-dianders@chromium.org>
+	<20140607181221.GB25068@e102568-lin.cambridge.arm.com>
+	<CAD=FV=X17PeJ6JPE9Qyc1QT07AvA2PTE69Q87gz9a6MdUHgi4A@mail.gmail.com>
+	<20140609223831.GB16889@e102568-lin.cambridge.arm.com>
+	<CANuQgHHxAhTNYX-JAEdRkO=PMYT4A5GwXcuQfiqwE0CEkQyR+w@mail.gmail.com>
+	<CAD=FV=V5_RRNkgA7Rk7XbQw9m1qh6-RJA8arW7ZRU=QbWAPa+w@mail.gmail.com>
+	<alpine.LFD.2.11.1406101146140.25775@knanqh.ubzr>
+	<CADWw7OjqK3MAuqCHuv-WS3Bb2+2Q-FXth+7hqtwFoyAP6pyYhA@mail.gmail.com>
+	<CAD=FV=ULFx0GPp_mnEfouZF+m4h_RYE6WQu48N0WbFWrFv8-BA@mail.gmail.com>
+	<5398758F.4080306@samsung.com>
+Date: Mon, 16 Jun 2014 11:35:21 -0700
+X-Google-Sender-Auth: 97BVIgnW4puTnSRrQv6tTc3ILNc
+Message-ID: <CAD=FV=U49dNrsNRe7d0PAyq_g_fUiaZYoqTAFoj+gJ=3K5c_2A@mail.gmail.com>
+Subject: Re: [PATCH] ARM: EXYNOS: mcpm: Don't rely on firmware's secondary_cpu_start
+From: Doug Anderson <dianders@chromium.org>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Chander Kashyap <k.chander@samsung.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Kevin Hilman <khilman@linaro.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Inderpal Singh <inderpal.s@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        "olof@lixom.net" <olof@lixom.net>, Tushar Behera <trblinux@gmail.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Thomas Abraham <thomas.ab@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/16/2014 1:30 PM, Nicholas Krause wrote:
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->   drivers/infiniband/hw/cxgb4/cm.c | 5 ++++-
->   1 file changed, 4 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/infiniband/hw/cxgb4/cm.c b/drivers/infiniband/hw/cxgb4/cm.c
-> index 5e153f6..c518411 100644
-> --- a/drivers/infiniband/hw/cxgb4/cm.c
-> +++ b/drivers/infiniband/hw/cxgb4/cm.c
-> @@ -455,7 +455,10 @@ static void send_flowc(struct c4iw_ep *ep, struct sk_buff *skb)
->   	unsigned int flowclen = 80;
->   	struct fw_flowc_wr *flowc;
->   	int i;
->
-> +	if (!skb) {
-> +		kfree_skb();
-> +		pr_warn(MOD "%s failed to allocate skb.\n", __func__);
-> +	}
->   	skb = get_skb(skb, flowclen, GFP_KERNEL);
+Kukjin,
 
-Oops, shouldn't the if statement be after the call to get_skb()?  :) 
-(you're having a bad day ;))
+On Wed, Jun 11, 2014 at 8:28 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+> On 06/12/14 00:19, Doug Anderson wrote:
+>>
+>> Chander,
+>>
+>> On Tue, Jun 10, 2014 at 9:52 PM, Chander Kashyap<k.chander@samsung.com>
+>> wrote:
+>>>
+>>> Hi Doug,
+>>>
+>>> On Tue, Jun 10, 2014 at 9:19 PM, Nicolas Pitre<nicolas.pitre@linaro.org>
+>>> wrote:
+>>>>
+>>>> On Tue, 10 Jun 2014, Doug Anderson wrote:
+>>>>
+>>>>> My S-state knowledge is not strong, but I believe that Lorenzo's
+>>>>> questions matter if we're using S2 for CPUidle (where we actually turn
+>>>>> off power and hot unplug CPUs) but not when we're using S1 for CPUidle
+>>>>> (where we just enter WFI/WFE).
+>>>>>
+>>>
+>>> No Its not plain WFI.
+>>>
+>>> All cores in Exynos5420 can be powered off independently.
+>>> This functionality has been tested.
+>>>
+>>> Below is the link for the posted patches.
+>>>
+>>> https://lkml.org/lkml/2014/6/10/194
+>>>
+>>> And as Nicolas wrote, these patches need MCPM for that.
+>>
+>>
+>> Most excellent!  I should have been more clear that I only knew about
+>> how CPUidle worked in our local production kernel.  There I'm pretty
+>> sure CPUidle is just WFI/WFE.  If you've got patches to do better then
+>> that's great!
+>>
+>> ...can you confirm that my patch doesn't interfere with your improved
+>> CPUidle?  It's been Acked by Nicolas (thanks!) so I'd imagine it will
+>> land shortly.  Kukjin: I assume you'll be taking this?
+>>
+> Sure, I will ;-)
 
->   	flowc = (struct fw_flowc_wr *)__skb_put(skb, flowclen);
->   
+I see that you put some branches up about 3 hours ago and I don't see
+this patch.  Are you planning on applying it?  It would be nice if it
+was in 3.16 (since it causes problems booting), but if there's some
+reason it needs to be for-next that's OK too.
 
-One more nit:  The comment is no longer correct.  It should be something 
-like:
-
-iw_cxgb4: in send_flowc(), handle a null skb return from get_skb()
-
-
+-Doug
