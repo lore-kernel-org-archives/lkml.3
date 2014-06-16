@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492AbaFPLT5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 07:19:57 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:48513 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752368AbaFPLTy (ORCPT
+	id S1752603AbaFPLUB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 07:20:01 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:40095 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752368AbaFPLT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 07:19:54 -0400
+	Mon, 16 Jun 2014 07:19:59 -0400
 From: Anil Belur <askb23@gmail.com>
 X-Google-Original-From: Anil Belur
 To: andreas.dilger@intel.com, oleg.drokin@intel.com,
         gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, hpdd-discuss@ml01.01.org,
         Anil Belur <askb23@gmail.com>
-Subject: [PATCH v4 4/8] staging: lustre: lclient: lcommon_cl.c fixing coding style issues
-Date: Mon, 16 Jun 2014 21:13:19 +1000
-Message-Id: <1402917203-12798-5-git-send-email-askb23@gmail.com>
+Subject: [PATCH v4 5/8] staging: lustre: lclient: lcommon_cl.c fixing coding style issues
+Date: Mon, 16 Jun 2014 21:13:20 +1000
+Message-Id: <1402917203-12798-6-git-send-email-askb23@gmail.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1402917203-12798-1-git-send-email-askb23@gmail.com>
 References: <1402917203-12798-1-git-send-email-askb23@gmail.com>
@@ -25,48 +25,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Anil Belur <askb23@gmail.com>
 
-fixed: WARNING: Missing a blank line after declarations
+fixed:  ERROR: do not initialise statics to 0 or NULL
 Signed-off-by: Anil Belur <askb23@gmail.com>
 ---
- drivers/staging/lustre/lustre/lclient/lcommon_cl.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/staging/lustre/lustre/lclient/lcommon_cl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/staging/lustre/lustre/lclient/lcommon_cl.c b/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
-index 6907a16..f83e6f2 100644
+index f83e6f2..7be0a93 100644
 --- a/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
 +++ b/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
-@@ -127,6 +127,7 @@ void ccc_key_fini(const struct lu_context *ctx,
- 			 struct lu_context_key *key, void *data)
- {
- 	struct ccc_thread_info *info = data;
-+
- 	OBD_SLAB_FREE_PTR(info, ccc_thread_kmem);
- }
+@@ -267,7 +267,7 @@ int ccc_req_init(const struct lu_env *env, struct cl_device *dev,
+  * fails. Access to this environment is serialized by ccc_inode_fini_guard
+  * mutex.
+  */
+-static struct lu_env *ccc_inode_fini_env = NULL;
++static struct lu_env *ccc_inode_fini_env;
  
-@@ -145,6 +146,7 @@ void ccc_session_key_fini(const struct lu_context *ctx,
- 				 struct lu_context_key *key, void *data)
- {
- 	struct ccc_session *session = data;
-+
- 	OBD_SLAB_FREE_PTR(session, ccc_session_kmem);
- }
- 
-@@ -573,6 +575,7 @@ void ccc_lock_delete(const struct lu_env *env,
- void ccc_lock_fini(const struct lu_env *env, struct cl_lock_slice *slice)
- {
- 	struct ccc_lock *clk = cl2ccc_lock(slice);
-+
- 	OBD_SLAB_FREE_PTR(clk, ccc_lock_kmem);
- }
- 
-@@ -753,6 +756,7 @@ int ccc_io_one_lock(const struct lu_env *env, struct cl_io *io,
- 		    loff_t start, loff_t end)
- {
- 	struct cl_object *obj = io->ci_obj;
-+
- 	return ccc_io_one_lock_index(env, io, enqflags, mode,
- 				     cl_index(obj, start), cl_index(obj, end));
- }
+ /**
+  * A mutex serializing calls to slp_inode_fini() under extreme memory
 -- 
 1.9.0
 
