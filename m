@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066AbaFPO67 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 10:58:59 -0400
-Received: from mx-rz-1.rrze.uni-erlangen.de ([131.188.11.20]:48550 "EHLO
-	mx-rz-1.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753467AbaFPO65 (ORCPT
+	id S932125AbaFPO7r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 10:59:47 -0400
+Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:57811 "EHLO
+	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932086AbaFPO7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 10:58:57 -0400
-X-Greylist: delayed 451 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Jun 2014 10:58:57 EDT
-X-RRZE-Submit-IP: 131.188.42.190
-From: Stephan Gabert <stephan.gabert@fau.de>
-To: pe1dnn@amsat.org, gregkh@linuxfoundation.org
-Cc: nicolas.pfeiffer@fau.de, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-kernel@i4.cs.fau.de,
-        Stephan Gabert <stephan.gabert@fau.de>
-Subject: [PATCH 0/5] staging/wlags49_h2: fixed up wl_cs.c
-Date: Mon, 16 Jun 2014 16:50:48 +0200
-Message-Id: <1402930253-32537-1-git-send-email-stephan.gabert@fau.de>
-X-Mailer: git-send-email 1.9.1
+	Mon, 16 Jun 2014 10:59:44 -0400
+Date: Mon, 16 Jun 2014 10:58:37 -0400
+From: Rich Felker <dalias@libc.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Ian Lance Taylor <iant@golang.org>, Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Mikael Pettersson <mikpelinux@gmail.com>, Russ Cox <rsc@golang.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>
+Subject: Re: [RFC 0/2] __vdso_findsym
+Message-ID: <20140616145837.GA179@brightrain.aerifal.cx>
+References: <cover.1402769596.git.luto@amacapital.net>
+ <21405.44257.742122.786960@gargle.gargle.HOWL>
+ <20140615143500.GP179@brightrain.aerifal.cx>
+ <539DD26B.3060709@zytor.com>
+ <CALCETrXTpkto2gJBiFC4CR5D=Lqf2YfP5BBH02f8hFW+TUGqeA@mail.gmail.com>
+ <539DDE9C.3010903@zytor.com>
+ <CALCETrWLBCNiJArMRPuHbfhj6=ytnx_YqykzgCgZ+DYu34M1Mg@mail.gmail.com>
+ <20140616023604.GI5714@two.firstfloor.org>
+ <CAKOQZ8wwKcDAXq0BnHwvL01LQNFeOGwgA9x8kCLWeFaP6USF4A@mail.gmail.com>
+ <20140616143801.GJ5714@two.firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140616143801.GJ5714@two.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The appended patches fix up wl_cs.c from the wireless device driver wlags49
-of Agere Systems Inc.
+On Mon, Jun 16, 2014 at 04:38:01PM +0200, Andi Kleen wrote:
+> > I think this issue started when some of the Go developers questioned
+> > why the kernel needed to provide a very complex interface--parsing an
+> > ELF shared shared library--for very simple functionality--looking up
+> > the address of a magic function.  This approach has required special
+> > support not just in Go, but also in the dynamic linker and gdb, and
+> > does not work well for statically linked binaries.  The support in gdb
+> > is perhaps a good idea, but elsewhere it does not make sense.
+> > 
+> > So why not provide a simple interface?
+> 
+> What good would it do now that everyone already supports it?
+> 
+> The proposal is 10+ years too late.
 
-Most modifications resulted from checkpatch.pl.
+I addressed that in one of my first emails to this thread. I don't
+think adding it now is immediately useful, but it will be very nice to
+have in a few years when optimizing for kernels from 2014 and earlier
+is no longer a priority. I would expect new users of vdso at that time
+not to bother with the ELF parsing ugliness and simply to use the
+lookup interface. It's not like they'd be losing any functionality on
+old kernels, just some performance due to falling back to the syscall.
 
-Stephan Gabert (5):
-  staging/wlags49_h2: checkpatch: including <linux/*.h> instead of
-    <asm/*.h>
-  staging/wlags49_h2: checkpatch: added spaces around equal sign
-  staging/wlags49_h2: correct check of the return value of
-    register_netdev()
-  staging/wlags49_h2: convert printk calls to netdev_* calls
-  staging/wlags49_h2: checkpatch: line over 80 characters
-
- drivers/staging/wlags49_h2/wl_cs.c | 27 ++++++++++++++-------------
- 1 file changed, 14 insertions(+), 13 deletions(-)
-
--- 
-1.9.1
-
+Rich
