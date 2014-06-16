@@ -1,84 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691AbaFPFsj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 01:48:39 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:33199 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbaFPFsg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 01:48:36 -0400
-X-AuditID: cbfee68d-b7fd46d000005f36-52-539e852c9a13
-Message-id: <539E852C.7040402@samsung.com>
-Date: Mon, 16 Jun 2014 14:48:28 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: George Cherian <george.cherian@ti.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, myungjoo.ham@samsung.com,
-        grant.likely@linaro.org, rdunlap@infradead.org, galak@codeaurora.org,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        robh+dt@kernel.org, pawel.moll@arm.com, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH] extcon: extcon-dra7xx: Add Extcon driver for DRA7xx
-References: <1402886548-22765-1-git-send-email-george.cherian@ti.com>
- <539E79A1.50208@roeck-us.net> <539E8399.80902@ti.com>
-In-reply-to: <539E8399.80902@ti.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsWyRsSkSFendV6wwa0rNhbzj5xjteh/s5DV
-	4tTB5awWB/7sYLQ492olo8XCtiUsFpd3zWGzeLLwDJPF0usXmSxuN65gs5gwfS2Lxds701ks
-	WvceYXfg9Vgzbw2jx+W+XiaPlcu/sHlsXqHlsWlVJ5vHnWt72Dx2fm9g9+jbsorR4/iN7Uwe
-	nzfJBXBFcdmkpOZklqUW6dslcGVsvfaUraCFteLH8SdsDYzNLF2MnBwSAiYS16ZPYoWwxSQu
-	3FvP1sXIxSEksJRR4n7jIWaYoovT7jKB2EIC0xklnl5ngSh6zSix+8N7sEm8AloS8/8fBWtg
-	EVCV6Ph8kA3EZgOK739xA8wWFQiTWDn9ClS9oMSPyffAbBGgmv5L3UwgQ5kFDjBJ7Hx7kBEk
-	ISzgIbHv2CsWiM21Ej8//gVbwCmgItG/tAXMZhbQkdjfOo0NwpaX2LzmLTPIIAmBqRwS/R2b
-	WSAuEpD4NvkQkM0BlJCV2HQA6jNJiYMrbrBMYBSbheSmWUjGzkIydgEj8ypG0dSC5ILipPQi
-	Q73ixNzi0rx0veT83E2MwCg//e9Z7w7G2wesDzEmA62cyCwlmpwPTBJ5JfGGxmZGFqYmpsZG
-	5pZmpAkrifMmPUwKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cCY9M0sjuvBpV9BS3ap8u5h
-	D+SWtnqabvTxUZbTylehKzJDUvKtuA4o/pntMt11z7TGWdEbNBZo63g0avz4KLnr96O7Fjtf
-	hwb3zc356fTG6W1eV8Fy7oRPNY8vL9rWZP2C6bWP9mzrXR2yr9m4khaUbOC6E7Ks8toBlQtc
-	KrN2i2tuFZ7xMtBRiaU4I9FQi7moOBEAWUiPZggDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEKsWRmVeSWpSXmKPExsVy+t9jQV2d1nnBBo86TCzmHznHatH/ZiGr
-	xamDy1ktDvzZwWhx7tVKRouFbUtYLC7vmsNm8WThGSaLpdcvMlncblzBZjFh+loWi7d3prNY
-	tO49wu7A67Fm3hpGj8t9vUweK5d/YfPYvELLY9OqTjaPO9f2sHns/N7A7tG3ZRWjx/Eb25k8
-	Pm+SC+CKamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXL
-	zAG6XkmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMOYsfXaU7aCFtaKH8ef
-	sDUwNrN0MXJySAiYSFycdpcJwhaTuHBvPRuILSQwnVHi6XWgGi4g+zWjxO4P78EaeAW0JOb/
-	P8oMYrMIqEp0fD4I1sAGFN//4gaYLSoQJrFy+hWoekGJH5PvgdkiQDX9l7qZQIYyCxxgktj5
-	9iAjSEJYwENi37FXLBCbayV+fvwLtoBTQEWif2kLmM0soCOxv3UaG4QtL7F5zVvmCYwCs5Ds
-	mIWkbBaSsgWMzKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxglPIM6kdjCsbLA4xCnAwKvHw
-	TnCcFyzEmlhWXJl7iFGCg1lJhNfeByjEm5JYWZValB9fVJqTWnyIMRkYBBOZpUST84HpLa8k
-	3tDYxMzI0sjc0MLI2Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGKu0dF+dtPwhLiDB
-	5eejEyb8uunIo5UfLDesXc5bGHx0veczN93EK9xSHhnyM2sVfnGGdN6/0rWYvfhpSMaFX5Pf
-	c7w8u1/b5YTB7eAaf3+1BT4Zv0LZTHbu2bkmlGP9E9F/No7aOX1fzm3mOlKkHKnRLRCcERD7
-	0/hqb8m9mAu7hBfUPPRjVWIpzkg01GIuKk4EAA+GYd1lAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753816AbaFPFtc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 01:49:32 -0400
+Received: from mga01.intel.com ([192.55.52.88]:50084 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753659AbaFPFta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 01:49:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,484,1400050800"; 
+   d="scan'208,223";a="548460948"
+Message-ID: <539E8559.3010601@linux.intel.com>
+Date: Mon, 16 Jun 2014 13:49:13 +0800
+From: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: brudley@broadcom.com, arend@broadcom.com, frankyl@broadcom.com,
+        meuleman@broadcom.com, linville@tuxdriver.com, pieterpg@broadcom.com,
+        dekim@broadcom.com, mcgrof@do-not-panic.com, antonio@open-mesh.com,
+        johannes.berg@intel.com
+CC: linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] brcmfmac: prevent watchdog from interfering with scanning
+ and connecting
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi George,
+>From 14485894add32aedacb3e486ebb2cc2b73861abf Mon Sep 17 00:00:00 2001
+From: Fu zhonghui <zhonghui.fu@linux.intel.com>
+Date: Wed, 11 Jun 2014 11:06:55 +0800
+Subject: [PATCH] brcmfmac: prevent watchdog from interfering with scanning and connecting
 
-On 06/16/2014 02:41 PM, George Cherian wrote:
-> On 6/16/2014 10:29 AM, Guenter Roeck wrote:
->> On 06/15/2014 07:42 PM, George Cherian wrote:
->>> This is the driver for the USB ID pin detection. This driver
->>> handles only the USB ID pin changes generated by cable
->>> insertion/removal.
->>>
->>> Signed-off-by: George Cherian <george.cherian@ti.com>
->>
->> Hi George,
->>
->> Curious: Why can't you use extcon-gpio ?
-> Main reason being missing dt support.
+Watchdog in brcmfmac driver may make WiFi chip enter sleep mode
+before completion of scanning or connecting.
 
-I'd like you to use extcon-gpio for DRA7xx driver.
-This patch has just one gpio control to wheter USB-HOST is attached or detached.
+This will lead to scanning or connecting failure.
 
-Thanks,
-Chanwoo Choi
+Increasing temporarily idle-time threshold during scanning or
+connecting can ensure scanning or connecting success without
+watchdog interference.
+
+Signed-off-by: Fu zhonghui <zhonghui.fu@linux.intel.com>
+---
+ drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c |   18 ++++++++++++++++--
+ .../net/wireless/brcm80211/brcmfmac/wl_cfg80211.c  |    3 ++-
+ 2 files changed, 18 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+index 13c89a0..729deab 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+@@ -34,6 +34,7 @@
+ #include <linux/vmalloc.h>
+ #include <linux/platform_data/brcmfmac-sdio.h>
+ #include <linux/moduleparam.h>
++#include <net/cfg80211.h>
+ #include <asm/unaligned.h>
+ #include <defs.h>
+ #include <brcmu_wifi.h>
+@@ -43,6 +44,10 @@
+ #include "sdio_host.h"
+ #include "chip.h"
+ #include "nvram.h"
++#include "dhd.h"
++#include "fwil_types.h"
++#include "p2p.h"
++#include "wl_cfg80211.h"
+ 
+ #define DCMD_RESP_TIMEOUT  2000	/* In milli second */
+ 
+@@ -307,6 +312,7 @@ struct rte_console {
+ 					 * when idle
+ 					 */
+ #define BRCMF_IDLE_INTERVAL	1
++#define BRCMF_IDLE_INTERVAL_SCANNING_CONNECTING	100
+ 
+ #define KSO_WAIT_US 50
+ #define MAX_KSO_ATTEMPTS (PMU_MAX_TRANSITION_DLY/KSO_WAIT_US)
+@@ -3613,9 +3619,9 @@ void brcmf_sdio_isr(struct brcmf_sdio *bus)
+ 
+ static bool brcmf_sdio_bus_watchdog(struct brcmf_sdio *bus)
+ {
+-#ifdef DEBUG
+ 	struct brcmf_bus *bus_if = dev_get_drvdata(bus->sdiodev->dev);
+-#endif	/* DEBUG */
++	struct brcmf_cfg80211_info *cfg = bus_if->drvr->config;
++	struct brcmf_if *ifp = cfg->pub->iflist[0];
+ 
+ 	brcmf_dbg(TIMER, "Enter\n");
+ 
+@@ -3678,6 +3684,14 @@ static bool brcmf_sdio_bus_watchdog(struct brcmf_sdio *bus)
+ 
+ 	/* On idle timeout clear activity flag and/or turn off clock */
+ 	if ((bus->idletime > 0) && (bus->clkstate == CLK_AVAIL)) {
++
++		if (test_bit(BRCMF_SCAN_STATUS_BUSY, &cfg->scan_status) ||
++		    test_bit(BRCMF_VIF_STATUS_CONNECTING, &ifp->vif->sme_state)) {
++			bus->idletime = BRCMF_IDLE_INTERVAL_SCANNING_CONNECTING;
++		} else {
++			bus->idletime = BRCMF_IDLE_INTERVAL;
++		}
++
+ 		if (++bus->idlecount >= bus->idletime) {
+ 			bus->idlecount = 0;
+ 			if (bus->activity) {
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+index be19852..e76517e 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+@@ -913,6 +913,8 @@ brcmf_cfg80211_escan(struct wiphy *wiphy, struct brcmf_cfg80211_vif *vif,
+ 		return -EAGAIN;
+ 	}
+ 
++	set_bit(BRCMF_SCAN_STATUS_BUSY, &cfg->scan_status);
++
+ 	/* If scan req comes for p2p0, send it over primary I/F */
+ 	if (vif == cfg->p2p.bss_idx[P2PAPI_BSSCFG_DEVICE].vif)
+ 		vif = cfg->p2p.bss_idx[P2PAPI_BSSCFG_PRIMARY].vif;
+@@ -933,7 +935,6 @@ brcmf_cfg80211_escan(struct wiphy *wiphy, struct brcmf_cfg80211_vif *vif,
+ 	}
+ 
+ 	cfg->scan_request = request;
+-	set_bit(BRCMF_SCAN_STATUS_BUSY, &cfg->scan_status);
+ 	if (escan_req) {
+ 		cfg->escan_info.run = brcmf_run_escan;
+ 		err = brcmf_p2p_scan_prep(wiphy, request, vif);
+-- 1.7.1
 
