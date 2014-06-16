@@ -1,59 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097AbaFPXmk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 19:42:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46848 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850AbaFPXmj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 19:42:39 -0400
-Date: Mon, 16 Jun 2014 16:42:37 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Chen Yucong <slaoub@gmail.com>
-Cc: mhocko@suse.cz, hannes@cmpxchg.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/vmscan.c: avoid recording the original scan targets
- in shrink_lruvec()
-Message-Id: <20140616164237.5fcba7baaec83d509c9683e0@linux-foundation.org>
-In-Reply-To: <1402923474.3958.34.camel@debian>
-References: <1402320436-22270-1-git-send-email-slaoub@gmail.com>
-	<1402923474.3958.34.camel@debian>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752446AbaFPXnH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 19:43:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56764 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751438AbaFPXnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 19:43:06 -0400
+Date: Mon, 16 Jun 2014 19:42:54 -0400
+From: Dave Jones <davej@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        therbert@google.com
+Subject: Re: [GIT] Networking
+Message-ID: <20140616234254.GA15332@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
+	akpm@linux-foundation.org, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org, therbert@google.com
+References: <20140615.193312.2155181077359902619.davem@davemloft.net>
+ <20140616230450.GA12887@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140616230450.GA12887@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jun 2014 20:57:54 +0800 Chen Yucong <slaoub@gmail.com> wrote:
+On Mon, Jun 16, 2014 at 07:04:50PM -0400, Dave Jones wrote:
+ > On Sun, Jun 15, 2014 at 07:33:12PM -0700, David Miller wrote:
+ > 
+ >  > 1) Fix checksumming regressions, from Tom Herbert.
+ > 
+ > Something still not right for me here.
+ > After about 5 minutes, I get an oops and then instant reboot/lock up.
+ > 
+ > I haven't managed to get a trace over usb-serial because it seems to
+ > crash before it completes. Hand transcribed one looks like..
+ > 
+ > rbp: ffff880236403970 r08: 0000000000000000 r09: 0000000000000000
+ > r10: 000000000000005a r11: 00000000000002d7 f12: ffff880233000d80
+ > r13: ffff8800aa1a6fc2 r14: ffff880233001d40 f15: 00000000ffffac82
+ > fs: 0 fs: ffff880236400000 knlGS: 0
+ > CS: 10 DS: 0 ES: 0 CR0: 80050033
+ > CR2: ffff8800aa1a8000 CR3: 1a0d000 CR4: 407f0
+ > Stack:
+ >  ffff880236403988 ffffffff81298bbc 00000000000016c0 ffff8802364039e8
+ >  ffffffff814ca05a ffff880233001d40 000005a80000e397 ffff880233001680
+ >  0000000000000000 0d420685ffffac82 000000000000012a 000000000000004e
+ > Call Trace:
+ > <IRQ>
+ > csum_partial
+ > tcp_gso_segment
+ > inet_gso_segment
+ > ? update_dl_migration
+ > skb_mac_gso_segment
+ > __skb_gso_segment
+ > dev_hard_start_xmit
+ > sch_direct_xmit
+ > __dev_queue_xmit
+ > ? dev_hard_start_xmit
+ > dev_queue_xmit
+ > ip_finish_output
+ > ? ip_output
+ > ip_output
+ > ip_forward_finish
+ > ip_forward
+ > ip_rcv_finish
+ > ip_rcv
+ > __netif_receive_skb_core
+ > ? __netif_receive_skb_core
+ > ? trace_hardirqs_on
+ > __netif_receive_skb
+ > netif_receive_skb_internal
+ > napi_gro_complete
+ > ? napi_gro_complete
+ > dev_gro_receive
+ > ? dev_gro_receive
+ > napi_gro_receive
+ > rtl8169_poll
+ > net_rx_action
+ > __do_softirq
+ > irq_exit
+ > do_IRQ
+ > common_interrupt
+ > <EOI>
+ > cpuidle_enter_state
+ > cpuidle_enter
+ > cpu_startup_entry
+ > rest_init
+ > ? csum_partial_copy_generic
+ > start_kernel
+ > RIP: do_csum+0x83/0x180
+ > 
+ > Code: 41 89 d2 74 45 89 d1 45 31 c0 48 89 fa 0f 1f 00 48 03 02 48 13 42
+ > 08 48 13 42 10 48 13 42 20 48 13 42 28 48 13 42 30 <48> 13 42 38 4c 11
+ > c0 48 83 c2 40 83 e9 01 75 d5 41 83 ea 01 49
+ > 
+ > All code
+ > ========
+ >    0:	41 89 d2             	mov    %edx,%r10d
+ >    3:	74 45                	je     0x4a
+ >    5:	89 d1                	mov    %edx,%ecx
+ >    7:	45 31 c0             	xor    %r8d,%r8d
+ >    a:	48 89 fa             	mov    %rdi,%rdx
+ >    d:	0f 1f 00             	nopl   (%rax)
+ >   10:	48 03 02             	add    (%rdx),%rax
+ >   13:	48 13 42 08          	adc    0x8(%rdx),%rax
+ >   17:	48 13 42 10          	adc    0x10(%rdx),%rax
+ >   1b:	48 13 42 20          	adc    0x20(%rdx),%rax
+ >   1f:	48 13 42 28          	adc    0x28(%rdx),%rax
+ >   23:	48 13 42 30          	adc    0x30(%rdx),%rax
+ >   27:*	48 13 42 38          	adc    0x38(%rdx),%rax     <-- trapping instruction
+ >   2b:	4c 11 c0             	adc    %r8,%rax
+ >   2e:	48 83 c2 40          	add    $0x40,%rdx
+ >   32:	83 e9 01             	sub    $0x1,%ecx
+ >   35:	75 d5                	jne    0xc
+ >   37:	41 83 ea 01          	sub    $0x1,%r10d
+ >   3b:	49                   	rex.WB
+ > 
+ > Typical, rdx and rax had scrolled off the screen.
 
-> On Mon, 2014-06-09 at 21:27 +0800, Chen Yucong wrote:
-> > Via https://lkml.org/lkml/2013/4/10/334 , we can find that recording the
-> > original scan targets introduces extra 40 bytes on the stack. This patch
-> > is able to avoid this situation and the call to memcpy(). At the same time,
-> > it does not change the relative design idea.
-> > 
-> > ratio = original_nr_file / original_nr_anon;
-> > 
-> > If (nr_file > nr_anon), then ratio = (nr_file - x) / nr_anon.
-> >  x = nr_file - ratio * nr_anon;
-> > 
-> > if (nr_file <= nr_anon), then ratio = nr_file / (nr_anon - x).
-> >  x = nr_anon - nr_file / ratio;
-> > 
-> Hi Andrew Morton,
-> 
-> I think the patch
->  
-> [PATCH]
-> mm-vmscanc-avoid-recording-the-original-scan-targets-in-shrink_lruvec-fix.patch
-> 
-> which I committed should be discarded.
+after removing the dump_stack invocations, I noticed that the reason
+this is rebooting is probably because right after the initial oops
+we hit the WARN_ON at arch/x86/kernel/smp.c:124
 
-OK, thanks.
+        if (unlikely(cpu_is_offline(cpu))) {
+                WARN_ON(1);
+                return;
+        }
 
-I assume you're referring to
-mm-vmscanc-avoid-recording-the-original-scan-targets-in-shrink_lruvec.patch
-- I don't think a -fix.patch existed?
+lol.
+
+Anwyay, before all that nonsense, I now have the top of the oops..
+
+BUG: unable to handle kernel paging request at ffff880218c18000
+IP: do_csum+0x68
+PGD: 2c6a067 PUD: 2c6d067 PMD 23fd1c067 PTE: 80000000218c18060
+RAX: 2090539bbf7b28f2 RBX: 00000000acb23d4e RCX: 000000000000000b
+RDX: ffff880218c18000 RSI: 0000000000001c62 RDI: ffff880218c16680
+
+Maybe also notable here is that the kernel is built with DEBUG_PAGEALLOC on.
+
+	Dave
 
