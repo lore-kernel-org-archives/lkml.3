@@ -1,76 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561AbaFPQh4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 12:37:56 -0400
-Received: from linode.aoot.com ([69.164.194.13]:57434 "EHLO linode.aoot.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753256AbaFPQhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 12:37:54 -0400
-Message-ID: <539F1D5E.30505@opengridcomputing.com>
-Date: Mon, 16 Jun 2014 11:37:50 -0500
-From: Steve Wise <swise@opengridcomputing.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S932270AbaFPQjN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 12:39:13 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:44415 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755534AbaFPQjJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 12:39:09 -0400
 MIME-Version: 1.0
-To: Levente Kurusa <levex@linux.com>, Nick Krause <xerofoify@gmail.com>
-CC: swise@chelsio.com, roland@kernel.org, sean.hefty@intel.com,
-        hal.rosenstock@gmail.com, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4]Checks for Null value in function *get_skub
-References: <1402932328-3732-1-git-send-email-xerofoify@gmail.com>	<539F0DAF.1020802@opengridcomputing.com> <CAPDOMVjd9J=Kz4d88==UsbfjH13mhGzzmbc2NnxSOfqJs_aGpQ@mail.gmail.com> <539F112F.7030303@linux.com>
-In-Reply-To: <539F112F.7030303@linux.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAODwPW9tRM8kxBVg3apkec2K1rahuENk_b_BD_0jvXON7JzeaA@mail.gmail.com>
+References: <1402689965-19397-1-git-send-email-jwerner@chromium.org>
+	<CAL_JsqL-K4i54ysugCKSw-aO-9pvnYgZfJ=NdBAot=mwffxmyA@mail.gmail.com>
+	<CAODwPW9tRM8kxBVg3apkec2K1rahuENk_b_BD_0jvXON7JzeaA@mail.gmail.com>
+Date: Mon, 16 Jun 2014 09:39:07 -0700
+X-Google-Sender-Auth: GX19l3Hl4cV5fSDvEo3fFtsz3WI
+Message-ID: <CALiw-2GWHKPbXuMFXUHY_pgpUJNdqQbyPEV1UjEep3zD2sSRPQ@mail.gmail.com>
+Subject: Re: [PATCH] firmware: Add device tree binding for coreboot
+From: Olof Johansson <olofj@chromium.org>
+To: Julius Werner <jwerner@chromium.org>
+Cc: Rob Herring <robherring2@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <stephen.r.warren@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Stefan Reinauer <stefan.reinauer@coreboot.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/16/2014 10:45 AM, Levente Kurusa wrote:
-> On 06/16/2014 05:37 PM, Nick Krause wrote:
->> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->> ---
->>   drivers/infiniband/hw/cxgb4/
->> cm.c | 8 +++-----
->>   1 file changed, 3 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/infiniband/hw/cxgb4/cm.c 
->> b/drivers/infiniband/hw/cxgb4/cm.c
->> index f9477e2..2d56983 100644
->> --- a/drivers/infiniband/hw/cxgb4/cm.c
->> +++ b/drivers/infiniband/hw/cxgb4/cm.c
->> @@ -340,15 +340,13 @@ static int status2errno(int status)
->>    */
->>   static struct sk_buff *get_skb(struct sk_buff *skb, int len, gfp_t 
->> gfp)
->>   {
->>   if (skb && !skb_is_nonlinear(skb) && !skb_cloned(skb)) {
->>                  skb_trim(skb, 0);
->>                  skb_get(skb);
->>                  skb_reset_transport_header(skb);
->>          } else {
->> +               if (skb)
->> /* NULL is ignored */.
->> +                       kfree_skb (skb);
->>                  skb = alloc_skb(len, gfp);
->>          }
->>          t4_set_arp_err_handler(skb, NULL, NULL);
+2014-06-13 14:58 GMT-07:00 Julius Werner <jwerner@chromium.org>:
+>> This is just to export a fixed log to userspace (like a DMI table) or
+>> the kernel will actually use the data in some way? Based on the link,
+>> it looks like the former to me.
 >
-> This patch is severely whitespace damaged. Can you fix your MUA
-> or try to use git-send-email?
->
-> The changelog as well is of low quality. Maybe something like this:
->
-> infiniband: cxgb4: fix memory skb memory leak
->
-> ... would be better.
->
-> Also, this fails the build, due to the extra dot character after
-> the comment. :-(
->
+> I could imagine both. The link is an in-kernel driver that exposes a
+> log through a sysfs node (in a way that has already been established
+> on x86 systems, which find the location through EBDA or ACPI entries
+> instead). We are also using a user-space tool that reads the address
+> from /proc/device-tree and accesses it through /dev/mem. The areas can
+> contain many interesting entries (like the location of an early
+> framebuffer set up by the firmware), so I could also imagine use cases
+> where the kernel makes use of it directly.
 
-Agreed.  Start over with this patch,  do what we asked, and make sure it 
-passes checkpatch...
+Hmm. It'd be much better if the early framebuffer was communicated
+using the already existing methods (i.e. simplefb device tree node).
+That way we don't have to add custom code to grab it out of the
+coreboot memory structure.
+
+Adding a platform driver for coreboot to do it later in boot isn't so
+hard (and registering platform devices based on the contents), but we
+probably need to be more generic if it is to be used in actual early
+boot, which is the main use case for it.
+
+>> Don't you need need to keep the kernel from allocating this memory by
+>> using one of the reserved memory mechanisms? The recently added one
+>> should be able to specific what the memory is reserved for IIRC.
+>
+> Our bootloader is carving the location out of the /memory node and
+> adding it to the device tree reserve map. As far as I know, that only
+> contains a list of raw start and size entries. At any rate, I think
+> it's useful (and in line with other bindings) to add a more explicit
+> node like this (if only to make it easier accessible through
+> /proc/device-tree).
+>
+>> /firmware is already used IIRC. What if you have other firmware such
+>> as Trustzone?
+>
+> I'm not quite sure how Trusted Foundations works and whether it would
+> even make sense to use it in parallel to coreboot, but it seems to be
+> using the /firmware/trusted-foundations subnode so that should be
+> fine. "firmware" seems to be used by other firmware implementations
+> (like "samsung,secure-firmware") which are similar in nature to and
+> mutually exclusive with coreboot, so I thought the node makes sense.
+> (The kernel should use the compatible string to find it anyway, so a
+> future name clash would not be world-ending.)
+
+Right, coreboot really should go under /firmware/coreboot -- we
+already use /firmware/chromeos on chromebooks to specify
+chromeos-specific firmware properties, this follows that convention.
+
+The samsung,secure-firmware should probably also be moved to a
+subnode. The binding shouldn't require a specific location no matter
+what.
 
 
-> Thanks,
->     Levente Kurusa.
-
+-Olof
