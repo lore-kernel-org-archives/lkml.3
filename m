@@ -1,154 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566AbaFPQ4r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 12:56:47 -0400
-Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:50995
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751295AbaFPQ4o convert rfc822-to-8bit (ORCPT
+	id S1755586AbaFPQ5k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 12:57:40 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60964 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349AbaFPQ5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 12:56:44 -0400
-From: Stuart Yoder <stuart.yoder@freescale.com>
-To: Will Deacon <will.deacon@arm.com>, Varun Sethi <Varun.Sethi@freescale.com>
-CC: Thierry Reding <thierry.reding@gmail.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>, "Arnd Bergmann" <arnd@arndb.de>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "Grant Grundler" <grundler@chromium.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        "Rob Herring" <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
-Thread-Topic: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
-Thread-Index: AQHPdsaiUOp/jHgCJ0WWjZOTtpbJjZtZJRKAgABh1wCAAAcqgIAABQyAgAQdoQCAA2YSAIAAI08AgAG4pNCAEQ6xgIAAEv9A
-Date: Mon, 16 Jun 2014 16:56:32 +0000
-Message-ID: <8b0492b4697943a0b1f276ef42cc8223@DM2PR03MB352.namprd03.prod.outlook.com>
-References: <1400877218-4113-1-git-send-email-thierry.reding@gmail.com>
- <4545972.cM7IP1qTXQ@wuerfel>
- <CAL_Jsq+tkFNpjSEZboT+o69B_Z3a8e-ZVKaYDmLwtkyYoPy6VQ@mail.gmail.com>
- <5288123.eXagyPAxNq@wuerfel>
- <20140602104104.GD3855@e103592.cambridge.arm.com>
- <20140604143509.GF28484@ulmo> <20140604164132.GF6644@arm.com>
- <07321368d15d4ad9928ebb83af87e401@DM2PR03MB479.namprd03.prod.outlook.com>
- <20140616152739.GS16758@arm.com>
-In-Reply-To: <20140616152739.GS16758@arm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.168.49]
-x-microsoft-antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-x-forefront-prvs: 0244637DEA
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(199002)(24454002)(189002)(51704005)(377454003)(13464003)(164054003)(21056001)(33646001)(74316001)(74502001)(85852003)(4396001)(85306003)(76576001)(80022001)(19580405001)(50986999)(99286001)(83322001)(99396002)(83072002)(19580395003)(86362001)(92566001)(93886003)(31966008)(79102001)(74662001)(101416001)(81342001)(81542001)(76482001)(54356999)(105586001)(20776003)(64706001)(46102001)(66066001)(76176999)(87936001)(77982001)(2656002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB477;H:DM2PR03MB352.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=stuart.yoder@freescale.com; 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 16 Jun 2014 12:57:39 -0400
+Message-ID: <539F21F4.20206@infradead.org>
+Date: Mon, 16 Jun 2014 09:57:24 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Xishi Qiu <qiuxishi@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, aquini@redhat.com,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>
+CC: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH 8/8] doc: update Documentation/sysctl/vm.txt
+References: <539EB803.9070001@huawei.com>
+In-Reply-To: <539EB803.9070001@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Will Deacon [mailto:will.deacon@arm.com]
-> Sent: Monday, June 16, 2014 10:28 AM
-> To: Sethi Varun-B16395
-> Cc: Thierry Reding; Mark Rutland; devicetree@vger.kernel.org; linux-
-> samsung-soc@vger.kernel.org; Pawel Moll; Arnd Bergmann; Ian Campbell;
-> Grant Grundler; Stephen Warren; linux-kernel@vger.kernel.org; Marc
-> Zyngier; Linux IOMMU; Rob Herring; Kumar Gala; linux-
-> tegra@vger.kernel.org; Cho KyongHo; Dave P Martin; linux-arm-
-> kernel@lists.infradead.org; Yoder Stuart-B08248
-> Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree
-> bindings
+On 06/16/14 02:25, Xishi Qiu wrote:
+> Update the doc.
 > 
-> Hi Varun,
+> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+> ---
+>  Documentation/sysctl/vm.txt |   43 +++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 43 insertions(+), 0 deletions(-)
 > 
-> On Thu, Jun 05, 2014 at 08:10:19PM +0100, Varun Sethi wrote:
-> > > The set of StreamIDs that can be generated by a master is fixed in
-> the
-> > > hardware. The SMMU can then be programmed to map these incoming IDs
-> onto
-> > > a context ID (or a set of context IDs), which are the IDs used
-> internally
-> > > by the SMMU to find the page tables etc.
-> > >
-> > > The StreamID -> ContextID mapping is dynamic and controlled by
-> software.
-> > > The Master -> StreamIDs mapping is fixed in the hardware.
-> > The Master -> StreamIDs mapping may not always be fixed in the
-> hardware.
-> > At, least in our case we plan to program these via software. PCI
-> devices
-> > is one place where this mapping would have to be dynamic (based on the
-> > topology i.e. if the devices are connected to a bridge etc). Also, we
-> have
-> > a hot plug device architecture where the stream ID is software
-> > programmable.
-> >
-> > Other than that, based on the isolation requirements (iommu domain)
-> > software programmability offers greater flexibility.
+> diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+> index dd9d0e3..8008e53 100644
+> --- a/Documentation/sysctl/vm.txt
+> +++ b/Documentation/sysctl/vm.txt
+> @@ -20,6 +20,10 @@ Currently, these files are in /proc/sys/vm:
+>  
+>  - admin_reserve_kbytes
+>  - block_dump
+> +- cache_limit_mbytes
+> +- cache_limit_ratio
+> +- cache_reclaim_s
+> +- cache_reclaim_weight
+>  - compact_memory
+>  - dirty_background_bytes
+>  - dirty_background_ratio
+> @@ -97,6 +101,45 @@ information on block I/O debugging is in Documentation/laptops/laptop-mode.txt.
+>  
+>  ==============================================================
+>  
+> +cache_limit_mbytes
+> +
+> +This is used to limit page cache amount. The input unit is MB, value range
+> +is from 0 to totalram_pages. If this is set to 0, it will not limit page cache.
+
+Where does one find the value of totalram_pages?
+
+Is totalram_pages in MB or does totalram_pages need to be divided by some value
+to convert it to MB?
+
+> +When written to the file, cache_limit_ratio will be updated too.
+> +
+> +The default value is 0.
+> +
+> +==============================================================
+> +
+> +cache_limit_ratio
+> +
+> +This is used to limit page cache amount. The input unit is percent, value
+> +range is from 0 to 100. If this is set to 0, it will not limit page cache.
+> +When written to the file, cache_limit_mbytes will be updated too.
+> +
+> +The default value is 0.
+> +
+> +==============================================================
+> +
+> +cache_reclaim_s
+> +
+> +This is used to reclaim page cache in circles. The input unit is second,
+> +the minimum value is 0. If this is set to 0, it will disable the feature.
+> +
+> +The default value is 0.
+> +
+> +==============================================================
+> +
+> +cache_reclaim_weight
+> +
+> +This is used to speed up page cache reclaim. It depend on enabling
+
+                                                   depends on
+
+> +cache_limit_mbytes/cache_limit_ratio or cache_reclaim_s. Value range is
+> +from 1(slow) to 100(fast).
+> +
+> +The default value is 1.
+> +
+> +==============================================================
+> +
+>  compact_memory
+>  
+>  Available only when CONFIG_COMPACTION is set. When 1 is written to the file,
 > 
-> For the sake of consistency, I'd really like to treat the master ->
-> streamIDs mapping as fixed. If that means setting it once during boot in
-> your case, then so be it (ideally in the firmware). That way, we just
-> describe the fixed mapping to the kernel and the driver doesn't have to
-> worry about changing the mapping, especially given that that's likely to
-> be
-> highly error-prone once the SMMU is in us.
-> 
-> Do you have use-cases where you really need to change these mappings
-> dynamically?
-
-Yes.  In the case of a PCI bus-- you may not know in advance how many
-PCI devices there are until you probe the bus.   We have another FSL
-proprietary bus we call the "fsl-mc" bus that is similar.
-
-Another thing to consider-- starting with SMMUv2, as you know, there
-is a new distributed architecture with multiple TBUs and a centralized
-TCU that walks the SMMU page tables.  So instead of sprinkling multiple
-SMMUs all over an SoC you now have the option a 1 central TCU and sprinkling
-multiple TBUs around.   However, this means that the stream ID namespace
-is now global and can be pretty limited.  In the SMMU implementation we 
-have there are only 64 stream ID total for our Soc.  But we have many more
-masters than that.
-
-So we look at stream IDs as really corresponding to an 'isolation context'
-and not to a bus master.  An isolation context is the domain you are
-trying to isolate with the SMMU.  Devices that all belong to the same
-'isolation context' can share the same stream ID, since they share
-the same domain and page tables.
-
-So, perhaps by default some/most SMMU masters may have a default stream ID
-of 0x0 that is used by the host...and that could be represented
-statically in the device tree.
-
-But, we absolutely will need to dynamically set new stream IDs
-into masters when a new IOMMU 'domain' is created and devices
-are added to it.   All the devices in a domain will share
-the same stream ID.
-
-So whatever we do, let's please have an architecture flexible enough
-to allow for this.
-
-Thanks,
-Stuart
 
 
-
-
-
-
+-- 
+~Randy
