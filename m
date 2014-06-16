@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932689AbaFPSE2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 14:04:28 -0400
-Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:55055 "EHLO
-	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932256AbaFPSEW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 14:04:22 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlcHAHASn1NbtAal/2dsb2JhbABagw2rFgUBAQEBAQEFAZFnhz2BERd1hAsCJC8jgQkRN4hGAc8qF4VjiRMdhC0El16CZZNYg0I7
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, David Woodhouse <dwmw2@infradead.org>,
-        linux-mtd@lists.infradead.org
-Subject: [PATCH 1/1] fs/jffs2/xattr.c:  remove null test before kfree
-Date: Mon, 16 Jun 2014 20:02:49 +0200
-Message-Id: <1402941769-4539-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	id S932717AbaFPSEw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 14:04:52 -0400
+Received: from mga09.intel.com ([134.134.136.24]:63170 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932654AbaFPSEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 14:04:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,488,1400050800"; 
+   d="scan'208";a="529348976"
+Message-ID: <1402942350.15603.23.camel@rage>
+Subject: Re: [patch 3/5] futex: Split out the waiter check from
+ lookup_pi_state()
+From: Darren Hart <darren@dvhart.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Davidlohr Bueso <davidlohr@hp.com>,
+        Kees Cook <kees@outflux.net>, wad@chromium.org
+Date: Mon, 16 Jun 2014 11:12:30 -0700
+In-Reply-To: <20140611204237.180458410@linutronix.de>
+References: <20140611202744.676528190@linutronix.de>
+	 <20140611204237.180458410@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch warning:
-WARNING: kfree(NULL) is safe this check is probably not required
+On Wed, 2014-06-11 at 20:45 +0000, Thomas Gleixner wrote:
+> We want to be a bit more clever in futex_lock_pi_atomic() and separate
+> the possible states. Split out the waiter verification into a separate
+> function. No functional change.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/jffs2/xattr.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Reviewed for functional equivalence.
 
-diff --git a/fs/jffs2/xattr.c b/fs/jffs2/xattr.c
-index ad0f2e2..d72817a 100644
---- a/fs/jffs2/xattr.c
-+++ b/fs/jffs2/xattr.c
-@@ -756,8 +756,7 @@ void jffs2_clear_xattr_subsystem(struct jffs2_sb_info *c)
- 	for (i=0; i < XATTRINDEX_HASHSIZE; i++) {
- 		list_for_each_entry_safe(xd, _xd, &c->xattrindex[i], xindex) {
- 			list_del(&xd->xindex);
--			if (xd->xname)
--				kfree(xd->xname);
-+			kfree(xd->xname);
- 			jffs2_free_xattr_datum(xd);
- 		}
- 	}
+Reviewed-by: Darren Hart <darren@dvhart.com>
+
+
 -- 
-1.8.4.5
+Darren Hart
+Intel Open Source Technology Center
+
 
