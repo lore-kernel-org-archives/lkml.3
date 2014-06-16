@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567AbaFPIWb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 04:22:31 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:53752 "EHLO
+	id S1754615AbaFPIXw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 04:23:52 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:39339 "EHLO
 	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754386AbaFPIWa (ORCPT
+	with ESMTP id S1754379AbaFPIXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 04:22:30 -0400
+	Mon, 16 Jun 2014 04:23:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <1402679637-27611-2-git-send-email-markus.mayer@linaro.org>
+In-Reply-To: <1402679637-27611-3-git-send-email-markus.mayer@linaro.org>
 References: <1402679637-27611-1-git-send-email-markus.mayer@linaro.org>
-	<1402679637-27611-2-git-send-email-markus.mayer@linaro.org>
-Date: Mon, 16 Jun 2014 10:22:29 +0200
-Message-ID: <CAPDyKFoo+MUSGwZu6Z81g47TccDGYdWF5Vc1A5ETEvYrZOeeMA@mail.gmail.com>
-Subject: Re: [PATCH v4 1/2] mmc: sdhci: Use mmc core regulator infrastucture
+	<1402679637-27611-3-git-send-email-markus.mayer@linaro.org>
+Date: Mon, 16 Jun 2014 10:23:49 +0200
+Message-ID: <CAPDyKFp7ccn8yJqgs=49V32injEBG=95ANh1vHKXKpS9OyJvXQ@mail.gmail.com>
+Subject: Re: [PATCH v4 2/2] mmc: sdhci: Replace host->mmc with mmc where possible
 From: Ulf Hansson <ulf.hansson@linaro.org>
 To: Markus Mayer <markus.mayer@linaro.org>
 Cc: Chris Ball <chris@printf.net>, Tim Kryger <tim.kryger@gmail.com>,
@@ -27,254 +27,160 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 13 June 2014 19:13, Markus Mayer <markus.mayer@linaro.org> wrote:
-> From: Tim Kryger <tim.kryger@gmail.com>
+> After the switch to the MMC core regulator infrastucture, we already
+> have a local "mmc" pointer in various functions. There is no longer a
+> need to access the data structure via host->mmc.
 >
-> Switch the common SDHCI code over to use mmc_host's regulator pointers
-> and remove the ones in the sdhci_host structure.  Additionally, use the
-> common mmc_regulator_get_supply function to get the regulators and set
-> the ocr_avail mask.
->
-> This change sets the ocr_avail directly based upon the voltage ranges
-> supported which ensures ocr_avail is set correctly while allowing the
-> use of regulators that can't provide exactly 1.8v, 3.0v, or 3.3v.
->
-> Signed-off-by: Tim Kryger <tim.kryger@gmail.com>
 > Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
 > Reviewed-by: Matt Porter <mporter@linaro.org>
 
-Thanks!
+Hi Markus,
 
-Applied for next.
+Could you run checkpatch? There were some warnings to handle.
 
 Kind regards
-Uffe
+Ulf Hansson
 
 > ---
->  drivers/mmc/host/sdhci.c  | 97 ++++++++++++++++++-----------------------------
->  include/linux/mmc/sdhci.h |  3 --
->  2 files changed, 36 insertions(+), 64 deletions(-)
+>  drivers/mmc/host/sdhci.c | 30 +++++++++++++++---------------
+>  1 file changed, 15 insertions(+), 15 deletions(-)
 >
 > diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> index 47055f3..ee524b0 100644
+> index ee524b0..54b5304 100644
 > --- a/drivers/mmc/host/sdhci.c
 > +++ b/drivers/mmc/host/sdhci.c
-> @@ -1223,6 +1223,7 @@ EXPORT_SYMBOL_GPL(sdhci_set_clock);
->  static void sdhci_set_power(struct sdhci_host *host, unsigned char mode,
->                             unsigned short vdd)
->  {
-> +       struct mmc_host *mmc = host->mmc;
->         u8 pwr = 0;
+> @@ -1287,7 +1287,7 @@ static void sdhci_set_power(struct sdhci_host *host, unsigned char mode,
 >
->         if (mode != MMC_POWER_OFF) {
-> @@ -1284,9 +1285,9 @@ static void sdhci_set_power(struct sdhci_host *host, unsigned char mode,
->                         mdelay(10);
->         }
->
-> -       if (host->vmmc) {
-> +       if (!IS_ERR(mmc->supply.vmmc)) {
+>         if (!IS_ERR(mmc->supply.vmmc)) {
 >                 spin_unlock_irq(&host->lock);
-> -               mmc_regulator_set_ocr(host->mmc, host->vmmc, vdd);
-> +               mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, vdd);
+> -               mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, vdd);
+> +               mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, vdd);
 >                 spin_lock_irq(&host->lock);
 >         }
 >  }
-> @@ -1440,13 +1441,15 @@ static void sdhci_do_set_ios(struct sdhci_host *host, struct mmc_ios *ios)
->  {
->         unsigned long flags;
->         u8 ctrl;
-> +       struct mmc_host *mmc = host->mmc;
->
->         spin_lock_irqsave(&host->lock, flags);
->
->         if (host->flags & SDHCI_DEVICE_DEAD) {
+> @@ -1449,7 +1449,7 @@ static void sdhci_do_set_ios(struct sdhci_host *host, struct mmc_ios *ios)
 >                 spin_unlock_irqrestore(&host->lock, flags);
-> -               if (host->vmmc && ios->power_mode == MMC_POWER_OFF)
-> -                       mmc_regulator_set_ocr(host->mmc, host->vmmc, 0);
-> +               if (!IS_ERR(mmc->supply.vmmc) &&
-> +                   ios->power_mode == MMC_POWER_OFF)
-> +                       mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, 0);
+>                 if (!IS_ERR(mmc->supply.vmmc) &&
+>                     ios->power_mode == MMC_POWER_OFF)
+> -                       mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, 0);
+> +                       mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, 0);
 >                 return;
 >         }
 >
-> @@ -1707,6 +1710,7 @@ static void sdhci_enable_sdio_irq(struct mmc_host *mmc, int enable)
->  static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
->                                                 struct mmc_ios *ios)
->  {
-> +       struct mmc_host *mmc = host->mmc;
->         u16 ctrl;
->         int ret;
->
-> @@ -1725,8 +1729,9 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
->                 ctrl &= ~SDHCI_CTRL_VDD_180;
->                 sdhci_writew(host, ctrl, SDHCI_HOST_CONTROL2);
->
-> -               if (host->vqmmc) {
-> -                       ret = regulator_set_voltage(host->vqmmc, 2700000, 3600000);
-> +               if (!IS_ERR(mmc->supply.vqmmc)) {
-> +                       ret = regulator_set_voltage(mmc->supply.vqmmc, 2700000,
-> +                                                   3600000);
+> @@ -1734,7 +1734,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
+>                                                     3600000);
 >                         if (ret) {
 >                                 pr_warning("%s: Switching to 3.3V signalling voltage "
->                                                 " failed\n", mmc_hostname(host->mmc));
-> @@ -1746,8 +1751,8 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
+> -                                               " failed\n", mmc_hostname(host->mmc));
+> +                                               " failed\n", mmc_hostname(mmc));
+>                                 return -EIO;
+>                         }
+>                 }
+> @@ -1747,7 +1747,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
+>                         return 0;
+>
+>                 pr_warning("%s: 3.3V regulator output did not became stable\n",
+> -                               mmc_hostname(host->mmc));
+> +                               mmc_hostname(mmc));
 >
 >                 return -EAGAIN;
 >         case MMC_SIGNAL_VOLTAGE_180:
-> -               if (host->vqmmc) {
-> -                       ret = regulator_set_voltage(host->vqmmc,
-> +               if (!IS_ERR(mmc->supply.vqmmc)) {
-> +                       ret = regulator_set_voltage(mmc->supply.vqmmc,
+> @@ -1756,7 +1756,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
 >                                         1700000, 1950000);
 >                         if (ret) {
 >                                 pr_warning("%s: Switching to 1.8V signalling voltage "
-> @@ -1776,8 +1781,9 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
+> -                                               " failed\n", mmc_hostname(host->mmc));
+> +                                               " failed\n", mmc_hostname(mmc));
+>                                 return -EIO;
+>                         }
+>                 }
+> @@ -1777,7 +1777,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
+>                         return 0;
+>
+>                 pr_warning("%s: 1.8V regulator output did not became stable\n",
+> -                               mmc_hostname(host->mmc));
+> +                               mmc_hostname(mmc));
 >
 >                 return -EAGAIN;
 >         case MMC_SIGNAL_VOLTAGE_120:
-> -               if (host->vqmmc) {
-> -                       ret = regulator_set_voltage(host->vqmmc, 1100000, 1300000);
-> +               if (!IS_ERR(mmc->supply.vqmmc)) {
-> +                       ret = regulator_set_voltage(mmc->supply.vqmmc, 1100000,
-> +                                                   1300000);
+> @@ -1786,7 +1786,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
+>                                                     1300000);
 >                         if (ret) {
 >                                 pr_warning("%s: Switching to 1.2V signalling voltage "
->                                                 " failed\n", mmc_hostname(host->mmc));
-> @@ -2962,25 +2968,22 @@ int sdhci_add_host(struct sdhci_host *host)
->             !(host->mmc->caps & MMC_CAP_NONREMOVABLE))
+> -                                               " failed\n", mmc_hostname(host->mmc));
+> +                                               " failed\n", mmc_hostname(mmc));
+>                                 return -EIO;
+>                         }
+>                 }
+> @@ -2826,12 +2826,12 @@ int sdhci_add_host(struct sdhci_host *host)
+>                  * (128) and potentially one alignment transfer for
+>                  * each of those entries.
+>                  */
+> -               host->adma_desc = dma_alloc_coherent(mmc_dev(host->mmc),
+> +               host->adma_desc = dma_alloc_coherent(mmc_dev(mmc),
+>                                                      ADMA_SIZE, &host->adma_addr,
+>                                                      GFP_KERNEL);
+>                 host->align_buffer = kmalloc(128 * 4, GFP_KERNEL);
+>                 if (!host->adma_desc || !host->align_buffer) {
+> -                       dma_free_coherent(mmc_dev(host->mmc), ADMA_SIZE,
+> +                       dma_free_coherent(mmc_dev(mmc), ADMA_SIZE,
+>                                           host->adma_desc, host->adma_addr);
+>                         kfree(host->align_buffer);
+>                         pr_warning("%s: Unable to allocate ADMA "
+> @@ -2844,7 +2844,7 @@ int sdhci_add_host(struct sdhci_host *host)
+>                         pr_warning("%s: unable to allocate aligned ADMA descriptor\n",
+>                                    mmc_hostname(mmc));
+>                         host->flags &= ~SDHCI_USE_ADMA;
+> -                       dma_free_coherent(mmc_dev(host->mmc), ADMA_SIZE,
+> +                       dma_free_coherent(mmc_dev(mmc), ADMA_SIZE,
+>                                           host->adma_desc, host->adma_addr);
+>                         kfree(host->align_buffer);
+>                         host->adma_desc = NULL;
+> @@ -2859,7 +2859,7 @@ int sdhci_add_host(struct sdhci_host *host)
+>          */
+>         if (!(host->flags & (SDHCI_USE_SDMA | SDHCI_USE_ADMA))) {
+>                 host->dma_mask = DMA_BIT_MASK(64);
+> -               mmc_dev(host->mmc)->dma_mask = &host->dma_mask;
+> +               mmc_dev(mmc)->dma_mask = &host->dma_mask;
+>         }
+>
+>         if (host->version >= SDHCI_SPEC_300)
+> @@ -2965,7 +2965,7 @@ int sdhci_add_host(struct sdhci_host *host)
+>                 mmc->caps |= MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED;
+>
+>         if ((host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION) &&
+> -           !(host->mmc->caps & MMC_CAP_NONREMOVABLE))
+> +           !(mmc->caps & MMC_CAP_NONREMOVABLE))
 >                 mmc->caps |= MMC_CAP_NEEDS_POLL;
 >
-> +       /* If there are external regulators, get them */
-> +       if (mmc_regulator_get_supply(mmc) == -EPROBE_DEFER)
-> +               return -EPROBE_DEFER;
-> +
->         /* If vqmmc regulator and no 1.8V signalling, then there's no UHS */
-> -       host->vqmmc = regulator_get_optional(mmc_dev(mmc), "vqmmc");
-> -       if (IS_ERR_OR_NULL(host->vqmmc)) {
-> -               if (PTR_ERR(host->vqmmc) < 0) {
-> -                       pr_info("%s: no vqmmc regulator found\n",
-> -                               mmc_hostname(mmc));
-> -                       host->vqmmc = NULL;
-> -               }
-> -       } else {
-> -               ret = regulator_enable(host->vqmmc);
-> -               if (!regulator_is_supported_voltage(host->vqmmc, 1700000,
-> -                       1950000))
-> +       if (!IS_ERR(mmc->supply.vqmmc)) {
-> +               ret = regulator_enable(mmc->supply.vqmmc);
-> +               if (!regulator_is_supported_voltage(mmc->supply.vqmmc, 1700000,
-> +                                                   1950000))
->                         caps[1] &= ~(SDHCI_SUPPORT_SDR104 |
->                                         SDHCI_SUPPORT_SDR50 |
->                                         SDHCI_SUPPORT_DDR50);
->                 if (ret) {
->                         pr_warn("%s: Failed to enable vqmmc regulator: %d\n",
->                                 mmc_hostname(mmc), ret);
-> -                       host->vqmmc = NULL;
-> +                       mmc->supply.vqmmc = NULL;
->                 }
->         }
+>         /* If there are external regulators, get them */
+> @@ -3261,7 +3261,7 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
 >
-> @@ -3041,34 +3044,6 @@ int sdhci_add_host(struct sdhci_host *host)
+>                 if (host->mrq) {
+>                         pr_err("%s: Controller removed during "
+> -                               " transfer!\n", mmc_hostname(host->mmc));
+> +                               " transfer!\n", mmc_hostname(mmc));
 >
->         ocr_avail = 0;
+>                         host->mrq->cmd->error = -ENOMEDIUM;
+>                         tasklet_schedule(&host->finish_tasklet);
+> @@ -3272,7 +3272,7 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
 >
-> -       host->vmmc = regulator_get_optional(mmc_dev(mmc), "vmmc");
-> -       if (IS_ERR_OR_NULL(host->vmmc)) {
-> -               if (PTR_ERR(host->vmmc) < 0) {
-> -                       pr_info("%s: no vmmc regulator found\n",
-> -                               mmc_hostname(mmc));
-> -                       host->vmmc = NULL;
-> -               }
-> -       }
-> -
-> -#ifdef CONFIG_REGULATOR
-> -       /*
-> -        * Voltage range check makes sense only if regulator reports
-> -        * any voltage value.
-> -        */
-> -       if (host->vmmc && regulator_get_voltage(host->vmmc) > 0) {
-> -               ret = regulator_is_supported_voltage(host->vmmc, 2700000,
-> -                       3600000);
-> -               if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_330)))
-> -                       caps[0] &= ~SDHCI_CAN_VDD_330;
-> -               if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_300)))
-> -                       caps[0] &= ~SDHCI_CAN_VDD_300;
-> -               ret = regulator_is_supported_voltage(host->vmmc, 1700000,
-> -                       1950000);
-> -               if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_180)))
-> -                       caps[0] &= ~SDHCI_CAN_VDD_180;
-> -       }
-> -#endif /* CONFIG_REGULATOR */
-> -
->         /*
->          * According to SD Host Controller spec v3.00, if the Host System
->          * can afford more than 150mA, Host Driver should set XPC to 1. Also
-> @@ -3077,8 +3052,8 @@ int sdhci_add_host(struct sdhci_host *host)
->          * value.
->          */
->         max_current_caps = sdhci_readl(host, SDHCI_MAX_CURRENT);
-> -       if (!max_current_caps && host->vmmc) {
-> -               u32 curr = regulator_get_current_limit(host->vmmc);
-> +       if (!max_current_caps && !IS_ERR(mmc->supply.vmmc)) {
-> +               u32 curr = regulator_get_current_limit(mmc->supply.vmmc);
->                 if (curr > 0) {
+>         sdhci_disable_card_detection(host);
 >
->                         /* convert to SDHCI_MAX_CURRENT format */
-> @@ -3118,8 +3093,11 @@ int sdhci_add_host(struct sdhci_host *host)
->                                    SDHCI_MAX_CURRENT_MULTIPLIER;
->         }
+> -       mmc_remove_host(host->mmc);
+> +       mmc_remove_host(mmc);
 >
-> +       if (mmc->ocr_avail)
-> +               ocr_avail &= mmc->ocr_avail;
-> +
->         if (host->ocr_mask)
-> -               ocr_avail = host->ocr_mask;
-> +               ocr_avail &= host->ocr_mask;
->
->         mmc->ocr_avail = ocr_avail;
->         mmc->ocr_avail_sdio = ocr_avail;
-> @@ -3273,6 +3251,7 @@ EXPORT_SYMBOL_GPL(sdhci_add_host);
->
->  void sdhci_remove_host(struct sdhci_host *host, int dead)
->  {
-> +       struct mmc_host *mmc = host->mmc;
->         unsigned long flags;
->
->         if (dead) {
-> @@ -3310,15 +3289,11 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
->
->         tasklet_kill(&host->finish_tasklet);
->
-> -       if (host->vmmc) {
-> -               regulator_disable(host->vmmc);
-> -               regulator_put(host->vmmc);
-> -       }
-> +       if (!IS_ERR(mmc->supply.vmmc))
-> +               regulator_disable(mmc->supply.vmmc);
->
-> -       if (host->vqmmc) {
-> -               regulator_disable(host->vqmmc);
-> -               regulator_put(host->vqmmc);
-> -       }
-> +       if (!IS_ERR(mmc->supply.vqmmc))
-> +               regulator_disable(mmc->supply.vqmmc);
+>  #ifdef SDHCI_USE_LEDS_CLASS
+>         led_classdev_unregister(&host->led);
+> @@ -3296,7 +3296,7 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
+>                 regulator_disable(mmc->supply.vqmmc);
 >
 >         if (host->adma_desc)
->                 dma_free_coherent(mmc_dev(host->mmc), ADMA_SIZE,
-> diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
-> index 08abe99..09ebe57 100644
-> --- a/include/linux/mmc/sdhci.h
-> +++ b/include/linux/mmc/sdhci.h
-> @@ -104,9 +104,6 @@ struct sdhci_host {
+> -               dma_free_coherent(mmc_dev(host->mmc), ADMA_SIZE,
+> +               dma_free_coherent(mmc_dev(mmc), ADMA_SIZE,
+>                                   host->adma_desc, host->adma_addr);
+>         kfree(host->align_buffer);
 >
->         const struct sdhci_ops *ops;    /* Low level hw interface */
->
-> -       struct regulator *vmmc;         /* Power regulator (vmmc) */
-> -       struct regulator *vqmmc;        /* Signaling regulator (vccq) */
-> -
->         /* Internal data */
->         struct mmc_host *mmc;   /* MMC structure */
->         u64 dma_mask;           /* custom DMA mask */
 > --
 > 1.9.1
 >
