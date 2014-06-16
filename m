@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932290AbaFPQvw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 12:51:52 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44109 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754490AbaFPQvt (ORCPT
+	id S932376AbaFPQws (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 12:52:48 -0400
+Received: from mx-rz-3.rrze.uni-erlangen.de ([131.188.11.22]:37370 "EHLO
+	mx-rz-3.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932070AbaFPQwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 12:51:49 -0400
-Date: Mon, 16 Jun 2014 17:51:23 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Doug Anderson <dianders@google.com>
-Cc: Tushar Behera <trblinux@gmail.com>, Tushar Behera <tushar.b@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Kevin Hilman <khilman@linaro.org>
-Message-ID: <20140616165123.GA21661@sirena.org.uk>
-References: <1402464739-19044-1-git-send-email-tushar.b@samsung.com>
- <1402464739-19044-4-git-send-email-tushar.b@samsung.com>
- <CAD=FV=XqqP7+xDOAKCixivzgaO0xvJX7L+CCN+unAEuf-6aUbQ@mail.gmail.com>
- <539ED2C0.8030405@gmail.com>
- <CAD=FV=UaaRQVq3TmXMTv9OkER+zORC89YfPNjwZwfCQKmuavrw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EeQfGwPcQSOJBaQU"
-Content-Disposition: inline
-In-Reply-To: <CAD=FV=UaaRQVq3TmXMTv9OkER+zORC89YfPNjwZwfCQKmuavrw@mail.gmail.com>
-X-Cookie: Shipping not included.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/3] ARM: dts: Enable audio support for Peach-pi board
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 16 Jun 2014 12:52:45 -0400
+X-RRZE-Submit-IP: 131.188.42.190
+From: Stephan Gabert <stephan.gabert@fau.de>
+To: marcel@holtmann.org, gustavo@padovan.org, johan.hedberg@gmail.com
+Cc: linux-bluetooth@vger.kernel.or, linux-kernel@vger.kernel.org,
+        nicolas.pfeiffer@fau.de, linux-kernel@i4.cs.fau.de,
+        Stephan Gabert <stephan.gabert@fau.de>
+Subject: [PATCH] bluetooth/Kconfig: checkpatch: removed trailing whitespaces
+Date: Mon, 16 Jun 2014 18:52:25 +0200
+Message-Id: <1402937545-2362-1-git-send-email-stephan.gabert@fau.de>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fixed a coding style issue. Removed trailing whitespaces in
+bluetooth/Kconfig.
 
---EeQfGwPcQSOJBaQU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This patch applies to v2.6.12-rc2 and above.
 
-On Mon, Jun 16, 2014 at 09:49:26AM -0700, Doug Anderson wrote:
+Signed-off-by: Stephan Gabert <stephan.gabert@fau.de>
+Signed-off-by: Nicolas Pfeiffer <nicolas.pfeiffer@fau.de>
+---
+ drivers/bluetooth/Kconfig | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-> Yes please.  I think there's supposed to be some official ordering of
-> things.  If anyone reading this has a pointer to the official sort
-> order of things in the device tree I'd love to see it!  ;)
+diff --git a/drivers/bluetooth/Kconfig b/drivers/bluetooth/Kconfig
+index f5ce64e..fa7fd62 100644
+--- a/drivers/bluetooth/Kconfig
++++ b/drivers/bluetooth/Kconfig
+@@ -30,8 +30,8 @@ config BT_HCIUART
+ 	help
+ 	  Bluetooth HCI UART driver.
+ 	  This driver is required if you want to use Bluetooth devices with
+-	  serial port interface. You will also need this driver if you have 
+-	  UART based Bluetooth PCMCIA and CF devices like Xircom Credit Card 
++	  serial port interface. You will also need this driver if you have
++	  UART based Bluetooth PCMCIA and CF devices like Xircom Credit Card
+ 	  adapter and BrainBoxes Bluetooth PC Card.
+ 
+ 	  Say Y here to compile support for Bluetooth UART devices into the
+@@ -41,9 +41,9 @@ config BT_HCIUART_H4
+ 	bool "UART (H4) protocol support"
+ 	depends on BT_HCIUART
+ 	help
+-	  UART (H4) is serial protocol for communication between Bluetooth 
+-	  device and host. This protocol is required for most Bluetooth devices 
+-	  with UART interface, including PCMCIA and CF cards. 
++	  UART (H4) is serial protocol for communication between Bluetooth
++	  device and host. This protocol is required for most Bluetooth devices
++	  with UART interface, including PCMCIA and CF cards.
+ 
+ 	  Say Y here to compile support for HCI UART (H4) protocol.
+ 
+@@ -52,7 +52,7 @@ config BT_HCIUART_BCSP
+ 	depends on BT_HCIUART
+ 	select BITREVERSE
+ 	help
+-	  BCSP (BlueCore Serial Protocol) is serial protocol for communication 
++	  BCSP (BlueCore Serial Protocol) is serial protocol for communication
+ 	  between Bluetooth device and host. This protocol is required for non
+ 	  USB Bluetooth devices based on CSR BlueCore chip, including PCMCIA and
+ 	  CF cards.
+-- 
+1.9.1
 
-Most exact first I believe?
-
---EeQfGwPcQSOJBaQU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTnyCIAAoJELSic+t+oim9DaQP/A9OimSgnv5qMFconyQiIIKR
-wRSdKuGqtwMXdM4cm4umb3FDD0zSF0crORL5xxyoRoHMcUDAaigYf6aqf+0FvYyq
-aqxUwpuCKFL63eCsw5r0OkPTu8G6+ZV4aWhCXaouymG2KHVRQcWWUbmhGmaiCtjS
-pizv1rvMvZsf8i+ikG7IKXmoByAuus4MS8XCqzgdITxmKhHeir29Fr61KANqUTkJ
-NM8wNBoLivd4L0kn75EG8pvGWdgOV1hlP3NiJYbgilOcrfiIqTQ+wTKrZtG8E+ld
-Ry9dLzrK6qQUUkxMJv3NAzqgV8a6vT2dqbyM09oVXuEtZs66Vt11bbFPA4bUsebY
-X+vMlS+CkspuXWWx+qX1zOqpsFIXJIAN5I7Rd52HjBlP2GSsaLRChy4+j9Lgorg9
-GUsI6p0XfOKjspwMdI2RC6WAycdcXZUp9Y63mpPyh1z8xP7kKoGrAT9CjTZ/EYCp
-FhnbEVdYBRDsj0TKTxjl8sU9iOZUSy+3KHFfsYVP0i3FUCMVEIAwCtvZLaRaWdVx
-KjkKu2AMDCNZgsj8uAFUI7cJm+dXG3qBPXMjt9ayWs46LEeNNqUPgJ/14D+uVlDZ
-weAk1qP8IjRCji9wlj79n8XtXR56960jQ85dpgunXRlOTE14k1kTGLkbnTsKzeJJ
-E+7JqJWJLAdhF9QN54/7
-=BElH
------END PGP SIGNATURE-----
-
---EeQfGwPcQSOJBaQU--
