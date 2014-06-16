@@ -1,40 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932857AbaFPSrs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 14:47:48 -0400
-Received: from mail-ie0-f193.google.com ([209.85.223.193]:36222 "EHLO
-	mail-ie0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932198AbaFPSrq (ORCPT
+	id S932876AbaFPSry (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 14:47:54 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:35473 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932859AbaFPSrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 14:47:46 -0400
-From: Nicholas Krause <xerofoify@gmail.com>
-To: swise@chelsio.com
-Cc: roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
-        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2] iw_cxgb4: in send_flowc(), handle a skb return from get_skb()
-Date: Mon, 16 Jun 2014 14:47:41 -0400
-Message-Id: <1402944461-7940-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
-Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+	Mon, 16 Jun 2014 14:47:49 -0400
+Date: Mon, 16 Jun 2014 14:47:46 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+cc: Kevin Hilman <khilman@linaro.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Inderpal Singh <inderpal.s@samsung.com>,
+        Thomas Abraham <thomas.ab@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Tushar Behera <trblinux@gmail.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ARM: EXYNOS: mcpm: Don't rely on firmware's
+ secondary_cpu_start
+In-Reply-To: <CAD=FV=XYBSkx_3jzZ2G=WuEYweiejna7KionneqUkEVPx3_E-w@mail.gmail.com>
+Message-ID: <alpine.LFD.2.11.1406161447190.16842@knanqh.ubzr>
+References: <1402090985-8061-1-git-send-email-dianders@chromium.org> <1402096465-13218-1-git-send-email-dianders@chromium.org> <7htx7uq7k1.fsf@paris.lan> <CAL1qeaGv+hBCr8oqs-E2j_Qh0Z=ZTVEaM-gdyu286Snu4otbMA@mail.gmail.com> <alpine.LFD.2.11.1406091617181.25775@knanqh.ubzr>
+ <CAGa+x87puSoPftG6ddGTVtxOOxoUg_dLmMmZUHm-j6pjFuhr=g@mail.gmail.com> <alpine.LFD.2.11.1406091649290.25775@knanqh.ubzr> <CAD=FV=XYBSkx_3jzZ2G=WuEYweiejna7KionneqUkEVPx3_E-w@mail.gmail.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/drivers/infiniband/hw/cxgb4/cm.c b/drivers/infiniband/hw/cxgb4/cm.c
-index 5e153f6..e0c43a3 100644
---- a/drivers/infiniband/hw/cxgb4/cm.c
-+++ b/drivers/infiniband/hw/cxgb4/cm.c
-@@ -457,6 +457,10 @@ static void send_flowc(struct c4iw_ep *ep, struct sk_buff *skb)
- 	int i;
- 
- 	skb = get_skb(skb, flowclen, GFP_KERNEL);
-+	if (!skb) {
-+		kfree_skb();
-+	pr_warn(MOD "%s failed to allocate skb.\n", __func__);
-+	}
- 	flowc = (struct fw_flowc_wr *)__skb_put(skb, flowclen);
- 
- 	flowc->op_to_nparams = cpu_to_be32(FW_WR_OP(FW_FLOWC_WR) |
--- 
-1.9.1
+On Mon, 16 Jun 2014, Doug Anderson wrote:
 
+> Nicolas,
+> 
+> On Mon, Jun 9, 2014 at 1:55 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> > On Mon, 9 Jun 2014, Kevin Hilman wrote:
+> >
+> >> On Mon, Jun 9, 2014 at 1:22 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> >> > On Mon, 9 Jun 2014, Andrew Bresticker wrote:
+> >> >
+> >> >> > [1] While waiting for the forth-coming patch from Andrew to enable the
+> >> >> >     CCI port for the boot cluster), I do this from u-boot before starting
+> >> >> >     the kernel (based on earlier email from Doug):
+> >> >> >
+> >> >> >     mw.l 10d25000 3  # Enable CCI from U-Boot
+> >> >>
+> >> >> From the other thread, it sounds like Nicolas wants enabling of the
+> >> >> boot cluster's CCI port to be done unconditionally for all MCPM
+> >> >> platforms.  Nicolas, are you preparing a patch for this or should I?
+> >> >
+> >> > I would like confirmation this indeed solves your problem first before I
+> >> > go ahead with it.
+> >>
+> >> FYI... I confirmed on the other thread.  It works on the Chromebook2.
+> >
+> > OK I'll clean it up for mainline.
+> 
+> I just wanted to double-check that this is still on your list of
+> things to do.  If not then please let us know!  :)
+
+It is.
+
+
+Nicolas
