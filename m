@@ -1,63 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922AbaFPM6F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 08:58:05 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:35490 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775AbaFPM6C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 08:58:02 -0400
+	id S1753083AbaFPM7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 08:59:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58145 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750953AbaFPM7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 08:59:20 -0400
+Date: Mon, 16 Jun 2014 14:59:15 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH 2/2] memcg: Allow guarantee reclaim
+Message-ID: <20140616125915.GB16915@dhcp22.suse.cz>
+References: <20140611075729.GA4520@dhcp22.suse.cz>
+ <1402473624-13827-1-git-send-email-mhocko@suse.cz>
+ <1402473624-13827-2-git-send-email-mhocko@suse.cz>
+ <20140611153631.GH2878@cmpxchg.org>
+ <20140612132207.GA32720@dhcp22.suse.cz>
+ <20140612135600.GI2878@cmpxchg.org>
+ <20140612142237.GB32720@dhcp22.suse.cz>
+ <20140612161733.GC23606@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <1402916796-1450-1-git-send-email-peter.griffin@linaro.org>
-References: <1402916796-1450-1-git-send-email-peter.griffin@linaro.org>
-Date: Mon, 16 Jun 2014 14:58:01 +0200
-Message-ID: <CAPDyKFr01qP26kEr3-3BwXoPFjU_E842mrFvFL_MHKAotNSO8Q@mail.gmail.com>
-Subject: Re: [PATCH] mmc: core: Fix DT documentation of eMMC high-speed DDR
- 1.8/1.2V bindings.
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Peter Griffin <peter.griffin@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Ball <chris@printf.net>, Jaehoon Chung <jh80.chung@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140612161733.GC23606@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 June 2014 13:06, Peter Griffin <peter.griffin@linaro.org> wrote:
-> Currently the documentation doesn't match the code in mmc_of_parse. This
-> patch rectifies this.
->
-> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+On Thu 12-06-14 12:17:33, Tejun Heo wrote:
+> Hello, Michal.
+> 
+> On Thu, Jun 12, 2014 at 04:22:37PM +0200, Michal Hocko wrote:
+> > The primary question would be, whether this is is the best transition
+> > strategy. I do not know how many users apart from developers are really
+> > using unified hierarchy. I would be worried that we merge a feature which
+> > will not be used for a long time.
+> 
+> I'm planning to drop __DEVEL__ mask from the unified hierarchy in a
+> cycle, at most two. 
 
-Thanks! Applied to my mmc tree for next.
+OK, I am obviously behind the current cgroup core changes. I thought
+that unified hierarchy will be for development only for much more time.
 
-Kind regards
-Uffe
+> The biggest hold up at the moment is
+> straightening out the interfaces and interaction between memcg and
+> blkcg because I think it'd be silly to have to go through another
+> round of interface versioning effort right after transitioning to
+> unified hierarchy.  I'm not too confident whether it'd be possible to
+> get blkcg completely in shape by that time, but, if that takes too
+> long, I'll just leave blkcg behind temporarily.  So, at least from
+> kernel side, it's not gonna be too long.
+> 
+> There sure is a question of how fast userland will move to the new
+> interface. 
 
-> ---
->  Documentation/devicetree/bindings/mmc/mmc.txt | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/mmc/mmc.txt b/Documentation/devicetree/bindings/mmc/mmc.txt
-> index 9dce540..9c96033 100644
-> --- a/Documentation/devicetree/bindings/mmc/mmc.txt
-> +++ b/Documentation/devicetree/bindings/mmc/mmc.txt
-> @@ -34,8 +34,8 @@ Optional properties:
->  - cap-power-off-card: powering off the card is safe
->  - cap-sdio-irq: enable SDIO IRQ signalling on this interface
->  - full-pwr-cycle: full power cycle of the card is supported
-> -- mmc-highspeed-ddr-1_8v: eMMC high-speed DDR mode(1.8V I/O) is supported
-> -- mmc-highspeed-ddr-1_2v: eMMC high-speed DDR mode(1.2V I/O) is supported
-> +- mmc-ddr-1_8v: eMMC high-speed DDR mode(1.8V I/O) is supported
-> +- mmc-ddr-1_2v: eMMC high-speed DDR mode(1.2V I/O) is supported
->  - mmc-hs200-1_8v: eMMC HS200 mode(1.8V I/O) is supported
->  - mmc-hs200-1_2v: eMMC HS200 mode(1.2V I/O) is supported
->
-> --
-> 1.9.1
->
+Yeah, I was mostly thinking about those who would need to to bigger
+changes. AFAIR threads will no longer be distributable between groups.
+
+> Some are already playing with unified hierarchy and
+> planning to migrate as soon as possible but there sure will be others
+> who will take more time.  Can't tell for sure, but the thing is that
+> migration to min/low/high/max scheme is a signficant migration effort
+> too, so I'm not sure how much we'd gain by doing that separately.
+> It'd be an extra transition step for userland (optional but still),
+> more combinations of configration to handle for memcg, and it's not
+> like unified hierarchy is that difficult to transition to.
+> 
+> > Moreover, if somebody wants to transition from soft limit then it would
+> > be really hard because switching to unified hierarchy might be a no-go.
+> 
+> Why would that be a no-go? 
+
+I remember discussions about per-thread distributions and some other
+things missing from the new API.
+
+> Its usage is mostly similar with
+> tranditional hierarchies and can be used with other hierarchies, so
+> while it'd take some adaptation, in most cases gradual transition
+> shouldn't be a big problem.
+
+OK
+
+> > I think that it is clear that we should deprecate soft_limit ASAP. I
+> > also think it wont't hurt to have min, low, high in both old and unified
+> > API and strongly warn if somebody tries to use soft_limit along with any
+> > of the new APIs in the first step. Later we can even forbid any
+> > combination by a hard failure.
+> 
+> I don't quite understand how you plan to deprecate it.  Sure you can
+> fail with -EINVAL or whatnot when the wrong combination
+
+Yes, I was thinking that direction. First warn and then EINVAL later.
+
+> is used but I don't think there's any chance of removing the knob.
+> There's a reason why we're introducing a new version of the whole
+> cgroup interface which can co-exist with the existing one after all.
+> If you wanna version memcg interface separately, maybe that'd work but
+> it sounds like a lot of extra hassle for not much gain.
+
+No, I didn't mean to version the interface. I just wanted to have
+gradual transition for potential soft_limit users.
+
+Maybe I am misunderstanding something but I thought that new version of
+API will contain all knobs which are not marked .flags = CFTYPE_INSANE
+while the old API will contain all of them.
+-- 
+Michal Hocko
+SUSE Labs
