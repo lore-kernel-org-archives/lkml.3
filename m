@@ -1,139 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932756AbaFPScX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 14:32:23 -0400
-Received: from mail-pb0-f73.google.com ([209.85.160.73]:43787 "EHLO
-	mail-pb0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147AbaFPScV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 14:32:21 -0400
-From: Simon Que <sque@chromium.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Sonny Rao <sonnyrao@chromium.org>, linux-kernel@vger.kernel.org,
-        Simon Que <sque@chromium.org>
-Subject: [PATCH v2] perf: Get kernel start address by symbol name
-Date: Mon, 16 Jun 2014 11:32:09 -0700
-Message-Id: <1402943529-13244-1-git-send-email-sque@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
+	id S932618AbaFPSec (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 14:34:32 -0400
+Received: from linode.aoot.com ([69.164.194.13]:56925 "EHLO linode.aoot.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932195AbaFPSeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 14:34:31 -0400
+Message-ID: <539F38B3.2020405@opengridcomputing.com>
+Date: Mon, 16 Jun 2014 13:34:27 -0500
+From: Steve Wise <swise@opengridcomputing.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Nicholas Krause <xerofoify@gmail.com>, swise@chelsio.com
+CC: roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
+        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] infinibad: fix memory leak in function send_flowc
+References: <1402943456-7532-1-git-send-email-xerofoify@gmail.com>
+In-Reply-To: <1402943456-7532-1-git-send-email-xerofoify@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function machine__get_kernel_start_addr() was taking the first symbol
-of kallsyms as the start address. This is incorrect in certain cases
-where the first symbol is something at 0, while the actual kernel
-functions begin at a later point (e.g. 0x80200000).
+On 6/16/2014 1:30 PM, Nicholas Krause wrote:
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> ---
+>   drivers/infiniband/hw/cxgb4/cm.c | 5 ++++-
+>   1 file changed, 4 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/infiniband/hw/cxgb4/cm.c b/drivers/infiniband/hw/cxgb4/cm.c
+> index 5e153f6..c518411 100644
+> --- a/drivers/infiniband/hw/cxgb4/cm.c
+> +++ b/drivers/infiniband/hw/cxgb4/cm.c
+> @@ -455,7 +455,10 @@ static void send_flowc(struct c4iw_ep *ep, struct sk_buff *skb)
+>   	unsigned int flowclen = 80;
+>   	struct fw_flowc_wr *flowc;
+>   	int i;
+>
+> +	if (!skb) {
+> +		kfree_skb();
+> +		pr_warn(MOD "%s failed to allocate skb.\n", __func__);
+> +	}
+>   	skb = get_skb(skb, flowclen, GFP_KERNEL);
 
-This patch fixes machine__get_kernel_start_addr() to search for the
-symbol "_text" or "_stext", which marks the beginning of kernel mapping.
-This was already being done in machine__create_kernel_maps(). Thus, this
-patch is just a refactor, to move that code into
-machine__get_kernel_start_addr().
+Oops, shouldn't the if statement be after the call to get_skb()?  :) 
+(you're having a bad day ;))
 
-Signed-off-by: Simon Que <sque@chromium.org>
----
- tools/perf/util/machine.c | 54 +++++++++++++++++++----------------------------
- 1 file changed, 22 insertions(+), 32 deletions(-)
+>   	flowc = (struct fw_flowc_wr *)__skb_put(skb, flowclen);
+>   
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 620a198..1639566 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -484,18 +484,6 @@ struct process_args {
- 	u64 start;
- };
- 
--static int symbol__in_kernel(void *arg, const char *name,
--			     char type __maybe_unused, u64 start)
--{
--	struct process_args *args = arg;
--
--	if (strchr(name, '['))
--		return 0;
--
--	args->start = start;
--	return 1;
--}
--
- static void machine__get_kallsyms_filename(struct machine *machine, char *buf,
- 					   size_t bufsz)
- {
-@@ -505,27 +493,41 @@ static void machine__get_kallsyms_filename(struct machine *machine, char *buf,
- 		scnprintf(buf, bufsz, "%s/proc/kallsyms", machine->root_dir);
- }
- 
--/* Figure out the start address of kernel map from /proc/kallsyms */
--static u64 machine__get_kernel_start_addr(struct machine *machine)
-+const char *ref_reloc_sym_names[] = {"_text", "_stext", NULL};
-+
-+/* Figure out the start address of kernel map from /proc/kallsyms.
-+ * Returns the name of the start symbol in *symbol_name. Pass in NULL as
-+ * symbol_name if it's not that important.
-+ */
-+static u64 machine__get_kernel_start_addr(struct machine *machine,
-+					  const char **symbol_name)
- {
- 	char filename[PATH_MAX];
--	struct process_args args;
-+	int i;
-+	const char *name;
-+	u64 addr = 0;
- 
- 	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
- 
- 	if (symbol__restricted_filename(filename, "/proc/kallsyms"))
- 		return 0;
- 
--	if (kallsyms__parse(filename, &args, symbol__in_kernel) <= 0)
--		return 0;
-+	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
-+		addr = kallsyms__get_function_start(filename, name);
-+		if (addr)
-+			break;
-+	}
-+
-+	if (symbol_name)
-+		*symbol_name = name;
- 
--	return args.start;
-+	return addr;
- }
- 
- int __machine__create_kernel_maps(struct machine *machine, struct dso *kernel)
- {
- 	enum map_type type;
--	u64 start = machine__get_kernel_start_addr(machine);
-+	u64 start = machine__get_kernel_start_addr(machine, NULL);
- 
- 	for (type = 0; type < MAP__NR_TYPES; ++type) {
- 		struct kmap *kmap;
-@@ -832,23 +834,11 @@ static int machine__create_modules(struct machine *machine)
- 	return 0;
- }
- 
--const char *ref_reloc_sym_names[] = {"_text", "_stext", NULL};
--
- int machine__create_kernel_maps(struct machine *machine)
- {
- 	struct dso *kernel = machine__get_kernel(machine);
--	char filename[PATH_MAX];
- 	const char *name;
--	u64 addr = 0;
--	int i;
--
--	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
--
--	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
--		addr = kallsyms__get_function_start(filename, name);
--		if (addr)
--			break;
--	}
-+	u64 addr = machine__get_kernel_start_addr(machine, &name);
- 	if (!addr)
- 		return -1;
- 
--- 
-2.0.0.526.g5318336
+One more nit:  The comment is no longer correct.  It should be something 
+like:
+
+iw_cxgb4: in send_flowc(), handle a null skb return from get_skb()
+
 
