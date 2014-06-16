@@ -1,115 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447AbaFPFTQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 01:19:16 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49739 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665AbaFPFTO (ORCPT
+	id S1753507AbaFPFUr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 01:20:47 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:39708 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139AbaFPFUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 01:19:14 -0400
+	Mon, 16 Jun 2014 01:20:45 -0400
 X-Original-SENDERIP: 10.177.220.145
 X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Mon, 16 Jun 2014 14:23:25 +0900
+Date: Mon, 16 Jun 2014 14:24:50 +0900
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Michal Nazarewicz <mina86@mina86.com>
+To: Minchan Kim <minchan@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>, kvm@vger.kernel.org,
+        linux-mm@kvack.org, Gleb Natapov <gleb@kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Alexander Graf <agraf@suse.de>,
+        Alexander Graf <agraf@suse.de>, kvm-ppc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 05/10] DMA, CMA: support arbitrary bitmap granularity
-Message-ID: <20140616052325.GC23210@js1304-P5Q-DELUXE>
+        Paolo Bonzini <pbonzini@redhat.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 03/10] DMA, CMA: separate core cma management codes
+ from DMA APIs
+Message-ID: <20140616052450.GD23210@js1304-P5Q-DELUXE>
 References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1402543307-29800-6-git-send-email-iamjoonsoo.kim@lge.com>
- <xa1t61k6juph.fsf@mina86.com>
+ <1402543307-29800-4-git-send-email-iamjoonsoo.kim@lge.com>
+ <20140612053743.GF12415@bbox>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <xa1t61k6juph.fsf@mina86.com>
+In-Reply-To: <20140612053743.GF12415@bbox>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 12:19:54PM +0200, Michal Nazarewicz wrote:
-> On Thu, Jun 12 2014, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> > ppc kvm's cma region management requires arbitrary bitmap granularity,
-> > since they want to reserve very large memory and manage this region
-> > with bitmap that one bit for several pages to reduce management overheads.
-> > So support arbitrary bitmap granularity for following generalization.
-> >
+On Thu, Jun 12, 2014 at 02:37:43PM +0900, Minchan Kim wrote:
+> On Thu, Jun 12, 2014 at 12:21:40PM +0900, Joonsoo Kim wrote:
+> > To prepare future generalization work on cma area management code,
+> > we need to separate core cma management codes from DMA APIs.
+> > We will extend these core functions to cover requirements of
+> > ppc kvm's cma area management functionality in following patches.
+> > This separation helps us not to touch DMA APIs while extending
+> > core functions.
+> > 
 > > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> 
-> Acked-by: Michal Nazarewicz <mina86@mina86.com>
-> 
+> > 
 > > diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-> > index bc4c171..9bc9340 100644
+> > index fb0cdce..8a44c82 100644
 > > --- a/drivers/base/dma-contiguous.c
 > > +++ b/drivers/base/dma-contiguous.c
-> > @@ -38,6 +38,7 @@ struct cma {
-> >  	unsigned long	base_pfn;
-> >  	unsigned long	count;
-> 
-> Have you considered replacing count with maxno?
-
-No, I haven't.
-I think that count is better than maxno, since it represent number of
-pages in this region.
-
-> 
-> >  	unsigned long	*bitmap;
-> > +	int order_per_bit; /* Order of pages represented by one bit */
-> 
-> I'd make it unsigned.
-
-Will fix it.
-
-> >  	struct mutex	lock;
-> >  };
+> > @@ -231,9 +231,9 @@ core_initcall(cma_init_reserved_areas);
+> >   * If @fixed is true, reserve contiguous area at exactly @base.  If false,
+> >   * reserve in range from @base to @limit.
+> >   */
+> > -int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+> > -				       phys_addr_t limit, struct cma **res_cma,
+> > -				       bool fixed)
+> > +static int __init __dma_contiguous_reserve_area(phys_addr_t size,
+> > +				phys_addr_t base, phys_addr_t limit,
+> > +				struct cma **res_cma, bool fixed)
+> >  {
+> >  	struct cma *cma = &cma_areas[cma_area_count];
+> >  	phys_addr_t alignment;
+> > @@ -288,16 +288,30 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
 > >  
-> > +static void clear_cma_bitmap(struct cma *cma, unsigned long pfn, int
-> > count)
-> 
-> For consistency cma_clear_bitmap would make more sense I think.  On the
-> other hand, you're just moving stuff around so perhaps renaming the
-> function at this point is not worth it any more.
-
-Will fix it.
-
+> >  	pr_info("%s(): reserved %ld MiB at %08lx\n",
+> >  		__func__, (unsigned long)size / SZ_1M, (unsigned long)base);
+> > -
+> > -	/* Architecture specific contiguous memory fixup. */
+> > -	dma_contiguous_early_fixup(base, size);
+> >  	return 0;
+> > +
+> >  err:
+> >  	pr_err("%s(): failed to reserve %ld MiB\n",
+> >  		__func__, (unsigned long)size / SZ_1M);
+> >  	return ret;
+> >  }
+> >  
+> > +int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+> > +				       phys_addr_t limit, struct cma **res_cma,
+> > +				       bool fixed)
 > > +{
-> > +	unsigned long bitmapno, nr_bits;
+> > +	int ret;
 > > +
-> > +	bitmapno = (pfn - cma->base_pfn) >> cma->order_per_bit;
-> > +	nr_bits = cma_bitmap_pages_to_bits(cma, count);
+> > +	ret = __dma_contiguous_reserve_area(size, base, limit, res_cma, fixed);
+> > +	if (ret)
+> > +		return ret;
 > > +
-> > +	mutex_lock(&cma->lock);
-> > +	bitmap_clear(cma->bitmap, bitmapno, nr_bits);
-> > +	mutex_unlock(&cma->lock);
+> > +	/* Architecture specific contiguous memory fixup. */
+> > +	dma_contiguous_early_fixup(base, size);
+> 
+> In old, base and size are aligned with alignment and passed into arch fixup
+> but your patch is changing it.
+> I didn't look at what kinds of side effect it makes but just want to confirm.
+
+Good catch!!!
+I will fix it.
+
+> > +
+> > +	return 0;
 > > +}
 > > +
-> >  static int __init cma_activate_area(struct cma *cma)
+> >  static void clear_cma_bitmap(struct cma *cma, unsigned long pfn, int count)
 > >  {
-> > -	int bitmap_size = BITS_TO_LONGS(cma->count) * sizeof(long);
-> > +	int bitmap_maxno = cma_bitmap_maxno(cma);
-> > +	int bitmap_size = BITS_TO_LONGS(bitmap_maxno) * sizeof(long);
-> >  	unsigned long base_pfn = cma->base_pfn, pfn = base_pfn;
-> >  	unsigned i = cma->count >> pageblock_order;
-> >  	struct zone *zone;
+> >  	mutex_lock(&cma->lock);
+> > @@ -316,20 +330,16 @@ static void clear_cma_bitmap(struct cma *cma, unsigned long pfn, int count)
+> >   * global one. Requires architecture specific dev_get_cma_area() helper
+> >   * function.
+> >   */
+> > -struct page *dma_alloc_from_contiguous(struct device *dev, int count,
+> > +static struct page *__dma_alloc_from_contiguous(struct cma *cma, int count,
+> >  				       unsigned int align)
+> >  {
+> >  	unsigned long mask, pfn, pageno, start = 0;
+> > -	struct cma *cma = dev_get_cma_area(dev);
+> >  	struct page *page = NULL;
+> >  	int ret;
+> >  
+> >  	if (!cma || !cma->count)
+> >  		return NULL;
+> >  
+> > -	if (align > CONFIG_CMA_ALIGNMENT)
+> > -		align = CONFIG_CMA_ALIGNMENT;
+> > -
+> >  	pr_debug("%s(cma %p, count %d, align %d)\n", __func__, (void *)cma,
+> >  		 count, align);
+> >  
+> > @@ -377,6 +387,17 @@ struct page *dma_alloc_from_contiguous(struct device *dev, int count,
+> >  	return page;
+> >  }
+> >  
 > 
-> bitmap_maxno is never used again, perhaps:
+> Please move the description in __dma_alloc_from_contiguous to here exported API.
 > 
-> +	int bitmap_size = BITS_TO_LONGS(cma_bitmap_maxno(cma)) * sizeof(long);
-> 
-> instead? Up to you.
 
-Okay!!
+Okay.
+
+> > +struct page *dma_alloc_from_contiguous(struct device *dev, int count,
+> > +				       unsigned int align)
+> > +{
+> > +	struct cma *cma = dev_get_cma_area(dev);
+> > +
+> > +	if (align > CONFIG_CMA_ALIGNMENT)
+> > +		align = CONFIG_CMA_ALIGNMENT;
+> > +
+> > +	return __dma_alloc_from_contiguous(cma, count, align);
+> > +}
+> > +
+> >  /**
+> >   * dma_release_from_contiguous() - release allocated pages
+> >   * @dev:   Pointer to device for which the pages were allocated.
+> > @@ -387,10 +408,9 @@ struct page *dma_alloc_from_contiguous(struct device *dev, int count,
+> >   * It returns false when provided pages do not belong to contiguous area and
+> >   * true otherwise.
+> >   */
+> > -bool dma_release_from_contiguous(struct device *dev, struct page *pages,
+> > +static bool __dma_release_from_contiguous(struct cma *cma, struct page *pages,
+> >  				 int count)
+> >  {
+> > -	struct cma *cma = dev_get_cma_area(dev);
+> >  	unsigned long pfn;
+> >  
+> >  	if (!cma || !pages)
+> > @@ -410,3 +430,11 @@ bool dma_release_from_contiguous(struct device *dev, struct page *pages,
+> >  
+> >  	return true;
+> >  }
+> > +
+> 
+> Ditto.
+> 
+Okay.
 
 Thanks.
