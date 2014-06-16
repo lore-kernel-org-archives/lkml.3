@@ -1,314 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610AbaFPIvn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 04:51:43 -0400
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:2299 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461AbaFPIvm (ORCPT
+	id S1754684AbaFPIwQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 04:52:16 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:48053 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754461AbaFPIwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 04:51:42 -0400
-X-IronPort-AV: E=Sophos;i="5.01,485,1400050800"; 
-   d="scan'208";a="34922516"
-Message-ID: <539EB018.2010009@broadcom.com>
-Date: Mon, 16 Jun 2014 10:51:36 +0200
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 16 Jun 2014 04:52:14 -0400
+Message-ID: <539EB03C.5080100@linaro.org>
+Date: Mon, 16 Jun 2014 10:52:12 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>, micky <micky_ching@realsil.com.cn>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Chris Ball <chris@printf.net>, <devel@linuxdriverproject.org>,
+To: Doug Anderson <dianders@chromium.org>
+CC: Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Chirantan Ekbote <chirantan@chromium.org>,
+        David Riley <davidriley@chromium.org>, Olof Johansson <olof@lixom.net>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Roger <rogerable@realtek.com>, "Wei WANG" <wei_wang@realsil.com.cn>
-Subject: Re: [PATCH 2/2] mmc: rtsx: add support for async request
-References: <cover.1402037562.git.micky_ching@realsil.com.cn>	<7b58fb0b0915ea0b0838404c74ec22a3b6e5f5a8.1402037565.git.micky_ching@realsil.com.cn> <CAPDyKFq1wYZRbuwhLjTMbwN1KYgKuNuZDb7t8FV78Pa=W85oqg@mail.gmail.com>
-In-Reply-To: <CAPDyKFq1wYZRbuwhLjTMbwN1KYgKuNuZDb7t8FV78Pa=W85oqg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/3] clocksource: exynos_mct: Fix ftrace
+References: <1401903034-20074-1-git-send-email-dianders@chromium.org>	<539E0D8E.9080706@linaro.org> <CAD=FV=XA09XawT-fxAm2tTMw4kZ=7RHceXuww2y6q+zMV71pew@mail.gmail.com>
+In-Reply-To: <CAD=FV=XA09XawT-fxAm2tTMw4kZ=7RHceXuww2y6q+zMV71pew@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16-06-14 10:42, Ulf Hansson wrote:
-> On 6 June 2014 09:05,  <micky_ching@realsil.com.cn> wrote:
->> From: Micky Ching <micky_ching@realsil.com.cn>
+On 06/16/2014 06:40 AM, Doug Anderson wrote:
+> Daniel,
+>
+> On Sun, Jun 15, 2014 at 2:18 PM, Daniel Lezcano
+> <daniel.lezcano@linaro.org> wrote:
+>> On 06/04/2014 07:30 PM, Doug Anderson wrote:
+>>>
+>>> In (93bfb76 clocksource: exynos_mct: register sched_clock callback) we
+>>> supported using the MCT as a scheduler clock.  We properly marked
+>>> exynos4_read_sched_clock() as notrace.  However, we then went and
+>>> called another function that _wasn't_ notrace.  That means if you do:
+>>>
+>>>     cd /sys/kernel/debug/tracing/
+>>>     echo function_graph > current_tracer
+>>>
+>>> You'll get a crash.
+>>>
+>>> Fix this (but still let other readers of the MCT be trace-enabled) by
+>>> adding an extra function.  It's important to keep other users of MCT
+>>> traceable because the MCT is actually quite slow.
 >>
->> Add support for non-blocking request, pre_req() runs dma_map_sg() and
->> post_req() runs dma_unmap_sg(). This patch can increase card read/write
->> speed, especially for high speed card and slow speed CPU.
+>>
+>>
+>> Hi Doug,
+>>
+>> could you elaborate ? I don't get the 'because the MCT ... slow'
+>
+> Sorry, I was trying to avoid duplication in the series and it's more
+> obvious when you look at parts 2 and 3 of the series.  ;)
+>
+> Doing the math (please correct any miscalculations) using the numbers
+> from the other patches: You can see that the existing code takes
+> 1323852 us for 1000000 gettimeofday in userspace.  The fastest
+> implementation (just shaving to a 32-bit timer) gets us as fast as
+> ~1000000 us for 1000000 gettimeofday in userspace.
+>
+>  From profiling, I believe that gettimeofday from userspace is about
+> 50% overhead (system call, multiplication, copies, etc) and about 50%
+> MCT read.  That means that the fastest you can possibly do an MCT read
+> is in .5us or 500ns.
+>
+> I believe an A15 has something like 1 or 2 cycles per instruction.  If
+> it were 2 cycles per instruction, it can execute a normal instruction
+> on a 2GHz machine in .5ns.  That means we can execute 1000 normal
+> instructions in the time it takes to do a since MCT access.
+>
+> ...so I guess that's what I'd call slow.  ;)  What do you think?  I
+> know that the MCT read shows up in whole system profiles of
+> gettimeofday.
 
-Interesting statement about slow speed CPU, but why then test with CPU 
-running at 2.3GHz. Did you also run at 800MHz?
+Hi Dough,
 
-Regards,
-Arend
+thanks for the explanation. I still don't get why it is important to 
+keep others users of mct traceable because it is quite slow ? May be it 
+is what you explained here, but I miss the connection between 'the other 
+users' <-> 'traceable' <-> 'because slow'.
 
->> Test on intel i3(800MHz - 2.3GHz) performance mode(2.3GHz), SD card
->> clock 208MHz
->>
->> run dd if=/dev/mmcblk0 of=/dev/null bs=64k count=1024
->> before:
->> 67108864 bytes (67 MB) copied, 0.85427 s, 78.6 MB/s
->> after:
->> 67108864 bytes (67 MB) copied, 0.74799 s, 89.7 MB/s
->>
->> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
->> ---
->>   drivers/mmc/host/rtsx_pci_sdmmc.c |  133 +++++++++++++++++++++++++++++++++++--
->>   1 file changed, 127 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
->> index 1c68e0d..a2c0858 100644
->> --- a/drivers/mmc/host/rtsx_pci_sdmmc.c
->> +++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
->> @@ -24,6 +24,7 @@
->>   #include <linux/highmem.h>
->>   #include <linux/delay.h>
->>   #include <linux/platform_device.h>
->> +#include <linux/workqueue.h>
->>   #include <linux/mmc/host.h>
->>   #include <linux/mmc/mmc.h>
->>   #include <linux/mmc/sd.h>
->> @@ -36,7 +37,10 @@ struct realtek_pci_sdmmc {
->>          struct rtsx_pcr         *pcr;
->>          struct mmc_host         *mmc;
->>          struct mmc_request      *mrq;
->> +       struct workqueue_struct *workq;
->> +#define SDMMC_WORKQ_NAME       "rtsx_pci_sdmmc_workq"
->>
->> +       struct work_struct      work;
->
-> I am trying to understand why you need a work/workqueue to implement
-> this feature. Is that really the case?
->
-> Could you elaborate on the reasons?
->
-> Kind regards
-> Uffe
->
->>          struct mutex            host_mutex;
->>
->>          u8                      ssc_depth;
->> @@ -48,6 +52,11 @@ struct realtek_pci_sdmmc {
->>          int                     power_state;
->>   #define SDMMC_POWER_ON         1
->>   #define SDMMC_POWER_OFF                0
->> +
->> +       unsigned int            sg_count;
->> +       s32                     cookie;
->> +       unsigned int            cookie_sg_count;
->> +       bool                    using_cookie;
->>   };
->>
->>   static inline struct device *sdmmc_dev(struct realtek_pci_sdmmc *host)
->> @@ -86,6 +95,77 @@ static void sd_print_debug_regs(struct realtek_pci_sdmmc *host)
->>   #define sd_print_debug_regs(host)
->>   #endif /* DEBUG */
->>
->> +/*
->> + * sd_pre_dma_transfer - do dma_map_sg() or using cookie
->> + *
->> + * @pre: if called in pre_req()
->> + * return:
->> + *     0 - do dma_map_sg()
->> + *     1 - using cookie
->> + */
->> +static int sd_pre_dma_transfer(struct realtek_pci_sdmmc *host,
->> +               struct mmc_data *data, bool pre)
->> +{
->> +       struct rtsx_pcr *pcr = host->pcr;
->> +       int read = data->flags & MMC_DATA_READ;
->> +       int count = 0;
->> +       int using_cookie = 0;
->> +
->> +       if (!pre && data->host_cookie && data->host_cookie != host->cookie) {
->> +               dev_err(sdmmc_dev(host),
->> +                       "error: data->host_cookie = %d, host->cookie = %d\n",
->> +                       data->host_cookie, host->cookie);
->> +               data->host_cookie = 0;
->> +       }
->> +
->> +       if (pre || data->host_cookie != host->cookie) {
->> +               count = rtsx_pci_dma_map_sg(pcr, data->sg, data->sg_len, read);
->> +       } else {
->> +               count = host->cookie_sg_count;
->> +               using_cookie = 1;
->> +       }
->> +
->> +       if (pre) {
->> +               host->cookie_sg_count = count;
->> +               if (++host->cookie < 0)
->> +                       host->cookie = 1;
->> +               data->host_cookie = host->cookie;
->> +       } else {
->> +               host->sg_count = count;
->> +       }
->> +
->> +       return using_cookie;
->> +}
->> +
->> +static void sdmmc_pre_req(struct mmc_host *mmc, struct mmc_request *mrq,
->> +               bool is_first_req)
->> +{
->> +       struct realtek_pci_sdmmc *host = mmc_priv(mmc);
->> +       struct mmc_data *data = mrq->data;
->> +
->> +       if (data->host_cookie) {
->> +               dev_err(sdmmc_dev(host),
->> +                       "error: reset data->host_cookie = %d\n",
->> +                       data->host_cookie);
->> +               data->host_cookie = 0;
->> +       }
->> +
->> +       sd_pre_dma_transfer(host, data, true);
->> +       dev_dbg(sdmmc_dev(host), "pre dma sg: %d\n", host->cookie_sg_count);
->> +}
->> +
->> +static void sdmmc_post_req(struct mmc_host *mmc, struct mmc_request *mrq,
->> +               int err)
->> +{
->> +       struct realtek_pci_sdmmc *host = mmc_priv(mmc);
->> +       struct rtsx_pcr *pcr = host->pcr;
->> +       struct mmc_data *data = mrq->data;
->> +       int read = data->flags & MMC_DATA_READ;
->> +
->> +       rtsx_pci_dma_unmap_sg(pcr, data->sg, data->sg_len, read);
->> +       data->host_cookie = 0;
->> +}
->> +
->>   static int sd_read_data(struct realtek_pci_sdmmc *host, u8 *cmd, u16 byte_cnt,
->>                  u8 *buf, int buf_len, int timeout)
->>   {
->> @@ -415,7 +495,7 @@ static int sd_rw_multi(struct realtek_pci_sdmmc *host, struct mmc_request *mrq)
->>
->>          rtsx_pci_send_cmd_no_wait(pcr);
->>
->> -       err = rtsx_pci_transfer_data(pcr, data->sg, data->sg_len, read, 10000);
->> +       err = rtsx_pci_dma_transfer(pcr, data->sg, host->sg_count, read, 10000);
->>          if (err < 0) {
->>                  sd_clear_error(host);
->>                  return err;
->> @@ -640,12 +720,24 @@ static int sd_tuning_rx(struct realtek_pci_sdmmc *host, u8 opcode)
->>          return 0;
->>   }
->>
->> -static void sdmmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
->> +static inline int sd_rw_cmd(struct mmc_command *cmd)
->>   {
->> -       struct realtek_pci_sdmmc *host = mmc_priv(mmc);
->> +       return mmc_op_multi(cmd->opcode) ||
->> +               (cmd->opcode == MMC_READ_SINGLE_BLOCK) ||
->> +               (cmd->opcode == MMC_WRITE_BLOCK);
->> +}
->> +
->> +static void sd_request(struct work_struct *work)
->> +{
->> +       struct realtek_pci_sdmmc *host = container_of(work,
->> +                       struct realtek_pci_sdmmc, work);
->>          struct rtsx_pcr *pcr = host->pcr;
->> +
->> +       struct mmc_host *mmc = host->mmc;
->> +       struct mmc_request *mrq = host->mrq;
->>          struct mmc_command *cmd = mrq->cmd;
->>          struct mmc_data *data = mrq->data;
->> +
->>          unsigned int data_size = 0;
->>          int err;
->>
->> @@ -677,13 +769,13 @@ static void sdmmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
->>          if (mrq->data)
->>                  data_size = data->blocks * data->blksz;
->>
->> -       if (!data_size || mmc_op_multi(cmd->opcode) ||
->> -                       (cmd->opcode == MMC_READ_SINGLE_BLOCK) ||
->> -                       (cmd->opcode == MMC_WRITE_BLOCK)) {
->> +       if (!data_size || sd_rw_cmd(cmd)) {
->>                  sd_send_cmd_get_rsp(host, cmd);
->>
->>                  if (!cmd->error && data_size) {
->>                          sd_rw_multi(host, mrq);
->> +                       if (!host->using_cookie)
->> +                               sdmmc_post_req(host->mmc, host->mrq, 0);
->>
->>                          if (mmc_op_multi(cmd->opcode) && mrq->stop)
->>                                  sd_send_cmd_get_rsp(host, mrq->stop);
->> @@ -712,6 +804,21 @@ finish:
->>          mmc_request_done(mmc, mrq);
->>   }
->>
->> +static void sdmmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
->> +{
->> +       struct realtek_pci_sdmmc *host = mmc_priv(mmc);
->> +       struct mmc_data *data = mrq->data;
->> +
->> +       mutex_lock(&host->host_mutex);
->> +       host->mrq = mrq;
->> +       mutex_unlock(&host->host_mutex);
->> +
->> +       if (sd_rw_cmd(mrq->cmd))
->> +               host->using_cookie = sd_pre_dma_transfer(host, data, false);
->> +
->> +       queue_work(host->workq, &host->work);
->> +}
->> +
->>   static int sd_set_bus_width(struct realtek_pci_sdmmc *host,
->>                  unsigned char bus_width)
->>   {
->> @@ -1144,6 +1251,8 @@ out:
->>   }
->>
->>   static const struct mmc_host_ops realtek_pci_sdmmc_ops = {
->> +       .pre_req = sdmmc_pre_req,
->> +       .post_req = sdmmc_post_req,
->>          .request = sdmmc_request,
->>          .set_ios = sdmmc_set_ios,
->>          .get_ro = sdmmc_get_ro,
->> @@ -1222,10 +1331,16 @@ static int rtsx_pci_sdmmc_drv_probe(struct platform_device *pdev)
->>                  return -ENOMEM;
->>
->>          host = mmc_priv(mmc);
->> +       host->workq = create_singlethread_workqueue(SDMMC_WORKQ_NAME);
->> +       if (!host->workq) {
->> +               mmc_free_host(mmc);
->> +               return -ENOMEM;
->> +       }
->>          host->pcr = pcr;
->>          host->mmc = mmc;
->>          host->pdev = pdev;
->>          host->power_state = SDMMC_POWER_OFF;
->> +       INIT_WORK(&host->work, sd_request);
->>          platform_set_drvdata(pdev, host);
->>          pcr->slots[RTSX_SD_CARD].p_dev = pdev;
->>          pcr->slots[RTSX_SD_CARD].card_event = rtsx_pci_sdmmc_card_event;
->> @@ -1253,6 +1368,8 @@ static int rtsx_pci_sdmmc_drv_remove(struct platform_device *pdev)
->>          pcr->slots[RTSX_SD_CARD].card_event = NULL;
->>          mmc = host->mmc;
->>
->> +       cancel_work_sync(&host->work);
->> +
->>          mutex_lock(&host->host_mutex);
->>          if (host->mrq) {
->>                  dev_dbg(&(pdev->dev),
->> @@ -1271,6 +1388,10 @@ static int rtsx_pci_sdmmc_drv_remove(struct platform_device *pdev)
->>          mmc_remove_host(mmc);
->>          host->eject = true;
->>
->> +       flush_workqueue(host->workq);
->> +       destroy_workqueue(host->workq);
->> +       host->workq = NULL;
->> +
->>          mmc_free_host(mmc);
->>
->>          dev_dbg(&(pdev->dev),
->> --
->> 1.7.9.5
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
