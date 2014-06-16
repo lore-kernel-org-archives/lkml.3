@@ -1,113 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586AbaFPQ5k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 12:57:40 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:60964 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349AbaFPQ5j (ORCPT
+	id S1755271AbaFPRDC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 13:03:02 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:52599 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753256AbaFPRC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 12:57:39 -0400
-Message-ID: <539F21F4.20206@infradead.org>
-Date: Mon, 16 Jun 2014 09:57:24 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 16 Jun 2014 13:02:59 -0400
 MIME-Version: 1.0
-To: Xishi Qiu <qiuxishi@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, aquini@redhat.com,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>
-CC: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH 8/8] doc: update Documentation/sysctl/vm.txt
-References: <539EB803.9070001@huawei.com>
-In-Reply-To: <539EB803.9070001@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140616165123.GA21661@sirena.org.uk>
+References: <1402464739-19044-1-git-send-email-tushar.b@samsung.com>
+	<1402464739-19044-4-git-send-email-tushar.b@samsung.com>
+	<CAD=FV=XqqP7+xDOAKCixivzgaO0xvJX7L+CCN+unAEuf-6aUbQ@mail.gmail.com>
+	<539ED2C0.8030405@gmail.com>
+	<CAD=FV=UaaRQVq3TmXMTv9OkER+zORC89YfPNjwZwfCQKmuavrw@mail.gmail.com>
+	<20140616165123.GA21661@sirena.org.uk>
+Date: Mon, 16 Jun 2014 10:02:58 -0700
+Message-ID: <CAD=FV=VaK3PR4exCsYbaYwEK=_cuK+=PK9QqK_uD-cT_Y7m7UQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ARM: dts: Enable audio support for Peach-pi board
+From: Doug Anderson <dianders@google.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Tushar Behera <trblinux@gmail.com>, Tushar Behera <tushar.b@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Kevin Hilman <khilman@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/14 02:25, Xishi Qiu wrote:
-> Update the doc.
-> 
-> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-> ---
->  Documentation/sysctl/vm.txt |   43 +++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 43 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-> index dd9d0e3..8008e53 100644
-> --- a/Documentation/sysctl/vm.txt
-> +++ b/Documentation/sysctl/vm.txt
-> @@ -20,6 +20,10 @@ Currently, these files are in /proc/sys/vm:
->  
->  - admin_reserve_kbytes
->  - block_dump
-> +- cache_limit_mbytes
-> +- cache_limit_ratio
-> +- cache_reclaim_s
-> +- cache_reclaim_weight
->  - compact_memory
->  - dirty_background_bytes
->  - dirty_background_ratio
-> @@ -97,6 +101,45 @@ information on block I/O debugging is in Documentation/laptops/laptop-mode.txt.
->  
->  ==============================================================
->  
-> +cache_limit_mbytes
-> +
-> +This is used to limit page cache amount. The input unit is MB, value range
-> +is from 0 to totalram_pages. If this is set to 0, it will not limit page cache.
+Mark,
 
-Where does one find the value of totalram_pages?
+On Mon, Jun 16, 2014 at 9:51 AM, Mark Brown <broonie@kernel.org> wrote:
+> On Mon, Jun 16, 2014 at 09:49:26AM -0700, Doug Anderson wrote:
+>
+>> Yes please.  I think there's supposed to be some official ordering of
+>> things.  If anyone reading this has a pointer to the official sort
+>> order of things in the device tree I'd love to see it!  ;)
+>
+> Most exact first I believe?
 
-Is totalram_pages in MB or does totalram_pages need to be divided by some value
-to convert it to MB?
+More specifically I'm looking for the ordering between nodes and
+between properties in a node.  For instance:
 
-> +When written to the file, cache_limit_ratio will be updated too.
-> +
-> +The default value is 0.
-> +
-> +==============================================================
-> +
-> +cache_limit_ratio
-> +
-> +This is used to limit page cache amount. The input unit is percent, value
-> +range is from 0 to 100. If this is set to 0, it will not limit page cache.
-> +When written to the file, cache_limit_mbytes will be updated too.
-> +
-> +The default value is 0.
-> +
-> +==============================================================
-> +
-> +cache_reclaim_s
-> +
-> +This is used to reclaim page cache in circles. The input unit is second,
-> +the minimum value is 0. If this is set to 0, it will disable the feature.
-> +
-> +The default value is 0.
-> +
-> +==============================================================
-> +
-> +cache_reclaim_weight
-> +
-> +This is used to speed up page cache reclaim. It depend on enabling
+1. It appears to be convention to sort children of the "pinctrl" nodes
+by the first pin number in that group.  That is:
 
-                                                   depends on
+ec_spi_cs: ec-spi-cs {
+  samsung,pins = "gpb1-2";
+  ...
+};
 
-> +cache_limit_mbytes/cache_limit_ratio or cache_reclaim_s. Value range is
-> +from 1(slow) to 100(fast).
-> +
-> +The default value is 1.
-> +
-> +==============================================================
-> +
->  compact_memory
->  
->  Available only when CONFIG_COMPACTION is set. When 1 is written to the file,
-> 
+...comes before:
+usb300_vbus_en: usb300-vbus-en {
+  samsung,pins = "gph0-0";
+  ...
+};
+
+...that's one really good and well-defined ordering.
 
 
--- 
-~Randy
+2. I have no idea how general properties should be sorted.  I tend to
+see "compatible" first but that's above the only rule I've seen.
+Sometimes I've seen "status" first, sometimes last, sometimes
+alphabetically sorted, and sometimes in a random place.  Examples:
+
+usb301_vbus_reg: regulator-usb301 {
+  compatible = "regulator-fixed";
+  regulator-name = "P5.0V_USB3CON1";
+  regulator-min-microvolt = <5000000>;
+  regulator-max-microvolt = <5000000>;
+  gpio = <&gph0 1 0>;
+  pinctrl-names = "default";
+  pinctrl-0 = <&usb301_vbus_en>;
+  enable-active-high;
+};
+
+&hdmi {
+  status = "okay";
+  hpd-gpio = <&gpx3 7 GPIO_ACTIVE_HIGH>;
+  pinctrl-names = "default";
+  pinctrl-0 = <&hdmi_hpd_irq>;
+  ddc = <&i2c_2>;
+};
+
+
+3. I have no idea how to sort nodes.  In theory you could say that
+they should be sorted by base address:
+
+i2s0: i2s@03830000 {
+  ...
+};
+
+hsi2c_7: i2c@12CD0000 {
+  ...
+};
+
+i2s1: i2s@12D60000 {
+  ...
+};
+
+...that works until someone argues that all of the "i2s" nodes should
+be together.  It also doesn't work so well with the board convention
+of using aliases to refer to things in the SoC, like:
+
+&i2s0 {
+  status = "okay";
+};
+
+&hsi2c_7 {
+  status = "okay";
+};
+
+...it's not at all obvious in the board file what the base address in
+the SoC was.
+
+---
+
+Anyway, none of this is earth shattering and it doesn't matter all
+that much.  It's just nice to have an official order to make diffing
+easier and also to avoid merge conflicts (unlikely someone changing
+different properties will both add them in the same place in the
+ordering).
+
+
+-Doug
