@@ -1,88 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216AbaFOX7n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 19:59:43 -0400
-Received: from ozlabs.org ([103.22.144.67]:41875 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751844AbaFOX7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 19:59:41 -0400
-Date: Mon, 16 Jun 2014 09:59:28 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Shawn Guo <shawn.guo@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: linux-next: manual merge of the imx-mxs tree with the  tree
-Message-ID: <20140616095928.1f21f8af@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1752421AbaFPAUx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 20:20:53 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:39890 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751890AbaFPAUw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jun 2014 20:20:52 -0400
+Date: Sun, 15 Jun 2014 17:19:29 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] hugetlb: fix copy_hugetlb_page_range() to handle
+ migration/hwpoisoned entry
+In-Reply-To: <1402081620-1247-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Message-ID: <alpine.LSU.2.11.1406151642020.25482@eggly.anvils>
+References: <1402081620-1247-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/t4dUruJqaDWz5DhGfyPsIWp"; protocol="application/pgp-signature"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/t4dUruJqaDWz5DhGfyPsIWp
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, 6 Jun 2014, Naoya Horiguchi wrote:
 
-Hi Shawn,
+> There's a race between fork() and hugepage migration, as a result we try to
+> "dereference" a swap entry as a normal pte, causing kernel panic.
+> The cause of the problem is that copy_hugetlb_page_range() can't handle "swap
+> entry" family (migration entry and hwpoisoned entry,) so let's fix it.
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: stable@vger.kernel.org # v2.6.36+
 
-Today's linux-next merge of the imx-mxs tree got a conflict in
-arch/arm/mach-imx/Kconfig between commit e49d9b375628 ("ARM: Remove
-ARCH_HAS_CPUFREQ config option") from the arm-soc tree and commit
-7de46855b1e7 ("ARM: imx5: move SOC_IMX5 and SOC_IMX51 into 'Device tree
-only'") from the imx-mxs tree.
+Seems a good catch.  But a few reservations...
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+> ---
+>  include/linux/mm.h |  6 +++++
+>  mm/hugetlb.c       | 72 ++++++++++++++++++++++++++++++++----------------------
+>  mm/memory.c        |  5 ----
+>  3 files changed, 49 insertions(+), 34 deletions(-)
+> 
+> diff --git v3.15-rc8.orig/include/linux/mm.h v3.15-rc8/include/linux/mm.h
+> index d6777060449f..6b4fe9ec79ba 100644
+> --- v3.15-rc8.orig/include/linux/mm.h
+> +++ v3.15-rc8/include/linux/mm.h
+> @@ -1924,6 +1924,12 @@ static inline struct vm_area_struct *find_exact_vma(struct mm_struct *mm,
+>  	return vma;
+>  }
+>  
+> +static inline bool is_cow_mapping(vm_flags_t flags)
+> +{
+> +	return (flags & (VM_SHARED | VM_MAYWRITE)) == VM_MAYWRITE;
+> +}
+> +
+> +
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+This is an unrelated cleanup, which makes the patch unnecessarily larger,
+needlessly touching include/linux/mm.h and mm/memory.c, making it more
+likely not to apply to all the old releases you're asking for in the
+stable line.
 
-diff --cc arch/arm/mach-imx/Kconfig
-index 28fa2fa49e5d,3b2a5c58cf91..000000000000
---- a/arch/arm/mach-imx/Kconfig
-+++ b/arch/arm/mach-imx/Kconfig
-@@@ -700,9 -691,15 +688,14 @@@ if ARCH_MULTI_V
- =20
-  comment "Device tree only"
- =20
-+ config SOC_IMX5
-+ 	bool
- -	select ARCH_HAS_CPUFREQ
-+ 	select ARCH_HAS_OPP
-+ 	select HAVE_IMX_SRC
-+ 	select MXC_TZIC
-+=20
-  config	SOC_IMX50
-  	bool "i.MX50 support"
-- 	select HAVE_IMX_SRC
-  	select PINCTRL_IMX50
-  	select SOC_IMX5
- =20
+And 3.16-rc moves is_cow_mapping() to mm/internal.h not include/linux/mm.h.
 
---Sig_/t4dUruJqaDWz5DhGfyPsIWp
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+>  #ifdef CONFIG_MMU
+>  pgprot_t vm_get_page_prot(unsigned long vm_flags);
+>  #else
+> diff --git v3.15-rc8.orig/mm/hugetlb.c v3.15-rc8/mm/hugetlb.c
+> index c82290b9c1fc..47ae7db288f7 100644
+> --- v3.15-rc8.orig/mm/hugetlb.c
+> +++ v3.15-rc8/mm/hugetlb.c
+> @@ -2377,6 +2377,31 @@ static void set_huge_ptep_writable(struct vm_area_struct *vma,
+>  		update_mmu_cache(vma, address, ptep);
+>  }
+>  
+> +static int is_hugetlb_entry_migration(pte_t pte)
+> +{
+> +	swp_entry_t swp;
+> +
+> +	if (huge_pte_none(pte) || pte_present(pte))
+> +		return 0;
+> +	swp = pte_to_swp_entry(pte);
+> +	if (non_swap_entry(swp) && is_migration_entry(swp))
+> +		return 1;
+> +	else
+> +		return 0;
+> +}
+> +
+> +static int is_hugetlb_entry_hwpoisoned(pte_t pte)
+> +{
+> +	swp_entry_t swp;
+> +
+> +	if (huge_pte_none(pte) || pte_present(pte))
+> +		return 0;
+> +	swp = pte_to_swp_entry(pte);
+> +	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
+> +		return 1;
+> +	else
+> +		return 0;
+> +}
+>  
+>  int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
+>  			    struct vm_area_struct *vma)
+> @@ -2391,7 +2416,7 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
+>  	unsigned long mmun_end;		/* For mmu_notifiers */
+>  	int ret = 0;
+>  
+> -	cow = (vma->vm_flags & (VM_SHARED | VM_MAYWRITE)) == VM_MAYWRITE;
+> +	cow = is_cow_mapping(vma->vm_flags);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+So, just leave this out and it all becomes easier, no?
 
-iQIcBAEBCAAGBQJTnjNoAAoJEMDTa8Ir7ZwV15gP/2eGlu++bt+HqDVWGygYgaMz
-soSL2wcQUgMi5l3HyPc6NR9++FidLh0TEPPxROaWHyouBbWngaBb2/I86kHfGsnO
-qcjeqzWZnEKyIqWaamFu6tjrVSHpfmvriThPAUdNWPfx6BCvOUsLpdsqBRNUB6vt
-ur6y0aXCbMwWMRPKmaLer1wYSZSC0wz6OxZTQCP4hCnuvcpi0cDUzMEB66nAyVKw
-GIaS4EO9BMYSRGb410QVVhNGa4NssF/CqIC1ANfI8SZ4PnGabdBfrFc3pP8cTQVN
-7oRfNoJ9kICETdUlKnD9E5Ejt1XMoSNrk2Fdx2Pq9ASp5zMuu3xoe9SJx4QECPC0
-KZXhH/Iv1fAHuKAKOR11+Ot41PpggV5R5xNnVjtjVgx0rzKHRflRkMFmsUFUcil9
-lVLmfmIyEXX2O1cgt4KTD703aKhgg2lBb+l9WFXPS3q+VAjD5W0EU2kaUya71YR4
-cvhz+Brs+kGSWGgMGKAOjdSEpGxEG18RluDMTmV1bCzOY9xD1T+Ft0K7oW8Jxdvq
-ZE3WG6oIlmHiY2dIEHIYaKZpNAH0Y3f6NjTMxex1JuQEmzmwe6tmnJ2m8oDUt+Jw
-wevjNhL5DUyUDTu/bpe4QG/NK2m3tGxA1V6fsMsils0kY7DEeZ9imgMAa0vU2vzJ
-wptohuiECeLfpSiteExR
-=0Rp7
------END PGP SIGNATURE-----
+>  
+>  	mmun_start = vma->vm_start;
+>  	mmun_end = vma->vm_end;
+> @@ -2416,10 +2441,25 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
+>  		dst_ptl = huge_pte_lock(h, dst, dst_pte);
+>  		src_ptl = huge_pte_lockptr(h, src, src_pte);
+>  		spin_lock_nested(src_ptl, SINGLE_DEPTH_NESTING);
+> -		if (!huge_pte_none(huge_ptep_get(src_pte))) {
+> +		entry = huge_ptep_get(src_pte);
+> +		if (huge_pte_none(entry)) { /* skip none entry */
+> +			;
 
---Sig_/t4dUruJqaDWz5DhGfyPsIWp--
+Not very pretty, but I would probably have made the same choice.
+
+> +		} else if (unlikely(is_hugetlb_entry_migration(entry) ||
+> +				    is_hugetlb_entry_hwpoisoned(entry))) {
+> +			swp_entry_t swp_entry = pte_to_swp_entry(entry);
+> +			if (is_write_migration_entry(swp_entry) && cow) {
+> +				/*
+> +				 * COW mappings require pages in both
+> +				 * parent and child to be set to read.
+> +				 */
+> +				make_migration_entry_read(&swp_entry);
+> +				entry = swp_entry_to_pte(swp_entry);
+> +				set_pte_at(src, addr, src_pte, entry);
+> +			}
+> +			set_huge_pte_at(dst, addr, dst_pte, entry);
+
+It's odd to see set_pte_at(src, addr, src_pte, entry)
+followed by     set_huge_pte_at(dst, addr, dst_pte, entry).
+
+Probably they should both say set_huge_pte_at().  But have you
+consulted the relevant architectures to check whether set_huge_pte_at()
+actually works on a migration or poisoned entry, rather than corrupting it?
+
+My quick reading is that only s390 and sparc provide a set_huge_pte_at()
+which differs from set_pte_at(), and that sparc does not have the
+pmd_huge_support() needed for hugepage_migration_support(); but s390's
+set_huge_pte_at() looks as if it would mess up the migration entry.
+
+Ah, but you have recently restricted hugepage migration to x86_64 only,
+to fix the follow_page problems, so this should be okay for now - though
+you appear to be leaving a dangerous landmine for s390 in future.
+
+Hold on, that restriction of hugepage migration was marked for stable
+3.12+, whereas this is marked for stable 2.6.36+ (a glance at my old
+trees suggests 2.6.37+, but you may know better - perhaps hugepage
+migration got backported to 2.6.36-stable, though hardly seems
+stable material).
+
+Perhaps you marked the disablement as 3.12+ because its patch wouldn't
+apply cleanly earlier? but it really should be disabled as far back as
+needed.  Or was there some other subtlety, so that hugepage migration
+never actually happened before 3.12?
+
+Confused.
+Hugh
+
+> +		} else {
+>  			if (cow)
+>  				huge_ptep_set_wrprotect(src, addr, src_pte);
+> -			entry = huge_ptep_get(src_pte);
+>  			ptepage = pte_page(entry);
+>  			get_page(ptepage);
+>  			page_dup_rmap(ptepage);
+> @@ -2435,32 +2475,6 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
+>  	return ret;
+>  }
+>  
+> -static int is_hugetlb_entry_migration(pte_t pte)
+> -{
+> -	swp_entry_t swp;
+> -
+> -	if (huge_pte_none(pte) || pte_present(pte))
+> -		return 0;
+> -	swp = pte_to_swp_entry(pte);
+> -	if (non_swap_entry(swp) && is_migration_entry(swp))
+> -		return 1;
+> -	else
+> -		return 0;
+> -}
+> -
+> -static int is_hugetlb_entry_hwpoisoned(pte_t pte)
+> -{
+> -	swp_entry_t swp;
+> -
+> -	if (huge_pte_none(pte) || pte_present(pte))
+> -		return 0;
+> -	swp = pte_to_swp_entry(pte);
+> -	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
+> -		return 1;
+> -	else
+> -		return 0;
+> -}
+> -
+>  void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
+>  			    unsigned long start, unsigned long end,
+>  			    struct page *ref_page)
+> diff --git v3.15-rc8.orig/mm/memory.c v3.15-rc8/mm/memory.c
+> index 037b812a9531..efc66b128976 100644
+> --- v3.15-rc8.orig/mm/memory.c
+> +++ v3.15-rc8/mm/memory.c
+> @@ -698,11 +698,6 @@ static void print_bad_pte(struct vm_area_struct *vma, unsigned long addr,
+>  	add_taint(TAINT_BAD_PAGE, LOCKDEP_NOW_UNRELIABLE);
+>  }
+>  
+> -static inline bool is_cow_mapping(vm_flags_t flags)
+> -{
+> -	return (flags & (VM_SHARED | VM_MAYWRITE)) == VM_MAYWRITE;
+> -}
+> -
+>  /*
+>   * vm_normal_page -- This function gets the "struct page" associated with a pte.
+>   *
+> -- 
+> 1.9.3
+> 
+> 
