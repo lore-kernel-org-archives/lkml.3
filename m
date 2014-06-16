@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803AbaFPJBy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 05:01:54 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:44220 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754784AbaFPJBw (ORCPT
+	id S1754805AbaFPJE6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 05:04:58 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:40097 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754285AbaFPJE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 05:01:52 -0400
-Date: Mon, 16 Jun 2014 10:01:46 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Peter Griffin <peter.griffin@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        maxime.coquelin@st.com, patrice.chotard@st.com,
-        srinivas.kandagatla@gmail.com, gabriel.fernandez@st.com,
-        daniel.thompson@linaro.org
-Subject: Re: [PATCH] ARM: STi: DT: Properly define sti-ethclk & stmmaceth for
- stih415/6
-Message-ID: <20140616090146.GI14323@lee--X1>
-References: <1402345355-5682-1-git-send-email-peter.griffin@linaro.org>
+	Mon, 16 Jun 2014 05:04:57 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s5G94PbC023684, This message is accepted by code: ctloc85258
+Message-ID: <539EB43B.8070707@realsil.com.cn>
+Date: Mon, 16 Jun 2014 17:09:15 +0800
+From: micky <micky_ching@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1402345355-5682-1-git-send-email-peter.griffin@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ulf Hansson <ulf.hansson@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Chris Ball <chris@printf.net>, <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Roger <rogerable@realtek.com>, Wei WANG <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH 2/2] mmc: rtsx: add support for async request
+References: <cover.1402037562.git.micky_ching@realsil.com.cn>	<7b58fb0b0915ea0b0838404c74ec22a3b6e5f5a8.1402037565.git.micky_ching@realsil.com.cn> <CAPDyKFq1wYZRbuwhLjTMbwN1KYgKuNuZDb7t8FV78Pa=W85oqg@mail.gmail.com>
+In-Reply-To: <CAPDyKFq1wYZRbuwhLjTMbwN1KYgKuNuZDb7t8FV78Pa=W85oqg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch fixes two problems: -
-> 
-> 1) The device tree isn't currently providing sti-ethclk which is
-> required by the dwmac glue code to correctly configure the ethernet
-> PHY clock speed.
-> 
-> This means depending on what the bootloader/jtag has
-> configured this clock to, and what switch/hub the board is plugged
-> into you most likely will NOT successfully negotiate a ethernet link.
-> 
-> 2) The stmmaceth clock was associated with the wrong clock. It was
-> referencing the PHY clock rather than the interconnect clock which
-> clocks the IP.
-> 
-> This patch also brings us closer to not having to boot the upstream
-> kernel with the clk_ignore_unused parameter.
-> 
-> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
-> ---
->  arch/arm/boot/dts/stih415.dtsi           | 8 ++++----
->  arch/arm/boot/dts/stih416.dtsi           | 8 ++++----
->  include/dt-bindings/clock/stih415-clks.h | 1 +
->  include/dt-bindings/clock/stih416-clks.h | 1 +
->  4 files changed, 10 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/stih415.dtsi b/arch/arm/boot/dts/stih415.dtsi
-> index c81dce4..768bf27 100644
-> --- a/arch/arm/boot/dts/stih415.dtsi
-> +++ b/arch/arm/boot/dts/stih415.dtsi
+On 06/16/2014 04:42 PM, Ulf Hansson wrote:
+>> @@ -36,7 +37,10 @@ struct realtek_pci_sdmmc {
+>> >         struct rtsx_pcr         *pcr;
+>> >         struct mmc_host         *mmc;
+>> >         struct mmc_request      *mrq;
+>> >+       struct workqueue_struct *workq;
+>> >+#define SDMMC_WORKQ_NAME       "rtsx_pci_sdmmc_workq"
+>> >
+>> >+       struct work_struct      work;
+> I am trying to understand why you need a work/workqueue to implement
+> this feature. Is that really the case?
+>
+> Could you elaborate on the reasons?
+Hi Uffe,
 
-[...]
+we need return as fast as possible in mmc_host_ops request(ops->request) 
+callback,
+so the mmc core can continue handle next request.
+when next request everything is ready, it will wait previous done(if not 
+done),
+then call ops->request().
 
->  		ethernet1: dwmac@fef08000 {
-> @@ -189,11 +189,11 @@
->  			st,syscon		= <&syscfg_sbc>;
->  
->  			resets			= <&softreset STIH415_ETH1_SOFTRESET>;
-> -			reset-names		= "stmmaceth";
-> +			reset-names		= "stmmaceth", "sti-ethclk";
->  			pinctrl-names 	= "default";
->  			pinctrl-0	= <&pinctrl_mii1>;
->  			clock-names	= "stmmaceth";
-> -			clocks		= <&clk_s_a0_ls CLK_ETH1_PHY>;
-> +			clocks		= <&clk_s_a0_ls CLK_ICN_REG>, <&clk_s_a0_ls CLK_ETH1_PHY>;
+we can't use atomic context, because we use mutex_lock() to protect
+resource, and we have to hold the lock during handle request.
+So I use workq, we just queue a work and return in ops->request(),
+The mmc core can continue without blocking at ops->request().
 
-This looks wrong to me.  You appear to have changed the reset-names
-instead of the clock-names here.
-
-[...]
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Best Regards.
+micky.
