@@ -1,340 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421AbaFPOEh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 10:04:37 -0400
-Received: from mail.kapsi.fi ([217.30.184.167]:48200 "EHLO mail.kapsi.fi"
+	id S1753634AbaFPOEx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 10:04:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59694 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751007AbaFPOEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 10:04:35 -0400
-Message-ID: <539EF932.9070405@kapsi.fi>
-Date: Mon, 16 Jun 2014 17:03:30 +0300
-From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753469AbaFPOEw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 10:04:52 -0400
+Date: Mon, 16 Jun 2014 16:04:48 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH 2/2] memcg: Allow guarantee reclaim
+Message-ID: <20140616140448.GE16915@dhcp22.suse.cz>
+References: <20140611075729.GA4520@dhcp22.suse.cz>
+ <1402473624-13827-1-git-send-email-mhocko@suse.cz>
+ <1402473624-13827-2-git-send-email-mhocko@suse.cz>
+ <20140611153631.GH2878@cmpxchg.org>
+ <20140612132207.GA32720@dhcp22.suse.cz>
+ <20140612135600.GI2878@cmpxchg.org>
+ <20140612142237.GB32720@dhcp22.suse.cz>
+ <20140612161733.GC23606@htj.dyndns.org>
+ <20140616125915.GB16915@dhcp22.suse.cz>
+ <20140616135741.GA11542@htj.dyndns.org>
 MIME-Version: 1.0
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        David Airlie <airlied@linux.ie>,
-        Mike Turquette <mturquette@linaro.org>, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com, devicetree@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [RFC PATCH 1/4] memory: tegra124-emc: Add EMC driver
-References: <1402925713-25426-1-git-send-email-tomeu.vizoso@collabora.com> <1402925713-25426-2-git-send-email-tomeu.vizoso@collabora.com>
-In-Reply-To: <1402925713-25426-2-git-send-email-tomeu.vizoso@collabora.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:708:30:12d0:be5f:f4ff:fe47:6518
-X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
-X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140616135741.GA11542@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It should be mentioned that calling clk_set_rate on the EMC clock 
-currently does absolutely nothing (except probably returning an error). 
-The rate switching sequence is not implemented (nor is the clock tree 
-entirely correct. For example, the kernel thinks that PLL_M is disabled).
+On Mon 16-06-14 09:57:41, Tejun Heo wrote:
+> Hello, Michal.
+> 
+> On Mon, Jun 16, 2014 at 02:59:15PM +0200, Michal Hocko wrote:
+> > > There sure is a question of how fast userland will move to the new
+> > > interface. 
+> > 
+> > Yeah, I was mostly thinking about those who would need to to bigger
+> > changes. AFAIR threads will no longer be distributable between groups.
+> 
+> Thread-level granularity should go away no matter what, but this is
+> completely irrelevant to memcg which can't do per-thread anyway.
 
-Another note: I am currently implementing an actmon driver. I'm not 
-entirely enthusiastic about the downstream style of managing EMC rate 
-policy in the actmon driver, but haven't yet given much thought to it.
+Yes, I wasn't afraid about memcg. It was a setup which requires more
+controllers that I was worried about.
 
-Yet another note: I think the exported API should not be SoC-specific, 
-so s/tegra124_/tegra_/.
+> For whatever reason, a user is stuck with thread-level granularity for
+> controllers which work that way, the user can use the old hierarchies
+> for them for the time being.
 
-Thanks,
-- Mikko
+So he can mount memcg with new cgroup API and others with old?
 
-On 06/16/2014 04:35 PM, Tomeu Vizoso wrote:
-> Adds functionality for registering memory bandwidth needs and setting
-> the EMC clock rate based on that.
->
-> Also adds API for setting floor and ceiling frequency rates.
->
-> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-> ---
->   .../bindings/arm/tegra/nvidia,tegra124-emc.txt     |  26 ++++
->   drivers/memory/Kconfig                             |   8 +
->   drivers/memory/Makefile                            |   1 +
->   drivers/memory/tegra124-emc.c                      | 173 +++++++++++++++++++++
->   include/linux/platform_data/tegra_emc.h            |  23 +++
->   5 files changed, 231 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/arm/tegra/nvidia,tegra124-emc.txt
->   create mode 100644 drivers/memory/tegra124-emc.c
->
-> diff --git a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra124-emc.txt b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra124-emc.txt
-> new file mode 100644
-> index 0000000..88e6a55
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra124-emc.txt
-> @@ -0,0 +1,26 @@
-> +Tegra124 External Memory Controller
-> +
-> +Properties:
-> +- compatible : Should contain "nvidia,tegra124-emc".
-> +- reg : Should contain the register range of the device
-> +- #address-cells : Should be 1
-> +- #size-cells : Should be 0
-> +- nvidia,mc : phandle to the mc bus connected to EMC.
-> +- clocks : phandle to EMC, EMC shared bus override, and all parent clocks.
-> +- clock-names : name of each clock.
-> +- nvidia,pmc : phandle to the PMC syscon node.
-> +- max-clock-frequency : optional, specifies the maximum EMC rate in kHz.
-> +
-> +Child device nodes describe the memory settings for different configurations and
-> +clock rates.
-> +
-> +Example:
-> +
-> +	memory-controller@7001b000 {
-> +		compatible = "nvidia,tegra124-emc";
-> +		reg = <0x7001b000 0x1000>;
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		clocks = <&tegra_car TEGRA124_CLK_EMC>;
-> +		clock-names = "emc";
-> +	};
-> diff --git a/drivers/memory/Kconfig b/drivers/memory/Kconfig
-> index c59e9c9..48fa0dd 100644
-> --- a/drivers/memory/Kconfig
-> +++ b/drivers/memory/Kconfig
-> @@ -61,6 +61,14 @@ config TEGRA30_MC
->   	  analysis, especially for IOMMU/SMMU(System Memory Management
->   	  Unit) module.
->
-> +config TEGRA124_EMC
-> +	tristate "Tegra124 External Memory Controller (EMC) driver"
-> +	default y
-> +	depends on ARCH_TEGRA_124_SOC
-> +	help
-> +	  This driver is for the External Memory Controller (EMC) module
-> +	  available in Tegra124 SoCs.
-> +
->   config FSL_IFC
->   	bool
->   	depends on FSL_SOC
-> diff --git a/drivers/memory/Makefile b/drivers/memory/Makefile
-> index 71160a2..0b7290b 100644
-> --- a/drivers/memory/Makefile
-> +++ b/drivers/memory/Makefile
-> @@ -11,3 +11,4 @@ obj-$(CONFIG_FSL_IFC)		+= fsl_ifc.o
->   obj-$(CONFIG_MVEBU_DEVBUS)	+= mvebu-devbus.o
->   obj-$(CONFIG_TEGRA20_MC)	+= tegra20-mc.o
->   obj-$(CONFIG_TEGRA30_MC)	+= tegra30-mc.o
-> +obj-$(CONFIG_TEGRA124_EMC)	+= tegra124-emc.o
-> diff --git a/drivers/memory/tegra124-emc.c b/drivers/memory/tegra124-emc.c
-> new file mode 100644
-> index 0000000..b7a54a5
-> --- /dev/null
-> +++ b/drivers/memory/tegra124-emc.c
-> @@ -0,0 +1,173 @@
-> +/*
-> + * Copyright (c) 2013, NVIDIA CORPORATION.  All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/clk.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/platform_data/tegra_emc.h>
-> +
-> +#define DRV_NAME "tegra124-emc"
-> +#define EMC_FREQ_CUTOFF_USE_130_PERCENT	100000000
-> +#define EMC_FREQ_CUTOFF_USE_140_PERCENT	50000000
-> +#define BYTES_PER_EMC_CLOCK 16
-> +
-> +struct tegra124_emc {
-> +	struct clk *clk;
-> +	unsigned long bandwidth_requests[TEGRA_EMC_CONSUMER_LAST];
-> +	unsigned long floor_freq;
-> +	unsigned long ceiling_freq;
-> +	/*
-> +	 * Cannot use a mutex here because the ACTMON driver would set a floor
-> +	 * frequency from an IRQ handler.
-> +	 */
-> +	spinlock_t spinlock;
-> +};
-> +
-> +static struct platform_device *emc_pdev;
-> +
-> +static unsigned long tegra124_emc_bw_to_freq_req(unsigned long bw)
-> +{
-> +	return (bw + BYTES_PER_EMC_CLOCK - 1) / BYTES_PER_EMC_CLOCK;
-> +}
-> +
-> +static void tegra124_emc_update_rate(struct tegra124_emc *emc)
-> +{
-> +	int i;
-> +	struct clk *emc_master;
-> +	unsigned long total_bandwidth = 0;
-> +	unsigned long freq;
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&emc->spinlock, flags);
-> +
-> +	for (i = 0; i < TEGRA_EMC_CONSUMER_LAST; i++)
-> +		total_bandwidth += emc->bandwidth_requests[i];
-> +
-> +	emc_master = clk_get_parent(emc->clk);
-> +	freq = tegra124_emc_bw_to_freq_req(total_bandwidth) * 1000;
-> +	freq = clk_round_rate(emc_master, freq);
-> +
-> +	/* XXX: Add safety margins for DVFS */
-> +
-> +	if (freq < EMC_FREQ_CUTOFF_USE_140_PERCENT)
-> +		total_bandwidth += 4 * total_bandwidth / 10;
-> +	else if (freq < EMC_FREQ_CUTOFF_USE_130_PERCENT)
-> +		total_bandwidth += 3 * total_bandwidth / 10;
-> +	else
-> +		total_bandwidth += total_bandwidth / 10;
-> +
-> +	freq = tegra124_emc_bw_to_freq_req(total_bandwidth) * 1000;
-> +	freq = max(freq, emc->floor_freq);
-> +	freq = min(freq, emc->ceiling_freq);
-> +
-> +	spin_unlock_irqrestore(&emc->spinlock, flags);
-> +
-> +
-> +	clk_set_rate(emc->clk, freq);
-> +}
-> +
-> +int tegra124_emc_reserve_bandwidth(unsigned int consumer, unsigned long rate)
-> +{
-> +	struct tegra124_emc *emc = platform_get_drvdata(emc_pdev);
-> +	unsigned long flags;
-> +
-> +	if (consumer >= TEGRA_EMC_CONSUMER_LAST) {
-> +		dev_err(&emc_pdev->dev, "Invalid EMC consumer ID (%u)\n", consumer);
-> +		return -EINVAL;
-> +	}
-> +
-> +	spin_lock_irqsave(&emc->spinlock, flags);
-> +	emc->bandwidth_requests[consumer] = rate;
-> +	spin_unlock_irqrestore(&emc->spinlock, flags);
-> +
-> +	tegra124_emc_update_rate(emc);
-> +
-> +	return 0;
-> +}
-> +
-> +void tegra124_emc_set_floor(unsigned long freq)
-> +{
-> +	struct tegra124_emc *emc = platform_get_drvdata(emc_pdev);
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&emc->spinlock, flags);
-> +	emc->floor_freq = freq;
-> +	spin_unlock_irqrestore(&emc->spinlock, flags);
-> +
-> +	tegra124_emc_update_rate(emc);
-> +}
-> +
-> +void tegra124_emc_set_ceiling(unsigned long freq)
-> +{
-> +	struct tegra124_emc *emc = platform_get_drvdata(emc_pdev);
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&emc->spinlock, flags);
-> +	emc->ceiling_freq = freq;
-> +	spin_unlock_irqrestore(&emc->spinlock, flags);
-> +
-> +	tegra124_emc_update_rate(emc);
-> +}
-> +
-> +static int tegra124_emc_probe(struct platform_device *pdev)
-> +{
-> +	struct tegra124_emc *emc;
-> +
-> +	emc_pdev = pdev;
-> +
-> +	emc = devm_kzalloc(&pdev->dev, sizeof(*emc), GFP_KERNEL);
-> +	if (emc == NULL) {
-> +		dev_err(&pdev->dev, "Failed to allocate private memory\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	emc->ceiling_freq = ULONG_MAX;
-> +
-> +	emc->clk = devm_clk_get(&pdev->dev, "emc");
-> +	if (IS_ERR(emc->clk)) {
-> +		devm_kfree(&pdev->dev, emc);
-> +		dev_err(&pdev->dev, "Can not find EMC clock\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	spin_lock_init(&emc->spinlock);
-> +
-> +	platform_set_drvdata(emc_pdev, emc);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct of_device_id tegra124_emc_of_match[] = {
-> +	{ .compatible = "nvidia,tegra124-emc", },
-> +	{ },
-> +};
-> +
-> +static struct platform_driver tegra124_emc_driver = {
-> +	.driver         = {
-> +		.name   = DRV_NAME,
-> +		.owner  = THIS_MODULE,
-> +		.of_match_table = tegra124_emc_of_match,
-> +	},
-> +	.probe          = tegra124_emc_probe,
-> +};
-> +
-> +module_platform_driver(tegra124_emc_driver);
-> +
-> +MODULE_AUTHOR("Tomeu Vizoso <tomeu.vizoso@collabora.com>");
-> +MODULE_DESCRIPTION("Tegra124 EMC driver");
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_ALIAS("platform:" DRV_NAME);
-> diff --git a/include/linux/platform_data/tegra_emc.h b/include/linux/platform_data/tegra_emc.h
-> index df67505..2967964 100644
-> --- a/include/linux/platform_data/tegra_emc.h
-> +++ b/include/linux/platform_data/tegra_emc.h
-> @@ -31,4 +31,27 @@ struct tegra_emc_pdata {
->   	struct tegra_emc_table *tables;
->   };
->
-> +enum {
-> +	TEGRA_EMC_CONSUMER_DISP1 = 0,
-> +	TEGRA_EMC_CONSUMER_DISP2,
-> +	TEGRA_EMC_CONSUMER_MSENC,
-> +	TEGRA_EMC_CONSUMER_CAMERA,
-> +	TEGRA_EMC_CONSUMER_AVP,
-> +	TEGRA_EMC_CONSUMER_ISO,
-> +	TEGRA_EMC_CONSUMER_LAST
-> +};
-> +
-> +#ifdef CONFIG_TEGRA124_EMC
-> +int tegra124_emc_reserve_bandwidth(unsigned int consumer, unsigned long rate);
-> +void tegra124_emc_set_floor(unsigned long freq);
-> +void tegra124_emc_set_ceiling(unsigned long freq);
-> +#else
-> +int tegra124_emc_reserve_bandwidth(unsigned int consumer, unsigned long rate)
-> +{ return -ENODEV; }
-> +void tegra124_emc_set_floor(unsigned long freq)
-> +{ return; }
-> +void tegra124_emc_set_ceiling(unsigned long freq)
-> +{ return; }
-> +#endif
-> +
->   #endif
->
+> > > is used but I don't think there's any chance of removing the knob.
+> > > There's a reason why we're introducing a new version of the whole
+> > > cgroup interface which can co-exist with the existing one after all.
+> > > If you wanna version memcg interface separately, maybe that'd work but
+> > > it sounds like a lot of extra hassle for not much gain.
+> > 
+> > No, I didn't mean to version the interface. I just wanted to have
+> > gradual transition for potential soft_limit users.
+> > 
+> > Maybe I am misunderstanding something but I thought that new version of
+> > API will contain all knobs which are not marked .flags = CFTYPE_INSANE
+> > while the old API will contain all of them.
+> 
+> Nope, some changes don't fit that model.  CFTYPE_ON_ON_DFL is the
+> opposite. 
 
+OK, I wasn't aware of this. On which branch I find this?
+
+> Knobs marked with the flag only appear on the default
+> hierarchy (cgroup core internally calls it the default hierarchy as
+> this is the tree all the controllers are attached to by default).
+
+I am not sure I understand. So they are visible only in the hierarchy
+mounted with the new cgroup API (sane or how is it called)?
+-- 
+Michal Hocko
+SUSE Labs
