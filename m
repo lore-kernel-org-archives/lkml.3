@@ -1,97 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898AbaFPGRC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 02:17:02 -0400
-Received: from mx0a-0016ce01.pphosted.com ([67.231.148.157]:23024 "EHLO
-	mx0a-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753852AbaFPGRA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 02:17:00 -0400
-From: Saurav Kashyap <saurav.kashyap@qlogic.com>
-To: Joe Perches <joe@perches.com>, linux-kernel <linux-kernel@vger.kernel.org>
-CC: Dept-Eng QLA2xxx Upstream <qla2xxx-upstream@qlogic.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH -next 22/26] qla2xxx: Use dma_zalloc_coherent
-Thread-Topic: [PATCH -next 22/26] qla2xxx: Use dma_zalloc_coherent
-Thread-Index: AQHPiSqPU9BB2KYxsk+whndch/gCeg==
-Date: Mon, 16 Jun 2014 06:16:50 +0000
-Message-ID: <F5D084D6342F9B479C34599BB0A03E4D01284FFE36@AVMB1.qlogic.org>
-References: <cover.1402863904.git.joe@perches.com>
- <5e845f43a014ad7dd4ab3a4fdcd95b879bc496ef.1402863905.git.joe@perches.com>
-In-Reply-To: <5e845f43a014ad7dd4ab3a4fdcd95b879bc496ef.1402863905.git.joe@perches.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.3.9.131030
-x-originating-ip: [10.1.4.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <9FEC3186B4FB9E4C9BB5E89287019BA1@qlogic.com>
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7470 signatures=670466
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
- adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=7.0.1-1402240000 definitions=main-1406160073
+	id S1753843AbaFPGWt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 02:22:49 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:51677 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753666AbaFPGWs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 02:22:48 -0400
+Message-ID: <1402899678.5426.21.camel@debian>
+Subject: Re: [PATCH] mm/vmscan.c: avoid recording the original scan targets
+ in shrink_lruvec()
+From: Chen Yucong <slaoub@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, mgorman@suse.de, mhocko@suse.cz,
+        hannes@cmpxchg.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Mon, 16 Jun 2014 14:21:18 +0800
+In-Reply-To: <alpine.LSU.2.11.1406151742290.26073@eggly.anvils>
+References: <1402320436-22270-1-git-send-email-slaoub@gmail.com>
+	 <20140610163338.5b463c5884c4c7e3f1b948e2@linux-foundation.org>
+	 <1402456897.28433.46.camel@debian>
+	 <alpine.LSU.2.11.1406151742290.26073@eggly.anvils>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+On Sun, 2014-06-15 at 17:47 -0700, Hugh Dickins wrote:
+> On Wed, 11 Jun 2014, Chen Yucong wrote:
+> > On Tue, 2014-06-10 at 16:33 -0700, Andrew Morton wrote:
+> > > >                       break;
+> > > >  
+> > > >               if (nr_file > nr_anon) {
+> > > > -                     unsigned long scan_target =
+> > > targets[LRU_INACTIVE_ANON] +
+> > > >
+> > > -                                             targets[LRU_ACTIVE_ANON]
+> > > + 1;
+> > > > +                     nr_to_scan = nr_file - ratio * nr_anon;
+> > > > +                     percentage = nr[LRU_FILE] * 100 / nr_file;
+> > > 
+> > > here, nr_file and nr_anon are derived from the contents of nr[].  But
+> > > nr[] was modified in the for_each_evictable_lru() loop, so its
+> > > contents
+> > > now may differ from what was in targets[]? 
+> > 
+> > nr_to_scan is used for recording the number of pages that should be
+> > scanned to keep original *ratio*.
+> > 
+> > We can assume that the value of (nr_file > nr_anon) is true, nr_to_scan
+> > should be distribute to nr[LRU_ACTIVE_FILE] and nr[LRU_INACTIVE_FILE] in
+> > proportion.
+> > 
+> >     nr_file = nr[LRU_ACTIVE_FILE] + nr[LRU_INACTIVE_FILE];
+> >     percentage = nr[LRU_FILE] / nr_file;
+> > 
+> > Note that in comparison with *old* percentage, the "new" percentage has
+> > the different meaning. It is just used to divide nr_so_scan pages
+> > appropriately.
+> 
+> [PATCH] mm-vmscanc-avoid-recording-the-original-scan-targets-in-shrink_lruvec-fix.patch
+> 
+> I have not reviewed your logic at all, but soon hit a divide-by-zero
+> crash on mmotm: it needs some such fix as below.
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> ---
+> 
+>  mm/vmscan.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> --- mmotm/mm/vmscan.c	2014-06-12 17:46:36.632008452 -0700
+> +++ linux/mm/vmscan.c	2014-06-12 18:55:18.832425713 -0700
+> @@ -2122,11 +2122,12 @@ static void shrink_lruvec(struct lruvec
+>  			nr_to_scan = nr_file - ratio * nr_anon;
+>  			percentage = nr[LRU_FILE] * 100 / nr_file;
+>  			lru = LRU_BASE;
+> -		} else {
+> +		} else if (ratio) {
+>  			nr_to_scan = nr_anon - nr_file / ratio;
+>  			percentage = nr[LRU_BASE] * 100 / nr_anon;
+>  			lru = LRU_FILE;
+> -		}
+> +		} else
+> +			break;
+>  
+>  		/* Stop scanning the smaller of the LRU */
+>  		nr[lru] = 0;
+
+I think I made a terrible mistake. If the value of
+     (nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE]) <
+     (nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON])
+is true , the ratio will always be zero in original patch. This is too
+terrible. It is unfair for anon list. Although the above fix can avoid
+hitting a divide-by-zero crash, it can not solve the problem of
+fairness.
+
+The following fix can solve divide-by-zero and unfair problems
+simultaneously. But it needs to introduce a new variable for saving the
+ratio of anon to file and relative operations.
+
+thx!
+cyc
 
 
->Use the zeroing function instead of dma_alloc_coherent & memset(,0,)
->
->Signed-off-by: Joe Perches <joe@perches.com>
->---
-> drivers/scsi/qla2xxx/qla_init.c | 10 ++++------
-> 1 file changed, 4 insertions(+), 6 deletions(-)
->
->diff --git a/drivers/scsi/qla2xxx/qla_init.c
->b/drivers/scsi/qla2xxx/qla_init.c
->index e218441..46990f4 100644
->--- a/drivers/scsi/qla2xxx/qla_init.c
->+++ b/drivers/scsi/qla2xxx/qla_init.c
->@@ -1526,8 +1526,8 @@ try_fce:
-> 			    FCE_SIZE, ha->fce, ha->fce_dma);
-> 
-> 		/* Allocate memory for Fibre Channel Event Buffer. */
->-		tc = dma_alloc_coherent(&ha->pdev->dev, FCE_SIZE, &tc_dma,
->-		    GFP_KERNEL);
->+		tc = dma_zalloc_coherent(&ha->pdev->dev, FCE_SIZE, &tc_dma,
->+					 GFP_KERNEL);
-> 		if (!tc) {
-> 			ql_log(ql_log_warn, vha, 0x00be,
-> 			    "Unable to allocate (%d KB) for FCE.\n",
->@@ -1535,7 +1535,6 @@ try_fce:
-> 			goto try_eft;
-> 		}
-> 
->-		memset(tc, 0, FCE_SIZE);
-> 		rval = qla2x00_enable_fce_trace(vha, tc_dma, FCE_NUM_BUFFERS,
-> 		    ha->fce_mb, &ha->fce_bufs);
-> 		if (rval) {
->@@ -1560,8 +1559,8 @@ try_eft:
-> 			    EFT_SIZE, ha->eft, ha->eft_dma);
-> 
-> 		/* Allocate memory for Extended Trace Buffer. */
->-		tc = dma_alloc_coherent(&ha->pdev->dev, EFT_SIZE, &tc_dma,
->-		    GFP_KERNEL);
->+		tc = dma_zalloc_coherent(&ha->pdev->dev, EFT_SIZE, &tc_dma,
->+					 GFP_KERNEL);
-> 		if (!tc) {
-> 			ql_log(ql_log_warn, vha, 0x00c1,
-> 			    "Unable to allocate (%d KB) for EFT.\n",
->@@ -1569,7 +1568,6 @@ try_eft:
-> 			goto cont_alloc;
-> 		}
-> 
->-		memset(tc, 0, EFT_SIZE);
-> 		rval = qla2x00_enable_eft_trace(vha, tc_dma, EFT_NUM_BUFFERS);
-> 		if (rval) {
-> 			ql_log(ql_log_warn, vha, 0x00c2,
->-- 
->1.8.1.2.459.gbcd45b4.dirty
->
+Signed-off-by: Chen Yucong <slaoub@gmail.com>
+---
+ mm/vmscan.c |   30 +++++++++++-------------------
+ 1 file changed, 11 insertions(+), 19 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index a8ffe4e..cf8d0a3 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2057,8 +2057,7 @@ out:
+ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control
+*sc)
+ {
+ 	unsigned long nr[NR_LRU_LISTS];
+-	unsigned long targets[NR_LRU_LISTS];
+-	unsigned long nr_to_scan;
++	unsigned long nr_to_scan, ratio_file_to_anon, ratio_anon_to_file;
+ 	enum lru_list lru;
+ 	unsigned long nr_reclaimed = 0;
+ 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
+@@ -2067,8 +2066,10 @@ static void shrink_lruvec(struct lruvec *lruvec,
+struct scan_control *sc)
+ 
+ 	get_scan_count(lruvec, sc, nr);
+ 
+-	/* Record the original scan target for proportional adjustments later
+*/
+-	memcpy(targets, nr, sizeof(nr));
++	ratio_file_to_anon = (nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE] +
+1) /
++			     (nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON] + 1);
++	ratio_anon_to_file = (nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON] +
+1) /
++			     (nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE] + 1);
+ 
+ 	/*
+ 	 * Global reclaiming within direct reclaim at DEF_PRIORITY is a normal
+@@ -2088,7 +2089,6 @@ static void shrink_lruvec(struct lruvec *lruvec,
+struct scan_control *sc)
+ 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
+ 					nr[LRU_INACTIVE_FILE]) {
+ 		unsigned long nr_anon, nr_file, percentage;
+-		unsigned long nr_scanned;
+ 
+ 		for_each_evictable_lru(lru) {
+ 			if (nr[lru]) {
+@@ -2123,15 +2123,13 @@ static void shrink_lruvec(struct lruvec *lruvec,
+struct scan_control *sc)
+ 			break;
+ 
+ 		if (nr_file > nr_anon) {
+-			unsigned long scan_target = targets[LRU_INACTIVE_ANON] +
+-						targets[LRU_ACTIVE_ANON] + 1;
++			nr_to_scan = nr_file - ratio_file_to_anon * nr_anon;
++			percentage = nr[LRU_FILE] * 100 / nr_file;
+ 			lru = LRU_BASE;
+-			percentage = nr_anon * 100 / scan_target;
+ 		} else {
+-			unsigned long scan_target = targets[LRU_INACTIVE_FILE] +
+-						targets[LRU_ACTIVE_FILE] + 1;
++			nr_to_scan = nr_anon - ratio_anon_to_file * nr_file;
++			percentage = nr[LRU_BASE] * 100 / nr_anon;
+ 			lru = LRU_FILE;
+-			percentage = nr_file * 100 / scan_target;
+ 		}
+ 
+ 		/* Stop scanning the smaller of the LRU */
+@@ -2143,14 +2141,8 @@ static void shrink_lruvec(struct lruvec *lruvec,
+struct scan_control *sc)
+ 		 * scan target and the percentage scanning already complete
+ 		 */
+ 		lru = (lru == LRU_FILE) ? LRU_BASE : LRU_FILE;
+-		nr_scanned = targets[lru] - nr[lru];
+-		nr[lru] = targets[lru] * (100 - percentage) / 100;
+-		nr[lru] -= min(nr[lru], nr_scanned);
+-
+-		lru += LRU_ACTIVE;
+-		nr_scanned = targets[lru] - nr[lru];
+-		nr[lru] = targets[lru] * (100 - percentage) / 100;
+-		nr[lru] -= min(nr[lru], nr_scanned);
++		nr[lru] = nr_to_scan * percentage / 100;
++		nr[lru + LRU_ACTIVE] = nr_to_scan - nr[lru];
+ 
+ 		scan_adjusted = true;
+ 	}
+-- 
+1.7.10.4
+
+
 
