@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023AbaFPUSE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 16:18:04 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:49844 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755816AbaFPUSC (ORCPT
+	id S1755979AbaFPUU3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 16:20:29 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:46398 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521AbaFPUU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 16:18:02 -0400
-From: Julius Werner <jwerner@chromium.org>
-To: Olof Johansson <olofj@chromium.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <stephen.r.warren@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Stefan Reinauer <stefan.reinauer@coreboot.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Julius Werner <jwerner@chromium.org>
-Subject: [PATCH v2] firmware: Add device tree binding for coreboot
-Date: Mon, 16 Jun 2014 13:17:34 -0700
-Message-Id: <1402949854-30380-1-git-send-email-jwerner@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <CAODwPW9w0sKme=QSthJN7QACGcwpR6NmxufFtirkm6d3XYZ1_g@mail.gmail.com>
-References: <1402689965-19397-1-git-send-email-jwerner@chromium.org> <CAL_JsqL-K4i54ysugCKSw-aO-9pvnYgZfJ=NdBAot=mwffxmyA@mail.gmail.com> <CAODwPW9tRM8kxBVg3apkec2K1rahuENk_b_BD_0jvXON7JzeaA@mail.gmail.com> <CALiw-2GWHKPbXuMFXUHY_pgpUJNdqQbyPEV1UjEep3zD2sSRPQ@mail.gmail.com> <CAODwPW9w0sKme=QSthJN7QACGcwpR6NmxufFtirkm6d3XYZ1_g@mail.gmail.com>
+	Mon, 16 Jun 2014 16:20:28 -0400
+X-CheckPoint: {539F5188-2-2100090A-C0000000}
+Message-ID: <539F5188.6060004@tilera.com>
+Date: Mon, 16 Jun 2014 16:20:24 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Himangi Saraogi <himangi774@gmail.com>, <linux-kernel@vger.kernel.org>
+CC: <julia.lawall@lip6.fr>
+Subject: Re: [PATCH] tile: use ARRAY_SIZE
+References: <20140616201224.GA18320@himangi-Dell>
+In-Reply-To: <20140616201224.GA18320@himangi-Dell>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.9.0.23]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds documentation describing a device tree binding for the
-coreboot firmware. It is meant to be dynamically added during boot and
-contains address definitions for the coreboot table (a list of
-variable-sized descriptors providing information about various compile-
-and run-time generated firmware parameters) and the CBMEM area (the
-structure containing most run-time resident memory regions set up by
-coreboot).
+On 6/16/2014 4:12 PM, Himangi Saraogi wrote:
+> ARRAY_SIZE is more concise to use when the size of an array is divided
+> by the size of its type or the size of its first element.
+>
+> The semantic patch that makes this change is as follows:
+>
+> // <smpl>
+> @i@
+> @@
+>
+> @@
+> type T;
+> T[] E;
+> @@
+>
+> - (sizeof(E)/sizeof(T))
+> + ARRAY_SIZE(E)
+> // </smpl>
+>
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> ---
+> Not compile tested.
+>   arch/tile/kernel/traps.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
 
-These definitions allow kernel drivers to easily access data contained
-in and pointed to by these regions (such as coreboot's in-memory log).
-(An example implementation can be seen at http://crosreview.com/203371,
-which will be submitted at a later point.)
+Thanks, taken into the tile tree.
 
-Change-Id: I97609d461d306f85851e5efc26c675ca1e2d7e9d
-Signed-off-by: Julius Werner <jwerner@chromium.org>
----
- .../devicetree/bindings/firmware/coreboot.txt      | 32 ++++++++++++++++++++++
- 1 file changed, 32 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/firmware/coreboot.txt
-
-diff --git a/Documentation/devicetree/bindings/firmware/coreboot.txt b/Documentation/devicetree/bindings/firmware/coreboot.txt
-new file mode 100644
-index 0000000..5055f0e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/firmware/coreboot.txt
-@@ -0,0 +1,32 @@
-+COREBOOT firmware information
-+
-+The device tree node to communicate the location of coreboot's memory-resident
-+bookkeeping structures to the kernel. Since coreboot itself cannot boot a
-+device-tree-based kernel (yet), this node needs to be inserted by a
-+second-stage bootloader (a coreboot "payload").
-+
-+Required properties:
-+ - compatible: Should be "coreboot"
-+ - reg: Address and length of the following two memory regions, in order:
-+	1.) The coreboot table. This is a list of variable-sized descriptors
-+	that contain various compile- and run-time generated firmware
-+	parameters. It is identified by the magic string "LBIO" in its first
-+	four bytes. See coreboot's src/include/boot/coreboot_tables.h for
-+	details.
-+	2.) The CBMEM area. This is a downward-growing memory region used by
-+	coreboot to dynamically allocate data structures that remain resident.
-+	It may or may not include the coreboot table as one of its members. It
-+	is identified by a root node descriptor with the magic number
-+	0xc0389479 that resides in the topmost 8 bytes of the area. See
-+	coreboot's src/lib/dynamic_cbmem.c for details.
-+
-+Example:
-+	firmware {
-+		ranges;
-+
-+		coreboot {
-+			compatible = "coreboot";
-+			reg = <0xfdfea000 0x264>,
-+			      <0xfdfea000 0x16000>;
-+		}
-+	};
 -- 
-1.8.3.2
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
