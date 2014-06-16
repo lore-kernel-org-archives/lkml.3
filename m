@@ -1,36 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434AbaFPPbc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 11:31:32 -0400
-Received: from qmta15.emeryville.ca.mail.comcast.net ([76.96.27.228]:39200
-	"EHLO qmta15.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754837AbaFPPb2 (ORCPT
+	id S1755455AbaFPPbn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 11:31:43 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:46225 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754312AbaFPPbk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 11:31:28 -0400
-Date: Mon, 16 Jun 2014 10:31:26 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Tejun Heo <tj@kernel.org>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/12] percpu: reorganize include/linux/percpu-defs.h
-In-Reply-To: <alpine.DEB.2.11.1406131354210.24349@gentwo.org>
-Message-ID: <alpine.DEB.2.11.1406161029250.20878@gentwo.org>
-References: <1402590209-31610-1-git-send-email-tj@kernel.org> <1402590209-31610-6-git-send-email-tj@kernel.org> <alpine.DEB.2.10.1406131215330.1717@gentwo.org> <20140613182538.GB3723@htj.dyndns.org> <alpine.DEB.2.11.1406131354210.24349@gentwo.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 16 Jun 2014 11:31:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140616143801.GJ5714@two.firstfloor.org>
+References: <cover.1402769596.git.luto@amacapital.net>
+	<21405.44257.742122.786960@gargle.gargle.HOWL>
+	<20140615143500.GP179@brightrain.aerifal.cx>
+	<539DD26B.3060709@zytor.com>
+	<CALCETrXTpkto2gJBiFC4CR5D=Lqf2YfP5BBH02f8hFW+TUGqeA@mail.gmail.com>
+	<539DDE9C.3010903@zytor.com>
+	<CALCETrWLBCNiJArMRPuHbfhj6=ytnx_YqykzgCgZ+DYu34M1Mg@mail.gmail.com>
+	<20140616023604.GI5714@two.firstfloor.org>
+	<CAKOQZ8wwKcDAXq0BnHwvL01LQNFeOGwgA9x8kCLWeFaP6USF4A@mail.gmail.com>
+	<20140616143801.GJ5714@two.firstfloor.org>
+Date: Mon, 16 Jun 2014 08:31:39 -0700
+X-Google-Sender-Auth: ZsoNlXZzFhYryqiduj12Y5by9S8
+Message-ID: <CAKOQZ8zk8KfkObSZg8fmhZXm9nXQSneOywvV-NBj=N-tNWjNPg@mail.gmail.com>
+Subject: Re: [RFC 0/2] __vdso_findsym
+From: Ian Lance Taylor <iant@golang.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Andy Lutomirski <luto@amacapital.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Rich Felker <dalias@libc.org>,
+        Mikael Pettersson <mikpelinux@gmail.com>, Russ Cox <rsc@golang.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jun 2014, Christoph Lameter wrote:
-
-> > Yeah, dropping that part isn't difficult.  Where's the &get_cpu_var
-> > patchset now?  Is it gonna make it into v3.16-rc1?
+On Mon, Jun 16, 2014 at 7:38 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>> I think this issue started when some of the Go developers questioned
+>> why the kernel needed to provide a very complex interface--parsing an
+>> ELF shared shared library--for very simple functionality--looking up
+>> the address of a magic function.  This approach has required special
+>> support not just in Go, but also in the dynamic linker and gdb, and
+>> does not work well for statically linked binaries.  The support in gdb
+>> is perhaps a good idea, but elsewhere it does not make sense.
+>>
+>> So why not provide a simple interface?
 >
-> Pieces are flowing in for that through various trees. I can post the
-> remaining patches once v3.16 is out.
+> What good would it do now that everyone already supports it?
 
-Just went through it. About 30 patches still left. Some of the subsystems
-that indicated acceptance did not merge the patches. Guess I will patch
-the whole thing and make my rounds again. Or could we get this through the
-percpu tree?
+Do statically linked binaries use the vDSO calls?
 
-
+Ian
