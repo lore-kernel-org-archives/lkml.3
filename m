@@ -1,220 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318AbaFPTVT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 15:21:19 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42897 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521AbaFPTVR (ORCPT
+	id S1755716AbaFPTZr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 15:25:47 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44243 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752558AbaFPTZp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 15:21:17 -0400
-From: Stephane Viau <sviau@codeaurora.org>
-To: dri-devel@lists.freedesktop.org
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        robdclark@gmail.com, Stephane Viau <sviau@codeaurora.org>
-Subject: [PATCH] drm/msm: update and activate iommu support
-Date: Mon, 16 Jun 2014 14:20:55 -0400
-Message-Id: <1402942855-29591-1-git-send-email-sviau@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Mon, 16 Jun 2014 15:25:45 -0400
+Date: Mon, 16 Jun 2014 20:25:00 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Daniel Stone <daniels@collabora.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20140616192500.GJ5099@sirena.org.uk>
+References: <1402941758-11216-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1402941758-11216-8-git-send-email-javier.martinez@collabora.co.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MmzhKBr7cvVIsstX"
+Content-Disposition: inline
+In-Reply-To: <1402941758-11216-8-git-send-email-javier.martinez@collabora.co.uk>
+X-Cookie: Ditat Deus.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 07/10] regulator: Add driver for Maxim 77802 PMIC
+ regulators
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This changes activates the iommu support for MDP5, through the
-platform config structure.
 
-Iommu support is also slightly modified in order to make sure
-that MDP iommu is properly cleaned up if a probe deferral is
-requested. Before this change, IOMMU faults would occur if the
-probe failed (-EPROBE_DEFER).
+--MmzhKBr7cvVIsstX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Stephane Viau <sviau@codeaurora.org>
----
- drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c | 28 +++++++++++++++++++++++-----
- drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h |  1 +
- drivers/gpu/drm/msm/msm_gem.c           |  6 ++++++
- drivers/gpu/drm/msm/msm_iommu.c         | 21 +++++++++++++++++++--
- drivers/gpu/drm/msm/msm_mmu.h           |  1 +
- 5 files changed, 50 insertions(+), 7 deletions(-)
+On Mon, Jun 16, 2014 at 08:02:35PM +0200, Javier Martinez Canillas wrote:
 
-diff --git a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c
-index 2967b19..62ee5cd 100644
---- a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c
-+++ b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c
-@@ -20,6 +20,10 @@
- #include "msm_mmu.h"
- #include "mdp5_kms.h"
- 
-+static const char *iommu_ports[] = {
-+		"mdp_0",
-+};
-+
- static struct mdp5_platform_config *mdp5_get_config(struct platform_device *dev);
- 
- uint32_t __read_mostly _mdp5_pipe_vig_base;
-@@ -201,6 +205,12 @@ static void mdp5_preclose(struct msm_kms *kms, struct drm_file *file)
- static void mdp5_destroy(struct msm_kms *kms)
- {
- 	struct mdp5_kms *mdp5_kms = to_mdp5_kms(to_mdp_kms(kms));
-+	struct msm_mmu *mmu = mdp5_kms->mmu;
-+
-+	if (mmu) {
-+		mmu->funcs->detach(mmu, iommu_ports, ARRAY_SIZE(iommu_ports));
-+		mmu->funcs->destroy(mmu);
-+	}
- 	kfree(mdp5_kms);
- }
- 
-@@ -313,10 +323,6 @@ fail:
- 	return ret;
- }
- 
--static const char *iommu_ports[] = {
--		"mdp_0",
--};
--
- static int get_clk(struct platform_device *pdev, struct clk **clkp,
- 		const char *name)
- {
-@@ -406,17 +412,23 @@ struct msm_kms *mdp5_kms_init(struct drm_device *dev)
- 		mmu = msm_iommu_new(dev, config->iommu);
- 		if (IS_ERR(mmu)) {
- 			ret = PTR_ERR(mmu);
-+			dev_err(dev->dev, "failed to init iommu: %d\n", ret);
- 			goto fail;
- 		}
-+
- 		ret = mmu->funcs->attach(mmu, iommu_ports,
- 				ARRAY_SIZE(iommu_ports));
--		if (ret)
-+		if (ret) {
-+			dev_err(dev->dev, "failed to attach iommu: %d\n", ret);
-+			mmu->funcs->destroy(mmu);
- 			goto fail;
-+		}
- 	} else {
- 		dev_info(dev->dev, "no iommu, fallback to phys "
- 				"contig buffers for scanout\n");
- 		mmu = NULL;
- 	}
-+	mdp5_kms->mmu = mmu;
- 
- 	mdp5_kms->id = msm_register_mmu(dev, mmu);
- 	if (mdp5_kms->id < 0) {
-@@ -445,5 +457,11 @@ static struct mdp5_platform_config *mdp5_get_config(struct platform_device *dev)
- #ifdef CONFIG_OF
- 	/* TODO */
- #endif
-+	config.iommu = iommu_domain_alloc(&platform_bus_type, 0);
-+	/* TODO hard-coded in downstream mdss, but should it be? */
-+	config.max_clk = 200000000;
-+	/* TODO get from DT: */
-+	config.smp_blk_cnt = 22;
-+
- 	return &config;
- }
-diff --git a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h
-index 6a89b04..20ea748 100644
---- a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h
-+++ b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h
-@@ -41,6 +41,7 @@ struct mdp5_kms {
- 
- 	/* mapper-id used to request GEM buffer mapped for scanout: */
- 	int id;
-+	struct msm_mmu *mmu;
- 
- 	/* for tracking smp allocation amongst pipes: */
- 	mdp5_smp_state_t smp_state;
-diff --git a/drivers/gpu/drm/msm/msm_gem.c b/drivers/gpu/drm/msm/msm_gem.c
-index bb8026d..690d7e7 100644
---- a/drivers/gpu/drm/msm/msm_gem.c
-+++ b/drivers/gpu/drm/msm/msm_gem.c
-@@ -278,6 +278,7 @@ int msm_gem_get_iova_locked(struct drm_gem_object *obj, int id,
- 		uint32_t *iova)
- {
- 	struct msm_gem_object *msm_obj = to_msm_bo(obj);
-+	struct drm_device *dev = obj->dev;
- 	int ret = 0;
- 
- 	if (!msm_obj->domain[id].iova) {
-@@ -285,6 +286,11 @@ int msm_gem_get_iova_locked(struct drm_gem_object *obj, int id,
- 		struct msm_mmu *mmu = priv->mmus[id];
- 		struct page **pages = get_pages(obj);
- 
-+		if (!mmu) {
-+			dev_err(dev->dev, "null MMU pointer\n");
-+			return -EINVAL;
-+		}
-+
- 		if (IS_ERR(pages))
- 			return PTR_ERR(pages);
- 
-diff --git a/drivers/gpu/drm/msm/msm_iommu.c b/drivers/gpu/drm/msm/msm_iommu.c
-index 92b7459..198b2fe 100644
---- a/drivers/gpu/drm/msm/msm_iommu.c
-+++ b/drivers/gpu/drm/msm/msm_iommu.c
-@@ -28,7 +28,7 @@ static int msm_fault_handler(struct iommu_domain *iommu, struct device *dev,
- 		unsigned long iova, int flags, void *arg)
- {
- 	DBG("*** fault: iova=%08lx, flags=%d", iova, flags);
--	return 0;
-+	return -ENOSYS;
- }
- 
- static int msm_iommu_attach(struct msm_mmu *mmu, const char **names, int cnt)
-@@ -40,8 +40,10 @@ static int msm_iommu_attach(struct msm_mmu *mmu, const char **names, int cnt)
- 	for (i = 0; i < cnt; i++) {
- 		struct device *msm_iommu_get_ctx(const char *ctx_name);
- 		struct device *ctx = msm_iommu_get_ctx(names[i]);
--		if (IS_ERR_OR_NULL(ctx))
-+		if (IS_ERR_OR_NULL(ctx)) {
-+			dev_warn(dev->dev, "couldn't get %s context", names[i]);
- 			continue;
-+		}
- 		ret = iommu_attach_device(iommu->domain, ctx);
- 		if (ret) {
- 			dev_warn(dev->dev, "could not attach iommu to %s", names[i]);
-@@ -52,6 +54,20 @@ static int msm_iommu_attach(struct msm_mmu *mmu, const char **names, int cnt)
- 	return 0;
- }
- 
-+static void msm_iommu_detach(struct msm_mmu *mmu, const char **names, int cnt)
-+{
-+	struct msm_iommu *iommu = to_msm_iommu(mmu);
-+	int i;
-+
-+	for (i = 0; i < cnt; i++) {
-+		struct device *msm_iommu_get_ctx(const char *ctx_name);
-+		struct device *ctx = msm_iommu_get_ctx(names[i]);
-+		if (IS_ERR_OR_NULL(ctx))
-+			continue;
-+		iommu_detach_device(iommu->domain, ctx);
-+	}
-+}
-+
- static int msm_iommu_map(struct msm_mmu *mmu, uint32_t iova,
- 		struct sg_table *sgt, unsigned len, int prot)
- {
-@@ -127,6 +143,7 @@ static void msm_iommu_destroy(struct msm_mmu *mmu)
- 
- static const struct msm_mmu_funcs funcs = {
- 		.attach = msm_iommu_attach,
-+		.detach = msm_iommu_detach,
- 		.map = msm_iommu_map,
- 		.unmap = msm_iommu_unmap,
- 		.destroy = msm_iommu_destroy,
-diff --git a/drivers/gpu/drm/msm/msm_mmu.h b/drivers/gpu/drm/msm/msm_mmu.h
-index 0303244..21da6d1 100644
---- a/drivers/gpu/drm/msm/msm_mmu.h
-+++ b/drivers/gpu/drm/msm/msm_mmu.h
-@@ -22,6 +22,7 @@
- 
- struct msm_mmu_funcs {
- 	int (*attach)(struct msm_mmu *mmu, const char **names, int cnt);
-+	void (*detach)(struct msm_mmu *mmu, const char **names, int cnt);
- 	int (*map)(struct msm_mmu *mmu, uint32_t iova, struct sg_table *sgt,
- 			unsigned len, int prot);
- 	int (*unmap)(struct msm_mmu *mmu, uint32_t iova, struct sg_table *sgt,
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+> --- a/drivers/mfd/max77802.c
+> +++ b/drivers/mfd/max77802.c
+> @@ -37,6 +37,7 @@
+>  #include <linux/err.h>
+> =20
+>  static const struct mfd_cell max77802_devs[] =3D {
+> +	{ .name =3D "max77802-pmic", },
+>  };
+> =20
+>  static bool max77802_pmic_is_accessible_reg(struct device *dev,
 
+Please don't do things like this, it makes it harder to apply your
+series.  Just register all the devices in the MFD when you add the MFD
+driver.
+
+> +	default:
+> +		pr_warn("%s: regulator_suspend_mode : 0x%x not supported\n",
+> +			rdev->desc->name, mode);
+> +		return -EINVAL;
+
+dev_warn().
+
+> +static void max77802_copy_reg(struct device *dev, struct regmap *regmap,
+> +			      int from_reg, int to_reg)
+> +{
+> +	int val;
+> +	int ret;
+> +
+> +	if (from_reg =3D=3D to_reg)
+> +		return;
+> +
+> +	ret =3D regmap_read(regmap, from_reg, &val);
+> +	if (!ret)
+> +		ret =3D regmap_write(regmap, to_reg, val);
+> +
+> +	if (ret)
+> +		dev_warn(dev, "Copy err %d =3D> %d (%d)\n",
+> +			 from_reg, to_reg, ret);
+> +}
+
+Again, this looks like it should be generic.
+
+> +static int max77802_pmic_probe(struct platform_device *pdev)
+> +{
+
+> +	dev_dbg(&pdev->dev, "%s\n", __func__);
+
+This isn't adding anything, just remove it - the core already logs
+probes if you want.
+
+> +	config.dev =3D &pdev->dev;
+
+Are you sure this shouldn't be the MFD?
+
+> +	for (i =3D 0; i < MAX77802_MAX_REGULATORS; i++) {
+> +		struct regulator_dev *rdev;
+> +		int id =3D pdata->regulators[i].id;
+> +
+> +		config.init_data =3D pdata->regulators[i].initdata;
+> +		config.of_node =3D pdata->regulators[i].of_node;
+> +
+> +		max77802->opmode[id] =3D MAX77802_OPMODE_NORMAL;
+
+Why isn't this being read from the hardware, this may lead to a
+configuration change the first time we pay attention?
+
+--MmzhKBr7cvVIsstX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTn0SIAAoJELSic+t+oim9E20P/35IuJBmgJxhAznpLcstFe9J
+ZmLvNWxRuf/Ofl97sD0O3e54M+pxhlAR9DgRKGxBYbZmrc7wW5nmpcZ5Z9e1A2Cc
+5UfljaITnYtK+toYzCdRnkWKTeeCCwRXQNMF3X03PDgU1NcHIvxOu9dfqctRG5BL
+HoDFZxnGY5lZsFuu3ZVI5FFmi/nWxoNQ5Gg1tCYtFzO/0AGdPgTVBCA6c7Oj/wmM
+Gx5NCImhayBljy6S5FP5SPlvKCbwpExr9rOXPRwfJ/FDnc2VNbciM5R9GMikJ8cX
+fW2MSjieGwqp1BQmVIcixM2b5iaakzRxWhglWUy4omXdUu/cum1HuO0zuGRDQIgC
+eVpW8DZZytvAsxa2HcBQWZTbQMCcIeRIl6kRA03WY2meDoqaVI8O5WsoGlGyKCgz
++uJsMbvfOpv0IayRJTFOSQ1tL8TnA6EmpIAcC7bPdh8vJFgv/duzx53Nqbeyg142
+pP51sxRe9g0aMRe0t7opaHpfZUi9gQ+9ovABwAN4kdLJEx0JGxBR9SrzTz1YFC/6
+hY4ISauMVVUUGeZ1CpvZYpjWrcrb6gE8vuQHcN6FTOUW7r+gVhNH0Ymg+z7hjaCr
+1HF0OvUSXM1y2hr6t55mw5oTdJBaaBKplSdTVQYrW5eoXFpNy7lHynjLSDk+cYiH
+TcJQq/1pW97kyqnTVWcO
+=Gno6
+-----END PGP SIGNATURE-----
+
+--MmzhKBr7cvVIsstX--
