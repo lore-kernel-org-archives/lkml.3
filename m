@@ -1,67 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811AbaFPOFr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 10:05:47 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:54167 "EHLO bear.ext.ti.com"
+	id S1753941AbaFPOHZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 10:07:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59734 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752054AbaFPOFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 10:05:46 -0400
-Message-ID: <539EF985.3080705@ti.com>
-Date: Mon, 16 Jun 2014 10:04:53 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751660AbaFPOHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 10:07:24 -0400
+Date: Mon, 16 Jun 2014 16:07:19 +0200
+From: Torsten Duwe <duwe@suse.de>
+To: "Theodore Ts'o" <tytso@mit.edu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        ingo.tuchscherer@de.ibm.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hans-Georg Markgraf <MGRF@de.ibm.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Joe Perches <joe@perches.com>,
+        =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+Subject: Re: [Patch v5.1 03/03]: hwrng: khwrngd derating per device
+Message-ID: <20140616140719.GA1744@suse.de>
+References: <20140527134156.GA14099@lst.de>
+ <20140527134645.GD14099@lst.de>
+ <20140527141144.GE14099@lst.de>
+ <53990165.3070505@zytor.com>
+ <20140612100954.GA26943@lst.de>
+ <20140614024050.GA6447@thunk.org>
+ <26a6d3cf-d327-4089-bdef-f48d3163e3bc@email.android.com>
+ <20140615051146.GA2180@thunk.org>
+ <20140616073108.GA28232@suse.de>
+ <20140616112207.GB4887@thunk.org>
 MIME-Version: 1.0
-To: Sricharan R <r.sricharan@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <tony@atomide.com>, <nm@ti.com>, <rnayak@ti.com>, <linux@arm.linux.org.uk>,
-        <tglx@linutronix.de>, <jason@lakedaemon.net>, <joe@perches.com>
-Subject: Re: [PATCH V3 00/16] irqchip: crossbar: driver fixes
-References: <1402917796-31574-1-git-send-email-r.sricharan@ti.com>
-In-Reply-To: <1402917796-31574-1-git-send-email-r.sricharan@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140616112207.GB4887@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sricharan,
+On Mon, Jun 16, 2014 at 07:22:07AM -0400, Theodore Ts'o wrote:
+> On Mon, Jun 16, 2014 at 09:31:08AM +0200, Torsten Duwe wrote:
+> > > 2)  Fixed a bug in patch #2 so that it would work correctly if the rng
+> > > driver doesn't have an init function (which happens to be the case for
+> > > the tpm-rng driver, which I used for my testing).
+> > 
+> > The whole thing stems from entropy-challenged s390. 3.12 on s390 compiles
+> > and runs fine. Yields a solid 200 kB/s
+> > 
+> > TPM RNG is a crook ;-)
+> 
+> I think the word you mean is "crock" (as in "crock of sh*t"?)  :-)
 
-On Monday 16 June 2014 07:23 AM, Sricharan R wrote:
-> This series does some cleanups, fixes for handling two interrupts
-> getting mapped twice to same crossbar and provides support for
-> hardwired IRQ and crossbar definitions.
-> 
-> On certain platforms such as DRA7, SPIs 0, 1, 2, 3, 5, 6, 10,
-> 131, 132, 133 are direct wired to hardware blocks bypassing
-> crossbar. This quirky implementation is *NOT* supposed to be the
-> expectation of crossbar hardware usage. This series adds support
-> to represent such hard-wired irqs through DT and avoid generic
-> allocation/programming of crossbar in the driver.
-> 
-> This way of supporting hard-wired irqs was a result of
-> the below discussions.
-> http://www.spinics.net/lists/arm-kernel/msg329946.html
-> 
-> Based on 3.15 mainline.
-> 
-> All the patches are available here
->  git@github.com:Sricharanti/sricharan.git crossbar_updates
-> 
-> The fixes series[1] earlier posted is merged in to this.
-> [1] http://www.spinics.net/lists/arm-kernel/msg328273.html
-> 
-> [V2] Merged the above series and rebased on 3.15 mainline
-> 
-> [V3] Modified patch#3 to get irqs-skip properties from DT,
->      merged path#8 for checkpatch warning to other relevant
->      patches and fixed comments for other patches.
->
-I scanned entire series again including your updates on Jason's
-comments. All look good to my eyes.
+Actually, I was thinking of a crutch. Makes you walk slowly, but better
+than nothing. Seems I've bent the wrong tube.
 
-Hopefully after this series now, we can actually enable the crossbar
-support on those machines.
+> Were you referring to the typical hardware implementation in most
+> TPM's, or something else?
 
-FWIW,
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Those are designed for the TPM's own, internal use IIRC. Their exposure
+to the main computer is only a side effect.
+
+> > With patch 03/03, it is up to the driver author to specify an entropy
+> > quality, which can be overridden at boot time, or when loading
+> > the module, respectively. This should be a constant hardware property.
+> > It would be nice to change it at runtime; but frankly I hope that this
+> > won't be neccessary.
+> 
+> The question of what should be the proper derating mechanism is going
+> to be subject to individual administrators.  I agree that we should
+> have good defaults, but for example, I'm sure the manufacturer of the
+> TPM that's in my Thinkpad would try to claim that it's the Bug
+> Free(tm), and try to assign it derating factor accordingly.  If the
+
+Then the next question would be about the underlying specification.
+A bug free implementation of dual-EC DRBG?
+
+> manufacturer is supplying the device driver, it may not be a value
+> that other people will agree with.  Which is why I think making it
+> runtime configurable is a good thing.
+
+Boot time configurable, I'd say. Again: this is a hardware property,
+multiplied by the admin's level of confidence in the absence of backdoors.
+It's easy with s390: from z/VM you can read all the guest's memory anyway.
+If you use this machine, you already trust IBM.
+
+> As another example, I assume Peter or someone else from Intel will be
+> shortly submitting a hw_random driver for RDRAND on x86.  What should
+> the derating factor be for that?  I suspect David Johnson's answer
+> would be quite different from other people's.  And that's to be
+> expected, since he has much better information that most of us have
+> access to about the RDRAND implementation, and the
+> likelihood/possibiliy it could have been subverted.
+
+So let's keep it close to 0, and allow those to raise it who have confidence.
+
+> > Maybe along with more sophisticated steering of how many bits to pick
+> > from which source, if multiple are available.
+> 
+> Yeah, the question about what to do we have multiple hw random sources
+> is something that I thought about.  Do we want to poll from more than
+> one?
+
+Of course! Choose your mix!
+
+> Also, suppose some hw random sources require more resources ---
+> battery life in particular, for mobile/laptop devices?  How do we deal
+> with policy questions such as these?  Should we deal with it all, or
+> just assume that userspace will dynamically enable or disable pulling
+> from certain devices based on policy questions such as power
+> utilization issues?
+
+One thing after the other. What are the consumers of kernel entropy?
+Mostly ASLR, I guess, and the web server / sshd accepting connections.
+Those proceses starting probably eats more power than a HWRNG needs for
+the appropriate random bits. We can address exceptions once they arise.
+
+	Torsten
+
