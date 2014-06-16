@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755107AbaFPPSo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 11:18:44 -0400
-Received: from linode.aoot.com ([69.164.194.13]:32867 "EHLO linode.aoot.com"
+	id S1755293AbaFPPWG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 11:22:06 -0400
+Received: from 8bytes.org ([85.214.48.195]:40199 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752857AbaFPPSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 11:18:43 -0400
-Message-ID: <539F0ACF.6080609@opengridcomputing.com>
-Date: Mon, 16 Jun 2014 10:18:39 -0500
-From: Steve Wise <swise@opengridcomputing.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1750804AbaFPPWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 11:22:03 -0400
+Date: Mon, 16 Jun 2014 17:21:58 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Christoffer Dall <christoffer.dall@linaro.org>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "tech@virtualopensystems.com" <tech@virtualopensystems.com>,
+        "a.rigo@virtualopensystems.com" <a.rigo@virtualopensystems.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "kim.phillips@freescale.com" <kim.phillips@freescale.com>,
+        "stuart.yoder@freescale.com" <stuart.yoder@freescale.com>,
+        "eric.auger@linaro.org" <eric.auger@linaro.org>,
+        "moderated list:ARM SMMU DRIVER" 
+	<linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability
+ IOMMU_CAP_INTR_REMAP
+Message-ID: <20140616152157.GB31771@8bytes.org>
+References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1401987808-23596-5-git-send-email-a.motakis@virtualopensystems.com>
+ <20140608103129.GC3279@lvm>
+ <20140616145344.GD18986@8bytes.org>
+ <20140616151329.GQ16758@arm.com>
 MIME-Version: 1.0
-To: Nick Krause <xerofoify@gmail.com>, Levente Kurusa <levex@linux.com>
-CC: swise@chelsio.com, roland@kernel.org, sean.hefty@intel.com,
-        hal.rosenstock@gmail.com, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3]Checks for Null value in function *get_skub
-References: <1402931337-3543-1-git-send-email-xerofoify@gmail.com>	<539F096F.8020502@linux.com> <CAPDOMVg8hthn2beTjHx94RRJeRHGGP1wyT0Y2KfscUtZGFfiCA@mail.gmail.com>
-In-Reply-To: <CAPDOMVg8hthn2beTjHx94RRJeRHGGP1wyT0Y2KfscUtZGFfiCA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140616151329.GQ16758@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Mon Jun 16 17:22:01 2014
+X-DSPAM-Confidence: 0.9994
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 539f0b9920866113268035
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 16, 2014 at 04:13:29PM +0100, Will Deacon wrote:
+> MSIs look just like memory accesses made by the device, so the SMMU
+> will translate them to point at the GIC ITS (doorbell). The ITS then
+> has tables to work out how to route the MSI.
+> 
+> So, if IOMMU_CAP_INTR_REMAP is simply supposed to indicate that the
+> SMMU can translate MSIs to point somewhere else, then the ARM SMMU can
+> always do it.  If it's supposed to indicate that the actual MSI
+> payload can be filtered/routed, then that requires the GIC ITS.
+> 
+> The part I'm unsure of is how VFIO knows where to map the MSIs to.
+> That requires knowledge of the physical and virtual doorbell pages --
+> is that discoverable in the API?
 
-On 6/16/2014 10:14 AM, Nick Krause wrote:
-> >From what I know yes so I would close the bug at the the link in
-> my previous email and just void my patch.
-> Cheers Nick
-
-We shouldn't be kfree-ing an skb anyway.  Should use kfree_skb().
-
-There is still a leak if skb is non-null and the skb is non linear or 
-cloned.
+VFIO does not care about the actual routing, it only cares that the
+device can not send interrupts it is not allowed to send (e.g.
+interrupts to vectors used by other devices or, on x86, exception vectors).
+If that is guaranteed by the SMMU or the GIC ITS hardware and driver
+then it is fine to set this flag.
 
 
-> On Mon, Jun 16, 2014 at 11:12 AM, Levente Kurusa <levex@linux.com> wrote:
->> On 06/16/2014 05:08 PM, Nicholas Krause wrote:
->>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->>> ---
->>>    drivers/infiniband/hw/cxgb4/cm.c | 8 +++-----
->>>    1 file changed, 3 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/drivers/infiniband/hw/cxgb4/cm.c
->>> b/drivers/infiniband/hw/cxgb4/cm.c
->>> index f9477e2..2d56983 100644
->>> --- a/drivers/infiniband/hw/cxgb4/cm.c
->>> +++ b/drivers/infiniband/hw/cxgb4/cm.c
->>> @@ -340,15 +340,13 @@ static int status2errno(int status)
->>>     */
->>>    static struct sk_buff *get_skb(struct sk_buff *skb, int len, gfp_t gfp)
->>>    {
->>>    if (skb && !skb_is_nonlinear(skb) && !skb_cloned(skb)) {
->>>                   skb_trim(skb, 0);
->>>                   skb_get(skb);
->>>                   skb_reset_transport_header(skb);
->>>          } else {
->>> +               if (skb)
->>> +                       kfree (skb);
->>>                  skb = alloc_skb(len, gfp);
->>>          }
->>>          t4_set_arp_err_handler(skb, NULL, NULL);
->>>
->> Isn't kfree(NULL) legal?
->>
->> (i.e. the if statement is useless)
->>
->> Thanks,
->>      Levente Kurusa
+	Joerg
+
 
