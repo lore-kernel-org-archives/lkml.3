@@ -1,78 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730AbaFPO3T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 10:29:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60322 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752580AbaFPO3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 10:29:18 -0400
-Date: Mon, 16 Jun 2014 16:29:15 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michel Lespinasse <walken@google.com>,
-        Roman Gushchin <klamm@yandex-team.ru>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH 2/2] memcg: Allow guarantee reclaim
-Message-ID: <20140616142915.GF16915@dhcp22.suse.cz>
-References: <1402473624-13827-2-git-send-email-mhocko@suse.cz>
- <20140611153631.GH2878@cmpxchg.org>
- <20140612132207.GA32720@dhcp22.suse.cz>
- <20140612135600.GI2878@cmpxchg.org>
- <20140612142237.GB32720@dhcp22.suse.cz>
- <20140612161733.GC23606@htj.dyndns.org>
- <20140616125915.GB16915@dhcp22.suse.cz>
- <20140616135741.GA11542@htj.dyndns.org>
- <20140616140448.GE16915@dhcp22.suse.cz>
- <20140616141233.GB11542@htj.dyndns.org>
+	id S1753353AbaFPOfM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 10:35:12 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:51720 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668AbaFPOfK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 10:35:10 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <539F0093.7070503@roeck-us.net>
+Date: Mon, 16 Jun 2014 07:34:59 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140616141233.GB11542@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Heiko Schocher <hs@denx.de>, lm-sensors@lm-sensors.org
+CC: Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v3] hwmon: Driver for TI TMP103 temperature sensor
+References: <1402901276-6114-1-git-send-email-hs@denx.de>
+In-Reply-To: <1402901276-6114-1-git-send-email-hs@denx.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 16-06-14 10:12:33, Tejun Heo wrote:
-> On Mon, Jun 16, 2014 at 04:04:48PM +0200, Michal Hocko wrote:
-> > > For whatever reason, a user is stuck with thread-level granularity for
-> > > controllers which work that way, the user can use the old hierarchies
-> > > for them for the time being.
-> > 
-> > So he can mount memcg with new cgroup API and others with old?
-> 
-> Yes, you can read Documentation/cgroups/unified-hierarchy.txt for more
-> details.  I think I cc'd you when posting unified hierarchy patchset,
-> didn't I?
+On 06/15/2014 11:47 PM, Heiko Schocher wrote:
+> Driver for the TI TMP103.
+>
+> The TI TMP103 is similar to the TMP102.  It differs from the TMP102
+> by having only 8 bit registers.
+>
+> Signed-off-by: Heiko Schocher <hs@denx.de>
+>
+Hello Heiko,
 
-OK, I've obviously pushed that out of my brain, because you are really
-clear about it:
-"
-All controllers which are not bound to other hierarchies are
-automatically bound to unified hierarchy and show up at the root of
-it. Controllers which are enabled only in the root of unified
-hierarchy can be bound to other hierarchies at any time.  This allows
-mixing unified hierarchy with the traditional multiple hierarchies in
-a fully backward compatible way.
-"
+Almost there.
 
-This of course sorts out my concerns. Sorry about the noise!
+> ---
+>
+> +static int tmp103_probe(struct i2c_client *client,
+> +			const struct i2c_device_id *id)
+> +{
+> +	struct device *dev = &client->dev;
+> +	struct device *hwmon_dev;
+> +	struct regmap *regmap;
+> +	int ret;
+> +
+> +	if (!i2c_check_functionality(client->adapter,
+> +				     I2C_FUNC_SMBUS_BYTE_DATA)) {
+> +		dev_err(&client->dev,
+> +			"adapter doesn't support SMBus byte transactions\n");
+> +		return -ENODEV;
+> +	}
+> +
+> +	regmap = devm_regmap_init_i2c(client, &tmp103_regmap_config);
+> +	if (IS_ERR(regmap)) {
+> +		dev_err(dev, "failed to allocate register map\n");
+> +		return PTR_ERR(regmap);
+> +	}
+> +
+> +	ret = regmap_update_bits(regmap, TMP103_CONF_REG, TMP103_CONFIG,
+> +				 TMP103_CONFIG);
 
-> > > Nope, some changes don't fit that model.  CFTYPE_ON_ON_DFL is the
-> > > opposite. 
-> > 
-> > OK, I wasn't aware of this. On which branch I find this?
-> 
-> They're all in the mainline now.
+You actually want to mask out CR0, CR1, M0, and M1 here.
 
-git grep CFTYPE_ON_ON_DFL origin/master didn't show me anything.
+> +	if (ret < 0) {
+> +		dev_err(&client->dev, "error writing config register\n");
+> +		return ret;
+> +	}
+> +
+> +	hwmon_dev = hwmon_device_register_with_groups(dev, client->name,
+> +						      regmap, tmp103_groups);
+> +	return PTR_ERR_OR_ZERO(hwmon_dev);
+> +}
+> +
+> +#ifdef CONFIG_PM
+> +static int tmp103_suspend(struct device *dev)
+> +{
+> +	struct regmap *regmap = dev_get_drvdata(dev);
+> +
+> +	return regmap_update_bits(regmap, TMP103_CONF_REG, TMP103_CONF_SD, 0);
+> +}
+> +
+> +static int tmp103_resume(struct device *dev)
+> +{
+> +	struct regmap *regmap = dev_get_drvdata(dev);
+> +
+> +	return regmap_update_bits(regmap, TMP103_CONF_REG, TMP103_CONF_SD,
+> +				  TMP103_CONF_SD);
 
-Thanks!
--- 
-Michal Hocko
-SUSE Labs
+That changes {M0, M1} to {1, 1}, but you really want {0, 1} to restore the
+pre-suspend configuration.
+
+One solution for both would be to define TMP103_CONFIG_MASK and TMP103_CONF_SD_MASK
+separately to ensure you catch all the to-be-cleared bits.
+
+Guenter
+
