@@ -1,97 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648AbaFPBrv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 21:47:51 -0400
-Received: from imap.thunk.org ([74.207.234.97]:40075 "EHLO imap.thunk.org"
+	id S1752622AbaFPB5U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 21:57:20 -0400
+Received: from ozlabs.org ([103.22.144.67]:51819 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752562AbaFPBru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 21:47:50 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Greg Price <price@mit.edu>
-Subject: [PATCH] random: fix nasty entropy accounting bug
-Date: Sun, 15 Jun 2014 21:47:26 -0400
-Message-Id: <1402883262-6743-1-git-send-email-tytso@mit.edu>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <20140616014415.GA4887@thunk.org>
-References: <20140616014415.GA4887@thunk.org>
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1752114AbaFPB5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jun 2014 21:57:17 -0400
+Date: Mon, 16 Jun 2014 11:57:09 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: linux-next: build warning after merge of the tip tree
+Message-ID: <20140616115709.3fce3a2a@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/Mif+B93xJF2aCM2Wyj3jgHx"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 0fb7a01af5b0 "random: simplify accounting code", introduced in
-v3.15, has a very nasty accounting problem when the entropy pool has
-has fewer bytes of entropy than the number of requested reserved
-bytes.  In that case, "have_bytes - reserved" goes negative, and since
-size_t is unsigned, the expression:
+--Sig_/Mif+B93xJF2aCM2Wyj3jgHx
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-       ibytes = min_t(size_t, ibytes, have_bytes - reserved);
+Hi all,
 
-... does not do the right thing.  This is rather bad, because it
-defeats the catastrophic reseeding feature in the
-xfer_secondary_pool() path.
+After merging the tip tree, today's linux-next build (x86_64
+allmodconfig) produced this warning:
 
-It also can cause the "BUG: spinlock trylock failure on UP" for some
-kernel configurations when prandom_reseed() calls get_random_bytes()
-in the early init, since when the entropy count gets corrupted,
-credit_entropy_bits() erroneously believes that the nonblocking pool
-has been fully initialized (when in fact it is not), and so it calls
-prandom_reseed(true) recursively leading to the spinlock BUG.
+In file included from arch/x86/crypto/camellia_aesni_avx_glue.c:23:0:
+arch/x86/include/asm/xsave.h:73:12: warning: 'xsave_state_booting' defined =
+but not used [-Wunused-function]
+ static int xsave_state_booting(struct xsave_struct *fx, u64 mask)
+            ^
 
-The logic is *not* the same it was originally, but in the cases where
-it matters, the behavior is the same, and the resulting code is
-hopefully easier to read and understand.
+Lots of these ...
 
-Fixes: 0fb7a01af5b0 "random: simplify accounting code"
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Cc: Greg Price <price@mit.edu>
-Cc: stable@vger.kernel.org  #v3.15
----
- drivers/char/random.c | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+Introduced by commit adb9d526e982 ("x86/xsaves: Add xsaves and xrstors
+support for booting time").  Forgotten "inline" :-(
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 102c50d..2b6e4cd 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -979,7 +979,6 @@ static void push_to_pool(struct work_struct *work)
- static size_t account(struct entropy_store *r, size_t nbytes, int min,
- 		      int reserved)
- {
--	int have_bytes;
- 	int entropy_count, orig;
- 	size_t ibytes;
- 
-@@ -988,17 +987,19 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
- 	/* Can we pull enough? */
- retry:
- 	entropy_count = orig = ACCESS_ONCE(r->entropy_count);
--	have_bytes = entropy_count >> (ENTROPY_SHIFT + 3);
- 	ibytes = nbytes;
- 	/* If limited, never pull more than available */
--	if (r->limit)
--		ibytes = min_t(size_t, ibytes, have_bytes - reserved);
-+	if (r->limit) {
-+		int have_bytes = entropy_count >> (ENTROPY_SHIFT + 3);
-+
-+		if ((have_bytes -= reserved) < 0)
-+			have_bytes = 0;
-+		ibytes = min_t(size_t, ibytes, have_bytes);
-+	}
- 	if (ibytes < min)
- 		ibytes = 0;
--	if (have_bytes >= ibytes + reserved)
--		entropy_count -= ibytes << (ENTROPY_SHIFT + 3);
--	else
--		entropy_count = reserved << (ENTROPY_SHIFT + 3);
-+	if ((entropy_count -= ibytes << (ENTROPY_SHIFT + 3)) < 0)
-+		entropy_count = 0;
- 
- 	if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
- 		goto retry;
--- 
-2.0.0
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Sig_/Mif+B93xJF2aCM2Wyj3jgHx
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTnk76AAoJEMDTa8Ir7ZwVX4UP/jUkHdGq9S8u9uZfYwruMwMP
+LoCIjiE6ixp49KzbA1sNFF+CngAsT5GUl1G/o/wvJc/MN/VEnV/bRocj8sta5AJf
+9zUDDGMsNser1J7vjMXRrKp+3JZQ83j5WPRlvNMIVGecqEg2QP+D2Wh/hytLoFKl
+BgA5TCR8NPId1GzQAtvL/fnh16m1VZn6UouXgXSsYu6yDSsLPeJpRlbRXgwNZa2m
+FguLbuRMl6c0TUNxP0ohexFZALXBM6hTomplt1F7YskqMtl4cu2bvZjwGX1Q1MkV
+rTdkuls7T1mPXBbKA2eU8GbrwQqzB2zJ3Z1wA+pHJOhh4stAGidh/AHTUu2l3jIc
+5gqJTGQSYZgL0LnNE6cPi1u2z7IdciTO+bzaMa8HrDfFFWf2zR4x4df6B4XkNEpI
+nL6pLL2/Fz/eTe3PmVe+1npyb3jj+jZ2ZpsMQPfsQX1ucmrI2tchJqPXHyQWzbsh
+nxhJ8DXMOcOBlgEdFLxFU0L2284qK8bi9Wvc2fTBA9F986BSZxG19aLJKSIKBdxr
+FvlFK5k86Y5k/dyz+k+ldYug7N2ayq46xeVyoUftBXTQVl/ybH7lgOlNYfypOVty
+pBZY5ETXfA+55r/rJYxvJ8kK3IppTnHFWggF4OtVOMePwRADhPMwLlF0hgZO9uEt
+p6ijnuubAWp5iVfXhjE4
+=YOWm
+-----END PGP SIGNATURE-----
+
+--Sig_/Mif+B93xJF2aCM2Wyj3jgHx--
