@@ -1,300 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946AbaFPU27 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 16:28:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21415 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755841AbaFPU25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 16:28:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,489,1400050800"; 
-   d="scan'208";a="529412144"
-Message-ID: <1402950997.15603.39.camel@rage>
-Subject: Re: [patch V2 5/5] futex: Simplify futex_lock_pi_atomic() and make
- it more robust
-From: Darren Hart <darren@dvhart.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Davidlohr Bueso <davidlohr@hp.com>,
-        Kees Cook <kees@outflux.net>, wad@chromium.org
-Date: Mon, 16 Jun 2014 13:36:37 -0700
-In-Reply-To: <alpine.DEB.2.10.1406131137020.5170@nanos>
-References: <20140611202744.676528190@linutronix.de>
-	  <20140611204237.361836310@linutronix.de>
-	 <1402638363.22229.23.camel@fury.dvhart.com>
-	 <alpine.DEB.2.10.1406131033440.5170@nanos>
-	 <alpine.DEB.2.10.1406131136140.5170@nanos>
-	 <alpine.DEB.2.10.1406131137020.5170@nanos>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756005AbaFPUdP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 16:33:15 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:48657 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755950AbaFPUdO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 16:33:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <1402942855-29591-1-git-send-email-sviau@codeaurora.org>
+References: <1402942855-29591-1-git-send-email-sviau@codeaurora.org>
+Date: Mon, 16 Jun 2014 16:33:12 -0400
+Message-ID: <CAF6AEGu0VgopadyXq0b5enVeUPZCB152VOu2jnRL3JcgEzjFuQ@mail.gmail.com>
+Subject: Re: [PATCH] drm/msm: update and activate iommu support
+From: Rob Clark <robdclark@gmail.com>
+To: Stephane Viau <sviau@codeaurora.org>
+Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-arm-msm@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-13 at 11:44 +0200, Thomas Gleixner wrote:
-> Subject: futex: Simplify futex_lock_pi_atomic() and make it more robust
-> From: Thomas Gleixner <tglx@linutronix.de>
-> Date: Wed, 11 Jun 2014 20:45:41 -0000
-> 
-> futex_lock_pi_atomic() is a maze of retry hoops and loops.
-> 
-> Reduce it to simple and understandable states:
-> 
-> First step is to lookup existing waiters (state) in the kernel.
-> 
-> If there is an existing waiter, validate it and attach to it.
-> 
-> If there is no existing waiter, check the user space value
-> 
-> If the TID encoded in the user space value is 0, take over the futex
-> preserving the owner died bit.
-> 
-> If the TID encoded in the user space value is != 0, lookup the owner
-> task, validate it and attach to it.
-> 
-> Reduces text size by 128 bytes on x8664.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Darren Hart <darren@dvhart.com>
-> Cc: Davidlohr Bueso <davidlohr@hp.com>
-> Cc: Kees Cook <kees@outflux.net>
-> Cc: wad@chromium.org
-> Link: http://lkml.kernel.org/r/20140611204237.361836310@linutronix.de
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+On Mon, Jun 16, 2014 at 2:20 PM, Stephane Viau <sviau@codeaurora.org> wrote:
+> This changes activates the iommu support for MDP5, through the
+> platform config structure.
+>
+> Iommu support is also slightly modified in order to make sure
+> that MDP iommu is properly cleaned up if a probe deferral is
+> requested. Before this change, IOMMU faults would occur if the
+> probe failed (-EPROBE_DEFER).
+
+So, this looks like it is really two patches.. one making
+-EPROBE_DEFER work properly, and the other adding the missing bits for
+mdp5 which so far are only on downstream kernel.
+
+Could you split this patch into two, so I can queue the -EPROBE_DEFER
+fix for a 3.16 -fixes pull req?
+
+BR,
+-R
+
+
+> Signed-off-by: Stephane Viau <sviau@codeaurora.org>
 > ---
-> 
-> V2: Fixed the brown paperbag bug of V1
-> 
->  kernel/futex.c |  141 ++++++++++++++++++++++-----------------------------------
->  1 file changed, 55 insertions(+), 86 deletions(-)
-> 
-> Index: linux/kernel/futex.c
-> ===================================================================
-> --- linux.orig/kernel/futex.c
-> +++ linux/kernel/futex.c
-> @@ -956,6 +956,17 @@ static int lookup_pi_state(u32 uval, str
->  	return attach_to_pi_owner(uval, key, ps);
->  }
->  
-> +static int lock_pi_update_atomic(u32 __user *uaddr, u32 uval, u32 newval)
-> +{
-> +	u32 uninitialized_var(curval);
+>  drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c | 28 +++++++++++++++++++++++-----
+>  drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h |  1 +
+>  drivers/gpu/drm/msm/msm_gem.c           |  6 ++++++
+>  drivers/gpu/drm/msm/msm_iommu.c         | 21 +++++++++++++++++++--
+>  drivers/gpu/drm/msm/msm_mmu.h           |  1 +
+>  5 files changed, 50 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c
+> index 2967b19..62ee5cd 100644
+> --- a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c
+> +++ b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c
+> @@ -20,6 +20,10 @@
+>  #include "msm_mmu.h"
+>  #include "mdp5_kms.h"
+>
+> +static const char *iommu_ports[] = {
+> +               "mdp_0",
+> +};
 > +
-> +	if (unlikely(cmpxchg_futex_value_locked(&curval, uaddr, uval, newval)))
-> +		return -EFAULT;
-> +
-> +	/*If user space value changed, let the caller retry */
-> +	return curval != uval ? -EAGAIN : 0;
-> +}
-
-Given the complexity of this update and how fragile this path can be, I
-think this refactoring would be best done in an independent patch, as
-you did with the previous two.
-
-Two general concerns, we appear to be eliminating both the force_take
-and the retry.
-
-The force_take only occurs if TID==0, and that is covered here in a
-cleaner way, so I believe we are good here.
-
-As for the retry, the remaining use case (outside of TID==0 ->
-force_take=1 -> retry) appears to be that userspace changed the value
-while we were running. Reading the value early doesn't protect us from
-this scenario. How does this change account for that?
-
-It looks to me that before we would retry, while here we just give up
-and return -EAGAIN..., which is addressed in futex_lock_pi(), but not in
-the futex_requeue() callsite for futex_proxy_trylock_atomic. It does
-handle it, but I guess also needs a comment update to "The owner was
-exiting" to include "or userspace changed the value" as you did for
-futex_lock_pi().
-
->From my analysis, this is a good cleanup and makes the code for
-explicit. I'm nervous about missing corner cases, and would like to
-understand what level of testing this has received. We need to add PI
-locking tests to futextest. There are some in glibc. Which tests were
-run to validate PI locking?
-
-Thanks,
-
-Darren Hart
-> +
->  /**
->   * futex_lock_pi_atomic() - Atomic work required to acquire a pi aware futex
->   * @uaddr:		the pi futex user address
-> @@ -979,113 +990,69 @@ static int futex_lock_pi_atomic(u32 __us
->  				struct futex_pi_state **ps,
->  				struct task_struct *task, int set_waiters)
+>  static struct mdp5_platform_config *mdp5_get_config(struct platform_device *dev);
+>
+>  uint32_t __read_mostly _mdp5_pipe_vig_base;
+> @@ -201,6 +205,12 @@ static void mdp5_preclose(struct msm_kms *kms, struct drm_file *file)
+>  static void mdp5_destroy(struct msm_kms *kms)
 >  {
-> -	int lock_taken, ret, force_take = 0;
-> -	u32 uval, newval, curval, vpid = task_pid_vnr(task);
-> -
-> -retry:
-> -	ret = lock_taken = 0;
-> +	u32 uval, newval, vpid = task_pid_vnr(task);
-> +	struct futex_q *match;
-> +	int ret;
->  
->  	/*
-> -	 * To avoid races, we attempt to take the lock here again
-> -	 * (by doing a 0 -> TID atomic cmpxchg), while holding all
-> -	 * the locks. It will most likely not succeed.
-> +	 * Read the user space value first so we can validate a few
-> +	 * things before proceeding further.
->  	 */
-> -	newval = vpid;
-> -	if (set_waiters)
-> -		newval |= FUTEX_WAITERS;
-> -
-> -	if (unlikely(cmpxchg_futex_value_locked(&curval, uaddr, 0, newval)))
-> +	if (get_futex_value_locked(&uval, uaddr))
->  		return -EFAULT;
->  
->  	/*
->  	 * Detect deadlocks.
->  	 */
-> -	if ((unlikely((curval & FUTEX_TID_MASK) == vpid)))
-> +	if ((unlikely((uval & FUTEX_TID_MASK) == vpid)))
->  		return -EDEADLK;
->  
->  	/*
-> -	 * Surprise - we got the lock, but we do not trust user space at all.
-> +	 * Lookup existing state first. If it exists, try to attach to
-> +	 * its pi_state.
->  	 */
-> -	if (unlikely(!curval)) {
-> -		/*
-> -		 * We verify whether there is kernel state for this
-> -		 * futex. If not, we can safely assume, that the 0 ->
-> -		 * TID transition is correct. If state exists, we do
-> -		 * not bother to fixup the user space state as it was
-> -		 * corrupted already.
-> -		 */
-> -		return futex_top_waiter(hb, key) ? -EINVAL : 1;
-> -	}
-> -
-> -	uval = curval;
-> +	match = futex_top_waiter(hb, key);
-> +	if (match)
-> +		return attach_to_pi_state(uval, match->pi_state, ps);
->  
->  	/*
-> -	 * Set the FUTEX_WAITERS flag, so the owner will know it has someone
-> -	 * to wake at the next unlock.
-> +	 * No waiter and user TID is 0. We are here because the
-> +	 * waiters or the owner died bit is set or called from
-> +	 * requeue_cmp_pi or for whatever reason something took the
-> +	 * syscall.
->  	 */
-> -	newval = curval | FUTEX_WAITERS;
-> -
-> -	/*
-> -	 * Should we force take the futex? See below.
-> -	 */
-> -	if (unlikely(force_take)) {
-> +	if (!(uval & FUTEX_TID_MASK)) {
->  		/*
-> -		 * Keep the OWNER_DIED and the WAITERS bit and set the
-> -		 * new TID value.
-> +		 * We take over the futex. No other waiters and the user space
-> +		 * TID is 0. We preserve the owner died bit.
->  		 */
-> -		newval = (curval & ~FUTEX_TID_MASK) | vpid;
-> -		force_take = 0;
-> -		lock_taken = 1;
-> -	}
-> +		newval = uval & FUTEX_OWNER_DIED;
-> +		newval |= vpid;
->  
-> -	if (unlikely(cmpxchg_futex_value_locked(&curval, uaddr, uval, newval)))
-> -		return -EFAULT;
-> -	if (unlikely(curval != uval))
-> -		goto retry;
-> +		/* The futex requeue_pi code can enforce the waiters bit */
-> +		if (set_waiters)
-> +			newval |= FUTEX_WAITERS;
+>         struct mdp5_kms *mdp5_kms = to_mdp5_kms(to_mdp_kms(kms));
+> +       struct msm_mmu *mmu = mdp5_kms->mmu;
 > +
-> +		ret = lock_pi_update_atomic(uaddr, uval, newval);
-> +		/* If the take over worked, return 1 */
-> +		return ret < 0 ? ret : 1;
-> +	}
->  
->  	/*
-> -	 * We took the lock due to forced take over.
-> +	 * First waiter. Set the waiters bit before attaching ourself to
-> +	 * the owner. If owner tries to unlock, it will be forced into
-> +	 * the kernel and blocked on hb->lock.
->  	 */
-> -	if (unlikely(lock_taken))
-> -		return 1;
-> -
-> +	newval = uval | FUTEX_WAITERS;
-> +	ret = lock_pi_update_atomic(uaddr, uval, newval);
-> +	if (ret)
-> +		return ret;
->  	/*
-> -	 * We dont have the lock. Look up the PI state (or create it if
-> -	 * we are the first waiter):
-> +	 * If the update of the user space value succeeded, we try to
-> +	 * attach to the owner. If that fails, no harm done, we only
-> +	 * set the FUTEX_WAITERS bit in the user space variable.
->  	 */
-> -	ret = lookup_pi_state(uval, hb, key, ps);
-> -
-> -	if (unlikely(ret)) {
-> -		switch (ret) {
-> -		case -ESRCH:
-> -			/*
-> -			 * We failed to find an owner for this
-> -			 * futex. So we have no pi_state to block
-> -			 * on. This can happen in two cases:
-> -			 *
-> -			 * 1) The owner died
-> -			 * 2) A stale FUTEX_WAITERS bit
-> -			 *
-> -			 * Re-read the futex value.
-> -			 */
-> -			if (get_futex_value_locked(&curval, uaddr))
-> -				return -EFAULT;
-> -
-> -			/*
-> -			 * If the owner died or we have a stale
-> -			 * WAITERS bit the owner TID in the user space
-> -			 * futex is 0.
-> -			 */
-> -			if (!(curval & FUTEX_TID_MASK)) {
-> -				force_take = 1;
-> -				goto retry;
-> -			}
-> -		default:
-> -			break;
-> -		}
-> -	}
-> -
-> -	return ret;
-> +	return attach_to_pi_owner(uval, key, ps);
+> +       if (mmu) {
+> +               mmu->funcs->detach(mmu, iommu_ports, ARRAY_SIZE(iommu_ports));
+> +               mmu->funcs->destroy(mmu);
+> +       }
+>         kfree(mdp5_kms);
 >  }
->  
->  /**
-> @@ -2316,8 +2283,10 @@ retry_private:
->  			goto uaddr_faulted;
->  		case -EAGAIN:
->  			/*
-> -			 * Task is exiting and we just wait for the
-> -			 * exit to complete.
-> +			 * Two reasons for this:
-> +			 * - Task is exiting and we just wait for the
-> +			 *   exit to complete.
-> +			 * - The user space value changed.
->  			 */
->  			queue_unlock(hb);
->  			put_futex_key(&q.key);
-
--- 
-Darren Hart
-Intel Open Source Technology Center
-
-
+>
+> @@ -313,10 +323,6 @@ fail:
+>         return ret;
+>  }
+>
+> -static const char *iommu_ports[] = {
+> -               "mdp_0",
+> -};
+> -
+>  static int get_clk(struct platform_device *pdev, struct clk **clkp,
+>                 const char *name)
+>  {
+> @@ -406,17 +412,23 @@ struct msm_kms *mdp5_kms_init(struct drm_device *dev)
+>                 mmu = msm_iommu_new(dev, config->iommu);
+>                 if (IS_ERR(mmu)) {
+>                         ret = PTR_ERR(mmu);
+> +                       dev_err(dev->dev, "failed to init iommu: %d\n", ret);
+>                         goto fail;
+>                 }
+> +
+>                 ret = mmu->funcs->attach(mmu, iommu_ports,
+>                                 ARRAY_SIZE(iommu_ports));
+> -               if (ret)
+> +               if (ret) {
+> +                       dev_err(dev->dev, "failed to attach iommu: %d\n", ret);
+> +                       mmu->funcs->destroy(mmu);
+>                         goto fail;
+> +               }
+>         } else {
+>                 dev_info(dev->dev, "no iommu, fallback to phys "
+>                                 "contig buffers for scanout\n");
+>                 mmu = NULL;
+>         }
+> +       mdp5_kms->mmu = mmu;
+>
+>         mdp5_kms->id = msm_register_mmu(dev, mmu);
+>         if (mdp5_kms->id < 0) {
+> @@ -445,5 +457,11 @@ static struct mdp5_platform_config *mdp5_get_config(struct platform_device *dev)
+>  #ifdef CONFIG_OF
+>         /* TODO */
+>  #endif
+> +       config.iommu = iommu_domain_alloc(&platform_bus_type, 0);
+> +       /* TODO hard-coded in downstream mdss, but should it be? */
+> +       config.max_clk = 200000000;
+> +       /* TODO get from DT: */
+> +       config.smp_blk_cnt = 22;
+> +
+>         return &config;
+>  }
+> diff --git a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h
+> index 6a89b04..20ea748 100644
+> --- a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h
+> +++ b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.h
+> @@ -41,6 +41,7 @@ struct mdp5_kms {
+>
+>         /* mapper-id used to request GEM buffer mapped for scanout: */
+>         int id;
+> +       struct msm_mmu *mmu;
+>
+>         /* for tracking smp allocation amongst pipes: */
+>         mdp5_smp_state_t smp_state;
+> diff --git a/drivers/gpu/drm/msm/msm_gem.c b/drivers/gpu/drm/msm/msm_gem.c
+> index bb8026d..690d7e7 100644
+> --- a/drivers/gpu/drm/msm/msm_gem.c
+> +++ b/drivers/gpu/drm/msm/msm_gem.c
+> @@ -278,6 +278,7 @@ int msm_gem_get_iova_locked(struct drm_gem_object *obj, int id,
+>                 uint32_t *iova)
+>  {
+>         struct msm_gem_object *msm_obj = to_msm_bo(obj);
+> +       struct drm_device *dev = obj->dev;
+>         int ret = 0;
+>
+>         if (!msm_obj->domain[id].iova) {
+> @@ -285,6 +286,11 @@ int msm_gem_get_iova_locked(struct drm_gem_object *obj, int id,
+>                 struct msm_mmu *mmu = priv->mmus[id];
+>                 struct page **pages = get_pages(obj);
+>
+> +               if (!mmu) {
+> +                       dev_err(dev->dev, "null MMU pointer\n");
+> +                       return -EINVAL;
+> +               }
+> +
+>                 if (IS_ERR(pages))
+>                         return PTR_ERR(pages);
+>
+> diff --git a/drivers/gpu/drm/msm/msm_iommu.c b/drivers/gpu/drm/msm/msm_iommu.c
+> index 92b7459..198b2fe 100644
+> --- a/drivers/gpu/drm/msm/msm_iommu.c
+> +++ b/drivers/gpu/drm/msm/msm_iommu.c
+> @@ -28,7 +28,7 @@ static int msm_fault_handler(struct iommu_domain *iommu, struct device *dev,
+>                 unsigned long iova, int flags, void *arg)
+>  {
+>         DBG("*** fault: iova=%08lx, flags=%d", iova, flags);
+> -       return 0;
+> +       return -ENOSYS;
+>  }
+>
+>  static int msm_iommu_attach(struct msm_mmu *mmu, const char **names, int cnt)
+> @@ -40,8 +40,10 @@ static int msm_iommu_attach(struct msm_mmu *mmu, const char **names, int cnt)
+>         for (i = 0; i < cnt; i++) {
+>                 struct device *msm_iommu_get_ctx(const char *ctx_name);
+>                 struct device *ctx = msm_iommu_get_ctx(names[i]);
+> -               if (IS_ERR_OR_NULL(ctx))
+> +               if (IS_ERR_OR_NULL(ctx)) {
+> +                       dev_warn(dev->dev, "couldn't get %s context", names[i]);
+>                         continue;
+> +               }
+>                 ret = iommu_attach_device(iommu->domain, ctx);
+>                 if (ret) {
+>                         dev_warn(dev->dev, "could not attach iommu to %s", names[i]);
+> @@ -52,6 +54,20 @@ static int msm_iommu_attach(struct msm_mmu *mmu, const char **names, int cnt)
+>         return 0;
+>  }
+>
+> +static void msm_iommu_detach(struct msm_mmu *mmu, const char **names, int cnt)
+> +{
+> +       struct msm_iommu *iommu = to_msm_iommu(mmu);
+> +       int i;
+> +
+> +       for (i = 0; i < cnt; i++) {
+> +               struct device *msm_iommu_get_ctx(const char *ctx_name);
+> +               struct device *ctx = msm_iommu_get_ctx(names[i]);
+> +               if (IS_ERR_OR_NULL(ctx))
+> +                       continue;
+> +               iommu_detach_device(iommu->domain, ctx);
+> +       }
+> +}
+> +
+>  static int msm_iommu_map(struct msm_mmu *mmu, uint32_t iova,
+>                 struct sg_table *sgt, unsigned len, int prot)
+>  {
+> @@ -127,6 +143,7 @@ static void msm_iommu_destroy(struct msm_mmu *mmu)
+>
+>  static const struct msm_mmu_funcs funcs = {
+>                 .attach = msm_iommu_attach,
+> +               .detach = msm_iommu_detach,
+>                 .map = msm_iommu_map,
+>                 .unmap = msm_iommu_unmap,
+>                 .destroy = msm_iommu_destroy,
+> diff --git a/drivers/gpu/drm/msm/msm_mmu.h b/drivers/gpu/drm/msm/msm_mmu.h
+> index 0303244..21da6d1 100644
+> --- a/drivers/gpu/drm/msm/msm_mmu.h
+> +++ b/drivers/gpu/drm/msm/msm_mmu.h
+> @@ -22,6 +22,7 @@
+>
+>  struct msm_mmu_funcs {
+>         int (*attach)(struct msm_mmu *mmu, const char **names, int cnt);
+> +       void (*detach)(struct msm_mmu *mmu, const char **names, int cnt);
+>         int (*map)(struct msm_mmu *mmu, uint32_t iova, struct sg_table *sgt,
+>                         unsigned len, int prot);
+>         int (*unmap)(struct msm_mmu *mmu, uint32_t iova, struct sg_table *sgt,
+> --
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+>
