@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328AbaFPQpD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 12:45:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16848 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932305AbaFPQpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 12:45:00 -0400
-Date: Mon, 16 Jun 2014 12:44:49 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH 7/7] mincore: apply page table walker on do_mincore()
-Message-ID: <20140616164449.GB13264@nhori.bos.redhat.com>
-References: <1402095520-10109-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1402095520-10109-8-git-send-email-n-horiguchi@ah.jp.nec.com>
- <539F0C20.10101@oracle.com>
+	id S1755335AbaFPQtS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 12:49:18 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44105 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349AbaFPQtR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 12:49:17 -0400
+Date: Mon, 16 Jun 2014 17:48:58 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>, sameo@linux.intel.com,
+        ckeepax@opensource.wolfsonmicro.com, lgirdwood@gmail.com,
+        perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Message-ID: <20140616164858.GI5099@sirena.org.uk>
+References: <20140609150013.GA5229@opensource.wolfsonmicro.com>
+ <20140609150226.GB5229@opensource.wolfsonmicro.com>
+ <20140616164242.GB14323@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="A+YNfBJfL1GjoVjN"
 Content-Disposition: inline
-In-Reply-To: <539F0C20.10101@oracle.com>
+In-Reply-To: <20140616164242.GB14323@lee--X1>
+X-Cookie: Ditat Deus.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/4] mfd: arizona: Export function to control subsystem
+ DVFS
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sasha,
 
-Thanks for bug reporting.
+--A+YNfBJfL1GjoVjN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Mon, Jun 16, 2014 at 11:24:16AM -0400, Sasha Levin wrote:
-> On 06/06/2014 06:58 PM, Naoya Horiguchi wrote:
-> > This patch makes do_mincore() use walk_page_vma(), which reduces many lines
-> > of code by using common page table walk code.
-> > 
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> 
-> Hi Naoya,
-> 
-> This patch is causing a few issues on -next:
-> 
-> [  367.679282] BUG: sleeping function called from invalid context at mm/mincore.c:37
+On Mon, Jun 16, 2014 at 05:42:42PM +0100, Lee Jones wrote:
+> On Mon, 09 Jun 2014, Richard Fitzgerald wrote:
 
-cond_resched() in mincore_hugetlb() triggered this. This is done in common
-pagewalk code, so I should have removed it.
+> > +	if (arizona->subsys_max_rq != new_flags) {
 
-...
-> And:
-> 
-> [  391.118663] BUG: unable to handle kernel paging request at ffff880142aca000
-> [  391.118663] IP: mincore_hole (mm/mincore.c:99 (discriminator 2))
+> I don't really get this.  What's the point in passing the mask
+> parameter - I don't see it being used for anything in this routine? No
+> matter what is passed in you always just turn on the same regulator.
 
-walk->pte_hole cannot assume walk->vma != NULL, so I should've checked it
-in mincore_hole() before using walk->vma.
+> What am I missing?
 
-Could you try the following fixes?
+AFAICT it's a bunch of different independently selectable requests for
+the voltage to ramped with any one of them causing it to happen.
 
-Thanks,
-Naoya Horiguchi
----
-diff --git a/mm/mincore.c b/mm/mincore.c
-index d8a5e9f62268..3261788369bd 100644
---- a/mm/mincore.c
-+++ b/mm/mincore.c
-@@ -34,7 +34,6 @@ static int mincore_hugetlb(pte_t *pte, unsigned long addr,
- 	present = pte && !huge_pte_none(huge_ptep_get(pte));
- 	for (; addr != end; vec++, addr += PAGE_SIZE)
- 		*vec = present;
--	cond_resched();
- 	walk->private += (end - addr) >> PAGE_SHIFT;
- #else
- 	BUG();
-@@ -91,7 +90,7 @@ static int mincore_hole(unsigned long addr, unsigned long end,
- 	unsigned long nr = (end - addr) >> PAGE_SHIFT;
- 	int i;
- 
--	if (vma->vm_file) {
-+	if (vma && vma->vm_file) {
- 		pgoff_t pgoff;
- 
- 		pgoff = linear_page_index(vma, addr);
+I did wonder why this wasn't just done by refcounting, that's the more
+normal pattern in the kernel, though I guess it's possible some of them
+need different ramps on different devices.
+
+--A+YNfBJfL1GjoVjN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTnx/3AAoJELSic+t+oim91vgP/3xqnq3yz4symAO68ZBTjY+E
+wbzAmXGb8GU9Zjkcl/4A1j7OCvdc5d+ZSKBQkVbG4VuB/umDyt73H7nw/VNfiI8d
+mlSb3Ewh9+BIL9gedk5RNV/JHZvgcqmzmKASQWoC32p8h4wS9emhov2OQOy70Ysc
+BvD4lm8vjD4sBwDZKhTCMrWnO2kj6JVtH2BPiwnKwW635d/SH98nfi2/+hPorC2n
+FYXeleMNlT3kiLuqe2VBQmSx99aSQoqVj8TuzBD18kTgQUc58o8O3JE3ixOmafyh
+BVCDtb0ZXJvhE1gyJCNAEaDPgRGhP0jTdl/S48mtEBsaHj7ZaoCYYio8292lX/6F
+CRArhYuF7VK1JuYDQMJqRqwvPHRGqxVlntPxekR6S+EdyI5BPoO7ehx+O3pq+1Tv
+z33TdzfzSlaRR17l7NdFQj2jLx+ljGvRnlDcNzi2mqxJe+Z1X0d9OQw5ajh8jF3K
+veMrBuq/5bJ6mBSjQ2aFiYCEkI6n0dC/RhW+p/kHt7o5/RZIKGSPDHHDeEuJsuHM
+i9XFVmt58ky0ZE1EFgR4olx87sEAmvFOrgwMWbReSZcHBTwC4IaRuyHbrmopGyOt
+3laIB6rzQi7YOlp51WbLPyUIFK45zPF84GgUVkeB8C+k1m2izg6goq6NuFQr3t3n
+n4Tn3f65/YpV2eGAmgF9
+=nMGS
+-----END PGP SIGNATURE-----
+
+--A+YNfBJfL1GjoVjN--
