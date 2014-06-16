@@ -1,91 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668AbaFPB5c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 21:57:32 -0400
-Received: from ozlabs.org ([103.22.144.67]:48274 "EHLO ozlabs.org"
+	id S1752677AbaFPCCG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 22:02:06 -0400
+Received: from ozlabs.org ([103.22.144.67]:38866 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752625AbaFPB51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 21:57:27 -0400
-Date: Mon, 16 Jun 2014 11:57:25 +1000
+	id S1752527AbaFPCCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jun 2014 22:02:02 -0400
+Date: Mon, 16 Jun 2014 12:01:52 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: linux-next: build warning after merge of the akpm-current tree
-Message-ID: <20140616115725.164966a2@canb.auug.org.au>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: linux-next: build failure after merge of the akpm-current tree
+Message-ID: <20140616120152.752ec516@canb.auug.org.au>
+In-Reply-To: <1402672324-io6h33kn@n-horiguchi@ah.jp.nec.com>
+References: <20140613150550.7b2e2c4c@canb.auug.org.au>
+	<1402672324-io6h33kn@n-horiguchi@ah.jp.nec.com>
 X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/MiaEPkThO/DqMnGG6zBEcAL"; protocol="application/pgp-signature"
+ boundary="Sig_/zZth.15U7q6c4+IBs2hWzHW"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/MiaEPkThO/DqMnGG6zBEcAL
+--Sig_/zZth.15U7q6c4+IBs2hWzHW
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-Hi Andrew,
+Hi Naoya,
 
-After merging the akpm-current tree, today's linux-next build (powerpc
-ppc64_defconfig) produced this warning:
+On Fri, 13 Jun 2014 11:12:06 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.c=
+om> wrote:
+>
+> On Fri, Jun 13, 2014 at 03:05:50PM +1000, Stephen Rothwell wrote:
+> >=20
+> > After merging the akpm-current tree, today's linux-next build (powerpc =
+ppc64_defconfig)
+> > failed like this:
+> >=20
+> > fs/proc/task_mmu.c: In function 'smaps_pmd':
+> > include/linux/compiler.h:363:38: error: call to '__compiletime_assert_5=
+05' declared with attribute error: BUILD_BUG failed
+> >   _compiletime_assert(condition, msg, __compiletime_assert_, __LINE__)
+> >                                       ^
+> > include/linux/compiler.h:346:4: note: in definition of macro '__compile=
+time_assert'
+> >     prefix ## suffix();    \
+> >     ^
+> > include/linux/compiler.h:363:2: note: in expansion of macro '_compileti=
+me_assert'
+> >   _compiletime_assert(condition, msg, __compiletime_assert_, __LINE__)
+> >   ^
+> > include/linux/bug.h:50:37: note: in expansion of macro 'compiletime_ass=
+ert'
+> >  #define BUILD_BUG_ON_MSG(cond, msg) compiletime_assert(!(cond), msg)
+> >                                      ^
+> > include/linux/bug.h:84:21: note: in expansion of macro 'BUILD_BUG_ON_MS=
+G'
+> >  #define BUILD_BUG() BUILD_BUG_ON_MSG(1, "BUILD_BUG failed")
+> >                      ^
+> > include/linux/huge_mm.h:167:27: note: in expansion of macro 'BUILD_BUG'
+> >  #define HPAGE_PMD_SIZE ({ BUILD_BUG(); 0; })
+> >                            ^
+> > fs/proc/task_mmu.c:505:39: note: in expansion of macro 'HPAGE_PMD_SIZE'
+> >   smaps_pte((pte_t *)pmd, addr, addr + HPAGE_PMD_SIZE, walk);
+> >                                        ^
+> >=20
+> > Caused by commit b0e08c526179 ("mm/pagewalk: move pmd_trans_huge_lock()
+> > from callbacks to common code").
+> >=20
+> > The reference to HPAGE_PMD_SIZE (which contains a BUILD_BUG() when
+> > CONFIG_TRANSPARENT_HUGEPAGE is not defined) used to be protected by a
+> > call to pmd_trans_huge_lock() (a static inline function that was
+> > contact 0 when CONFIG_TRANSPARENT_HUGEPAGE is not defined) so gcc did
+> > not see the reference and the BUG_ON.  That protection has been
+> > removed ...
+> >=20
+> > I have reverted that commit and commit 2dc554765dd1
+> > ("mm-pagewalk-move-pmd_trans_huge_lock-from-callbacks-to-common-code-ch=
+eckpatch-fixes")
+> > that depend on it for today.
+>=20
+> Sorry about that, this build failure happens because I moved the
+> pmd_trans_huge_lock() into the common pagewalk code,
+> clearly this makes mm_walk->pmd_entry handle only transparent hugepage,
+> so the additional patch below explicitly declare it with #ifdef
+> CONFIG_TRANSPARENT_HUGEPAGE.
+>=20
+> I'll merge this in the next version of my series, but this will help
+> linux-next for a quick solution.
+>=20
+> Thanks,
+> Naoya Horiguchi
+> ---
+> From da0850cd03baa3d50c8e353976b5b9edbfbd4413 Mon Sep 17 00:00:00 2001
+> Date: Fri, 13 Jun 2014 10:33:26 -0400
+> Subject: [PATCH] fix build error of v3.15-mmotm-2014-06-12-16-38
+>=20
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-In file included from arch/powerpc/include/asm/mmu-hash64.h:23:0,
-                 from arch/powerpc/include/asm/mmu.h:197,
-                 from arch/powerpc/include/asm/lppaca.h:36,
-                 from arch/powerpc/include/asm/paca.h:20,
-                 from arch/powerpc/include/asm/hw_irq.h:41,
-                 from arch/powerpc/include/asm/irqflags.h:11,
-                 from include/linux/irqflags.h:15,
-                 from include/linux/spinlock.h:53,
-                 from include/linux/mmzone.h:7,
-                 from include/linux/gfp.h:5,
-                 from include/linux/mm.h:9,
-                 from include/linux/mman.h:4,
-                 from mm/madvise.c:8:
-mm/madvise.c: In function 'swapin_walk_pte_entry':
-arch/powerpc/include/asm/pgtable-ppc64.h:183:3: warning: statement with no =
-effect [-Wunused-value]
-   (((pte_t *) pmd_page_vaddr(*(dir))) + (((addr) >> PAGE_SHIFT) & (PTRS_PE=
-R_PTE - 1)))
-   ^
-arch/powerpc/include/asm/pgtable-ppc64.h:185:34: note: in expansion of macr=
-o 'pte_offset_kernel'
- #define pte_offset_map(dir,addr) pte_offset_kernel((dir), (addr))
-                                  ^
-mm/madvise.c:161:2: note: in expansion of macro 'pte_offset_map'
-  pte_offset_map(walk->pmd, start & PMD_MASK);
-  ^
-mm/madvise.c:145:9: warning: unused variable 'orig_pte' [-Wunused-variable]
-  pte_t *orig_pte =3D pte - ((start & (PMD_SIZE - 1)) >> PAGE_SHIFT);
-         ^
+I added that to the akpm-current tree in linux-next today and the build
+failures went away.
 
-Introduced by commit 17336ae3d58a ("madvise: cleanup swapin_walk_pmd_entry(=
-)")
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Sig_/MiaEPkThO/DqMnGG6zBEcAL
+
+--Sig_/zZth.15U7q6c4+IBs2hWzHW
 Content-Type: application/pgp-signature; name=signature.asc
 Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBCAAGBQJTnk8FAAoJEMDTa8Ir7ZwVil0P/R4L3H/B+iGCwJ29teFfm8jo
-JWqkb2/65ORveY3Lv6lYzpS82bCcWixgTNe01iwfecsaD9iOXDNFcGErEBWyD0QQ
-2u+v1y/voN0ftKKt/LxQiXZLcuUlXT1DLEK3JMVko5itPYW6X8HxgqJC/6SnkMXc
-HwmsLtECyuMCMgDmGQzy5Me3F8bbolsFYC8IAvi/VF+YeT2Z0CgozpZDTxtAYD5x
-zO8cbMevC4D5IfDECa2+zpTHK1nsel7UEPa1fTOT3VHfFhzkkWpl/1pZursiSojs
-7nTznWEsKAMBYMqAjvvXe6JtAdmIPBPXfQtmWwubLVXhqAbVr4jTJN2nHCys3DBE
-H4BK9PKHUh0wp32yXgCse2a5tg7YhhSQQEV12dyHE9lG7y+0C5mlvcvTiGTZpeY/
-F1WF+m5AOagi10HA/B0ekwEn6dZf3MkkueSalQXmaY+6XzhqhwJf8gnVtARj6cR6
-EYRc4j2rp93yldVW610fXLuAd/JJX3q0IVYqUPLzbYTokX2v4olRSAswShwm7xrM
-uGk+sf+DOnKLHubbyjBVZDst7AO6vybnKWts92EnZ259u8o0v7gwj0xQPs1AJscF
-STXgFUc5xU1I7mh8cbL/fsfGP8PLMajxnqtR1ohkKNApLv60pbWQH0JvJaDVHYwx
-47h4cePc11UU/kfiq2/6
-=Te95
+iQIcBAEBCAAGBQJTnlAVAAoJEMDTa8Ir7ZwVgp0P/1wf84gPCsAYfq+GPjEKff3D
+onSccGzVUP3dp2ll1eRoIAKvK1wOpDhdqeX3csOFXdjfmoWo3/M2krVnnf7RU5QN
+1OBs26iIRMsjp+X3CMBktT66jwSEiUvuWs7eg7hN/utJHoTXdx5psjgsUGSfco8T
+RbkQkLbdfHxDzeoakfVn8ykkLqAkEROb4xcTRCezSZeuupUHg4W8aaNu+F+RMeTp
+j/R33lUylSUw1EuEbzeAGB9l0m8cGLakENrLRLln8CJLzTTwtdt5/l4jip9ddDeP
+pOvSWNdME304AOlzfLmX6CKIuF2KEco5EilbP72oH2MWsuwJh1nCK1xVUUOPFzzP
+8dIy8AntnL518e4Q1o95ma9sh1jyzD+osqQhwlxEFf8AY7K9htSg3eP72vjGk502
+dO05M/2CWfU49RjsNytdU/bIdOKlUQ1ubzl4YI1RELOzUkcZQMVUidmStu7auMhB
+e79Z4md/6PgXCureChkgQVOJicwwNh3tD6UQ7XggbsQpBAiHxU96/ky/HsPPJ9ne
+423qX1Vr6s/4rRprjLoFJXM9f+s0Uud9xErTIyLbHtgw8l3Y5c/ty2Xm9dYC88qI
+5yo3trUA2NtSM+jFFlp+MWXkxnUL4n5bo2FkT7PdhWwJvVS9uyyAdlZiMWSRrMLD
+vSYjVh2csernoZcXc9/L
+=WIZ5
 -----END PGP SIGNATURE-----
 
---Sig_/MiaEPkThO/DqMnGG6zBEcAL--
+--Sig_/zZth.15U7q6c4+IBs2hWzHW--
