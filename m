@@ -1,271 +1,342 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488AbaFPIIN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 04:08:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46387 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754144AbaFPIIL (ORCPT
+	id S1754516AbaFPIIh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 04:08:37 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:51275 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754320AbaFPIIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 04:08:11 -0400
-Date: Mon, 16 Jun 2014 01:06:38 -0700
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-27e35715df54cbc4f2d044f681802ae30479e7fb@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rostedt@goodmis.org, peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <20140611183852.937945560@linutronix.de>
-References: <20140611183852.937945560@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/urgent] rtmutex: Plug slow unlock race
-Git-Commit-ID: 27e35715df54cbc4f2d044f681802ae30479e7fb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 16 Jun 2014 04:08:35 -0400
+Date: Mon, 16 Jun 2014 09:08:28 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Carlo Caione <carlo@caione.org>, Shuge <shuge@allwinnertech.com>,
+        kevin@allwinnertech.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, dev@linux-sunxi.org
+Subject: Re: [PATCH v3 5/6] regulator: add support for regulator set
+ registration
+Message-ID: <20140616080828.GF14323@lee--X1>
+References: <1401183535-31003-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1401183535-31003-6-git-send-email-boris.brezillon@free-electrons.com>
+ <53970ABD.4030402@free-electrons.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53970ABD.4030402@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  27e35715df54cbc4f2d044f681802ae30479e7fb
-Gitweb:     http://git.kernel.org/tip/27e35715df54cbc4f2d044f681802ae30479e7fb
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Wed, 11 Jun 2014 18:44:04 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 16 Jun 2014 10:03:09 +0200
+> Hello Mark,
+> 
+> Did you have time to take a look at this patch ?
+> 
+> I'd like to post a new version of this series addressing Lee's comments,
+> but it would be great to have your feedback on this patch before posting
+> a new version.
 
-rtmutex: Plug slow unlock race
+I wouldn't do that, as you're likely to upset him.
 
-When the rtmutex fast path is enabled the slow unlock function can
-create the following situation:
+Just fix what you know and resend.
 
-spin_lock(foo->m->wait_lock);
-foo->m->owner = NULL;
-	    			rt_mutex_lock(foo->m); <-- fast path
-				free = atomic_dec_and_test(foo->refcnt);
-				rt_mutex_unlock(foo->m); <-- fast path
-				if (free)
-				   kfree(foo);
+Mark will subsequently review I'm sure.
 
-spin_unlock(foo->m->wait_lock); <--- Use after free.
+> Best Regards,
+> 
+> Boris
+> 
+> On 27/05/2014 11:38, Boris BREZILLON wrote:
+> > PMIC devices often provide several regulators, and these regulators are
+> > all using the same regmap and are all attached to the same device (the
+> > PMIC device).
+> >
+> > Add helper functions (both simple and resource managed versions) to
+> > register and unregister such kind of regulator set.
+> >
+> > This implementation handles self dependency issues where one regulator
+> > provided the PMIC depends on another one provided by the same PMIC.
+> >
+> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> > ---
+> >  drivers/regulator/core.c         | 106 +++++++++++++++++++++++++++++++++++++++
+> >  drivers/regulator/devres.c       |  68 +++++++++++++++++++++++++
+> >  include/linux/regulator/driver.h |  51 +++++++++++++++++++
+> >  3 files changed, 225 insertions(+)
+> >
+> > diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+> > index 9a09f3c..7703853 100644
+> > --- a/drivers/regulator/core.c
+> > +++ b/drivers/regulator/core.c
+> > @@ -3595,6 +3595,112 @@ void regulator_unregister(struct regulator_dev *rdev)
+> >  EXPORT_SYMBOL_GPL(regulator_unregister);
+> >  
+> >  /**
+> > + * regulator_set_register - register a set of regulators
+> > + * @config: runtime configuration for regulator set
+> > + *
+> > + * Called by regulator drivers to register a set of regulators.
+> > + * Returns a valid pointer to struct regulator_set on success
+> > + * or an ERR_PTR() on error.
+> > + */
+> > +struct regulator_set *
+> > +regulator_set_register(const struct regulator_set_config *config)
+> > +{
+> > +	struct regulator_set *rset;
+> > +	int prev_nregistered = -1;
+> > +	int nregistered = 0;
+> > +	int ret;
+> > +	int i;
+> > +
+> > +	if (!config->descs || !config->nregulators)
+> > +		return ERR_PTR(-EINVAL);
+> > +
+> > +	rset = kzalloc(sizeof(*rset) +
+> > +		       (config->nregulators * sizeof(struct regulator_dev *)),
+> > +		       GFP_KERNEL);
+> > +	if (!rset)
+> > +		return ERR_PTR(-ENOMEM);
+> > +
+> > +	rset->nregulators = config->nregulators;
+> > +
+> > +	while (nregistered < config->nregulators &&
+> > +	       prev_nregistered < nregistered) {
+> > +
+> > +		prev_nregistered = nregistered;
+> > +
+> > +		for (i = 0; i < config->nregulators; i++) {
+> > +			struct regulator_config conf;
+> > +			struct regulator_dev *regulator;
+> > +
+> > +			if (rset->regulators[i])
+> > +				continue;
+> > +
+> > +			memset(&conf, 0, sizeof(conf));
+> > +
+> > +			conf.dev = config->dev;
+> > +			conf.regmap = config->regmap;
+> > +			conf.driver_data = config->driver_data;
+> > +			if (config->matches && config->matches[i].init_data)
+> > +				conf.init_data = config->matches[i].init_data;
+> > +			else if (config->init_data)
+> > +				conf.init_data = config->init_data[i];
+> > +
+> > +			if (config->matches)
+> > +				conf.of_node = config->matches[i].of_node;
+> > +
+> > +			regulator = regulator_register(&config->descs[i],
+> > +						       &conf);
+> > +			if (IS_ERR(regulator)) {
+> > +				ret = PTR_ERR(regulator);
+> > +				if (ret == -EPROBE_DEFER)
+> > +					continue;
+> > +
+> > +				goto err;
+> > +			}
+> > +
+> > +			rset->regulators[i] = regulator;
+> > +			nregistered++;
+> > +		}
+> > +	}
+> > +
+> > +	if (nregistered < config->nregulators) {
+> > +		ret = -EPROBE_DEFER;
+> > +		goto err;
+> > +	}
+> > +
+> > +	return rset;
+> > +
+> > +err:
+> > +	for (i = 0; i < config->nregulators; i++) {
+> > +		if (rset->regulators[i])
+> > +			regulator_unregister(rset->regulators[i]);
+> > +	}
+> > +
+> > +	kfree(rset);
+> > +
+> > +	return ERR_PTR(ret);
+> > +}
+> > +EXPORT_SYMBOL_GPL(regulator_set_register);
+> > +
+> > +/**
+> > + * regulator_set_unregister - unregister regulator set
+> > + * @rset: regulator set to unregister
+> > + *
+> > + * Called by regulator drivers to unregister a regulator set.
+> > + */
+> > +void regulator_set_unregister(struct regulator_set *rset)
+> > +{
+> > +	int i;
+> > +
+> > +	for (i = 0; i < rset->nregulators; i++) {
+> > +		if (rset->regulators[i])
+> > +			regulator_unregister(rset->regulators[i]);
+> > +	}
+> > +
+> > +	kfree(rset);
+> > +}
+> > +EXPORT_SYMBOL_GPL(regulator_set_unregister);
+> > +
+> > +/**
+> >   * regulator_suspend_prepare - prepare regulators for system wide suspend
+> >   * @state: system suspend state
+> >   *
+> > diff --git a/drivers/regulator/devres.c b/drivers/regulator/devres.c
+> > index f44818b..a34f34c 100644
+> > --- a/drivers/regulator/devres.c
+> > +++ b/drivers/regulator/devres.c
+> > @@ -251,6 +251,74 @@ void devm_regulator_unregister(struct device *dev, struct regulator_dev *rdev)
+> >  }
+> >  EXPORT_SYMBOL_GPL(devm_regulator_unregister);
+> >  
+> > +static void devm_rset_release(struct device *dev, void *res)
+> > +{
+> > +	regulator_set_unregister(*(struct regulator_set **)res);
+> > +}
+> > +
+> > +/**
+> > + * devm_regulator_set_register - Resource managed regulator_set_register()
+> > + * @dev: device registering the regulator set
+> > + * @config: runtime configuration for regulator set
+> > + *
+> > + * Called by regulator drivers to register a set of regulators.  Returns a
+> > + * valid pointer to struct regulator_set on success or an ERR_PTR() on
+> > + * error.  The regulator will automatically be released when the device
+> > + * is unbound.
+> > + */
+> > +struct regulator_set *
+> > +devm_regulator_set_register(struct device *dev,
+> > +			    const struct regulator_set_config *config)
+> > +{
+> > +	struct regulator_set **ptr, *rset;
+> > +
+> > +	ptr = devres_alloc(devm_rset_release, sizeof(*ptr),
+> > +			   GFP_KERNEL);
+> > +	if (!ptr)
+> > +		return ERR_PTR(-ENOMEM);
+> > +
+> > +	rset = regulator_set_register(config);
+> > +	if (!IS_ERR(rset)) {
+> > +		*ptr = rset;
+> > +		devres_add(dev, ptr);
+> > +	} else {
+> > +		devres_free(ptr);
+> > +	}
+> > +
+> > +	return rset;
+> > +}
+> > +EXPORT_SYMBOL_GPL(devm_regulator_set_register);
+> > +
+> > +static int devm_rset_match(struct device *dev, void *res, void *data)
+> > +{
+> > +	struct regulator_set **r = res;
+> > +	if (!r || !*r) {
+> > +		WARN_ON(!r || !*r);
+> > +		return 0;
+> > +	}
+> > +	return *r == data;
+> > +}
+> > +
+> > +/**
+> > + * devm_regulator_set_unregister - Resource managed regulator_set_unregister()
+> > + * @dev: device unregistering the regulator set
+> > + * @rset: regulator set to release
+> > + *
+> > + * Unregister a regulator set registered with devm_regulator_set_register().
+> > + * Normally this function will not need to be called and the resource
+> > + * management code will ensure that the resource is freed.
+> > + */
+> > +void devm_regulator_set_unregister(struct device *dev,
+> > +				   struct regulator_set *rset)
+> > +{
+> > +	int rc;
+> > +
+> > +	rc = devres_release(dev, devm_rdev_release, devm_rset_match, rset);
+> > +	if (rc != 0)
+> > +		WARN_ON(rc);
+> > +}
+> > +EXPORT_SYMBOL_GPL(devm_regulator_unregister);
+> > +
+> >  struct regulator_supply_alias_match {
+> >  	struct device *dev;
+> >  	const char *id;
+> > diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
+> > index bbe03a1..b683f68 100644
+> > --- a/include/linux/regulator/driver.h
+> > +++ b/include/linux/regulator/driver.h
+> > @@ -350,6 +350,48 @@ struct regulator_dev {
+> >  	unsigned int ena_gpio_state:1;
+> >  };
+> >  
+> > +/**
+> > + * struct regulator_set_config - Dynamic regulator set descriptor
+> > + *
+> > + * This structure describe a regulator and each regulator in this set
+> > + * will be registered using informations passed through regulator_desc
+> > + * and of_regulator_match tables.
+> > + *
+> > + * @dev: struct device providing the regulator set.
+> > + * @driver_data: private driver data for this regulator set.
+> > + * @regmap: regmap to use for core regmap helpers if dev_get_regulator() is
+> > + *          insufficient.
+> > + * @descs: table of regulator descriptors.
+> > + * @matches: table of DT regulator descriptors. This table should have
+> > + *           been filled by the of_regulator_match function.
+> > + * @init_data: a table of init_data in case matches is NULL or the init_data
+> > + *             of the match entry is NULL.
+> > + * @nregulators: number of regulators in the regulator set.
+> > + */
+> > +struct regulator_set_config {
+> > +	struct device *dev;
+> > +	void *driver_data;
+> > +	struct regmap *regmap;
+> > +	const struct regulator_desc *descs;
+> > +	const struct of_regulator_match *matches;
+> > +	const struct regulator_init_data **init_data;
+> > +	int nregulators;
+> > +};
+> > +
+> > +/*
+> > + * struct regulator_set - Regulator set
+> > + *
+> > + * This structure stores a set of regulator devices provided by a single
+> > + * device (e.g. a PMIC device).
+> > + *
+> > + * @nregulators: number of regulators in the set
+> > + * @regulators: regulators table
+> > + */
+> > +struct regulator_set {
+> > +	int nregulators;
+> > +	struct regulator_dev *regulators[0];
+> > +};
+> > +
+> >  struct regulator_dev *
+> >  regulator_register(const struct regulator_desc *regulator_desc,
+> >  		   const struct regulator_config *config);
+> > @@ -360,6 +402,15 @@ devm_regulator_register(struct device *dev,
+> >  void regulator_unregister(struct regulator_dev *rdev);
+> >  void devm_regulator_unregister(struct device *dev, struct regulator_dev *rdev);
+> >  
+> > +struct regulator_set *
+> > +regulator_set_register(const struct regulator_set_config *config);
+> > +struct regulator_set *
+> > +devm_regulator_set_register(struct device *dev,
+> > +			    const struct regulator_set_config *config);
+> > +void regulator_set_unregister(struct regulator_set *rset);
+> > +void devm_regulator_set_unregister(struct device *dev,
+> > +				   struct regulator_set *rset);
+> > +
+> >  int regulator_notifier_call_chain(struct regulator_dev *rdev,
+> >  				  unsigned long event, void *data);
+> >  
+> 
 
-Plug the race by changing the slow unlock to the following scheme:
-
-     while (!rt_mutex_has_waiters(m)) {
-     	    /* Clear the waiters bit in m->owner */
-	    clear_rt_mutex_waiters(m);
-      	    owner = rt_mutex_owner(m);
-      	    spin_unlock(m->wait_lock);
-      	    if (cmpxchg(m->owner, owner, 0) == owner)
-      	       return;
-      	    spin_lock(m->wait_lock);
-     }
-
-So in case of a new waiter incoming while the owner tries the slow
-path unlock we have two situations:
-
- unlock(wait_lock);
-					lock(wait_lock);
- cmpxchg(p, owner, 0) == owner
- 	    	   			mark_rt_mutex_waiters(lock);
-	 				acquire(lock);
-
-Or:
-
- unlock(wait_lock);
-					lock(wait_lock);
-	 				mark_rt_mutex_waiters(lock);
- cmpxchg(p, owner, 0) != owner
-					enqueue_waiter();
-					unlock(wait_lock);
- lock(wait_lock);
- wakeup_next waiter();
- unlock(wait_lock);
-					lock(wait_lock);
-					acquire(lock);
-
-If the fast path is disabled, then the simple
-
-   m->owner = NULL;
-   unlock(m->wait_lock);
-
-is sufficient as all access to m->owner is serialized via
-m->wait_lock;
-
-Also document and clarify the wakeup_next_waiter function as suggested
-by Oleg Nesterov.
-
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140611183852.937945560@linutronix.de
-Cc: stable@vger.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/locking/rtmutex.c | 115 ++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 109 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
-index a8a83a2..fc60594 100644
---- a/kernel/locking/rtmutex.c
-+++ b/kernel/locking/rtmutex.c
-@@ -83,6 +83,47 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
- 		owner = *p;
- 	} while (cmpxchg(p, owner, owner | RT_MUTEX_HAS_WAITERS) != owner);
- }
-+
-+/*
-+ * Safe fastpath aware unlock:
-+ * 1) Clear the waiters bit
-+ * 2) Drop lock->wait_lock
-+ * 3) Try to unlock the lock with cmpxchg
-+ */
-+static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
-+	__releases(lock->wait_lock)
-+{
-+	struct task_struct *owner = rt_mutex_owner(lock);
-+
-+	clear_rt_mutex_waiters(lock);
-+	raw_spin_unlock(&lock->wait_lock);
-+	/*
-+	 * If a new waiter comes in between the unlock and the cmpxchg
-+	 * we have two situations:
-+	 *
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 * cmpxchg(p, owner, 0) == owner
-+	 *					mark_rt_mutex_waiters(lock);
-+	 *					acquire(lock);
-+	 * or:
-+	 *
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 *					mark_rt_mutex_waiters(lock);
-+	 *
-+	 * cmpxchg(p, owner, 0) != owner
-+	 *					enqueue_waiter();
-+	 *					unlock(wait_lock);
-+	 * lock(wait_lock);
-+	 * wake waiter();
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 *					acquire(lock);
-+	 */
-+	return rt_mutex_cmpxchg(lock, owner, NULL);
-+}
-+
- #else
- # define rt_mutex_cmpxchg(l,c,n)	(0)
- static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
-@@ -90,6 +131,17 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
- 	lock->owner = (struct task_struct *)
- 			((unsigned long)lock->owner | RT_MUTEX_HAS_WAITERS);
- }
-+
-+/*
-+ * Simple slow path only version: lock->owner is protected by lock->wait_lock.
-+ */
-+static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
-+	__releases(lock->wait_lock)
-+{
-+	lock->owner = NULL;
-+	raw_spin_unlock(&lock->wait_lock);
-+	return true;
-+}
- #endif
- 
- static inline int
-@@ -650,7 +702,8 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
- /*
-  * Wake up the next waiter on the lock.
-  *
-- * Remove the top waiter from the current tasks waiter list and wake it up.
-+ * Remove the top waiter from the current tasks pi waiter list and
-+ * wake it up.
-  *
-  * Called with lock->wait_lock held.
-  */
-@@ -671,10 +724,23 @@ static void wakeup_next_waiter(struct rt_mutex *lock)
- 	 */
- 	rt_mutex_dequeue_pi(current, waiter);
- 
--	rt_mutex_set_owner(lock, NULL);
-+	/*
-+	 * As we are waking up the top waiter, and the waiter stays
-+	 * queued on the lock until it gets the lock, this lock
-+	 * obviously has waiters. Just set the bit here and this has
-+	 * the added benefit of forcing all new tasks into the
-+	 * slow path making sure no task of lower priority than
-+	 * the top waiter can steal this lock.
-+	 */
-+	lock->owner = (void *) RT_MUTEX_HAS_WAITERS;
- 
- 	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
- 
-+	/*
-+	 * It's safe to dereference waiter as it cannot go away as
-+	 * long as we hold lock->wait_lock. The waiter task needs to
-+	 * acquire it in order to dequeue the waiter.
-+	 */
- 	wake_up_process(waiter->task);
- }
- 
-@@ -928,12 +994,49 @@ rt_mutex_slowunlock(struct rt_mutex *lock)
- 
- 	rt_mutex_deadlock_account_unlock(current);
- 
--	if (!rt_mutex_has_waiters(lock)) {
--		lock->owner = NULL;
--		raw_spin_unlock(&lock->wait_lock);
--		return;
-+	/*
-+	 * We must be careful here if the fast path is enabled. If we
-+	 * have no waiters queued we cannot set owner to NULL here
-+	 * because of:
-+	 *
-+	 * foo->lock->owner = NULL;
-+	 *			rtmutex_lock(foo->lock);   <- fast path
-+	 *			free = atomic_dec_and_test(foo->refcnt);
-+	 *			rtmutex_unlock(foo->lock); <- fast path
-+	 *			if (free)
-+	 *				kfree(foo);
-+	 * raw_spin_unlock(foo->lock->wait_lock);
-+	 *
-+	 * So for the fastpath enabled kernel:
-+	 *
-+	 * Nothing can set the waiters bit as long as we hold
-+	 * lock->wait_lock. So we do the following sequence:
-+	 *
-+	 *	owner = rt_mutex_owner(lock);
-+	 *	clear_rt_mutex_waiters(lock);
-+	 *	raw_spin_unlock(&lock->wait_lock);
-+	 *	if (cmpxchg(&lock->owner, owner, 0) == owner)
-+	 *		return;
-+	 *	goto retry;
-+	 *
-+	 * The fastpath disabled variant is simple as all access to
-+	 * lock->owner is serialized by lock->wait_lock:
-+	 *
-+	 *	lock->owner = NULL;
-+	 *	raw_spin_unlock(&lock->wait_lock);
-+	 */
-+	while (!rt_mutex_has_waiters(lock)) {
-+		/* Drops lock->wait_lock ! */
-+		if (unlock_rt_mutex_safe(lock) == true)
-+			return;
-+		/* Relock the rtmutex and try again */
-+		raw_spin_lock(&lock->wait_lock);
- 	}
- 
-+	/*
-+	 * The wakeup next waiter path does not suffer from the above
-+	 * race. See the comments there.
-+	 */
- 	wakeup_next_waiter(lock);
- 
- 	raw_spin_unlock(&lock->wait_lock);
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
