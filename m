@@ -1,93 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362AbaFPN4H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 09:56:07 -0400
-Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.183]:8948 "EHLO
-	mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953AbaFPN4F (ORCPT
+	id S1753346AbaFPN5q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 09:57:46 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:47807 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775AbaFPN5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 09:56:05 -0400
-X-Greylist: delayed 359 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Jun 2014 09:56:03 EDT
-X-RZG-AUTH: :IWkQb0WIdvqIIwNfJfyiKBgoQwjwJ7eL6yL6M6h2IziqwDGkR4xBppx51ChxczpID85bUDEXFKm95dvMav6s1e6U
-X-RZG-CLASS-ID: mo05
-Message-ID: <539EF5FD.5000307@samba.org>
-Date: Mon, 16 Jun 2014 15:49:49 +0200
-From: "Stefan (metze) Metzmacher" <metze@samba.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 16 Jun 2014 09:57:44 -0400
+Date: Mon, 16 Jun 2014 09:57:41 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH 2/2] memcg: Allow guarantee reclaim
+Message-ID: <20140616135741.GA11542@htj.dyndns.org>
+References: <20140611075729.GA4520@dhcp22.suse.cz>
+ <1402473624-13827-1-git-send-email-mhocko@suse.cz>
+ <1402473624-13827-2-git-send-email-mhocko@suse.cz>
+ <20140611153631.GH2878@cmpxchg.org>
+ <20140612132207.GA32720@dhcp22.suse.cz>
+ <20140612135600.GI2878@cmpxchg.org>
+ <20140612142237.GB32720@dhcp22.suse.cz>
+ <20140612161733.GC23606@htj.dyndns.org>
+ <20140616125915.GB16915@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: =?UTF-8?B?QmrDtnJuIEJhdW1iYWNo?= <bb@sernet.de>,
-        Steve French <sfrench@samba.org>
-CC: linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Steve French <smfrench@gmail.com>,
-        Pavel Shilovsky <piastryyy@gmail.com>
-Subject: Re: [PATCH] fs/cifs: fix regression in cifs_create_mf_symlink()
-References: <1402394606-7910-1-git-send-email-bb@sernet.de>
-In-Reply-To: <1402394606-7910-1-git-send-email-bb@sernet.de>
-X-Enigmail-Version: 1.6
-OpenPGP: id=0E53083F
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="QbxoLR5KvvS2XQrJOoAOfRa5p7cjHO6jH"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140616125915.GB16915@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---QbxoLR5KvvS2XQrJOoAOfRa5p7cjHO6jH
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hello, Michal.
 
-Hi Steve,
+On Mon, Jun 16, 2014 at 02:59:15PM +0200, Michal Hocko wrote:
+> > There sure is a question of how fast userland will move to the new
+> > interface. 
+> 
+> Yeah, I was mostly thinking about those who would need to to bigger
+> changes. AFAIR threads will no longer be distributable between groups.
 
-any comments on this? How can we get this fixed upstream?
+Thread-level granularity should go away no matter what, but this is
+completely irrelevant to memcg which can't do per-thread anyway.  For
+whatever reason, a user is stuck with thread-level granularity for
+controllers which work that way, the user can use the old hierarchies
+for them for the time being.
 
-Thanks!
-metze
+> > is used but I don't think there's any chance of removing the knob.
+> > There's a reason why we're introducing a new version of the whole
+> > cgroup interface which can co-exist with the existing one after all.
+> > If you wanna version memcg interface separately, maybe that'd work but
+> > it sounds like a lot of extra hassle for not much gain.
+> 
+> No, I didn't mean to version the interface. I just wanted to have
+> gradual transition for potential soft_limit users.
+> 
+> Maybe I am misunderstanding something but I thought that new version of
+> API will contain all knobs which are not marked .flags = CFTYPE_INSANE
+> while the old API will contain all of them.
 
-Am 10.06.2014 12:03, schrieb Bj=C3=B6rn Baumbach:
-> commit d81b8a40e2ece0a9ab57b1fe1798e291e75bf8fc
-> ("CIFS: Cleanup cifs open codepath")
-> changed disposition to FILE_OPEN.
->=20
-> Signed-off-by: Bj=C3=B6rn Baumbach <bb@sernet.de>
-> Signed-off-by: Stefan Metzmacher <metze@samba.org>
-> Reviewed-by: Stefan Metzmacher <metze@samba.org>
-> Cc: <stable@vger.kernel.org> # v3.14+
-> Cc: Pavel Shilovsky <piastry@etersoft.ru>
-> Cc: Steve French <sfrench@samba.org>
-> ---
->  fs/cifs/link.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/fs/cifs/link.c b/fs/cifs/link.c
-> index 264ece7..68559fd 100644
-> --- a/fs/cifs/link.c
-> +++ b/fs/cifs/link.c
-> @@ -374,7 +374,7 @@ cifs_create_mf_symlink(unsigned int xid, struct cif=
-s_tcon *tcon,
->  	oparms.cifs_sb =3D cifs_sb;
->  	oparms.desired_access =3D GENERIC_WRITE;
->  	oparms.create_options =3D create_options;
-> -	oparms.disposition =3D FILE_OPEN;
-> +	oparms.disposition =3D FILE_CREATE;
->  	oparms.path =3D path;
->  	oparms.fid =3D &fid;
->  	oparms.reconnect =3D false;
->=20
+Nope, some changes don't fit that model.  CFTYPE_ON_ON_DFL is the
+opposite.  Knobs marked with the flag only appear on the default
+hierarchy (cgroup core internally calls it the default hierarchy as
+this is the tree all the controllers are attached to by default).
 
+Thanks.
 
---QbxoLR5KvvS2XQrJOoAOfRa5p7cjHO6jH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlOe9gYACgkQm70gjA5TCD89XQCfR05JcjbtnGAs3mpQXQXS1CGx
-cLYAnjWQBwzYg7zJROjwbKmvp2gXjZcK
-=686d
------END PGP SIGNATURE-----
-
---QbxoLR5KvvS2XQrJOoAOfRa5p7cjHO6jH--
+-- 
+tejun
