@@ -1,107 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277AbaFPJ7P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 05:59:15 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:48555 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754820AbaFPJ7N (ORCPT
+	id S1755195AbaFPKCl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 06:02:41 -0400
+Received: from smtprelay-b32.telenor.se ([213.150.131.21]:43056 "EHLO
+	smtprelay-b32.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754816AbaFPKCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 05:59:13 -0400
+	Mon, 16 Jun 2014 06:02:39 -0400
+X-Greylist: delayed 1928 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Jun 2014 06:02:39 EDT
+X-LISTENER: [mailrelay1.bredband.net]
+X-SENDER-IP: [92.33.28.242]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApQBALe3nlNcIRzy/2dsb2JhbAANTcQ/gxIBgSeEeAEBAQECAThBBQsLDgoJJQ8CHCoGDQEHAQEXiB8NsBOeeheJQ4UzB4RDAQOlc4tq
+X-IPAS-Result: ApQBALe3nlNcIRzy/2dsb2JhbAANTcQ/gxIBgSeEeAEBAQECAThBBQsLDgoJJQ8CHCoGDQEHAQEXiB8NsBOeeheJQ4UzB4RDAQOlc4tq
+X-IronPort-AV: E=Sophos;i="5.01,485,1400018400"; 
+   d="scan'208";a="703867388"
+Message-ID: <539EB8F4.20104@gaisler.com>
+Date: Mon, 16 Jun 2014 11:29:24 +0200
+From: Andreas Larsson <andreas@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20140529141705.GI2764@kernel.org>
-References: <20140527192115.GD25474@kernel.org> <CAKgNAkht1vubHueYPpkRu_W5B8OYW3rPUkHeLEq5WMVbCvO47w@mail.gmail.com>
- <20140527203010.GA2764@kernel.org> <5385D47A.3070401@gmail.com>
- <20140528150720.GB2764@kernel.org> <063D6719AE5E284EB5DD2968C1650D6D1724F2A0@AcuExch.aculab.com>
- <20140528195004.GD2764@kernel.org> <063D6719AE5E284EB5DD2968C1650D6D1724FB67@AcuExch.aculab.com>
- <20140529135547.GG2764@kernel.org> <063D6719AE5E284EB5DD2968C1650D6D1724FC78@AcuExch.aculab.com>
- <20140529141705.GI2764@kernel.org>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Mon, 16 Jun 2014 11:58:51 +0200
-Message-ID: <CAKgNAkj-MVfeqEeffWKMNok0yO-Rm1kyY+zhXEy-U9NkB+aLow@mail.gmail.com>
-Subject: Re: [PATCH/RFC] Re: recvmmsg() timeout behavior strangeness [RESEND]
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Laight <David.Laight@aculab.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        =?UTF-8?Q?Ondrej_B=C3=ADlka?= <neleai@seznam.cz>,
-        Caitlin Bestler <caitlin.bestler@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Elie De Brauwer <eliedebrauwer@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Steven Whitehouse <steve@chygwyn.com>,
-        =?UTF-8?Q?R=C3=A9mi_Denis=2DCourmont?= 
-	<remi.denis-courmont@nokia.com>,
-        Paul Moore <paul@paul-moore.com>,
-        Chris Friesen <chris.friesen@windriver.com>
-Content-Type: text/plain; charset=UTF-8
+To: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+CC: lugovskoy@dev.rtsoft.ru, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
+        davem@davemloft.net
+Subject: Re: [PATCH 00/21] add and use devm_irq_of_parse_and_map()
+References: <53997AF6.1040003@gaisler.com> <5399AE1B.1080301@gaisler.com> <5399F92B.50406@dev.rtsoft.ru> <539EA986.1090501@gaisler.com> <539EAC92.1040606@dev.rtsoft.ru>
+In-Reply-To: <539EAC92.1040606@dev.rtsoft.ru>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+On 2014-06-16 10:36, Nikita Yushchenko wrote:
+>>>> SPARC does not use OF_IRQ and has a different implementation of
+>>>> irq_of_parse_and_map than the one in drivers/of/irq.c. All code
+>>>> converted from irq_of_parse_and_map to devm_irq_of_parse_and_map in this
+>>>> patch set will be unlinkable for SPARC. This includes SPI in general and
+>>>> many drivers that are used for SPARC (of which several are currently
+>>>> only used on SPARC platforms).
+>>>
+>>> Can this be fixed by adding a copy of devm_irq_of_parse_and_map() to
+>>> arch/sparc/kernel/of_device_common.c ?
+>>
+>> Not a copy of the version in irq.c no. On SPARC, IRQ_DOMAIN is not
+>> selected in general.
+>>
+>> However, there is no technical problem that I can see with having a
+>> SPARC version of devm_irq_of_parse_and_map that just calls
+>> irq_of_parse_and_map as there are no mappings that needs to be disposed
+>> of. (The empty dummy for irq_dispose_mapping is used if any
+>> irq_dispose_mapping calls are made from drivers).
+>
+> Ok, I will post an updated patchset that adds sparc
+> devm_irq_of_parse_and_map() that just calls irq_of_parse_and_map(), and
+> devm_irq_dispose_mapping() that does nothing.
 
-Things have gone quiet ;-). What's the current state of this patch?
+You have already added the needed empty devm_irq_dispose_mapping in 
+include/linux/irqdomain.h.
 
-Thanks,
-
-Michael
-
-
-On Thu, May 29, 2014 at 4:17 PM, Arnaldo Carvalho de Melo
-<acme@ghostprotocols.net> wrote:
-> Em Thu, May 29, 2014 at 02:06:04PM +0000, David Laight escreveu:
->> From: 'Arnaldo Carvalho de Melo'
->> ...
->> > > I remember some discussions from an XNET standards meeting (I've forgotten
->> > > exactly which errors on which calls were being discussed).
->> > > My recollection is that you return success with a partial transfer
->> > > count for ANY error that happens after some data has been transferred.
->> > > The actual error will be returned when it happens again on the next
->> > > system call - Note the AGAIN, not a saved error.
->
->> > A saved error, for the right entity, in the recvmmsg case, that
->> > basically is batching multiple recvmsg syscalls, doesn't sound like a
->> > problem, i.e. the idea is to, as much as possible, mimic what multiple
->> > recvmsg calls would do, but reduce its in/out kernel (and inside kernel
->> > subsystems) overhead.
->
->> > Perhaps we can have something in between, i.e. for things like EFAULT,
->> > we should report straight away, effectively dropping whatever datagrams
->> > successfully received in the current batch, do you agree?
->
->> Not unreasonable - EFAULT shouldn't happen unless the application
->> is buggy.
->
-> Ok.
->
->> > For transient errors the existing mechanism, fixed so that only per
->> > socket errors are saved for later, as today, could be kept?
->
->> I don't think it is ever necessary to save an errno value for the
->> next system call at all.
->> Just process the next system call and see what happens.
->
->> If the call returns with less than the maximum number of datagrams
->> and with a non-zero timeout left - then the application can infer
->> that it was terminated by an abnormal event of some kind.
->> This might be a signal.
->
-> Then it could use getsockopt(SO_ERROR) perhaps? I.e. we don't return the
-> error on the next call, but we provide a way for the app to retrieve the
-> reason for the smaller than expected batch?
->
->> I'm not sure if an icmp error on a connected datagram socket could
->> generate a 'disconnect'. It might happen if the interface is being
->> used for something like SCTP.
->> In either case the next call will detect the error.
->
-> - Arnaldo
+Note that the IRQ_DOMAIN *can* be used under SPARC (GPIO_GRGPIO is one 
+example that selects it), but it is not used at the top level so to 
+speak. There should not be a SPARC specific empty version of 
+devm_irq_dispose_mapping - CONF_IRQ_DOMAIN or not takes care of that.
 
 
+> Also, you mentioned that some drivers that my original patchset touches
+> are sparc-only?  Then, maybe better not convert these to devm_? Could
+> you please give a list of such drivers?
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+The drivers that I know of off hand is not necessarily SPARC only. Some 
+are currently only found in SPARC environments, but that could change in 
+the future. I personally don't see a problem with using 
+devm_of_parse_and_map solution as long as there is a SPARC-specific one 
+as discussed above.
+
+Best regards,
+Andreas Larsson
