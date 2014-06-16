@@ -1,71 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565AbaFPIPA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 04:15:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40952 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754165AbaFPIO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 04:14:59 -0400
-Date: Mon, 16 Jun 2014 10:09:50 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Simon Que <sque@chromium.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@google.com>,
-        Sonny Rao <sonnyrao@chromium.org>, linux-kernel@vger.kernel.org,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH] perf: Get kernel start address by symbol name
-Message-ID: <20140616080950.GA4632@krava.brq.redhat.com>
-References: <1402685121-32267-1-git-send-email-sque@chromium.org>
- <20140616080649.GB1148@krava.brq.redhat.com>
+	id S1754590AbaFPIPk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 04:15:40 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:45791 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754272AbaFPIPh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 04:15:37 -0400
+X-IronPort-AV: E=Sophos;i="5.01,485,1400050800"; 
+   d="scan'208";a="34644085"
+Message-ID: <539EA79C.7010206@broadcom.com>
+Date: Mon, 16 Jun 2014 10:15:24 +0200
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140616080649.GB1148@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>, <brudley@broadcom.com>,
+        Franky Lin <frankyl@broadcom.com>, <meuleman@broadcom.com>,
+        <linville@tuxdriver.com>, <pieterpg@broadcom.com>,
+        <dekim@broadcom.com>, <mcgrof@do-not-panic.com>,
+        <antonio@open-mesh.com>, <johannes.berg@intel.com>
+CC: <linux-wireless@vger.kernel.org>, <brcm80211-dev-list@broadcom.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] brcmfmac: prevent watchdog from interfering with scanning
+ and connecting
+References: <539E8559.3010601@linux.intel.com>
+In-Reply-To: <539E8559.3010601@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 10:06:49AM +0200, Jiri Olsa wrote:
-> On Fri, Jun 13, 2014 at 11:45:21AM -0700, Simon Que wrote:
-> > The function machine__get_kernel_start_addr() was taking the first symbol
-> > of kallsyms as the start address. This is incorrect in certain cases
-> > where the first symbol is something at 0, while the actual kernel
-> > functions begin at a later point (e.g. 0x80200000).
-> > 
-> > This patch fixes machine__get_kernel_start_addr() to search for the
-> > symbol "_text" or "_stext", which marks the beginning of kernel mapping.
-> > This was already being done in machine__create_kernel_maps(). Thus, this
-> > patch is just a refactor, to move that code into
-> > machine__get_kernel_start_addr().
-> > 
-> > Change-Id: I0c38c36f5e8b0f4fb92a6f57211fa45aabe545a6
-> > Signed-off-by: Simon Que <sque@chromium.org>
-> 
-> hi,
-> looks good to me, adding Adrian to the loop
+On 16-06-14 07:49, Fu, Zhonghui wrote:
+>  From 14485894add32aedacb3e486ebb2cc2b73861abf Mon Sep 17 00:00:00 2001
+> From: Fu zhonghui <zhonghui.fu@linux.intel.com>
+> Date: Wed, 11 Jun 2014 11:06:55 +0800
+> Subject: [PATCH] brcmfmac: prevent watchdog from interfering with scanning and connecting
+>
+> Watchdog in brcmfmac driver may make WiFi chip enter sleep mode
+> before completion of scanning or connecting.
+>
+> This will lead to scanning or connecting failure.
+>
+> Increasing temporarily idle-time threshold during scanning or
+> connecting can ensure scanning or connecting success without
+> watchdog interference.
 
-well, apart from this compile error ;-)
+Are you sure you are not having runtime PM enabled. That could be your 
+problem as the host controller code disables sdio irqs. Please see this 
+thread [1]. For our device runtime pm should not be enabled, but I am 
+not sure if that is taken into account in mmc_attach_sdio() (see code 
+below).
 
-[jolsa@krava perf]$ make
-  BUILD:   Doing 'make -j4' parallel build
-  CC       util/machine.o
-  SUBDIR   /home/jolsa/kernel.org/linux-perf/tools/lib/traceevent/
-util/machine.c: In function ‘machine__get_kernel_start_addr’:
-util/machine.c:520:6: error: ‘addr’ may be used uninitialized in this function [-Werror=maybe-uninitialized]
-  u64 addr;
-      ^
-util/machine.c: In function ‘machine__process_kernel_mmap_event’:
-util/machine.c:547:42: error: ‘addr’ may be used uninitialized in this function [-Werror=maybe-uninitialized]
-   machine->vmlinux_maps[type] = map__new2(start, kernel, type);
-                                          ^
-util/machine.c:520:6: note: ‘addr’ was declared here
-  u64 addr;
-      ^
-cc1: all warnings being treated as errors
-make[1]: *** [util/machine.o] Error 1
-make: *** [all] Error 2
+Gr. AvS
 
+[1] http://www.spinics.net/lists/linux-mmc/msg25978.html
 
-jirka
+--8<----------------------------------------------------------------
+
+	/*
+	 * Enable runtime PM only if supported by host+card+board
+	 */
+	if (host->caps & MMC_CAP_POWER_OFF_CARD) {
+		/*
+		 * Let runtime PM core know our card is active
+		 */
+		err = pm_runtime_set_active(&card->dev);
+		if (err)
+			goto remove;
+
+		/*
+		 * Enable runtime PM for this card
+		 */
+		pm_runtime_enable(&card->dev);
+	}
+
+> Signed-off-by: Fu zhonghui <zhonghui.fu@linux.intel.com>
+> ---
+>   drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c |   18 ++++++++++++++++--
+>   .../net/wireless/brcm80211/brcmfmac/wl_cfg80211.c  |    3 ++-
+>   2 files changed, 18 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+> index 13c89a0..729deab 100644
+> --- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+> +++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+> @@ -34,6 +34,7 @@
+>   #include <linux/vmalloc.h>
+>   #include <linux/platform_data/brcmfmac-sdio.h>
+>   #include <linux/moduleparam.h>
+> +#include <net/cfg80211.h>
+>   #include <asm/unaligned.h>
+>   #include <defs.h>
+>   #include <brcmu_wifi.h>
+> @@ -43,6 +44,10 @@
+>   #include "sdio_host.h"
+>   #include "chip.h"
+>   #include "nvram.h"
+> +#include "dhd.h"
+> +#include "fwil_types.h"
+> +#include "p2p.h"
+> +#include "wl_cfg80211.h"
+>
+>   #define DCMD_RESP_TIMEOUT  2000	/* In milli second */
+>
+> @@ -307,6 +312,7 @@ struct rte_console {
+>   					 * when idle
+>   					 */
+>   #define BRCMF_IDLE_INTERVAL	1
+> +#define BRCMF_IDLE_INTERVAL_SCANNING_CONNECTING	100
+>
+>   #define KSO_WAIT_US 50
+>   #define MAX_KSO_ATTEMPTS (PMU_MAX_TRANSITION_DLY/KSO_WAIT_US)
+> @@ -3613,9 +3619,9 @@ void brcmf_sdio_isr(struct brcmf_sdio *bus)
+>
+>   static bool brcmf_sdio_bus_watchdog(struct brcmf_sdio *bus)
+>   {
+> -#ifdef DEBUG
+>   	struct brcmf_bus *bus_if = dev_get_drvdata(bus->sdiodev->dev);
+> -#endif	/* DEBUG */
+> +	struct brcmf_cfg80211_info *cfg = bus_if->drvr->config;
+> +	struct brcmf_if *ifp = cfg->pub->iflist[0];
+>
+>   	brcmf_dbg(TIMER, "Enter\n");
+>
+> @@ -3678,6 +3684,14 @@ static bool brcmf_sdio_bus_watchdog(struct brcmf_sdio *bus)
+>
+>   	/* On idle timeout clear activity flag and/or turn off clock */
+>   	if ((bus->idletime > 0) && (bus->clkstate == CLK_AVAIL)) {
+> +
+> +		if (test_bit(BRCMF_SCAN_STATUS_BUSY, &cfg->scan_status) ||
+> +		    test_bit(BRCMF_VIF_STATUS_CONNECTING, &ifp->vif->sme_state)) {
+> +			bus->idletime = BRCMF_IDLE_INTERVAL_SCANNING_CONNECTING;
+> +		} else {
+> +			bus->idletime = BRCMF_IDLE_INTERVAL;
+> +		}
+> +
+>   		if (++bus->idlecount >= bus->idletime) {
+>   			bus->idlecount = 0;
+>   			if (bus->activity) {
+> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+> index be19852..e76517e 100644
+> --- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+> +++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+> @@ -913,6 +913,8 @@ brcmf_cfg80211_escan(struct wiphy *wiphy, struct brcmf_cfg80211_vif *vif,
+>   		return -EAGAIN;
+>   	}
+>
+> +	set_bit(BRCMF_SCAN_STATUS_BUSY, &cfg->scan_status);
+> +
+>   	/* If scan req comes for p2p0, send it over primary I/F */
+>   	if (vif == cfg->p2p.bss_idx[P2PAPI_BSSCFG_DEVICE].vif)
+>   		vif = cfg->p2p.bss_idx[P2PAPI_BSSCFG_PRIMARY].vif;
+> @@ -933,7 +935,6 @@ brcmf_cfg80211_escan(struct wiphy *wiphy, struct brcmf_cfg80211_vif *vif,
+>   	}
+>
+>   	cfg->scan_request = request;
+> -	set_bit(BRCMF_SCAN_STATUS_BUSY, &cfg->scan_status);
+>   	if (escan_req) {
+>   		cfg->escan_info.run = brcmf_run_escan;
+>   		err = brcmf_p2p_scan_prep(wiphy, request, vif);
+> -- 1.7.1
+>
+
