@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758AbaFPNj5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 09:39:57 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:41176 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751962AbaFPNjy (ORCPT
+	id S1753978AbaFPNka (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 09:40:30 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:49788 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753693AbaFPNj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 09:39:54 -0400
+	Mon, 16 Jun 2014 09:39:56 -0400
 From: Alex Elder <elder@linaro.org>
 To: mturquette@linaro.org, mporter@linaro.org, bcm@fixthebug.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v6 4/7] clk: bcm281xx: implement prerequisite clocks
-Date: Mon, 16 Jun 2014 08:40:04 -0500
-Message-Id: <1402926007-4436-5-git-send-email-elder@linaro.org>
+Subject: [PATCH v6 6/7] clk: bcm281xx: define a bus clock
+Date: Mon, 16 Jun 2014 08:40:06 -0500
+Message-Id: <1402926007-4436-7-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1402926007-4436-1-git-send-email-elder@linaro.org>
 References: <1402926007-4436-1-git-send-email-elder@linaro.org>
@@ -20,173 +20,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow a clock to specify a "prerequisite" clock, identified by its
-name.  The prerequisite clock must be prepared and enabled before a
-clock that depends on it is used.  In order to simplify locking, we
-require a clock and its prerequisite to be associated with the same
-CCU.  (We'll just trust--but not verify--that nobody defines a cycle
-of prerequisite clocks.)
+Define the bus clock "bsc3_apb".  This bus clock has to be managed
+using the CCU policy mechanism, so add the definitions required for
+that to the clock and its CCU.
 
-Rework the KONA_CLK() macro, and define a new KONA_CLK_PREREQ()
-variant that allows a prerequisite clock to be specified.
+This one bus clock in particular is defined because it is needed
+by peripheral clock "bsc3".  Our boot loader does not properly
+activate "bsc3_apb", and as a result, "bsc3" isn't able to function
+properly.  With "bsc3_apb" specified as a prerequisite clock for
+"bsc3", the latter works correctly.
+
+For now only this one bus clock is defined, because it allows
+correct operation of "bsc3".  Others can be added later as needed
+(and this patch serves to show how that's done).
 
 Signed-off-by: Alex Elder <elder@linaro.org>
 ---
- drivers/clk/bcm/clk-kona.c | 70 ++++++++++++++++++++++++++++++++++++++++++++--
- drivers/clk/bcm/clk-kona.h | 20 +++++++++++--
- 2 files changed, 85 insertions(+), 5 deletions(-)
+ drivers/clk/bcm/clk-bcm281xx.c       | 13 ++++++++++++-
+ include/dt-bindings/clock/bcm281xx.h |  3 ++-
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/clk/bcm/clk-kona.c b/drivers/clk/bcm/clk-kona.c
-index 2e27924..51b4edb 100644
---- a/drivers/clk/bcm/clk-kona.c
-+++ b/drivers/clk/bcm/clk-kona.c
-@@ -1037,6 +1037,42 @@ static bool __peri_clk_init(struct kona_clk *bcm_clk)
+diff --git a/drivers/clk/bcm/clk-bcm281xx.c b/drivers/clk/bcm/clk-bcm281xx.c
+index 502a487..b937fc9 100644
+--- a/drivers/clk/bcm/clk-bcm281xx.c
++++ b/drivers/clk/bcm/clk-bcm281xx.c
+@@ -309,8 +309,17 @@ static struct peri_clk_data pwm_data = {
+ 	.trig		= TRIGGER(0x0afc, 15),
+ };
  
- /* Clock operations */
++static struct bus_clk_data bsc3_apb_data = {
++	.policy		= POLICY(0x0048, 4),
++	.gate		= HW_SW_GATE(0x0484, 16, 0, 1),
++};
++
+ static struct ccu_data slave_ccu_data = {
+ 	BCM281XX_CCU_COMMON(slave, SLAVE),
++	.policy		= {
++		.enable		= CCU_LVM_EN(0x0034, 0),
++		.control	= CCU_POLICY_CTL(0x000c, 0, 1, 2),
++	},
+ 	.kona_clks	= {
+ 		[BCM281XX_SLAVE_CCU_UARTB] =
+ 			KONA_CLK(slave, uartb, peri),
+@@ -329,9 +338,11 @@ static struct ccu_data slave_ccu_data = {
+ 		[BCM281XX_SLAVE_CCU_BSC2] =
+ 			KONA_CLK(slave, bsc2, peri),
+ 		[BCM281XX_SLAVE_CCU_BSC3] =
+-			KONA_CLK(slave, bsc3, peri),
++			KONA_CLK_PREREQ(slave, bsc3, peri, bsc3_apb),
+ 		[BCM281XX_SLAVE_CCU_PWM] =
+ 			KONA_CLK(slave, pwm, peri),
++		[BCM281XX_SLAVE_CCU_BSC3_APB] =
++			KONA_CLK(slave, bsc3_apb, bus),
+ 		[BCM281XX_SLAVE_CCU_CLOCK_COUNT] = LAST_KONA_CLK,
+ 	},
+ };
+diff --git a/include/dt-bindings/clock/bcm281xx.h b/include/dt-bindings/clock/bcm281xx.h
+index a763460..99f4aad 100644
+--- a/include/dt-bindings/clock/bcm281xx.h
++++ b/include/dt-bindings/clock/bcm281xx.h
+@@ -72,6 +72,7 @@
+ #define BCM281XX_SLAVE_CCU_BSC2			7
+ #define BCM281XX_SLAVE_CCU_BSC3			8
+ #define BCM281XX_SLAVE_CCU_PWM			9
+-#define BCM281XX_SLAVE_CCU_CLOCK_COUNT		10
++#define BCM281XX_SLAVE_CCU_BSC3_APB		10
++#define BCM281XX_SLAVE_CCU_CLOCK_COUNT		11
  
-+static int kona_prereq_prepare_enable(struct kona_clk *bcm_clk)
-+{
-+	const char *clk_name = bcm_clk->init_data.name;
-+	const char *prereq_name = bcm_clk->prereq.name;
-+	struct clk *prereq_clk = bcm_clk->prereq.clk;
-+	int ret;
-+
-+	BUG_ON(!clk_name);
-+
-+	/* Look up the prerequisite clock if we haven't already */
-+	if (!prereq_clk) {
-+		prereq_clk = __clk_lookup(prereq_name);
-+		if (WARN_ON_ONCE(!prereq_clk))
-+			return -ENOENT;
-+		bcm_clk->prereq.clk = prereq_clk;
-+	}
-+
-+	/* Dependent clock already holds the prepare lock */
-+	ret = __clk_prepare(prereq_clk);
-+	if (ret) {
-+		pr_err("%s: unable to prepare prereq clock %s for %s\n",
-+			__func__, prereq_name, clk_name);
-+		return ret;
-+	}
-+
-+	ret = clk_enable(prereq_clk);
-+	if (ret) {
-+		__clk_unprepare(prereq_clk);
-+		pr_err("%s: unable to enable prereq clock %s for %s\n",
-+			__func__, prereq_name, clk_name);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
- static int kona_clk_prepare(struct clk_hw *hw)
- {
- 	struct kona_clk *bcm_clk = to_kona_clk(hw);
-@@ -1044,6 +1080,13 @@ static int kona_clk_prepare(struct clk_hw *hw)
- 	unsigned long flags;
- 	int ret = 0;
- 
-+	/* Prepare the prerequisite clock first */
-+	if (bcm_clk->prereq.name) {
-+		ret = kona_prereq_prepare_enable(bcm_clk);
-+		if (ret)
-+			goto out;
-+	}
-+
- 	if (clk_is_initialized(bcm_clk))
- 		return 0;
- 
-@@ -1062,19 +1105,42 @@ static int kona_clk_prepare(struct clk_hw *hw)
- 
- 	__ccu_write_disable(ccu);
- 	ccu_unlock(ccu, flags);
--
-+out:
- 	if (!ret)
- 		clk_set_initialized(bcm_clk);
- 
- 	return ret;
- }
- 
-+/*
-+ * Disable and unprepare a prerequisite clock, and drop our
-+ * reference to it.
-+ */
-+static void kona_prereq_disable_unprepare(struct kona_clk *bcm_clk)
-+{
-+	struct clk *prereq_clk = bcm_clk->prereq.clk;
-+
-+	BUG_ON(!bcm_clk->prereq.name);
-+	WARN_ON_ONCE(!prereq_clk);
-+
-+	clk_disable(prereq_clk);
-+	__clk_unprepare(prereq_clk);
-+}
-+
- static void kona_clk_unprepare(struct clk_hw *hw)
- {
- 	struct kona_clk *bcm_clk = to_kona_clk(hw);
- 
- 	WARN_ON(!clk_is_initialized(bcm_clk));
--	/* Nothing to do. */
-+
-+	/*
-+	 * We don't do anything to unprepare Kona clocks themselves,
-+	 * but if there's a prerequisite we'll need to unprepare it.
-+	 */
-+	if (!bcm_clk->prereq.name)
-+		return;
-+
-+	kona_prereq_disable_unprepare(bcm_clk);
- }
- 
- static int kona_peri_clk_enable(struct clk_hw *hw)
-diff --git a/drivers/clk/bcm/clk-kona.h b/drivers/clk/bcm/clk-kona.h
-index ea77ec1..98b6fa1 100644
---- a/drivers/clk/bcm/clk-kona.h
-+++ b/drivers/clk/bcm/clk-kona.h
-@@ -407,6 +407,10 @@ struct kona_clk {
- 	struct ccu_data *ccu;	/* ccu this clock is associated with */
- 	enum bcm_clk_type type;
- 	u32 flags;		/* BCM_CLK_KONA_FLAGS_* below */
-+	struct {
-+		const char *name;
-+		struct clk *clk;
-+	} prereq;
- 	union {
- 		void *data;
- 		struct peri_clk_data *peri;
-@@ -422,16 +426,26 @@ struct kona_clk {
- #define BCM_CLK_KONA_FLAGS_INITIALIZED	((u32)1 << 0)	/* Clock initialized */
- 
- /* Initialization macro for an entry in a CCU's kona_clks[] array. */
--#define KONA_CLK(_ccu_name, _clk_name, _type)				\
--	{								\
-+#define ___KONA_CLK_COMMON(_ccu_name, _clk_name, _type)			\
- 		.init_data	= {					\
- 			.name = #_clk_name,				\
- 			.ops = &kona_ ## _type ## _clk_ops,		\
- 		},							\
- 		.ccu		= &_ccu_name ## _ccu_data,		\
- 		.type		= bcm_clk_ ## _type,			\
--		.u.data		= &_clk_name ## _data,			\
-+		.u.data		= &_clk_name ## _data
-+
-+#define KONA_CLK_PREREQ(_ccu_name, _clk_name, _type, _prereq)		\
-+	{								\
-+		.prereq.name	= #_prereq,				\
-+		___KONA_CLK_COMMON(_ccu_name, _clk_name, _type),	\
- 	}
-+
-+#define KONA_CLK(_ccu_name, _clk_name, _type)				\
-+	{								\
-+		___KONA_CLK_COMMON(_ccu_name, _clk_name, _type),	\
-+	}
-+
- #define LAST_KONA_CLK	{ .type = bcm_clk_none }
- 
- /*
+ #endif /* _CLOCK_BCM281XX_H */
 -- 
 1.9.1
 
