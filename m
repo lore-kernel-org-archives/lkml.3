@@ -1,118 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083AbaFPM7V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 08:59:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58145 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750953AbaFPM7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 08:59:20 -0400
-Date: Mon, 16 Jun 2014 14:59:15 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michel Lespinasse <walken@google.com>,
-        Roman Gushchin <klamm@yandex-team.ru>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH 2/2] memcg: Allow guarantee reclaim
-Message-ID: <20140616125915.GB16915@dhcp22.suse.cz>
-References: <20140611075729.GA4520@dhcp22.suse.cz>
- <1402473624-13827-1-git-send-email-mhocko@suse.cz>
- <1402473624-13827-2-git-send-email-mhocko@suse.cz>
- <20140611153631.GH2878@cmpxchg.org>
- <20140612132207.GA32720@dhcp22.suse.cz>
- <20140612135600.GI2878@cmpxchg.org>
- <20140612142237.GB32720@dhcp22.suse.cz>
- <20140612161733.GC23606@htj.dyndns.org>
+	id S1753185AbaFPM7m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 08:59:42 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:46760 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668AbaFPM7k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 08:59:40 -0400
+Message-ID: <539EEA2A.2040207@ti.com>
+Date: Mon, 16 Jun 2014 07:59:22 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140612161733.GC23606@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Axel Lin <axel.lin@ingics.com>, Mark Brown <broonie@kernel.org>
+CC: Aaro Koskinen <aaro.koskinen@iki.fi>, Rajendra Nayak <rnayak@ti.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] regulator: twl: Convert to use devm_kmemdup()
+References: <1402883060.4707.1.camel@phoenix>
+In-Reply-To: <1402883060.4707.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 12-06-14 12:17:33, Tejun Heo wrote:
-> Hello, Michal.
++linux-omap.
+
+On 06/15/2014 08:44 PM, Axel Lin wrote:
+
+Might be nice to have a commit message here.
+
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+>  drivers/regulator/twl-regulator.c | 13 +------------
+>  1 file changed, 1 insertion(+), 12 deletions(-)
 > 
-> On Thu, Jun 12, 2014 at 04:22:37PM +0200, Michal Hocko wrote:
-> > The primary question would be, whether this is is the best transition
-> > strategy. I do not know how many users apart from developers are really
-> > using unified hierarchy. I would be worried that we merge a feature which
-> > will not be used for a long time.
+> diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
+> index fed28ab..0b4f866 100644
+> --- a/drivers/regulator/twl-regulator.c
+> +++ b/drivers/regulator/twl-regulator.c
+> @@ -1128,7 +1128,7 @@ static int twlreg_probe(struct platform_device *pdev)
+>  	if (!initdata)
+>  		return -EINVAL;
+>  
+> -	info = kmemdup(template, sizeof(*info), GFP_KERNEL);
+> +	info = devm_kmemdup(&pdev->dev, template, sizeof(*info), GFP_KERNEL);
+>  	if (!info)
+>  		return -ENOMEM;
+>  
+> @@ -1192,7 +1192,6 @@ static int twlreg_probe(struct platform_device *pdev)
+>  	if (IS_ERR(rdev)) {
+>  		dev_err(&pdev->dev, "can't register %s, %ld\n",
+>  				info->desc.name, PTR_ERR(rdev));
+> -		kfree(info);
+>  		return PTR_ERR(rdev);
+>  	}
+>  	platform_set_drvdata(pdev, rdev);
+> @@ -1212,20 +1211,10 @@ static int twlreg_probe(struct platform_device *pdev)
+>  	return 0;
+>  }
+>  
+> -static int twlreg_remove(struct platform_device *pdev)
+> -{
+> -	struct regulator_dev *rdev = platform_get_drvdata(pdev);
+> -	struct twlreg_info *info = rdev->reg_data;
+> -
+> -	kfree(info);
+> -	return 0;
+> -}
+> -
+>  MODULE_ALIAS("platform:twl_reg");
+>  
+>  static struct platform_driver twlreg_driver = {
+>  	.probe		= twlreg_probe,
+> -	.remove		= twlreg_remove,
+>  	/* NOTE: short name, to work around driver model truncation of
+>  	 * "twl_regulator.12" (and friends) to "twl_regulator.1".
+>  	 */
 > 
-> I'm planning to drop __DEVEL__ mask from the unified hierarchy in a
-> cycle, at most two. 
 
-OK, I am obviously behind the current cgroup core changes. I thought
-that unified hierarchy will be for development only for much more time.
+otherwise, looks good to me.
+Reviewed-by: Nishanth Menon <nm@ti.com>
 
-> The biggest hold up at the moment is
-> straightening out the interfaces and interaction between memcg and
-> blkcg because I think it'd be silly to have to go through another
-> round of interface versioning effort right after transitioning to
-> unified hierarchy.  I'm not too confident whether it'd be possible to
-> get blkcg completely in shape by that time, but, if that takes too
-> long, I'll just leave blkcg behind temporarily.  So, at least from
-> kernel side, it's not gonna be too long.
-> 
-> There sure is a question of how fast userland will move to the new
-> interface. 
-
-Yeah, I was mostly thinking about those who would need to to bigger
-changes. AFAIR threads will no longer be distributable between groups.
-
-> Some are already playing with unified hierarchy and
-> planning to migrate as soon as possible but there sure will be others
-> who will take more time.  Can't tell for sure, but the thing is that
-> migration to min/low/high/max scheme is a signficant migration effort
-> too, so I'm not sure how much we'd gain by doing that separately.
-> It'd be an extra transition step for userland (optional but still),
-> more combinations of configration to handle for memcg, and it's not
-> like unified hierarchy is that difficult to transition to.
-> 
-> > Moreover, if somebody wants to transition from soft limit then it would
-> > be really hard because switching to unified hierarchy might be a no-go.
-> 
-> Why would that be a no-go? 
-
-I remember discussions about per-thread distributions and some other
-things missing from the new API.
-
-> Its usage is mostly similar with
-> tranditional hierarchies and can be used with other hierarchies, so
-> while it'd take some adaptation, in most cases gradual transition
-> shouldn't be a big problem.
-
-OK
-
-> > I think that it is clear that we should deprecate soft_limit ASAP. I
-> > also think it wont't hurt to have min, low, high in both old and unified
-> > API and strongly warn if somebody tries to use soft_limit along with any
-> > of the new APIs in the first step. Later we can even forbid any
-> > combination by a hard failure.
-> 
-> I don't quite understand how you plan to deprecate it.  Sure you can
-> fail with -EINVAL or whatnot when the wrong combination
-
-Yes, I was thinking that direction. First warn and then EINVAL later.
-
-> is used but I don't think there's any chance of removing the knob.
-> There's a reason why we're introducing a new version of the whole
-> cgroup interface which can co-exist with the existing one after all.
-> If you wanna version memcg interface separately, maybe that'd work but
-> it sounds like a lot of extra hassle for not much gain.
-
-No, I didn't mean to version the interface. I just wanted to have
-gradual transition for potential soft_limit users.
-
-Maybe I am misunderstanding something but I thought that new version of
-API will contain all knobs which are not marked .flags = CFTYPE_INSANE
-while the old API will contain all of them.
 -- 
-Michal Hocko
-SUSE Labs
+Regards,
+Nishanth Menon
