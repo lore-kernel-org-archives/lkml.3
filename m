@@ -1,80 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299AbaFPDbp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 23:31:45 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:38830 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491AbaFPDbm (ORCPT
+	id S1752850AbaFPDne (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 23:43:34 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:53032 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131AbaFPDnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 23:31:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPDOMVj0JSp-ZfvAXkeTqHscKkhmp0ZttN5NVM+BYE_X+jWCcQ@mail.gmail.com>
-References: <1402769508-3821-1-git-send-email-xerofoify@gmail.com>
-	<20140615203058.GA22265@lukather>
-	<CAPDOMVj0JSp-ZfvAXkeTqHscKkhmp0ZttN5NVM+BYE_X+jWCcQ@mail.gmail.com>
-Date: Sun, 15 Jun 2014 23:31:41 -0400
-Message-ID: <CAPDOMVimRry7XejNt9gdqLX4C64T7qsOwEBGvpYLDvxa2H5xuA@mail.gmail.com>
-Subject: Re: [PATCH] Frees gate after if statement in clk-sunxi.c
-From: Nick Krause <xerofoify@gmail.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: =?UTF-8?Q?Emilio_L=C3=B3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+	Sun, 15 Jun 2014 23:43:31 -0400
+From: Varka Bhadram <varkabhadram@gmail.com>
+X-Google-Original-From: Varka Bhadram <varkab@cdac.in>
+To: netdev@vger.kernel.org
+Cc: alex.bluesman.smirnov@gmail.com, dbaryshkov@gmail.com,
+        linux-zigbee-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, Varka Bhadram <varkab@cdac.in>
+Subject: [PATCH net-next] mrf24j40: separate h/w init and add checkings
+Date: Mon, 16 Jun 2014 09:12:31 +0530
+Message-Id: <1402890152-2803-1-git-send-email-varkab@cdac.in>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seems the bug is fixed , don't worry about resent patch.
-Thanks Nick
+separate the mrf24j40 hardware initialisation from probe()
+and adds the sanity checkings.
 
-On Sun, Jun 15, 2014 at 11:21 PM, Nick Krause <xerofoify@gmail.com> wrote:
-> New Patch Just Fixed Typo for my email client.
-> Signed-off-by: Nick <xerofoify@gmail.com>
-> ---
->  drivers/clk/sunxi/clk-sunxi.c | 1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/clk/sunxi/clk-sunxi.
-> c b/drivers/clk/sunxi/clk-sunxi.c
-> index 4264834..6f4fc51 100644
-> --- a/drivers/clk/sunxi/clk-sunxi.c
-> +++ b/drivers/clk/sunxi/clk-sunxi.c
-> @@ -42,6 +42,7 @@ static void __init sun4i_osc_clk_setup(struct
-> device_node *node)
->         u32 rate;
->
->         if (of_property_read_u32(node, "clock-frequency", &rate))
-> +               kfree(gate);
->                 return;
->
->         /* allocate fixed-rate and gate clock structs */
-> Cheers Nick
->
-> On Sun, Jun 15, 2014 at 4:30 PM, Maxime Ripard
-> <maxime.ripard@free-electrons.com> wrote:
->> On Sat, Jun 14, 2014 at 02:11:48PM -0400, Nick wrote:
->>> Signed-off-by: Nick <xerofoify@gmail.com>
->>
->> This should be your full real name here.
->>
->>> ---
->>>  drivers/clk/sunxi/clk-sunxi.c | 1 +
->>>  1 file changed, 1 insertion(+)
->>>
->>> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
->>> index 4264834..6f4fc51 100644
->>> --- a/drivers/clk/sunxi/clk-sunxi.c
->>> +++ b/drivers/clk/sunxi/clk-sunxi.c
->>> @@ -42,6 +42,7 @@ static void __init sun4i_osc_clk_setup(struct device_node *node)
->>>       u32 rate;
->>>
->>>       if (of_property_read_u32(node, "clock-frequency", &rate))
->>> +             kree(gate);
->>
->> There's a typo in kfree. How does that even compile?
->>
->> --
->> Maxime Ripard, Free Electrons
->> Embedded Linux, Kernel and Android engineering
->> http://free-electrons.com
+These checkings are required if somebody hasn't a right spi configuration
+the probe function should fail. So we have to return from there.
+
+Signed-off-by: Varka Bhadram <varkab@cdac.in>
+---
+ drivers/net/ieee802154/mrf24j40.c |  115 ++++++++++++++++++++++++++++---------
+ 1 file changed, 89 insertions(+), 26 deletions(-)
+
+diff --git a/drivers/net/ieee802154/mrf24j40.c b/drivers/net/ieee802154/mrf24j40.c
+index 4048062..9e6a124 100644
+--- a/drivers/net/ieee802154/mrf24j40.c
++++ b/drivers/net/ieee802154/mrf24j40.c
+@@ -610,10 +610,95 @@ out:
+ 	return IRQ_HANDLED;
+ }
+ 
++static int mrf24j40_hw_init(struct mrf24j40 *devrec)
++{
++	int ret;
++	u8 val;
++
++	/* Initialize the device.
++		From datasheet section 3.2: Initialization. */
++	ret = write_short_reg(devrec, REG_SOFTRST, 0x07);
++	if (ret)
++		goto err_ret;
++
++	ret = write_short_reg(devrec, REG_PACON2, 0x98);
++	if (ret)
++		goto err_ret;
++
++	ret = write_short_reg(devrec, REG_TXSTBL, 0x95);
++	if (ret)
++		goto err_ret;
++
++	ret = write_long_reg(devrec, REG_RFCON0, 0x03);
++	if (ret)
++		goto err_ret;
++
++	ret = write_long_reg(devrec, REG_RFCON1, 0x01);
++	if (ret)
++		goto err_ret;
++
++	ret = write_long_reg(devrec, REG_RFCON2, 0x80);
++	if (ret)
++		goto err_ret;
++
++	ret = write_long_reg(devrec, REG_RFCON6, 0x90);
++	if (ret)
++		goto err_ret;
++
++	ret = write_long_reg(devrec, REG_RFCON7, 0x80);
++	if (ret)
++		goto err_ret;
++
++	ret = write_long_reg(devrec, REG_RFCON8, 0x10);
++	if (ret)
++		goto err_ret;
++
++	ret = write_long_reg(devrec, REG_SLPCON1, 0x21);
++	if (ret)
++		goto err_ret;
++
++	ret = write_short_reg(devrec, REG_BBREG2, 0x80);
++	if (ret)
++		goto err_ret;
++
++	ret = write_short_reg(devrec, REG_CCAEDTH, 0x60);
++	if (ret)
++		goto err_ret;
++
++	ret = write_short_reg(devrec, REG_BBREG6, 0x40);
++	if (ret)
++		goto err_ret;
++
++	ret = write_short_reg(devrec, REG_RFCTL, 0x04);
++	if (ret)
++		goto err_ret;
++
++	ret = write_short_reg(devrec, REG_RFCTL, 0x0);
++	if (ret)
++		goto err_ret;
++
++	udelay(192);
++
++	/* Set RX Mode. RXMCR<1:0>: 0x0 normal, 0x1 promisc, 0x2 error */
++	ret = read_short_reg(devrec, REG_RXMCR, &val);
++	if (ret)
++		goto err_ret;
++
++	val &= ~0x3; /* Clear RX mode (normal) */
++
++	ret = write_short_reg(devrec, REG_RXMCR, val);
++	if (ret)
++		goto err_ret;
++
++	return 0;
++
++err_ret:
++	return ret;
++}
++
+ static int mrf24j40_probe(struct spi_device *spi)
+ {
+ 	int ret = -ENOMEM;
+-	u8 val;
+ 	struct mrf24j40 *devrec;
+ 
+ 	printk(KERN_INFO "mrf24j40: probe(). IRQ: %d\n", spi->irq);
+@@ -650,31 +735,9 @@ static int mrf24j40_probe(struct spi_device *spi)
+ 	if (ret)
+ 		goto err_register_device;
+ 
+-	/* Initialize the device.
+-		From datasheet section 3.2: Initialization. */
+-	write_short_reg(devrec, REG_SOFTRST, 0x07);
+-	write_short_reg(devrec, REG_PACON2, 0x98);
+-	write_short_reg(devrec, REG_TXSTBL, 0x95);
+-	write_long_reg(devrec, REG_RFCON0, 0x03);
+-	write_long_reg(devrec, REG_RFCON1, 0x01);
+-	write_long_reg(devrec, REG_RFCON2, 0x80);
+-	write_long_reg(devrec, REG_RFCON6, 0x90);
+-	write_long_reg(devrec, REG_RFCON7, 0x80);
+-	write_long_reg(devrec, REG_RFCON8, 0x10);
+-	write_long_reg(devrec, REG_SLPCON1, 0x21);
+-	write_short_reg(devrec, REG_BBREG2, 0x80);
+-	write_short_reg(devrec, REG_CCAEDTH, 0x60);
+-	write_short_reg(devrec, REG_BBREG6, 0x40);
+-	write_short_reg(devrec, REG_RFCTL, 0x04);
+-	write_short_reg(devrec, REG_RFCTL, 0x0);
+-	udelay(192);
+-
+-	/* Set RX Mode. RXMCR<1:0>: 0x0 normal, 0x1 promisc, 0x2 error */
+-	ret = read_short_reg(devrec, REG_RXMCR, &val);
++	ret = mrf24j40_hw_init(devrec);
+ 	if (ret)
+-		goto err_read_reg;
+-	val &= ~0x3; /* Clear RX mode (normal) */
+-	write_short_reg(devrec, REG_RXMCR, val);
++		goto err_hw_init;
+ 
+ 	ret = devm_request_threaded_irq(&spi->dev,
+ 					spi->irq,
+@@ -692,7 +755,7 @@ static int mrf24j40_probe(struct spi_device *spi)
+ 	return 0;
+ 
+ err_irq:
+-err_read_reg:
++err_hw_init:
+ 	ieee802154_unregister_device(devrec->dev);
+ err_register_device:
+ 	ieee802154_free_device(devrec->dev);
+-- 
+1.7.9.5
+
