@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227AbaFPJxJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 05:53:09 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:49437 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755191AbaFPJxG (ORCPT
+	id S1755247AbaFPJzD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 05:55:03 -0400
+Received: from smtprelay-h21.telenor.se ([195.54.99.196]:54355 "EHLO
+	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755051AbaFPJzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 05:53:06 -0400
-Date: Mon, 16 Jun 2014 10:52:56 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: robh+dt@kernel.org, swarren@nvidia.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mark.rutland@arm.com,
-        linus.walleij@linaro.org
-Subject: Re: [PATCH] Doc: mfd: as3722: Add details of optional missing
- property
-Message-ID: <20140616095256.GN14323@lee--X1>
-References: <1402297417-9338-1-git-send-email-ldewangan@nvidia.com>
+	Mon, 16 Jun 2014 05:55:00 -0400
+X-LISTENER: [mailrelay1.bredband.net]
+X-SENDER-IP: [92.33.28.242]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApQBAJG9nlNcIRzy/2dsb2JhbAANTcQ/gxIBgSiEeAEBAQEDJxFAARALDgoJFg8JAwIBAgEbKgYBDAEHAQGIQ7AQnn4XiUOFMweEQwEDpXOLag
+X-IPAS-Result: ApQBAJG9nlNcIRzy/2dsb2JhbAANTcQ/gxIBgSiEeAEBAQEDJxFAARALDgoJFg8JAwIBAgEbKgYBDAEHAQGIQ7AQnn4XiUOFMweEQwEDpXOLag
+X-IronPort-AV: E=Sophos;i="5.01,485,1400018400"; 
+   d="scan'208";a="29844682"
+Message-ID: <539EBEBD.6080903@gaisler.com>
+Date: Mon, 16 Jun 2014 11:54:05 +0200
+From: Andreas Larsson <andreas@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1402297417-9338-1-git-send-email-ldewangan@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, lugovskoy@dev.rtsoft.ru
+Subject: Re: [PATCH 20/21] usb: use devm_irq_of_parse_and_map() where appropriate
+References: <1401880402-30091-1-git-send-email-nyushchenko@dev.rtsoft.ru> <1401880402-30091-21-git-send-email-nyushchenko@dev.rtsoft.ru> <539EBA6F.7060008@gaisler.com> <539EBC8E.6060602@dev.rtsoft.ru>
+In-Reply-To: <539EBC8E.6060602@dev.rtsoft.ru>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC'ing Linus as he had an opinion.
+On 2014-06-16 11:44, Nikita Yushchenko wrote:
+>>> diff --git a/drivers/usb/host/ehci-grlib.c
+>>> b/drivers/usb/host/ehci-grlib.c
+>>> index 495b6fb..666c03e 100644
+>>> --- a/drivers/usb/host/ehci-grlib.c
+>>> +++ b/drivers/usb/host/ehci-grlib.c
+>>> @@ -111,11 +111,11 @@ static int ehci_hcd_grlib_probe(struct
+>>> platform_device *op)
+>>>        hcd->rsrc_start = res.start;
+>>>        hcd->rsrc_len = resource_size(&res);
+>>>
+>>> -    irq = irq_of_parse_and_map(dn, 0);
+>>> -    if (irq == NO_IRQ) {
+>>> -        dev_err(&op->dev, "%s: irq_of_parse_and_map failed\n",
+>>> +    irq = devm_irq_of_parse_and_map(&op->dev, dn, 0);
+>>> +    if (irq <= 0) {
+>>> +        dev_err(&op->dev, "%s: devm_irq_of_parse_and_map failed\n",
+>>>                __FILE__);
+>>> -        rv = -EBUSY;
+>>> +        rv = irq ? irq : -EINVAL;
+>>
+>> Here and in more places below you change the return value from -EBUSY to
+>> -EINVAL when irq == 0. These changes and the reason for them is not
+>> something that is commented upon in the commit message. Maybe these
+>> changes were not intended or should be in a separate patch?
+>
+> Although errno codes are quite unspecific, I can't think a valid reason
+> to return -EBUSY on [devm_]irq_of_parse_and_map() failure. It could be
+> -EINVAL or -ENODEV, but not -EBUSY ...
+>
+> Since changing line that sets error code anyway, I decided to change
+> -EBUST to -ENODEV.
+>
+> But I agree that this is not the topic of the patch.
+>
+> IS it better to remove this change from changeset alltogether, or to
+> mention it in commit's log message?
 
-On Mon, 09 Jun 2014, Laxman Dewangan wrote:
-> Add details of following properties which are used on driver but
-> not documented on DT binding document.
-> - ams,enable-internal-int-pullup
-> - ams,enable-internal-i2c-pullup
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> Reported-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  Documentation/devicetree/bindings/mfd/as3722.txt | 8 ++++++++
->  1 file changed, 8 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/mfd/as3722.txt b/Documentation/devicetree/bindings/mfd/as3722.txt
-> index 8edcb9b..4f64b2a 100644
-> --- a/Documentation/devicetree/bindings/mfd/as3722.txt
-> +++ b/Documentation/devicetree/bindings/mfd/as3722.txt
-> @@ -13,6 +13,14 @@ Required properties:
->    The second cell is the flags, encoded as the trigger masks from binding document
->  	interrupts.txt, using dt-bindings/irq.
->  
-> +Optional properties:
-> +--------------------
-> +- ams,enable-internal-int-pullup: Boolean property, to enable internal pullup on
-> +	interrupt pin. Missing this will disable internal pullup on INT pin.
-> +- ams,enable-internal-i2c-pullup: Boolean property, to enable internal pullup on
-> +	i2c scl/sda pins. Missing this will disable internal pullup on i2c
-> +	scl/sda lines.
-> +
->  Optional submodule and their properties:
->  =======================================
->  
+Given that there are a lot of -EBUSY being returned in drivers/usb/host 
+- not just in these error cases, maybe it is better to not touch this in 
+this patch set.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Best regards,
+Andreas Larsson
