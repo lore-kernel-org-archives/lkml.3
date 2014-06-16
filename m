@@ -1,83 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195AbaFPKCl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 06:02:41 -0400
-Received: from smtprelay-b32.telenor.se ([213.150.131.21]:43056 "EHLO
-	smtprelay-b32.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754816AbaFPKCj (ORCPT
+	id S1755265AbaFPKEJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 06:04:09 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:63491 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755004AbaFPKEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 06:02:39 -0400
-X-Greylist: delayed 1928 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Jun 2014 06:02:39 EDT
-X-LISTENER: [mailrelay1.bredband.net]
-X-SENDER-IP: [92.33.28.242]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApQBALe3nlNcIRzy/2dsb2JhbAANTcQ/gxIBgSeEeAEBAQECAThBBQsLDgoJJQ8CHCoGDQEHAQEXiB8NsBOeeheJQ4UzB4RDAQOlc4tq
-X-IPAS-Result: ApQBALe3nlNcIRzy/2dsb2JhbAANTcQ/gxIBgSeEeAEBAQECAThBBQsLDgoJJQ8CHCoGDQEHAQEXiB8NsBOeeheJQ4UzB4RDAQOlc4tq
-X-IronPort-AV: E=Sophos;i="5.01,485,1400018400"; 
-   d="scan'208";a="703867388"
-Message-ID: <539EB8F4.20104@gaisler.com>
-Date: Mon, 16 Jun 2014 11:29:24 +0200
-From: Andreas Larsson <andreas@gaisler.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 16 Jun 2014 06:04:08 -0400
+X-IronPort-AV: E=Sophos;i="5.00,716,1396972800"; 
+   d="scan'208";a="31965461"
+Message-ID: <539EC117.1040105@cn.fujitsu.com>
+Date: Mon, 16 Jun 2014 18:04:07 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
 MIME-Version: 1.0
-To: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-CC: lugovskoy@dev.rtsoft.ru, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
-        davem@davemloft.net
-Subject: Re: [PATCH 00/21] add and use devm_irq_of_parse_and_map()
-References: <53997AF6.1040003@gaisler.com> <5399AE1B.1080301@gaisler.com> <5399F92B.50406@dev.rtsoft.ru> <539EA986.1090501@gaisler.com> <539EAC92.1040606@dev.rtsoft.ru>
-In-Reply-To: <539EAC92.1040606@dev.rtsoft.ru>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Xishi Qiu <qiuxishi@huawei.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, <aquini@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH 0/8] mm: add page cache limit and reclaim feature
+References: <539EB7D6.8070401@huawei.com>
+In-Reply-To: <539EB7D6.8070401@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.225.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-16 10:36, Nikita Yushchenko wrote:
->>>> SPARC does not use OF_IRQ and has a different implementation of
->>>> irq_of_parse_and_map than the one in drivers/of/irq.c. All code
->>>> converted from irq_of_parse_and_map to devm_irq_of_parse_and_map in this
->>>> patch set will be unlinkable for SPARC. This includes SPI in general and
->>>> many drivers that are used for SPARC (of which several are currently
->>>> only used on SPARC platforms).
->>>
->>> Can this be fixed by adding a copy of devm_irq_of_parse_and_map() to
->>> arch/sparc/kernel/of_device_common.c ?
->>
->> Not a copy of the version in irq.c no. On SPARC, IRQ_DOMAIN is not
->> selected in general.
->>
->> However, there is no technical problem that I can see with having a
->> SPARC version of devm_irq_of_parse_and_map that just calls
->> irq_of_parse_and_map as there are no mappings that needs to be disposed
->> of. (The empty dummy for irq_dispose_mapping is used if any
->> irq_dispose_mapping calls are made from drivers).
->
-> Ok, I will post an updated patchset that adds sparc
-> devm_irq_of_parse_and_map() that just calls irq_of_parse_and_map(), and
-> devm_irq_dispose_mapping() that does nothing.
+Hi,
 
-You have already added the needed empty devm_irq_dispose_mapping in 
-include/linux/irqdomain.h.
+On 06/16/2014 05:24 PM, Xishi Qiu wrote:
+> When system(e.g. smart phone) running for a long time, the cache often takes
+> a large memory, maybe the free memory is less than 50M, then OOM will happen
+> if APP allocate a large order pages suddenly and memory reclaim too slowly. 
 
-Note that the IRQ_DOMAIN *can* be used under SPARC (GPIO_GRGPIO is one 
-example that selects it), but it is not used at the top level so to 
-speak. There should not be a SPARC specific empty version of 
-devm_irq_dispose_mapping - CONF_IRQ_DOMAIN or not takes care of that.
+If there is really too many page caches, and the free memory is low. I think
+the page allocator will enter the slowpath to free more memory for allocation.
+And it the slowpath, there is indeed the direct reclaim operation, so is that
+really not enough to reclaim pagecaches?
+
+> 
+> Use "echo 3 > /proc/sys/vm/drop_caches" will drop the whole cache, this will
+> affect the performance, so it is used for debugging only. 
+> 
+> suse has this feature, I tested it before, but it can not limit the page cache
+> actually. So I rewrite the feature and add some parameters.
+> 
+> Christoph Lameter has written a patch "Limit the size of the pagecache"
+> http://marc.info/?l=linux-mm&m=116959990228182&w=2
+> It changes in zone fallback, this is not a good way.
+> 
+> The patchset is based on v3.15, it introduces two features, page cache limit
+> and page cache reclaim in circles.
+> 
+> Add four parameters in /proc/sys/vm
+> 
+> 1) cache_limit_mbytes
+> This is used to limit page cache amount.
+> The input unit is MB, value range is from 0 to totalram_pages.
+> If this is set to 0, it will not limit page cache.
+> When written to the file, cache_limit_ratio will be updated too.
+> The default value is 0.
+> 
+> 2) cache_limit_ratio
+> This is used to limit page cache amount.
+> The input unit is percent, value range is from 0 to 100.
+> If this is set to 0, it will not limit page cache.
+> When written to the file, cache_limit_mbytes will be updated too.
+> The default value is 0.
+> 
+> 3) cache_reclaim_s
+> This is used to reclaim page cache in circles.
+> The input unit is second, the minimum value is 0.
+> If this is set to 0, it will disable the feature.
+> The default value is 0.
+> 
+> 4) cache_reclaim_weight
+> This is used to speed up page cache reclaim.
+> It depend on enabling cache_limit_mbytes/cache_limit_ratio or cache_reclaim_s.
+> Value range is from 1(slow) to 100(fast).
+> The default value is 1.
+> 
+> I tested the two features on my system(x86_64), it seems to work right.
+> However, as it changes the hot path "add_to_page_cache_lru()", I don't know
+> how much it will the affect the performance,
+
+Yeah, at a quick glance, for every invoke of add_to_page_cache_lru(), there is the 
+newly added test:
+
+if (vm_cache_limit_mbytes && page_cache_over_limit())
+
+and if the test is passed, shrink_page_cache()->do_try_to_free_pages() is called.
+And this is a sync operation. IMO, it is better to make such an operation async.
+(You've implemented async operation but I doubt if it is suitable to put the sync operation
+here.)
+
+Thanks.
+
+ maybe there are some errors
+> in the patches too, RFC.
+> 
+> 
+> *** BLURB HERE ***
+> 
+> Xishi Qiu (8):
+>   mm: introduce cache_limit_ratio and cache_limit_mbytes
+>   mm: add shrink page cache core
+>   mm: implement page cache limit feature
+>   mm: introduce cache_reclaim_s
+>   mm: implement page cache reclaim in circles
+>   mm: introduce cache_reclaim_weight
+>   mm: implement page cache reclaim speed
+>   doc: update Documentation/sysctl/vm.txt
+> 
+>  Documentation/sysctl/vm.txt |   43 +++++++++++++++++++
+>  include/linux/swap.h        |   17 ++++++++
+>  kernel/sysctl.c             |   35 +++++++++++++++
+>  mm/filemap.c                |    3 +
+>  mm/hugetlb.c                |    3 +
+>  mm/page_alloc.c             |   51 ++++++++++++++++++++++
+>  mm/vmscan.c                 |   97 ++++++++++++++++++++++++++++++++++++++++++-
+>  7 files changed, 248 insertions(+), 1 deletions(-)
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> .
+> 
 
 
-> Also, you mentioned that some drivers that my original patchset touches
-> are sparc-only?  Then, maybe better not convert these to devm_? Could
-> you please give a list of such drivers?
-
-The drivers that I know of off hand is not necessarily SPARC only. Some 
-are currently only found in SPARC environments, but that could change in 
-the future. I personally don't see a problem with using 
-devm_of_parse_and_map solution as long as there is a SPARC-specific one 
-as discussed above.
-
-Best regards,
-Andreas Larsson
+-- 
+Thanks.
+Zhang Yanfei
