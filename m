@@ -1,136 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196AbaFPD3F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 23:29:05 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:36843 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753093AbaFPD27 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753238AbaFPD3J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 23:29:09 -0400
+Received: from mail-by2lp0239.outbound.protection.outlook.com ([207.46.163.239]:21898
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753084AbaFPD27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 15 Jun 2014 23:28:59 -0400
-Date: Mon, 16 Jun 2014 11:28:52 +0800
-From: Real Name <enjoymindful@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] delete unnecessary bootmem struct page array
-Message-ID: <20140616032852.GA1763@name>
-References: <1401773445-25256-1-git-send-email-enjoymindful@gmail.com>
- <539C1964.4050504@nod.at>
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: <vinod.koul@intel.com>, <s.hauer@pengutronix.de>
+CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rdunlap@infradead.org>, <dan.j.williams@intel.com>,
+        <shawn.guo@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <dmaengine@vger.kernel.org>
+Subject: [PATCH] dma: imx-sdma: Add a new DMATYPE for Shared Peripheral ASRC
+Date: Mon, 16 Jun 2014 11:31:05 +0800
+Message-ID: <1402889465-23797-1-git-send-email-nicoleotsuka@gmail.com>
+X-Mailer: git-send-email 1.8.4
+X-EOPAttributedMessage: 0
+X-Matching-Connectors: 130473629370877130;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(19580405001)(33646001)(87572001)(87286001)(61266001)(104166001)(86362001)(47776003)(64706001)(85306003)(48376002)(20776003)(81542001)(4396001)(62966002)(55446002)(81442001)(73392001)(79102001)(93916002)(92566001)(102836001)(81342001)(73972005)(50986999)(50466002)(97736001)(50226001)(99396002)(92726001)(74502001)(46102001)(89996001)(74662001)(87936001)(77982001)(84676001)(6806004)(68736004)(88136002)(82202001)(31966008)(85852003)(104016001)(21056001)(36756003)(83072002)(26826002)(80022001)(77156001)(19580395003)(575784001)(44976005);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB396;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <539C1964.4050504@nod.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+X-Forefront-PRVS: 0244637DEA
+Authentication-Results: spf=softfail (sender IP is 192.88.168.50)
+ smtp.mailfrom=nicoleotsuka@gmail.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 14, 2014 at 11:44:04AM +0200, Richard Weinberger wrote:
-> Hi!
-> 
-> Am 03.06.2014 07:30, schrieb Real Name:
-> > From: Honggang Li <enjoymindful@gmail.com>
-> > 
-> > The patch based on linux-next-2014-06-02.
-> > 
-> > The old init_maps function does two things:
-> > 1) allocates and initializes one struct page array for bootmem
-> > 2) count the number of total pages
-> > 
-> > After removed the source code related to the unnecessary array, the name 
-> > 'init_maps' is some kind of improper named, as it just count the number of
-> > total page numbers. So, I renamed the function as 'mem_total_pages'.
-> > 
-> > I tested the patch through repeat reboot the uml kernel many times.
-> > [real@name linux-next]$ make ARCH=um defconfig
-> > [real@name linux-next]$ make ARCH=um linux
-> > [real@name linux-next]$ file linux
-> > linux: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked (uses shared libs), for GNU/Linux 2.6.32, not stripped
-> > [real@name linux-next]$ ./linux ubda=/home/real/linux-next/Fedora20-AMD64-root_fs mem=256m && sync && echo 1
-> > [real@name linux-next]$ ./linux ubda=/home/real/linux-next/Fedora20-AMD64-root_fs mem=256m && sync && echo 2
-> > (repeat reboot the uml kernel many times..)
-> 
-> Can you please include in the changelog the commit sha1 which made the old init_maps() obsolete?
-> I had a look at the pre-git linux tree, looks like init_maps() wasn't touched for more than 10 years.
+Shared Peripheral ASRC, running on SPBA, needs to use shp sciprts for
+DMA transfer. So this patch just adds a new DMATYPE for it.
 
-hi, richard
+Signed-off-by: Nicolin Chen <nicoleotsuka@gmail.com>
+---
+ Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt | 1 +
+ drivers/dma/imx-sdma.c                                 | 5 +++++
+ include/linux/platform_data/dma-imx.h                  | 1 +
+ 3 files changed, 7 insertions(+)
 
-what is the pre-git linux tree? I searched it with google, but failed.
+diff --git a/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt b/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
+index ee9be99..d2e91f1 100644
+--- a/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
++++ b/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
+@@ -47,6 +47,7 @@ The full ID of peripheral types can be found below.
+ 	20	ASRC
+ 	21	ESAI
+ 	22	SSI Dual FIFO	(needs firmware ver >= 2)
++	23	Shared ASRC
+ 
+ The third cell specifies the transfer priority as below.
+ 
+diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+index fc04add..85561dc 100644
+--- a/drivers/dma/imx-sdma.c
++++ b/drivers/dma/imx-sdma.c
+@@ -745,6 +745,11 @@ static void sdma_get_pc(struct sdma_channel *sdmac,
+ 		emi_2_per = sdma->script_addrs->asrc_2_mcu_addr;
+ 		per_2_per = sdma->script_addrs->per_2_per_addr;
+ 		break;
++	case IMX_DMATYPE_ASRC_SP:
++		per_2_emi = sdma->script_addrs->shp_2_mcu_addr;
++		emi_2_per = sdma->script_addrs->mcu_2_shp_addr;
++		per_2_per = sdma->script_addrs->per_2_per_addr;
++		break;
+ 	case IMX_DMATYPE_MSHC:
+ 		per_2_emi = sdma->script_addrs->mshc_2_mcu_addr;
+ 		emi_2_per = sdma->script_addrs->mcu_2_mshc_addr;
+diff --git a/include/linux/platform_data/dma-imx.h b/include/linux/platform_data/dma-imx.h
+index bcbc6c3..7aa0e89 100644
+--- a/include/linux/platform_data/dma-imx.h
++++ b/include/linux/platform_data/dma-imx.h
+@@ -40,6 +40,7 @@ enum sdma_peripheral_type {
+ 	IMX_DMATYPE_ASRC,	/* ASRC */
+ 	IMX_DMATYPE_ESAI,	/* ESAI */
+ 	IMX_DMATYPE_SSI_DUAL,	/* SSI Dual FIFO */
++	IMX_DMATYPE_ASRC_SP,	/* Shared ASRC */
+ };
+ 
+ enum imx_dma_prio {
+-- 
+1.8.4
 
-The v2.6.12 kernel is the oldest one available from the linux-next git tree. And it has duplicated
-struct page arrays. So, any suggestion how to find the commit you wanted?
-
-linux-2.4.20 + uml-patch-2.4.20-8 works on *old* redhat-9 virtual machine. And it seems has duplicated
-struct page array too.
-
-The first struct page array
-------------------------
-linux-2.4.20/arch/um/kernel/physmem.c
-157 int init_maps(unsigned long len)
-158 {
-159         struct page *p, *map;
-160         int i, n;
-161 
-162         n = len >> PAGE_SHIFT;
-163         len = n * sizeof(struct page);
-164 
-165         if(kmalloc_ok){
-166                 map = kmalloc(len, GFP_KERNEL);
-167                 if(map == NULL) map = vmalloc(len);
-168         }
-169         else map = alloc_bootmem_low_pages(len);
-170 
-171         if(map == NULL)
-172                 return(-ENOMEM);
-173 
-174         for(i = 0; i < n; i++){
-175                 p = &map[i];
-176                 set_page_count(p, 0);
-177                 SetPageReserved(p);
-178                 INIT_LIST_HEAD(&p->list);
-179         }
-180 
-181         mem_map = map;
-182         max_mapnr = n;
-183         return(0);
-184 }
-
-
-The second struct page array
------------------------
-mm/memory.c
-73 mem_map_t * mem_map; // global define
-
-mm/page_alloc.c
-839 void __init free_area_init(unsigned long *zones_size)
-840 {
-841         free_area_init_core(0, &contig_page_data, &mem_map, zones_size, 0, 0, 0);
-842 }
-
---------
-mm/page_alloc.c
-685 void __init free_area_init_core(int nid, pg_data_t *pgdat, struct page **gmap,
-686         unsigned long *zones_size, unsigned long zone_start_paddr,
-687         unsigned long *zholes_size, struct page *lmem_map)
-688 {
-........
-716         map_size = (totalpages + 1)*sizeof(struct page);
-717         if (lmem_map == (struct page *)0) {
-718                 lmem_map = (struct page *) alloc_bootmem_node(pgdat, map_size);
-719                 lmem_map = (struct page *)(PAGE_OFFSET +
-720                         MAP_ALIGN((unsigned long)lmem_map - PAGE_OFFSET));
-721         }
-722         *gmap = pgdat->node_mem_map = lmem_map;
-
-
-> 
-> Thanks,
-> //richard
-> 
-> > Honggang Li (1):
-> >   delete unnecessary bootmem struct page array
-> > 
-> >  arch/um/include/shared/mem_user.h |  2 +-
-> >  arch/um/kernel/physmem.c          | 32 ++++++--------------------------
-> >  arch/um/kernel/um_arch.c          |  7 +------
-> >  3 files changed, 8 insertions(+), 33 deletions(-)
-> > 
