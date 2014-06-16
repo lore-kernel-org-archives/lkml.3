@@ -1,110 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568AbaFPQye (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 12:54:34 -0400
-Received: from mx.exactcode.de ([85.10.202.90]:35878 "EHLO mx.exactcode.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752857AbaFPQyc convert rfc822-to-8bit (ORCPT
+	id S1755566AbaFPQ4r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 12:56:47 -0400
+Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:50995
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751295AbaFPQ4o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 12:54:32 -0400
-X-Greylist: delayed 1671 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Jun 2014 12:54:32 EDT
-From: ExactCODE <rene@exactcode.com>
-Content-Type: text/plain; charset=iso-8859-1
+	Mon, 16 Jun 2014 12:56:44 -0400
+From: Stuart Yoder <stuart.yoder@freescale.com>
+To: Will Deacon <will.deacon@arm.com>, Varun Sethi <Varun.Sethi@freescale.com>
+CC: Thierry Reding <thierry.reding@gmail.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>, "Arnd Bergmann" <arnd@arndb.de>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Grant Grundler" <grundler@chromium.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        "Rob Herring" <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
+Thread-Topic: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
+Thread-Index: AQHPdsaiUOp/jHgCJ0WWjZOTtpbJjZtZJRKAgABh1wCAAAcqgIAABQyAgAQdoQCAA2YSAIAAI08AgAG4pNCAEQ6xgIAAEv9A
+Date: Mon, 16 Jun 2014 16:56:32 +0000
+Message-ID: <8b0492b4697943a0b1f276ef42cc8223@DM2PR03MB352.namprd03.prod.outlook.com>
+References: <1400877218-4113-1-git-send-email-thierry.reding@gmail.com>
+ <4545972.cM7IP1qTXQ@wuerfel>
+ <CAL_Jsq+tkFNpjSEZboT+o69B_Z3a8e-ZVKaYDmLwtkyYoPy6VQ@mail.gmail.com>
+ <5288123.eXagyPAxNq@wuerfel>
+ <20140602104104.GD3855@e103592.cambridge.arm.com>
+ <20140604143509.GF28484@ulmo> <20140604164132.GF6644@arm.com>
+ <07321368d15d4ad9928ebb83af87e401@DM2PR03MB479.namprd03.prod.outlook.com>
+ <20140616152739.GS16758@arm.com>
+In-Reply-To: <20140616152739.GS16758@arm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.168.49]
+x-microsoft-antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+x-forefront-prvs: 0244637DEA
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(199002)(24454002)(189002)(51704005)(377454003)(13464003)(164054003)(21056001)(33646001)(74316001)(74502001)(85852003)(4396001)(85306003)(76576001)(80022001)(19580405001)(50986999)(99286001)(83322001)(99396002)(83072002)(19580395003)(86362001)(92566001)(93886003)(31966008)(79102001)(74662001)(101416001)(81342001)(81542001)(76482001)(54356999)(105586001)(20776003)(64706001)(46102001)(66066001)(76176999)(87936001)(77982001)(2656002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB477;H:DM2PR03MB352.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=stuart.yoder@freescale.com; 
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Subject: [PATCH] Microsoft Sufrace Dock USB Ethernet
-Message-Id: <13982460-3633-4BA4-A466-31E5A27C2F41@exactcode.com>
-Date: Mon, 16 Jun 2014 18:26:27 +0200
-To: linux-net@vger.kernel.org, linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
-X-Mailer: Apple Mail (2.1878.2)
-X-Spam-Score: -1.7 (-)
-X-Spam-Report: Spam detection software, running on the system "exactcode.de", has
-	identified this incoming email as possible spam.  The original message
-	has been attached to this so you can view it (if it isn't spam) or label
-	similar future email.  If you have any questions, see
-	the administrator of that system for details.
-	Content preview:  Currently the cdc_ether driver is matched for the Microsoft
-	Surface Dock USB port, however it does not work and will not send/receive
-	any packets. Instead using the r8152 driver explicitly appears to work fine
-	for me, so far. [...] 
-	Content analysis details:   (-1.7 points, 5.0 required)
-	pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	-1.5 ALL_TRUSTED            Passed through trusted hosts only via SMTP
-	-0.2 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
-	[score: 0.2042]
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the cdc_ether driver is matched for the Microsoft Surface Dock USB port,
-however it does not work and will not send/receive any packets. Instead using the
-r8152 driver explicitly appears to work fine for me, so far.
 
- Signed-off-by: René Rebe <rene@exactcode.com>
 
---- linux-3.15/drivers/net/usb/cdc_ether.c.orig	2014-06-16 18:01:08.153110776 +0200
-+++ linux-3.15/drivers/net/usb/cdc_ether.c	2014-06-16 18:03:21.465111094 +0200
-@@ -659,6 +659,13 @@
- 	.driver_info = 0,
- },
- 
-+/* Microsoft Surface Dock Ethernet Adapter */
-+{
-+	USB_DEVICE_AND_INTERFACE_INFO(0x045e, 0x07ab, USB_CLASS_COMM,
-+			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
-+	.driver_info = 0,
-+},
-+
- /* Samsung USB Ethernet Adapters */
- {
- 	USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, 0xa101, USB_CLASS_COMM,
---- linux-3.15/drivers/net/usb/r8152.c.orig	2014-06-16 18:00:54.873110744 +0200
-+++ linux-3.15/drivers/net/usb/r8152.c	2014-06-16 18:04:45.721111295 +0200
-@@ -459,6 +459,9 @@
- #define PRODUCT_ID_RTL8152		0x8152
- #define PRODUCT_ID_RTL8153		0x8153
- 
-+#define VENDOR_ID_MICROSOFT		0x045e
-+#define PRODUCT_ID_MICROSOFT		0x07ab
-+
- #define VENDOR_ID_SAMSUNG		0x04e8
- #define PRODUCT_ID_SAMSUNG		0xa101
- 
-@@ -3381,6 +3384,22 @@
- 		}
- 		break;
- 
-+	case VENDOR_ID_MICROSOFT:
-+		switch (id->idProduct) {
-+		case PRODUCT_ID_MICROSOFT:
-+			ops->init		= r8152b_init;
-+			ops->enable		= rtl8152_enable;
-+			ops->disable		= rtl8152_disable;
-+			ops->up			= r8152b_exit_oob;
-+			ops->down		= rtl8152_down;
-+			ops->unload		= rtl8152_unload;
-+			ret = 0;
-+			break;
-+		default:
-+			break;
-+		}
-+		break;
-+
- 	case VENDOR_ID_SAMSUNG:
- 		switch (id->idProduct) {
- 		case PRODUCT_ID_SAMSUNG:
-@@ -3512,6 +3531,7 @@
- static struct usb_device_id rtl8152_table[] = {
- 	{USB_DEVICE(VENDOR_ID_REALTEK, PRODUCT_ID_RTL8152)},
- 	{USB_DEVICE(VENDOR_ID_REALTEK, PRODUCT_ID_RTL8153)},
-+	{USB_DEVICE(VENDOR_ID_MICROSOFT, PRODUCT_ID_MICROSOFT)},
- 	{USB_DEVICE(VENDOR_ID_SAMSUNG, PRODUCT_ID_SAMSUNG)},
- 	{}
- };
--- 
-ExactCODE GmbH, Jaegerstr. 67, DE-10117 Berlin
-DE Legal: Amtsgericht Berlin (Charlottenburg) HRB 105123B, Tax-ID#: DE251602478
-Managing Director: René Rebe
-http://exactcode.com | http://exactscan.com | http://ocrkit.com | http://t2-project.org | http://rene.rebe.de
+> -----Original Message-----
+> From: Will Deacon [mailto:will.deacon@arm.com]
+> Sent: Monday, June 16, 2014 10:28 AM
+> To: Sethi Varun-B16395
+> Cc: Thierry Reding; Mark Rutland; devicetree@vger.kernel.org; linux-
+> samsung-soc@vger.kernel.org; Pawel Moll; Arnd Bergmann; Ian Campbell;
+> Grant Grundler; Stephen Warren; linux-kernel@vger.kernel.org; Marc
+> Zyngier; Linux IOMMU; Rob Herring; Kumar Gala; linux-
+> tegra@vger.kernel.org; Cho KyongHo; Dave P Martin; linux-arm-
+> kernel@lists.infradead.org; Yoder Stuart-B08248
+> Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree
+> bindings
+> 
+> Hi Varun,
+> 
+> On Thu, Jun 05, 2014 at 08:10:19PM +0100, Varun Sethi wrote:
+> > > The set of StreamIDs that can be generated by a master is fixed in
+> the
+> > > hardware. The SMMU can then be programmed to map these incoming IDs
+> onto
+> > > a context ID (or a set of context IDs), which are the IDs used
+> internally
+> > > by the SMMU to find the page tables etc.
+> > >
+> > > The StreamID -> ContextID mapping is dynamic and controlled by
+> software.
+> > > The Master -> StreamIDs mapping is fixed in the hardware.
+> > The Master -> StreamIDs mapping may not always be fixed in the
+> hardware.
+> > At, least in our case we plan to program these via software. PCI
+> devices
+> > is one place where this mapping would have to be dynamic (based on the
+> > topology i.e. if the devices are connected to a bridge etc). Also, we
+> have
+> > a hot plug device architecture where the stream ID is software
+> > programmable.
+> >
+> > Other than that, based on the isolation requirements (iommu domain)
+> > software programmability offers greater flexibility.
+> 
+> For the sake of consistency, I'd really like to treat the master ->
+> streamIDs mapping as fixed. If that means setting it once during boot in
+> your case, then so be it (ideally in the firmware). That way, we just
+> describe the fixed mapping to the kernel and the driver doesn't have to
+> worry about changing the mapping, especially given that that's likely to
+> be
+> highly error-prone once the SMMU is in us.
+> 
+> Do you have use-cases where you really need to change these mappings
+> dynamically?
+
+Yes.  In the case of a PCI bus-- you may not know in advance how many
+PCI devices there are until you probe the bus.   We have another FSL
+proprietary bus we call the "fsl-mc" bus that is similar.
+
+Another thing to consider-- starting with SMMUv2, as you know, there
+is a new distributed architecture with multiple TBUs and a centralized
+TCU that walks the SMMU page tables.  So instead of sprinkling multiple
+SMMUs all over an SoC you now have the option a 1 central TCU and sprinkling
+multiple TBUs around.   However, this means that the stream ID namespace
+is now global and can be pretty limited.  In the SMMU implementation we 
+have there are only 64 stream ID total for our Soc.  But we have many more
+masters than that.
+
+So we look at stream IDs as really corresponding to an 'isolation context'
+and not to a bus master.  An isolation context is the domain you are
+trying to isolate with the SMMU.  Devices that all belong to the same
+'isolation context' can share the same stream ID, since they share
+the same domain and page tables.
+
+So, perhaps by default some/most SMMU masters may have a default stream ID
+of 0x0 that is used by the host...and that could be represented
+statically in the device tree.
+
+But, we absolutely will need to dynamically set new stream IDs
+into masters when a new IOMMU 'domain' is created and devices
+are added to it.   All the devices in a domain will share
+the same stream ID.
+
+So whatever we do, let's please have an architecture flexible enough
+to allow for this.
+
+Thanks,
+Stuart
+
+
+
+
+
 
