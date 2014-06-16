@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820AbaFPLXZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 07:23:25 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:41233 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754704AbaFPLXW (ORCPT
+	id S1754891AbaFPLXp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 07:23:45 -0400
+Received: from smtp26.sms.unimo.it ([155.185.44.26]:53256 "EHLO
+	smtp26.sms.unimo.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752130AbaFPLXn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 07:23:22 -0400
-Message-ID: <539ED3A5.5050300@gmail.com>
-Date: Mon, 16 Jun 2014 13:23:17 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>
-CC: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
-        zmxu@marvell.com, jszhang@marvell.com,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: dts: berlin: enable i2c0 and i2c2
-References: <1401780790-17830-1-git-send-email-antoine.tenart@free-electrons.com> <1401780790-17830-3-git-send-email-antoine.tenart@free-electrons.com>
-In-Reply-To: <1401780790-17830-3-git-send-email-antoine.tenart@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 16 Jun 2014 07:23:43 -0400
+Subject: Re: [PATCH RFC - TAKE TWO - 10/12] block, bfq: add Early Queue Merge (EQM)
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+Content-Type: text/plain; charset=windows-1252
+From: Paolo Valente <paolo.valente@unimore.it>
+In-Reply-To: <20140604130446.GA5004@htj.dyndns.org>
+Date: Mon, 16 Jun 2014 13:23:34 +0200
+Cc: Jens Axboe <axboe@kernel.dk>, Li Zefan <lizefan@huawei.com>,
+        Fabio Checconi <fchecconi@gmail.com>,
+        Arianna Avanzini <avanzini.arianna@gmail.com>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org,
+        Mauro Andreolini <mauro.andreolini@unimore.it>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <EB40F548-C6D3-441D-B67B-2FCA8C797563@unimore.it>
+References: <20140528221929.GG1419@htj.dyndns.org> <1401354343-5527-1-git-send-email-paolo.valente@unimore.it> <1401354343-5527-11-git-send-email-paolo.valente@unimore.it> <20140601000331.GA29085@htj.dyndns.org> <3B7B1A46-46EB-4C52-A52C-4F79C71D14C2@unimore.it> <20140603162844.GD26210@htj.dyndns.org> <91383F1F-69C3-4B88-B51E-30204818F1AB@unimore.it> <20140604130446.GA5004@htj.dyndns.org>
+To: Tejun Heo <tj@kernel.org>
+X-Mailer: Apple Mail (2.1878.2)
+UNIMORE-X-SA-Score: -2.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2014 09:33 AM, Antoine Ténart wrote:
-> Enable the I2C0 and I2C2 for the Marvell Berlin BG2G DMP. I2C1 and I2C3
-> are also working on this board, but no devices seemed to be there.
->
-> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+Hi,
 
-Applied to berlin/dt with Andrew's Reviewed-by.
+Il giorno 04/giu/2014, alle ore 15:04, Tejun Heo <tj@kernel.org> ha scritto:
 
-Thanks!
+> Hello,
+> 
+>> [�]
 
-> ---
->   arch/arm/boot/dts/berlin2q-marvell-dmp.dts | 8 ++++++++
->   1 file changed, 8 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-> index 995150f93795..a357ce02a64e 100644
-> --- a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-> +++ b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-> @@ -34,6 +34,14 @@
->   	status = "okay";
->   };
->
-> +&i2c0 {
-> +	status = "okay";
-> +};
-> +
-> +&i2c2 {
-> +	status = "okay";
-> +};
-> +
->   &uart0 {
->   	status = "okay";
->   };
->
+>> The problem is not the duration of the plugging, but the fact that, if a request merge
+>> succeeds for a bio, then there will be no set_request invocation for that bio.
+>> Therefore, without early merging, there will be no queue merge at all.
+>> 
+>> If my replies are correct and convince you, then I will use them to integrate and
+>> hopefully improve the documentation for this patch.
+> 
+> Ah, okay, so it's about missing the chance to look for cooperating
+> queues when merge succeeds.  Yeah, that makes a lot more sense to me.
+> If that's the case, wouldn't it be better to try finding cooperating
+> queues after each merge success rather than each allow_merge()
+> invocation?
+
+If I have correctly understandood your question, then the answer is unfortunately no.
+
+First, without any queue-merge control in allow_merge, a bio-merge attempt would
+fail if the destination queue of the bio differs from the queue containing the target rq,
+even if the two queues should be merged. With early queue merge, not only the two
+queues are merged, but also the request-merge attempt succeeds.
+
+Second, if the queue-merge check was executed only after a successful request merge,
+then, in the case of a request-merge failure, the next chance to merge the destination queue
+of the bio with some other queue would be in the next add_request. But, according to the
+what we already discussed in some previous emails, waiting for the add_request is usually
+too much with, e.g., the I/O generated by QEMU I/O threads.
+
+In the end, moving queue merging to after successful request merges would most certainly
+cause the throughput to drop.
+
+
+>  And let's please document what we're catching with the
+> extra attempts.
+> 
+
+Definitely, thanks,
+
+Paolo
+
+> Thanks.
+> 
+> -- 
+> tejun
+
+
+--
+Paolo Valente                                                 
+Algogroup
+Dipartimento di Fisica, Informatica e Matematica		
+Via Campi, 213/B
+41125 Modena - Italy        				  
+homepage:  http://algogroup.unimore.it/people/paolo/
 
