@@ -1,91 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074AbaFPHD0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 03:03:26 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36926 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753865AbaFPHDZ (ORCPT
+	id S1754091AbaFPHEs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 03:04:48 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:47299 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753865AbaFPHEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 03:03:25 -0400
-Date: Mon, 16 Jun 2014 08:58:24 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        rdunlap@infradead.org, viresh.kumar@linaro.org,
-        "Srivatsa S. Bhat" <srivatsa@mit.edu>, linux-pm@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: company copyrights. Re: [PATCH] PM / Documentation: Update
- Srivatsa S. Bhat's email address
-Message-ID: <20140616065824.GA11379@atrey.karlin.mff.cuni.cz>
-References: <20140609102426.26530.15670.stgit@srivatsabhat.in.ibm.com>
- <1465703.Zlfm9gi0xo@vostro.rjw.lan>
- <20140614223611.GD1389@xo-6d-61-c0.localdomain>
- <2113679.6ZdJDAD0Zn@vostro.rjw.lan>
+	Mon, 16 Jun 2014 03:04:47 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Alexander Graf <agraf@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2 00/10] CMA: generalize CMA reserved area management code
+In-Reply-To: <20140616053209.GG23210@js1304-P5Q-DELUXE>
+References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com> <87r42seyvg.fsf@linux.vnet.ibm.com> <20140616053209.GG23210@js1304-P5Q-DELUXE>
+User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
+Date: Mon, 16 Jun 2014 12:34:14 +0530
+Message-ID: <87tx7lcp3l.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2113679.6ZdJDAD0Zn@vostro.rjw.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061607-2674-0000-0000-0000006E43CA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-> On Sunday, June 15, 2014 12:36:11 AM Pavel Machek wrote:
-> > On Mon 2014-06-09 13:28:36, Rafael J. Wysocki wrote:
-> > > On Monday, June 09, 2014 03:54:49 PM Srivatsa S. Bhat wrote:
-> > > > My @linux.vnet.ibm.com email address is going to disappear soon, as I will be
-> > > > beginning my M.S./PhD studies at MIT in a few months.
-> > > 
-> > > Congratulations!
-> > > 
-> > > > So update my email address in the documentation.
-> > > > 
-> > > > Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> > > > Signed-off-by: Srivatsa S. Bhat <srivatsa@mit.edu>
-> > > > ---
-> > > > 
-> > > >  Documentation/power/suspend-and-cpuhotplug.txt |    2 +-
-> > > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > > 
-> > > > diff --git a/Documentation/power/suspend-and-cpuhotplug.txt b/Documentation/power/suspend-and-cpuhotplug.txt
-> > > > index e13dafc..3813703 100644
-> > > > --- a/Documentation/power/suspend-and-cpuhotplug.txt
-> > > > +++ b/Documentation/power/suspend-and-cpuhotplug.txt
-> > > > @@ -1,6 +1,6 @@
-> > > >  Interaction of Suspend code (S3) with the CPU hotplug infrastructure
-> > > >  
-> > > > -     (C) 2011 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> > > > +     (C) 2011-2014 Srivatsa S. Bhat <srivatsa@mit.edu>
-> > > 
-> > > I'm actually unsure if updating copyright notices like that is OK.
-> > > 
-> > > Yes, you're moving, but the address in the notice documents the status at
-> > > the time you added it.
-> > 
-> > Well, invalid addresses in the comments are useless.
-> > 
-> > If copyright is _yours_, updating the address is ok.
-> 
-> It may be OK from the legal standpoint, but only as long as you change it to
-> your private address (that is, one that you own personally).  Also it is
-> changing history retroactively which I don't really find helpful.
+Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 
-People do fix invalid email addresses. That's what normally done on
-lkml. If people want to credit the companies at the same time, its
-easy to add note "for IBM", "in cooperation with IBM" or something...
+> On Sat, Jun 14, 2014 at 12:55:39PM +0530, Aneesh Kumar K.V wrote:
+>> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+>> 
+>> > Currently, there are two users on CMA functionality, one is the DMA
+>> > subsystem and the other is the kvm on powerpc. They have their own code
+>> > to manage CMA reserved area even if they looks really similar.
+>> > From my guess, it is caused by some needs on bitmap management. Kvm side
+>> > wants to maintain bitmap not for 1 page, but for more size. Eventually it
+>> > use bitmap where one bit represents 64 pages.
+>> >
+>> > When I implement CMA related patches, I should change those two places
+>> > to apply my change and it seem to be painful to me. I want to change
+>> > this situation and reduce future code management overhead through
+>> > this patch.
+>> >
+>> > This change could also help developer who want to use CMA in their
+>> > new feature development, since they can use CMA easily without
+>> > copying & pasting this reserved area management code.
+>> >
+>> > v2:
+>> >   Although this patchset looks very different with v1, the end result,
+>> >   that is, mm/cma.c is same with v1's one. So I carry Ack to patch 6-7.
+>> >
+>> > Patch 1-5 prepare some features to cover ppc kvm's requirements.
+>> > Patch 6-7 generalize CMA reserved area management code and change users
+>> > to use it.
+>> > Patch 8-10 clean-up minor things.
+>> 
+>> 
+>> I wanted to test the ppc changes and found that the patch series doesn't apply
+>> against v3.15 . Do you have a kernel tree which I can clone to test this
+>> series ?
+>
+> This is based on linux-next -next-20140610.
+> And my tree is on following link.
+>
+> https://github.com/JoonsooKim/linux/tree/cma-general-v2.0-next-20140610
+>
+> But, I think I'm late, because you have already added a Tested-by tag.
 
-> > If copyright is your company's, you should probably say that plainly, not
-> > just by email address.
-> > 
-> > 	(C) 2011 IBM (Srivatsa...) 
-> > 
-> > is what people do.
-> 
-> Yes, that's the preferred way to do that.
+linux-next kexec is broken on ppc64, hence I hand picked few of
+dependent patches for dma CMA on top of 3.15 and used that for testing.
 
-Agreed.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+-aneesh
+
