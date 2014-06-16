@@ -1,132 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728AbaFPSZG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 14:25:06 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:42244 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755624AbaFPSZE convert rfc822-to-8bit (ORCPT
+	id S932542AbaFPSZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 14:25:27 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:32958 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932195AbaFPSZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 14:25:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <539F35A0.2050002@gmx.de>
-References: <539F1C59.6070308@gmx.de> <CAFLxGvyqPzbmfz1-WxP7z02=V-V5=p5b09HYPOFOS7Qj8eUHGw@mail.gmail.com>
- <CALCETrXqjHPvKw=wcdnxQWO0Y140B=a0E7eh4+PoERvU=z909w@mail.gmail.com>
- <539F297F.7010904@nod.at> <CALCETrU+TmaEjPSHz1LwQJvVDp8fqoDs3O4b+3gS_ewthiwnMA@mail.gmail.com>
- <539F2B2D.6050105@gmx.de> <CALCETrVw6f7iy4qTMgSt8k9N4rOWJ_mm9LbrtVZ9YFORacriSQ@mail.gmail.com>
- <539F3077.7040005@gmx.de> <CALCETrUUC6g_y4nJkSYo7MrKB8ehyXgnnuBHxGCDrq1d4zp2BQ@mail.gmail.com>
- <539F35A0.2050002@gmx.de>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 16 Jun 2014 11:24:43 -0700
-Message-ID: <CALCETrVseO=n6TH-msfTHRqB-OMPs_32nRELVYc=V1ZDmvFXVA@mail.gmail.com>
-Subject: Re: 3.15: kernel BUG at kernel/auditsc.c:1525!
-To: =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>
-Cc: Eric Paris <eparis@redhat.com>, Richard Weinberger <richard@nod.at>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 16 Jun 2014 14:25:25 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlUHAHASn1NbtAal/2dsb2JhbABagw2rFgUBAQEBAQEFAZkkgREXdYQxLyOBGjeIRgHPKheFY4hKSR2ELQSPbIpXizCIKINCO4Ey
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/3] fs/romfs/super.c: convert printk to pr_foo()
+Date: Mon, 16 Jun 2014 20:24:07 +0200
+Message-Id: <1402943047-10653-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 11:21 AM, Toralf Förster <toralf.foerster@gmx.de> wrote:
-> On 06/16/2014 08:15 PM, Andy Lutomirski wrote:
->> On Mon, Jun 16, 2014 at 10:59 AM, Toralf Förster <toralf.foerster@gmx.de> wrote:
->>> On 06/16/2014 07:50 PM, Andy Lutomirski wrote:
->>>> cc: eparis.  This might be a new audit bug.
->>>>
->>>> On Mon, Jun 16, 2014 at 10:36 AM, Toralf Förster <toralf.foerster@gmx.de> wrote:
->>>>> On 06/16/2014 07:32 PM, Andy Lutomirski wrote:
->>>>>> On Mon, Jun 16, 2014 at 10:29 AM, Richard Weinberger <richard@nod.at> wrote:
->>>>>>> Am 16.06.2014 19:25, schrieb Andy Lutomirski:
->>>>>>>> On Mon, Jun 16, 2014 at 10:21 AM, Richard Weinberger
->>>>>>>> <richard.weinberger@gmail.com> wrote:
->>>>>>>>> On Mon, Jun 16, 2014 at 6:33 PM, Toralf Förster <toralf.foerster@gmx.de> wrote:
->>>>>>>>>> $ cat syscall.c
->>>>>>>>>> #include <unistd.h>
->>>>>>>>>> #include <sys/syscall.h>
->>>>>>>>>> int main(){return syscall(1000)!=-1;}
->>>>>>>>
->>>>>>>> What architecture are you building for?  On i386 and x86_64, 1000
->>>>>>>> shouldn't be big enough to trigger this.
->>>>>>>
->>>>>>> Toralf, is this an UML kernel?
->>>>>>>
->>>>>>
->>>>>> I'm also interested in the userspace architecture.  If it's x32
->>>>>> userspace, then I'm not surprised that there's a problem.
->>>>>
->>>>> It is a x86 system (ThinkPad T420) - not x32.
->>>>
->>>> I don't think this is CVE-2014-3917.  It looks like you're hitting this BUG:
->>>>
->>>> BUG_ON(context->in_syscall || context->name_count);
->>>>
->>>> Can you send the output of:
->>>>
->>>> auditctl -l [run as root]
->>>>
->>>> and
->>>>
->>>> dmesg |grep audit
->>>>
->>>> Are you using ptrace or anything like that (e.g. strace) when you
->>>> trigger this?  Are you using a funny glibc version?  Do you have
->>>> selinux or something like that enabled?
->>>>
->>>> --Andy
->>>>
->>> n22 ~ # auditctl -l
->>> LIST_RULES: exit,never arch=1073741827 (0x40000003) syscall=read,write,open,close,brk,fcntl,dup2,mmap,munmap,stat,fstat,nanosleep,rt_sigaction
->>>
->>>
->>> no ptrace/strace/SELinux, this is a stable x86 Gentoo Linux, glibc is 2.17, unstable are just KDE + Co.
->>>
->>> (@Richard: no. it is not an UML guest, I just stumbled over this while I tried to upgrade an unstable ~x86 Gentoo UML image using chroot)
->>>
->>> The trigger is just given by that C one-liner and kernel 3.15 (erm, I did not checked, if 3.14.x hit its too)
->>
->> At the very least, it looks like sysret_audit can result in invoking
->> the audit exit hook twice. That's not what's causing this, but it
->> still looks fishy.
->>
->> Toralf, can you run your test program under strace, post the output,
->> and see whether it still crashes?  There's some chance that strace
->> will "fix" it, since strace causes a different set of hooks to run.
->>
-> tfoerste@n22 ~/tmp $ cat syscall.c
-> #include <unistd.h>
-> #include <sys/syscall.h>
-> int main(){return syscall(1000)!=-1;}
->
-> tfoerste@n22 ~/tmp $ gcc strcmp.c && strace ./a.out
-> execve("./a.out", ["./a.out"], [/* 75 vars */]) = 0
-> brk(0)                                  = 0x85f3000
-> mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xb7750000
-> access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
-> open("/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
-> fstat64(3, {st_mode=S_IFREG|0644, st_size=164108, ...}) = 0
-> mmap2(NULL, 164108, PROT_READ, MAP_PRIVATE, 3, 0) = 0xb7727000
-> close(3)                                = 0
-> open("/lib/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
-> read(3, "\177ELF\1\1\1\0\0\0\0\0\0\0\0\0\3\0\3\0\1\0\0\0 \316\1\0004\0\0\0"..., 512) = 512
-> fstat64(3, {st_mode=S_IFREG|0755, st_size=1750448, ...}) = 0
-> mmap2(NULL, 1759980, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0xb7579000
-> mmap2(0xb7721000, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1a8000) = 0xb7721000
-> mmap2(0xb7724000, 10988, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0xb7724000
-> close(3)                                = 0
-> mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xb7578000
-> set_thread_area({entry_number:-1 -> 6, base_addr:0xb75786c0, limit:1048575, seg_32bit:1, contents:0, read_exec_only:0, limit_in_pages:1, seg_not_present:0, useable:1}) = 0
-> mprotect(0xb7721000, 8192, PROT_READ)   = 0
-> mprotect(0x8049000, 4096, PROT_READ)    = 0
-> mprotect(0xb7774000, 4096, PROT_READ)   = 0
-> munmap(0xb7727000, 164108)              = 0
-> fstat64(1, {st_mode=S_IFCHR|0600, st_rdev=makedev(136, 5), ...}) = 0
-> mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xb774f000
-> write(1, "1\n", 21
-> )                      = 2
+Use current logging functions.
++coalesce formats
 
-Does this mean it didn't OOPS?  And where's the write(1, "1\n", 2)
-coming from?  Are you sure you straced the right thing?
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/romfs/super.c | 16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
---Andy
+diff --git a/fs/romfs/super.c b/fs/romfs/super.c
+index ef90e8b..c32006e 100644
+--- a/fs/romfs/super.c
++++ b/fs/romfs/super.c
+@@ -380,7 +380,7 @@ static struct inode *romfs_iget(struct super_block *sb, unsigned long pos)
+ eio:
+ 	ret = -EIO;
+ error:
+-	printk(KERN_ERR "ROMFS: read error for inode 0x%lx\n", pos);
++	pr_err("ROMFS: read error for inode 0x%lx\n", pos);
+ 	return ERR_PTR(ret);
+ }
+ 
+@@ -507,14 +507,13 @@ static int romfs_fill_super(struct super_block *sb, void *data, int silent)
+ 	if (rsb->word0 != ROMSB_WORD0 || rsb->word1 != ROMSB_WORD1 ||
+ 	    img_size < ROMFH_SIZE) {
+ 		if (!silent)
+-			printk(KERN_WARNING "VFS:"
+-			       " Can't find a romfs filesystem on dev %s.\n",
++			pr_warn("VFS: Can't find a romfs filesystem on dev %s.\n",
+ 			       sb->s_id);
+ 		goto error_rsb_inval;
+ 	}
+ 
+ 	if (romfs_checksum(rsb, min_t(size_t, img_size, 512))) {
+-		printk(KERN_ERR "ROMFS: bad initial checksum on dev %s.\n",
++		pr_err("ROMFS: bad initial checksum on dev %s.\n",
+ 		       sb->s_id);
+ 		goto error_rsb_inval;
+ 	}
+@@ -523,7 +522,7 @@ static int romfs_fill_super(struct super_block *sb, void *data, int silent)
+ 
+ 	len = strnlen(rsb->name, ROMFS_MAXFN);
+ 	if (!silent)
+-		printk(KERN_NOTICE "ROMFS: Mounting image '%*.*s' through %s\n",
++		pr_notice("ROMFS: Mounting image '%*.*s' through %s\n",
+ 		       (unsigned) len, (unsigned) len, rsb->name, storage);
+ 
+ 	kfree(rsb);
+@@ -614,7 +613,7 @@ static int __init init_romfs_fs(void)
+ {
+ 	int ret;
+ 
+-	printk(KERN_INFO "ROMFS MTD (C) 2007 Red Hat, Inc.\n");
++	pr_info("ROMFS MTD (C) 2007 Red Hat, Inc.\n");
+ 
+ 	romfs_inode_cachep =
+ 		kmem_cache_create("romfs_i",
+@@ -623,13 +622,12 @@ static int __init init_romfs_fs(void)
+ 				  romfs_i_init_once);
+ 
+ 	if (!romfs_inode_cachep) {
+-		printk(KERN_ERR
+-		       "ROMFS error: Failed to initialise inode cache\n");
++		pr_err("ROMFS error: Failed to initialise inode cache\n");
+ 		return -ENOMEM;
+ 	}
+ 	ret = register_filesystem(&romfs_fs_type);
+ 	if (ret) {
+-		printk(KERN_ERR "ROMFS error: Failed to register filesystem\n");
++		pr_err("ROMFS error: Failed to register filesystem\n");
+ 		goto error_register;
+ 	}
+ 	return 0;
+-- 
+1.8.4.5
+
