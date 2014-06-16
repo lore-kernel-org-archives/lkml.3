@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634AbaFPOEx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 10:04:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59694 "EHLO mx2.suse.de"
+	id S1753811AbaFPOFr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 10:05:47 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:54167 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753469AbaFPOEw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 10:04:52 -0400
-Date: Mon, 16 Jun 2014 16:04:48 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michel Lespinasse <walken@google.com>,
-        Roman Gushchin <klamm@yandex-team.ru>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH 2/2] memcg: Allow guarantee reclaim
-Message-ID: <20140616140448.GE16915@dhcp22.suse.cz>
-References: <20140611075729.GA4520@dhcp22.suse.cz>
- <1402473624-13827-1-git-send-email-mhocko@suse.cz>
- <1402473624-13827-2-git-send-email-mhocko@suse.cz>
- <20140611153631.GH2878@cmpxchg.org>
- <20140612132207.GA32720@dhcp22.suse.cz>
- <20140612135600.GI2878@cmpxchg.org>
- <20140612142237.GB32720@dhcp22.suse.cz>
- <20140612161733.GC23606@htj.dyndns.org>
- <20140616125915.GB16915@dhcp22.suse.cz>
- <20140616135741.GA11542@htj.dyndns.org>
+	id S1752054AbaFPOFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 10:05:46 -0400
+Message-ID: <539EF985.3080705@ti.com>
+Date: Mon, 16 Jun 2014 10:04:53 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140616135741.GA11542@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Sricharan R <r.sricharan@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <tony@atomide.com>, <nm@ti.com>, <rnayak@ti.com>, <linux@arm.linux.org.uk>,
+        <tglx@linutronix.de>, <jason@lakedaemon.net>, <joe@perches.com>
+Subject: Re: [PATCH V3 00/16] irqchip: crossbar: driver fixes
+References: <1402917796-31574-1-git-send-email-r.sricharan@ti.com>
+In-Reply-To: <1402917796-31574-1-git-send-email-r.sricharan@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 16-06-14 09:57:41, Tejun Heo wrote:
-> Hello, Michal.
+Sricharan,
+
+On Monday 16 June 2014 07:23 AM, Sricharan R wrote:
+> This series does some cleanups, fixes for handling two interrupts
+> getting mapped twice to same crossbar and provides support for
+> hardwired IRQ and crossbar definitions.
 > 
-> On Mon, Jun 16, 2014 at 02:59:15PM +0200, Michal Hocko wrote:
-> > > There sure is a question of how fast userland will move to the new
-> > > interface. 
-> > 
-> > Yeah, I was mostly thinking about those who would need to to bigger
-> > changes. AFAIR threads will no longer be distributable between groups.
+> On certain platforms such as DRA7, SPIs 0, 1, 2, 3, 5, 6, 10,
+> 131, 132, 133 are direct wired to hardware blocks bypassing
+> crossbar. This quirky implementation is *NOT* supposed to be the
+> expectation of crossbar hardware usage. This series adds support
+> to represent such hard-wired irqs through DT and avoid generic
+> allocation/programming of crossbar in the driver.
 > 
-> Thread-level granularity should go away no matter what, but this is
-> completely irrelevant to memcg which can't do per-thread anyway.
-
-Yes, I wasn't afraid about memcg. It was a setup which requires more
-controllers that I was worried about.
-
-> For whatever reason, a user is stuck with thread-level granularity for
-> controllers which work that way, the user can use the old hierarchies
-> for them for the time being.
-
-So he can mount memcg with new cgroup API and others with old?
-
-> > > is used but I don't think there's any chance of removing the knob.
-> > > There's a reason why we're introducing a new version of the whole
-> > > cgroup interface which can co-exist with the existing one after all.
-> > > If you wanna version memcg interface separately, maybe that'd work but
-> > > it sounds like a lot of extra hassle for not much gain.
-> > 
-> > No, I didn't mean to version the interface. I just wanted to have
-> > gradual transition for potential soft_limit users.
-> > 
-> > Maybe I am misunderstanding something but I thought that new version of
-> > API will contain all knobs which are not marked .flags = CFTYPE_INSANE
-> > while the old API will contain all of them.
+> This way of supporting hard-wired irqs was a result of
+> the below discussions.
+> http://www.spinics.net/lists/arm-kernel/msg329946.html
 > 
-> Nope, some changes don't fit that model.  CFTYPE_ON_ON_DFL is the
-> opposite. 
+> Based on 3.15 mainline.
+> 
+> All the patches are available here
+>  git@github.com:Sricharanti/sricharan.git crossbar_updates
+> 
+> The fixes series[1] earlier posted is merged in to this.
+> [1] http://www.spinics.net/lists/arm-kernel/msg328273.html
+> 
+> [V2] Merged the above series and rebased on 3.15 mainline
+> 
+> [V3] Modified patch#3 to get irqs-skip properties from DT,
+>      merged path#8 for checkpatch warning to other relevant
+>      patches and fixed comments for other patches.
+>
+I scanned entire series again including your updates on Jason's
+comments. All look good to my eyes.
 
-OK, I wasn't aware of this. On which branch I find this?
+Hopefully after this series now, we can actually enable the crossbar
+support on those machines.
 
-> Knobs marked with the flag only appear on the default
-> hierarchy (cgroup core internally calls it the default hierarchy as
-> this is the tree all the controllers are attached to by default).
-
-I am not sure I understand. So they are visible only in the hierarchy
-mounted with the new cgroup API (sane or how is it called)?
--- 
-Michal Hocko
-SUSE Labs
+FWIW,
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
