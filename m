@@ -1,140 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484AbaFPB0v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 21:26:51 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:53393 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751890AbaFPB0u (ORCPT
+	id S1752589AbaFPB3e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 21:29:34 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:64704 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752478AbaFPB3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 21:26:50 -0400
-X-IronPort-AV: E=Sophos;i="5.00,713,1396972800"; 
-   d="scan'208";a="31944792"
-Message-ID: <539E48BC.1040805@cn.fujitsu.com>
-Date: Mon, 16 Jun 2014 09:30:36 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Sun, 15 Jun 2014 21:29:30 -0400
+Date: Sun, 15 Jun 2014 18:28:00 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Lukas Czerner <lczerner@redhat.com>, Namjae Jeon <namjae.jeon@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] tmpfs: ZERO_RANGE and COLLAPSE_RANGE not currently
+ supported
+Message-ID: <alpine.LSU.2.11.1406151816410.31998@eggly.anvils>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-To: <jjherne@linux.vnet.ibm.com>, Peter Zijlstra <peterz@infradead.org>
-CC: Sasha Levin <sasha.levin@oracle.com>, Tejun Heo <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: workqueue: WARN at at kernel/workqueue.c:2176
-References: <CACvQF52-jUMzK32uoDCb8zn0RZsiC9uzUOq+ZBRXK22esYKS0g@mail.gmail.com> <20140516162945.GZ11096@twins.programming.kicks-ass.net> <53849EB7.9090302@linux.vnet.ibm.com> <20140527142637.GB19143@laptop.programming.kicks-ass.net> <53875F09.3090607@linux.vnet.ibm.com> <538DB076.4090704@cn.fujitsu.com> <20140603141659.GO30445@twins.programming.kicks-ass.net> <538E840D.2040300@cn.fujitsu.com> <20140604064946.GF30445@twins.programming.kicks-ass.net> <538ED7EB.5050303@cn.fujitsu.com> <20140604093907.GC11096@twins.programming.kicks-ass.net> <53904C6B.90001@cn.fujitsu.com> <5395BE3D.6060409@linux.vnet.ibm.com> <53965D86.2070803@cn.fujitsu.com>
-In-Reply-To: <53965D86.2070803@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Peter
+I was well aware of FALLOC_FL_ZERO_RANGE and FALLOC_FL_COLLAPSE_RANGE
+support being added to fallocate(); but didn't realize until now that
+I had been too stupid to future-proof shmem_fallocate() against new
+additions.  -EOPNOTSUPP instead of going on to ordinary fallocation.
 
-Ping...
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: stable@vger.kernel.org # v3.15
+---
 
-thanks,
-Lai
+ mm/shmem.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-On 06/10/2014 09:21 AM, Lai Jiangshan wrote:
-> On 06/09/2014 10:01 PM, Jason J. Herne wrote:
->> On 06/05/2014 06:54 AM, Lai Jiangshan wrote:
->>> ------------
->>>
->>> Subject: [PATCH] sched: migrate the waking tasks
->>>
->>> Current code skips to migrate the waking task silently when TTWU_QUEUE is enabled.
->>>
->>> When a task is waking, it is pending on the wake_list of the rq, but
->>> it is not on queue (task->on_rq == 0). In this case, set_cpus_allowed_ptr()
->>> and __migrate_task() will not migrate it due to it is not on queue.
->>>
->>> This behavior is incorrect, because the task had been already waken-up, it will
->>> be running on the wrong CPU without correct placement until the next wake-up
->>> or update for cpus_allowed.
->>>
->>> To fix this problem, we need to make the waking tasks on-queue (transfer
->>> the waking tasks to running state) before migrate them.
->>>
->>> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
->>> ---
->>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->>> index 268a45e..d05a5a1 100644
->>> --- a/kernel/sched/core.c
->>> +++ b/kernel/sched/core.c
->>> @@ -1474,20 +1474,24 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
->>>   }
->>>
->>>   #ifdef CONFIG_SMP
->>> -static void sched_ttwu_pending(void)
->>> +static void sched_ttwu_pending_locked(struct rq *rq)
->>>   {
->>> -    struct rq *rq = this_rq();
->>>       struct llist_node *llist = llist_del_all(&rq->wake_list);
->>>       struct task_struct *p;
->>>
->>> -    raw_spin_lock(&rq->lock);
->>> -
->>>       while (llist) {
->>>           p = llist_entry(llist, struct task_struct, wake_entry);
->>>           llist = llist_next(llist);
->>>           ttwu_do_activate(rq, p, 0);
->>>       }
->>> +}
->>>
->>> +static void sched_ttwu_pending(void)
->>> +{
->>> +    struct rq *rq = this_rq();
->>> +
->>> +    raw_spin_lock(&rq->lock);
->>> +    sched_ttwu_pending_locked(rq);
->>>       raw_spin_unlock(&rq->lock);
->>>   }
->>>
->>> @@ -4530,6 +4534,11 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
->>>           goto out;
->>>
->>>       dest_cpu = cpumask_any_and(cpu_active_mask, new_mask);
->>> +
->>> +    /* Ensure it is on rq for migration if it is waking */
->>> +    if (p->state == TASK_WAKING)
->>> +        sched_ttwu_pending_locked(rq);
->>> +
->>>       if (p->on_rq) {
->>>           struct migration_arg arg = { p, dest_cpu };
->>>           /* Need help from migration thread: drop lock and wait. */
->>> @@ -4576,6 +4585,10 @@ static int __migrate_task(struct task_struct *p, int src_cpu, int dest_cpu)
->>>       if (!cpumask_test_cpu(dest_cpu, tsk_cpus_allowed(p)))
->>>           goto fail;
->>>
->>> +    /* Ensure it is on rq for migration if it is waking */
->>> +    if (p->state == TASK_WAKING)
->>> +        sched_ttwu_pending_locked(rq_src);
->>> +
->>>       /*
->>>        * If we're not on a rq, the next wake-up will ensure we're
->>>        * placed properly.
->>>
->>
->> FYI, this patch appears to fix the problem. I was able to run for 3 days without hitting the warning.
-> 
-> Thank you for the test. It proves that we found the root cause.
-> Your tests are the most important, coding takes the second place, let it go forward step by step.
-> 
-> Thanks,
-> Lai
-> 
->>
->> I see that you guys are still discussing the details of the fix. When you decide on a final solution I'm happy to retest. Just be sure to ask :). It is hard to tell what to test with so many patches and code snippets flying around all the time.
->>
->> Happy coding.
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> .
-> 
-
+--- v3.15/mm/shmem.c	2014-06-08 11:19:54.000000000 -0700
++++ linux/mm/shmem.c	2014-06-15 18:01:16.988996166 -0700
+@@ -1728,6 +1728,9 @@ static long shmem_fallocate(struct file
+ 	pgoff_t start, index, end;
+ 	int error;
+ 
++	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
++		return -EOPNOTSUPP;
++
+ 	mutex_lock(&inode->i_mutex);
+ 
+ 	if (mode & FALLOC_FL_PUNCH_HOLE) {
