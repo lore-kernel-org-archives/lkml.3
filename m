@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206AbaFPKyL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 06:54:11 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:55330 "EHLO SMTP.CITRIX.COM"
+	id S1751609AbaFPK5m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 06:57:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17813 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751430AbaFPKyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 06:54:08 -0400
-X-IronPort-AV: E=Sophos;i="5.01,486,1400025600"; 
-   d="scan'208";a="144015171"
-Message-ID: <539ECCCC.4030601@citrix.com>
-Date: Mon, 16 Jun 2014 11:54:04 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1751017AbaFPK5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 06:57:41 -0400
+Date: Mon, 16 Jun 2014 11:57:34 +0100
+From: "Bryn M. Reeves" <bmr@redhat.com>
+To: LVM general discussion and development <linux-lvm@redhat.com>
+Cc: linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-lvm] copying file results in out of memory, kills other
+ processes, makes system unavailable
+Message-ID: <20140616105733.GB2241@localhost.localdomain>
+References: <539C275B.4010003@davidnewall.com>
 MIME-Version: 1.0
-To: Daniel Kiper <daniel.kiper@oracle.com>, <linux-efi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <x86@kernel.org>,
-        <xen-devel@lists.xenproject.org>
-CC: <mjg59@srcf.ucam.org>, <jeremy@goop.org>, <matt.fleming@intel.com>,
-        <ian.campbell@citrix.com>, <andrew.cooper3@citrix.com>,
-        <stefano.stabellini@eu.citrix.com>, <mingo@redhat.com>,
-        <david.vrabel@citrix.com>, <jbeulich@suse.com>, <hpa@zytor.com>,
-        <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>,
-        <eshelton@pobox.com>
-Subject: Re: [Xen-devel] [PATCH v5 3/7] xen: Define EFI related stuff
-References: <1402678823-24589-1-git-send-email-daniel.kiper@oracle.com> <1402678823-24589-4-git-send-email-daniel.kiper@oracle.com>
-In-Reply-To: <1402678823-24589-4-git-send-email-daniel.kiper@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <539C275B.4010003@davidnewall.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/06/14 18:00, Daniel Kiper wrote:
-> Define constants and structures which are needed to properly
-> execute EFI related hypercall in Xen dom0.
+On Sat, Jun 14, 2014 at 08:13:39PM +0930, David Newall wrote:
+> I'm running a qemu virtual machine, 2 x i686 with 2GB RAM.  VM's disks are
+> managed via LVM2.  Most disk activity is on one LV, formatted as ext4.
+> Backups are taken using snapshots, and at the time of the problem that I am
+> about to describe, there were ten of them, or so.  OS is Ubuntu 12.04 with
+
+You don't mention what type of snapshots you're using but by the sound
+of it these are legacy LVM2 snapshots using the snapshot target. For
+applications where you want to have this number of snapshots present
+simultaneously you really want to be using the new snapshot
+implementation ('thin snapshots').
+
+Take a look at the RHEL docs for creating and managing these (the
+commands work the same whay on Ubuntu):
+
+  http://tinyurl.com/pjdovee  [access.redhat.com]
+
+The problem with traditional snapshots is that they will issue separate
+IO for each active snapshot so for one snap a write to the origin (that
+triggers a CoW exception) will cause a read and a write of that block in
+the snapshot table. With ten active snapshots you're writing that
+changed block separately to the ten active CoW areas.
+
+It doesn't take a large number of snapshots before this scheme becomes
+unworkable as you've discovered. There are many threads on this topic in
+the list archives, e.g.:
+
+  https://www.redhat.com/archives/linux-lvm/2013-July/msg00044.html
+
+> Let me be clear: Process A requests memory; processes B & C are killed;
+> where B & C later become D, E & F!
 > 
-> This patch is based on Jan Beulich and Tang Liang work.
-> 
-> v5 - suggestions/fixes:
+> I feel that over-committing memory is a foolish and odious practice, and
+> makes problem determination very much harder than it need be. When a process
+> requests memory, if that cannot be satisfied the system should return an
+> error and that be the end of it.
 
-This version information should be after a '---' marker.
+You can disable memory over-commit by setting mode 3 in ('don't
+overcommit') in vm.overcommit-memory but see:
 
-> +	struct {
-> +		GUEST_HANDLE(void) name;  /* UCS-2/UTF-16 string */
-> +		xen_ulong_t size;
-> +		GUEST_HANDLE(void) data;
-> +		struct xenpf_efi_guid {
-> +			uint32_t data1;
-> +			uint16_t data2;
-> +			uint16_t data3;
-> +			uint8_t data4[8];
-> +			} vendor_guid;
+  Documentation/vm/overcommit-accounting
 
-Indentation looks all messed up here and in many other places.
+As well as the documentation for the per-process OOM controls (oom_adj,
+oom_score_adj, oom_score). These are discussed in:
 
-David
+  Documentation/filesystems/proc.txt
+ 
+> Actual use of snapshots seems to beg denial of service.
+
+Keeping that number of legacy snapshots present is certainly going to
+cause you performance problems like this. Try using thin snapshots or
+reducing the number that you keep active.
+
+Regards,
+Bryn.
+
