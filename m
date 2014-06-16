@@ -1,42 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114AbaFPPY4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 11:24:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41947 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754596AbaFPPYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 11:24:55 -0400
-Message-ID: <1402932269.3707.35.camel@ul30vt.home>
-Subject: Re: [PATCH 0/3] iommu: Expose IOMMU information in sysfs
-From: Alex Williamson <alex.williamson@redhat.com>
+	id S932090AbaFPPZc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 11:25:32 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52413 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750804AbaFPPZb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 11:25:31 -0400
+Date: Mon, 16 Jun 2014 16:25:26 +0100
+From: Will Deacon <will.deacon@arm.com>
 To: Joerg Roedel <joro@8bytes.org>
-Cc: iommu@lists.linux-foundation.org, dwmw2@infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 16 Jun 2014 09:24:29 -0600
-In-Reply-To: <20140616151619.GA31771@8bytes.org>
-References: <20140612215954.2754.30263.stgit@bling.home>
-	 <20140616151619.GA31771@8bytes.org>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Cc: Christoffer Dall <christoffer.dall@linaro.org>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "tech@virtualopensystems.com" <tech@virtualopensystems.com>,
+        "a.rigo@virtualopensystems.com" <a.rigo@virtualopensystems.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "kim.phillips@freescale.com" <kim.phillips@freescale.com>,
+        "stuart.yoder@freescale.com" <stuart.yoder@freescale.com>,
+        "eric.auger@linaro.org" <eric.auger@linaro.org>,
+        "moderated list:ARM SMMU DRIVER" 
+	<linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability
+ IOMMU_CAP_INTR_REMAP
+Message-ID: <20140616152526.GR16758@arm.com>
+References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1401987808-23596-5-git-send-email-a.motakis@virtualopensystems.com>
+ <20140608103129.GC3279@lvm>
+ <20140616145344.GD18986@8bytes.org>
+ <20140616151329.GQ16758@arm.com>
+ <20140616152157.GB31771@8bytes.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140616152157.GB31771@8bytes.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-16 at 17:16 +0200, Joerg Roedel wrote:
-> On Thu, Jun 12, 2014 at 04:12:18PM -0600, Alex Williamson wrote:
-> > Alex Williamson (3):
-> >       iommu: Add sysfs support for IOMMUs
-> >       iommu/intel: Make use of IOMMU sysfs support
-> >       iommu/amd: Add sysfs support
+On Mon, Jun 16, 2014 at 04:21:58PM +0100, Joerg Roedel wrote:
+> On Mon, Jun 16, 2014 at 04:13:29PM +0100, Will Deacon wrote:
+> > MSIs look just like memory accesses made by the device, so the SMMU
+> > will translate them to point at the GIC ITS (doorbell). The ITS then
+> > has tables to work out how to route the MSI.
+> > 
+> > So, if IOMMU_CAP_INTR_REMAP is simply supposed to indicate that the
+> > SMMU can translate MSIs to point somewhere else, then the ARM SMMU can
+> > always do it.  If it's supposed to indicate that the actual MSI
+> > payload can be filtered/routed, then that requires the GIC ITS.
+> > 
+> > The part I'm unsure of is how VFIO knows where to map the MSIs to.
+> > That requires knowledge of the physical and virtual doorbell pages --
+> > is that discoverable in the API?
 > 
-> I like the general approach. But why do you only enable the x86 iommus?
-> Some ARM IOMMUs and PAMU would certainly also benefit from a sysfs
-> representation of which device is translated by which IOMMU.
+> VFIO does not care about the actual routing, it only cares that the
+> device can not send interrupts it is not allowed to send (e.g.
+> interrupts to vectors used by other devices or, on x86, exception vectors).
+> If that is guaranteed by the SMMU or the GIC ITS hardware and driver
+> then it is fine to set this flag.
 
-Only because I have no ability to test the others platforms.  I'd be
-thrilled if someone working on those IOMMUs could validate this on
-non-x86.  Thanks,
+Ok, thanks. In which case, I think this is really a combined property of
+the SMMU and the interrupt controller, so we might need some extra code
+so that the SMMU can check that the interrupt controller for the device
+is also capable of interrupt remapping.
 
-Alex
-
+Will
