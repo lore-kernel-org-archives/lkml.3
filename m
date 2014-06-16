@@ -1,103 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755699AbaFPRTg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 13:19:36 -0400
-Received: from mail-bn1blp0189.outbound.protection.outlook.com ([207.46.163.189]:34682
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755659AbaFPRTf convert rfc822-to-8bit (ORCPT
+	id S1755713AbaFPRVl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 13:21:41 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:39377 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755488AbaFPRVj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 13:19:35 -0400
-From: "Pinski, Andrew" <Andrew.Pinski@caviumnetworks.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Andrew Pinski <apinski@cavium.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2 00/24] ILP32 Support in ARM64
-Thread-Topic: [PATCHv2 00/24] ILP32 Support in ARM64
-Thread-Index: AQHPdx4fltjAVXk9G0qpJdxvxxCbT5t0HNoAgAADL/U=
-Date: Mon, 16 Jun 2014 17:19:32 +0000
-Message-ID: <6ABA4097-FE5B-4F52-A4A0-C289836919F6@caviumnetworks.com>
-References: <1400914939-9708-1-git-send-email-apinski@cavium.com>,<20140616170808.GA5362@arm.com>
-In-Reply-To: <20140616170808.GA5362@arm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [76.253.2.104]
-x-microsoft-antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-x-forefront-prvs: 0244637DEA
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(164054003)(51704005)(24454002)(189002)(199002)(377454003)(33656002)(87936001)(46102001)(105586001)(76482001)(101416001)(21056001)(86362001)(83716003)(77982001)(82746002)(99286001)(77096002)(4396001)(2656002)(85852003)(74662001)(92726001)(79102001)(83322001)(19580395003)(19580405001)(81342001)(80022001)(66066001)(20776003)(54356999)(76176999)(31966008)(92566001)(74502001)(64706001)(81542001)(99396002)(83072002)(50986999)(85306003)(36756003)(104396001);DIR:OUT;SFP:;SCL:1;SRVR:CO1PR07MB128;H:CO1PR07MB127.namprd07.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=Andrew.Pinski@caviumnetworks.com; 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 16 Jun 2014 13:21:39 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: caviumnetworks.com
+In-Reply-To: <539F1C59.6070308@gmx.de>
+References: <539F1C59.6070308@gmx.de>
+Date: Mon, 16 Jun 2014 19:21:38 +0200
+Message-ID: <CAFLxGvyqPzbmfz1-WxP7z02=V-V5=p5b09HYPOFOS7Qj8eUHGw@mail.gmail.com>
+Subject: Re: 3.15: kernel BUG at kernel/auditsc.c:1525!
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 16, 2014 at 6:33 PM, Toralf Förster <toralf.foerster@gmx.de> wrote:
+> $ cat syscall.c
+> #include <unistd.h>
+> #include <sys/syscall.h>
+> int main(){return syscall(1000)!=-1;}
+>
+> (pls see https://bugs.gentoo.org/show_bug.cgi?id=513308) gives at a 32 bit stable Gentoo Linux w/ kernel 3.15 :
+>
+> Jun 16 18:29:42 n22 kernel: ------------[ cut here ]------------
+> Jun 16 18:29:42 n22 kernel: kernel BUG at kernel/auditsc.c:1525!
+> Jun 16 18:29:42 n22 kernel: invalid opcode: 0000 [#1] SMP
+> Jun 16 18:29:42 n22 kernel: Modules linked in: ip6t_REJECT ip6table_filter ip6_tables ipt_MASQUERADE xt_owner xt_LOG xt_limit xt_multiport ipt_REJECT xt_recent xt_conntrack xt_tcpudp nf_conntrack_ftp iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_filter ip_tables x_tables ctr ccm af_packet bridge stp llc ipv6 tun i915 cfbfillrect uvcvideo cfbimgblt i2c_algo_bit x86_pkg_temp_thermal arc4 iwldvm mac80211 coretemp fbcon bitblit softcursor font cfbcopyarea drm_kms_helper videobuf2_vmalloc videobuf2_memops usblp videobuf2_core kvm_intel videodev drm kvm iwlwifi intel_gtt psmouse evdev agpgart cfg80211 acpi_cpufreq video processor thermal sdhci_pci sdhci mmc_core fb wmi thermal_sys snd_hda_codec_conexant e1000e snd_hda_codec_generic 8250_pci battery tpm_tis tpm thinkpad_acpi nvram ac snd_hda_intel snd_hda_controller snd_hda_codec fbdev snd_pcm 8250 snd_timer i2c_i801 ptp snd serial_core rfkill hwmon button i2c_core pps_core soundcore aesni_intel xts aes
+> _i586 lrw gf128mul ablk_helper cryptd cbc fuse nfs lockd sunrpc dm_crypt dm_mod hid_monterey hid_microsoft hid_logitech hid_ezkey hid_cypress hid_chicony hid_cherry hid_belkin hid_apple hid_a4tech hid_generic usbhid hid sr_mod cdrom sg [last unloaded: microcode]
+> Jun 16 18:29:42 n22 kernel: CPU: 1 PID: 29269 Comm: a.out Not tainted 3.15.0 #3
+> Jun 16 18:29:42 n22 kernel: Hardware name: LENOVO 4180F65/4180F65, BIOS 83ET75WW (1.45 ) 05/10/2013
+> Jun 16 18:29:42 n22 kernel: task: cb368aa0 ti: e4dee000 task.ti: e4dee000
+> Jun 16 18:29:42 n22 kernel: EIP: 0060:[<c10b6c70>] EFLAGS: 00010202 CPU: 1
+> Jun 16 18:29:42 n22 kernel: EIP is at __audit_syscall_entry+0xf0/0x100
+> Jun 16 18:29:42 n22 kernel: EAX: 40000003 EBX: f1a9a000 ECX: 00000000 EDX: 000000fc
+> Jun 16 18:29:42 n22 kernel: ESI: 00000001 EDI: cb368aa0 EBP: e4deffb0 ESP: e4deffa4
+> Jun 16 18:29:42 n22 kernel: DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+> Jun 16 18:29:42 n22 kernel: CR0: 80050033 CR2: b75dd2c0 CR3: 22f69000 CR4: 000407f0
+> Jun 16 18:29:42 n22 kernel: Stack:
+> Jun 16 18:29:42 n22 kernel: 00000000 00000000 b76c8264 e4dee000 c14ca296 00000000 00000008 00000000
+> Jun 16 18:29:42 n22 kernel: b76c8264 b76c8264 000000fc 0000007b 0000007b 00000000 00000033 000000fc
+> Jun 16 18:29:42 n22 kernel: b76fab2c 00000073 00000246 bfcd3e1c 0000007b 807f7f7f 807f7f7f
+> Jun 16 18:29:42 n22 kernel: Call Trace:
+> Jun 16 18:29:42 n22 kernel: [<c14ca296>] sysenter_audit+0x1e/0x25
+> Jun 16 18:29:42 n22 kernel: Code: 7d fc 89 ec 5d c3 90 8d 74 26 00 c7 43 34 00 00 00 00 b9 b0 2a 66 c1 89 da c7 43 38 00 00 00 00 89 f8 e8 54 f6 ff ff 89 c6 eb 91 <0f> 0b 8d b4 26 00 00 00 00 8d bc 27 00 00 00 00 55 89 e5 57 56
+> Jun 16 18:29:42 n22 kernel: EIP: [<c10b6c70>] __audit_syscall_entry+0xf0/0x100 SS:ESP 0068:e4deffa4
+> Jun 16 18:29:42 n22 kernel: ---[ end trace eaa43aea29d8101e ]---
+> Jun 16 18:30:01 n22 crond[29299]: pam_unix(crond:session): session opened for user root by (uid=0)
+> Jun 16 18:30:01 n22 CROND[29303]: (root) CMD (/usr/lib/sa/sa1 60 15 )
+> Jun 16 18:30:01 n22 crond[29298]: pam_unix(crond:session): session opened for user root by (uid=0)
+> Jun 16 18:30:01 n22 CROND[29304]: (root) CMD (test -x /usr/sbin/run-crons && /usr/sbin/run-crons )
+> Jun 16 18:30:01 n22 CROND[29298]: pam_unix(crond:session): session closed for user root
+
+I think this is the fix you need:
+
+[PATCH 1/2] auditsc: audit_krule mask accesses need bounds checking
 
 
-> On Jun 16, 2014, at 10:08 AM, "Catalin Marinas" <catalin.marinas@arm.com> wrote:
-> 
-> Andrew,
-> 
->> On Sat, May 24, 2014 at 12:01:55AM -0700, Andrew Pinski wrote:
->> New version of the patches with documentation, signal changes are
->> simplified, using less compat syscalls and splitting up the patches so
->> it is easier to review.  I have tested LTP on both LP64 and ILP32.
->> There is a few LTP failures but they are due to LTP being incorrect
->> (sigaction structure in glibc is not the one which is used by the
->> kernel)
-> 
-> Do you have more details about what's wrong here and where the fix
-> should go? LTP? glibc? Kernel?
-
-LTP assumes some sigaction structure is the same between userland and kernel.
-Glibc has the correct idea of what the kernel structure will be when passing to the kernel already. The fix should be done in LTP. There is already code in LTP for x86 for a similar issue which we should be able to advantage of. 
-
-> 
-> I'll give you more specific comments on the code in the next couple of
-> days. But for cosmetics, please wrap the lines around 72 (or whatever)
-> characters both in emails, commit logs and Documentation/* files (and
-> you can drop the "Thanks" part in every commit log ;)).
-
-Will do this with the rest of the review. 
-
-> 
->> Andrew Pinski (24):
->>  ARM64: Force LP64 to compile the kernel.
->>  ARM64: Rename COMPAT to AARCH32_EL0 in Kconfig.
->>  ARM64: Change some CONFIG_COMPAT over to use CONFIG_AARCH32_EL0
->>    instead.
->>  ARM64:ILP32: Set kernel_long to long long so we can reuse most of the
->>    same syscalls as LP64.
->>  ARM64:UAPI: Set the correct __BITS_PER_LONG for ILP32.
->>  Allow for some signal structures to be the same between a 32bit ABI
->>    and the 64bit ABI.
->>  ARM64:ILP32: Use the same size and layout of the signal structures
->>    for ILP32 as for LP64.
->>  Allow a 32bit ABI to use the naming of the 64bit ABI syscalls to
->>    avoid confusion of not splitting the registers.
->>  ARM64:ILP32: Use the same syscall names as LP64.
->>  ARM64: Introduce is_a32_task and is_a32_thread. Use them in the
->>    correct locations.
->>  ARM64: Add ARM64_ILP32 to Kconfig.
-> 
-> Does this patch need to be in the middle of the series? It should come
-> after the ILP32 support is complete.
+> --
+> Toralf
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 
-Ok, I will move it. I had added in the middle to test the newly added code. 
 
+-- 
 Thanks,
-Andrew
-
-> 
-> Thanks.
-> 
-> -- 
-> Catalin
+//richard
