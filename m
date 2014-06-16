@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932867AbaFPSPn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 14:15:43 -0400
-Received: from g6t1524.atlanta.hp.com ([15.193.200.67]:51150 "EHLO
-	g6t1524.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932852AbaFPSPl (ORCPT
+	id S932883AbaFPSPs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 14:15:48 -0400
+Received: from g5t1627.atlanta.hp.com ([15.192.137.10]:24185 "EHLO
+	g5t1627.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932852AbaFPSPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 14:15:41 -0400
+	Mon, 16 Jun 2014 14:15:46 -0400
 From: Davidlohr Bueso <davidlohr@hp.com>
 To: acme@kernel.org, jolsa@kernel.org
 Cc: mitake@dcl.info.waseda.ac.jp, davidlohr@hp.com, aswin@hp.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 8/9] perf bench: sched-messaging: Drop barf()
-Date: Mon, 16 Jun 2014 11:14:26 -0700
-Message-Id: <1402942467-10671-9-git-send-email-davidlohr@hp.com>
+Subject: [PATCH 9/9] perf bench: futex: Support operations for shared futexes
+Date: Mon, 16 Jun 2014 11:14:27 -0700
+Message-Id: <1402942467-10671-10-git-send-email-davidlohr@hp.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1402942467-10671-1-git-send-email-davidlohr@hp.com>
 References: <1402942467-10671-1-git-send-email-davidlohr@hp.com>
@@ -21,165 +21,177 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of reinventing the wheel, we can use err(2) when dealing
-with fatal errors. Exit code is now always EXIT_FAILURE (1).
+Unlike futex-hash, requeuing and wakeup benchmarks do not support
+shared futexes, limiting the usefulness of the programs. Correct
+this, and allow using the local -S parameter. The default remains
+using private futexes.
 
 Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 ---
- tools/perf/bench/sched-messaging.c | 45 ++++++++++++++++----------------------
- 1 file changed, 19 insertions(+), 26 deletions(-)
+ tools/perf/bench/futex-hash.c    |  7 +++++--
+ tools/perf/bench/futex-requeue.c | 22 ++++++++++++++--------
+ tools/perf/bench/futex-wake.c    | 15 ++++++++++-----
+ 3 files changed, 29 insertions(+), 15 deletions(-)
 
-diff --git a/tools/perf/bench/sched-messaging.c b/tools/perf/bench/sched-messaging.c
-index b519ba4..bf5645e 100644
---- a/tools/perf/bench/sched-messaging.c
-+++ b/tools/perf/bench/sched-messaging.c
-@@ -27,6 +27,7 @@
- #include <sys/time.h>
- #include <sys/poll.h>
- #include <limits.h>
-+#include <err.h>
+diff --git a/tools/perf/bench/futex-hash.c b/tools/perf/bench/futex-hash.c
+index 14791eb..5175171 100644
+--- a/tools/perf/bench/futex-hash.c
++++ b/tools/perf/bench/futex-hash.c
+@@ -26,6 +26,7 @@ static unsigned int nsecs    = 10;
+ /* amount of futexes per thread */
+ static unsigned int nfutexes = 1024;
+ static bool fshared = false, done = false;
++static int futex_flag = 0;
  
- #define DATASIZE 100
+ struct timeval start, end, runtime;
+ static pthread_mutex_t thread_lock;
+@@ -74,8 +75,7 @@ static void *workerfn(void *arg)
+ 			 * such as internal waitqueue handling, thus enlarging
+ 			 * the critical region protected by hb->lock.
+ 			 */
+-			ret = futex_wait(&w->futex[i], 1234, NULL,
+-					 fshared ? 0 : FUTEX_PRIVATE_FLAG);
++			ret = futex_wait(&w->futex[i], 1234, NULL, futex_flag);
+ 			if (bench_format == BENCH_FORMAT_DEFAULT &&
+ 			    (!ret || errno != EAGAIN || errno != EWOULDBLOCK))
+ 				warn("Non-expected futex return call");
+@@ -147,6 +147,9 @@ int bench_futex_hash(int argc, const char **argv,
+ 	if (!worker)
+ 		goto errmem;
  
-@@ -50,12 +51,6 @@ struct receiver_context {
- 	int wakefd;
++	if (!fshared)
++		futex_flag = FUTEX_PRIVATE_FLAG;
++
+ 	if (bench_format == BENCH_FORMAT_DEFAULT) {
+ 		printf("Run summary [PID %d]: %d threads, each operating on %d [%s] futexes for %d secs.\n\n",
+ 		       getpid(), nthreads, nfutexes, fshared ? "shared":"private", nsecs);
+diff --git a/tools/perf/bench/futex-requeue.c b/tools/perf/bench/futex-requeue.c
+index 7b211c1..197537b 100644
+--- a/tools/perf/bench/futex-requeue.c
++++ b/tools/perf/bench/futex-requeue.c
+@@ -30,15 +30,17 @@ static u_int32_t futex1 = 0, futex2 = 0;
+ static unsigned int nrequeue = 1;
+ 
+ static pthread_t *worker;
+-static bool done = 0;
++static bool done = false, fshared = false;
+ static pthread_mutex_t thread_lock;
+ static pthread_cond_t thread_parent, thread_worker;
+ static struct stats requeuetime_stats, requeued_stats;
+ static unsigned int ncpus, threads_starting, nthreads = 0;
++static int futex_flag = 0;
+ 
+ static const struct option options[] = {
+ 	OPT_UINTEGER('t', "threads",  &nthreads, "Specify amount of threads"),
+ 	OPT_UINTEGER('q', "nrequeue", &nrequeue, "Specify amount of threads to requeue at once"),
++	OPT_BOOLEAN('S',  "shared",   &fshared,  "Use shared futexes instead of private ones"),
+ 	OPT_END()
  };
  
--static void barf(const char *msg)
--{
--	fprintf(stderr, "%s (error: %s)\n", msg, strerror(errno));
--	exit(1);
--}
--
- static void fdpair(int fds[2])
- {
- 	if (use_pipes) {
-@@ -66,7 +61,7 @@ static void fdpair(int fds[2])
- 			return;
- 	}
+@@ -80,7 +82,7 @@ static void *workerfn(void *arg __maybe_unused)
+ 	pthread_cond_wait(&thread_worker, &thread_lock);
+ 	pthread_mutex_unlock(&thread_lock);
  
--	barf(use_pipes ? "pipe()" : "socketpair()");
-+	err(EXIT_FAILURE, use_pipes ? "pipe()" : "socketpair()");
+-	futex_wait(&futex1, 0, NULL, FUTEX_PRIVATE_FLAG);
++	futex_wait(&futex1, 0, NULL, futex_flag);
+ 	return NULL;
  }
  
- /* Block until we're ready to go */
-@@ -77,11 +72,11 @@ static void ready(int ready_out, int wakefd)
+@@ -137,10 +139,13 @@ int bench_futex_requeue(int argc, const char **argv,
+ 	if (!worker)
+ 		err(EXIT_FAILURE, "calloc");
  
- 	/* Tell them we're ready. */
- 	if (write(ready_out, &dummy, 1) != 1)
--		barf("CLIENT: ready write");
-+		err(EXIT_FAILURE, "CLIENT: ready write");
- 
- 	/* Wait for "GO" signal */
- 	if (poll(&pollfd, 1, -1) != 1)
--		barf("poll");
-+		err(EXIT_FAILURE, "poll");
- }
- 
- /* Sender sprays loops messages down each file descriptor */
-@@ -101,7 +96,7 @@ again:
- 			ret = write(ctx->out_fds[j], data + done,
- 				    sizeof(data)-done);
- 			if (ret < 0)
--				barf("SENDER: write");
-+				err(EXIT_FAILURE, "SENDER: write");
- 			done += ret;
- 			if (done < DATASIZE)
- 				goto again;
-@@ -131,7 +126,7 @@ static void *receiver(struct receiver_context* ctx)
- again:
- 		ret = read(ctx->in_fds[0], data + done, DATASIZE - done);
- 		if (ret < 0)
--			barf("SERVER: read");
-+			err(EXIT_FAILURE, "SERVER: read");
- 		done += ret;
- 		if (done < DATASIZE)
- 			goto again;
-@@ -144,14 +139,14 @@ static pthread_t create_worker(void *ctx, void *(*func)(void *))
- {
- 	pthread_attr_t attr;
- 	pthread_t childid;
--	int err;
-+	int ret;
- 
- 	if (!thread_mode) {
- 		/* process mode */
- 		/* Fork the receiver. */
- 		switch (fork()) {
- 		case -1:
--			barf("fork()");
-+			err(EXIT_FAILURE, "fork()");
- 			break;
- 		case 0:
- 			(*func) (ctx);
-@@ -165,19 +160,17 @@ static pthread_t create_worker(void *ctx, void *(*func)(void *))
- 	}
- 
- 	if (pthread_attr_init(&attr) != 0)
--		barf("pthread_attr_init:");
-+		err(EXIT_FAILURE, "pthread_attr_init:");
- 
- #ifndef __ia64__
- 	if (pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN) != 0)
--		barf("pthread_attr_setstacksize");
-+		err(EXIT_FAILURE, "pthread_attr_setstacksize");
- #endif
- 
--	err = pthread_create(&childid, &attr, func, ctx);
--	if (err != 0) {
--		fprintf(stderr, "pthread_create failed: %s (%d)\n",
--			strerror(err), err);
--		exit(-1);
--	}
-+	ret = pthread_create(&childid, &attr, func, ctx);
-+	if (ret != 0)
-+		err(EXIT_FAILURE, "pthread_create failed");
++	if (!fshared)
++		futex_flag = FUTEX_PRIVATE_FLAG;
 +
- 	return childid;
+ 	if (bench_format == BENCH_FORMAT_DEFAULT) {
+-		printf("Run summary [PID %d]: Requeuing %d threads (from %p to %p), "
+-		       "%d at a time.\n\n",
+-		       getpid(), nthreads, &futex1, &futex2, nrequeue);
++		printf("Run summary [PID %d]: Requeuing %d threads (from [%s] futex %p to %p), "
++		       "%d at a time.\n\n", getpid(), nthreads,
++		       fshared ? "shared":"private", &futex1, &futex2, nrequeue);
+ 	}
+ 
+ 	init_stats(&requeued_stats);
+@@ -173,8 +178,9 @@ int bench_futex_requeue(int argc, const char **argv,
+ 			 * Do not wakeup any tasks blocked on futex1, allowing
+ 			 * us to really measure futex_wait functionality.
+ 			 */
+-			futex_cmp_requeue(&futex1, 0, &futex2, 0, nrequeue,
+-					  FUTEX_PRIVATE_FLAG);
++			futex_cmp_requeue(&futex1, 0, &futex2, 0,
++					  nrequeue, futex_flag);
++
+ 		gettimeofday(&end, NULL);
+ 		timersub(&end, &start, &runtime);
+ 
+@@ -187,7 +193,7 @@ int bench_futex_requeue(int argc, const char **argv,
+ 		}
+ 
+ 		/* everybody should be blocked on futex2, wake'em up */
+-		nrequeued = futex_wake(&futex2, nthreads, FUTEX_PRIVATE_FLAG);
++		nrequeued = futex_wake(&futex2, nthreads, futex_flag);
+ 		if (nthreads != nrequeued)
+ 			warnx("couldn't wakeup all tasks (%d/%d)", nrequeued, nthreads);
+ 
+diff --git a/tools/perf/bench/futex-wake.c b/tools/perf/bench/futex-wake.c
+index eae6d09..08f62eb 100644
+--- a/tools/perf/bench/futex-wake.c
++++ b/tools/perf/bench/futex-wake.c
+@@ -31,15 +31,17 @@ static u_int32_t futex1 = 0;
+ static unsigned int nwakes = 1;
+ 
+ pthread_t *worker;
+-static bool done = false;
++static bool done = false, fshared = false;
+ static pthread_mutex_t thread_lock;
+ static pthread_cond_t thread_parent, thread_worker;
+ static struct stats waketime_stats, wakeup_stats;
+ static unsigned int ncpus, threads_starting, nthreads = 0;
++static int futex_flag = 0;
+ 
+ static const struct option options[] = {
+ 	OPT_UINTEGER('t', "threads", &nthreads, "Specify amount of threads"),
+ 	OPT_UINTEGER('w', "nwakes",  &nwakes,   "Specify amount of threads to wake at once"),
++	OPT_BOOLEAN('S',  "shared",  &fshared,  "Use shared futexes instead of private ones"),
+ 	OPT_END()
+ };
+ 
+@@ -57,7 +59,7 @@ static void *workerfn(void *arg __maybe_unused)
+ 	pthread_cond_wait(&thread_worker, &thread_lock);
+ 	pthread_mutex_unlock(&thread_lock);
+ 
+-	futex_wait(&futex1, 0, NULL, FUTEX_PRIVATE_FLAG);
++	futex_wait(&futex1, 0, NULL, futex_flag);
+ 	return NULL;
  }
  
-@@ -207,14 +200,14 @@ static unsigned int group(pthread_t *pth,
- 			+ num_fds * sizeof(int));
+@@ -140,10 +142,13 @@ int bench_futex_wake(int argc, const char **argv,
+ 	if (!worker)
+ 		err(EXIT_FAILURE, "calloc");
  
- 	if (!snd_ctx)
--		barf("malloc()");
-+		err(EXIT_FAILURE, "malloc()");
++	if (!fshared)
++		futex_flag = FUTEX_PRIVATE_FLAG;
++
+ 	if (bench_format == BENCH_FORMAT_DEFAULT)
+-		printf("Run summary [PID %d]: blocking on %d threads (at futex %p), "
++		printf("Run summary [PID %d]: blocking on %d threads (at [%s] futex %p), "
+ 		       "waking up %d at a time.\n\n",
+-		       getpid(), nthreads, &futex1, nwakes);
++		       getpid(), nthreads, fshared ? "shared":"private",  &futex1, nwakes);
  
- 	for (i = 0; i < num_fds; i++) {
- 		int fds[2];
- 		struct receiver_context *ctx = malloc(sizeof(*ctx));
- 
- 		if (!ctx)
--			barf("malloc()");
-+			err(EXIT_FAILURE, "malloc()");
- 
- 
- 		/* Create the pipe between client and server */
-@@ -303,7 +296,7 @@ int bench_sched_messaging(int argc, const char **argv,
- 
- 	pth_tab = malloc(num_fds * 2 * num_groups * sizeof(pthread_t));
- 	if (!pth_tab)
--		barf("main:malloc()");
-+		err(EXIT_FAILURE, "main:malloc()");
- 
- 	if (bench_format == BENCH_FORMAT_DEFAULT) {
- 		printf("# %d sender and receiver %s per group\n",
-@@ -327,13 +320,13 @@ int bench_sched_messaging(int argc, const char **argv,
- 		/* Wait for everyone to be ready */
- 		for (i = 0; i < total_children; i++)
- 			if (read(readyfds[0], &dummy, 1) != 1)
--				barf("Reading for readyfds");
-+				err(EXIT_FAILURE, "Reading for readyfds");
- 
+ 	init_stats(&wakeup_stats);
+ 	init_stats(&waketime_stats);
+@@ -171,7 +176,7 @@ int bench_futex_wake(int argc, const char **argv,
+ 		/* Ok, all threads are patiently blocked, start waking folks up */
  		gettimeofday(&start, NULL);
+ 		while (nwoken != nthreads)
+-			nwoken += futex_wake(&futex1, nwakes, FUTEX_PRIVATE_FLAG);
++			nwoken += futex_wake(&futex1, nwakes, futex_flag);
+ 		gettimeofday(&end, NULL);
+ 		timersub(&end, &start, &runtime);
  
- 		/* Kick them off */
- 		if (write(wakefds[1], &dummy, 1) != 1)
--			barf("Writing to start them");
-+			err(EXIT_FAILURE, "Writing to start them");
- 
- 		/* Reap them all */
- 		for (i = 0; i < total_children; i++)
 -- 
 1.8.1.4
 
