@@ -1,290 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718AbaFPFmh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 01:42:37 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:52123 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751103AbaFPFmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 01:42:35 -0400
-Message-ID: <539E8399.80902@ti.com>
-Date: Mon, 16 Jun 2014 11:11:45 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, <cw00.choi@samsung.com>,
-        <myungjoo.ham@samsung.com>, <grant.likely@linaro.org>,
-        <rdunlap@infradead.org>, <galak@codeaurora.org>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <robh+dt@kernel.org>, <pawel.moll@arm.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
+	id S1753691AbaFPFsj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 01:48:39 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:33199 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103AbaFPFsg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 01:48:36 -0400
+X-AuditID: cbfee68d-b7fd46d000005f36-52-539e852c9a13
+Message-id: <539E852C.7040402@samsung.com>
+Date: Mon, 16 Jun 2014 14:48:28 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: George Cherian <george.cherian@ti.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, myungjoo.ham@samsung.com,
+        grant.likely@linaro.org, rdunlap@infradead.org, galak@codeaurora.org,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        robh+dt@kernel.org, pawel.moll@arm.com, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree@vger.kernel.org
 Subject: Re: [PATCH] extcon: extcon-dra7xx: Add Extcon driver for DRA7xx
-References: <1402886548-22765-1-git-send-email-george.cherian@ti.com> <539E79A1.50208@roeck-us.net>
-In-Reply-To: <539E79A1.50208@roeck-us.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+References: <1402886548-22765-1-git-send-email-george.cherian@ti.com>
+ <539E79A1.50208@roeck-us.net> <539E8399.80902@ti.com>
+In-reply-to: <539E8399.80902@ti.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsWyRsSkSFendV6wwa0rNhbzj5xjteh/s5DV
+	4tTB5awWB/7sYLQ492olo8XCtiUsFpd3zWGzeLLwDJPF0usXmSxuN65gs5gwfS2Lxds701ks
+	WvceYXfg9Vgzbw2jx+W+XiaPlcu/sHlsXqHlsWlVJ5vHnWt72Dx2fm9g9+jbsorR4/iN7Uwe
+	nzfJBXBFcdmkpOZklqUW6dslcGVsvfaUraCFteLH8SdsDYzNLF2MnBwSAiYS16ZPYoWwxSQu
+	3FvP1sXIxSEksJRR4n7jIWaYoovT7jKB2EIC0xklnl5ngSh6zSix+8N7sEm8AloS8/8fBWtg
+	EVCV6Ph8kA3EZgOK739xA8wWFQiTWDn9ClS9oMSPyffAbBGgmv5L3UwgQ5kFDjBJ7Hx7kBEk
+	ISzgIbHv2CsWiM21Ej8//gVbwCmgItG/tAXMZhbQkdjfOo0NwpaX2LzmLTPIIAmBqRwS/R2b
+	WSAuEpD4NvkQkM0BlJCV2HQA6jNJiYMrbrBMYBSbheSmWUjGzkIydgEj8ypG0dSC5ILipPQi
+	Q73ixNzi0rx0veT83E2MwCg//e9Z7w7G2wesDzEmA62cyCwlmpwPTBJ5JfGGxmZGFqYmpsZG
+	5pZmpAkrifMmPUwKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cCY9M0sjuvBpV9BS3ap8u5h
+	D+SWtnqabvTxUZbTylehKzJDUvKtuA4o/pntMt11z7TGWdEbNBZo63g0avz4KLnr96O7Fjtf
+	hwb3zc356fTG6W1eV8Fy7oRPNY8vL9rWZP2C6bWP9mzrXR2yr9m4khaUbOC6E7Ks8toBlQtc
+	KrN2i2tuFZ7xMtBRiaU4I9FQi7moOBEAWUiPZggDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEKsWRmVeSWpSXmKPExsVy+t9jQV2d1nnBBo86TCzmHznHatH/ZiGr
+	xamDy1ktDvzZwWhx7tVKRouFbUtYLC7vmsNm8WThGSaLpdcvMlncblzBZjFh+loWi7d3prNY
+	tO49wu7A67Fm3hpGj8t9vUweK5d/YfPYvELLY9OqTjaPO9f2sHns/N7A7tG3ZRWjx/Eb25k8
+	Pm+SC+CKamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXL
+	zAG6XkmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMOYsfXaU7aCFtaKH8ef
+	sDUwNrN0MXJySAiYSFycdpcJwhaTuHBvPRuILSQwnVHi6XWgGi4g+zWjxO4P78EaeAW0JOb/
+	P8oMYrMIqEp0fD4I1sAGFN//4gaYLSoQJrFy+hWoekGJH5PvgdkiQDX9l7qZQIYyCxxgktj5
+	9iAjSEJYwENi37FXLBCbayV+fvwLtoBTQEWif2kLmM0soCOxv3UaG4QtL7F5zVvmCYwCs5Ds
+	mIWkbBaSsgWMzKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxglPIM6kdjCsbLA4xCnAwKvHw
+	TnCcFyzEmlhWXJl7iFGCg1lJhNfeByjEm5JYWZValB9fVJqTWnyIMRkYBBOZpUST84HpLa8k
+	3tDYxMzI0sjc0MLI2Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGKu0dF+dtPwhLiDB
+	5eejEyb8uunIo5UfLDesXc5bGHx0veczN93EK9xSHhnyM2sVfnGGdN6/0rWYvfhpSMaFX5Pf
+	c7w8u1/b5YTB7eAaf3+1BT4Zv0LZTHbu2bkmlGP9E9F/No7aOX1fzm3mOlKkHKnRLRCcERD7
+	0/hqb8m9mAu7hBfUPPRjVWIpzkg01GIuKk4EAA+GYd1lAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/16/2014 10:29 AM, Guenter Roeck wrote:
-> On 06/15/2014 07:42 PM, George Cherian wrote:
->> This is the driver for the USB ID pin detection. This driver
->> handles only the USB ID pin changes generated by cable
->> insertion/removal.
->>
->> Signed-off-by: George Cherian <george.cherian@ti.com>
->
-> Hi George,
->
-> Curious: Why can't you use extcon-gpio ?
-Main reason being missing dt support.
->
-> Also, I thought that Linux specific bindings would be unacceptable.
-> "ti,dra7xx-extcon" looks very linux specific to me. Did the rules 
-> change ?
->
-Then how about "ti,extcon-usbid" ?
-> Thanks,
-> Guenter
->
->> ---
->>   .../devicetree/bindings/extcon/extcon-dra7xx.txt   |  15 ++
->>   drivers/extcon/Kconfig                             |   5 +
->>   drivers/extcon/Makefile                            |   1 +
->>   drivers/extcon/extcon-dra7xx.c                     | 164 
->> +++++++++++++++++++++
->>   4 files changed, 185 insertions(+)
->>   create mode 100644 
->> Documentation/devicetree/bindings/extcon/extcon-dra7xx.txt
->>   create mode 100644 drivers/extcon/extcon-dra7xx.c
->>
->> diff --git 
->> a/Documentation/devicetree/bindings/extcon/extcon-dra7xx.txt 
->> b/Documentation/devicetree/bindings/extcon/extcon-dra7xx.txt
->> new file mode 100644
->> index 0000000..69c3804
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/extcon/extcon-dra7xx.txt
->> @@ -0,0 +1,15 @@
->> +EXTCON FOR DRA7xx USB
->> +
->> +Required Properties:
->> + - compatible : Should be "ti,dra7xx-extcon"
->> + - gpios : specifies the gpio pin used for ID pin detection.
->> +
->> +
->> +Please refer to ../gpio/gpio.txt for details of the common GPIO 
->> bindings
->> +
->> +Example:
->> +
->> + dra7xx_extcon {
->> +                compatible = "ti,dra7xx-extcon";
->> +                gpios = <&gpio21 1 0>;
->> +        };
->> diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
->> index aebde48..1481b7f 100644
->> --- a/drivers/extcon/Kconfig
->> +++ b/drivers/extcon/Kconfig
->> @@ -70,4 +70,9 @@ config EXTCON_PALMAS
->>         Say Y here to enable support for USB peripheral and USB host
->>         detection by palmas usb.
->>
->> +config EXTCON_DRA7XX
->> +    tristate "DRA7xx USB ID detection EXTCON support"
->> +    help
->> +      Say Y here to enable support for USB ID detection for DRA7xx.
->> +
->>   endif # MULTISTATE_SWITCH
->> diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
->> index bf7861e..b5f7cac 100644
->> --- a/drivers/extcon/Makefile
->> +++ b/drivers/extcon/Makefile
->> @@ -10,3 +10,4 @@ obj-$(CONFIG_EXTCON_MAX77693)    += extcon-max77693.o
->>   obj-$(CONFIG_EXTCON_MAX8997)    += extcon-max8997.o
->>   obj-$(CONFIG_EXTCON_ARIZONA)    += extcon-arizona.o
->>   obj-$(CONFIG_EXTCON_PALMAS)    += extcon-palmas.o
->> +obj-$(CONFIG_EXTCON_DRA7XX)    += extcon-dra7xx.o
->> diff --git a/drivers/extcon/extcon-dra7xx.c 
->> b/drivers/extcon/extcon-dra7xx.c
->> new file mode 100644
->> index 0000000..2f80509
->> --- /dev/null
->> +++ b/drivers/extcon/extcon-dra7xx.c
->> @@ -0,0 +1,164 @@
->> +/*
->> + * DRA7xx-Extcon  USB ID pin detection driver
->> + *
->> + * Copyright (C) 2014 Texas Instruments Incorporated - 
->> http://www.ti.com
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License as published by
->> + * the Free Software Foundation; either version 2 of the License, or
->> + * (at your option) any later version.
->> + *
->> + * Author: George Cherian <george.cherian@ti.com>
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +
->> +#include <linux/err.h>
->> +#include <linux/extcon.h>
->> +#include <linux/gpio.h>
->> +#include <linux/interrupt.h>
->> +#include <linux/module.h>
->> +#include <linux/of.h>
->> +#include <linux/of_gpio.h>
->> +#include <linux/of_platform.h>
->> +#include <linux/platform_device.h>
->> +
->> +struct dra7xx_extcon {
->> +    struct device *dev;
->> +    struct extcon_dev edev;
->> +
->> +    int id_gpio;
->> +    int id_irq;
->> +};
->> +
->> +static const char *dra7xx_extcon_cable[] = {
->> +    [1] = "USB-HOST",
->> +    NULL,
->> +};
->> +
->> +#define ID_GND        0
->> +
->> +static irqreturn_t id_irq_handler(int irq, void *data)
->> +{
->> +    struct dra7xx_extcon *dra7xx_extcon = (struct dra7xx_extcon *)data;
->> +    int id_current;
->> +
->> +    id_current = gpio_get_value_cansleep(dra7xx_extcon->id_gpio);
->> +    if (id_current == ID_GND)
->> +        extcon_set_cable_state(&dra7xx_extcon->edev, "USB-HOST", true);
->> +    else
->> +        extcon_set_cable_state(&dra7xx_extcon->edev, "USB-HOST", 
->> false);
->> +
->> +    return IRQ_HANDLED;
->> +}
->> +
->> +static void dra7xx_extcon_set_initial_state(struct dra7xx_extcon 
->> *dra7xx_extcon)
->> +{
->> +    int id_current;
->> +
->> +    id_current = gpio_get_value_cansleep(dra7xx_extcon->id_gpio);
->> +    if (id_current == ID_GND)
->> +        extcon_set_cable_state(&dra7xx_extcon->edev,
->> +                       "USB-HOST", true);
->> +    else
->> +        extcon_set_cable_state(&dra7xx_extcon->edev,
->> +                       "USB-HOST", false);
->> +}
->> +
->> +static int dra7xx_extcon_request_irq(struct dra7xx_extcon 
->> *dra7xx_extcon)
->> +{
->> +    int ret;
->> +
->> +    ret = devm_request_threaded_irq(dra7xx_extcon->dev,
->> +                    dra7xx_extcon->id_irq,
->> +                    NULL, id_irq_handler,
->> +                    IRQF_ONESHOT | IRQF_TRIGGER_FALLING,
->> +                    dev_name(dra7xx_extcon->dev),
->> +                    (void *)dra7xx_extcon);
->> +    if (ret) {
->> +        dev_err(dra7xx_extcon->dev, "failed to request id irq #%d\n",
->> +            dra7xx_extcon->id_irq);
->> +        return ret;
->> +    }
->> +    return ret;
->> +}
->> +
->> +static int dra7xx_extcon_probe(struct platform_device *pdev)
->> +{
->> +    struct device_node *node = pdev->dev.of_node;
->> +    struct dra7xx_extcon *dra7xx_extcon;
->> +    int ret, gpio;
->> +
->> +    dra7xx_extcon = devm_kzalloc(&pdev->dev, sizeof(*dra7xx_extcon),
->> +                     GFP_KERNEL);
->> +    if (!dra7xx_extcon)
->> +        return -ENOMEM;
->> +
->> +    dra7xx_extcon->dev = &pdev->dev;
->> +
->> +    platform_set_drvdata(pdev, dra7xx_extcon);
->> +
->> +    dra7xx_extcon->edev.supported_cable = dra7xx_extcon_cable;
->> +
->> +    gpio = of_get_gpio(node, 0);
->> +    if (gpio_is_valid(gpio)) {
->> +        dra7xx_extcon->id_gpio = gpio;
->> +        ret = devm_gpio_request(&pdev->dev, dra7xx_extcon->id_gpio,
->> +                    "id_gpio");
->> +        if (ret)
->> +            return ret;
->> +
->> +        dra7xx_extcon->id_irq = gpio_to_irq(dra7xx_extcon->id_gpio);
->> +    } else {
->> +        dev_err(&pdev->dev, "failed to get id gpio\n");
->> +        return -EPROBE_DEFER;
->> +    }
->> +
->> +    ret = dra7xx_extcon_request_irq(dra7xx_extcon);
->> +    if (ret)
->> +        return ret;
->> +
->> +    ret = extcon_dev_register(&dra7xx_extcon->edev);
->> +    if (ret) {
->> +        dev_err(&pdev->dev, "failed to register extcon device\n");
->> +        return ret;
->> +    }
->> +
->> +    dra7xx_extcon_set_initial_state(dra7xx_extcon);
->> +
->> +    return 0;
->> +}
->> +
->> +static int dra7xx_extcon_remove(struct platform_device *pdev)
->> +{
->> +    struct dra7xx_extcon *dra7xx_extcon = platform_get_drvdata(pdev);
->> +
->> +    extcon_dev_unregister(&dra7xx_extcon->edev);
->> +    return 0;
->> +}
->> +
->> +static struct of_device_id of_dra7xx_extcon_match_tbl[] = {
->> +    { .compatible = "ti,dra7xx-extcon", },
->> +    { /* end */ }
->> +};
->> +
->> +static struct platform_driver dra7xx_extcon_driver = {
->> +    .probe = dra7xx_extcon_probe,
->> +    .remove = dra7xx_extcon_remove,
->> +    .driver = {
->> +        .name = "dra7xx-extcon",
->> +        .of_match_table = of_dra7xx_extcon_match_tbl,
->> +        .owner = THIS_MODULE,
->> +    },
->> +};
->> +
->> +module_platform_driver(dra7xx_extcon_driver);
->> +
->> +MODULE_ALIAS("platform:extcon-dra7xx");
->> +MODULE_AUTHOR("George Cherian <george.cherian@ti.com>");
->> +MODULE_DESCRIPTION("USB ID pin detection driver for DRA7xx");
->> +MODULE_LICENSE("GPL");
->> +MODULE_DEVICE_TABLE(of, of_dra7xx_extcon_match_tbl);
->>
->
+Hi George,
 
+On 06/16/2014 02:41 PM, George Cherian wrote:
+> On 6/16/2014 10:29 AM, Guenter Roeck wrote:
+>> On 06/15/2014 07:42 PM, George Cherian wrote:
+>>> This is the driver for the USB ID pin detection. This driver
+>>> handles only the USB ID pin changes generated by cable
+>>> insertion/removal.
+>>>
+>>> Signed-off-by: George Cherian <george.cherian@ti.com>
+>>
+>> Hi George,
+>>
+>> Curious: Why can't you use extcon-gpio ?
+> Main reason being missing dt support.
 
--- 
--George
+I'd like you to use extcon-gpio for DRA7xx driver.
+This patch has just one gpio control to wheter USB-HOST is attached or detached.
+
+Thanks,
+Chanwoo Choi
 
