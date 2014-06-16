@@ -1,178 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403AbaFPQFA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 12:05:00 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.137]:61815 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752857AbaFPQE5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 12:04:57 -0400
-X-Greylist: delayed 381 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Jun 2014 12:04:57 EDT
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-3.tower-178.messagelabs.com!1402934313!28781388!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
-To: Jonathan Cameron <jic23@kernel.org>,
-        "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Support Opensource" <Support.Opensource@diasemi.com>
-Subject: RE: [PATCH 4/8] iio: Add support for DA9150 GPADC
-Thread-Topic: [PATCH 4/8] iio: Add support for DA9150 GPADC
-Thread-Index: AQHPhWXnsW9Hzw1urUGbXZZXqpSfwZtykp4AgAEsJ/A=
-Date: Mon, 16 Jun 2014 15:58:33 +0000
-Message-ID: <2E89032DDAA8B9408CB92943514A0337AB4FD9C7@SW-EX-MBX01.diasemi.com>
-References: <cover.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
- <3c1a7551c7deaeccdca731fa95f4349c57e04249.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
- <539DFFC8.3080406@kernel.org>
-In-Reply-To: <539DFFC8.3080406@kernel.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.26.15]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S932100AbaFPQF1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 12:05:27 -0400
+Received: from mga01.intel.com ([192.55.52.88]:8956 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752863AbaFPQFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 12:05:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,487,1400050800"; 
+   d="scan'208";a="556276929"
+Subject: Re: [PATCH char-misc-next v2 0/8] Enable dma driver for MIC X100
+ Coprocessors
+From: Sudeep Dutt <sudeep.dutt@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Williams <dan.j.williams@intel.com>
+Cc: Siva Yerramreddy <yshivakrishna@gmail.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Nikhil Rao <nikhil.rao@intel.com>, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org, Sudeep Dutt <sudeep.dutt@intel.com>
+In-Reply-To: <cover.1401397315.git.sudeep.dutt@intel.com>
+References: <cover.1401397315.git.sudeep.dutt@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 Jun 2014 08:58:09 -0700
+Message-ID: <1402934289.16234.6.camel@rbtaylor-desk1.amr.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5GG57sf032083
 
-On June 15, 2014 21:19, Jonathon Cameron wrote:
-
-> Hi Adam
+On Thu, 2014-05-29 at 14:23 -0700, Sudeep Dutt wrote:
+> ChangeLog:
+> =========
+> v1 => v2:
+> a) MIC bus driver cleanups and device release callback fix in patch 2,
+>    as per feedback from Greg Kroah-Hartman.
 > 
-> Reasonably clean code, but the _ channels stuff doesn't comply with the ABI
-> and is rather confusing.
-
-To be honest I did debate this in my head for a while. The reason I went with
-the current approach was to make the driver channel layout match that of the 
-datasheet for the device. Sounds like it wasn't the correct direction though.
-
-> If it really does make sense to allow reading these channels at different
-> ranges (presumably to enhance the effective adc resolution) then we need
-> to control this via existing ABIs. Controlling it via scale with a
-> range attribute if required (read only but changes with whatever the
-> scale attribute it set to).
-
-Yes, with smaller range then you get a better degree of accuracy. Ok, will have
-a look at this and see if I can improve things based on your comments.
-
-> Often, for slow parts at least it makes little sense to have provide
-> software support for variable input ranges.
+> v1: Initial post @ https://lkml.org/lkml/2014/5/27/819
 > 
-> Looking at what is covered, is it the case that only one option will make
-> sense for a given hardware setup? (cover the required range and nothing more).
+
+Hi Greg/Dan,
+
+We have addressed the feedback received so far. Please take a look at
+this patch series.
+
+Thanks,
+Sudeep Dutt
+
+> These patches are being sent to char-misc because there is a dependency
+> between the patches for dma driver and other drivers.
 > 
-> If so, perhaps this wants to go into the device tree or similar?
-
-Possibly. Having read your comments further on though, and given that
-it seems reasonable to use the range/scale attribute to choose the resolution,
-I'd prefer to opt for that approach (seems more flexible).
-
-> Please get rid of excess white space and comments that just tell you
-> something obvious about the code following them.
-
-Preferably I'd like to keep it this way as I think it makes the code
-easier to read, but if you're dead against it then I'll remove them.
-
-> Linear in the coeeficients, so fine for raw output with a scale and offset.
-
-Ok will have a look at re-working this as per your comment.
-
-> Ah, so here is your reasoning behind the 'interesting' underscore channels.
-> This is just doing different range checks on the channel?  If so allow one
-> at a time and provide a writable scale info_mask element to control which
-> is used..
+> Description:
+> ============
+> This set of patches add support for MIC X100 dma driver.
+> MIC PCIe card has a dma controller with 8 channels. These channels are
+> shared between the host s/w and the card s/w. 0 to 3 are used by host
+> nd 4 to 7 by card. As the dma device doesn't show up as PCIe device,
+> a virtual bus called mic bus is created and virtual dma devices are
+> created on it by the host/card drivers. On host the channels are private
+> and used only by the host driver to transfer data for the virtio devices.
 > 
-> Looks like there are only thes two channels doing this, so shouldn't be
-> too hard to support it via more conventional means.
-
-The GPIO, VBUS and VSYS related channels provide different ranges. I guess they
-should all follow the same approach for implementing this alternate range. So I
-will assume that for the 'repeat' channels where the same raw value is provided
-on both the _ and non _ channels only one channel should be provided.
-
-> Don't use the |=, just = and you can't avoid assigning reg above.
-> Actually, it's not complex enough that you couldn't just do it directly into
-> the write function and skip this local variable.
-
-Ok fine. Will update to tidy up.
-
-> Unlock first, then check for error.
-
-Yep. Makes sense. Will update.
-
-> The mixture of having defs here for the shift.
-> > +	/* MSBs - 8 bits */
-> > +	result |= result_regs[0] << 2;
-> and not here is inconsistent.  I honestly don't mind which way, but
-> just use one style.
+> Here is a higher level block diagram.
+>                                       |
+>                +----------+           |             +----------+
+>                | Card OS  |           |             | Host OS  |
+>                +----------+           |             +----------+
+>                                       |
+>         +-------+ +--------+ +------+ | +---------+  +--------+ +--------+
+>         | Virtio| |Virtio  | |Virtio| | |Virtio   |  |Virtio  | |Virtio  |
+>         | Net   | |Console | |Block | | |Net      |  |Console | |Block   |
+>         | Driver| |Driver  | |Driver| | |backend  |  |backend | |backend |
+>         +-------+ +--------+ +------+ | +---------+  +--------+ +--------+
+>             |         |         |     |      |            |         |
+>             |         |         |     |User  |            |         |
+>             |         |         |     |------|------------|---------|-------
+>             +-------------------+     |Kernel +--------------------------+
+>                       |               |       | Virtio over PCIe IOCTLs  |
+>                       |               |       +--------------------------+
+> +-----------+         |               |                   |  +-----------+
+> | MIC DMA   |         |               |                   |  | MIC DMA   |
+> | Driver    |         |               |                   |  | Driver    |
+> +-----------+         |               |                   |  +-----------+
+>       |               |               |                   |        |
+> +---------------+     |               |                   |  +----------------+
+> |MIC virtual Bus|     |               |                   |  |MIC virtual Bus |
+> +---------------+     |               |                   |  +----------------+
+>       |               |               |                   |              |
+>       |   +--------------+            |            +---------------+     |
+>       |   |Intel MIC     |            |            |Intel MIC      |     |
+>       +---|Card Driver   |            |            |Host Driver    |     |
+>           +--------------+            |            +---------------+-----+
+>                       |               |                   |
+>              +-------------------------------------------------------------+
+>              |                                                             |
+>              |                    PCIe Bus                                 |
+>              +-------------------------------------------------------------+
 > 
-> You could just use an endian conversion and shift the combined 16bit result
+> The following series of patches are partitioned as follows:
+> 
+> Patch 1: Add mic bus and dma driver documentation.
+> 	 Author: Siva Yerramreddy
+> Patch 2: Add a bus driver for virtual MIC devices.
+> 	 Authors: Siva Yerramreddy, Sudeep Dutt
+> Patch 3: MIC X100 DMA Driver.
+> 	 Author: Siva Yerramreddy
+> Patch 4: Add threaded irq support in host driver.
+> 	 This is needed as the dma driver uses threaded irq.
+> 	 Author: Siva Yerramreddy
+> Patch 5: Use dma to transfer data between MIC and host.
+> 	 Authors: Siva Yerramreddy, Ashutosh Dixit
+> Patch 6: Add threaded irq support in mic_request_card_irq.
+> 	 This is needed as the dma driver uses threaded irq.
+> 	 Author: Siva Yerramreddy
+> Patch 7: Add dma device on mic bus.
+> 	 Author: Siva Yerramreddy
+> Patch 8: Modify the mpss script to load/unload mic_x100_dma.ko.
+> 	 Author: Siva Yerramreddy
+> 
+> The patches have been compiled/validated against v3.15-rc3. Tested using
+> dmatest module with module parameter "threads_per_chan=60". These patches
+> have also been scanned by Fengguang Wu's 0-day infrastructure and no
+> issues have been reported.
+> 
+> Thanks to Dan Williams, Vinod Koul, Jon Mason, Dave Jiang for the initial
+> review.
+> 
+> Siva Yerramreddy (7):
+>   misc: mic: Add mic bus and dma driver documentation
+>   dma: MIC X100 DMA Driver
+>   misc: mic: add threaded irq support in host driver
+>   misc: mic: add dma support in host driver
+>   misc: mic: add threaded irq support in card driver
+>   misc: mic: add dma support in card driver
+>   misc: mic: add support for loading/unloading dma driver
+> 
+> Sudeep Dutt (1):
+>   misc: mic: add a bus driver for virtual MIC devices
+> 
+>  Documentation/mic/mic_overview.txt |  67 ++--
+>  Documentation/mic/mpssd/mpss       |  14 +-
+>  drivers/dma/Kconfig                |  19 +
+>  drivers/dma/Makefile               |   1 +
+>  drivers/dma/mic_x100_dma.c         | 774 +++++++++++++++++++++++++++++++++++++
+>  drivers/dma/mic_x100_dma.h         | 286 ++++++++++++++
+>  drivers/misc/mic/Kconfig           |  21 +-
+>  drivers/misc/mic/Makefile          |   1 +
+>  drivers/misc/mic/bus/Makefile      |   5 +
+>  drivers/misc/mic/bus/mic_bus.c     | 219 +++++++++++
+>  drivers/misc/mic/card/mic_device.c |  23 +-
+>  drivers/misc/mic/card/mic_device.h |   9 +-
+>  drivers/misc/mic/card/mic_virtio.c |   7 +-
+>  drivers/misc/mic/card/mic_x100.c   |  55 ++-
+>  drivers/misc/mic/host/mic_boot.c   |  83 +++-
+>  drivers/misc/mic/host/mic_device.h |  24 ++
+>  drivers/misc/mic/host/mic_intr.c   | 121 +++---
+>  drivers/misc/mic/host/mic_intr.h   |  27 +-
+>  drivers/misc/mic/host/mic_main.c   |   5 +-
+>  drivers/misc/mic/host/mic_virtio.c | 187 +++++++--
+>  drivers/misc/mic/host/mic_virtio.h |  21 +-
+>  drivers/misc/mic/host/mic_x100.c   |   8 +
+>  include/linux/mic_bus.h            | 112 ++++++
+>  23 files changed, 1938 insertions(+), 151 deletions(-)
+>  create mode 100644 drivers/dma/mic_x100_dma.c
+>  create mode 100644 drivers/dma/mic_x100_dma.h
+>  create mode 100644 drivers/misc/mic/bus/Makefile
+>  create mode 100644 drivers/misc/mic/bus/mic_bus.c
+>  create mode 100644 include/linux/mic_bus.h
+> 
 
-Fair point. Will make this cleaner.
 
-> It very rarely makes sense to provide both raw and processed interfaces.
-> If the transform is nasty and non linear then userspace won't have the info
-> to do anything with it.  If the transform is linear, then provide scale
-> and offset and let userspace perform the computation.
-
-The charger module uses certain channels for its readings, and to me it makes
-more sense for that calculation to be done by the GPADC. However having looked
-at the inkern.c framework code it looks like if you request a processed channel
-and it's doesn't provide that feature, then the code drops to linear scaling if
-possible to provide the processed value. I take it this is the preferred
-approach then? Just thought it was more consistent to see the calculation using
-dedicated functions (processed channel approach).
-
-> Get rid of this comment and any other ones that don't add any
-> actual information.  Also this is single line comment, please
-> check the comment syntax.
-
-As per previous comment on this topic.
-
-> Why a blank line here.
-
-Accidental. Will remove it.
-
-> The device register call is the one that exposes userspace interfaces. As
-> a general rule it wants to be the last thing in probe as everything
-> else should be setup first.
-
-Ok, that's something I missed. Will make the change.
-
-> > +#include <linux/iio/machine.h>
-> This isn't used in the header, so should be included in the c file, not here.
-
-Yes, is something I meant to remove during development increments. Consider it
-gone.
-
-> > +#include <linux/mfd/da9150/core.h>
-> Having moved the struct definition into the c file
-> this header include will not want to be here.
-
-I personally would prefer a separate header for the definitions as I believe
-this is tidier. Have never really liked struct definitions in c files. I could
-move this header to the same directory as the source file, if that is preferred.
-As it stands this header is only related to DA9150 in its current location, so
-is this a big issue? If not then I'd rather keep it as is.
-
-> > +/* Private data */
-> Why is this in the header?  Should be defined directly in the c file
-> as nothing outside the driver should be touching it.
-
-As per previous comment.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
