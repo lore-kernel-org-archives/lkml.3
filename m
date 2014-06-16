@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932893AbaFPStS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 14:49:18 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:34109 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932208AbaFPStR (ORCPT
+	id S1755416AbaFPStw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 14:49:52 -0400
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:62790 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752582AbaFPStu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 14:49:17 -0400
-Date: Mon, 16 Jun 2014 21:49:03 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Stephan Gabert <stephan.gabert@fau.de>
-Cc: pe1dnn@amsat.org, gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, nicolas.pfeiffer@fau.de,
-        linux-kernel@i4.cs.fau.de
-Subject: Re: [PATCH 3/5] staging/wlags49_h2: correct check of the return
- value of register_netdev()
-Message-ID: <20140616184903.GH5500@mwanda>
-References: <1402930253-32537-1-git-send-email-stephan.gabert@fau.de>
- <1402930253-32537-4-git-send-email-stephan.gabert@fau.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402930253-32537-4-git-send-email-stephan.gabert@fau.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Mon, 16 Jun 2014 14:49:50 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlUHAHASn1NbtAal/2dsb2JhbABagw2rFgUBAQEBAQEFAZkkgREXdYRgI4EaN4hGAc8qF4VjiC9kHYQtBI9sileLMIgogX6BRDuBMQ
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Phillip Lougher <phillip@squashfs.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>
+Subject: [PATCH V2] fs/squashfs/file_direct.c: replace count*size kmalloc by  kmalloc_array
+Date: Mon, 16 Jun 2014 20:48:22 +0200
+Message-Id: <1402944502-12263-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 04:50:51PM +0200, Stephan Gabert wrote:
-> As mentioned in net/core/dev.c register_netdev() explicitly returns a
-> negative errno code on failure.
-> 
-> So in case of failure, one should rather test whether ret is negative
-> than just unlike 0.
+kmalloc_array manages count*sizeof overflow.
 
-No.  In the kernel the normal way is to say:
+Cc: Phillip Lougher <phillip@squashfs.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+V2:
+   use kmalloc_array instead of kcalloc (suggested by Joe Perches).
 
-	if (ret)
-		return ret;
+ fs/squashfs/file_direct.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Zero is succes and non-zero is error code.
-
-	if (ret != 0)
-		return ret;
-
-That's a double negative and pointlessly confusing.
-
-	if (ret != 0 != 0 != 0)
-
-That's a hextuple negative and awesomely confusing.
-
-There are times where a double negative is ok.  When you are talking
-about numbers specifically:
-
-	if (ret != 0 && ret != 3) {
-
-That means ret is not zero or three, but zero doesn't mean success or
-failure, it's just a number.
-
-For strcmp() functions you should always compare against zero
-because that is the idiom.
-
-	if (strcmp(foo, bar) < 0)
-	if (strcmp(foo, bar) != 0)
-
-The first "<" means "foo" is before "bar" and "!=" means not equal.
-
-	if (ret < 0)
-		return ret;
-
-Probably means that now ret is either zero or a positive value???  It is
-ambiguous.
-
-regards,
-dan carpenter
+diff --git a/fs/squashfs/file_direct.c b/fs/squashfs/file_direct.c
+index 62a0de6..43e7a7e 100644
+--- a/fs/squashfs/file_direct.c
++++ b/fs/squashfs/file_direct.c
+@@ -44,7 +44,7 @@ int squashfs_readpage_block(struct page *target_page, u64 block, int bsize)
+ 
+ 	pages = end_index - start_index + 1;
+ 
+-	page = kmalloc(sizeof(void *) * pages, GFP_KERNEL);
++	page = kmalloc_array(pages, sizeof(void *), GFP_KERNEL);
+ 	if (page == NULL)
+ 		return res;
+ 
+-- 
+1.8.4.5
 
