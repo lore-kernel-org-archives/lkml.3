@@ -1,67 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932403AbaFPRJm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 13:09:42 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:48909 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbaFPRJk (ORCPT
+	id S1755596AbaFPRNl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 13:13:41 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:54464 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753692AbaFPRNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 13:09:40 -0400
-Date: Mon, 16 Jun 2014 18:09:33 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: tc3589x: translate onecell, not twocell
-Message-ID: <20140616170933.GE14323@lee--X1>
-References: <1402403492-24960-1-git-send-email-linus.walleij@linaro.org>
+	Mon, 16 Jun 2014 13:13:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1402403492-24960-1-git-send-email-linus.walleij@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131212141655.238445339@infradead.org>
+References: <20131212140835.729222186@infradead.org>
+	<20131212141655.238445339@infradead.org>
+Date: Mon, 16 Jun 2014 22:43:38 +0530
+X-Google-Sender-Auth: yqRqpAVgmqv5PHhzGBm0ISiC1SY
+Message-ID: <CAOh2x=mgeozUMGYQubQ4GKPEB6k_TkcV3CSTzNLqjKok-gROQg@mail.gmail.com>
+Subject: Re: [PATCH 11/15] x86: Rewrite cyc2ns to avoid the need to disable IRQs
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Zhang Rui <rui.zhang@intel.com>, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        registosites@hotmail.com, srivatsa@mit.edu
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jun 2014, Linus Walleij wrote:
+Cc'ing Mauro/Rafael/Srivatsa..
 
-> Something changed in the OF parser in the v3.16 merge window
-> making it be strict about passing the number of IRQ cells
-> correctly and disturbing the irqdomain xlate function guard
-> to crash when subdevices try to obtain IRQs like this:
-
-[...]
-
-> The TC3589x device trees specify the MFD core device
-> as having one interrupt cell (cannot specify flags) so the
-> twocell translation function is clearly wrong, changing it to
-> onecell, as it should be, fixes the regression.
-> 
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+On Thu, Dec 12, 2013 at 7:38 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> Use a ring-buffer like multi-version object structure which allows
+> always having a coherent object; we use this to avoid having to
+> disable IRQs while reading sched_clock() and avoids a problem when
+> getting an NMI while changing the cyc2ns data.
+>
+>                         MAINLINE   PRE        POST
+>
+>     sched_clock_stable: 1          1          1
+>     (cold) sched_clock: 329841     331312     257223
+>     (cold) local_clock: 301773     310296     309889
+>     (warm) sched_clock: 38375      38247      25280
+>     (warm) local_clock: 100371     102713     85268
+>     (warm) rdtsc:       27340      27289      24247
+>     sched_clock_stable: 0          0          0
+>     (cold) sched_clock: 382634     372706     301224
+>     (cold) local_clock: 396890     399275     399870
+>     (warm) sched_clock: 38194      38124      25630
+>     (warm) local_clock: 143452     148698     129629
+>     (warm) rdtsc:       27345      27365      24307
+>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 > ---
->  drivers/mfd/tc3589x.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  arch/x86/include/asm/timer.h     |   23 +++
+>  arch/x86/kernel/cpu/perf_event.c |   14 +-
+>  arch/x86/kernel/tsc.c            |  229 ++++++++++++++++++++++++++++++++++-----
+>  3 files changed, 236 insertions(+), 30 deletions(-)
 
-Looks good.  Applied, thanks.
+Hi Peter,
 
-> diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
-> index bd83accc0f6d..0072e668c208 100644
-> --- a/drivers/mfd/tc3589x.c
-> +++ b/drivers/mfd/tc3589x.c
-> @@ -236,7 +236,7 @@ static void tc3589x_irq_unmap(struct irq_domain *d, unsigned int virq)
->  static struct irq_domain_ops tc3589x_irq_ops = {
->  	.map    = tc3589x_irq_map,
->  	.unmap  = tc3589x_irq_unmap,
-> -	.xlate  = irq_domain_xlate_twocell,
-> +	.xlate  = irq_domain_xlate_onecell,
->  };
->  
->  static int tc3589x_irq_init(struct tc3589x *tc3589x, struct device_node *np)
+We have been following a bug around cpufreq changes in 3.14
+(https://bugzilla.kernel.org/show_bug.cgi?id=77201) and our tests
+narrowed it down to this patch after which things aren't working
+as expected.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Mauro (registosites@hotmail.com) have reported that since 3.14
+after doing hot-unplug/hotplug of CPU1, cpufreq POSTCHANGE notifications
+for every second frequency change hangs his machine ..
+
+Last working tag was: 3.13.8 and it started failing from 3.14 and fails
+for latest 3.15 as well..
+
+model name : AMD Turion(tm) 64 X2 Mobile Technology TL-64
+CPUFreq driver: powernow-k8 ..
+CPUs: Only two CPUs, sharing clock line
+
+
+We have asked him to do lots of tests as we initially though its
+because of some cpufreq changes, but finally we came to the conclusion
+that reverting below two commits fixes his issues over 3.14:
+
+20d1c86 sched/clock, x86: Rewrite cyc2ns() to avoid the need to disable IRQs
+57c67da sched/clock, x86: Move some cyc2ns() code around
+
+(some more commits were reverted as well to revert these two cleanly,
+but he still had issues after those reverts and only after reverting these two
+his problem got fixed)..
+
+He couldn't do a bisect as it was broken with compilation errors ..
+
+Can you give any pointers, so that he can get it fixed ?
+
+Thanks.
+
+--
+Viresh
