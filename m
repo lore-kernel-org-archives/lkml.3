@@ -1,131 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932445AbaFPVPo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 17:15:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44259 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755880AbaFPVPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 17:15:42 -0400
-Date: Mon, 16 Jun 2014 17:15:00 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
-        greg@kroah.com, jkosina@suse.cz, dyoung@redhat.com,
-        chaowang@redhat.com, bhe@redhat.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 11/13] kexec-bzImage: Support for loading bzImage using
- 64bit entry
-Message-ID: <20140616211500.GA1870@redhat.com>
-References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
- <1401800822-27425-12-git-send-email-vgoyal@redhat.com>
- <20140615163515.GA17016@pd.tnic>
- <20140616200608.GD4515@redhat.com>
- <20140616205743.GI8170@pd.tnic>
+	id S1756064AbaFPVR2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 17:17:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45486 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755363AbaFPVR0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 17:17:26 -0400
+Date: Mon, 16 Jun 2014 14:17:16 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.4.94
+Message-ID: <20140616211716.GA1807@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AqsLC8rIMeq19msA"
 Content-Disposition: inline
-In-Reply-To: <20140616205743.GI8170@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 10:57:43PM +0200, Borislav Petkov wrote:
-> On Mon, Jun 16, 2014 at 04:06:08PM -0400, Vivek Goyal wrote:
-> > There can be more than one loader and the one which claims first
-> > to recognize the image will get to load the image. So once 32 bit
-> > loader support comes in, it might happen that we ask 64bit loader
-> > first and it rejects the image and then we ask 32bit loader.
-> 
-> What does that have to do with anything??
 
-Say down the line you support 3 types of kernel images. 64bit bzImage, 
-32bit bzImage and ELF vmlinux. And there are 3 different loader
-implementations in kernel. Now assume user us trying to load an ELF vmlinux
-image. 
+--AqsLC8rIMeq19msA
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Generic code will call.
+I'm announcing the release of the 3.4.94 kernel.
 
-arch_kexec_kernel_image_probe {
-        for (i = 0; i < nr_file_types; i++) {
-                if (!kexec_file_type[i].probe)
-                        continue;
+All users of the 3.4 kernel series must upgrade.
 
-                ret = kexec_file_type[i].probe(buf, buf_len);
-                if (!ret) {
-                        image->file_handler_idx = i;
-                        return ret;
-                }
-        }
-	return ret;
-}
+The updated 3.4.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.4.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
 
-This code calls into very registered loader and if nobody is ready to
-load the image it returns error. Say first bzImage64 and bzImage32 bit
-loader are called. They both will reject the image and vmlinux loader
-will accept it.
+thanks,
 
-Do we want to show all the rejection messages from bzImage64 and bzImage32
-loaders. It might be too verbose to show users that before vmlinux loader
-accepted the image other loaders on this arches rejcted the image.
+greg k-h
 
-This is very similar to binary file loaing. Looks at load_elf_binary(). If
-it does not find elf header it knows it is not an ELF binary and
-returns error -ENOEXEC without outputing any messages.
+------------
 
-> 
-> > So these message are really debug message which tells why loader
-> > is not accepting an image. It might not be image destined for that
-> > loader at all.
-> > 
-> > pr_debug() allows being verbose if user wants to for debugging purposes.
-> > You just have to make sure that CONFIG_DYNAMIC_DEBUG=y and enable verbosity
-> > in individual file.
-> > 
-> > echo 'file kexec-bzimage.c +p' > /sys/kernel/debug/dynamic_debug/control
-> 
-> So people are supposed to enable dynamic_debug just so that they see
-> *why* their image doesn't load.
-> 
-> Doesn't sound optimal to me.
+ Makefile                                       |    2 -
+ arch/powerpc/Makefile                          |    4 ++-
+ arch/powerpc/include/asm/ppc_asm.h             |    7 +++++-
+ drivers/ata/ahci.c                             |    2 +
+ drivers/net/ethernet/mellanox/mlx4/en_cq.c     |    1=20
+ drivers/net/ethernet/mellanox/mlx4/en_netdev.c |    6 -----
+ drivers/net/ethernet/mellanox/mlx4/mlx4_en.h   |    1=20
+ drivers/scsi/megaraid/megaraid_sas.h           |    1=20
+ drivers/scsi/megaraid/megaraid_sas_base.c      |    5 ++--
+ drivers/staging/zram/zram_sysfs.c              |   21 ++++++++++++++-----
+ kernel/auditsc.c                               |   27 ++++++++++++++++----=
+-----
+ net/ipv4/netfilter/nf_defrag_ipv4.c            |    5 ++--
+ 12 files changed, 53 insertions(+), 29 deletions(-)
 
-This is one way of doing it. I can change it if you think that displaying
-messages from all the loaders is fine.
+Andy Lutomirski (1):
+      auditsc: audit_krule mask accesses need bounds checking
 
-> 
-> > Same here. We will potentially be trying multiple loaders and if every
-> > loader prints messages for rejection by default, it is too much of
-> > info, IMO.
-> 
-> For max two loaders on one architecture? I don't think so. Now you're
-> just arguing for the sake of it.
+Ben Collins (1):
+      SCSI: megaraid: Use resource_size_t for PCI resources, not long
 
-Well, we have 3 loaders in user space currently for x86_64. bzImage64,
-bzImage32 and ELF vmlinux. So one would think that somebody might
-go about implementing these in kernel space too.
+Chris Mason (1):
+      mlx4_en: don't use napi_synchronize inside mlx4_en_netpoll
 
-> 
-> > I like doing memory allocations early in the functions (as far as
-> > possible) and error out if need be. If memory is available to begin
-> > with for all the data structures needed by this function, it is kind
-> > of pointless to do rest of the processing.
-> 
-> We're talking about memory for a single void * which is ridiculous. And
-> I think simplifying the error paths is a much higher win than doing some
-> minor allocation.
+Florian Westphal (1):
+      netfilter: ipv4: defrag: set local_df flag on defragmented skb
 
-Ok, I will change it.
+Greg Kroah-Hartman (1):
+      Linux 3.4.94
 
-> 
-> > Hmm..., If you feel strongly about it, I can make this change. I
-> > thought I just made it easier to share the code between 32bit and
-> > 64bit by this.
-> 
-> Someone later can do that - right now this code is 64-bit only as far as
-> we're concerned and if it can be made to work on 32-bit, then people are
-> free to do so.
+Guenter Roeck (1):
+      powerpc: Fix 64 bit builds with binutils 2.24
 
-Ok.
+Jiang Liu (1):
+      zram: protect sysfs handler from invalid memory access
 
-Thanks
-Vivek
+J=E9r=F4me Carretero (1):
+      ahci: Add Device ID for HighPoint RocketRaid 642L
+
+Rashika Kheria (1):
+      Staging: zram: Fix memory leak by refcount mismatch
+
+
+--AqsLC8rIMeq19msA
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTn17cAAoJEDjbvchgkmk+BUkP/0XgzIPS6uV2YlDv52U9EJRh
+1ws7POfHjrCBZHJ73VWKkwLuPkTQEBFomoEPPs89Uq6zWBkm+fdRJB+iTPWboOGF
+/T+ichAE6ysQnETZy1aiUeg/Tkhj8od6H6Pu/0djL4WCbV1M1v/TsYDfZ082qGHw
+72hCor2zKXixqkPbIrCSVSdH/Wg2wgoxdMUu1+ZUlIN+oIm7mm9FnfCH2l+2e9fa
+z5lXJ3JeqEsnvbMAYkuqJ+SiTSQTJYOvvB3a8tFuL96KqmsC4V22aCaXAxUk8QTs
+Zh7WtnIQA4U0mXncpAWAZztw8xu9o/1TGCrAk9C+QzNuUPQS8gQV/6qgIAfnTuhZ
+X5O94rsXlisUHGaoa+VQ7/qWF/pEOrmWRu61voP3lfs3MGuxf0zv9Lfq4fe9Yb+b
+09VBd+0o0aphokrJakFsudIYpsaq0yUaIYU9DPLLdhXeRNimWV7K7wSLDxWRjsvN
+cNSETsDt40zMLyPO29vdcUbnIYrG7jdpcx20su11AQa4yTO9LX6gPLHRWFPwxLCD
+8D8Mrl4JvSGK05TrPd6S2L+Dz+wZ/cmRZayqbgCORE/aWQcEmDHS4vkQkjmxzswz
+pXJWGObeYvUnc17LE+bnCAtn3VBN50Pl32SmSiNv8Y1G1SCM9L9VUNnpkabW2bSa
+3wwU0yRV+6RAZkkc9UmC
+=YgnD
+-----END PGP SIGNATURE-----
+
+--AqsLC8rIMeq19msA--
