@@ -1,132 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755024AbaFPJXq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 05:23:46 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:38669 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754834AbaFPJXp (ORCPT
+	id S1755121AbaFPJY6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 05:24:58 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:57440 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754986AbaFPJYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 05:23:45 -0400
-Date: Mon, 16 Jun 2014 10:23:39 +0100
-From: Peter Griffin <peter.griffin@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        maxime.coquelin@st.com, patrice.chotard@st.com,
-        srinivas.kandagatla@gmail.com
-Cc: lee.jones@linaro.org, gabriel.fernandez@st.com, daniel.thompson@linaro.org
-Subject: [PATCH V2] ARM: STi: DT: Properly define sti-ethclk & stmmaceth for
- stih415/6
-Message-ID: <20140616092339.GB27978@griffinp-ThinkPad-X1-Carbon-2nd>
-References: <1402345355-5682-1-git-send-email-peter.griffin@linaro.org>
+	Mon, 16 Jun 2014 05:24:55 -0400
+X-IronPort-AV: E=McAfee;i="5600,1067,7470"; a="134679159"
+X-IronPort-AV: E=Sophos;i="5.01,485,1400050800"; 
+   d="scan'208";a="750468750"
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+To: Joe Perches <joe@perches.com>
+CC: <linux-kernel@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Eugene Krasnikov <k.eugene.e@gmail.com>, <ath10k@lists.infradead.org>,
+        <linux-wireless@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <wcn36xx@lists.infradead.org>
+Subject: Re: [PATCH -next 13/26] ath: Use dma_zalloc_coherent
+References: <cover.1402863904.git.joe@perches.com>
+	<55b103a2ec78c0031b348e103603bf9a0d9cac3b.1402863905.git.joe@perches.com>
+Date: Mon, 16 Jun 2014 12:24:46 +0300
+In-Reply-To: <55b103a2ec78c0031b348e103603bf9a0d9cac3b.1402863905.git.joe@perches.com>
+	(Joe Perches's message of "Sun, 15 Jun 2014 13:37:42 -0700")
+Message-ID: <87fvj52om9.fsf@kamboji.qca.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402345355-5682-1-git-send-email-peter.griffin@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [172.30.48.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes two problems: -
+Joe Perches <joe@perches.com> writes:
 
-1) The device tree isn't currently providing sti-ethclk which is
-required by the dwmac glue code to correctly configure the ethernet
-PHY clock speed.
+> Use the zeroing function instead of dma_alloc_coherent & memset(,0,)
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-This means depending on what the bootloader/jtag has
-configured this clock to, and what switch/hub the board is plugged
-into you most likely will NOT successfully negotiate a ethernet link.
+For ath10k:
 
-2) The stmmaceth clock was associated with the wrong clock. It was
-referencing the PHY clock rather than the interconnect clock which
-clocks the IP.
+Acked-by: Kalle Valo <kvalo@qca.qualcomm.com>
 
-This patch also brings us closer to not having to boot the upstream
-kernel with the clk_ignore_unused parameter.
-
-Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
----
- arch/arm/boot/dts/stih415.dtsi           | 8 ++++----
- arch/arm/boot/dts/stih416.dtsi           | 8 ++++----
- include/dt-bindings/clock/stih415-clks.h | 1 +
- include/dt-bindings/clock/stih416-clks.h | 1 +
- 4 files changed, 10 insertions(+), 8 deletions(-)
-
-diff --git a/arch/arm/boot/dts/stih415.dtsi b/arch/arm/boot/dts/stih415.dtsi
-index d6f254f..a0f6f75 100644
---- a/arch/arm/boot/dts/stih415.dtsi
-+++ b/arch/arm/boot/dts/stih415.dtsi
-@@ -169,8 +169,8 @@
- 
- 			pinctrl-names 	= "default";
- 			pinctrl-0	= <&pinctrl_mii0>;
--			clock-names	= "stmmaceth";
--			clocks		= <&clk_s_a1_ls CLK_GMAC0_PHY>;
-+			clock-names	= "stmmaceth", "sti-ethclk";
-+			clocks		= <&clk_s_a1_ls CLK_ICN_IF_2>, <&clk_s_a1_ls CLK_GMAC0_PHY>;
- 		};
- 
- 		ethernet1: dwmac@fef08000 {
-@@ -192,8 +192,8 @@
- 			reset-names		= "stmmaceth";
- 			pinctrl-names 	= "default";
- 			pinctrl-0	= <&pinctrl_mii1>;
--			clock-names	= "stmmaceth";
--			clocks		= <&clk_s_a0_ls CLK_ETH1_PHY>;
-+			clock-names	= "stmmaceth", "sti-ethclk";
-+			clocks		= <&clk_s_a0_ls CLK_ICN_REG>, <&clk_s_a0_ls CLK_ETH1_PHY>;
- 		};
- 
- 		rc: rc@fe518000 {
-diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
-index 06473c5..84758d7 100644
---- a/arch/arm/boot/dts/stih416.dtsi
-+++ b/arch/arm/boot/dts/stih416.dtsi
-@@ -175,8 +175,8 @@
- 			reset-names		= "stmmaceth";
- 			pinctrl-names 	= "default";
- 			pinctrl-0	= <&pinctrl_mii0>;
--			clock-names	= "stmmaceth";
--			clocks		= <&clk_s_a1_ls CLK_GMAC0_PHY>;
-+			clock-names	= "stmmaceth", "sti-ethclk";
-+			clocks		= <&clk_s_a1_ls CLK_ICN_IF_2>, <&clk_s_a1_ls CLK_GMAC0_PHY>;
- 		};
- 
- 		ethernet1: dwmac@fef08000 {
-@@ -197,8 +197,8 @@
- 			reset-names	= "stmmaceth";
- 			pinctrl-names 	= "default";
- 			pinctrl-0	= <&pinctrl_mii1>;
--			clock-names	= "stmmaceth";
--			clocks		= <&clk_s_a0_ls CLK_ETH1_PHY>;
-+			clock-names	= "stmmaceth", "sti-ethclk";
-+			clocks		= <&clk_s_a0_ls CLK_ICN_REG>, <&clk_s_a0_ls CLK_ETH1_PHY>;
- 		};
- 
- 		rc: rc@fe518000 {
-diff --git a/include/dt-bindings/clock/stih415-clks.h b/include/dt-bindings/clock/stih415-clks.h
-index 0d2c739..d80caa6 100644
---- a/include/dt-bindings/clock/stih415-clks.h
-+++ b/include/dt-bindings/clock/stih415-clks.h
-@@ -10,6 +10,7 @@
- #define CLK_ETH1_PHY		4
- 
- /* CLOCKGEN A1 */
-+#define CLK_ICN_IF_2		0
- #define CLK_GMAC0_PHY		3
- 
- #endif
-diff --git a/include/dt-bindings/clock/stih416-clks.h b/include/dt-bindings/clock/stih416-clks.h
-index 552c779..f9bdbd1 100644
---- a/include/dt-bindings/clock/stih416-clks.h
-+++ b/include/dt-bindings/clock/stih416-clks.h
-@@ -10,6 +10,7 @@
- #define CLK_ETH1_PHY		4
- 
- /* CLOCKGEN A1 */
-+#define CLK_ICN_IF_2		0
- #define CLK_GMAC0_PHY		3
- 
- #endif
 -- 
-1.9.1
-
+Kalle Valo
