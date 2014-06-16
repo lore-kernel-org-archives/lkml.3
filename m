@@ -1,131 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816AbaFPFtc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 01:49:32 -0400
-Received: from mga01.intel.com ([192.55.52.88]:50084 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753659AbaFPFta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 01:49:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,484,1400050800"; 
-   d="scan'208,223";a="548460948"
-Message-ID: <539E8559.3010601@linux.intel.com>
-Date: Mon, 16 Jun 2014 13:49:13 +0800
-From: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753820AbaFPFwc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 01:52:32 -0400
+Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:46381
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751103AbaFPFwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 01:52:31 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <daniel.lezcano@linaro.org>, <tglx@linutronix.de>, <sboyd@codeaurora.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCHv2] clocksource: arch_arm_timer: Fix timecounter initialization
+Date: Mon, 16 Jun 2014 13:08:38 +0800
+Message-ID: <1402895318-26217-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(104166001)(74662001)(92566001)(21056001)(104016001)(68736004)(44976005)(2201001)(84676001)(19580405001)(92726001)(26826002)(74502001)(87936001)(50466002)(19580395003)(86362001)(77982001)(64706001)(6806004)(93916002)(83322001)(89996001)(85852003)(62966002)(87286001)(50226001)(4396001)(76482001)(77156001)(80022001)(20776003)(81542001)(102836001)(79102001)(81342001)(83072002)(50986999)(31966008)(99396002)(36756003)(48376002)(85306003)(88136002)(47776003)(97736001)(46102001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB509;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-To: brudley@broadcom.com, arend@broadcom.com, frankyl@broadcom.com,
-        meuleman@broadcom.com, linville@tuxdriver.com, pieterpg@broadcom.com,
-        dekim@broadcom.com, mcgrof@do-not-panic.com, antonio@open-mesh.com,
-        johannes.berg@intel.com
-CC: linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] brcmfmac: prevent watchdog from interfering with scanning
- and connecting
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+X-Forefront-PRVS: 0244637DEA
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Li.Xiubo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 14485894add32aedacb3e486ebb2cc2b73861abf Mon Sep 17 00:00:00 2001
-From: Fu zhonghui <zhonghui.fu@linux.intel.com>
-Date: Wed, 11 Jun 2014 11:06:55 +0800
-Subject: [PATCH] brcmfmac: prevent watchdog from interfering with scanning and connecting
+The third parameter(u64 start_tstamp) of timecounter_init() should
+be the start time by ns, not a cycle counter.
 
-Watchdog in brcmfmac driver may make WiFi chip enter sleep mode
-before completion of scanning or connecting.
+Here just set it to zero.
 
-This will lead to scanning or connecting failure.
-
-Increasing temporarily idle-time threshold during scanning or
-connecting can ensure scanning or connecting success without
-watchdog interference.
-
-Signed-off-by: Fu zhonghui <zhonghui.fu@linux.intel.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
- drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c |   18 ++++++++++++++++--
- .../net/wireless/brcm80211/brcmfmac/wl_cfg80211.c  |    3 ++-
- 2 files changed, 18 insertions(+), 3 deletions(-)
+ drivers/clocksource/arm_arch_timer.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
-index 13c89a0..729deab 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
-@@ -34,6 +34,7 @@
- #include <linux/vmalloc.h>
- #include <linux/platform_data/brcmfmac-sdio.h>
- #include <linux/moduleparam.h>
-+#include <net/cfg80211.h>
- #include <asm/unaligned.h>
- #include <defs.h>
- #include <brcmu_wifi.h>
-@@ -43,6 +44,10 @@
- #include "sdio_host.h"
- #include "chip.h"
- #include "nvram.h"
-+#include "dhd.h"
-+#include "fwil_types.h"
-+#include "p2p.h"
-+#include "wl_cfg80211.h"
+diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+index 5163ec1..b29a810 100644
+--- a/drivers/clocksource/arm_arch_timer.c
++++ b/drivers/clocksource/arm_arch_timer.c
+@@ -426,19 +426,16 @@ struct timecounter *arch_timer_get_timecounter(void)
  
- #define DCMD_RESP_TIMEOUT  2000	/* In milli second */
- 
-@@ -307,6 +312,7 @@ struct rte_console {
- 					 * when idle
- 					 */
- #define BRCMF_IDLE_INTERVAL	1
-+#define BRCMF_IDLE_INTERVAL_SCANNING_CONNECTING	100
- 
- #define KSO_WAIT_US 50
- #define MAX_KSO_ATTEMPTS (PMU_MAX_TRANSITION_DLY/KSO_WAIT_US)
-@@ -3613,9 +3619,9 @@ void brcmf_sdio_isr(struct brcmf_sdio *bus)
- 
- static bool brcmf_sdio_bus_watchdog(struct brcmf_sdio *bus)
+ static void __init arch_counter_register(unsigned type)
  {
--#ifdef DEBUG
- 	struct brcmf_bus *bus_if = dev_get_drvdata(bus->sdiodev->dev);
--#endif	/* DEBUG */
-+	struct brcmf_cfg80211_info *cfg = bus_if->drvr->config;
-+	struct brcmf_if *ifp = cfg->pub->iflist[0];
+-	u64 start_count;
+-
+ 	/* Register the CP15 based counter if we have one */
+ 	if (type & ARCH_CP15_TIMER)
+ 		arch_timer_read_counter = arch_counter_get_cntvct;
+ 	else
+ 		arch_timer_read_counter = arch_counter_get_cntvct_mem;
  
- 	brcmf_dbg(TIMER, "Enter\n");
+-	start_count = arch_timer_read_counter();
+ 	clocksource_register_hz(&clocksource_counter, arch_timer_rate);
+ 	cyclecounter.mult = clocksource_counter.mult;
+ 	cyclecounter.shift = clocksource_counter.shift;
+-	timecounter_init(&timecounter, &cyclecounter, start_count);
++	timecounter_init(&timecounter, &cyclecounter, 0);
  
-@@ -3678,6 +3684,14 @@ static bool brcmf_sdio_bus_watchdog(struct brcmf_sdio *bus)
- 
- 	/* On idle timeout clear activity flag and/or turn off clock */
- 	if ((bus->idletime > 0) && (bus->clkstate == CLK_AVAIL)) {
-+
-+		if (test_bit(BRCMF_SCAN_STATUS_BUSY, &cfg->scan_status) ||
-+		    test_bit(BRCMF_VIF_STATUS_CONNECTING, &ifp->vif->sme_state)) {
-+			bus->idletime = BRCMF_IDLE_INTERVAL_SCANNING_CONNECTING;
-+		} else {
-+			bus->idletime = BRCMF_IDLE_INTERVAL;
-+		}
-+
- 		if (++bus->idlecount >= bus->idletime) {
- 			bus->idlecount = 0;
- 			if (bus->activity) {
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
-index be19852..e76517e 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
-@@ -913,6 +913,8 @@ brcmf_cfg80211_escan(struct wiphy *wiphy, struct brcmf_cfg80211_vif *vif,
- 		return -EAGAIN;
- 	}
- 
-+	set_bit(BRCMF_SCAN_STATUS_BUSY, &cfg->scan_status);
-+
- 	/* If scan req comes for p2p0, send it over primary I/F */
- 	if (vif == cfg->p2p.bss_idx[P2PAPI_BSSCFG_DEVICE].vif)
- 		vif = cfg->p2p.bss_idx[P2PAPI_BSSCFG_PRIMARY].vif;
-@@ -933,7 +935,6 @@ brcmf_cfg80211_escan(struct wiphy *wiphy, struct brcmf_cfg80211_vif *vif,
- 	}
- 
- 	cfg->scan_request = request;
--	set_bit(BRCMF_SCAN_STATUS_BUSY, &cfg->scan_status);
- 	if (escan_req) {
- 		cfg->escan_info.run = brcmf_run_escan;
- 		err = brcmf_p2p_scan_prep(wiphy, request, vif);
--- 1.7.1
+ 	/* 56 bits minimum, so we assume worst case rollover */
+ 	sched_clock_register(arch_timer_read_counter, 56, arch_timer_rate);
+-- 
+1.8.5
 
