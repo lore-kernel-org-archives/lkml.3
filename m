@@ -1,64 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884AbaFPUMc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 16:12:32 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:49898 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521AbaFPUMb (ORCPT
+	id S1756052AbaFPUMp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 16:12:45 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:37428 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755921AbaFPUMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 16:12:31 -0400
-Date: Tue, 17 Jun 2014 01:42:24 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] tile: use ARRAY_SIZE
-Message-ID: <20140616201224.GA18320@himangi-Dell>
+	Mon, 16 Jun 2014 16:12:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140603145710.GQ2878@cmpxchg.org>
+References: <1398806483-19122-1-git-send-email-john.stultz@linaro.org>
+	<536BBB08.3000503@linaro.org>
+	<20140603145710.GQ2878@cmpxchg.org>
+Date: Mon, 16 Jun 2014 13:12:41 -0700
+Message-ID: <CALAqxLXBs0scEEb7-rYbq9vHHs8VWUg-9vFXDoK4mzUt4smbYw@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Volatile Ranges (v14 - madvise reborn edition!)
+From: John Stultz <john.stultz@linaro.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@sr71.net>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>, Keith Packard <keithp@keithp.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ARRAY_SIZE is more concise to use when the size of an array is divided
-by the size of its type or the size of its first element.
+On Tue, Jun 3, 2014 at 7:57 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> On Thu, May 08, 2014 at 10:12:40AM -0700, John Stultz wrote:
+>> On 04/29/2014 02:21 PM, John Stultz wrote:
+>> > Another few weeks and another volatile ranges patchset...
+>> >
+>> > After getting the sense that the a major objection to the earlier
+>> > patches was the introduction of a new syscall (and its somewhat
+>> > strange dual length/purged-bit return values), I spent some time
+>> > trying to rework the vma manipulations so we can be we won't fail
+>> > mid-way through changing volatility (basically making it atomic).
+>> > I think I have it working, and thus, there is no longer the
+>> > need for a new syscall, and we can go back to using madvise()
+>> > to set and unset pages as volatile.
+>>
+>> Johannes: To get some feedback, maybe I'll needle you directly here a
+>> bit. :)
+>>
+>> Does moving this interface to madvise help reduce your objections?  I
+>> feel like your cleaning-the-dirty-bit idea didn't work out, but I was
+>> hoping that by reworking the vma manipulations to be atomic, we could
+>> move to madvise and still avoid the new syscall that you seemed bothered
+>> by. But I've not really heard much from you recently so I worry your
+>> concerns on this were actually elsewhere, and I'm just churning the
+>> patch needlessly.
+>
+> My objection was not the syscall.
+>
+> From a reclaim perspective, using the dirty state to denote whether a
+> swap-backed page needs writeback before reclaim is quite natural and I
+> much prefer Minchan's changes to the reclaim code over yours.
+>
+> From an interface point of view, I would prefer the simplicity of
+> cleaning dirty bits to invalidate pages, and a default of zero-filling
+> invalidated pages instead of sending SIGBUS.  This also is quite
+> natural when you think of anon/shmem mappings as cache pages on top of
+> /dev/zero (see mmap_zero() and shmem_zero_setup()).  And it translates
+> well to tmpfs.
+>
+> At the same time, I acknowledge that there are usecases that want
+> SIGBUS delivery for more than just convenience in order to implement
+> userspace fault handling, and this is the only place where I see a
+> real divergence in actual functionality from Minchan's code.
 
-The semantic patch that makes this change is as follows:
+Thanks for the clarification and feedback. Sorry for my slow response,
+as I was on vacation for a week and am just now catching up on this.
 
-// <smpl>
-@i@
-@@
+So again, SIGBUS for userspace fault handling is really of a
+side-effect of having more userspace friendly semantics, and isn't
+really the primary goal/usage model.
 
-@@
-type T;
-T[] E;
-@@
+Zerofill semantics are mostly problematic because they make userspace
+mistakes harder to find and diagnose. Android's ashmem actually uses
+zerofill semantics, so while I see it as less ideal, technically
+zerofill would work here.
 
-- (sizeof(E)/sizeof(T))
-+ ARRAY_SIZE(E)
-// </smpl>
+However, combining zerofill with your preferred overloading of the
+dirty state is particularly problematic because it makes any dirtying
+of volatile data clear both the volatile state as well as the purged
+state for the entire page. The volatile state is surprising, but less
+problematic, but the clearing of the purged state means applications
+would possibly get a partial zero page (for whatever wasn't written)
+and no warning that their data was lost.  This is a very surprising
+and unfriendly side-effect from a userspace perspective.
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
-Not compile tested.
- arch/tile/kernel/traps.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+For context,  Android's ashmem preserves both the volatile and purged
+state on volatile page dirtying (since the volatility and purged state
+are kept in their own range structure independently from the VM).
 
-diff --git a/arch/tile/kernel/traps.c b/arch/tile/kernel/traps.c
-index f3ceb63..86900cc 100644
---- a/arch/tile/kernel/traps.c
-+++ b/arch/tile/kernel/traps.c
-@@ -277,7 +277,7 @@ void __kprobes do_trap(struct pt_regs *regs, int fault_num,
- 		if (fixup_exception(regs))  /* ILL_TRANS or UNALIGN_DATA */
- 			return;
- 		if (fault_num >= 0 &&
--		    fault_num < sizeof(int_name)/sizeof(int_name[0]) &&
-+		    fault_num < ARRAY_SIZE(int_name) &&
- 		    int_name[fault_num] != NULL)
- 			name = int_name[fault_num];
- 		else
--- 
-1.9.1
+> That, however, truly is a separate virtual memory feature.  Would it
+> be possible for you to take MADV_FREE and MADV_REVIVE as a base and
+> implement an madvise op that switches the no-page behavior of a VMA
+> from zero-filling to SIGBUS delivery?
 
+I'll see if I can look into it if I get some time. However, I suspect
+its more likely I'll just have to admit defeat on this one and let
+someone else champion the effort. Interest and reviews have seemingly
+dropped again here and with other work ramping up, I'm not sure if
+I'll be able to justify further work on this. :(
+
+thanks
+-john
