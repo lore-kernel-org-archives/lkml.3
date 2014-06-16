@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755117AbaFPJsu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 05:48:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54352 "EHLO mx2.suse.de"
+	id S1755179AbaFPJsy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 05:48:54 -0400
+Received: from gate.crashing.org ([63.228.1.57]:54038 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754730AbaFPJst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 05:48:49 -0400
-Date: Mon, 16 Jun 2014 11:48:45 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH v2] clocksource: Add a Kconfig menu
-Message-ID: <20140616114845.343e9960@endymion.delvare>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755139AbaFPJsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 05:48:53 -0400
+Message-ID: <1402912122.7661.38.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Mon, 16 Jun 2014 19:48:42 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the clocksource Kconfig entries into their own menu, so that they
-don't pollute the main device driver menu.
+Hi Linus !
 
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
-Patch already sent on 2014-04-24. Changes since v1:
- * Rebased on kernel 3.16-rc1
+This is a single revert for a patch I should have never merged in the
+first place had I reviewed things with a clear mind at the time :-(
 
- drivers/clocksource/Kconfig |    4 ++++
- 1 file changed, 4 insertions(+)
+Cheers,
+Ben.
 
---- linux-3.16-rc1.orig/drivers/clocksource/Kconfig	2014-06-16 11:43:35.338280484 +0200
-+++ linux-3.16-rc1/drivers/clocksource/Kconfig	2014-06-16 11:45:58.395215728 +0200
-@@ -1,3 +1,5 @@
-+menu "Clock Source drivers"
-+
- config CLKSRC_OF
- 	bool
- 
-@@ -207,3 +209,5 @@ config CLKSRC_VERSATILE
- 	  counter available in the "System Registers" block of
- 	  ARM Versatile, RealView and Versatile Express reference
- 	  platforms.
-+
-+endmenu
+The following changes since commit
+7171511eaec5bf23fb06078f59784a3a0626b38f:
+
+  Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git next
+
+for you to fetch changes up to 68986c9f0f4552c34c248501eb0c690553866d6e:
+
+  Revert "offb: Add palette hack for little endian" (2014-06-16 19:45:45
++1000)
+
+----------------------------------------------------------------
+Benjamin Herrenschmidt (1):
+      Revert "offb: Add palette hack for little endian"
+
+ drivers/video/fbdev/offb.c | 11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
 
 
--- 
-Jean Delvare
-SUSE L3 Support
