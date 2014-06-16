@@ -1,83 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753678AbaFPMLN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 08:11:13 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:34955 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753083AbaFPMLK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 08:11:10 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ivan <athlon_@mail.ru>, One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH tty-next 2/2] tty: Correct INPCK handling
-Date: Mon, 16 Jun 2014 08:10:42 -0400
-Message-Id: <1402920642-4855-2-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1402920642-4855-1-git-send-email-peter@hurleysoftware.com>
-References: <1402920642-4855-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	id S1754075AbaFPMMv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 08:12:51 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43448 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751468AbaFPMMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 08:12:50 -0400
+From: Sricharan R <r.sricharan@ti.com>
+To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <tony@atomide.com>, <santosh.shilimkar@ti.com>, <nm@ti.com>,
+        <rnayak@ti.com>, <linux@arm.linux.org.uk>, <r.sricharan@ti.com>,
+        <tglx@linutronix.de>, <jason@lakedaemon.net>, <joe@perches.com>
+Subject: [PATCH V3 0/2] arm: dts: dra7: add crossbar dt support
+Date: Mon, 16 Jun 2014 17:40:20 +0530
+Message-ID: <1402920622-7998-1-git-send-email-r.sricharan@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If INPCK is not set, input parity detection should be disabled. This means
-parity errors should not be received from the tty driver, and the data
-received should be treated normally.
+This series introduces DT support for crossbar device and
+changes dra7 peripherals to use crossbar number instead of irq.
 
-SUS v3, 11.2.2, General Terminal Interface - Input Modes, states:
-  "If INPCK is set, input parity checking shall be enabled. If INPCK is
-   not set, input parity checking shall be disabled, allowing output parity
-   generation without input parity errors. Note that whether input parity
-   checking is enabled or disabled is independent of whether parity detection
-   is enabled or disabled (see Control Modes). If parity detection is enabled
-   but input parity checking is disabled, the hardware to which the terminal
-   is connected shall recognize the parity bit, but the terminal special file
-   shall not check whether or not this bit is correctly set."
+This depends on below driver fixes and cleanup series.
 
-Ignore parity errors reported by the tty driver when INPCK is not set, and
-handle the received data normally.
+https://lkml.org/lkml/2014/6/16/218
 
-Fixes: Bugzilla #71681, 'Improvement of n_tty_receive_parity_error from n_tty.c'
-Reported-by: Ivan <athlon_@mail.ru>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/n_tty.c | 19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+[V2] Rebased on 3.15 mainline.
+[V3] Added ti,irqs-skip property and ti,irqs-safe-map property to
+     crossbar dt node.
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index fe9d129..0391f17 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -1214,15 +1214,16 @@ static void n_tty_receive_parity_error(struct tty_struct *tty, unsigned char c)
- {
- 	struct n_tty_data *ldata = tty->disc_data;
- 
--	if (I_IGNPAR(tty))
--		return;
--	if (I_PARMRK(tty)) {
--		put_tty_queue('\377', ldata);
--		put_tty_queue('\0', ldata);
--		put_tty_queue(c, ldata);
--	} else	if (I_INPCK(tty))
--		put_tty_queue('\0', ldata);
--	else
-+	if (I_INPCK(tty)) {
-+		if (I_IGNPAR(tty))
-+			return;
-+		if (I_PARMRK(tty)) {
-+			put_tty_queue('\377', ldata);
-+			put_tty_queue('\0', ldata);
-+			put_tty_queue(c, ldata);
-+		} else
-+			put_tty_queue('\0', ldata);
-+	} else
- 		put_tty_queue(c, ldata);
- 	if (waitqueue_active(&tty->read_wait))
- 		wake_up_interruptible(&tty->read_wait);
+R Sricharan (2):
+  arm: dts: dra7: add routable-irqs property for gic node
+  arm: dts: dra7: add crossbar device binding
+
+ arch/arm/boot/dts/dra7.dtsi |  136 +++++++++++++++++++++++++------------------
+ 1 file changed, 78 insertions(+), 58 deletions(-)
+
 -- 
-2.0.0
+1.7.9.5
 
