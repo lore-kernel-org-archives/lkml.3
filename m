@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932206AbaFPK2q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 06:28:46 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:59055 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755332AbaFPK0j (ORCPT
+	id S932188AbaFPK2p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 06:28:45 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54096 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755328AbaFPK0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 06:26:39 -0400
-From: Chander Kashyap <k.chander@samsung.com>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, daniel.lezcano@linaro.org,
-        lorenzo.pieralisi@arm.com, rjw@rjwysocki.net, kgene.kim@samsung.com,
-        tomasz.figa@gmail.com, Chander Kashyap <k.chander@samsung.com>
-Subject: [Patch v7 0/6] add cpuidle support for Exynos5420
-Date: Mon, 16 Jun 2014 15:56:17 +0530
-Message-Id: <1402914383-20471-1-git-send-email-k.chander@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 16 Jun 2014 06:26:40 -0400
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com, tj@kernel.org, kishon@ti.com
+Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v6 6/7] ARM: berlin: add the AHCI node for the BG2Q
+Date: Mon, 16 Jun 2014 12:26:31 +0200
+Message-Id: <1402914392-6028-7-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1402914392-6028-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1402914392-6028-1-git-send-email-antoine.tenart@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exynos5420 is a big-little Soc from Samsung. It has 4 A15 and 4 A7 cores.
+The BG2Q has an AHCI SATA controller. Add the corresponding nodes
+(AHCI, PHY) into its device tree.
 
-This patchset adds cpuidle support for Exynos5420 SoC based on
-generic big.little cpuidle driver.
+Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+---
+ arch/arm/boot/dts/berlin2q.dtsi | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
-Tested on SMDK5420.
-Rebased on 3.16-rc1
-
-Changelog is in respective patches.
-Chander Kashyap (5):
-  driver: cpuidle-big-little: add of_device_id structure
-  arm: exynos: add generic function to calculate cpu number
-  cpuidle: config: Add ARCH_EXYNOS entry to select cpuidle-big-little
-    driver
-  driver: cpuidle: cpuidle-big-little: init driver for Exynos5420
-  exynos: cpuidle: do not allow cpuidle registration for Exynos5420
-  mcpm: exynos: populate suspend and powered_up callbacks
-
- arch/arm/mach-exynos/exynos.c        |    4 +++-
- arch/arm/mach-exynos/mcpm-exynos.c   |   36 ++++++++++++++++++++++++++++++++++
- arch/arm/mach-exynos/regs-pmu.h      |    9 +++++++++
- drivers/cpuidle/Kconfig.arm          |    2 +-
- drivers/cpuidle/cpuidle-big_little.c |   12 +++++++++++-
- 5 files changed, 60 insertions(+), 3 deletions(-)
-
+diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+index 635a16a64cb4..3fb0d3935aec 100644
+--- a/arch/arm/boot/dts/berlin2q.dtsi
++++ b/arch/arm/boot/dts/berlin2q.dtsi
+@@ -303,6 +303,34 @@
+ 			clock-names = "refclk";
+ 		};
+ 
++		ahci: sata@e90000 {
++			compatible = "generic-ahci";
++			reg = <0xe90000 0x1000>;
++			interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&chip CLKID_SATA>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			sata0: sata-port@0 {
++				reg = <0>;
++				phys = <&sata_phy 0>;
++				status = "disabled";
++			};
++
++			sata1: sata-port@1 {
++				reg = <1>;
++				phys = <&sata_phy 1>;
++				status = "disabled";
++			};
++		};
++
++		sata_phy: phy@e900a0 {
++			compatible = "marvell,berlin-sata-phy";
++			reg = <0xe900a0 0x200>;
++			#phy-cells = <1>;
++			status = "disabled";
++		};
++
+ 		apb@fc0000 {
+ 			compatible = "simple-bus";
+ 			#address-cells = <1>;
 -- 
-1.7.9.5
+1.9.1
 
