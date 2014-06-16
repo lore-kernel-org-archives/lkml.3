@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891AbaFPLXp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 07:23:45 -0400
-Received: from smtp26.sms.unimo.it ([155.185.44.26]:53256 "EHLO
-	smtp26.sms.unimo.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130AbaFPLXn convert rfc822-to-8bit (ORCPT
+	id S1752810AbaFPLYw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 07:24:52 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:37842 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149AbaFPLYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 07:23:43 -0400
-Subject: Re: [PATCH RFC - TAKE TWO - 10/12] block, bfq: add Early Queue Merge (EQM)
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
-Content-Type: text/plain; charset=windows-1252
-From: Paolo Valente <paolo.valente@unimore.it>
-In-Reply-To: <20140604130446.GA5004@htj.dyndns.org>
-Date: Mon, 16 Jun 2014 13:23:34 +0200
-Cc: Jens Axboe <axboe@kernel.dk>, Li Zefan <lizefan@huawei.com>,
-        Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org,
-        Mauro Andreolini <mauro.andreolini@unimore.it>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <EB40F548-C6D3-441D-B67B-2FCA8C797563@unimore.it>
-References: <20140528221929.GG1419@htj.dyndns.org> <1401354343-5527-1-git-send-email-paolo.valente@unimore.it> <1401354343-5527-11-git-send-email-paolo.valente@unimore.it> <20140601000331.GA29085@htj.dyndns.org> <3B7B1A46-46EB-4C52-A52C-4F79C71D14C2@unimore.it> <20140603162844.GD26210@htj.dyndns.org> <91383F1F-69C3-4B88-B51E-30204818F1AB@unimore.it> <20140604130446.GA5004@htj.dyndns.org>
-To: Tejun Heo <tj@kernel.org>
-X-Mailer: Apple Mail (2.1878.2)
-UNIMORE-X-SA-Score: -2.9
+	Mon, 16 Jun 2014 07:24:50 -0400
+Message-ID: <539ED3FD.1090201@gmail.com>
+Date: Mon, 16 Jun 2014 13:24:45 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+To: Jisheng Zhang <jszhang@marvell.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, alexandre.belloni@free-electrons.com,
+        antoine.tenart@free-electrons.com
+CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: dts: berlin2q.dtsi: set L2CC tag and data latency
+ as 2 cycles
+References: <1402565920-5636-1-git-send-email-jszhang@marvell.com>
+In-Reply-To: <1402565920-5636-1-git-send-email-jszhang@marvell.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 06/12/2014 11:38 AM, Jisheng Zhang wrote:
+> For all BG2Q SoCs, 2 cycles is the best/correct value
+>
+> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
 
-Il giorno 04/giu/2014, alle ore 15:04, Tejun Heo <tj@kernel.org> ha scritto:
+Applied to berlin/dt with following fixed patch title:
+   "ARM: dts: berlin2q: set L2CC tag and data latency to 2 cycles"
 
-> Hello,
-> 
->> […]
+Thanks!
 
->> The problem is not the duration of the plugging, but the fact that, if a request merge
->> succeeds for a bio, then there will be no set_request invocation for that bio.
->> Therefore, without early merging, there will be no queue merge at all.
->> 
->> If my replies are correct and convince you, then I will use them to integrate and
->> hopefully improve the documentation for this patch.
-> 
-> Ah, okay, so it's about missing the chance to look for cooperating
-> queues when merge succeeds.  Yeah, that makes a lot more sense to me.
-> If that's the case, wouldn't it be better to try finding cooperating
-> queues after each merge success rather than each allow_merge()
-> invocation?
-
-If I have correctly understandood your question, then the answer is unfortunately no.
-
-First, without any queue-merge control in allow_merge, a bio-merge attempt would
-fail if the destination queue of the bio differs from the queue containing the target rq,
-even if the two queues should be merged. With early queue merge, not only the two
-queues are merged, but also the request-merge attempt succeeds.
-
-Second, if the queue-merge check was executed only after a successful request merge,
-then, in the case of a request-merge failure, the next chance to merge the destination queue
-of the bio with some other queue would be in the next add_request. But, according to the
-what we already discussed in some previous emails, waiting for the add_request is usually
-too much with, e.g., the I/O generated by QEMU I/O threads.
-
-In the end, moving queue merging to after successful request merges would most certainly
-cause the throughput to drop.
-
-
->  And let's please document what we're catching with the
-> extra attempts.
-> 
-
-Definitely, thanks,
-
-Paolo
-
-> Thanks.
-> 
-> -- 
-> tejun
-
-
---
-Paolo Valente                                                 
-Algogroup
-Dipartimento di Fisica, Informatica e Matematica		
-Via Campi, 213/B
-41125 Modena - Italy        				  
-homepage:  http://algogroup.unimore.it/people/paolo/
+> ---
+>   arch/arm/boot/dts/berlin2q.dtsi | 2 ++
+>   1 file changed, 2 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+> index 635a16a..3f95dc5 100644
+> --- a/arch/arm/boot/dts/berlin2q.dtsi
+> +++ b/arch/arm/boot/dts/berlin2q.dtsi
+> @@ -90,6 +90,8 @@
+>   			compatible = "arm,pl310-cache";
+>   			reg = <0xac0000 0x1000>;
+>   			cache-level = <2>;
+> +			arm,data-latency = <2 2 2>;
+> +			arm,tag-latency = <2 2 2>;
+>   		};
+>
+>   		scu: snoop-control-unit@ad0000 {
+>
 
