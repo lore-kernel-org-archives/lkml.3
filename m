@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932193AbaFPPEZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 11:04:25 -0400
-Received: from linode.aoot.com ([69.164.194.13]:46826 "EHLO linode.aoot.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754309AbaFPPEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 11:04:23 -0400
-Message-ID: <539F0774.5030909@opengridcomputing.com>
-Date: Mon, 16 Jun 2014 10:04:20 -0500
-From: Steve Wise <swise@opengridcomputing.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755251AbaFPPE5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 11:04:57 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52169 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753494AbaFPPEz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 11:04:55 -0400
+Date: Mon, 16 Jun 2014 16:04:51 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Antonios Motakis <a.motakis@virtualopensystems.com>
+Cc: "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "tech@virtualopensystems.com" <tech@virtualopensystems.com>,
+        "a.rigo@virtualopensystems.com" <a.rigo@virtualopensystems.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
+        "kim.phillips@freescale.com" <kim.phillips@freescale.com>,
+        "stuart.yoder@freescale.com" <stuart.yoder@freescale.com>,
+        "eric.auger@linaro.org" <eric.auger@linaro.org>,
+        Joerg Roedel <joro@8bytes.org>,
+        "moderated list:ARM SMMU DRIVER" 
+	<linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v6 03/20] iommu/arm-smmu: add IOMMU_CAP_NOEXEC to the
+ ARM SMMU driver
+Message-ID: <20140616150451.GP16758@arm.com>
+References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1401987808-23596-4-git-send-email-a.motakis@virtualopensystems.com>
 MIME-Version: 1.0
-To: Nicholas Krause <xerofoify@gmail.com>, swise@chelsio.com
-CC: roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
-        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] Checks for Null value in function *get_skub
-References: <1402931009-3403-1-git-send-email-xerofoify@gmail.com>
-In-Reply-To: <1402931009-3403-1-git-send-email-xerofoify@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401987808-23596-4-git-send-email-a.motakis@virtualopensystems.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/16/2014 10:03 AM, Nicholas Krause wrote:
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+On Thu, Jun 05, 2014 at 06:03:11PM +0100, Antonios Motakis wrote:
+> The ARM SMMU supports the IOMMU_NOEXEC protection flag. Add the
+> corresponding IOMMU capability.
+> 
+> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
 > ---
->   drivers/infiniband/hw/cxgb4/cm.c | 8 +++-----
->   1 file changed, 3 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/infiniband/hw/cxgb4/cm.c b/drivers/infiniband/hw/cxgb4/cm.c
-> index f9477e2..2d56983 100644
-> --- a/drivers/infiniband/hw/cxgb4/cm.c
-> +++ b/drivers/infiniband/hw/cxgb4/cm.c
-> @@ -340,15 +340,13 @@ static int status2errno(int status)
->    */
->   static struct sk_buff *get_skb(struct sk_buff *skb, int len, gfp_t gfp)
->   {
->   if (skb && !skb_is_nonlinear(skb) && !skb_cloned(skb)) {
->                  skb_trim(skb, 0);
->                  skb_get(skb);
->                  skb_reset_transport_header(skb);
->   	} else {
-> +		if (!skb)
-> +			kfree(skb);
->   		skb = alloc_skb(len, gfp);
->   	}
->   	t4_set_arp_err_handler(skb, NULL, NULL);
+>  drivers/iommu/arm-smmu.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/iommu/arm-smmu.c b/drivers/iommu/arm-smmu.c
+> index d5a2200..15ab2af 100644
+> --- a/drivers/iommu/arm-smmu.c
+> +++ b/drivers/iommu/arm-smmu.c
+> @@ -1544,6 +1544,8 @@ static int arm_smmu_domain_has_cap(struct iommu_domain *domain,
+>  	if (smmu_domain->root_cfg.smmu->features & ARM_SMMU_FEAT_COHERENT_WALK)
+>  		caps |= IOMMU_CAP_CACHE_COHERENCY;
+>  
+> +	caps |= IOMMU_CAP_NOEXEC;
+> +
 
-Should be 'if (skb)'
+Just initialise caps to IOMMU_CAP_NOEXEC.
 
-:)
-
-
+Will
