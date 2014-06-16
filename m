@@ -1,44 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237AbaFPPQX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 11:16:23 -0400
-Received: from 8bytes.org ([85.214.48.195]:40164 "EHLO mail.8bytes.org"
+	id S1755107AbaFPPSo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 11:18:44 -0400
+Received: from linode.aoot.com ([69.164.194.13]:32867 "EHLO linode.aoot.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752098AbaFPPQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 11:16:22 -0400
-Date: Mon, 16 Jun 2014 17:16:19 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: iommu@lists.linux-foundation.org, dwmw2@infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] iommu: Expose IOMMU information in sysfs
-Message-ID: <20140616151619.GA31771@8bytes.org>
-References: <20140612215954.2754.30263.stgit@bling.home>
+	id S1752857AbaFPPSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 11:18:43 -0400
+Message-ID: <539F0ACF.6080609@opengridcomputing.com>
+Date: Mon, 16 Jun 2014 10:18:39 -0500
+From: Steve Wise <swise@opengridcomputing.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140612215954.2754.30263.stgit@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Mon Jun 16 17:16:20 2014
-X-DSPAM-Confidence: 0.9978
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 539f0a4420861436816434
+To: Nick Krause <xerofoify@gmail.com>, Levente Kurusa <levex@linux.com>
+CC: swise@chelsio.com, roland@kernel.org, sean.hefty@intel.com,
+        hal.rosenstock@gmail.com, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3]Checks for Null value in function *get_skub
+References: <1402931337-3543-1-git-send-email-xerofoify@gmail.com>	<539F096F.8020502@linux.com> <CAPDOMVg8hthn2beTjHx94RRJeRHGGP1wyT0Y2KfscUtZGFfiCA@mail.gmail.com>
+In-Reply-To: <CAPDOMVg8hthn2beTjHx94RRJeRHGGP1wyT0Y2KfscUtZGFfiCA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 04:12:18PM -0600, Alex Williamson wrote:
-> Alex Williamson (3):
->       iommu: Add sysfs support for IOMMUs
->       iommu/intel: Make use of IOMMU sysfs support
->       iommu/amd: Add sysfs support
 
-I like the general approach. But why do you only enable the x86 iommus?
-Some ARM IOMMUs and PAMU would certainly also benefit from a sysfs
-representation of which device is translated by which IOMMU.
+On 6/16/2014 10:14 AM, Nick Krause wrote:
+> >From what I know yes so I would close the bug at the the link in
+> my previous email and just void my patch.
+> Cheers Nick
+
+We shouldn't be kfree-ing an skb anyway.  Should use kfree_skb().
+
+There is still a leak if skb is non-null and the skb is non linear or 
+cloned.
 
 
-	Joerg
-
+> On Mon, Jun 16, 2014 at 11:12 AM, Levente Kurusa <levex@linux.com> wrote:
+>> On 06/16/2014 05:08 PM, Nicholas Krause wrote:
+>>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>>> ---
+>>>    drivers/infiniband/hw/cxgb4/cm.c | 8 +++-----
+>>>    1 file changed, 3 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/drivers/infiniband/hw/cxgb4/cm.c
+>>> b/drivers/infiniband/hw/cxgb4/cm.c
+>>> index f9477e2..2d56983 100644
+>>> --- a/drivers/infiniband/hw/cxgb4/cm.c
+>>> +++ b/drivers/infiniband/hw/cxgb4/cm.c
+>>> @@ -340,15 +340,13 @@ static int status2errno(int status)
+>>>     */
+>>>    static struct sk_buff *get_skb(struct sk_buff *skb, int len, gfp_t gfp)
+>>>    {
+>>>    if (skb && !skb_is_nonlinear(skb) && !skb_cloned(skb)) {
+>>>                   skb_trim(skb, 0);
+>>>                   skb_get(skb);
+>>>                   skb_reset_transport_header(skb);
+>>>          } else {
+>>> +               if (skb)
+>>> +                       kfree (skb);
+>>>                  skb = alloc_skb(len, gfp);
+>>>          }
+>>>          t4_set_arp_err_handler(skb, NULL, NULL);
+>>>
+>> Isn't kfree(NULL) legal?
+>>
+>> (i.e. the if statement is useless)
+>>
+>> Thanks,
+>>      Levente Kurusa
 
