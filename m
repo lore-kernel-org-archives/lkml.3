@@ -1,37 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932343AbaFPRZs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 13:25:48 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:56321 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752152AbaFPRZr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 13:25:47 -0400
+	id S932384AbaFPR01 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 13:26:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17605 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932195AbaFPR00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 13:26:26 -0400
+Date: Mon, 16 Jun 2014 13:25:38 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, jkosina@suse.cz, dyoung@redhat.com,
+        chaowang@redhat.com, bhe@redhat.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 09/13] purgatory: Core purgatory functionality
+Message-ID: <20140616172538.GB4515@redhat.com>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <1401800822-27425-10-git-send-email-vgoyal@redhat.com>
+ <20140605200523.GB26110@pd.tnic>
+ <20140606195104.GM1526@redhat.com>
+ <20140613101713.GD4751@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <CAFLxGvyqPzbmfz1-WxP7z02=V-V5=p5b09HYPOFOS7Qj8eUHGw@mail.gmail.com>
-References: <539F1C59.6070308@gmx.de> <CAFLxGvyqPzbmfz1-WxP7z02=V-V5=p5b09HYPOFOS7Qj8eUHGw@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 16 Jun 2014 10:25:26 -0700
-Message-ID: <CALCETrXqjHPvKw=wcdnxQWO0Y140B=a0E7eh4+PoERvU=z909w@mail.gmail.com>
-Subject: Re: 3.15: kernel BUG at kernel/auditsc.c:1525!
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140613101713.GD4751@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 10:21 AM, Richard Weinberger
-<richard.weinberger@gmail.com> wrote:
-> On Mon, Jun 16, 2014 at 6:33 PM, Toralf Förster <toralf.foerster@gmx.de> wrote:
->> $ cat syscall.c
->> #include <unistd.h>
->> #include <sys/syscall.h>
->> int main(){return syscall(1000)!=-1;}
+On Fri, Jun 13, 2014 at 12:17:13PM +0200, Borislav Petkov wrote:
+> On Fri, Jun 06, 2014 at 03:51:04PM -0400, Vivek Goyal wrote:
+> > On Thu, Jun 05, 2014 at 10:05:23PM +0200, Borislav Petkov wrote:
+> > 
+> > [..]
+> > > > @@ -249,6 +254,7 @@ archclean:
+> > > >  	$(Q)rm -rf $(objtree)/arch/x86_64
+> > > >  	$(Q)$(MAKE) $(clean)=$(boot)
+> > > >  	$(Q)$(MAKE) $(clean)=arch/x86/tools
+> > > 
+> > > ifeq ($(CONFIG_KEXEC),y)
+> > > 	$(Q)$(MAKE) $(clean)=arch/x86/purgatory
+> > > endif
+> > 
+> > Hmm.., is it strictly required? I am wondering what happens if I build
+> > a kernel with CONFIG_KEXEC=y, then set CONFIG_KEXEC=n and do "make clean".
+> 
+> Try it - it works here.
+> 
+> > I think I will still like any files in arch/x86/purgatory to be cleaned
+> > despite the fact that CONFIG_KEXEC=n. Isn't it?
+> 
+> Yep, that works. Conversely, we don't want people who haven't enabled
+> KEXEC ever to have unrelated cleanup delay.
+> 
 
-What architecture are you building for?  On i386 and x86_64, 1000
-shouldn't be big enough to trigger this.
+I tried following with CONFIG_KEXEC=n
 
---Andy
+ifeq ($(CONFIG_KEXEC),y)
+        $(Q)$(MAKE) $(clean)=arch/x86/purgatory
+endif
+
+And still "make V=1 clean" shows me that it is going in purgatory dir
+to clean things up.
+
+make -f scripts/Makefile.clean obj=arch/x86/purgatory
+
+Thanks
+Vivek
