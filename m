@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756081AbaFPVkX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 17:40:23 -0400
-Received: from mail-oa0-f73.google.com ([209.85.219.73]:55975 "EHLO
-	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755356AbaFPVkT (ORCPT
+	id S932562AbaFPVlO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 17:41:14 -0400
+Received: from mail-ob0-f201.google.com ([209.85.214.201]:45682 "EHLO
+	mail-ob0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755815AbaFPVkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 Jun 2014 17:40:19 -0400
 From: Doug Anderson <dianders@chromium.org>
@@ -17,9 +17,9 @@ Cc: Andrew Bresticker <abrestic@chromium.org>, swarren@wwwdotorg.org,
         Wolfram Sang <wsa@the-dreams.de>, broonie@kernel.org,
         Doug Anderson <dianders@chromium.org>, sameo@linux.intel.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 02/10] mfd: cros_ec: IRQs for cros_ec should be optional
-Date: Mon, 16 Jun 2014 14:39:52 -0700
-Message-Id: <1402954800-28215-3-git-send-email-dianders@chromium.org>
+Subject: [PATCH 03/10] mfd: cros_ec: Allow static din/dout buffers with cros_ec_register()
+Date: Mon, 16 Jun 2014 14:39:53 -0700
+Message-Id: <1402954800-28215-4-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 2.0.0.526.g5318336
 In-Reply-To: <1402954800-28215-1-git-send-email-dianders@chromium.org>
 References: <1402954800-28215-1-git-send-email-dianders@chromium.org>
@@ -29,66 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bill Richardson <wfrichar@chromium.org>
 
-Preparing the way for the LPC device, which is just a plaform_device without
-interrupts.
+The lower-level driver may want to provide its own buffers. If so,
+there's no need to allocate new ones.  This already happens to work
+just fine (since we check for size of 0 and use devm allocation), but
+it's good to document it.
+
+[dianders: Resolved conflicts; documented that no code changes needed
+on mainline]
 
 Signed-off-by: Bill Richardson <wfrichar@chromium.org>
 Signed-off-by: Doug Anderson <dianders@chromium.org>
 ---
- drivers/mfd/cros_ec.c | 26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+ include/linux/mfd/cros_ec.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/cros_ec.c b/drivers/mfd/cros_ec.c
-index 38fe9bf..bd6f936 100644
---- a/drivers/mfd/cros_ec.c
-+++ b/drivers/mfd/cros_ec.c
-@@ -119,17 +119,15 @@ int cros_ec_register(struct cros_ec_device *ec_dev)
- 			return -ENOMEM;
- 	}
- 
--	if (!ec_dev->irq) {
--		dev_dbg(dev, "no valid IRQ: %d\n", ec_dev->irq);
--		return err;
--	}
--
--	err = request_threaded_irq(ec_dev->irq, NULL, ec_irq_thread,
--				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
--				   "chromeos-ec", ec_dev);
--	if (err) {
--		dev_err(dev, "request irq %d: error %d\n", ec_dev->irq, err);
--		return err;
-+	if (ec_dev->irq) {
-+		err = request_threaded_irq(ec_dev->irq, NULL, ec_irq_thread,
-+					IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-+					"chromeos-ec", ec_dev);
-+		if (err) {
-+			dev_err(dev, "request irq %d: error %d\n",
-+				ec_dev->irq, err);
-+			return err;
-+		}
- 	}
- 
- 	err = mfd_add_devices(dev, 0, cros_devs,
-@@ -145,7 +143,8 @@ int cros_ec_register(struct cros_ec_device *ec_dev)
- 	return 0;
- 
- fail_mfd:
--	free_irq(ec_dev->irq, ec_dev);
-+	if (ec_dev->irq)
-+		free_irq(ec_dev->irq, ec_dev);
- 
- 	return err;
- }
-@@ -154,7 +153,8 @@ EXPORT_SYMBOL(cros_ec_register);
- int cros_ec_remove(struct cros_ec_device *ec_dev)
- {
- 	mfd_remove_devices(ec_dev->dev);
--	free_irq(ec_dev->irq, ec_dev);
-+	if (ec_dev->irq)
-+		free_irq(ec_dev->irq, ec_dev);
- 
- 	return 0;
- }
+diff --git a/include/linux/mfd/cros_ec.h b/include/linux/mfd/cros_ec.h
+index 7e9fe6e..2ee3190 100644
+--- a/include/linux/mfd/cros_ec.h
++++ b/include/linux/mfd/cros_ec.h
+@@ -68,8 +68,8 @@ struct cros_ec_msg {
+  * We use this alignment to keep ARM and x86 happy. Probably word
+  * alignment would be OK, there might be a small performance advantage
+  * to using dword.
+- * @din_size: size of din buffer
+- * @dout_size: size of dout buffer
++ * @din_size: size of din buffer to allocate (zero to use static din)
++ * @dout_size: size of dout buffer to allocate (zero to use static dout)
+  * @command_send: send a command
+  * @command_recv: receive a command
+  * @ec_name: name of EC device (e.g. 'chromeos-ec')
 -- 
 2.0.0.526.g5318336
 
