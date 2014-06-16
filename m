@@ -1,103 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668AbaFPOYD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 10:24:03 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:60323 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668AbaFPOYB (ORCPT
+	id S1754081AbaFPOYQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 10:24:16 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:42729 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753721AbaFPOYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 10:24:01 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <539EFDF9.8000708@roeck-us.net>
-Date: Mon, 16 Jun 2014 07:23:53 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 16 Jun 2014 10:24:13 -0400
+Date: Mon, 16 Jun 2014 15:24:04 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, broonie@kernel.org,
+        sjg@chromium.org, olof@lixom.net, javier.martinez@collabora.co.uk,
+        ch.naveen@samsung.com, swarren@wwwdotorg.org, khilman@linaro.org,
+        ajaynumb@gmail.com, rahul.sharma@samsung.com, tushar.b@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mfd: cros_ec: spi: Fix end of transfer on devices
+ with no spi-msg-delay
+Message-ID: <20140616142404.GY14323@lee--X1>
+References: <1402683213-23120-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>,
-        Bart Van Assche <bvanassche@acm.org>
-CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Suppress -Wignored-qualifiers warnings
-References: <539C17BB.1020809@acm.org> <CAKfTPtBLSHYCdUpdN6MZiD_gCLa12Gv-hMO5oRY6uyiw4AqCug@mail.gmail.com>
-In-Reply-To: <CAKfTPtBLSHYCdUpdN6MZiD_gCLa12Gv-hMO5oRY6uyiw4AqCug@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1402683213-23120-1-git-send-email-dianders@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2014 12:49 AM, Vincent Guittot wrote:
-> Hi Bart,
->
-> Guenter sent similar patch few days ago
-> https://lkml.org/lkml/2014/6/12/743
-> with additional patches for ARM and powerpc architecture
-> https://lkml.org/lkml/2014/6/13/399
-> https://lkml.org/lkml/2014/6/13/407
->
+> cros_ec_spi makes the assumption that a 0-length message will put the
+> spi chip select back to normal (non cs_toggle mode).  This used to be
+> the case back on kernel-3.8 on the spi-s3c64xx driver but doesn't
+> appear to be true anymore.  It seems like it was a pretty questionable
+> assumption to begin with, so let's fix the code to be more robust.  We
+> know that a message with a single 0-length segment _will_ put things
+> back in order.  Change cros_ec_spi to handle this.
+> 
+> This wasn't a problem on the main user of cros_ec_spi upstream (tegra)
+> because it specified 'google,cros-ec-spi-msg-delay'.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+>  drivers/mfd/cros_ec_spi.c | 18 +++++++-----------
+>  1 file changed, 7 insertions(+), 11 deletions(-)
 
-Still not applied, though, so maybe a few more submissions
-until one of them is accepted won't hurt ;-).
+Looks fine to me and I'm sure you've tested this on your platform.
 
-Guenter
+Applied, thanks.
 
-> Vincent
->
->
-> On 14 June 2014 11:36, Bart Van Assche <bvanassche@acm.org> wrote:
->> Avoid that gcc reports the following warning when building with W=1:
->>
->> warning: type qualifiers ignored on function return type [-Wignored-qualifiers]
->>
->> Signed-off-by: Bart Van Assche <bvanassche@acm.org>
->> Cc: Ingo Molnar <mingo@kernel.org>
->> Cc: Peter Zijlstra <peterz@infradead.org>
->> Cc: Vincent Guittot <vincent.guittot@linaro.org>
->> ---
->>   include/linux/sched.h | 8 ++++----
->>   1 file changed, 4 insertions(+), 4 deletions(-)
->>
->> diff --git a/include/linux/sched.h b/include/linux/sched.h
->> index 306f4f0..0376b05 100644
->> --- a/include/linux/sched.h
->> +++ b/include/linux/sched.h
->> @@ -872,21 +872,21 @@ enum cpu_idle_type {
->>   #define SD_NUMA                        0x4000  /* cross-node balancing */
->>
->>   #ifdef CONFIG_SCHED_SMT
->> -static inline const int cpu_smt_flags(void)
->> +static inline int cpu_smt_flags(void)
->>   {
->>          return SD_SHARE_CPUCAPACITY | SD_SHARE_PKG_RESOURCES;
->>   }
->>   #endif
->>
->>   #ifdef CONFIG_SCHED_MC
->> -static inline const int cpu_core_flags(void)
->> +static inline int cpu_core_flags(void)
->>   {
->>          return SD_SHARE_PKG_RESOURCES;
->>   }
->>   #endif
->>
->>   #ifdef CONFIG_NUMA
->> -static inline const int cpu_numa_flags(void)
->> +static inline int cpu_numa_flags(void)
->>   {
->>          return SD_NUMA;
->>   }
->> @@ -999,7 +999,7 @@ void free_sched_domains(cpumask_var_t doms[], unsigned int ndoms);
->>   bool cpus_share_cache(int this_cpu, int that_cpu);
->>
->>   typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
->> -typedef const int (*sched_domain_flags_f)(void);
->> +typedef int (*sched_domain_flags_f)(void);
->>
->>   #define SDTL_OVERLAP   0x01
->>
->> --
->> 1.8.4.5
->>
->
->
+> diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
+> index 0b8d328..0cbc3db 100644
+> --- a/drivers/mfd/cros_ec_spi.c
+> +++ b/drivers/mfd/cros_ec_spi.c
+> @@ -266,18 +266,14 @@ static int cros_ec_command_spi_xfer(struct cros_ec_device *ec_dev,
+>  		dev_err(ec_dev->dev, "spi transfer failed: %d\n", ret);
+>  	}
+>  
+> -	/* turn off CS */
+> +	/*
+> +	 * Turn off CS, possibly adding a delay to ensure the rising edge
+> +	 * doesn't come too soon after the end of the data.
+> +	 */
+>  	spi_message_init(&msg);
+> -
+> -	if (ec_spi->end_of_msg_delay) {
+> -		/*
+> -		 * Add delay for last transaction, to ensure the rising edge
+> -		 * doesn't come too soon after the end of the data.
+> -		 */
+> -		memset(&trans, 0, sizeof(trans));
+> -		trans.delay_usecs = ec_spi->end_of_msg_delay;
+> -		spi_message_add_tail(&trans, &msg);
+> -	}
+> +	memset(&trans, 0, sizeof(trans));
+> +	trans.delay_usecs = ec_spi->end_of_msg_delay;
+> +	spi_message_add_tail(&trans, &msg);
+>  
+>  	final_ret = spi_sync(ec_spi->spi, &msg);
+>  	ktime_get_ts(&ts);
 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
