@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195AbaFPOSQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 10:18:16 -0400
-Received: from mga09.intel.com ([134.134.136.24]:4114 "EHLO mga09.intel.com"
+	id S1754239AbaFPOTV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 10:19:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60067 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751668AbaFPOSP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 10:18:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,486,1400050800"; 
-   d="scan'208";a="558251860"
-From: "Drokin, Oleg" <oleg.drokin@intel.com>
-To: Anil Belur <askb23@gmail.com>
-CC: "Dilger, Andreas" <andreas.dilger@intel.com>,
-        "<gregkh@linuxfoundation.org>" <gregkh@linuxfoundation.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "<hpdd-discuss@lists.01.org>" <hpdd-discuss@ml01.01.org>
-Subject: Re: [PATCH v4 7/8] staging: lustre: lclient: lcommon_cl.c fixing
- coding style issues
-Thread-Topic: [PATCH v4 7/8] staging: lustre: lclient: lcommon_cl.c fixing
- coding style issues
-Thread-Index: AQHPiVT2M/bNVwjDEEutdeN0Qo7sBZt0PjgA
-Date: Mon, 16 Jun 2014 14:17:56 +0000
-Message-ID: <33547832-F895-4D4E-AB26-A4D4B11681B7@intel.com>
-References: <1402917203-12798-1-git-send-email-askb23@gmail.com>
- <1402917203-12798-8-git-send-email-askb23@gmail.com>
-In-Reply-To: <1402917203-12798-8-git-send-email-askb23@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.12.165]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <B8DA0C04454E4D44B6FB67731A703A27@intel.com>
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752098AbaFPOTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 10:19:19 -0400
+From: Michal Marek <mmarek@suse.cz>
+To: Ilya Dryomov <idryomov@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] deb-pkg: Fix for relative paths
+Date: Mon, 16 Jun 2014 16:18:59 +0200
+Message-Id: <1402928339-29785-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <CAOi1vP9YvbroujXEut6Xn-tvv07MNuxanwDrRvDFhS_-HT_5Lg@mail.gmail.com>
+References: <CAOi1vP9YvbroujXEut6Xn-tvv07MNuxanwDrRvDFhS_-HT_5Lg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When $srctree or $objtree are relative paths, we cannot change directory
+and refer to them in the same subshell. Do the redirection outside of
+the subshell to fix this.
 
-On Jun 16, 2014, at 7:13 AM, Anil Belur wrote:
+Reported-by: Ilya Dryomov <idryomov@gmail.com>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+---
+ scripts/package/builddeb | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-> From: Anil Belur <askb23@gmail.com>
-> 
-> fixed: WARNING: line over 80 characters, used a new variable 'check' to
-> store the offset. Replace "unsigned long" with  "u64" type fir
-> 'cur_index'
-> 
-> Signed-off-by: Anil Belur <askb23@gmail.com>
-> ---
-> drivers/staging/lustre/lustre/lclient/lcommon_cl.c | 5 +++--
-> 1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/lustre/lustre/lclient/lcommon_cl.c b/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
-> index c180a20..440d7c2 100644
-> --- a/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
-> +++ b/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
-> @@ -864,10 +864,11 @@ int ccc_prep_size(const struct lu_env *env, struct cl_object *obj,
-> 				 * linux-2.6.18-128.1.1 miss to do that.
-> 				 * --bug 17336 */
-> 				loff_t size = cl_isize_read(inode);
-> -				unsigned long cur_index = start >> PAGE_CACHE_SHIFT;
-> +				u64 cur_index = start >> PAGE_CACHE_SHIFT;
+diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+index b5f08f7..9a38e85 100644
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -290,13 +290,13 @@ EOF
+ fi
+ 
+ # Build header package
+-(cd $srctree; find . -name Makefile\* -o -name Kconfig\* -o -name \*.pl > "$objtree/debian/hdrsrcfiles")
+-(cd $srctree; find arch/$SRCARCH/include include scripts -type f >> "$objtree/debian/hdrsrcfiles")
+-(cd $objtree; find arch/$SRCARCH/include Module.symvers include scripts -type f >> "$objtree/debian/hdrobjfiles")
++(cd $srctree; find . -name Makefile\* -o -name Kconfig\* -o -name \*.pl) > "$objtree/debian/hdrsrcfiles"
++(cd $srctree; find arch/$SRCARCH/include include scripts -type f) >> "$objtree/debian/hdrsrcfiles"
++(cd $objtree; find arch/$SRCARCH/include Module.symvers include scripts -type f) >> "$objtree/debian/hdrobjfiles"
+ destdir=$kernel_headers_dir/usr/src/linux-headers-$version
+ mkdir -p "$destdir"
+-(cd $srctree; tar -c -f - -T "$objtree/debian/hdrsrcfiles") | (cd $destdir; tar -xf -)
+-(cd $objtree; tar -c -f - -T "$objtree/debian/hdrobjfiles") | (cd $destdir; tar -xf -)
++(cd $srctree; tar -c -f - -T -) < "$objtree/debian/hdrsrcfiles" | (cd $destdir; tar -xf -)
++(cd $objtree; tar -c -f - -T -) < "$objtree/debian/hdrobjfiles" | (cd $destdir; tar -xf -)
+ (cd $objtree; cp $KCONFIG_CONFIG $destdir/.config) # copy .config manually to be where it's expected to be
+ ln -sf "/usr/src/linux-headers-$version" "$kernel_headers_dir/lib/modules/$version/build"
+ rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
+-- 
+1.9.2
 
-Well, size is of type loff_t, so I imagine it's most natural to make cur_index to be loff_t too,
-just like what you do with the newly added check (not very great name, btw, size_index?) variable
-
-Bye,
-    Oleg
