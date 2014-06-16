@@ -1,83 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335AbaFPQtS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 12:49:18 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44105 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349AbaFPQtR (ORCPT
+	id S1755510AbaFPQtc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 12:49:32 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:37153 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752632AbaFPQt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 12:49:17 -0400
-Date: Mon, 16 Jun 2014 17:48:58 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>, sameo@linux.intel.com,
-        ckeepax@opensource.wolfsonmicro.com, lgirdwood@gmail.com,
-        perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Message-ID: <20140616164858.GI5099@sirena.org.uk>
-References: <20140609150013.GA5229@opensource.wolfsonmicro.com>
- <20140609150226.GB5229@opensource.wolfsonmicro.com>
- <20140616164242.GB14323@lee--X1>
+	Mon, 16 Jun 2014 12:49:28 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="A+YNfBJfL1GjoVjN"
-Content-Disposition: inline
-In-Reply-To: <20140616164242.GB14323@lee--X1>
-X-Cookie: Ditat Deus.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/4] mfd: arizona: Export function to control subsystem
- DVFS
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <539ED2C0.8030405@gmail.com>
+References: <1402464739-19044-1-git-send-email-tushar.b@samsung.com>
+	<1402464739-19044-4-git-send-email-tushar.b@samsung.com>
+	<CAD=FV=XqqP7+xDOAKCixivzgaO0xvJX7L+CCN+unAEuf-6aUbQ@mail.gmail.com>
+	<539ED2C0.8030405@gmail.com>
+Date: Mon, 16 Jun 2014 09:49:26 -0700
+Message-ID: <CAD=FV=UaaRQVq3TmXMTv9OkER+zORC89YfPNjwZwfCQKmuavrw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ARM: dts: Enable audio support for Peach-pi board
+From: Doug Anderson <dianders@google.com>
+To: Tushar Behera <trblinux@gmail.com>
+Cc: Tushar Behera <tushar.b@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Kevin Hilman <khilman@linaro.org>, Mark Brown <broonie@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Tushar,
 
---A+YNfBJfL1GjoVjN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Mon, Jun 16, 2014 at 4:19 AM, Tushar Behera <trblinux@gmail.com> wrote:
+> On 06/13/2014 10:33 PM, Doug Anderson wrote:
+>> Tushar,
+>>
+>> On Tue, Jun 10, 2014 at 10:32 PM, Tushar Behera <tushar.b@samsung.com> wrote:
+>>> Peach-pi board has MAX98090 audio codec connected on HSI2C-7 bus.
+>>
+>> If you want to be a stickler about it, peach-pi actually has a
+>> max98091.  That requires code changes to the i2c driver, though.
+>> ...and unfortunately listing two compatible strings for i2c devices is
+>> broken.  :(
+>>
+> Hi Doug,
+>
+> You are right. I checked the boot logs, the detected codec type is
+> MAX98091. Since both these CODECs are supported through a single driver
+> and the detection of chip is done during runtime, I would suggest we go
+> ahead with "max98090" compatible string. I will update the commit
+> message accordingly.
+>
+> Does that sound okay to you?
 
-On Mon, Jun 16, 2014 at 05:42:42PM +0100, Lee Jones wrote:
-> On Mon, 09 Jun 2014, Richard Fitzgerald wrote:
+As per my understanding you shouldn't do this.  You should have two patches:
 
-> > +	if (arizona->subsys_max_rq != new_flags) {
+1. Add "max98091".  You could simply post Wonjoon's patch from
+<https://chromium-review.googlesource.com/184091>
 
-> I don't really get this.  What's the point in passing the mask
-> parameter - I don't see it being used for anything in this routine? No
-> matter what is passed in you always just turn on the same regulator.
+2. Change the device tree to refer to "max98091"
 
-> What am I missing?
+The argument that the "current kernel driver has a single driver" is
+an argument that you're not supposed to make for device tree.  The
+same device tree is supposed to work for U-Boot, BSD, or any other
+platform.  On those platforms it might not be a shared driver.
 
-AFAICT it's a bunch of different independently selectable requests for
-the voltage to ramped with any one of them causing it to happen.
 
-I did wonder why this wasn't just done by refcounting, that's the more
-normal pattern in the kernel, though I guess it's possible some of them
-need different ramps on different devices.
+> If you so desire, I will submit a patch to sort peach-pi device-tree
+> nodes (w.r.t. peach-pit dts file).
 
---A+YNfBJfL1GjoVjN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Yes please.  I think there's supposed to be some official ordering of
+things.  If anyone reading this has a pointer to the official sort
+order of things in the device tree I'd love to see it!  ;)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTnx/3AAoJELSic+t+oim91vgP/3xqnq3yz4symAO68ZBTjY+E
-wbzAmXGb8GU9Zjkcl/4A1j7OCvdc5d+ZSKBQkVbG4VuB/umDyt73H7nw/VNfiI8d
-mlSb3Ewh9+BIL9gedk5RNV/JHZvgcqmzmKASQWoC32p8h4wS9emhov2OQOy70Ysc
-BvD4lm8vjD4sBwDZKhTCMrWnO2kj6JVtH2BPiwnKwW635d/SH98nfi2/+hPorC2n
-FYXeleMNlT3kiLuqe2VBQmSx99aSQoqVj8TuzBD18kTgQUc58o8O3JE3ixOmafyh
-BVCDtb0ZXJvhE1gyJCNAEaDPgRGhP0jTdl/S48mtEBsaHj7ZaoCYYio8292lX/6F
-CRArhYuF7VK1JuYDQMJqRqwvPHRGqxVlntPxekR6S+EdyI5BPoO7ehx+O3pq+1Tv
-z33TdzfzSlaRR17l7NdFQj2jLx+ljGvRnlDcNzi2mqxJe+Z1X0d9OQw5ajh8jF3K
-veMrBuq/5bJ6mBSjQ2aFiYCEkI6n0dC/RhW+p/kHt7o5/RZIKGSPDHHDeEuJsuHM
-i9XFVmt58ky0ZE1EFgR4olx87sEAmvFOrgwMWbReSZcHBTwC4IaRuyHbrmopGyOt
-3laIB6rzQi7YOlp51WbLPyUIFK45zPF84GgUVkeB8C+k1m2izg6goq6NuFQr3t3n
-n4Tn3f65/YpV2eGAmgF9
-=nMGS
------END PGP SIGNATURE-----
-
---A+YNfBJfL1GjoVjN--
+-Doug
