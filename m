@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555AbaFPBoW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 21:44:22 -0400
-Received: from imap.thunk.org ([74.207.234.97]:40068 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752309AbaFPBoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 21:44:21 -0400
-Date: Sun, 15 Jun 2014 21:44:15 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Jet Chen <jet.chen@intel.com>
-Cc: Greg Price <price@mit.edu>, Fengguang Wu <fengguang.wu@intel.com>,
-        Yuanhan Liu <yuanhan.liu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: Re: [random] BUG: spinlock trylock failure on UP on CPU#0, swapper/1
-Message-ID: <20140616014415.GA4887@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Jet Chen <jet.chen@intel.com>, Greg Price <price@mit.edu>,
-	Fengguang Wu <fengguang.wu@intel.com>,
-	Yuanhan Liu <yuanhan.liu@intel.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	lkp@01.org
-References: <539D4776.1030804@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <539D4776.1030804@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1752611AbaFPBod (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 21:44:33 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:56011 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752309AbaFPBoZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jun 2014 21:44:25 -0400
+Message-ID: <1402883060.4707.1.camel@phoenix>
+Subject: [PATCH] regulator: twl: Convert to use devm_kmemdup()
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Nishanth Menon <nm@ti.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Rajendra Nayak <rnayak@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 16 Jun 2014 09:44:20 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 15, 2014 at 03:12:54PM +0800, Jet Chen wrote:
-> Hi Greg,
-> 
-> 0day kernel testing robot got the below dmesg and the first bad commit is
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git master
-> commit 0fb7a01af5b0cbe5bf365891fc4d186f2caa23f7
-> Author:     Greg Price <price@MIT.EDU>
-> AuthorDate: Thu Dec 5 19:32:19 2013 -0500
->
->     random: simplify accounting code
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/twl-regulator.c | 13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
 
-I believe I've found the problem, thanks for the report!
+diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
+index fed28ab..0b4f866 100644
+--- a/drivers/regulator/twl-regulator.c
++++ b/drivers/regulator/twl-regulator.c
+@@ -1128,7 +1128,7 @@ static int twlreg_probe(struct platform_device *pdev)
+ 	if (!initdata)
+ 		return -EINVAL;
+ 
+-	info = kmemdup(template, sizeof(*info), GFP_KERNEL);
++	info = devm_kmemdup(&pdev->dev, template, sizeof(*info), GFP_KERNEL);
+ 	if (!info)
+ 		return -ENOMEM;
+ 
+@@ -1192,7 +1192,6 @@ static int twlreg_probe(struct platform_device *pdev)
+ 	if (IS_ERR(rdev)) {
+ 		dev_err(&pdev->dev, "can't register %s, %ld\n",
+ 				info->desc.name, PTR_ERR(rdev));
+-		kfree(info);
+ 		return PTR_ERR(rdev);
+ 	}
+ 	platform_set_drvdata(pdev, rdev);
+@@ -1212,20 +1211,10 @@ static int twlreg_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static int twlreg_remove(struct platform_device *pdev)
+-{
+-	struct regulator_dev *rdev = platform_get_drvdata(pdev);
+-	struct twlreg_info *info = rdev->reg_data;
+-
+-	kfree(info);
+-	return 0;
+-}
+-
+ MODULE_ALIAS("platform:twl_reg");
+ 
+ static struct platform_driver twlreg_driver = {
+ 	.probe		= twlreg_probe,
+-	.remove		= twlreg_remove,
+ 	/* NOTE: short name, to work around driver model truncation of
+ 	 * "twl_regulator.12" (and friends) to "twl_regulator.1".
+ 	 */
+-- 
+1.8.3.2
 
-There was an earlier warning when this was in the random.git tree, but
-I analyzed the bug report incorrectly and thought it was due to a bug
-in lib/random32.c that would only show up in testing.  My bad for not
-seeing the problem earlier.
 
-The patch will be chained to this reply and sent to LKML.
 
-  	       	     	 	  	     - Ted
