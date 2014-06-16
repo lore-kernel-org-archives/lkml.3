@@ -1,97 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000AbaFPEgl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 00:36:41 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:41503 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192AbaFPEgh (ORCPT
+	id S1753111AbaFPEkn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 00:40:43 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:59816 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833AbaFPEkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 00:36:37 -0400
-Message-ID: <539E6E93.6070102@gmail.com>
-Date: Mon, 16 Jun 2014 06:12:03 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 16 Jun 2014 00:40:40 -0400
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: mtk.manpages@gmail.com, David Herrmann <dh.herrmann@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>, Ryan Lortie <desrt@desrt.ca>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Hugh Dickins <hughd@google.com>,
-        Tony Battersby <tonyb@cybernetics.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [PATCH v3 3/7] shm: add memfd_create() syscall
-References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>	<1402655819-14325-4-git-send-email-dh.herrmann@gmail.com>	<CAKgNAkgnnWjrbE+2KAETsmiyrnrMQu0h7-MrYLvkiwj--_nxcQ@mail.gmail.com>	<CANq1E4R2K+eq9AxtFewp4YUL2cujg+dg+sN19Anvf-zWuvgyWw@mail.gmail.com>	<CAKgNAkgMA39AfoSoA5Pe1r9N+ZzfYQNvNPvcRN7tOvRb8+v06Q@mail.gmail.com> <CALAqxLUDDYhDbU-fa50ZHVe+yOmv0m3aOO3WmGpRrk-cPzsMAg@mail.gmail.com>
-In-Reply-To: <CALAqxLUDDYhDbU-fa50ZHVe+yOmv0m3aOO3WmGpRrk-cPzsMAg@mail.gmail.com>
+In-Reply-To: <539E0D8E.9080706@linaro.org>
+References: <1401903034-20074-1-git-send-email-dianders@chromium.org>
+	<539E0D8E.9080706@linaro.org>
+Date: Sun, 15 Jun 2014 21:40:39 -0700
+X-Google-Sender-Auth: ps-JKqSI2JeoBLw5H77fSd01zig
+Message-ID: <CAD=FV=XA09XawT-fxAm2tTMw4kZ=7RHceXuww2y6q+zMV71pew@mail.gmail.com>
+Subject: Re: [PATCH 1/3] clocksource: exynos_mct: Fix ftrace
+From: Doug Anderson <dianders@chromium.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Chirantan Ekbote <chirantan@chromium.org>,
+        David Riley <davidriley@chromium.org>, Olof Johansson <olof@lixom.net>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2014 06:20 PM, John Stultz wrote:
-> On Fri, Jun 13, 2014 at 7:20 AM, Michael Kerrisk (man-pages)
-> <mtk.manpages@gmail.com> wrote:
+Daniel,
+
+On Sun, Jun 15, 2014 at 2:18 PM, Daniel Lezcano
+<daniel.lezcano@linaro.org> wrote:
+> On 06/04/2014 07:30 PM, Doug Anderson wrote:
 >>
->> The general notion these days is that a (comprehensive) manual page
->> _should_ come *with* the system call, rather than after the fact. And
->> there's a lot of value in that. I've found no end of bugs and design
->> errors while writing (comprehensive) man pages after the fact (by
->> which time it's too late to fix the design errors), and also found
->> quite a few of those issues when I've managed to work with folk at the
->> same time as they write the syscall. Bottom line: you really should
->> write formal documentation now, as part of the process of code
->> submission. It improves the chance of finding implementation and
->> design bugs, and may well widen your circle of reviewers.
-> 
-> I very much agree here. One practical issue I've noticed is that
-> having separate targets for both the code changes and the manpages can
-> be an extra barrier for folks getting changes correctly documented as
-> the change is being submitted. Reviewers may say "be sure to send
-> updates to the man pages" but its not always easy to remember to
-> follow up and make sure the submitter got the changes (which match the
-> merged patches) to you as well.
-> 
-> I've been thinking it might be nice to have the kernel syscall man
-> pages included in the kernel source tree, then have them
-> copied/imported over to the man-pages project (similar to how glibc
-> imports uapi kernel headers).  They could even be kept in the
-> include/uapi directory, and checkpatch could ensure that changes that
-> touch include/uapi also have modifications to something in the
-> manpages directory. This way folks would be able to include the man
-> page change with the code change, making it easier for developers to
-> do the right thing, making it easier for reviewers to ensure its
-> correct, and making it easier for maintainers to ensure man page
-> documentation is properly in sync.
-> 
-> Or is this something that has been hashed over already? I do admit
-> this would disrupt your process a bit.
+>> In (93bfb76 clocksource: exynos_mct: register sched_clock callback) we
+>> supported using the MCT as a scheduler clock.  We properly marked
+>> exynos4_read_sched_clock() as notrace.  However, we then went and
+>> called another function that _wasn't_ notrace.  That means if you do:
+>>
+>>    cd /sys/kernel/debug/tracing/
+>>    echo function_graph > current_tracer
+>>
+>> You'll get a crash.
+>>
+>> Fix this (but still let other readers of the MCT be trace-enabled) by
+>> adding an extra function.  It's important to keep other users of MCT
+>> traceable because the MCT is actually quite slow.
+>
+>
+>
+> Hi Doug,
+>
+> could you elaborate ? I don't get the 'because the MCT ... slow'
 
-It's more a less a FAQ from my point of view, so I wrote this:
-https://www.kernel.org/doc/man-pages/todo.html#migrate_to_kernel_source
+Sorry, I was trying to avoid duplication in the series and it's more
+obvious when you look at parts 2 and 3 of the series.  ;)
 
-In short, I agree that the current process is not optimal, but lacking
-(a lot) more time, it'd be hard to make any change to the current 
-process. In any case, I think there's room for a lot of improvement
-even without changing the current process. (For example, while I 
-agree that having man pages in a separate location from the kernel 
-source does create some barriers, I don't think it's the reason
-most developers don't update the man pages. One just has to
-look at the patchy state Documentation/filesystems/proc.txt as one 
-example to support that view point.)
+Doing the math (please correct any miscalculations) using the numbers
+from the other patches: You can see that the existing code takes
+1323852 us for 1000000 gettimeofday in userspace.  The fastest
+implementation (just shaving to a 32-bit timer) gets us as fast as
+~1000000 us for 1000000 gettimeofday in userspace.
 
-Cheers,
+>From profiling, I believe that gettimeofday from userspace is about
+50% overhead (system call, multiplication, copies, etc) and about 50%
+MCT read.  That means that the fastest you can possibly do an MCT read
+is in .5us or 500ns.
 
-Michael
+I believe an A15 has something like 1 or 2 cycles per instruction.  If
+it were 2 cycles per instruction, it can execute a normal instruction
+on a 2GHz machine in .5ns.  That means we can execute 1000 normal
+instructions in the time it takes to do a since MCT access.
 
+...so I guess that's what I'd call slow.  ;)  What do you think?  I
+know that the MCT read shows up in whole system profiles of
+gettimeofday.
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+-Doug
