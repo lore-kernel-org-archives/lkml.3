@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311AbaFPPpo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 11:45:44 -0400
-Received: from y-p-l.com.tw ([211.20.201.10]:45457 "EHLO mail.y-p-l.com.tw"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754045AbaFPPpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 11:45:43 -0400
-From: "Karim Wattara" <k.wattara@laposte.net>
-Reply-To: mr.wattara22@yahoo.com
-Subject: Are You interested?
-Date: Mon, 16 Jun 2014 23:45:41 +0800
-Message-Id: <20140616154348.M63476@laposte.net>
-X-Mailer: OpenWebMail 2.53 
-X-OriginatingIP: 41.138.98.71 (doris)
+	id S1755390AbaFPPp4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 11:45:56 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:37141 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755344AbaFPPpy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 11:45:54 -0400
+Message-ID: <539F112F.7030303@linux.com>
+Date: Mon, 16 Jun 2014 17:45:51 +0200
+From: Levente Kurusa <levex@linux.com>
+Reply-To: Levente Kurusa <levex@linux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=utf-8
-To: undisclosed-recipients:;
+To: Nick Krause <xerofoify@gmail.com>,
+        Steve Wise <swise@opengridcomputing.com>
+CC: swise@chelsio.com, roland@kernel.org, sean.hefty@intel.com,
+        hal.rosenstock@gmail.com, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4]Checks for Null value in function *get_skub
+References: <1402932328-3732-1-git-send-email-xerofoify@gmail.com>	<539F0DAF.1020802@opengridcomputing.com> <CAPDOMVjd9J=Kz4d88==UsbfjH13mhGzzmbc2NnxSOfqJs_aGpQ@mail.gmail.com>
+In-Reply-To: <CAPDOMVjd9J=Kz4d88==UsbfjH13mhGzzmbc2NnxSOfqJs_aGpQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greeting's,
+On 06/16/2014 05:37 PM, Nick Krause wrote:
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> ---
+>   drivers/infiniband/hw/cxgb4/
+> cm.c | 8 +++-----
+>   1 file changed, 3 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/infiniband/hw/cxgb4/cm.c b/drivers/infiniband/hw/cxgb4/cm.c
+> index f9477e2..2d56983 100644
+> --- a/drivers/infiniband/hw/cxgb4/cm.c
+> +++ b/drivers/infiniband/hw/cxgb4/cm.c
+> @@ -340,15 +340,13 @@ static int status2errno(int status)
+>    */
+>   static struct sk_buff *get_skb(struct sk_buff *skb, int len, gfp_t gfp)
+>   {
+>   if (skb && !skb_is_nonlinear(skb) && !skb_cloned(skb)) {
+>                  skb_trim(skb, 0);
+>                  skb_get(skb);
+>                  skb_reset_transport_header(skb);
+>          } else {
+> +               if (skb)
+> /* NULL is ignored */.
+> +                       kfree_skb (skb);
+>                  skb = alloc_skb(len, gfp);
+>          }
+>          t4_set_arp_err_handler(skb, NULL, NULL);
 
-I know that this mail will come to you as a surprise as we have never met before, but
-need not to worry as I am contacting you independently of my investigation and no one is
-informed of this communication. I need your urgent assistance in transferring the sum of
-$19.3 Million Dollars mmediately to your private account. The money has been here in our
-Bank lying dormant for years now without anybody coming for the claim of it.
+This patch is severely whitespace damaged. Can you fix your MUA
+or try to use git-send-email?
 
-I want to release the money to you as the relative to our deceased customer (the account
-owner) who died a long with her supposed NEXT OF KIN since 31 January 2000. The Banking
-law here does not allow such money to stay more than 15 years, because the money will be
-recalled to the Bank treasury account as unclaimed fund.
+The changelog as well is of low quality. Maybe something like this:
 
-Please, you have to respect the secrecy of most executives as my bank does not have to
-know about my dealings with you. I mean that most officials of my bank, my security they
-do not have to know I have a hand deuce this operation or that I who gave you guidance
-on how to claim these funds. The money will be transferred to your account for us you
-and I share in a proportion of 60% for me and 40% to you. For you and expenses
-incidental occur during the transfer will be incur by both of us.
+infiniband: cxgb4: fix memory skb memory leak
 
-The transfer is risk free on both sides hence you are going to follow my instruction.
-More details information will be forwarded to you to breakdown explaining comprehensively.
+... would be better.
 
-Please delete if you are not interested. Have a nice day and hope to hear your response
-on k.wattara@laposte.net
+Also, this fails the build, due to the extra dot character after
+the comment. :-(
 
-Regards,
-
-Mr Karim Wattara.
-
+Thanks,
+     Levente Kurusa.
