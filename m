@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455AbaFPPbn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 11:31:43 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:46225 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754312AbaFPPbk (ORCPT
+	id S1755343AbaFPPdM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 11:33:12 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:51599 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468AbaFPPdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 11:31:40 -0400
+	Mon, 16 Jun 2014 11:33:10 -0400
+Message-ID: <539F0E32.50100@linux.com>
+Date: Mon, 16 Jun 2014 17:33:06 +0200
+From: Levente Kurusa <levex@linux.com>
+Reply-To: Levente Kurusa <levex@linux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140616143801.GJ5714@two.firstfloor.org>
-References: <cover.1402769596.git.luto@amacapital.net>
-	<21405.44257.742122.786960@gargle.gargle.HOWL>
-	<20140615143500.GP179@brightrain.aerifal.cx>
-	<539DD26B.3060709@zytor.com>
-	<CALCETrXTpkto2gJBiFC4CR5D=Lqf2YfP5BBH02f8hFW+TUGqeA@mail.gmail.com>
-	<539DDE9C.3010903@zytor.com>
-	<CALCETrWLBCNiJArMRPuHbfhj6=ytnx_YqykzgCgZ+DYu34M1Mg@mail.gmail.com>
-	<20140616023604.GI5714@two.firstfloor.org>
-	<CAKOQZ8wwKcDAXq0BnHwvL01LQNFeOGwgA9x8kCLWeFaP6USF4A@mail.gmail.com>
-	<20140616143801.GJ5714@two.firstfloor.org>
-Date: Mon, 16 Jun 2014 08:31:39 -0700
-X-Google-Sender-Auth: ZsoNlXZzFhYryqiduj12Y5by9S8
-Message-ID: <CAKOQZ8zk8KfkObSZg8fmhZXm9nXQSneOywvV-NBj=N-tNWjNPg@mail.gmail.com>
-Subject: Re: [RFC 0/2] __vdso_findsym
-From: Ian Lance Taylor <iant@golang.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, "H. Peter Anvin" <hpa@zytor.com>,
-        Rich Felker <dalias@libc.org>,
-        Mikael Pettersson <mikpelinux@gmail.com>, Russ Cox <rsc@golang.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Steve Wise <swise@opengridcomputing.com>,
+        Nicholas Krause <xerofoify@gmail.com>, swise@chelsio.com
+CC: roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
+        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4]Checks for Null value in function *get_skub
+References: <1402932328-3732-1-git-send-email-xerofoify@gmail.com> <539F0DAF.1020802@opengridcomputing.com>
+In-Reply-To: <539F0DAF.1020802@opengridcomputing.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 7:38 AM, Andi Kleen <andi@firstfloor.org> wrote:
->> I think this issue started when some of the Go developers questioned
->> why the kernel needed to provide a very complex interface--parsing an
->> ELF shared shared library--for very simple functionality--looking up
->> the address of a magic function.  This approach has required special
->> support not just in Go, but also in the dynamic linker and gdb, and
->> does not work well for statically linked binaries.  The support in gdb
->> is perhaps a good idea, but elsewhere it does not make sense.
+On 06/16/2014 05:30 PM, Steve Wise wrote:
+> On 6/16/2014 10:25 AM, Nicholas Krause wrote:
+>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>> ---
+>>   drivers/infiniband/hw/cxgb4/cm.c | 8 +++-----
+>>   1 file changed, 3 insertions(+), 5 deletions(-)
 >>
->> So why not provide a simple interface?
+>> diff --git a/drivers/infiniband/hw/cxgb4/cm.c b/drivers/infiniband/hw/cxgb4/cm.c
+>> index f9477e2..2d56983 100644
+>> --- a/drivers/infiniband/hw/cxgb4/cm.c
+>> +++ b/drivers/infiniband/hw/cxgb4/cm.c
+>> @@ -340,15 +340,13 @@ static int status2errno(int status)
+>>    */
+>>   static struct sk_buff *get_skb(struct sk_buff *skb, int len, gfp_t gfp)
+>>   {
+>>   if (skb && !skb_is_nonlinear(skb) && !skb_cloned(skb)) {
+>>                  skb_trim(skb, 0);
+>>                  skb_get(skb);
+>>                  skb_reset_transport_header(skb);
+>>       } else {
+>> +        if (skb)
+>> +            kfree_skb (skb);
+>>           skb = alloc_skb(len, gfp);
+>>       }
+>>       t4_set_arp_err_handler(skb, NULL, NULL);
 >
-> What good would it do now that everyone already supports it?
+> Can you change the comment?  This patch is now fixing a potential skb leak.
+> Also, kfree_sb() will ignore NULL ptrs, so we could just always call it.
+ > But I'd add a comment like /* NULL is ignored */.
 
-Do statically linked binaries use the vDSO calls?
+AFAIK, checkpatch.pl will show you a message if it detects this:
 
-Ian
+if (x)
+     kfree(x);
+
+so I guess it is not really needed.
+
+Thanks,
+     Levente Kurusa.
