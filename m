@@ -1,224 +1,667 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932474AbaFPSBK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 14:01:10 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.218]:39071 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932350AbaFPSBH (ORCPT
+	id S932502AbaFPSDN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 14:03:13 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:54603 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932477AbaFPSDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 14:01:07 -0400
-X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Jun 2014 14:01:07 EDT
-X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5kzHuK2TMg==
-X-RZG-CLASS-ID: mo00
-Message-ID: <539F2F78.40502@hartkopp.net>
-Date: Mon, 16 Jun 2014 19:55:04 +0200
-From: Oliver Hartkopp <socketcan@hartkopp.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Tyler Hall <tylerwhall@gmail.com>, Andre Naujoks <nautsch2@gmail.com>,
-        Alexander Stein <alexander.stein@systec-electronic.com>
-CC: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] slip: Fix deadlock in write_wakeup
-References: <1402885397-21062-1-git-send-email-tylerwhall@gmail.com>
-In-Reply-To: <1402885397-21062-1-git-send-email-tylerwhall@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 16 Jun 2014 14:03:10 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Daniel Stone <daniels@collabora.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH v2 01/10] mfd: max77686: Convert to use regmap_irq
+Date: Mon, 16 Jun 2014 20:02:29 +0200
+Message-Id: <1402941758-11216-2-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.0.0.rc2
+In-Reply-To: <1402941758-11216-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1402941758-11216-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tyler,
+By using the generic IRQ support in the Register map API, it
+is possible to get rid of max77686-irq.c and simplify the code.
 
-On 16.06.2014 04:23, Tyler Hall wrote:
-> Use schedule_work() to avoid potentially taking the spinlock in
-> interrupt context.
-> 
-(..)
+Suggested-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+---
+ drivers/mfd/Kconfig                  |   1 +
+ drivers/mfd/Makefile                 |   2 +-
+ drivers/mfd/max77686-irq.c           | 319 -----------------------------------
+ drivers/mfd/max77686.c               |  93 +++++++++-
+ drivers/rtc/rtc-max77686.c           |  27 +--
+ include/linux/mfd/max77686-private.h |  26 ++-
+ include/linux/mfd/max77686.h         |   2 -
+ 7 files changed, 119 insertions(+), 351 deletions(-)
+ delete mode 100644 drivers/mfd/max77686-irq.c
 
-> 
-> To deal with these issues, don't grab the lock in the wakeup function by
-> deferring the writeout to a workqueue. Also hold the lock during close
-> when de-assigning the tty pointer to safely disarm the worker and
-> timers.
-> 
-> This bug is easily reproducible on the first transmit when slip is
-> used with the standard 8250 serial driver.
-> 
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index ee8204c..0916447 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -371,6 +371,7 @@ config MFD_MAX77686
+ 	depends on I2C=y
+ 	select MFD_CORE
+ 	select REGMAP_I2C
++	select REGMAP_IRQ
+ 	select IRQ_DOMAIN
+ 	help
+ 	  Say yes here to add support for Maxim Semiconductor MAX77686.
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 8afedba..3b3b408 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -115,7 +115,7 @@ da9063-objs			:= da9063-core.o da9063-irq.o da9063-i2c.o
+ obj-$(CONFIG_MFD_DA9063)	+= da9063.o
+ 
+ obj-$(CONFIG_MFD_MAX14577)	+= max14577.o
+-obj-$(CONFIG_MFD_MAX77686)	+= max77686.o max77686-irq.o
++obj-$(CONFIG_MFD_MAX77686)	+= max77686.o
+ obj-$(CONFIG_MFD_MAX77693)	+= max77693.o max77693-irq.o
+ obj-$(CONFIG_MFD_MAX8907)	+= max8907.o
+ max8925-objs			:= max8925-core.o max8925-i2c.o
+diff --git a/drivers/mfd/max77686-irq.c b/drivers/mfd/max77686-irq.c
+deleted file mode 100644
+index cdc3280..0000000
+--- a/drivers/mfd/max77686-irq.c
++++ /dev/null
+@@ -1,319 +0,0 @@
+-/*
+- * max77686-irq.c - Interrupt controller support for MAX77686
+- *
+- * Copyright (C) 2012 Samsung Electronics Co.Ltd
+- * Chiwoong Byun <woong.byun@samsung.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- *
+- * This driver is based on max8997-irq.c
+- */
+-
+-#include <linux/err.h>
+-#include <linux/irq.h>
+-#include <linux/interrupt.h>
+-#include <linux/gpio.h>
+-#include <linux/mfd/max77686.h>
+-#include <linux/mfd/max77686-private.h>
+-#include <linux/irqdomain.h>
+-#include <linux/regmap.h>
+-
+-enum {
+-	MAX77686_DEBUG_IRQ_INFO = 1 << 0,
+-	MAX77686_DEBUG_IRQ_MASK = 1 << 1,
+-	MAX77686_DEBUG_IRQ_INT = 1 << 2,
+-};
+-
+-static int debug_mask = 0;
+-module_param(debug_mask, int, 0);
+-MODULE_PARM_DESC(debug_mask, "Set debug_mask : 0x0=off 0x1=IRQ_INFO  0x2=IRQ_MASK 0x4=IRQ_INI)");
+-
+-static const u8 max77686_mask_reg[] = {
+-	[PMIC_INT1] = MAX77686_REG_INT1MSK,
+-	[PMIC_INT2] = MAX77686_REG_INT2MSK,
+-	[RTC_INT] = MAX77686_RTC_INTM,
+-};
+-
+-static struct regmap *max77686_get_regmap(struct max77686_dev *max77686,
+-				enum max77686_irq_source src)
+-{
+-	switch (src) {
+-	case PMIC_INT1 ... PMIC_INT2:
+-		return max77686->regmap;
+-	case RTC_INT:
+-		return max77686->rtc_regmap;
+-	default:
+-		return ERR_PTR(-EINVAL);
+-	}
+-}
+-
+-struct max77686_irq_data {
+-	int mask;
+-	enum max77686_irq_source group;
+-};
+-
+-#define DECLARE_IRQ(idx, _group, _mask)		\
+-	[(idx)] = { .group = (_group), .mask = (_mask) }
+-static const struct max77686_irq_data max77686_irqs[] = {
+-	DECLARE_IRQ(MAX77686_PMICIRQ_PWRONF,	PMIC_INT1, 1 << 0),
+-	DECLARE_IRQ(MAX77686_PMICIRQ_PWRONR,	PMIC_INT1, 1 << 1),
+-	DECLARE_IRQ(MAX77686_PMICIRQ_JIGONBF,	PMIC_INT1, 1 << 2),
+-	DECLARE_IRQ(MAX77686_PMICIRQ_JIGONBR,	PMIC_INT1, 1 << 3),
+-	DECLARE_IRQ(MAX77686_PMICIRQ_ACOKBF,	PMIC_INT1, 1 << 4),
+-	DECLARE_IRQ(MAX77686_PMICIRQ_ACOKBR,	PMIC_INT1, 1 << 5),
+-	DECLARE_IRQ(MAX77686_PMICIRQ_ONKEY1S,	PMIC_INT1, 1 << 6),
+-	DECLARE_IRQ(MAX77686_PMICIRQ_MRSTB,		PMIC_INT1, 1 << 7),
+-	DECLARE_IRQ(MAX77686_PMICIRQ_140C,		PMIC_INT2, 1 << 0),
+-	DECLARE_IRQ(MAX77686_PMICIRQ_120C,		PMIC_INT2, 1 << 1),
+-	DECLARE_IRQ(MAX77686_RTCIRQ_RTC60S,		RTC_INT, 1 << 0),
+-	DECLARE_IRQ(MAX77686_RTCIRQ_RTCA1,		RTC_INT, 1 << 1),
+-	DECLARE_IRQ(MAX77686_RTCIRQ_RTCA2,		RTC_INT, 1 << 2),
+-	DECLARE_IRQ(MAX77686_RTCIRQ_SMPL,		RTC_INT, 1 << 3),
+-	DECLARE_IRQ(MAX77686_RTCIRQ_RTC1S,		RTC_INT, 1 << 4),
+-	DECLARE_IRQ(MAX77686_RTCIRQ_WTSR,		RTC_INT, 1 << 5),
+-};
+-
+-static void max77686_irq_lock(struct irq_data *data)
+-{
+-	struct max77686_dev *max77686 = irq_get_chip_data(data->irq);
+-
+-	if (debug_mask & MAX77686_DEBUG_IRQ_MASK)
+-		pr_info("%s\n", __func__);
+-
+-	mutex_lock(&max77686->irqlock);
+-}
+-
+-static void max77686_irq_sync_unlock(struct irq_data *data)
+-{
+-	struct max77686_dev *max77686 = irq_get_chip_data(data->irq);
+-	int i;
+-
+-	for (i = 0; i < MAX77686_IRQ_GROUP_NR; i++) {
+-		u8 mask_reg = max77686_mask_reg[i];
+-		struct regmap *map = max77686_get_regmap(max77686, i);
+-
+-		if (debug_mask & MAX77686_DEBUG_IRQ_MASK)
+-			pr_debug("%s: mask_reg[%d]=0x%x, cur=0x%x\n",
+-			__func__, i, mask_reg, max77686->irq_masks_cur[i]);
+-
+-		if (mask_reg == MAX77686_REG_INVALID ||
+-				IS_ERR_OR_NULL(map))
+-			continue;
+-
+-		max77686->irq_masks_cache[i] = max77686->irq_masks_cur[i];
+-
+-		regmap_write(map, max77686_mask_reg[i],
+-				max77686->irq_masks_cur[i]);
+-	}
+-
+-	mutex_unlock(&max77686->irqlock);
+-}
+-
+-static const inline struct max77686_irq_data *to_max77686_irq(int irq)
+-{
+-	struct irq_data *data = irq_get_irq_data(irq);
+-	return &max77686_irqs[data->hwirq];
+-}
+-
+-static void max77686_irq_mask(struct irq_data *data)
+-{
+-	struct max77686_dev *max77686 = irq_get_chip_data(data->irq);
+-	const struct max77686_irq_data *irq_data = to_max77686_irq(data->irq);
+-
+-	max77686->irq_masks_cur[irq_data->group] |= irq_data->mask;
+-
+-	if (debug_mask & MAX77686_DEBUG_IRQ_MASK)
+-		pr_info("%s: group=%d, cur=0x%x\n",
+-			__func__, irq_data->group,
+-			max77686->irq_masks_cur[irq_data->group]);
+-}
+-
+-static void max77686_irq_unmask(struct irq_data *data)
+-{
+-	struct max77686_dev *max77686 = irq_get_chip_data(data->irq);
+-	const struct max77686_irq_data *irq_data = to_max77686_irq(data->irq);
+-
+-	max77686->irq_masks_cur[irq_data->group] &= ~irq_data->mask;
+-
+-	if (debug_mask & MAX77686_DEBUG_IRQ_MASK)
+-		pr_info("%s: group=%d, cur=0x%x\n",
+-			__func__, irq_data->group,
+-			max77686->irq_masks_cur[irq_data->group]);
+-}
+-
+-static struct irq_chip max77686_irq_chip = {
+-	.name			= "max77686",
+-	.irq_bus_lock		= max77686_irq_lock,
+-	.irq_bus_sync_unlock	= max77686_irq_sync_unlock,
+-	.irq_mask		= max77686_irq_mask,
+-	.irq_unmask		= max77686_irq_unmask,
+-};
+-
+-static irqreturn_t max77686_irq_thread(int irq, void *data)
+-{
+-	struct max77686_dev *max77686 = data;
+-	unsigned int irq_reg[MAX77686_IRQ_GROUP_NR] = {};
+-	unsigned int irq_src;
+-	int ret;
+-	int i, cur_irq;
+-
+-	ret = regmap_read(max77686->regmap,  MAX77686_REG_INTSRC, &irq_src);
+-	if (ret < 0) {
+-		dev_err(max77686->dev, "Failed to read interrupt source: %d\n",
+-				ret);
+-		return IRQ_NONE;
+-	}
+-
+-	if (debug_mask & MAX77686_DEBUG_IRQ_INT)
+-		pr_info("%s: irq_src=0x%x\n", __func__, irq_src);
+-
+-	if (irq_src == MAX77686_IRQSRC_PMIC) {
+-		ret = regmap_bulk_read(max77686->regmap,
+-					 MAX77686_REG_INT1, irq_reg, 2);
+-		if (ret < 0) {
+-			dev_err(max77686->dev, "Failed to read interrupt source: %d\n",
+-					ret);
+-			return IRQ_NONE;
+-		}
+-
+-		if (debug_mask & MAX77686_DEBUG_IRQ_INT)
+-			pr_info("%s: int1=0x%x, int2=0x%x\n", __func__,
+-				 irq_reg[PMIC_INT1], irq_reg[PMIC_INT2]);
+-	}
+-
+-	if (irq_src & MAX77686_IRQSRC_RTC) {
+-		ret = regmap_read(max77686->rtc_regmap,
+-					MAX77686_RTC_INT, &irq_reg[RTC_INT]);
+-		if (ret < 0) {
+-			dev_err(max77686->dev, "Failed to read interrupt source: %d\n",
+-					ret);
+-			return IRQ_NONE;
+-		}
+-
+-		if (debug_mask & MAX77686_DEBUG_IRQ_INT)
+-			pr_info("%s: rtc int=0x%x\n", __func__,
+-							 irq_reg[RTC_INT]);
+-
+-	}
+-
+-	for (i = 0; i < MAX77686_IRQ_GROUP_NR; i++)
+-		irq_reg[i] &= ~max77686->irq_masks_cur[i];
+-
+-	for (i = 0; i < MAX77686_IRQ_NR; i++) {
+-		if (irq_reg[max77686_irqs[i].group] & max77686_irqs[i].mask) {
+-			cur_irq = irq_find_mapping(max77686->irq_domain, i);
+-			if (cur_irq)
+-				handle_nested_irq(cur_irq);
+-		}
+-	}
+-
+-	return IRQ_HANDLED;
+-}
+-
+-static int max77686_irq_domain_map(struct irq_domain *d, unsigned int irq,
+-					irq_hw_number_t hw)
+-{
+-	struct max77686_dev *max77686 = d->host_data;
+-
+-	irq_set_chip_data(irq, max77686);
+-	irq_set_chip_and_handler(irq, &max77686_irq_chip, handle_edge_irq);
+-	irq_set_nested_thread(irq, 1);
+-#ifdef CONFIG_ARM
+-	set_irq_flags(irq, IRQF_VALID);
+-#else
+-	irq_set_noprobe(irq);
+-#endif
+-	return 0;
+-}
+-
+-static struct irq_domain_ops max77686_irq_domain_ops = {
+-	.map = max77686_irq_domain_map,
+-};
+-
+-int max77686_irq_init(struct max77686_dev *max77686)
+-{
+-	struct irq_domain *domain;
+-	int i;
+-	int ret;
+-	int val;
+-	struct regmap *map;
+-
+-	mutex_init(&max77686->irqlock);
+-
+-	if (max77686->irq_gpio && !max77686->irq) {
+-		max77686->irq = gpio_to_irq(max77686->irq_gpio);
+-
+-		if (debug_mask & MAX77686_DEBUG_IRQ_INT) {
+-			ret = gpio_request(max77686->irq_gpio, "pmic_irq");
+-			if (ret < 0) {
+-				dev_err(max77686->dev,
+-					"Failed to request gpio %d with ret:"
+-					"%d\n",	max77686->irq_gpio, ret);
+-				return IRQ_NONE;
+-			}
+-
+-			gpio_direction_input(max77686->irq_gpio);
+-			val = gpio_get_value(max77686->irq_gpio);
+-			gpio_free(max77686->irq_gpio);
+-			pr_info("%s: gpio_irq=%x\n", __func__, val);
+-		}
+-	}
+-
+-	if (!max77686->irq) {
+-		dev_err(max77686->dev, "irq is not specified\n");
+-		return -ENODEV;
+-	}
+-
+-	/* Mask individual interrupt sources */
+-	for (i = 0; i < MAX77686_IRQ_GROUP_NR; i++) {
+-		max77686->irq_masks_cur[i] = 0xff;
+-		max77686->irq_masks_cache[i] = 0xff;
+-		map = max77686_get_regmap(max77686, i);
+-
+-		if (IS_ERR_OR_NULL(map))
+-			continue;
+-		if (max77686_mask_reg[i] == MAX77686_REG_INVALID)
+-			continue;
+-
+-		regmap_write(map, max77686_mask_reg[i], 0xff);
+-	}
+-	domain = irq_domain_add_linear(NULL, MAX77686_IRQ_NR,
+-					&max77686_irq_domain_ops, max77686);
+-	if (!domain) {
+-		dev_err(max77686->dev, "could not create irq domain\n");
+-		return -ENODEV;
+-	}
+-	max77686->irq_domain = domain;
+-
+-	ret = request_threaded_irq(max77686->irq, NULL, max77686_irq_thread,
+-				   IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+-				   "max77686-irq", max77686);
+-
+-	if (ret)
+-		dev_err(max77686->dev, "Failed to request IRQ %d: %d\n",
+-			max77686->irq, ret);
+-
+-
+-	if (debug_mask & MAX77686_DEBUG_IRQ_INFO)
+-		pr_info("%s-\n", __func__);
+-
+-	return 0;
+-}
+-
+-void max77686_irq_exit(struct max77686_dev *max77686)
+-{
+-	if (max77686->irq)
+-		free_irq(max77686->irq, max77686);
+-}
+diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+index ce869ac..42eacb16 100644
+--- a/drivers/mfd/max77686.c
++++ b/drivers/mfd/max77686.c
+@@ -25,6 +25,8 @@
+ #include <linux/export.h>
+ #include <linux/slab.h>
+ #include <linux/i2c.h>
++#include <linux/irq.h>
++#include <linux/interrupt.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/module.h>
+ #include <linux/mfd/core.h>
+@@ -46,6 +48,54 @@ static struct regmap_config max77686_regmap_config = {
+ 	.val_bits = 8,
+ };
+ 
++static struct regmap_config max77686_rtc_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++};
++
++static const struct regmap_irq max77686_irqs[] = {
++	/* INT1 interrupts */
++	{ .reg_offset = 0, .mask = MAX77686_INT1_PWRONF_MSK, },
++	{ .reg_offset = 0, .mask = MAX77686_INT1_PWRONR_MSK, },
++	{ .reg_offset = 0, .mask = MAX77686_INT1_JIGONBF_MSK, },
++	{ .reg_offset = 0, .mask = MAX77686_INT1_JIGONBR_MSK, },
++	{ .reg_offset = 0, .mask = MAX77686_INT1_ACOKBF_MSK, },
++	{ .reg_offset = 0, .mask = MAX77686_INT1_ACOKBR_MSK, },
++	{ .reg_offset = 0, .mask = MAX77686_INT1_ONKEY1S_MSK, },
++	{ .reg_offset = 0, .mask = MAX77686_INT1_MRSTB_MSK, },
++	/* INT2 interrupts */
++	{ .reg_offset = 1, .mask = MAX77686_INT2_140C_MSK, },
++	{ .reg_offset = 1, .mask = MAX77686_INT2_120C_MSK, },
++};
++
++static const struct regmap_irq_chip max77686_irq_chip = {
++	.name			= "max77686-pmic",
++	.status_base		= MAX77686_REG_INT1,
++	.mask_base		= MAX77686_REG_INT1MSK,
++	.num_regs		= 2,
++	.irqs			= max77686_irqs,
++	.num_irqs		= ARRAY_SIZE(max77686_irqs),
++};
++
++static const struct regmap_irq max77686_rtc_irqs[] = {
++	/* RTC interrupts */
++	{ .reg_offset = 0, .mask = MAX77686_RTCINT_RTC60S_MSK, },
++	{ .reg_offset = 0, .mask = MAX77686_RTCINT_RTCA1_MSK, },
++	{ .reg_offset = 0, .mask = MAX77686_RTCINT_RTCA2_MSK, },
++	{ .reg_offset = 0, .mask = MAX77686_RTCINT_SMPL_MSK, },
++	{ .reg_offset = 0, .mask = MAX77686_RTCINT_RTC1S_MSK, },
++	{ .reg_offset = 0, .mask = MAX77686_RTCINT_WTSR_MSK, },
++};
++
++static const struct regmap_irq_chip max77686_rtc_irq_chip = {
++	.name			= "max77686-rtc",
++	.status_base		= MAX77686_RTC_INT,
++	.mask_base		= MAX77686_RTC_INTM,
++	.num_regs		= 1,
++	.irqs			= max77686_rtc_irqs,
++	.num_irqs		= ARRAY_SIZE(max77686_rtc_irqs),
++};
++
+ #ifdef CONFIG_OF
+ static const struct of_device_id max77686_pmic_dt_match[] = {
+ 	{.compatible = "maxim,max77686", .data = NULL},
+@@ -101,7 +151,6 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 	max77686->type = id->driver_data;
+ 
+ 	max77686->wakeup = pdata->wakeup;
+-	max77686->irq_gpio = pdata->irq_gpio;
+ 	max77686->irq = i2c->irq;
+ 
+ 	max77686->regmap = devm_regmap_init_i2c(i2c, &max77686_regmap_config);
+@@ -117,8 +166,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 		dev_err(max77686->dev,
+ 			"device not found on this channel (this is not an error)\n");
+ 		return -ENODEV;
+-	} else
+-		dev_info(max77686->dev, "device found\n");
++	}
+ 
+ 	max77686->rtc = i2c_new_dummy(i2c->adapter, I2C_ADDR_RTC);
+ 	if (!max77686->rtc) {
+@@ -127,15 +175,48 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 	}
+ 	i2c_set_clientdata(max77686->rtc, max77686);
+ 
+-	max77686_irq_init(max77686);
++	max77686->rtc_regmap = devm_regmap_init_i2c(max77686->rtc,
++						    &max77686_rtc_regmap_config);
++	if (IS_ERR(max77686->rtc_regmap)) {
++		ret = PTR_ERR(max77686->rtc_regmap);
++		dev_err(max77686->dev, "failed to allocate RTC regmap: %d\n",
++			ret);
++		goto err_unregister_i2c;
++	}
++
++	ret = regmap_add_irq_chip(max77686->regmap, max77686->irq,
++				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT |
++				  IRQF_SHARED, 0, &max77686_irq_chip,
++				  &max77686->irq_data);
++	if (ret != 0) {
++		dev_err(&i2c->dev, "failed to add PMIC irq chip: %d\n", ret);
++		goto err_unregister_i2c;
++	}
++	ret = regmap_add_irq_chip(max77686->rtc_regmap, max77686->irq,
++				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT |
++				  IRQF_SHARED, 0, &max77686_rtc_irq_chip,
++				  &max77686->rtc_irq_data);
++	if (ret != 0) {
++		dev_err(&i2c->dev, "failed to add RTC irq chip: %d\n", ret);
++		goto err_del_irqc;
++	}
+ 
+ 	ret = mfd_add_devices(max77686->dev, -1, max77686_devs,
+ 			      ARRAY_SIZE(max77686_devs), NULL, 0, NULL);
+ 	if (ret < 0) {
+-		mfd_remove_devices(max77686->dev);
+-		i2c_unregister_device(max77686->rtc);
++		dev_err(&i2c->dev, "failed to add MFD devices: %d\n", ret);
++		goto err_del_rtc_irqc;
+ 	}
+ 
++	return 0;
++
++err_del_rtc_irqc:
++	regmap_del_irq_chip(max77686->irq, max77686->rtc_irq_data);
++err_del_irqc:
++	regmap_del_irq_chip(max77686->irq, max77686->irq_data);
++err_unregister_i2c:
++	i2c_unregister_device(max77686->rtc);
++
+ 	return ret;
+ }
+ 
+diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
+index 9efe118..d20a7f0 100644
+--- a/drivers/rtc/rtc-max77686.c
++++ b/drivers/rtc/rtc-max77686.c
+@@ -492,16 +492,11 @@ static int max77686_rtc_init_reg(struct max77686_rtc_info *info)
+ 	return ret;
+ }
+ 
+-static struct regmap_config max77686_rtc_regmap_config = {
+-	.reg_bits = 8,
+-	.val_bits = 8,
+-};
+-
+ static int max77686_rtc_probe(struct platform_device *pdev)
+ {
+ 	struct max77686_dev *max77686 = dev_get_drvdata(pdev->dev.parent);
+ 	struct max77686_rtc_info *info;
+-	int ret, virq;
++	int ret;
+ 
+ 	dev_info(&pdev->dev, "%s\n", __func__);
+ 
+@@ -514,14 +509,7 @@ static int max77686_rtc_probe(struct platform_device *pdev)
+ 	info->dev = &pdev->dev;
+ 	info->max77686 = max77686;
+ 	info->rtc = max77686->rtc;
+-	info->max77686->rtc_regmap = devm_regmap_init_i2c(info->max77686->rtc,
+-					 &max77686_rtc_regmap_config);
+-	if (IS_ERR(info->max77686->rtc_regmap)) {
+-		ret = PTR_ERR(info->max77686->rtc_regmap);
+-		dev_err(info->max77686->dev, "Failed to allocate register map: %d\n",
+-				ret);
+-		return ret;
+-	}
++
+ 	platform_set_drvdata(pdev, info);
+ 
+ 	ret = max77686_rtc_init_reg(info);
+@@ -550,15 +538,16 @@ static int max77686_rtc_probe(struct platform_device *pdev)
+ 			ret = -EINVAL;
+ 		goto err_rtc;
+ 	}
+-	virq = irq_create_mapping(max77686->irq_domain, MAX77686_RTCIRQ_RTCA1);
+-	if (!virq) {
++
++	info->virq = regmap_irq_get_virq(max77686->rtc_irq_data,
++					 MAX77686_RTCIRQ_RTCA1);
++	if (!info->virq) {
+ 		ret = -ENXIO;
+ 		goto err_rtc;
+ 	}
+-	info->virq = virq;
+ 
+-	ret = devm_request_threaded_irq(&pdev->dev, virq, NULL,
+-				max77686_rtc_alarm_irq, 0, "rtc-alarm0", info);
++	ret = devm_request_threaded_irq(&pdev->dev, info->virq, NULL,
++				max77686_rtc_alarm_irq, 0, "rtc-alarm1", info);
+ 	if (ret < 0)
+ 		dev_err(&pdev->dev, "Failed to request alarm IRQ: %d: %d\n",
+ 			info->virq, ret);
+diff --git a/include/linux/mfd/max77686-private.h b/include/linux/mfd/max77686-private.h
+index 8c75a9c..3a810b1 100644
+--- a/include/linux/mfd/max77686-private.h
++++ b/include/linux/mfd/max77686-private.h
+@@ -205,7 +205,7 @@ enum max77686_irq {
+ 	MAX77686_PMICIRQ_140C,
+ 	MAX77686_PMICIRQ_120C,
+ 
+-	MAX77686_RTCIRQ_RTC60S,
++	MAX77686_RTCIRQ_RTC60S = 0,
+ 	MAX77686_RTCIRQ_RTCA1,
+ 	MAX77686_RTCIRQ_RTCA2,
+ 	MAX77686_RTCIRQ_SMPL,
+@@ -215,6 +215,25 @@ enum max77686_irq {
+ 	MAX77686_IRQ_NR,
+ };
+ 
++#define MAX77686_INT1_PWRONF_MSK	BIT(0)
++#define MAX77686_INT1_PWRONR_MSK	BIT(1)
++#define MAX77686_INT1_JIGONBF_MSK	BIT(2)
++#define MAX77686_INT1_JIGONBR_MSK	BIT(3)
++#define MAX77686_INT1_ACOKBF_MSK	BIT(4)
++#define MAX77686_INT1_ACOKBR_MSK	BIT(5)
++#define MAX77686_INT1_ONKEY1S_MSK	BIT(6)
++#define MAX77686_INT1_MRSTB_MSK		BIT(7)
++
++#define MAX77686_INT2_140C_MSK		BIT(0)
++#define MAX77686_INT2_120C_MSK		BIT(1)
++
++#define MAX77686_RTCINT_RTC60S_MSK	BIT(0)
++#define MAX77686_RTCINT_RTCA1_MSK	BIT(1)
++#define MAX77686_RTCINT_RTCA2_MSK	BIT(2)
++#define MAX77686_RTCINT_SMPL_MSK	BIT(3)
++#define MAX77686_RTCINT_RTC1S_MSK	BIT(4)
++#define MAX77686_RTCINT_WTSR_MSK	BIT(5)
++
+ struct max77686_dev {
+ 	struct device *dev;
+ 	struct i2c_client *i2c; /* 0xcc / PMIC, Battery Control, and FLASH */
+@@ -224,11 +243,10 @@ struct max77686_dev {
+ 
+ 	struct regmap *regmap;		/* regmap for mfd */
+ 	struct regmap *rtc_regmap;	/* regmap for rtc */
+-
+-	struct irq_domain *irq_domain;
++	struct regmap_irq_chip_data *irq_data;
++	struct regmap_irq_chip_data *rtc_irq_data;
+ 
+ 	int irq;
+-	int irq_gpio;
+ 	bool wakeup;
+ 	struct mutex irqlock;
+ 	int irq_masks_cur[MAX77686_IRQ_GROUP_NR];
+diff --git a/include/linux/mfd/max77686.h b/include/linux/mfd/max77686.h
+index 46c0f32..4cbcc13 100644
+--- a/include/linux/mfd/max77686.h
++++ b/include/linux/mfd/max77686.h
+@@ -89,8 +89,6 @@ struct max77686_opmode_data {
+ };
+ 
+ struct max77686_platform_data {
+-	/* IRQ */
+-	int irq_gpio;
+ 	int ono;
+ 	int wakeup;
+ 
+-- 
+2.0.0.rc2
 
-looks reasonable. Thanks for your patch!
-Indeed I can't remember ever using the slcan driver with a real serial
-controller hardware with irq line but only via serial-to-USB adapters :-)
-Due to the recent fixes from Andre and Alexander these two drivers got in
-motion again ...
-
-@Andre/Alexander: Can you please check if slcan still works in your setup. I
-don't have that hardware with me. I only was able to compile it successfully.
-
-Just for the records: These two patches would be candidates for stable 3.12+
-
-Thanks,
-Oliver
-
-
-> [<c0410b7c>] (spin_bug+0x0/0x38) from [<c006109c>] (do_raw_spin_lock+0x60/0x1d0)
->  r5:eab27000 r4:ec02754c
-> [<c006103c>] (do_raw_spin_lock+0x0/0x1d0) from [<c04185c0>] (_raw_spin_lock+0x28/0x2c)
->  r10:0000001f r9:eabb814c r8:eabb8140 r7:40070193 r6:ec02754c r5:eab27000
->  r4:ec02754c r3:00000000
-> [<c0418598>] (_raw_spin_lock+0x0/0x2c) from [<bf3a0220>] (slip_write_wakeup+0x50/0xe0 [slip])
->  r4:ec027540 r3:00000003
-> [<bf3a01d0>] (slip_write_wakeup+0x0/0xe0 [slip]) from [<c026e420>] (tty_wakeup+0x48/0x68)
->  r6:00000000 r5:ea80c480 r4:eab27000 r3:bf3a01d0
-> [<c026e3d8>] (tty_wakeup+0x0/0x68) from [<c028a8ec>] (uart_write_wakeup+0x2c/0x30)
->  r5:ed68ea90 r4:c06790d8
-> [<c028a8c0>] (uart_write_wakeup+0x0/0x30) from [<c028dc44>] (serial8250_tx_chars+0x114/0x170)
-> [<c028db30>] (serial8250_tx_chars+0x0/0x170) from [<c028dffc>] (serial8250_handle_irq+0xa0/0xbc)
->  r6:000000c2 r5:00000060 r4:c06790d8 r3:00000000
-> [<c028df5c>] (serial8250_handle_irq+0x0/0xbc) from [<c02933a4>] (dw8250_handle_irq+0x38/0x64)
->  r7:00000000 r6:edd2f390 r5:000000c2 r4:c06790d8
-> [<c029336c>] (dw8250_handle_irq+0x0/0x64) from [<c028d2f4>] (serial8250_interrupt+0x44/0xc4)
->  r6:00000000 r5:00000000 r4:c06791c4 r3:c029336c
-> [<c028d2b0>] (serial8250_interrupt+0x0/0xc4) from [<c0067fe4>] (handle_irq_event_percpu+0xb4/0x2b0)
->  r10:c06790d8 r9:eab27000 r8:00000000 r7:00000000 r6:0000001f r5:edd52980
->  r4:ec53b6c0 r3:c028d2b0
-> [<c0067f30>] (handle_irq_event_percpu+0x0/0x2b0) from [<c006822c>] (handle_irq_event+0x4c/0x6c)
->  r10:c06790d8 r9:eab27000 r8:c0673ae0 r7:c05c2020 r6:ec53b6c0 r5:edd529d4
->  r4:edd52980
-> [<c00681e0>] (handle_irq_event+0x0/0x6c) from [<c006b140>] (handle_level_irq+0xe8/0x100)
->  r6:00000000 r5:edd529d4 r4:edd52980 r3:00022000
-> [<c006b058>] (handle_level_irq+0x0/0x100) from [<c00676f8>] (generic_handle_irq+0x30/0x40)
->  r5:0000001f r4:0000001f
-> [<c00676c8>] (generic_handle_irq+0x0/0x40) from [<c000f57c>] (handle_IRQ+0xd0/0x13c)
->  r4:ea997b18 r3:000000e0
-> [<c000f4ac>] (handle_IRQ+0x0/0x13c) from [<c00086c4>] (armada_370_xp_handle_irq+0x4c/0x118)
->  r8:000003ff r7:ea997b18 r6:ffffffff r5:60070013 r4:c0674dc0
-> [<c0008678>] (armada_370_xp_handle_irq+0x0/0x118) from [<c0013840>] (__irq_svc+0x40/0x70)
-> Exception stack(0xea997b18 to 0xea997b60)
-> 7b00:                                                       00000001 20070013
-> 7b20: 00000000 0000000b 20070013 eab27000 20070013 00000000 ed10103e eab27000
-> 7b40: c06790d8 ea997b74 ea997b60 ea997b60 c04186c0 c04186c8 60070013 ffffffff
->  r9:eab27000 r8:ed10103e r7:ea997b4c r6:ffffffff r5:60070013 r4:c04186c8
-> [<c04186a4>] (_raw_spin_unlock_irqrestore+0x0/0x54) from [<c0288fc0>] (uart_start+0x40/0x44)
->  r4:c06790d8 r3:c028ddd8
-> [<c0288f80>] (uart_start+0x0/0x44) from [<c028982c>] (uart_write+0xe4/0xf4)
->  r6:0000003e r5:00000000 r4:ed68ea90 r3:0000003e
-> [<c0289748>] (uart_write+0x0/0xf4) from [<bf3a0d20>] (sl_xmit+0x1c4/0x228 [slip])
->  r10:ed388e60 r9:0000003c r8:ffffffdd r7:0000003e r6:ec02754c r5:ea717eb8
->  r4:ec027000
-> [<bf3a0b5c>] (sl_xmit+0x0/0x228 [slip]) from [<c0368d74>] (dev_hard_start_xmit+0x39c/0x6d0)
->  r8:eaf163c0 r7:ec027000 r6:ea717eb8 r5:00000000 r4:00000000
-> 
-> Signed-off-by: Tyler Hall <tylerwhall@gmail.com>
-> Cc: Oliver Hartkopp <socketcan@hartkopp.net>
-> Cc: Andre Naujoks <nautsch2@gmail.com>
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/net/slip/slip.c | 36 ++++++++++++++++++++++++++----------
->  drivers/net/slip/slip.h |  1 +
->  2 files changed, 27 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/net/slip/slip.c b/drivers/net/slip/slip.c
-> index ad4a94e..8752644 100644
-> --- a/drivers/net/slip/slip.c
-> +++ b/drivers/net/slip/slip.c
-> @@ -83,6 +83,7 @@
->  #include <linux/delay.h>
->  #include <linux/init.h>
->  #include <linux/slab.h>
-> +#include <linux/workqueue.h>
->  #include "slip.h"
->  #ifdef CONFIG_INET
->  #include <linux/ip.h>
-> @@ -416,36 +417,46 @@ static void sl_encaps(struct slip *sl, unsigned char *icp, int len)
->  #endif
->  }
->  
-> -/*
-> - * Called by the driver when there's room for more data.  If we have
-> - * more packets to send, we send them here.
-> - */
-> -static void slip_write_wakeup(struct tty_struct *tty)
-> +/* Write out any remaining transmit buffer. Scheduled when tty is writable */
-> +static void slip_transmit(struct work_struct *work)
->  {
-> +	struct slip *sl = container_of(work, struct slip, tx_work);
->  	int actual;
-> -	struct slip *sl = tty->disc_data;
->  
-> +	spin_lock_bh(&sl->lock);
->  	/* First make sure we're connected. */
-> -	if (!sl || sl->magic != SLIP_MAGIC || !netif_running(sl->dev))
-> +	if (!sl->tty || sl->magic != SLIP_MAGIC || !netif_running(sl->dev)) {
-> +		spin_unlock_bh(&sl->lock);
->  		return;
-> +	}
->  
-> -	spin_lock_bh(&sl->lock);
->  	if (sl->xleft <= 0)  {
->  		/* Now serial buffer is almost free & we can start
->  		 * transmission of another packet */
->  		sl->dev->stats.tx_packets++;
-> -		clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
-> +		clear_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
->  		spin_unlock_bh(&sl->lock);
->  		sl_unlock(sl);
->  		return;
->  	}
->  
-> -	actual = tty->ops->write(tty, sl->xhead, sl->xleft);
-> +	actual = sl->tty->ops->write(sl->tty, sl->xhead, sl->xleft);
->  	sl->xleft -= actual;
->  	sl->xhead += actual;
->  	spin_unlock_bh(&sl->lock);
->  }
->  
-> +/*
-> + * Called by the driver when there's room for more data.
-> + * Schedule the transmit.
-> + */
-> +static void slip_write_wakeup(struct tty_struct *tty)
-> +{
-> +	struct slip *sl = tty->disc_data;
-> +
-> +	schedule_work(&sl->tx_work);
-> +}
-> +
->  static void sl_tx_timeout(struct net_device *dev)
->  {
->  	struct slip *sl = netdev_priv(dev);
-> @@ -749,6 +760,7 @@ static struct slip *sl_alloc(dev_t line)
->  	sl->magic       = SLIP_MAGIC;
->  	sl->dev	      	= dev;
->  	spin_lock_init(&sl->lock);
-> +	INIT_WORK(&sl->tx_work, slip_transmit);
->  	sl->mode        = SL_MODE_DEFAULT;
->  #ifdef CONFIG_SLIP_SMART
->  	/* initialize timer_list struct */
-> @@ -872,8 +884,12 @@ static void slip_close(struct tty_struct *tty)
->  	if (!sl || sl->magic != SLIP_MAGIC || sl->tty != tty)
->  		return;
->  
-> +	spin_lock_bh(&sl->lock);
->  	tty->disc_data = NULL;
->  	sl->tty = NULL;
-> +	spin_unlock_bh(&sl->lock);
-> +
-> +	flush_work(&sl->tx_work);
->  
->  	/* VSV = very important to remove timers */
->  #ifdef CONFIG_SLIP_SMART
-> diff --git a/drivers/net/slip/slip.h b/drivers/net/slip/slip.h
-> index 67673cf..cf32aad 100644
-> --- a/drivers/net/slip/slip.h
-> +++ b/drivers/net/slip/slip.h
-> @@ -53,6 +53,7 @@ struct slip {
->    struct tty_struct	*tty;		/* ptr to TTY structure		*/
->    struct net_device	*dev;		/* easy for intr handling	*/
->    spinlock_t		lock;
-> +  struct work_struct	tx_work;	/* Flushes transmit buffer	*/
->  
->  #ifdef SL_INCLUDE_CSLIP
->    struct slcompress	*slcomp;	/* for header compression 	*/
-> 
