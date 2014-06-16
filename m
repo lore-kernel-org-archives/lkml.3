@@ -1,78 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359AbaFPNjj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 09:39:39 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51131 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751962AbaFPNjh (ORCPT
+	id S1753535AbaFPNjx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 09:39:53 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:40400 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753579AbaFPNjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 09:39:37 -0400
-Date: Mon, 16 Jun 2014 14:38:49 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Liu hua <sdu.liu@huawei.com>
-Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "wangnan0@huawei.com" <wangnan0@huawei.com>,
-        "peifeiyue@huawei.com" <peifeiyue@huawei.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "mika.westerberg@iki.fi" <mika.westerberg@iki.fi>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alonid@stratoscale.com" <alonid@stratoscale.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RESEND PATCH] ARM: kdump: Add vmcore_elf64_check_arch
-Message-ID: <20140616133849.GG16758@arm.com>
-References: <1399124686-63299-1-git-send-email-sdu.liu@huawei.com>
- <20140506121558.GB30234@arm.com>
- <5395B4D0.6040302@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5395B4D0.6040302@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 16 Jun 2014 09:39:51 -0400
+From: Alex Elder <elder@linaro.org>
+To: mturquette@linaro.org, mporter@linaro.org, bcm@fixthebug.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v6 2/7] clk: kona: don't init clocks at startup time
+Date: Mon, 16 Jun 2014 08:40:02 -0500
+Message-Id: <1402926007-4436-3-git-send-email-elder@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1402926007-4436-1-git-send-email-elder@linaro.org>
+References: <1402926007-4436-1-git-send-email-elder@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 02:21:20PM +0100, Liu hua wrote:
-> 于 2014/5/6 20:15, Will Deacon 写道:
-> > On Sat, May 03, 2014 at 02:44:46PM +0100, Liu Hua wrote:
-> Sorry to reply you so late. These days I am working on kdump feature for LPAE enabled
-> kernel. And now I think this patch is not good.
-> 
-> > This function looks identical to elf_check_arch. Why do we need to duplicate
-> > that code? You could use some pre-processor magic to make the core part of
-> > the functions agnostic to header type.
-> 
-> At the begging I think I should add elf_check_arch_64 just as elf_check_arch to
-> do complicated check.
-> 
-> But for ARM32, elf_check_arch_64 would not be used except for kdump. No programs
-> with elf64 header can be loaded into 32bit ARM kernel. So I think I can just check
-> the "e_machine", just as what other platform does. I think other checks is useless
-> for kdump.
-> 
-> > In fact, if elf_check_arch could handle both header types then the generic
-> > definition of vmcore_elf64_check_arch in include/linux/crash_dump.h would
-> > work out of the box.
-> 
-> As I mentioned, I afraid this will make the code hard to understand.( Sorry
-> for my former incorrect patch).
-> 
-> How about this patch?
-> 
-> diff --git a/arch/arm/include/asm/elf.h b/arch/arm/include/asm/elf.h
-> index f4b46d3..9424542 100644
-> --- a/arch/arm/include/asm/elf.h
-> +++ b/arch/arm/include/asm/elf.h
-> @@ -97,7 +97,7 @@ struct elf32_hdr;
->  extern int elf_check_arch(const struct elf32_hdr *);
->  #define elf_check_arch elf_check_arch
-> 
-> -#define vmcore_elf64_check_arch(x) (0)
-> +#define vmcore_elf64_check_arch(x) ((x)->e_machine == EM_ARM)
+The last thing done for CCU setup is a call to kona_ccu_init().
+This locks and enables write access on the CCU, then calls
+__kona_clk_init() for all of the clocks it provides.  The purpose of
+this was to get or set the initial state of all the registers
+related to each clock.
 
-Is there no way we can get away with using the generic version here? What
-goes wrong if you let vmcore_elf64_check_arch fallback to elf_check_arch?
+There's no reason to do this though.  The common clock framework
+assumes nothing about the state of the hardware, and if a driver
+requires its clock to be in a particular state it can set that
+state up itself.
 
-Will
+Instead of initializing clocks at startup time, define a prepare
+method that performs that step when a clock is first needed.
+
+Signed-off-by: Alex Elder <elder@linaro.org>
+---
+ drivers/clk/bcm/clk-kona-setup.c |  3 ---
+ drivers/clk/bcm/clk-kona.c       | 49 +++++++++++++++++++---------------------
+ drivers/clk/bcm/clk-kona.h       |  1 -
+ 3 files changed, 23 insertions(+), 30 deletions(-)
+
+diff --git a/drivers/clk/bcm/clk-kona-setup.c b/drivers/clk/bcm/clk-kona-setup.c
+index e5aeded..317f7dd 100644
+--- a/drivers/clk/bcm/clk-kona-setup.c
++++ b/drivers/clk/bcm/clk-kona-setup.c
+@@ -867,9 +867,6 @@ void __init kona_dt_ccu_setup(struct ccu_data *ccu,
+ 		goto out_err;
+ 	}
+ 
+-	if (!kona_ccu_init(ccu))
+-		pr_err("Broadcom %s initialization had errors\n", node->name);
+-
+ 	return;
+ out_err:
+ 	kona_ccu_teardown(ccu);
+diff --git a/drivers/clk/bcm/clk-kona.c b/drivers/clk/bcm/clk-kona.c
+index b643d35..cacbfd6 100644
+--- a/drivers/clk/bcm/clk-kona.c
++++ b/drivers/clk/bcm/clk-kona.c
+@@ -1032,43 +1032,38 @@ static bool __peri_clk_init(struct kona_clk *bcm_clk)
+ 	return true;
+ }
+ 
+-static bool __kona_clk_init(struct kona_clk *bcm_clk)
++/* Clock operations */
++
++static int kona_clk_prepare(struct clk_hw *hw)
+ {
++	struct kona_clk *bcm_clk = to_kona_clk(hw);
++	struct ccu_data *ccu;
++	unsigned long flags;
++	int ret = 0;
++
++	ccu = bcm_clk->ccu;
++	flags = ccu_lock(ccu);
++	__ccu_write_enable(ccu);
++
+ 	switch (bcm_clk->type) {
+ 	case bcm_clk_peri:
+-		return __peri_clk_init(bcm_clk);
++		if (!__peri_clk_init(bcm_clk))
++			ret = -EINVAL;
++		break;
+ 	default:
+ 		BUG();
+ 	}
+-	return -EINVAL;
+-}
+-
+-/* Set a CCU and all its clocks into their desired initial state */
+-bool __init kona_ccu_init(struct ccu_data *ccu)
+-{
+-	unsigned long flags;
+-	unsigned int which;
+-	struct clk **clks = ccu->clk_data.clks;
+-	bool success = true;
+-
+-	flags = ccu_lock(ccu);
+-	__ccu_write_enable(ccu);
+-
+-	for (which = 0; which < ccu->clk_data.clk_num; which++) {
+-		struct kona_clk *bcm_clk;
+-
+-		if (!clks[which])
+-			continue;
+-		bcm_clk = to_kona_clk(__clk_get_hw(clks[which]));
+-		success &= __kona_clk_init(bcm_clk);
+-	}
+ 
+ 	__ccu_write_disable(ccu);
+ 	ccu_unlock(ccu, flags);
+-	return success;
++
++	return ret;
+ }
+ 
+-/* Clock operations */
++static void kona_clk_unprepare(struct clk_hw *hw)
++{
++	/* Nothing to do. */
++}
+ 
+ static int kona_peri_clk_enable(struct clk_hw *hw)
+ {
+@@ -1270,6 +1265,8 @@ static int kona_peri_clk_set_rate(struct clk_hw *hw, unsigned long rate,
+ }
+ 
+ struct clk_ops kona_peri_clk_ops = {
++	.prepare = kona_clk_prepare,
++	.unprepare = kona_clk_unprepare,
+ 	.enable = kona_peri_clk_enable,
+ 	.disable = kona_peri_clk_disable,
+ 	.is_enabled = kona_peri_clk_is_enabled,
+diff --git a/drivers/clk/bcm/clk-kona.h b/drivers/clk/bcm/clk-kona.h
+index 2537b30..4c7e796 100644
+--- a/drivers/clk/bcm/clk-kona.h
++++ b/drivers/clk/bcm/clk-kona.h
+@@ -511,6 +511,5 @@ extern u64 scaled_div_build(struct bcm_clk_div *div, u32 div_value,
+ extern struct clk *kona_clk_setup(struct kona_clk *bcm_clk);
+ extern void __init kona_dt_ccu_setup(struct ccu_data *ccu,
+ 				struct device_node *node);
+-extern bool __init kona_ccu_init(struct ccu_data *ccu);
+ 
+ #endif /* _CLK_KONA_H */
+-- 
+1.9.1
+
