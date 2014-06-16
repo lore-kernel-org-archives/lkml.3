@@ -1,41 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998AbaFPO23 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 10:28:29 -0400
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:59874 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668AbaFPO22 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 10:28:28 -0400
+	id S1754730AbaFPO3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 10:29:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60322 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752580AbaFPO3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 10:29:18 -0400
+Date: Mon, 16 Jun 2014 16:29:15 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH 2/2] memcg: Allow guarantee reclaim
+Message-ID: <20140616142915.GF16915@dhcp22.suse.cz>
+References: <1402473624-13827-2-git-send-email-mhocko@suse.cz>
+ <20140611153631.GH2878@cmpxchg.org>
+ <20140612132207.GA32720@dhcp22.suse.cz>
+ <20140612135600.GI2878@cmpxchg.org>
+ <20140612142237.GB32720@dhcp22.suse.cz>
+ <20140612161733.GC23606@htj.dyndns.org>
+ <20140616125915.GB16915@dhcp22.suse.cz>
+ <20140616135741.GA11542@htj.dyndns.org>
+ <20140616140448.GE16915@dhcp22.suse.cz>
+ <20140616141233.GB11542@htj.dyndns.org>
 MIME-Version: 1.0
-X-Originating-IP: [84.208.72.173]
-In-Reply-To: <8B2F6FFD0BD1E448853114367400A37306FCDFE8A7@BLRX7MCDC203.AMER.DELL.COM>
-References: <8B2F6FFD0BD1E448853114367400A37306FCD2E023@BLRX7MCDC203.AMER.DELL.COM>
- <CAG-2HqUDQ3e-cq4y3zgehz6J8E6LsTCUfqvMEqPEqG7aBmEeRg@mail.gmail.com>
- <8B2F6FFD0BD1E448853114367400A37306FCD2E02A@BLRX7MCDC203.AMER.DELL.COM>
- <CAG-2HqXBOfZTGi-S=AzjGYDyGWkh0ijz73_pUUtmFdmQkgxWVQ@mail.gmail.com> <8B2F6FFD0BD1E448853114367400A37306FCDFE8A7@BLRX7MCDC203.AMER.DELL.COM>
-From: Tom Gundersen <teg@jklm.no>
-Date: Mon, 16 Jun 2014 16:28:07 +0200
-Message-ID: <CAG-2HqUDsda5sk7Mp5idKG7Wig+kawgZEpKV5dSRaWe1sgPmmw@mail.gmail.com>
-Subject: Re: [PATCH] firmware loader: allow disabling of udev as firmware loader
-To: b_b_singh <B_B_Singh@dell.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ming Lei <ming.lei@canonical.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Abhay Salunke <Abhay_Salunke@dell.com>, Stefan Roese <sr@denx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Kay Sievers <kay@vrfy.org>,
-        matt_domsch <Matt_Domsch@dell.com>,
-        srinivas_g_gowda <Srinivas_G_Gowda@dell.com>,
-        stuart_hayes <Stuart_Hayes@dell.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140616141233.GB11542@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 4:08 PM,  <B_B_Singh@dell.com> wrote:
-> Today I have tried with 3.15 the behavior is same as before.
+On Mon 16-06-14 10:12:33, Tejun Heo wrote:
+> On Mon, Jun 16, 2014 at 04:04:48PM +0200, Michal Hocko wrote:
+> > > For whatever reason, a user is stuck with thread-level granularity for
+> > > controllers which work that way, the user can use the old hierarchies
+> > > for them for the time being.
+> > 
+> > So he can mount memcg with new cgroup API and others with old?
+> 
+> Yes, you can read Documentation/cgroups/unified-hierarchy.txt for more
+> details.  I think I cc'd you when posting unified hierarchy patchset,
+> didn't I?
 
-None of these patches were in 3.15, so that should behave as before.
+OK, I've obviously pushed that out of my brain, because you are really
+clear about it:
+"
+All controllers which are not bound to other hierarchies are
+automatically bound to unified hierarchy and show up at the root of
+it. Controllers which are enabled only in the root of unified
+hierarchy can be bound to other hierarchies at any time.  This allows
+mixing unified hierarchy with the traditional multiple hierarchies in
+a fully backward compatible way.
+"
 
-Cheers,
+This of course sorts out my concerns. Sorry about the noise!
 
-Tom
+> > > Nope, some changes don't fit that model.  CFTYPE_ON_ON_DFL is the
+> > > opposite. 
+> > 
+> > OK, I wasn't aware of this. On which branch I find this?
+> 
+> They're all in the mainline now.
+
+git grep CFTYPE_ON_ON_DFL origin/master didn't show me anything.
+
+Thanks!
+-- 
+Michal Hocko
+SUSE Labs
