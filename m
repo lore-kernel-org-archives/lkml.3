@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828AbaFPJFH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 05:05:07 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:46101 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754285AbaFPJFD (ORCPT
+	id S1754867AbaFPJFk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 05:05:40 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:18786 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754772AbaFPJFg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 05:05:03 -0400
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>, Ian Kent <raven@themaw.net>,
-        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
-        Thorsten Diehl <thorsten.diehl@de.ibm.com>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Stefan Bader <stefan.bader@canonical.com>,
+	Mon, 16 Jun 2014 05:05:36 -0400
+Date: Mon, 16 Jun 2014 12:05:25 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
+        devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH 0/2] /proc/stat vs. failed order-4 allocation
-Date: Mon, 16 Jun 2014 11:04:50 +0200
-Message-Id: <1402909492-36486-1-git-send-email-heiko.carstens@de.ibm.com>
-X-Mailer: git-send-email 1.8.5.5
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061609-8372-0000-0000-000000363C14
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Thomas Cort <linuxgeek@gmail.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: Re: [PATCH] staging: rtl8712: rtl871x_ioctl_linux.c: Cleaning up
+ useless if statement
+Message-ID: <20140616090525.GG5500@mwanda>
+References: <1402852858-1352-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402852858-1352-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These two patches are supposed to "fix" failed order-4 memory
-allocations which have been observed when reading /proc/stat.
-The problem has been observed on s390 as well as on x86.
+On Sun, Jun 15, 2014 at 07:20:57PM +0200, Rickard Strandqvist wrote:
+> The same code regardless of the outcome of the if statement. This may of
+> course be a miss and there should be a difference in the code.
+> And clean up another duplicate line of code.
+> 
+> This was partly found using a static code analysis program called cppcheck.
+> 
 
-To address the problem change the seq_file memory allocations to
-fallback to use vmalloc, so that allocations also work if memory
-is fragmented.
+We don't need a cover letter for a single patch.  Just put this stuff in
+the patch description next time.
 
-This approach seems to be simpler and less intrusive than changing
-/proc/stat to use an interator. Also it "fixes" other users as well,
-which use seq_file's single_open() interface.
-
-Heiko Carstens (2):
-  proc/stat: convert to single_open_size()
-  fs/seq_file: fallback to vmalloc allocation
-
- fs/proc/stat.c | 22 ++--------------------
- fs/seq_file.c  | 30 +++++++++++++++++++++---------
- 2 files changed, 23 insertions(+), 29 deletions(-)
-
--- 
-1.8.5.5
+regards,
+dan carpenter
 
