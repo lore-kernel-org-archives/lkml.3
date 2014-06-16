@@ -1,97 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684AbaFPIwQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 04:52:16 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:48053 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461AbaFPIwO (ORCPT
+	id S1754723AbaFPIwo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 04:52:44 -0400
+Received: from mailsender.cdac.in ([196.1.113.117]:58285 "EHLO
+	mailsender.cdac.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754461AbaFPIwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 04:52:14 -0400
-Message-ID: <539EB03C.5080100@linaro.org>
-Date: Mon, 16 Jun 2014 10:52:12 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 16 Jun 2014 04:52:43 -0400
+Message-ID: <539EB007.9000302@cdac.in>
+Date: Mon, 16 Jun 2014 14:21:19 +0530
+From: Varka Bhadram <varkab@cdac.in>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Chirantan Ekbote <chirantan@chromium.org>,
-        David Riley <davidriley@chromium.org>, Olof Johansson <olof@lixom.net>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/3] clocksource: exynos_mct: Fix ftrace
-References: <1401903034-20074-1-git-send-email-dianders@chromium.org>	<539E0D8E.9080706@linaro.org> <CAD=FV=XA09XawT-fxAm2tTMw4kZ=7RHceXuww2y6q+zMV71pew@mail.gmail.com>
-In-Reply-To: <CAD=FV=XA09XawT-fxAm2tTMw4kZ=7RHceXuww2y6q+zMV71pew@mail.gmail.com>
+To: Alexander Aring <alex.aring@gmail.com>,
+        Varka Bhadram <varkabhadram@gmail.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-zigbee-devel@lists.sourceforge.net, davem@davemloft.net
+Subject: Re: [Linux-zigbee-devel] [PATCH net-next 1/3] ieee802154: cc2520:
+ driver for TI cc2520 radio
+References: <1402894318-30349-1-git-send-email-varkab@cdac.in> <1402894318-30349-2-git-send-email-varkab@cdac.in> <20140616073853.GA20343@omega>
+In-Reply-To: <20140616073853.GA20343@omega>
 Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
+X-CDAC-PUNE-MailScanner-ID: s5G8qJpD020729
+X-CDAC-PUNE-MailScanner: Found to be clean, Found to be clean
+X-CDAC-PUNE-MailScanner-SpamCheck: not spam, SpamAssassin (cached, score=-3,
+	required 6, autolearn=disabled, ALL_TRUSTED -1.00, BAYES_50 0.80,
+	RP_MATCHES_RCVD -2.80), not spam, SpamAssassin (cached,
+	score=-2.91, required 6, autolearn=disabled, ALL_TRUSTED -1.80,
+	BAYES_05 -1.11)
+X-CDAC-PUNE-MailScanner-Information: Please contact npsfhelp@cdac.in/mailadmin@cdac.in for more information
+X-MailScanner-ID: s5G8qPSw021778
+X-CDAC-PUNE-MailScanner-From: varkab@cdac.in
+X-CDAC-MailScanner-Spam-Status: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2014 06:40 AM, Doug Anderson wrote:
-> Daniel,
->
-> On Sun, Jun 15, 2014 at 2:18 PM, Daniel Lezcano
-> <daniel.lezcano@linaro.org> wrote:
->> On 06/04/2014 07:30 PM, Doug Anderson wrote:
->>>
->>> In (93bfb76 clocksource: exynos_mct: register sched_clock callback) we
->>> supported using the MCT as a scheduler clock.  We properly marked
->>> exynos4_read_sched_clock() as notrace.  However, we then went and
->>> called another function that _wasn't_ notrace.  That means if you do:
->>>
->>>     cd /sys/kernel/debug/tracing/
->>>     echo function_graph > current_tracer
->>>
->>> You'll get a crash.
->>>
->>> Fix this (but still let other readers of the MCT be trace-enabled) by
->>> adding an extra function.  It's important to keep other users of MCT
->>> traceable because the MCT is actually quite slow.
->>
->>
->>
->> Hi Doug,
->>
->> could you elaborate ? I don't get the 'because the MCT ... slow'
->
-> Sorry, I was trying to avoid duplication in the series and it's more
-> obvious when you look at parts 2 and 3 of the series.  ;)
->
-> Doing the math (please correct any miscalculations) using the numbers
-> from the other patches: You can see that the existing code takes
-> 1323852 us for 1000000 gettimeofday in userspace.  The fastest
-> implementation (just shaving to a 32-bit timer) gets us as fast as
-> ~1000000 us for 1000000 gettimeofday in userspace.
->
->  From profiling, I believe that gettimeofday from userspace is about
-> 50% overhead (system call, multiplication, copies, etc) and about 50%
-> MCT read.  That means that the fastest you can possibly do an MCT read
-> is in .5us or 500ns.
->
-> I believe an A15 has something like 1 or 2 cycles per instruction.  If
-> it were 2 cycles per instruction, it can execute a normal instruction
-> on a 2GHz machine in .5ns.  That means we can execute 1000 normal
-> instructions in the time it takes to do a since MCT access.
->
-> ...so I guess that's what I'd call slow.  ;)  What do you think?  I
-> know that the MCT read shows up in whole system profiles of
-> gettimeofday.
+Hi Alex,
 
-Hi Dough,
+Thanks for the comments.
 
-thanks for the explanation. I still don't get why it is important to 
-keep others users of mct traceable because it is quite slow ? May be it 
-is what you explained here, but I miss the connection between 'the other 
-users' <-> 'traceable' <-> 'because slow'.
+I will create a patch for the required changes with Reported-by 
+Alexander Aring  <...> reply if this is okay for you.
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+On 06/16/2014 01:08 PM, Alexander Aring wrote:
+> Hi Varka,
+>
+> On Mon, Jun 16, 2014 at 10:21:56AM +0530, Varka Bhadram wrote:
+> Maybe some more information about this chip in the commit msg?
+I will provide the proper commit messages in next version
+>
+> +/*Generic Functions*/
+> +static int cc2520_cmd_strobe(struct cc2520_private *priv,
+> +						u8 cmd)
+> +{
+> +	int ret;
+> +	u8 status = 0xff;
+> +	struct spi_message msg;
+> +	struct spi_transfer xfer = {
+> +		.len = 0,
+> +		.tx_buf = priv->buf,
+> +		.rx_buf = priv->buf,
+> +	};
+> +
+> +	spi_message_init(&msg);
+> +	spi_message_add_tail(&xfer, &msg);
+> I see, you maybe looked at others drivers like at86rf230 and see what
+> they do there. I really don't like the lowlevel spi calls in the others
+> drivers. There are spi helper functions like 'spi_write_then_read' look
+> in drivers/spi/spi.c for the helper functions. Then you don't need the
+> buffer_mutex also.
+In at86rf230 driver first it hold the mutex lock for buffer then 
+__at86rf230_read_subreg()/ __at86rf230_write()
+functions called. One more thing is that at the low level spi core is 
+holding the lock for the buffer data.
+We can remove the buffer mutex.
+>> +
+>> +	mutex_lock(&priv->buffer_mutex);
+>> +	priv->buf[xfer.len++] = cmd;
+>> +	dev_vdbg(&priv->spi->dev,
+>> +			"command strobe buf[0] = %02x\n",
+>> +			priv->buf[0]);
+>> +
+>> +	ret = spi_sync(priv->spi, &msg);
+>> +	if (!ret)
+>> +		status = priv->buf[0];
+>> +	dev_vdbg(&priv->spi->dev,
+>> +			"buf[0] = %02x\n", priv->buf[0]);
+>> +	mutex_unlock(&priv->buffer_mutex);
+>> +
+>> +	return ret;
+>> +}
+>> +
+> ....
+>
+>> +
+>> +static void cc2520_unregister(struct cc2520_private *priv)
+>> +{
+>> +	ieee802154_unregister_device(priv->dev);
+>> +	ieee802154_free_device(priv->dev);
+>> +}
+> Only used in remove callback of module. It's small enough to do this in
+> the remove callback.
+>
+Ya its nice . We can save the cpu context switching time also....
+>> +
+>> +static void cc2520_fifop_irqwork(struct work_struct *work)
+>> +{
+>> +	struct cc2520_private *priv
+>> +		= container_of(work, struct cc2520_private, fifop_irqwork);
+>> +
+>> +	dev_dbg(&priv->spi->dev, "fifop interrupt received\n");
+>> +
+>> +	if (gpio_get_value(priv->fifo_pin))
+>> +		cc2520_rx(priv);
+>> +	else
+>> +		dev_err(&priv->spi->dev, "rxfifo overflow\n");
+>> +
+>> +	cc2520_cmd_strobe(priv, CC2520_CMD_SFLUSHRX);
+>> +	cc2520_cmd_strobe(priv, CC2520_CMD_SFLUSHRX);
+>> +}
+>> +
+>> +static irqreturn_t cc2520_fifop_isr(int irq, void *data)
+>> +{
+>> +	struct cc2520_private *priv = data;
+>> +
+>> +	schedule_work(&priv->fifop_irqwork);
+>> +
+>> +	return IRQ_HANDLED;
+>> +}
+>> +
+>> +static irqreturn_t cc2520_sfd_isr(int irq, void *data)
+>> +{
+>> +	struct cc2520_private *priv = data;
+>> +
+>> +	spin_lock(&priv->lock);
+> You need to use here spin_lock_irqsave and spin_unlock_irqrestore here.
+> Please verify you locking with PROVE_LOCKING enabled in your kernel.
+>
+> In your xmit callback you use a irqsave spinlocks there. You need always
+> save to the "strongest" context which is a interrupt in your case.
+This type of mechanism is needed when you want to remember the interrupt 
+status for the
+IRQ/system.
+>> +	if (priv->is_tx) {
+>> +		dev_dbg(&priv->spi->dev, "SFD for TX\n");
+>> +		priv->is_tx = 0;
+>> +		complete(&priv->tx_complete);
+>> +	} else
+>> +		dev_dbg(&priv->spi->dev, "SFD for RX\n");
+> make brackets in the else branch if you have brackets in the "if" branch.
+>
+> You don't need to lock all the things here I think:
+>
+> --snip
+> 	spin_lock_irqsave(&priv->lock, flags);
+> 	if (priv->is_tx) {
+> 		priv->is_tx = 0;
+> 		spin_unlock_irqrestore(&priv->lock, flags);
+> 		dev_dbg(&priv->spi->dev, "SFD for TX\n");
+> 		complete(&priv->tx_complete);
+> 	} else {
+> 		spin_unlock_irqrestore(&priv->lock, flags);
+> 		dev_dbg(&priv->spi->dev, "SFD for RX\n");
+> 	}
+> --snap
+>
+Ya this can be the good approach...
+>> +	spin_unlock(&priv->lock);
+>> +
+>> +	return IRQ_HANDLED
+>> +/*Driver probe function*/
+>> +static int cc2520_probe(struct spi_device *spi)
+>> +{
+>> +	struct cc2520_private *priv;
+>> +	struct pinctrl *pinctrl;
+>> +	struct cc2520_platform_data *pdata;
+>> +	struct device_node __maybe_unused *np = spi->dev.of_node;
+>> +	int ret;
+>> +
+>> +	priv = kzalloc(sizeof(struct cc2520_private), GFP_KERNEL);
+>> +	if (!priv) {
+>> +		ret = -ENOMEM;
+>> +		goto err_free_local;
+>> +	}
+> why not devm_ calls?
+I will surely change it to devm_....
+>> +
+>> +	spi_set_drvdata(spi, priv);
+>> +
+>> +	pinctrl = devm_pinctrl_get_select_default(&spi->dev);
+>> +
+>> +	if (gpio_is_valid(pdata->vreg)) {
+>> +		ret = devm_gpio_request_one(&spi->dev, pdata->vreg,
+>> +					GPIOF_OUT_INIT_LOW, "vreg");
+>> +		if (ret)
+>> +			goto err_hw_init;
+>> +	}
+> You should check on the not optional pins if you can request them. You
+> use in the above code the pins vreg, reset, fifo_irq, sfd. And this
+> failed if the gpio's are not valid.
+>
+> means:
+>
+> if (!gpio_is_valid(pdata->vreg)) {
+> 	dev_err(....)
+> 	ret = -EINVAL;
+> 	goto ...;
+> }
+>
+> on all pins which are needed to use your chip.
+>
+>> +
+>> +	gpio_set_value(pdata->vreg, HIGH);
+>> +	udelay(100);
+>> +
+>> +	gpio_set_value(pdata->reset, HIGH);
+>> +	udelay(200);
+>> +
+>> +	ret = cc2520_hw_init(priv);
+>> +	if (ret)
+>> +		goto err_hw_init;
+>> +
+>> +	/*Set up fifop interrupt */
+>> +	priv->fifo_irq = gpio_to_irq(pdata->fifop);
+> why is fifo_irq in your "private data"? This is only used in this function.
+
+Ya this is my mistake. Previously i used in other place also.
+
+>> +	ret = devm_request_irq(&spi->dev,
+>> +				priv->fifo_irq,
+>> +				cc2520_fifop_isr,
+>> +				IRQF_TRIGGER_RISING,
+>> +				dev_name(&spi->dev),
+>> +				priv);
+>> +	if (ret) {
+>> +		dev_err(&spi->dev, "could not get fifop irq\n");
+>> +		goto err_hw_init;
+>> +	}
+>> +
+>> +	/*Set up sfd interrupt*/
+>> +	ret = devm_request_irq(&spi->dev,
+>> +				gpio_to_irq(pdata->sfd),
+>> +				cc2520_sfd_isr,
+>> +				IRQF_TRIGGER_FALLING,
+>> +				dev_name(&spi->dev),
+>> +				priv);
+>> +	if (ret) {
+>> +		dev_err(&spi->dev, "could not get sfd irq\n");
+>> +		goto err_hw_init;
+>> +	}
+>> +
+>> +	ret = cc2520_register(priv);
+>> +	if (ret)
+>> +		goto err_hw_init;
+>> +
+>> +	return 0;
+>> +
+>> +err_hw_init:
+>> +	mutex_destroy(&priv->buffer_mutex);
+>> +	flush_work(&priv->fifop_irqwork);
+>> +
+>> +err_free_buf:
+>> +	kfree(priv->buf);
+>> +
+>> +err_free_local:
+>> +	kfree(priv);
+>> +
+>> +	return ret;
+>> +}
+>> +
+>> +/*Driver remove function*/
+>> +static int cc2520_remove(struct spi_device *spi)
+>> +{
+>> +	struct cc2520_private *priv = spi_get_drvdata(spi);
+>> +
+>> +	cc2520_unregister(priv);
+>> +
+>> +	mutex_destroy(&priv->buffer_mutex);
+>> +	flush_work(&priv->fifop_irqwork);
+>> +
+>> +	kfree(priv->buf);
+>> +	kfree(priv);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static const struct spi_device_id cc2520_ids[] = {
+>> +	{"cc2520", 0},
+> You don't need to set the driver_data to 0. Simple:
+> 	{ "cc2520", },
+this does not make any difference.
+>> +	{},
+>> +};
+>> +MODULE_DEVICE_TABLE(spi, cc2520_ids);
+>> +
+>> +static const struct of_device_id cc2520_of_ids[] = {
+>> +	{.compatible = "ti,cc2520", },
+>> +	{},
+>> +};
+>> +MODULE_DEVICE_TABLE(of, cc2520_of_ids);
+>> +
+>> +/*SPI Driver Structure*/
+>> +static struct spi_driver cc2520_driver = {
+>> +	.driver = {
+>> +		.name = "cc2520",
+>> +		.bus = &spi_bus_type,
+>> +		.owner = THIS_MODULE,
+>> +		.of_match_table = of_match_ptr(cc2520_of_ids),
+>> +	},
+>> +	.id_table = cc2520_ids,
+>> +	.probe = cc2520_probe,
+>> +	.remove = cc2520_remove,
+>> +};
+>> +module_spi_driver(cc2520_driver);
+>> +
+>> +MODULE_DESCRIPTION("CC2520 Transceiver Driver");
+>> +MODULE_LICENSE("GPL v2");
+>> diff --git a/include/linux/spi/cc2520.h b/include/linux/spi/cc2520.h
+>> new file mode 100644
+>> index 0000000..68a2c88
+>> --- /dev/null
+>> +++ b/include/linux/spi/cc2520.h
+> In this location of header files are platform_data structs only. I think
+> you should leave the cc2520_platform_data in this file and move the rest
+> of declaration to you cc2520.c file.
+>
+I will move the code
+>> @@ -0,0 +1,176 @@
+>> +#ifndef __CC2520_H
+>> +#define __CC2520_H
+>> +
+>> +#define RSSI_VALID		0
+>> +#define RSSI_OFFSET		78
+>> +#define CC2520_FREG_MASK	0x3F
+>> +
+>> +struct cc2520_platform_data {
+>> +	int fifo;
+>> +	int fifop;
+>> +	int cca;
+>> +	int sfd;
+>> +	int reset;
+>> +	int vreg;
+>> +};
+>> +
+> - Alex
+
+
+-Varka Bhadram
+
+-------------------------------------------------------------------------------------------------------------------------------
+[ C-DAC is on Social-Media too. Kindly follow us at:
+Facebook: https://www.facebook.com/CDACINDIA & Twitter: @cdacindia ]
+
+This e-mail is for the sole use of the intended recipient(s) and may
+contain confidential and privileged information. If you are not the
+intended recipient, please contact the sender by reply e-mail and destroy
+all copies and the original message. Any unauthorized review, use,
+disclosure, dissemination, forwarding, printing or copying of this email
+is strictly prohibited and appropriate legal action will be taken.
+-------------------------------------------------------------------------------------------------------------------------------
 
