@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464AbaFPNw6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 09:52:58 -0400
-Received: from bastet.se.axis.com ([195.60.68.11]:52044 "EHLO
-	bastet.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751478AbaFPNw5 (ORCPT
+	id S1753537AbaFPNxP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 09:53:15 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:49802 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751478AbaFPNxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 09:52:57 -0400
-Date: Mon, 16 Jun 2014 15:52:51 +0200
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        Mikael Starvik <starvik@axis.com>, Jesper Nilsson <jespern@axis.com>,
-        linux-cris-kernel@axis.com, Samuel Ortiz <samuel@sortiz.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH tty-next 17/22] tty: Remove ASYNC_CLOSING
-Message-ID: <20140616135251.GK732@axis.com>
-References: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com>
- <1402924639-5164-18-git-send-email-peter@hurleysoftware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402924639-5164-18-git-send-email-peter@hurleysoftware.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 16 Jun 2014 09:53:13 -0400
+Message-ID: <1402926791.16903.4.camel@x41>
+Subject: Re: [GIT PULL] scheduler tree changes for v3.16
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Date: Mon, 16 Jun 2014 15:53:11 +0200
+In-Reply-To: <20140603120752.GA26873@gmail.com>
+References: <20140603120752.GA26873@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Jun 2014 13:53:11.0290 (UTC) FILETIME=[4FA6BDA0:01CF896A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 09:17:14AM -0400, Peter Hurley wrote:
-> Since at least before 2.6.30, tty drivers that do not drop the tty lock
-> while closing cannot observe ASYNC_CLOSING set while holding the
-> tty lock; this includes the tty driver's open() and hangup() methods,
-> since the tty core calls these methods holding the tty lock.
-> 
-> For these drivers, waiting for ASYNC_CLOSING to clear while opening
-> is not required, since this condition cannot occur. Similarly, even
-> when the open() method drops and reacquires the tty lock after
-> blocking, ASYNC_CLOSING cannot be set (again, for drivers that
-> do not drop the tty lock while closing).
-> 
-> Now that tty port drivers no longer drop the tty lock while closing
-> (since 'tty: Remove tty_wait_until_sent_from_close()'), the same
-> conditions apply: waiting for ASYNC_CLOSING to clear while opening
-> is not required, nor is re-checking ASYNC_CLOSING after dropping and
-> reacquiring the tty lock while blocking (eg., in *_block_til_ready()).
-> 
-> Since ASYNC_CLOSING is not tested elsewhere, it is safe to remove
-> the flag.
-> 
-> CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> CC: Heiko Carstens <heiko.carstens@de.ibm.com>
-> CC: linux-s390@vger.kernel.org
-> CC: Mikael Starvik <starvik@axis.com>
+Peter,
 
-For the CRIS part:
+Ingo Molnar schreef op di 03-06-2014 om 14:07 [+0200]:
+> Peter Zijlstra (12):
+>       [...]
+>       sched/idle, x86: Switch from TS_POLLING to TIF_POLLING_NRFLAG
 
-Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+This introduces this obviously correct warning (on 32 bit x86):
+    arch/x86/kernel/apm_32.c: In function 'apm_do_idle':
+    arch/x86/kernel/apm_32.c:844:6: warning: unused variable 'polling' [-Wunused-variable]
+      int polling;
+          ^
 
-> CC: linux-cris-kernel@axis.com
-> CC: Samuel Ortiz <samuel@sortiz.org>
-> CC: "David S. Miller" <davem@davemloft.net>
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Is the trivial patch to remove 'polling' queued somewhere?
 
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+
+Paul Bolle
+
