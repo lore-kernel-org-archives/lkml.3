@@ -1,142 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864AbaFPNT5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 09:19:57 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:41290 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752624AbaFPNRq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753205AbaFPNRq (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 16 Jun 2014 09:17:46 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:40622 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751679AbaFPNRo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 09:17:44 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH tty-next 02/22] tty: Document locking for tty_port_close{,start,end}()
-Date: Mon, 16 Jun 2014 09:16:59 -0400
-Message-Id: <1402924639-5164-3-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH tty-next 00/22] tty/serial fixes for 3.17
+Date: Mon, 16 Jun 2014 09:16:57 -0400
+Message-Id: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com>
-References: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com>
 X-Authenticated-User: 990527 peter@hurleysoftware.com
 X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tty lock is held when the tty driver's .close method is called
-(from the two lone call-sites of tty_release() and __tty_hangup()).
-The call-tree audit[1] of tty_port_close(), tty_port_close_start,
-and tty_port_close_end() is a closed graph of the callers of these
-3 functions; ie., all callers originate from only tty_release()
-or __tty_hangup().
+Hi Greg,
 
-Of these callers, none drop the tty lock.
+These patches are the accumulation of fixes resulting from audits
+of the tty and serial cores; mostly cleanups of open() and close().
+Most of the changes remove condition testing and handling which
+cannot occur because the tty lock is held for the tty driver open()
+call.
 
-Also, document tty_port_close_start() may drop and reacquire the
-tty lock in tty_wait_until_sent_from_close(), which means the tty
-or tty_port may have changed state (but not reopened or hung up).
+The exceptions are the last 3 patches which address API design and
+locking issues for uart drivers.
 
-[1]
-Call-tree audit of tty_port_close, tty_port_close_start, and tty_port_close_end()
+At least 4 known bugs remain:
+1. Several drivers mishandle the start_tx() method; I hope to finish
+   an audit of these soon for fixing in 3.16.
+2. uart_open() mismanages the port count if an error occurs,
+   because uart_close() is always called even if open() returns
+   an error
+3. Most of the port->flags usage is SMP-unsafe; atomics are mixed
+   with spinlock-protected updates.
+4. uart_remove_one_port() is unsafe, as there is no provision for
+   preventing in-use port removal.
 
-tty_release()
-  tty->ops->close() --+
-                      |
-__tty_hangup()        |
-  tty->ops->close() --+
-                      |
-                      +- rp_close():drivers/tty/rocket.c -------------------+
-                      +- uart_close():drivers/tty/serial/serial_core.c -----+
-                      |                                                     +- tty_port_close_start()
-                      |
-                      |
-                      +- close():drivers/tty/synclinkmp.c ------------------+
-                      +- rs_close():drivers/tty/amiserial.c ----------------+
-                      +- gsmtty_close():drivers/tty/n_gsm.c ----------------+
-                      +- mxser_close():drivers/tty/mxser.c -----------------+
-                      +- close():drivers/tty/synclink_gt.c -----------------+
-                      +- mgsl_close():drivers/tty/synclink.c ---------------+
-                      +- isdn_tty_close():drivers/isdn/i4l/isdn_tty.c ------+
-                      +- mgslpc_close():drivers/char/pcmcia/synclink_cs.c --+
-                      +- ircomm_tty_close():net/irda/ircomm/ircomm_tty.c ---+
-                      |                                                     |
-        rs_close():arch/ia64/hp/sim/simserial.c                             |
-       *line_close():arch/um/drivers/line.c                                 |
-        gdm_tty_close():drivers/staging/gdm724x/gdm_tty.c
-        fwtty_close():drivers/staging/fwserial/fwserial.c
-        acm_tty_close():drivers/usb/class/cdc-acm.c
-        serial_close():drivers/usb/serial/usb-serial.c
-        pti_tty_driver_close():drivers/misc/pti.c
-        ipoctal_close():drivers/ipack/devices/ipoctal.c
-        cy_close():drivers/tty/cyclades.c
-        isicom_close():drivers/tty/isicom.c
-        dashtty_close():drivers/tty/metag_da.c
-        moxa_close():drivers/tty/moxa.c
-        goldfish_tty_close():drivers/tty/goldfish.c
-        ehv_bc_tty_close():drivers/tty/ehv_bytechan.c
-        kgdb_nmi_tty_close():drivers/tty/serial/kgdb_nmi.c
-        ifx_spi_close():drivers/tty/serial/ifx6x60.c
-        smd_tty_close():drivers/tty/serial/msm_smd_tty.c
-        ntty_close():drivers/tty/nozomi.c
-        capinc_tty_close():drivers/isdn/capi/capi.c
-        tpk_close():drivers/char/ttyprintk.c
-        sdio_uart_close():drivers/mmc/card/sdio_uart.c                      |
-        rfcomm_tty_close():net/bluetooth/rfcomm/tty.c                       |
-                      |                                                     |
-                      +- tty_port_close():drivers/tty/tty_port.c -----------+
-                                                                            |
-                                                                            +- tty_port_close_start()
-                                                                            +- tty_port_close_end()
+Regards,
 
-* line_close() is the .close method for 2 um drivers,
-  declared in ./arch/um/drivers/stdio_console.c and
-  in ./arch/um/drivers/ssl.c, and not called directly
+Peter Hurley (22):
+  tty: Document locking for tty driver methods
+  tty: Document locking for tty_port_close{,start,end}()
+  tty: Document locking for tty_port_open()
+  tty: Document locking for tty_port_block_til_ready()
+  tty: Document locking for tty_port_hangup()
+  tty: Move tty->closing from port lock critical section
+  tty: ipwireless: Remove tty->closing abort from ipw_open()
+  serial: Use UPF_* constants with struct uart_port flags
+  tty: Remove tty_hung_up_p() tests from tty drivers' open()
+  char: synclink: Remove WARN_ON for bad port count
+  tty: Call hangup method in modern style
+  tty: serial: Fix termios/port flags mismatch
+  serial: blackfin: Fix CTS flow control
+  tty: Remove tty_wait_until_sent_from_close()
+  isdn: tty: Use private flag for ASYNC_CLOSING
+  tty: mxser: Use tty->closing for ASYNC_CLOSING
+  tty: Remove ASYNC_CLOSING
+  tty: Move tty hung up check from port->lock critical section
+  serial: Style fix
+  serial: Refactor uart_flush_buffer() from uart_close()
+  serial: core: Remove superfluous ldisc flush from uart_close()
+  serial: Fix locking for uart driver set_termios() method
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/tty_port.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ Documentation/serial/driver          |  6 ++--
+ drivers/char/pcmcia/synclink_cs.c    | 11 -------
+ drivers/isdn/i4l/isdn_tty.c          | 16 +++++-----
+ drivers/s390/char/con3215.c          |  3 +-
+ drivers/staging/dgrp/dgrp_tty.c      | 10 -------
+ drivers/tty/cyclades.c               |  9 ------
+ drivers/tty/hvc/hvc_console.c        |  2 +-
+ drivers/tty/hvc/hvcs.c               |  2 +-
+ drivers/tty/ipwireless/tty.c         |  5 ----
+ drivers/tty/mxser.c                  |  6 ++--
+ drivers/tty/rocket.c                 | 14 +--------
+ drivers/tty/serial/68328serial.c     |  2 --
+ drivers/tty/serial/amba-pl011.c      |  1 +
+ drivers/tty/serial/atmel_serial.c    |  2 ++
+ drivers/tty/serial/bfin_sport_uart.c | 11 +++++--
+ drivers/tty/serial/bfin_uart.c       | 13 ++++----
+ drivers/tty/serial/crisv10.c         | 47 ++++-------------------------
+ drivers/tty/serial/lantiq.c          |  2 +-
+ drivers/tty/serial/mcf.c             |  4 +--
+ drivers/tty/serial/serial-tegra.c    |  2 ++
+ drivers/tty/serial/serial_core.c     | 31 ++++++++-----------
+ drivers/tty/serial/timbuart.c        |  2 ++
+ drivers/tty/synclink.c               | 26 ++++------------
+ drivers/tty/synclink_gt.c            | 22 +++-----------
+ drivers/tty/synclinkmp.c             | 23 +++-----------
+ drivers/tty/tty_io.c                 |  2 +-
+ drivers/tty/tty_port.c               | 58 ++++++++++++++++++++----------------
+ include/linux/isdn.h                 |  1 +
+ include/linux/tty.h                  | 18 -----------
+ include/linux/tty_driver.h           |  8 +++--
+ include/uapi/linux/tty_flags.h       |  2 --
+ net/irda/ircomm/ircomm_tty.c         | 39 ++----------------------
+ 32 files changed, 117 insertions(+), 283 deletions(-)
 
-diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
-index 3f746c8..bcc15f7 100644
---- a/drivers/tty/tty_port.c
-+++ b/drivers/tty/tty_port.c
-@@ -458,6 +458,10 @@ static void tty_port_drain_delay(struct tty_port *port, struct tty_struct *tty)
- 	schedule_timeout_interruptible(timeout);
- }
- 
-+/* Caller holds tty lock.
-+ * NB: may drop and reacquire tty lock (in tty_wait_until_sent_from_close())
-+ * so tty and tty port may have changed state (but not hung up or reopened).
-+ */
- int tty_port_close_start(struct tty_port *port,
- 				struct tty_struct *tty, struct file *filp)
- {
-@@ -506,6 +510,7 @@ int tty_port_close_start(struct tty_port *port,
- }
- EXPORT_SYMBOL(tty_port_close_start);
- 
-+/* Caller holds tty lock */
- void tty_port_close_end(struct tty_port *port, struct tty_struct *tty)
- {
- 	unsigned long flags;
-@@ -528,6 +533,15 @@ void tty_port_close_end(struct tty_port *port, struct tty_struct *tty)
- }
- EXPORT_SYMBOL(tty_port_close_end);
- 
-+/**
-+ * tty_port_close
-+ *
-+ * Caller holds tty lock
-+ *
-+ * NB: may drop and reacquire tty lock (in tty_port_close_start()->
-+ * tty_wait_until_sent_from_close()) so tty and tty_port may have changed
-+ * state (but not hung up or reopened).
-+ */
- void tty_port_close(struct tty_port *port, struct tty_struct *tty,
- 							struct file *filp)
- {
 -- 
 2.0.0
 
