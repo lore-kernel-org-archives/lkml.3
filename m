@@ -1,47 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557AbaFPBUA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 21:20:00 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:34678 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890AbaFPBT7 (ORCPT
+	id S1752484AbaFPB0v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 21:26:51 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:53393 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751890AbaFPB0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 21:19:59 -0400
-Date: Mon, 16 Jun 2014 02:19:46 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Daniel Kiper <daniel.kiper@oracle.com>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, andrew.cooper3@citrix.com,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        eshelton@pobox.com, hpa@zytor.com, ian.campbell@citrix.com,
-        jbeulich@suse.com, jeremy@goop.org, konrad.wilk@oracle.com,
-        matt.fleming@intel.com, mingo@redhat.com,
-        stefano.stabellini@eu.citrix.com, tglx@linutronix.de
-Subject: Re: [PATCH v5 1/7] efi: Use early_mem*() instead of early_io*()
-Message-ID: <20140616011946.GC5104@srcf.ucam.org>
-References: <1402678823-24589-1-git-send-email-daniel.kiper@oracle.com>
- <1402678823-24589-2-git-send-email-daniel.kiper@oracle.com>
+	Sun, 15 Jun 2014 21:26:50 -0400
+X-IronPort-AV: E=Sophos;i="5.00,713,1396972800"; 
+   d="scan'208";a="31944792"
+Message-ID: <539E48BC.1040805@cn.fujitsu.com>
+Date: Mon, 16 Jun 2014 09:30:36 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402678823-24589-2-git-send-email-daniel.kiper@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: <jjherne@linux.vnet.ibm.com>, Peter Zijlstra <peterz@infradead.org>
+CC: Sasha Levin <sasha.levin@oracle.com>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: workqueue: WARN at at kernel/workqueue.c:2176
+References: <CACvQF52-jUMzK32uoDCb8zn0RZsiC9uzUOq+ZBRXK22esYKS0g@mail.gmail.com> <20140516162945.GZ11096@twins.programming.kicks-ass.net> <53849EB7.9090302@linux.vnet.ibm.com> <20140527142637.GB19143@laptop.programming.kicks-ass.net> <53875F09.3090607@linux.vnet.ibm.com> <538DB076.4090704@cn.fujitsu.com> <20140603141659.GO30445@twins.programming.kicks-ass.net> <538E840D.2040300@cn.fujitsu.com> <20140604064946.GF30445@twins.programming.kicks-ass.net> <538ED7EB.5050303@cn.fujitsu.com> <20140604093907.GC11096@twins.programming.kicks-ass.net> <53904C6B.90001@cn.fujitsu.com> <5395BE3D.6060409@linux.vnet.ibm.com> <53965D86.2070803@cn.fujitsu.com>
+In-Reply-To: <53965D86.2070803@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 07:00:17PM +0200, Daniel Kiper wrote:
-> Use early_mem*() instead of early_io*() because all mapped EFI regions
-> are true RAM not I/O regions. Additionally, I/O family calls do not work
-> correctly under Xen in our case. AIUI, early_io*() maps/unmaps real machine
-> addresses. However, all artificial EFI structures created under Xen live
-> in dom0 memory and should be mapped/unmapped using early_mem*() family
-> calls which map domain memory.
+Hi, Peter
 
-Mapped EFI regions may include memory mapped flash, not merely true RAM.
+Ping...
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+thanks,
+Lai
+
+On 06/10/2014 09:21 AM, Lai Jiangshan wrote:
+> On 06/09/2014 10:01 PM, Jason J. Herne wrote:
+>> On 06/05/2014 06:54 AM, Lai Jiangshan wrote:
+>>> ------------
+>>>
+>>> Subject: [PATCH] sched: migrate the waking tasks
+>>>
+>>> Current code skips to migrate the waking task silently when TTWU_QUEUE is enabled.
+>>>
+>>> When a task is waking, it is pending on the wake_list of the rq, but
+>>> it is not on queue (task->on_rq == 0). In this case, set_cpus_allowed_ptr()
+>>> and __migrate_task() will not migrate it due to it is not on queue.
+>>>
+>>> This behavior is incorrect, because the task had been already waken-up, it will
+>>> be running on the wrong CPU without correct placement until the next wake-up
+>>> or update for cpus_allowed.
+>>>
+>>> To fix this problem, we need to make the waking tasks on-queue (transfer
+>>> the waking tasks to running state) before migrate them.
+>>>
+>>> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+>>> ---
+>>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>>> index 268a45e..d05a5a1 100644
+>>> --- a/kernel/sched/core.c
+>>> +++ b/kernel/sched/core.c
+>>> @@ -1474,20 +1474,24 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
+>>>   }
+>>>
+>>>   #ifdef CONFIG_SMP
+>>> -static void sched_ttwu_pending(void)
+>>> +static void sched_ttwu_pending_locked(struct rq *rq)
+>>>   {
+>>> -    struct rq *rq = this_rq();
+>>>       struct llist_node *llist = llist_del_all(&rq->wake_list);
+>>>       struct task_struct *p;
+>>>
+>>> -    raw_spin_lock(&rq->lock);
+>>> -
+>>>       while (llist) {
+>>>           p = llist_entry(llist, struct task_struct, wake_entry);
+>>>           llist = llist_next(llist);
+>>>           ttwu_do_activate(rq, p, 0);
+>>>       }
+>>> +}
+>>>
+>>> +static void sched_ttwu_pending(void)
+>>> +{
+>>> +    struct rq *rq = this_rq();
+>>> +
+>>> +    raw_spin_lock(&rq->lock);
+>>> +    sched_ttwu_pending_locked(rq);
+>>>       raw_spin_unlock(&rq->lock);
+>>>   }
+>>>
+>>> @@ -4530,6 +4534,11 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
+>>>           goto out;
+>>>
+>>>       dest_cpu = cpumask_any_and(cpu_active_mask, new_mask);
+>>> +
+>>> +    /* Ensure it is on rq for migration if it is waking */
+>>> +    if (p->state == TASK_WAKING)
+>>> +        sched_ttwu_pending_locked(rq);
+>>> +
+>>>       if (p->on_rq) {
+>>>           struct migration_arg arg = { p, dest_cpu };
+>>>           /* Need help from migration thread: drop lock and wait. */
+>>> @@ -4576,6 +4585,10 @@ static int __migrate_task(struct task_struct *p, int src_cpu, int dest_cpu)
+>>>       if (!cpumask_test_cpu(dest_cpu, tsk_cpus_allowed(p)))
+>>>           goto fail;
+>>>
+>>> +    /* Ensure it is on rq for migration if it is waking */
+>>> +    if (p->state == TASK_WAKING)
+>>> +        sched_ttwu_pending_locked(rq_src);
+>>> +
+>>>       /*
+>>>        * If we're not on a rq, the next wake-up will ensure we're
+>>>        * placed properly.
+>>>
+>>
+>> FYI, this patch appears to fix the problem. I was able to run for 3 days without hitting the warning.
+> 
+> Thank you for the test. It proves that we found the root cause.
+> Your tests are the most important, coding takes the second place, let it go forward step by step.
+> 
+> Thanks,
+> Lai
+> 
+>>
+>> I see that you guys are still discussing the details of the fix. When you decide on a final solution I'm happy to retest. Just be sure to ask :). It is hard to tell what to test with so many patches and code snippets flying around all the time.
+>>
+>> Happy coding.
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> .
+> 
+
