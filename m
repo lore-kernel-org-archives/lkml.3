@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118AbaFPLxl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 07:53:41 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:54913 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039AbaFPLxj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 07:53:39 -0400
-Message-ID: <539EDABF.5060701@gmail.com>
-Date: Mon, 16 Jun 2014 14:53:35 +0300
-From: Nadav Amit <nadav.amit@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752671AbaFPLyU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 07:54:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56937 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752245AbaFPLyT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 07:54:19 -0400
+Date: Mon, 16 Jun 2014 13:54:15 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH RESEND] mfd: Fix cs5535 dependencies
+Message-ID: <20140616135415.7f879f1e@endymion.delvare>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>, Nadav Amit <namit@cs.technion.ac.il>
-CC: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] KVM: x86: check DR6/7 high-bits are clear only on
- long-mode
-References: <1402837982-24959-1-git-send-email-namit@cs.technion.ac.il> <1402837982-24959-7-git-send-email-namit@cs.technion.ac.il> <539EC43F.607@redhat.com> <539EC7F7.2000208@gmail.com> <539ED084.2000906@redhat.com>
-In-Reply-To: <539ED084.2000906@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/16/14, 2:09 PM, Paolo Bonzini wrote:
-> Il 16/06/2014 12:33, Nadav Amit ha scritto:
->>>
->>> Do you get this if the input register has bit 31 set?
->> No. To be frank, the scenario may be considered a bit synthetic: the
->> guest assigns a value to a general-purpose register in 64-bit mode,
->> setting the high 32-bits to some non-zero value. Then, later, in 32-bit
->> mode, the guest performs MOV DR instruction. In between the two
->> assignments, the general purpose register is unmodified, so the high
->> 32-bits of the general purpose registers are still set.
->>
->> Note that this scenario does not occur when MOV DR is emulated, but when
->> handle_dr() is called. In this case, the entire 64-bits of the general
->> purpose register used for MOV DR are read, regardless to the execution
->> mode of the guest.
->
-> I wonder if the same bug happens elsewhere.  For example,
-> kvm_emulate_hypercall doesn't look at CS.L/CS.DB, which is really a
-> corner case but arguably also a bug.  kvm_hv_hypercall instead does it
-> right.
->
-> Perhaps we need a variant of kvm_register_read that (on 64-bit hosts)
-> checks EFER/CS.L/CS.DB and masks the returned value accordingly.  You
-> could call it kvm_register_readl.
+As far as I know, the CS5535 and CS5536 chipsets are companions of the
+Geode series of processors, which are 32-bit only. So the CS5535
+drivers are not needed on x86-64, except for build testing purpose.
 
-There are two questions that come in mind:
-1. Should we ignore CS.DB? It would make it consistent with 
-kvm_hv_hypercall and handle_dr. I think this is the proper behavior.
+This aligns the dependencies to what FB_GEODE already uses.
 
-2. Reading CS.L once and masking all the registers (i.e., changing the 
-is_long_mode in kvm_emulate_hypercall to is_64_bit_mode) is likely to be 
-more efficient.
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>
+---
+Patch already sent on: 2014-03-07
 
-Regards,
-Nadav
+ drivers/mfd/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- linux-3.14-rc5.orig/drivers/mfd/Kconfig	2014-03-07 21:43:13.739818995 +0100
++++ linux-3.14-rc5/drivers/mfd/Kconfig	2014-03-07 21:43:59.262786389 +0100
+@@ -13,7 +13,7 @@ config MFD_CORE
+ config MFD_CS5535
+ 	tristate "AMD CS5535 and CS5536 southbridge core functions"
+ 	select MFD_CORE
+-	depends on PCI && X86
++	depends on PCI && (X86_32 || (X86 && COMPILE_TEST))
+ 	---help---
+ 	  This is the core driver for CS5535/CS5536 MFD functions.  This is
+           necessary for using the board's GPIO and MFGPT functionality.
+
+
+-- 
+Jean Delvare
+SUSE L3 Support
