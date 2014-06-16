@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932503AbaFPVlM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 17:41:12 -0400
-Received: from mail-ob0-f202.google.com ([209.85.214.202]:58791 "EHLO
-	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755904AbaFPVkT (ORCPT
+	id S1756196AbaFPVlK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 17:41:10 -0400
+Received: from mail-pd0-f202.google.com ([209.85.192.202]:51479 "EHLO
+	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755917AbaFPVkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 Jun 2014 17:40:19 -0400
 From: Doug Anderson <dianders@chromium.org>
@@ -17,9 +17,9 @@ Cc: Andrew Bresticker <abrestic@chromium.org>, swarren@wwwdotorg.org,
         Wolfram Sang <wsa@the-dreams.de>, broonie@kernel.org,
         Doug Anderson <dianders@chromium.org>, sameo@linux.intel.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 04/10] mfd: cros_ec: Tweak struct cros_ec_device for clarity
-Date: Mon, 16 Jun 2014 14:39:54 -0700
-Message-Id: <1402954800-28215-5-git-send-email-dianders@chromium.org>
+Subject: [PATCH 07/10] mfd: cros_ec: cleanup: remove unused fields from struct cros_ec_device
+Date: Mon, 16 Jun 2014 14:39:57 -0700
+Message-Id: <1402954800-28215-8-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 2.0.0.526.g5318336
 In-Reply-To: <1402954800-28215-1-git-send-email-dianders@chromium.org>
 References: <1402954800-28215-1-git-send-email-dianders@chromium.org>
@@ -29,205 +29,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bill Richardson <wfrichar@chromium.org>
 
-The members of struct cros_ec_device were improperly commented, and
-intermixed the private and public sections. This is just cleanup to make it
-more obvious what goes with what.
-
-[dianders: left lock in the structure but gave it the name that will
-eventually be used.]
+struct cros_ec_device has a superfluous "name" field. We can get all the
+debugging info we need from the existing ec_name and phys_name fields, so
+let's take out the extra field.
 
 Signed-off-by: Bill Richardson <wfrichar@chromium.org>
 Signed-off-by: Doug Anderson <dianders@chromium.org>
 ---
- drivers/mfd/cros_ec.c       |  2 +-
- drivers/mfd/cros_ec_i2c.c   |  4 +--
- drivers/mfd/cros_ec_spi.c   | 10 +++----
- include/linux/mfd/cros_ec.h | 65 ++++++++++++++++++++++++---------------------
- 4 files changed, 43 insertions(+), 38 deletions(-)
+ drivers/mfd/cros_ec.c       | 2 +-
+ drivers/mfd/cros_ec_i2c.c   | 1 -
+ drivers/mfd/cros_ec_spi.c   | 1 -
+ include/linux/mfd/cros_ec.h | 2 --
+ 4 files changed, 1 insertion(+), 5 deletions(-)
 
 diff --git a/drivers/mfd/cros_ec.c b/drivers/mfd/cros_ec.c
-index bd6f936..a9eede5 100644
+index 9304056..d242714 100644
 --- a/drivers/mfd/cros_ec.c
 +++ b/drivers/mfd/cros_ec.c
-@@ -57,7 +57,7 @@ static int cros_ec_command_sendrecv(struct cros_ec_device *ec_dev,
- 	msg.in_buf = in_buf;
- 	msg.in_len = in_len;
+@@ -138,7 +138,7 @@ int cros_ec_register(struct cros_ec_device *ec_dev)
+ 		goto fail_mfd;
+ 	}
  
--	return ec_dev->command_xfer(ec_dev, &msg);
-+	return ec_dev->cmd_xfer(ec_dev, &msg);
- }
+-	dev_info(dev, "Chrome EC (%s)\n", ec_dev->name);
++	dev_info(dev, "Chrome EC device registered\n");
  
- static int cros_ec_command_recv(struct cros_ec_device *ec_dev,
+ 	return 0;
+ 
 diff --git a/drivers/mfd/cros_ec_i2c.c b/drivers/mfd/cros_ec_i2c.c
-index 4f71be9..777e529 100644
+index 37ed12f..5bb32f5 100644
 --- a/drivers/mfd/cros_ec_i2c.c
 +++ b/drivers/mfd/cros_ec_i2c.c
-@@ -29,7 +29,7 @@ static inline struct cros_ec_device *to_ec_dev(struct device *dev)
- 	return i2c_get_clientdata(client);
- }
+@@ -132,7 +132,6 @@ static int cros_ec_i2c_probe(struct i2c_client *client,
+ 		return -ENOMEM;
  
--static int cros_ec_command_xfer(struct cros_ec_device *ec_dev,
-+static int cros_ec_cmd_xfer_i2c(struct cros_ec_device *ec_dev,
- 				struct cros_ec_msg *msg)
- {
- 	struct i2c_client *client = ec_dev->priv;
-@@ -136,7 +136,7 @@ static int cros_ec_i2c_probe(struct i2c_client *client,
+ 	i2c_set_clientdata(client, ec_dev);
+-	ec_dev->name = "I2C";
  	ec_dev->dev = dev;
  	ec_dev->priv = client;
  	ec_dev->irq = client->irq;
--	ec_dev->command_xfer = cros_ec_command_xfer;
-+	ec_dev->cmd_xfer = cros_ec_cmd_xfer_i2c;
- 	ec_dev->ec_name = client->name;
- 	ec_dev->phys_name = client->adapter->name;
- 	ec_dev->parent = &client->dev;
 diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
-index 0b8d328..52d4d7b 100644
+index 2d713fe..09ca789 100644
 --- a/drivers/mfd/cros_ec_spi.c
 +++ b/drivers/mfd/cros_ec_spi.c
-@@ -73,7 +73,7 @@
-  *	if no record
-  * @end_of_msg_delay: used to set the delay_usecs on the spi_transfer that
-  *      is sent when we want to turn off CS at the end of a transaction.
-- * @lock: mutex to ensure only one user of cros_ec_command_spi_xfer at a time
-+ * @lock: mutex to ensure only one user of cros_ec_cmd_xfer_spi at a time
-  */
- struct cros_ec_spi {
- 	struct spi_device *spi;
-@@ -210,13 +210,13 @@ static int cros_ec_spi_receive_response(struct cros_ec_device *ec_dev,
- }
+@@ -374,7 +374,6 @@ static int cros_ec_spi_probe(struct spi_device *spi)
+ 	cros_ec_spi_dt_probe(ec_spi, dev);
  
- /**
-- * cros_ec_command_spi_xfer - Transfer a message over SPI and receive the reply
-+ * cros_ec_cmd_xfer_spi - Transfer a message over SPI and receive the reply
-  *
-  * @ec_dev: ChromeOS EC device
-  * @ec_msg: Message to transfer
-  */
--static int cros_ec_command_spi_xfer(struct cros_ec_device *ec_dev,
--				    struct cros_ec_msg *ec_msg)
-+static int cros_ec_cmd_xfer_spi(struct cros_ec_device *ec_dev,
-+				struct cros_ec_msg *ec_msg)
- {
- 	struct cros_ec_spi *ec_spi = ec_dev->priv;
- 	struct spi_transfer trans;
-@@ -372,7 +372,7 @@ static int cros_ec_spi_probe(struct spi_device *spi)
+ 	spi_set_drvdata(spi, ec_dev);
+-	ec_dev->name = "SPI";
  	ec_dev->dev = dev;
  	ec_dev->priv = ec_spi;
  	ec_dev->irq = spi->irq;
--	ec_dev->command_xfer = cros_ec_command_spi_xfer;
-+	ec_dev->cmd_xfer = cros_ec_cmd_xfer_spi;
- 	ec_dev->ec_name = ec_spi->spi->modalias;
- 	ec_dev->phys_name = dev_name(&ec_spi->spi->dev);
- 	ec_dev->parent = &ec_spi->spi->dev;
 diff --git a/include/linux/mfd/cros_ec.h b/include/linux/mfd/cros_ec.h
-index 2ee3190..79a3585 100644
+index f27c037..2b0c598 100644
 --- a/include/linux/mfd/cros_ec.h
 +++ b/include/linux/mfd/cros_ec.h
-@@ -16,7 +16,9 @@
- #ifndef __LINUX_MFD_CROS_EC_H
- #define __LINUX_MFD_CROS_EC_H
- 
-+#include <linux/notifier.h>
- #include <linux/mfd/cros_ec_commands.h>
-+#include <linux/mutex.h>
- 
- /*
-  * Command interface between EC and AP, for LPC, I2C and SPI interfaces.
-@@ -55,34 +57,53 @@ struct cros_ec_msg {
- /**
-  * struct cros_ec_device - Information about a ChromeOS EC device
+@@ -67,7 +67,6 @@ struct cros_ec_command {
+  * @command_recv: receive a response
+  * @command_sendrecv: send a command and receive a response
   *
-+ * @ec_name: name of EC device (e.g. 'chromeos-ec')
-+ * @phys_name: name of physical comms layer (e.g. 'i2c-4')
-+ * @dev: Device pointer
-+ * @was_wake_device: true if this device was set to wake the system from
-+ * sleep at the last suspend
-+ * @event_notifier: interrupt event notifier for transport devices
-+ * @command_send: send a command
-+ * @command_recv: receive a response
-+ * @command_sendrecv: send a command and receive a response
-+ *
-  * @name: Name of this EC interface
+- * @name: Name of this EC interface
   * @priv: Private data
   * @irq: Interrupt to use
-- * @din: input buffer (from EC)
-- * @dout: output buffer (to EC)
-+ * @din: input buffer (for data from EC)
-+ * @dout: output buffer (for data to EC)
-  * \note
-  * These two buffers will always be dword-aligned and include enough
-  * space for up to 7 word-alignment bytes also, so we can ensure that
-  * the body of the message is always dword-aligned (64-bit).
-- *
-  * We use this alignment to keep ARM and x86 happy. Probably word
-  * alignment would be OK, there might be a small performance advantage
-  * to using dword.
-  * @din_size: size of din buffer to allocate (zero to use static din)
-  * @dout_size: size of dout buffer to allocate (zero to use static dout)
-- * @command_send: send a command
-- * @command_recv: receive a command
-- * @ec_name: name of EC device (e.g. 'chromeos-ec')
-- * @phys_name: name of physical comms layer (e.g. 'i2c-4')
-  * @parent: pointer to parent device (e.g. i2c or spi device)
-- * @dev: Device pointer
-- * dev_lock: Lock to prevent concurrent access
-  * @wake_enabled: true if this device can wake the system from sleep
-- * @was_wake_device: true if this device was set to wake the system from
-- * sleep at the last suspend
-- * @event_notifier: interrupt event notifier for transport devices
-+ * @lock: one transaction at a time
-+ * @cmd_xfer: low-level channel to the EC
-  */
- struct cros_ec_device {
-+
-+	/* These are used by other drivers that want to talk to the EC */
-+	const char *ec_name;
-+	const char *phys_name;
-+	struct device *dev;
-+	bool was_wake_device;
-+	struct class *cros_class;
-+	struct blocking_notifier_head event_notifier;
-+	int (*command_send)(struct cros_ec_device *ec,
-+			    uint16_t cmd, void *out_buf, int out_len);
-+	int (*command_recv)(struct cros_ec_device *ec,
-+			    uint16_t cmd, void *in_buf, int in_len);
-+	int (*command_sendrecv)(struct cros_ec_device *ec,
-+				uint16_t cmd, void *out_buf, int out_len,
-+				void *in_buf, int in_len);
-+
-+	/* These are used to implement the platform-specific interface */
- 	const char *name;
+  * @din: input buffer (for data from EC)
+@@ -104,7 +103,6 @@ struct cros_ec_device {
+ 				void *in_buf, int in_len);
+ 
+ 	/* These are used to implement the platform-specific interface */
+-	const char *name;
  	void *priv;
  	int irq;
-@@ -90,26 +111,10 @@ struct cros_ec_device {
- 	uint8_t *dout;
- 	int din_size;
- 	int dout_size;
--	int (*command_send)(struct cros_ec_device *ec,
--			uint16_t cmd, void *out_buf, int out_len);
--	int (*command_recv)(struct cros_ec_device *ec,
--			uint16_t cmd, void *in_buf, int in_len);
--	int (*command_sendrecv)(struct cros_ec_device *ec,
--			uint16_t cmd, void *out_buf, int out_len,
--			void *in_buf, int in_len);
--	int (*command_xfer)(struct cros_ec_device *ec,
--			struct cros_ec_msg *msg);
--
--	const char *ec_name;
--	const char *phys_name;
- 	struct device *parent;
--
--	/* These are --private-- fields - do not assign */
--	struct device *dev;
--	struct mutex dev_lock;
- 	bool wake_enabled;
--	bool was_wake_device;
--	struct blocking_notifier_head event_notifier;
-+	struct mutex lock;
-+	int (*cmd_xfer)(struct cros_ec_device *ec, struct cros_ec_msg *msg);
- };
- 
- /**
+ 	uint8_t *din;
 -- 
 2.0.0.526.g5318336
 
