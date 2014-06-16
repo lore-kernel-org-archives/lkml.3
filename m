@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390AbaFPPp4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 11:45:56 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:37141 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755344AbaFPPpy (ORCPT
+	id S1755417AbaFPPsI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 11:48:08 -0400
+Received: from mout.gmx.net ([212.227.15.19]:59529 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751448AbaFPPsG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 11:45:54 -0400
-Message-ID: <539F112F.7030303@linux.com>
-Date: Mon, 16 Jun 2014 17:45:51 +0200
-From: Levente Kurusa <levex@linux.com>
-Reply-To: Levente Kurusa <levex@linux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 16 Jun 2014 11:48:06 -0400
+From: Jan-Simon =?ISO-8859-1?Q?M=F6ller?= <dl9pf@gmx.de>
+To: pageexec@freemail.hu
+Cc: Borislav Petkov <bp@alien8.de>, Behan Webster <behanw@converseincode.com>,
+        Mark Charlebois <mcharleb@gmail.com>, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: 3d3d6b847420 ("kbuild: LLVMLinux: Adapt warnings for compilation with clang")
+Date: Mon, 16 Jun 2014 17:48:01 +0200
+Message-ID: <2065274.H8oo5iWEkB@aragorn.auenland.lan>
+User-Agent: KMail/4.13.2 (Linux/3.11.10-7-desktop; KDE/4.13.2; x86_64; ; )
+In-Reply-To: <539F0D55.31207.1DF87EFF@pageexec.freemail.hu>
+References: <20140616130751.GD8170@pd.tnic> <539F0D55.31207.1DF87EFF@pageexec.freemail.hu>
 MIME-Version: 1.0
-To: Nick Krause <xerofoify@gmail.com>,
-        Steve Wise <swise@opengridcomputing.com>
-CC: swise@chelsio.com, roland@kernel.org, sean.hefty@intel.com,
-        hal.rosenstock@gmail.com, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4]Checks for Null value in function *get_skub
-References: <1402932328-3732-1-git-send-email-xerofoify@gmail.com>	<539F0DAF.1020802@opengridcomputing.com> <CAPDOMVjd9J=Kz4d88==UsbfjH13mhGzzmbc2NnxSOfqJs_aGpQ@mail.gmail.com>
-In-Reply-To: <CAPDOMVjd9J=Kz4d88==UsbfjH13mhGzzmbc2NnxSOfqJs_aGpQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
+X-Provags-ID: V03:K0:3YcqKPNRtMht5YcOQBk26PS7HmKXrbYemS1VgtqjjVUwCKCunOm
+ YOvwo76GfP+NUVKOvnEjug3axVqCF45SEDa3tEAnRCHQc9sV2ApXkTfq83d6pDl3MrffKiz
+ qjB9rHnbzf8VHp+tf4im89qMdk5vc/iwKDzpy1ZBe/rxsJOmpedARU8VjjtPc7OzAREFQRA
+ pL+/dHikx0TWGJ/gBVGNw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2014 05:37 PM, Nick Krause wrote:
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->   drivers/infiniband/hw/cxgb4/
-> cm.c | 8 +++-----
->   1 file changed, 3 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/infiniband/hw/cxgb4/cm.c b/drivers/infiniband/hw/cxgb4/cm.c
-> index f9477e2..2d56983 100644
-> --- a/drivers/infiniband/hw/cxgb4/cm.c
-> +++ b/drivers/infiniband/hw/cxgb4/cm.c
-> @@ -340,15 +340,13 @@ static int status2errno(int status)
->    */
->   static struct sk_buff *get_skb(struct sk_buff *skb, int len, gfp_t gfp)
->   {
->   if (skb && !skb_is_nonlinear(skb) && !skb_cloned(skb)) {
->                  skb_trim(skb, 0);
->                  skb_get(skb);
->                  skb_reset_transport_header(skb);
->          } else {
-> +               if (skb)
-> /* NULL is ignored */.
-> +                       kfree_skb (skb);
->                  skb = alloc_skb(len, gfp);
->          }
->          t4_set_arp_err_handler(skb, NULL, NULL);
+Ok, let's wrap this case with 
 
-This patch is severely whitespace damaged. Can you fix your MUA
-or try to use git-send-email?
+ifeq ($(COMPILER),clang)
+...
+endif
 
-The changelog as well is of low quality. Maybe something like this:
+And we'll update the stale entries.
 
-infiniband: cxgb4: fix memory skb memory leak
+Patch to follow after some testing.
 
-... would be better.
+-- 
 
-Also, this fails the build, due to the extra dot character after
-the comment. :-(
+Dipl.-Ing.
+Jan-Simon Möller
 
-Thanks,
-     Levente Kurusa.
+jansimon.moeller@gmx.de
+Am Montag, 16. Juni 2014, 17:29:25 schrieb PaX Team:
+> On 16 Jun 2014 at 15:07, Borislav Petkov wrote:
+> > Please fix this to have effect only for clang but not for the rest of
+> > the universe.
+> 
+> i'd suggest reverting it instead, there're probably some stale entries
+> in there already (e.g., -fcatch-undefined-behavior).
+
