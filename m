@@ -1,110 +1,340 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484AbaFPOCG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 10:02:06 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:49657 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953AbaFPOCE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 10:02:04 -0400
-Message-ID: <539EF8C6.1080207@ti.com>
-Date: Mon, 16 Jun 2014 17:01:42 +0300
-From: Tero Kristo <t-kristo@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753421AbaFPOEh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 10:04:37 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:48200 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751007AbaFPOEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 10:04:35 -0400
+Message-ID: <539EF932.9070405@kapsi.fi>
+Date: Mon, 16 Jun 2014 17:03:30 +0300
+From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, <mturquette@linaro.org>,
-        <grant.likely@linaro.org>, <tony@atomide.com>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <robh+dt@kernel.org>, <bcousson@baylibre.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 4/4] ARM: DTS: dra7/dra7xx-clocks: ATL related changes
-References: <1399458048-28213-1-git-send-email-peter.ujfalusi@ti.com> <1399458048-28213-5-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1399458048-28213-5-git-send-email-peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Airlie <airlied@linux.ie>,
+        Mike Turquette <mturquette@linaro.org>, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, devicetree@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [RFC PATCH 1/4] memory: tegra124-emc: Add EMC driver
+References: <1402925713-25426-1-git-send-email-tomeu.vizoso@collabora.com> <1402925713-25426-2-git-send-email-tomeu.vizoso@collabora.com>
+In-Reply-To: <1402925713-25426-2-git-send-email-tomeu.vizoso@collabora.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:be5f:f4ff:fe47:6518
+X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2014 01:20 PM, Peter Ujfalusi wrote:
-> Modify the clock nodes for the ATL clocks to use the ATL clock driver to
-> handle them.
+It should be mentioned that calling clk_set_rate on the EMC clock 
+currently does absolutely nothing (except probably returning an error). 
+The rate switching sequence is not implemented (nor is the clock tree 
+entirely correct. For example, the kernel thinks that PLL_M is disabled).
+
+Another note: I am currently implementing an actmon driver. I'm not 
+entirely enthusiastic about the downstream style of managing EMC rate 
+policy in the actmon driver, but haven't yet given much thought to it.
+
+Yet another note: I think the exported API should not be SoC-specific, 
+so s/tegra124_/tegra_/.
+
+Thanks,
+- Mikko
+
+On 06/16/2014 04:35 PM, Tomeu Vizoso wrote:
+> Adds functionality for registering memory bandwidth needs and setting
+> the EMC clock rate based on that.
 >
-> Add the ATL device node at the same time for DRA7.
+> Also adds API for setting floor and ceiling frequency rates.
 >
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-
-This patch missed the merge window due to long dependency chain, however 
-Tony promised to pull this with rc-fixes. So, for that purpose:
-
-Acked-by: Tero Kristo <t-kristo@ti.com>
-
+> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 > ---
->   arch/arm/boot/dts/dra7.dtsi          | 11 +++++++++++
->   arch/arm/boot/dts/dra7xx-clocks.dtsi | 16 ++++++++--------
->   2 files changed, 19 insertions(+), 8 deletions(-)
+>   .../bindings/arm/tegra/nvidia,tegra124-emc.txt     |  26 ++++
+>   drivers/memory/Kconfig                             |   8 +
+>   drivers/memory/Makefile                            |   1 +
+>   drivers/memory/tegra124-emc.c                      | 173 +++++++++++++++++++++
+>   include/linux/platform_data/tegra_emc.h            |  23 +++
+>   5 files changed, 231 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/arm/tegra/nvidia,tegra124-emc.txt
+>   create mode 100644 drivers/memory/tegra124-emc.c
 >
-> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
-> index 149b55099935..84071423016e 100644
-> --- a/arch/arm/boot/dts/dra7.dtsi
-> +++ b/arch/arm/boot/dts/dra7.dtsi
-> @@ -789,6 +789,17 @@
->   			dma-names = "tx0", "rx0";
->   			status = "disabled";
->   		};
+> diff --git a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra124-emc.txt b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra124-emc.txt
+> new file mode 100644
+> index 0000000..88e6a55
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra124-emc.txt
+> @@ -0,0 +1,26 @@
+> +Tegra124 External Memory Controller
 > +
-> +		atl: atl@4843c000 {
-> +			compatible = "ti,dra7-atl";
-> +			reg = <0x4843c000 0x3ff>;
-> +			ti,hwmods = "atl";
-> +			ti,provided-clocks = <&atl_clkin0_ck>, <&atl_clkin1_ck>,
-> +					     <&atl_clkin2_ck>, <&atl_clkin3_ck>;
-> +			clocks = <&atl_gfclk_mux>;
-> +			clock-names = "fck";
-> +			status = "disabled";
-> +		};
->   	};
+> +Properties:
+> +- compatible : Should contain "nvidia,tegra124-emc".
+> +- reg : Should contain the register range of the device
+> +- #address-cells : Should be 1
+> +- #size-cells : Should be 0
+> +- nvidia,mc : phandle to the mc bus connected to EMC.
+> +- clocks : phandle to EMC, EMC shared bus override, and all parent clocks.
+> +- clock-names : name of each clock.
+> +- nvidia,pmc : phandle to the PMC syscon node.
+> +- max-clock-frequency : optional, specifies the maximum EMC rate in kHz.
+> +
+> +Child device nodes describe the memory settings for different configurations and
+> +clock rates.
+> +
+> +Example:
+> +
+> +	memory-controller@7001b000 {
+> +		compatible = "nvidia,tegra124-emc";
+> +		reg = <0x7001b000 0x1000>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		clocks = <&tegra_car TEGRA124_CLK_EMC>;
+> +		clock-names = "emc";
+> +	};
+> diff --git a/drivers/memory/Kconfig b/drivers/memory/Kconfig
+> index c59e9c9..48fa0dd 100644
+> --- a/drivers/memory/Kconfig
+> +++ b/drivers/memory/Kconfig
+> @@ -61,6 +61,14 @@ config TEGRA30_MC
+>   	  analysis, especially for IOMMU/SMMU(System Memory Management
+>   	  Unit) module.
+>
+> +config TEGRA124_EMC
+> +	tristate "Tegra124 External Memory Controller (EMC) driver"
+> +	default y
+> +	depends on ARCH_TEGRA_124_SOC
+> +	help
+> +	  This driver is for the External Memory Controller (EMC) module
+> +	  available in Tegra124 SoCs.
+> +
+>   config FSL_IFC
+>   	bool
+>   	depends on FSL_SOC
+> diff --git a/drivers/memory/Makefile b/drivers/memory/Makefile
+> index 71160a2..0b7290b 100644
+> --- a/drivers/memory/Makefile
+> +++ b/drivers/memory/Makefile
+> @@ -11,3 +11,4 @@ obj-$(CONFIG_FSL_IFC)		+= fsl_ifc.o
+>   obj-$(CONFIG_MVEBU_DEVBUS)	+= mvebu-devbus.o
+>   obj-$(CONFIG_TEGRA20_MC)	+= tegra20-mc.o
+>   obj-$(CONFIG_TEGRA30_MC)	+= tegra30-mc.o
+> +obj-$(CONFIG_TEGRA124_EMC)	+= tegra124-emc.o
+> diff --git a/drivers/memory/tegra124-emc.c b/drivers/memory/tegra124-emc.c
+> new file mode 100644
+> index 0000000..b7a54a5
+> --- /dev/null
+> +++ b/drivers/memory/tegra124-emc.c
+> @@ -0,0 +1,173 @@
+> +/*
+> + * Copyright (c) 2013, NVIDIA CORPORATION.  All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/clk.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/platform_data/tegra_emc.h>
+> +
+> +#define DRV_NAME "tegra124-emc"
+> +#define EMC_FREQ_CUTOFF_USE_130_PERCENT	100000000
+> +#define EMC_FREQ_CUTOFF_USE_140_PERCENT	50000000
+> +#define BYTES_PER_EMC_CLOCK 16
+> +
+> +struct tegra124_emc {
+> +	struct clk *clk;
+> +	unsigned long bandwidth_requests[TEGRA_EMC_CONSUMER_LAST];
+> +	unsigned long floor_freq;
+> +	unsigned long ceiling_freq;
+> +	/*
+> +	 * Cannot use a mutex here because the ACTMON driver would set a floor
+> +	 * frequency from an IRQ handler.
+> +	 */
+> +	spinlock_t spinlock;
+> +};
+> +
+> +static struct platform_device *emc_pdev;
+> +
+> +static unsigned long tegra124_emc_bw_to_freq_req(unsigned long bw)
+> +{
+> +	return (bw + BYTES_PER_EMC_CLOCK - 1) / BYTES_PER_EMC_CLOCK;
+> +}
+> +
+> +static void tegra124_emc_update_rate(struct tegra124_emc *emc)
+> +{
+> +	int i;
+> +	struct clk *emc_master;
+> +	unsigned long total_bandwidth = 0;
+> +	unsigned long freq;
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&emc->spinlock, flags);
+> +
+> +	for (i = 0; i < TEGRA_EMC_CONSUMER_LAST; i++)
+> +		total_bandwidth += emc->bandwidth_requests[i];
+> +
+> +	emc_master = clk_get_parent(emc->clk);
+> +	freq = tegra124_emc_bw_to_freq_req(total_bandwidth) * 1000;
+> +	freq = clk_round_rate(emc_master, freq);
+> +
+> +	/* XXX: Add safety margins for DVFS */
+> +
+> +	if (freq < EMC_FREQ_CUTOFF_USE_140_PERCENT)
+> +		total_bandwidth += 4 * total_bandwidth / 10;
+> +	else if (freq < EMC_FREQ_CUTOFF_USE_130_PERCENT)
+> +		total_bandwidth += 3 * total_bandwidth / 10;
+> +	else
+> +		total_bandwidth += total_bandwidth / 10;
+> +
+> +	freq = tegra124_emc_bw_to_freq_req(total_bandwidth) * 1000;
+> +	freq = max(freq, emc->floor_freq);
+> +	freq = min(freq, emc->ceiling_freq);
+> +
+> +	spin_unlock_irqrestore(&emc->spinlock, flags);
+> +
+> +
+> +	clk_set_rate(emc->clk, freq);
+> +}
+> +
+> +int tegra124_emc_reserve_bandwidth(unsigned int consumer, unsigned long rate)
+> +{
+> +	struct tegra124_emc *emc = platform_get_drvdata(emc_pdev);
+> +	unsigned long flags;
+> +
+> +	if (consumer >= TEGRA_EMC_CONSUMER_LAST) {
+> +		dev_err(&emc_pdev->dev, "Invalid EMC consumer ID (%u)\n", consumer);
+> +		return -EINVAL;
+> +	}
+> +
+> +	spin_lock_irqsave(&emc->spinlock, flags);
+> +	emc->bandwidth_requests[consumer] = rate;
+> +	spin_unlock_irqrestore(&emc->spinlock, flags);
+> +
+> +	tegra124_emc_update_rate(emc);
+> +
+> +	return 0;
+> +}
+> +
+> +void tegra124_emc_set_floor(unsigned long freq)
+> +{
+> +	struct tegra124_emc *emc = platform_get_drvdata(emc_pdev);
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&emc->spinlock, flags);
+> +	emc->floor_freq = freq;
+> +	spin_unlock_irqrestore(&emc->spinlock, flags);
+> +
+> +	tegra124_emc_update_rate(emc);
+> +}
+> +
+> +void tegra124_emc_set_ceiling(unsigned long freq)
+> +{
+> +	struct tegra124_emc *emc = platform_get_drvdata(emc_pdev);
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&emc->spinlock, flags);
+> +	emc->ceiling_freq = freq;
+> +	spin_unlock_irqrestore(&emc->spinlock, flags);
+> +
+> +	tegra124_emc_update_rate(emc);
+> +}
+> +
+> +static int tegra124_emc_probe(struct platform_device *pdev)
+> +{
+> +	struct tegra124_emc *emc;
+> +
+> +	emc_pdev = pdev;
+> +
+> +	emc = devm_kzalloc(&pdev->dev, sizeof(*emc), GFP_KERNEL);
+> +	if (emc == NULL) {
+> +		dev_err(&pdev->dev, "Failed to allocate private memory\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	emc->ceiling_freq = ULONG_MAX;
+> +
+> +	emc->clk = devm_clk_get(&pdev->dev, "emc");
+> +	if (IS_ERR(emc->clk)) {
+> +		devm_kfree(&pdev->dev, emc);
+> +		dev_err(&pdev->dev, "Can not find EMC clock\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	spin_lock_init(&emc->spinlock);
+> +
+> +	platform_set_drvdata(emc_pdev, emc);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct of_device_id tegra124_emc_of_match[] = {
+> +	{ .compatible = "nvidia,tegra124-emc", },
+> +	{ },
+> +};
+> +
+> +static struct platform_driver tegra124_emc_driver = {
+> +	.driver         = {
+> +		.name   = DRV_NAME,
+> +		.owner  = THIS_MODULE,
+> +		.of_match_table = tegra124_emc_of_match,
+> +	},
+> +	.probe          = tegra124_emc_probe,
+> +};
+> +
+> +module_platform_driver(tegra124_emc_driver);
+> +
+> +MODULE_AUTHOR("Tomeu Vizoso <tomeu.vizoso@collabora.com>");
+> +MODULE_DESCRIPTION("Tegra124 EMC driver");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_ALIAS("platform:" DRV_NAME);
+> diff --git a/include/linux/platform_data/tegra_emc.h b/include/linux/platform_data/tegra_emc.h
+> index df67505..2967964 100644
+> --- a/include/linux/platform_data/tegra_emc.h
+> +++ b/include/linux/platform_data/tegra_emc.h
+> @@ -31,4 +31,27 @@ struct tegra_emc_pdata {
+>   	struct tegra_emc_table *tables;
 >   };
 >
-> diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-> index 30160348934c..789e92cd5595 100644
-> --- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
-> +++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-> @@ -10,26 +10,26 @@
->   &cm_core_aon_clocks {
->   	atl_clkin0_ck: atl_clkin0_ck {
->   		#clock-cells = <0>;
-> -		compatible = "fixed-clock";
-> -		clock-frequency = <0>;
-> +		compatible = "ti,dra7-atl-clock";
-> +		clocks = <&atl_gfclk_mux>;
->   	};
->
->   	atl_clkin1_ck: atl_clkin1_ck {
->   		#clock-cells = <0>;
-> -		compatible = "fixed-clock";
-> -		clock-frequency = <0>;
-> +		compatible = "ti,dra7-atl-clock";
-> +		clocks = <&atl_gfclk_mux>;
->   	};
->
->   	atl_clkin2_ck: atl_clkin2_ck {
->   		#clock-cells = <0>;
-> -		compatible = "fixed-clock";
-> -		clock-frequency = <0>;
-> +		compatible = "ti,dra7-atl-clock";
-> +		clocks = <&atl_gfclk_mux>;
->   	};
->
->   	atl_clkin3_ck: atl_clkin3_ck {
->   		#clock-cells = <0>;
-> -		compatible = "fixed-clock";
-> -		clock-frequency = <0>;
-> +		compatible = "ti,dra7-atl-clock";
-> +		clocks = <&atl_gfclk_mux>;
->   	};
->
->   	hdmi_clkin_ck: hdmi_clkin_ck {
+> +enum {
+> +	TEGRA_EMC_CONSUMER_DISP1 = 0,
+> +	TEGRA_EMC_CONSUMER_DISP2,
+> +	TEGRA_EMC_CONSUMER_MSENC,
+> +	TEGRA_EMC_CONSUMER_CAMERA,
+> +	TEGRA_EMC_CONSUMER_AVP,
+> +	TEGRA_EMC_CONSUMER_ISO,
+> +	TEGRA_EMC_CONSUMER_LAST
+> +};
+> +
+> +#ifdef CONFIG_TEGRA124_EMC
+> +int tegra124_emc_reserve_bandwidth(unsigned int consumer, unsigned long rate);
+> +void tegra124_emc_set_floor(unsigned long freq);
+> +void tegra124_emc_set_ceiling(unsigned long freq);
+> +#else
+> +int tegra124_emc_reserve_bandwidth(unsigned int consumer, unsigned long rate)
+> +{ return -ENODEV; }
+> +void tegra124_emc_set_floor(unsigned long freq)
+> +{ return; }
+> +void tegra124_emc_set_ceiling(unsigned long freq)
+> +{ return; }
+> +#endif
+> +
+>   #endif
 >
 
