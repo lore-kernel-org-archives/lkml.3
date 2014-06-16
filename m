@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700AbaFPCNY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 22:13:24 -0400
-Received: from mga03.intel.com ([143.182.124.21]:57340 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752542AbaFPCNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 22:13:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,482,1400050800"; 
-   d="scan'208";a="445829640"
-Message-ID: <539E528B.90908@intel.com>
-Date: Mon, 16 Jun 2014 10:12:27 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: rjw@rjwysocki.net, lenb@kernel.org, naszar@ya.ru,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI/Battery: Retry to get Battery information if failed
- during probing
-References: <1402552946-14704-1-git-send-email-tianyu.lan@intel.com> <alpine.DEB.2.02.1406112354070.23724@chino.kir.corp.google.com> <53995488.20308@intel.com> <alpine.DEB.2.02.1406120025050.23724@chino.kir.corp.google.com> <53996152.2000407@intel.com> <alpine.DEB.2.02.1406121415150.8305@chino.kir.corp.google.com> <539A60FC.1050301@intel.com> <alpine.DEB.2.02.1406131445130.31981@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1406131445130.31981@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1752722AbaFPCRr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 22:17:47 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:64854 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752478AbaFPCRo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jun 2014 22:17:44 -0400
+From: Daniel Jeong <gshark.jeong@gmail.com>
+To: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Randy Dunlap <rdunlap@infradead.org>
+Cc: Daniel Jeong <daniel.jeong@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, Daniel Jeong <gshark.jeong@gmail.com>
+Subject: [RFC 0/2]  backlight: add new tps611xx backlight driver
+Date: Mon, 16 Jun 2014 11:17:21 +0900
+Message-Id: <1402885043-3626-1-git-send-email-gshark.jeong@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年06月14日 05:46, David Rientjes wrote:
-> On Fri, 13 Jun 2014, Lan Tianyu wrote:
-> 
->> How about this?
->>
->> -       result = acpi_battery_update(battery, false);
->> -       if (result)
->> +
->> +       /*
->> +        * Some machines'(E,G Lenovo Z480) ECs are not stable
->> +        * during boot up and this causes battery driver fails to be
->> +        * probed due to failure of getting battery information
->> +        * from EC sometimes. After several retries, the operation
->> +        * may work. So add retry code here and 20ms sleep between
->> +        * every retries.
->> +        */
->> +       while (acpi_battery_update(battery, false) && retry--)
->> +               msleep(20);
->> +       if (!retry) {
->> +               result = -ENODEV;
->>                 goto fail;
->> +       }
->> +
-> 
-> I think you want --retry and not retry--.
+This driver a general version for tps611xx backlgiht chips of TI.
+It supports tps61158, tps61161, tps61163 and tps61165 backlight driver
+based on EasyScale protocol.
 
-My original purpose is to retry 5 times after the first try fails.
-If use "--retry" here, it just retries 4 times.
+Daniel Jeong (2):
+  backlight: add new tps611xx backlight driver
+  backlight: add new tps611xx backlight device tree support
 
->  Otherwise it's possible for the 
-> final call to acpi_battery_update() to succeed and now it's returning 
-> -ENODEV.
-> 
-
-Yes, it maybe and I will change code like the following.
-
-while ((result = acpi_battery_update(battery, false)) && retry--)
-       msleep(20);
-if (result)
-       goto fail;
-
+ .../video/backlight/tps611xx-backlight.txt         |   16 +
+ drivers/video/backlight/Kconfig                    |    7 +
+ drivers/video/backlight/Makefile                   |    1 +
+ drivers/video/backlight/tps611xx_bl.c              |  486 ++++++++++++++++++++
+ include/linux/platform_data/tps611xx_bl.h          |   30 ++
+ 5 files changed, 540 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/video/backlight/tps611xx-backlight.txt
+ create mode 100644 drivers/video/backlight/tps611xx_bl.c
+ create mode 100644 include/linux/platform_data/tps611xx_bl.h
 
 -- 
-Best regards
-Tianyu Lan
+1.7.9.5
+
