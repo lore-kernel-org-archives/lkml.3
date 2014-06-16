@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753057AbaFPC02 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 22:26:28 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:63449 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753020AbaFPC0Z (ORCPT
+	id S1753137AbaFPC0n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 22:26:43 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:43865 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752968AbaFPC0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 22:26:25 -0400
-From: Nick <xerofoify@gmail.com>
-To: swise@chelsio.com
-Cc: roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
-        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix memory leak in cm.c
-Date: Sun, 15 Jun 2014 22:26:19 -0400
-Message-Id: <1402885579-2994-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sun, 15 Jun 2014 22:26:39 -0400
+Date: Sun, 15 Jun 2014 19:26:35 -0700 (PDT)
+Message-Id: <20140615.192635.533361731164638772.davem@davemloft.net>
+To: xerofoify@gmail.com
+Cc: andriy.shevchenko@linux.intel.com, dvhart@linux.intel.com,
+        jeffrey.t.kirsher@intel.com, ast@plumgrid.com, dborkman@redhat.com,
+        bhutchings@solarflare.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Missing return check against Null for return value of
+ netdev_alloc_dev_skb()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAPDOMVgV8V8fPpZupwQaDERiK-0OMLt66LULR6Biw1=8LJhOKw@mail.gmail.com>
+References: <1402805139-6363-1-git-send-email-xerofoify@gmail.com>
+	<20140614.235300.1228145928404410306.davem@davemloft.net>
+	<CAPDOMVgV8V8fPpZupwQaDERiK-0OMLt66LULR6Biw1=8LJhOKw@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 15 Jun 2014 19:26:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes memory by checking in function,
-*get_skuff if it is be passing a Null skb
-struct.
-Cheers Nick 
-Signed-off-by: Nick <xerofoify@gmail.com>
----
- drivers/infiniband/hw/cxgb4/cm.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+From: Nick Krause <xerofoify@gmail.com>
+Date: Sun, 15 Jun 2014 16:27:23 -0400
 
-diff --git a/drivers/infiniband/hw/cxgb4/cm.c b/drivers/infiniband/hw/cxgb4/cm.c
-index 5e153f6..f9477e2 100644
---- a/drivers/infiniband/hw/cxgb4/cm.c
-+++ b/drivers/infiniband/hw/cxgb4/cm.c
-@@ -340,7 +340,11 @@ static int status2errno(int status)
-  */
- static struct sk_buff *get_skb(struct sk_buff *skb, int len, gfp_t gfp)
- {
--	if (skb && !skb_is_nonlinear(skb) && !skb_cloned(skb)) {
-+	if (!skb) {
-+		return NULL;
-+	}
-+
-+	else if (skb && !skb_is_nonlinear(skb) && !skb_cloned(skb)) {
- 		skb_trim(skb, 0);
- 		skb_get(skb);
- 		skb_reset_transport_header(skb);
--- 
-1.9.1
+> From 62b0d77a1430f74b7f5c008c5e8bec11604b33b0 Mon Sep 17 00:00:00 2001
+> From: Nick <xerofoify@gmail.com>
+> Date: Sun, 15 Jun 2014 16:16:14 -0400
+> Subject: [PATCHv2] Fixes return logic of function of pch_gbe_alloc_tx_buffers()
+> Here is the fixed patch changed return type of function to int in
+> order to use return -ENOMEM as with the function above it , seems to
+> fit , otherwise returns 0.
+>  Report if it breaks anything related to this driver.
+> Signed-off-by: Nick <xerofoify@gmail.com>
 
+Nobody is checking the return value, you can't just change the function to
+return an error code, you have to make the caller act upon it appropriately
+as well.
+
+I'm very much not confident that you are willing to put in the effort
+necessary to fix this problem properly.
+
+I told you explicitly that if this memory allocation failure occurs, the
+bringup of the device has to fail.
+
+Your patch is making the situation worse, it breaks when there is an
+allocation failure, leaving the TX run partially allocated so that the
+driver will crash with an OOPS later.
+
+>From your first iteration, you aren't build testing this change, and I
+therefore severely doubt you are functionally testing this change either.
+
+I hate to be harsh, but this is an extremely _poor_ patch submission.
