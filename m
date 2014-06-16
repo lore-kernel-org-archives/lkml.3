@@ -1,43 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866AbaFPURj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 16:17:39 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:46354 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752440AbaFPURi (ORCPT
+	id S1756023AbaFPUSE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 16:18:04 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:49844 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755816AbaFPUSC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 16:17:38 -0400
-X-CheckPoint: {539F50E1-E-2100090A-C0000000}
-Message-ID: <539F50E0.3030900@tilera.com>
-Date: Mon, 16 Jun 2014 16:17:36 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, Davidlohr Bueso <davidlohr@hp.com>
-CC: =?ISO-8859-1?Q?Petr_Ml=E1dek?= <pmladek@suse.cz>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        <linux-kernel@vger.kernel.org>, "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arun KS <arunks.linux@gmail.com>, Kees Cook <keescook@chromium.org>
-Subject: Re: [RFC] printk: allow increasing the ring buffer depending on the
- number of CPUs
-References: <1402448685-30634-1-git-send-email-mcgrof@do-not-panic.com>	 <20140611093447.GL7772@pathway.suse.cz>	 <1402596066.2627.1.camel@buesod1.americas.hpqcorp.net> <1402598718.12385.16.camel@joe-AO725>
-In-Reply-To: <1402598718.12385.16.camel@joe-AO725>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.9.0.23]
+	Mon, 16 Jun 2014 16:18:02 -0400
+From: Julius Werner <jwerner@chromium.org>
+To: Olof Johansson <olofj@chromium.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <stephen.r.warren@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Stefan Reinauer <stefan.reinauer@coreboot.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Julius Werner <jwerner@chromium.org>
+Subject: [PATCH v2] firmware: Add device tree binding for coreboot
+Date: Mon, 16 Jun 2014 13:17:34 -0700
+Message-Id: <1402949854-30380-1-git-send-email-jwerner@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <CAODwPW9w0sKme=QSthJN7QACGcwpR6NmxufFtirkm6d3XYZ1_g@mail.gmail.com>
+References: <1402689965-19397-1-git-send-email-jwerner@chromium.org> <CAL_JsqL-K4i54ysugCKSw-aO-9pvnYgZfJ=NdBAot=mwffxmyA@mail.gmail.com> <CAODwPW9tRM8kxBVg3apkec2K1rahuENk_b_BD_0jvXON7JzeaA@mail.gmail.com> <CALiw-2GWHKPbXuMFXUHY_pgpUJNdqQbyPEV1UjEep3zD2sSRPQ@mail.gmail.com> <CAODwPW9w0sKme=QSthJN7QACGcwpR6NmxufFtirkm6d3XYZ1_g@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/12/2014 2:45 PM, Joe Perches wrote:
-> (adding Chris Metcalf for arch/tile,
->   I think this change might impact that arch)
+This patch adds documentation describing a device tree binding for the
+coreboot firmware. It is meant to be dynamically added during boot and
+contains address definitions for the coreboot table (a list of
+variable-sized descriptors providing information about various compile-
+and run-time generated firmware parameters) and the CBMEM area (the
+structure containing most run-time resident memory regions set up by
+coreboot).
 
-Thanks for the Cc.  I've been following the discussion and I think it's on the right track for arch/tile.
+These definitions allow kernel drivers to easily access data contained
+in and pointed to by these regions (such as coreboot's in-memory log).
+(An example implementation can be seen at http://crosreview.com/203371,
+which will be submitted at a later point.)
 
+Change-Id: I97609d461d306f85851e5efc26c675ca1e2d7e9d
+Signed-off-by: Julius Werner <jwerner@chromium.org>
+---
+ .../devicetree/bindings/firmware/coreboot.txt      | 32 ++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/firmware/coreboot.txt
+
+diff --git a/Documentation/devicetree/bindings/firmware/coreboot.txt b/Documentation/devicetree/bindings/firmware/coreboot.txt
+new file mode 100644
+index 0000000..5055f0e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/firmware/coreboot.txt
+@@ -0,0 +1,32 @@
++COREBOOT firmware information
++
++The device tree node to communicate the location of coreboot's memory-resident
++bookkeeping structures to the kernel. Since coreboot itself cannot boot a
++device-tree-based kernel (yet), this node needs to be inserted by a
++second-stage bootloader (a coreboot "payload").
++
++Required properties:
++ - compatible: Should be "coreboot"
++ - reg: Address and length of the following two memory regions, in order:
++	1.) The coreboot table. This is a list of variable-sized descriptors
++	that contain various compile- and run-time generated firmware
++	parameters. It is identified by the magic string "LBIO" in its first
++	four bytes. See coreboot's src/include/boot/coreboot_tables.h for
++	details.
++	2.) The CBMEM area. This is a downward-growing memory region used by
++	coreboot to dynamically allocate data structures that remain resident.
++	It may or may not include the coreboot table as one of its members. It
++	is identified by a root node descriptor with the magic number
++	0xc0389479 that resides in the topmost 8 bytes of the area. See
++	coreboot's src/lib/dynamic_cbmem.c for details.
++
++Example:
++	firmware {
++		ranges;
++
++		coreboot {
++			compatible = "coreboot";
++			reg = <0xfdfea000 0x264>,
++			      <0xfdfea000 0x16000>;
++		}
++	};
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+1.8.3.2
 
