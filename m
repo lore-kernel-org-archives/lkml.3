@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756178AbaFPVn4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 17:43:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13292 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751521AbaFPVnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 17:43:55 -0400
-Date: Mon, 16 Jun 2014 17:43:13 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@alien8.de>, WANG Chao <chaowang@redhat.com>,
-        Dave Young <dyoung@redhat.com>, mjg59@srcf.ucam.org, bhe@redhat.com,
-        jkosina@suse.cz, greg@kroah.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 07/13] kexec: Implementation of new syscall
- kexec_file_load
-Message-ID: <20140616214313.GB1870@redhat.com>
-References: <20140609053538.GA2874@dhcp-17-89.nay.redhat.com>
- <20140609154137.GD22049@redhat.com>
- <20140613075011.GA4751@pd.tnic>
- <20140613124609.GC5871@redhat.com>
- <20140613153620.GG4751@pd.tnic>
- <20140616173823.GC4515@redhat.com>
- <20140616200526.GF8170@pd.tnic>
- <20140616205331.GA13257@redhat.com>
- <20140616210927.GJ8170@pd.tnic>
- <539F60B3.1040509@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <539F60B3.1040509@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756073AbaFPVqB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 17:46:01 -0400
+Received: from mail-ie0-f201.google.com ([209.85.223.201]:58080 "EHLO
+	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521AbaFPVqA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 17:46:00 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Andrew Bresticker <abrestic@chromium.org>, swarren@wwwdotorg.org,
+        olof@lixom.net, Sonny Rao <sonnyrao@chromium.org>,
+        linux-samsung-soc@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Bill Richardson <wfrichar@chromium.org>, sjg@chromium.org,
+        Wolfram Sang <wsa@the-dreams.de>, broonie@kernel.org,
+        Doug Anderson <dianders@chromium.org>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 05/10] mdf: cros_ec: Detect in-progress commands
+Date: Mon, 16 Jun 2014 14:39:55 -0700
+Message-Id: <1402954800-28215-6-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <1402954800-28215-1-git-send-email-dianders@chromium.org>
+References: <1402954800-28215-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 02:25:07PM -0700, H. Peter Anvin wrote:
-> On 06/16/2014 02:09 PM, Borislav Petkov wrote:
-> > 
-> > Nah, I don't feel strongly about it - I just don't trust userspace and
-> > think that every value we get from it should be "sanitized".
-> > 
-> 
-> Borislav and I talked about this briefly over IRC.  A key part of that
-> is that if userspace could manipulate this system call to consume an
-> unreasonable amount of memory, we would have a problem, for example if
-> this code used vzalloc() instead of kzalloc().  However, since
-> kmalloc/kzalloc implies a relatively restrictive limit on the memory
-> allocation size anyway, well short of anything that could cause OOM
-> problems, that pretty much solves the problem.
+From: Simon Glass <sjg@chromium.org>
 
-Actually currently I am using vzalloc() for command line buffer
-allocation.
+Some commands take a while to execute. Use -EAGAIN to signal this to the
+caller.
 
-	image->cmdline_buf = vzalloc(cmdline_len);
-	if (!image->cmdline_buf)
-		goto out;
+Signed-off-by: Simon Glass <sjg@chromium.org>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ drivers/mfd/cros_ec_spi.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Should I switch to using kzalloc() instead?
+diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
+index 52d4d7b..c29a2d7 100644
+--- a/drivers/mfd/cros_ec_spi.c
++++ b/drivers/mfd/cros_ec_spi.c
+@@ -292,6 +292,12 @@ static int cros_ec_cmd_xfer_spi(struct cros_ec_device *ec_dev,
+ 	/* check response error code */
+ 	ptr = ec_dev->din;
+ 	if (ptr[0]) {
++		if (ptr[0] == EC_RES_IN_PROGRESS) {
++			dev_dbg(ec_dev->dev, "command 0x%02x in progress\n",
++				ec_msg->cmd);
++			ret = -EAGAIN;
++			goto exit;
++		}
+ 		dev_warn(ec_dev->dev, "command 0x%02x returned an error %d\n",
+ 			 ec_msg->cmd, ptr[0]);
+ 		debug_packet(ec_dev->dev, "in_err", ptr, len);
+-- 
+2.0.0.526.g5318336
 
-Thanks
-Vivek
