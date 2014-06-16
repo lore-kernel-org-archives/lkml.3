@@ -1,336 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932604AbaFPSDm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 14:03:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35886 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932239AbaFPSDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 14:03:39 -0400
-Date: Mon, 16 Jun 2014 20:03:36 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, hpa@linux.intel.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, Joe Perches <joe@perches.com>,
-        Arun KS <arunks.linux@gmail.com>, Kees Cook <keescook@chromium.org>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [RFT v4] printk: allow increasing the ring buffer depending on
-	the number of CPUs
-Message-ID: <20140616180336.GF4841@wotan.suse.de>
-References: <1402771965-7515-1-git-send-email-mcgrof@do-not-panic.com> <20140616163253.GA17672@pathway.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140616163253.GA17672@pathway.suse.cz>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S932689AbaFPSE2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 14:04:28 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:55055 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932256AbaFPSEW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 14:04:22 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlcHAHASn1NbtAal/2dsb2JhbABagw2rFgUBAQEBAQEFAZFnhz2BERd1hAsCJC8jgQkRN4hGAc8qF4VjiRMdhC0El16CZZNYg0I7
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, David Woodhouse <dwmw2@infradead.org>,
+        linux-mtd@lists.infradead.org
+Subject: [PATCH 1/1] fs/jffs2/xattr.c:  remove null test before kfree
+Date: Mon, 16 Jun 2014 20:02:49 +0200
+Message-Id: <1402941769-4539-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 06:32:53PM +0200, Petr Mládek wrote:
-> On Sat 2014-06-14 11:52:45, Luis R. Rodriguez wrote:
-> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> > 
-> > The default size of the ring buffer is too small for machines
-> > with a large amount of CPUs under heavy load. What ends up
-> > happening when debugging is the ring buffer overlaps and chews
-> > up old messages making debugging impossible unless the size is
-> > passed as a kernel parameter. An idle system upon boot up will
-> > on average spew out only about one or two extra lines but where
-> > this really matters is on heavy load and that will vary widely
-> > depending on the system and environment.
-> > 
-> > There are mechanisms to help increase the kernel ring buffer
-> > for tracing through debugfs, and those interfaces even allow growing
-> > the kernel ring buffer per CPU. We also have a static value which
-> > can be passed upon boot. Relying on debugfs however is not ideal
-> > for production, and relying on the value passed upon bootup is
-> > can only used *after* an issue has creeped up. Instead of being
-> > reactive this adds a proactive measure which lets you scale the
-> > amount of contributions you'd expect to the kernel ring buffer
-> > under load by each CPU in the worst case scenario.
-> > 
-> > We use num_possible_cpus() to avoid complexities which could be
-> > introduced by dynamically changing the ring buffer size at run
-> > time, num_possible_cpus() lets us use the upper limit on possible
-> > number of CPUs therefore avoiding having to deal with hotplugging
-> > CPUs on and off. This introduces the kernel configuration option
-> > LOG_CPU_MIN_BUF_SHIFT which is used to specify the maximum amount
-> > of contributions to the kernel ring buffer in the worst case before
-> > the kernel ring buffer flips over, the size is specified as a power
-> > of 2. The total amount of contributions made by each CPU must be
-> > greater than half of the default kernel ring buffer size
-> > (1 << LOG_BUF_SHIFT bytes) in order to trigger an increase upon
-> > bootup. For example if LOG_BUF_SHIFT is 18 (256 KB) you'd require at
-> > least 128 KB contributions by other CPUs in order to trigger an
-> > increase. With a LOG_CPU_BUF_SHIFT of 12 (4 KB) you'd require at
-> > least anything over > 64 possible CPUs to trigger an increase. If
-> > you had 128 possible CPUs your kernel buffer size would be:
-> > 
-> >    ((1 << 18) + ((128 - 1) * (1 << 12))) / 1024 = 764 KB
-> > 
-> > This value is ignored when "log_buf_len" kernel parameter is used
-> > as it forces the exact size of the ring buffer to an expected value.
-> > 
-> > In order to use num_possible_cpus() we need to make this a late call
-> > on the init process but that also means we cannot share __init code,
-> > the late_setup_log_buf() provided is therefore very similar to the
-> > setup_log_buf() but just modified slightly, in particular since we're
-> > at late boot we can now also use kzalloc().
-> > 
-> > Cc: Michal Hocko <mhocko@suse.cz>
-> > Cc: Petr Mladek <pmladek@suse.cz>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Joe Perches <joe@perches.com>
-> > Cc: Arun KS <arunks.linux@gmail.com>
-> > Cc: Kees Cook <keescook@chromium.org>
-> > Cc: Davidlohr Bueso <davidlohr@hp.com>
-> > Cc: Chris Metcalf <cmetcalf@tilera.com>
-> > Cc: linux-kernel@vger.kernel.org
-> > Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
-> > ---
-> > 
-> > This doesn't kfree() at halt but do we need to do it ?
-> > 
-> >  Documentation/kernel-parameters.txt |  8 ++++--
-> >  include/linux/printk.h              |  5 ++++
-> >  init/Kconfig                        | 45 +++++++++++++++++++++++++++++++-
-> >  init/main.c                         |  1 +
-> >  kernel/printk/printk.c              | 51 +++++++++++++++++++++++++++++++++++++
-> >  5 files changed, 107 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> > index 6eaa9cd..229d031 100644
-> > --- a/Documentation/kernel-parameters.txt
-> > +++ b/Documentation/kernel-parameters.txt
-> > @@ -1685,8 +1685,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
-> >  			7 (KERN_DEBUG)		debug-level messages
-> >  
-> >  	log_buf_len=n[KMG]	Sets the size of the printk ring buffer,
-> > -			in bytes.  n must be a power of two.  The default
-> > -			size is set in the kernel config file.
-> > +			in bytes.  n must be a power of two and greater
-> > +			than the minimal size. The minimal size is defined
-> > +			by LOG_BUF_SHIFT kernel config parameter. There is
-> > +			also CONFIG_LOG_CPU_MIN_BUF_SHIFT config parameter
-> > +			that allows to increase the default size depending on
-> > +			the number of CPUs. See init/Kconfig for more details.
-> >  
-> >  	logo.nologo	[FB] Disables display of the built-in Linux logo.
-> >  			This may be used to provide more screen space for
-> > diff --git a/include/linux/printk.h b/include/linux/printk.h
-> > index 319ff7e..315a0b7 100644
-> > --- a/include/linux/printk.h
-> > +++ b/include/linux/printk.h
-> > @@ -161,6 +161,7 @@ extern void wake_up_klogd(void);
-> >  
-> >  void log_buf_kexec_setup(void);
-> >  void __init setup_log_buf(int early);
-> > +void late_setup_log_buf(void);
-> >  void dump_stack_set_arch_desc(const char *fmt, ...);
-> >  void dump_stack_print_info(const char *log_lvl);
-> >  void show_regs_print_info(const char *log_lvl);
-> > @@ -202,6 +203,10 @@ static inline void setup_log_buf(int early)
-> >  {
-> >  }
-> >  
-> > +static inline void late_setup_log_buf(void)
-> > +{
-> > +}
-> > +
-> >  static inline void dump_stack_set_arch_desc(const char *fmt, ...)
-> >  {
-> >  }
-> > diff --git a/init/Kconfig b/init/Kconfig
-> > index 9d76b99..f0607d0 100644
-> > --- a/init/Kconfig
-> > +++ b/init/Kconfig
-> > @@ -807,7 +807,11 @@ config LOG_BUF_SHIFT
-> >  	range 12 21
-> >  	default 17
-> >  	help
-> > -	  Select kernel log buffer size as a power of 2.
-> > +	  Select the minimal kernel log buffer size as a power of 2.
-> > +	  The final size is affected by LOG_CPU_MIN_BUF_SHIFT config
-> > +	  parameter, see below. Any higher size also might be forced
-> > +	  by "log_buf_len" boot parameter.
-> > +
-> >  	  Examples:
-> >  	  	     17 => 128 KB
-> >  		     16 => 64 KB
-> > @@ -816,6 +820,45 @@ config LOG_BUF_SHIFT
-> >  		     13 =>  8 KB
-> >  		     12 =>  4 KB
-> >  
-> > +config LOG_CPU_MIN_BUF_SHIFT
-> > +	int "CPU kernel log buffer size contribution (13 => 8 KB, 17 => 128KB)"
-> > +	range 0 21
-> > +	default 12
-> > +	depends on SMP
-> > +	depends on !BASE_SMALL
-> > +	help
-> > +	  The kernel ring buffer will get additional data logged onto it
-> > +	  when multiple CPUs are supported. Typically the contributions are
-> > +	  only a few lines when idle however under under load this can vary
-> > +	  and in the worst case it can mean losing logging information. You
-> > +	  can use this to set the maximum expected mount of amount of logging
-> > +	  contribution under load by each CPU in the worst case scenario, as
-> > +	  a power of 2. The total amount of contributions made by each CPU
-> > +	  must be greater than half of the default kernel ring buffer size
-> > +	  (1 << LOG_BUF_SHIFT bytes) in order to trigger an increase upon
-> > +	  bootup. For example if LOG_BUF_SHIFT is 18 (256 KB) you're require
-> > +	  at least 128 KB contributions by other CPUs in order to trigger
-> > +	  an increase. With a LOG_CPU_BUF_SHIFT of 12 (4 KB) you'd require
-> > +	  at least anything over > 64 possible CPUs to trigger an increase.
-> > +	  If you had 128 possible CPUs your kernel buffer size would be:
-> > +
-> > +	     ((1 << 18) + ((128 - 1) * (1 << 12))) / 1024 = 764 KB
-> > +
-> > +	  This value is ignored when "log_buf_len" kernel parameter is used
-> > +	  as it forces the exact size of the ring buffer to an expected value.
-> > +
-> > +	  The number of possible CPUs is used for this computation ignoring
-> > +	  hotplugging making the compuation optimal for the the worst case
-> > +	  scenerio while allowing a simple algorithm to be used from bootup.
-> > +
-> > +	  Examples shift values and their meaning:
-> > +		     17 => 128 KB for each CPU
-> > +		     16 =>  64 KB for each CPU
-> > +		     15 =>  32 KB for each CPU
-> > +		     14 =>  16 KB for each CPU
-> > +		     13 =>   8 KB for each CPU
-> > +		     12 =>   4 KB for each CPU
-> > +
-> >  #
-> >  # Architectures with an unreliable sched_clock() should select this:
-> >  #
-> > diff --git a/init/main.c b/init/main.c
-> > index e8ae1fe..8b472c6 100644
-> > --- a/init/main.c
-> > +++ b/init/main.c
-> > @@ -940,6 +940,7 @@ static int __ref kernel_init(void *unused)
-> >  	numa_default_policy();
-> >  
-> >  	flush_delayed_fput();
-> > +	late_setup_log_buf();
-> >  
-> >  	if (ramdisk_execute_command) {
-> >  		ret = run_init_process(ramdisk_execute_command);
-> > diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> > index ea2d5f6..9cf919f 100644
-> > --- a/kernel/printk/printk.c
-> > +++ b/kernel/printk/printk.c
-> > @@ -266,6 +266,7 @@ static u32 clear_idx;
-> >  #define LOG_ALIGN __alignof__(struct printk_log)
-> >  #endif
-> >  #define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
-> > +#define __LOG_CPU_MIN_BUF_LEN (1 << CONFIG_LOG_CPU_MIN_BUF_SHIFT)
-> >  static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
-> >  static char *log_buf = __log_buf;
-> >  static u32 log_buf_len = __LOG_BUF_LEN;
-> > @@ -842,6 +843,12 @@ static int __init log_buf_len_setup(char *str)
-> >  }
-> >  early_param("log_buf_len", log_buf_len_setup);
-> >  
-> > +/*
-> > + * The log buffer is by default set using static memory unless
-> > + * you either set the log_buf_len=n kernel parameter or use a
-> > + * LOG_CPU_MIN_BUF_SHIFT that triggers a required increase
-> > + * via late_setup_log_buf().
-> > + */
-> >  void __init setup_log_buf(int early)
-> >  {
-> >  	unsigned long flags;
-> > @@ -877,6 +884,50 @@ void __init setup_log_buf(int early)
-> >  		free, (free * 100) / __LOG_BUF_LEN);
-> >  }
-> >  
-> > +/*
-> > + * If you set log_buf_len=n kernel parameter LOG_CPU_MIN_BUF_SHIFT will
-> > + * be ignored. LOG_CPU_MIN_BUF_SHIFT is a proactive measure for large
-> > + * systems. With a LOG_BUF_SHIFT of 18 and LOG_CPU_MIN_BUF_SHIFT 12 at
-> > + * we'd require more than 64 CPUs to trigger an increase from the
-> > + * default. Since we need num_possible_cpus() we do this allocation
-> > + * later in the boot process.
-> > + */
-> > +void late_setup_log_buf(void)
-> > +{
-> > +	unsigned long flags;
-> > +	char *new_log_buf;
-> > +	int free;
-> > +	int cpu_extra = (num_possible_cpus() - 1) *  __LOG_CPU_MIN_BUF_LEN;
-> > +	size_t new_log_size;
-> > +
-> > +	/* The log_buf_len=n kernel parameter was passed */
-> > +	if (log_buf_len > __LOG_BUF_LEN)
-> > +		return;
-> > +
-> > +	/* Extra CPU contribution penalty not incurred */
-> > +	if (cpu_extra < __LOG_BUF_LEN / 2)
-> > +		return;
-> > +
-> > +	new_log_size = __LOG_BUF_LEN + cpu_extra;
-> > +	new_log_buf = kzalloc(new_log_size, GFP_KERNEL);
-> > +
-> > +	if (unlikely(!new_log_buf)) {
-> > +		pr_err("log_buf_len: %ld bytes not available\n", new_log_size);
-> > +		return;
-> > +	}
-> > +
-> > +	raw_spin_lock_irqsave(&logbuf_lock, flags);
-> > +	log_buf_len = new_log_size;
-> > +	log_buf = new_log_buf;
-> > +	free = __LOG_BUF_LEN - log_next_idx;
-> 
-> I wonder if the ring buffer could be already rotated at this late boot
-> stage.
+Fix checkpatch warning:
+WARNING: kfree(NULL) is safe this check is probably not required
 
-I was a bit concerned over this so I did more digging just now. The earliest
-num_possible_cpus() should have been available to us is right after
-setup_arch() which is where all archs deal with prefilling the possible CPU map
-with set_cpu_possible() for each detected valid possible CPU. For example on
-x86 and ia64 this is done via prefill_possible_map(). Note that the current
-placement of setup_log_buf() is after setup_arch() *but* there is a special
-excemption for x86 -- its the only architecture that makes use of calling
-calls setup_log_buf(1) for an early setup on its own setup_arch() before
-it sets the number of possible CPU map via prefill_possible_map(). This would
-explain why I ran into the issue with the original patch. Even when early
-is used the later non-early call will reallocate the buffer for x86 though
-so I think I can fix the original patch then to only account for
-num_possible_cpus() if the call is not early -- and I just document the
-requirement on setup_arch() on setup_log_buf().
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: linux-mtd@lists.infradead.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/jffs2/xattr.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-This should take care of the concern you've expressed, I'll respin.
+diff --git a/fs/jffs2/xattr.c b/fs/jffs2/xattr.c
+index ad0f2e2..d72817a 100644
+--- a/fs/jffs2/xattr.c
++++ b/fs/jffs2/xattr.c
+@@ -756,8 +756,7 @@ void jffs2_clear_xattr_subsystem(struct jffs2_sb_info *c)
+ 	for (i=0; i < XATTRINDEX_HASHSIZE; i++) {
+ 		list_for_each_entry_safe(xd, _xd, &c->xattrindex[i], xindex) {
+ 			list_del(&xd->xindex);
+-			if (xd->xname)
+-				kfree(xd->xname);
++			kfree(xd->xname);
+ 			jffs2_free_xattr_datum(xd);
+ 		}
+ 	}
+-- 
+1.8.4.5
 
-> This "free" space computation is valid only when
-> "log_first_idx" is still zero. As simple solution would be to use:
-> 
-> 	int free = 0;
-> 
-> 	if (log_first_idx == 0)
-> 		free = __LOG_BUF_LEN - log_next_idx;
-
-OK thanks, will amend, but now that I think we can move this back to __init
-this should not be an issue and we can share all the code.
-
-> > +	memcpy(log_buf, __log_buf, __LOG_BUF_LEN);
-> > +	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
-> > +
-> > +	pr_info("big CPU log_buf_len: %d\n", log_buf_len);
-> > +	pr_info("big CPU early log buf free: %d(%d%%)\n",
-> > +		free, (free * 100) / __LOG_BUF_LEN);
-> > +}
-> > +
-> >  static bool __read_mostly ignore_loglevel;
-> >  
-> >  static int __init ignore_loglevel_setup(char *str)
-> 
-> Otherwise, it looks fine to me. I wanted to do some testing but I have
-> got stucked by some other problems. I hope that I'll find some time
-> tomorrow.
-
-Thanks, I'll respin shortly.
-
-  Luis
