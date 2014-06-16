@@ -1,73 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007AbaFPG7s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 02:59:48 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:62471 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752152AbaFPG7r convert rfc822-to-8bit (ORCPT
+	id S1754039AbaFPHCp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 03:02:45 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:36405 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753931AbaFPHCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 02:59:47 -0400
+	Mon, 16 Jun 2014 03:02:43 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Alexander Graf <agraf@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2 07/10] PPC, KVM, CMA: use general CMA reserved area management framework
+In-Reply-To: <20140616053408.GH23210@js1304-P5Q-DELUXE>
+References: <1402543307-29800-1-git-send-email-iamjoonsoo.kim@lge.com> <1402543307-29800-8-git-send-email-iamjoonsoo.kim@lge.com> <87mwdfg9co.fsf@linux.vnet.ibm.com> <20140616053408.GH23210@js1304-P5Q-DELUXE>
+User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
+Date: Mon, 16 Jun 2014 12:32:24 +0530
+Message-ID: <87wqchcp6n.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1402506054-7696-1-git-send-email-geert@linux-m68k.org>
-References: <1402506054-7696-1-git-send-email-geert@linux-m68k.org>
-Date: Mon, 16 Jun 2014 08:59:45 +0200
-X-Google-Sender-Auth: Ngpm6rGNyq2QV_7mXH5Z351SYFA
-Message-ID: <CAMuHMdWX9gY=6npcVk6kLRGPq+wjg545AZEvphw0hW79bsympQ@mail.gmail.com>
-Subject: Re: [PATCH] staging: lustre: Use %ld to format long
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: driverdevel <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061607-4790-0000-0000-0000021222AB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 
-On Wed, Jun 11, 2014 at 7:00 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> drivers/staging/lustre/lustre/llite/rw26.c: In function ‘ll_direct_IO_26’:
-> drivers/staging/lustre/lustre/llite/rw26.c:388: warning: format ‘%zd’ expects type ‘signed size_t’, but argument 6 has type ‘long int’
-> drivers/staging/lustre/lustre/llite/rw26.c:388: warning: format ‘%zd’ expects type ‘signed size_t’, but argument 10 has type ‘long int’
+> On Sat, Jun 14, 2014 at 02:23:59PM +0530, Aneesh Kumar K.V wrote:
+>> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+>> 
+>> > Now, we have general CMA reserved area management framework,
+>> > so use it for future maintainabilty. There is no functional change.
+>> >
+>> > Acked-by: Michal Nazarewicz <mina86@mina86.com>
+>> > Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+>> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>> 
+>> Need this. We may want to keep the VM_BUG_ON by moving
+>> KVM_CMA_CHUNK_ORDER around.
+>> 
+>> diff --git a/arch/powerpc/kvm/book3s_64_mmu_hv.c b/arch/powerpc/kvm/book3s_64_mmu_hv.c
+>> index 8056107..1932e0e 100644
+>> --- a/arch/powerpc/kvm/book3s_64_mmu_hv.c
+>> +++ b/arch/powerpc/kvm/book3s_64_mmu_hv.c
+>> @@ -37,8 +37,6 @@
+>>  #include <asm/ppc-opcode.h>
+>>  #include <asm/cputable.h>
+>>  
+>> -#include "book3s_hv_cma.h"
+>> -
+>>  /* POWER7 has 10-bit LPIDs, PPC970 has 6-bit LPIDs */
+>>  #define MAX_LPID_970   63
+>>  
+>> @@ -64,7 +62,6 @@ long kvmppc_alloc_hpt(struct kvm *kvm, u32 *htab_orderp)
+>>         }
+>>  
+>>         kvm->arch.hpt_cma_alloc = 0;
+>> -       VM_BUG_ON(order < KVM_CMA_CHUNK_ORDER);
+>>         page = kvm_alloc_hpt(1 << (order - PAGE_SHIFT));
+>>         if (page) {
+>>                 hpt = (unsigned long)pfn_to_kaddr(page_to_pfn(page));
+>> 
+>> 
+>> 
+>> -aneesh
 >
-> Introduced by commit b41a1fe067c34b40736860458b9d62b2139471d5 ("staging:
-> lustre: Use %zd to format ssize_t"), which was part of a series to fix
-> issues in -next. However, the commits introducing the issues never made it
-> to mainline.
-
-They have now, so please drop this patch.
-
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->  drivers/staging/lustre/lustre/llite/rw26.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Okay.
+> So do you also want this?
 >
-> diff --git a/drivers/staging/lustre/lustre/llite/rw26.c b/drivers/staging/lustre/lustre/llite/rw26.c
-> index 55ca8d3c3e46..5b944d3fb80c 100644
-> --- a/drivers/staging/lustre/lustre/llite/rw26.c
-> +++ b/drivers/staging/lustre/lustre/llite/rw26.c
-> @@ -386,7 +386,7 @@ static ssize_t ll_direct_IO_26(int rw, struct kiocb *iocb,
->                 return -EINVAL;
+> @@ -131,16 +135,18 @@ struct page *kvm_alloc_hpt(unsigned long nr_pages)
+>  {
+>         unsigned long align_pages = HPT_ALIGN_PAGES;
 >
->         CDEBUG(D_VFSTRACE,
-> -              "VFS Op:inode=%lu/%u(%p), size=%zd (max %lu), offset=%lld=%llx, pages %zd (max %lu)\n",
-> +              "VFS Op:inode=%lu/%u(%p), size=%ld (max %lu), offset=%lld=%llx, pages %ld (max %lu)\n",
->                inode->i_ino, inode->i_generation, inode, count, MAX_DIO_SIZE,
->                file_offset, file_offset, count >> PAGE_CACHE_SHIFT,
->                MAX_DIO_SIZE >> PAGE_CACHE_SHIFT);
-> --
-> 1.9.1
+> +       VM_BUG_ON(get_order(nr_pages) < KVM_CMA_CHUNK_ORDER - PAGE_SHIFT);
+> +
+>         /* Old CPUs require HPT aligned on a multiple of its size */
+>         if (!cpu_has_feature(CPU_FTR_ARCH_206))
+>                 align_pages = nr_pages;
+> -       return kvm_alloc_cma(nr_pages, align_pages);
+> +       return cma_alloc(kvm_cma, nr_pages, get_order(align_pages));
+>  }
 
-Gr{oetje,eeting}s,
+That would also work.
 
-                        Geert
+Thanks
+-aneesh
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
