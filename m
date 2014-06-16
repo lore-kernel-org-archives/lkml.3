@@ -1,52 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922AbaFPLKP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 07:10:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61903 "EHLO mx1.redhat.com"
+	id S1751783AbaFPLO0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 07:14:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56029 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750963AbaFPLKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 07:10:13 -0400
-Message-ID: <539ED084.2000906@redhat.com>
-Date: Mon, 16 Jun 2014 13:09:56 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1750976AbaFPLOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 07:14:25 -0400
+Date: Mon, 16 Jun 2014 13:14:22 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Xishi Qiu <qiuxishi@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, aquini@redhat.com,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH 0/8] mm: add page cache limit and reclaim feature
+Message-ID: <20140616111422.GA16915@dhcp22.suse.cz>
+References: <539EB7D6.8070401@huawei.com>
 MIME-Version: 1.0
-To: Nadav Amit <nadav.amit@gmail.com>, Nadav Amit <namit@cs.technion.ac.il>
-CC: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] KVM: x86: check DR6/7 high-bits are clear only on
- long-mode
-References: <1402837982-24959-1-git-send-email-namit@cs.technion.ac.il> <1402837982-24959-7-git-send-email-namit@cs.technion.ac.il> <539EC43F.607@redhat.com> <539EC7F7.2000208@gmail.com>
-In-Reply-To: <539EC7F7.2000208@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <539EB7D6.8070401@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 16/06/2014 12:33, Nadav Amit ha scritto:
->>
->> Do you get this if the input register has bit 31 set?
-> No. To be frank, the scenario may be considered a bit synthetic: the
-> guest assigns a value to a general-purpose register in 64-bit mode,
-> setting the high 32-bits to some non-zero value. Then, later, in 32-bit
-> mode, the guest performs MOV DR instruction. In between the two
-> assignments, the general purpose register is unmodified, so the high
-> 32-bits of the general purpose registers are still set.
->
-> Note that this scenario does not occur when MOV DR is emulated, but when
-> handle_dr() is called. In this case, the entire 64-bits of the general
-> purpose register used for MOV DR are read, regardless to the execution
-> mode of the guest.
+On Mon 16-06-14 17:24:38, Xishi Qiu wrote:
+> When system(e.g. smart phone) running for a long time, the cache often takes
+> a large memory, maybe the free memory is less than 50M, then OOM will happen
+> if APP allocate a large order pages suddenly and memory reclaim too slowly. 
 
-I wonder if the same bug happens elsewhere.  For example, 
-kvm_emulate_hypercall doesn't look at CS.L/CS.DB, which is really a 
-corner case but arguably also a bug.  kvm_hv_hypercall instead does it 
-right.
+Have you ever seen this to happen? Page cache should be easy to reclaim and
+if there is too mach dirty memory then you should be able to tune the
+amount by dirty_bytes/ratio knob. If the page allocator falls back to
+OOM and there is a lot of page cache then I would call it a bug. I do
+not think that limiting the amount of the page cache globally makes
+sense. There are Unix systems which offer this feature but I think it is
+a bad interface which only papers over the reclaim inefficiency or lack
+of other isolations between loads.
 
-Perhaps we need a variant of kvm_register_read that (on 64-bit hosts) 
-checks EFER/CS.L/CS.DB and masks the returned value accordingly.  You 
-could call it kvm_register_readl.
+> Use "echo 3 > /proc/sys/vm/drop_caches" will drop the whole cache, this will
+> affect the performance, so it is used for debugging only. 
+> 
+> suse has this feature, I tested it before, but it can not limit the page cache
+> actually. So I rewrite the feature and add some parameters.
 
-Paolo
+The feature is there for historic reasons and I _really_ think the
+interface is not appropriate. If there is a big pagecache usage which
+affects other loads then Memory cgroup controller can be used to help
+from interference.
+
+> Christoph Lameter has written a patch "Limit the size of the pagecache"
+> http://marc.info/?l=linux-mm&m=116959990228182&w=2
+> It changes in zone fallback, this is not a good way.
+> 
+> The patchset is based on v3.15, it introduces two features, page cache limit
+> and page cache reclaim in circles.
+> 
+> Add four parameters in /proc/sys/vm
+> 
+> 1) cache_limit_mbytes
+> This is used to limit page cache amount.
+> The input unit is MB, value range is from 0 to totalram_pages.
+> If this is set to 0, it will not limit page cache.
+> When written to the file, cache_limit_ratio will be updated too.
+> The default value is 0.
+> 
+> 2) cache_limit_ratio
+> This is used to limit page cache amount.
+> The input unit is percent, value range is from 0 to 100.
+> If this is set to 0, it will not limit page cache.
+> When written to the file, cache_limit_mbytes will be updated too.
+> The default value is 0.
+> 
+> 3) cache_reclaim_s
+> This is used to reclaim page cache in circles.
+> The input unit is second, the minimum value is 0.
+> If this is set to 0, it will disable the feature.
+> The default value is 0.
+> 
+> 4) cache_reclaim_weight
+> This is used to speed up page cache reclaim.
+> It depend on enabling cache_limit_mbytes/cache_limit_ratio or cache_reclaim_s.
+> Value range is from 1(slow) to 100(fast).
+> The default value is 1.
+> 
+> I tested the two features on my system(x86_64), it seems to work right.
+> However, as it changes the hot path "add_to_page_cache_lru()", I don't know
+> how much it will the affect the performance, maybe there are some errors
+> in the patches too, RFC.
+
+I haven't looked at patches yet but you would need to explain why the
+feature is needed much better and why the existing features are not
+sufficient.
+-- 
+Michal Hocko
+SUSE Labs
