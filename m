@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185AbaFPM7m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 08:59:42 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46760 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668AbaFPM7k (ORCPT
+	id S1752509AbaFPNAj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 09:00:39 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:43735 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092AbaFPNAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 08:59:40 -0400
-Message-ID: <539EEA2A.2040207@ti.com>
-Date: Mon, 16 Jun 2014 07:59:22 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>, Mark Brown <broonie@kernel.org>
-CC: Aaro Koskinen <aaro.koskinen@iki.fi>, Rajendra Nayak <rnayak@ti.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] regulator: twl: Convert to use devm_kmemdup()
-References: <1402883060.4707.1.camel@phoenix>
-In-Reply-To: <1402883060.4707.1.camel@phoenix>
+	Mon, 16 Jun 2014 09:00:38 -0400
+Message-ID: <1402923474.3958.34.camel@debian>
+Subject: Re: [PATCH] mm/vmscan.c: avoid recording the original scan targets
+ in shrink_lruvec()
+From: Chen Yucong <slaoub@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: mhocko@suse.cz, hannes@cmpxchg.org, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Mon, 16 Jun 2014 20:57:54 +0800
+In-Reply-To: <1402320436-22270-1-git-send-email-slaoub@gmail.com>
+References: <1402320436-22270-1-git-send-email-slaoub@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+linux-omap.
-
-On 06/15/2014 08:44 PM, Axel Lin wrote:
-
-Might be nice to have a commit message here.
-
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->  drivers/regulator/twl-regulator.c | 13 +------------
->  1 file changed, 1 insertion(+), 12 deletions(-)
+On Mon, 2014-06-09 at 21:27 +0800, Chen Yucong wrote:
+> Via https://lkml.org/lkml/2013/4/10/334 , we can find that recording the
+> original scan targets introduces extra 40 bytes on the stack. This patch
+> is able to avoid this situation and the call to memcpy(). At the same time,
+> it does not change the relative design idea.
 > 
-> diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
-> index fed28ab..0b4f866 100644
-> --- a/drivers/regulator/twl-regulator.c
-> +++ b/drivers/regulator/twl-regulator.c
-> @@ -1128,7 +1128,7 @@ static int twlreg_probe(struct platform_device *pdev)
->  	if (!initdata)
->  		return -EINVAL;
->  
-> -	info = kmemdup(template, sizeof(*info), GFP_KERNEL);
-> +	info = devm_kmemdup(&pdev->dev, template, sizeof(*info), GFP_KERNEL);
->  	if (!info)
->  		return -ENOMEM;
->  
-> @@ -1192,7 +1192,6 @@ static int twlreg_probe(struct platform_device *pdev)
->  	if (IS_ERR(rdev)) {
->  		dev_err(&pdev->dev, "can't register %s, %ld\n",
->  				info->desc.name, PTR_ERR(rdev));
-> -		kfree(info);
->  		return PTR_ERR(rdev);
->  	}
->  	platform_set_drvdata(pdev, rdev);
-> @@ -1212,20 +1211,10 @@ static int twlreg_probe(struct platform_device *pdev)
->  	return 0;
->  }
->  
-> -static int twlreg_remove(struct platform_device *pdev)
-> -{
-> -	struct regulator_dev *rdev = platform_get_drvdata(pdev);
-> -	struct twlreg_info *info = rdev->reg_data;
-> -
-> -	kfree(info);
-> -	return 0;
-> -}
-> -
->  MODULE_ALIAS("platform:twl_reg");
->  
->  static struct platform_driver twlreg_driver = {
->  	.probe		= twlreg_probe,
-> -	.remove		= twlreg_remove,
->  	/* NOTE: short name, to work around driver model truncation of
->  	 * "twl_regulator.12" (and friends) to "twl_regulator.1".
->  	 */
+> ratio = original_nr_file / original_nr_anon;
 > 
+> If (nr_file > nr_anon), then ratio = (nr_file - x) / nr_anon.
+>  x = nr_file - ratio * nr_anon;
+> 
+> if (nr_file <= nr_anon), then ratio = nr_file / (nr_anon - x).
+>  x = nr_anon - nr_file / ratio;
+> 
+Hi Andrew Morton,
 
-otherwise, looks good to me.
-Reviewed-by: Nishanth Menon <nm@ti.com>
+I think the patch
+ 
+[PATCH]
+mm-vmscanc-avoid-recording-the-original-scan-targets-in-shrink_lruvec-fix.patch
 
--- 
-Regards,
-Nishanth Menon
+which I committed should be discarded. Because It have some critical
+defects.
+    1) If we want to solve the divide-by-zero and unfair problems, it
+needs to two variables for recording the ratios.
+ 
+    2) For "x = nr_file - ratio * nr_anon", the "x" is likely to be a
+negative number. we can assume:
+
+      nr[LRU_ACTIVE_FILE] = 30
+      nr[LRU_INACTIVE_FILE] = 30
+      nr[LRU_ACTIVE_ANON] = 0
+      nr[LRU_INACTIVE_ANON] = 40
+
+      ratio = 60/40 = 3/2
+
+When the value of (nr_reclaimed < nr_to_reclaim) become false, there are
+the following results:
+      nr[LRU_ACTIVE_FILE] = 15
+      nr[LRU_INACTIVE_FILE] = 15
+      nr[LRU_ACTIVE_ANON] = 0
+      nr[LRU_INACTIVE_ANON] = 25
+ 
+      nr_file = 30
+      nr_anon = 25
+
+      x = 30 - 25 * (3/2) = 30 - 37.5 = -7.5.
+
+The result is too terrible. 
+   
+   3) This method is less accurate than the original, especially for the
+qualitative difference between FILE and ANON that is very small.
+
+thx!
+cyc  
+   
+
