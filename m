@@ -1,102 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813AbaFPNDN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 09:03:13 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:64388 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007AbaFPNDM (ORCPT
+	id S1752460AbaFPNGW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 09:06:22 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:36424 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423AbaFPNGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 09:03:12 -0400
-Date: Mon, 16 Jun 2014 14:03:06 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: sbkim73@samsung.com, sameo@linux.intel.com, k.kozlowski@samsung.com,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv5 1/3] mfd: sec-core: Add support for S2MPU02 device
-Message-ID: <20140616130306.GU14323@lee--X1>
-References: <1402893757-18957-1-git-send-email-cw00.choi@samsung.com>
- <1402893757-18957-2-git-send-email-cw00.choi@samsung.com>
+	Mon, 16 Jun 2014 09:06:20 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Mark A. Greer" <mgreer@animalcreek.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-wireless@vger.kernel.org, linux-nfc@ml01.01.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] NFC: trf7970a: Move trf7970a_init inside #ifdef CONFIG_PM_RUNTIME
+Date: Mon, 16 Jun 2014 15:06:13 +0200
+Message-Id: <1402923973-24316-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1402893757-18957-2-git-send-email-cw00.choi@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jun 2014, Chanwoo Choi wrote:
+If CONFIG_PM_RUNTIME=n:
 
-> Add support for Samsung S2MPU02 PMIC device to the MFD sec-core driver.
-> The S2MPU02 device includes PMIC/RTC/Clock devices.
-> 
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  drivers/mfd/sec-core.c           | 19 +++++++++
->  drivers/mfd/sec-irq.c            | 88 ++++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/samsung/core.h |  1 +
->  include/linux/mfd/samsung/irq.h  | 24 +++++++++++
->  4 files changed, 132 insertions(+)
-> 
-> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-> index be06d0a..5e8784b 100644
-> --- a/drivers/mfd/sec-core.c
-> +++ b/drivers/mfd/sec-core.c
-> @@ -89,6 +89,17 @@ static const struct mfd_cell s2mpa01_devs[] = {
->  	},
->  };
->  
-> +static const struct mfd_cell s2mpu02_devs[] = {
-> +	{
-> +		.name = "s2mpu02-pmic",
-> +	}, {
-> +		.name = "s2mpu02-rtc",
+drivers/nfc/trf7970a.c:755: warning: ‘trf7970a_init’ defined but not used
 
-Make these two one liners, so:
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ drivers/nfc/trf7970a.c | 80 +++++++++++++++++++++++++-------------------------
+ 1 file changed, 40 insertions(+), 40 deletions(-)
 
-  { .name = "s2mpu02-pmic" },
-  { .name = "s2mpu02-rtc" ),
-
-> +	}, {
-> +		.name = "s2mpu02-clk",
-> +		.of_compatible = "samsung,s2mpu02-clk",
-> +	}
-> +};
-> +
->  #ifdef CONFIG_OF
->  static const struct of_device_id sec_dt_match[] = {
->  	{	.compatible = "samsung,s5m8767-pmic",
-> @@ -103,6 +114,9 @@ static const struct of_device_id sec_dt_match[] = {
->  		.compatible = "samsung,s2mpa01-pmic",
->  		.data = (void *)S2MPA01,
->  	}, {
-> +		.compatible = "samsung,s2mpu02-pmic",
-> +		.data = (void *)S2MPU02,
-> +	}, {
->  		/* Sentinel */
->  	},
->  };
-> @@ -342,6 +356,11 @@ static int sec_pmic_probe(struct i2c_client *i2c,
->  		ret = mfd_add_devices(sec_pmic->dev, -1, s2mps14_devs,
->  				      ARRAY_SIZE(s2mps14_devs), NULL, 0, NULL);
->  		break;
-> +	case S2MPU02:
-> +		ret = mfd_add_devices(sec_pmic->dev, -1, s2mpu02_devs,
-> +				      ARRAY_SIZE(s2mpu02_devs), NULL, 0, NULL);
-> +		break;
-
-This is a bit bonkers.  Instead of passing S2MPU02, why don't you pass
-a new container which holds s2mpu02_devs and s2mpu02_irq_chip, then
-you won't need new mfd_add_devices() and regmap_add_irq_chip() calls
-for every device you want to support.
-
-[...]
-
+diff --git a/drivers/nfc/trf7970a.c b/drivers/nfc/trf7970a.c
+index 3b78b031e617..41a153ecc6ed 100644
+--- a/drivers/nfc/trf7970a.c
++++ b/drivers/nfc/trf7970a.c
+@@ -751,45 +751,6 @@ static void trf7970a_timeout_work_handler(struct work_struct *work)
+ 	mutex_unlock(&trf->lock);
+ }
+ 
+-static int trf7970a_init(struct trf7970a *trf)
+-{
+-	int ret;
+-
+-	dev_dbg(trf->dev, "Initializing device - state: %d\n", trf->state);
+-
+-	ret = trf7970a_cmd(trf, TRF7970A_CMD_SOFT_INIT);
+-	if (ret)
+-		goto err_out;
+-
+-	ret = trf7970a_cmd(trf, TRF7970A_CMD_IDLE);
+-	if (ret)
+-		goto err_out;
+-
+-	/* Must clear NFC Target Detection Level reg due to erratum */
+-	ret = trf7970a_write(trf, TRF7970A_NFC_TARGET_LEVEL, 0);
+-	if (ret)
+-		goto err_out;
+-
+-	ret = trf7970a_write(trf, TRF7970A_ADJUTABLE_FIFO_IRQ_LEVELS,
+-			TRF7970A_ADJUTABLE_FIFO_IRQ_LEVELS_WLH_96 |
+-			TRF7970A_ADJUTABLE_FIFO_IRQ_LEVELS_WLL_32);
+-	if (ret)
+-		goto err_out;
+-
+-	ret = trf7970a_write(trf, TRF7970A_SPECIAL_FCN_REG1, 0);
+-	if (ret)
+-		goto err_out;
+-
+-	trf->special_fcn_reg1 = 0;
+-
+-	trf->iso_ctrl = 0xff;
+-	return 0;
+-
+-err_out:
+-	dev_dbg(trf->dev, "Couldn't init device: %d\n", ret);
+-	return ret;
+-}
+-
+ static void trf7970a_switch_rf_off(struct trf7970a *trf)
+ {
+ 	dev_dbg(trf->dev, "Switching rf off\n");
+@@ -1430,6 +1391,45 @@ static int trf7970a_pm_runtime_suspend(struct device *dev)
+ 	return ret;
+ }
+ 
++static int trf7970a_init(struct trf7970a *trf)
++{
++	int ret;
++
++	dev_dbg(trf->dev, "Initializing device - state: %d\n", trf->state);
++
++	ret = trf7970a_cmd(trf, TRF7970A_CMD_SOFT_INIT);
++	if (ret)
++		goto err_out;
++
++	ret = trf7970a_cmd(trf, TRF7970A_CMD_IDLE);
++	if (ret)
++		goto err_out;
++
++	/* Must clear NFC Target Detection Level reg due to erratum */
++	ret = trf7970a_write(trf, TRF7970A_NFC_TARGET_LEVEL, 0);
++	if (ret)
++		goto err_out;
++
++	ret = trf7970a_write(trf, TRF7970A_ADJUTABLE_FIFO_IRQ_LEVELS,
++			TRF7970A_ADJUTABLE_FIFO_IRQ_LEVELS_WLH_96 |
++			TRF7970A_ADJUTABLE_FIFO_IRQ_LEVELS_WLL_32);
++	if (ret)
++		goto err_out;
++
++	ret = trf7970a_write(trf, TRF7970A_SPECIAL_FCN_REG1, 0);
++	if (ret)
++		goto err_out;
++
++	trf->special_fcn_reg1 = 0;
++
++	trf->iso_ctrl = 0xff;
++	return 0;
++
++err_out:
++	dev_dbg(trf->dev, "Couldn't init device: %d\n", ret);
++	return ret;
++}
++
+ static int trf7970a_pm_runtime_resume(struct device *dev)
+ {
+ 	struct spi_device *spi = container_of(dev, struct spi_device, dev);
+@@ -1462,7 +1462,7 @@ static int trf7970a_pm_runtime_resume(struct device *dev)
+ 
+ 	return 0;
+ }
+-#endif
++#endif /* CONFIG_PM_RUNTIME */
+ 
+ static const struct dev_pm_ops trf7970a_pm_ops = {
+ 	SET_RUNTIME_PM_OPS(trf7970a_pm_runtime_suspend,
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.1
+
