@@ -1,148 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446AbaFPXnH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 19:43:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56764 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751438AbaFPXnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 19:43:06 -0400
-Date: Mon, 16 Jun 2014 19:42:54 -0400
-From: Dave Jones <davej@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        therbert@google.com
-Subject: Re: [GIT] Networking
-Message-ID: <20140616234254.GA15332@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
-	akpm@linux-foundation.org, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org, therbert@google.com
-References: <20140615.193312.2155181077359902619.davem@davemloft.net>
- <20140616230450.GA12887@redhat.com>
+	id S1752762AbaFPXoJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 19:44:09 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:47600 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121AbaFPXoG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 19:44:06 -0400
+Date: Mon, 16 Jun 2014 16:44:04 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Steve Wise <swise@opengridcomputing.com>
+cc: Nicholas Krause <xerofoify@gmail.com>, swise@chelsio.com,
+        roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
+        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] infiniband: Fixes memory leak in send_flowc
+In-Reply-To: <539F34E8.3000501@opengridcomputing.com>
+Message-ID: <alpine.DEB.2.02.1406161638360.21018@chino.kir.corp.google.com>
+References: <1402940957-6381-1-git-send-email-xerofoify@gmail.com> <539F34E8.3000501@opengridcomputing.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140616230450.GA12887@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 07:04:50PM -0400, Dave Jones wrote:
- > On Sun, Jun 15, 2014 at 07:33:12PM -0700, David Miller wrote:
- > 
- >  > 1) Fix checksumming regressions, from Tom Herbert.
- > 
- > Something still not right for me here.
- > After about 5 minutes, I get an oops and then instant reboot/lock up.
- > 
- > I haven't managed to get a trace over usb-serial because it seems to
- > crash before it completes. Hand transcribed one looks like..
- > 
- > rbp: ffff880236403970 r08: 0000000000000000 r09: 0000000000000000
- > r10: 000000000000005a r11: 00000000000002d7 f12: ffff880233000d80
- > r13: ffff8800aa1a6fc2 r14: ffff880233001d40 f15: 00000000ffffac82
- > fs: 0 fs: ffff880236400000 knlGS: 0
- > CS: 10 DS: 0 ES: 0 CR0: 80050033
- > CR2: ffff8800aa1a8000 CR3: 1a0d000 CR4: 407f0
- > Stack:
- >  ffff880236403988 ffffffff81298bbc 00000000000016c0 ffff8802364039e8
- >  ffffffff814ca05a ffff880233001d40 000005a80000e397 ffff880233001680
- >  0000000000000000 0d420685ffffac82 000000000000012a 000000000000004e
- > Call Trace:
- > <IRQ>
- > csum_partial
- > tcp_gso_segment
- > inet_gso_segment
- > ? update_dl_migration
- > skb_mac_gso_segment
- > __skb_gso_segment
- > dev_hard_start_xmit
- > sch_direct_xmit
- > __dev_queue_xmit
- > ? dev_hard_start_xmit
- > dev_queue_xmit
- > ip_finish_output
- > ? ip_output
- > ip_output
- > ip_forward_finish
- > ip_forward
- > ip_rcv_finish
- > ip_rcv
- > __netif_receive_skb_core
- > ? __netif_receive_skb_core
- > ? trace_hardirqs_on
- > __netif_receive_skb
- > netif_receive_skb_internal
- > napi_gro_complete
- > ? napi_gro_complete
- > dev_gro_receive
- > ? dev_gro_receive
- > napi_gro_receive
- > rtl8169_poll
- > net_rx_action
- > __do_softirq
- > irq_exit
- > do_IRQ
- > common_interrupt
- > <EOI>
- > cpuidle_enter_state
- > cpuidle_enter
- > cpu_startup_entry
- > rest_init
- > ? csum_partial_copy_generic
- > start_kernel
- > RIP: do_csum+0x83/0x180
- > 
- > Code: 41 89 d2 74 45 89 d1 45 31 c0 48 89 fa 0f 1f 00 48 03 02 48 13 42
- > 08 48 13 42 10 48 13 42 20 48 13 42 28 48 13 42 30 <48> 13 42 38 4c 11
- > c0 48 83 c2 40 83 e9 01 75 d5 41 83 ea 01 49
- > 
- > All code
- > ========
- >    0:	41 89 d2             	mov    %edx,%r10d
- >    3:	74 45                	je     0x4a
- >    5:	89 d1                	mov    %edx,%ecx
- >    7:	45 31 c0             	xor    %r8d,%r8d
- >    a:	48 89 fa             	mov    %rdi,%rdx
- >    d:	0f 1f 00             	nopl   (%rax)
- >   10:	48 03 02             	add    (%rdx),%rax
- >   13:	48 13 42 08          	adc    0x8(%rdx),%rax
- >   17:	48 13 42 10          	adc    0x10(%rdx),%rax
- >   1b:	48 13 42 20          	adc    0x20(%rdx),%rax
- >   1f:	48 13 42 28          	adc    0x28(%rdx),%rax
- >   23:	48 13 42 30          	adc    0x30(%rdx),%rax
- >   27:*	48 13 42 38          	adc    0x38(%rdx),%rax     <-- trapping instruction
- >   2b:	4c 11 c0             	adc    %r8,%rax
- >   2e:	48 83 c2 40          	add    $0x40,%rdx
- >   32:	83 e9 01             	sub    $0x1,%ecx
- >   35:	75 d5                	jne    0xc
- >   37:	41 83 ea 01          	sub    $0x1,%r10d
- >   3b:	49                   	rex.WB
- > 
- > Typical, rdx and rax had scrolled off the screen.
+On Mon, 16 Jun 2014, Steve Wise wrote:
 
-after removing the dump_stack invocations, I noticed that the reason
-this is rebooting is probably because right after the initial oops
-we hit the WARN_ON at arch/x86/kernel/smp.c:124
+> On 6/16/2014 12:49 PM, Nicholas Krause wrote:
+> > Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> > ---
+> >   drivers/infiniband/hw/cxgb4/cm.c | 5 ++++-
+> >   1 file changed, 4 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/infiniband/hw/cxgb4/cm.c
+> > b/drivers/infiniband/hw/cxgb4/cm.c
+> > index 5e153f6..867e664 100644
+> > --- a/drivers/infiniband/hw/cxgb4/cm.c
+> > +++ b/drivers/infiniband/hw/cxgb4/cm.c
+> > @@ -455,8 +455,11 @@ static void send_flowc(struct c4iw_ep *ep, struct
+> > sk_buff *skb)
+> >   	unsigned int flowclen = 80;
+> >   	struct fw_flowc_wr *flowc;
+> >   	int i;
+> > -
+> 
+> Please add back the above blank line.
+> 
+> >   	skb = get_skb(skb, flowclen, GFP_KERNEL);
+> > +	if (!skb) {
+> > +		kfree_skb(skb);
+> 
+> Let's do a pr_warn() here;
+> 
+>         pr_warn(MOD "%s failed to allocate skb.\n", __func__);
+> 
 
-        if (unlikely(cpu_is_offline(cpu))) {
-                WARN_ON(1);
-                return;
-        }
+No need, if the allocation from skbuff_head_cache fails in the slab 
+allocator, the page allocator will loop forever for orders less than 
+PAGE_ALLOC_COSTLY_ORDER or spew a page allocation failure warning with a 
+stack trace that indicated the high order page allocation failed in this 
+path.
 
-lol.
-
-Anwyay, before all that nonsense, I now have the top of the oops..
-
-BUG: unable to handle kernel paging request at ffff880218c18000
-IP: do_csum+0x68
-PGD: 2c6a067 PUD: 2c6d067 PMD 23fd1c067 PTE: 80000000218c18060
-RAX: 2090539bbf7b28f2 RBX: 00000000acb23d4e RCX: 000000000000000b
-RDX: ffff880218c18000 RSI: 0000000000001c62 RDI: ffff880218c16680
-
-Maybe also notable here is that the kernel is built with DEBUG_PAGEALLOC on.
-
-	Dave
-
+> 
+> > +		return;
+> > +	}
+> >   	flowc = (struct fw_flowc_wr *)__skb_put(skb, flowclen);
+> >     	flowc->op_to_nparams = cpu_to_be32(FW_WR_OP(FW_FLOWC_WR) |
