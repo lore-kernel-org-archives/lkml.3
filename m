@@ -1,225 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354AbaFPNlk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 09:41:40 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:51673 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752317AbaFPNjv (ORCPT
+	id S1752749AbaFPNtt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 09:49:49 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51214 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752060AbaFPNts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 09:39:51 -0400
-From: Alex Elder <elder@linaro.org>
-To: mturquette@linaro.org, mporter@linaro.org, bcm@fixthebug.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v6 1/7] clk: kona: move some code
-Date: Mon, 16 Jun 2014 08:40:01 -0500
-Message-Id: <1402926007-4436-2-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1402926007-4436-1-git-send-email-elder@linaro.org>
-References: <1402926007-4436-1-git-send-email-elder@linaro.org>
+	Mon, 16 Jun 2014 09:49:48 -0400
+Date: Mon, 16 Jun 2014 14:49:08 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Wang Weidong <wangweidong1@huawei.com>
+Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "gregory.clement@free-electrons.com" 
+	<gregory.clement@free-electrons.com>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: Thumb-2: Fix out-of-range offset for Thumb-2 in,
+ proc-macros.S
+Message-ID: <20140616134908.GI16758@arm.com>
+References: <5396ACF1.1020107@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5396ACF1.1020107@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the definition of __peri_clk_init() up in "clk-kona.c", in
-preparation for the next patch (so it's defined before it's needed).
-Move kona_ccu_init() and __kona_clk_init() as well.
+On Tue, Jun 10, 2014 at 08:00:01AM +0100, Wang Weidong wrote:
+> The STR Instruction Encoding T4 points that the <imm> is in the
+> range 0-255.So split the instruction into two for Thumb-2. Just
+> like commit 874d5d3ccc("ARM: 6623/1: Thumb-2: Fix out-of-range
+> offset for Thumb-2 in proc-v7.S").
+> 
+> Signed-off-by: Wang Weidong <wangweidong1@huawei.com>
+> ---
+>  arch/arm/mm/proc-macros.S | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mm/proc-macros.S b/arch/arm/mm/proc-macros.S
+> index ee1d805..63f710c 100644
+> --- a/arch/arm/mm/proc-macros.S
+> +++ b/arch/arm/mm/proc-macros.S
+> @@ -252,7 +252,9 @@
+>  	tst	r3, #L_PTE_PRESENT | L_PTE_YOUNG	@ present and young?
+>  	movne	r2, #0				@ no -> fault
+>  
+> -	str	r2, [r0, #2048]!		@ hardware version
+> + ARM(	str	r2, [r0, #2048]! 		) @ hardware version
+> + THUMB( add	r0, r0, #2048 			)
+> + THUMB( str	r2, [r0] 			)
+>  	mov	ip, #0
+>  	mcr	p15, 0, r0, c7, c10, 1		@ clean L1 D line
+>  	mcr	p15, 0, ip, c7, c10, 4		@ data write barrier
 
-Done as a separate patch so doing so doesn't obscure other changes.
+AFAICT this is in xscale_set_pte_ext_epilogue which should only be built as
+ARM. Are you seeing a real issue here?
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
- drivers/clk/bcm/clk-kona.c | 174 ++++++++++++++++++++++-----------------------
- 1 file changed, 87 insertions(+), 87 deletions(-)
-
-diff --git a/drivers/clk/bcm/clk-kona.c b/drivers/clk/bcm/clk-kona.c
-index 95af2e6..b643d35 100644
---- a/drivers/clk/bcm/clk-kona.c
-+++ b/drivers/clk/bcm/clk-kona.c
-@@ -981,6 +981,93 @@ static int selector_write(struct ccu_data *ccu, struct bcm_clk_gate *gate,
- 	return ret;
- }
- 
-+/* Put a peripheral clock into its initial state */
-+static bool __peri_clk_init(struct kona_clk *bcm_clk)
-+{
-+	struct ccu_data *ccu = bcm_clk->ccu;
-+	struct peri_clk_data *peri = bcm_clk->u.peri;
-+	const char *name = bcm_clk->init_data.name;
-+	struct bcm_clk_trig *trig;
-+
-+	BUG_ON(bcm_clk->type != bcm_clk_peri);
-+
-+	if (!policy_init(ccu, &peri->policy)) {
-+		pr_err("%s: error initializing policy for %s\n",
-+			__func__, name);
-+		return false;
-+	}
-+	if (!gate_init(ccu, &peri->gate)) {
-+		pr_err("%s: error initializing gate for %s\n", __func__, name);
-+		return false;
-+	}
-+	if (!hyst_init(ccu, &peri->hyst)) {
-+		pr_err("%s: error initializing hyst for %s\n", __func__, name);
-+		return false;
-+	}
-+	if (!div_init(ccu, &peri->gate, &peri->div, &peri->trig)) {
-+		pr_err("%s: error initializing divider for %s\n", __func__,
-+			name);
-+		return false;
-+	}
-+
-+	/*
-+	 * For the pre-divider and selector, the pre-trigger is used
-+	 * if it's present, otherwise we just use the regular trigger.
-+	 */
-+	trig = trigger_exists(&peri->pre_trig) ? &peri->pre_trig
-+					       : &peri->trig;
-+
-+	if (!div_init(ccu, &peri->gate, &peri->pre_div, trig)) {
-+		pr_err("%s: error initializing pre-divider for %s\n", __func__,
-+			name);
-+		return false;
-+	}
-+
-+	if (!sel_init(ccu, &peri->gate, &peri->sel, trig)) {
-+		pr_err("%s: error initializing selector for %s\n", __func__,
-+			name);
-+		return false;
-+	}
-+
-+	return true;
-+}
-+
-+static bool __kona_clk_init(struct kona_clk *bcm_clk)
-+{
-+	switch (bcm_clk->type) {
-+	case bcm_clk_peri:
-+		return __peri_clk_init(bcm_clk);
-+	default:
-+		BUG();
-+	}
-+	return -EINVAL;
-+}
-+
-+/* Set a CCU and all its clocks into their desired initial state */
-+bool __init kona_ccu_init(struct ccu_data *ccu)
-+{
-+	unsigned long flags;
-+	unsigned int which;
-+	struct clk **clks = ccu->clk_data.clks;
-+	bool success = true;
-+
-+	flags = ccu_lock(ccu);
-+	__ccu_write_enable(ccu);
-+
-+	for (which = 0; which < ccu->clk_data.clk_num; which++) {
-+		struct kona_clk *bcm_clk;
-+
-+		if (!clks[which])
-+			continue;
-+		bcm_clk = to_kona_clk(__clk_get_hw(clks[which]));
-+		success &= __kona_clk_init(bcm_clk);
-+	}
-+
-+	__ccu_write_disable(ccu);
-+	ccu_unlock(ccu, flags);
-+	return success;
-+}
-+
- /* Clock operations */
- 
- static int kona_peri_clk_enable(struct clk_hw *hw)
-@@ -1192,90 +1279,3 @@ struct clk_ops kona_peri_clk_ops = {
- 	.get_parent = kona_peri_clk_get_parent,
- 	.set_rate = kona_peri_clk_set_rate,
- };
--
--/* Put a peripheral clock into its initial state */
--static bool __peri_clk_init(struct kona_clk *bcm_clk)
--{
--	struct ccu_data *ccu = bcm_clk->ccu;
--	struct peri_clk_data *peri = bcm_clk->u.peri;
--	const char *name = bcm_clk->init_data.name;
--	struct bcm_clk_trig *trig;
--
--	BUG_ON(bcm_clk->type != bcm_clk_peri);
--
--	if (!policy_init(ccu, &peri->policy)) {
--		pr_err("%s: error initializing policy for %s\n",
--			__func__, name);
--		return false;
--	}
--	if (!gate_init(ccu, &peri->gate)) {
--		pr_err("%s: error initializing gate for %s\n", __func__, name);
--		return false;
--	}
--	if (!hyst_init(ccu, &peri->hyst)) {
--		pr_err("%s: error initializing hyst for %s\n", __func__, name);
--		return false;
--	}
--	if (!div_init(ccu, &peri->gate, &peri->div, &peri->trig)) {
--		pr_err("%s: error initializing divider for %s\n", __func__,
--			name);
--		return false;
--	}
--
--	/*
--	 * For the pre-divider and selector, the pre-trigger is used
--	 * if it's present, otherwise we just use the regular trigger.
--	 */
--	trig = trigger_exists(&peri->pre_trig) ? &peri->pre_trig
--					       : &peri->trig;
--
--	if (!div_init(ccu, &peri->gate, &peri->pre_div, trig)) {
--		pr_err("%s: error initializing pre-divider for %s\n", __func__,
--			name);
--		return false;
--	}
--
--	if (!sel_init(ccu, &peri->gate, &peri->sel, trig)) {
--		pr_err("%s: error initializing selector for %s\n", __func__,
--			name);
--		return false;
--	}
--
--	return true;
--}
--
--static bool __kona_clk_init(struct kona_clk *bcm_clk)
--{
--	switch (bcm_clk->type) {
--	case bcm_clk_peri:
--		return __peri_clk_init(bcm_clk);
--	default:
--		BUG();
--	}
--	return -EINVAL;
--}
--
--/* Set a CCU and all its clocks into their desired initial state */
--bool __init kona_ccu_init(struct ccu_data *ccu)
--{
--	unsigned long flags;
--	unsigned int which;
--	struct clk **clks = ccu->clk_data.clks;
--	bool success = true;
--
--	flags = ccu_lock(ccu);
--	__ccu_write_enable(ccu);
--
--	for (which = 0; which < ccu->clk_data.clk_num; which++) {
--		struct kona_clk *bcm_clk;
--
--		if (!clks[which])
--			continue;
--		bcm_clk = to_kona_clk(__clk_get_hw(clks[which]));
--		success &= __kona_clk_init(bcm_clk);
--	}
--
--	__ccu_write_disable(ccu);
--	ccu_unlock(ccu, flags);
--	return success;
--}
--- 
-1.9.1
-
+Will
