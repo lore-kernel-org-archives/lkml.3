@@ -1,134 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755211AbaFPN2A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 09:28:00 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:43723 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753608AbaFPN16 (ORCPT
+	id S1752687AbaFPNaG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 09:30:06 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55476 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751188AbaFPNaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 09:27:58 -0400
-Date: Mon, 16 Jun 2014 14:27:49 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Jonathan Cameron <jic23@kernel.org>,
-        linux-iio@vger.kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, support.opensource@diasemi.com
-Subject: Re: [PATCH 6/8] power: Add support for DA9150 Charger
-Message-ID: <20140616132749.GW14323@lee--X1>
-References: <cover.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
- <d4ef0d7ce2d6a2919d528ed75e82d2b99ec8d962.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
+	Mon, 16 Jun 2014 09:30:04 -0400
+Date: Mon, 16 Jun 2014 15:29:15 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Alexander Bersenev <bay@hackerdom.ru>
+Cc: linux-sunxi@googlegroups.com, david@hardeman.nu,
+        devicetree@vger.kernel.org, galak@codeaurora.org,
+        grant.likely@linaro.org, ijc+devicetree@hellion.org.uk,
+        james.hogan@imgtec.com, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, m.chehab@samsung.com, mark.rutland@arm.com,
+        pawel.moll@arm.com, rdunlap@infradead.org, robh+dt@kernel.org,
+        sean@mess.org, srinivas.kandagatla@st.com, wingrime@linux-sunxi.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH v9 5/5] ARM: sunxi: Enable IR controller on cubieboard 2
+ and cubietruck in dts
+Message-ID: <20140616132915.GC9757@lukather>
+References: <1402250893-5412-1-git-send-email-bay@hackerdom.ru>
+ <1402250893-5412-6-git-send-email-bay@hackerdom.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qtZFehHsKgwS5rPz"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <d4ef0d7ce2d6a2919d528ed75e82d2b99ec8d962.1402484954.git.Adam.Thomson.Opensource@diasemi.com>
+In-Reply-To: <1402250893-5412-6-git-send-email-bay@hackerdom.ru>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jun 2014, Adam Thomson wrote:
 
-> This patch adds support for DA9150 Charger & Fuel-Guage IC Charger.
-> 
-> Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-> ---
->  drivers/power/Kconfig              |  23 ++
->  drivers/power/Makefile             |   1 +
->  drivers/power/da9150-charger.c     | 790 +++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/da9150/charger.h |  58 +++
->  4 files changed, 872 insertions(+)
->  create mode 100644 drivers/power/da9150-charger.c
->  create mode 100644 include/linux/mfd/da9150/charger.h
+--qtZFehHsKgwS5rPz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[...]
+On Mon, Jun 09, 2014 at 12:08:13AM +0600, Alexander Bersenev wrote:
+> This patch enables two IR devices in dts:
+> - One IR device physically found on Cubieboard 2
+> - One IR device physically found on Cubietruck
+>=20
+> Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
+> Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
 
-> diff --git a/include/linux/mfd/da9150/charger.h b/include/linux/mfd/da9150/charger.h
-> new file mode 100644
-> index 0000000..73c41b3
-> --- /dev/null
-> +++ b/include/linux/mfd/da9150/charger.h
-> @@ -0,0 +1,58 @@
-> +/*
-> + * DA9150 MFD Driver - Charger Data
-> + *
-> + * Copyright (c) 2014 Dialog Semiconductor
-> + *
-> + * Author: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-> + *
-> + * This program is free software; you can redistribute  it and/or modify it
-> + * under  the terms of  the GNU General  Public License as published by the
-> + * Free Software Foundation;  either version 2 of the  License, or (at your
-> + * option) any later version.
-> + */
-> +
-> +#ifndef _DA9150_CHARGER_H
-> +#define _DA9150_CHARGER_H
+Applied, thanks.
 
-Two '_'s are normally preferred.
+Maxime
 
-> +#include <linux/device.h>
-> +#include <linux/i2c.h>
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-What are you using this for?
+--qtZFehHsKgwS5rPz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> +#include <linux/power_supply.h>
-> +#include <linux/notifier.h>
-> +#include <linux/usb/otg.h>
-> +#include <linux/timer.h>
-> +#include <linux/iio/consumer.h>
-> +
-> +#include <linux/mfd/da9150/core.h>
-> +
-> +
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Extra '\n' here.
+iQIcBAEBAgAGBQJTnvErAAoJEBx+YmzsjxAgdKIP/3TxwASLhpIjRFCQdu11poGq
+WaulJgo9H6mmGXNI9twlmkkgWcQM4bcYp6UGOlcYkGry+uFVdhCS3uTJB5zDvs7R
+LqaU7E7/AeV4nPKADCy+yJLkEl/LMu6GVeN/gnZCSSNEh4ArXhKLcE5BHfqR5BEw
+lpxplUadFeHjSkzRTNGxfjVSGA0VbHT05dNqzh2DUIbZaKfZyX+ZbCTcON07KzfF
+mn+pJ5fXFHcj+puxH1HYSYJVpOkTnpmGDX/al/AL9J9lJ8NtjfLcsRs7ipC5ovY5
+8Rt2Hu4YwaLJUeM2ytlrFtxnUD+2l2/bfZ4DZyuuYn44QPYP20/zPcwbKaj1zYPE
+EVGlG7CQ/1IGuYYM/BNaXt4VciAjjBD5Ce85HrY4CpddQ4ocwH4l/YAdPMVI0GIT
+2ZDSH8uRWf7cKNRw5D6Kr9yXhbFMhTNSu7rOaAyFlKYH0EjD5IVgbAsbi7FJHD5Z
+Cfgy74NIOsQjFWexPkytN35JrAHulEoUvySVbqJmufro7rqTQRw+DmAzXNq37BLK
+uB8FeKc/gleoJmaJmvnIrUWsLphSBHe7TNI9BE4EyKv+fZGnmeKokwZp5a1diYaL
++Lcg8iSOgfxQN1z4PDWPh51AvvrqAoG/c6m03kYwNHvcPW3aaXbcG6OlvpVOEGe9
+DCBU3uwNkSJMPedHHHd6
+=K9RW
+-----END PGP SIGNATURE-----
 
-> +struct da9150_charger_attr_map {
-> +	struct device_attribute attr;
-> +	u16 reg;
-> +	u8 shift;
-> +	u8 mask;
-> +};
-> +
-> +/* Private data */
-> +struct da9150_charger {
-> +	struct da9150 *da9150;
-> +	struct device *dev;
-> +
-> +	struct power_supply ac;
-> +	struct power_supply usb;
-> +	struct power_supply battery;
-
-Do you want these (or pointers to these) here?
-
-How much space do they take up?
-
-> +	struct power_supply *supply_online;
-> +
-> +	struct usb_phy *usb_phy;
-> +	struct notifier_block otg_nb;
-> +	struct work_struct otg_work;
-> +	unsigned long usb_event;
-> +
-> +	struct iio_channel *ibus_chan;
-> +	struct iio_channel *vbus_chan;
-> +	struct iio_channel *tjunc_chan;
-> +	struct iio_channel *vbat_chan;
-> +
-> +	bool invalid_tbat;
-> +};
-> +
-> +#endif /* _DA9150_CHARGER_H */
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+--qtZFehHsKgwS5rPz--
