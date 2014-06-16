@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734AbaFPQhO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 12:37:14 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:32859 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448AbaFPQhN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 12:37:13 -0400
-X-IronPort-AV: E=Sophos;i="5.01,487,1400025600"; 
-   d="scan'208";a="143816767"
-Message-ID: <539F1D36.5040008@citrix.com>
-Date: Mon, 16 Jun 2014 17:37:10 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1755561AbaFPQh4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 12:37:56 -0400
+Received: from linode.aoot.com ([69.164.194.13]:57434 "EHLO linode.aoot.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753256AbaFPQhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 12:37:54 -0400
+Message-ID: <539F1D5E.30505@opengridcomputing.com>
+Date: Mon, 16 Jun 2014 11:37:50 -0500
+From: Steve Wise <swise@opengridcomputing.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Vitaly Kuznetsov <vkuznets@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>
-CC: <xen-devel@lists.xenproject.org>, Andrew Jones <drjones@redhat.com>,
-        <x86@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH v2] xenpv: don't BUG when failing to setup
- NMI callback
-References: <1402916820-27500-1-git-send-email-vkuznets@redhat.com>
-In-Reply-To: <1402916820-27500-1-git-send-email-vkuznets@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Levente Kurusa <levex@linux.com>, Nick Krause <xerofoify@gmail.com>
+CC: swise@chelsio.com, roland@kernel.org, sean.hefty@intel.com,
+        hal.rosenstock@gmail.com, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4]Checks for Null value in function *get_skub
+References: <1402932328-3732-1-git-send-email-xerofoify@gmail.com>	<539F0DAF.1020802@opengridcomputing.com> <CAPDOMVjd9J=Kz4d88==UsbfjH13mhGzzmbc2NnxSOfqJs_aGpQ@mail.gmail.com> <539F112F.7030303@linux.com>
+In-Reply-To: <539F112F.7030303@linux.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/06/14 12:07, Vitaly Kuznetsov wrote:
-> 
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -746,12 +746,13 @@ static int cvt_gate_to_trap(int vector, const gate_desc *val,
->  		 */
->  		;
->  #endif
-> -	} else if (addr == (unsigned long)nmi)
-> +	} else if (addr == (unsigned long)nmi) {
->  		/*
-> -		 * Use the native version as well.
-> +		 * Use the native version as well but require Xen >= 3.2
->  		 */
-> -		;
-> -	else {
-> +		if (!xen_running_on_version_or_later(3, 2))
-> +			return 0;
-> +	} else {
+On 6/16/2014 10:45 AM, Levente Kurusa wrote:
+> On 06/16/2014 05:37 PM, Nick Krause wrote:
+>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>> ---
+>>   drivers/infiniband/hw/cxgb4/
+>> cm.c | 8 +++-----
+>>   1 file changed, 3 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/infiniband/hw/cxgb4/cm.c 
+>> b/drivers/infiniband/hw/cxgb4/cm.c
+>> index f9477e2..2d56983 100644
+>> --- a/drivers/infiniband/hw/cxgb4/cm.c
+>> +++ b/drivers/infiniband/hw/cxgb4/cm.c
+>> @@ -340,15 +340,13 @@ static int status2errno(int status)
+>>    */
+>>   static struct sk_buff *get_skb(struct sk_buff *skb, int len, gfp_t 
+>> gfp)
+>>   {
+>>   if (skb && !skb_is_nonlinear(skb) && !skb_cloned(skb)) {
+>>                  skb_trim(skb, 0);
+>>                  skb_get(skb);
+>>                  skb_reset_transport_header(skb);
+>>          } else {
+>> +               if (skb)
+>> /* NULL is ignored */.
+>> +                       kfree_skb (skb);
+>>                  skb = alloc_skb(len, gfp);
+>>          }
+>>          t4_set_arp_err_handler(skb, NULL, NULL);
+>
+> This patch is severely whitespace damaged. Can you fix your MUA
+> or try to use git-send-email?
+>
+> The changelog as well is of low quality. Maybe something like this:
+>
+> infiniband: cxgb4: fix memory skb memory leak
+>
+> ... would be better.
+>
+> Also, this fails the build, due to the extra dot character after
+> the comment. :-(
+>
 
-The end result of this looked odd so I played around with it a bit and
-it turns out that the register_callback for the NMI is entirely unneeded
-(since we set the NMI callback via the write_idt pv-op and it's also
-broken since it only sets the callback on the current VCPU.
+Agreed.  Start over with this patch,  do what we asked, and make sure it 
+passes checkpatch...
 
-I'm preparing an alternate patch, but I do not have a Xen 3.1 install I
-can test with.
 
-David
+> Thanks,
+>     Levente Kurusa.
+
