@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036AbaFPT5B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 15:57:01 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:36730 "EHLO zene.cmpxchg.org"
+	id S1756047AbaFPT5d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 15:57:33 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:36725 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755939AbaFPTzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 15:55:11 -0400
+	id S1755910AbaFPTzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 15:55:09 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
         Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
         cgroups@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [patch 07/12] mm: memcontrol: catch root bypass in move precharge
-Date: Mon, 16 Jun 2014 15:54:27 -0400
-Message-Id: <1402948472-8175-8-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 06/12] mm: memcontrol: simplify move precharge function
+Date: Mon, 16 Jun 2014 15:54:26 -0400
+Message-Id: <1402948472-8175-7-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1402948472-8175-1-git-send-email-hannes@cmpxchg.org>
 References: <1402948472-8175-1-git-send-email-hannes@cmpxchg.org>
@@ -22,50 +22,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When mem_cgroup_try_charge() returns -EINTR, it bypassed the charge to
-the root memcg.  But move precharging does not catch this and treats
-this case as if no charge had happened, thus leaking a charge against
-root.  Because of an old optimization, the root memcg's res_counter is
-not actually charged right now, but it's still an imbalance and
-subsequent patches will charge the root memcg again.
+The move precharge function does some baroque things: it tries raw
+res_counter charging of the entire amount first, and then falls back
+to a loop of one-by-one charges, with checks for pending signals and
+cond_resched() batching.
 
-Catch those bypasses to the root memcg and properly cancel them before
-giving up the move.
+Just use mem_cgroup_try_charge() without __GFP_WAIT for the first bulk
+charge attempt.  In the one-by-one loop, remove the signal check (this
+is already checked in try_charge), and simply call cond_resched()
+after every charge - it's not that expensive.
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Michal Hocko <mhocko@suse.cz>
 ---
- mm/memcontrol.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ mm/memcontrol.c | 51 +++++++++++++++++----------------------------------
+ 1 file changed, 17 insertions(+), 34 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 3d9df94896a7..a3b69d4a6f17 100644
+index 9c646b9b56f4..3d9df94896a7 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -6389,6 +6389,10 @@ static int mem_cgroup_do_precharge(unsigned long count)
+@@ -6372,55 +6372,38 @@ static void mem_cgroup_css_free(struct cgroup_subsys_state *css)
+ 
+ #ifdef CONFIG_MMU
+ /* Handlers for move charge at task migration. */
+-#define PRECHARGE_COUNT_AT_ONCE	256
+ static int mem_cgroup_do_precharge(unsigned long count)
+ {
+-	int ret = 0;
+-	int batch_count = PRECHARGE_COUNT_AT_ONCE;
+-	struct mem_cgroup *memcg = mc.to;
++	int ret;
+ 
+-	if (mem_cgroup_is_root(memcg)) {
++	if (mem_cgroup_is_root(mc.to)) {
+ 		mc.precharge += count;
+ 		/* we don't need css_get for root */
+ 		return ret;
+ 	}
+-	/* try to charge at once */
+-	if (count > 1) {
+-		struct res_counter *dummy;
+-		/*
+-		 * "memcg" cannot be under rmdir() because we've already checked
+-		 * by cgroup_lock_live_cgroup() that it is not removed and we
+-		 * are still under the same cgroup_mutex. So we can postpone
+-		 * css_get().
+-		 */
+-		if (res_counter_charge(&memcg->res, PAGE_SIZE * count, &dummy))
+-			goto one_by_one;
+-		if (do_swap_account && res_counter_charge(&memcg->memsw,
+-						PAGE_SIZE * count, &dummy)) {
+-			res_counter_uncharge(&memcg->res, PAGE_SIZE * count);
+-			goto one_by_one;
+-		}
++
++	/* Try a single bulk charge without reclaim first */
++	ret = mem_cgroup_try_charge(mc.to, GFP_KERNEL & ~__GFP_WAIT,
++				    count, false);
++	if (!ret) {
  		mc.precharge += count;
  		return ret;
  	}
-+	if (ret == -EINTR) {
-+		__mem_cgroup_cancel_charge(root_mem_cgroup, count);
-+		return ret;
-+	}
- 
- 	/* Try charges one by one with reclaim */
+-one_by_one:
+-	/* fall back to one by one charge */
++
++	/* Try charges one by one with reclaim */
  	while (count--) {
-@@ -6396,8 +6400,11 @@ static int mem_cgroup_do_precharge(unsigned long count)
- 		/*
- 		 * In case of failure, any residual charges against
- 		 * mc.to will be dropped by mem_cgroup_clear_mc()
--		 * later on.
-+		 * later on.  However, cancel any charges that are
-+		 * bypassed to root right away or they'll be lost.
- 		 */
-+		if (ret == -EINTR)
-+			__mem_cgroup_cancel_charge(root_mem_cgroup, 1);
+-		if (signal_pending(current)) {
+-			ret = -EINTR;
+-			break;
+-		}
+-		if (!batch_count--) {
+-			batch_count = PRECHARGE_COUNT_AT_ONCE;
+-			cond_resched();
+-		}
+-		ret = mem_cgroup_try_charge(memcg, GFP_KERNEL, 1, false);
++		ret = mem_cgroup_try_charge(mc.to, GFP_KERNEL, 1, false);
++		/*
++		 * In case of failure, any residual charges against
++		 * mc.to will be dropped by mem_cgroup_clear_mc()
++		 * later on.
++		 */
  		if (ret)
+-			/* mem_cgroup_clear_mc() will do uncharge later */
  			return ret;
  		mc.precharge++;
++		cond_resched();
+ 	}
+-	return ret;
++	return 0;
+ }
+ 
+ /**
 -- 
 2.0.0
 
