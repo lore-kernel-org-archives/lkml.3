@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247AbaFPJzD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 05:55:03 -0400
-Received: from smtprelay-h21.telenor.se ([195.54.99.196]:54355 "EHLO
-	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755051AbaFPJzA (ORCPT
+	id S1755161AbaFPJ4g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 05:56:36 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:48374 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754816AbaFPJ4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 05:55:00 -0400
-X-LISTENER: [mailrelay1.bredband.net]
-X-SENDER-IP: [92.33.28.242]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApQBAJG9nlNcIRzy/2dsb2JhbAANTcQ/gxIBgSiEeAEBAQEDJxFAARALDgoJFg8JAwIBAgEbKgYBDAEHAQGIQ7AQnn4XiUOFMweEQwEDpXOLag
-X-IPAS-Result: ApQBAJG9nlNcIRzy/2dsb2JhbAANTcQ/gxIBgSiEeAEBAQEDJxFAARALDgoJFg8JAwIBAgEbKgYBDAEHAQGIQ7AQnn4XiUOFMweEQwEDpXOLag
-X-IronPort-AV: E=Sophos;i="5.01,485,1400018400"; 
-   d="scan'208";a="29844682"
-Message-ID: <539EBEBD.6080903@gaisler.com>
-Date: Mon, 16 Jun 2014 11:54:05 +0200
-From: Andreas Larsson <andreas@gaisler.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 16 Jun 2014 05:56:35 -0400
+Date: Mon, 16 Jun 2014 12:56:31 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Martyn Welch <martyn.welch@ge.com>
+Cc: nick <nickkrause@sympatico.ca>, manohar.vanga@gmail.com,
+        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: =?utf-8?B?UEFUQ0hbW3ZtZS9icmlkZ2VzL3Zt?=
+ =?utf-8?B?ZV9jYTkxY3g0Mi5jOjEzODI6IEJhZCBpZiB0ZXN0IEJ1ZyBGaXhd4oCP4oCP?=
+Message-ID: <20140616095631.GN5015@mwanda>
+References: <BLU436-SMTP2404B87A72E455C1BDE2B43A52A0@phx.gbl>
+ <539EBD2D.9030504@ge.com>
 MIME-Version: 1.0
-To: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, lugovskoy@dev.rtsoft.ru
-Subject: Re: [PATCH 20/21] usb: use devm_irq_of_parse_and_map() where appropriate
-References: <1401880402-30091-1-git-send-email-nyushchenko@dev.rtsoft.ru> <1401880402-30091-21-git-send-email-nyushchenko@dev.rtsoft.ru> <539EBA6F.7060008@gaisler.com> <539EBC8E.6060602@dev.rtsoft.ru>
-In-Reply-To: <539EBC8E.6060602@dev.rtsoft.ru>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <539EBD2D.9030504@ge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-16 11:44, Nikita Yushchenko wrote:
->>> diff --git a/drivers/usb/host/ehci-grlib.c
->>> b/drivers/usb/host/ehci-grlib.c
->>> index 495b6fb..666c03e 100644
->>> --- a/drivers/usb/host/ehci-grlib.c
->>> +++ b/drivers/usb/host/ehci-grlib.c
->>> @@ -111,11 +111,11 @@ static int ehci_hcd_grlib_probe(struct
->>> platform_device *op)
->>>        hcd->rsrc_start = res.start;
->>>        hcd->rsrc_len = resource_size(&res);
->>>
->>> -    irq = irq_of_parse_and_map(dn, 0);
->>> -    if (irq == NO_IRQ) {
->>> -        dev_err(&op->dev, "%s: irq_of_parse_and_map failed\n",
->>> +    irq = devm_irq_of_parse_and_map(&op->dev, dn, 0);
->>> +    if (irq <= 0) {
->>> +        dev_err(&op->dev, "%s: devm_irq_of_parse_and_map failed\n",
->>>                __FILE__);
->>> -        rv = -EBUSY;
->>> +        rv = irq ? irq : -EINVAL;
->>
->> Here and in more places below you change the return value from -EBUSY to
->> -EINVAL when irq == 0. These changes and the reason for them is not
->> something that is commented upon in the commit message. Maybe these
->> changes were not intended or should be in a separate patch?
->
-> Although errno codes are quite unspecific, I can't think a valid reason
-> to return -EBUSY on [devm_]irq_of_parse_and_map() failure. It could be
-> -EINVAL or -ENODEV, but not -EBUSY ...
->
-> Since changing line that sets error code anyway, I decided to change
-> -EBUST to -ENODEV.
->
-> But I agree that this is not the topic of the patch.
->
-> IS it better to remove this change from changeset alltogether, or to
-> mention it in commit's log message?
+On Mon, Jun 16, 2014 at 10:47:25AM +0100, Martyn Welch wrote:
+> Nick,
+> 
+> Sorry for the delay in responding.
+> 
+> I'm staring at the manual for the ca91c142 and the relevant bits in
+> the VSIx_CTL registers definitely need to be set to 0 for A16,
+> likewise with the LM_CTL register. The pattern (3<<16) would enable
+> one of the "reserved" address spaces.
+> 
 
-Given that there are a lot of -EBUSY being returned in drivers/usb/host 
-- not just in these error cases, maybe it is better to not touch this in 
-this patch set.
+Nick emailed me privately that this was a static checker warning.  These
+warnings are often false positives...  But I'm worried about the test:
 
-Best regards,
-Andreas Larsson
+	if ((ctl & CA91CX42_VSI_CTL_VAS_M) == CA91CX42_VSI_CTL_VAS_A16)
+		*aspace = VME_A16;
+
+That could be true when we didn't intend it.
+
+regards,
+dan carpenter
+
