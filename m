@@ -1,133 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbaFPCCG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jun 2014 22:02:06 -0400
-Received: from ozlabs.org ([103.22.144.67]:38866 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752527AbaFPCCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jun 2014 22:02:02 -0400
-Date: Mon, 16 Jun 2014 12:01:52 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: linux-next: build failure after merge of the akpm-current tree
-Message-ID: <20140616120152.752ec516@canb.auug.org.au>
-In-Reply-To: <1402672324-io6h33kn@n-horiguchi@ah.jp.nec.com>
-References: <20140613150550.7b2e2c4c@canb.auug.org.au>
-	<1402672324-io6h33kn@n-horiguchi@ah.jp.nec.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/zZth.15U7q6c4+IBs2hWzHW"; protocol="application/pgp-signature"
+	id S1752643AbaFPCMb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jun 2014 22:12:31 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:60388 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114AbaFPCMa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jun 2014 22:12:30 -0400
+Message-ID: <1402884745.16047.2.camel@phoenix>
+Subject: [PATCH] regulator: max8952: Convert to devm_gpio_request_one()
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Mon, 16 Jun 2014 10:12:25 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/zZth.15U7q6c4+IBs2hWzHW
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/max8952.c | 34 ++++++++++------------------------
+ 1 file changed, 10 insertions(+), 24 deletions(-)
 
-Hi Naoya,
-
-On Fri, 13 Jun 2014 11:12:06 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.c=
-om> wrote:
->
-> On Fri, Jun 13, 2014 at 03:05:50PM +1000, Stephen Rothwell wrote:
-> >=20
-> > After merging the akpm-current tree, today's linux-next build (powerpc =
-ppc64_defconfig)
-> > failed like this:
-> >=20
-> > fs/proc/task_mmu.c: In function 'smaps_pmd':
-> > include/linux/compiler.h:363:38: error: call to '__compiletime_assert_5=
-05' declared with attribute error: BUILD_BUG failed
-> >   _compiletime_assert(condition, msg, __compiletime_assert_, __LINE__)
-> >                                       ^
-> > include/linux/compiler.h:346:4: note: in definition of macro '__compile=
-time_assert'
-> >     prefix ## suffix();    \
-> >     ^
-> > include/linux/compiler.h:363:2: note: in expansion of macro '_compileti=
-me_assert'
-> >   _compiletime_assert(condition, msg, __compiletime_assert_, __LINE__)
-> >   ^
-> > include/linux/bug.h:50:37: note: in expansion of macro 'compiletime_ass=
-ert'
-> >  #define BUILD_BUG_ON_MSG(cond, msg) compiletime_assert(!(cond), msg)
-> >                                      ^
-> > include/linux/bug.h:84:21: note: in expansion of macro 'BUILD_BUG_ON_MS=
-G'
-> >  #define BUILD_BUG() BUILD_BUG_ON_MSG(1, "BUILD_BUG failed")
-> >                      ^
-> > include/linux/huge_mm.h:167:27: note: in expansion of macro 'BUILD_BUG'
-> >  #define HPAGE_PMD_SIZE ({ BUILD_BUG(); 0; })
-> >                            ^
-> > fs/proc/task_mmu.c:505:39: note: in expansion of macro 'HPAGE_PMD_SIZE'
-> >   smaps_pte((pte_t *)pmd, addr, addr + HPAGE_PMD_SIZE, walk);
-> >                                        ^
-> >=20
-> > Caused by commit b0e08c526179 ("mm/pagewalk: move pmd_trans_huge_lock()
-> > from callbacks to common code").
-> >=20
-> > The reference to HPAGE_PMD_SIZE (which contains a BUILD_BUG() when
-> > CONFIG_TRANSPARENT_HUGEPAGE is not defined) used to be protected by a
-> > call to pmd_trans_huge_lock() (a static inline function that was
-> > contact 0 when CONFIG_TRANSPARENT_HUGEPAGE is not defined) so gcc did
-> > not see the reference and the BUG_ON.  That protection has been
-> > removed ...
-> >=20
-> > I have reverted that commit and commit 2dc554765dd1
-> > ("mm-pagewalk-move-pmd_trans_huge_lock-from-callbacks-to-common-code-ch=
-eckpatch-fixes")
-> > that depend on it for today.
->=20
-> Sorry about that, this build failure happens because I moved the
-> pmd_trans_huge_lock() into the common pagewalk code,
-> clearly this makes mm_walk->pmd_entry handle only transparent hugepage,
-> so the additional patch below explicitly declare it with #ifdef
-> CONFIG_TRANSPARENT_HUGEPAGE.
->=20
-> I'll merge this in the next version of my series, but this will help
-> linux-next for a quick solution.
->=20
-> Thanks,
-> Naoya Horiguchi
-> ---
-> From da0850cd03baa3d50c8e353976b5b9edbfbd4413 Mon Sep 17 00:00:00 2001
-> Date: Fri, 13 Jun 2014 10:33:26 -0400
-> Subject: [PATCH] fix build error of v3.15-mmotm-2014-06-12-16-38
->=20
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-
-I added that to the akpm-current tree in linux-next today and the build
-failures went away.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/drivers/regulator/max8952.c b/drivers/regulator/max8952.c
+index c2792f0..f7f9efc 100644
+--- a/drivers/regulator/max8952.c
++++ b/drivers/regulator/max8952.c
+@@ -229,7 +229,6 @@ static int max8952_pmic_probe(struct i2c_client *client,
+ 		config.ena_gpio_flags |= GPIOF_OUT_INIT_HIGH;
+ 
+ 	rdev = devm_regulator_register(&client->dev, &regulator, &config);
+-
+ 	if (IS_ERR(rdev)) {
+ 		ret = PTR_ERR(rdev);
+ 		dev_err(&client->dev, "regulator init failed (%d)\n", ret);
+@@ -241,21 +240,19 @@ static int max8952_pmic_probe(struct i2c_client *client,
+ 
+ 	if (gpio_is_valid(pdata->gpio_vid0) &&
+ 			gpio_is_valid(pdata->gpio_vid1)) {
+-		if (!gpio_request(pdata->gpio_vid0, "MAX8952 VID0"))
+-			gpio_direction_output(pdata->gpio_vid0,
+-					(pdata->default_mode) & 0x1);
+-		else
++		unsigned long gpio_flags;
++
++		gpio_flags = max8952->vid0 ?
++			     GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW;
++		if (devm_gpio_request_one(&client->dev, pdata->gpio_vid0,
++					  gpio_flags, "MAX8952 VID0"))
+ 			err = 1;
+ 
+-		if (!gpio_request(pdata->gpio_vid1, "MAX8952 VID1"))
+-			gpio_direction_output(pdata->gpio_vid1,
+-				(pdata->default_mode >> 1) & 0x1);
+-		else {
+-			if (!err)
+-				gpio_free(pdata->gpio_vid0);
++		gpio_flags = max8952->vid1 ?
++			     GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW;
++		if (devm_gpio_request_one(&client->dev, pdata->gpio_vid1,
++					  gpio_flags, "MAX8952 VID1"))
+ 			err = 2;
+-		}
+-
+ 	} else
+ 		err = 3;
+ 
+@@ -314,16 +311,6 @@ static int max8952_pmic_probe(struct i2c_client *client,
+ 	return 0;
+ }
+ 
+-static int max8952_pmic_remove(struct i2c_client *client)
+-{
+-	struct max8952_data *max8952 = i2c_get_clientdata(client);
+-	struct max8952_platform_data *pdata = max8952->pdata;
+-
+-	gpio_free(pdata->gpio_vid0);
+-	gpio_free(pdata->gpio_vid1);
+-	return 0;
+-}
+-
+ static const struct i2c_device_id max8952_ids[] = {
+ 	{ "max8952", 0 },
+ 	{ },
+@@ -332,7 +319,6 @@ MODULE_DEVICE_TABLE(i2c, max8952_ids);
+ 
+ static struct i2c_driver max8952_pmic_driver = {
+ 	.probe		= max8952_pmic_probe,
+-	.remove		= max8952_pmic_remove,
+ 	.driver		= {
+ 		.name	= "max8952",
+ 		.of_match_table = of_match_ptr(max8952_dt_match),
+-- 
+1.8.3.2
 
 
---Sig_/zZth.15U7q6c4+IBs2hWzHW
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTnlAVAAoJEMDTa8Ir7ZwVgp0P/1wf84gPCsAYfq+GPjEKff3D
-onSccGzVUP3dp2ll1eRoIAKvK1wOpDhdqeX3csOFXdjfmoWo3/M2krVnnf7RU5QN
-1OBs26iIRMsjp+X3CMBktT66jwSEiUvuWs7eg7hN/utJHoTXdx5psjgsUGSfco8T
-RbkQkLbdfHxDzeoakfVn8ykkLqAkEROb4xcTRCezSZeuupUHg4W8aaNu+F+RMeTp
-j/R33lUylSUw1EuEbzeAGB9l0m8cGLakENrLRLln8CJLzTTwtdt5/l4jip9ddDeP
-pOvSWNdME304AOlzfLmX6CKIuF2KEco5EilbP72oH2MWsuwJh1nCK1xVUUOPFzzP
-8dIy8AntnL518e4Q1o95ma9sh1jyzD+osqQhwlxEFf8AY7K9htSg3eP72vjGk502
-dO05M/2CWfU49RjsNytdU/bIdOKlUQ1ubzl4YI1RELOzUkcZQMVUidmStu7auMhB
-e79Z4md/6PgXCureChkgQVOJicwwNh3tD6UQ7XggbsQpBAiHxU96/ky/HsPPJ9ne
-423qX1Vr6s/4rRprjLoFJXM9f+s0Uud9xErTIyLbHtgw8l3Y5c/ty2Xm9dYC88qI
-5yo3trUA2NtSM+jFFlp+MWXkxnUL4n5bo2FkT7PdhWwJvVS9uyyAdlZiMWSRrMLD
-vSYjVh2csernoZcXc9/L
-=WIZ5
------END PGP SIGNATURE-----
-
---Sig_/zZth.15U7q6c4+IBs2hWzHW--
