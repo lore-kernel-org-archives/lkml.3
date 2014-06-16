@@ -1,189 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932272AbaFPQmv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 12:42:51 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:38046 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752152AbaFPQmu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 12:42:50 -0400
-Date: Mon, 16 Jun 2014 17:42:42 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-Cc: sameo@linux.intel.com, ckeepax@opensource.wolfsonmicro.com,
-        broonie@kernel.org, lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        alsa-devel@alsa-project.org, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] mfd: arizona: Export function to control subsystem
- DVFS
-Message-ID: <20140616164242.GB14323@lee--X1>
-References: <20140609150013.GA5229@opensource.wolfsonmicro.com>
- <20140609150226.GB5229@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140609150226.GB5229@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932295AbaFPQn7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 12:43:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:46627 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754490AbaFPQn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 12:43:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,487,1400050800"; 
+   d="scan'208";a="529310267"
+Message-ID: <1402937485.15603.21.camel@rage>
+Subject: Re: [patch 2/5] futex: Use futex_top_waiter() in lookup_pi_state()
+From: Darren Hart <darren@dvhart.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Davidlohr Bueso <davidlohr@hp.com>,
+        Kees Cook <kees@outflux.net>, wad@chromium.org
+Date: Mon, 16 Jun 2014 09:51:25 -0700
+In-Reply-To: <20140611204237.092947239@linutronix.de>
+References: <20140611202744.676528190@linutronix.de>
+	 <20140611204237.092947239@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 09 Jun 2014, Richard Fitzgerald wrote:
-
-> Moving this control from being a side-effect of the LDO1
-> regulator driver to a specific exported function.
+On Wed, 2014-06-11 at 20:45 +0000, Thomas Gleixner wrote:
+> No point in open coding the same function again.
 > 
-> Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 > ---
->  drivers/mfd/arizona-core.c       |   84 ++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/arizona/core.h |   12 +++++
->  2 files changed, 96 insertions(+), 0 deletions(-)
+>  kernel/futex.c |  128
+> ++++++++++++++++++++++++++++-----------------------------
+>  1 file changed, 63 insertions(+), 65 deletions(-)
 > 
-> diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-> index 58e1fe5..a1b4fe6 100644
-> --- a/drivers/mfd/arizona-core.c
-> +++ b/drivers/mfd/arizona-core.c
-> @@ -94,6 +94,89 @@ int arizona_clk32k_disable(struct arizona *arizona)
->  }
->  EXPORT_SYMBOL_GPL(arizona_clk32k_disable);
->  
-> +int arizona_dvfs_up(struct arizona *arizona, unsigned int mask)
-> +{
-> +	unsigned int new_flags;
-> +	int ret = 0;
-> +
-> +	mutex_lock(&arizona->subsys_max_lock);
-> +
-> +	new_flags = arizona->subsys_max_rq | mask;
-
-This doesn't look like a mask to me.  It looks like you're setting
-flags rather than masking out bits?
-
-> +	if (arizona->subsys_max_rq != new_flags) {
-> +		switch (arizona->type) {
-> +		case WM5102:
-> +		case WM8997:
-> +			ret = regulator_set_voltage(arizona->dcvdd,
-> +						    1800000, 1800000);
-> +			if (ret != 0) {
-> +				dev_err(arizona->dev,
-> +					"Failed to raise dcvdd (%u)\n", ret);
-> +				goto err;
-> +			}
-> +
-> +			ret = regmap_update_bits(arizona->regmap,
-> +					ARIZONA_DYNAMIC_FREQUENCY_SCALING_1,
-> +					ARIZONA_SUBSYS_MAX_FREQ, 1);
-> +			if (ret != 0) {
-> +				dev_err(arizona->dev,
-> +					"Failed to enable subsys max (%u)\n",
-> +					ret);
-> +				regulator_set_voltage(arizona->dcvdd,
-> +						      1200000, 1800000);
-> +				goto err;
-> +			}
-> +			break;
-> +
-> +		default:
-> +			break;
-> +		}
-
-I don't really get this.  What's the point in passing the mask
-parameter - I don't see it being used for anything in this routine? No
-matter what is passed in you always just turn on the same regulator.
-
-What am I missing?
-
-> +	arizona->subsys_max_rq = new_flags;
-
-This tabbing is incorrect.
-> +	}
-> +err:
-> +	mutex_unlock(&arizona->subsys_max_lock);
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(arizona_dvfs_up);
-> +
-> +int arizona_dvfs_down(struct arizona *arizona, unsigned int mask)
-> +{
-> +	int ret = 0;
-> +
-> +	mutex_lock(&arizona->subsys_max_lock);
-> +
-> +	arizona->subsys_max_rq &= ~mask;
-> +
-> +	if (arizona->subsys_max_rq == 0) {
-> +		switch (arizona->type) {
-> +		case WM5102:
-> +		case WM8997:
-> +			ret = regmap_update_bits(arizona->regmap,
-> +					ARIZONA_DYNAMIC_FREQUENCY_SCALING_1,
-> +					ARIZONA_SUBSYS_MAX_FREQ, 0);
-> +			if (ret != 0)
-> +				dev_err(arizona->dev,
-> +					"Failed to disable subsys max (%u)\n",
-> +					ret);
-> +
-> +			ret = regulator_set_voltage(arizona->dcvdd,
-> +						    1200000, 1800000);
-> +			if (ret != 0)
-> +				dev_err(arizona->dev,
-> +					"Failed to lower dcvdd (%u)\n", ret);
-> +			break;
-> +
-> +		default:
-> +			break;
-> +		}
-> +	}
-> +
-> +	mutex_unlock(&arizona->subsys_max_lock);
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(arizona_dvfs_down);
-> +
->  static irqreturn_t arizona_clkgen_err(int irq, void *data)
+> Index: linux/kernel/futex.c
+> ===================================================================
+> --- linux.orig/kernel/futex.c
+> +++ linux/kernel/futex.c
+> @@ -796,87 +796,85 @@ static int
+>  lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+>                 union futex_key *key, struct futex_pi_state **ps)
 >  {
->  	struct arizona *arizona = data;
-> @@ -645,6 +728,7 @@ int arizona_dev_init(struct arizona *arizona)
+> +       struct futex_q *match = futex_top_waiter(hb, key);
+>         struct futex_pi_state *pi_state = NULL;
+> -       struct futex_q *this, *next;
+>         struct task_struct *p;
+>         pid_t pid = uval & FUTEX_TID_MASK;
 >  
->  	dev_set_drvdata(arizona->dev, arizona);
->  	mutex_init(&arizona->clk_lock);
-> +	mutex_init(&arizona->subsys_max_lock);
->  
->  	if (dev_get_platdata(arizona->dev))
->  		memcpy(&arizona->pdata, dev_get_platdata(arizona->dev),
-> diff --git a/include/linux/mfd/arizona/core.h b/include/linux/mfd/arizona/core.h
-> index 76564af..b4b8a7e 100644
-> --- a/include/linux/mfd/arizona/core.h
-> +++ b/include/linux/mfd/arizona/core.h
-> @@ -132,11 +132,23 @@ struct arizona {
->  	struct mutex clk_lock;
->  	int clk32k_ref;
->  
-> +	struct mutex subsys_max_lock;
-> +	unsigned int subsys_max_rq;
+> -       plist_for_each_entry_safe(this, next, &hb->chain, list) {
+> -               if (match_futex(&this->key, key)) {
+> +       if (match) {
+> +               /*
+> +                * Sanity check the waiter before increasing the
+> +                * refcount and attaching to it.
+> +                */
+> +               pi_state = match->pi_state;
+> +               /*
+> +                * Userspace might have messed up non-PI and PI
+> +                * futexes [3]
+> +                */
+> +               if (unlikely(!pi_state))
+> +                       return -EINVAL;
 > +
->  	struct snd_soc_dapm_context *dapm;
->  };
->  
-> +#define ARIZONA_DVFS_SR1_RQ          0x00000001
-> +#define ARIZONA_DVFS_SR2_RQ          0x00000002
-> +#define ARIZONA_DVFS_SR3_RQ          0x00000004
-> +#define ARIZONA_DVFS_ASR1_RQ         0x00000010
-> +#define ARIZONA_DVFS_ASR2_RQ         0x00000020
-> +#define ARIZONA_DVFS_ADSP1_RQ        0x00010000
+> +               WARN_ON(!atomic_read(&pi_state->refcount));
 > +
->  int arizona_clk32k_enable(struct arizona *arizona);
->  int arizona_clk32k_disable(struct arizona *arizona);
-> +int arizona_dvfs_up(struct arizona *arizona, unsigned int mask);
-> +int arizona_dvfs_down(struct arizona *arizona, unsigned int mask);
+> +               /*
+> +                * Handle the owner died case:
+> +                */
+> +               if (uval & FUTEX_OWNER_DIED) {
+>                         /*
+> -                        * Sanity check the waiter before increasing
+> -                        * the refcount and attaching to it.
+> +                        * exit_pi_state_list sets owner to NULL and
+> +                        * wakes the topmost waiter. The task which
+> +                        * acquires the pi_state->rt_mutex will fixup
+> +                        * owner.
+>                          */
+> -                       pi_state = this->pi_state;
+> -                       /*
+> -                        * Userspace might have messed up non-PI and
+> -                        * PI futexes [3]
+> -                        */
+> -                       if (unlikely(!pi_state))
+> -                               return -EINVAL;
+> -
+> -                       WARN_ON(!atomic_read(&pi_state->refcount));
+> -
+> -                       /*
+> -                        * Handle the owner died case:
+> -                        */
+> -                       if (uval & FUTEX_OWNER_DIED) {
+> -                               /*
+> -                                * exit_pi_state_list sets owner to
+> NULL and
+> -                                * wakes the topmost waiter. The task
+> which
+> -                                * acquires the pi_state->rt_mutex
+> will fixup
+> -                                * owner.
+> -                                */
+> -                               if (!pi_state->owner) {
+> -                                       /*
+> -                                        * No pi state owner, but the
+> user
+> -                                        * space TID is not 0.
+> Inconsistent
+> -                                        * state. [5]
+> -                                        */
+> -                                       if (pid)
+> -                                               return -EINVAL;
+> -                                       /*
+> -                                        * Take a ref on the state and
+> -                                        * return. [4]
+> -                                        */
+> -                                       goto out_state;
+> -                               }
+> -
+> +                       if (!pi_state->owner) {
+>                                 /*
+> -                                * If TID is 0, then either the dying
+> owner
+> -                                * has not yet executed
+> exit_pi_state_list()
+> -                                * or some waiter acquired the rtmutex
+> in the
+> -                                * pi state, but did not yet fixup the
+> TID in
+> -                                * user space.
+> -                                *
+> -                                * Take a ref on the state and return.
+> [6]
+> +                                * No pi state owner, but the user
+> +                                * space TID is not 0. Inconsistent
+> +                                * state. [5]
+>                                  */
+> -                               if (!pid)
+> -                                       goto out_state;
+> -                       } else {
+> +                               if (pid)
+> +                                       return -EINVAL;
+>                                 /*
+> -                                * If the owner died bit is not set,
+> -                                * then the pi_state must have an
+> -                                * owner. [7]
+> +                                * Take a ref on the state and
+> +                                * return. [4]
+>                                  */
+> -                               if (!pi_state->owner)
+> -                                       return -EINVAL;
+> +                               goto out_state;
+>                         }
 >  
->  int arizona_request_irq(struct arizona *arizona, int irq, char *name,
->  			irq_handler_t handler, void *data);
+>                         /*
+> -                        * Bail out if user space manipulated the
+> -                        * futex value. If pi state exists then the
+> -                        * owner TID must be the same as the user
+> -                        * space TID. [9/10]
+> +                        * If TID is 0, then either the dying owner
+> +                        * has not yet executed exit_pi_state_list()
+> +                        * or some waiter acquired the rtmutex in the
+> +                        * pi state, but did not yet fixup the TID in
+> +                        * user space.
+> +                        *
+> +                        * Take a ref on the state and return. [6]
+>                          */
+> -                       if (pid != task_pid_vnr(pi_state->owner))
+> +                       if (!pid)
+> +                               goto out_state;
+> +               } else {
+> +                       /*
+> +                        * If the owner died bit is not set,
+> +                        * then the pi_state must have an
+> +                        * owner. [7]
+> +                        */
+> +                       if (!pi_state->owner)
+>                                 return -EINVAL;
+> -
+> -               out_state:
+> -                       atomic_inc(&pi_state->refcount);
+> -                       *ps = pi_state;
+> -                       return 0;
+>                 }
+> +
+> +               /*
+> +                * Bail out if user space manipulated the
+> +                * futex value. If pi state exists then the
+> +                * owner TID must be the same as the user
+> +                * space TID. [9/10]
+> +                */
+> +               if (pid != task_pid_vnr(pi_state->owner))
+> +                       return -EINVAL;
+> +
+> +       out_state:
+> +               atomic_inc(&pi_state->refcount);
+> +               *ps = pi_state;
+> +               return 0;
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+Surely there is a better tool for viewing such "shift left one tab"
+patches that don't make one track three if blocks in parallel in one's
+head to ensure they all assemble back to the same thing? What do other
+people use? Ouch...
+
+Reviewed-by: Darren Hart <darren@dvhart.com>
+
+--
+Darren Hart
+Intel Open Source Technology Center
+
