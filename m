@@ -1,452 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976AbaFPVEU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 17:04:20 -0400
-Received: from smtp207.alice.it ([82.57.200.103]:52005 "EHLO smtp207.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751521AbaFPVES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 17:04:18 -0400
-Date: Mon, 16 Jun 2014 23:03:59 +0200
-From: Antonio Ospite <ao2@ao2.it>
-To: Jamie Lentin <jm@lentin.co.uk>
-Cc: Jiri Kosina <jkosina@suse.cz>, Alexander Clouter <alex@digriz.org.uk>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] Add support for Compact (Bluetooth|USB) keyboard
- with Trackpoint
-Message-Id: <20140616230359.4f994e6af5da8df3622076b5@ao2.it>
-In-Reply-To: <1402864790-7478-3-git-send-email-jm@lentin.co.uk>
-References: <1402864790-7478-1-git-send-email-jm@lentin.co.uk>
-	<1402864790-7478-3-git-send-email-jm@lentin.co.uk>
-X-Mailer: Sylpheed 3.5.0beta1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756043AbaFPVEZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 17:04:25 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:28949 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755783AbaFPVET (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 17:04:19 -0400
+Message-ID: <539F5BC5.3010501@oracle.com>
+Date: Mon, 16 Jun 2014 17:04:05 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Hugh Dickins <hughd@google.com>
+CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        Bob Liu <bob.liu@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Christoph Lameter <cl@gentwo.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: mm: NULL ptr deref in remove_migration_pte
+References: <534E9ACA.2090008@oracle.com> <5367B365.1070709@oracle.com> <537FE9F3.40508@oracle.com> <alpine.LSU.2.11.1405261255530.3649@eggly.anvils> <538498A1.7010305@oracle.com> <alpine.LSU.2.11.1406092104330.12382@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.11.1406092104330.12382@eggly.anvils>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 15 Jun 2014 21:39:50 +0100
-Jamie Lentin <jm@lentin.co.uk> wrote:
-
-This one does not compile on 3.15, see below.
-
-Maybe you can take the chance to split the series in 4 patches:
-	1. rename only
-	2. cleanup of already existing code
-	3. preparatory changes to support multiple devices (the original
-	   1/2)
-	4. support for the Compact keyboard (the original 2/2).
-
-but two patches are fine too as long as the important issues are sorted
-out.
-
-> Signed-off-by: Jamie Lentin <jm@lentin.co.uk>
-> ---
->  drivers/hid/Kconfig      |   2 +
->  drivers/hid/hid-core.c   |   2 +
->  drivers/hid/hid-ids.h    |   2 +
->  drivers/hid/hid-lenovo.c | 202 +++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/hid.h      |   1 +
->  5 files changed, 209 insertions(+)
+On 06/10/2014 12:20 AM, Hugh Dickins wrote:
+> On Tue, 27 May 2014, Sasha Levin wrote:
+>> > On 05/26/2014 04:05 PM, Hugh Dickins wrote:
+>>> > > On Fri, 23 May 2014, Sasha Levin wrote:
+>>> > > 
+>>>> > >> Ping?
+>>>> > >>
+>>>> > >> On 05/05/2014 11:51 AM, Sasha Levin wrote:
+>>>>> > >>> Did anyone have a chance to look at it? I still see it in -next.
+>>>>> > >>>
+>>>>> > >>>
+>>>>> > >>> Thanks,
+>>>>> > >>> Sasha
+>>>>> > >>>
+>>>>> > >>> On 04/16/2014 10:59 AM, Sasha Levin wrote:
+>>>>>> > >>>> Hi all,
+>>>>>> > >>>>
+>>>>>> > >>>> While fuzzing with trinity inside a KVM tools guest running latest -next
+>>>>>> > >>>> kernel I've stumbled on the following:
+>>>>>> > >>>>
+>>>>>> > >>>> [ 2552.313602] BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+>>>>>> > >>>> [ 2552.315878] IP: __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
+>>>>>> > >>>> [ 2552.315878] PGD 465836067 PUD 465837067 PMD 0
+>>>>>> > >>>> [ 2552.315878] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>>>>>> > >>>> [ 2552.315878] Dumping ftrace buffer:
+>>>>>> > >>>> [ 2552.315878]    (ftrace buffer empty)
+>>>>>> > >>>> [ 2552.315878] Modules linked in:
+>>>>>> > >>>> [ 2552.315878] CPU: 6 PID: 16173 Comm: trinity-c364 Tainted: G        W     3.15.0-rc1-next-20140415-sasha-00020-gaa90d09 #398
+>>>>>> > >>>> [ 2552.315878] task: ffff88046548b000 ti: ffff88044e532000 task.ti: ffff88044e532000
+>>>>>> > >>>> [ 2552.320286] RIP: __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
+>>>>>> > >>>> [ 2552.320286] RSP: 0018:ffff88044e5339c8  EFLAGS: 00010002
+>>>>>> > >>>> [ 2552.320286] RAX: 0000000000000082 RBX: ffff88046548b000 RCX: 0000000000000000
+>>>>>> > >>>> [ 2552.320286] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000018
+>>>>>> > >>>> [ 2552.320286] RBP: ffff88044e533ab8 R08: 0000000000000001 R09: 0000000000000000
+>>>>>> > >>>> [ 2552.320286] R10: ffff88046548b000 R11: 0000000000000001 R12: 0000000000000000
+>>>>>> > >>>> [ 2552.320286] R13: 0000000000000018 R14: 0000000000000000 R15: 0000000000000000
+>>>>>> > >>>> [ 2552.320286] FS:  00007fd286a9a700(0000) GS:ffff88018b000000(0000) knlGS:0000000000000000
+>>>>>> > >>>> [ 2552.320286] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>>>>>> > >>>> [ 2552.320286] CR2: 0000000000000018 CR3: 0000000442c17000 CR4: 00000000000006a0
+>>>>>> > >>>> [ 2552.320286] DR0: 0000000000695000 DR1: 0000000000000000 DR2: 0000000000000000
+>>>>>> > >>>> [ 2552.320286] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+>>>>>> > >>>> [ 2552.320286] Stack:
+>>>>>> > >>>> [ 2552.320286]  ffff88044e5339e8 ffffffff9f56e761 0000000000000000 ffff880315c13000
+>>>>>> > >>>> [ 2552.320286]  ffff88044e533a38 ffffffff9c193f0d ffffffff9c193e34 ffff8804654e8000
+>>>>>> > >>>> [ 2552.320286]  ffff8804654e8000 0000000000000001 ffff88046548b000 0000000000000007
+>>>>>> > >>>> [ 2552.320286] Call Trace:
+>>>>>> > >>>> [ 2552.320286] ? _raw_spin_unlock_irq (arch/x86/include/asm/preempt.h:98 include/linux/spinlock_api_smp.h:169 kernel/locking/spinlock.c:199)
+>>>>>> > >>>> [ 2552.320286] ? finish_task_switch (include/linux/tick.h:206 kernel/sched/core.c:2163)
+>>>>>> > >>>> [ 2552.320286] ? finish_task_switch (arch/x86/include/asm/current.h:14 kernel/sched/sched.h:993 kernel/sched/core.c:2145)
+>>>>>> > >>>> [ 2552.320286] ? retint_restore_args (arch/x86/kernel/entry_64.S:1040)
+>>>>>> > >>>> [ 2552.320286] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+>>>>>> > >>>> [ 2552.320286] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
+>>>>>> > >>>> [ 2552.320286] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+>>>>>> > >>>> [ 2552.320286] ? remove_migration_pte (mm/migrate.c:137)
+>>>>>> > >>>> [ 2552.320286] ? retint_restore_args (arch/x86/kernel/entry_64.S:1040)
+>>>>>> > >>>> [ 2552.320286] _raw_spin_lock (include/linux/spinlock_api_smp.h:143 kernel/locking/spinlock.c:151)
+>>>>>> > >>>> [ 2552.320286] ? remove_migration_pte (mm/migrate.c:137)
+>>>>>> > >>>> [ 2552.320286] remove_migration_pte (mm/migrate.c:137)
+>>>>>> > >>>> [ 2552.320286] rmap_walk (mm/rmap.c:1628 mm/rmap.c:1699)
+>>>>>> > >>>> [ 2552.320286] remove_migration_ptes (mm/migrate.c:224)
+>>>>>> > >>>> [ 2552.320286] ? new_page_node (mm/migrate.c:107)
+>>>>>> > >>>> [ 2552.320286] ? remove_migration_pte (mm/migrate.c:195)
+>>>>>> > >>>> [ 2552.320286] migrate_pages (mm/migrate.c:922 mm/migrate.c:960 mm/migrate.c:1126)
+>>>>>> > >>>> [ 2552.320286] ? perf_trace_mm_numa_migrate_ratelimit (mm/migrate.c:1574)
+>>>>>> > >>>> [ 2552.320286] migrate_misplaced_page (mm/migrate.c:1733)
+>>>>>> > >>>> [ 2552.320286] __handle_mm_fault (mm/memory.c:3762 mm/memory.c:3812 mm/memory.c:3925)
+>>>>>> > >>>> [ 2552.320286] ? __const_udelay (arch/x86/lib/delay.c:126)
+>>>>>> > >>>> [ 2552.320286] ? __rcu_read_unlock (kernel/rcu/update.c:97)
+>>>>>> > >>>> [ 2552.320286] handle_mm_fault (mm/memory.c:3948)
+>>>>>> > >>>> [ 2552.320286] __get_user_pages (mm/memory.c:1851)
+>>>>>> > >>>> [ 2552.320286] ? preempt_count_sub (kernel/sched/core.c:2527)
+>>>>>> > >>>> [ 2552.320286] __mlock_vma_pages_range (mm/mlock.c:255)
+>>>>>> > >>>> [ 2552.320286] __mm_populate (mm/mlock.c:711)
+>>>>>> > >>>> [ 2552.320286] SyS_mlockall (include/linux/mm.h:1799 mm/mlock.c:817 mm/mlock.c:791)
+>>>>>> > >>>> [ 2552.320286] tracesys (arch/x86/kernel/entry_64.S:749)
+>>>>>> > >>>> [ 2552.320286] Code: 85 2d 1e 00 00 48 c7 c1 d7 68 6c a0 48 c7 c2 47 11 6c a0 31 c0 be fa 0b 00 00 48 c7 c7 91 68 6c a0 e8 1c 6d f9 ff e9 07 1e 00 00 <49> 81 7d 00 80 31 76 a2 b8 00 00 00 00 44 0f 44 c0 eb 07 0f 1f
+>>>>>> > >>>> [ 2552.320286] RIP __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
+>>>>>> > >>>> [ 2552.320286]  RSP <ffff88044e5339c8>
+>>>>>> > >>>> [ 2552.320286] CR2: 0000000000000018
+>>> > > 
+>>> > > Sasha, please clarify your Ping: I've seen you say in other mail
+>>> > > "I had to disable transhuge/hugetlb in my testing .config".
+>>> > > 
+>>> > > Do you see this remove_migration_pte oops even with THP disabled?
+>>> > > 
+>>> > > Do you see the filemap.c:202 BUG_ON(page_mapped(page))
+>>> > > even with THP disabled?
+>> > 
+>> > The mail that you mentioned prompted me to go back and re-enable THP and
+>> > see what still breaks, which would explain why I pinged this thread again (I
+>> > only do that once I see that problem still occurs).
+>> > 
+>> > However, I can't confirm if these problems happen without THP as I didn't
+>> > think they were related. I'll disable THP again and give it a go.
+> Although there's nothing in the backtrace to implicate it,
+> I think this crash is caused by THP: please try this patch - thanks.
 > 
-> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-> index dd07d59..48b4777 100644
-> --- a/drivers/hid/Kconfig
-> +++ b/drivers/hid/Kconfig
-> @@ -334,6 +334,8 @@ config HID_LENOVO
->  	Thinkpad standalone keyboards, e.g:
->  	- ThinkPad USB Keyboard with TrackPoint (supports extra LEDs and trackpoint
->  	  configuration)
-> +	- ThinkPad Compact Bluetooth Keyboard with TrackPoint (supports Fn keys)
-> +	- ThinkPad Compact USB Keyboard with TrackPoint (supports Fn keys)
->  
->  config HID_LOGITECH
->  	tristate "Logitech devices" if EXPERT
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index e8ce932..bce37c3 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -1738,6 +1738,8 @@ static const struct hid_device_id hid_have_special_driver[] = {
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_LCPOWER, USB_DEVICE_ID_LCPOWER_LC1000 ) },
->  #if IS_ENABLED(CONFIG_HID_LENOVO)
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_LENOVO, USB_DEVICE_ID_LENOVO_TPKBD) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_LENOVO, USB_DEVICE_ID_LENOVO_CUSBKBD) },
-> +	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_LENOVO, USB_DEVICE_ID_LENOVO_CBTKBD) },
->  #endif
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_MX3000_RECEIVER) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_S510_RECEIVER) },
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index 6e12cd0..1763a07 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -551,6 +551,8 @@
->  
->  #define USB_VENDOR_ID_LENOVO		0x17ef
->  #define USB_DEVICE_ID_LENOVO_TPKBD	0x6009
-> +#define USB_DEVICE_ID_LENOVO_CUSBKBD	0x6047
-> +#define USB_DEVICE_ID_LENOVO_CBTKBD		0x6048
-
-One TAB is enough here to align the second entry.
-
->  
->  #define USB_VENDOR_ID_LG		0x1fd2
->  #define USB_DEVICE_ID_LG_MULTITOUCH	0x0064
-> diff --git a/drivers/hid/hid-lenovo.c b/drivers/hid/hid-lenovo.c
-> index aabf084..0a19f84 100644
-> --- a/drivers/hid/hid-lenovo.c
-> +++ b/drivers/hid/hid-lenovo.c
-> @@ -1,8 +1,11 @@
->  /*
->   *  HID driver for Lenovo:-
->   *  - ThinkPad USB Keyboard with TrackPoint (tpkbd)
-> + *  - ThinkPad Compact Bluetooth Keyboard with TrackPoint (cptkbd)
-> + *  - ThinkPad Compact USB Keyboard with TrackPoint (cptkbd)
->   *
->   *  Copyright (c) 2012 Bernhard Seibold
-> + *  Copyright (c) 2014 Jamie Lentin <jm@lentin.co.uk>
->   */
->  
->  /*
-> @@ -33,6 +36,10 @@ struct lenovo_drvdata_tpkbd {
->  	int press_speed;
->  };
->  
-> +struct lenovo_drvdata_cptkbd {
-> +	unsigned int fn_lock;
-
-bool? 
-
-> +};
-> +
->  #define map_key_clear(c) hid_map_usage_clear(hi, usage, bit, max, EV_KEY, (c))
->  
->  static int lenovo_input_mapping_tpkbd(struct hid_device *hdev,
-> @@ -48,6 +55,49 @@ static int lenovo_input_mapping_tpkbd(struct hid_device *hdev,
->  	return 0;
->  }
->  
-> +static int lenovo_input_mapping_cptkbd(struct hid_device *hdev,
-> +		struct hid_input *hi, struct hid_field *field,
-> +		struct hid_usage *usage, unsigned long **bit, int *max)
-> +{
-> +	/* HID_UP_LNVENDOR = USB, HID_UP_MSVENDOR = BT */
-> +	if ((usage->hid & HID_USAGE_PAGE) == HID_UP_MSVENDOR ||
-> +	    (usage->hid & HID_USAGE_PAGE) == HID_UP_LNVENDOR) {
-> +		set_bit(EV_REP, hi->input->evbit);
-> +		switch (usage->hid & HID_USAGE) {
-> +		case 0x00f1: /* Fn-F4: Mic mute */
-> +			map_key_clear(KEY_MICMUTE);
-> +			return 1;
-> +		case 0x00f2: /* Fn-F5: Brightness down */
-> +			map_key_clear(KEY_BRIGHTNESSDOWN);
-> +			return 1;
-> +		case 0x00f3: /* Fn-F6: Brightness up */
-> +			map_key_clear(KEY_BRIGHTNESSUP);
-> +			return 1;
-> +		case 0x00f4: /* Fn-F7: External display (projector) */
-> +			map_key_clear(KEY_SWITCHVIDEOMODE);
-> +			return 1;
-> +		case 0x00f5: /* Fn-F8: Wireless */
-> +			map_key_clear(KEY_WLAN);
-> +			return 1;
-> +		case 0x00f6: /* Fn-F9: Control panel */
-> +			map_key_clear(KEY_CONFIG);
-> +			return 1;
-> +		case 0x00f8: /* Fn-F11: View open applications (3 boxes) */
-> +			map_key_clear(KEY_FN_F11);
-> +			return 1;
-> +		case 0x00fa: /* Fn-Esc: Fn-lock toggle */
-> +			map_key_clear(KEY_FN_ESC);
-> +			return 1;
-> +		case 0x00fb: /* Fn-F12: Open My computer (6 boxes) USB-only */
-> +			/* NB: This mapping is invented in raw_event below */
-> +			map_key_clear(KEY_FILE);
-> +			return 1;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  static int lenovo_input_mapping(struct hid_device *hdev,
->  		struct hid_input *hi, struct hid_field *field,
->  		struct hid_usage *usage, unsigned long **bit, int *max)
-> @@ -57,6 +107,11 @@ static int lenovo_input_mapping(struct hid_device *hdev,
->  		return lenovo_input_mapping_tpkbd(hdev, hi, field,
->  							usage, bit, max);
->  		break;
-> +	case USB_DEVICE_ID_LENOVO_CUSBKBD:
-> +	case USB_DEVICE_ID_LENOVO_CBTKBD:
-> +		return lenovo_input_mapping_cptkbd(hdev, hi, field,
-> +							usage, bit, max);
-> +		break;
-
-break after return not needed.
-
->  	}
->  
->  	return 0;
-> @@ -64,6 +119,96 @@ static int lenovo_input_mapping(struct hid_device *hdev,
->  
->  #undef map_key_clear
->  
-> +/* Send a config command to the keyboard */
-> +static int lenovo_send_cmd_cptkbd(struct hid_device *hdev,
-> +			unsigned char byte2, unsigned char byte3)
-> +{
-> +	int ret;
-> +	unsigned char buf[] = {0x18, byte2, byte3};
-> +	unsigned char report_type = HID_OUTPUT_REPORT;
-> +
-> +	/* The USB keyboard accepts commands via SET_FEATURE */
-> +	if (hdev->product == USB_DEVICE_ID_LENOVO_CUSBKBD) {
-> +		buf[0] = 0x13;
-> +		report_type = HID_FEATURE_REPORT;
-> +	}
-> +
-> +	ret = hdev->hid_output_raw_report(hdev, buf, sizeof(buf), report_type);
-
-This makes the driver fail to compile on 3.15.
-
-The hid_output_raw_report() handler is not present anymore since
-3.15-rc1, see commit 6fd182028c43baf1c7d017d52b0134ecadbdc447 in
-current linus tree, I think you need to use something like:
-
-	ret = hid_hw_raw_request(hdev, buf[0], buf, sizeof(buf),
-	 			 report_type, HID_REQ_SET_REPORT);
-
-but I cannot test that.
-
-Please test the driver at least on 3.15, or even better on 3.16rc if you
-can.
-
-> +	return ret < 0 ? ret : 0; /* BT returns 0, USB returns sizeof(buf) */
-> +}
-
-The callers never propagate the error code, so maybe this function can
-be declared to return a bool directly, and:
-	return (ret >= 0);
-
-just an idea.
-
-> +
-> +static void lenovo_features_set_cptkbd(struct hid_device *hdev)
-> +{
-> +	struct lenovo_drvdata_cptkbd *tpcsc = hid_get_drvdata(hdev);
-> +
-> +	if (lenovo_send_cmd_cptkbd(hdev, 0x05, tpcsc->fn_lock ? 0x01 : 0x00))
-> +		hid_err(hdev, "Fn-lock setting failed\n");
-> +}
-> +
-> +static ssize_t attr_fn_lock_show_cptkbd(struct device *dev,
-> +		struct device_attribute *attr,
-> +		char *buf)
-> +{
-> +	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-> +	struct lenovo_drvdata_cptkbd *tpcsc = hid_get_drvdata(hdev);
-> +
-> +	return snprintf(buf, PAGE_SIZE, "%u\n", tpcsc->fn_lock);
-> +}
-> +
-> +static ssize_t attr_fn_lock_store_cptkbd(struct device *dev,
-> +		struct device_attribute *attr,
-> +		const char *buf,
-> +		size_t count)
-> +{
-> +	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-> +	struct lenovo_drvdata_cptkbd *tpcsc = hid_get_drvdata(hdev);
-> +	int value;
-> +
-> +	if (kstrtoint(buf, 10, &value))
-> +		return -EINVAL;
-> +	if (value < 0 || value > 1)
-> +		return -EINVAL;
-> +
-> +	tpcsc->fn_lock = value;
-
-if tpcsc->fn_lock is bool you can use "!!value" here to convert value
-to bool.
-
-> +	lenovo_features_set_cptkbd(hdev);
-> +
-> +	return count;
-> +}
-> +
-> +static struct device_attribute dev_attr_fn_lock_cptkbd =
-> +	__ATTR(fn_lock, S_IWUSR | S_IRUGO,
-> +			attr_fn_lock_show_cptkbd,
-> +			attr_fn_lock_store_cptkbd);
-> +
-> +static struct attribute *lenovo_attributes_cptkbd[] = {
-> +	&dev_attr_fn_lock_cptkbd.attr,
-> +	NULL
-> +};
-> +
-> +static const struct attribute_group lenovo_attr_group_cptkbd = {
-> +	.attrs = lenovo_attributes_cptkbd,
-> +};
-> +
-> +static int lenovo_raw_event(struct hid_device *hdev,
-> +			struct hid_report *report, u8 *data, int size)
-> +{
-> +	/*
-> +	 * Compact USB keyboard's Fn-F12 report holds down many other keys, and
-> +	 * it's own key is outside the usage page range. Remove extra
-           ^^^^
-its?
-
-> +	 * keypresses and remap to inside usage page.
-> +	 */
-> +	if (unlikely(hdev->product == USB_DEVICE_ID_LENOVO_CUSBKBD
-> +			&& size == 3
-> +			&& data[0] == 0x15
-> +			&& data[1] == 0x94
-> +			&& data[2] == 0x01)) {
-> +		data[1] = 0x0;
-> +		data[2] = 0x4;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  static int lenovo_features_set_tpkbd(struct hid_device *hdev)
->  {
->  	struct hid_report *report;
-> @@ -417,6 +562,46 @@ static int lenovo_probe_tpkbd(struct hid_device *hdev,
->  	return 0;
->  }
->  
-> +static int lenovo_probe_cptkbd(struct hid_device *hdev,
-> +			const struct hid_device_id *id)
-
-The id argument is not needed for the "internal" probe function.
-
-> +{
-> +	int ret;
-> +	struct lenovo_drvdata_cptkbd *tpcsc;
-> +
-> +	tpcsc = devm_kzalloc(&hdev->dev, sizeof(*tpcsc), GFP_KERNEL);
-> +	if (tpcsc == NULL) {
-> +		hid_err(hdev, "can't alloc keyboard descriptor\n");
-> +		return -ENOMEM;
-> +	}
-> +	hid_set_drvdata(hdev, tpcsc);
-> +
-> +	/* All the custom action happens on the mouse device for USB */
-> +	if (hdev->product == USB_DEVICE_ID_LENOVO_CUSBKBD
-> +			&& hdev->type != HID_TYPE_USBMOUSE) {
-> +		pr_debug("Ignoring keyboard half of device\n");
-
-hid_dbg(hdev, ...); can also be used
-
-> +		return 0;
-> +	}
-> +
-> +	/*
-> +	 * Tell the keyboard a driver understands it, and turn F7, F9, F11 into
-> +	 * regular keys
-> +	 */
-> +	ret = lenovo_send_cmd_cptkbd(hdev, 0x01, 0x03);
-> +	if (ret)
-> +		hid_warn(hdev, "Failed to switch F7/9/11 into regular keys\n");
-> +
-> +	/* Turn Fn-Lock on by default */
-> +	tpcsc->fn_lock = 1;
-> +	lenovo_features_set_cptkbd(hdev);
-> +
-> +	if (sysfs_create_group(&hdev->dev.kobj,
-> +				&lenovo_attr_group_cptkbd)) {
-
-	ret = sysfs_create_group(...);
-	if (ret)
-		hid_warn(...)
-
-no curly braces needed.
-
-> +		hid_warn(hdev, "Could not create sysfs group\n");
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  static int lenovo_probe(struct hid_device *hdev,
->  		const struct hid_device_id *id)
->  {
-> @@ -438,6 +623,10 @@ static int lenovo_probe(struct hid_device *hdev,
->  	case USB_DEVICE_ID_LENOVO_TPKBD:
->  		ret = lenovo_probe_tpkbd(hdev, id);
->  		break;
-> +	case USB_DEVICE_ID_LENOVO_CUSBKBD:
-> +	case USB_DEVICE_ID_LENOVO_CBTKBD:
-> +		ret = lenovo_probe_cptkbd(hdev, id);
-> +		break;
->  	}
->  	if (ret)
->  		goto err_hid;
-> @@ -465,12 +654,22 @@ static void lenovo_remove_tpkbd(struct hid_device *hdev)
->  	hid_set_drvdata(hdev, NULL);
->  }
->  
-> +static void lenovo_remove_cptkbd(struct hid_device *hdev)
-> +{
-> +	sysfs_remove_group(&hdev->dev.kobj,
-> +			&lenovo_attr_group_cptkbd);
-> +}
-> +
->  static void lenovo_remove(struct hid_device *hdev)
->  {
->  	switch (hdev->product) {
->  	case USB_DEVICE_ID_LENOVO_TPKBD:
->  		lenovo_remove_tpkbd(hdev);
->  		break;
-> +	case USB_DEVICE_ID_LENOVO_CUSBKBD:
-> +	case USB_DEVICE_ID_LENOVO_CBTKBD:
-> +		lenovo_remove_cptkbd(hdev);
-> +		break;
->  	}
->  
->  	hid_hw_stop(hdev);
-> @@ -478,6 +677,8 @@ static void lenovo_remove(struct hid_device *hdev)
->  
->  static const struct hid_device_id lenovo_devices[] = {
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_LENOVO, USB_DEVICE_ID_LENOVO_TPKBD) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_LENOVO, USB_DEVICE_ID_LENOVO_CUSBKBD) },
-> +	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_LENOVO, USB_DEVICE_ID_LENOVO_CBTKBD) },
->  	{ }
->  };
->  
-> @@ -489,6 +690,7 @@ static struct hid_driver lenovo_driver = {
->  	.input_mapping = lenovo_input_mapping,
->  	.probe = lenovo_probe,
->  	.remove = lenovo_remove,
-> +	.raw_event = lenovo_raw_event,
->  };
->  module_hid_driver(lenovo_driver);
->  
-> diff --git a/include/linux/hid.h b/include/linux/hid.h
-> index 31b9d29..ed23d6a 100644
-> --- a/include/linux/hid.h
-> +++ b/include/linux/hid.h
-> @@ -167,6 +167,7 @@ struct hid_item {
->  #define HID_UP_MSVENDOR		0xff000000
->  #define HID_UP_CUSTOM		0x00ff0000
->  #define HID_UP_LOGIVENDOR	0xffbc0000
-> +#define HID_UP_LNVENDOR		0xffa00000
->  #define HID_UP_SENSOR		0x00200000
->  
->  #define HID_USAGE		0x0000ffff
-> -- 
-> 2.0.0.rc2
+> [PATCH] mm: let mm_find_pmd fix buggy race with THP fault
 > 
+> Trinity has reported:
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+> IP: __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
+> CPU: 6 PID: 16173 Comm: trinity-c364 Tainted: G        W
+>                         3.15.0-rc1-next-20140415-sasha-00020-gaa90d09 #398
+> lock_acquire (arch/x86/include/asm/current.h:14
+>               kernel/locking/lockdep.c:3602)
+> _raw_spin_lock (include/linux/spinlock_api_smp.h:143
+>                 kernel/locking/spinlock.c:151)
+> remove_migration_pte (mm/migrate.c:137)
+> rmap_walk (mm/rmap.c:1628 mm/rmap.c:1699)
+> remove_migration_ptes (mm/migrate.c:224)
+> migrate_pages (mm/migrate.c:922 mm/migrate.c:960 mm/migrate.c:1126)
+> migrate_misplaced_page (mm/migrate.c:1733)
+> __handle_mm_fault (mm/memory.c:3762 mm/memory.c:3812 mm/memory.c:3925)
+> handle_mm_fault (mm/memory.c:3948)
+> __get_user_pages (mm/memory.c:1851)
+> __mlock_vma_pages_range (mm/mlock.c:255)
+> __mm_populate (mm/mlock.c:711)
+> SyS_mlockall (include/linux/mm.h:1799 mm/mlock.c:817 mm/mlock.c:791)
 > 
+> I believe this comes about because, whereas collapsing and splitting
+> THP functions take anon_vma lock in write mode (which excludes
+> concurrent rmap walks), faulting THP functions (write protection and
+> misplaced NUMA) do not - and mostly they do not need to.
+> 
+> But they do use a pmdp_clear_flush(), set_pmd_at() sequence which,
+> for an instant (indeed, for a long instant, given the inter-CPU
+> TLB flush in there), leaves *pmd neither present not trans_huge.
+> 
+> Which can confuse a concurrent rmap walk, as when removing migration
+> ptes, seen in the dumped trace.  Although that rmap walk has a 4k
+> page to insert, anon_vmas containing THPs are in no way segregated
+> from 4k-page anon_vmas, so the 4k-intent mm_find_pmd() does need to
+> cope with that instant when a trans_huge pmd is temporarily absent.
+> 
+> I don't think we need strengthen the locking at the THP end: it's
+> easily handled with an ACCESS_ONCE() before testing both conditions.
+> 
+> And since mm_find_pmd() had only one caller who wanted a THP rather
+> than a pmd, let's slightly repurpose it to fail when it hits a THP
+> or non-present pmd, and open code split_huge_page_address() again.
+> 
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+
+Hi Hugh,
+
+It took some time to hit something here, but I think that the following
+is related:
+
+[  489.152166] INFO: trying to register non-static key.
+[  489.152166] the code is fine but needs lockdep annotation.
+[  489.152166] turning off the locking correctness validator.
+[  489.152166] CPU: 23 PID: 12148 Comm: trinity-c79 Not tainted 3.15.0-next-20140616-sasha-00025-g0fd1f7d-dirty #657
+[  489.152166]  ffff8804dd013000 ffff8804e15a38e8 ffffffff965140d1 0000000000000002
+[  489.152166]  ffffffff9a5ce7c0 ffff8804e15a39e8 ffffffff931ca363 ffff8804e15a3928
+[  489.152166]  0000000000000000 0000000000000000 ffff8804e4730978 0000000000000001
+[  489.152166] Call Trace:
+[  489.152166] dump_stack (lib/dump_stack.c:52)
+[  489.152166] __lock_acquire (kernel/locking/lockdep.c:743 kernel/locking/lockdep.c:3078)
+[  489.152166] ? __lock_acquire (kernel/locking/lockdep.c:3189)
+[  489.152166] ? kvm_clock_read (./arch/x86/include/asm/preempt.h:90 arch/x86/kernel/kvmclock.c:86)
+[  489.152166] lock_acquire (./arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+[  489.152166] ? __page_check_address (include/linux/spinlock.h:303 mm/rmap.c:630)
+[  489.152166] _raw_spin_lock (include/linux/spinlock_api_smp.h:143 kernel/locking/spinlock.c:151)
+[  489.152166] ? __page_check_address (include/linux/spinlock.h:303 mm/rmap.c:630)
+[  489.152166] ? get_parent_ip (kernel/sched/core.c:2546)
+[  489.152166] __page_check_address (include/linux/spinlock.h:303 mm/rmap.c:630)
+[  489.152166] try_to_unmap_one (mm/rmap.c:1153)
+[  489.152166] ? __const_udelay (arch/x86/lib/delay.c:126)
+[  489.152166] ? __rcu_read_unlock (kernel/rcu/update.c:97)
+[  489.152166] ? page_lock_anon_vma_read (mm/rmap.c:448)
+[  489.152166] rmap_walk (mm/rmap.c:1654 mm/rmap.c:1725)
+[  489.152166] ? preempt_count_sub (kernel/sched/core.c:2602)
+[  489.152166] try_to_unmap (mm/rmap.c:1547)
+[  489.152166] ? page_remove_rmap (mm/rmap.c:1144)
+[  489.152166] ? invalid_migration_vma (mm/rmap.c:1503)
+[  489.152166] ? try_to_unmap_one (mm/rmap.c:1411)
+[  489.152166] ? anon_vma_prepare (mm/rmap.c:448)
+[  489.152166] ? invalid_mkclean_vma (mm/rmap.c:1498)
+[  489.152166] ? page_get_anon_vma (mm/rmap.c:405)
+[  489.152166] migrate_pages (mm/migrate.c:913 mm/migrate.c:959 mm/migrate.c:1146)
+[  489.152166] ? _raw_spin_unlock_irq (./arch/x86/include/asm/preempt.h:98 include/linux/spinlock_api_smp.h:169 kernel/locking/spinlock.c:199)
+[  489.152166] ? perf_trace_mm_numa_migrate_ratelimit (mm/migrate.c:1594)
+[  489.152166] migrate_misplaced_page (mm/migrate.c:1754)
+[  489.152166] __handle_mm_fault (mm/memory.c:3157 mm/memory.c:3207 mm/memory.c:3317)
+[  489.152166] handle_mm_fault (include/linux/memcontrol.h:151 mm/memory.c:3343)
+[  489.152166] ? __do_page_fault (arch/x86/mm/fault.c:1163)
+[  489.152166] __do_page_fault (arch/x86/mm/fault.c:1230)
+[  489.152166] ? vtime_account_user (kernel/sched/cputime.c:687)
+[  489.152166] ? get_parent_ip (kernel/sched/core.c:2546)
+[  489.152166] ? preempt_count_sub (kernel/sched/core.c:2602)
+[  489.152166] ? context_tracking_user_exit (kernel/context_tracking.c:184)
+[  489.152166] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[  489.152166] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2638 (discriminator 2))
+[  489.152166] trace_do_page_fault (arch/x86/mm/fault.c:1313 include/linux/jump_label.h:115 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1314)
+[  489.152166] do_async_page_fault (arch/x86/kernel/kvm.c:264)
+[  489.152166] async_page_fault (arch/x86/kernel/entry_64.S:1322)
+[  494.710068] =============================================================================
+[  494.710068] BUG page->ptl (Not tainted): Redzone overwritten
+[  494.710068] -----------------------------------------------------------------------------
+[  494.710068]
+[  494.710068] INFO: 0xffff8804e4730e58-0xffff8804e4730e5f. First byte 0x0 instead of 0xbb
+[  494.710068] INFO: Slab 0xffffea001391cc00 objects=40 used=40 fp=0x          (null) flags=0x56fffff80004080
+[  494.710068] INFO: Object 0xffff8804e4730e10 @offset=3600 fp=0x          (null)
+[  494.710068]
+[  494.710068] Bytes b4 ffff8804e4730e00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+[  494.710068] Object ffff8804e4730e10: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+[  494.710068] Object ffff8804e4730e20: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+[  494.710068] Object ffff8804e4730e30: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+[  494.710068] Object ffff8804e4730e40: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+[  494.710068] Object ffff8804e4730e50: 00 00 00 00 00 00 00 00                          ........
+[  494.710068] Redzone ffff8804e4730e58: 00 00 00 00 00 00 00 00                          ........
+[  494.710068] Padding ffff8804e4730f98: 00 00 00 00 00 00 00 00                          ........
+[  494.710068] CPU: 21 PID: 12452 Comm: trinity-c128 Tainted: G    B         3.15.0-next-20140616-sasha-00025-g0fd1f7d-dirty #657
+[  494.710068]  ffff8804e4730e10 ffff88040b7d3980 ffffffff965140d1 0000000000000001
+[  494.710068]  ffff88003680bb80 ffff88040b7d39b0 ffffffff932eac11 ffff8804e4730e60
+[  494.710068]  ffff88003680bb80 00000000000000bb ffff8804e4730e10 ffff88040b7d3a00
+[  494.710068] Call Trace:
+[  494.710068] dump_stack (lib/dump_stack.c:52)
+[  494.710068] print_trailer (mm/slub.c:641)
+[  494.710068] check_bytes_and_report (mm/slub.c:680 mm/slub.c:704)
+[  494.710068] check_object (mm/slub.c:804)
+[  494.710068] ? ptlock_alloc (mm/memory.c:3826)
+[  494.742119] alloc_debug_processing (mm/slub.c:1082)
+[  494.742119] __slab_alloc (mm/slub.c:2382 (discriminator 1))
+[  494.742119] ? ptlock_alloc (mm/memory.c:3826)
+[  494.742119] ? get_parent_ip (kernel/sched/core.c:2546)
+[  494.742119] kmem_cache_alloc (mm/slub.c:2442 mm/slub.c:2484 mm/slub.c:2489)
+[  494.742119] ? ptlock_alloc (mm/memory.c:3826)
+[  494.742119] ? pte_alloc_one (arch/x86/mm/pgtable.c:28)
+[  494.742119] ? copy_huge_pmd (./arch/x86/include/asm/paravirt.h:571 ./arch/x86/include/asm/pgtable.h:168 mm/huge_memory.c:867)
+[  494.742119] ptlock_alloc (mm/memory.c:3826)
+[  494.742119] pte_alloc_one (include/linux/mm.h:1464 include/linux/mm.h:1499 arch/x86/mm/pgtable.c:30)
+[  494.742119] copy_huge_pmd (mm/huge_memory.c:858)
+[  494.742119] copy_page_range (mm/memory.c:968 mm/memory.c:998 mm/memory.c:1062)
+[  494.742119] copy_process (kernel/fork.c:460 kernel/fork.c:835 kernel/fork.c:898 kernel/fork.c:1346)
+[  494.742119] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2619)
+[  494.742119] do_fork (kernel/fork.c:1607)
+[  494.742119] ? get_parent_ip (kernel/sched/core.c:2546)
+[  494.742119] ? context_tracking_user_exit (./arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:184 (discriminator 2))
+[  494.742119] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2564)
+[  494.742119] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
+[  494.742119] SyS_clone (kernel/fork.c:1693)
+[  494.742119] stub_clone (arch/x86/kernel/entry_64.S:637)
+[  494.742119] ? tracesys (arch/x86/kernel/entry_64.S:542)
+[  494.742119] FIX page->ptl: Restoring 0xffff8804e4730e58-0xffff8804e4730e5f=0xbb
+[  494.742119]
+[  494.742119] FIX page->ptl: Marking all objects used
 
 
--- 
-Antonio Ospite
-http://ao2.it
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
+Thanks,
+Sasha
