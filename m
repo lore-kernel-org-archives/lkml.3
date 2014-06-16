@@ -1,101 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805AbaFPT1p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 15:27:45 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44254 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147AbaFPT1m (ORCPT
+	id S932238AbaFPTew (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 15:34:52 -0400
+Received: from g2t2352.austin.hp.com ([15.217.128.51]:55961 "EHLO
+	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625AbaFPTev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 15:27:42 -0400
-Date: Mon, 16 Jun 2014 20:27:20 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140616192720.GK5099@sirena.org.uk>
-References: <1402941758-11216-1-git-send-email-javier.martinez@collabora.co.uk>
- <1402941758-11216-7-git-send-email-javier.martinez@collabora.co.uk>
+	Mon, 16 Jun 2014 15:34:51 -0400
+Message-ID: <539F46D7.6050502@hp.com>
+Date: Mon, 16 Jun 2014 15:34:47 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/OcK+/OmjmyK8lO9"
-Content-Disposition: inline
-In-Reply-To: <1402941758-11216-7-git-send-email-javier.martinez@collabora.co.uk>
-X-Cookie: Ditat Deus.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 06/10] mfd: Add driver for Maxim 77802 Power
- Management IC
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH] mm: Move __vma_address() to internal.h to be inlined
+ in huge_memory.c
+References: <1402600540-52031-1-git-send-email-Waiman.Long@hp.com> <20140612122546.cfdebdb22bb22c0f767e30b5@linux-foundation.org> <539A1CDA.5000709@hp.com> <alpine.DEB.2.02.1406121444140.12437@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1406121444140.12437@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/12/2014 05:45 PM, David Rientjes wrote:
+> On Thu, 12 Jun 2014, Waiman Long wrote:
+>
+>>>> The vma_address() function which is used to compute the virtual address
+>>>> within a VMA is used only by 2 files in the mm subsystem - rmap.c and
+>>>> huge_memory.c. This function is defined in rmap.c and is inlined by
+>>>> its callers there, but it is also declared as an external function.
+>>>>
+>>>> However, the __split_huge_page() function which calls vma_address()
+>>>> in huge_memory.c is calling it as a real function call. This is not
+>>>> as efficient as an inlined function. This patch moves the underlying
+>>>> inlined __vma_address() function to internal.h to be shared by both
+>>>> the rmap.c and huge_memory.c file.
+>>> This increases huge_memory.o's text+data_bss by 311 bytes, which makes
+>>> me suspect that it is a bad change due to its increase of kernel cache
+>>> footprint.
+>>>
+>>> Perhaps we should be noinlining __vma_address()?
+>> On my test machine, I saw an increase of 144 bytes in the text segment
+>> of huge_memory.o. The size in size is caused by an increase in the size
+>> of the __split_huge_page function. When I remove the
+>>
+>>          if (unlikely(is_vm_hugetlb_page(vma)))
+>>                  pgoff = page->index<<  huge_page_order(page_hstate(page));
+>>
+>> check, the increase in size drops down to 24 bytes. As a THP cannot be
+>> a hugetlb page, there is no point in doing this check for a THP. I will
+>> update the patch to pass in an additional argument to disable this
+>> check for __split_huge_page.
+>>
+> I think we're seeking a reason or performance numbers that suggest
+> __vma_address() being inline is appropriate and so far we lack any such
+> evidence.  Adding additional parameters to determine checks isn't going to
+> change the fact that it increases text size needlessly.
 
---/OcK+/OmjmyK8lO9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This patch was motivated by my investigation of a freeze problem of an 
+application running on SLES11 sp3 which was caused by the long time it 
+took to munmap part of a THP. Inlining vma_address help a bit in that 
+situation. However, the problem will be essentially gone after including 
+patches that changing the anon_vma_chain to use rbtree instead of a 
+simple list.
 
-On Mon, Jun 16, 2014 at 08:02:34PM +0200, Javier Martinez Canillas wrote:
+I do agree that performance impact of inlining vma_address in minimal in 
+the latest kernel. So I am not going to pursue this any further.
 
-> +- max77802,pmic-buck-dvs-gpios: The DVS GPIOs. We'll try to set these GPIOs
-> +  to match pmic-buck-default-dvs-idx at probe time if they are defined. If
-> +  some or all of these GPIOs are not defined it's assumed that the board has
-> +  any missing GPIOs hardwired to match pmic-buck-default-dvs-idx.
+Thank for the review.
 
-I can't tell from reading this what the property means exactly - I
-expect it is an array of the GPIOs in some order but that order isn't
-specified.
-
-> +config MFD_MAX77802
-> +	tristate "Maxim Integrated MAX77802 PMIC Support"
-> +	depends on I2C=y
-> +	select MFD_CORE
-> +	select REGMAP_I2C
-> +	select REGMAP_IRQ
-> +	select IRQ_DOMAIN
-> +	help
-> +	  Say yes here to support for Maxim Integrated MAX77802.
-> +	  This is a Power Management IC with RTC on chip.
-> +	  This driver provides common support for accessing the device;
-> +	  additional drivers must be enabled in order to use the functionality
-> +	  of the device.
-> +
-
-It is a bit unorthodox to put the build infrastructure in the same patch
-as the DT binding...
-
---/OcK+/OmjmyK8lO9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTn0UUAAoJELSic+t+oim9+XAP/0k0xAGWLJs4e/JK0xyzjNB0
-Sl0DuDX9IVU5pey7WnyzKGy2WArtwvgRe/5R4m1Ekr3PHaQEZ5rx3R4TZQIlNj1c
-xPkMELl82hJQtrDQIuZfGdU03d8YlnvudfeS82cN6QuKt32eS9PZy+HapYTbB5mc
-DYTTznAMvuoIFhg3t7KYBX18/uSmA2PmqjvpBbSAj7TwkzopbvzTvA223dUkbL++
-Deli/6SBehLsVGi6+akVHpXw9kfpEkutJ3L5yGiaDjH34C/yPs1yAHzQn0lkiOl9
-ziRMb+c/lU+hOVEkIpKSsutiy3sq/GidOWzXU55b2+9d74yTeTmGOLOhnoGtI9gh
-WBqlRYuHs6yW9UC/6lpc6N+BOcLJXblELJPIeJtfk4a0aJwzrwn1n+zlWg2Tow6c
-yiCc0SXT+sEPmovMgDaJQRV8nAW3AddqRmvxCuV8wzwmLUH7aotzqq3UkGWIcdhk
-zWMmTuRooZQ1WID37XwaikIUp4qWPIMv7bgatV1A1C8X7Zu26wDjqy9AOp8+L80m
-AH0JEOlrPTqJVOxpw7iikIEtlzTXziax41zFTLyE6/7xKrcQeSXMELahDKCRw2PY
-Krb/Fqmjo2i9IQDBgDk7s/afF3X02yUAW7ELU2iPkZ+U/RJ2OKuGyIFmBwFQQYyo
-w2yaxMGKIlrO208PVbvc
-=3csc
------END PGP SIGNATURE-----
-
---/OcK+/OmjmyK8lO9--
+-Longman
