@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559AbaFPNTD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 09:19:03 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:41797 "EHLO
+	id S1753515AbaFPNTB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 09:19:01 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:37241 "EHLO
 	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753208AbaFPNRr (ORCPT
+	with ESMTP id S1751679AbaFPNRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 Jun 2014 09:17:47 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
@@ -12,9 +12,9 @@ To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH tty-next 05/22] tty: Document locking for tty_port_hangup()
-Date: Mon, 16 Jun 2014 09:17:02 -0400
-Message-Id: <1402924639-5164-6-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH tty-next 06/22] tty: Move tty->closing from port lock critical section
+Date: Mon, 16 Jun 2014 09:17:03 -0400
+Message-Id: <1402924639-5164-7-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com>
 References: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com>
@@ -24,64 +24,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tty lock is held when the tty driver's hangup() method is called
-(from the lone call-site, __tty_hangup()). The call-tree audit [1]
-of tty_port_hangup() is a closed graph of the callers of
-tty_port_hangup(); ie., all callers originate only from __tty_hangup().
+tty->closing informs the line discipline that the hardware will
+be shutting down imminently, and to disable further input other
+than soft flow control (but to still allow additional output).
 
-Of these callers, none drop the tty lock prior to calling
-tty_port_hangup().
+However, the tty lock is the necessary lock for preventing
+concurrent changes to tty->closing. As shown by the call-tree
+audit [1] of functions that modify tty->closing, the tty lock
+is already held for those functions.
 
 [1]
-Call-tree audit of tty_port_hangup()
+Call-tree audit of functions that modify tty->closing
+* does not include call tree to tty_port_close(), tty_port_close_start(),
+  or tty_port_close_end() which is already documented in
+  'tty: Document locking for tty_port_close{,start,end}' that shows
+  callers to those 3 functions hold the tty lock
 
-__tty_hangup()
-  tty->ops->hangup() --+
-                       |
-        rs_hangup():arch/ia64/hp/sim/simserial.c
-        line_hangup():arch/um/drivers/line.c
-        gdm_tty_hangup():drivers/staging/gdm724x/gdm_tty.c
-        fwtty_hangup():drivers/staging/fwserial/fwserial.c
-        acm_tty_hangup():drivers/usb/class/cdc-acm.c
-        serial_hangup():drivers/usb/serial/usb-serial.c
-        ipoctal_hangup():drivers/ipack/devices/ipoctal.c
-        cy_hangup():drivers/tty/cyclades.c
-        isicom_hangup():drivers/tty/isicom.c
-        rp_hangup():drivers/tty/rocket.c
-        dashtty_hangup():drivers/tty/metag_da.c
-        moxa_hangup():drivers/tty/moxa.c
-        gsmtty_hangup():drivers/tty/n_gsm.c
-        goldfish_tty_hangup():drivers/tty/goldfish.c
-        ehv_bc_tty_hangup():drivers/tty/ehv_bytechan.c
-        mxser_hangup():drivers/tty/mxser.c
-        kgdb_nmi_tty_hangup():drivers/tty/serial/kgdb_nmi.c
-        ifx_spi_hangup():drivers/tty/serial/ifx6x60.c
-        ntty_hangup():drivers/tty/nozomi.c
-        capinc_tty_hangup():drivers/isdn/capi/capi.c
-        mgslpc_hangup():drivers/char/pcmcia/synclink_cs.c
-        sdio_uart_hangup():drivers/mmc/card/sdio_uart.c
-        rfcomm_tty_hangup():net/bluetooth/rfcomm/tty.c
-                       |
-                       +- tty_port_hangup()
+tty_release()
+  tty->ops->close() --+
+                      |
+__tty_hangup()        |
+  tty->ops->close() --+
+                      |
+        mp_close():drivers/staging/sb105x/sb_pci_mp.c
+        dngc_tty_close():drivers/staging/dgnc/dgnc_tty.c
+        dgap_tty_close():drivers/staging/dgap/dgap_tty.c
+        dgrp_tty_close():drivers/staging/dgrp/dgrp_tty.c
+        rp_close():drivers/tty/rocket.c
+        hvsi_close():drivers/tty/hvc/hvsi.c
+        rs_close():drivers/tty/serial/68328serial.c
+        rs_close():drivers/tty/serial/crisv10.c
+        uart_close():drivers/tty/serial/serial_core.c
+        isdn_tty_close():drivers/isdn/i4l/isdn_tty.c
+        tty3215_close():drivers/s390/char/con3215.c
+
+tty_open()
+  tty_ldisc_setup() ----+
+                        |
+__tty_hangup()          |
+  tty_ldisc_hangup() ---+
+                        |
+tty_set_ldisc() --------+
+  tty_ldisc_restore() --+
+                        |
+                        +- tty_ldisc_open()
+                             ld->ops->open() --+
+                                               |
+                                               +- n_tty_open()
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_port.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/tty/serial/serial_core.c | 2 +-
+ drivers/tty/tty_port.c           | 6 ++++--
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index b68550d..f2febb4 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -1356,8 +1356,8 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
+ 	tty_ldisc_flush(tty);
+ 
+ 	tty_port_tty_set(port, NULL);
+-	spin_lock_irqsave(&port->lock, flags);
+ 	tty->closing = 0;
++	spin_lock_irqsave(&port->lock, flags);
+ 
+ 	if (port->blocked_open) {
+ 		spin_unlock_irqrestore(&port->lock, flags);
 diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
-index 69e072b..7309594 100644
+index 7309594..9209d63 100644
 --- a/drivers/tty/tty_port.c
 +++ b/drivers/tty/tty_port.c
-@@ -227,6 +227,8 @@ out:
-  *
-  *	Perform port level tty hangup flag and count changes. Drop the tty
-  *	reference.
-+ *
-+ *	Caller holds tty lock.
-  */
+@@ -497,9 +497,10 @@ int tty_port_close_start(struct tty_port *port,
+ 		return 0;
+ 	}
+ 	set_bit(ASYNCB_CLOSING, &port->flags);
+-	tty->closing = 1;
+ 	spin_unlock_irqrestore(&port->lock, flags);
  
- void tty_port_hangup(struct tty_port *port)
++	tty->closing = 1;
++
+ 	if (test_bit(ASYNCB_INITIALIZED, &port->flags)) {
+ 		/* Don't block on a stalled port, just pull the chain */
+ 		if (tty->flow_stopped)
+@@ -522,9 +523,10 @@ void tty_port_close_end(struct tty_port *port, struct tty_struct *tty)
+ {
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&port->lock, flags);
+ 	tty->closing = 0;
+ 
++	spin_lock_irqsave(&port->lock, flags);
++
+ 	if (port->blocked_open) {
+ 		spin_unlock_irqrestore(&port->lock, flags);
+ 		if (port->close_delay) {
 -- 
 2.0.0
 
