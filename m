@@ -1,363 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985AbaFPGsK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 02:48:10 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:36278 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753865AbaFPGsH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 02:48:07 -0400
-X-Auth-Info: 3fFW4zXhf7QpLx3jBjWnpJAcX5USAIk4BESkm8XyNlQ=
-From: Heiko Schocher <hs@denx.de>
-To: lm-sensors@lm-sensors.org
-Cc: Heiko Schocher <hs@denx.de>, Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: [PATCH v3] hwmon: Driver for TI TMP103 temperature sensor
-Date: Mon, 16 Jun 2014 08:47:56 +0200
-Message-Id: <1402901276-6114-1-git-send-email-hs@denx.de>
-X-Mailer: git-send-email 1.8.3.1
+	id S1753961AbaFPGuk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 02:50:40 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750905AbaFPGuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 02:50:39 -0400
+Message-ID: <539E93B9.5070407@nod.at>
+Date: Mon, 16 Jun 2014 08:50:33 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Real Name <enjoymindful@gmail.com>
+CC: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] delete unnecessary bootmem struct page array
+References: <1401773445-25256-1-git-send-email-enjoymindful@gmail.com> <539C1964.4050504@nod.at> <20140616032852.GA1763@name>
+In-Reply-To: <20140616032852.GA1763@name>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver for the TI TMP103.
 
-The TI TMP103 is similar to the TMP102.  It differs from the TMP102
-by having only 8 bit registers.
 
-Signed-off-by: Heiko Schocher <hs@denx.de>
+Am 16.06.2014 05:28, schrieb Real Name:
+> On Sat, Jun 14, 2014 at 11:44:04AM +0200, Richard Weinberger wrote:
+>> Hi!
+>>
+>> Am 03.06.2014 07:30, schrieb Real Name:
+>>> From: Honggang Li <enjoymindful@gmail.com>
+>>>
+>>> The patch based on linux-next-2014-06-02.
+>>>
+>>> The old init_maps function does two things:
+>>> 1) allocates and initializes one struct page array for bootmem
+>>> 2) count the number of total pages
+>>>
+>>> After removed the source code related to the unnecessary array, the name 
+>>> 'init_maps' is some kind of improper named, as it just count the number of
+>>> total page numbers. So, I renamed the function as 'mem_total_pages'.
+>>>
+>>> I tested the patch through repeat reboot the uml kernel many times.
+>>> [real@name linux-next]$ make ARCH=um defconfig
+>>> [real@name linux-next]$ make ARCH=um linux
+>>> [real@name linux-next]$ file linux
+>>> linux: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked (uses shared libs), for GNU/Linux 2.6.32, not stripped
+>>> [real@name linux-next]$ ./linux ubda=/home/real/linux-next/Fedora20-AMD64-root_fs mem=256m && sync && echo 1
+>>> [real@name linux-next]$ ./linux ubda=/home/real/linux-next/Fedora20-AMD64-root_fs mem=256m && sync && echo 2
+>>> (repeat reboot the uml kernel many times..)
+>>
+>> Can you please include in the changelog the commit sha1 which made the old init_maps() obsolete?
+>> I had a look at the pre-git linux tree, looks like init_maps() wasn't touched for more than 10 years.
+> 
+> hi, richard
+> 
+> what is the pre-git linux tree? I searched it with google, but failed.
+> 
+> The v2.6.12 kernel is the oldest one available from the linux-next git tree. And it has duplicated
+> struct page arrays. So, any suggestion how to find the commit you wanted?
 
----
+https://git.kernel.org/cgit/linux/kernel/git/tglx/history.git
 
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org
-Cc: devicetree@vger.kernel.org
-Cc: linux-doc@vger.kernel.org
+> linux-2.4.20 + uml-patch-2.4.20-8 works on *old* redhat-9 virtual machine. And it seems has duplicated
+> struct page array too.
+>
 
-- change for v2:
-  - add comments from GuenterRoeck:
-    - remove Cc from commit subject
-    - add devicetree maintainer
-    - move Documentation to Documentation/hwmon/tmp103
-    - remove devicetree bindings from Documentation
-    - add compatible string to
-      "Documentation/devicetree/bindings/i2c/trivial-devices.txt"
-    - remove CamelCase
-    - fix Codingstyle issues
-    - use ATTRIBUTE_GROUPS and devm_hwmon_device_register_with_groups()
-    - remove unsused define TMP103_CONFIG_RD_ONLY
-    - restore config register when exit()
-    - use regmap
-- changes for v3:
-  again a lot of fantastic tips how to use regmap efficiently
-  from Guenter Roeck:
-  - get rid of "struct tmp103"
-  - get rid of "static const u8 tmp103_reg[]"
-  - get rid of mutex lock
-  - drop config_orig entirely
-  - use regmap_update_bits()
+And if you remove it here too UML still works?
 
- .../devicetree/bindings/i2c/trivial-devices.txt    |   1 +
- Documentation/hwmon/tmp103                         |  28 +++
- drivers/hwmon/Kconfig                              |  10 +
- drivers/hwmon/Makefile                             |   1 +
- drivers/hwmon/tmp103.c                             | 203 +++++++++++++++++++++
- 5 files changed, 243 insertions(+)
- create mode 100644 Documentation/hwmon/tmp103
- create mode 100644 drivers/hwmon/tmp103.c
+Thanks,
+//richard
 
-diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-index bef86e5..fc944e0 100644
---- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-+++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-@@ -83,5 +83,6 @@ stm,m41t80		M41T80 - SERIAL ACCESS RTC WITH ALARMS
- taos,tsl2550		Ambient Light Sensor with SMBUS/Two Wire Serial Interface
- ti,tsc2003		I2C Touch-Screen Controller
- ti,tmp102		Low Power Digital Temperature Sensor with SMBUS/Two Wire Serial Interface
-+ti,tmp103		Low Power Digital Temperature Sensor with SMBUS/Two Wire Serial Interface
- ti,tmp275		Digital Temperature Sensor
- winbond,wpct301		i2c trusted platform module (TPM)
-diff --git a/Documentation/hwmon/tmp103 b/Documentation/hwmon/tmp103
-new file mode 100644
-index 0000000..ec00a15
---- /dev/null
-+++ b/Documentation/hwmon/tmp103
-@@ -0,0 +1,28 @@
-+Kernel driver tmp103
-+====================
-+
-+Supported chips:
-+  * Texas Instruments TMP103
-+    Prefix: 'tmp103'
-+    Addresses scanned: none
-+    Product info and datasheet: http://www.ti.com/product/tmp103
-+
-+Author:
-+	Heiko Schocher <hs@denx.de>
-+
-+Description
-+-----------
-+
-+The TMP103 is a digital output temperature sensor in a four-ball
-+wafer chip-scale package (WCSP). The TMP103 is capable of reading
-+temperatures to a resolution of 1°C. The TMP103 is specified for
-+operation over a temperature range of –40°C to +125°C.
-+
-+Resolution: 8 Bits
-+Accuracy: ±1°C Typ (–10°C to +100°C)
-+
-+The driver provides the common sysfs-interface for temperatures (see
-+Documentation/hwmon/sysfs-interface under Temperatures).
-+
-+Please refer how to instantiate this driver:
-+Documentation/i2c/instantiating-devices
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 08531a1..c882d4b 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -1391,6 +1391,16 @@ config SENSORS_TMP102
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called tmp102.
- 
-+config SENSORS_TMP103
-+	tristate "Texas Instruments TMP103"
-+	depends on I2C
-+	help
-+	  If you say yes here you get support for Texas Instruments TMP103
-+	  sensor chips.
-+
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called tmp103.
-+
- config SENSORS_TMP401
- 	tristate "Texas Instruments TMP401 and compatibles"
- 	depends on I2C
-diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 3dc0f02..cc0df1ef 100644
---- a/drivers/hwmon/Makefile
-+++ b/drivers/hwmon/Makefile
-@@ -135,6 +135,7 @@ obj-$(CONFIG_SENSORS_SMSC47M192)+= smsc47m192.o
- obj-$(CONFIG_SENSORS_AMC6821)	+= amc6821.o
- obj-$(CONFIG_SENSORS_THMC50)	+= thmc50.o
- obj-$(CONFIG_SENSORS_TMP102)	+= tmp102.o
-+obj-$(CONFIG_SENSORS_TMP103)	+= tmp103.o
- obj-$(CONFIG_SENSORS_TMP401)	+= tmp401.o
- obj-$(CONFIG_SENSORS_TMP421)	+= tmp421.o
- obj-$(CONFIG_SENSORS_TWL4030_MADC)+= twl4030-madc-hwmon.o
-diff --git a/drivers/hwmon/tmp103.c b/drivers/hwmon/tmp103.c
-new file mode 100644
-index 0000000..8d83033
---- /dev/null
-+++ b/drivers/hwmon/tmp103.c
-@@ -0,0 +1,203 @@
-+/*
-+ * Texas Instruments TMP103 SMBus temperature sensor driver
-+ * Copyright (C) 2014 Heiko Schocher <hs@denx.de>
-+ *
-+ * Based on:
-+ * Texas Instruments TMP102 SMBus temperature sensor driver
-+ *
-+ * Copyright (C) 2010 Steven King <sfking@fdwdc.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/i2c.h>
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
-+#include <linux/err.h>
-+#include <linux/mutex.h>
-+#include <linux/device.h>
-+#include <linux/jiffies.h>
-+#include <linux/regmap.h>
-+
-+#define	DRIVER_NAME "tmp103"
-+
-+#define TMP103_TEMP_REG		0x00
-+#define TMP103_CONF_REG		0x01
-+#define TMP103_TLOW_REG		0x02
-+#define TMP103_THIGH_REG	0x03
-+
-+#define TMP103_CONF_M0		0x01
-+#define TMP103_CONF_M1		0x02
-+#define TMP103_CONF_LC		0x04
-+#define TMP103_CONF_FL		0x08
-+#define TMP103_CONF_FH		0x10
-+#define TMP103_CONF_CR0		0x20
-+#define TMP103_CONF_CR1		0x40
-+#define TMP103_CONF_ID		0x80
-+#define TMP103_CONF_SD		(TMP103_CONF_M0 | TMP103_CONF_M1)
-+
-+#define TMP103_CONFIG		(TMP103_CONF_CR1 | TMP103_CONF_M1)
-+
-+static inline int tmp103_reg_to_mc(s8 val)
-+{
-+	return val * 1000;
-+}
-+
-+static inline u8 tmp103_mc_to_reg(int val)
-+{
-+	return DIV_ROUND_CLOSEST(val, 1000);
-+}
-+
-+static ssize_t tmp103_show_temp(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	struct sensor_device_attribute *sda = to_sensor_dev_attr(attr);
-+	struct regmap *regmap = dev_get_drvdata(dev);
-+	unsigned int regval;
-+	int ret;
-+
-+	ret = regmap_read(regmap, sda->index, &regval);
-+	if (ret < 0)
-+		return ret;
-+
-+	return sprintf(buf, "%d\n", tmp103_reg_to_mc(regval));
-+}
-+
-+static ssize_t tmp103_set_temp(struct device *dev,
-+			       struct device_attribute *attr,
-+			       const char *buf, size_t count)
-+{
-+	struct sensor_device_attribute *sda = to_sensor_dev_attr(attr);
-+	struct regmap *regmap = dev_get_drvdata(dev);
-+	long val;
-+	int ret;
-+
-+	if (kstrtol(buf, 10, &val) < 0)
-+		return -EINVAL;
-+
-+	val = clamp_val(val, -55000, 127000);
-+	ret = regmap_write(regmap, sda->index, tmp103_mc_to_reg(val));
-+	return ret ? ret : count;
-+}
-+
-+static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, tmp103_show_temp, NULL ,
-+			  TMP103_TEMP_REG);
-+
-+static SENSOR_DEVICE_ATTR(temp1_min, S_IWUSR | S_IRUGO, tmp103_show_temp,
-+			  tmp103_set_temp, TMP103_TLOW_REG);
-+
-+static SENSOR_DEVICE_ATTR(temp1_max, S_IWUSR | S_IRUGO, tmp103_show_temp,
-+			  tmp103_set_temp, TMP103_THIGH_REG);
-+
-+static struct attribute *tmp103_attrs[] = {
-+	&sensor_dev_attr_temp1_input.dev_attr.attr,
-+	&sensor_dev_attr_temp1_min.dev_attr.attr,
-+	&sensor_dev_attr_temp1_max.dev_attr.attr,
-+	NULL
-+};
-+ATTRIBUTE_GROUPS(tmp103);
-+
-+static bool tmp103_regmap_is_volatile(struct device *dev, unsigned int reg)
-+{
-+	return reg == TMP103_TEMP_REG;
-+}
-+
-+static struct regmap_config tmp103_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+	.max_register = TMP103_THIGH_REG,
-+	.volatile_reg = tmp103_regmap_is_volatile,
-+};
-+
-+static int tmp103_probe(struct i2c_client *client,
-+			const struct i2c_device_id *id)
-+{
-+	struct device *dev = &client->dev;
-+	struct device *hwmon_dev;
-+	struct regmap *regmap;
-+	int ret;
-+
-+	if (!i2c_check_functionality(client->adapter,
-+				     I2C_FUNC_SMBUS_BYTE_DATA)) {
-+		dev_err(&client->dev,
-+			"adapter doesn't support SMBus byte transactions\n");
-+		return -ENODEV;
-+	}
-+
-+	regmap = devm_regmap_init_i2c(client, &tmp103_regmap_config);
-+	if (IS_ERR(regmap)) {
-+		dev_err(dev, "failed to allocate register map\n");
-+		return PTR_ERR(regmap);
-+	}
-+
-+	ret = regmap_update_bits(regmap, TMP103_CONF_REG, TMP103_CONFIG,
-+				 TMP103_CONFIG);
-+	if (ret < 0) {
-+		dev_err(&client->dev, "error writing config register\n");
-+		return ret;
-+	}
-+
-+	hwmon_dev = hwmon_device_register_with_groups(dev, client->name,
-+						      regmap, tmp103_groups);
-+	return PTR_ERR_OR_ZERO(hwmon_dev);
-+}
-+
-+#ifdef CONFIG_PM
-+static int tmp103_suspend(struct device *dev)
-+{
-+	struct regmap *regmap = dev_get_drvdata(dev);
-+
-+	return regmap_update_bits(regmap, TMP103_CONF_REG, TMP103_CONF_SD, 0);
-+}
-+
-+static int tmp103_resume(struct device *dev)
-+{
-+	struct regmap *regmap = dev_get_drvdata(dev);
-+
-+	return regmap_update_bits(regmap, TMP103_CONF_REG, TMP103_CONF_SD,
-+				  TMP103_CONF_SD);
-+}
-+
-+static const struct dev_pm_ops tmp103_dev_pm_ops = {
-+	.suspend	= tmp103_suspend,
-+	.resume		= tmp103_resume,
-+};
-+
-+#define TMP103_DEV_PM_OPS (&tmp103_dev_pm_ops)
-+#else
-+#define	TMP103_DEV_PM_OPS NULL
-+#endif /* CONFIG_PM */
-+
-+static const struct i2c_device_id tmp103_id[] = {
-+	{ DRIVER_NAME, 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, tmp103_id);
-+
-+static struct i2c_driver tmp103_driver = {
-+	.driver = {
-+		.name	= DRIVER_NAME,
-+		.pm	= TMP103_DEV_PM_OPS,
-+	},
-+	.probe		= tmp103_probe,
-+	.id_table	= tmp103_id,
-+};
-+
-+module_i2c_driver(tmp103_driver);
-+
-+MODULE_AUTHOR("Heiko Schocher <hs@denx.de>");
-+MODULE_DESCRIPTION("Texas Instruments TMP103 temperature sensor driver");
-+MODULE_LICENSE("GPL");
--- 
-1.8.3.1
-
+> The first struct page array
+> ------------------------
+> linux-2.4.20/arch/um/kernel/physmem.c
+> 157 int init_maps(unsigned long len)
+> 158 {
+> 159         struct page *p, *map;
+> 160         int i, n;
+> 161 
+> 162         n = len >> PAGE_SHIFT;
+> 163         len = n * sizeof(struct page);
+> 164 
+> 165         if(kmalloc_ok){
+> 166                 map = kmalloc(len, GFP_KERNEL);
+> 167                 if(map == NULL) map = vmalloc(len);
+> 168         }
+> 169         else map = alloc_bootmem_low_pages(len);
+> 170 
+> 171         if(map == NULL)
+> 172                 return(-ENOMEM);
+> 173 
+> 174         for(i = 0; i < n; i++){
+> 175                 p = &map[i];
+> 176                 set_page_count(p, 0);
+> 177                 SetPageReserved(p);
+> 178                 INIT_LIST_HEAD(&p->list);
+> 179         }
+> 180 
+> 181         mem_map = map;
+> 182         max_mapnr = n;
+> 183         return(0);
+> 184 }
+> 
+> 
+> The second struct page array
+> -----------------------
+> mm/memory.c
+> 73 mem_map_t * mem_map; // global define
+> 
+> mm/page_alloc.c
+> 839 void __init free_area_init(unsigned long *zones_size)
+> 840 {
+> 841         free_area_init_core(0, &contig_page_data, &mem_map, zones_size, 0, 0, 0);
+> 842 }
+> 
+> --------
+> mm/page_alloc.c
+> 685 void __init free_area_init_core(int nid, pg_data_t *pgdat, struct page **gmap,
+> 686         unsigned long *zones_size, unsigned long zone_start_paddr,
+> 687         unsigned long *zholes_size, struct page *lmem_map)
+> 688 {
+> ........
+> 716         map_size = (totalpages + 1)*sizeof(struct page);
+> 717         if (lmem_map == (struct page *)0) {
+> 718                 lmem_map = (struct page *) alloc_bootmem_node(pgdat, map_size);
+> 719                 lmem_map = (struct page *)(PAGE_OFFSET +
+> 720                         MAP_ALIGN((unsigned long)lmem_map - PAGE_OFFSET));
+> 721         }
+> 722         *gmap = pgdat->node_mem_map = lmem_map;
+> 
+> 
+>>
+>> Thanks,
+>> //richard
+>>
+>>> Honggang Li (1):
+>>>   delete unnecessary bootmem struct page array
+>>>
+>>>  arch/um/include/shared/mem_user.h |  2 +-
+>>>  arch/um/kernel/physmem.c          | 32 ++++++--------------------------
+>>>  arch/um/kernel/um_arch.c          |  7 +------
+>>>  3 files changed, 8 insertions(+), 33 deletions(-)
+>>>
