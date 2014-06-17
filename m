@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965539AbaFQVpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:45:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53629 "EHLO
+	id S966411AbaFQVtf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:49:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54183 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965485AbaFQVp1 (ORCPT
+	with ESMTP id S966381AbaFQVt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:45:27 -0400
+	Tue, 17 Jun 2014 17:49:28 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Bibek Basu <bbasu@nvidia.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 009/212] ipv6: Limit mtu to 65575 bytes
-Date: Tue, 17 Jun 2014 14:41:43 -0700
-Message-Id: <1403041506-13646-10-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 171/212] cpufreq: remove race while accessing cur_policy
+Date: Tue, 17 Jun 2014 14:44:25 -0700
+Message-Id: <1403041506-13646-172-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -28,76 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Bibek Basu <bbasu@nvidia.com>
 
-[ Upstream commit 30f78d8ebf7f514801e71b88a10c948275168518 ]
+commit c5450db85b828d0c46ac8fc570fb8a51bf07ac40 upstream.
 
-Francois reported that setting big mtu on loopback device could prevent
-tcp sessions making progress.
+While accessing cur_policy during executing events
+CPUFREQ_GOV_START, CPUFREQ_GOV_STOP, CPUFREQ_GOV_LIMITS,
+same mutex lock is not taken, dbs_data->mutex, which leads
+to race and data corruption while running continious suspend
+resume test. This is seen with ondemand governor with suspend
+resume test using rtcwake.
 
-We do not support (yet ?) IPv6 Jumbograms and cook corrupted packets.
+ Unable to handle kernel NULL pointer dereference at virtual address 00000028
+ pgd = ed610000
+ [00000028] *pgd=adf11831, *pte=00000000, *ppte=00000000
+ Internal error: Oops: 17 [#1] PREEMPT SMP ARM
+ Modules linked in: nvhost_vi
+ CPU: 1 PID: 3243 Comm: rtcwake Not tainted 3.10.24-gf5cf9e5 #1
+ task: ee708040 ti: ed61c000 task.ti: ed61c000
+ PC is at cpufreq_governor_dbs+0x400/0x634
+ LR is at cpufreq_governor_dbs+0x3f8/0x634
+ pc : [<c05652b8>] lr : [<c05652b0>] psr: 600f0013
+ sp : ed61dcb0 ip : 000493e0 fp : c1cc14f0
+ r10: 00000000 r9 : 00000000 r8 : 00000000
+ r7 : eb725280 r6 : c1cc1560 r5 : eb575200 r4 : ebad7740
+ r3 : ee708040 r2 : ed61dca8 r1 : 001ebd24 r0 : 00000000
+ Flags: nZCv IRQs on FIQs on Mode SVC_32 ISA ARM Segment user
+ Control: 10c5387d Table: ad61006a DAC: 00000015
+ [<c05652b8>] (cpufreq_governor_dbs+0x400/0x634) from [<c055f700>] (__cpufreq_governor+0x98/0x1b4)
+ [<c055f700>] (__cpufreq_governor+0x98/0x1b4) from [<c0560770>] (__cpufreq_set_policy+0x250/0x320)
+ [<c0560770>] (__cpufreq_set_policy+0x250/0x320) from [<c0561dcc>] (cpufreq_update_policy+0xcc/0x168)
+ [<c0561dcc>] (cpufreq_update_policy+0xcc/0x168) from [<c0561ed0>] (cpu_freq_notify+0x68/0xdc)
+ [<c0561ed0>] (cpu_freq_notify+0x68/0xdc) from [<c008eff8>] (notifier_call_chain+0x4c/0x8c)
+ [<c008eff8>] (notifier_call_chain+0x4c/0x8c) from [<c008f3d4>] (__blocking_notifier_call_chain+0x50/0x68)
+ [<c008f3d4>] (__blocking_notifier_call_chain+0x50/0x68) from [<c008f40c>] (blocking_notifier_call_chain+0x20/0x28)
+ [<c008f40c>] (blocking_notifier_call_chain+0x20/0x28) from [<c00aac6c>] (pm_qos_update_bounded_target+0xd8/0x310)
+ [<c00aac6c>] (pm_qos_update_bounded_target+0xd8/0x310) from [<c00ab3b0>] (__pm_qos_update_request+0x64/0x70)
+ [<c00ab3b0>] (__pm_qos_update_request+0x64/0x70) from [<c004b4b8>] (tegra_pm_notify+0x114/0x134)
+ [<c004b4b8>] (tegra_pm_notify+0x114/0x134) from [<c008eff8>] (notifier_call_chain+0x4c/0x8c)
+ [<c008eff8>] (notifier_call_chain+0x4c/0x8c) from [<c008f3d4>] (__blocking_notifier_call_chain+0x50/0x68)
+ [<c008f3d4>] (__blocking_notifier_call_chain+0x50/0x68) from [<c008f40c>] (blocking_notifier_call_chain+0x20/0x28)
+ [<c008f40c>] (blocking_notifier_call_chain+0x20/0x28) from [<c00ac228>] (pm_notifier_call_chain+0x1c/0x34)
+ [<c00ac228>] (pm_notifier_call_chain+0x1c/0x34) from [<c00ad38c>] (enter_state+0xec/0x128)
+ [<c00ad38c>] (enter_state+0xec/0x128) from [<c00ad400>] (pm_suspend+0x38/0xa4)
+ [<c00ad400>] (pm_suspend+0x38/0xa4) from [<c00ac114>] (state_store+0x70/0xc0)
+ [<c00ac114>] (state_store+0x70/0xc0) from [<c027b1e8>] (kobj_attr_store+0x14/0x20)
+ [<c027b1e8>] (kobj_attr_store+0x14/0x20) from [<c019cd9c>] (sysfs_write_file+0x104/0x184)
+ [<c019cd9c>] (sysfs_write_file+0x104/0x184) from [<c0143038>] (vfs_write+0xd0/0x19c)
+ [<c0143038>] (vfs_write+0xd0/0x19c) from [<c0143414>] (SyS_write+0x4c/0x78)
+ [<c0143414>] (SyS_write+0x4c/0x78) from [<c000f080>] (ret_fast_syscall+0x0/0x30)
+ Code: e1a00006 eb084346 e59b0020 e5951024 (e5903028)
+ ---[ end trace 0488523c8f6b0f9d ]---
 
-We must limit the IPv6 MTU to (65535 + 40) bytes in theory.
-
-Tested:
-
-ifconfig lo mtu 70000
-netperf -H ::1
-
-Before patch : Throughput :   0.05 Mbits
-
-After patch : Throughput : 35484 Mbits
-
-Reported-by: Francois WELLENREITER <f.wellenreiter@gmail.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Bibek Basu <bbasu@nvidia.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/net/ip6_route.h | 5 +++++
- net/ipv6/route.c        | 5 +++--
- 2 files changed, 8 insertions(+), 2 deletions(-)
+ drivers/cpufreq/cpufreq_governor.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/include/net/ip6_route.h b/include/net/ip6_route.h
-index 733747c..9302699 100644
---- a/include/net/ip6_route.h
-+++ b/include/net/ip6_route.h
-@@ -32,6 +32,11 @@ struct route_info {
- #define RT6_LOOKUP_F_SRCPREF_PUBLIC	0x00000010
- #define RT6_LOOKUP_F_SRCPREF_COA	0x00000020
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index e6be635..922ab10 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -362,6 +362,11 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 		break;
  
-+/* We do not (yet ?) support IPv6 jumbograms (RFC 2675)
-+ * Unlike IPv4, hdr->seg_len doesn't include the IPv6 header
-+ */
-+#define IP6_MAX_MTU (0xFFFF + sizeof(struct ipv6hdr))
-+
- /*
-  * rt6_srcprefs2flags() and rt6_flags2srcprefs() translate
-  * between IPV6_ADDR_PREFERENCES socket option values
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index 40b6e69..0caafb5 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -1324,7 +1324,7 @@ static unsigned int ip6_mtu(const struct dst_entry *dst)
- 	unsigned int mtu = dst_metric_raw(dst, RTAX_MTU);
- 
- 	if (mtu)
--		return mtu;
-+		goto out;
- 
- 	mtu = IPV6_MIN_MTU;
- 
-@@ -1334,7 +1334,8 @@ static unsigned int ip6_mtu(const struct dst_entry *dst)
- 		mtu = idev->cnf.mtu6;
- 	rcu_read_unlock();
- 
--	return mtu;
-+out:
-+	return min_t(unsigned int, mtu, IP6_MAX_MTU);
- }
- 
- static struct dst_entry *icmp6_dst_gc_list;
+ 	case CPUFREQ_GOV_LIMITS:
++		mutex_lock(&dbs_data->mutex);
++		if (!cpu_cdbs->cur_policy) {
++			mutex_unlock(&dbs_data->mutex);
++			break;
++		}
+ 		mutex_lock(&cpu_cdbs->timer_mutex);
+ 		if (policy->max < cpu_cdbs->cur_policy->cur)
+ 			__cpufreq_driver_target(cpu_cdbs->cur_policy,
+@@ -371,6 +376,7 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 					policy->min, CPUFREQ_RELATION_L);
+ 		dbs_check_cpu(dbs_data, cpu);
+ 		mutex_unlock(&cpu_cdbs->timer_mutex);
++		mutex_unlock(&dbs_data->mutex);
+ 		break;
+ 	}
+ 	return 0;
 -- 
 1.9.1
 
