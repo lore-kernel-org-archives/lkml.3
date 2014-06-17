@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967312AbaFQWRY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:17:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54512 "EHLO
+	id S965539AbaFQVpa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:45:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53629 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966731AbaFQVvE (ORCPT
+	with ESMTP id S965485AbaFQVp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:51:04 -0400
+	Tue, 17 Jun 2014 17:45:27 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ludovic Drolez <ldrolez@debian.org>, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 191/212] USB: io_ti: fix firmware download on big-endian machines (part 2)
-Date: Tue, 17 Jun 2014 14:44:45 -0700
-Message-Id: <1403041506-13646-192-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 009/212] ipv6: Limit mtu to 65575 bytes
+Date: Tue, 17 Jun 2014 14:41:43 -0700
+Message-Id: <1403041506-13646-10-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -28,62 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit c03890ff5e24a4bf59059f2d179f427559b7330a upstream.
+[ Upstream commit 30f78d8ebf7f514801e71b88a10c948275168518 ]
 
-A recent patch that purported to fix firmware download on big-endian
-machines failed to add the corresponding sparse annotation to the
-i2c-header. This was reported by the kbuild test robot.
+Francois reported that setting big mtu on loopback device could prevent
+tcp sessions making progress.
 
-Adding the appropriate annotation revealed another endianess bug related
-to the i2c-header Size-field in a code path that is exercised when the
-firmware is actually being downloaded (and not just verified and left
-untouched unless older than the firmware at hand).
+We do not support (yet ?) IPv6 Jumbograms and cook corrupted packets.
 
-This patch adds the required sparse annotation to the i2c-header and
-makes sure that the Size-field is sent in little-endian byte order
-during firmware download also on big-endian machines.
+We must limit the IPv6 MTU to (65535 + 40) bytes in theory.
 
-Note that this patch is only compile-tested, but that there is no
-functional change for little-endian systems.
+Tested:
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Cc: Ludovic Drolez <ldrolez@debian.org>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ifconfig lo mtu 70000
+netperf -H ::1
+
+Before patch : Throughput :   0.05 Mbits
+
+After patch : Throughput : 35484 Mbits
+
+Reported-by: Francois WELLENREITER <f.wellenreiter@gmail.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/io_ti.c      | 2 +-
- drivers/usb/serial/io_usbvend.h | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ include/net/ip6_route.h | 5 +++++
+ net/ipv6/route.c        | 5 +++--
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/serial/io_ti.c b/drivers/usb/serial/io_ti.c
-index 1c7bc52..0385bc4 100644
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@ -832,7 +832,7 @@ static int build_i2c_fw_hdr(__u8 *header, struct device *dev)
- 	firmware_rec =  (struct ti_i2c_firmware_rec*)i2c_header->Data;
+diff --git a/include/net/ip6_route.h b/include/net/ip6_route.h
+index 733747c..9302699 100644
+--- a/include/net/ip6_route.h
++++ b/include/net/ip6_route.h
+@@ -32,6 +32,11 @@ struct route_info {
+ #define RT6_LOOKUP_F_SRCPREF_PUBLIC	0x00000010
+ #define RT6_LOOKUP_F_SRCPREF_COA	0x00000020
  
- 	i2c_header->Type	= I2C_DESC_TYPE_FIRMWARE_BLANK;
--	i2c_header->Size	= (__u16)buffer_size;
-+	i2c_header->Size	= cpu_to_le16(buffer_size);
- 	i2c_header->CheckSum	= cs;
- 	firmware_rec->Ver_Major	= OperationalMajorVersion;
- 	firmware_rec->Ver_Minor	= OperationalMinorVersion;
-diff --git a/drivers/usb/serial/io_usbvend.h b/drivers/usb/serial/io_usbvend.h
-index 51f83fb..6f6a856 100644
---- a/drivers/usb/serial/io_usbvend.h
-+++ b/drivers/usb/serial/io_usbvend.h
-@@ -594,7 +594,7 @@ struct edge_boot_descriptor {
++/* We do not (yet ?) support IPv6 jumbograms (RFC 2675)
++ * Unlike IPv4, hdr->seg_len doesn't include the IPv6 header
++ */
++#define IP6_MAX_MTU (0xFFFF + sizeof(struct ipv6hdr))
++
+ /*
+  * rt6_srcprefs2flags() and rt6_flags2srcprefs() translate
+  * between IPV6_ADDR_PREFERENCES socket option values
+diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+index 40b6e69..0caafb5 100644
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1324,7 +1324,7 @@ static unsigned int ip6_mtu(const struct dst_entry *dst)
+ 	unsigned int mtu = dst_metric_raw(dst, RTAX_MTU);
  
- struct ti_i2c_desc {
- 	__u8	Type;			// Type of descriptor
--	__u16	Size;			// Size of data only not including header
-+	__le16	Size;			// Size of data only not including header
- 	__u8	CheckSum;		// Checksum (8 bit sum of data only)
- 	__u8	Data[0];		// Data starts here
- } __attribute__((packed));
+ 	if (mtu)
+-		return mtu;
++		goto out;
+ 
+ 	mtu = IPV6_MIN_MTU;
+ 
+@@ -1334,7 +1334,8 @@ static unsigned int ip6_mtu(const struct dst_entry *dst)
+ 		mtu = idev->cnf.mtu6;
+ 	rcu_read_unlock();
+ 
+-	return mtu;
++out:
++	return min_t(unsigned int, mtu, IP6_MAX_MTU);
+ }
+ 
+ static struct dst_entry *icmp6_dst_gc_list;
 -- 
 1.9.1
 
