@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932183AbaFQCg5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 22:36:57 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:35043 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753719AbaFQCg4 (ORCPT
+	id S1754652AbaFQCis (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 22:38:48 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:48293 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753920AbaFQCiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 22:36:56 -0400
-X-Originating-IP: 50.43.32.211
-Date: Mon, 16 Jun 2014 19:36:48 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-sparse@vger.kernel.org
-Subject: Re: [PATCH] lib.c: skip --param parameters
-Message-ID: <20140617023648.GA5961@thin>
-References: <1402915386-28210-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <20140616160238.GA2746@jtriplet-mobl1>
- <alpine.DEB.2.02.1406161647510.21018@chino.kir.corp.google.com>
+	Mon, 16 Jun 2014 22:38:46 -0400
+X-Original-SENDERIP: 10.178.37.74
+X-Original-MAILFROM: neidhard.kim@lge.com
+Message-ID: <539FAA34.9030002@lge.com>
+Date: Tue, 17 Jun 2014 11:38:44 +0900
+From: Jongsung Kim <neidhard.kim@lge.com>
+Organization: LG Electronics
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1406161647510.21018@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hayun Hwang <hwang.hayun@lge.com>,
+        Youngkyu Choi <youngkyu7.choi@lge.com>
+Subject: Re: [PATCH] net/cadence/macb: clear interrupts simply and correctly
+References: <1402563054-8546-1-git-send-email-neidhard.kim@lge.com> <9f5be687-d127-49a4-90ea-c1033505452d@BN1BFFO11FD019.protection.gbl> <539E79F1.1090006@lge.com> <ea57b37f-1f1c-40a0-84a6-46b0b78ec6b4@BY2FFO11FD034.protection.gbl>
+In-Reply-To: <ea57b37f-1f1c-40a0-84a6-46b0b78ec6b4@BY2FFO11FD034.protection.gbl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 04:48:51PM -0700, David Rientjes wrote:
-> On Mon, 16 Jun 2014, Josh Triplett wrote:
-> 
-> > On Mon, Jun 16, 2014 at 01:43:06PM +0300, Andy Shevchenko wrote:
-> > > Very dumb patch to just skip --param allow-store-data-races=0 introduced in
-> > > newest Linux kernel buildsystem.
-> > > 
-> > > Actually the option is present in few GCC versions and probably should be
-> > > handled properly.
-> > > 
-> > > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > 
-> > As far as I can tell, this seems to only handle "--param arg"; however,
-> > according to the thread on LKML, GCC handles --param=arg as well.  Could
-> > you please handle that variant too?
-> > 
-> 
-> This is only from linux-next and not Linus's tree, correct?
-> 
-> Is this still necessary since the "./Makefile: tell gcc optimizer to never 
-> introduce new data races" patch has been removed from -mm due to failures?
-> 
-> See http://marc.info/?l=linux-mm-commits&m=140295825623471
+On 06/16/2014 11:56 PM, Sören Brinkmann wrote:
+> On Mon, 2014-06-16 at 02:00PM +0900, Jongsung Kim wrote:
+>> On 06/13/2014 12:44 AM, Sören Brinkmann wrote:
+>>> This is now clearing all IRQ flags which is probably not what we want
+>>> here. This is handling RX only. We still want the non-RX interrupts to go to
+>>> the actual interrupt service routing.
+>>
+>> The ISR(Interrupt Status Register) is read only in the interrupt service
+>> routine, macb_interrupt. But is partially cleared here and there. Further
+>> handler-functions decide jobs to be done by reading/checking other status
+>> registers. (e.g., TSR, RSR) So, clearing the ISR after reading looks not
+>> a bad idea.
+>
+> But you are clearing _all_ interrupt flags in the RX NAPI handler.
+> Doesn't that mean we might miss certain events?
 
-I'd still like to see Sparse not choke on the option, in either form,
-whether the kernel ends up using it or not.
-
-- Josh Triplett
+Please inspect my patch again. What I did in the macb_poll is removing
+statements clearing the Rx-complete interrupt, not clearing all the
+interrupts.
