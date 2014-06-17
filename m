@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933137AbaFQPMz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 11:12:55 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:64219 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933031AbaFQPMx (ORCPT
+	id S933240AbaFQPNW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 11:13:22 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:46531 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932999AbaFQPNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 11:12:53 -0400
-Date: Tue, 17 Jun 2014 16:12:26 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: nyushchenko@dev.rtsoft.ru
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lugovskoy@dev.rtsoft.ru
-Subject: Re: [PATCH 11/21] mfd: use devm_irq_of_parse_and_map() where
- appropriate
-Message-ID: <20140617151226.GM29841@lee--X1>
-References: <1401880402-30091-1-git-send-email-nyushchenko@dev.rtsoft.ru>
- <1401880402-30091-12-git-send-email-nyushchenko@dev.rtsoft.ru>
+	Tue, 17 Jun 2014 11:13:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401880402-30091-12-git-send-email-nyushchenko@dev.rtsoft.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1402784666-20300-1-git-send-email-fabf@skynet.be>
+References: <1402784666-20300-1-git-send-email-fabf@skynet.be>
+Date: Tue, 17 Jun 2014 11:13:20 -0400
+Message-ID: <CAF6AEGvau+w=M9-Qj1GnBUUT9AC5VU71uPeygv+2vULF2jsmhQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] drivers/gpu/drm/msm/msm_iommu.c: use PAGE_ALIGNED
+ instead of IS_ALIGNED(PAGE_SIZE
+From: Rob Clark <robdclark@gmail.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-> 
-> This avoids leak of IRQ mapping on error paths, and makes it possible
-> to use devm_request_irq() without facing unmap-while-handler-installed
-> issues.
-> 
-> Signed-off-by: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+On Sat, Jun 14, 2014 at 6:24 PM, Fabian Frederick <fabf@skynet.be> wrote:
+> use mm.h definition
+>
+> Cc: David Airlie <airlied@linux.ie>
+> Cc: Rob Clark <robdclark@gmail.com>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+
+Thanks, I've got this queued up
+
+BR,
+-R
+
 > ---
->  drivers/mfd/max8997.c |    4 +++-
->  drivers/mfd/max8998.c |    4 +++-
->  2 files changed, 6 insertions(+), 2 deletions(-)
-
-Applied, thanks.
-
-> diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
-> index 8cf7a01..6ae0786 100644
-> --- a/drivers/mfd/max8997.c
-> +++ b/drivers/mfd/max8997.c
-> @@ -153,7 +153,9 @@ static struct max8997_platform_data *max8997_i2c_parse_dt_pdata(
->  		return ERR_PTR(-ENOMEM);
->  	}
->  
-> -	pd->ono = irq_of_parse_and_map(dev->of_node, 1);
-> +	pd->ono = devm_irq_of_parse_and_map(dev, dev->of_node, 1);
-> +	if (pd->ono < 0)
-> +		return ERR_PTR(pd->ono);
->  
->  	/*
->  	 * ToDo: the 'wakeup' member in the platform data is more of a linux
-> diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
-> index 592db06..6b62dd7 100644
-> --- a/drivers/mfd/max8998.c
-> +++ b/drivers/mfd/max8998.c
-> @@ -159,7 +159,9 @@ static struct max8998_platform_data *max8998_i2c_parse_dt_pdata(
->  	if (!pd)
->  		return ERR_PTR(-ENOMEM);
->  
-> -	pd->ono = irq_of_parse_and_map(dev->of_node, 1);
-> +	pd->ono = devm_irq_of_parse_and_map(dev, dev->of_node, 1);
-> +	if (pd->ono < 0)
-> +		return ERR_PTR(pd->ono);
->  
->  	/*
->  	 * ToDo: the 'wakeup' member in the platform data is more of a linux
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+>  drivers/gpu/drm/msm/msm_iommu.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/gpu/drm/msm/msm_iommu.c b/drivers/gpu/drm/msm/msm_iommu.c
+> index 92b7459..198ed84 100644
+> --- a/drivers/gpu/drm/msm/msm_iommu.c
+> +++ b/drivers/gpu/drm/msm/msm_iommu.c
+> @@ -110,7 +110,7 @@ static int msm_iommu_unmap(struct msm_mmu *mmu, uint32_t iova,
+>
+>                 VERB("unmap[%d]: %08x(%x)", i, iova, bytes);
+>
+> -               BUG_ON(!IS_ALIGNED(bytes, PAGE_SIZE));
+> +               BUG_ON(!PAGE_ALIGNED(bytes));
+>
+>                 da += bytes;
+>         }
+> --
+> 1.8.4.5
+>
