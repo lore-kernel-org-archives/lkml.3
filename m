@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967545AbaFQWJU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:09:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54679 "EHLO
+	id S967553AbaFQWJj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:09:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54674 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966942AbaFQVvy (ORCPT
+	with ESMTP id S966935AbaFQVvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:51:54 -0400
+	Tue, 17 Jun 2014 17:51:53 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: George McCollister <george.mccollister@gmail.com>,
-        Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 192/212] USB: ftdi_sio: add NovaTech OrionLXm product ID
-Date: Tue, 17 Jun 2014 14:44:46 -0700
-Message-Id: <1403041506-13646-193-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 116/212] x86, mm, hugetlb: Add missing TLB page invalidation for hugetlb_cow()
+Date: Tue, 17 Jun 2014 14:43:30 -0700
+Message-Id: <1403041506-13646-117-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -29,55 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: George McCollister <george.mccollister@gmail.com>
+From: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
 
-commit d0839d757e6294921c31b1c4ca4f1dcc5df63bcd upstream.
+commit 9844f5462392b53824e8b86726e7c33b5ecbb676 upstream.
 
-The NovaTech OrionLXm uses an onboard FTDI serial converter for JTAG and
-console access.
+The invalidation is required in order to maintain proper semantics
+under CoW conditions. In scenarios where a process clones several
+threads, a thread operating on a core whose DTLB entry for a
+particular hugepage has not been invalidated, will be reading from
+the hugepage that belongs to the forked child process, even after
+hugetlb_cow().
 
-Here is the lsusb output:
-Bus 004 Device 123: ID 0403:7c90 Future Technology Devices
-International, Ltd
+The thread will not see the updated page as long as the stale DTLB
+entry remains cached, the thread attempts to write into the page,
+the child process exits, or the thread gets migrated to a different
+processor.
 
-Signed-off-by: George McCollister <george.mccollister@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
+Link: http://lkml.kernel.org/r/20140514092948.GA17391@server-36.huawei.corp
+Suggested-by: Shay Goikhman <shay.goikhman@huawei.com>
+Acked-by: Dave Hansen <dave.hansen@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/ftdi_sio.c     | 2 ++
- drivers/usb/serial/ftdi_sio_ids.h | 5 +++++
- 2 files changed, 7 insertions(+)
+ arch/x86/include/asm/hugetlb.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index ae49336..f009887 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -581,6 +581,8 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_TAVIR_STK500_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_TIAO_UMPA_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(FTDI_VID, FTDI_NT_ORIONLXM_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	/*
- 	 * ELV devices:
- 	 */
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 993c93d..500474c 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -538,6 +538,11 @@
-  */
- #define FTDI_TIAO_UMPA_PID	0x8a98	/* TIAO/DIYGADGET USB Multi-Protocol Adapter */
+diff --git a/arch/x86/include/asm/hugetlb.h b/arch/x86/include/asm/hugetlb.h
+index a809121..68c0539 100644
+--- a/arch/x86/include/asm/hugetlb.h
++++ b/arch/x86/include/asm/hugetlb.h
+@@ -52,6 +52,7 @@ static inline pte_t huge_ptep_get_and_clear(struct mm_struct *mm,
+ static inline void huge_ptep_clear_flush(struct vm_area_struct *vma,
+ 					 unsigned long addr, pte_t *ptep)
+ {
++	ptep_clear_flush(vma, addr, ptep);
+ }
  
-+/*
-+ * NovaTech product ids (FTDI_VID)
-+ */
-+#define FTDI_NT_ORIONLXM_PID	0x7c90	/* OrionLXm Substation Automation Platform */
-+
- 
- /********************************/
- /** third-party VID/PID combos **/
+ static inline int huge_pte_none(pte_t pte)
 -- 
 1.9.1
 
