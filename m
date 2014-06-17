@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965883AbaFQQy4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:54:56 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:50000 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965868AbaFQQyy (ORCPT
+	id S965701AbaFQQyw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:54:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50587 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933938AbaFQQSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:54:54 -0400
-Message-ID: <1403024089.1995.0.camel@jarvis>
-Subject: Re: [PATCH 01/24] kobject: return actual error on
- kset_create_and_add
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Jeff Liu <jeff.liu@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, herbert@gondor.apana.org.au,
-        davem@davemloft.net, stefanr@s5r6.in-berlin.de, joro@8bytes.org,
-        jejb@parisc-linux.org, deller@gmx.de, bhelgaas@google.com, clm@fb.com,
-        Josef Bacik <jbacik@fb.com>, swhiteho@redhat.com, bharrosh@panasas.com,
-        bhalevy@primarydata.com, ccaulfie@redhat.com, teigland@redhat.com,
-        "Theodore Ts'o" <tytso@mit.edu>, adilger.kernel@dilger.ca,
-        jaegeuk@kernel.org, cm224.lee@samsung.com,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        casey@schaufler-ca.com, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 17 Jun 2014 09:54:49 -0700
-In-Reply-To: <alpine.DEB.2.11.1406171128540.20610@gentwo.org>
-References: <53A04FF7.5050900@oracle.com> <20140617154730.GA14153@kroah.com>
-	 <alpine.DEB.2.11.1406171057270.20610@gentwo.org>
-	 <1403021389.27991.11.camel@dabdike.int.hansenpartnership.com>
-	 <alpine.DEB.2.11.1406171128540.20610@gentwo.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Jun 2014 12:18:49 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 042/121] usb: qcserial: add Sierra Wireless MC73xx
+Date: Tue, 17 Jun 2014 09:17:00 -0700
+Message-Id: <1403021899-16708-15-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
+References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-06-17 at 11:29 -0500, Christoph Lameter wrote:
-> On Tue, 17 Jun 2014, James Bottomley wrote:
-> 
-> > What useful information does this supply?  The current assumption on
-> > NULL return is -ENOMEM ... what's the interesting case where this
-> > assumption is wrong?
-> 
-> No idea. Sysfs just ignored all error codes and returns NULL right now.
-> If it is indeed just ENOMEN then we have no issue.
+3.8.13.24 -stable review patch.  If anyone has any objections, please let me know.
 
-Well, I think when we have that justification, then we can decide on the
-merits of the patch set.
+------------------
 
-James
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
+commit 70a3615fc07c2330ed7c1e922f3c44f4a67c0762 upstream.
+
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/usb/serial/qcserial.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
+index 6622352..1d1bc9b 100644
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -136,6 +136,9 @@ static const struct usb_device_id id_table[] = {
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x68a2, 0)},	/* Sierra Wireless MC7710 Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x68a2, 2)},	/* Sierra Wireless MC7710 NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x68a2, 3)},	/* Sierra Wireless MC7710 Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x68c0, 0)},	/* Sierra Wireless MC73xx Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x68c0, 2)},	/* Sierra Wireless MC73xx NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x68c0, 3)},	/* Sierra Wireless MC73xx Modem */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901c, 0)},	/* Sierra Wireless EM7700 Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901c, 2)},	/* Sierra Wireless EM7700 NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901c, 3)},	/* Sierra Wireless EM7700 Modem */
+-- 
+1.9.1
 
