@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967455AbaFQWUU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:20:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54434 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966650AbaFQVul (ORCPT
+	id S1756545AbaFQWyN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:54:13 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:35835 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756530AbaFQWyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:50:41 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 028/212] net: qmi_wwan: add Sierra Wireless EM7355
-Date: Tue, 17 Jun 2014 14:42:02 -0700
-Message-Id: <1403041506-13646-29-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+	Tue, 17 Jun 2014 18:54:07 -0400
+Date: Tue, 17 Jun 2014 18:54:03 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: the cgroup tree has an unnecessary merge
+Message-ID: <20140617225403.GB8838@mtj.dyndns.org>
+References: <20140618084921.07c3b391@canb.auug.org.au>
+ <20140617225159.GA8838@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Extended-Stable: 3.13
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140617225159.GA8838@mtj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jun 17, 2014 at 06:51:59PM -0400, Tejun Heo wrote:
+> Hello, Stephen.
+> 
+> On Wed, Jun 18, 2014 at 08:49:21AM +1000, Stephen Rothwell wrote:
+> > The cgroup tree has a merge of 963649d735c8 and c731ae1d0f02 both of
+> > which are already merged into v3.16-rc1.  Why did you just not use
+> > v3.16-rc1 itself (or the point where Linus merged your tree) (and then
+> > add the other commit on top?  That would have removed any chance that
+> > you resolved the merged differently to how it was resolved in Linus'
+> > tree (I don't know if there is a difference, but I have had conflicts
+> > from different merge resolutions in the past).
+> 
+> Oops, my mistake.  Reset to for-3.16-fixes.
 
-------------------
+Heh, the mistake was in cgroup/for-3.16-fixes.  I branched it off the
+wrong base.  Thanks for noticing it early.  Fixed now.
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Thanks.
 
-[ Upstream commit b85f5deaf052340021d025e120a9858f084a1d79 ]
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/net/usb/qmi_wwan.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
-index 33e0712..a488400 100644
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -723,6 +723,7 @@ static const struct usb_device_id products[] = {
- 	{QMI_FIXED_INTF(0x1199, 0x68a2, 8)},	/* Sierra Wireless MC7710 in QMI mode */
- 	{QMI_FIXED_INTF(0x1199, 0x68a2, 19)},	/* Sierra Wireless MC7710 in QMI mode */
- 	{QMI_FIXED_INTF(0x1199, 0x901c, 8)},    /* Sierra Wireless EM7700 */
-+	{QMI_FIXED_INTF(0x1199, 0x901f, 8)},    /* Sierra Wireless EM7355 */
- 	{QMI_FIXED_INTF(0x1199, 0x9051, 8)},	/* Netgear AirCard 340U */
- 	{QMI_FIXED_INTF(0x1bbb, 0x011e, 4)},	/* Telekom Speedstick LTE II (Alcatel One Touch L100V LTE) */
- 	{QMI_FIXED_INTF(0x2357, 0x0201, 4)},	/* TP-LINK HSUPA Modem MA180 */
 -- 
-1.9.1
-
+tejun
