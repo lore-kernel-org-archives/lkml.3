@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934094AbaFQQY1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:24:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50820 "EHLO
+	id S934105AbaFQQYg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:24:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50826 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933997AbaFQQYY (ORCPT
+	with ESMTP id S934081AbaFQQY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:24:24 -0400
+	Tue, 17 Jun 2014 12:24:27 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
+Cc: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 106/121] Bluetooth: Fix triggering BR/EDR L2CAP Connect too early
-Date: Tue, 17 Jun 2014 09:18:04 -0700
-Message-Id: <1403021899-16708-79-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 114/121] fsl-usb: do not test for PHY_CLK_VALID bit on controller version 1.6
+Date: Tue, 17 Jun 2014 09:18:12 -0700
+Message-Id: <1403021899-16708-87-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
@@ -28,42 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
 
-commit 9eb1fbfa0a737fd4d3a6d12d71c5ea9af622b887 upstream.
+commit d183c81929beeba842b74422f754446ef2b8b49c upstream.
 
-Commit 1c2e004183178 introduced an event handler for the encryption key
-refresh complete event with the intent of fixing some LE/SMP cases.
-However, this event is shared with BR/EDR and there we actually want to
-act only on the auth_complete event (which comes after the key refresh).
+Per reference manuals of Freescale P1020 and P2020 SoCs, USB controller
+present in these SoCs has bit 17 of USBx_CONTROL register marked as
+Reserved - there is no PHY_CLK_VALID bit there.
 
-If we do not do this we may trigger an L2CAP Connect Request too early
-and cause the remote side to return a security block error.
+Testing for this bit in ehci_fsl_setup_phy() behaves differently on two
+P1020RDB boards available here - on one board test passes and fsl-usb
+init succeeds, but on other board test fails, causing fsl-usb init to
+fail.
 
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+This patch changes ehci_fsl_setup_phy() not to test PHY_CLK_VALID on
+controller version 1.6 that (per manual) does not have this bit.
+
+Signed-off-by: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/bluetooth/hci_event.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/host/ehci-fsl.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
-index b719a83..ba6f399 100644
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -3406,6 +3406,12 @@ static void hci_key_refresh_complete_evt(struct hci_dev *hdev,
- 	if (!conn)
- 		goto unlock;
+diff --git a/drivers/usb/host/ehci-fsl.c b/drivers/usb/host/ehci-fsl.c
+index 512f117..392a65a 100644
+--- a/drivers/usb/host/ehci-fsl.c
++++ b/drivers/usb/host/ehci-fsl.c
+@@ -261,7 +261,8 @@ static int ehci_fsl_setup_phy(struct usb_hcd *hcd,
+ 		break;
+ 	}
  
-+	/* For BR/EDR the necessary steps are taken through the
-+	 * auth_complete event.
-+	 */
-+	if (conn->type != LE_LINK)
-+		goto unlock;
-+
- 	if (!ev->status)
- 		conn->sec_level = conn->pending_sec_level;
- 
+-	if (pdata->have_sysif_regs && pdata->controller_ver &&
++	if (pdata->have_sysif_regs &&
++	    pdata->controller_ver > FSL_USB_VER_1_6 &&
+ 	    (phy_mode == FSL_USB2_PHY_ULPI)) {
+ 		/* check PHY_CLK_VALID to get phy clk valid */
+ 		if (!spin_event_timeout(in_be32(non_ehci + FSL_SOC_USB_CTRL) &
 -- 
 1.9.1
 
