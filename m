@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933778AbaFQQP5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:15:57 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51406 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933535AbaFQQPy (ORCPT
+	id S933760AbaFQQPu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:15:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50430 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933633AbaFQQPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:15:54 -0400
-Message-ID: <53A069B6.6070902@wwwdotorg.org>
-Date: Tue, 17 Jun 2014 10:15:50 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        David Airlie <airlied@linux.ie>,
-        Mike Turquette <mturquette@linaro.org>, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com, devicetree@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [RFC PATCH 1/4] memory: tegra124-emc: Add EMC driver
-References: <1402925713-25426-1-git-send-email-tomeu.vizoso@collabora.com> <1402925713-25426-2-git-send-email-tomeu.vizoso@collabora.com> <539F4D44.3070309@wwwdotorg.org> <53A03186.3040703@collabora.com>
-In-Reply-To: <53A03186.3040703@collabora.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Jun 2014 12:15:45 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 025/121] ext4: note the error in ext4_end_bio()
+Date: Tue, 17 Jun 2014 09:13:38 -0700
+Message-Id: <1403021714-16320-26-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403021714-16320-1-git-send-email-kamal@canonical.com>
+References: <1403021714-16320-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2014 06:16 AM, Tomeu Vizoso wrote:
-> On 06/16/2014 10:02 PM, Stephen Warren wrote:
->> On 06/16/2014 07:35 AM, Tomeu Vizoso wrote:
+3.8.13.24 -stable review patch.  If anyone has any objections, please let me know.
 
->> This binding looks quite anaemic vs.
->> Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-emc.txt; I
->> would expect that this binding needs all the EMC register data from the
->> tegra20-emc binding too. Can the two bindings be identical?
-> 
-> There's even less stuff needed right now, as all what ultimately the EMC
-> driver does is call clk_set_rate on the EMC clock. As the T124 EMC
-> driver gains more features, they should get more similar.
+------------------
 
-IIRC, even changing the EMC clock rate requires modifying the memory
-controller's programming (e.g. delays/taps/tuning etc.). That's exactly
-what the more complex stuff in the nvidia,tegra20-emc.txt is all about.
-I not convinced that a driver that just modifies the clock rate without
-adjusting the EMC programming will work reliably.
+From: Matthew Wilcox <willy@linux.intel.com>
 
->>> +#ifdef CONFIG_TEGRA124_EMC
->>> +int tegra124_emc_reserve_bandwidth(unsigned int consumer, unsigned
->>> long rate);
->>> +void tegra124_emc_set_floor(unsigned long freq);
->>> +void tegra124_emc_set_ceiling(unsigned long freq);
->>> +#else
->>> +int tegra124_emc_reserve_bandwidth(unsigned int consumer, unsigned
->>> long rate)
->>> +{ return -ENODEV; }
->>> +void tegra124_emc_set_floor(unsigned long freq)
->>> +{ return; }
->>> +void tegra124_emc_set_ceiling(unsigned long freq)
->>> +{ return; }
->>> +#endif
->>
->> I'll repeat what I said off-list so that we can have the whole
->> conversation on the list:
->>
->> That looks like a custom Tegra-specific API. I think it'd be much better
->> to integrate this into the common clock framework as a standard clock
->> constraints API. There are other use-cases for clock constraints besides
->> EMC scaling (e.g. some in audio on Tegra, and I'm sure many on other
->> SoCs too).
-> 
-> Yes, I wrote a bit in the cover letter about our requirements and how
-> they map to the CCF. Could you please comment on that?
+commit 9503c67c93ed0b95ba62d12d1fd09da6245dbdd6 upstream.
 
-My comments remain the same. I believe this is something that belongs in
-the clock driver, or at the least, some API that takes a struct clock as
-its parameter, so that drivers can use the existing DT clock lookup
-mechanism.
+ext4_end_bio() currently throws away the error that it receives.  Chances
+are this is part of a spate of errors, one of which will end up getting
+the error returned to userspace somehow, but we shouldn't take that risk.
+Also print out the errno to aid in debug.
+
+Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ fs/ext4/page-io.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/fs/ext4/page-io.c b/fs/ext4/page-io.c
+index b42d04f..311d1db 100644
+--- a/fs/ext4/page-io.c
++++ b/fs/ext4/page-io.c
+@@ -308,13 +308,14 @@ static void ext4_end_bio(struct bio *bio, int error)
+ 
+ 	if (error) {
+ 		io_end->flag |= EXT4_IO_END_ERROR;
+-		ext4_warning(inode->i_sb, "I/O error writing to inode %lu "
++		ext4_warning(inode->i_sb, "I/O error %d writing to inode %lu "
+ 			     "(offset %llu size %ld starting block %llu)",
+-			     inode->i_ino,
++			     error, inode->i_ino,
+ 			     (unsigned long long) io_end->offset,
+ 			     (long) io_end->size,
+ 			     (unsigned long long)
+ 			     bi_sector >> (inode->i_blkbits - 9));
++		mapping_set_error(inode->i_mapping, error);
+ 	}
+ 
+ 	if (!(io_end->flag & EXT4_IO_END_UNWRITTEN)) {
+-- 
+1.9.1
+
