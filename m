@@ -1,59 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920AbaFQLBu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 07:01:50 -0400
-Received: from submit2.sa.ew.hu ([212.108.200.72]:49108 "EHLO submit2.sa.ew.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754771AbaFQLBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 07:01:48 -0400
-Message-ID: <53A02013.1060403@denx.de>
-Date: Tue, 17 Jun 2014 13:01:39 +0200
-From: Heiko Schocher <hs@denx.de>
-Reply-To: hs@denx.de
-Organization: DENX Software Engineering
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120421 Thunderbird/12.0
+	id S1755895AbaFQLEs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 07:04:48 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:52209 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753173AbaFQLEq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 07:04:46 -0400
+Subject: [PATCH -tip v2 0/3] ftrace,
+ kprobes: Introduce IPMODIFY flag for ftrace_ops to detect conflicts
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+To: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Date: Tue, 17 Jun 2014 11:04:36 +0000
+Message-ID: <20140617110436.15167.7179.stgit@kbuild-fedora.novalocal>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: lm-sensors@lm-sensors.org, Jean Delvare <khali@linux-fr.org>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v4] hwmon: Driver for TI TMP103 temperature sensor
-References: <1402992713-22711-1-git-send-email-hs@denx.de> <53A01CE6.4010608@roeck-us.net>
-In-Reply-To: <53A01CE6.4010608@roeck-us.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-PMX-Spam: Gauge=XXXIIII, Probability=34%, Report='
- SXL_IP_DYNAMIC 3, HASHBUSTER_BLOCK_V2 0.5, MULTIPLE_RCPTS 0.1, HTML_00_01 0.05, HTML_00_10 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, BODY_SIZE_900_999 0, RDNS_GENERIC_POOLED 0, RDNS_SUSP 0, RDNS_SUSP_GENERIC 0, __ANY_URI 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __FORWARDED_MSG 0, __HASHBUSTER_BLOCK_V2_1 0, __HAS_FROM 0, __HAS_MSGID 0, __HAS_REPLYTO 0, __IN_REP_TO 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __MOZILLA_MSGID 0, __MOZILLA_USER_AGENT 0, __MULTIPLE_RCPTS_CC_X2 0, __REPLYTO_SAMEAS_FROM_ACC 0, __REPLYTO_SAMEAS_FROM_ADDY 0, __REPLYTO_SAMEAS_FROM_DOMAIN 0, __SANE_MSGID 0, __SUBJ_ALPHA_END 0, __SUBJ_ALPHA_NEGATE 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS , __USER_AGENT 0'
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Guenter
+Hi,
 
-Am 17.06.2014 12:48, schrieb Guenter Roeck:
-> On 06/17/2014 01:11 AM, Heiko Schocher wrote:
->> Driver for the TI TMP103.
->>
->> The TI TMP103 is similar to the TMP102. It differs from the TMP102
->> by having only 8 bit registers.
->>
->> Signed-off-by: Heiko Schocher <hs@denx.de>
->>
-> [ ... ]
->> +#define TMP103_CONF_SD (TMP103_CONF_M0 | TMP103_CONF_M1)
->
-> Hello Heiko,
->
-> I thought this needs to be TMP103_CONF_M1, but from the datasheet it looks
-> like it does not matter if M0 is set if M1 is set as well. Did you test it,
-> though, to make sure that it works ? I feel slightly uncomfortable with it.
+Here is the version 2 of the series of patches which introduces
+IPMODIFY flag for ftrace_ops to detect conflicts of ftrace users
+who can modify regs->ip in their handler.
+In this version, I fixed some bugs in previous version and
+added a patch which made kprobe itself free from IPMODIFY
+except for jprobe.
 
-Yes, i tested it on an imx6 based board. I see no issues ... but I can
-test it with "#define TMP103_CONF_SD TMP103_CONF_M1" and post a v5 with
-this setting if it works ...
+Currently, only kprobes can change the regs->ip in the handler,
+but recently kpatch is also want to change it. Moreover, since
+the ftrace itself exported to modules, it might be considerable
+senario.
 
-bye,
-Heiko
--- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+Here we talked on github.
+ https://github.com/dynup/kpatch/issues/47
+
+To protect modified regs-ip from each other, this series
+introduces FTRACE_OPS_FL_IPMODIFY flag and ftrace now ensures
+the flag can be set on each function entry location. If there
+is someone who already reserve regs->ip on target function
+entry, ftrace_set_filter_ip or register_ftrace_function will
+return -EBUSY. Users must handle that.
+
+The 3rd patch adds a special reservation of IPMODIFY on the
+jprobed address, since it is the only user who will change
+the regs->ip. Other kprobes do not change it anymore. 
+
+Testing:
+BTW, I've tested it with samples/kprobes/{k,j}probe_example.ko
+and a small test module which I added to the last of this mail.
+
+Here is the test script. I think I should put this under
+tools/testing, maybe kprobes? or selftest/kprobes?
+
+----
+#!/bin/bash
+
+echo "IPMODIFY test"
+ADDR=0x`grep do_fork /proc/kallsyms | cut -f 1 -d" "`
+
+echo "Case1: kprobe->jprobe->ipmodify(fail)"
+modprobe kprobe_example
+modprobe jprobe_example
+insmod ./ipmodify.ko && echo "Case1: [FAIL]" || echo "Case1: [OK]"
+rmmod kprobe_example jprobe_example
+
+echo "Case2: jprobe->kprobe->ipmodify(fail)"
+modprobe jprobe_example
+modprobe kprobe_example
+insmod ./ipmodify.ko && echo "Case2: [FAIL]" || echo "Case2: [OK]"
+rmmod kprobe_example jprobe_example
+
+echo "Case3: jprobe->ipmodify(fail)"
+modprobe jprobe_example
+insmod ./ipmodify.ko && echo "Case3: [FAIL]" || echo "Case3: [OK]"
+rmmod jprobe_example
+
+echo "Case4: ipmodify->jprobe(fail)"
+insmod ./ipmodify.ko
+modprobe jprobe_example && echo "Case4: [FAIL]" || echo "Case4: [OK]"
+rmmod ipmodify
+
+echo "Case5: ipmodify->kprobe->jprobe(fail)"
+insmod ./ipmodify.ko
+modprobe kprobe_example
+modprobe jprobe_example && echo "Case5: [FAIL]" || echo "Case5: [OK]"
+rmmod ipmodify kprobe_example
+-----
+
+Thank you,
+
+---
+
+Masami Hiramatsu (3):
+      ftrace: Simplify ftrace_hash_disable/enable path in ftrace_hash_move
+      ftrace, kprobes: Support IPMODIFY flag to find IP modify conflict
+      kprobes: Set IPMODIFY flag only if the probe can change regs->ip
+
+
+ Documentation/kprobes.txt        |   12 +--
+ Documentation/trace/ftrace.txt   |    5 +
+ arch/x86/kernel/kprobes/ftrace.c |    9 +-
+ include/linux/ftrace.h           |   10 ++
+ kernel/kprobes.c                 |  115 +++++++++++++++++++++++----
+ kernel/trace/ftrace.c            |  164 +++++++++++++++++++++++++++++++++-----
+ 6 files changed, 265 insertions(+), 50 deletions(-)
+
+--
+
+-----<ipmodify.c>
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/ftrace.h>
+
+
+static void ftrace_ipmodify_handler(unsigned long a0, unsigned long a1,
+				struct ftrace_ops *op, struct pt_regs *regs)
+{
+	return;
+}
+
+static struct ftrace_ops test_ops __read_mostly = {
+	.func = ftrace_ipmodify_handler,
+	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY,
+};
+
+static unsigned long target;
+module_param(target, ulong, 0444);
+
+static int __init ipmodify_init(void)
+{
+	int ret;
+	unsigned long ip = target;
+
+	ret = ftrace_set_filter_ip(&test_ops, ip, 0, 0);
+	pr_err("ipmodify_test: set filter ip 0x%lx, ret = %d\n", ip, ret);
+
+        if (ret >= 0) {
+		ret = register_ftrace_function(&test_ops);
+		pr_err("ipmodify_test: register ftrace on 0x%lx, ret = %d\n",
+			ip, ret);
+        }
+
+	return ret;
+}
+
+static void __exit ipmodify_exit(void)
+{
+	int ret;
+	unsigned long ip = target;
+
+	ret = unregister_ftrace_function(&test_ops);
+	pr_err("ipmodify_test: unregister ftrace on 0x%lx, ret = %d\n", ip, ret);
+        if (ret >= 0) {
+		ret = ftrace_set_filter_ip(&test_ops, ip, 1, 0);
+		pr_err("ipmodify_test: clear filter ip 0x%lx, ret = %d\n",
+			ip, ret);
+        }
+}
+
+module_init(ipmodify_init)
+module_exit(ipmodify_exit)
+MODULE_LICENSE("GPL");
+-----
+
