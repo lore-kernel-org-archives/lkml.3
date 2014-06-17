@@ -1,128 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932890AbaFQMPz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 08:15:55 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:32784 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932223AbaFQMPy (ORCPT
+	id S932911AbaFQMQW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 08:16:22 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:55235 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932223AbaFQMQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 08:15:54 -0400
-Date: Tue, 17 Jun 2014 14:15:35 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        Zhang Rui <rui.zhang@intel.com>, jacob.jun.pan@linux.intel.com,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        registosites@hotmail.com, srivatsa@mit.edu
-Subject: Re: [PATCH 11/15] x86: Rewrite cyc2ns to avoid the need to disable
- IRQs
-Message-ID: <20140617121535.GY6758@twins.programming.kicks-ass.net>
-References: <20131212140835.729222186@infradead.org>
- <20131212141655.238445339@infradead.org>
- <CAOh2x=mgeozUMGYQubQ4GKPEB6k_TkcV3CSTzNLqjKok-gROQg@mail.gmail.com>
+	Tue, 17 Jun 2014 08:16:20 -0400
+Message-ID: <53A03186.3040703@collabora.com>
+Date: Tue, 17 Jun 2014 14:16:06 +0200
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="O82bwzp7nMTZS6dV"
-Content-Disposition: inline
-In-Reply-To: <CAOh2x=mgeozUMGYQubQ4GKPEB6k_TkcV3CSTzNLqjKok-gROQg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Airlie <airlied@linux.ie>,
+        Mike Turquette <mturquette@linaro.org>, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, devicetree@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [RFC PATCH 1/4] memory: tegra124-emc: Add EMC driver
+References: <1402925713-25426-1-git-send-email-tomeu.vizoso@collabora.com> <1402925713-25426-2-git-send-email-tomeu.vizoso@collabora.com> <539F4D44.3070309@wwwdotorg.org>
+In-Reply-To: <539F4D44.3070309@wwwdotorg.org>
+Content-Type: text/plain; charset=US-ASCII;
+	format=flowed
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/16/2014 10:02 PM, Stephen Warren wrote:
+> On 06/16/2014 07:35 AM, Tomeu Vizoso wrote:
+>> +
+>> +Child device nodes describe the memory settings for different configurations and
+>> +clock rates.
+>
+> How do the child nodes do that? The binding needs to specify the format
+> of the child node.
 
---O82bwzp7nMTZS6dV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sorry, that file was sent before I had finished removing the bits from 
+downstream that aren't needed yet. There's no current need for any child 
+nodes.
 
-On Mon, Jun 16, 2014 at 10:43:38PM +0530, Viresh Kumar wrote:
-> Cc'ing Mauro/Rafael/Srivatsa..
->=20
-> On Thu, Dec 12, 2013 at 7:38 PM, Peter Zijlstra <peterz@infradead.org> wr=
-ote:
-> > Use a ring-buffer like multi-version object structure which allows
-> > always having a coherent object; we use this to avoid having to
-> > disable IRQs while reading sched_clock() and avoids a problem when
-> > getting an NMI while changing the cyc2ns data.
-> >
-> >                         MAINLINE   PRE        POST
-> >
-> >     sched_clock_stable: 1          1          1
-> >     (cold) sched_clock: 329841     331312     257223
-> >     (cold) local_clock: 301773     310296     309889
-> >     (warm) sched_clock: 38375      38247      25280
-> >     (warm) local_clock: 100371     102713     85268
-> >     (warm) rdtsc:       27340      27289      24247
-> >     sched_clock_stable: 0          0          0
-> >     (cold) sched_clock: 382634     372706     301224
-> >     (cold) local_clock: 396890     399275     399870
-> >     (warm) sched_clock: 38194      38124      25630
-> >     (warm) local_clock: 143452     148698     129629
-> >     (warm) rdtsc:       27345      27365      24307
-> >
-> > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> > ---
-> >  arch/x86/include/asm/timer.h     |   23 +++
-> >  arch/x86/kernel/cpu/perf_event.c |   14 +-
-> >  arch/x86/kernel/tsc.c            |  229 ++++++++++++++++++++++++++++++=
-++++-----
-> >  3 files changed, 236 insertions(+), 30 deletions(-)
->=20
-> Hi Peter,
->=20
-> We have been following a bug around cpufreq changes in 3.14
-> (https://bugzilla.kernel.org/show_bug.cgi?id=3D77201) and our tests
-> narrowed it down to this patch after which things aren't working
-> as expected.
+> This binding looks quite anaemic vs.
+> Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-emc.txt; I
+> would expect that this binding needs all the EMC register data from the
+> tegra20-emc binding too. Can the two bindings be identical?
 
-> Mauro (registosites@hotmail.com) have reported that since 3.14
-> after doing hot-unplug/hotplug of CPU1, cpufreq POSTCHANGE notifications
-> for every second frequency change hangs his machine ..
+There's even less stuff needed right now, as all what ultimately the EMC 
+driver does is call clk_set_rate on the EMC clock. As the T124 EMC 
+driver gains more features, they should get more similar.
 
-Ah, just a freeze?
+> Can you explain what the nvidia,mc and nvidia,pmc references are needed
+> for? Hopefully, this driver isn't going to reach into those devices and
+> touch their registers directly.
 
-> Last working tag was: 3.13.8 and it started failing from 3.14 and fails
-> for latest 3.15 as well..
->=20
-> model name : AMD Turion(tm) 64 X2 Mobile Technology TL-64
-> CPUFreq driver: powernow-k8 ..
-> CPUs: Only two CPUs, sharing clock line
+Not really needed, see above.
 
-What's specific to this particular CPU?
+>> diff --git a/include/linux/platform_data/tegra_emc.h b/include/linux/platform_data/tegra_emc.h
+>
+> A header file that defines platform data format isn't the correct place
+> to put the definitions of public APIs. I'd expect something more like
+> <linux/tegra-soc.h>.
 
-> Can you give any pointers, so that he can get it fixed ?
+Sounds better indeed, thanks.
 
-So what you can try is force a cyc2ns read before the write in
-set_cyc2ns_scale(). I think its possible that if we do not do the read,
-the write will wait for a 'free' slot indefinitely.
+>> +#ifdef CONFIG_TEGRA124_EMC
+>> +int tegra124_emc_reserve_bandwidth(unsigned int consumer, unsigned long rate);
+>> +void tegra124_emc_set_floor(unsigned long freq);
+>> +void tegra124_emc_set_ceiling(unsigned long freq);
+>> +#else
+>> +int tegra124_emc_reserve_bandwidth(unsigned int consumer, unsigned long rate)
+>> +{ return -ENODEV; }
+>> +void tegra124_emc_set_floor(unsigned long freq)
+>> +{ return; }
+>> +void tegra124_emc_set_ceiling(unsigned long freq)
+>> +{ return; }
+>> +#endif
+>
+> I'll repeat what I said off-list so that we can have the whole
+> conversation on the list:
+>
+> That looks like a custom Tegra-specific API. I think it'd be much better
+> to integrate this into the common clock framework as a standard clock
+> constraints API. There are other use-cases for clock constraints besides
+> EMC scaling (e.g. some in audio on Tegra, and I'm sure many on other
+> SoCs too).
 
---O82bwzp7nMTZS6dV
-Content-Type: application/pgp-signature
+Yes, I wrote a bit in the cover letter about our requirements and how 
+they map to the CCF. Could you please comment on that?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Thanks,
 
-iQIcBAEBAgAGBQJToDFnAAoJEHZH4aRLwOS6yOMP+wV56fHEyPtvceMiq5ayZA7k
-W2fVK7zigZQ30A+kjgELit+Y7A040qokfhwXKoWQmgmKBJehADupBn8REur2l+YB
-51+/eK6jjhh/MLrSjoR0JvMSEhsW4MLYwwfvGJOUN4gbmmYgvJ/fPX9XyKwR8R33
-J3GjWmkcfRcGMfNfaIDVkOHsxcz+iNiz5B975O6+E4T8PN/SSGV89x4eSg4BRa8D
-P6hxK7epZnkR6YudgvOeNko/ZzJWJm2uH2NlYs9kFTcTBygZ2905ivo88FAGS0sg
-cfAZPhNuIGrgTPVz7Ix10xZD/q6mjv8bKKMvVzcSJnlwJE87ywAURI871uPNVzNJ
-FNo+NE4iwZGqH4ChYc5B6V1F7sbqMlpS1tCx1RSoMVsRROPVpDk7cjVMjx0DNP08
-mDcQhvp3R4oAsFfTwGo9aPaWE5yYW1IS68TCSmsKFiOWLipnEIZkBLB4w1Z/Vqmq
-6NbTSrsba7RexnWQgplVFubbXgX/N1xPFBv9iZEWoblQg20QxQXUyt9qAJokKC/5
-0Zpv2oHiLtJODU9VHCVC09y2osq37BMJNmOBscTejoY8iZdyU+pXmahc38NTEwD4
-Gtq7FhNs1ku0O4ItdpXRLMfIWCdOUlw9r7hbO6mYZkIyf9JutPa1FZ7ZgfMCxw3c
-Tez8DXb4hLB2ZPROwdQU
-=re7Z
------END PGP SIGNATURE-----
+Tomeu
 
---O82bwzp7nMTZS6dV--
+> See https://lkml.org/lkml/2014/5/16/569 for some previous discussion on
+> this topic.
+
+
