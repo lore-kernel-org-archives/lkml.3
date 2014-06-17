@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967606AbaFQW0v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:26:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54300 "EHLO
+	id S1756482AbaFQWx3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:53:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53619 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965384AbaFQVuH (ORCPT
+	with ESMTP id S965254AbaFQVp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:50:07 -0400
+	Tue, 17 Jun 2014 17:45:27 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Matija Glavinic Pecotic <matija.glavinic-pecotic.ext@nsn.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Steve Dickson <steved@redhat.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 036/212] net: sctp: Potentially-Failed state should not be reached from unconfirmed state
-Date: Tue, 17 Jun 2014 14:42:10 -0700
-Message-Id: <1403041506-13646-37-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 002/212] SUNRPC: Ensure call_connect_status() deals correctly with SOFTCONN tasks
+Date: Tue, 17 Jun 2014 14:41:36 -0700
+Message-Id: <1403041506-13646-3-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -28,73 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matija Glavinic Pecotic <matija.glavinic-pecotic.ext@nsn.com>
+From: Steve Dickson <steved@redhat.com>
 
-commit 7cce3b75682ff898c935c17d186983cbf3ed393e upstream.
+commit 1fa3e2eb9db07f30a605c66d1a2fdde4b24e74d5 upstream.
 
-In current implementation it is possible to reach PF state from unconfirmed.
-We can interpret sctp-failover-02 in a way that PF state is meant to be reached
-only from active state, in the end, this is when entering PF state makes sense.
-Here are few quotes from sctp-failover-02, but regardless of these, same
-understanding can be reached from whole section 5:
+Don't schedule an rpc_delay before checking to see if the task
+is a SOFTCONN because the tk_callback from the delay (__rpc_atrun)
+clears the task status before the rpc_exit_task can be run.
 
-Section 5.1, quickfailover guide:
-    "The PF state is an intermediate state between Active and Failed states."
-
-    "Each time the T3-rtx timer expires on an active or idle
-    destination, the error counter of that destination address will
-    be incremented.  When the value in the error counter exceeds
-    PFMR, the endpoint should mark the destination transport address as PF."
-
-There are several concrete reasons for such interpretation. For start, rfc4960
-does not take into concern quickfailover algorithm. Therefore, quickfailover
-must comply to 4960. Point where this compliance can be argued is following
-behavior:
-When PF is entered, association overall error counter is incremented for each
-missed HB. This is contradictory to rfc4960, as address, while in unconfirmed
-state, is subjected to probing, and while it is probed, it should not increment
-association overall error counter. This has as a consequence that we might end
-up in situation in which we drop association due path failure on unconfirmed
-address, in case we have wrong configuration in a way:
-Association.Max.Retrans == Path.Max.Retrans.
-
-Another reason is that entering PF from unconfirmed will cause a loss of address
-confirmed event when address is once (if) confirmed. This is fine from failover
-guide point of view, but it is not consistent with behavior preceding failover
-implementation and recommendation from 4960:
-
-5.4.  Path Verification
-   Whenever a path is confirmed, an indication MAY be given to the upper
-   layer.
-
-Signed-off-by: Matija Glavinic Pecotic <matija.glavinic-pecotic.ext@nsn.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Steve Dickson <steved@redhat.com>
+Fixes: 561ec1603171c (SUNRPC: call_connect_status should recheck...)
+Link: http://lkml.kernel.org/r/5329CF7C.7090308@RedHat.com
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+[ Stefan Bader: backport to 3.13-stable: context ]
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/sctp/sm_sideeffect.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ net/sunrpc/clnt.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/sctp/sm_sideeffect.c b/net/sctp/sm_sideeffect.c
-index 1a6eef3..04b1398 100644
---- a/net/sctp/sm_sideeffect.c
-+++ b/net/sctp/sm_sideeffect.c
-@@ -496,11 +496,12 @@ static void sctp_do_8_2_transport_strike(sctp_cmd_seq_t *commands,
- 	}
- 
- 	/* If the transport error count is greater than the pf_retrans
--	 * threshold, and less than pathmaxrtx, then mark this transport
--	 * as Partially Failed, ee SCTP Quick Failover Draft, secon 5.1,
--	 * point 1
-+	 * threshold, and less than pathmaxrtx, and if the current state
-+	 * is not SCTP_UNCONFIRMED, then mark this transport as Partially
-+	 * Failed, see SCTP Quick Failover Draft, section 5.1
- 	 */
- 	if ((transport->state != SCTP_PF) &&
-+	   (transport->state != SCTP_UNCONFIRMED) &&
- 	   (asoc->pf_retrans < transport->pathmaxrxt) &&
- 	   (transport->error_count > asoc->pf_retrans)) {
- 
+diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+index 70eddf3..ed2c481 100644
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -1800,10 +1800,10 @@ call_connect_status(struct rpc_task *task)
+ 	case -ECONNREFUSED:
+ 	case -ECONNRESET:
+ 	case -ENETUNREACH:
+-		/* retry with existing socket, after a delay */
+-		rpc_delay(task, 3*HZ);
+ 		if (RPC_IS_SOFTCONN(task))
+ 			break;
++		/* retry with existing socket, after a delay */
++		rpc_delay(task, 3*HZ);
+ 	case -EAGAIN:
+ 		/* Check for timeouts before looping back to call_bind */
+ 	case -ETIMEDOUT:
 -- 
 1.9.1
 
