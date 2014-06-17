@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967290AbaFQVxS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:53:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57503 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967264AbaFQVxM (ORCPT
+	id S967321AbaFQVx1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:53:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55041 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966211AbaFQVxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:53:12 -0400
-Date: Tue, 17 Jun 2014 14:57:09 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: devel@driverdev.osuosl.org, lisa@xenapiadmin.com, ben@decadent.org.uk,
-        valentina.manea.m@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] Fixes function fw_download_code to check for Null
- return from dev_skb_alloc
-Message-ID: <20140617215709.GA20496@kroah.com>
-References: <1403039881-16050-1-git-send-email-xerofoify@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403039881-16050-1-git-send-email-xerofoify@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 17 Jun 2014 17:53:20 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 145/212] mac80211: fix suspend vs. association race
+Date: Tue, 17 Jun 2014 14:43:59 -0700
+Message-Id: <1403041506-13646-146-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lots of things wrong here, please step back, and slow down.
+3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
 
-Your subject, this really isn't "v2", is it?
+------------------
 
-On Tue, Jun 17, 2014 at 05:18:01PM -0400, Nicholas Krause wrote:
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-You aren't saying what you are doing here in the body of the patch, why
-not?
+commit c52666aef9f2dff39276eb53f15d99e2e229870f upstream.
 
-> ---
->  drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-> index 11e915e..e4c8224 100644
-> --- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-> +++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-> @@ -62,12 +62,14 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
->  
->  		skb  = dev_alloc_skb(frag_length + 4);
->  		if (!skb){
-> +			rt_status = false;
-> +			return rt_status;
-> +		}
+If the association is in progress while we suspend, the
+stack will be in a messed up state. Clean it before we
+suspend.
 
-Again, this patch will not apply to the tree, you are making it against
-your previous patch, which was rejected.  There is no way I can take
-this, right?
+This patch completes Johannes's patch:
 
-Please start over and try again from a "clean" kernel tree.
+1a1cb744de160ee70086a77afff605bbc275d291
+Author: Johannes Berg <johannes.berg@intel.com>
 
-thanks,
+    mac80211: fix suspend vs. authentication race
 
-greg k-h
+Fixes: 12e7f517029d ("mac80211: cleanup generic suspend/resume procedures")
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ net/mac80211/mlme.c | 20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
+
+diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
+index 4eef5fd..fcdd5de 100644
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -3494,18 +3494,24 @@ void ieee80211_mgd_quiesce(struct ieee80211_sub_if_data *sdata)
+ 
+ 	sdata_lock(sdata);
+ 
+-	if (ifmgd->auth_data) {
++	if (ifmgd->auth_data || ifmgd->assoc_data) {
++		const u8 *bssid = ifmgd->auth_data ?
++				ifmgd->auth_data->bss->bssid :
++				ifmgd->assoc_data->bss->bssid;
++
+ 		/*
+-		 * If we are trying to authenticate while suspending, cfg80211
+-		 * won't know and won't actually abort those attempts, thus we
+-		 * need to do that ourselves.
++		 * If we are trying to authenticate / associate while suspending,
++		 * cfg80211 won't know and won't actually abort those attempts,
++		 * thus we need to do that ourselves.
+ 		 */
+-		ieee80211_send_deauth_disassoc(sdata,
+-					       ifmgd->auth_data->bss->bssid,
++		ieee80211_send_deauth_disassoc(sdata, bssid,
+ 					       IEEE80211_STYPE_DEAUTH,
+ 					       WLAN_REASON_DEAUTH_LEAVING,
+ 					       false, frame_buf);
+-		ieee80211_destroy_auth_data(sdata, false);
++		if (ifmgd->assoc_data)
++			ieee80211_destroy_assoc_data(sdata, false);
++		if (ifmgd->auth_data)
++			ieee80211_destroy_auth_data(sdata, false);
+ 		cfg80211_tx_mlme_mgmt(sdata->dev, frame_buf,
+ 				      IEEE80211_DEAUTH_FRAME_LEN);
+ 	}
+-- 
+1.9.1
+
