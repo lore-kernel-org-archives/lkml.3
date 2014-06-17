@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966832AbaFQWkj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:40:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53969 "EHLO
+	id S967620AbaFQW2R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:28:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54245 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965460AbaFQVsS (ORCPT
+	with ESMTP id S966450AbaFQVtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:48:18 -0400
+	Tue, 17 Jun 2014 17:49:47 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 113/212] ASoC: wm8962: Update register CLASS_D_CONTROL_1 to be non-volatile
-Date: Tue, 17 Jun 2014 14:43:27 -0700
-Message-Id: <1403041506-13646-114-git-send-email-kamal@canonical.com>
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 042/212] net: cdc_ncm: fix buffer overflow
+Date: Tue, 17 Jun 2014 14:42:16 -0700
+Message-Id: <1403041506-13646-43-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,90 +31,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit 44330ab516c15dda8a1e660eeaf0003f84e43e3f upstream.
+[ Upstream commit 9becd707841207652449a8dfd90fe9c476d88546 ]
 
-The register CLASS_D_CONTROL_1 is marked as volatile because it contains
-a bit, DAC_MUTE, which is also mirrored in the ADC_DAC_CONTROL_1
-register. This causes problems for the "Speaker Switch" control, which
-will report an error if the CODEC is suspended because it relies on a
-volatile register.
+Commit 4d619f625a60 ("net: cdc_ncm: no point in filling up the NTBs
+if we send ZLPs") changed the padding logic for devices with the ZLP
+flag set.  This meant that frames of any size will be sent without
+additional padding, except for the single byte added if the size is
+a multiple of the USB packet size. But if the unpadded size is
+identical to the maximum frame size, and the maximum size is a
+multiplum of the USB packet size, then this one-byte padding will
+overflow the buffer.
 
-To resolve this issue mark CLASS_D_CONTROL_1 as non-volatile and
-manually keep the register cache in sync by updating both bits when
-changing the mute status.
+Prevent padding if already at maximum frame size, letting usbnet
+transmit a ZLP instead in this case.
 
-Reported-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Tested-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Fixes: 4d619f625a60 ("net: cdc_ncm: no point in filling up the NTBs if we send ZLPs")
+Reported by: Yu-an Shih <yshih@nvidia.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/codecs/wm8962.c | 15 ++++++++++++---
- sound/soc/codecs/wm8962.h |  4 ++++
- 2 files changed, 16 insertions(+), 3 deletions(-)
+ drivers/net/usb/cdc_ncm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/soc/codecs/wm8962.c b/sound/soc/codecs/wm8962.c
-index 0f17ed3..8540b4f 100644
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -154,6 +154,7 @@ static struct reg_default wm8962_reg[] = {
- 	{ 40, 0x0000 },   /* R40    - SPKOUTL volume */
- 	{ 41, 0x0000 },   /* R41    - SPKOUTR volume */
+diff --git a/drivers/net/usb/cdc_ncm.c b/drivers/net/usb/cdc_ncm.c
+index b74f5ff..f2c3646 100644
+--- a/drivers/net/usb/cdc_ncm.c
++++ b/drivers/net/usb/cdc_ncm.c
+@@ -769,7 +769,7 @@ cdc_ncm_fill_tx_frame(struct usbnet *dev, struct sk_buff *skb, __le32 sign)
+ 	    skb_out->len > CDC_NCM_MIN_TX_PKT)
+ 		memset(skb_put(skb_out, ctx->tx_max - skb_out->len), 0,
+ 		       ctx->tx_max - skb_out->len);
+-	else if ((skb_out->len % dev->maxpacket) == 0)
++	else if (skb_out->len < ctx->tx_max && (skb_out->len % dev->maxpacket) == 0)
+ 		*skb_put(skb_out, 1) = 0;	/* force short packet */
  
-+	{ 49, 0x0010 },   /* R49    - Class D Control 1 */
- 	{ 51, 0x0003 },   /* R51    - Class D Control 2 */
- 
- 	{ 56, 0x0506 },   /* R56    - Clocking 4 */
-@@ -795,7 +796,6 @@ static bool wm8962_volatile_register(struct device *dev, unsigned int reg)
- 	case WM8962_ALC2:
- 	case WM8962_THERMAL_SHUTDOWN_STATUS:
- 	case WM8962_ADDITIONAL_CONTROL_4:
--	case WM8962_CLASS_D_CONTROL_1:
- 	case WM8962_DC_SERVO_6:
- 	case WM8962_INTERRUPT_STATUS_1:
- 	case WM8962_INTERRUPT_STATUS_2:
-@@ -2922,13 +2922,22 @@ static int wm8962_set_fll(struct snd_soc_codec *codec, int fll_id, int source,
- static int wm8962_mute(struct snd_soc_dai *dai, int mute)
- {
- 	struct snd_soc_codec *codec = dai->codec;
--	int val;
-+	int val, ret;
- 
- 	if (mute)
--		val = WM8962_DAC_MUTE;
-+		val = WM8962_DAC_MUTE | WM8962_DAC_MUTE_ALT;
- 	else
- 		val = 0;
- 
-+	/**
-+	 * The DAC mute bit is mirrored in two registers, update both to keep
-+	 * the register cache consistent.
-+	 */
-+	ret = snd_soc_update_bits(codec, WM8962_CLASS_D_CONTROL_1,
-+				  WM8962_DAC_MUTE_ALT, val);
-+	if (ret < 0)
-+		return ret;
-+
- 	return snd_soc_update_bits(codec, WM8962_ADC_DAC_CONTROL_1,
- 				   WM8962_DAC_MUTE, val);
- }
-diff --git a/sound/soc/codecs/wm8962.h b/sound/soc/codecs/wm8962.h
-index a1a5d52..910aafd 100644
---- a/sound/soc/codecs/wm8962.h
-+++ b/sound/soc/codecs/wm8962.h
-@@ -1954,6 +1954,10 @@
- #define WM8962_SPKOUTL_ENA_MASK                 0x0040  /* SPKOUTL_ENA */
- #define WM8962_SPKOUTL_ENA_SHIFT                     6  /* SPKOUTL_ENA */
- #define WM8962_SPKOUTL_ENA_WIDTH                     1  /* SPKOUTL_ENA */
-+#define WM8962_DAC_MUTE_ALT                     0x0010  /* DAC_MUTE */
-+#define WM8962_DAC_MUTE_ALT_MASK                0x0010  /* DAC_MUTE */
-+#define WM8962_DAC_MUTE_ALT_SHIFT                    4  /* DAC_MUTE */
-+#define WM8962_DAC_MUTE_ALT_WIDTH                    1  /* DAC_MUTE */
- #define WM8962_SPKOUTL_PGA_MUTE                 0x0002  /* SPKOUTL_PGA_MUTE */
- #define WM8962_SPKOUTL_PGA_MUTE_MASK            0x0002  /* SPKOUTL_PGA_MUTE */
- #define WM8962_SPKOUTL_PGA_MUTE_SHIFT                1  /* SPKOUTL_PGA_MUTE */
+ 	/* set final frame length */
 -- 
 1.9.1
 
