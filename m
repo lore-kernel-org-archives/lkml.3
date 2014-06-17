@@ -1,80 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967315AbaFQV6Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:58:25 -0400
-Received: from smtprelay0052.hostedemail.com ([216.40.44.52]:33309 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965326AbaFQV6W (ORCPT
+	id S967433AbaFQV6m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:58:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54927 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967177AbaFQVws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:58:22 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:965:966:967:968:973:981:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2525:2553:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3354:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:4385:4390:4395:5007:6119:7652:7875:7903:8660:9025:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12740:13019:13069:13095:13148:13230:13311:13357:13845:14096:14097,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: sail97_2bc5c3782f42c
-X-Filterd-Recvd-Size: 2734
-Message-ID: <1403042299.2649.3.camel@joe-AO725>
-Subject: Re: [PATCH 1/1] scripts/coccinelle/free: add conditional kfree test
-From: Joe Perches <joe@perches.com>
-To: Julia Lawall <julia.lawall@lip6.fr>, Jesper Juhl <jj@chaosbits.net>
-Cc: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org,
-        Gilles Muller <Gilles.Muller@lip6.fr>
-Date: Tue, 17 Jun 2014 14:58:19 -0700
-In-Reply-To: <alpine.DEB.2.02.1406172331001.2055@localhost6.localdomain6>
-References: <1403034199-9824-1-git-send-email-fabf@skynet.be>
-	 <1403035539.2722.3.camel@joe-AO725>
-	 <alpine.DEB.2.02.1406172331001.2055@localhost6.localdomain6>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Jun 2014 17:52:48 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Stephane Grosjean <s.grosjean@peak-system.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 156/212] can: peak_pci: prevent use after free at netdev removal
+Date: Tue, 17 Jun 2014 14:44:10 -0700
+Message-Id: <1403041506-13646-157-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(adding Jesper Juhl)
+3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
 
-On Tue, 2014-06-17 at 23:33 +0200, Julia Lawall wrote:
-> On Tue, 17 Jun 2014, Joe Perches wrote:
-> > On Tue, 2014-06-17 at 21:43 +0200, Fabian Frederick wrote:
-> > > This patch adds a trivial script warning on
-> > > 
-> > > if(foo)
-> > > 	kfree(foo)
-> > > 
-> > > (based on checkpatch)
-> > []
-> > > diff --git a/scripts/coccinelle/free/cond_kfree.cocci b/scripts/coccinelle/free/cond_kfree.cocci
-> > []
-> > > +* if (E)
-> > > +*	kfree@p(E);
-> > 
-> > You should probably add all of the unnecessary
-> > conditional tests that checkpatch uses:
-> > 
-> > kfree
-> > usb_free_urb
-> > debugfs_remove
-> > debugfs_remove_recursive
-> 
-> Personally, I would prefer that the message encourage the user to consider 
-> whether it is necessary to call these functions with NULL as an argument 
-> in any case.
+------------------
 
-Jesper quite awhile ago wrote:
+From: Stephane Grosjean <s.grosjean@peak-system.com>
 
-https://lkml.org/lkml/2005/10/13/81
+commit 0b5a958cf4df3a5cd578b861471e62138f55c85e upstream.
 
-- Since kfree always checks for a NULL argument there's no reason to have an
-additional check prior to calling kfree. It's redundant.
-- In many cases gcc produce significantly smaller code without the redundant
-check before the call.
-- It's been shown in the past (in discussions on LKML) that it's generally a
-win performance wise to avoid the extra NULL check even though it might save
-a function call. Only when the NULL check avoids the function call in the vast
-majority of cases and the code is in a hot path does it make sense to have it.
-- This patch removes quite a few more source lines than it adds, cutting down
-on the overall number of source lines is generally a good thing.
-- This patch reduces the indentation level, which is nice when the kfree call
-is inside some deeply nested construct.
+As remarked by Christopher R. Baker in his post at
 
+http://marc.info/?l=linux-can&m=139707295706465&w=2
 
+there's a possibility for an use after free condition at device removal.
+
+This simplified patch introduces an additional variable to prevent the issue.
+Thanks for catching this.
+
+Reported-by: Christopher R. Baker <cbaker@rec.ri.cmu.edu>
+Signed-off-by: Stephane Grosjean <s.grosjean@peak-system.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/net/can/sja1000/peak_pci.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/can/sja1000/peak_pci.c b/drivers/net/can/sja1000/peak_pci.c
+index 065ca49..546a848 100644
+--- a/drivers/net/can/sja1000/peak_pci.c
++++ b/drivers/net/can/sja1000/peak_pci.c
+@@ -551,7 +551,7 @@ static int peak_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ {
+ 	struct sja1000_priv *priv;
+ 	struct peak_pci_chan *chan;
+-	struct net_device *dev;
++	struct net_device *dev, *prev_dev;
+ 	void __iomem *cfg_base, *reg_base;
+ 	u16 sub_sys_id, icr;
+ 	int i, err, channels;
+@@ -687,11 +687,13 @@ failure_remove_channels:
+ 	writew(0x0, cfg_base + PITA_ICR + 2);
+ 
+ 	chan = NULL;
+-	for (dev = pci_get_drvdata(pdev); dev; dev = chan->prev_dev) {
+-		unregister_sja1000dev(dev);
+-		free_sja1000dev(dev);
++	for (dev = pci_get_drvdata(pdev); dev; dev = prev_dev) {
+ 		priv = netdev_priv(dev);
+ 		chan = priv->priv;
++		prev_dev = chan->prev_dev;
++
++		unregister_sja1000dev(dev);
++		free_sja1000dev(dev);
+ 	}
+ 
+ 	/* free any PCIeC resources too */
+@@ -725,10 +727,12 @@ static void peak_pci_remove(struct pci_dev *pdev)
+ 
+ 	/* Loop over all registered devices */
+ 	while (1) {
++		struct net_device *prev_dev = chan->prev_dev;
++
+ 		dev_info(&pdev->dev, "removing device %s\n", dev->name);
+ 		unregister_sja1000dev(dev);
+ 		free_sja1000dev(dev);
+-		dev = chan->prev_dev;
++		dev = prev_dev;
+ 
+ 		if (!dev) {
+ 			/* do that only for first channel */
+-- 
+1.9.1
 
