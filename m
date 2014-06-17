@@ -1,25 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967630AbaFQW2i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:28:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54230 "EHLO
+	id S967691AbaFQWcp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:32:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54155 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966436AbaFQVtl (ORCPT
+	with ESMTP id S966306AbaFQVtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:49:41 -0400
+	Tue, 17 Jun 2014 17:49:20 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Lezcano <daniel.lezcano@free.fr>, Patrick McHardy <kaber@trash.net>,
-        Andrian Nord <nightnord@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>, Vlad Yasevich <vyasevic@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Darren Hart <darren@dvhart.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Clark Williams <williams@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 038/212] mactap: Fix checksum errors for non-gso packets in bridge mode
-Date: Tue, 17 Jun 2014 14:42:12 -0700
-Message-Id: <1403041506-13646-39-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 169/212] futex: Prevent attaching to kernel threads
+Date: Tue, 17 Jun 2014 14:44:23 -0700
+Message-Id: <1403041506-13646-170-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -32,65 +38,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-[ Upstream commit cbdb04279ccaefcc702c8757757eea8ed76e50cf ]
+commit f0d71b3dcb8332f7971b5f2363632573e6d9486a upstream.
 
-The following is a problematic configuration:
+We happily allow userspace to declare a random kernel thread to be the
+owner of a user space PI futex.
 
- VM1: virtio-net device connected to macvtap0@eth0
- VM2: e1000 device connect to macvtap1@eth0
+Found while analysing the fallout of Dave Jones syscall fuzzer.
 
-The problem is is that virtio-net supports checksum offloading
-and thus sends the packets to the host with CHECKSUM_PARTIAL set.
-On the other hand, e1000 does not support any acceleration.
+We also should validate the thread group for private futexes and find
+some fast way to validate whether the "alleged" owner has RW access on
+the file which backs the SHM, but that's a separate issue.
 
-For small TCP packets (and this includes the 3-way handshake),
-e1000 ends up receiving packets that only have a partial checksum
-set.  This causes TCP to fail checksum validation and to drop
-packets.  As a result tcp connections can not be established.
-
-Commit 3e4f8b787370978733ca6cae452720a4f0c296b8
-	macvtap: Perform GSO on forwarding path.
-fixes this issue for large packets wthat will end up undergoing GSO.
-This commit adds a check for the non-GSO case and attempts to
-compute the checksum for partially checksummed packets in the
-non-GSO case.
-
-CC: Daniel Lezcano <daniel.lezcano@free.fr>
-CC: Patrick McHardy <kaber@trash.net>
-CC: Andrian Nord <nightnord@gmail.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Michael S. Tsirkin <mst@redhat.com>
-CC: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Darren Hart <darren@dvhart.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Clark Williams <williams@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Roland McGrath <roland@hack.frob.com>
+Cc: Carlos ODonell <carlos@redhat.com>
+Cc: Jakub Jelinek <jakub@redhat.com>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Link: http://lkml.kernel.org/r/20140512201701.194824402@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/macvtap.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ kernel/futex.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index 2a89da0..73ffad8 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -315,6 +315,15 @@ static int macvtap_forward(struct net_device *dev, struct sk_buff *skb)
- 			segs = nskb;
- 		}
- 	} else {
-+		/* If we receive a partial checksum and the tap side
-+		 * doesn't support checksum offload, compute the checksum.
-+		 * Note: it doesn't matter which checksum feature to
-+		 *        check, we either support them all or none.
-+		 */
-+		if (skb->ip_summed == CHECKSUM_PARTIAL &&
-+		    !(features & NETIF_F_ALL_CSUM) &&
-+		    skb_checksum_help(skb))
-+			goto drop;
- 		skb_queue_tail(&q->sk.sk_receive_queue, skb);
- 	}
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 5055418..7876c15 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -668,6 +668,11 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+ 	if (!p)
+ 		return -ESRCH;
  
++	if (!p->mm) {
++		put_task_struct(p);
++		return -EPERM;
++	}
++
+ 	/*
+ 	 * We need to look at the task state flags to figure out,
+ 	 * whether the task is exiting. To protect against the do_exit
 -- 
 1.9.1
 
