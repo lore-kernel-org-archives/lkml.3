@@ -1,55 +1,561 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932775AbaFQNpL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 09:45:11 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:39885 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932066AbaFQNpJ (ORCPT
+	id S932908AbaFQNqp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 09:46:45 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:62349 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932066AbaFQNqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 09:45:09 -0400
-Date: Tue, 17 Jun 2014 21:45:01 +0800
-From: Real Name <enjoymindful@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: user-mode-linux-devel@lists.sourceforge.net,
-        user-mode-linux-user@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, jdike@addtoit.com
-Subject: Re: [PATCH] remove csum_partial_copy_generic_i386 to clean up
- exception table
-Message-ID: <20140617134501.GA3604@name>
-References: <538F275B.7000508@nod.at>
- <1401941724-6703-1-git-send-email-enjoymindful@gmail.com>
- <1401941724-6703-2-git-send-email-enjoymindful@gmail.com>
- <5390E5FD.5030400@nod.at>
- <20140609054556.GA2465@name>
+	Tue, 17 Jun 2014 09:46:42 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Tue, 17 Jun 2014 15:46:02 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Janne Kanniainen <janne.kanniainen@gmail.com>
+Cc: jkosina@suse.cz, johan@kernel.org, cooloney@gmail.com,
+        linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH v6] leds: USB: HID: Add support for MSI GT683R led panels
+Message-ID: <20140617134602.GB28179@localhost>
+References: <1402939415-32056-1-git-send-email-janne.kanniainen@gmail.com>
+ <1402956115-1280-1-git-send-email-janne.kanniainen@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140609054556.GA2465@name>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1402956115-1280-1-git-send-email-janne.kanniainen@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 01:45:56PM +0800, Real Name wrote:
-> On Thu, Jun 05, 2014 at 11:49:49PM +0200, Richard Weinberger wrote:
-> > Am 05.06.2014 06:15, schrieb Honggang Li:
-> > > arch/x86/um/checksum_32.S had been copy & paste from x86. When build
-> > > x86 uml, csum_partial_copy_generic_i386 mess up the exception table.
-> > > In fact, exception table dose not work in uml kernel.
-> > 
-> > Are you sure that exception tables do not work on UML?
-> > I said, I'm not sure. Can you please find out?
+On Tue, Jun 17, 2014 at 01:01:55AM +0300, Janne Kanniainen wrote:
+> This driver adds support for USB controlled led panels that exists in
+> MSI GT683R laptop
 > 
-> I think we can't test the exception table with linux-next uml kernel, because
-> the exception table is broken.
->
+> Signed-off-by: Janne Kanniainen <janne.kanniainen@gmail.com>
+> ---
+> Changes in v2:
+> 	- sorted headers to alphabetic order
+> 	- using devm_kzalloc
+> 	- using BIT(n)
+> 	- using usb_control_msg instead of usb_submit_urb
+> 	- removing unneeded code
+> 
+> Changes in v3:
+> 	- implemented as HID device
+> 	- some cleanups and bug fixes
+> 
+> Changes in v4:
+> 	- more cleanups
+> 	- support for selecting leds
+> 	- suppport for selecting status
+> 
+> Changes in v5:
+> 	- mode attribute documented under Documentation/ABI
+> 	- made array for led_classdev
+> 	- led devices uses now recommended naming scheme
+> 
+> Changes in v6:
+> 	- flush_work added
+> 	- using hid device name instead of hard coded gt683r
+> 	- allocating name buffers with devm_kzalloc
+> 
+> There was a bug with "for", so I fixed it.
 
-This patch is the root source of the broken exception table of UML
-kernel. 
+Then it really was a v7 and should have been marked as such, right?
+ 
+>  .../ABI/testing/sysfs-class-hid-driver-gt683r      |  14 +
+>  drivers/hid/Kconfig                                |  16 ++
+>  drivers/hid/Makefile                               |   1 +
+>  drivers/hid/hid-core.c                             |   1 +
+>  drivers/hid/hid-gt683r.c                           | 318 +++++++++++++++++++++
+>  drivers/hid/hid-ids.h                              |   2 +-
+>  drivers/hid/usbhid/hid-quirks.c                    |   2 +-
+>  7 files changed, 352 insertions(+), 2 deletions(-)
+>  create mode 100644 Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
+>  create mode 100644 drivers/hid/hid-gt683r.c
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r b/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
+> new file mode 100644
+> index 0000000..6d0bd80
+> --- /dev/null
+> +++ b/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
+> @@ -0,0 +1,14 @@
+> +What:		/sys/class/hidraw/<hidraw>/device/mode
 
-linux]# git bisect visualize 
-commit 706276543b699d80f546e45f8b12574e7b18d952
-Author: H. Peter Anvin <hpa@zytor.com>
-Date:   Fri Apr 20 17:12:48 2012 -0700
+Perhaps you should name this "leds_mode" or "led_panel_mode", or similar
+(only change the attribute name, code is fine otherwise). This is an
+attribute of the parent HID device, but it's not really apparent what
+just "mode" would mean for such a device.
 
-    x86, extable: Switch to relative exception table entries
+> +Date:		Jun 2014
+> +KernelVersion:	3.17
+> +Contact:	Janne Kanniainen <janne.kanniainen@gmail.com>
+> +Description:
+> +		Set the mode of LEDs
+> +
+> +		0 - normal
+> +		1 - audio
+> +		2 - breathing
+> +
+> +		Normal: LEDs are on
+
+Change this to "LEDs are fully on when enabled", or similar?
+
+> +		Audio:  LEDs brightness depends on sound level
+> +		Breathing: LEDs brightness varies at human breathing rate
+> \ No newline at end of file
+> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+> index 7af9d0b..b88cabd 100644
+> --- a/drivers/hid/Kconfig
+> +++ b/drivers/hid/Kconfig
+> @@ -261,6 +261,22 @@ config HOLTEK_FF
+>  	  Say Y here if you have a Holtek On Line Grip based game controller
+>  	  and want to have force feedback support for it.
+>  
+> +config HID_GT683R
+> +	tristate "MSI GT68xR LED support"
+> +	depends on LEDS_CLASS && USB_HID
+> +	---help---
+> +	Say Y here if you want to enable support for the MSI GT68xR LEDS
+> +
+> +	This driver support following modes:
+> +	  - Normal: LEDs are on
+> +	  - Audio:  LEDs brightness depends on sound level
+> +	  - Breathing: LEDs brightness varies at human breathing rate
+
+This might need an update as well.
+
+> +
+> +	You can also select which leds you want to enable.
+
+You could drop this line, and just say "enable support for the three
+MSI" LEDs above?
+
+> +
+> +	Currently the following devices are know to be supported:
+> +	  - MSI GT683R
+> +
+>  config HID_HUION
+>  	tristate "Huion tablets"
+>  	depends on USB_HID
+> diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
+> index fc712dd..7129311 100644
+> --- a/drivers/hid/Makefile
+> +++ b/drivers/hid/Makefile
+> @@ -48,6 +48,7 @@ obj-$(CONFIG_HID_EMS_FF)	+= hid-emsff.o
+>  obj-$(CONFIG_HID_ELECOM)	+= hid-elecom.o
+>  obj-$(CONFIG_HID_ELO)		+= hid-elo.o
+>  obj-$(CONFIG_HID_EZKEY)		+= hid-ezkey.o
+> +obj-$(CONFIG_HID_GT683R)	+= hid-gt683r.o
+>  obj-$(CONFIG_HID_GYRATION)	+= hid-gyration.o
+>  obj-$(CONFIG_HID_HOLTEK)	+= hid-holtek-kbd.o
+>  obj-$(CONFIG_HID_HOLTEK)	+= hid-holtek-mouse.o
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index da52279..ec88fdb 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -1827,6 +1827,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_WIRELESS_OPTICAL_DESKTOP_3_0) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_OFFICE_KB) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_MONTEREY, USB_DEVICE_ID_GENIUS_KB29E) },
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GT683R_LED_PANEL) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_1) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_2) },
+> diff --git a/drivers/hid/hid-gt683r.c b/drivers/hid/hid-gt683r.c
+> new file mode 100644
+> index 0000000..1b16250
+> --- /dev/null
+> +++ b/drivers/hid/hid-gt683r.c
+> @@ -0,0 +1,318 @@
+> +/*
+> + * MSI GT683R led driver
+> + *
+> + * Copyright (c) 2014 Janne Kanniainen <janne.kanniainen@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License as
+> + * published by the Free Software Foundation; either version 2 of
+> + * the License, or (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + */
+> +
+> +#include <linux/device.h>
+> +#include <linux/hid.h>
+> +#include <linux/kernel.h>
+> +#include <linux/leds.h>
+> +#include <linux/module.h>
+> +
+> +#include "hid-ids.h"
+> +
+> +#define GT683R_BUFFER_SIZE			8
+> +
+> +/*
+> + * GT683R_LED_OFF: all LEDs are off
+> + * GT683R_LED_AUDIO: LEDs brightness depends
+> + * on sound level
+> + * GT683R_LED_BREATHING: LEDs brightness varies
+> + * at human breathing rate
+
+No need to break these two lines (they would still be below 80 cols
+wide).
+
+> + * GT683R_LED_NORMAL: LEDs are on
+> + */
+> +enum gt683r_led_mode {
+> +	GT683R_LED_OFF = 0,
+> +	GT683R_LED_AUDIO = 2,
+> +	GT683R_LED_BREATHING = 3,
+> +	GT683R_LED_NORMAL = 5
+> +};
+> +
+> +enum gt683r_panels {
+> +	GT683R_LED_BACK,
+> +	GT683R_LED_SIDE,
+> +	GT683R_LED_FRONT,
+
+Perhaps initialise these three explicitly as the order really isn't
+arbitrary?
+
+> +	GT683R_LED_COUNT,
+> +};
+> +
+> +static const char * const gt683r_panel_names[] = {
+> +	"back",
+> +	"side",
+> +	"front",
+> +};
+> +
+> +struct gt683r_led {
+> +	struct hid_device *hdev;
+> +	struct led_classdev led_devs[GT683R_LED_COUNT];
+> +	struct mutex lock;
+> +	struct work_struct work;
+> +	enum led_brightness brightnesses[GT683R_LED_COUNT];
+> +	enum gt683r_led_mode mode;
+> +};
+> +
+> +static const struct hid_device_id gt683r_led_id[] = {
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GT683R_LED_PANEL) },
+> +	{ }
+> +};
+> +
+> +static void gt683r_brightness_set(struct led_classdev *led_cdev,
+> +				enum led_brightness brightness)
+> +{
+> +	int i;
+> +	struct device *dev = led_cdev->dev->parent;
+> +	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
+> +	struct gt683r_led *led = hid_get_drvdata(hdev);
+> +
+> +	for (i = 0; i < GT683R_LED_COUNT; i++) {
+> +		if (&led->led_devs[i] == led_cdev)
+> +			break;
+> +	}
+> +
+> +	if (i < GT683R_LED_COUNT) {
+> +		led->brightnesses[i] = brightness;
+> +		schedule_work(&led->work);
+> +	}
+> +}
+> +
+> +static ssize_t mode_show(struct device *dev,
+> +				struct device_attribute *attr,
+> +				char *buf)
+> +{
+> +	u8 sysfs_mode;
+> +	struct hid_device *hdev =
+> +		container_of(dev, struct hid_device, dev);
+
+No need to break this (still < 80 cols).
+
+> +	struct gt683r_led *led = hid_get_drvdata(hdev);
+> +
+> +	if (led->mode == GT683R_LED_NORMAL)
+> +		sysfs_mode = 0;
+> +	else if (led->mode == GT683R_LED_AUDIO)
+> +		sysfs_mode = 1;
+> +	else
+> +		sysfs_mode = 2;
+> +
+> +	return scnprintf(buf, PAGE_SIZE, "%u\n", sysfs_mode);
+> +}
+> +
+> +static ssize_t mode_store(struct device *dev,
+> +				struct device_attribute *attr,
+> +				const char *buf, size_t count)
+> +{
+> +	u8 sysfs_mode;
+> +	struct hid_device *hdev =
+> +		container_of(dev, struct hid_device, dev);
+
+No need to break this (still < 80 cols).
+
+> +	struct gt683r_led *led = hid_get_drvdata(hdev);
+> +
+> +	mutex_lock(&led->lock);
+> +
+> +	if (kstrtou8(buf, 10, &sysfs_mode) || sysfs_mode > 2) {
+> +		count = -EINVAL;
+> +		goto fail;
+> +	}
+> +
+> +	if (sysfs_mode == 0)
+> +		led->mode = GT683R_LED_NORMAL;
+> +	else if (sysfs_mode == 1)
+> +		led->mode = GT683R_LED_AUDIO;
+> +	else
+> +		led->mode = GT683R_LED_BREATHING;
+> +
+> +fail:
+> +	mutex_unlock(&led->lock);
+> +
+> +	if (count != -EINVAL)
+> +		schedule_work(&led->work);
+> +
+> +	return count;
+> +}
+
+This could be simplified somewhat as the lock only needs to protect the
+assignment to led->mode.
+
+(Glad to see you realised I meant kstrouX when I wrote snprintf. ;))
+
+> +
+> +static int gt683r_led_snd_msg(struct gt683r_led *led, u8 *msg)
+> +{
+> +	int ret;
+> +
+> +	ret = hid_hw_raw_request(led->hdev, msg[0], msg, GT683R_BUFFER_SIZE,
+> +				HID_FEATURE_REPORT, HID_REQ_SET_REPORT);
+> +	if (ret != GT683R_BUFFER_SIZE) {
+> +		hid_err(led->hdev,
+> +			"failed to send set report request: %i\n", ret);
+> +		if (ret < 0)
+> +			return ret;
+> +		return -EIO;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int gt683r_leds_set(struct gt683r_led *led, u8 leds)
+> +{
+> +	int ret;
+> +	u8 *buffer;
+> +
+> +	buffer = kzalloc(GT683R_BUFFER_SIZE, GFP_KERNEL);
+> +	if (!buffer)
+> +		return -ENOMEM;
+> +
+> +	buffer[0] = 0x01;
+> +	buffer[1] = 0x02;
+> +	buffer[2] = 0x30;
+> +	buffer[3] = leds;
+> +	ret = gt683r_led_snd_msg(led, buffer);
+> +
+> +	kfree(buffer);
+> +	return ret;
+> +}
+> +
+> +static int gt683r_mode_set(struct gt683r_led *led, u8 mode)
+> +{
+> +	int ret;
+> +	u8 *buffer;
+> +
+> +	buffer = kzalloc(GT683R_BUFFER_SIZE, GFP_KERNEL);
+> +	if (!buffer)
+> +		return -ENOMEM;
+> +
+> +	buffer[0] = 0x01;
+> +	buffer[1] = 0x02;
+> +	buffer[2] = 0x20;
+> +	buffer[3] = mode;
+> +	buffer[4] = 0x01;
+> +	ret = gt683r_led_snd_msg(led, buffer);
+> +
+> +	kfree(buffer);
+> +	return ret;
+> +}
+> +
+> +static void gt683r_led_work(struct work_struct *work)
+> +{
+> +	u8 leds = 0, mode;
+
+Try to stick to one definition per line (throughout), especially if
+you're initialising as well.
+
+> +	struct gt683r_led *led =
+> +		container_of(work, struct gt683r_led, work);
+> +
+> +	mutex_lock(&led->lock);
+> +
+> +	if (led->brightnesses[GT683R_LED_BACK])
+> +		leds |= BIT(GT683R_LED_BACK);
+> +
+> +	if (led->brightnesses[GT683R_LED_SIDE])
+> +		leds |= BIT(GT683R_LED_SIDE);
+> +
+> +	if (led->brightnesses[GT683R_LED_FRONT])
+> +		leds |= BIT(GT683R_LED_FRONT);
+
+This could of course be implemented as a loop as well, if you want...
+
+> +
+> +	if (gt683r_leds_set(led, leds))
+> +		goto fail;
+> +
+> +	if (leds)
+> +		mode = led->mode;
+> +	else
+> +		mode = GT683R_LED_OFF;
+> +
+> +	gt683r_mode_set(led, mode);
+> +fail:
+> +	mutex_unlock(&led->lock);
+> +}
+> +
+> +static DEVICE_ATTR_RW(mode);
+> +
+> +static int gt683r_led_probe(struct hid_device *hdev,
+> +			const struct hid_device_id *id)
+> +{
+> +	int ret, i, name_sz;
+> +	char *name;
+> +	struct gt683r_led *led;
+> +
+> +	led = devm_kzalloc(&hdev->dev, sizeof(struct gt683r_led), GFP_KERNEL);
+> +	if (!led)
+> +		return -ENOMEM;
+> +
+> +	led->mode = GT683R_LED_NORMAL;
+> +	led->hdev = hdev;
+> +	hid_set_drvdata(hdev, led);
+> +
+> +	ret = hid_parse(hdev);
+> +	if (ret) {
+> +		hid_err(hdev, "hid parsing failed\n");
+> +		goto fail;
+
+Just return ret here.
+
+> +	}
+> +
+> +	ret = hid_hw_start(hdev, HID_CONNECT_HIDRAW);
+> +	if (ret) {
+> +		hid_err(hdev, "hw start failed\n");
+> +		goto fail;
+> +	}
+> +
+> +	for (i = 0; i < GT683R_LED_COUNT; i++) {
+> +		name_sz = strlen(dev_name(&hdev->dev)) +
+> +			strlen(gt683r_panel_names[i]) + 3;
+> +
+> +		name = devm_kzalloc(&hdev->dev, sizeof(char) * name_sz,
+> +				GFP_KERNEL);
+
+Must check for allocation failure still.
+
+> +
+> +		snprintf(name, name_sz, "%s::%s",
+> +			dev_name(&hdev->dev), gt683r_panel_names[i]);
+> +		led->led_devs[i].name = name;
+> +		led->led_devs[i].max_brightness = 1;
+> +		led->led_devs[i].brightness_set = gt683r_brightness_set;
+> +		ret = led_classdev_register(&hdev->dev, &led->led_devs[i]);
+> +		if (ret) {
+> +			hid_err(hdev, "could not register led device\n");
+> +			goto fail2;
+> +		}
+> +	}
+> +
+> +	ret = device_create_file(&led->hdev->dev,
+> +				&dev_attr_mode);
+
+No need to break line.
+
+> +	if (ret) {
+> +		hid_err(hdev, "could not make mode attribute file\n");
+> +		goto fail2;
+> +	}
+> +
+> +	mutex_init(&led->lock);
+> +	INIT_WORK(&led->work, gt683r_led_work);
+> +
+> +	return 0;
+> +
+> +fail2:
+> +	for (; i >= 0; i--)
+
+You must initialise i to (i - 1) as well (either led_class_devregister
+failed or i == GT683R_LED_COUNT here).
+
+> +		led_classdev_unregister(&led->led_devs[i]);
+> +	hid_hw_stop(hdev);
+> +fail:
+> +	return ret;
+> +}
+> +
+> +static void gt683r_led_remove(struct hid_device *hdev)
+> +{
+> +	int i;
+> +	struct gt683r_led *led = hid_get_drvdata(hdev);
+> +
+> +	for (i = 0; i < GT683R_LED_COUNT; i++)
+> +		led_classdev_unregister(&led->led_devs[i]);
+> +	device_remove_file(&hdev->dev,
+> +			&dev_attr_mode);
+
+No need to break line.
+
+Perhaps do the removal before unregistering to reverse probe.
+
+> +	flush_work(&led->work);
+> +	hid_hw_stop(hdev);
+> +}
+> +
+> +static struct hid_driver gt683r_led_driver = {
+> +	.probe = gt683r_led_probe,
+> +	.remove = gt683r_led_remove,
+> +	.name = "gt683r_led",
+> +	.id_table = gt683r_led_id,
+> +};
+> +
+> +module_hid_driver(gt683r_led_driver);
+> +
+> +MODULE_AUTHOR("Janne Kanniainen");
+> +MODULE_DESCRIPTION("MSI GT683R led driver");
+> +MODULE_LICENSE("GPL");
+> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+> index 34bb220..3692d37 100644
+> --- a/drivers/hid/hid-ids.h
+> +++ b/drivers/hid/hid-ids.h
+> @@ -641,7 +641,7 @@
+>  #define USB_DEVICE_ID_GENIUS_KB29E	0x3004
+>  
+>  #define USB_VENDOR_ID_MSI		0x1770
+> -#define USB_DEVICE_ID_MSI_GX680R_LED_PANEL	0xff00
+> +#define USB_DEVICE_ID_MSI_GT683R_LED_PANEL 0xff00
+>  
+>  #define USB_VENDOR_ID_NATIONAL_SEMICONDUCTOR 0x0400
+>  #define USB_DEVICE_ID_N_S_HARMONY	0xc359
+> diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
+> index 8e4ddb3..c640e1d 100644
+> --- a/drivers/hid/usbhid/hid-quirks.c
+> +++ b/drivers/hid/usbhid/hid-quirks.c
+> @@ -73,7 +73,7 @@ static const struct hid_blacklist {
+>  	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
+>  	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
+>  	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
+> -	{ USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GX680R_LED_PANEL, HID_QUIRK_NO_INIT_REPORTS },
+> +	{ USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GT683R_LED_PANEL, HID_QUIRK_NO_INIT_REPORTS },
+>  	{ USB_VENDOR_ID_NEXIO, USB_DEVICE_ID_NEXIO_MULTITOUCH_PTI0750, HID_QUIRK_NO_INIT_REPORTS },
+>  	{ USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_MOUSE, HID_QUIRK_NO_INIT_REPORTS },
+>  	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
+
+Johan
