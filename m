@@ -1,179 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932766AbaFQMNZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 08:13:25 -0400
-Received: from relay.parallels.com ([195.214.232.42]:49579 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932444AbaFQMNY (ORCPT
+	id S932803AbaFQMNp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 08:13:45 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:55587 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932209AbaFQMNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 08:13:24 -0400
-Message-ID: <53A030CE.6070101@parallels.com>
-Date: Tue, 17 Jun 2014 16:13:02 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Tue, 17 Jun 2014 08:13:43 -0400
+Date: Tue, 17 Jun 2014 14:13:29 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Drew Richardson <drew.richardson@arm.com>
+Subject: Re: [PATCH] perf: Handle compat ioctl
+Message-ID: <20140617121328.GO3213@twins.programming.kicks-ass.net>
+References: <1402671812-9078-1-git-send-email-pawel.moll@arm.com>
 MIME-Version: 1.0
-To: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
-CC: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        David Howells <dhowells@redhat.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Vasiliy Kulikov <segooon@gmail.com>,
-        Gotou Yasunori <y-goto@jp.fujitsu.com>
-Subject: Re: [PATCH] ns: introduce getnspid syscall
-References: <1403000496-10094-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-In-Reply-To: <1403000496-10094-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [89.169.95.100]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="e4annfiqlsPm5rKd"
+Content-Disposition: inline
+In-Reply-To: <1402671812-9078-1-git-send-email-pawel.moll@arm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2014 02:21 PM, Chen Hanxiao wrote:
-> We need a direct method of getting the pid inside containers.
-> If some issues occurred inside container guest, host user
-> could not know which process is in trouble just by guest pid:
-> the users of container guest only knew the pid inside containers.
-> This will bring obstacle for trouble shooting.
-> 
-> int getnspid(pid_t pid, int fd1, int fd2, int pidtype);
-> 
-> pid: the pid number need to be translated.
-> 
-> fd: a file descriptor referring to one of
->     the namespace entries in a /proc/[pid]/ns/pid.
->     fd1 for destination ns(ns1), where the pid came from.
->     fd2 for reference ns(ns2), while fd2 = -2 means for current ns.
-> 
-> pidtype: 0 PIDTYPE_PID; 1 PIDTYPE_PGID; 2 PIDTYPE_SID.
-> 
-> return value:
->     >0: translated pid in ns1(fd1) seen from ns2(fd2).
->     <0: on failure.
-> 
-> Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+
+--e4annfiqlsPm5rKd
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, Jun 13, 2014 at 04:03:32PM +0100, Pawel Moll wrote:
+> When running a 32-bit userspace on a 64-bit kernel (eg. i386
+> application on x86_64 kernel or 32-bit arm userspace on arm64
+> kernel) some of the perf ioctls must be treated with special
+> care, as they have a pointer size encoded in the command.
+>=20
+> For example, PERF_EVENT_IOC_ID in 32-bit world will be encoded
+> as 0x80042407, but 64-bit kernel will expect 0x80082407. In
+> result the ioctl will fail returning -ENOTTY.
+>=20
+> This patch solves the problem by adding code fixing up the
+> size as compat_ioctl file operation.
+>=20
+> Reported-by: Drew Richardson <drew.richardson@arm.com>
+> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
 > ---
->  arch/x86/syscalls/syscall_32.tbl |  1 +
->  arch/x86/syscalls/syscall_64.tbl |  1 +
->  include/linux/syscalls.h         |  1 +
->  kernel/nsproxy.c                 | 60 ++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 63 insertions(+)
-> 
-> diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
-> index d6b8679..9de0b32 100644
-> --- a/arch/x86/syscalls/syscall_32.tbl
-> +++ b/arch/x86/syscalls/syscall_32.tbl
-> @@ -360,3 +360,4 @@
->  351	i386	sched_setattr		sys_sched_setattr
->  352	i386	sched_getattr		sys_sched_getattr
->  353	i386	renameat2		sys_renameat2
-> +354	i386	getnspid		sys_getnspid
-> diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-> index ec255a1..1630a8a 100644
-> --- a/arch/x86/syscalls/syscall_64.tbl
-> +++ b/arch/x86/syscalls/syscall_64.tbl
-> @@ -323,6 +323,7 @@
->  314	common	sched_setattr		sys_sched_setattr
->  315	common	sched_getattr		sys_sched_getattr
->  316	common	renameat2		sys_renameat2
-> +317	common	getnspid		sys_getnspid
->  
->  #
->  # x32-specific system call numbers start at 512 to avoid cache impact
-> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-> index b0881a0..271c7b1 100644
-> --- a/include/linux/syscalls.h
-> +++ b/include/linux/syscalls.h
-> @@ -866,4 +866,5 @@ asmlinkage long sys_process_vm_writev(pid_t pid,
->  asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
->  			 unsigned long idx1, unsigned long idx2);
->  asmlinkage long sys_finit_module(int fd, const char __user *uargs, int flags);
-> +asmlinkage long sys_getpidns(pid_t pid, int fd1, int fd2, int pidtype);
->  #endif
-> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-> index 8e78110..3eda90a 100644
-> --- a/kernel/nsproxy.c
-> +++ b/kernel/nsproxy.c
-> @@ -261,6 +261,66 @@ out:
->  	return err;
->  }
->  
-> +SYSCALL_DEFINE4(getnspid, pid_t, pid, int, fd1, int, fd2, int, pidtype)
-> +{
-> +	struct file *file1 = NULL, *file2 = NULL;
-> +	struct task_struct *task;
-> +	struct pid_namespace *ns1, *ns2;
-> +	struct proc_ns *ei;
-> +	int ret = -1;
-> +
-> +	if (pidtype >= PIDTYPE_MAX)
-> +		return -EINVAL;
-> +
-> +	file1 = proc_ns_fget(fd1);
-> +	if (IS_ERR(file1))
-> +		return PTR_ERR(file1);
-> +	ei = get_proc_ns(file_inode(file1));
-> +	ns1 = (struct pid_namespace *)ei->ns;
-> +
-> +	/* fd == -2 for current pid ns */
-> +	if (fd2 == -2) {
-> +		ns2 = task_active_pid_ns(current);
-> +	} else {
-> +		file2 = proc_ns_fget(fd2);
-> +		if (IS_ERR(file2)) {
-> +			fput(file1);
-> +			return PTR_ERR(file2);
-> +		}
-> +		ei = get_proc_ns(file_inode(file2));
-> +		ns2 = (struct pid_namespace *)ei->ns;
-> +	}
-> +
-> +	rcu_read_lock();
-> +	task = find_task_by_pid_ns(pid, ns1);
-> +	rcu_read_unlock();
-> +	if (!task) {
-> +		ret = -ESRCH;
-> +		goto out;
-> +	}
-> +
-> +	switch (pidtype) {
 
-There's no need in switch, the __task_pid_nr_ns() accepts
-the type argument.
+This gets me (on my favourite x86_64 .config):
 
-> +	case PIDTYPE_PID:
-> +		ret = task_pid_nr_ns(task, ns2);
-
-But this is not correct. If task doesn't live in ns2, but ns2
-just has the ns->level small enough, then the wrong pid value
-would be reported.
-
-> +		break;
-> +	case PIDTYPE_PGID:
-> +		ret = task_pgrp_nr_ns(task, ns2);
-> +		break;
-> +	case PIDTYPE_SID:
-> +		ret = task_session_nr_ns(task, ns2);
-> +		break;
-> +	default:
-> +		ret = -EINVAL;
-> +	}
-> +	ret = (ret == 0) ? -ESRCH : ret;
-> +
-> +out:
-> +	fput(file1);
-> +	if (file2)
-> +		fput(file2);
-> +	return ret;
-> +}
-> +
->  int __init nsproxy_cache_init(void)
->  {
->  	nsproxy_cachep = KMEM_CACHE(nsproxy, SLAB_PANIC);
-> 
+kernel/events/core.c: In function =E2=80=98perf_compat_ioctl=E2=80=99:
+kernel/events/core.c:3726:32: error: =E2=80=98compat_uptr_t=E2=80=99 undecl=
+ared (first use in this function)
+kernel/events/core.c:3726:32: note: each undeclared identifier is reported =
+only once for each function it appears in
 
 
+--e4annfiqlsPm5rKd
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJToDDoAAoJEHZH4aRLwOS6zLUP/0My9zndXOOlVykp2rW4msFJ
+83k+P0jWawDEpvA0ZmU2Sed4oe7vpxxkbT4elDPeWa80Kin5NnHc/wbbfSZ1z5sT
+blLJlRBSu3ATtH0D1bi6qNB42OS3yXBXD4T9KdxvLYwti/4IpbyvRn3plxsDVMRL
+oh/pzgVh1tibkKAU4rIeDZekTGOI/I5YSsk6JaJT05UsUk9yJnp99gcJfm6xMmRk
+XzBhjk3EuTI8FUgnHBx1BpZfIvr0hVkgusL4SNVexsKTrAT1tIywm6mI4tLDl7F1
+BqUNNVGyeuCKV+tofQtijIvSy0sxrkD7k+6ljUvgXIvq9dVRSDC54bLqLkhYuNPx
+b0t7xD99guTOKb/GElQ7JBJy43dfmyDIYoQB6MrwXsl3l+ZkZ/kLVA5B6lhxxoyg
+dH5UEkGTsV0AtNbpg/4Q+iC0/3tTl2q1PD+bgUQYyUtIUAM1970ml65MzeAG8Rcw
+fSL6FPfLf2tNhyyxV/UBluqXwEcxx0fYKrG3b3Q0ORmZYjaBkoWDIWp1/INPgDqR
+HFs96YuT6mHK9ufXzBGcPXCHmV0QQGqmETQ+e6pi7T/Tkz3W7TpcOJH4OQD3Wv4R
+qxvoKp3JQ3hjSSj2M6wuZKIth019o7dUxflS6FyHsaD2NbdnRQNgRzJx4lQW+ivo
+anpecHF/I6f8dVegFw4M
+=BH0f
+-----END PGP SIGNATURE-----
+
+--e4annfiqlsPm5rKd--
