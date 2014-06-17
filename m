@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933723AbaFQQPn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:15:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50400 "EHLO
+	id S933745AbaFQQPs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:15:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50431 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933633AbaFQQPd (ORCPT
+	with ESMTP id S933725AbaFQQPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:15:33 -0400
+	Tue, 17 Jun 2014 12:15:45 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 010/121] staging: r8712u: Fix case where ethtype was never obtained and always be checked against 0
-Date: Tue, 17 Jun 2014 09:13:23 -0700
-Message-Id: <1403021714-16320-11-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 020/121] drm/radeon/si: make sure mc ucode is loaded before checking the size
+Date: Tue, 17 Jun 2014 09:13:33 -0700
+Message-Id: <1403021714-16320-21-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021714-16320-1-git-send-email-kamal@canonical.com>
 References: <1403021714-16320-1-git-send-email-kamal@canonical.com>
@@ -28,56 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit f764cd68d9036498f08fe8834deb6a367b5c2542 upstream.
+commit 8c79bae6a30f606b7a4e17c994bc5f72f8fdaf11 upstream.
 
-Zero-initializing ether_type masked that the ether type would never be
-obtained for 8021x packets and the comparison against eapol_type
-would always fail.
+Avoid a possible segfault.
 
-Reported-by: Jes Sorensen <Jes.Sorensen@redhat.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Noticed-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/rtl8712/rtl871x_recv.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/radeon/si.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/rtl8712/rtl871x_recv.c b/drivers/staging/rtl8712/rtl871x_recv.c
-index 23ec684..274c359 100644
---- a/drivers/staging/rtl8712/rtl871x_recv.c
-+++ b/drivers/staging/rtl8712/rtl871x_recv.c
-@@ -254,7 +254,7 @@ union recv_frame *r8712_portctrl(struct _adapter *adapter,
- 	struct sta_info *psta;
- 	struct	sta_priv *pstapriv;
- 	union recv_frame *prtnframe;
--	u16 ether_type = 0;
-+	u16 ether_type;
+diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
+index c2c14d6..9b0403e 100644
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -206,11 +206,13 @@ static int si_mc_load_microcode(struct radeon_device *rdev)
+ 	const __be32 *fw_data;
+ 	u32 running, blackout = 0;
+ 	u32 *io_mc_regs;
+-	int i, ucode_size, regs_size;
++	int i, regs_size, ucode_size;
  
- 	pstapriv = &adapter->stapriv;
- 	ptr = get_recvframe_data(precv_frame);
-@@ -263,15 +263,14 @@ union recv_frame *r8712_portctrl(struct _adapter *adapter,
- 	psta = r8712_get_stainfo(pstapriv, psta_addr);
- 	auth_alg = adapter->securitypriv.AuthAlgrthm;
- 	if (auth_alg == 2) {
-+		/* get ether_type */
-+		ptr = ptr + pfhdr->attrib.hdrlen + LLC_HEADER_SIZE;
-+		memcpy(&ether_type, ptr, 2);
-+		ether_type = ntohs((unsigned short)ether_type);
+ 	if (!rdev->mc_fw)
+ 		return -EINVAL;
+ 
++	ucode_size = rdev->mc_fw->size / 4;
 +
- 		if ((psta != NULL) && (psta->ieee8021x_blocked)) {
- 			/* blocked
- 			 * only accept EAPOL frame */
--			prtnframe = precv_frame;
--			/*get ether_type */
--			ptr = ptr + pfhdr->attrib.hdrlen +
--			      pfhdr->attrib.iv_len + LLC_HEADER_SIZE;
--			memcpy(&ether_type, ptr, 2);
--			ether_type = ntohs((unsigned short)ether_type);
- 			if (ether_type == 0x888e)
- 				prtnframe = precv_frame;
- 			else {
+ 	switch (rdev->family) {
+ 	case CHIP_TAHITI:
+ 		io_mc_regs = (u32 *)&tahiti_io_mc_regs;
 -- 
 1.9.1
 
