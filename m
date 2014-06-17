@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933417AbaFQOyd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 10:54:33 -0400
-Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:41462 "EHLO
-	mirror2.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933350AbaFQOyG (ORCPT
+	id S933431AbaFQOyn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 10:54:43 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:44082 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933104AbaFQOyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 10:54:06 -0400
-From: Chen-Yu Tsai <wens@csie.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: Chen-Yu Tsai <wens@csie.org>, linux-serial@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Luc Verhaegen <libv@skynet.be>
-Subject: [PATCH v2 04/20] clk: sunxi: Fix gate indexing for sun6i-a31-apb0-gates
-Date: Tue, 17 Jun 2014 22:52:41 +0800
-Message-Id: <1403016777-15121-5-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1403016777-15121-1-git-send-email-wens@csie.org>
-References: <1403016777-15121-1-git-send-email-wens@csie.org>
+	Tue, 17 Jun 2014 10:54:41 -0400
+Date: Tue, 17 Jun 2014 15:54:20 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] mfd: arizona: Destroy regulators after the other MFD
+ cells
+Message-ID: <20140617145420.GH29841@lee--X1>
+References: <1401699704-17902-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1401699704-17902-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401699704-17902-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sun6i-a31-apb0-gates supports using clock-indices for holes between
-individual gates. However, the driver passes the number of gates
-registered in clk_data->clk_num, which of_clk_src_onecell_get uses
-to recognize the range of valid indices a consumer can use.
+On Mon, 02 Jun 2014, Charles Keepax wrote:
 
-This patch makes the driver pass the maximum gate index + 1, so
-of_clk_src_onecell_get does not complain about indices greater
-than gates registered.
+> Several of the cells depend on the regulators provided by the
+> arizona-micsupp and arizona-ldo1 cells. As such use the new remove_level
+> feature of the MFD core to ensure the regulators are destroyed after all
+> the other cells.
+> 
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> ---
+>  drivers/mfd/arizona-core.c |   20 ++++++++++++++++----
+>  1 files changed, 16 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+> index 51c0110..76248bc 100644
+> --- a/drivers/mfd/arizona-core.c
+> +++ b/drivers/mfd/arizona-core.c
+> @@ -570,7 +570,10 @@ static inline int arizona_of_get_core_pdata(struct arizona *arizona)
+>  #endif
+>  
+>  static const struct mfd_cell early_devs[] = {
+> -	{ .name = "arizona-ldo1" },
+> +	{
+> +		.name = "arizona-ldo1",
+> +		.remove_level = 1,
+> +	},
+>  };
 
-This was tested on the A23 SoC, which has a similar APB0 clock,
-but has holes for gates to removed IP blocks.
+Not keen on this approach at all.
 
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
----
- drivers/clk/sunxi/clk-sun6i-apb0-gates.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
++1 for the new reverse-probe-helpers.
 
-diff --git a/drivers/clk/sunxi/clk-sun6i-apb0-gates.c b/drivers/clk/sunxi/clk-sun6i-apb0-gates.c
-index 44cd27c..b342f2a 100644
---- a/drivers/clk/sunxi/clk-sun6i-apb0-gates.c
-+++ b/drivers/clk/sunxi/clk-sun6i-apb0-gates.c
-@@ -25,6 +25,7 @@ static int sun6i_a31_apb0_gates_clk_probe(struct platform_device *pdev)
- 	void __iomem *reg;
- 	int gate_id;
- 	int ngates;
-+	int gate_max = 0;
- 	int i;
- 
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-@@ -72,9 +73,12 @@ static int sun6i_a31_apb0_gates_clk_probe(struct platform_device *pdev)
- 							    reg, gate_id,
- 							    0, NULL);
- 		WARN_ON(IS_ERR(clk_data->clks[gate_id]));
-+
-+		if (gate_id > gate_max)
-+			gate_max = gate_id;
- 	}
- 
--	clk_data->clk_num = ngates;
-+	clk_data->clk_num = gate_max + 1;
- 
- 	return of_clk_add_provider(np, of_clk_src_onecell_get, clk_data);
- }
+[...]
+
 -- 
-2.0.0
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
