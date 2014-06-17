@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933589AbaFQTTi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 15:19:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55411 "EHLO
+	id S933615AbaFQTUd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 15:20:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55423 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933231AbaFQTTh (ORCPT
+	with ESMTP id S932657AbaFQTUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 15:19:37 -0400
-Date: Tue, 17 Jun 2014 12:23:34 -0700
+	Tue, 17 Jun 2014 15:20:32 -0400
+Date: Tue, 17 Jun 2014 12:24:30 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Jeff Liu <jeff.liu@oracle.com>
-Cc: benh@kernel.crashing.org, paulus@samba.org, linuxppc-dev@lists.ozlabs.org,
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Jeff Liu <jeff.liu@oracle.com>, iommu@lists.linux-foundation.org,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/24] powerpc: check/return actual error on sysfs
- functions
-Message-ID: <20140617192334.GA4628@kroah.com>
-References: <53A0512D.1090909@oracle.com>
+Subject: Re: [PATCH 09/24]  drivers/iommu: check actual error on iommu_init
+Message-ID: <20140617192430.GC4628@kroah.com>
+References: <53A050BF.3000101@oracle.com>
+ <20140617152154.GE31771@8bytes.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53A0512D.1090909@oracle.com>
+In-Reply-To: <20140617152154.GE31771@8bytes.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 10:31:09PM +0800, Jeff Liu wrote:
-> From: Jie Liu <jeff.liu@oracle.com>
+On Tue, Jun 17, 2014 at 05:21:54PM +0200, Joerg Roedel wrote:
+> On Tue, Jun 17, 2014 at 10:29:19PM +0800, Jeff Liu wrote:
+> > From: Jie Liu <jeff.liu@oracle.com>
+> > 
+> > kset_create_and_add() has been fixed to return the actual error
+> > code ptr rather than NULL, so update iommu_init() to check the
+> > return value via IS_ERR() accordingly.
+> > 
+> > Cc: Joerg Roedel <joro@8bytes.org>
+> > Signed-off-by: Jie Liu <jeff.liu@oracle.com>
 > 
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Signed-off-by: Jie Liu <jeff.liu@oracle.com>
-> ---
->  arch/powerpc/platforms/powernv/opal-dump.c | 2 +-
->  arch/powerpc/platforms/powernv/opal-elog.c | 4 ++--
->  2 files changed, 3 insertions(+), 3 deletions(-)
+> Acked-by: Joerg Roedel <joro@8bytes.org>
 
-Ben and Paul, please do not take this patch, it is incorrect.
+Nope, please do not take this patch, it is not needed and as the kset
+call is not changing, it will be incorrect.
+
+thanks,
 
 greg k-h
