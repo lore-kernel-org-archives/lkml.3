@@ -1,60 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966665AbaFQVun (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:50:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54412 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965250AbaFQVuf (ORCPT
+	id S967268AbaFQWQm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:16:42 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:60837 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966010AbaFQWQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:50:35 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "J. Bruce Fields" <bfields@redhat.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 158/212] nfsd4: warn on finding lockowner without stateid's
-Date: Tue, 17 Jun 2014 14:44:12 -0700
-Message-Id: <1403041506-13646-159-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 17 Jun 2014 18:16:24 -0400
+Date: Tue, 17 Jun 2014 16:16:20 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Andreas Noever <andreas.noever@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        yinghai@kernel.org
+Subject: Re: [PATCH] PCI: Do not touch siblings in
+ pci_assign_unassigned_bridge_resources
+Message-ID: <20140617221620.GC30559@google.com>
+References: <1402346730-2508-1-git-send-email-andreas.noever@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402346730-2508-1-git-send-email-andreas.noever@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
+[+cc Yinghai]
 
-------------------
+On Mon, Jun 09, 2014 at 10:45:30PM +0200, Andreas Noever wrote:
+> pci_assign_unassigned_bridge_resources is used to assign resources below
+> a hotplug bridge. If the first attempt fails it will release some
+> resources and try again. If a resource allocation on the hotplug bridge
+> itself fails then pci_assign_unassigned_bridge_resources will invoke
+> pci_bus_release_bridge_resources on the parent bus of the hotplug
+> bridge. This in turn will release resources assigned to siblings of the
+> hotplug bridge which may already be in use.
+> 
+> This patch checks for this case and prevents
+> pci_bus_release_bridge_resources to be invoked on the parent bus.
+> 
+> The problem can be reproduced by having two sibling hotplug bridges A
+> and B. The problem will occour if the parent of A and B does not have
+> enough resources to satisfy window allocations for B during a hotplug
+> event.
+> 
+> Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
+> ---
+> 
+> I must admit that I do not fully understand how
+> pci_assign_unassigned_bridge_resources works. Under which scenario would the
+> second allocation attempt be successful?
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+I don't understand how all this works either.  Yinghai?
 
-commit 27b11428b7de097c42f205beabb1764f4365443b upstream.
+We definitely don't want to release resources that are already in use.  Can
+you review and ack or nack this?
 
-The current code assumes a one-to-one lockowner<->lock stateid
-correspondance.
-
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- fs/nfsd/nfs4state.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index f1fa0ec..63b6cdc 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -4153,6 +4153,10 @@ static bool same_lockowner_ino(struct nfs4_lockowner *lo, struct inode *inode, c
- 
- 	if (!same_owner_str(&lo->lo_owner, owner, clid))
- 		return false;
-+	if (list_empty(&lo->lo_owner.so_stateids)) {
-+		WARN_ON_ONCE(1);
-+		return false;
-+	}
- 	lst = list_first_entry(&lo->lo_owner.so_stateids,
- 			       struct nfs4_ol_stateid, st_perstateowner);
- 	return lst->st_file->fi_inode == inode;
--- 
-1.9.1
-
+>  drivers/pci/setup-bus.c | 21 +++++++++++++++++++--
+>  1 file changed, 19 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+> index 138bdd6..2e418d6 100644
+> --- a/drivers/pci/setup-bus.c
+> +++ b/drivers/pci/setup-bus.c
+> @@ -1560,6 +1560,12 @@ void __init pci_assign_unassigned_resources(void)
+>  		pci_assign_unassigned_root_bus_resources(root_bus);
+>  }
+>  
+> +/**
+> + * pci_assign_unassigned_bridge_resources - greenfield resource allocation
+> + *
+> + * Try to assign io and memory resources on and below @bridge. The caller must
+> + * ensure that no device below @bridge is active.
+> + */
+>  void pci_assign_unassigned_bridge_resources(struct pci_dev *bridge)
+>  {
+>  	struct pci_bus *parent = bridge->subordinate;
+> @@ -1567,7 +1573,7 @@ void pci_assign_unassigned_bridge_resources(struct pci_dev *bridge)
+>  					want additional resources */
+>  	int tried_times = 0;
+>  	LIST_HEAD(fail_head);
+> -	struct pci_dev_resource *fail_res;
+> +	struct pci_dev_resource *fail_res, *tmp;
+>  	int retval;
+>  	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
+>  				  IORESOURCE_PREFETCH;
+> @@ -1594,10 +1600,21 @@ again:
+>  	 * Try to release leaf bridge's resources that doesn't fit resource of
+>  	 * child device under that bridge
+>  	 */
+> -	list_for_each_entry(fail_res, &fail_head, list)
+> +	list_for_each_entry_safe(fail_res, tmp, &fail_head, list) {
+> +		 /*
+> +		  * The allocation of the mem/io window of the top level bridge
+> +		  * can fail.  Without the following check we would release our
+> +		  * siblings' resources.
+> +		  */
+> +		if (fail_res->dev == bridge) {
+> +			list_del(&fail_res->list);
+> +			kfree(fail_res);
+> +			continue;
+> +		}
+>  		pci_bus_release_bridge_resources(fail_res->dev->bus,
+>  						 fail_res->flags & type_mask,
+>  						 whole_subtree);
+> +	}
+>  
+>  	/* restore size and flags */
+>  	list_for_each_entry(fail_res, &fail_head, list) {
+> -- 
+> 2.0.0
+> 
