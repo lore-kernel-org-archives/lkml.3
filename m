@@ -1,86 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965550AbaFQQeW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:34:22 -0400
-Received: from mga01.intel.com ([192.55.52.88]:54226 "EHLO mga01.intel.com"
+	id S965566AbaFQQe0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:34:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4422 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933617AbaFQQ0j convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:26:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,495,1400050800"; 
-   d="scan'208";a="549282075"
-From: "Dilger, Andreas" <andreas.dilger@intel.com>
-To: Anil Belur <askb23@gmail.com>, "Drokin, Oleg" <oleg.drokin@intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpdd-discuss@lists.01.org" <hpdd-discuss@ml01.01.org>
-Subject: Re: [PATCH v6 8/8] staging: lustre: lclient: lcommon_cl.c fixing
- coding style issues
-Thread-Topic: [PATCH v6 8/8] staging: lustre: lclient: lcommon_cl.c fixing
- coding style issues
-Thread-Index: AQHPie/WqEyUws9dhEm2zoqLWACo5Zt1jp0A
-Date: Tue, 17 Jun 2014 16:25:14 +0000
-Message-ID: <CFC5C7D5.ABDC7%andreas.dilger@intel.com>
-References: <1402983839-3549-1-git-send-email-askb23@gmail.com>
- <1402983839-3549-9-git-send-email-askb23@gmail.com>
-In-Reply-To: <1402983839-3549-9-git-send-email-askb23@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.252.132.85]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <BE39DEC9FAB4B442AFE04D7D191C61A4@intel.com>
-Content-Transfer-Encoding: 8BIT
+	id S965552AbaFQQeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 12:34:23 -0400
+Message-ID: <53A06E05.9060708@redhat.com>
+Date: Tue, 17 Jun 2014 18:34:13 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
+To: Ming Lei <ming.lei@canonical.com>
+CC: Stefan Hajnoczi <stefanha@gmail.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>, linux-api@vger.kernel.org,
+        Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        Stefan Hajnoczi <stefanha@redhat.com>
+Subject: Re: [RFC PATCH 2/2] block: virtio-blk: support multi virt queues
+ per virtio-blk device
+References: <1402680562-8328-1-git-send-email-ming.lei@canonical.com>	<1402680562-8328-3-git-send-email-ming.lei@canonical.com>	<CAJSP0QWaS--gPZ=ONFrXby1DQLw4R0RCro7bpHCdmucyjmqT_w@mail.gmail.com>	<CACVXFVO0SybUKArQbKkj2+hbk6q_gt3SBooNNmw1jErRR8d07A@mail.gmail.com>	<53A06475.7000308@redhat.com> <CACVXFVO6GDu7Cp=s7kn_XBE2EFnuh+XQs4UQKTFaCLi4_9jcgg@mail.gmail.com>
+In-Reply-To: <CACVXFVO6GDu7Cp=s7kn_XBE2EFnuh+XQs4UQKTFaCLi4_9jcgg@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/06/16, 11:43 PM, "Anil Belur" <askb23@gmail.com> wrote:
+Il 17/06/2014 18:00, Ming Lei ha scritto:
+>> > If you want to do queue steering based on the guest VCPU number, the number
+>> > of queues must be = to the number of VCPUs shouldn't it?
+>> >
+>> > I tried using a divisor of the number of VCPUs, but couldn't get the block
+>> > layer to deliver interrupts to the right VCPU.
+> For blk-mq's hardware queue, that won't be necessary to equal to
+> VCPUs number, and irq affinity per hw queue can be simply set as
+> blk_mq_hw_ctx->cpumask.
 
->From: Anil Belur <askb23@gmail.com>
->
->fixed: WARNING: suspect code indent for conditional statements (32, 32)
->Signed-off-by: Anil Belur <askb23@gmail.com>
->---
-> drivers/staging/lustre/lustre/lclient/lcommon_cl.c | 4 ++--
-> 1 file changed, 2 insertions(+), 2 deletions(-)
->
->diff --git a/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
->b/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
->index e2da397..3b2b995 100644
->--- a/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
->+++ b/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
->@@ -825,8 +825,8 @@ int ccc_prep_size(const struct lu_env *env, struct
->cl_object *obj,
-> 				loff_t size_index = ((size - 1) >> PAGE_CACHE_SHIFT);
-> 
-> 				if ((size == 0 && cur_index != 0) ||
->-				    (size_index < cur_index))
->-				*exceed = 1;
->+						(size_index < cur_index))
+Yes, but on top of that you want to have each request processed exactly 
+by the CPU that sent it.  Unless the cpumasks are singletons, most of 
+the benefit went away in my virtio-scsi tests.  Perhaps blk-mq is smarter.
 
-The old indentation of this line (aligned after '(' on the previous line)
-was better.  Note also that there is no need for parenthesis around this
-statement.
+Can you try benchmarking a 16 VCPU guest with 8 and 16 queues?
 
->+					*exceed = 1;
-> 			}
-> 			return result;
-> 		} else {
->-- 
->1.9.0
->
->
-
-
-Cheers, Andreas
--- 
-Andreas Dilger
-
-Lustre Software Architect
-Intel High Performance Data Division
-
-
+Paolo
