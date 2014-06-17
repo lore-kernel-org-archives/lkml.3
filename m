@@ -1,117 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933425AbaFQP1A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 11:27:00 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:26555 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932869AbaFQP07 (ORCPT
+	id S933442AbaFQP15 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 11:27:57 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:56902 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932869AbaFQP14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 11:26:59 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-fc-53a05e40d99f
-Message-id: <53A05E2D.6020702@samsung.com>
-Date: Tue, 17 Jun 2014 17:26:37 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, chow.kim@samsung.com,
-        vikas.sajjan@samsung.com, joshi@samsung.com
-Subject: Re: [PATCH v4 06/11] ARM: EXYNOS: Add support for mapping PMU base
- address via DT
-References: <1399704998-13321-1-git-send-email-pankaj.dubey@samsung.com>
- <1399704998-13321-7-git-send-email-pankaj.dubey@samsung.com>
- <53973C0B.2000903@samsung.com> <000401cf89f7$7db93190$792b94b0$@samsung.com>
-In-reply-to: <000401cf89f7$7db93190$792b94b0$@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFLMWRmVeSWpSXmKPExsVy+t/xq7oOcQuCDY5/lbFYNukum8X3XV/Y
-	LXoXXGWz2PT4GqvF5V1z2CxmnN/HZHH7Mq/Foq1AyZvPtjM5cHq0NPeweWxeUu/Rt2UVo8fn
-	TXIBLFFcNimpOZllqUX6dglcGcf/7mIv2CZSsbeVtYFxkUAXIyeHhICJxOxXjxkhbDGJC/fW
-	s3UxcnEICSxllFh/spsJJCEk8JlR4t509y5GDg5eAS2JZe+5QcIsAqoSxxZfAOtlE1CT+Nzw
-	iA3E5gcqWdN0nQWkXFQgQuLxBSGQMK+AoMSPyfdYQMaLCExhlLjYs4wRpIZZoExi2hoVkBph
-	gRiJg/v/sUKccI1R4ljnchaQBKeAlcSliduZQWxmAR2J/a3T2CBseYnNa94yT2AUnIVkxywk
-	ZbOQlC1gZF7FKJpamlxQnJSea6hXnJhbXJqXrpecn7uJERL+X3YwLj5mdYhRgINRiYc34tL8
-	YCHWxLLiytxDjBIczEoivCXiC4KFeFMSK6tSi/Lji0pzUosPMTJxcEo1MLKUNk2/Xqwk+XWB
-	R54Af/i1PLaOTTMPnlv19NKtTTkuwTd/zjl90yyp4/kFtevGU51WBc64vj/w9EuGktcWIUf+
-	LpNa972Zi/3/Qq6MAJH5Z8/b8U50KvmVdbdHMFhBT9TVzHkTj1twdLHegjanE/IVV9YwPpUw
-	cVc2luAQ51TIi50xYePFCUosxRmJhlrMRcWJANudLC5dAgAA
+	Tue, 17 Jun 2014 11:27:56 -0400
+Date: Tue, 17 Jun 2014 11:27:52 -0400
+From: Tejun Heo <tj@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
+ accessors and operations
+Message-ID: <20140617152752.GC31819@htj.dyndns.org>
+References: <20140612135630.GA23606@htj.dyndns.org>
+ <20140612153426.GV4581@linux.vnet.ibm.com>
+ <20140612155227.GB23606@htj.dyndns.org>
+ <20140617144151.GD4669@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140617144151.GD4669@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pankaj,
+Hello, Paul.
 
-On 17.06.2014 08:43, Pankaj Dubey wrote:
-> Hi Tomasz,
+On Tue, Jun 17, 2014 at 07:41:51AM -0700, Paul E. McKenney wrote:
+> > Well, we can always say that it's the caller's responsibility to put
+> > in enough barriers, but it becomes weird for percpu areas because the
+> > ownership of the allocated areas isn't really clear.  Whether each
+> > allocated cpu-specific area's queued writes belong to the allocating
+> > cpu or the cpu that the area is associated with is an implementation
+> > detail which may theoretically change and as such I think it'd be best
+> > for the problem to be dealt with in percpu allocator and accessors
+> > proper.  I think this is way too subtle to ask the users to handle
+> > correctly.
 > 
->> Hi,
->>
->> On 10.05.2014 08:56, Pankaj Dubey wrote:
->>> From: Young-Gun Jang <yg1004.jang@samsung.com>
->>>
->>> Add support for mapping Samsung Power Management Unit (PMU) base
->>> address from device tree. This patch also adds helper function as
->>> "get_exynos_pmuregmap". This function can be used by other machine
->>> files such as "pm.c", "hotplug.c" for accessing PMU regmap handle.
->>>
->>
->> I don't think there is a need to use regmap to provide access to PMU to
-> such low
->> level code such as pm.c or hotplug.c. Moreover, I believe that it might be
-> undesirable
->> in some cases, e.g. very low level code running at early resume or late
-> suspend.
->>
->> IMHO, based on what we now have for SYSRAM, you could simply map PMU from
->> device tree one time, before SMP init, and keep the address in some
-> globally
->> accessible variable, like those for SYSRAM we have right now
-> (sysram_base_addr,
->> sysram_ns_base_addr -> pmu_base_addr).
->>
-> 
-> Thanks for review. 
-> 
-> Well I adopted same approach in V1 of this patch series. 
-> 
-> V1: https://lkml.org/lkml/2014/4/2/48
-> 
-> So, if we do not have issues with that approach, I think we can map PMU
-> address
-> one time and use it for all machine files including pmu.c. 
+> But in the case where the allocation is initially zeroed, then a few
+> fields are initialized to non-zero values, the memory barrier in the
+> allocator is insufficient.  I believe that it will be easier for people
 
-The approach itself is fine, but I believe there is no reason to use fdt
-there. My recommendation is to follow the method used to map SYSRAMs in
-patch "b3205dea8f ARM: EXYNOS: Map SYSRAM through generic DT bindings"
-and taking into account patch "b87abf7deb ARM: exynos: move sysram info
-to exynos.c", which moves things around source files.
+Oh, definitely but in those cases it's clear whose responsbility it
+is.  The task/cpu which modified the memory owns the in-flight
+modifications and is responsible for propagation.  The problem with
+zeroed allocation, especially for percpu areas, is that it isn't clear
+who owns the zeroing.  Again, there's no reason the zeroing can't
+belong to the each local cpu, which could have performance benefits if
+we ever get frequent enough with percpu allocations.  To me, this
+really seems like an implementation detail which shouldn't leak to the
+users of the allocator.
 
-> Also I can see that early_syscon patch [1] is not progressing anymore,
-> so in next version of this series better I remove dependency of early syscon
-> and usage
-> of regmap.
+> to always use smp_store_release() or whatever than to not need it if
+> the initialization is strictly zero, but to need it if additional
+> initialization is required.
 
-I have another proposal, basically something I already proposed in
-review of one of previous versions of this series. I will send a patch
-as a reply to this message.
+That goes further and would require dedicated assignment macros for
+percpu pointers, a la rcu_assign_pointer().  Yeah, I think that would
+be helpful.  It'd take quite a bit of work but percpu allocator usage
+is still in low hundreds, so it should be doable.  The whole thing is
+way too subtle to require each user to handle it manually.
 
+So, how about the followings?
+
+* Add data dependency barrier to percpu accessors and write barrier to
+  the allocator with the comment that this will be replaced with
+  proper assignment macros and mark this change w/ -stable.
+
+* Later, introduce percpu pointer assignment macros and convert all
+  users and remove the wmb added above.
+
+> > > I was worried about use of per_cpu() by the reading CPU, but of course
+> > > in that case, things are initialized at compiler time.
+> > 
+> > Not really.  The template is initialized on kernel load.  The actual
+> > percpu areas have to be allocated dynamically; however, this happens
+> > while the machine is still running UP, so this should be okay.
 > 
-> 1: https://lkml.org/lkml/2014/4/8/239
-> 
-> Tomasz, It will be good if you can review remaining patches under this
-> series, specially patch [2].
-> So that, I can update this series after addressing all comments.
-> 
-> 2: https://lkml.org/lkml/2014/5/10/26
-> 
+> Good point.  How about per-CPU variables that are introduced by
+> loadable modules?  (I would guess that there are plenty of memory
+> barriers in the load process, given that text and data also needs
+> to be visible to other CPUs.)
 
-Most of the patches have already received my reviewed-by tag. I'm
-generally hesitating to review remaining ones, because the general
-architecture will be quite different after changing things mentioned
-above. However let me see and try to point issues I can find.
+(cc'ing Rusty, hi!)
 
-Best regards,
-Tomasz
+Percpu initialization happens in post_relocation() before
+module_finalize().  There seem to be enough operations which can act
+as write barrier afterwards but nothing seems explicit.
+
+I have no idea how we're guaranteeing that .data is visible to all
+cpus without barrier from reader side.  Maybe we don't allow something
+like the following?
+
+  module init				built-in code
+
+  static int mod_static_var = X;	if (builtin_ptr)
+  builtin_ptr = &mod_static_var;		WARN_ON(*builtin_ptr != X);
+
+Rusty, can you please enlighten me?
+
+> > For normal allocations, I don't have a strong opinion.  I'd prefer to
+> > think of memory coming out of the allocator to have memory ordering
+> > already taken care of but it is a lot less murky than with percpu
+> > areas.
+> 
+> Again, it won't help for the allocator to strongly order the
+> initialization to zero if there are additional initializations of some
+> fields to non-zero values.  And again, it should be a lot easier to
+> require the smp_store_release() or whatever uniformly than only in cases
+> where additional initialization occurred.
+
+This one is less murky as we can say that the cpu which allocated owns
+the zeroing; however, it still deviates from requiring the one which
+makes changes to take care of barriering for those changes, which is
+what makes me feel a bit uneasy.  IOW, it's the allocator which
+cleared the memory, why should its users worry about in-flight
+operations from it?  That said, this poses a lot less issues compared
+to percpu ones as passing normal pointers to other cpus w/o going
+through proper set of barriers is a special thing to do anyway.
+
+Thanks.
+
+-- 
+tejun
