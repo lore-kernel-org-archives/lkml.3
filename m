@@ -1,135 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932624AbaFQLyG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 07:54:06 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54795 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753608AbaFQLyE (ORCPT
+	id S1756182AbaFQLzE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 07:55:04 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:36497 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752049AbaFQLzB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 07:54:04 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: lenb@kernel.org, robert.moore@intel.com, lv.zheng@intel.com,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, bhelgaas@google.com
-Subject: Re: [PATCH 1/4] ACPI: Support _OSI("Darwin") correctly
-Date: Tue, 17 Jun 2014 14:11:36 +0200
-Message-ID: <7712179.sDPAd6Ubry@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1401640436-1947-2-git-send-email-matthew.garrett@nebula.com>
-References: <1401640436-1947-1-git-send-email-matthew.garrett@nebula.com> <1401640436-1947-2-git-send-email-matthew.garrett@nebula.com>
+	Tue, 17 Jun 2014 07:55:01 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <53A01039.2020302@linux.vnet.ibm.com>
+References: <CAK5sBcEJOJDtt_7ow=q=hiN8-JRHzOUg6t=T3hTNOwzKq5dodw@mail.gmail.com>
+	<53A007F7.6020103@linux.vnet.ibm.com>
+	<CAK5sBcECq5sN9CnUhWLPoYnFnPz64JM_6CVRBwjz8Q2=X5_t=A@mail.gmail.com>
+	<53A01039.2020302@linux.vnet.ibm.com>
+Date: Tue, 17 Jun 2014 17:25:00 +0530
+X-Google-Sender-Auth: Z05oD0Bzj6YJ52H7yDEymauJdnc
+Message-ID: <CAK5sBcH6Yw0rdfUgTPi2OhqZ5pNeD39_NUguT4NFR4hrK2uZgA@mail.gmail.com>
+Subject: Re: Boot warnings on exynos5420 based boards
+From: Sachin Kamat <sachin.kamat@samsung.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc@vger.kernel.org, akpm@linux-foundation.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, June 01, 2014 12:33:53 PM Matthew Garrett wrote:
-> Apple hardware queries _OSI("Darwin") in order to determine whether the
-> system is running OS X, and changes firmware behaviour based on the answer.
-> The most obvious difference in behaviour is that Thunderbolt hardware is
-> forcibly powered down unless the system is running OS X. The obvious solution
-> would be to simply add Darwin to the list of supported _OSI strings, but this
-> causes problems.
-> 
-> Recent Apple hardware includes two separate methods for checking _OSI
-> strings. The first will check whether Darwin is supported, and if so will
-> exit. The second will check whether Darwin is supported, but will then
-> continue to check for further operating systems. If a further operating
-> system is found then later firmware code will assume that the OS is not OS X.
-> This results in the unfortunate situation where the Thunderbolt controller is
-> available at boot time but remains powered down after suspend.
-> 
-> The easiest way to handle this is to special-case it in the Linux-specific
-> OSI handling code. If we see Darwin, we should answer true and then disable
-> all other _OSI vendor strings.
-> 
-> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+Hi Srivatsa,
 
-Does applying this patch without the rest of the series makes things worse
-or better on the machines in question (or perhaps it doesn't matter at all
-alone)?
+On Tue, Jun 17, 2014 at 3:24 PM, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> On 06/17/2014 03:03 PM, Sachin Kamat wrote:
+>
+>>> Below is an updated patch, please let me know how it goes. (You'll have to
+>>> revert c47a9d7cca first, and then 56e692182, before trying this patch).
+>>
+>> I am unable to apply your below patch on top of the above 2 reverts.
+>> Applying: CPU hotplug, smp: Execute any pending IPI callbacks before CPU offline
+>> fatal: corrupt patch at line 106
+>> Patch failed at 0001 CPU hotplug, smp: Execute any pending IPI
+>> callbacks before CPU offline
+>>
+>> Even with 'patch' I get the below failures:
+>> patching file kernel/smp.c
+>> Hunk #2 FAILED at 53.
+>> Hunk #3 FAILED at 179.
+>> 2 out of 3 hunks FAILED -- saving rejects to file kernel/smp.c.rej
+>>
+>
+> Hmm, weird. My mailer must have screwed it up.
+>
+> Let's try again:
+>
+> [In case this also doesn't work for you, please use this git tree in which
+>  I have reverted the 2 old commits and added this updated patch.
+>
+>  git://github.com/srivatsabhat/linux.git ipi-offline-fix-v3
+> ]
 
-Rafael
+Unfortunately the attached patch did not apply either. Nevertheless, I
+applied the
+patch from your above mentioned tree. With that patch I do not see the warnings
+that I mentioned in my first mail. Thanks for fixing it.
 
-
-> ---
->  drivers/acpi/acpica/utosi.c |  1 +
->  drivers/acpi/osl.c          | 10 ++++++++++
->  include/acpi/actypes.h      | 25 +++++++++++++------------
->  3 files changed, 24 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/acpi/acpica/utosi.c b/drivers/acpi/acpica/utosi.c
-> index 685766f..63b0a3b 100644
-> --- a/drivers/acpi/acpica/utosi.c
-> +++ b/drivers/acpi/acpica/utosi.c
-> @@ -87,6 +87,7 @@ ACPI_MODULE_NAME("utosi")
->  static struct acpi_interface_info acpi_default_supported_interfaces[] = {
->  	/* Operating System Vendor Strings */
->  
-> +	{"Darwin", NULL, 0, ACPI_OSI_DARWIN},	/* OS X */
->  	{"Windows 2000", NULL, 0, ACPI_OSI_WIN_2000},	/* Windows 2000 */
->  	{"Windows 2001", NULL, 0, ACPI_OSI_WIN_XP},	/* Windows XP */
->  	{"Windows 2001 SP1", NULL, 0, ACPI_OSI_WIN_XP_SP1},	/* Windows XP SP1 */
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index 6776c59..312ab5c 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -152,6 +152,16 @@ static u32 acpi_osi_handler(acpi_string interface, u32 supported)
->  			osi_linux.dmi ? " via DMI" : "");
->  	}
->  
-> +	if (!strcmp("Darwin", interface)) {
-> +		/*
-> +		 * Apple firmware will behave poorly if it receives positive
-> +		 * answers to "Darwin" and any other OS. Respond positively
-> +		 * to Darwin and then disable all other vendor strings.
-> +		 */
-> +		acpi_update_interfaces(ACPI_DISABLE_ALL_VENDOR_STRINGS);
-> +		supported = ACPI_UINT32_MAX;
-> +	}
-> +
->  	return supported;
->  }
->  
-> diff --git a/include/acpi/actypes.h b/include/acpi/actypes.h
-> index e763565..1c2ef56 100644
-> --- a/include/acpi/actypes.h
-> +++ b/include/acpi/actypes.h
-> @@ -1210,17 +1210,18 @@ struct acpi_memory_list {
->  #define ACPI_ENABLE_ALL_FEATURE_STRINGS     (ACPI_ENABLE_INTERFACES | ACPI_FEATURE_STRINGS)
->  #define ACPI_ENABLE_ALL_STRINGS             (ACPI_ENABLE_INTERFACES | ACPI_VENDOR_STRINGS | ACPI_FEATURE_STRINGS)
->  
-> -#define ACPI_OSI_WIN_2000               0x01
-> -#define ACPI_OSI_WIN_XP                 0x02
-> -#define ACPI_OSI_WIN_XP_SP1             0x03
-> -#define ACPI_OSI_WINSRV_2003            0x04
-> -#define ACPI_OSI_WIN_XP_SP2             0x05
-> -#define ACPI_OSI_WINSRV_2003_SP1        0x06
-> -#define ACPI_OSI_WIN_VISTA              0x07
-> -#define ACPI_OSI_WINSRV_2008            0x08
-> -#define ACPI_OSI_WIN_VISTA_SP1          0x09
-> -#define ACPI_OSI_WIN_VISTA_SP2          0x0A
-> -#define ACPI_OSI_WIN_7                  0x0B
-> -#define ACPI_OSI_WIN_8                  0x0C
-> +#define ACPI_OSI_DARWIN                 0x01
-> +#define ACPI_OSI_WIN_2000               0x02
-> +#define ACPI_OSI_WIN_XP                 0x03
-> +#define ACPI_OSI_WIN_XP_SP1             0x04
-> +#define ACPI_OSI_WINSRV_2003            0x05
-> +#define ACPI_OSI_WIN_XP_SP2             0x06
-> +#define ACPI_OSI_WINSRV_2003_SP1        0x07
-> +#define ACPI_OSI_WIN_VISTA              0x08
-> +#define ACPI_OSI_WINSRV_2008            0x09
-> +#define ACPI_OSI_WIN_VISTA_SP1          0x0A
-> +#define ACPI_OSI_WIN_VISTA_SP2          0x0B
-> +#define ACPI_OSI_WIN_7                  0x0C
-> +#define ACPI_OSI_WIN_8                  0x0D
->  
->  #endif				/* __ACTYPES_H__ */
-> 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Regards,
+Sachin.
