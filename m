@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965305AbaFQQ0r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:26:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51018 "EHLO
+	id S965397AbaFQQbu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:31:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51029 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965286AbaFQQ0o (ORCPT
+	with ESMTP id S965302AbaFQQ0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:26:44 -0400
+	Tue, 17 Jun 2014 12:26:47 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Patrick McHardy <kaber@trash.net>, Pablo Neira Ayuso <pablo@netfilter.org>,
-        Mathias Krause <minipli@googlemail.com>,
+Cc: Chuansheng Liu <chuansheng.liu@intel.com>,
+        Zhang Dongxing <dongxing.zhang@intel.com>,
+        xiaoming wang <xiaoming.wang@intel.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 056/121] filter: prevent nla extensions to peek beyond the end of the message
-Date: Tue, 17 Jun 2014 09:17:14 -0700
-Message-Id: <1403021899-16708-29-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 054/121] net: ipv4: current group_info should be put after using.
+Date: Tue, 17 Jun 2014 09:17:12 -0700
+Message-Id: <1403021899-16708-27-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
@@ -29,91 +30,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
 
-[ Upstream commit 05ab8f2647e4221cbdb3856dd7d32bd5407316b3 ]
+[ Upstream commit b04c46190219a4f845e46a459e3102137b7f6cac ]
 
-The BPF_S_ANC_NLATTR and BPF_S_ANC_NLATTR_NEST extensions fail to check
-for a minimal message length before testing the supplied offset to be
-within the bounds of the message. This allows the subtraction of the nla
-header to underflow and therefore -- as the data type is unsigned --
-allowing far to big offset and length values for the search of the
-netlink attribute.
+Plug a group_info refcount leak in ping_init.
+group_info is only needed during initialization and
+the code failed to release the reference on exit.
+While here move grabbing the reference to a place
+where it is actually needed.
 
-The remainder calculation for the BPF_S_ANC_NLATTR_NEST extension is
-also wrong. It has the minuend and subtrahend mixed up, therefore
-calculates a huge length value, allowing to overrun the end of the
-message while looking for the netlink attribute.
-
-The following three BPF snippets will trigger the bugs when attached to
-a UNIX datagram socket and parsing a message with length 1, 2 or 3.
-
- ,-[ PoC for missing size check in BPF_S_ANC_NLATTR ]--
- | ld	#0x87654321
- | ldx	#42
- | ld	#nla
- | ret	a
- `---
-
- ,-[ PoC for the same bug in BPF_S_ANC_NLATTR_NEST ]--
- | ld	#0x87654321
- | ldx	#42
- | ld	#nlan
- | ret	a
- `---
-
- ,-[ PoC for wrong remainder calculation in BPF_S_ANC_NLATTR_NEST ]--
- | ; (needs a fake netlink header at offset 0)
- | ld	#0
- | ldx	#42
- | ld	#nlan
- | ret	a
- `---
-
-Fix the first issue by ensuring the message length fulfills the minimal
-size constrains of a nla header. Fix the second bug by getting the math
-for the remainder calculation right.
-
-Fixes: 4738c1db15 ("[SKFILTER]: Add SKF_ADF_NLATTR instruction")
-Fixes: d214c7537b ("filter: add SKF_AD_NLATTR_NEST to look for nested..")
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
+Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/core/filter.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ net/ipv4/ping.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/net/core/filter.c b/net/core/filter.c
-index 9a8d5e8..2cc3e4f 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -352,6 +352,8 @@ load_b:
+diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
+index 3d8ddd9..69f3f3e 100644
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -204,26 +204,33 @@ static int ping_init_sock(struct sock *sk)
+ {
+ 	struct net *net = sock_net(sk);
+ 	kgid_t group = current_egid();
+-	struct group_info *group_info = get_current_groups();
+-	int i, j, count = group_info->ngroups;
++	struct group_info *group_info;
++	int i, j, count;
+ 	kgid_t low, high;
++	int ret = 0;
  
- 			if (skb_is_nonlinear(skb))
- 				return 0;
-+			if (skb->len < sizeof(struct nlattr))
-+				return 0;
- 			if (A > skb->len - sizeof(struct nlattr))
- 				return 0;
+ 	inet_get_ping_group_range_net(net, &low, &high);
+ 	if (gid_lte(low, group) && gid_lte(group, high))
+ 		return 0;
  
-@@ -368,11 +370,13 @@ load_b:
++	group_info = get_current_groups();
++	count = group_info->ngroups;
+ 	for (i = 0; i < group_info->nblocks; i++) {
+ 		int cp_count = min_t(int, NGROUPS_PER_BLOCK, count);
+ 		for (j = 0; j < cp_count; j++) {
+ 			kgid_t gid = group_info->blocks[i][j];
+ 			if (gid_lte(low, gid) && gid_lte(gid, high))
+-				return 0;
++				goto out_release_group;
+ 		}
  
- 			if (skb_is_nonlinear(skb))
- 				return 0;
-+			if (skb->len < sizeof(struct nlattr))
-+				return 0;
- 			if (A > skb->len - sizeof(struct nlattr))
- 				return 0;
+ 		count -= cp_count;
+ 	}
  
- 			nla = (struct nlattr *)&skb->data[A];
--			if (nla->nla_len > A - skb->len)
-+			if (nla->nla_len > skb->len - A)
- 				return 0;
+-	return -EACCES;
++	ret = -EACCES;
++
++out_release_group:
++	put_group_info(group_info);
++	return ret;
+ }
  
- 			nla = nla_find_nested(nla, X);
+ static void ping_close(struct sock *sk, long timeout)
 -- 
 1.9.1
 
