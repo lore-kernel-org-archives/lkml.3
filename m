@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965576AbaFQQe5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:34:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50985 "EHLO
+	id S965581AbaFQQfX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:35:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50980 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964871AbaFQQ03 (ORCPT
+	with ESMTP id S965244AbaFQQ00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:26:29 -0400
+	Tue, 17 Jun 2014 12:26:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ding Tianhong <dingtianhong@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 058/121] vlan: Fix lockdep warning when vlan dev handle notification
-Date: Tue, 17 Jun 2014 09:17:16 -0700
-Message-Id: <1403021899-16708-31-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 112/121] usb: qcserial: add a number of Dell devices
+Date: Tue, 17 Jun 2014 09:18:10 -0700
+Message-Id: <1403021899-16708-85-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,190 +31,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: dingtianhong <dingtianhong@huawei.com>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-[ Upstream commit dc8eaaa006350d24030502a4521542e74b5cb39f ]
+commit 4d7c0136a54f62501f8a34c4d08a5e0258d3d3ca upstream.
 
-When I open the LOCKDEP config and run these steps:
+Dan writes:
 
-modprobe 8021q
-vconfig add eth2 20
-vconfig add eth2.20 30
-ifconfig eth2 xx.xx.xx.xx
+"The Dell drivers use the same configuration for PIDs:
 
-then the Call Trace happened:
+81A2: Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card
+81A3: Dell Wireless 5570 HSPA+ (42Mbps) Mobile Broadband Card
+81A4: Dell Wireless 5570e HSPA+ (42Mbps) Mobile Broadband Card
+81A8: Dell Wireless 5808 Gobi(TM) 4G LTE Mobile Broadband Card
+81A9: Dell Wireless 5808e Gobi(TM) 4G LTE Mobile Broadband Card
 
-[32524.386288] =============================================
-[32524.386293] [ INFO: possible recursive locking detected ]
-[32524.386298] 3.14.0-rc2-0.7-default+ #35 Tainted: G           O
-[32524.386302] ---------------------------------------------
-[32524.386306] ifconfig/3103 is trying to acquire lock:
-[32524.386310]  (&vlan_netdev_addr_lock_key/1){+.....}, at: [<ffffffff814275f4>] dev_mc_sync+0x64/0xb0
-[32524.386326]
-[32524.386326] but task is already holding lock:
-[32524.386330]  (&vlan_netdev_addr_lock_key/1){+.....}, at: [<ffffffff8141af83>] dev_set_rx_mode+0x23/0x40
-[32524.386341]
-[32524.386341] other info that might help us debug this:
-[32524.386345]  Possible unsafe locking scenario:
-[32524.386345]
-[32524.386350]        CPU0
-[32524.386352]        ----
-[32524.386354]   lock(&vlan_netdev_addr_lock_key/1);
-[32524.386359]   lock(&vlan_netdev_addr_lock_key/1);
-[32524.386364]
-[32524.386364]  *** DEADLOCK ***
-[32524.386364]
-[32524.386368]  May be due to missing lock nesting notation
-[32524.386368]
-[32524.386373] 2 locks held by ifconfig/3103:
-[32524.386376]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81431d42>] rtnl_lock+0x12/0x20
-[32524.386387]  #1:  (&vlan_netdev_addr_lock_key/1){+.....}, at: [<ffffffff8141af83>] dev_set_rx_mode+0x23/0x40
-[32524.386398]
-[32524.386398] stack backtrace:
-[32524.386403] CPU: 1 PID: 3103 Comm: ifconfig Tainted: G           O 3.14.0-rc2-0.7-default+ #35
-[32524.386409] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-[32524.386414]  ffffffff81ffae40 ffff8800d9625ae8 ffffffff814f68a2 ffff8800d9625bc8
-[32524.386421]  ffffffff810a35fb ffff8800d8a8d9d0 00000000d9625b28 ffff8800d8a8e5d0
-[32524.386428]  000003cc00000000 0000000000000002 ffff8800d8a8e5f8 0000000000000000
-[32524.386435] Call Trace:
-[32524.386441]  [<ffffffff814f68a2>] dump_stack+0x6a/0x78
-[32524.386448]  [<ffffffff810a35fb>] __lock_acquire+0x7ab/0x1940
-[32524.386454]  [<ffffffff810a323a>] ? __lock_acquire+0x3ea/0x1940
-[32524.386459]  [<ffffffff810a4874>] lock_acquire+0xe4/0x110
-[32524.386464]  [<ffffffff814275f4>] ? dev_mc_sync+0x64/0xb0
-[32524.386471]  [<ffffffff814fc07a>] _raw_spin_lock_nested+0x2a/0x40
-[32524.386476]  [<ffffffff814275f4>] ? dev_mc_sync+0x64/0xb0
-[32524.386481]  [<ffffffff814275f4>] dev_mc_sync+0x64/0xb0
-[32524.386489]  [<ffffffffa0500cab>] vlan_dev_set_rx_mode+0x2b/0x50 [8021q]
-[32524.386495]  [<ffffffff8141addf>] __dev_set_rx_mode+0x5f/0xb0
-[32524.386500]  [<ffffffff8141af8b>] dev_set_rx_mode+0x2b/0x40
-[32524.386506]  [<ffffffff8141b3cf>] __dev_open+0xef/0x150
-[32524.386511]  [<ffffffff8141b177>] __dev_change_flags+0xa7/0x190
-[32524.386516]  [<ffffffff8141b292>] dev_change_flags+0x32/0x80
-[32524.386524]  [<ffffffff8149ca56>] devinet_ioctl+0x7d6/0x830
-[32524.386532]  [<ffffffff81437b0b>] ? dev_ioctl+0x34b/0x660
-[32524.386540]  [<ffffffff814a05b0>] inet_ioctl+0x80/0xa0
-[32524.386550]  [<ffffffff8140199d>] sock_do_ioctl+0x2d/0x60
-[32524.386558]  [<ffffffff81401a52>] sock_ioctl+0x82/0x2a0
-[32524.386568]  [<ffffffff811a7123>] do_vfs_ioctl+0x93/0x590
-[32524.386578]  [<ffffffff811b2705>] ? rcu_read_lock_held+0x45/0x50
-[32524.386586]  [<ffffffff811b39e5>] ? __fget_light+0x105/0x110
-[32524.386594]  [<ffffffff811a76b1>] SyS_ioctl+0x91/0xb0
-[32524.386604]  [<ffffffff815057e2>] system_call_fastpath+0x16/0x1b
+These devices are all clearly Sierra devices, but are also definitely
+Gobi-based.  The A8 might be the MC7700/7710 and A9 is likely a MC7750.
 
-========================================================================
+>From DellGobi5kSetup.exe from the Dell drivers:
 
-The reason is that all of the addr_lock_key for vlan dev have the same class,
-so if we change the status for vlan dev, the vlan dev and its real dev will
-hold the same class of addr_lock_key together, so the warning happened.
+usbif0: serial/firmware loader?
+usbif2: nmea
+usbif3: modem/ppp
+usbif8: net/QMI"
 
-we should distinguish the lock depth for vlan dev and its real dev.
-
-v1->v2: Convert the vlan_netdev_addr_lock_key to an array of eight elements, which
-	could support to add 8 vlan id on a same vlan dev, I think it is enough for current
-	scene, because a netdev's name is limited to IFNAMSIZ which could not hold 8 vlan id,
-	and the vlan dev would not meet the same class key with its real dev.
-
-	The new function vlan_dev_get_lockdep_subkey() will return the subkey and make the vlan
-	dev could get a suitable class key.
-
-v2->v3: According David's suggestion, I use the subclass to distinguish the lock key for vlan dev
-	and its real dev, but it make no sense, because the difference for subclass in the
-	lock_class_key doesn't mean that the difference class for lock_key, so I use lock_depth
-	to distinguish the different depth for every vlan dev, the same depth of the vlan dev
-	could have the same lock_class_key, I import the MAX_LOCK_DEPTH from the include/linux/sched.h,
-	I think it is enough here, the lockdep should never exceed that value.
-
-v3->v4: Add a huge array of locking keys will waste static kernel memory and is not a appropriate method,
-	we could use _nested() variants to fix the problem, calculate the depth for every vlan dev,
-	and use the depth as the subclass for addr_lock_key.
-
-Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: AceLan Kao <acelan.kao@canonical.com>
+Reported-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/8021q/vlan_dev.c | 46 +++++++++++++++++++++++++++++++++++++++++-----
- net/core/dev.c       |  1 +
- 2 files changed, 42 insertions(+), 5 deletions(-)
+ drivers/usb/serial/qcserial.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
-index 4c87317..b4202e1 100644
---- a/net/8021q/vlan_dev.c
-+++ b/net/8021q/vlan_dev.c
-@@ -501,10 +501,48 @@ static void vlan_dev_change_rx_flags(struct net_device *dev, int change)
- 	}
- }
+diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
+index 7ed681a..6c0a542 100644
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -151,6 +151,21 @@ static const struct usb_device_id id_table[] = {
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 0)},	/* Netgear AirCard 340U Device Management */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 2)},	/* Netgear AirCard 340U NMEA */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 3)},	/* Netgear AirCard 340U Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 0)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 2)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 3)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a3, 0)},	/* Dell Wireless 5570 HSPA+ (42Mbps) Mobile Broadband Card Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a3, 2)},	/* Dell Wireless 5570 HSPA+ (42Mbps) Mobile Broadband Card NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a3, 3)},	/* Dell Wireless 5570 HSPA+ (42Mbps) Mobile Broadband Card Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a4, 0)},	/* Dell Wireless 5570e HSPA+ (42Mbps) Mobile Broadband Card Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a4, 2)},	/* Dell Wireless 5570e HSPA+ (42Mbps) Mobile Broadband Card NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a4, 3)},	/* Dell Wireless 5570e HSPA+ (42Mbps) Mobile Broadband Card Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a8, 0)},	/* Dell Wireless 5808 Gobi(TM) 4G LTE Mobile Broadband Card Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a8, 2)},	/* Dell Wireless 5808 Gobi(TM) 4G LTE Mobile Broadband Card NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a8, 3)},	/* Dell Wireless 5808 Gobi(TM) 4G LTE Mobile Broadband Card Modem */
++	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a9, 0)},	/* Dell Wireless 5808e Gobi(TM) 4G LTE Mobile Broadband Card Device Management */
++	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a9, 2)},	/* Dell Wireless 5808e Gobi(TM) 4G LTE Mobile Broadband Card NMEA */
++	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a9, 3)},	/* Dell Wireless 5808e Gobi(TM) 4G LTE Mobile Broadband Card Modem */
  
-+static int vlan_calculate_locking_subclass(struct net_device *real_dev)
-+{
-+	int subclass = 0;
-+
-+	while (is_vlan_dev(real_dev)) {
-+		subclass++;
-+		real_dev = vlan_dev_priv(real_dev)->real_dev;
-+	}
-+
-+	return subclass;
-+}
-+
-+static void vlan_dev_mc_sync(struct net_device *to, struct net_device *from)
-+{
-+	int err = 0, subclass;
-+
-+	subclass = vlan_calculate_locking_subclass(to);
-+
-+	spin_lock_nested(&to->addr_list_lock, subclass);
-+	err = __hw_addr_sync(&to->mc, &from->mc, to->addr_len);
-+	if (!err)
-+		__dev_set_rx_mode(to);
-+	spin_unlock(&to->addr_list_lock);
-+}
-+
-+static void vlan_dev_uc_sync(struct net_device *to, struct net_device *from)
-+{
-+	int err = 0, subclass;
-+
-+	subclass = vlan_calculate_locking_subclass(to);
-+
-+	spin_lock_nested(&to->addr_list_lock, subclass);
-+	err = __hw_addr_sync(&to->uc, &from->uc, to->addr_len);
-+	if (!err)
-+		__dev_set_rx_mode(to);
-+	spin_unlock(&to->addr_list_lock);
-+}
-+
- static void vlan_dev_set_rx_mode(struct net_device *vlan_dev)
- {
--	dev_mc_sync(vlan_dev_priv(vlan_dev)->real_dev, vlan_dev);
--	dev_uc_sync(vlan_dev_priv(vlan_dev)->real_dev, vlan_dev);
-+	vlan_dev_mc_sync(vlan_dev_priv(vlan_dev)->real_dev, vlan_dev);
-+	vlan_dev_uc_sync(vlan_dev_priv(vlan_dev)->real_dev, vlan_dev);
- }
- 
- /*
-@@ -612,9 +650,7 @@ static int vlan_dev_init(struct net_device *dev)
- 
- 	SET_NETDEV_DEVTYPE(dev, &vlan_type);
- 
--	if (is_vlan_dev(real_dev))
--		subclass = 1;
--
-+	subclass = vlan_calculate_locking_subclass(dev);
- 	vlan_dev_set_lockdep_class(dev, subclass);
- 
- 	vlan_dev_priv(dev)->vlan_pcpu_stats = alloc_percpu(struct vlan_pcpu_stats);
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 59a5ce7..69ba30b 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -4829,6 +4829,7 @@ void __dev_set_rx_mode(struct net_device *dev)
- 	if (ops->ndo_set_rx_mode)
- 		ops->ndo_set_rx_mode(dev);
- }
-+EXPORT_SYMBOL(__dev_set_rx_mode);
- 
- void dev_set_rx_mode(struct net_device *dev)
- {
+ 	{ }				/* Terminating entry */
+ };
 -- 
 1.9.1
 
