@@ -1,33 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933181AbaFQO2S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 10:28:18 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:47966 "EHLO
+	id S933199AbaFQO23 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 10:28:29 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:48074 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932973AbaFQO2P (ORCPT
+	with ESMTP id S932973AbaFQO20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 10:28:15 -0400
-Message-ID: <53A04FDA.6070101@oracle.com>
-Date: Tue, 17 Jun 2014 22:25:30 +0800
+	Tue, 17 Jun 2014 10:28:26 -0400
+Message-ID: <53A04FF7.5050900@oracle.com>
+Date: Tue, 17 Jun 2014 22:25:59 +0800
 From: Jeff Liu <jeff.liu@oracle.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
 To: gregkh@linuxfoundation.org
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@gentwo.org>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, benh@kernel.crashing.org,
-        paulus@samba.org, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        herbert@gondor.apana.org.au, davem@davemloft.net,
-        stefanr@s5r6.in-berlin.de, joro@8bytes.org, jejb@parisc-linux.org,
-        deller@gmx.de, bhelgaas@google.com, clm@fb.com,
+CC: Christoph Lameter <cl@gentwo.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, herbert@gondor.apana.org.au,
+        davem@davemloft.net, stefanr@s5r6.in-berlin.de, joro@8bytes.org,
+        jejb@parisc-linux.org, deller@gmx.de, bhelgaas@google.com, clm@fb.com,
         Josef Bacik <jbacik@fb.com>, swhiteho@redhat.com, bharrosh@panasas.com,
         bhalevy@primarydata.com, ccaulfie@redhat.com, teigland@redhat.com,
         "Theodore Ts'o" <tytso@mit.edu>, adilger.kernel@dilger.ca,
         jaegeuk@kernel.org, cm224.lee@samsung.com,
         Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
         casey@schaufler-ca.com, LKML <linux-kernel@vger.kernel.org>
-Subject: [patch 00/24] lib/kobject: kset_create_and_add return error clean
- up
+Subject: [PATCH 01/24] kobject: return actual error on kset_create_and_add
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-Source-IP: acsinet22.oracle.com [141.146.126.238]
@@ -35,44 +34,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Jie Liu <jeff.liu@oracle.com>
 
-Currently, to verify if kset_create_and_add() is succeed or not, almost
-all subsystems with sysfs support are check up the return value against
-NULL, then return -ENOMEM on failure, since kset_create_and_add() always 
-return NULL in case of anything wrong.  However, kset_register() can fail
-due to other reasons, hence it's better to return the actual error on
-kset_create_and_add(), this patch series is just did that and this is
-inspired by Christoph in another thread:
-http://www.spinics.net/lists/linux-mm/msg74729.html
+It's better to return the actual error rather than NULL because
+kset_register() can failed due to other reasons.
 
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: James E.J. Bottomley <JBottomley@parallels.com>
+Cc: Helge Deller <deller@gmx.de>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Chris Mason <clm@fb.com>
+Cc: Josef Bacik <jbacik@fb.com>
+Cc: Steven Whitehouse <swhiteho@redhat.com>
+Cc: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Benny Halevy <bhalevy@primarydata.com>
+Cc: Christine Caulfield <ccaulfie@redhat.com>
+Cc: David Teigland <teigland@redhat.com>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: Jaegeuk Kim <jaegeuk@kernel.org>
+Cc: Changman Lee <cm224.lee@samsung.com>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Casey Schaufler <casey@schaufler-ca.com>
+Signed-off-by: Jie Liu <jeff.liu@oracle.com>
+---
+ lib/kobject.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Jeff Liu (24)
-  kobject: return actual error on kset_create_and_add
-  sample/kobject: update kset-example code
-  slub: return actual error on sysfs_slab_add
-  powerpc: check/return acutal error on sysfs init
-  s390: check/return actual error on sysfs init
-  crypt: return actual error code on pcrypt_init
-  kernel: return actual error on param_sysfs_init
-  drivers/firmware: return actual error on sysfs init
-  drivers/iommu: check actual error on iommu_init
-  drivers/base: return actual error on sysfs init
-  drviers/scsi: check sysfs init return value via IS_ERR at iscsi_boot_create_kset
-  drivers/parisc: return actual error on pdc_stable_init
-  drivers/pci: return actual error on pci_slot_init
-  drivers/s390: return actual error on sysfs init functions
-  drivers/of: return actual error on of_init
-  btrfs: return actual error on btrfs_init_sysfs
-  gfs2: return actual error on gfs2_sys_init
-  exofs: return actual error on exofs_sysfs_odev_add
-  fs/dlm: return actual error on dlm_lockspace_init
-  ext4: return actual error on ext4_init_fs
-  f2fs: return actual error on init_f2fs_fs
-  ocfs2: return actual error on sysfs init
-  net: return actual error on register_queue_kobjects
-  security/smack: return acutal error on smk_init_sysfs
-
-
-Cheers,
--Jeff
+diff --git a/lib/kobject.c b/lib/kobject.c
+index 58751bb..538c617 100644
+--- a/lib/kobject.c
++++ b/lib/kobject.c
+@@ -919,11 +919,11 @@ struct kset *kset_create_and_add(const char *name,
+ 
+ 	kset = kset_create(name, uevent_ops, parent_kobj);
+ 	if (!kset)
+-		return NULL;
++		return ERR_PTR(-ENOMEM);
+ 	error = kset_register(kset);
+ 	if (error) {
+ 		kfree(kset);
+-		return NULL;
++		return ERR_PTR(error);
+ 	}
+ 	return kset;
+ }
+-- 
+1.8.3.2
