@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932749AbaFQN00 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 09:26:26 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:59075 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932332AbaFQN0Y (ORCPT
+	id S932834AbaFQN3F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 09:29:05 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:58148 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932070AbaFQN3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 09:26:24 -0400
+	Tue, 17 Jun 2014 09:29:04 -0400
+Message-ID: <53A0428C.10200@linaro.org>
+Date: Tue, 17 Jun 2014 14:28:44 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <53A030E9.7010701@redhat.com>
-References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
-	<CALCETrVoE+JO2rLsBUHAOJdvescEEjxikj8iQ339Nxfopfc7pw@mail.gmail.com>
-	<CANq1E4SaWLD=hNEc-CDJbNnrGfXE_PkxZFBhpW4tbK7wor7xPA@mail.gmail.com>
-	<CALCETrU8N9EbnJ3=oQ1WQCG9Vunn3nR9Ba=J48wJm0SuH0YB4A@mail.gmail.com>
-	<CANq1E4QQUKHabheq18AzkVZk3WDtAeC-6W66tVNB+EKgYOx1Vg@mail.gmail.com>
-	<53A01049.6020502@redhat.com>
-	<CANq1E4T3KJZ++=KF2OZ_dd+NvPqg+=4Pw6O7Po3-ZxaaMHPukw@mail.gmail.com>
-	<53A012C8.7060109@redhat.com>
-	<CANq1E4QinvVA-O=dX4N819jVK3xSihJcpz9juFj+A3qv0MXODg@mail.gmail.com>
-	<53A030E9.7010701@redhat.com>
-Date: Tue, 17 Jun 2014 15:26:23 +0200
-Message-ID: <CANq1E4SGFoq1POtrP9DD91=3nbswELK9TH49_XkjE=Wwym4f+w@mail.gmail.com>
-Subject: Re: [PATCH v3 0/7] File Sealing & memfd_create()
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Florian Weimer <fweimer@redhat.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Hugh Dickins <hughd@google.com>,
-        Tony Battersby <tonyb@cybernetics.com>
-Content-Type: text/plain; charset=UTF-8
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Rob Clark <robdclark@gmail.com>, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v3] ARM: add get_user() support for 8 byte types
+References: <1402587755-29245-1-git-send-email-daniel.thompson@linaro.org> <20140612155843.GK23430@n2100.arm.linux.org.uk> <53A015B3.2070809@linaro.org> <20140617110908.GH23430@n2100.arm.linux.org.uk>
+In-Reply-To: <20140617110908.GH23430@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On 17/06/14 12:09, Russell King - ARM Linux wrote:
+> On Tue, Jun 17, 2014 at 11:17:23AM +0100, Daniel Thompson wrote:
+>> ... at this point there is a narrowing cast followed by an implicit
+>> widening. This results in compiler either ignoring r3 altogether or, if
+>> spilling to the stack, generating code to set r3 to zero before doing
+>> the store.
+> 
+> In actual fact, there's very little difference between the two
+> implementations in terms of generated code.
+> 
+> The difference between them is what happens on the 64-bit big endian
+> narrowing case, where we use __get_user_4 with your version.  This
+> adds one additional instruction.
 
-On Tue, Jun 17, 2014 at 2:13 PM, Florian Weimer <fweimer@redhat.com> wrote:
-> On 06/17/2014 12:10 PM, David Herrmann wrote:
->
->>>> The file might have holes, therefore, you'd have to allocate backing
->>>> pages. This might hit a soft-limit and fail. To avoid this, use
->>>> fallocate() to allocate pages prior to mmap()
->>>
->>>
->>> This does not work because the consuming side does not know how the
->>> descriptor was set up if sealing does not imply that.
->>
->>
->> The consuming side has to very seals via F_GET_SEALS. After that, it
->> shall do a simple fallocate() on the whole file if it wants to go sure
->> that all pages are allocated. Why shouldn't that be possible? Please
->> elaborate.
->
->
-> Hmm.  You permit general fallocate even for WRITE seals.  That's really
-> unexpected.
+Good point.
 
-SEAL_WRITE prevents modifications of file-content. fallocate() does
-not modify file-contents, so I think it's not unexpected that
-fallocate() is still allowed.
 
-> The inode_newsize_ok check in shmem_fallocate can result in SIGXFSZ, which
-> doesn't seem to be what's intended here.
+> and 64-bit narrowed to 32-bit:
+> 
+>         str     lr, [sp, #-4]!
+> -       mov     ip, r0
+> +       mov     r3, r0
+>         mov     r0, r1
+>  #APP
+>  @ 275 "t-getuser.c" 1
+> -       bl      __get_user_8
+> +       bl      __get_user_4
+>  @ 0 "" 2
+> -       str     r2, [ip, #0]
+> +       str     r2, [r3, #0]
+>         ldr     pc, [sp], #4
 
-It can only result in SIGXFSZ if you _increase_ the file-size with
-fallocate(). You shouldn't do that if you only verify that holes are
-allocated. Hence, a simple fallocate(st.st_size) cannot result in
-SIGXFSZ. Obviously, this requires SEAL_SHRINK to prevent the remote
-site to shrink the file while you call fallocate(). But SEAL_WRITE
-usually goes together with SEAL_SHRINK for obvious reasons.
+The later case avoids allocating r3 for the __get_user_x and should
+reduce register pressure and, potentially, saves a few instructions
+elsewhere (one of my rather large test functions does demonstrate this
+effect).
 
-> Will the new pages attributed to the process calling fallocate, or to the
-> process calling memfd_create?
+I don't know if we care about that. If we do I'm certainly happy to put
+a patch together than exploits this (whilst avoiding the add in the big
+endian case).
 
-Pages are always allocated by the caller and charged on current->mm
-(current process).
 
-Thanks
-David
+Daniel.
