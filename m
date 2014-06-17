@@ -1,289 +1,322 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933468AbaFQPC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 11:02:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21691 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933047AbaFQPCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 11:02:25 -0400
-Date: Tue, 17 Jun 2014 11:01:59 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm v2 04/11] pagewalk: move pmd_trans_huge_lock() from
- callbacks to common code
-Message-ID: <20140617150159.GA8524@nhori.redhat.com>
-References: <1402609691-13950-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1402609691-13950-5-git-send-email-n-horiguchi@ah.jp.nec.com>
- <53A0506C.6040609@redhat.com>
+	id S933188AbaFQPEb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 11:04:31 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:50367 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933014AbaFQPE3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 11:04:29 -0400
+Date: Tue, 17 Jun 2014 16:04:22 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+Cc: linus.walleij@linaro.org, broonie@kernel.org, sameo@linux.intel.com,
+        mika.westerberg@linux.intel.com, gnurou@gmail.com,
+        linux-kernel@vger.kernel.org, jacob.jun.pan@linux.intel.com,
+        bin.yang@intel.com
+Subject: Re: [PATCH v5 1/3] mfd: intel_soc_pmic: Core driver
+Message-ID: <20140617150422.GI29841@lee--X1>
+References: <1401773164-30326-1-git-send-email-lejun.zhu@linux.intel.com>
+ <1401773164-30326-2-git-send-email-lejun.zhu@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <53A0506C.6040609@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401773164-30326-2-git-send-email-lejun.zhu@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 04:27:56PM +0200, Jerome Marchand wrote:
-> On 06/12/2014 11:48 PM, Naoya Horiguchi wrote:
-> > Now all of current users of page table walker are canonicalized, i.e.
-> > pmd_entry() handles only trans_pmd entry, and pte_entry() handles pte entry.
-> > So we can factorize common code more.
-> > This patch moves pmd_trans_huge_lock() in each pmd_entry() to pagewalk core.
-> > 
-> > ChangeLog v2:
-> > - add null check walk->vma in walk_pmd_range()
+> This patch provides the common I2C driver code for Intel SoC PMICs.
 > 
-> An older version of this patch already made it to linux-next (commit
-> b0e08c5) and I've actually hit the NULL pointer dereference.
-> 
-> Moreover, that patch (or maybe another recent pagewalk patch) breaks
-> /proc/<pid>/smaps. All fields that should have been filled by
-> smaps_pte() are almost always zero (and when it isn't, it's always a
-> multiple of 2MB). It seems to me that the page walk never goes below
-> pmd level.
+> Signed-off-by: Yang, Bin <bin.yang@intel.com>
+> Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
+> ---
+> v2:
+> - Use regmap instead of creating our own I2C read/write callbacks.
+> - Add one missing EXPORT_SYMBOL.
+> - Remove duplicate code and put them into pmic_regmap_load_from_hw.
+> v3:
+> - Use regmap-irq. Remove our own pmic_regmap_* and IRQ handling code.
+> - Remove intel_soc_pmic_dev() and intel_soc_pmic_set_pdata().
+> - Use EXPORT_SYMBOL_GPL for exposed APIs.
+> - Use gpiod interface instead of gpio numbers.
+> - Remove redundant I2C IDs.
+> - Use managed allocations.
+> v4:
+> - Remove all exported APIs which are wrappers of regmap API, export
+>   the regmap in data structure instead.
+> - Combine I2C and core .c files.
+> - Clean up include files.
+> - Use intel_soc_pmic_ prefix to replace pmic_ and intel_pmic_.
+> - Fix various coding style issues.
+> v5:
+> - Add comment to describe what is done in _find_gpio_irq().
+> - Remove i2c id. Only keep ACPI id and match it in _probe().
+> - Further fix of coding style issues.
+> ---
+>  drivers/mfd/intel_soc_pmic_core.c  | 168 +++++++++++++++++++++++++++++++++++++
+>  drivers/mfd/intel_soc_pmic_core.h  |  32 +++++++
+>  include/linux/mfd/intel_soc_pmic.h |  30 +++++++
+>  3 files changed, 230 insertions(+)
+>  create mode 100644 drivers/mfd/intel_soc_pmic_core.c
+>  create mode 100644 drivers/mfd/intel_soc_pmic_core.h
+>  create mode 100644 include/linux/mfd/intel_soc_pmic.h
 
-Agreed, I'm now thinking that forcing pte_entry() for every user is not
-good idea, so I'll return to the start point and just will do only the
-necessary changes (i.e. only iron out the vma handling problem for hugepage.)
+Applied, thanks.
 
-Thanks,
-Naoya Horiguchi
+> diff --git a/drivers/mfd/intel_soc_pmic_core.c b/drivers/mfd/intel_soc_pmic_core.c
+> new file mode 100644
+> index 0000000..7638b34
+> --- /dev/null
+> +++ b/drivers/mfd/intel_soc_pmic_core.c
+> @@ -0,0 +1,168 @@
+> +/*
+> + * intel_soc_pmic_core.c - Intel SoC PMIC MFD Driver
+> + *
+> + * Copyright (C) 2013, 2014 Intel Corporation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License version
+> + * 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * Author: Yang, Bin <bin.yang@intel.com>
+> + * Author: Zhu, Lejun <lejun.zhu@linux.intel.com>
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/mfd/core.h>
+> +#include <linux/i2c.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/gpio/consumer.h>
+> +#include <linux/acpi.h>
+> +#include <linux/regmap.h>
+> +#include <linux/mfd/intel_soc_pmic.h>
+> +#include "intel_soc_pmic_core.h"
+> +
+> +/*
+> + * On some boards the PMIC interrupt may come from a GPIO line.
+> + * Try to lookup the ACPI table and see if such connection exists. If not,
+> + * return -ENOENT and use the IRQ provided by I2C.
+> + */
+> +static int intel_soc_pmic_find_gpio_irq(struct device *dev)
+> +{
+> +	struct gpio_desc *desc;
+> +	int irq;
+> +
+> +	desc = devm_gpiod_get_index(dev, "intel_soc_pmic", 0);
+> +	if (IS_ERR(desc))
+> +		return -ENOENT;
+> +
+> +	irq = gpiod_to_irq(desc);
+> +	if (irq < 0)
+> +		dev_warn(dev, "Can't get irq: %d\n", irq);
+> +
+> +	return irq;
+> +}
+> +
+> +static int intel_soc_pmic_i2c_probe(struct i2c_client *i2c,
+> +				    const struct i2c_device_id *i2c_id)
+> +{
+> +	struct device *dev = &i2c->dev;
+> +	const struct acpi_device_id *id;
+> +	struct intel_soc_pmic_config *config;
+> +	struct intel_soc_pmic *pmic;
+> +	int ret;
+> +	int irq;
+> +
+> +	id = acpi_match_device(dev->driver->acpi_match_table, dev);
+> +	if (!id || !id->driver_data)
+> +		return -ENODEV;
+> +
+> +	config = (struct intel_soc_pmic_config *)id->driver_data;
+> +
+> +	pmic = devm_kzalloc(dev, sizeof(*pmic), GFP_KERNEL);
+> +	dev_set_drvdata(dev, pmic);
+> +
+> +	pmic->regmap = devm_regmap_init_i2c(i2c, config->regmap_config);
+> +
+> +	irq = intel_soc_pmic_find_gpio_irq(dev);
+> +	pmic->irq = (irq < 0) ? i2c->irq : irq;
+> +
+> +	ret = regmap_add_irq_chip(pmic->regmap, pmic->irq,
+> +				  config->irq_flags | IRQF_ONESHOT,
+> +				  0, config->irq_chip,
+> +				  &pmic->irq_chip_data);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = enable_irq_wake(pmic->irq);
+> +	if (ret)
+> +		dev_warn(dev, "Can't enable IRQ as wake source: %d\n", ret);
+> +
+> +	ret = mfd_add_devices(dev, -1, config->cell_dev,
+> +			      config->n_cell_devs, NULL, 0,
+> +			      regmap_irq_get_domain(pmic->irq_chip_data));
+> +	if (ret)
+> +		goto err_del_irq_chip;
+> +
+> +	return 0;
+> +
+> +err_del_irq_chip:
+> +	regmap_del_irq_chip(pmic->irq, pmic->irq_chip_data);
+> +	return ret;
+> +}
+> +
+> +static int intel_soc_pmic_i2c_remove(struct i2c_client *i2c)
+> +{
+> +	struct intel_soc_pmic *pmic = dev_get_drvdata(&i2c->dev);
+> +
+> +	regmap_del_irq_chip(pmic->irq, pmic->irq_chip_data);
+> +
+> +	mfd_remove_devices(&i2c->dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static void intel_soc_pmic_shutdown(struct i2c_client *i2c)
+> +{
+> +	struct intel_soc_pmic *pmic = dev_get_drvdata(&i2c->dev);
+> +
+> +	disable_irq(pmic->irq);
+> +
+> +	return;
+> +}
+> +
+> +static int intel_soc_pmic_suspend(struct device *dev)
+> +{
+> +	struct intel_soc_pmic *pmic = dev_get_drvdata(dev);
+> +
+> +	disable_irq(pmic->irq);
+> +
+> +	return 0;
+> +}
+> +
+> +static int intel_soc_pmic_resume(struct device *dev)
+> +{
+> +	struct intel_soc_pmic *pmic = dev_get_drvdata(dev);
+> +
+> +	enable_irq(pmic->irq);
+> +
+> +	return 0;
+> +}
+> +
+> +static SIMPLE_DEV_PM_OPS(intel_soc_pmic_pm_ops, intel_soc_pmic_suspend,
+> +			 intel_soc_pmic_resume);
+> +
+> +static const struct i2c_device_id intel_soc_pmic_i2c_id[] = {
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(i2c, intel_soc_pmic_i2c_id);
+> +
+> +static struct acpi_device_id intel_soc_pmic_acpi_match[] = {
+> +	{"INT33FD", (kernel_ulong_t)&intel_soc_pmic_config_crc},
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(acpi, intel_soc_pmic_acpi_match);
+> +
+> +static struct i2c_driver intel_soc_pmic_i2c_driver = {
+> +	.driver = {
+> +		.name = "intel_soc_pmic_i2c",
+> +		.owner = THIS_MODULE,
+> +		.pm = &intel_soc_pmic_pm_ops,
+> +		.acpi_match_table = ACPI_PTR(intel_soc_pmic_acpi_match),
+> +	},
+> +	.probe = intel_soc_pmic_i2c_probe,
+> +	.remove = intel_soc_pmic_i2c_remove,
+> +	.id_table = intel_soc_pmic_i2c_id,
+> +	.shutdown = intel_soc_pmic_shutdown,
+> +};
+> +
+> +module_i2c_driver(intel_soc_pmic_i2c_driver);
+> +
+> +MODULE_DESCRIPTION("I2C driver for Intel SoC PMIC");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_AUTHOR("Yang, Bin <bin.yang@intel.com>");
+> +MODULE_AUTHOR("Zhu, Lejun <lejun.zhu@linux.intel.com>");
+> diff --git a/drivers/mfd/intel_soc_pmic_core.h b/drivers/mfd/intel_soc_pmic_core.h
+> new file mode 100644
+> index 0000000..33aacd9
+> --- /dev/null
+> +++ b/drivers/mfd/intel_soc_pmic_core.h
+> @@ -0,0 +1,32 @@
+> +/*
+> + * intel_soc_pmic_core.h - Intel SoC PMIC MFD Driver
+> + *
+> + * Copyright (C) 2012-2014 Intel Corporation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License version
+> + * 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * Author: Yang, Bin <bin.yang@intel.com>
+> + * Author: Zhu, Lejun <lejun.zhu@linux.intel.com>
+> + */
+> +
+> +#ifndef __INTEL_SOC_PMIC_CORE_H__
+> +#define __INTEL_SOC_PMIC_CORE_H__
+> +
+> +struct intel_soc_pmic_config {
+> +	unsigned long irq_flags;
+> +	struct mfd_cell *cell_dev;
+> +	int n_cell_devs;
+> +	struct regmap_config *regmap_config;
+> +	struct regmap_irq_chip *irq_chip;
+> +};
+> +
+> +extern struct intel_soc_pmic_config intel_soc_pmic_config_crc;
+> +
+> +#endif	/* __INTEL_SOC_PMIC_CORE_H__ */
+> diff --git a/include/linux/mfd/intel_soc_pmic.h b/include/linux/mfd/intel_soc_pmic.h
+> new file mode 100644
+> index 0000000..abcbfcf
+> --- /dev/null
+> +++ b/include/linux/mfd/intel_soc_pmic.h
+> @@ -0,0 +1,30 @@
+> +/*
+> + * intel_soc_pmic.h - Intel SoC PMIC Driver
+> + *
+> + * Copyright (C) 2012-2014 Intel Corporation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License version
+> + * 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * Author: Yang, Bin <bin.yang@intel.com>
+> + * Author: Zhu, Lejun <lejun.zhu@linux.intel.com>
+> + */
+> +
+> +#ifndef __INTEL_SOC_PMIC_H__
+> +#define __INTEL_SOC_PMIC_H__
+> +
+> +#include <linux/regmap.h>
+> +
+> +struct intel_soc_pmic {
+> +	int irq;
+> +	struct regmap *regmap;
+> +	struct regmap_irq_chip_data *irq_chip_data;
+> +};
+> +
+> +#endif	/* __INTEL_SOC_PMIC_H__ */
 
-> Jerome
-> 
-> > - move comment update into a separate patch
-> > 
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > ---
-> >  arch/powerpc/mm/subpage-prot.c |  2 ++
-> >  fs/proc/task_mmu.c             | 66 ++++++++++++++----------------------------
-> >  mm/memcontrol.c                | 55 ++++++++++-------------------------
-> >  mm/pagewalk.c                  | 18 ++++++++++--
-> >  4 files changed, 55 insertions(+), 86 deletions(-)
-> > 
-> > diff --git mmotm-2014-05-21-16-57.orig/arch/powerpc/mm/subpage-prot.c mmotm-2014-05-21-16-57/arch/powerpc/mm/subpage-prot.c
-> > index fa9fb5b4c66c..d0d94ac606f3 100644
-> > --- mmotm-2014-05-21-16-57.orig/arch/powerpc/mm/subpage-prot.c
-> > +++ mmotm-2014-05-21-16-57/arch/powerpc/mm/subpage-prot.c
-> > @@ -135,7 +135,9 @@ static int subpage_walk_pmd_entry(pmd_t *pmd, unsigned long addr,
-> >  				  unsigned long end, struct mm_walk *walk)
-> >  {
-> >  	struct vm_area_struct *vma = walk->vma;
-> > +	spin_unlock(walk->ptl);
-> >  	split_huge_page_pmd(vma, addr, pmd);
-> > +	spin_lock(walk->ptl);
-> >  	return 0;
-> >  }
-> >  
-> > diff --git mmotm-2014-05-21-16-57.orig/fs/proc/task_mmu.c mmotm-2014-05-21-16-57/fs/proc/task_mmu.c
-> > index fa6d6a4e85b3..059206ea3c6b 100644
-> > --- mmotm-2014-05-21-16-57.orig/fs/proc/task_mmu.c
-> > +++ mmotm-2014-05-21-16-57/fs/proc/task_mmu.c
-> > @@ -496,15 +496,8 @@ static int smaps_pmd(pmd_t *pmd, unsigned long addr, unsigned long end,
-> >  			struct mm_walk *walk)
-> >  {
-> >  	struct mem_size_stats *mss = walk->private;
-> > -	spinlock_t *ptl;
-> > -
-> > -	if (pmd_trans_huge_lock(pmd, walk->vma, &ptl) == 1) {
-> > -		smaps_pte((pte_t *)pmd, addr, addr + HPAGE_PMD_SIZE, walk);
-> > -		spin_unlock(ptl);
-> > -		mss->anonymous_thp += HPAGE_PMD_SIZE;
-> > -		/* don't call smaps_pte() */
-> > -		walk->skip = 1;
-> > -	}
-> > +	smaps_pte((pte_t *)pmd, addr, addr + HPAGE_PMD_SIZE, walk);
-> > +	mss->anonymous_thp += HPAGE_PMD_SIZE;
-> >  	return 0;
-> >  }
-> >  
-> > @@ -983,31 +976,21 @@ static int pagemap_pmd(pmd_t *pmd, unsigned long addr, unsigned long end,
-> >  	struct vm_area_struct *vma = walk->vma;
-> >  	struct pagemapread *pm = walk->private;
-> >  	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
-> > -	spinlock_t *ptl;
-> > -
-> > -	if (!vma)
-> > -		return err;
-> > -	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
-> > -		int pmd_flags2;
-> > +	int pmd_flags2;
-> >  
-> > -		if ((vma->vm_flags & VM_SOFTDIRTY) || pmd_soft_dirty(*pmd))
-> > -			pmd_flags2 = __PM_SOFT_DIRTY;
-> > -		else
-> > -			pmd_flags2 = 0;
-> > +	if ((vma->vm_flags & VM_SOFTDIRTY) || pmd_soft_dirty(*pmd))
-> > +		pmd_flags2 = __PM_SOFT_DIRTY;
-> > +	else
-> > +		pmd_flags2 = 0;
-> >  
-> > -		for (; addr != end; addr += PAGE_SIZE) {
-> > -			unsigned long offset;
-> > +	for (; addr != end; addr += PAGE_SIZE) {
-> > +		unsigned long offset;
-> >  
-> > -			offset = (addr & ~PAGEMAP_WALK_MASK) >>
-> > -					PAGE_SHIFT;
-> > -			thp_pmd_to_pagemap_entry(&pme, pm, *pmd, offset, pmd_flags2);
-> > -			err = add_to_pagemap(addr, &pme, pm);
-> > -			if (err)
-> > -				break;
-> > -		}
-> > -		spin_unlock(ptl);
-> > -		/* don't call pagemap_pte() */
-> > -		walk->skip = 1;
-> > +		offset = (addr & ~PAGEMAP_WALK_MASK) >> PAGE_SHIFT;
-> > +		thp_pmd_to_pagemap_entry(&pme, pm, *pmd, offset, pmd_flags2);
-> > +		err = add_to_pagemap(addr, &pme, pm);
-> > +		if (err)
-> > +			break;
-> >  	}
-> >  	return err;
-> >  }
-> > @@ -1277,20 +1260,13 @@ static int gather_pmd_stats(pmd_t *pmd, unsigned long addr,
-> >  {
-> >  	struct numa_maps *md = walk->private;
-> >  	struct vm_area_struct *vma = walk->vma;
-> > -	spinlock_t *ptl;
-> > -
-> > -	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
-> > -		pte_t huge_pte = *(pte_t *)pmd;
-> > -		struct page *page;
-> > -
-> > -		page = can_gather_numa_stats(huge_pte, vma, addr);
-> > -		if (page)
-> > -			gather_stats(page, md, pte_dirty(huge_pte),
-> > -				     HPAGE_PMD_SIZE/PAGE_SIZE);
-> > -		spin_unlock(ptl);
-> > -		/* don't call gather_pte_stats() */
-> > -		walk->skip = 1;
-> > -	}
-> > +	pte_t huge_pte = *(pte_t *)pmd;
-> > +	struct page *page;
-> > +
-> > +	page = can_gather_numa_stats(huge_pte, vma, addr);
-> > +	if (page)
-> > +		gather_stats(page, md, pte_dirty(huge_pte),
-> > +			     HPAGE_PMD_SIZE/PAGE_SIZE);
-> >  	return 0;
-> >  }
-> >  #ifdef CONFIG_HUGETLB_PAGE
-> > diff --git mmotm-2014-05-21-16-57.orig/mm/memcontrol.c mmotm-2014-05-21-16-57/mm/memcontrol.c
-> > index 01a66a208769..bb987cb9e043 100644
-> > --- mmotm-2014-05-21-16-57.orig/mm/memcontrol.c
-> > +++ mmotm-2014-05-21-16-57/mm/memcontrol.c
-> > @@ -6723,15 +6723,9 @@ static int mem_cgroup_count_precharge_pmd(pmd_t *pmd,
-> >  					struct mm_walk *walk)
-> >  {
-> >  	struct vm_area_struct *vma = walk->vma;
-> > -	spinlock_t *ptl;
-> > -
-> > -	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
-> > -		if (get_mctgt_type_thp(vma, addr, *pmd, NULL) == MC_TARGET_PAGE)
-> > -			mc.precharge += HPAGE_PMD_NR;
-> > -		spin_unlock(ptl);
-> > -		/* don't call mem_cgroup_count_precharge_pte() */
-> > -		walk->skip = 1;
-> > -	}
-> > +
-> > +	if (get_mctgt_type_thp(vma, addr, *pmd, NULL) == MC_TARGET_PAGE)
-> > +		mc.precharge += HPAGE_PMD_NR;
-> >  	return 0;
-> >  }
-> >  
-> > @@ -6952,38 +6946,21 @@ static int mem_cgroup_move_charge_pmd(pmd_t *pmd,
-> >  	struct page *page;
-> >  	struct page_cgroup *pc;
-> >  
-> > -	/*
-> > -	 * We don't take compound_lock() here but no race with splitting thp
-> > -	 * happens because:
-> > -	 *  - if pmd_trans_huge_lock() returns 1, the relevant thp is not
-> > -	 *    under splitting, which means there's no concurrent thp split,
-> > -	 *  - if another thread runs into split_huge_page() just after we
-> > -	 *    entered this if-block, the thread must wait for page table lock
-> > -	 *    to be unlocked in __split_huge_page_splitting(), where the main
-> > -	 *    part of thp split is not executed yet.
-> > -	 */
-> > -	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
-> > -		if (mc.precharge < HPAGE_PMD_NR) {
-> > -			spin_unlock(ptl);
-> > -			return 0;
-> > -		}
-> > -		target_type = get_mctgt_type_thp(vma, addr, *pmd, &target);
-> > -		if (target_type == MC_TARGET_PAGE) {
-> > -			page = target.page;
-> > -			if (!isolate_lru_page(page)) {
-> > -				pc = lookup_page_cgroup(page);
-> > -				if (!mem_cgroup_move_account(page, HPAGE_PMD_NR,
-> > -							pc, mc.from, mc.to)) {
-> > -					mc.precharge -= HPAGE_PMD_NR;
-> > -					mc.moved_charge += HPAGE_PMD_NR;
-> > -				}
-> > -				putback_lru_page(page);
-> > +	if (mc.precharge < HPAGE_PMD_NR)
-> > +		return 0;
-> > +	target_type = get_mctgt_type_thp(vma, addr, *pmd, &target);
-> > +	if (target_type == MC_TARGET_PAGE) {
-> > +		page = target.page;
-> > +		if (!isolate_lru_page(page)) {
-> > +			pc = lookup_page_cgroup(page);
-> > +			if (!mem_cgroup_move_account(page, HPAGE_PMD_NR,
-> > +						     pc, mc.from, mc.to)) {
-> > +				mc.precharge -= HPAGE_PMD_NR;
-> > +				mc.moved_charge += HPAGE_PMD_NR;
-> >  			}
-> > -			put_page(page);
-> > +			putback_lru_page(page);
-> >  		}
-> > -		spin_unlock(ptl);
-> > -		/* don't call mem_cgroup_move_charge_pte() */
-> > -		walk->skip = 1;
-> > +		put_page(page);
-> >  	}
-> >  	return 0;
-> >  }
-> > diff --git mmotm-2014-05-21-16-57.orig/mm/pagewalk.c mmotm-2014-05-21-16-57/mm/pagewalk.c
-> > index 24311d6f5c20..f1a3417d0b51 100644
-> > --- mmotm-2014-05-21-16-57.orig/mm/pagewalk.c
-> > +++ mmotm-2014-05-21-16-57/mm/pagewalk.c
-> > @@ -73,8 +73,22 @@ static int walk_pmd_range(pud_t *pud, unsigned long addr,
-> >  			continue;
-> >  		}
-> >  
-> > -		if (walk->pmd_entry) {
-> > -			err = walk->pmd_entry(pmd, addr, next, walk);
-> > +		/*
-> > +		 * We don't take compound_lock() here but no race with splitting
-> > +		 * thp happens because:
-> > +		 *  - if pmd_trans_huge_lock() returns 1, the relevant thp is
-> > +		 *    not under splitting, which means there's no concurrent
-> > +		 *    thp split,
-> > +		 *  - if another thread runs into split_huge_page() just after
-> > +		 *    we entered this if-block, the thread must wait for page
-> > +		 *    table lock to be unlocked in __split_huge_page_splitting(),
-> > +		 *    where the main part of thp split is not executed yet.
-> > +		 */
-> > +		if (walk->pmd_entry && walk->vma) {
-> > +			if (pmd_trans_huge_lock(pmd, walk->vma, &walk->ptl) == 1) {
-> > +				err = walk->pmd_entry(pmd, addr, next, walk);
-> > +				spin_unlock(walk->ptl);
-> > +			}
-> >  			if (skip_lower_level_walking(walk))
-> >  				continue;
-> >  			if (err)
-> > 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
