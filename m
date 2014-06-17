@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967275AbaFQWLV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:11:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54626 "EHLO
+	id S966872AbaFQVve (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:51:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54615 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966848AbaFQVvf (ORCPT
+	with ESMTP id S966848AbaFQVvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:51:35 -0400
+	Tue, 17 Jun 2014 17:51:31 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Robert N <crshman@gmail.com>,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Jani Nikula <jani.nikula@intel.com>,
+Cc: Mark Salter <msalter@redhat.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 125/212] drm/i915: Increase WM memory latency values on SNB
-Date: Tue, 17 Jun 2014 14:43:39 -0700
-Message-Id: <1403041506-13646-126-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 136/212] arm64: fix pud_huge() for 2-level pagetables
+Date: Tue, 17 Jun 2014 14:43:50 -0700
+Message-Id: <1403041506-13646-137-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,93 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
+From: Mark Salter <msalter@redhat.com>
 
-commit e95a2f7509f5219177d6821a0a8754f93892ca56 upstream.
+commit 4797ec2dc83a43be35bad56037d1b53db9e2b5d5 upstream.
 
-On SNB the BIOS provided WM memory latency values seem insufficient to
-handle high resolution displays.
+The following happens when trying to run a kvm guest on a kernel
+configured for 64k pages. This doesn't happen with 4k pages:
 
-In this particular case the display mode was a 2560x1440@60Hz, which
-makes the pixel clock 241.5 MHz. It was empirically found that a memory
-latency value if 1.2 usec is enough to avoid underruns, whereas the BIOS
-provided value of 0.7 usec was clearly too low. Incidentally 1.2 usec
-is what the typical BIOS provided values are on IVB systems.
+  BUG: failure at include/linux/mm.h:297/put_page_testzero()!
+  Kernel panic - not syncing: BUG!
+  CPU: 2 PID: 4228 Comm: qemu-system-aar Tainted: GF            3.13.0-0.rc7.31.sa2.k32v1.aarch64.debug #1
+  Call trace:
+  [<fffffe0000096034>] dump_backtrace+0x0/0x16c
+  [<fffffe00000961b4>] show_stack+0x14/0x1c
+  [<fffffe000066e648>] dump_stack+0x84/0xb0
+  [<fffffe0000668678>] panic+0xf4/0x220
+  [<fffffe000018ec78>] free_reserved_area+0x0/0x110
+  [<fffffe000018edd8>] free_pages+0x50/0x88
+  [<fffffe00000a759c>] kvm_free_stage2_pgd+0x30/0x40
+  [<fffffe00000a5354>] kvm_arch_destroy_vm+0x18/0x44
+  [<fffffe00000a1854>] kvm_put_kvm+0xf0/0x184
+  [<fffffe00000a1938>] kvm_vm_release+0x10/0x1c
+  [<fffffe00001edc1c>] __fput+0xb0/0x288
+  [<fffffe00001ede4c>] ____fput+0xc/0x14
+  [<fffffe00000d5a2c>] task_work_run+0xa8/0x11c
+  [<fffffe0000095c14>] do_notify_resume+0x54/0x58
 
-Increase the WM memory latency values to at least 1.2 usec on SNB.
-Hopefully this won't have a significant effect on power consumption.
+In arch/arm/kvm/mmu.c:unmap_range(), we end up doing an extra put_page()
+on the stage2 pgd which leads to the BUG in put_page_testzero(). This
+happens because a pud_huge() test in unmap_range() returns true when it
+should always be false with 2-level pages tables used by 64k pages.
+This patch removes support for huge puds if 2-level pagetables are
+being used.
 
-v2: Increase the latency values regardless of the pixel clock
-
-Cc: Robert N <crshman@gmail.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=70254
-Tested-by: Robert Navarro <crshman@gmail.com>
-Tested-by: Vitaly Minko <vitaly.minko@gmail.com>
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Mark Salter <msalter@redhat.com>
+[catalin.marinas@arm.com: removed #ifndef around PUD_SIZE check]
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_pm.c | 40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
+ arch/arm64/mm/hugetlbpage.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
-index e2d10ce..4128d0e 100644
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -2563,6 +2563,43 @@ static void intel_print_wm_latency(struct drm_device *dev,
- 	}
- }
+diff --git a/arch/arm64/mm/hugetlbpage.c b/arch/arm64/mm/hugetlbpage.c
+index 5e9aec3..31eb959 100644
+--- a/arch/arm64/mm/hugetlbpage.c
++++ b/arch/arm64/mm/hugetlbpage.c
+@@ -51,7 +51,11 @@ int pmd_huge(pmd_t pmd)
  
-+static bool ilk_increase_wm_latency(struct drm_i915_private *dev_priv,
-+				    uint16_t wm[5], uint16_t min)
-+{
-+	int level, max_level = ilk_wm_max_level(dev_priv->dev);
-+
-+	if (wm[0] >= min)
-+		return false;
-+
-+	wm[0] = max(wm[0], min);
-+	for (level = 1; level <= max_level; level++)
-+		wm[level] = max_t(uint16_t, wm[level], DIV_ROUND_UP(min, 5));
-+
-+	return true;
-+}
-+
-+static void snb_wm_latency_quirk(struct drm_device *dev)
-+{
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	bool changed;
-+
-+	/*
-+	 * The BIOS provided WM memory latency values are often
-+	 * inadequate for high resolution displays. Adjust them.
-+	 */
-+	changed = ilk_increase_wm_latency(dev_priv, dev_priv->wm.pri_latency, 12) |
-+		ilk_increase_wm_latency(dev_priv, dev_priv->wm.spr_latency, 12) |
-+		ilk_increase_wm_latency(dev_priv, dev_priv->wm.cur_latency, 12);
-+
-+	if (!changed)
-+		return;
-+
-+	DRM_DEBUG_KMS("WM latency values increased to avoid potential underruns\n");
-+	intel_print_wm_latency(dev, "Primary", dev_priv->wm.pri_latency);
-+	intel_print_wm_latency(dev, "Sprite", dev_priv->wm.spr_latency);
-+	intel_print_wm_latency(dev, "Cursor", dev_priv->wm.cur_latency);
-+}
-+
- static void intel_setup_wm_latency(struct drm_device *dev)
+ int pud_huge(pud_t pud)
  {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
-@@ -2580,6 +2617,9 @@ static void intel_setup_wm_latency(struct drm_device *dev)
- 	intel_print_wm_latency(dev, "Primary", dev_priv->wm.pri_latency);
- 	intel_print_wm_latency(dev, "Sprite", dev_priv->wm.spr_latency);
- 	intel_print_wm_latency(dev, "Cursor", dev_priv->wm.cur_latency);
-+
-+	if (IS_GEN6(dev))
-+		snb_wm_latency_quirk(dev);
++#ifndef __PAGETABLE_PMD_FOLDED
+ 	return !(pud_val(pud) & PUD_TABLE_BIT);
++#else
++	return 0;
++#endif
  }
  
- static void hsw_compute_wm_parameters(struct drm_crtc *crtc,
+ int pmd_huge_support(void)
 -- 
 1.9.1
 
