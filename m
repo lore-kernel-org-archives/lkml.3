@@ -1,33 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205AbaFQLhQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 07:37:16 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:58547 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754825AbaFQLhP (ORCPT
+	id S1756163AbaFQLkW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 07:40:22 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:44607 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752233AbaFQLkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 07:37:15 -0400
+	Tue, 17 Jun 2014 07:40:19 -0400
+Date: Tue, 17 Jun 2014 07:39:52 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+Cc: Francois Romieu <romieu@fr.zoreil.com>, Cong Wang <cwang@twopensource.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        David Miller <davem@davemloft.net>,
+        "bridge@lists.linux-foundation.org" 
+	<bridge@lists.linux-foundation.org>,
+        Linux Netdev List <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: netconsole breaks netpoll on bridge
+Message-ID: <20140617113952.GE8539@hmsreliant.think-freely.org>
+References: <539EE86E.6030806@profihost.ag>
+ <CAHA+R7OrT+x_jvDeqKgFc=ndebhB6qwecJBcT5y0ZAA+hBCJ3Q@mail.gmail.com>
+ <6B8712E6-8012-42C3-9D98-0EBD943F2894@profihost.ag>
+ <CAHA+R7NUKXJhaX45+OQx3ufxrWjkjnhO84cNznbijOZWru7u6w@mail.gmail.com>
+ <CE582178-E749-473F-9D88-E6D7789A3B73@profihost.ag>
+ <CAHA+R7Ncr_96hcTCgnxWnjXpKvW09DWMZ7J_W4n3GK0VtEo9VA@mail.gmail.com>
+ <835D3F57-EB3A-4D30-B19C-7CC987D06C55@profihost.ag>
+ <20140616213019.GA31594@electric-eye.fr.zoreil.com>
+ <539FDB02.2020700@profihost.ag>
 MIME-Version: 1.0
-X-Originating-IP: [80.246.32.33]
-In-Reply-To: <1402952842-12886-1-git-send-email-mina86@mina86.com>
-References: <1402952842-12886-1-git-send-email-mina86@mina86.com>
-Date: Tue, 17 Jun 2014 13:37:13 +0200
-Message-ID: <CAPh34mfF60+yB2O03WYM0D6QitZzjnQUF86irG8o42b0TeJYCA@mail.gmail.com>
-Subject: Re: [PATCH] include: kernel.h: rewrite min3, max3 and clamp using min
- and max
-From: Hagen Paul Pfeifer <hagen@jauu.net>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <539FDB02.2020700@profihost.ag>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wow, back in the days where I submitted the patch I saw improvement in
-the generated code (focus on number of instructions). Don't know what
-happends with gcc in the meantime. Anyway, patch and analysis looks
-good. So from a clean-patch perspective you get an:
+On Tue, Jun 17, 2014 at 08:06:58AM +0200, Stefan Priebe - Profihost AG wrote:
+> Am 16.06.2014 23:30, schrieb Francois Romieu:
+> > Stefan Priebe - Profihost AG <s.priebe@profihost.ag> :
+> > [...]
+> >> That sounds great! Is there anything I can do or some code I can port to veth?
+> > 
+> > You may add an empty handler for .ndo_poll_controller in drivers/net/veth.c
+> > and give it a try on current kernel.
+> > 
+> > It should not be too bad.
+> > 
+> Why is an empty poll controller enough to fix it? This sounds a bit
+> crazy to me.
+> 
+Because the presence of a non-null poll_controller method is how we determine if
+a device supports netpoll.  Most devices require a ndo_poll_controller function
+to simulate an interrupt for receiving packets, but virtual devices really
+don't, so an empty function sufficies to get the device recognized as having
+netpoll support.  See tun_poll_controller as an example
+Neil
 
-Signed-off-by: Hagen Paul Pfeifer <hagen@jauu.net>
+> 
+> Greets,
+> Stefan
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
