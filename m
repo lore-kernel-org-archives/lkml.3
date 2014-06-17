@@ -1,134 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933597AbaFQO7f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 10:59:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54292 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933031AbaFQO7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 10:59:33 -0400
-Date: Tue, 17 Jun 2014 16:59:30 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 06/12] mm: memcontrol: simplify move precharge function
-Message-ID: <20140617145930.GE19886@dhcp22.suse.cz>
-References: <1402948472-8175-1-git-send-email-hannes@cmpxchg.org>
- <1402948472-8175-7-git-send-email-hannes@cmpxchg.org>
+	id S933585AbaFQO72 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 10:59:28 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:31622 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933031AbaFQO7Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 10:59:24 -0400
+Message-ID: <53A05704.4070203@oracle.com>
+Date: Tue, 17 Jun 2014 22:56:04 +0800
+From: Jeff Liu <jeff.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402948472-8175-7-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: gregkh@linuxfoundation.org, Christoph Lameter <cl@gentwo.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, herbert@gondor.apana.org.au,
+        davem@davemloft.net, stefanr@s5r6.in-berlin.de, joro@8bytes.org,
+        jejb@parisc-linux.org, deller@gmx.de, bhelgaas@google.com, clm@fb.com,
+        Josef Bacik <jbacik@fb.com>, swhiteho@redhat.com, bharrosh@panasas.com,
+        bhalevy@primarydata.com, ccaulfie@redhat.com, teigland@redhat.com,
+        "Theodore Ts'o" <tytso@mit.edu>, adilger.kernel@dilger.ca,
+        jaegeuk@kernel.org, cm224.lee@samsung.com,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        casey@schaufler-ca.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/24] kobject: return actual error on kset_create_and_add
+References: <53A04FF7.5050900@oracle.com> <1403016160.27991.1.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1403016160.27991.1.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 16-06-14 15:54:26, Johannes Weiner wrote:
-> The move precharge function does some baroque things: it tries raw
-> res_counter charging of the entire amount first, and then falls back
-> to a loop of one-by-one charges, with checks for pending signals and
-> cond_resched() batching.
+
+On 06/17/2014 22:42 PM, James Bottomley wrote:
+> On Tue, 2014-06-17 at 22:25 +0800, Jeff Liu wrote:
+>> From: Jie Liu <jeff.liu@oracle.com>
+>>
+>> It's better to return the actual error rather than NULL because
+>> kset_register() can failed due to other reasons.
+>>
+>> Cc: Christoph Lameter <cl@linux-foundation.org>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: Pekka Enberg <penberg@kernel.org>
+>> Cc: Matt Mackall <mpm@selenic.com>
+>> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>> Cc: Paul Mackerras <paulus@samba.org>
+>> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+>> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+>> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+>> Cc: David S. Miller <davem@davemloft.net>
+>> Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
+>> Cc: Joerg Roedel <joro@8bytes.org>
+>> Cc: James E.J. Bottomley <JBottomley@parallels.com>
+>> Cc: Helge Deller <deller@gmx.de>
+>> Cc: Bjorn Helgaas <bhelgaas@google.com>
+>> Cc: Chris Mason <clm@fb.com>
+>> Cc: Josef Bacik <jbacik@fb.com>
+>> Cc: Steven Whitehouse <swhiteho@redhat.com>
+>> Cc: Boaz Harrosh <bharrosh@panasas.com>
+>> Cc: Benny Halevy <bhalevy@primarydata.com>
+>> Cc: Christine Caulfield <ccaulfie@redhat.com>
+>> Cc: David Teigland <teigland@redhat.com>
+>> Cc: Theodore Ts'o <tytso@mit.edu>
+>> Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+>> Cc: Jaegeuk Kim <jaegeuk@kernel.org>
+>> Cc: Changman Lee <cm224.lee@samsung.com>
+>> Cc: Mark Fasheh <mfasheh@suse.com>
+>> Cc: Joel Becker <jlbec@evilplan.org>
+>> Cc: Casey Schaufler <casey@schaufler-ca.com>
+>> Signed-off-by: Jie Liu <jeff.liu@oracle.com>
+>> ---
+>>  lib/kobject.c | 4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/lib/kobject.c b/lib/kobject.c
+>> index 58751bb..538c617 100644
+>> --- a/lib/kobject.c
+>> +++ b/lib/kobject.c
+>> @@ -919,11 +919,11 @@ struct kset *kset_create_and_add(const char *name,
+>>  
+>>  	kset = kset_create(name, uevent_ops, parent_kobj);
+>>  	if (!kset)
+>> -		return NULL;
+>> +		return ERR_PTR(-ENOMEM);
+>>  	error = kset_register(kset);
+>>  	if (error) {
+>>  		kfree(kset);
+>> -		return NULL;
+>> +		return ERR_PTR(error);
+>>  	}
+>>  	return kset;
+>>  }
 > 
-> Just use mem_cgroup_try_charge() without __GFP_WAIT for the first bulk
-> charge attempt.  In the one-by-one loop, remove the signal check (this
-> is already checked in try_charge), and simply call cond_resched()
-> after every charge - it's not that expensive.
+> This patch series isn't bisectable.  When changing an error signal from
+> NULL to non-NULL, you have to do it as one patch, otherwise if a
+> bisection lands in here we'll get error returns from all our kobject
+> kset code and the kernel won't boot.
 
-Agreed. There shouldn't be any calls to res_counters for {un}charging
-outside of mem_cgroup_try_charge and kmem variant.
+Thanks for pointing this out.
 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> It's fine if you're sending it out as 24 patches for review, but it has
+> to be applied as a single one.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Ok, I'll post the v2 patch as a single one once this series has been reviewed.
 
-> ---
->  mm/memcontrol.c | 51 +++++++++++++++++----------------------------------
->  1 file changed, 17 insertions(+), 34 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 9c646b9b56f4..3d9df94896a7 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -6372,55 +6372,38 @@ static void mem_cgroup_css_free(struct cgroup_subsys_state *css)
->  
->  #ifdef CONFIG_MMU
->  /* Handlers for move charge at task migration. */
-> -#define PRECHARGE_COUNT_AT_ONCE	256
->  static int mem_cgroup_do_precharge(unsigned long count)
->  {
-> -	int ret = 0;
-> -	int batch_count = PRECHARGE_COUNT_AT_ONCE;
-> -	struct mem_cgroup *memcg = mc.to;
-> +	int ret;
->  
-> -	if (mem_cgroup_is_root(memcg)) {
-> +	if (mem_cgroup_is_root(mc.to)) {
->  		mc.precharge += count;
->  		/* we don't need css_get for root */
->  		return ret;
->  	}
-> -	/* try to charge at once */
-> -	if (count > 1) {
-> -		struct res_counter *dummy;
-> -		/*
-> -		 * "memcg" cannot be under rmdir() because we've already checked
-> -		 * by cgroup_lock_live_cgroup() that it is not removed and we
-> -		 * are still under the same cgroup_mutex. So we can postpone
-> -		 * css_get().
-> -		 */
-> -		if (res_counter_charge(&memcg->res, PAGE_SIZE * count, &dummy))
-> -			goto one_by_one;
-> -		if (do_swap_account && res_counter_charge(&memcg->memsw,
-> -						PAGE_SIZE * count, &dummy)) {
-> -			res_counter_uncharge(&memcg->res, PAGE_SIZE * count);
-> -			goto one_by_one;
-> -		}
-> +
-> +	/* Try a single bulk charge without reclaim first */
-> +	ret = mem_cgroup_try_charge(mc.to, GFP_KERNEL & ~__GFP_WAIT,
-> +				    count, false);
-> +	if (!ret) {
->  		mc.precharge += count;
->  		return ret;
->  	}
-> -one_by_one:
-> -	/* fall back to one by one charge */
-> +
-> +	/* Try charges one by one with reclaim */
->  	while (count--) {
-> -		if (signal_pending(current)) {
-> -			ret = -EINTR;
-> -			break;
-> -		}
-> -		if (!batch_count--) {
-> -			batch_count = PRECHARGE_COUNT_AT_ONCE;
-> -			cond_resched();
-> -		}
-> -		ret = mem_cgroup_try_charge(memcg, GFP_KERNEL, 1, false);
-> +		ret = mem_cgroup_try_charge(mc.to, GFP_KERNEL, 1, false);
-> +		/*
-> +		 * In case of failure, any residual charges against
-> +		 * mc.to will be dropped by mem_cgroup_clear_mc()
-> +		 * later on.
-> +		 */
->  		if (ret)
-> -			/* mem_cgroup_clear_mc() will do uncharge later */
->  			return ret;
->  		mc.precharge++;
-> +		cond_resched();
->  	}
-> -	return ret;
-> +	return 0;
->  }
->  
->  /**
-> -- 
-> 2.0.0
-> 
 
--- 
-Michal Hocko
-SUSE Labs
+Cheers,
+-Jeff
