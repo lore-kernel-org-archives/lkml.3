@@ -1,103 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965544AbaFQQng (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:43:36 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48066 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965499AbaFQQl6 (ORCPT
+	id S965755AbaFQQn5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:43:57 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:57129 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964930AbaFQQny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:41:58 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 3/6] ARM: at91/dt: sam9n12 crystals under the clocks node
-Date: Tue, 17 Jun 2014 18:41:45 +0200
-Message-Id: <1403023308-20533-4-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403023308-20533-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1403023308-20533-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Tue, 17 Jun 2014 12:43:54 -0400
+Message-ID: <1403023431.1984.37.camel@x220>
+Subject: Re: [PATCH v3 5/7] mfd: cros_ec: Sync to the latest
+ cros_ec_commands.h from EC sources
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Doug Anderson <dianders@chromium.org>,
+        Bill Richardson <wfrichar@chromium.org>,
+        Simon Glass <sjg@chromium.org>, Lee Jones <lee.jones@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 17 Jun 2014 18:43:51 +0200
+In-Reply-To: <53A06AD4.3000704@wwwdotorg.org>
+References: <1398879850-9111-1-git-send-email-dianders@chromium.org>
+		 <1398879850-9111-6-git-send-email-dianders@chromium.org>
+		 <20140520084602.GF24991@lee--X1> <1402483068.3798.82.camel@x220>
+		 <CAD=FV=XL9tnEqza8Zx8mt_Z7-bj8TCzdeyHMhnpewKp_1CR-ig@mail.gmail.com>
+		 <1402646902.28881.15.camel@x220>
+		 <CAD=FV=XcK5R1sdNwoJkFPapwWQ9vqxvmQi_L3BqTSt8EKRTNHw@mail.gmail.com>
+	 <1402995202.1984.22.camel@x220> <53A06AD4.3000704@wwwdotorg.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 17 Jun 2014 16:43:51.0930 (UTC) FILETIME=[51F625A0:01CF8A4B]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Having clocks grouped in a subnode is common practice, so move the crystals
-under a clocks node for the at91sam9n12 SoC and at91sam9n12 based boards.
+On Tue, 2014-06-17 at 10:20 -0600, Stephen Warren wrote:
+> On 06/17/2014 02:53 AM, Paul Bolle wrote:
+> > So, in summary, while we're apparently only discussing a single comment,
+> > I would appreciate it if it could be reworded, preferably by dropping
+> > that the CONFIG_ prefix. But other people might care very little, as
+> > they don't share this particular pet peeve.
+> 
+> Can't your tool maintain a whitelist or ignore list?
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/boot/dts/at91sam9n12.dtsi  | 20 +++++++++++---------
- arch/arm/boot/dts/at91sam9n12ek.dts | 16 ++++++++--------
- 2 files changed, 19 insertions(+), 17 deletions(-)
+Sure it can. But I do think I should try to fix the (in my view, at
+least) problems I find before adding stuff to a whitelist or (whatever).
 
-diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
-index 287795985e32..67efd442fd85 100644
---- a/arch/arm/boot/dts/at91sam9n12.dtsi
-+++ b/arch/arm/boot/dts/at91sam9n12.dtsi
-@@ -50,16 +50,18 @@
- 		reg = <0x20000000 0x10000000>;
- 	};
- 
--	slow_xtal: slow_xtal {
--		compatible = "fixed-clock";
--		#clock-cells = <0>;
--		clock-frequency = <0>;
--	};
-+	clocks {
-+		slow_xtal: slow_xtal {
-+			compatible = "fixed-clock";
-+			#clock-cells = <0>;
-+			clock-frequency = <0>;
-+		};
- 
--	main_xtal: main_xtal {
--		compatible = "fixed-clock";
--		#clock-cells = <0>;
--		clock-frequency = <0>;
-+		main_xtal: main_xtal {
-+			compatible = "fixed-clock";
-+			#clock-cells = <0>;
-+			clock-frequency = <0>;
-+		};
- 	};
- 
- 	ahb {
-diff --git a/arch/arm/boot/dts/at91sam9n12ek.dts b/arch/arm/boot/dts/at91sam9n12ek.dts
-index 64bbe46e4f90..32f1aad889d2 100644
---- a/arch/arm/boot/dts/at91sam9n12ek.dts
-+++ b/arch/arm/boot/dts/at91sam9n12ek.dts
-@@ -21,14 +21,6 @@
- 		reg = <0x20000000 0x8000000>;
- 	};
- 
--	slow_xtal {
--		clock-frequency = <32768>;
--	};
--
--	main_xtal {
--		clock-frequency = <16000000>;
--	};
--
- 	clocks {
- 		#address-cells = <1>;
- 		#size-cells = <1>;
-@@ -38,6 +30,14 @@
- 			compatible = "atmel,osc", "fixed-clock";
- 			clock-frequency = <16000000>;
- 		};
-+
-+		slow_xtal {
-+			clock-frequency = <32768>;
-+		};
-+
-+		main_xtal {
-+			clock-frequency = <16000000>;
-+		};
- 	};
- 
- 	ahb {
--- 
-1.9.1
+> There are many
+> cases where the kernel can pull in headers/data from other projects
+> (Firmware interfaces to an arbitrarily large set of HW, Device trees,
+> IO/network protocools, perhaps more). It feels quite unreasonable for
+> the kernel to decide that it exclusively owns the CONFIG_* namespace
+> even in comments, and that every other project it interacts with must
+> not use that namespace.
+
+As I said, this is more my peeve. Then again, referring to a macro from
+some other project is likely to confuse people.
+
+
+Paul Bolle
 
