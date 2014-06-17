@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932834AbaFQN3F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 09:29:05 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58148 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932070AbaFQN3E (ORCPT
+	id S932894AbaFQNaN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 09:30:13 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:54739 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932066AbaFQNaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 09:29:04 -0400
-Message-ID: <53A0428C.10200@linaro.org>
-Date: Tue, 17 Jun 2014 14:28:44 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 17 Jun 2014 09:30:12 -0400
+Message-ID: <53A0430D.8000006@gmail.com>
+Date: Tue, 17 Jun 2014 15:30:53 +0200
+From: Wladislav Wiebe <wladislav.kw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Rob Clark <robdclark@gmail.com>, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v3] ARM: add get_user() support for 8 byte types
-References: <1402587755-29245-1-git-send-email-daniel.thompson@linaro.org> <20140612155843.GK23430@n2100.arm.linux.org.uk> <53A015B3.2070809@linaro.org> <20140617110908.GH23430@n2100.arm.linux.org.uk>
-In-Reply-To: <20140617110908.GH23430@n2100.arm.linux.org.uk>
-X-Enigmail-Version: 1.6
+To: linuxppc-dev@lists.ozlabs.org, benh@kernel.crashing.org, paulus@samba.org,
+        scottwood@freescale.com, mikey@neuling.org, mahesh@linux.vnet.ibm.com,
+        michael@ellerman.id.au, anton@samba.org, r65777@freescale.com,
+        haokexin@gmail.com
+CC: linux-kernel@vger.kernel.org, wladislav.kw@gmail.com
+Subject: [PATCH 1/1] powerpc/traps/e500: fix misleading error output
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/06/14 12:09, Russell King - ARM Linux wrote:
-> On Tue, Jun 17, 2014 at 11:17:23AM +0100, Daniel Thompson wrote:
->> ... at this point there is a narrowing cast followed by an implicit
->> widening. This results in compiler either ignoring r3 altogether or, if
->> spilling to the stack, generating code to set r3 to zero before doing
->> the store.
-> 
-> In actual fact, there's very little difference between the two
-> implementations in terms of generated code.
-> 
-> The difference between them is what happens on the 64-bit big endian
-> narrowing case, where we use __get_user_4 with your version.  This
-> adds one additional instruction.
+In machine_check_e500 exception handler is a wrong indication
+in case of MCSR_BUS_WBERR - so print "Write" instead of "Read".
 
-Good point.
+Signed-off-by: Wladislav Wiebe <wladislav.kw@gmail.com>
+---
+ arch/powerpc/kernel/traps.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-
-> and 64-bit narrowed to 32-bit:
-> 
->         str     lr, [sp, #-4]!
-> -       mov     ip, r0
-> +       mov     r3, r0
->         mov     r0, r1
->  #APP
->  @ 275 "t-getuser.c" 1
-> -       bl      __get_user_8
-> +       bl      __get_user_4
->  @ 0 "" 2
-> -       str     r2, [ip, #0]
-> +       str     r2, [r3, #0]
->         ldr     pc, [sp], #4
-
-The later case avoids allocating r3 for the __get_user_x and should
-reduce register pressure and, potentially, saves a few instructions
-elsewhere (one of my rather large test functions does demonstrate this
-effect).
-
-I don't know if we care about that. If we do I'm certainly happy to put
-a patch together than exploits this (whilst avoiding the add in the big
-endian case).
-
-
-Daniel.
+diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
+index 239f1cd..cb9cfe4 100644
+--- a/arch/powerpc/kernel/traps.c
++++ b/arch/powerpc/kernel/traps.c
+@@ -609,7 +609,7 @@ int machine_check_e500(struct pt_regs *regs)
+ 	if (reason & MCSR_BUS_RBERR)
+ 		printk("Bus - Read Data Bus Error\n");
+ 	if (reason & MCSR_BUS_WBERR)
+-		printk("Bus - Read Data Bus Error\n");
++		printk("Bus - Write Data Bus Error\n");
+ 	if (reason & MCSR_BUS_IPERR)
+ 		printk("Bus - Instruction Parity Error\n");
+ 	if (reason & MCSR_BUS_RPERR)
+-- 
+1.7.1
