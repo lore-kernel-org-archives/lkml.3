@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965201AbaFQQ0E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:26:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50937 "EHLO
+	id S965219AbaFQQ0P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:26:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50949 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964811AbaFQQZ7 (ORCPT
+	with ESMTP id S964811AbaFQQ0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:25:59 -0400
+	Tue, 17 Jun 2014 12:26:10 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stuart Hayes <stuart.w.hayes@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Florian Westphal <fw@strlen.de>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 101/121] hrtimer: Prevent all reprogramming if hang detected
-Date: Tue, 17 Jun 2014 09:17:59 -0700
-Message-Id: <1403021899-16708-74-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 051/121] net: core: don't account for udp header size when computing seglen
+Date: Tue, 17 Jun 2014 09:17:09 -0700
+Message-Id: <1403021899-16708-24-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
@@ -28,79 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stuart Hayes <stuart.w.hayes@gmail.com>
+From: Florian Westphal <fw@strlen.de>
 
-commit 6c6c0d5a1c949d2e084706f9e5fb1fccc175b265 upstream.
+[ Upstream commit 6d39d589bb76ee8a1c6cde6822006ae0053decff ]
 
-If the last hrtimer interrupt detected a hang it sets hang_detected=1
-and programs the clock event device with a delay to let the system
-make progress.
+In case of tcp, gso_size contains the tcpmss.
 
-If hang_detected == 1, we prevent reprogramming of the clock event
-device in hrtimer_reprogram() but not in hrtimer_force_reprogram().
+For UFO (udp fragmentation offloading) skbs, gso_size is the fragment
+payload size, i.e. we must not account for udp header size.
 
-This can lead to the following situation:
+Otherwise, when using virtio drivers, a to-be-forwarded UFO GSO packet
+will be needlessly fragmented in the forward path, because we think its
+individual segments are too large for the outgoing link.
 
-hrtimer_interrupt()
-   hang_detected = 1;
-   program ce device to Xms from now (hang delay)
-
-We have two timers pending:
-   T1 expires 50ms from now
-   T2 expires 5s from now
-
-Now T1 gets canceled, which causes hrtimer_force_reprogram() to be
-invoked, which in turn programs the clock event device to T2 (5
-seconds from now).
-
-Any hrtimer_start after that will not reprogram the hardware due to
-hang_detected still being set. So we effectivly block all timers until
-the T2 event fires and cleans up the hang situation.
-
-Add a check for hang_detected to hrtimer_force_reprogram() which
-prevents the reprogramming of the hang delay in the hardware
-timer. The subsequent hrtimer_interrupt will resolve all outstanding
-issues.
-
-[ tglx: Rewrote subject and changelog and fixed up the comment in
-  	hrtimer_force_reprogram() ]
-
-Signed-off-by: Stuart Hayes <stuart.w.hayes@gmail.com>
-Link: http://lkml.kernel.org/r/53602DC6.2060101@gmail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Fixes: fe6cc55f3a9a053 ("net: ip, ipv6: handle gso skbs in forwarding path")
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Reported-by: Tobias Brunner <tobias@strongswan.org>
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/hrtimer.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ net/core/skbuff.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 60f7e32..3c29703 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -567,6 +567,23 @@ hrtimer_force_reprogram(struct hrtimer_cpu_base *cpu_base, int skip_equal)
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index e255b9c..f97fe58 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -3461,12 +3461,14 @@ EXPORT_SYMBOL(skb_try_coalesce);
+ unsigned int skb_gso_transport_seglen(const struct sk_buff *skb)
+ {
+ 	const struct skb_shared_info *shinfo = skb_shinfo(skb);
+-	unsigned int hdr_len;
  
- 	cpu_base->expires_next.tv64 = expires_next.tv64;
- 
-+	/*
-+	 * If a hang was detected in the last timer interrupt then we
-+	 * leave the hang delay active in the hardware. We want the
-+	 * system to make progress. That also prevents the following
-+	 * scenario:
-+	 * T1 expires 50ms from now
-+	 * T2 expires 5s from now
-+	 *
-+	 * T1 is removed, so this code is called and would reprogram
-+	 * the hardware to 5s from now. Any hrtimer_start after that
-+	 * will not reprogram the hardware due to hang_detected being
-+	 * set. So we'd effectivly block all timers until the T2 event
-+	 * fires.
-+	 */
-+	if (cpu_base->hang_detected)
-+		return;
+ 	if (likely(shinfo->gso_type & (SKB_GSO_TCPV4 | SKB_GSO_TCPV6)))
+-		hdr_len = tcp_hdrlen(skb);
+-	else
+-		hdr_len = sizeof(struct udphdr);
+-	return hdr_len + shinfo->gso_size;
++		return tcp_hdrlen(skb) + shinfo->gso_size;
 +
- 	if (cpu_base->expires_next.tv64 != KTIME_MAX)
- 		tick_program_event(cpu_base->expires_next, 1);
++	/* UFO sets gso_size to the size of the fragmentation
++	 * payload, i.e. the size of the L4 (UDP) header is already
++	 * accounted for.
++	 */
++	return shinfo->gso_size;
  }
+ EXPORT_SYMBOL_GPL(skb_gso_transport_seglen);
 -- 
 1.9.1
 
