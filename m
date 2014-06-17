@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932337AbaFQLvv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 07:51:51 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62152 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753608AbaFQLvu (ORCPT
+	id S932528AbaFQLw2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 07:52:28 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:42139 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932394AbaFQLw0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 07:51:50 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Josef Gajdusek <atx@atx.name>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] acpi/battery: fix wrong value of capacity_now reported by few battery types when fully charged (resend)
-Date: Tue, 17 Jun 2014 14:09:22 +0200
-Message-ID: <3564280.IKKn41NV0x@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140612145813.GB14085@dashie>
-References: <20140612145813.GB14085@dashie>
+	Tue, 17 Jun 2014 07:52:26 -0400
+From: "Javi Merino" <javi.merino@arm.com>
+Date: Tue, 17 Jun 2014 12:52:22 +0100
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH v4 6/7] thermal: add trace events to the power
+ allocator governor
+Message-ID: <20140617115222.GC2801@e104805>
+References: <1402996493-3578-1-git-send-email-javi.merino@arm.com>
+ <1402996493-3578-7-git-send-email-javi.merino@arm.com>
+ <20140617071838.1b0d8673@gandalf.local.home>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20140617071838.1b0d8673@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 17 Jun 2014 11:52:16.0116 (UTC) FILETIME=[95A4CB40:01CF8A22]
+X-MC-Unique: 114061712522403601
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, June 12, 2014 04:58:13 PM Josef Gajdusek wrote:
-> It seems that some batteries (noticed on DELL JYPJ136) assume 
-> capacity_now = design_capacity when fully charged. This causes 
-> reported capacity to suddenly jump to >full_charge_capacity (and that 
-> means capacity reported to userspace is >100% and incorrect) 
-> values after 99%. This patch attempts to detect this bug and trims 
-> capacity_now properly.
+On Tue, Jun 17, 2014 at 12:18:38PM +0100, Steven Rostedt wrote:
+> On Tue, 17 Jun 2014 10:14:52 +0100
+> "Javi Merino" <javi.merino@arm.com> wrote:
 > 
-> Signed-off-by: Josef Gajdusek <atx@atx.name>
-> ---
-> Oops, I forgot to sign the previous one.
+> > Add trace events for the power allocator governor and the power actor
+> > interface of the cpu cooling device.
+> > 
+> > Cc: Zhang Rui <rui.zhang@intel.com>
+> > Cc: Eduardo Valentin <edubezval@gmail.com>
+> > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Ingo Molnar <mingo@redhat.com>
+> > Signed-off-by: Javi Merino <javi.merino@arm.com>
+> > 
+> > ---
+> > 
+> > trace-cmd needs the patched attached in
+> > http://article.gmane.org/gmane.linux.kernel/1704423 for this to work.
 > 
-> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-> index e48fc98..3338dd5 100644
-> --- a/drivers/acpi/battery.c
-> +++ b/drivers/acpi/battery.c
-> @@ -532,6 +532,14 @@ static int acpi_battery_get_state(struct acpi_battery *battery)
->  			" invalid.\n");
->  	}
->  
-> +	/* When fully charged, some batteries wrongly report
-> +	 * capacity_now = design_capacity instead of = full_charge_capacity
-> +	 */
-> +	if (battery->capacity_now == battery->design_capacity &&
+> The recently released trace-cmd v2.4 contains this.
 
-Why don't you use the
+Good to know, I'll drop the text from future uploads.  Thanks!
+Javi
 
-	battery->capacity_now > battery->full_charge_capacity
-
-check here?  That would be more robust, wouldn't it?
-
-> +	    battery->full_charge_capacity != ACPI_BATTERY_VALUE_UNKNOWN)
-> +		battery->capacity_now = battery->full_charge_capacity;
-> +
-> +
->  	if (test_bit(ACPI_BATTERY_QUIRK_PERCENTAGE_CAPACITY, &battery->flags)
->  	    && battery->capacity_now >= 0 && battery->capacity_now <= 100)
->  		battery->capacity_now = (battery->capacity_now *
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
