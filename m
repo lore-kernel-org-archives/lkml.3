@@ -1,92 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933733AbaFQUyc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 16:54:32 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:32875 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933275AbaFQUyb (ORCPT
+	id S933897AbaFQU4c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 16:56:32 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:41562 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933275AbaFQU4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 16:54:31 -0400
-X-Greylist: delayed 600 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jun 2014 16:54:30 EDT
-Date: Tue, 17 Jun 2014 13:44:29 -0700 (PDT)
-From: Arvind Kumar <arvindkumar@vmware.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, VMware PV-Drivers <pv-drivers@vmware.com>
-Message-ID: <1745375990.42893830.1403037869286.JavaMail.root@vmware.com>
-In-Reply-To: <1402784389-19065-1-git-send-email-fabf@skynet.be>
-References: <1402784389-19065-1-git-send-email-fabf@skynet.be>
-Subject: Re: [PATCH 1/1] drivers/scsi/vmw_pvscsi.c: use PAGE_ALIGNED instead
- of IS_ALIGNED(PAGE_SIZE
+	Tue, 17 Jun 2014 16:56:30 -0400
+Date: Tue, 17 Jun 2014 16:55:25 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Waiman.Long@hp.com, tglx@linutronix.de, mingo@kernel.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        paolo.bonzini@gmail.com, boris.ostrovsky@oracle.com,
+        paulmck@linux.vnet.ibm.com, riel@redhat.com,
+        torvalds@linux-foundation.org, raghavendra.kt@linux.vnet.ibm.com,
+        david.vrabel@citrix.com, oleg@redhat.com, gleb@redhat.com,
+        scott.norton@hp.com, chegu_vinod@hp.com,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 04/11] qspinlock: Extract out the exchange of tail code
+ word
+Message-ID: <20140617205525.GB29634@laptop.dumpdata.com>
+References: <20140615124657.264658593@chello.nl>
+ <20140615130153.376621956@chello.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.163.68]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF28 (Linux)/8.0.3_GA_5664)
-Thread-Topic: drivers/scsi/vmw_pvscsi.c: use PAGE_ALIGNED instead of IS_ALIGNED(PAGE_SIZE
-Thread-Index: EEjkZ6kOE7A5lchR5I5FuUIqJGfQew==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140615130153.376621956@chello.nl>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the patch Fabian!
+On Sun, Jun 15, 2014 at 02:47:01PM +0200, Peter Zijlstra wrote:
+> From: Waiman Long <Waiman.Long@hp.com>
+> 
+> This patch extracts the logic for the exchange of new and previous tail
+> code words into a new xchg_tail() function which can be optimized in a
+> later patch.
 
-It looks fine to me. I think you should also include the emails listed by running 'scripts/get_maintainer.pl <your-patch>'.
+And also adds a third try on acquiring the lock. That I think should
+be a seperate patch.
 
-Acked-by: Arvind Kumar <arvindkumar@vmware.com>
+And instead of saying 'later patch' you should spell out the name
+of the patch. Especially as this might not be obvious from somebody
+doing git bisection.
 
-Thanks!
-Arvind
+> 
+> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  include/asm-generic/qspinlock_types.h |    2 +
+>  kernel/locking/qspinlock.c            |   58 +++++++++++++++++++++-------------
+>  2 files changed, 38 insertions(+), 22 deletions(-)
+> 
+> --- a/include/asm-generic/qspinlock_types.h
+> +++ b/include/asm-generic/qspinlock_types.h
+> @@ -61,6 +61,8 @@ typedef struct qspinlock {
+>  #define _Q_TAIL_CPU_BITS	(32 - _Q_TAIL_CPU_OFFSET)
+>  #define _Q_TAIL_CPU_MASK	_Q_SET_MASK(TAIL_CPU)
+>  
+> +#define _Q_TAIL_MASK		(_Q_TAIL_IDX_MASK | _Q_TAIL_CPU_MASK)
+> +
+>  #define _Q_LOCKED_VAL		(1U << _Q_LOCKED_OFFSET)
+>  #define _Q_PENDING_VAL		(1U << _Q_PENDING_OFFSET)
+>  
+> --- a/kernel/locking/qspinlock.c
+> +++ b/kernel/locking/qspinlock.c
+> @@ -86,6 +86,31 @@ static inline struct mcs_spinlock *decod
+>  #define _Q_LOCKED_PENDING_MASK	(_Q_LOCKED_MASK | _Q_PENDING_MASK)
+>  
+>  /**
+> + * xchg_tail - Put in the new queue tail code word & retrieve previous one
+> + * @lock : Pointer to queue spinlock structure
+> + * @tail : The new queue tail code word
+> + * Return: The previous queue tail code word
+> + *
+> + * xchg(lock, tail)
+> + *
+> + * p,*,* -> n,*,* ; prev = xchg(lock, node)
+> + */
+> +static __always_inline u32 xchg_tail(struct qspinlock *lock, u32 tail)
+> +{
+> +	u32 old, new, val = atomic_read(&lock->val);
+> +
+> +	for (;;) {
+> +		new = (val & _Q_LOCKED_PENDING_MASK) | tail;
+> +		old = atomic_cmpxchg(&lock->val, val, new);
+> +		if (old == val)
+> +			break;
+> +
+> +		val = old;
+> +	}
+> +	return old;
+> +}
+> +
+> +/**
+>   * queue_spin_lock_slowpath - acquire the queue spinlock
+>   * @lock: Pointer to queue spinlock structure
+>   * @val: Current value of the queue spinlock 32-bit word
+> @@ -182,36 +207,25 @@ void queue_spin_lock_slowpath(struct qsp
+>  	node->next = NULL;
+>  
+>  	/*
+> -	 * we already touched the queueing cacheline; don't bother with pending
+> -	 * stuff.
+> -	 *
+> -	 * trylock || xchg(lock, node)
+> -	 *
+> -	 * 0,0,0 -> 0,0,1 ; trylock
+> -	 * p,y,x -> n,y,x ; prev = xchg(lock, node)
+> +	 * We touched a (possibly) cold cacheline in the per-cpu queue node;
+> +	 * attempt the trylock once more in the hope someone let go while we
+> +	 * weren't watching.
+>  	 */
+> -	for (;;) {
+> -		new = _Q_LOCKED_VAL;
+> -		if (val)
+> -			new = tail | (val & _Q_LOCKED_PENDING_MASK);
+> -
+> -		old = atomic_cmpxchg(&lock->val, val, new);
+> -		if (old == val)
+> -			break;
+> -
+> -		val = old;
+> -	}
+> +	if (queue_spin_trylock(lock))
+> +		goto release;
 
------ Original Message -----
-From: "Fabian Frederick" <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: "Fabian Frederick" <fabf@skynet.be>, "Arvind Kumar" <arvindkumar@vmware.com>, "VMware PV-Drivers" <pv-drivers@vmware.com>
-Sent: Saturday, June 14, 2014 3:19:49 PM
-Subject: [PATCH 1/1] drivers/scsi/vmw_pvscsi.c: use PAGE_ALIGNED instead of IS_ALIGNED(PAGE_SIZE
+So now are three of them? One in queue_spin_lock, then at the start
+of this function when checking for the pending bit, and the once more
+here. And that is because the local cache line might be cold for the
+'mcs_index' struct?
 
-use mm.h definition
+That all seems to be a bit of experimental. But then we are already
+in the slowpath so we could as well do:
 
-Cc: Arvind Kumar <arvindkumar@vmware.com>
-Cc: VMware PV-Drivers <pv-drivers@vmware.com>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/scsi/vmw_pvscsi.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+for (i = 0; i < 10; i++)
+	if (queue_spin_trylock(lock))
+		goto release;
 
-diff --git a/drivers/scsi/vmw_pvscsi.c b/drivers/scsi/vmw_pvscsi.c
-index c88e146..07dc492 100644
---- a/drivers/scsi/vmw_pvscsi.c
-+++ b/drivers/scsi/vmw_pvscsi.c
-@@ -439,9 +439,9 @@ static int pvscsi_allocate_rings(struct pvscsi_adapter *adapter)
- 	if (!adapter->cmp_ring)
- 		return -ENOMEM;
- 
--	BUG_ON(!IS_ALIGNED(adapter->ringStatePA, PAGE_SIZE));
--	BUG_ON(!IS_ALIGNED(adapter->reqRingPA, PAGE_SIZE));
--	BUG_ON(!IS_ALIGNED(adapter->cmpRingPA, PAGE_SIZE));
-+	BUG_ON(!PAGE_ALIGNED(adapter->ringStatePA));
-+	BUG_ON(!PAGE_ALIGNED(adapter->reqRingPA));
-+	BUG_ON(!PAGE_ALIGNED(adapter->cmpRingPA));
- 
- 	if (!adapter->use_msg)
- 		return 0;
-@@ -453,7 +453,7 @@ static int pvscsi_allocate_rings(struct pvscsi_adapter *adapter)
- 						 &adapter->msgRingPA);
- 	if (!adapter->msg_ring)
- 		return -ENOMEM;
--	BUG_ON(!IS_ALIGNED(adapter->msgRingPA, PAGE_SIZE));
-+	BUG_ON(!PAGE_ALIGNED(adapter->msgRingPA));
- 
- 	return 0;
- }
-@@ -1280,7 +1280,7 @@ static int pvscsi_allocate_sg(struct pvscsi_adapter *adapter)
- 		ctx->sgl = (void *)__get_free_pages(GFP_KERNEL,
- 						    get_order(SGL_SIZE));
- 		ctx->sglPA = 0;
--		BUG_ON(!IS_ALIGNED(((unsigned long)ctx->sgl), PAGE_SIZE));
-+		BUG_ON(!PAGE_ALIGNED((ctx->sgl)));
- 		if (!ctx->sgl) {
- 			for (; i >= 0; --i, --ctx) {
- 				free_pages((unsigned long)ctx->sgl,
--- 
-1.8.4.5
+And would have the same effect.
+
+
+>  
+>  	/*
+> -	 * we won the trylock; forget about queueing.
+> +	 * we already touched the queueing cacheline; don't bother with pending
+> +	 * stuff.
+
+I guess we could also just erase the pending bit if we wanted too. The
+optimistic spinning will still hit go to the queue label as lock->val will
+have the tail value.
+
+> +	 *
+> +	 * p,*,* -> n,*,*
+>  	 */
+> -	if (new == _Q_LOCKED_VAL)
+> -		goto release;
+> +	old = xchg_tail(lock, tail);
+>  
+>  	/*
+>  	 * if there was a previous node; link it and wait.
+>  	 */
+> -	if (old & ~_Q_LOCKED_PENDING_MASK) {
+> +	if (old & _Q_TAIL_MASK) {
+>  		prev = decode_tail(old);
+>  		ACCESS_ONCE(prev->next) = node;
+>  
+> 
+> 
