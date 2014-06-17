@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933665AbaFQQAN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:00:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50223 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933335AbaFQQAJ (ORCPT
+	id S933259AbaFQQAf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:00:35 -0400
+Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:36469 "EHLO
+	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933681AbaFQQAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:00:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <53A06475.7000308@redhat.com>
-References: <1402680562-8328-1-git-send-email-ming.lei@canonical.com>
-	<1402680562-8328-3-git-send-email-ming.lei@canonical.com>
-	<CAJSP0QWaS--gPZ=ONFrXby1DQLw4R0RCro7bpHCdmucyjmqT_w@mail.gmail.com>
-	<CACVXFVO0SybUKArQbKkj2+hbk6q_gt3SBooNNmw1jErRR8d07A@mail.gmail.com>
-	<53A06475.7000308@redhat.com>
-Date: Wed, 18 Jun 2014 00:00:07 +0800
-Message-ID: <CACVXFVO6GDu7Cp=s7kn_XBE2EFnuh+XQs4UQKTFaCLi4_9jcgg@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/2] block: virtio-blk: support multi virt queues per
- virtio-blk device
-From: Ming Lei <ming.lei@canonical.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Stefan Hajnoczi <stefanha@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>, linux-api@vger.kernel.org,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        Stefan Hajnoczi <stefanha@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 17 Jun 2014 12:00:32 -0400
+Date: Tue, 17 Jun 2014 11:00:25 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+cc: Jeff Liu <jeff.liu@oracle.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, herbert@gondor.apana.org.au,
+        davem@davemloft.net, stefanr@s5r6.in-berlin.de, joro@8bytes.org,
+        jejb@parisc-linux.org, deller@gmx.de, bhelgaas@google.com, clm@fb.com,
+        Josef Bacik <jbacik@fb.com>, swhiteho@redhat.com, bharrosh@panasas.com,
+        bhalevy@primarydata.com, ccaulfie@redhat.com, teigland@redhat.com,
+        "Theodore Ts'o" <tytso@mit.edu>, adilger.kernel@dilger.ca,
+        jaegeuk@kernel.org, cm224.lee@samsung.com,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        casey@schaufler-ca.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/24] kobject: return actual error on
+ kset_create_and_add
+In-Reply-To: <20140617154730.GA14153@kroah.com>
+Message-ID: <alpine.DEB.2.11.1406171057270.20610@gentwo.org>
+References: <53A04FF7.5050900@oracle.com> <20140617154730.GA14153@kroah.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 11:53 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
-> Il 17/06/2014 17:50, Ming Lei ha scritto:
->
->>> > It would be nice to allocate virtqueues dynamically instead of
->>> > hardcoding the limit.  virtio-scsi also allocates virtqueues
->>> > dynamically.
->>
->> virtio-scsi may have lots of LUN, but virtio-blk only has one disk
->> which needn't lots of hardware queues.
->
->
-> If you want to do queue steering based on the guest VCPU number, the number
-> of queues must be = to the number of VCPUs shouldn't it?
->
-> I tried using a divisor of the number of VCPUs, but couldn't get the block
-> layer to deliver interrupts to the right VCPU.
+On Tue, 17 Jun 2014, Greg KH wrote:
 
-For blk-mq's hardware queue, that won't be necessary to equal to
-VCPUs number, and irq affinity per hw queue can be simply set as
-blk_mq_hw_ctx->cpumask.
+> Who really cares about that?  What can do you do with that additional
+> information that will help anything out?
 
-Thanks,
---
-Ming Lei
+The obvious reason for doing so is so that one can put the error code into
+a log message to get more detailed information on why the call failed.
+
+In this particular case the slab allocator can give an error message that
+gives a hint why the sysfs support could not be enabled.
+
+
