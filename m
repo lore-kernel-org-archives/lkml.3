@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260AbaFQLtN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 07:49:13 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:53164 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049AbaFQLtM (ORCPT
+	id S932337AbaFQLvv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 07:51:51 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62152 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753608AbaFQLvu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 07:49:12 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vinod Koul <vinod.koul@intel.com>
-Subject: Re: [PATCH] ALSA: compress: Fix the mismatch size of struc between share lib(32bit) and kernel(64bit)
-Date: Tue, 17 Jun 2014 13:48:59 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: Takashi Iwai <tiwai@suse.de>, "Wang, Xiaoming" <xiaoming.wang@intel.com>,
-        jeeja.kp@intel.com, dhowells@redhat.com, tglx@linutronix.de,
-        mtk.manpages@gmail.com, paulmck@linux.vnet.ibm.com, davej@redhat.com,
-        linux-kernel@vger.kernel.org, dongxing.zhang@intel.com
-References: <1402346792.30956.17.camel@wxm-ubuntu> <201406131619.32976.arnd@arndb.de> <20140617030636.GE22053@intel.com>
-In-Reply-To: <20140617030636.GE22053@intel.com>
+	Tue, 17 Jun 2014 07:51:50 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Josef Gajdusek <atx@atx.name>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] acpi/battery: fix wrong value of capacity_now reported by few battery types when fully charged (resend)
+Date: Tue, 17 Jun 2014 14:09:22 +0200
+Message-ID: <3564280.IKKn41NV0x@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140612145813.GB14085@dashie>
+References: <20140612145813.GB14085@dashie>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201406171348.59329.arnd@arndb.de>
-X-Provags-ID: V02:K0:Hgygro5D5ClSOofZ9vB1QcJm6m6HIIVpKS54j1hcYH8
- O9RfAaWJv0RyqvQasPJRmvuomGO2GL3dg5OhwYa2AxI/6pMSD4
- LpUltwKDyU9T47Djv6fsFxrSEVRiAaFP7rY34Q5ocB9Nfdt/lz
- hff7ppRfIybqYBWINQJICMJ47hs37BiCAuxFL79C4nYRKc09Vo
- fwg3Wx7b1FpHJM2PS7XTshaZwqdzULwzfiMWz5f1rLPYfXKYcn
- EXuUUUWq16+rvJhg7MNIz1EDXDGwStvXK+Ku8ayunXZeBxVuua
- VI7XxyeD/pFE66cDlVAiA+oxF2ADjZNGXpU0ifRNw/zLuCQGmU
- cbqK3Uuuvp1MZkDxTBWk=
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 June 2014, Vinod Koul wrote:
-> > Anyway, if you use the __packed attribute, best apply it only to
-> > the individual __u64 member(s), not the entire struct, otherwise
-> > you might change user space programs in a subtle way when the alignment
-> > changes from 4 to 1 byte. 
->
-> then wouldn't it make sense to call out the aligned as well to ensure that it is
-> aligning to what we want. Then we should add aligned (4) everywhere as mostly we
-> need 4 byte aligned here
+On Thursday, June 12, 2014 04:58:13 PM Josef Gajdusek wrote:
+> It seems that some batteries (noticed on DELL JYPJ136) assume 
+> capacity_now = design_capacity when fully charged. This causes 
+> reported capacity to suddenly jump to >full_charge_capacity (and that 
+> means capacity reported to userspace is >100% and incorrect) 
+> values after 99%. This patch attempts to detect this bug and trims 
+> capacity_now properly.
+> 
+> Signed-off-by: Josef Gajdusek <atx@atx.name>
+> ---
+> Oops, I forgot to sign the previous one.
+> 
+> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+> index e48fc98..3338dd5 100644
+> --- a/drivers/acpi/battery.c
+> +++ b/drivers/acpi/battery.c
+> @@ -532,6 +532,14 @@ static int acpi_battery_get_state(struct acpi_battery *battery)
+>  			" invalid.\n");
+>  	}
+>  
+> +	/* When fully charged, some batteries wrongly report
+> +	 * capacity_now = design_capacity instead of = full_charge_capacity
+> +	 */
+> +	if (battery->capacity_now == battery->design_capacity &&
 
-If you want to be explicit, then just mark the entire structure as
-attribute((packed,aligned(4))), not each individual member.
+Why don't you use the
 
-	Arnd
+	battery->capacity_now > battery->full_charge_capacity
+
+check here?  That would be more robust, wouldn't it?
+
+> +	    battery->full_charge_capacity != ACPI_BATTERY_VALUE_UNKNOWN)
+> +		battery->capacity_now = battery->full_charge_capacity;
+> +
+> +
+>  	if (test_bit(ACPI_BATTERY_QUIRK_PERCENTAGE_CAPACITY, &battery->flags)
+>  	    && battery->capacity_now >= 0 && battery->capacity_now <= 100)
+>  		battery->capacity_now = (battery->capacity_now *
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
