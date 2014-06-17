@@ -1,51 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964838AbaFQT2z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 15:28:55 -0400
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:28325 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932657AbaFQT2y (ORCPT
+	id S933717AbaFQTaY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 15:30:24 -0400
+Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:60453 "EHLO
+	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932657AbaFQTaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 15:28:54 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlQJABeWoFNbsl1t/2dsb2JhbABagw2rKgUBAQEBAQEFAZkmgQ0XdYQxLyOBGjeIRgHLQBeFY4kTHYQtBJpDizCIKIF+gUQ7
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Michal Simek <michal.simek@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH 1/1] drivers/net/ethernet/xilinx/ll_temac_main.c: remove null test before kfree
-Date: Tue, 17 Jun 2014 21:27:33 +0200
-Message-Id: <1403033253-7011-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Tue, 17 Jun 2014 15:30:23 -0400
+Date: Tue, 17 Jun 2014 14:30:21 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Jeff Liu <jeff.liu@oracle.com>
+cc: Greg KH <gregkh@linuxfoundation.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 02/24] sample/kobject: update kset-example code
+In-Reply-To: <20140617192256.GE4319@kroah.com>
+Message-ID: <alpine.DEB.2.11.1406171428351.22064@gentwo.org>
+References: <53A05027.5020407@oracle.com> <20140617192256.GE4319@kroah.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch warning:
-WARNING: kfree(NULL) is safe this check is probably not required
+On Tue, 17 Jun 2014, Greg KH wrote:
 
-Cc: Michal Simek <michal.simek@xilinx.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/net/ethernet/xilinx/ll_temac_main.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+> On Tue, Jun 17, 2014 at 10:26:47PM +0800, Jeff Liu wrote:
+> > From: Jie Liu <jeff.liu@oracle.com>
+> > Subject: sample/kobject: update kset-example code
+> >
+> > Check and return the error ptr if call kset_create_and_add() failed
+> >
+> > Cc: Christoph Lameter <cl@linux-foundation.org>
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Signed-off-by: Jie Liu <jeff.liu@oracle.com>
+> > ---
+> >  samples/kobject/kset-example.c | 4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> Nope, not taking this, sorry.
 
-diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
-index 4ef818a..21b6e297 100644
---- a/drivers/net/ethernet/xilinx/ll_temac_main.c
-+++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
-@@ -224,8 +224,7 @@ static void temac_dma_bd_release(struct net_device *ndev)
- 		dma_free_coherent(ndev->dev.parent,
- 				sizeof(*lp->tx_bd_v) * TX_BD_NUM,
- 				lp->tx_bd_v, lp->tx_bd_p);
--	if (lp->rx_skb)
--		kfree(lp->rx_skb);
-+	kfree(lp->rx_skb);
- }
- 
- /**
--- 
-1.8.4.5
+Ok. I will then accept the first patch to slub.c that you sent which
+simply returns -ENOMEM. Please resend that one.
 
