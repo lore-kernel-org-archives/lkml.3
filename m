@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965933AbaFQVrQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:47:16 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:39848 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965220AbaFQVrN (ORCPT
+	id S965810AbaFQVqs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:46:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53800 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965767AbaFQVqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:47:13 -0400
-Date: Tue, 17 Jun 2014 15:47:09 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-pci@vger.kernel.org, ben@decadent.org.uk, gwshan@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pci: Fix unaligned access testing AF transaction pending
-Message-ID: <20140617214709.GA30559@google.com>
-References: <20140612152732.4162.23298.stgit@bling.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140612152732.4162.23298.stgit@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 17 Jun 2014 17:46:45 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Daeseok Youn <daeseok.youn@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 068/212] workqueue: fix bugs in wq_update_unbound_numa() failure path
+Date: Tue, 17 Jun 2014 14:42:42 -0700
+Message-Id: <1403041506-13646-69-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 09:28:07AM -0600, Alex Williamson wrote:
-> pci_wait_for_pending() uses word access, so we shouldn't be passing
-> an offset that is only byte aligned.  Use the control register offset
-> instead, shifting the mask to match.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> Reported-by: Ben Hutchings <ben@decadent.org.uk>
-> Cc: stable@vger.kernel.org
+3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
 
-Applied with Gavin's ack to for-linus for v3.16, thanks!
+------------------
 
-> ---
->  drivers/pci/pci.c |    9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index 759475e..81012ec 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -3109,8 +3109,13 @@ static int pci_af_flr(struct pci_dev *dev, int probe)
->  	if (probe)
->  		return 0;
->  
-> -	/* Wait for Transaction Pending bit clean */
-> -	if (pci_wait_for_pending(dev, pos + PCI_AF_STATUS, PCI_AF_STATUS_TP))
-> +	/*
-> +	 * Wait for Transaction Pending bit to clear.  A word-aligned test
-> +	 * is used, so we use the conrol offset rather than status and shift
-> +	 * the test bit to match.
-> +	 */
-> +	if (pci_wait_for_pending(dev, pos + PCI_AF_CTRL,
-> +				 PCI_AF_STATUS_TP << 8))
->  		goto clear;
->  
->  	dev_err(&dev->dev, "transaction is not cleared; "
-> 
+From: Daeseok Youn <daeseok.youn@gmail.com>
+
+commit 77f300b198f93328c26191b52655ce1b62e202cf upstream.
+
+wq_update_unbound_numa() failure path has the following two bugs.
+
+- alloc_unbound_pwq() is called without holding wq->mutex; however, if
+  the allocation fails, it jumps to out_unlock which tries to unlock
+  wq->mutex.
+
+- The function should switch to dfl_pwq on failure but didn't do so
+  after alloc_unbound_pwq() failure.
+
+Fix it by regrabbing wq->mutex and jumping to use_dfl_pwq on
+alloc_unbound_pwq() failure.
+
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+Acked-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Fixes: 4c16bd327c74 ("workqueue: implement NUMA affinity for unbound workqueues")
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ kernel/workqueue.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index a8381cf..6b1b746 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -4093,7 +4093,8 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
+ 	if (!pwq) {
+ 		pr_warning("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
+ 			   wq->name);
+-		goto out_unlock;
++		mutex_lock(&wq->mutex);
++		goto use_dfl_pwq;
+ 	}
+ 
+ 	/*
+-- 
+1.9.1
+
