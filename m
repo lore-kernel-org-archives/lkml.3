@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755029AbaFQHpd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 03:45:33 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:43678 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816AbaFQHpb (ORCPT
+	id S932175AbaFQHyn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 03:54:43 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:11203 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752160AbaFQHym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 03:45:31 -0400
+	Tue, 17 Jun 2014 03:54:42 -0400
+Message-ID: <539FF43E.2020002@atmel.com>
+Date: Tue, 17 Jun 2014 09:54:38 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <539F9412.3010209@realsil.com.cn>
-References: <cover.1402037562.git.micky_ching@realsil.com.cn>
-	<7b58fb0b0915ea0b0838404c74ec22a3b6e5f5a8.1402037565.git.micky_ching@realsil.com.cn>
-	<CAPDyKFq1wYZRbuwhLjTMbwN1KYgKuNuZDb7t8FV78Pa=W85oqg@mail.gmail.com>
-	<539EB43B.8070707@realsil.com.cn>
-	<CAPDyKFqKDAqvacwCVKM8KLjxfykpBq38MS_RgWCcA7+He4_S5w@mail.gmail.com>
-	<539F9412.3010209@realsil.com.cn>
-Date: Tue, 17 Jun 2014 09:45:31 +0200
-Message-ID: <CAPDyKFqK8mLGc82FfEoxdHG7mioX7JmtFDO=18XZRkwQ4ykU2g@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mmc: rtsx: add support for async request
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: micky <micky_ching@realsil.com.cn>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Chris Ball <chris@printf.net>, devel@linuxdriverproject.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Roger <rogerable@realtek.com>, Wei WANG <wei_wang@realsil.com.cn>
-Content-Type: text/plain; charset=UTF-8
+To: Jongsung Kim <neidhard.kim@lge.com>,
+        =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hayun Hwang <hwang.hayun@lge.com>,
+        "Youngkyu Choi" <youngkyu7.choi@lge.com>,
+        Cyrille Pitchen <cyrille.pitchen@atmel.com>
+Subject: Re: [PATCH] net/cadence/macb: clear interrupts simply and correctly
+References: <1402563054-8546-1-git-send-email-neidhard.kim@lge.com> <7e888b59-d27b-49dc-9ffc-1c7d56f11773@BN1AFFO11FD007.protection.gbl> <539FB874.1040003@lge.com>
+In-Reply-To: <539FB874.1040003@lge.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 June 2014 03:04, micky <micky_ching@realsil.com.cn> wrote:
-> On 06/16/2014 08:40 PM, Ulf Hansson wrote:
->>
->> On 16 June 2014 11:09, micky <micky_ching@realsil.com.cn> wrote:
->>>
->>> On 06/16/2014 04:42 PM, Ulf Hansson wrote:
->>>>>
->>>>> @@ -36,7 +37,10 @@ struct realtek_pci_sdmmc {
->>>>>>
->>>>>>          struct rtsx_pcr         *pcr;
->>>>>>          struct mmc_host         *mmc;
->>>>>>          struct mmc_request      *mrq;
->>>>>> +       struct workqueue_struct *workq;
->>>>>> +#define SDMMC_WORKQ_NAME       "rtsx_pci_sdmmc_workq"
->>>>>>
->>>>>> +       struct work_struct      work;
->>>>
->>>> I am trying to understand why you need a work/workqueue to implement
->>>> this feature. Is that really the case?
->>>>
->>>> Could you elaborate on the reasons?
->>>
->>> Hi Uffe,
->>>
->>> we need return as fast as possible in mmc_host_ops request(ops->request)
->>> callback,
->>> so the mmc core can continue handle next request.
->>> when next request everything is ready, it will wait previous done(if not
->>> done),
->>> then call ops->request().
->>>
->>> we can't use atomic context, because we use mutex_lock() to protect
->>
->> ops->request should never executed in atomic context. Is that your
->> concern?
->
-> Yes.
+On 17/06/2014 05:39, Jongsung Kim :
+> On 06/17/2014 06:28 AM, Sören Brinkmann wrote:
+>> Shouldn't it be sufficient to replace 'MACB_BIT(RCOMP) with 'MACB_RX_INT_FLAGS'
+>> to clear all the RX IRQ flags.
+> 
+> I'm afraid not.
+> 
+> You know, this driver initially targeted only GEMs configured with "gem_irq_clear_read."
+> For this implementation of GEM, the ISR is automatically cleared by reading. The driver
+> was designed to operate with the value read from ISR, not with the ISR itself.
+> 
+> However, there are other GEMs configured without "gem_irq_clear_read," people like you
+> and I working with. To support them, they insert similar codes conditionally clearing
+> the ISR here and there. Now they are found at 6 places. Not enough yet. Do you want to
+> insert another at the end of macb_reset_hw..? Maybe not.
 
-Okay. Unless I missed your point, I don't think you need the work/workqueue.
+Can't we separate a bit more the implementations of "clear on read" and
+"clear on write" so that we do not spread the tests that you are talking
+about all over the place and slower the driver's hot paths?
 
-Because, ops->request isn't ever executed in atomic context. That's
-due to the mmc core, which handles the async mechanism, are waiting
-for a completion variable in process context, before it invokes the
-ops->request() callback.
+I am more and more skeptical about the mix of MACB/GEM versions in this
+single driver as I realized recently that the old MACB-equipped devices
+are behaving strangely and with lower performance figures than in the past.
 
-That completion variable will be kicked, from your host driver, when
-you invoke mmc_request_done(), .
-
-Kind regards
-Uffe
-
->>
->>
->>> resource, and we have to hold the lock during handle request.
->>> So I use workq, we just queue a work and return in ops->request(),
->>> The mmc core can continue without blocking at ops->request().
->>>
->>> Best Regards.
->>> micky.
->>
->> Kind regards
->> Uffe
->> .
->>
->
+Best regards,
+-- 
+Nicolas Ferre
