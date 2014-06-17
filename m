@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932563AbaFQNZP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 09:25:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37217 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932332AbaFQNZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 09:25:13 -0400
-Date: Tue, 17 Jun 2014 09:24:26 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
-        greg@kroah.com, jkosina@suse.cz, dyoung@redhat.com,
-        chaowang@redhat.com, bhe@redhat.com, akpm@linux-foundation.org
-Subject: Re: [RFC PATCH 00/13][V3] kexec: A new system call to allow in
- kernel loading
-Message-ID: <20140617132426.GB28340@redhat.com>
-References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
- <20140616211328.GK8170@pd.tnic>
+	id S932749AbaFQN00 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 09:26:26 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:59075 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932332AbaFQN0Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 09:26:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140616211328.GK8170@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53A030E9.7010701@redhat.com>
+References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
+	<CALCETrVoE+JO2rLsBUHAOJdvescEEjxikj8iQ339Nxfopfc7pw@mail.gmail.com>
+	<CANq1E4SaWLD=hNEc-CDJbNnrGfXE_PkxZFBhpW4tbK7wor7xPA@mail.gmail.com>
+	<CALCETrU8N9EbnJ3=oQ1WQCG9Vunn3nR9Ba=J48wJm0SuH0YB4A@mail.gmail.com>
+	<CANq1E4QQUKHabheq18AzkVZk3WDtAeC-6W66tVNB+EKgYOx1Vg@mail.gmail.com>
+	<53A01049.6020502@redhat.com>
+	<CANq1E4T3KJZ++=KF2OZ_dd+NvPqg+=4Pw6O7Po3-ZxaaMHPukw@mail.gmail.com>
+	<53A012C8.7060109@redhat.com>
+	<CANq1E4QinvVA-O=dX4N819jVK3xSihJcpz9juFj+A3qv0MXODg@mail.gmail.com>
+	<53A030E9.7010701@redhat.com>
+Date: Tue, 17 Jun 2014 15:26:23 +0200
+Message-ID: <CANq1E4SGFoq1POtrP9DD91=3nbswELK9TH49_XkjE=Wwym4f+w@mail.gmail.com>
+Subject: Re: [PATCH v3 0/7] File Sealing & memfd_create()
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Florian Weimer <fweimer@redhat.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Hugh Dickins <hughd@google.com>,
+        Tony Battersby <tonyb@cybernetics.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 11:13:28PM +0200, Borislav Petkov wrote:
-> On Tue, Jun 03, 2014 at 09:06:49AM -0400, Vivek Goyal wrote:
-> > This patch series does not do kernel signature verification yet. I
-> > plan to post another patch series for that. Now bzImage is already
-> > signed with PKCS7 signature I plan to parse and verify those
-> > signatures.
-> 
-> Btw, do you have a brief outline on how you are going to do the
-> extension to signature verification? Nothing formal, just enough of an
-> outline that I can see where in the flow it will be plugged in.
-> 
-> I was wondering how the whole signature signing and verification will
-> be done, i.e., where do I get the signature, how and who will verify it
-> (I'm guessing the purgatory code), etc, etc.
+Hi
 
-Hi Boris,
+On Tue, Jun 17, 2014 at 2:13 PM, Florian Weimer <fweimer@redhat.com> wrote:
+> On 06/17/2014 12:10 PM, David Herrmann wrote:
+>
+>>>> The file might have holes, therefore, you'd have to allocate backing
+>>>> pages. This might hit a soft-limit and fail. To avoid this, use
+>>>> fallocate() to allocate pages prior to mmap()
+>>>
+>>>
+>>> This does not work because the consuming side does not know how the
+>>> descriptor was set up if sealing does not imply that.
+>>
+>>
+>> The consuming side has to very seals via F_GET_SEALS. After that, it
+>> shall do a simple fallocate() on the whole file if it wants to go sure
+>> that all pages are allocated. Why shouldn't that be possible? Please
+>> elaborate.
+>
+>
+> Hmm.  You permit general fallocate even for WRITE seals.  That's really
+> unexpected.
 
-I am still working on signing patches. I have uploaded them here for you
-to have a look.
+SEAL_WRITE prevents modifications of file-content. fallocate() does
+not modify file-contents, so I think it's not unexpected that
+fallocate() is still allowed.
 
-http://people.redhat.com/vgoyal/kdump-secureboot/in-kernel-kexec/bzimage-sig-verification/
+> The inode_newsize_ok check in shmem_fallocate can result in SIGXFSZ, which
+> doesn't seem to be what's intended here.
 
-Last patch should give you a good idea how signature verification hooks
-into kexec.
+It can only result in SIGXFSZ if you _increase_ the file-size with
+fallocate(). You shouldn't do that if you only verify that holes are
+allocated. Hence, a simple fallocate(st.st_size) cannot result in
+SIGXFSZ. Obviously, this requires SEAL_SHRINK to prevent the remote
+site to shrink the file while you call fallocate(). But SEAL_WRITE
+usually goes together with SEAL_SHRINK for obvious reasons.
 
-Signature verification patches are based on David Howell's work.
+> Will the new pages attributed to the process calling fallocate, or to the
+> process calling memfd_create?
 
-There is no purgatory involved here. Once we have copied kernel image
-into kernel space, first thing we do is call into arch image loader
-and ask it to verify signature of image. And bzImage loader in turn
-calls into helper functions which can parse a PE signed file and
-verify image signature.
-
-I have yet to cleanup the code, implement a config option which enforces
-signature verification.
-
-Automatic enforncement of signature verification if secureboot is
-enabled will happen once matthew's secureboot patches are merged 
-into mainline.
+Pages are always allocated by the caller and charged on current->mm
+(current process).
 
 Thanks
-Vivek
+David
