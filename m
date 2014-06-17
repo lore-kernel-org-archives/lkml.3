@@ -1,102 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964784AbaFQXCY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 19:02:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57968 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932442AbaFQXCW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 19:02:22 -0400
-Date: Tue, 17 Jun 2014 16:06:18 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Bin Wang <binw@marvell.com>,
-        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Norbert Ciosek <norbertciosek@gmail.com>
-Subject: Re: [GIT PULL] char/misc driver patches for 3.16-rc1
-Message-ID: <20140617230618.GA22780@kroah.com>
-References: <20140603054434.GB2921@kroah.com>
- <CA+55aFyQ=iSMnLAywumYpGBOBiqxL2qO9u9OsTF=RFfYBnz10g@mail.gmail.com>
- <20140603170244.GA22867@kroah.com>
- <CA+55aFwMEigYZGeF4sFTSpmnvb8YQ3hOndjNrd9ObL2EdOptgQ@mail.gmail.com>
- <20140603182555.GA28541@kroah.com>
+	id S1754323AbaFQXKi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 19:10:38 -0400
+Received: from mga09.intel.com ([134.134.136.24]:34956 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751353AbaFQXKh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 19:10:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,497,1400050800"; 
+   d="scan'208";a="559157222"
+Message-ID: <53A0CAE5.9000702@intel.com>
+Date: Tue, 17 Jun 2014 16:10:29 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140603182555.GA28541@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: paulmck@linux.vnet.ibm.com
+CC: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [bisected] pre-3.16 regression on open() scalability
+References: <539B594C.8070004@intel.com> <20140613224519.GV4581@linux.vnet.ibm.com>
+In-Reply-To: <20140613224519.GV4581@linux.vnet.ibm.com>
+Content-Type: multipart/mixed;
+ boundary="------------090002010804060404090900"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 11:25:55AM -0700, Greg KH wrote:
-> On Tue, Jun 03, 2014 at 10:14:41AM -0700, Linus Torvalds wrote:
-> > On Tue, Jun 3, 2014 at 10:02 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > >
-> > > Hm, I got two different bug reports, and this same patch from two
-> > > different people insisting that we broke their drivers with the above
-> > > patches, and asked for this patch to be applied.
-> > 
-> > So I do think that we might be able to apply this patch, but I think
-> > it needs a *lot* more thought than was obviously spent on it so far.
-> > 
-> > For example, right now it's actively insecure. Do we care? Maybe we
-> > don't. The user-space uio side presumably is root-owned, and hopefully
-> > trusted.
-> 
-> It better be trusted, as userspace has access to the "raw" hardware
-> here, and is getting notified about every irq that happens to the
-> device.
-> 
-> > And what about the unaligned mmio case? Are people somehow
-> > guaranteeing that the regions is page-aligned, even if it isn't
-> > page-sized?
-> > 
-> > What is the actual hardware in question?
-> 
-> Here are two email threads that I had about this, first from Bin that
-> is the patch I applied:
-> 	https://lkml.org/lkml/2014/3/25/11
-> 
-> And this one with Nobuhiro that goes into details a bit more:
-> 	https://lkml.org/lkml/2014/3/11/707
-> 
-> Showing how a small memory window of the device is now broken without
-> this change.
-> 
-> And this one that didn't get an answer from anyone from Norbert:
-> 	https://lkml.org/lkml/2014/4/18/47
-> showing how the changes you referred to broke his hardware access as
-> well for the same reasons.
-> 
-> Bin, Nobuhiro, Norbert, anything else you want to bring up about this as
-> your hardware is affected?
-> 
-> Norbert, it is commit ddb09754e6c7239e302c7b675df9bbd415f8de5d now in
-> Linus's tree.
-> 
-> > Basically, it's an obvious security issue, and we shouldn't just say
-> > "whatever". But maybe - with lots of commentary about why the security
-> > implications aren't actually bad in _practice_, and why things are
-> > always page-aligned even if they aren't page-sized, we can say "ok,
-> > it's wrong, but we can still do it because xyz".
-> 
-> I think that if the size of the io range is smaller than a page, we
-> still want to give access to the hardware.  I guess we can require that
-> userspace ask for the whole page size, but even if we do that, it's
-> still accessing data "off the end" of the device and that is unknown
-> what's going to happen as we are mmaping physical memory here, not
-> virtual.
+This is a multi-part message in MIME format.
+--------------090002010804060404090900
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-Ok, given that NO ONE has responded to this thread that had previously
-wanted this patch to be accepted (including the original author), I'm
-going to revert it now and push that change to Linus soon.  If someone
-wants to justify this change is needed, feel free to send another patch
-sometime in the future with a whole bunch of explanation...
+On 06/13/2014 03:45 PM, Paul E. McKenney wrote:
+>> > Could the additional RCU quiescent states be causing us to be doing more
+>> > RCU frees that we were before, and getting less benefit from the lock
+>> > batching that RCU normally provides?
+> Quite possibly.  One way to check would be to use the debugfs files
+> rcu/*/rcugp, which give a count of grace periods since boot for each
+> RCU flavor.  Here "*" is rcu_preempt for CONFIG_PREEMPT and rcu_sched
+> for !CONFIG_PREEMPT.
 
-thanks,
+With the previously-mentioned workload, rcugp's "age" averages 9 with
+the old kernel (or RCU_COND_RESCHED_LIM at a high value) and 2 with the
+current kernel which contains this regression.
 
-greg k-h
+I also checked the rate and sources for how I'm calling cond_resched.
+I'm calling it 5x for every open/close() pair in my test case, which
+take about 7us.  So, _cond_resched() is, on average, only being called
+every microsecond.  That doesn't seem _too_ horribly extreme.
+
+>  3895.165846 |     8)               |  SyS_open() {
+>  3895.165846 |     8)   0.065 us    |    _cond_resched();
+>  3895.165847 |     8)   0.064 us    |    _cond_resched();
+>  3895.165849 |     8)   2.406 us    |  }
+>  3895.165849 |     8)   0.199 us    |  SyS_close();
+>  3895.165850 |     8)               |  do_notify_resume() {
+>  3895.165850 |     8)   0.063 us    |    _cond_resched();
+>  3895.165851 |     8)   0.069 us    |    _cond_resched();
+>  3895.165852 |     8)   0.060 us    |    _cond_resched();
+>  3895.165852 |     8)   2.194 us    |  }
+>  3895.165853 |     8)               |  SyS_open() {
+
+The more I think about it, the more I think we can improve on a purely
+call-based counter.
+
+First, it couples the number of cond_resched() directly calls with the
+benefits we see out of RCU.  We really don't *need* to see more grace
+periods if we have more cond_resched() calls.
+
+It also ends up eating a new cacheline in a bunch of pretty hot paths.
+It would be nice to be able to keep the fast path part of this as at
+least read-only.
+
+Could we do something (functionally) like the attached patch?  Instead
+of counting cond_resched() calls, we could just specify some future time
+by which we want have a quiescent state.  We could even push the time to
+be something _just_ before we would have declared a stall.
+
+
+--------------090002010804060404090900
+Content-Type: text/x-patch;
+ name="rcu-halfstall.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="rcu-halfstall.patch"
+
+
+
+---
+
+ b/arch/x86/kernel/nmi.c    |    6 +++---
+ b/include/linux/rcupdate.h |    7 +++----
+ b/kernel/rcu/update.c      |    4 ++--
+ 3 files changed, 8 insertions(+), 9 deletions(-)
+
+diff -puN include/linux/rcupdate.h~rcu-halfstall include/linux/rcupdate.h
+--- a/include/linux/rcupdate.h~rcu-halfstall	2014-06-17 14:08:19.596464173 -0700
++++ b/include/linux/rcupdate.h	2014-06-17 14:15:40.335598696 -0700
+@@ -303,8 +303,8 @@ bool __rcu_is_watching(void);
+  * Hooks for cond_resched() and friends to avoid RCU CPU stall warnings.
+  */
+ 
+-extern u64 RCU_COND_RESCHED_LIM;	/* ms vs. 100s of ms. */
+-DECLARE_PER_CPU(int, rcu_cond_resched_count);
++extern u64 RCU_COND_RESCHED_EVERY_THIS_JIFFIES;
++DECLARE_PER_CPU(unsigned long, rcu_cond_resched_at_jiffies);
+ void rcu_resched(void);
+ 
+ /*
+@@ -321,8 +321,7 @@ void rcu_resched(void);
+  */
+ static inline bool rcu_should_resched(void)
+ {
+-	return raw_cpu_inc_return(rcu_cond_resched_count) >=
+-	       RCU_COND_RESCHED_LIM;
++	return raw_cpu_read(rcu_cond_resched_at_jiffies) >= jiffies;
+ }
+ 
+ /*
+diff -puN arch/x86/kernel/nmi.c~rcu-halfstall arch/x86/kernel/nmi.c
+--- a/arch/x86/kernel/nmi.c~rcu-halfstall	2014-06-17 14:11:28.442072042 -0700
++++ b/arch/x86/kernel/nmi.c	2014-06-17 14:12:04.664723690 -0700
+@@ -88,13 +88,13 @@ __setup("unknown_nmi_panic", setup_unkno
+ 
+ static u64 nmi_longest_ns = 1 * NSEC_PER_MSEC;
+ 
+-u64 RCU_COND_RESCHED_LIM = 256;
++u64 RCU_COND_RESCHED_EVERY_THIS_JIFFIES = 100;
+ static int __init nmi_warning_debugfs(void)
+ {
+ 	debugfs_create_u64("nmi_longest_ns", 0644,
+ 			arch_debugfs_dir, &nmi_longest_ns);
+-	debugfs_create_u64("RCU_COND_RESCHED_LIM", 0644,
+-			arch_debugfs_dir, &RCU_COND_RESCHED_LIM);
++	debugfs_create_u64("RCU_COND_RESCHED_EVERY_THIS_JIFFIES", 0644,
++			arch_debugfs_dir, &RCU_COND_RESCHED_EVERY_THIS_JIFFIES);
+ 	return 0;
+ }
+ fs_initcall(nmi_warning_debugfs);
+diff -puN kernel/rcu/update.c~rcu-halfstall kernel/rcu/update.c
+--- a/kernel/rcu/update.c~rcu-halfstall	2014-06-17 14:12:50.768834979 -0700
++++ b/kernel/rcu/update.c	2014-06-17 14:17:14.166894075 -0700
+@@ -355,7 +355,7 @@ early_initcall(check_cpu_stall_init);
+  * Hooks for cond_resched() and friends to avoid RCU CPU stall warnings.
+  */
+ 
+-DEFINE_PER_CPU(int, rcu_cond_resched_count);
++DEFINE_PER_CPU(unsigned long, rcu_cond_resched_at_jiffies);
+ 
+ /*
+  * Report a set of RCU quiescent states, for use by cond_resched()
+@@ -364,7 +364,7 @@ DEFINE_PER_CPU(int, rcu_cond_resched_cou
+ void rcu_resched(void)
+ {
+ 	preempt_disable();
+-	__this_cpu_write(rcu_cond_resched_count, 0);
++	__this_cpu_write(rcu_cond_resched_at_jiffies, jiffies + RCU_COND_RESCHED_EVERY_THIS_JIFFIES);
+ 	rcu_note_context_switch(smp_processor_id());
+ 	preempt_enable();
+ }
+_
+
+--------------090002010804060404090900--
