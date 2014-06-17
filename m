@@ -1,124 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933203AbaFQSRJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 14:17:09 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:64895 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932762AbaFQSRF (ORCPT
+	id S933127AbaFQSUV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 14:20:21 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:62394 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932762AbaFQSUT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 14:17:05 -0400
-Message-ID: <53A0861E.90400@gmail.com>
-Date: Tue, 17 Jun 2014 20:17:02 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>,
-        tj@kernel.org, kishon@ti.com
-CC: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
-        zmxu@marvell.com, jszhang@marvell.com,
-        linux-arm-kernel@lists.infradead.org, linux-ide@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 1/7] phy: add a driver for the Berlin SATA PHY
-References: <1402914392-6028-1-git-send-email-antoine.tenart@free-electrons.com> <1402914392-6028-2-git-send-email-antoine.tenart@free-electrons.com>
-In-Reply-To: <1402914392-6028-2-git-send-email-antoine.tenart@free-electrons.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 17 Jun 2014 14:20:19 -0400
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Wei.Yang@windriver.com, stern@rowland.harvard.edu
+Cc: wei.yang@windriver.com, balbi@ti.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB:gadget: Fix a warning while loading g_mass_storage
+In-Reply-To: <1402800030-17078-1-git-send-email-Wei.Yang@windriver.com>
+Organization: http://mina86.com/
+References: <1401856367-12553-1-git-send-email-Wei.Yang@windriver.com> <1402800030-17078-1-git-send-email-Wei.Yang@windriver.com>
+User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+X-Hashcash: 1:20:140617:stern@rowland.harvard.edu::MjYVyiexeYn+tmIY:0000000000000000000000000000000000001411
+X-Hashcash: 1:20:140617:wei.yang@windriver.com::nROW1cR1cvhxANJ/:0000000000000000000000000000000000000001Wj5
+X-Hashcash: 1:20:140617:linux-usb@vger.kernel.org::pxEzY5KcmXGPLL1C:0000000000000000000000000000000000001eLq
+X-Hashcash: 1:20:140617:linux-kernel@vger.kernel.org::P2p+cYVfj23wew+Y:0000000000000000000000000000000003Q+J
+X-Hashcash: 1:20:140617:wei.yang@windriver.com::9p3wkT+Vw3iqTYKU:0000000000000000000000000000000000000003nt1
+X-Hashcash: 1:20:140617:balbi@ti.com::nQIAGBt9cZosPsa4:000006POs
+Date: Tue, 17 Jun 2014 20:20:14 +0200
+Message-ID: <xa1ta99bwg81.fsf@mina86.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2014 12:26 PM, Antoine Ténart wrote:
-> The Berlin SoC has a two SATA ports. Add a PHY driver to handle them.
-> 
-> The mode selection can let us think this PHY can be configured to fit
-> other purposes. But there are reasons to think the SATA mode will be
-> the only one usable: the PHY registers are only accessible indirectly
-> through two registers in the SATA range, the PHY seems to be integrated
-> and no information tells us the contrary. For these reasons, make the
-> driver a SATA PHY driver.
-> 
-> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+On Sun, Jun 15 2014, Wei.Yang@windriver.com wrote:
+> From: Yang Wei <Wei.Yang@windriver.com>
+>
+> While loading g_mass_storage module, the following warning
+> is triggered.
+>
+> WARNING: at drivers/usb/gadget/composite.c:
+> usb_composite_setup_continue: Unexpected call
+> Modules linked in: fat vfat minix nls_cp437 nls_iso8859_1 g_mass_storage
+> [<800179cc>] (unwind_backtrace+0x0/0x104) from [<80619608>] (dump_stack+0x20/0x24)
+> [<80619608>] (dump_stack+0x20/0x24) from [<80025100>] (warn_slowpath_common+0x64/0x74)
+> [<80025100>] (warn_slowpath_common+0x64/0x74) from [<800251cc>] (warn_slowpath_fmt+0x40/0x48)
+> [<800251cc>] (warn_slowpath_fmt+0x40/0x48) from [<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage])
+> [<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage]) from [<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage])
+> [<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage]) from [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage])
+> [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage]) from [<8004bc90>] (kthread+0x98/0x9c)
+> [<8004bc90>] (kthread+0x98/0x9c) from [<8000faec>] (kernel_thread_exit+0x0/0x8)
+>
+> The root cause is that the existing code fails to take into
+> account the possibility that common->new_fsg can change while
+> do_set_interface() is running, so the value of common->new_fsg
+> that gets tested after do_set_interface returns needs to be
+> the same as the value used by do_set_interface.
+>
+> Signed-off-by: Yang Wei <Wei.Yang@windriver.com>
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+
 > ---
-[...]
-> diff --git a/drivers/phy/phy-berlin-sata.c b/drivers/phy/phy-berlin-sata.c
-> new file mode 100644
-> index 000000000000..907897a02672
-> --- /dev/null
-> +++ b/drivers/phy/phy-berlin-sata.c
-> @@ -0,0 +1,232 @@
-> +/*
-> + * Marvell Berlin SATA PHY driver
-> + *
-> + * Copyright (C) 2014 Marvell Technology Group Ltd.
-> + *
-> + * Antoine Ténart <antoine.tenart@free-electrons.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2. This program is licensed "as is" without any
-> + * warranty of any kind, whether express or implied.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/phy/phy.h>
-> +#include <linux/io.h>
-> +#include <linux/platform_device.h>
-> +
-> +#define HOST_VSA_ADDR		0x0
-> +#define HOST_VSA_DATA		0x4
-> +#define PORT_VSR_ADDR		0x78
-> +#define PORT_VSR_DATA		0x7c
-> +#define PORT_SCR_CTL		0x2c
-> +
-> +#define CONTROL_REGISTER	0x0
-> +#define MBUS_SIZE_CONTROL	0x4
-> +
-> +#define POWER_DOWN_PHY0			BIT(6)
-> +#define POWER_DOWN_PHY1			BIT(14)
-> +#define MBUS_WRITE_REQUEST_SIZE_128	(BIT(2) << 16)
-> +#define MBUS_READ_REQUEST_SIZE_128	(BIT(2) << 19)
-> +
-> +#define PHY_BASE		0x200
+>  drivers/usb/gadget/f_mass_storage.c |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+>
+> Changes in v3 ----> v4
+>
+> move "new_fsg = common->new_fsg" out of comm->lock protection, and refine the commit log.
+>
+> Thanks
+> Wei
+>
+> diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+> index b963939..a7e24c8 100644
+> --- a/drivers/usb/gadget/f_mass_storage.c
+> +++ b/drivers/usb/gadget/f_mass_storage.c
+> @@ -2342,6 +2342,7 @@ static void handle_exception(struct fsg_common *common)
+>  	struct fsg_buffhd	*bh;
+>  	enum fsg_state		old_state;
+>  	struct fsg_lun		*curlun;
+> +	struct fsg_dev		*new_fsg;
+>  	unsigned int		exception_req_tag;
+>  
+>  	/*
+> @@ -2460,8 +2461,9 @@ static void handle_exception(struct fsg_common *common)
+>  		break;
+>  
+>  	case FSG_STATE_CONFIG_CHANGE:
+> -		do_set_interface(common, common->new_fsg);
+> -		if (common->new_fsg)
+> +		new_fsg = common->new_fsg;
+> +		do_set_interface(common, new_fsg);
+> +		if (new_fsg)
+>  			usb_composite_setup_continue(common->cdev);
+>  		break;
 
-Antoine,
-
-I gave your Berlin AHCI patches a try on BG2. I finally got it working
-but BG2 has a different PHY_BASE and need some register fixups.
-
-Please update this patch and the DT bindings to reflect the difference
-of BG2Q with respect to BG2 as below.
-
-[...]
-> +
-> +static const struct of_device_id phy_berlin_sata_of_match[] = {
-> +	{ .compatible = "marvell,berlin-sata-phy" },
-
-s/marvell,berlin-sata-phy/marvell,berlin2-sata-phy/
-
-and add
-
-marvell,berlin2q-sata-phy
-
-That way it can be applied now without proper support for BG2
-and I can send patches later.
-
-Sebastian
-
-> +	{ },
-> +};
-> +
-> +static struct platform_driver phy_berlin_sata_driver = {
-> +	.probe	= phy_berlin_sata_probe,
-> +	.driver	= {
-> +		.name		= "phy-berlin-sata",
-> +		.owner		= THIS_MODULE,
-> +		.of_match_table	= phy_berlin_sata_of_match,
-> +	},
-> +};
-> +module_platform_driver(phy_berlin_sata_driver);
-> +
-> +MODULE_DESCRIPTION("Marvell Berlin SATA PHY driver");
-> +MODULE_AUTHOR("Antoine Ténart <antoine.tenart@free-electrons.com>");
-> +MODULE_LICENSE("GPL v2");
-> 
-
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
