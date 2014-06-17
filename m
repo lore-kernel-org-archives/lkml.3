@@ -1,258 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933173AbaFQPdM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 11:33:12 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:63655 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756032AbaFQPdK (ORCPT
+	id S933281AbaFQPdu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 11:33:50 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:54569 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932999AbaFQPdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 11:33:10 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-60-53a05fb459b8
-From: Tomasz Figa <t.figa@samsung.com>
-To: linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>, chow.kim@samsung.com,
-        vikas.sajjan@samsung.com, joshi@samsung.com,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH RFC] mfd: syscon: Decouple syscon interface from syscon devices
-Date: Tue, 17 Jun 2014 17:32:44 +0200
-Message-id: <1403019164-12514-1-git-send-email-t.figa@samsung.com>
-X-Mailer: git-send-email 1.9.3
-In-reply-to: <53A05E2D.6020702@samsung.com>
-References: <53A05E2D.6020702@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprILMWRmVeSWpSXmKPExsVy+t/xK7pb4hcEG0yfwG6xbNJdNovvu76w
-	W/QuuMpmcf/rUUaLTY+vsVpc3jWHzWLG+X1MFrcv81os2gpUcbqb1WL9jNcsFjefbWdy4PFo
-	ae5h87hzbQ+bx7yTgR6bl9R79G1ZxejxeZNcAFsUl01Kak5mWWqRvl0CV8bviddYChqMKpoP
-	HWJrYFys2cXIySEhYCIxde9qNghbTOLCvfVANheHkMBSRomWQz3MEE4fk8TfKbNZQKrYBNQk
-	Pjc8AusQEVCV+Ny2gB2kiFngP5PErUMLWUESwgL+Ev93/wYrYgEqun/oClicV8BJ4uPLq1Dr
-	5CR6t71hBrE5BbQlvh5fzwRiCwloSTz78o9xAiPvAkaGVYyiqaXJBcVJ6bmGesWJucWleel6
-	yfm5mxghwfhlB+PiY1aHGAU4GJV4eCMuzQ8WYk0sK67MPcQowcGsJMJbIr4gWIg3JbGyKrUo
-	P76oNCe1+BAjEwenVAOjwiRHDZOVDs/vsMbaxTa3my002Zu3nufmtmm1CodLRd7u2eskzi+7
-	Imffce5i15zN6ibxi3MTQ05J3zjzSP/emkS1yDN1pyKnTVl9vjZk6TIlgVzZsyq2npGetqdc
-	HcpcZ7WaKvyINFVtDtN63JE389vHhXMnJDiZHLvOO881yy7YtuzmEgUlluKMREMt5qLiRABF
-	oez+JAIAAA==
+	Tue, 17 Jun 2014 11:33:49 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: ARM: SoC bug fixes
+Date: Tue, 17 Jun 2014 17:33:45 +0200
+Message-ID: <6661934.qBJd3kAAeu@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:krWbl5cAvNlDCi72kh7ilXnC0ea0iyOj5mKWN5ZXLeH
+ 9YaD3eWOuIx2IjVhT5+4F1jyLy08d671gsA6e+OkHPsoLomudP
+ ovzaxqAJ41K4zr1NShToaU9xTYuaPanqj6bJrnGP6i8LeLNn0w
+ OhwIH4RFN4ZnyTA/fClkjbCT5xrCs2xACQ57PUadHmdAiMlaM5
+ 8sL8dL4SPmQuz7AVot2i0BS46gxWqemqiP6Nur6Y87Mzh64nyK
+ albd8yJvoojzkB7FW4R9u6z8gDI/JaSpydC7CuShxOG53RrHxH
+ jlL7F7NwY54vA3GxexSyDW39WVxCUd+CiDDA76Zwf3gZ6M90qL
+ t7aw4GLCnHXJd2XAxYlw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently a syscon entity can be only registered directly through a
-platform device that binds to a dedicated driver. However in certain use
-cases it is desirable to make a device used with another driver a syscon
-interface provider. For example, certain SoCs (e.g. Exynos) contain
-system controller blocks which perform various functions such as power
-domain control, CPU power management, low power mode control, but in
-addition contain certain IP integration glue, such as various signal
-masks, coprocessor power control, etc. In such case, there is a need to
-have a dedicated driver for such system controller but also share
-registers with other drivers. The latter is where the syscon interface
-is helpful.
+The following changes since commit 2dc24b0d0636349d403ae803bbad0c84f6c2ea57:
 
-This patch decouples syscon object from syscon driver, so that it can be
-registered from any driver in addition to the original "syscon" platform
-driver.
+  Merge tag 'soc2-for-3.16' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc (2014-06-11 11:03:24 -0700)
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
----
- drivers/mfd/syscon.c       | 102 +++++++++++++++++++++++++++++----------------
- include/linux/mfd/syscon.h |   9 ++++
- 2 files changed, 75 insertions(+), 36 deletions(-)
+are available in the git repository at:
 
-diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
-index ca15878..11baaae 100644
---- a/drivers/mfd/syscon.c
-+++ b/drivers/mfd/syscon.c
-@@ -14,6 +14,7 @@
- 
- #include <linux/err.h>
- #include <linux/io.h>
-+#include <linux/list.h>
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
-@@ -23,30 +24,28 @@
- #include <linux/regmap.h>
- #include <linux/mfd/syscon.h>
- 
--static struct platform_driver syscon_driver;
-+static DEFINE_SPINLOCK(syscon_list_slock);
-+static LIST_HEAD(syscon_list);
- 
- struct syscon {
- 	struct regmap *regmap;
-+	struct device *dev;
-+	struct list_head list;
- };
- 
--static int syscon_match_node(struct device *dev, void *data)
--{
--	struct device_node *dn = data;
--
--	return (dev->of_node == dn) ? 1 : 0;
--}
--
- struct regmap *syscon_node_to_regmap(struct device_node *np)
- {
--	struct syscon *syscon;
--	struct device *dev;
-+	struct syscon *entry, *syscon = ERR_PTR(-EPROBE_DEFER);
-+
-+	spin_lock(&syscon_list_slock);
- 
--	dev = driver_find_device(&syscon_driver.driver, NULL, np,
--				 syscon_match_node);
--	if (!dev)
--		return ERR_PTR(-EPROBE_DEFER);
-+	list_for_each_entry(entry, &syscon_list, list)
-+		if (entry->dev->of_node == np) {
-+			syscon = entry;
-+			break;
-+		}
- 
--	syscon = dev_get_drvdata(dev);
-+	spin_unlock(&syscon_list_slock);
- 
- 	return syscon->regmap;
- }
-@@ -68,22 +67,19 @@ struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
- }
- EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_compatible);
- 
--static int syscon_match_pdevname(struct device *dev, void *data)
--{
--	return !strcmp(dev_name(dev), (const char *)data);
--}
--
- struct regmap *syscon_regmap_lookup_by_pdevname(const char *s)
- {
--	struct device *dev;
--	struct syscon *syscon;
-+	struct syscon *entry, *syscon = ERR_PTR(-EPROBE_DEFER);
-+
-+	spin_lock(&syscon_list_slock);
- 
--	dev = driver_find_device(&syscon_driver.driver, NULL, (void *)s,
--				 syscon_match_pdevname);
--	if (!dev)
--		return ERR_PTR(-EPROBE_DEFER);
-+	list_for_each_entry(entry, &syscon_list, list)
-+		if (!strcmp(dev_name(entry->dev), s)) {
-+			syscon = entry;
-+			break;
-+		}
- 
--	syscon = dev_get_drvdata(dev);
-+	spin_unlock(&syscon_list_slock);
- 
- 	return syscon->regmap;
- }
-@@ -121,17 +117,49 @@ static struct regmap_config syscon_regmap_config = {
- 	.reg_stride = 4,
- };
- 
-+static void devm_syscon_unregister(struct device *dev, void *res)
-+{
-+	struct syscon *syscon = *(struct syscon **)res;
-+
-+	spin_lock(&syscon_list_slock);
-+	list_del(&syscon->list);
-+	spin_unlock(&syscon_list_slock);
-+}
-+
-+int devm_syscon_register(struct device *dev, struct regmap *regmap)
-+{
-+	struct syscon **ptr, *syscon;
-+
-+	syscon = devm_kzalloc(dev, sizeof(*syscon), GFP_KERNEL);
-+	if (!syscon)
-+		return -ENOMEM;
-+
-+	syscon->regmap = regmap;
-+	syscon->dev = dev;
-+
-+	ptr = devres_alloc(devm_syscon_unregister, sizeof(*ptr), GFP_KERNEL);
-+	if (!ptr)
-+		return -ENOMEM;
-+
-+	spin_lock(&syscon_list_slock);
-+	list_add_tail(&syscon->list, &syscon_list);
-+	spin_unlock(&syscon_list_slock);
-+
-+	*ptr = syscon;
-+	devres_add(dev, ptr);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(devm_syscon_register);
-+
- static int syscon_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
- 	struct syscon_platform_data *pdata = dev_get_platdata(dev);
--	struct syscon *syscon;
-+	struct regmap *regmap;
- 	struct resource *res;
- 	void __iomem *base;
--
--	syscon = devm_kzalloc(dev, sizeof(*syscon), GFP_KERNEL);
--	if (!syscon)
--		return -ENOMEM;
-+	int ret;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res)
-@@ -144,14 +172,16 @@ static int syscon_probe(struct platform_device *pdev)
- 	syscon_regmap_config.max_register = res->end - res->start - 3;
- 	if (pdata)
- 		syscon_regmap_config.name = pdata->label;
--	syscon->regmap = devm_regmap_init_mmio(dev, base,
-+	regmap = devm_regmap_init_mmio(dev, base,
- 					&syscon_regmap_config);
--	if (IS_ERR(syscon->regmap)) {
-+	if (IS_ERR(regmap)) {
- 		dev_err(dev, "regmap init failed\n");
--		return PTR_ERR(syscon->regmap);
-+		return PTR_ERR(regmap);
- 	}
- 
--	platform_set_drvdata(pdev, syscon);
-+	ret = devm_syscon_register(dev, regmap);
-+	if (ret)
-+		return ret;
- 
- 	dev_dbg(dev, "regmap %pR registered\n", res);
- 
-diff --git a/include/linux/mfd/syscon.h b/include/linux/mfd/syscon.h
-index 75e543b..6a1cadf 100644
---- a/include/linux/mfd/syscon.h
-+++ b/include/linux/mfd/syscon.h
-@@ -18,8 +18,11 @@
- #include <linux/err.h>
- 
- struct device_node;
-+struct regmap;
- 
- #ifdef CONFIG_MFD_SYSCON
-+extern int devm_syscon_register(struct device *dev, struct regmap *regmap);
-+
- extern struct regmap *syscon_node_to_regmap(struct device_node *np);
- extern struct regmap *syscon_regmap_lookup_by_compatible(const char *s);
- extern struct regmap *syscon_regmap_lookup_by_pdevname(const char *s);
-@@ -27,6 +30,12 @@ extern struct regmap *syscon_regmap_lookup_by_phandle(
- 					struct device_node *np,
- 					const char *property);
- #else
-+static inline int devm_syscon_register(struct device *dev,
-+				       struct regmap *regmap)
-+{
-+	return -ENOSYS;
-+}
-+
- static inline struct regmap *syscon_node_to_regmap(struct device_node *np)
- {
- 	return ERR_PTR(-ENOSYS);
--- 
-1.9.3
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
+
+for you to fetch changes up to 21278aeafbfacfd62b3e613525f0c694a029dac1:
+
+  ARM: use menuconfig for sub-arch menus (2014-06-17 17:09:48 +0200)
+
+----------------------------------------------------------------
+ARM: SoC fixes for 3.16
+
+A first set of bug fixes that didn't make it for the merge window, and
+two Kconfig cleanups that still make sense at this point. Unfortunately,
+one of the two cleanups caused an unintended change in the original
+version, so we had to revert one part of it and do some more testing
+to ensure the rest is really fine. There was also a last-minute
+rebase of the patches to remove another bad commit.
+
+----------------------------------------------------------------
+Arnd Bergmann (5):
+      ARM: omap2: fix am43xx dependency on l2x0 cache
+      ARM: keystone requires ARM_PATCH_PHYS_VIRT
+      bus/arm-cci: add dependency on OF && CPU_V7
+      remoteproc: da8xx: don't select CMA on no-MMU
+      ARM: samsung: make SAMSUNG_DMADEV optional
+
+Dan Carpenter (1):
+      misc: vexpress: fix error handling vexpress_syscfg_regmap_init()
+
+Ezequiel Garcia (2):
+      ARM: dts: Specify the NAND ECC scheme explicitly on Armada 375 DB board
+      ARM: dts: Specify the NAND ECC scheme explicitly on Armada 385 DB board
+
+Jason Cooper (1):
+      ARM: mvebu: DT: fix OpenBlocks AX3-4 RAM size
+
+Linus Walleij (1):
+      ARM: integrator: fix section mismatch problem
+
+Olof Johansson (1):
+      ARM: exynos: move sysram info to exynos.c
+
+Rob Herring (2):
+      ARM: exynos: cleanup kconfig option display
+      ARM: use menuconfig for sub-arch menus
+
+Sachin Kamat (1):
+      ARM: EXYNOS: Fix compilation warning
+
+Stephen Boyd (1):
+      ARM: Remove ARCH_HAS_CPUFREQ config option
+
+Stephen Warren (1):
+      ARM: multi_v7_defconfig: re-enable SDHCI drivers
+
+ arch/arm/Kconfig                                 | 20 +--------------
+ arch/arm/boot/dts/armada-375-db.dts              |  2 ++
+ arch/arm/boot/dts/armada-385-db.dts              |  2 ++
+ arch/arm/boot/dts/armada-xp-openbl	ocks-ax3-4.dts |  2 +-
+ arch/arm/configs/multi_v7_defconfig              |  1 +
+ arch/arm/configs/omap2plus_defconfig             |  1 +
+ arch/arm/mach-bcm/Kconfig                        |  7 +++---
+ arch/arm/mach-berlin/Kconfig                     |  6 +----
+ arch/arm/mach-cns3xxx/Kconfig                    |  7 +++---
+ arch/arm/mach-davinci/Kconfig                    |  1 -
+ arch/arm/mach-exynos/Kconfig                     |  7 +-----
+ arch/arm/mach-exynos/common.h                    |  1 +
+ arch/arm/mach-exynos/exynos.c                    | 31 +++++++++++++++++++++++-
+ arch/arm/mach-exynos/platsmp.c                   | 26 ++------------------
+ arch/arm/mach-highbank/Kconfig                   |  1 -
+ arch/arm/mach-imx/Kconfig                        | 10 +++-----
+ arch/arm/mach-integrator/Kconfig                 |  2 +-
+ arch/arm/mach-integrator/impd1.c                 | 12 ++++++++-
+ arch/arm/mach-keystone/Kconfig                   |  1 +
+ arch/arm/mach-moxart/Kconfig                     |  2 +-
+ arch/arm/mach-mvebu/Kconfig                      |  7 +-----
+ arch/arm/mach-nomadik/Kconfig                    |  4 +--
+ arch/arm/mach-omap2/Kconfig                      |  7 ++++--
+ arch/arm/mach-omap2/common.h                     |  7 ++++++
+ arch/arm/mach-prima2/Kconfig                     |  6 ++---
+ arch/arm/mach-qcom/Kconfig                       |  6 +----
+ arch/arm/mach-s3c24xx/Kconfig                    |  2 +-
+ arch/arm/mach-s3c64xx/Kconfig                    |  4 +--
+ arch/arm/mach-s5p64x0/Kconfig                    |  6 +++--
+ arch/arm/mach-s5pc100/Kconfig                    |  3 ++-
+ arch/arm/mach-s5pv210/Kconfig                    |  3 ++-
+ arch/arm/mach-shmobile/Kconfig                   |  6 ++---
+ arch/arm/mach-spear/Kconfig                      |  1 -
+ arch/arm/mach-sti/Kconfig                        |  2 +-
+ arch/arm/mach-tegra/Kconfig                      |  8 +++---
+ arch/arm/mach-u300/Kconfig                       |  6 +----
+ arch/arm/mach-ux500/Kconfig                      |  7 +-----
+ arch/arm/mach-vexpress/Kconfig                   |  8 +++---
+ arch/arm/mach-vt8500/Kconfig                     |  1 -
+ arch/arm/mach-zynq/Kconfig                       |  1 -
+ arch/arm/plat-samsung/Kconfig                    | 28 ++++++---------------
+ drivers/bus/Kconfig                              |  2 +-
+ drivers/misc/vexpress-syscfg.c                   | 12 ++++++---
+ drivers/remoteproc/Kconfig                       |  2 +-
+ 44 files changed, 123 insertions(+), 158 deletions(-)
 
