@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966953AbaFQVv4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:51:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54671 "EHLO
+	id S966974AbaFQVwC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:52:02 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54694 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965856AbaFQVvv (ORCPT
+	with ESMTP id S966954AbaFQVv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:51:51 -0400
+	Tue, 17 Jun 2014 17:51:57 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Marek=20Ol=C5=A1=C3=A1k?= <marek.olsak@amd.com>,
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 186/212] drm/radeon: don't allow RADEON_GEM_DOMAIN_CPU for command submission
-Date: Tue, 17 Jun 2014 14:44:40 -0700
-Message-Id: <1403041506-13646-187-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 187/212] iwlwifi: mvm: fix setting channel in monitor mode
+Date: Tue, 17 Jun 2014 14:44:41 -0700
+Message-Id: <1403041506-13646-188-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,36 +27,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Marek=20Ol=C5=A1=C3=A1k?= <marek.olsak@amd.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit ec65da385d46f63740c1c9230b891a6dcbd64c71 upstream.
+commit 1c4abec0baf25ffb92a28cc99d4231feeaa4d3f3 upstream.
 
-It hangs the hardware.
+There was a deadlock in monitor mode when we were setting the
+channel if the channel was not 1.
 
-Signed-off-by: Marek Olšák <marek.olsak@amd.com>
-Reviewed-by: Christian König <christian.koenig@amd.com>
+======================================================
+[ INFO: possible circular locking dependency detected ]
+3.14.3 #4 Not tainted
+-------------------------------------------------------
+iw/3323 is trying to acquire lock:
+ (&local->chanctx_mtx){+.+.+.}, at: [<ffffffffa062e2f2>] ieee80211_vif_release_channel+0x42/0xb0 [mac80211]
+
+but task is already holding lock:
+ (&local->iflist_mtx){+.+...}, at: [<ffffffffa0609e0a>] ieee80211_set_monitor_channel+0x5a/0x1b0 [mac80211]
+
+which lock already depends on the new lock.
+
+the existing dependency chain (in reverse order) is:
+
+-> #2 (&local->iflist_mtx){+.+...}:
+       [<ffffffff810d95bb>] __lock_acquire+0xb3b/0x13b0
+       [<ffffffff810d9ee0>] lock_acquire+0xb0/0x1f0
+       [<ffffffff817eb9c8>] mutex_lock_nested+0x78/0x4f0
+       [<ffffffffa06225cf>] ieee80211_iterate_active_interfaces+0x2f/0x60 [mac80211]
+       [<ffffffffa0518189>] iwl_mvm_recalc_multicast+0x49/0xa0 [iwlmvm]
+       [<ffffffffa051822e>] iwl_mvm_configure_filter+0x4e/0x70 [iwlmvm]
+       [<ffffffffa05e6d43>] ieee80211_configure_filter+0x153/0x5f0 [mac80211]
+       [<ffffffffa05e71f5>] ieee80211_reconfig_filter+0x15/0x20 [mac80211]
+       [snip]
+
+-> #1 (&mvm->mutex){+.+.+.}:
+       [<ffffffff810d95bb>] __lock_acquire+0xb3b/0x13b0
+       [<ffffffff810d9ee0>] lock_acquire+0xb0/0x1f0
+       [<ffffffff817eb9c8>] mutex_lock_nested+0x78/0x4f0
+       [<ffffffffa0517246>] iwl_mvm_add_chanctx+0x56/0xe0 [iwlmvm]
+       [<ffffffffa062ca1e>] ieee80211_new_chanctx+0x13e/0x410 [mac80211]
+       [<ffffffffa062d953>] ieee80211_vif_use_channel+0x1c3/0x5a0 [mac80211]
+       [<ffffffffa06035ab>] ieee80211_add_virtual_monitor+0x1ab/0x6b0 [mac80211]
+       [<ffffffffa06052ea>] ieee80211_do_open+0xe6a/0x15a0 [mac80211]
+       [<ffffffffa0605a79>] ieee80211_open+0x59/0x60 [mac80211]
+       [snip]
+
+-> #0 (&local->chanctx_mtx){+.+.+.}:
+       [<ffffffff810d6cb7>] check_prevs_add+0x977/0x980
+       [<ffffffff810d95bb>] __lock_acquire+0xb3b/0x13b0
+       [<ffffffff810d9ee0>] lock_acquire+0xb0/0x1f0
+       [<ffffffff817eb9c8>] mutex_lock_nested+0x78/0x4f0
+       [<ffffffffa062e2f2>] ieee80211_vif_release_channel+0x42/0xb0 [mac80211]
+       [<ffffffffa0609ec3>] ieee80211_set_monitor_channel+0x113/0x1b0 [mac80211]
+       [<ffffffffa058fb37>] cfg80211_set_monitor_channel+0x77/0x2b0 [cfg80211]
+       [<ffffffffa056e0b2>] __nl80211_set_channel+0x122/0x140 [cfg80211]
+       [<ffffffffa0581374>] nl80211_set_wiphy+0x284/0xaf0 [cfg80211]
+       [snip]
+
+other info that might help us debug this:
+
+Chain exists of:
+  &local->chanctx_mtx --> &mvm->mutex --> &local->iflist_mtx
+
+ Possible unsafe locking scenario:
+
+       CPU0                    CPU1
+       ----                    ----
+  lock(&local->iflist_mtx);
+                               lock(&mvm->mutex);
+                               lock(&local->iflist_mtx);
+  lock(&local->chanctx_mtx);
+
+ *** DEADLOCK ***
+
+This deadlock actually occurs:
+INFO: task iw:3323 blocked for more than 120 seconds.
+      Not tainted 3.14.3 #4
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+iw              D ffff8800c8afcd80  4192  3323   3322 0x00000000
+ ffff880078fdb7e0 0000000000000046 ffff8800c8afcd80 ffff880078fdbfd8
+ 00000000001d5540 00000000001d5540 ffff8801141b0000 ffff8800c8afcd80
+ ffff880078ff9e38 ffff880078ff9e38 ffff880078ff9e40 0000000000000246
+Call Trace:
+ [<ffffffff817ea841>] schedule_preempt_disabled+0x31/0x80
+ [<ffffffff817ebaed>] mutex_lock_nested+0x19d/0x4f0
+ [<ffffffffa06225cf>] ? ieee80211_iterate_active_interfaces+0x2f/0x60 [mac80211]
+ [<ffffffffa06225cf>] ? ieee80211_iterate_active_interfaces+0x2f/0x60 [mac80211]
+ [<ffffffffa052a680>] ? iwl_mvm_power_mac_update_mode+0xc0/0xc0 [iwlmvm]
+ [<ffffffffa06225cf>] ieee80211_iterate_active_interfaces+0x2f/0x60 [mac80211]
+ [<ffffffffa0529357>] _iwl_mvm_power_update_binding+0x27/0x80 [iwlmvm]
+ [<ffffffffa0516eb1>] iwl_mvm_unassign_vif_chanctx+0x81/0xc0 [iwlmvm]
+ [<ffffffffa062d3ff>] __ieee80211_vif_release_channel+0xdf/0x470 [mac80211]
+ [<ffffffffa062e2fa>] ieee80211_vif_release_channel+0x4a/0xb0 [mac80211]
+ [<ffffffffa0609ec3>] ieee80211_set_monitor_channel+0x113/0x1b0 [mac80211]
+ [<ffffffffa058fb37>] cfg80211_set_monitor_channel+0x77/0x2b0 [cfg80211]
+ [<ffffffffa056e0b2>] __nl80211_set_channel+0x122/0x140 [cfg80211]
+ [<ffffffffa0581374>] nl80211_set_wiphy+0x284/0xaf0 [cfg80211]
+
+This fixes https://bugzilla.kernel.org/show_bug.cgi?id=75541
+
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+[ kamal: backport to 3.13: omit iwl_mvm_recalc_multicast change (not impl.) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_cs.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/net/wireless/iwlwifi/mvm/mac80211.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_cs.c b/drivers/gpu/drm/radeon/radeon_cs.c
-index 8093a25..f2fc07c 100644
---- a/drivers/gpu/drm/radeon/radeon_cs.c
-+++ b/drivers/gpu/drm/radeon/radeon_cs.c
-@@ -97,6 +97,12 @@ static int radeon_cs_parser_relocs(struct radeon_cs_parser *p)
- 			uint32_t domain = r->write_domain ?
- 				r->write_domain : r->read_domains;
+diff --git a/drivers/net/wireless/iwlwifi/mvm/mac80211.c b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
+index b3338b1..3960541 100644
+--- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
++++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
+@@ -820,7 +820,7 @@ static int iwl_mvm_configure_mcast_filter(struct iwl_mvm *mvm,
  
-+			if (domain & RADEON_GEM_DOMAIN_CPU) {
-+				DRM_ERROR("RADEON_GEM_DOMAIN_CPU is not valid "
-+					  "for command submission\n");
-+				return -EINVAL;
-+			}
-+
- 			p->relocs[i].lobj.domain = domain;
- 			if (domain == RADEON_GEM_DOMAIN_VRAM)
- 				domain |= RADEON_GEM_DOMAIN_GTT;
+ 	memcpy(mcast_filter_cmd.bssid, vif->bss_conf.bssid, ETH_ALEN);
+ 
+-	return iwl_mvm_send_cmd_pdu(mvm, MCAST_FILTER_CMD, CMD_SYNC,
++	return iwl_mvm_send_cmd_pdu(mvm, MCAST_FILTER_CMD, CMD_ASYNC,
+ 				    sizeof(mcast_filter_cmd),
+ 				    &mcast_filter_cmd);
+ }
 -- 
 1.9.1
 
