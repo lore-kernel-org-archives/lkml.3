@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933691AbaFQQAq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:00:46 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:58393 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933015AbaFQQAo (ORCPT
+	id S933702AbaFQQBM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:01:12 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:35293 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933337AbaFQQBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:00:44 -0400
-Date: Tue, 17 Jun 2014 12:00:40 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
- accessors and operations
-Message-ID: <20140617160040.GE31819@htj.dyndns.org>
-References: <20140612135630.GA23606@htj.dyndns.org>
- <20140612153426.GV4581@linux.vnet.ibm.com>
- <20140612155227.GB23606@htj.dyndns.org>
- <20140617144151.GD4669@linux.vnet.ibm.com>
- <20140617152752.GC31819@htj.dyndns.org>
- <alpine.DEB.2.11.1406171053230.20610@gentwo.org>
+	Tue, 17 Jun 2014 12:01:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1406171053230.20610@gentwo.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAPDyKFpqb=pSR0ZKXdgqJOAWioC+x2OqA7nVR4Q74iVQPfqXMg@mail.gmail.com>
+References: <1402189798-7665-1-git-send-email-houcheng@gmail.com>
+	<CAPDyKFpqb=pSR0ZKXdgqJOAWioC+x2OqA7nVR4Q74iVQPfqXMg@mail.gmail.com>
+Date: Wed, 18 Jun 2014 00:01:08 +0800
+Message-ID: <CAL8JtxB3DoWRwox4zn5mkP6UjejPWUYxzmuxZMLPxyMmPW8MNg@mail.gmail.com>
+Subject: Re: [RFC PATCH] gpio: Add a defer reset object to send board specific reset
+From: Houcheng Lin <houcheng@gmail.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Christoph.
+Hi,
 
-On Tue, Jun 17, 2014 at 10:56:10AM -0500, Christoph Lameter wrote:
-> Uhhh no. The percpu stuff and the associated per cpu atomics are to be
-> used for stuff that is per cpu specific and runs at the fastest speed
-> doable at that level. Introducing implicit barriers is not that good an
-> idea.
+2014-06-16 21:18 GMT+08:00 Ulf Hansson <ulf.hansson@linaro.org>:
+>
+> If I understand correct, you need a per device reset functionality?
+> And obviously the reset implementation is board/SoC specific.
+>
+> We have the "Reset Controller framework", drivers/reset. Could this help you?
+>
+> Kind regards
+> Ulf Hansson
+>
 
-Hmmm?  Read barriers are noops on all archs except for alpha and
-percpu pointer assignments aren't exactly a high frequency operation
-and I'm pretty sure we'll end up with a raw variant anyway.
+Thanks for your information. The defer reset object is to send
+board specific reset signal and this signal has to be sent after
+some device is intialized. For example, a USB device may need extra
+reset signal after root hub is initialized.
 
-> The concurrency guarantees for the per cpu operations are related to being
-> interrupted or rescheduled but not for accesses from other processors.
-> 
-> Cpus maintain at least the appearance of operations being visible in
-> sequence for code running on the same processor. Therefore no barriers are
-> needed.
+As machine init code is run before driver init-call, can not add reset
+sending here if it depends on a specific device's initialization.
 
-Huh?  We're talking about percpu *pointer* assignments not assignments
-to percpu areas.
+Also it provides a DT node that helps both HW/SW developer to use this
+feature.
 
-Thanks.
-
--- 
-tejun
+Best regards,
+Houcheng Lin
