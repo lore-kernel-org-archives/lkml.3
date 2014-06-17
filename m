@@ -1,90 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965369AbaFQVjK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:39:10 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:39653 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964863AbaFQVjD (ORCPT
+	id S965405AbaFQVjg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:39:36 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:37194 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964863AbaFQVje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:39:03 -0400
+	Tue, 17 Jun 2014 17:39:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140617192734.30783.71260.stgit@amt.stowe>
-References: <20140617192734.30783.71260.stgit@amt.stowe>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 17 Jun 2014 15:07:56 -0600
-Message-ID: <CAErSpo7t2kXj2ZULLXCJSWb_awS+DCtCg51dnLbb8ztWmQdYog@mail.gmail.com>
-Subject: Re: [PATCH] PCI: pciehp: Include the Data Link Layer State Changed
- bit when clearing the Slot Status register's event bits
-To: Myron Stowe <myron.stowe@redhat.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rajat Jain <rajatjain.linux@gmail.com>
+In-Reply-To: <20140617202932.GA31414@roeck-us.net>
+References: <20140617181034.GA25854@roeck-us.net> <CAL_Jsq+TFKJN_-PowcAyYztXzcomeAiT70xg7FxKgEQoG=7tAw@mail.gmail.com>
+ <20140617202932.GA31414@roeck-us.net>
+From: Rob Herring <robh@kernel.org>
+Date: Tue, 17 Jun 2014 16:39:13 -0500
+X-Google-Sender-Auth: pq6W3dNoh2q-cU0YBveMOZ2ZxWQ
+Message-ID: <CAL_JsqK9bcb9LKRM_S8R0YqcNzuBnW1fhwEsAYYxfOEdmmhKtQ@mail.gmail.com>
+Subject: Re: Problems with commit 9ec36cafe4 (of/irq: do irq resolution in
+ platform_get_irq) and mfd client devices
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 1:27 PM, Myron Stowe <myron.stowe@redhat.com> wrote:
-> During PCIe hot-plug initialization - pciehp_probe - data structures
-> related to slot capabilities are set up.  As part of this set up, ISRs are
-> put in place to handle slot events and all event bits are cleared out.
+On Tue, Jun 17, 2014 at 3:29 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On Tue, Jun 17, 2014 at 03:08:24PM -0500, Rob Herring wrote:
+>> On Tue, Jun 17, 2014 at 1:10 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> > Hi,
+>> >
+>> > I have an mfd master and client drivers on a system which has devicetree
+>> > enabled. The mfd master driver passes interrupts to the clients using
+>> > mfd cells and 'struct resource'. The client driver is a platform driver
+>> > which retrieves the irq using platform_get_irq().
+>> >
+>> > After commit 9ec36cafe (of/irq: do irq resolution in platform_get_irq),
+>> > this code no longer works. This is because platform_get_irq() does no
+>> > longer call platform_get_resource() if OF is enabled and if dev->of_node
+>> > is not NULL (it is not NULL because there is other [static] information
+>> > which is passed to the client with devicetree data).
+>> >
+>> > Any idea how to solve this problem ? How do I now pass a virtual interrupt
+>> > from an mfd master to its clients if devicetree is enabled ?
+>>
+>> The node ptr points to the MFD node or a child node? If there are
+>> child nodes in DT, then why not define interrupts there too? If there
+>> are not child nodes, then perhaps the child drivers should not have DT
+>> knowledge.
+>>
+> There is a whole bunch of secondary data in the child's dt node.
+> One of the child/client drivers is an i2c controller with attached
+> i2c muxes and several i2c devices, another is a gpio controller
+> with a large number of gpio pins which itself acts as interrupt
+> controller.
+
+Then why not put interrupt data into the child nodes?
+
+>> Does it fail to get an interrupt or gets the parent interrupt instead?
+>>
+> It fails to get an interrupt and returns -EINVAL.
 >
-> This patch adds the Data Link Layer State Changed (PCI_EXP_SLTSTA_DLLSC)
-> Slot Status bit to the event bits that are cleared out during
-> initialization.
+>> We could probably make an error fall-back to looking at resources. Or
+>> try to get irq from resources first, then call of_irq_get.
+>>
+> I submitted a patch implementing the first approach a few minutes ago.
+> That fixes the problem for me. Not sure if that is the right solution
+> though, as it doesn't handle -EPROBE_DEFER. Let me know when you see
+> the patch if there is a better way to handle it (maybe abort with
+> -EPROBE_DEFER if of_irq_get returns it would do).
 
-I think this is related to e48f1b67f668 ("PCI: pciehp: Use link change
-notifications for hot-plug and removal").  Prior to that, pcie_isr()
-didn't look at the PCI_EXP_SLTSTA_DLLSC bit.
+Humm, don't see it. In any case, you would need to fall back only if
+the error is not EPROBE_DEFER.
 
-Apparently there's a non-public report of spurious messages like this
-at boot-time, with no actual hotplug events:
-
-  pciehp 0000:82:04.0:pcie24: slot(4): Link Up event
-  pciehp 0000:82:04.0:pcie24: Device 0000:83:00.0 already exists at
-0000:83:00, cannot hot-add
-  pciehp 0000:82:04.0:pcie24: Cannot add device at 0000:83:00
-
-Device 0000:83:00.0 was enumerated previously, during the normal PCI
-device enumeration.  I suspect DLLSC was set by the hardware when the
-link came up after power-on, and it remained set until Linux booted.
-Then when we take the first pciehp interrupt, we notice DLLSC is set
-and think it's a new link state change.
-
-This might be system-specific, because some BIOSes might clear DLLSC
-before handing off to the OS.  Or my theory might be all wet.
-
-But I think we should clear DLLSC in any case.  We clear all the other
-RW1C bits in Slot Status, and I think we should clear DLLSC as well.
-
-I'd like to include a bugzilla or mailing list reference for the
-spurious message, and I'd also like confirmation that this changes
-actually fixes it.
-
-Bjorn
-
-> Reference:
->   PCI-SIG.  PCI Express Base Specification Revision 4.0 Version 0.3
->   (PCI-SIG, 2014): 7.8.11. Slot Status Register (Offset 1Ah).
->
-> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
-> ---
->
->  drivers/pci/hotplug/pciehp_hpc.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
-> index 42914e0..0568416 100644
-> --- a/drivers/pci/hotplug/pciehp_hpc.c
-> +++ b/drivers/pci/hotplug/pciehp_hpc.c
-> @@ -794,7 +794,7 @@ struct controller *pcie_init(struct pcie_device *dev)
->         pcie_capability_write_word(pdev, PCI_EXP_SLTSTA,
->                 PCI_EXP_SLTSTA_ABP | PCI_EXP_SLTSTA_PFD |
->                 PCI_EXP_SLTSTA_MRLSC | PCI_EXP_SLTSTA_PDC |
-> -               PCI_EXP_SLTSTA_CC);
-> +               PCI_EXP_SLTSTA_CC | PCI_EXP_SLTSTA_DLLSC);
->
->         /* Disable software notification */
->         pcie_disable_notification(ctrl);
->
+Rob
