@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965538AbaFQQdt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:33:49 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:49340 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965093AbaFQQdq (ORCPT
+	id S965550AbaFQQeW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:34:22 -0400
+Received: from mga01.intel.com ([192.55.52.88]:54226 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933617AbaFQQ0j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:33:46 -0400
-Date: Tue, 17 Jun 2014 17:33:39 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Keerthy <j-keerthy@ti.com>
-Cc: linux-omap@vger.kernel.org, lgirdwood@gmail.com, broonie@kernel.org,
-        linux-kernel@vger.kernel.org, sameo@linux.intel.com
-Subject: Re: [PATCH 6/9] mfd: palmas: shift the palmas_sleep_requestor_info
- structure definition to the header file
-Message-ID: <20140617163339.GQ29841@lee--X1>
-References: <1401272423-25761-1-git-send-email-j-keerthy@ti.com>
- <1401272423-25761-7-git-send-email-j-keerthy@ti.com>
+	Tue, 17 Jun 2014 12:26:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,495,1400050800"; 
+   d="scan'208";a="549282075"
+From: "Dilger, Andreas" <andreas.dilger@intel.com>
+To: Anil Belur <askb23@gmail.com>, "Drokin, Oleg" <oleg.drokin@intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpdd-discuss@lists.01.org" <hpdd-discuss@ml01.01.org>
+Subject: Re: [PATCH v6 8/8] staging: lustre: lclient: lcommon_cl.c fixing
+ coding style issues
+Thread-Topic: [PATCH v6 8/8] staging: lustre: lclient: lcommon_cl.c fixing
+ coding style issues
+Thread-Index: AQHPie/WqEyUws9dhEm2zoqLWACo5Zt1jp0A
+Date: Tue, 17 Jun 2014 16:25:14 +0000
+Message-ID: <CFC5C7D5.ABDC7%andreas.dilger@intel.com>
+References: <1402983839-3549-1-git-send-email-askb23@gmail.com>
+ <1402983839-3549-9-git-send-email-askb23@gmail.com>
+In-Reply-To: <1402983839-3549-9-git-send-email-askb23@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.252.132.85]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <BE39DEC9FAB4B442AFE04D7D191C61A4@intel.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401272423-25761-7-git-send-email-j-keerthy@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 May 2014, Keerthy wrote:
+On 2014/06/16, 11:43 PM, "Anil Belur" <askb23@gmail.com> wrote:
 
-> shift the palmas_sleep_requestor_info structure definition to the header file.
+>From: Anil Belur <askb23@gmail.com>
+>
+>fixed: WARNING: suspect code indent for conditional statements (32, 32)
+>Signed-off-by: Anil Belur <askb23@gmail.com>
+>---
+> drivers/staging/lustre/lustre/lclient/lcommon_cl.c | 4 ++--
+> 1 file changed, 2 insertions(+), 2 deletions(-)
+>
+>diff --git a/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
+>b/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
+>index e2da397..3b2b995 100644
+>--- a/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
+>+++ b/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
+>@@ -825,8 +825,8 @@ int ccc_prep_size(const struct lu_env *env, struct
+>cl_object *obj,
+> 				loff_t size_index = ((size - 1) >> PAGE_CACHE_SHIFT);
 > 
-> Signed-off-by: Keerthy <j-keerthy@ti.com>
-> ---
->  drivers/mfd/palmas.c       |   10 ----------
->  include/linux/mfd/palmas.h |   10 ++++++++++
->  2 files changed, 10 insertions(+), 10 deletions(-)
+> 				if ((size == 0 && cur_index != 0) ||
+>-				    (size_index < cur_index))
+>-				*exceed = 1;
+>+						(size_index < cur_index))
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+The old indentation of this line (aligned after '(' on the previous line)
+was better.  Note also that there is no need for parenthesis around this
+statement.
 
-> diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
-> index 485d755..f1f31d5 100644
-> --- a/drivers/mfd/palmas.c
-> +++ b/drivers/mfd/palmas.c
-> @@ -25,16 +25,6 @@
->  #include <linux/mfd/palmas.h>
->  #include <linux/of_device.h>
->  
-> -#define PALMAS_EXT_REQ (PALMAS_EXT_CONTROL_ENABLE1 |	\
-> -			PALMAS_EXT_CONTROL_ENABLE2 |	\
-> -			PALMAS_EXT_CONTROL_NSLEEP)
-> -
-> -struct palmas_sleep_requestor_info {
-> -	int id;
-> -	int reg_offset;
-> -	int bit_pos;
-> -};
-> -
->  #define EXTERNAL_REQUESTOR(_id, _offset, _pos)		\
->  	[PALMAS_EXTERNAL_REQSTR_ID_##_id] = {		\
->  		.id = PALMAS_EXTERNAL_REQSTR_ID_##_id,	\
-> diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
-> index 150a6314..8d68452 100644
-> --- a/include/linux/mfd/palmas.h
-> +++ b/include/linux/mfd/palmas.h
-> @@ -88,6 +88,16 @@ struct palmas {
->  	u8 pwm_muxed;
->  };
->  
-> +#define PALMAS_EXT_REQ (PALMAS_EXT_CONTROL_ENABLE1 |	\
-> +			PALMAS_EXT_CONTROL_ENABLE2 |	\
-> +			PALMAS_EXT_CONTROL_NSLEEP)
-> +
-> +struct palmas_sleep_requestor_info {
-> +	int id;
-> +	int reg_offset;
-> +	int bit_pos;
-> +};
-> +
->  struct regs_info {
->  	char	*name;
->  	char	*sname;
+>+					*exceed = 1;
+> 			}
+> 			return result;
+> 		} else {
+>-- 
+>1.9.0
+>
+>
 
+
+Cheers, Andreas
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Andreas Dilger
+
+Lustre Software Architect
+Intel High Performance Data Division
+
+
