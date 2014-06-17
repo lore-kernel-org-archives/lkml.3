@@ -1,38 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016AbaFQNVY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 09:21:24 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:43362 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754462AbaFQNVW (ORCPT
+	id S1756115AbaFQNYG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 09:24:06 -0400
+Received: from relay.parallels.com ([195.214.232.42]:34342 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372AbaFQNYE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 09:21:22 -0400
-Message-ID: <53A040CF.2000105@kernel.dk>
-Date: Tue, 17 Jun 2014 07:21:19 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 17 Jun 2014 09:24:04 -0400
+Message-ID: <1403011439.27674.43.camel@tkhai>
+Subject: [PATCH 0/3] Fix shutdown of cpu which having throttled rq
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        <tkhai@yandex.ru>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "Mike Galbraith" <umgwanakikbuti@gmail.com>, <khorenko@parallels.com>
+Date: Tue, 17 Jun 2014 17:23:59 +0400
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>,
-        Alexander Gordeev <agordeev@redhat.com>
-CC: linux-kernel@vger.kernel.org, Ming Lei <tom.leiming@gmail.com>
-Subject: Re: [PATCH 0/3] blk-mq: bitmap tag: Fix few races
-References: <cover.1402582256.git.agordeev@redhat.com> <20140617103531.GA13924@infradead.org>
-In-Reply-To: <20140617103531.GA13924@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-17 04:35, Christoph Hellwig wrote:
-> Jens, did you plan to pick these up?  There's a few bits of low hanging
-> fruit for cleanups / micro-optimizations in this area, but I don't want
-> to create conflicts with Alexanders work.
+Hi,
 
-I'm evaluating just getting rid of the cyclic waits, which is why I've 
-held off. But the patches don't apply to the current tree anyway, so 
-they would need a rediffing no matter what.
+this is a result from discussion "[PATCH 1/2] sched: Rework migrate_tasks()":
 
--- 
-Jens Axboe
+	https://lkml.org/lkml/2014/6/11/166
+
+The problem is cfs_rq and rt_rq may stay throttled in the moment
+of task migration from dead cpu. This patch fixes that for fair
+and RT classes. No fix for deadline class yet, it's coming soon.
+
+Thanks
+---
+
+Kirill Tkhai (3):
+      sched/fair: Disable runtime_enabled on dying rq
+      sched/rt: __disable_runtime: Enqueue just unthrottled rt_rq back on the stack
+      sched: Rework check_for_tasks()
+
+
+ kernel/cpu.c        |   33 ++++++++++++++++++++-------------
+ kernel/sched/fair.c |   22 ++++++++++++++++++++++
+ kernel/sched/rt.c   |    3 +++
+ 3 files changed, 45 insertions(+), 13 deletions(-)
+
+--
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+
 
