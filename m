@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967325AbaFQWXY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:23:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54359 "EHLO
+	id S967606AbaFQW0v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:26:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54300 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965034AbaFQVuW (ORCPT
+	with ESMTP id S965384AbaFQVuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:50:22 -0400
+	Tue, 17 Jun 2014 17:50:07 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Xuelin Shi <xuelin.shi@freescale.com>,
-        Dan Williams <dan.j.williams@intel.com>,
+Cc: Matija Glavinic Pecotic <matija.glavinic-pecotic.ext@nsn.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 160/212] dmaengine: fix dmaengine_unmap failure
-Date: Tue, 17 Jun 2014 14:44:14 -0700
-Message-Id: <1403041506-13646-161-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 036/212] net: sctp: Potentially-Failed state should not be reached from unconfirmed state
+Date: Tue, 17 Jun 2014 14:42:10 -0700
+Message-Id: <1403041506-13646-37-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -28,57 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xuelin Shi <xuelin.shi@freescale.com>
+From: Matija Glavinic Pecotic <matija.glavinic-pecotic.ext@nsn.com>
 
-commit c1f43dd9c20d85e66c4d77e284f64ac114abe3f8 upstream.
+commit 7cce3b75682ff898c935c17d186983cbf3ed393e upstream.
 
-The count which is used to get_unmap_data maybe not the same as the
-count computed in dmaengine_unmap which causes to free data in a
-wrong pool.
+In current implementation it is possible to reach PF state from unconfirmed.
+We can interpret sctp-failover-02 in a way that PF state is meant to be reached
+only from active state, in the end, this is when entering PF state makes sense.
+Here are few quotes from sctp-failover-02, but regardless of these, same
+understanding can be reached from whole section 5:
 
-This patch fixes this issue by keeping the map count with unmap_data
-structure and use this count to get the pool.
+Section 5.1, quickfailover guide:
+    "The PF state is an intermediate state between Active and Failed states."
 
-Signed-off-by: Xuelin Shi <xuelin.shi@freescale.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+    "Each time the T3-rtx timer expires on an active or idle
+    destination, the error counter of that destination address will
+    be incremented.  When the value in the error counter exceeds
+    PFMR, the endpoint should mark the destination transport address as PF."
+
+There are several concrete reasons for such interpretation. For start, rfc4960
+does not take into concern quickfailover algorithm. Therefore, quickfailover
+must comply to 4960. Point where this compliance can be argued is following
+behavior:
+When PF is entered, association overall error counter is incremented for each
+missed HB. This is contradictory to rfc4960, as address, while in unconfirmed
+state, is subjected to probing, and while it is probed, it should not increment
+association overall error counter. This has as a consequence that we might end
+up in situation in which we drop association due path failure on unconfirmed
+address, in case we have wrong configuration in a way:
+Association.Max.Retrans == Path.Max.Retrans.
+
+Another reason is that entering PF from unconfirmed will cause a loss of address
+confirmed event when address is once (if) confirmed. This is fine from failover
+guide point of view, but it is not consistent with behavior preceding failover
+implementation and recommendation from 4960:
+
+5.4.  Path Verification
+   Whenever a path is confirmed, an indication MAY be given to the upper
+   layer.
+
+Signed-off-by: Matija Glavinic Pecotic <matija.glavinic-pecotic.ext@nsn.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/dma/dmaengine.c   | 2 ++
- include/linux/dmaengine.h | 1 +
- 2 files changed, 3 insertions(+)
+ net/sctp/sm_sideeffect.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-index ef63b90..b4c711d 100644
---- a/drivers/dma/dmaengine.c
-+++ b/drivers/dma/dmaengine.c
-@@ -959,6 +959,7 @@ static void dmaengine_unmap(struct kref *kref)
- 		dma_unmap_page(dev, unmap->addr[i], unmap->len,
- 			       DMA_BIDIRECTIONAL);
+diff --git a/net/sctp/sm_sideeffect.c b/net/sctp/sm_sideeffect.c
+index 1a6eef3..04b1398 100644
+--- a/net/sctp/sm_sideeffect.c
++++ b/net/sctp/sm_sideeffect.c
+@@ -496,11 +496,12 @@ static void sctp_do_8_2_transport_strike(sctp_cmd_seq_t *commands,
  	}
-+	cnt = unmap->map_cnt;
- 	mempool_free(unmap, __get_unmap_pool(cnt)->pool);
- }
  
-@@ -1024,6 +1025,7 @@ dmaengine_get_unmap_data(struct device *dev, int nr, gfp_t flags)
- 	memset(unmap, 0, sizeof(*unmap));
- 	kref_init(&unmap->kref);
- 	unmap->dev = dev;
-+	unmap->map_cnt = nr;
+ 	/* If the transport error count is greater than the pf_retrans
+-	 * threshold, and less than pathmaxrtx, then mark this transport
+-	 * as Partially Failed, ee SCTP Quick Failover Draft, secon 5.1,
+-	 * point 1
++	 * threshold, and less than pathmaxrtx, and if the current state
++	 * is not SCTP_UNCONFIRMED, then mark this transport as Partially
++	 * Failed, see SCTP Quick Failover Draft, section 5.1
+ 	 */
+ 	if ((transport->state != SCTP_PF) &&
++	   (transport->state != SCTP_UNCONFIRMED) &&
+ 	   (asoc->pf_retrans < transport->pathmaxrxt) &&
+ 	   (transport->error_count > asoc->pf_retrans)) {
  
- 	return unmap;
- }
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 41cf0c3..ed6c1f1 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -405,6 +405,7 @@ typedef bool (*dma_filter_fn)(struct dma_chan *chan, void *filter_param);
- typedef void (*dma_async_tx_callback)(void *dma_async_param);
- 
- struct dmaengine_unmap_data {
-+	u8 map_cnt;
- 	u8 to_cnt;
- 	u8 from_cnt;
- 	u8 bidi_cnt;
 -- 
 1.9.1
 
