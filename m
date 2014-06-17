@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932967AbaFQMm3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 08:42:29 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:56969 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932694AbaFQMm2 (ORCPT
+	id S1756237AbaFQMoF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 08:44:05 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:20828 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755836AbaFQMoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 08:42:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140617121535.GY6758@twins.programming.kicks-ass.net>
-References: <20131212140835.729222186@infradead.org>
-	<20131212141655.238445339@infradead.org>
-	<CAOh2x=mgeozUMGYQubQ4GKPEB6k_TkcV3CSTzNLqjKok-gROQg@mail.gmail.com>
-	<20140617121535.GY6758@twins.programming.kicks-ass.net>
-Date: Tue, 17 Jun 2014 18:12:27 +0530
-Message-ID: <CAKohpo=6t-VHgJfrq7wz35y_zKfL+wb8amgj0ZV9cezb39r=uA@mail.gmail.com>
-Subject: Re: [PATCH 11/15] x86: Rewrite cyc2ns to avoid the need to disable IRQs
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        Zhang Rui <rui.zhang@intel.com>, jacob.jun.pan@linux.intel.com,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        registosites@hotmail.com, "Srivatsa S. Bhat" <srivatsa@mit.edu>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 17 Jun 2014 08:44:03 -0400
+From: Pawel Moll <pawel.moll@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Drew Richardson <Drew.Richardson@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: [PATCH v2] perf: Handle compat ioctl
+Date: Tue, 17 Jun 2014 13:43:49 +0100
+Message-Id: <1403009029-30967-1-git-send-email-pawel.moll@arm.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <20140617121328.GO3213@twins.programming.kicks-ass.net>
+References: <20140617121328.GO3213@twins.programming.kicks-ass.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 June 2014 17:45, Peter Zijlstra <peterz@infradead.org> wrote:
-> Ah, just a freeze?
+When running a 32-bit userspace on a 64-bit kernel (eg. i386
+application on x86_64 kernel or 32-bit arm userspace on arm64
+kernel) some of the perf ioctls must be treated with special
+care, as they have a pointer size encoded in the command.
 
-As per what he reported and his screen dumps, looks like yes a
-freeze. IOW, no prints at all on terminal, even the ones issued
-before reaching set_cyc2ns_scale()..
+For example, PERF_EVENT_IOC_ID in 32-bit world will be encoded
+as 0x80042407, but 64-bit kernel will expect 0x80082407. In
+result the ioctl will fail returning -ENOTTY.
 
->> CPUs: Only two CPUs, sharing clock line
->
-> What's specific to this particular CPU?
+This patch solves the problem by adding code fixing up the
+size as compat_ioctl file operation.
 
-You meant why I mentioned this information? Nothing specific
-actually, just mentioned it to make all information available that
-might be useful .. Probably its not :)
+Reported-by: Drew Richardson <drew.richardson@arm.com>
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+---
+ kernel/events/core.c | 23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
 
-> So what you can try is force a cyc2ns read before the write in
-> set_cyc2ns_scale(). I think its possible that if we do not do the read,
-> the write will wait for a 'free' slot indefinitely.
+Changes from v1:
+- added missing #include
 
-Hmm, I see. Thanks for your quick response.
-
-Are you suggesting something like this ? :
-
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 57e5ce1..290ac03 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -249,6 +249,9 @@ static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
-        if (!cpu_khz)
-                goto done;
-
-+       data = cyc2ns_read_begin();
-+       cyc2ns_read_end(data);
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 5fa58e4..f081335 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -40,6 +40,7 @@
+ #include <linux/mm_types.h>
+ #include <linux/cgroup.h>
+ #include <linux/module.h>
++#include <linux/compat.h>
+ 
+ #include "internal.h"
+ 
+@@ -3716,6 +3717,26 @@ static long perf_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_COMPAT
++static long perf_compat_ioctl(struct file *file, unsigned int cmd,
++				unsigned long arg)
++{
++	switch (_IOC_NR(cmd)) {
++	case _IOC_NR(PERF_EVENT_IOC_SET_FILTER):
++	case _IOC_NR(PERF_EVENT_IOC_ID):
++		/* Fix up pointer size (usually 4 -> 8 in 32-on-64-bit case */
++		if (_IOC_SIZE(cmd) == sizeof(compat_uptr_t)) {
++			cmd &= ~IOCSIZE_MASK;
++			cmd |= sizeof(void *) << IOCSIZE_SHIFT;
++		}
++		break;
++	}
++	return perf_ioctl(file, cmd, arg);
++}
++#else
++#define perf_compat_ioctl NULL
++#endif
 +
-        data = cyc2ns_write_begin(cpu);
+ int perf_event_task_enable(void)
+ {
+ 	struct perf_event *event;
+@@ -4221,7 +4242,7 @@ static const struct file_operations perf_fops = {
+ 	.read			= perf_read,
+ 	.poll			= perf_poll,
+ 	.unlocked_ioctl		= perf_ioctl,
+-	.compat_ioctl		= perf_ioctl,
++	.compat_ioctl		= perf_compat_ioctl,
+ 	.mmap			= perf_mmap,
+ 	.fasync			= perf_fasync,
+ };
+-- 
+1.9.1
 
-        rdtscll(tsc_now);
-
-
-@Mauro: Please try this once Peter confirms.
-
---
-viresh
