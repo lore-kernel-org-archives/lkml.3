@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429AbaFQF0s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 01:26:48 -0400
-Received: from mga01.intel.com ([192.55.52.88]:25172 "EHLO mga01.intel.com"
+	id S1755475AbaFQF1G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 01:27:06 -0400
+Received: from mga11.intel.com ([192.55.52.93]:26777 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754472AbaFQF0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 01:26:47 -0400
+	id S1755437AbaFQF1C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 01:27:02 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,492,1400050800"; 
-   d="scan'208";a="549014929"
+   d="scan'208";a="549015008"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>,
@@ -16,87 +16,83 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         "H. Peter Anvin" <hpa@zytor.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [RFC Patch V2 00/16] Enable support of IOAPIC hotplug on x86 platforms
-Date: Tue, 17 Jun 2014 13:29:39 +0800
-Message-Id: <1402982995-13747-1-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [RFC Patch V2 01/16] x86, irq: Split out alloc_ioapic_save_registers()
+Date: Tue, 17 Jun 2014 13:29:40 +0800
+Message-Id: <1402982995-13747-2-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1402982995-13747-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1402982995-13747-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set enhances IOAPIC core and ACPI drivers to support IOAPIC
-hotplug on x86 platforms. It's based on another patch set "use irqdomain
-to dynamically allocate IRQ for IOAPIC" at
-https://lkml.org/lkml/2014/6/9/44
+From: Yinghai Lu <yinghai@kernel.org>
 
-You may pull it from 
-https://github.com/jiangliu/linux.git ioapic/hotplug_v2
+Split alloc_ioapic_save_registers() from early_irq_init(),
+so it will be used per ioapic.
 
-We have pick up several patches from Yinghai's original IOAPIC hotplug
-patch set and reimplemented IOAPIC driver as an ACPI driver instead of
-a PCI driver.
+Will call that later for hot-added ioapic controller.
 
-It has been tested on a 4-socket Intel SDV with socket hot-addition
-capability. Any suggestions are welcomed!
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+---
+ arch/x86/kernel/apic/io_apic.c |   22 +++++++++++++++-------
+ 1 file changed, 15 insertions(+), 7 deletions(-)
 
-Jiang Liu (10):
-  x86, irq, ACPI: protect acpi_pci_irq_enable() from reentrance
-  PCI: kill wrong warning message in pcieport driver
-  x86, irq: remove __init marker for functions will be used by IOAPIC
-    hotplug
-  x86, irq: refine mp_register_ioapic() to prepare for IOAPIC hotplug
-  x86, irq, ACPI: introduce a rwsem to protect IOAPIC operations from
-    hotplug
-  x86, irq, ACPI: implement interface to support ACPI based IOAPIC
-    hot-addition
-  x86, irq, ACPI: implement interface to support ACPI based IOAPIC
-    hot-removal
-  x86, irq: introduce helper to check whether an IOAPIC has been
-    registered
-  pci, ioapic: kill ioapic PCI driver
-  x86, irq, ACPI: implement ACPI driver to support IOAPIC hotplug
-
-Yinghai Lu (6):
-  x86, irq: Split out alloc_ioapic_save_registers()
-  x86, ioapic: Find usable ioapic id for 64bit.
-  ACPI, x86/PCI: Move resource_to_addr() to acpi generic
-  ACPI: Make map_mat_entry handle x2apic entry
-  ACPI: Move acpi_get_cpuid() to separated file
-  ACPI, ioapic: Add acpi_get_ioapic_id()
-
- arch/x86/include/asm/io_apic.h |    6 +-
- arch/x86/kernel/acpi/boot.c    |   74 +++++++++-
- arch/x86/kernel/apic/io_apic.c |  235 +++++++++++++++++++++++++-------
- arch/x86/pci/acpi.c            |   50 +------
- drivers/acpi/Kconfig           |    6 +
- drivers/acpi/Makefile          |    2 +
- drivers/acpi/apic_id.c         |  295 ++++++++++++++++++++++++++++++++++++++++
- drivers/acpi/internal.h        |    7 +
- drivers/acpi/ioapic.c          |  231 +++++++++++++++++++++++++++++++
- drivers/acpi/pci_irq.c         |    7 +-
- drivers/acpi/pci_root.c        |    3 +
- drivers/acpi/processor_core.c  |  191 --------------------------
- drivers/acpi/resource.c        |   46 +++++++
- drivers/pci/Kconfig            |    7 -
- drivers/pci/Makefile           |    2 -
- drivers/pci/ioapic.c           |  121 ----------------
- drivers/pci/pcie/portdrv_pci.c |    4 -
- include/acpi/processor.h       |    3 -
- include/linux/acpi.h           |   11 ++
- 19 files changed, 868 insertions(+), 433 deletions(-)
- create mode 100644 drivers/acpi/apic_id.c
- create mode 100644 drivers/acpi/ioapic.c
- delete mode 100644 drivers/pci/ioapic.c
-
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 26490336ef6f..e97ec28f5269 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -237,6 +237,19 @@ static struct irq_pin_list *alloc_irq_pin_list(int node)
+ 	return kzalloc_node(sizeof(struct irq_pin_list), GFP_KERNEL, node);
+ }
+ 
++static void alloc_ioapic_saved_registers(int idx)
++{
++	size_t size;
++
++	if (ioapics[idx].saved_registers)
++		return;
++
++	size = sizeof(struct IO_APIC_route_entry) * ioapics[idx].nr_registers;
++	ioapics[idx].saved_registers = kzalloc(size, GFP_KERNEL);
++	if (!ioapics[idx].saved_registers)
++		pr_err("IOAPIC %d: suspend/resume impossible!\n", idx);
++}
++
+ int __init arch_early_irq_init(void)
+ {
+ 	struct irq_cfg *cfg;
+@@ -245,13 +258,8 @@ int __init arch_early_irq_init(void)
+ 	if (!nr_legacy_irqs())
+ 		io_apic_irqs = ~0UL;
+ 
+-	for_each_ioapic(i) {
+-		ioapics[i].saved_registers =
+-			kzalloc(sizeof(struct IO_APIC_route_entry) *
+-				ioapics[i].nr_registers, GFP_KERNEL);
+-		if (!ioapics[i].saved_registers)
+-			pr_err("IOAPIC %d: suspend/resume impossible!\n", i);
+-	}
++	for_each_ioapic(i)
++		alloc_ioapic_saved_registers(i);
+ 
+ 	/*
+ 	 * For legacy IRQ's, start with assigning irq0 to irq15 to
 -- 
 1.7.10.4
 
