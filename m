@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933913AbaFQQSZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:18:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50439 "EHLO
+	id S933926AbaFQQSo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:18:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50438 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933738AbaFQQPs (ORCPT
+	with ESMTP id S933728AbaFQQPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:15:48 -0400
+	Tue, 17 Jun 2014 12:15:47 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Quentin Casasnovas <quentin.casasnovas@oracle.com>,
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 019/121] drm/radeon: memory leak on bo reservation failure. v2
-Date: Tue, 17 Jun 2014 09:13:32 -0700
-Message-Id: <1403021714-16320-20-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 026/121] ext4: fix jbd2 warning under heavy xattr load
+Date: Tue, 17 Jun 2014 09:13:39 -0700
+Message-Id: <1403021714-16320-27-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021714-16320-1-git-send-email-kamal@canonical.com>
 References: <1403021714-16320-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,42 +27,133 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Quentin Casasnovas <quentin.casasnovas@oracle.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 74073c9dd29905645feb6dee03c144657a9844cd upstream.
+commit ec4cb1aa2b7bae18dd8164f2e9c7c51abcf61280 upstream.
 
-On bo reservation failure, we end up leaking fpriv.
+When heavily exercising xattr code the assertion that
+jbd2_journal_dirty_metadata() shouldn't return error was triggered:
 
-v2 (chk): rebased and added missing free on vm failure as well
+WARNING: at /srv/autobuild-ceph/gitbuilder.git/build/fs/jbd2/transaction.c:1237
+jbd2_journal_dirty_metadata+0x1ba/0x260()
 
-Fixes: 5e386b574cf7e1 ("drm/radeon: fix missing bo reservation")
-Cc: Christian König <christian.koenig@amd.com>
-Cc: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Quentin Casasnovas <quentin.casasnovas@oracle.com>
-Signed-off-by: Christian König <christian.koenig@amd.com>
-[ kamal: backport to 3.13-stable: omit radeon_vm_init() return check ]
+CPU: 0 PID: 8877 Comm: ceph-osd Tainted: G    W 3.10.0-ceph-00049-g68d04c9 #1
+Hardware name: Dell Inc. PowerEdge R410/01V648, BIOS 1.6.3 02/07/2011
+ ffffffff81a1d3c8 ffff880214469928 ffffffff816311b0 ffff880214469968
+ ffffffff8103fae0 ffff880214469958 ffff880170a9dc30 ffff8802240fbe80
+ 0000000000000000 ffff88020b366000 ffff8802256e7510 ffff880214469978
+Call Trace:
+ [<ffffffff816311b0>] dump_stack+0x19/0x1b
+ [<ffffffff8103fae0>] warn_slowpath_common+0x70/0xa0
+ [<ffffffff8103fb2a>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff81267c2a>] jbd2_journal_dirty_metadata+0x1ba/0x260
+ [<ffffffff81245093>] __ext4_handle_dirty_metadata+0xa3/0x140
+ [<ffffffff812561f3>] ext4_xattr_release_block+0x103/0x1f0
+ [<ffffffff81256680>] ext4_xattr_block_set+0x1e0/0x910
+ [<ffffffff8125795b>] ext4_xattr_set_handle+0x38b/0x4a0
+ [<ffffffff810a319d>] ? trace_hardirqs_on+0xd/0x10
+ [<ffffffff81257b32>] ext4_xattr_set+0xc2/0x140
+ [<ffffffff81258547>] ext4_xattr_user_set+0x47/0x50
+ [<ffffffff811935ce>] generic_setxattr+0x6e/0x90
+ [<ffffffff81193ecb>] __vfs_setxattr_noperm+0x7b/0x1c0
+ [<ffffffff811940d4>] vfs_setxattr+0xc4/0xd0
+ [<ffffffff8119421e>] setxattr+0x13e/0x1e0
+ [<ffffffff811719c7>] ? __sb_start_write+0xe7/0x1b0
+ [<ffffffff8118f2e8>] ? mnt_want_write_file+0x28/0x60
+ [<ffffffff8118c65c>] ? fget_light+0x3c/0x130
+ [<ffffffff8118f2e8>] ? mnt_want_write_file+0x28/0x60
+ [<ffffffff8118f1f8>] ? __mnt_want_write+0x58/0x70
+ [<ffffffff811946be>] SyS_fsetxattr+0xbe/0x100
+ [<ffffffff816407c2>] system_call_fastpath+0x16/0x1b
+
+The reason for the warning is that buffer_head passed into
+jbd2_journal_dirty_metadata() didn't have journal_head attached. This is
+caused by the following race of two ext4_xattr_release_block() calls:
+
+CPU1                                CPU2
+ext4_xattr_release_block()          ext4_xattr_release_block()
+lock_buffer(bh);
+/* False */
+if (BHDR(bh)->h_refcount == cpu_to_le32(1))
+} else {
+  le32_add_cpu(&BHDR(bh)->h_refcount, -1);
+  unlock_buffer(bh);
+                                    lock_buffer(bh);
+                                    /* True */
+                                    if (BHDR(bh)->h_refcount == cpu_to_le32(1))
+                                      get_bh(bh);
+                                      ext4_free_blocks()
+                                        ...
+                                        jbd2_journal_forget()
+                                          jbd2_journal_unfile_buffer()
+                                          -> JH is gone
+  error = ext4_handle_dirty_xattr_block(handle, inode, bh);
+  -> triggers the warning
+
+We fix the problem by moving ext4_handle_dirty_xattr_block() under the
+buffer lock. Sadly this cannot be done in nojournal mode as that
+function can call sync_dirty_buffer() which would deadlock. Luckily in
+nojournal mode the race is harmless (we only dirty already freed buffer)
+and thus for nojournal mode we leave the dirtying outside of the buffer
+lock.
+
+Reported-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_kms.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/ext4/xattr.c | 23 +++++++++++++++++++----
+ 1 file changed, 19 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_kms.c b/drivers/gpu/drm/radeon/radeon_kms.c
-index 89c85e0..32a5dae 100644
---- a/drivers/gpu/drm/radeon/radeon_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_kms.c
-@@ -460,8 +460,11 @@ int radeon_driver_open_kms(struct drm_device *dev, struct drm_file *file_priv)
- 		radeon_vm_init(rdev, &fpriv->vm);
+diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
+index 44f19f3..a6483c6 100644
+--- a/fs/ext4/xattr.c
++++ b/fs/ext4/xattr.c
+@@ -516,8 +516,8 @@ static void ext4_xattr_update_super_block(handle_t *handle,
+ }
  
- 		r = radeon_bo_reserve(rdev->ring_tmp_bo.bo, false);
--		if (r)
-+		if (r) {
-+			radeon_vm_fini(rdev, &fpriv->vm);
-+			kfree(fpriv);
- 			return r;
-+		}
- 
- 		/* map the ib pool buffer read only into
- 		 * virtual address space */
+ /*
+- * Release the xattr block BH: If the reference count is > 1, decrement
+- * it; otherwise free the block.
++ * Release the xattr block BH: If the reference count is > 1, decrement it;
++ * otherwise free the block.
+  */
+ static void
+ ext4_xattr_release_block(handle_t *handle, struct inode *inode,
+@@ -537,16 +537,31 @@ ext4_xattr_release_block(handle_t *handle, struct inode *inode,
+ 		if (ce)
+ 			mb_cache_entry_free(ce);
+ 		get_bh(bh);
++		unlock_buffer(bh);
+ 		ext4_free_blocks(handle, inode, bh, 0, 1,
+ 				 EXT4_FREE_BLOCKS_METADATA |
+ 				 EXT4_FREE_BLOCKS_FORGET);
+-		unlock_buffer(bh);
+ 	} else {
+ 		le32_add_cpu(&BHDR(bh)->h_refcount, -1);
+ 		if (ce)
+ 			mb_cache_entry_release(ce);
++		/*
++		 * Beware of this ugliness: Releasing of xattr block references
++		 * from different inodes can race and so we have to protect
++		 * from a race where someone else frees the block (and releases
++		 * its journal_head) before we are done dirtying the buffer. In
++		 * nojournal mode this race is harmless and we actually cannot
++		 * call ext4_handle_dirty_xattr_block() with locked buffer as
++		 * that function can call sync_dirty_buffer() so for that case
++		 * we handle the dirtying after unlocking the buffer.
++		 */
++		if (ext4_handle_valid(handle))
++			error = ext4_handle_dirty_xattr_block(handle, inode,
++							      bh);
+ 		unlock_buffer(bh);
+-		error = ext4_handle_dirty_xattr_block(handle, inode, bh);
++		if (!ext4_handle_valid(handle))
++			error = ext4_handle_dirty_xattr_block(handle, inode,
++							      bh);
+ 		if (IS_SYNC(inode))
+ 			ext4_handle_sync(handle);
+ 		dquot_free_block(inode, EXT4_C2B(EXT4_SB(inode->i_sb), 1));
 -- 
 1.9.1
 
