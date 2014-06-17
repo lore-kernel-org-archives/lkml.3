@@ -1,131 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932335AbaFQMBq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 08:01:46 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:48254 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753608AbaFQMBo (ORCPT
+	id S932457AbaFQMGe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 08:06:34 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:51873 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752049AbaFQMGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 08:01:44 -0400
-Date: Tue, 17 Jun 2014 13:58:30 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Dave P Martin <Dave.Martin@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Joerg Roedel <joro@8bytes.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
-Message-ID: <20140617115829.GB18816@ulmo>
-References: <1400877395-4235-1-git-send-email-thierry.reding@gmail.com>
- <538757B6.4010109@wwwdotorg.org>
- <20140530073006.GA24748@ulmo>
- <20140530112728.GB3949@e103592.cambridge.arm.com>
- <20140604211237.GC18710@mithrandir>
- <20140616125704.GE16758@arm.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GID0FwUMdk1T2AWN"
-Content-Disposition: inline
-In-Reply-To: <20140616125704.GE16758@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 17 Jun 2014 08:06:33 -0400
+Message-ID: <1403006790.1984.25.camel@x220>
+Subject: [PATCH] eeepc-laptop: rename _set and _get arguments in macro
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Cc: acpi4asus-user@lists.sourceforge.net, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 17 Jun 2014 14:06:30 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 17 Jun 2014 12:06:30.0978 (UTC) FILETIME=[932E6220:01CF8A24]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The _set and _get arguments to the EEEPC_CREATE_SENSOR_ATTR() macro
+are confusingly named: _set should be _get and vice versa. Rename these
+arguments.
 
---GID0FwUMdk1T2AWN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Drop the trailing semicolon from that macro, while we're at it.
 
-On Mon, Jun 16, 2014 at 01:57:04PM +0100, Will Deacon wrote:
-> On Wed, Jun 04, 2014 at 10:12:38PM +0100, Thierry Reding wrote:
-> > On Fri, May 30, 2014 at 12:27:28PM +0100, Dave Martin wrote:
-> > > On Fri, May 30, 2014 at 08:30:08AM +0100, Thierry Reding wrote:
-> > [...]
-> > > > Arnd, can you take another look at this binding and see if there's
-> > > > anything else missing? If not I'll go through the document again and
-> > > > update all #address-cells/#size-cells references with #iommu-cells =
-as
-> > > > appropriate and submit v3.
-> > >=20
-> > > How do you envisage propagation of the master ID bits downstream of t=
-he
-> > > IOMMU would be described?
-> > >=20
-> > > We will definitely need a way to describe this for GICv3.  How those
-> > > values are propagated is likely to vary between related SoCs and does=
-n't
-> > > feel like it should be baked into a driver, especially for the ARM SM=
-MU
-> > > which may get reused in radically different SoC families from differe=
-nt
-> > > vendors.
-> >=20
-> > Well, we've had cases like these in the past (power sequences come to
-> > mind). Some concepts are just too difficult or unwieldy to be put into
-> > device tree. I think that this is one of them.
-> >=20
-> > > The most likely types of remapping are the adding of a base offset or
-> > > some extra bits to the ID -- because not all MSIs to the GIC will
-> > > necessarily pass through the IOMMU.  It's also possible that we might
-> > > see ID squashing or folding in some systems.
-> >=20
-> > It can easily be argued that if the algorithm used to remap the ID
-> > varies, the compatibility of the device changes. Therefore I would
-> > expect any variant of the GICv3 that deviates from the "standard"
-> > mapping (if there is such a thing) to have its own compatible string.
->=20
-> There is no standard mapping; it's a property defined at system integrati=
-on
-> time. I fully expect different SoCs to do different things here.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Compile tested (I do not have this hardware).
 
-My point was that the mapping itself seems to be fundamental enough to
-make devices with different mappings "incompatible". Therefore I think
-this could probably be handled by using different compatible values,
-something along the lines of this:
+ drivers/platform/x86/eeepc-laptop.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-	compatible =3D "vendor,soc-gicv3", "arm,gicv3";
+diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+index 9b0c57cd1d4a..bd533c22be57 100644
+--- a/drivers/platform/x86/eeepc-laptop.c
++++ b/drivers/platform/x86/eeepc-laptop.c
+@@ -1053,20 +1053,20 @@ static ssize_t show_sys_hwmon(int (*get)(void), char *buf)
+ 	return sprintf(buf, "%d\n", get());
+ }
+ 
+-#define EEEPC_CREATE_SENSOR_ATTR(_name, _mode, _set, _get)		\
++#define EEEPC_CREATE_SENSOR_ATTR(_name, _mode, _get, _set)		\
+ 	static ssize_t show_##_name(struct device *dev,			\
+ 				    struct device_attribute *attr,	\
+ 				    char *buf)				\
+ 	{								\
+-		return show_sys_hwmon(_set, buf);			\
++		return show_sys_hwmon(_get, buf);			\
+ 	}								\
+ 	static ssize_t store_##_name(struct device *dev,		\
+ 				     struct device_attribute *attr,	\
+ 				     const char *buf, size_t count)	\
+ 	{								\
+-		return store_sys_hwmon(_get, buf, count);		\
++		return store_sys_hwmon(_set, buf, count);		\
+ 	}								\
+-	static DEVICE_ATTR(_name, _mode, show_##_name, store_##_name);
++	static DEVICE_ATTR(_name, _mode, show_##_name, store_##_name)
+ 
+ EEEPC_CREATE_SENSOR_ATTR(fan1_input, S_IRUGO, eeepc_get_fan_rpm, NULL);
+ EEEPC_CREATE_SENSOR_ATTR(pwm1, S_IRUGO | S_IWUSR,
+-- 
+1.9.3
 
-Then the mapping can be described in code, which should be a whole lot
-easier and more flexible than a more or less generic notation in device
-tree.
-
-Thierry
-
---GID0FwUMdk1T2AWN
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJToC1lAAoJEN0jrNd/PrOhoDoQAIrRLnCfk4INnOK9LyQbVali
-ZiChXj0F9DYqy+drqd/trV4ogPjHcaylSGyK4w/3c0kpEr8ENs0axnoDtO34HxFz
-AU1LoFTaNZoevj3ZUC7XN26CUgGRe/Jq9+BolD0c5Jw41mD0mStKpJTSZOPkGpYs
-8b7y+2/04s2uidndI6oOymM2Yp3rC8qAsjI6ppBE0oypwRzzcvBS65JIod3MKIx9
-oYDOMan8+twFIBXl4DP5azQv8sGfCMdM4cv1436jTNRJXW2E2hoN4D3ED6tDOFWK
-ubucFt7o0YPbsJkVgpXt2o8qUw9f99+h0UE9n+92mzpnzykfe1BrNX3TS7Rb/smw
-ZIbgJsCjOsCmPLfpXlaFxf3dHPh2Fz73vXWz/8jm+pFgW+QLZ37tLLRssuTZzMlZ
-cdRivcKVrkN+pDvsJ8atZ/fL2c00kc3l0pjdFUVL8+M5qn8/Xbg2S/GBItL6d2Kk
-Ij9gg/6irAjjnrpyUzCjXU3R2ILeBDHSc1iLUjwx0tV70qVbheFylNsPMJisUDeu
-Bbevv4mMsvxSwiei+FHHGlJ5VGeZx4NoII8a0HnROLdd5T1x8+WnHFQpwnYD8wxz
-pkI7pCIB5RpMw+1bq6XWiwym0TU9Ep3Qkabc0oknnJ8NnikvLStPW3AMFsWeFaKR
-anoBpU795w1snQT2xFWG
-=sthc
------END PGP SIGNATURE-----
-
---GID0FwUMdk1T2AWN--
