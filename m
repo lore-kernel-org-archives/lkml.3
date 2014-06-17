@@ -1,59 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530AbaFQEaX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 00:30:23 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:35516 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932378AbaFQEaT (ORCPT
+	id S1755098AbaFQEe3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 00:34:29 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:51306 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280AbaFQEe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 00:30:19 -0400
-Date: Tue, 17 Jun 2014 07:30:14 +0300
-From: Dan Aloni <dan@kernelim.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Dave Jones <davej@redhat.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: mm/sched/net: BUG when running simple code
-Message-ID: <20140617043014.GA18161@gmail.com>
-References: <539A6850.4090408@oracle.com>
- <20140613032754.GA20729@gmail.com>
- <539A77A1.60700@oracle.com>
- <20140613041331.GA31688@redhat.com>
- <539FB363.1070302@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <539FB363.1070302@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 17 Jun 2014 00:34:28 -0400
+Date: Mon, 16 Jun 2014 21:34:27 -0700 (PDT)
+Message-Id: <20140616.213427.126923556571858602.davem@davemloft.net>
+To: cmetcalf@tilera.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sergei.shtylyov@cogentembedded.com, tklauser@distanz.ch
+Subject: Re: [PATCH v2] net: tile: fix unused variable warning
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201406161816.s5GIGptF028053@farm-0039.internal.tilera.com>
+References: <201406161816.s5GIGptF028053@farm-0039.internal.tilera.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 16 Jun 2014 21:34:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 11:17:55PM -0400, Sasha Levin wrote:
-> On 06/13/2014 12:13 AM, Dave Jones wrote:
-> > On Fri, Jun 13, 2014 at 12:01:37AM -0400, Sasha Levin wrote:
-> > another theory: Trinity can sometimes generate plausible looking module
-> > addresses and pass those in structs etc.
-> > 
-> > I wonder if there's somewhere in that path that isn't checking that the address
-> > in the optval it got is actually a userspace address before it tries to write to it.
-> 
-> It happened again, and this time I've left the kernel addresses in, and it's quite
-> interesting:
-> 
-> [   88.837926] Call Trace:
-> [   88.837926]  [<ffffffff9ff6a792>] __sock_create+0x292/0x3c0
-> [   88.837926]  [<ffffffff9ff6a610>] ? __sock_create+0x110/0x3c0
-> [   88.837926]  [<ffffffff9ff6a920>] sock_create+0x30/0x40
-> [   88.837926]  [<ffffffff9ff6ad4c>] SyS_socket+0x2c/0x70
-> [   88.837926]  [<ffffffffa0561c30>] ? tracesys+0x7e/0xe6
-> [   88.837926]  [<ffffffffa0561c93>] tracesys+0xe1/0xe6
-> 
-> tracesys() seems to live inside a module space here?
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Mon, 16 Jun 2014 13:14:05 -0400
 
-I think it's more likely kASLR. The Documentation/x86/x86_64/mm.txt doc needs updating.
+> 'i' is unused in tile_net_dev_init() after commit d581ebf5a1f
+> ("net: tile: Use helpers from linux/etherdevice.h to check/set MAC").
+> 
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> ---
+> v2: includes previous commit's summary line as suggested by Sergei Shtylyov.
 
--- 
-Dan Aloni
+Applied, thanks.
