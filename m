@@ -1,99 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933642AbaFQP6Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 11:58:24 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36668 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755575AbaFQP6T (ORCPT
+	id S964845AbaFQP6g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 11:58:36 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:29541 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756235AbaFQP6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 11:58:19 -0400
-Date: Tue, 17 Jun 2014 16:57:19 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: George Cherian <george.cherian@ti.com>
-Cc: "cw00.choi@samsung.com" <cw00.choi@samsung.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rdunlap@infradead.org" <rdunlap@infradead.org>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 2/2] extcon: gpio: Add dt support for the driver.
-Message-ID: <20140617155719.GC8930@leverpostej>
-References: <1402977500-19987-1-git-send-email-george.cherian@ti.com>
- <1402977500-19987-3-git-send-email-george.cherian@ti.com>
+	Tue, 17 Jun 2014 11:58:34 -0400
+Date: Tue, 17 Jun 2014 16:58:30 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Andrew Pinski <apinski@cavium.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 07/24] ARM64:ILP32: Use the same size and layout of the
+ signal structures for ILP32 as for LP64.
+Message-ID: <20140617155830.GE21752@arm.com>
+References: <1400914939-9708-1-git-send-email-apinski@cavium.com>
+ <1400914939-9708-8-git-send-email-apinski@cavium.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1402977500-19987-3-git-send-email-george.cherian@ti.com>
+In-Reply-To: <1400914939-9708-8-git-send-email-apinski@cavium.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 04:58:20AM +0100, George Cherian wrote:
-> Add device tree support to extcon-gpio driver.
-> Add devicetree binding documentation
-> 
-> Signed-off-by: George Cherian <george.cherian@ti.com>
-> ---
->  .../devicetree/bindings/extcon/extcon-gpio.txt     | 34 ++++++++++++++++++++++
->  drivers/extcon/extcon-gpio.c                       | 29 ++++++++++++++++++
->  2 files changed, 63 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/extcon/extcon-gpio.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/extcon/extcon-gpio.txt b/Documentation/devicetree/bindings/extcon/extcon-gpio.txt
-> new file mode 100644
-> index 0000000..80b791b
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/extcon/extcon-gpio.txt
-> @@ -0,0 +1,34 @@
-> +GPIO based EXTCON
+On Sat, May 24, 2014 at 12:02:02AM -0700, Andrew Pinski wrote:
+> diff --git a/arch/arm64/include/uapi/asm/siginfo.h b/arch/arm64/include/uapi/asm/siginfo.h
+> index 5a74a08..1a6aa32 100644
+> --- a/arch/arm64/include/uapi/asm/siginfo.h
+> +++ b/arch/arm64/include/uapi/asm/siginfo.h
+> @@ -1,5 +1,6 @@
+>  /*
+>   * Copyright (C) 2012 ARM Ltd.
+> + * Copyright (C) 2014 Cavium Inc.
+>   *
+>   * This program is free software; you can redistribute it and/or modify
+>   * it under the terms of the GNU General Public License version 2 as
+> @@ -18,6 +19,26 @@
+>  
+>  #define __ARCH_SI_PREAMBLE_SIZE	(4 * sizeof(int))
+>  
+> +#ifdef __ILP32__
+
+Does the compiler define __ILP32__ or it just undefined __LP64__.
+Anyway, maybe we should have some consistency and only use one in all
+places.
+
+> +# ifdef __AARCH64EB__
+> +#  define __SIGINFO_INNER(type, field)		\
+> +		int __pad#field;		\
+> +		type field
+> +# else
+> +#  define __SIGINFO_INNER(type, field)		\
+> +		type field;			\
+> +		int __pad#field
+> +# endif
 > +
-> +EXTCON GPIO
-> +-----------
+> +# undef __SIGINFO_VOIDPOINTER
+> +# define __SIGINFO_VOIDPOINTER(field)		\
+> +		__SIGINFO_INNER(void __user*, field)
+> +# undef __SIGINFO_BAND
 > +
-> +Required Properties:
-> + - compatible: should be:
-> +   * "ti,extcon-gpio"
-> + - gpios: specifies the gpio pin used.
-> + - debounce: Debounce time for GPIO IRQ in ms
-> + - irq-flags: IRQ flag to be used ( eg: IRQ_TYPE_EDGE_FALLING)
+> +# define __SIGINFO_BAND(field)			\
+> +	__SIGINFO_INNER(long, field)
+> +#endif
+> +
+>  #include <asm-generic/siginfo.h>
+>  
+>  #endif
 
-This looks distinctly odd. Why do you need this here?
+Do the above give us the correct alignment for the _sifields union in
+siginfo? Or we get it as a side-effect of some other structure member
+forcing 64-bit alignment?
 
-> +Optional Properties:
-> + - gpio-active-low: Property describing whether gpio active state is 1 or 0
-> +		    If defined , low state of gpio means active.
+> diff --git a/arch/arm64/include/uapi/asm/signal.h b/arch/arm64/include/uapi/asm/signal.h
+> index 8d1e723..d90d53b 100644
+> --- a/arch/arm64/include/uapi/asm/signal.h
+> +++ b/arch/arm64/include/uapi/asm/signal.h
+> @@ -19,6 +19,38 @@
+>  /* Required for AArch32 compatibility. */
+>  #define SA_RESTORER	0x04000000
+>  
+> +/* For ILP32, sigset should be the same size fields as LP64 so use
+> +   unsigned long long. */
+> +#ifdef __ILP32__
+> +#define __SIGSET_INNER_TYPE __extension__ unsigned long long
+> +#define _NSIG_BPW 64
+> +
+> +# ifdef __AARCH64EB__
+> +#  define __SIGNAL_INNER(type, field)		\
+> +	__extension__ struct {			\
+> +		int __pad_##field;		\
+> +		type field;			\
+> +	} __attribute__((aligned(8)))
+> +# else
+> +#  define __SIGNAL_INNER(type, field)		\
+> +	__extension__ struct {			\
+> +		type field;			\
+> +		int __pad_##field;		\
+> +	} __attribute__((aligned(8)))
+> +# endif
+> +
+> +# define __SIGACTION_HANDLER(field)		\
+> +	__SIGNAL_INNER(__sighandler_t, field)
+> +
+> +
+> +#define __SIGACTION_FLAGS(field)		\
+> +	__extension__ unsigned long long field
+> +
+> +#define __SIGACTION_RESTORER(field)		\
+> +	__SIGNAL_INNER(__sigrestore_t, field)
+> +
+> +#endif
+> +
+>  #include <asm-generic/signal.h>
+>  
+>  #endif
 
-Surely this is defined in the gpio flags?
+I haven't seen any UAPI header using __extension__. Is this allowed? I
+assume we should be allowed to use the exported kernel headers with
+non-gcc compilers.
 
-> + - check-on-resume: Property describing whether to check the gpio state
-> +		    while resuming from SLEEP.
-
-Does this need to be in DT? Surely we could jsut always check this?
-
-> + - state-on: print_state is overriden with state_on string if provided.
-> +	     If NULL, default method of extcon class is used.
-> + - state_off: print_state is overriden with state_off string  if provided.
-> +	      If NUll, default method of extcon class is used.
-
-This means nothing from a HW perspective. This describes linux internal
-details.
-
-[...]
-
-> +		of_property_read_u32(np, "debounce", (u32 *)&pdata->debounce);
-> +		of_property_read_u32(np, "irq-flags", (u32 *)&pdata->irq_flags);
-
-If you need theses casts, the code is broken.
-
-These functions can only read into a u32. If you pass a smaller type
-you'll trash aribtrary memory locations, and if you pass a larger type
-this is broken for BE.
-
-Mark.
+-- 
+Catalin
