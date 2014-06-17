@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964815AbaFQRXk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 13:23:40 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37735 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755436AbaFQRXi (ORCPT
+	id S933669AbaFQR1i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 13:27:38 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43537 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933574AbaFQR1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 13:23:38 -0400
-Date: Tue, 17 Jun 2014 18:23:02 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Zhangfei Gao <zhangfei.gao@linaro.org>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        "haifeng.yan@linaro.org" <haifeng.yan@linaro.org>,
-        "jchxue@gmail.com" <jchxue@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Jiancheng Xue <xuejiancheng@huawei.com>
-Subject: Re: [PATCH 2/2] phy: add hix5hd2-sata-phy driver
-Message-ID: <20140617172302.GI8930@leverpostej>
-References: <1402991881-27676-1-git-send-email-zhangfei.gao@linaro.org>
- <1402991881-27676-3-git-send-email-zhangfei.gao@linaro.org>
+	Tue, 17 Jun 2014 13:27:36 -0400
+Message-ID: <53A07A87.3010908@infradead.org>
+Date: Tue, 17 Jun 2014 10:27:35 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402991881-27676-3-git-send-email-zhangfei.gao@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Guy Briggs <rgb@redhat.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: corrected sub-chapter number
+References: <1537cb738c6d4998106c5b91626b69f742d2b47d.1402946960.git.rgb@redhat.com>
+In-Reply-To: <1537cb738c6d4998106c5b91626b69f742d2b47d.1402946960.git.rgb@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 08:58:01AM +0100, Zhangfei Gao wrote:
-> From: Jiancheng Xue <xuejiancheng@huawei.com>
+On 06/16/14 12:48, Richard Guy Briggs wrote:
+> The index is correct, but there are two sections tagged 3.7.  Fix.
 > 
-> Add hix5hd2-sata-phy driver on Hisilicon hix5hd2 soc.
-> 
-> Signed-off-by: Jiancheng Xue <xuejiancheng@huawei.com>
-> Signed-off-by: Zhangfei Gao <zhangfei.gao@linaro.org>
+> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+
+This seems to already be fixed by commit 49d063cb353265c3af701bab215ac438ca7df36d
+on April 7, 2014.
+
 > ---
->  drivers/phy/Kconfig            |    8 ++
->  drivers/phy/Makefile           |    1 +
->  drivers/phy/phy-hix5hd2-sata.c |  192 ++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 201 insertions(+)
->  create mode 100644 drivers/phy/phy-hix5hd2-sata.c
- 
-[...]
+>  Documentation/filesystems/proc.txt |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+> index f00bee1..68e3a76 100644
+> --- a/Documentation/filesystems/proc.txt
+> +++ b/Documentation/filesystems/proc.txt
+> @@ -1648,7 +1648,7 @@ pids, so one need to either stop or freeze processes being inspected
+>  if precise results are needed.
+>  
+>  
+> -3.7	/proc/<pid>/fdinfo/<fd> - Information about opened file
+> +3.8	/proc/<pid>/fdinfo/<fd> - Information about opened file
+>  ---------------------------------------------------------------
+>  This file provides information associated with an opened file. The regular
+>  files have at least two fields -- 'pos' and 'flags'. The 'pos' represents
+> 
 
-> +	paddr = of_get_property(phy->dev.of_node, "hisilicon,reg-init", &lenp);
-> +	if (!paddr || lenp < 4 * sizeof(*paddr))
-> +		return 0;
-> +
-> +	lenp /= sizeof(*paddr);
-> +	for (i = 0; i < lenp - 3; i += 4) {
-> +		offset = be32_to_cpup(paddr + i);
-> +		shift = be32_to_cpup(paddr + i + 1);
-> +		width = be32_to_cpup(paddr + i + 2);
-> +		value = be32_to_cpup(paddr + i + 3);
-> +		hix5hd2_sata_phy_write(priv->base + offset,
-> +				       shift, width, value);
-> +	}
 
-There is absolutely no reason to use of_get_property and be32 values
-here, we have of_property_count_u32_elems and
-of_property_read_u32_index.
-
-That said I would like to see a compelling reason for why we need to
-have this at all; I'm not a fan of DT becoming a shoddy bytecode format.
-
-Cheers,
-Mark.
+-- 
+~Randy
