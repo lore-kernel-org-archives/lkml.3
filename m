@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761AbaFQCXh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 22:23:37 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:33789 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754480AbaFQCXZ (ORCPT
+	id S932408AbaFQCYx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 22:24:53 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:43517 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754735AbaFQCXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 22:23:25 -0400
+	Mon, 16 Jun 2014 22:23:37 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: x86@kernel.org, linux-kernel@vger.kernel.org
 Cc: Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 2/8] x86_64,vsyscall: Move all of the gate_area code to vsyscall_64.c
-Date: Mon, 16 Jun 2014 19:23:09 -0700
-Message-Id: <21d4ab4881ad9b257bec75d04480105dad4336e1.1402971639.git.luto@amacapital.net>
+Subject: [PATCH 8/8] x86_64,vdso: Clean up vgetcpu init and merge the vdso initcalls
+Date: Mon, 16 Jun 2014 19:23:15 -0700
+Message-Id: <80beb66b4b10800d709630a222fb54b2438abda0.1402971639.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1402971639.git.luto@amacapital.net>
 References: <cover.1402971639.git.luto@amacapital.net>
@@ -22,136 +22,145 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This code exists for the sole purpose of making the vsyscall page
-look sort of like real userspace memory.  Move it so that it lives
-with the rest of the vsyscall code.
+Now vdso/vma.c has a single initcall and no references to
+"vsyscall".
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/kernel/vsyscall_64.c | 49 +++++++++++++++++++++++++++++++++++++++++++
- arch/x86/mm/init_64.c         | 49 -------------------------------------------
- 2 files changed, 49 insertions(+), 49 deletions(-)
+ arch/x86/vdso/vma.c | 61 +++++++++++++++++++----------------------------------
+ 1 file changed, 22 insertions(+), 39 deletions(-)
 
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index e1e1e80..420c468 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -284,6 +284,55 @@ sigsegv:
- }
- 
+diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+index 8973b4e..84df79b 100644
+--- a/arch/x86/vdso/vma.c
++++ b/arch/x86/vdso/vma.c
+@@ -1,7 +1,8 @@
  /*
-+ * A pseudo VMA to allow ptrace access for the vsyscall page.  This only
-+ * covers the 64bit vsyscall page now. 32bit has a real VMA now and does
-+ * not need special handling anymore:
-+ */
-+static const char *gate_vma_name(struct vm_area_struct *vma)
-+{
-+	return "[vsyscall]";
-+}
-+static struct vm_operations_struct gate_vma_ops = {
-+	.name = gate_vma_name,
-+};
-+static struct vm_area_struct gate_vma = {
-+	.vm_start	= VSYSCALL_ADDR,
-+	.vm_end		= VSYSCALL_ADDR + PAGE_SIZE,
-+	.vm_page_prot	= PAGE_READONLY_EXEC,
-+	.vm_flags	= VM_READ | VM_EXEC,
-+	.vm_ops		= &gate_vma_ops,
-+};
-+
-+struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
-+{
-+#ifdef CONFIG_IA32_EMULATION
-+	if (!mm || mm->context.ia32_compat)
-+		return NULL;
-+#endif
-+	return &gate_vma;
-+}
-+
-+int in_gate_area(struct mm_struct *mm, unsigned long addr)
-+{
-+	struct vm_area_struct *vma = get_gate_vma(mm);
-+
-+	if (!vma)
-+		return 0;
-+
-+	return (addr >= vma->vm_start) && (addr < vma->vm_end);
-+}
-+
-+/*
-+ * Use this when you have no reliable mm, typically from interrupt
-+ * context. It is less reliable than using a task's mm and may give
-+ * false positives.
-+ */
-+int in_gate_area_no_mm(unsigned long addr)
-+{
-+	return (addr & PAGE_MASK) == VSYSCALL_ADDR;
-+}
-+
-+/*
-  * Assume __initcall executes before all user space. Hopefully kmod
-  * doesn't violate that. We'll find out if it does.
+- * Set up the VMAs to tell the VM about the vDSO.
+  * Copyright 2007 Andi Kleen, SUSE Labs.
+  * Subject to the GPL, v.2
++ *
++ * This contains most of the x86 vDSO kernel-side code.
   */
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index df1a992..417ea05 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -1180,55 +1180,6 @@ int kern_addr_valid(unsigned long addr)
- 	return pfn_valid(pte_pfn(*pte));
+ #include <linux/mm.h>
+ #include <linux/err.h>
+@@ -11,7 +12,6 @@
+ #include <linux/random.h>
+ #include <linux/elf.h>
+ #include <linux/cpu.h>
+-#include <asm/vsyscall.h>
+ #include <asm/vgtod.h>
+ #include <asm/proto.h>
+ #include <asm/vdso.h>
+@@ -22,8 +22,6 @@
+ 
+ #if defined(CONFIG_X86_64)
+ unsigned int __read_mostly vdso64_enabled = 1;
+-
+-extern unsigned short vdso_sync_cpuid;
+ #endif
+ 
+ void __init init_vdso_image(const struct vdso_image *image)
+@@ -41,20 +39,6 @@ void __init init_vdso_image(const struct vdso_image *image)
+ 						image->alt_len));
  }
  
--/*
-- * A pseudo VMA to allow ptrace access for the vsyscall page.  This only
-- * covers the 64bit vsyscall page now. 32bit has a real VMA now and does
-- * not need special handling anymore:
-- */
--static const char *gate_vma_name(struct vm_area_struct *vma)
+-#if defined(CONFIG_X86_64)
+-static int __init init_vdso(void)
 -{
--	return "[vsyscall]";
--}
--static struct vm_operations_struct gate_vma_ops = {
--	.name = gate_vma_name,
--};
--static struct vm_area_struct gate_vma = {
--	.vm_start	= VSYSCALL_ADDR,
--	.vm_end		= VSYSCALL_ADDR + PAGE_SIZE,
--	.vm_page_prot	= PAGE_READONLY_EXEC,
--	.vm_flags	= VM_READ | VM_EXEC,
--	.vm_ops		= &gate_vma_ops,
--};
+-	init_vdso_image(&vdso_image_64);
 -
--struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
--{
--#ifdef CONFIG_IA32_EMULATION
--	if (!mm || mm->context.ia32_compat)
--		return NULL;
+-#ifdef CONFIG_X86_X32_ABI
+-	init_vdso_image(&vdso_image_x32);
 -#endif
--	return &gate_vma;
+-
+-	return 0;
 -}
+-subsys_initcall(init_vdso);
+-#endif
 -
--int in_gate_area(struct mm_struct *mm, unsigned long addr)
--{
--	struct vm_area_struct *vma = get_gate_vma(mm);
--
--	if (!vma)
--		return 0;
--
--	return (addr >= vma->vm_start) && (addr < vma->vm_end);
--}
--
+ struct linux_binprm;
+ 
+ /* Put the vdso above the (randomized) stack with another randomized offset.
+@@ -237,12 +221,9 @@ __setup("vdso=", vdso_setup);
+ #endif
+ 
+ #ifdef CONFIG_X86_64
 -/*
-- * Use this when you have no reliable mm, typically from interrupt
-- * context. It is less reliable than using a task's mm and may give
-- * false positives.
+- * Assume __initcall executes before all user space. Hopefully kmod
+- * doesn't violate that. We'll find out if it does.
 - */
--int in_gate_area_no_mm(unsigned long addr)
--{
--	return (addr & PAGE_MASK) == VSYSCALL_ADDR;
+-static void vsyscall_set_cpu(int cpu)
++static void vgetcpu_cpu_init(void *arg)
+ {
++	int cpu = smp_processor_id();
+ 	unsigned long d;
+ 	unsigned long node = 0;
+ #ifdef CONFIG_NUMA
+@@ -252,45 +233,47 @@ static void vsyscall_set_cpu(int cpu)
+ 		write_rdtscp_aux((node << 12) | cpu);
+ 
+ 	/*
+-	 * Store cpu number in limit so that it can be loaded quickly
+-	 * in user space in vgetcpu. (12 bits for the CPU and 8 bits for the node)
++	 * Store cpu number in limit so that it can be loaded quickly in
++	 * user space in vgetcpu. (12 bits for the CPU and 8 bits for
++	 * the node)
+ 	 */
+ 	d = 0x0f40000000000ULL;
+ 	d |= cpu;
+ 	d |= (node & 0xf) << 12;
+ 	d |= (node >> 4) << 48;
+ 
+-	write_gdt_entry(get_cpu_gdt_table(cpu), GDT_ENTRY_PER_CPU, &d, DESCTYPE_S);
 -}
 -
- static unsigned long probe_memory_block_size(void)
+-static void cpu_vsyscall_init(void *arg)
+-{
+-	/* preemption should be already off */
+-	vsyscall_set_cpu(raw_smp_processor_id());
++	write_gdt_entry(get_cpu_gdt_table(cpu),
++			GDT_ENTRY_PER_CPU, &d, DESCTYPE_S);
+ }
+ 
+ static int
+-cpu_vsyscall_notifier(struct notifier_block *n, unsigned long action, void *arg)
++vgetcpu_cpu_notifier(struct notifier_block *n, unsigned long action, void *arg)
  {
- 	/* start from 2g */
+ 	long cpu = (long)arg;
+ 
+ 	if (action == CPU_ONLINE || action == CPU_ONLINE_FROZEN)
+-		smp_call_function_single(cpu, cpu_vsyscall_init, NULL, 1);
++		smp_call_function_single(cpu, vgetcpu_cpu_init, NULL, 1);
+ 
+ 	return NOTIFY_DONE;
+ }
+ 
+-static int __init vsyscall_init(void)
++static int __init init_vdso(void)
+ {
++	init_vdso_image(&vdso_image_64);
++
++#ifdef CONFIG_X86_X32_ABI
++	init_vdso_image(&vdso_image_x32);
++#endif
++
+ 	cpu_notifier_register_begin();
+ 
+-	on_each_cpu(cpu_vsyscall_init, NULL, 1);
++	on_each_cpu(vgetcpu_cpu_init, NULL, 1);
+ 	/* notifier priority > KVM */
+-	__hotcpu_notifier(cpu_vsyscall_notifier, 30);
++	__hotcpu_notifier(vgetcpu_cpu_notifier, 30);
+ 
+ 	cpu_notifier_register_done();
+ 
+ 	return 0;
+ }
+-__initcall(vsyscall_init);
+-#endif
++subsys_initcall(init_vdso);
++#endif /* CONFIG_X86_64 */
 -- 
 1.9.3
 
