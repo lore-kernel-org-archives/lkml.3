@@ -1,86 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965060AbaFQUwI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 16:52:08 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:5276 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933275AbaFQUwE (ORCPT
+	id S933733AbaFQUyc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 16:54:32 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:32875 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933275AbaFQUyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 16:52:04 -0400
-Message-ID: <53A0AA6D.1070708@hp.com>
-Date: Tue, 17 Jun 2014 16:51:57 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Tue, 17 Jun 2014 16:54:31 -0400
+X-Greylist: delayed 600 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jun 2014 16:54:30 EDT
+Date: Tue, 17 Jun 2014 13:44:29 -0700 (PDT)
+From: Arvind Kumar <arvindkumar@vmware.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, VMware PV-Drivers <pv-drivers@vmware.com>
+Message-ID: <1745375990.42893830.1403037869286.JavaMail.root@vmware.com>
+In-Reply-To: <1402784389-19065-1-git-send-email-fabf@skynet.be>
+References: <1402784389-19065-1-git-send-email-fabf@skynet.be>
+Subject: Re: [PATCH 1/1] drivers/scsi/vmw_pvscsi.c: use PAGE_ALIGNED instead
+ of IS_ALIGNED(PAGE_SIZE
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, tglx@linutronix.de,
-        mingo@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        paolo.bonzini@gmail.com, boris.ostrovsky@oracle.com,
-        paulmck@linux.vnet.ibm.com, riel@redhat.com,
-        torvalds@linux-foundation.org, raghavendra.kt@linux.vnet.ibm.com,
-        david.vrabel@citrix.com, oleg@redhat.com, gleb@redhat.com,
-        scott.norton@hp.com, chegu_vinod@hp.com,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 03/11] qspinlock: Add pending bit
-References: <20140615124657.264658593@chello.nl> <20140615130153.196728583@chello.nl> <20140617203615.GA29634@laptop.dumpdata.com>
-In-Reply-To: <20140617203615.GA29634@laptop.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.163.68]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF28 (Linux)/8.0.3_GA_5664)
+Thread-Topic: drivers/scsi/vmw_pvscsi.c: use PAGE_ALIGNED instead of IS_ALIGNED(PAGE_SIZE
+Thread-Index: EEjkZ6kOE7A5lchR5I5FuUIqJGfQew==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2014 04:36 PM, Konrad Rzeszutek Wilk wrote:
-> On Sun, Jun 15, 2014 at 02:47:00PM +0200, Peter Zijlstra wrote:
->> Because the qspinlock needs to touch a second cacheline; add a pending
->> bit and allow a single in-word spinner before we punt to the second
->> cacheline.
-> Could you add this in the description please:
->
-> And by second cacheline we mean the local 'node'. That is the:
-> mcs_nodes[0] and mcs_nodes[idx]
->
-> Perhaps it might be better then to split this in the header file
-> as this is trying to not be a slowpath code - but rather - a
-> pre-slow-path-lets-try-if-we can do another cmpxchg in case
-> the unlocker has just unlocked itself.
->
-> So something like:
->
-> diff --git a/include/asm-generic/qspinlock.h b/include/asm-generic/qspinlock.h
-> index e8a7ae8..29cc9c7 100644
-> --- a/include/asm-generic/qspinlock.h
-> +++ b/include/asm-generic/qspinlock.h
-> @@ -75,11 +75,21 @@ extern void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val);
->    */
->   static __always_inline void queue_spin_lock(struct qspinlock *lock)
->   {
-> -	u32 val;
-> +	u32 val, new;
->
->   	val = atomic_cmpxchg(&lock->val, 0, _Q_LOCKED_VAL);
->   	if (likely(val == 0))
->   		return;
-> +
-> +	/* One more attempt - but if we fail mark it as pending. */
-> +	if (val == _Q_LOCKED_VAL) {
-> +		new = Q_LOCKED_VAL |_Q_PENDING_VAL;
-> +
-> +		old = atomic_cmpxchg(&lock->val, val, new);
-> +		if (old == _Q_LOCKED_VAL) /* YEEY! */
-> +			return;
+Thanks for the patch Fabian!
 
-No, it can leave like that. The unlock path will not clear the pending 
-bit. We are trying to make the fastpath as simple as possible as it may 
-be inlined. The complexity of the queue spinlock is in the slowpath.
+It looks fine to me. I think you should also include the emails listed by running 'scripts/get_maintainer.pl <your-patch>'.
 
-Moreover, an cmpxchg followed immediately followed by another cmpxchg 
-will just increase the level of memory contention when a lock is fairly 
-contended. The chance of second cmpxchg() succeeding will be pretty low.
+Acked-by: Arvind Kumar <arvindkumar@vmware.com>
 
--Longman
+Thanks!
+Arvind
 
+----- Original Message -----
+From: "Fabian Frederick" <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: "Fabian Frederick" <fabf@skynet.be>, "Arvind Kumar" <arvindkumar@vmware.com>, "VMware PV-Drivers" <pv-drivers@vmware.com>
+Sent: Saturday, June 14, 2014 3:19:49 PM
+Subject: [PATCH 1/1] drivers/scsi/vmw_pvscsi.c: use PAGE_ALIGNED instead of IS_ALIGNED(PAGE_SIZE
 
+use mm.h definition
+
+Cc: Arvind Kumar <arvindkumar@vmware.com>
+Cc: VMware PV-Drivers <pv-drivers@vmware.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/scsi/vmw_pvscsi.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/scsi/vmw_pvscsi.c b/drivers/scsi/vmw_pvscsi.c
+index c88e146..07dc492 100644
+--- a/drivers/scsi/vmw_pvscsi.c
++++ b/drivers/scsi/vmw_pvscsi.c
+@@ -439,9 +439,9 @@ static int pvscsi_allocate_rings(struct pvscsi_adapter *adapter)
+ 	if (!adapter->cmp_ring)
+ 		return -ENOMEM;
+ 
+-	BUG_ON(!IS_ALIGNED(adapter->ringStatePA, PAGE_SIZE));
+-	BUG_ON(!IS_ALIGNED(adapter->reqRingPA, PAGE_SIZE));
+-	BUG_ON(!IS_ALIGNED(adapter->cmpRingPA, PAGE_SIZE));
++	BUG_ON(!PAGE_ALIGNED(adapter->ringStatePA));
++	BUG_ON(!PAGE_ALIGNED(adapter->reqRingPA));
++	BUG_ON(!PAGE_ALIGNED(adapter->cmpRingPA));
+ 
+ 	if (!adapter->use_msg)
+ 		return 0;
+@@ -453,7 +453,7 @@ static int pvscsi_allocate_rings(struct pvscsi_adapter *adapter)
+ 						 &adapter->msgRingPA);
+ 	if (!adapter->msg_ring)
+ 		return -ENOMEM;
+-	BUG_ON(!IS_ALIGNED(adapter->msgRingPA, PAGE_SIZE));
++	BUG_ON(!PAGE_ALIGNED(adapter->msgRingPA));
+ 
+ 	return 0;
+ }
+@@ -1280,7 +1280,7 @@ static int pvscsi_allocate_sg(struct pvscsi_adapter *adapter)
+ 		ctx->sgl = (void *)__get_free_pages(GFP_KERNEL,
+ 						    get_order(SGL_SIZE));
+ 		ctx->sglPA = 0;
+-		BUG_ON(!IS_ALIGNED(((unsigned long)ctx->sgl), PAGE_SIZE));
++		BUG_ON(!PAGE_ALIGNED((ctx->sgl)));
+ 		if (!ctx->sgl) {
+ 			for (; i >= 0; --i, --ctx) {
+ 				free_pages((unsigned long)ctx->sgl,
+-- 
+1.8.4.5
