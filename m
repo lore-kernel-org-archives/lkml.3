@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967488AbaFQWDA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:03:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54807 "EHLO
+	id S967065AbaFQVwT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:52:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54753 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967062AbaFQVwU (ORCPT
+	with ESMTP id S966997AbaFQVwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:52:20 -0400
+	Tue, 17 Jun 2014 17:52:09 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
+Cc: Nicholas Bellinger <nab@linux-iscsi.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 072/212] workqueue: make rescuer_thread() empty wq->maydays list before exiting
-Date: Tue, 17 Jun 2014 14:42:46 -0700
-Message-Id: <1403041506-13646-73-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 131/212] iscsi-target: Change BUG_ON to REJECT in iscsit_process_nop_out
+Date: Tue, 17 Jun 2014 14:43:45 -0700
+Message-Id: <1403041506-13646-132-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -27,80 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 4d595b866d2c653dc90a492b9973a834eabfa354 upstream.
+commit 7cbfcc953789ff864c2bf8365a82a3fba4869649 upstream.
 
-After a @pwq is scheduled for emergency execution, other workers may
-consume the affectd work items before the rescuer gets to them.  This
-means that a workqueue many have pwqs queued on @wq->maydays list
-while not having any work item pending or in-flight.  If
-destroy_workqueue() executes in such condition, the rescuer may exit
-without emptying @wq->maydays.
+This patch changes an incorrect use of BUG_ON to instead generate a
+REJECT + PROTOCOL_ERROR in iscsit_process_nop_out() code.  This case
+can occur with traditional TCP where a flood of zeros in the data
+stream can reach this block for what is presumed to be a NOP-OUT with
+a solicited reply, but without a valid iscsi_cmd pointer.
 
-This currently doesn't cause any actual harm.  destroy_workqueue() can
-safely destroy all the involved data structures whether @wq->maydays
-is populated or not as nobody access the list once the rescuer exits.
+This incorrect BUG_ON was introduced during the v3.11-rc timeframe
+with the following commit:
 
-However, this is nasty and makes future development difficult.  Let's
-update rescuer_thread() so that it empties @wq->maydays after seeing
-should_stop to guarantee that the list is empty on rescuer exit.
+commit 778de368964c5b7e8100cde9f549992d521e9c89
+Author: Nicholas Bellinger <nab@linux-iscsi.org>
+Date:   Fri Jun 14 16:07:47 2013 -0700
 
-tj: Updated comment and patch description.
+    iscsi/isert-target: Refactor ISCSI_OP_NOOP RX handling
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Arshad Hussain <arshad.hussain@calsoftinc.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/workqueue.c | 21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
+ drivers/target/iscsi/iscsi_target.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 6b1b746..df9d7e8 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2391,6 +2391,7 @@ static int rescuer_thread(void *__rescuer)
- 	struct worker *rescuer = __rescuer;
- 	struct workqueue_struct *wq = rescuer->rescue_wq;
- 	struct list_head *scheduled = &rescuer->scheduled;
-+	bool should_stop;
+diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+index 55e5a03..9ab2b91 100644
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -1564,7 +1564,9 @@ int iscsit_process_nop_out(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
+ 	 * Initiator is expecting a NopIN ping reply..
+ 	 */
+ 	if (hdr->itt != RESERVED_ITT) {
+-		BUG_ON(!cmd);
++		if (!cmd)
++			return iscsit_add_reject(conn, ISCSI_REASON_PROTOCOL_ERROR,
++						(unsigned char *)hdr);
  
- 	set_user_nice(current, RESCUER_NICE_LEVEL);
- 
-@@ -2402,11 +2403,15 @@ static int rescuer_thread(void *__rescuer)
- repeat:
- 	set_current_state(TASK_INTERRUPTIBLE);
- 
--	if (kthread_should_stop()) {
--		__set_current_state(TASK_RUNNING);
--		rescuer->task->flags &= ~PF_WQ_WORKER;
--		return 0;
--	}
-+	/*
-+	 * By the time the rescuer is requested to stop, the workqueue
-+	 * shouldn't have any work pending, but @wq->maydays may still have
-+	 * pwq(s) queued.  This can happen by non-rescuer workers consuming
-+	 * all the work items before the rescuer got to them.  Go through
-+	 * @wq->maydays processing before acting on should_stop so that the
-+	 * list is always empty on exit.
-+	 */
-+	should_stop = kthread_should_stop();
- 
- 	/* see whether any pwq is asking for help */
- 	spin_lock_irq(&wq_mayday_lock);
-@@ -2452,6 +2457,12 @@ repeat:
- 
- 	spin_unlock_irq(&wq_mayday_lock);
- 
-+	if (should_stop) {
-+		__set_current_state(TASK_RUNNING);
-+		rescuer->task->flags &= ~PF_WQ_WORKER;
-+		return 0;
-+	}
-+
- 	/* rescuers should never participate in concurrency management */
- 	WARN_ON_ONCE(!(rescuer->flags & WORKER_NOT_RUNNING));
- 	schedule();
+ 		spin_lock_bh(&conn->cmd_lock);
+ 		list_add_tail(&cmd->i_conn_node, &conn->conn_cmd_list);
 -- 
 1.9.1
 
