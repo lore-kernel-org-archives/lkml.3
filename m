@@ -1,75 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321AbaFQDuZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 23:50:25 -0400
-Received: from mail-by2lp0240.outbound.protection.outlook.com ([207.46.163.240]:52070
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754848AbaFQDuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 23:50:23 -0400
-Date: Mon, 16 Jun 2014 20:50:17 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Jongsung Kim <neidhard.kim@lge.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Hayun Hwang <hwang.hayun@lge.com>,
-        Youngkyu Choi <youngkyu7.choi@lge.com>
-Subject: Re: [PATCH] net/cadence/macb: clear interrupts simply and correctly
-References: <1402563054-8546-1-git-send-email-neidhard.kim@lge.com>
- <9f5be687-d127-49a4-90ea-c1033505452d@BN1BFFO11FD019.protection.gbl>
- <539E79F1.1090006@lge.com>
- <ea57b37f-1f1c-40a0-84a6-46b0b78ec6b4@BY2FFO11FD034.protection.gbl>
- <539FAA34.9030002@lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <539FAA34.9030002@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <0f1d404c-89a7-4bbd-99ff-973d4f26d2c6@BY2FFO11FD005.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438001)(479174003)(164054003)(377454003)(377424004)(199002)(189002)(51704005)(24454002)(21056001)(46102001)(81542001)(4396001)(44976005)(6806004)(80022001)(83322001)(74662001)(74502001)(81342001)(70736001)(23676002)(102836001)(33646001)(92726001)(31696002)(86362001)(87936001)(85852003)(83072002)(99396002)(54356999)(76176999)(50986999)(85306003)(77096002)(104016002)(95666004)(74316001)(93886003)(1496007)(53416004)(50466002)(77982001)(76482001)(47776003)(20776003)(85202002)(79102001)(85182001)(64706001)(83506001);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB036;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-X-Forefront-PRVS: 0245702D7B
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
+	id S932286AbaFQDvp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 23:51:45 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:16933 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754926AbaFQDvn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 23:51:43 -0400
+X-AuditID: cbfee690-b7fb56d000003439-a9-539fbb4d16e0
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: "'Tomasz Figa'" <t.figa@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: kgene.kim@samsung.com, arnd@arndb.de
+References: <1399706287-13919-1-git-send-email-y@samsung.com>
+ <1399706419-13976-1-git-send-email-pankaj.dubey@samsung.com>
+ <1399706419-13976-5-git-send-email-pankaj.dubey@samsung.com>
+ <53970E8E.5030408@samsung.com>
+In-reply-to: <53970E8E.5030408@samsung.com>
+Subject: RE: [PATCH v3 4/6] ARM:  EXYNOS: Remove unused header inclusion from
+ hotplug.c
+Date: Tue, 17 Jun 2014 09:22:20 +0530
+Message-id: <000201cf89df$8dbd9d00$a938d700$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQFGFxwhMBc3rJ51QTN4z3RDiHZXkQKOC0AUAmIYkcICKwQctZxOtwFw
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJIsWRmVeSWpSXmKPExsWyRsSkWtd39/xggxk/OC3+TjrGbtG74Cqb
+	xabH11gtLu+aw2Yx4/w+Jov1M16zOLB5/P41idFj85J6j74tqxg9Pm+SC2CJ4rJJSc3JLEst
+	0rdL4Mo4d+wfS8E+9oruhRtZGhjfsnYxcnJICJhInHrXwQhhi0lcuLeerYuRi0NIYCmjxIuH
+	85lgij72fGSCSExnlFjWcIIRwvnLKNG65BQLSBWbgK7Ek/dzmUESIgL9jBIvt/4A2sHBwSyg
+	IXH1lT9Ewx1GiZUL/oI1cApoS0y63MAOYgsLREpc/7wRLM4ioCoxZddOsPt4BSwlPj46ygRh
+	C0r8mHwPrIZZQEti/c7jTBC2vMTmNW+ZIU5VkNhx9jXYPyICbhJPFv9kg6gRl5j04CE7yBES
+	AvfYJRoefoZaJiDxbfIhFpBDJQRkJTYdgJojKXFwxQ2WCYwSs5CsnoVk9Swkq2chWbGAkWUV
+	o2hqQXJBcVJ6kYlecWJucWleul5yfu4mRmC0nv73bMIOxnsHrA8xJgOtn8gsJZqcD4z2vJJ4
+	Q2MzIwtTE1NjI3NLM9KElcR51R4lBQkJpCeWpGanphakFsUXleakFh9iZOLglGpgLJLYx1ec
+	6pd9uaop13/5fl6BC1NMVottzy86c/tT149JM9e5zdrw70WmTu3swk/O6lPPbd/GPHn2ltjn
+	awrPeuz7KqQ861PMQm33sisKLzd+yF822+fkSz6Gy3v3JjPLrvYX9RZ/kBSq9TB222o+tuyQ
+	7Vyznl+4IcSXvTBh+6GaksxLzT13ViixFGckGmoxFxUnAgDFGPqv7AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGKsWRmVeSWpSXmKPExsVy+t9jQV3f3fODDT7fZLT4O+kYu0Xvgqts
+	FpseX2O1uLxrDpvFjPP7mCzWz3jN4sDm8fvXJEaPzUvqPfq2rGL0+LxJLoAlqoHRJiM1MSW1
+	SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdouZJCWWJOKVAoILG4
+	WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsIYx49yxfywF+9gruhduZGlgfMvaxcjJISFgIvGx
+	5yMThC0mceHeerYuRi4OIYHpjBLLGk4wQjh/GSVal5xiAaliE9CVePJ+LjNIQkSgn1Hi5dYf
+	QKM4OJgFNCSuvvKHaLjDKLFywV+wBk4BbYlJlxvYQWxhgUiJ6583gsVZBFQlpuzaCXYGr4Cl
+	xMdHR5kgbEGJH5PvgdUwC2hJrN95nAnClpfYvOYtM8SpChI7zr5mBLFFBNwkniz+yQZRIy4x
+	6cFD9gmMQrOQjJqFZNQsJKNmIWlZwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4FTyT
+	2sG4ssHiEKMAB6MSD+9D2fnBQqyJZcWVuYcYJTiYlUR4ucyBQrwpiZVVqUX58UWlOanFhxiT
+	gT6dyCwlmpwPTFN5JfGGxibmpsamliYWJmaWpAkrifMeaLUOFBJITyxJzU5NLUgtgtnCxMEp
+	1cCYy6+6/yLTnCMb8i3WmYgxe6S/2Hdm2t5bf0on2jpU3WKRDc9PPzNVPyH1pgXjynaZpH+N
+	XzxWWClvvp+60bFzpb7vRu+njjz++WuUl3+a8yjoetvHsz/WHPxfo/O2c419/4r020fWbTsr
+	/lfn+slJe4wPBp9cPd1JesrsTp/wO58c1tyY/ozZRomlOCPRUIu5qDgRALnHq6hJAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-06-17 at 11:38AM +0900, Jongsung Kim wrote:
-> On 06/16/2014 11:56 PM, Sören Brinkmann wrote:
-> > On Mon, 2014-06-16 at 02:00PM +0900, Jongsung Kim wrote:
-> >> On 06/13/2014 12:44 AM, Sören Brinkmann wrote:
-> >>> This is now clearing all IRQ flags which is probably not what we want
-> >>> here. This is handling RX only. We still want the non-RX interrupts to go to
-> >>> the actual interrupt service routing.
-> >>
-> >> The ISR(Interrupt Status Register) is read only in the interrupt service
-> >> routine, macb_interrupt. But is partially cleared here and there. Further
-> >> handler-functions decide jobs to be done by reading/checking other status
-> >> registers. (e.g., TSR, RSR) So, clearing the ISR after reading looks not
-> >> a bad idea.
-> >
-> > But you are clearing _all_ interrupt flags in the RX NAPI handler.
-> > Doesn't that mean we might miss certain events?
+Hi Tomasz,
+
+
+> -----Original Message-----
 > 
-> Please inspect my patch again. What I did in the macb_poll is removing
-> statements clearing the Rx-complete interrupt, not clearing all the
-> interrupts.
+> Hi Pankaj,
+> 
+> On 10.05.2014 09:20, Pankaj Dubey wrote:
+> > This patch removed "plat/cpu.h" inclusion from hotplug.c as it is not
+> > required.
+> >
+> > Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> > ---
+> >  arch/arm/mach-exynos/hotplug.c |    2 --
+> >  1 file changed, 2 deletions(-)
+> >
+> > diff --git a/arch/arm/mach-exynos/hotplug.c
+> > b/arch/arm/mach-exynos/hotplug.c index 0243ef3..5e19601 100644
+> > --- a/arch/arm/mach-exynos/hotplug.c
+> > +++ b/arch/arm/mach-exynos/hotplug.c
+> > @@ -19,8 +19,6 @@
+> >  #include <asm/cp15.h>
+> >  #include <asm/smp_plat.h>
+> >
+> > -#include <plat/cpu.h>
+> > -
+> >  #include "common.h"
+> >  #include "regs-pmu.h"
+> >
+> >
+> 
+> I don't see this header being included in current linux-next.
+> 
 
-Oh, you're right. I misread the patch, sorry. The call to macb_read_isr was
-already a different hunk.
-Why is clearing those bits removed? It's probably not a big hit, but it might
-result in a pointless interrupt which could be avoided. But it should
-probably clear all RX interrupts - MACB_RX_INT_FLAGS - instead of just RCOMP.
-For clear-on-read implementations it shouldn't make a difference.
+OK, if it's already taken care, I will drop this change in next version.
 
-And in the if-condition in that new helper, I'd add '&& status' to
-avoid writing back zeros.
+> Best regards,
+> Tomasz
 
-	Thanks,
-	Sören
+Thanks,
+Pankaj Dubey
+
