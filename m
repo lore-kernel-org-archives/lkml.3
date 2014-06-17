@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932648AbaFQIBF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 04:01:05 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:51397 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753544AbaFQIBE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 04:01:04 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linuxppc-dev@lists.ozlabs.org
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Karsten Keil <isdn@linux-pingi.de>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH tty-next 14/22] tty: Remove tty_wait_until_sent_from_close()
-Date: Tue, 17 Jun 2014 10:00:59 +0200
-Message-ID: <4575870.N9RCpZ4UMg@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1402924639-5164-15-git-send-email-peter@hurleysoftware.com>
-References: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com> <1402924639-5164-15-git-send-email-peter@hurleysoftware.com>
+	id S932661AbaFQIBg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 04:01:36 -0400
+Received: from mail0.unitn.it ([193.205.194.10]:56208 "EHLO mail0.unitn.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753420AbaFQIBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 04:01:34 -0400
+Message-ID: <539FF5D2.9080703@unitn.it>
+Date: Tue, 17 Jun 2014 10:01:22 +0200
+From: Luca Abeni <luca.abeni@unitn.it>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Aj4HE/j0S6mdoRSy1soI4mvj18an5D+fXIv7IOtYFL4
- ubkEsjiWORnGJvDcaWwKjV1BZmgA9mKvPvweDH2a8jPGJP8+ri
- lVIKExr+0h4zN187fdl+IPlwk0u+Zsljak86HzxU+yNwUP1UBS
- deTIFNsmSZun61NPG5AfE2rlVjRkxQCQL6/fZpD2Q1424IB90J
- lsPx5CYfsUgwWokJWK9gpvGScWQfB3awFxKSVs7AAeNfXr5K0D
- KOJgy0Y1OJfaDWmjPAI5eFKnXuE6MZ/Exa5m2d3SL6WtWh5MKf
- BGbeuVJ3ZpM59k4ZcV/582ccCN+zl7B6YPYGWyEUOujEcyclrJ
- bgbVyLUcaanqh4RDspww=
+To: "xiaofeng.yan" <xiaofeng.yan@huawei.com>
+CC: Henrik Austad <henrik@austad.us>, Juri Lelli <juri.lelli@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        duzhiping.du@huawei.com, xiaofeng.yan2012@gmail.com, raistlin@linux.it,
+        tkhai@yandex.ru, harald.gustafsson@ericsson.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFD] sched/deadline: EDF dynamic quota design
+References: <537348DA.7080001@huawei.com> <20140514113245.GZ11096@twins.programming.kicks-ass.net> <53736CD9.90805@unitn.it> <5374A335.90705@huawei.com> <20140515143132.c3199bec4476065cc843277d@gmail.com> <20140516071141.GA28755@austad.us> <537C9FE1.8060603@unitn.it> <539FAB4D.6000702@huawei.com>
+In-Reply-To: <539FAB4D.6000702@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 16 June 2014 09:17:11 Peter Hurley wrote:
-> tty_wait_until_sent_from_close() drops the tty lock while waiting
-> for the tty driver to finish sending previously accepted data (ie.,
-> data remaining in its write buffer and transmit fifo).
-> 
-> However, dropping the tty lock is a hold-over from when the tty
-> lock was system-wide; ie., one lock for all ttys.
-> 
-> Since commit 89c8d91e31f267703e365593f6bfebb9f6d2ad01,
-> 'tty: localise the lock', dropping the tty lock has not been necessary.
-> 
-> CC: Karsten Keil <isdn@linux-pingi.de>
-> CC: linuxppc-dev@lists.ozlabs.org
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Hi,
 
-I don't understand the second half of the changelog, it doesn't seem
-to fit here: there deadlock that we are trying to avoid here happens
-when the *same* tty needs the lock to complete the function that
-sends the pending data. I don't think we do still do that any more,
-but it doesn't seem related to the tty lock being system-wide or not.
+On 06/17/2014 04:43 AM, xiaofeng.yan wrote:
+[...]
+>> The basic ideas are (warning! This is an over-simplification of the algorithm! :)
+>> - You assign runtime and period to each SCHED_DEADLINE task as usual
+>> - Each task is guaranteed to receive its runtime every period
+>> - You can also define a maximum fraction Umax of the CPU time that the
+>>   SCHED_DEADLINE tasks can use. Note that Umax _must_ be larger or equal
+>>   than sum_i runtime_i / period_i
+>>   (note: in the original GRUB paper, only one CPU is considered, and Umax is
+>>   set equal to 1)
+>> - If the tasks are consuming less than Umax, then the scheduling algorithm
+>>   allows them to use more runtime (but not less than the guaranteed runtime_i)
+>>   in order to use up to Umax.
+>>   This is achieved by modifying the rule used to decrease the runtime: in
+>>   SCHED_DEADLINE, if a task executes for a time delta, its runtime is decreased
+>>   by delta; using GRUB, it would be decreased by a smaller amount of time
+>>   (computed based on Umax, on the active SCHED_DEADLINE tasks, etc...).
+>>   This requires to implement some kind of state machine (the details are in
+>>   the GRUB paper)
+>>
+>> I also had an implementation of the GRUB algorithm (based on a modification
+>> of my old CBS scheduler for Linux), but the computational complexity of the
+>> algorithm was too high. That's why I never proposed to merge it in SCHED_DEADLINE.
+>> But maybe there can be some trade-off between the "exact compliance with the
+>> GRUB algorithm" and implementation efficiency that can make it acceptable...
+>>
+>>
+> Has these  codes been opened about the implementation in some community or not ?
+The old GRUB scheduler for Linux was used for some experiments published in a paper
+at RTLWS 2007, and of course the code was open-source (released under GPL).
+It required a patch for the Linux kernel (I used a 2.6.something kernel) which allowed
+to load the scheduler as a kernel module (yes, I know this is the wrong way to go...
+But implementing it like this was simpler :).
+That is very old code... I probably still have it somewhere, but I have to search
+for it. If someone is interested, I can try to search (the story of the user-space
+daemon for adaptive reservations is similar: I released it as open-source years ago...
+If anyone is interested I can search for this code too)
 
-	Arnd
+
+				Luca
