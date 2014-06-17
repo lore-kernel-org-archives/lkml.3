@@ -1,71 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086AbaFQOlU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 10:41:20 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45981 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932873AbaFQOlS (ORCPT
+	id S933120AbaFQOmA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 10:42:00 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:59405 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932873AbaFQOl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 10:41:18 -0400
-Date: Tue, 17 Jun 2014 15:40:47 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Christian Engelmayer <cengelma@gmx.at>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Xiubo Li <Li.Xiubo@freescale.com>, patches@opensource.wolfsonmicro.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20140617144047.GT5099@sirena.org.uk>
-References: <1402679968-5925-1-git-send-email-cengelma@gmx.at>
+	Tue, 17 Jun 2014 10:41:59 -0400
+Date: Tue, 17 Jun 2014 07:41:51 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
+ accessors and operations
+Message-ID: <20140617144151.GD4669@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140612135630.GA23606@htj.dyndns.org>
+ <20140612153426.GV4581@linux.vnet.ibm.com>
+ <20140612155227.GB23606@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Mcvs3sMuhDlWUu+I"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1402679968-5925-1-git-send-email-cengelma@gmx.at>
-X-Cookie: Ditat Deus.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: wm8985: Remove unused pointer in wm8985_remove()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140612155227.GB23606@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061714-8236-0000-0000-0000032A2CF6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 12, 2014 at 11:52:27AM -0400, Tejun Heo wrote:
+> Hello, Paul.
+> 
+> On Thu, Jun 12, 2014 at 08:34:26AM -0700, Paul E. McKenney wrote:
+> > > It can be argued that smp_read_barrier_depends() is the responsibility
+> > > of the caller; however, discerning local and remote accesses gets very
+> > > confusing with percpu areas (initialized remotely but local to this
+> > > cpu and vice-versa) and data dependency barrier is free on all archs
+> > > except for alpha, so I think it's better to include it as part of
+> > > percpu accessors and operations.
+> > 
+> > OK, I will bite...  Did you find a bug of this form?  (I do see a
+> > couple of possible bugs on a quick look, so maybe...)
+> 
+> I don't have an actual bug report or repro case, which isn't too
+> surprising given that this can't happen on x86, but I know of places
+> where percpu pointer is used opportunistically (if allocated) which
+> would be affected by this.
 
---Mcvs3sMuhDlWUu+I
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Fair enough.
 
-On Fri, Jun 13, 2014 at 07:19:28PM +0200, Christian Engelmayer wrote:
-> Commit a0b148b4 (ASoC: wm8985: Use devm_regulator_bulk_get()) removed the last
-> user of pointer wm8985 to struct wm8985_priv. Thus remove it. Detected by
-> Coverity CID 1222150.
+> > I would argue that the code above should instead say something like:
+> > 
+> > 	smp_store_release(p, alloc_percpu());
+> 
+> Well, we can always say that it's the caller's responsibility to put
+> in enough barriers, but it becomes weird for percpu areas because the
+> ownership of the allocated areas isn't really clear.  Whether each
+> allocated cpu-specific area's queued writes belong to the allocating
+> cpu or the cpu that the area is associated with is an implementation
+> detail which may theoretically change and as such I think it'd be best
+> for the problem to be dealt with in percpu allocator and accessors
+> proper.  I think this is way too subtle to ask the users to handle
+> correctly.
 
-Applied, thanks.
+But in the case where the allocation is initially zeroed, then a few
+fields are initialized to non-zero values, the memory barrier in the
+allocator is insufficient.  I believe that it will be easier for people
+to always use smp_store_release() or whatever than to not need it if
+the initialization is strictly zero, but to need it if additional
+initialization is required.
 
---Mcvs3sMuhDlWUu+I
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> > I was worried about use of per_cpu() by the reading CPU, but of course
+> > in that case, things are initialized at compiler time.
+> 
+> Not really.  The template is initialized on kernel load.  The actual
+> percpu areas have to be allocated dynamically; however, this happens
+> while the machine is still running UP, so this should be okay.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Good point.  How about per-CPU variables that are introduced by
+loadable modules?  (I would guess that there are plenty of memory
+barriers in the load process, given that text and data also needs
+to be visible to other CPUs.)
 
-iQIcBAEBAgAGBQJToFNsAAoJELSic+t+oim9spoP/3IrTBbUxknKlWLP2x5kxTr9
-fnfqHBIM5zr0NHiXCPYAJPO6D1p2eMRTjNoinkimMNn73Yp/EKVX7zNWLrVbZba6
-koEnty9O/4t1BkW6ILLLmeN8Lj5Xk7UJXoNJbda9jna+dl8pqKVIasE2PVY9OOx1
-bxAkmCUuGD197wJ9+MdSm/xgHffZ4WkfFRcA93ZddomCu83C6BAEC2Hcs3/dCdnD
-7emFpPHMeKzn+hu7pMjp1HCvLUmH48EdPpGMJ8/slZ6Z9gBy4Sig/Ebi1d4IuZu9
-jAJ8XPMJtfiD85w4gIUFGmuy2K1e80eHfMJmejGQ2jHzSIYN3y5PWFXjs1/zsW1S
-jChs/tYelSsVN9Fu2S+YXRLgpT7crsMR940Z9jQshmjEySmxIB1/raxsBW21uGYj
-yJUf6HRQ2UinxtqI15eAJj7CT852MmzXjBvo+lUIcgrR4X8b+YyaaS8Iy67VPKkb
-G5E9B0+HLbN/IvIT2sExrHDmAsPEvBK/b7AbCLkr6zhwuNCmm1VcjQTc26el58ZF
-bqEg8HTsArbGD3bzT0D1cXAvtOS1S67gioEuckJWHnlLkVPUbY/dW8G5Pn+YeTyi
-6VtqzUXcrtGO489ttWXcMAMAU6sJie1UZMHphAE8sfydX9OOktLQlCQ4yHpf3D3X
-8HnWADE5kWV5VOdB9mhq
-=gN7M
------END PGP SIGNATURE-----
+> > > I wonder whether we also need a smp_wmb() for other __GFP_ZERO
+> > > allocations.  There isn't one and requiring the users to perform
+> > > smp_wmb() to ensure the propagation of zeroing seems too subtle.
+> > 
+> > I would say "no" even if we do decide that alloc_percpu() needs
+> > an smp_wmb().  The reason is that you really do have to store the
+> > pointer at some point, and you should use smp_store_release() for
+> > this task, at least if you are storing to something accessible to
+> > other CPUs.
+> 
+> For normal allocations, I don't have a strong opinion.  I'd prefer to
+> think of memory coming out of the allocator to have memory ordering
+> already taken care of but it is a lot less murky than with percpu
+> areas.
 
---Mcvs3sMuhDlWUu+I--
+Again, it won't help for the allocator to strongly order the
+initialization to zero if there are additional initializations of some
+fields to non-zero values.  And again, it should be a lot easier to
+require the smp_store_release() or whatever uniformly than only in cases
+where additional initialization occurred.
+
+							Thanx, Paul
+
