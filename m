@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965219AbaFQQ0P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:26:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50949 "EHLO
+	id S965235AbaFQQ0V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:26:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50954 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964811AbaFQQ0K (ORCPT
+	with ESMTP id S965217AbaFQQ0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:26:10 -0400
+	Tue, 17 Jun 2014 12:26:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Florian Westphal <fw@strlen.de>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Ivan Vecera <ivecera@redhat.com>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 051/121] net: core: don't account for udp header size when computing seglen
-Date: Tue, 17 Jun 2014 09:17:09 -0700
-Message-Id: <1403021899-16708-24-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 059/121] tg3: update rx_jumbo_pending ring param only when jumbo frames are enabled
+Date: Tue, 17 Jun 2014 09:17:17 -0700
+Message-Id: <1403021899-16708-32-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
@@ -28,53 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Ivan Vecera <ivecera@redhat.com>
 
-[ Upstream commit 6d39d589bb76ee8a1c6cde6822006ae0053decff ]
+commit ba67b510035141bd89b40bf65efa0a79834311ca upstream.
 
-In case of tcp, gso_size contains the tcpmss.
+The patch fixes a problem with dropped jumbo frames after usage of
+'ethtool -G ... rx'.
 
-For UFO (udp fragmentation offloading) skbs, gso_size is the fragment
-payload size, i.e. we must not account for udp header size.
+Scenario:
+1. ip link set eth0 up
+2. ethtool -G eth0 rx N # <- This zeroes rx-jumbo
+3. ip link set mtu 9000 dev eth0
 
-Otherwise, when using virtio drivers, a to-be-forwarded UFO GSO packet
-will be needlessly fragmented in the forward path, because we think its
-individual segments are too large for the outgoing link.
+The ethtool command set rx_jumbo_pending to zero so any received jumbo
+packets are dropped and you need to use 'ethtool -G eth0 rx-jumbo N'
+to workaround the issue.
+The patch changes the logic so rx_jumbo_pending value is changed only if
+jumbo frames are enabled (MTU > 1500).
 
-Fixes: fe6cc55f3a9a053 ("net: ip, ipv6: handle gso skbs in forwarding path")
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Reported-by: Tobias Brunner <tobias@strongswan.org>
-Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Ivan Vecera <ivecera@redhat.com>
+Acked-by: Michael Chan <mchan@broadcom.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/core/skbuff.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index e255b9c..f97fe58 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -3461,12 +3461,14 @@ EXPORT_SYMBOL(skb_try_coalesce);
- unsigned int skb_gso_transport_seglen(const struct sk_buff *skb)
- {
- 	const struct skb_shared_info *shinfo = skb_shinfo(skb);
--	unsigned int hdr_len;
- 
- 	if (likely(shinfo->gso_type & (SKB_GSO_TCPV4 | SKB_GSO_TCPV6)))
--		hdr_len = tcp_hdrlen(skb);
--	else
--		hdr_len = sizeof(struct udphdr);
--	return hdr_len + shinfo->gso_size;
-+		return tcp_hdrlen(skb) + shinfo->gso_size;
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index d619517..40d8e23 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -11514,7 +11514,9 @@ static int tg3_set_ringparam(struct net_device *dev, struct ethtool_ringparam *e
+ 	if (tg3_flag(tp, MAX_RXPEND_64) &&
+ 	    tp->rx_pending > 63)
+ 		tp->rx_pending = 63;
+-	tp->rx_jumbo_pending = ering->rx_jumbo_pending;
 +
-+	/* UFO sets gso_size to the size of the fragmentation
-+	 * payload, i.e. the size of the L4 (UDP) header is already
-+	 * accounted for.
-+	 */
-+	return shinfo->gso_size;
- }
- EXPORT_SYMBOL_GPL(skb_gso_transport_seglen);
++	if (tg3_flag(tp, JUMBO_RING_ENABLE))
++		tp->rx_jumbo_pending = ering->rx_jumbo_pending;
+ 
+ 	for (i = 0; i < tp->irq_max; i++)
+ 		tp->napi[i].tx_pending = ering->tx_pending;
 -- 
 1.9.1
 
