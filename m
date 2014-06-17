@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933995AbaFQQ6T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:58:19 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:41429 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933704AbaFQQ6Q (ORCPT
+	id S933708AbaFQQPl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:15:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50379 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933629AbaFQQPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:58:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <1401198917-16077-1-git-send-email-p.zabel@pengutronix.de>
-References: <1401198917-16077-1-git-send-email-p.zabel@pengutronix.de>
-From: Rob Herring <robherring2@gmail.com>
-Date: Tue, 17 Jun 2014 11:57:55 -0500
-Message-ID: <CAL_JsqLjyNQfjs4cDf8Eh1WeVGauym=qbF_pEAMu7ASVMqaccg@mail.gmail.com>
-Subject: Re: [RFC PATCH] mfd: syscon: add child device support
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Lee Jones <lee.jones@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 17 Jun 2014 12:15:33 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Michael Ulbricht <michael.ulbricht@systec-electronic.com>,
+        Alexander Stein <alexander.stein@systec-electronic.com>,
+        Oliver Neukum <oliver@neukum.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 018/121] USB: cdc-acm: Remove Motorola/Telit H24 serial interfaces from ACM driver
+Date: Tue, 17 Jun 2014 09:13:31 -0700
+Message-Id: <1403021714-16320-19-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403021714-16320-1-git-send-email-kamal@canonical.com>
+References: <1403021714-16320-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 8:55 AM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
-> For devices which have a complete register for themselves, it is possible to
-> place them next to the syscon device with overlapping reg ranges. The same is
+3.8.13.24 -stable review patch.  If anyone has any objections, please let me know.
 
-We want to avoid overlapping ranges.
+------------------
 
-> not possible for devices which only occupy bitfields in registers shared with
-> other users.
+From: Michael Ulbricht <michael.ulbricht@systec-electronic.com>
 
-You are addressing the latter case here?
+commit 895d240d1db0b2736d779200788e4c4aea28a0c6 upstream.
 
-> For devices that are completely controlled by bitfields in the syscon address
-> range, such as multiplexers or voltage regulators, allow to put child devices
-> into the syscon device node.
->
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> ---
->  Documentation/devicetree/bindings/mfd/syscon.txt | 11 +++++++++++
->  drivers/mfd/syscon.c                             |  2 ++
->  2 files changed, 13 insertions(+)
->
-> diff --git a/Documentation/devicetree/bindings/mfd/syscon.txt b/Documentation/devicetree/bindings/mfd/syscon.txt
-> index fe8150b..a7e11d5 100644
-> --- a/Documentation/devicetree/bindings/mfd/syscon.txt
-> +++ b/Documentation/devicetree/bindings/mfd/syscon.txt
-> @@ -9,10 +9,21 @@ using a specific compatible value), interrogate the node (or associated
->  OS driver) to determine the location of the registers, and access the
->  registers directly.
->
-> +Optionally, devices that are only controlled through single syscon
-> +registers or bitfields can also be added as child nodes to the syscon
-> +device node. These devices can implicitly assume their parent node
-> +as syscon provider without referencing it explicitly via phandle.
-> +In this case, the syscon node should have #address-cells = <1> and
-> +#size-cells = <0> and no ranges property.
-> +
+By specifying NO_UNION_NORMAL the ACM driver does only use the first two
+USB interfaces (modem data & control). The AT Port, Diagnostic and NMEA
+interfaces are left to the USB serial driver.
 
-I'd like to see an example. What does reg in the child contain? The
-register address?
+Signed-off-by: Michael Ulbricht <michael.ulbricht@systec-electronic.com>
+Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+Signed-off-by: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/usb/class/cdc-acm.c | 28 +++++++++++++++++++++-------
+ 1 file changed, 21 insertions(+), 7 deletions(-)
 
-What if the child device needs 3 bitfields from 3 different registers?
-It seems to me that you could then want to describe every single
-bitfield of a block in the DT. That seems like too much information in
-DT much like trying to describe every single clock in DT.
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index c4564e3..f12fed0 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1587,13 +1587,27 @@ static const struct usb_device_id acm_ids[] = {
+ 	},
+ 	/* Motorola H24 HSPA module: */
+ 	{ USB_DEVICE(0x22b8, 0x2d91) }, /* modem                                */
+-	{ USB_DEVICE(0x22b8, 0x2d92) }, /* modem           + diagnostics        */
+-	{ USB_DEVICE(0x22b8, 0x2d93) }, /* modem + AT port                      */
+-	{ USB_DEVICE(0x22b8, 0x2d95) }, /* modem + AT port + diagnostics        */
+-	{ USB_DEVICE(0x22b8, 0x2d96) }, /* modem                         + NMEA */
+-	{ USB_DEVICE(0x22b8, 0x2d97) }, /* modem           + diagnostics + NMEA */
+-	{ USB_DEVICE(0x22b8, 0x2d99) }, /* modem + AT port               + NMEA */
+-	{ USB_DEVICE(0x22b8, 0x2d9a) }, /* modem + AT port + diagnostics + NMEA */
++	{ USB_DEVICE(0x22b8, 0x2d92),   /* modem           + diagnostics        */
++	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
++	},
++	{ USB_DEVICE(0x22b8, 0x2d93),   /* modem + AT port                      */
++	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
++	},
++	{ USB_DEVICE(0x22b8, 0x2d95),   /* modem + AT port + diagnostics        */
++	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
++	},
++	{ USB_DEVICE(0x22b8, 0x2d96),   /* modem                         + NMEA */
++	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
++	},
++	{ USB_DEVICE(0x22b8, 0x2d97),   /* modem           + diagnostics + NMEA */
++	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
++	},
++	{ USB_DEVICE(0x22b8, 0x2d99),   /* modem + AT port               + NMEA */
++	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
++	},
++	{ USB_DEVICE(0x22b8, 0x2d9a),   /* modem + AT port + diagnostics + NMEA */
++	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
++	},
+ 
+ 	{ USB_DEVICE(0x0572, 0x1329), /* Hummingbird huc56s (Conexant) */
+ 	.driver_info = NO_UNION_NORMAL, /* union descriptor misplaced on
+-- 
+1.9.1
 
-Rob
