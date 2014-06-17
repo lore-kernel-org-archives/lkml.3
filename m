@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967257AbaFQWQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:16:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54539 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965696AbaFQVvK (ORCPT
+	id S967667AbaFQWbU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:31:20 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:57294 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966369AbaFQWbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:51:10 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 129/212] Target/iser: Fix wrong connection requests list addition
-Date: Tue, 17 Jun 2014 14:43:43 -0700
-Message-Id: <1403041506-13646-130-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 17 Jun 2014 18:31:15 -0400
+Date: Tue, 17 Jun 2014 15:31:14 -0700 (PDT)
+Message-Id: <20140617.153114.745988923921147057.davem@davemloft.net>
+To: himangi774@gmail.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
+Subject: Re: [PATCH v2] net/nxp/lpc_eth: use devm_ functions
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140613180356.GA8582@himangi-Dell>
+References: <20140613180356.GA8582@himangi-Dell>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 17 Jun 2014 15:31:15 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
+From: Himangi Saraogi <himangi774@gmail.com>
+Date: Fri, 13 Jun 2014 23:33:56 +0530
 
-------------------
+> The various devm_ functions allocate memory that is released when a
+> driver detaches. This patch uses dmam_alloc_coherent, devm_ioremap
+> devm_clk_get etc. for data that is allocated in the probe function of
+> platform device and is only freed in the remove function. The
+> corresponding free functions are removed and many labels are done
+> away with.
+> 
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> ---
+> v2: undo use of devm_request_irq
+> Not compile tested
 
-From: Sagi Grimberg <sagig@mellanox.com>
-
-commit 9fe63c88b1d59f1ce054d6948ccd3096496ecedb upstream.
-
-Should be adding list_add_tail($new, $head) and not
-the other way around.
-
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/infiniband/ulp/isert/ib_isert.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index 3e3b2a1..d2dec1f 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -573,7 +573,7 @@ isert_connect_request(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
- 		goto out_conn_dev;
- 
- 	mutex_lock(&isert_np->np_accept_mutex);
--	list_add_tail(&isert_np->np_accept_list, &isert_conn->conn_accept_node);
-+	list_add_tail(&isert_conn->conn_accept_node, &isert_np->np_accept_list);
- 	mutex_unlock(&isert_np->np_accept_mutex);
- 
- 	pr_debug("isert_connect_request() waking up np_accept_wq: %p\n", np);
--- 
-1.9.1
-
+This doesn't apply cleanly to any of my trees.
