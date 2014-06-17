@@ -1,149 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932804AbaFQMkj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 08:40:39 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:46946 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932444AbaFQMkh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 08:40:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <539915B3.9050904@codeaurora.org>
-References: <CAMuHMdXm_fT251+ih2cJS+hRkrPuVQi3sMFgYe+k18xe-Wd21w@mail.gmail.com>
- <539892BD.8020403@codeaurora.org> <CAMuHMdWZutiNpGScEhCzgM70jJ+MZ1ErmKtNfMHVLDB+d5Lyzw@mail.gmail.com>
- <539915B3.9050904@codeaurora.org>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Tue, 17 Jun 2014 13:40:16 +0100
-X-Google-Sender-Auth: KJlvqHpJpIApIN2m3ILUwjpBvk4
-Message-ID: <CACxGe6vkcfeEf0TNE5gstFs0jCm+GUT7RuJt+D8Ngq2e9Lf_fg@mail.gmail.com>
-Subject: Re: BUG: Bad page state in process swapper pfn:00000
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932889AbaFQMlI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 08:41:08 -0400
+Received: from mx02.posteo.de ([89.146.194.165]:45037 "EHLO posteo.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932555AbaFQMlH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 08:41:07 -0400
+From: Martin Kepplinger <martink@posteo.de>
+To: dan.carpenter@oracle.com
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        forest@alittletooquiet.net, linux-kernel@vger.kernel.org,
+        Martin Kepplinger <martink@posteo.de>
+Subject: [PATCH v3] staging: vt6655: preserve address space in ethtool_ioctl()
+Date: Tue, 17 Jun 2014 14:40:27 +0200
+Message-Id: <1403008827-6098-1-git-send-email-martink@posteo.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1403008355-4163-1-git-send-email-martink@posteo.de>
+References: <1403008355-4163-1-git-send-email-martink@posteo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 3:51 AM, Laura Abbott <lauraa@codeaurora.org> wrote:
-> On 6/11/2014 12:19 PM, Geert Uytterhoeven wrote:
->> Hi Laura,
->>
->> On Wed, Jun 11, 2014 at 7:32 PM, Laura Abbott <lauraa@codeaurora.org> wrote:
->>> On 6/11/2014 4:40 AM, Geert Uytterhoeven wrote:
->>>> With current mainline, I get an early crash on r8a7791/koelsch:
->>>>
->>>> BUG: Bad page state in process swapper  pfn:00000
->>>> page:ee20b000 count:0 mapcount:0 mapping:66756200 index:0x65726566
->>>> page flags: 0x74656b63(locked|error|lru|active|owner_priv_1|arch_1|private|writeback|head|swapcache
->>>> |reclaim|mlocked)
->>>> page dumped because: PAGE_FLAGS_CHECK_AT_FREE flag(s) set
->>>> bad because of flags:
->>>> page flags: 0x212861(locked|lru|active|private|writeback|swapcache|mlocked)
->>>>
->>>> I bisected it to
->>>>
->>>> commit 1c2f87c22566cd057bc8cde10c37ae9da1a1bb76
->>>> Author: Laura Abbott <lauraa@codeaurora.org>
->>>> Date:   Sun Apr 13 22:54:58 2014 +0100
->>>>
->>>>     ARM: 8025/1: Get rid of meminfo
->>
->>>> -Truncating RAM at 40000000-bfffffff to -6f7fffff (vmalloc region overlap).
->>>> +Truncating RAM at 0x00000000-0xc0000000 to -0x6f800000
->>>
->>> I'm guessing this is the issue right there.
->>>
->>>         memory@40000000 {
->>>                 device_type = "memory";
->>>                 reg = <0 0x40000000 0 0x40000000>;
->>>         };
->>>
->>>         memory@200000000 {
->>>                 device_type = "memory";
->>>                 reg = <2 0x00000000 0 0x40000000>;
->>>         };
->>>
->>> Those are the memory nodes from r8a7791-koelsch.dts. It looks like the memory
->>> outside 32-bit address range is not being dropped. It was suggested to drop
->>> early_init_dt_add_memory_arch which called arm_add_memory and just use the
->>> generic of code directly but the problem is arm_add_memory does additional
->>> bounds checking. It looks like early_init_dt_add_memory_arch in
->>> drivers/of/fdt.c checks for overflow on u64 types but not for overflow
->>> on phys_addr_t (32 bits) which is what memblock_add actually uses.
->>>
->>> For a quick test, can you try bringing back early_init_dt_add_memory_arch
->>> and see if that fixes the problem:
->>>
->>> diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
->>> index e94a157..ea9ce92 100644
->>> --- a/arch/arm/kernel/devtree.c
->>> +++ b/arch/arm/kernel/devtree.c
->>> @@ -27,6 +27,10 @@
->>>  #include <asm/mach/arch.h>
->>>  #include <asm/mach-types.h>
->>>
->>> +void __init early_init_dt_add_memory_arch(u64 base, u64 size)
->>> +{
->>> +       arm_add_memory(base, size);
->>> +}
->>>
->>>  #ifdef CONFIG_SMP
->>>  extern struct of_cpu_method __cpu_method_of_table[];
->>
->> Thanks, my board boots again after applying this quick hack.
->>
->
-> Great! Russell are you okay with taking the above as a fix or would you prefer
-> I fixup drivers/of/fdt.c right now?
+Fix the sparse error: cast removes address space of expression and
+add __user annotation to the driver's ethtool_ioctl().
 
-I would rather see the fix directly in fdt.c.
+Signed-off-by: Martin Kepplinger <martink@posteo.de>
+---
+I think I forgot to change the declaration on top.
 
-g.
+ drivers/staging/vt6655/device_main.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
->
->
-> Thanks,
-> Laura
->
-> ----8<----
-> From 14bda557a108ad197e7c5f040f50ca024b45cc17 Mon Sep 17 00:00:00 2001
-> From: Laura Abbott <lauraa@codeaurora.org>
-> Date: Wed, 11 Jun 2014 19:39:29 -0700
-> Subject: [PATCH] arm: Bring back early_init_dt_add_memory_arch
->
-> Commit 1c2f87c (ARM: 8025/1: Get rid of meminfo) removed
-> early_init_dt_add_memory_arch in favor of using the common method.
-> The common method does not currently check for memory outside of
-> 32-bit bounds which may lead to memory being incorrectly added to
-> the system. Bring back early_init_dt_add_memory_arch for now until
-> the generic function can be fixed up.
->
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
-> ---
->  arch/arm/kernel/devtree.c | 4 ++++
->  1 file changed, 4 insertions(+)
->
-> diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
-> index e94a157..ea9ce92 100644
-> --- a/arch/arm/kernel/devtree.c
-> +++ b/arch/arm/kernel/devtree.c
-> @@ -27,6 +27,10 @@
->  #include <asm/mach/arch.h>
->  #include <asm/mach-types.h>
->
-> +void __init early_init_dt_add_memory_arch(u64 base, u64 size)
-> +{
-> +       arm_add_memory(base, size);
-> +}
->
->  #ifdef CONFIG_SMP
->  extern struct of_cpu_method __cpu_method_of_table[];
-> --
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
+diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
+index 1d3908d..81c9932 100644
+--- a/drivers/staging/vt6655/device_main.c
++++ b/drivers/staging/vt6655/device_main.c
+@@ -302,7 +302,7 @@ static int  device_dma0_tx_80211(struct sk_buff *skb, struct net_device *dev);
+ //2008-0714<Add>by Mike Liu
+ static bool device_release_WPADEV(PSDevice pDevice);
+ 
+-static int  ethtool_ioctl(struct net_device *dev, void *useraddr);
++static int  ethtool_ioctl(struct net_device *dev, void __user *useraddr);
+ static int  device_rx_srv(PSDevice pDevice, unsigned int uIdx);
+ static int  device_tx_srv(PSDevice pDevice, unsigned int uIdx);
+ static bool device_alloc_rx_buf(PSDevice pDevice, PSRxDesc pDesc);
+@@ -3067,7 +3067,7 @@ static int  device_ioctl(struct net_device *dev, struct ifreq *rq, int cmd) {
+ 		break;
+ 
+ 	case SIOCETHTOOL:
+-		return ethtool_ioctl(dev, (void *)rq->ifr_data);
++		return ethtool_ioctl(dev, &rq->ifr_data);
+ 		// All other calls are currently unsupported
+ 
+ 	default:
+@@ -3103,7 +3103,7 @@ static int  device_ioctl(struct net_device *dev, struct ifreq *rq, int cmd) {
+ 	return rc;
+ }
+ 
+-static int ethtool_ioctl(struct net_device *dev, void *useraddr)
++static int ethtool_ioctl(struct net_device *dev, void __user *useraddr)
+ {
+ 	u32 ethcmd;
+ 
+-- 
+1.7.10.4
+
