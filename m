@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965581AbaFQQfX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:35:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50980 "EHLO
+	id S965593AbaFQQfw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:35:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50971 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965244AbaFQQ00 (ORCPT
+	with ESMTP id S965217AbaFQQ0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:26:26 -0400
+	Tue, 17 Jun 2014 12:26:23 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Daniel Borkmann <dborkman@redhat.com>, Vlad Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 112/121] usb: qcserial: add a number of Dell devices
-Date: Tue, 17 Jun 2014 09:18:10 -0700
-Message-Id: <1403021899-16708-85-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 049/121] net: sctp: test if association is dead in sctp_wake_up_waiters
+Date: Tue, 17 Jun 2014 09:17:07 -0700
+Message-Id: <1403021899-16708-22-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,65 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 4d7c0136a54f62501f8a34c4d08a5e0258d3d3ca upstream.
+[ Upstream commit 1e1cdf8ac78793e0875465e98a648df64694a8d0 ]
 
-Dan writes:
+In function sctp_wake_up_waiters(), we need to involve a test
+if the association is declared dead. If so, we don't have any
+reference to a possible sibling association anymore and need
+to invoke sctp_write_space() instead, and normally walk the
+socket's associations and notify them of new wmem space. The
+reason for special casing is that otherwise, we could run
+into the following issue when a sctp_primitive_SEND() call
+from sctp_sendmsg() fails, and tries to flush an association's
+outq, i.e. in the following way:
 
-"The Dell drivers use the same configuration for PIDs:
+sctp_association_free()
+`-> list_del(&asoc->asocs)         <-- poisons list pointer
+    asoc->base.dead = true
+    sctp_outq_free(&asoc->outqueue)
+    `-> __sctp_outq_teardown()
+     `-> sctp_chunk_free()
+      `-> consume_skb()
+       `-> sctp_wfree()
+        `-> sctp_wake_up_waiters() <-- dereferences poisoned pointers
+                                       if asoc->ep->sndbuf_policy=0
 
-81A2: Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card
-81A3: Dell Wireless 5570 HSPA+ (42Mbps) Mobile Broadband Card
-81A4: Dell Wireless 5570e HSPA+ (42Mbps) Mobile Broadband Card
-81A8: Dell Wireless 5808 Gobi(TM) 4G LTE Mobile Broadband Card
-81A9: Dell Wireless 5808e Gobi(TM) 4G LTE Mobile Broadband Card
+Therefore, only walk the list in an 'optimized' way if we find
+that the current association is still active. We could also use
+list_del_init() in addition when we call sctp_association_free(),
+but as Vlad suggests, we want to trap such bugs and thus leave
+it poisoned as is.
 
-These devices are all clearly Sierra devices, but are also definitely
-Gobi-based.  The A8 might be the MC7700/7710 and A9 is likely a MC7750.
+Why is it safe to resolve the issue by testing for asoc->base.dead?
+Parallel calls to sctp_sendmsg() are protected under socket lock,
+that is lock_sock()/release_sock(). Only within that path under
+lock held, we're setting skb/chunk owner via sctp_set_owner_w().
+Eventually, chunks are freed directly by an association still
+under that lock. So when traversing association list on destruction
+time from sctp_wake_up_waiters() via sctp_wfree(), a different
+CPU can't be running sctp_wfree() while another one calls
+sctp_association_free() as both happens under the same lock.
+Therefore, this can also not race with setting/testing against
+asoc->base.dead as we are guaranteed for this to happen in order,
+under lock. Further, Vlad says: the times we check asoc->base.dead
+is when we've cached an association pointer for later processing.
+In between cache and processing, the association may have been
+freed and is simply still around due to reference counts. We check
+asoc->base.dead under a lock, so it should always be safe to check
+and not race against sctp_association_free(). Stress-testing seems
+fine now, too.
 
->From DellGobi5kSetup.exe from the Dell drivers:
-
-usbif0: serial/firmware loader?
-usbif2: nmea
-usbif3: modem/ppp
-usbif8: net/QMI"
-
-Reported-by: AceLan Kao <acelan.kao@canonical.com>
-Reported-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Fixes: cd253f9f357d ("net: sctp: wake up all assocs if sndbuf policy is per socket")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Vlad Yasevich <vyasevic@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevic@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/qcserial.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ net/sctp/socket.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
-index 7ed681a..6c0a542 100644
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -151,6 +151,21 @@ static const struct usb_device_id id_table[] = {
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 0)},	/* Netgear AirCard 340U Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 2)},	/* Netgear AirCard 340U NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 3)},	/* Netgear AirCard 340U Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 0)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 2)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 3)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a3, 0)},	/* Dell Wireless 5570 HSPA+ (42Mbps) Mobile Broadband Card Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a3, 2)},	/* Dell Wireless 5570 HSPA+ (42Mbps) Mobile Broadband Card NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a3, 3)},	/* Dell Wireless 5570 HSPA+ (42Mbps) Mobile Broadband Card Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a4, 0)},	/* Dell Wireless 5570e HSPA+ (42Mbps) Mobile Broadband Card Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a4, 2)},	/* Dell Wireless 5570e HSPA+ (42Mbps) Mobile Broadband Card NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a4, 3)},	/* Dell Wireless 5570e HSPA+ (42Mbps) Mobile Broadband Card Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a8, 0)},	/* Dell Wireless 5808 Gobi(TM) 4G LTE Mobile Broadband Card Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a8, 2)},	/* Dell Wireless 5808 Gobi(TM) 4G LTE Mobile Broadband Card NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a8, 3)},	/* Dell Wireless 5808 Gobi(TM) 4G LTE Mobile Broadband Card Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a9, 0)},	/* Dell Wireless 5808e Gobi(TM) 4G LTE Mobile Broadband Card Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a9, 2)},	/* Dell Wireless 5808e Gobi(TM) 4G LTE Mobile Broadband Card NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a9, 3)},	/* Dell Wireless 5808e Gobi(TM) 4G LTE Mobile Broadband Card Modem */
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index a2eb3f7..4b33509 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -6592,6 +6592,12 @@ static void sctp_wake_up_waiters(struct sock *sk,
+ 	if (asoc->ep->sndbuf_policy)
+ 		return __sctp_write_space(asoc);
  
- 	{ }				/* Terminating entry */
- };
++	/* If association goes down and is just flushing its
++	 * outq, then just normally notify others.
++	 */
++	if (asoc->base.dead)
++		return sctp_write_space(sk);
++
+ 	/* Accounting for the sndbuf space is per socket, so we
+ 	 * need to wake up others, try to be fair and in case of
+ 	 * other associations, let them have a go first instead
 -- 
 1.9.1
 
