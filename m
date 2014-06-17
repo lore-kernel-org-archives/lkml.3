@@ -1,236 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569AbaFQBkp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 21:40:45 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:32933 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754112AbaFQBje (ORCPT
+	id S1753887AbaFQCAd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 22:00:33 -0400
+Received: from smtprelay0173.hostedemail.com ([216.40.44.173]:51222 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751460AbaFQCAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 21:39:34 -0400
-From: Laura Abbott <lauraa@codeaurora.org>
-To: Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: Laura Abbott <lauraa@codeaurora.org>,
-        David Riley <davidriley@chromium.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Ritesh Harjain <ritesh.harjani@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv3 3/5] common: dma-mapping: Introduce common remapping functions
-Date: Mon, 16 Jun 2014 18:39:23 -0700
-Message-Id: <1402969165-7526-4-git-send-email-lauraa@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1402969165-7526-1-git-send-email-lauraa@codeaurora.org>
-References: <1402969165-7526-1-git-send-email-lauraa@codeaurora.org>
+	Mon, 16 Jun 2014 22:00:32 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3871:3874:4321:5007:7652:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13141:13230:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: curve69_3eac60afe994f
+X-Filterd-Recvd-Size: 1670
+Message-ID: <1402970429.2797.3.camel@joe-AO725>
+Subject: Re: [PATCH] checkpatch: Warn on unnecessary void function return
+ statements
+From: Joe Perches <joe@perches.com>
+To: Anish Bhatt <anish@chelsio.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Date: Mon, 16 Jun 2014 19:00:29 -0700
+In-Reply-To: <539F8F62.4000805@chelsio.com>
+References: <1401728316.5770.9.camel@joe-AO725>
+	 <1402961300-17985-1-git-send-email-anish@chelsio.com>
+	 <1402964898.11561.2.camel@joe-AO725> <539F8F62.4000805@chelsio.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For architectures without coherent DMA, memory for DMA may
-need to be remapped with coherent attributes. Factor out
-the the remapping code from arm and put it in a
-common location to reduced code duplication.
+On Mon, 2014-06-16 at 17:44 -0700, Anish Bhatt wrote:
+> My code has multiple exit lables:
+> void function(void)
+> {
+> 	...
+> 
+> 	if (err1)
+> 		goto exit1;
+> 	...
+> 	if (err2)
+> 		goto exit2;
+> 
+> 	...
+> 	return; /* Good return, no errors */
+> exit1:
+> 	printk(err1);
+> 	return;
+> exit2:
+> 	printk(err2);
+> }
+> 
+> The single tabbed return was required to prevent the good return & err1 
+> messages cascading down. The extra exit label with a noop looks weird, 
+> but is passing checkpatch.pl --strict, so I will go with that, thanks.
+> -Anish
+> 
 
-Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
----
- arch/arm/mm/dma-mapping.c                | 57 +++++----------------------
- drivers/base/dma-mapping.c               | 67 ++++++++++++++++++++++++++++++++
- include/asm-generic/dma-mapping-common.h |  9 +++++
- 3 files changed, 85 insertions(+), 48 deletions(-)
+Hmm, those return uses seem reasonable
+to me.
 
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 4c88935..f5190ac 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -297,37 +297,19 @@ static void *
- __dma_alloc_remap(struct page *page, size_t size, gfp_t gfp, pgprot_t prot,
- 	const void *caller)
- {
--	struct vm_struct *area;
--	unsigned long addr;
--
- 	/*
- 	 * DMA allocation can be mapped to user space, so lets
- 	 * set VM_USERMAP flags too.
- 	 */
--	area = get_vm_area_caller(size, VM_ARM_DMA_CONSISTENT | VM_USERMAP,
--				  caller);
--	if (!area)
--		return NULL;
--	addr = (unsigned long)area->addr;
--	area->phys_addr = __pfn_to_phys(page_to_pfn(page));
--
--	if (ioremap_page_range(addr, addr + size, area->phys_addr, prot)) {
--		vunmap((void *)addr);
--		return NULL;
--	}
--	return (void *)addr;
-+	return dma_common_contiguous_remap(page, size,
-+			VM_ARM_DMA_CONSISTENT | VM_USERMAP,
-+			prot, caller);
- }
- 
- static void __dma_free_remap(void *cpu_addr, size_t size)
- {
--	unsigned int flags = VM_ARM_DMA_CONSISTENT | VM_USERMAP;
--	struct vm_struct *area = find_vm_area(cpu_addr);
--	if (!area || (area->flags & flags) != flags) {
--		WARN(1, "trying to free invalid coherent area: %p\n", cpu_addr);
--		return;
--	}
--	unmap_kernel_range((unsigned long)cpu_addr, size);
--	vunmap(cpu_addr);
-+	dma_common_free_remap(cpu_addr, size,
-+			VM_ARM_DMA_CONSISTENT | VM_USERMAP);
- }
- 
- #define DEFAULT_DMA_COHERENT_POOL_SIZE	SZ_256K
-@@ -1261,29 +1243,8 @@ static void *
- __iommu_alloc_remap(struct page **pages, size_t size, gfp_t gfp, pgprot_t prot,
- 		    const void *caller)
- {
--	unsigned int i, nr_pages = PAGE_ALIGN(size) >> PAGE_SHIFT;
--	struct vm_struct *area;
--	unsigned long p;
--
--	area = get_vm_area_caller(size, VM_ARM_DMA_CONSISTENT | VM_USERMAP,
--				  caller);
--	if (!area)
--		return NULL;
--
--	area->pages = pages;
--	area->nr_pages = nr_pages;
--	p = (unsigned long)area->addr;
--
--	for (i = 0; i < nr_pages; i++) {
--		phys_addr_t phys = __pfn_to_phys(page_to_pfn(pages[i]));
--		if (ioremap_page_range(p, p + PAGE_SIZE, phys, prot))
--			goto err;
--		p += PAGE_SIZE;
--	}
--	return area->addr;
--err:
--	unmap_kernel_range((unsigned long)area->addr, size);
--	vunmap(area->addr);
-+	return dma_common_pages_remap(pages, size,
-+			VM_ARM_DMA_CONSISTENT | VM_USERMAP, prot, caller);
- 	return NULL;
- }
- 
-@@ -1491,8 +1452,8 @@ void arm_iommu_free_attrs(struct device *dev, size_t size, void *cpu_addr,
- 	}
- 
- 	if (!dma_get_attr(DMA_ATTR_NO_KERNEL_MAPPING, attrs)) {
--		unmap_kernel_range((unsigned long)cpu_addr, size);
--		vunmap(cpu_addr);
-+		dma_common_free_remap(cpu_addr, size,
-+			VM_ARM_DMA_CONSISTENT | VM_USERMAP);
- 	}
- 
- 	__iommu_remove_mapping(dev, handle, size);
-diff --git a/drivers/base/dma-mapping.c b/drivers/base/dma-mapping.c
-index 6cd08e1..34265b5 100644
---- a/drivers/base/dma-mapping.c
-+++ b/drivers/base/dma-mapping.c
-@@ -10,6 +10,8 @@
- #include <linux/dma-mapping.h>
- #include <linux/export.h>
- #include <linux/gfp.h>
-+#include <linux/slab.h>
-+#include <linux/vmalloc.h>
- #include <asm-generic/dma-coherent.h>
- 
- /*
-@@ -267,3 +269,68 @@ int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
- 	return ret;
- }
- EXPORT_SYMBOL(dma_common_mmap);
-+
-+/*
-+ * remaps an allocated contiguous region into another vm_area.
-+ * Cannot be used in non-sleeping contexts
-+ */
-+
-+void *dma_common_contiguous_remap(struct page *page, size_t size,
-+			unsigned long vm_flags,
-+			pgprot_t prot, const void *caller)
-+{
-+	int i;
-+	struct page **pages;
-+	void *ptr;
-+
-+	pages = kmalloc(sizeof(struct page *) << get_order(size), GFP_KERNEL);
-+	if (!pages)
-+		return NULL;
-+
-+	for (i = 0; i < (size >> PAGE_SHIFT); i++)
-+		pages[i] = page + i;
-+
-+	ptr = dma_common_pages_remap(pages, size, vm_flags, prot, caller);
-+
-+	kfree(pages);
-+
-+	return ptr;
-+}
-+
-+/*
-+ * remaps an array of PAGE_SIZE pages into another vm_area
-+ * Cannot be used in non-sleeping contexts
-+ */
-+void *dma_common_pages_remap(struct page **pages, size_t size,
-+			unsigned long vm_flags, pgprot_t prot,
-+			const void *caller)
-+{
-+	struct vm_struct *area;
-+
-+	area = get_vm_area_caller(size, vm_flags, caller);
-+	if (!area)
-+		return NULL;
-+
-+	if (map_vm_area(area, prot, &pages)) {
-+		vunmap(area->addr);
-+		return NULL;
-+	}
-+
-+	return area->addr;
-+}
-+
-+/*
-+ * unmaps a range previously mapped by dma_common_*_remap
-+ */
-+void dma_common_free_remap(void *cpu_addr, size_t size, unsigned long vm_flags)
-+{
-+	struct vm_struct *area = find_vm_area(cpu_addr);
-+
-+	if (!area || (area->flags & vm_flags) != vm_flags) {
-+		WARN(1, "trying to free invalid coherent area: %p\n", cpu_addr);
-+		return;
-+	}
-+
-+	unmap_kernel_range((unsigned long)cpu_addr, size);
-+	vunmap(cpu_addr);
-+}
-diff --git a/include/asm-generic/dma-mapping-common.h b/include/asm-generic/dma-mapping-common.h
-index de8bf89..a9fd248 100644
---- a/include/asm-generic/dma-mapping-common.h
-+++ b/include/asm-generic/dma-mapping-common.h
-@@ -179,6 +179,15 @@ dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
- extern int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
- 			   void *cpu_addr, dma_addr_t dma_addr, size_t size);
- 
-+void *dma_common_contiguous_remap(struct page *page, size_t size,
-+			unsigned long vm_flags,
-+			pgprot_t prot, const void *caller);
-+
-+void *dma_common_pages_remap(struct page **pages, size_t size,
-+			unsigned long vm_flags, pgprot_t prot,
-+			const void *caller);
-+void dma_common_free_remap(void *cpu_addr, size_t size, unsigned long vm_flags);
-+
- /**
-  * dma_mmap_attrs - map a coherent DMA allocation into user space
-  * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Perhaps the test should warn only on
+this specific 3 line sequence:
+
+[any line but a label]
+	return;
+}
+
+Andrew?  Anyone else?  Opinions?
 
