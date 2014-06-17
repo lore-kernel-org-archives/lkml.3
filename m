@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965663AbaFQQlq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:41:46 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:45362 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965469AbaFQQln (ORCPT
+	id S965676AbaFQQl4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:41:56 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48050 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S964930AbaFQQly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:41:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <CANq1E4QdGz6cRm2Y-vMQHV1O=VK74XNP8qCAmiAskVaVKpJuxg@mail.gmail.com>
-References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
- <CALCETrVoE+JO2rLsBUHAOJdvescEEjxikj8iQ339Nxfopfc7pw@mail.gmail.com>
- <CANq1E4SaWLD=hNEc-CDJbNnrGfXE_PkxZFBhpW4tbK7wor7xPA@mail.gmail.com>
- <CALCETrU8N9EbnJ3=oQ1WQCG9Vunn3nR9Ba=J48wJm0SuH0YB4A@mail.gmail.com>
- <CANq1E4QQUKHabheq18AzkVZk3WDtAeC-6W66tVNB+EKgYOx1Vg@mail.gmail.com>
- <53A01049.6020502@redhat.com> <CANq1E4T3KJZ++=KF2OZ_dd+NvPqg+=4Pw6O7Po3-ZxaaMHPukw@mail.gmail.com>
- <CALCETrVpZ0vFM4usHK+tQhk234Y2jWzB1522kGcGvdQQFAqsZQ@mail.gmail.com> <CANq1E4QdGz6cRm2Y-vMQHV1O=VK74XNP8qCAmiAskVaVKpJuxg@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 17 Jun 2014 09:41:22 -0700
-Message-ID: <CALCETrVerC155vzO-1Js1W8cRTYat0-+OGOxW+kSynJor6rJag@mail.gmail.com>
-Subject: Re: [PATCH v3 0/7] File Sealing & memfd_create()
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>, Greg KH <greg@kroah.com>,
-        Florian Weimer <fweimer@redhat.com>, Hugh Dickins <hughd@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Daniel Mack <zonque@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Tony Battersby <tonyb@cybernetics.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 17 Jun 2014 12:41:54 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 0/6] ARM: at91: more clocks fixes for 3.16
+Date: Tue, 17 Jun 2014 18:41:42 +0200
+Message-Id: <1403023308-20533-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 9:36 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> Hi
->
-> On Tue, Jun 17, 2014 at 6:20 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> Can you summarize why holes can't be reliably backed by the zero page?
->
-> To answer this, I will quote Hugh from "PATCH v2 1/3":
->
->> We do already use the ZERO_PAGE instead of allocating when it's a
->> simple read; and on the face of it, we could extend that to mmap
->> once the file is sealed.  But I am rather afraid to do so - for
->> many years there was an mmap /dev/zero case which did that, but
->> it was an easily forgotten case which caught us out at least
->> once, so I'm reluctant to reintroduce it now for sealing.
->>
->> Anyway, I don't expect you to resolve the issue of sealed holes:
->> that's very much my territory, to give you support on.
->
-> Holes can be avoided with a simple fallocate(). I don't understand why
-> I should make SEAL_WRITE do the fallocate for the caller. During the
-> discussion of memfd_create() I was told to drop the "size" parameter,
-> because it is redundant. I don't see how this implicit fallocate()
-> does not fall into the same category?
->
+Hi,
 
-I'm really confused now.
+This patch set fixes more issues with the clocks on AT91:
 
-If I SEAL_WRITE a file, and then I mmap it PROT_READ, and then I read
-it, is that a "simple read"?  If so, doesn't that mean that there's no
-problem?
+The first patch define the slow crystal on the at91sam9261ek board
 
---Andy
+The next patchs are moving all the clocks that were under the root under a
+"clocks" node to be consistent accross all architecture.
+
+Alexandre Belloni (6):
+  ARM: at91/dt: define sam9261ek slow crystal frequency
+  ARM: at91/dt: sam9261 crystals under the clocks node
+  ARM: at91/dt: sam9n12 crystals under the clocks node
+  ARM: at91/dt: sam9rl crystals under the clocks node
+  ARM: at91/dt: sam9x5 crystals under the clocks node
+  ARM: at91/dt: sama5d3 crystals under the clocks node
+
+ arch/arm/boot/dts/at91-sama5d3_xplained.dts | 12 +++++++-----
+ arch/arm/boot/dts/at91sam9261.dtsi          | 20 ++++++++++---------
+ arch/arm/boot/dts/at91sam9261ek.dts         | 12 ++++++++----
+ arch/arm/boot/dts/at91sam9n12.dtsi          | 20 ++++++++++---------
+ arch/arm/boot/dts/at91sam9n12ek.dts         | 16 +++++++--------
+ arch/arm/boot/dts/at91sam9rl.dtsi           | 22 ++++++++++-----------
+ arch/arm/boot/dts/at91sam9rlek.dts          | 17 ++++++++--------
+ arch/arm/boot/dts/at91sam9x5.dtsi           | 30 +++++++++++++++--------------
+ arch/arm/boot/dts/at91sam9x5cm.dtsi         | 12 +++++++-----
+ arch/arm/boot/dts/sama5d3.dtsi              | 22 ++++++++++-----------
+ arch/arm/boot/dts/sama5d3xcm.dtsi           | 12 +++++++-----
+ 11 files changed, 105 insertions(+), 90 deletions(-)
+
+-- 
+1.9.1
+
