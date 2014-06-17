@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756243AbaFQQJz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:09:55 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49627 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755631AbaFQQJy (ORCPT
+	id S1756317AbaFQQK3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:10:29 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44798 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755661AbaFQQK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:09:54 -0400
-Message-ID: <1403021389.27991.11.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH 01/24] kobject: return actual error on
- kset_create_and_add
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Jeff Liu <jeff.liu@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, herbert@gondor.apana.org.au,
-        davem@davemloft.net, stefanr@s5r6.in-berlin.de, joro@8bytes.org,
-        jejb@parisc-linux.org, deller@gmx.de, bhelgaas@google.com, clm@fb.com,
-        Josef Bacik <jbacik@fb.com>, swhiteho@redhat.com, bharrosh@panasas.com,
-        bhalevy@primarydata.com, ccaulfie@redhat.com, teigland@redhat.com,
-        "Theodore Ts'o" <tytso@mit.edu>, adilger.kernel@dilger.ca,
-        jaegeuk@kernel.org, cm224.lee@samsung.com,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        casey@schaufler-ca.com, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 17 Jun 2014 09:09:49 -0700
-In-Reply-To: <alpine.DEB.2.11.1406171057270.20610@gentwo.org>
-References: <53A04FF7.5050900@oracle.com> <20140617154730.GA14153@kroah.com>
-	 <alpine.DEB.2.11.1406171057270.20610@gentwo.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
+	Tue, 17 Jun 2014 12:10:27 -0400
+Message-ID: <53A0686F.4000303@wwwdotorg.org>
+Date: Tue, 17 Jun 2014 10:10:23 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Mikko Perttunen <mperttunen@nvidia.com>
+CC: thierry.reding@gmail.com, tj@kernel.org, pdeschrijver@nvidia.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH 8/9] ata: Add support for the Tegra124 SATA controller
+References: <1401881559-18469-1-git-send-email-mperttunen@nvidia.com> <1401881559-18469-9-git-send-email-mperttunen@nvidia.com> <1470404.13mIFv0Hnj@amdc1032>
+In-Reply-To: <1470404.13mIFv0Hnj@amdc1032>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-06-17 at 11:00 -0500, Christoph Lameter wrote:
-> On Tue, 17 Jun 2014, Greg KH wrote:
+On 06/17/2014 06:14 AM, Bartlomiej Zolnierkiewicz wrote:
 > 
-> > Who really cares about that?  What can do you do with that additional
-> > information that will help anything out?
+> Hi,
 > 
-> The obvious reason for doing so is so that one can put the error code into
-> a log message to get more detailed information on why the call failed.
+> On Wednesday, June 04, 2014 02:32:38 PM Mikko Perttunen wrote:
+>> This adds support for the integrated AHCI-compliant Serial ATA
+>> controller present on the NVIDIA Tegra124 system-on-chip.
+
+>> +static inline void sata_writel(struct tegra_ahci_priv *tegra, u32 value,
+>> +				 unsigned long offset)
+>> +{
+>> +	writel(value, tegra->sata_regs + offset);
+>> +}
+>> +
+>> +static inline u32 sata_readl(struct tegra_ahci_priv *tegra,
+>> +				unsigned long offset)
+>> +{
+>> +	return readl(tegra->sata_regs + offset);
+>> +}
 > 
-> In this particular case the slab allocator can give an error message that
-> gives a hint why the sysfs support could not be enabled.
+> sata_writel() and sata_read() static inlines don't seem to add any value.
+> 
+> Can they be removed?
 
-What useful information does this supply?  The current assumption on
-NULL return is -ENOMEM ... what's the interesting case where this
-assumption is wrong?
+Such functions are quite idiomatic in drivers, and serve to simplify all
+the call-sites by removing the need to write out the addition of the
+base address everywhere.
 
-James
+>> +static struct platform_driver tegra_ahci_driver = {
+>> +	.probe = tegra_ahci_probe,
+>> +	.remove = ata_platform_remove_one,
+>> +	.driver = {
+>> +		.name = "tegra-ahci",
+>> +		.owner = THIS_MODULE,
+>> +		.of_match_table = tegra_ahci_of_match,
+>> +	},
+> 
+> This driver lacks PM suspend/resume support.  I assume that
+> the Tegra124 platform also doesn't support suspend/resume yet
+> (if so a comment in the driver code about this would be useful),
+> otherwise the driver should be fixed.
 
-
+We do have basic system suspend/resume support. However, I don't think
+missing suspend/resume in an individual driver should stop it from being
+merged. It can certainly be added later.
