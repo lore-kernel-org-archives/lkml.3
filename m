@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967775AbaFQWoO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:44:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53868 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965453AbaFQVrQ (ORCPT
+	id S967744AbaFQWhF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:37:05 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:47867 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966209AbaFQWhC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:47:16 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Li RongQing <roy.qing.li@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 062/212] ipv4: initialise the itag variable in __mkroute_input
-Date: Tue, 17 Jun 2014 14:42:36 -0700
-Message-Id: <1403041506-13646-63-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 17 Jun 2014 18:37:02 -0400
+Date: Tue, 17 Jun 2014 15:37:00 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: werner <w.landgraf@ru.ru>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: 3.16-rc1 problems vdso_addr , _mb_cache_entry_ , rtl8723au
+In-Reply-To: <web-91666686@zbackend1.aha.ru>
+Message-ID: <alpine.DEB.2.02.1406171530420.517@chino.kir.corp.google.com>
+References: <web-91666686@zbackend1.aha.ru>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, 17 Jun 2014, werner wrote:
 
-------------------
+> Different to 3.15 , now for 3.16-rc1 the compiling list have warnings of any
+> incompatibility for all subroutines
+> 
+> and it don't build, because problems in vdso_addr  and _mb_cache_entry_    The
+> last is a problem occuring already in 3.15
+> 
+> also subroutine  rtl8723au  don't compile
+> 
 
-From: Li RongQing <roy.qing.li@gmail.com>
+It's probably not a good idea to just post a collection of build errors in 
+one email that isn't cc'd to anyone in particular and expect the issues to 
+be addressed.
 
-[ Upstream commit fbdc0ad095c0a299e9abf5d8ac8f58374951149a ]
+ - The staging errors should be reported directly to the people 
+   responsible for those drivers, check git-blame for who to email: not
+   everything in staging is guaranteed to compile at any time, it's very
+   fluid.
 
-the value of itag is a random value from stack, and may not be initiated by
-fib_validate_source, which called fib_combine_itag if CONFIG_IP_ROUTE_CLASSID
-is not set
+ - The __builtin_log2() problem should be fixed with "fs/mbcache.c: 
+   replacing __builtin_log2() with ilog2()" that was written specifically
+   due to your previous error report, see 
+   http://marc.info/?t=140147146600003
 
-This will make the cached dst uncertainty
-
-Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
-Acked-by: Alexei Starovoitov <ast@plumgrid.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/ipv4/route.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index de44aee..a25c6e7 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -1529,7 +1529,7 @@ static int __mkroute_input(struct sk_buff *skb,
- 	struct in_device *out_dev;
- 	unsigned int flags = 0;
- 	bool do_cache;
--	u32 itag;
-+	u32 itag = 0;
- 
- 	/* get a working reference to the output device */
- 	out_dev = __in_dev_get_rcu(FIB_RES_DEV(*res));
--- 
-1.9.1
-
+ - I can't reproduce your align_vdso_addr() problem, please send your 
+   .config
