@@ -1,40 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967762AbaFQWiX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:38:23 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:27817 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966569AbaFQWiU (ORCPT
+	id S967492AbaFQW0U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:26:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54307 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965630AbaFQVuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 18:38:20 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Scott J Norton <scott.norton@hp.com>, Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v2 0/2] mm, thp: two THP splitting performance fixes
-Date: Tue, 17 Jun 2014 18:37:57 -0400
-Message-Id: <1403044679-9993-1-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
+	Tue, 17 Jun 2014 17:50:08 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 177/212] Input: synaptics - T540p - unify with other LEN0034 models
+Date: Tue, 17 Jun 2014 14:44:31 -0700
+Message-Id: <1403041506-13646-178-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v1->v2:
- - Add a second patch to replace smp_mb() by smp_mb__after_atomic().
- - Add performance data to the first patch
+3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
 
-This mini-series contains 2 minor changes to the transparent huge
-page splitting code to split its performance, particularly for the
-x86 architecture.
+------------------
 
-Waiman Long (2):
-  mm, thp: move invariant bug check out of loop in
-    __split_huge_page_map
-  mm, thp: replace smp_mb after atomic_add by smp_mb__after_atomic
+From: Hans de Goede <hdegoede@redhat.com>
 
- mm/huge_memory.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+commit 6d396ede224dc596d92d7cab433713536e68916c upstream.
+
+The T540p has a touchpad with pnp-id LEN0034, all the models with this
+pnp-id have the same min/max values, except the T540p where the values are
+slightly off. Fix them to be identical.
+
+This is a preparation patch for simplifying the quirk table.
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/input/mouse/synaptics.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index fa1dee5..f6fbba5 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -1552,7 +1552,7 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+ 			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T540"),
+ 		},
+-		.driver_data = (int []){1024, 5056, 2058, 4832},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
+ 	},
+ 	{
+ 		/* Lenovo ThinkPad L540 */
+-- 
+1.9.1
 
