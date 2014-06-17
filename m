@@ -1,99 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965656AbaFQQhn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:37:43 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:41202 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965349AbaFQQhj (ORCPT
+	id S965154AbaFQQZp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:25:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50921 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965137AbaFQQZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:37:39 -0400
-Date: Tue, 17 Jun 2014 17:37:21 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Keerthy <j-keerthy@ti.com>
-Cc: linux-omap@vger.kernel.org, lgirdwood@gmail.com, broonie@kernel.org,
-        linux-kernel@vger.kernel.org, sameo@linux.intel.com
-Subject: Re: [PATCH 7/9] regulator: palmas: Add palmas_pmic_driver_data
- structure
-Message-ID: <20140617163721.GR29841@lee--X1>
-References: <1401272423-25761-1-git-send-email-j-keerthy@ti.com>
- <1401272423-25761-8-git-send-email-j-keerthy@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401272423-25761-8-git-send-email-j-keerthy@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 17 Jun 2014 12:25:39 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Grant Likely <grant.likely@linaro.org>, Mark Brown <broonie@kernel.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 100/121] drivercore: deferral race condition fix
+Date: Tue, 17 Jun 2014 09:17:58 -0700
+Message-Id: <1403021899-16708-73-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
+References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 May 2014, Keerthy wrote:
+3.8.13.24 -stable review patch.  If anyone has any objections, please let me know.
 
-> Add palmas_pmic_driver_data structure.
-> 
-> Signed-off-by: Keerthy <j-keerthy@ti.com>
-> ---
->  include/linux/mfd/palmas.h |   25 +++++++++++++++++++++++++
->  1 file changed, 25 insertions(+)
-> 
-> diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
-> index 8d68452..70f0695 100644
-> --- a/include/linux/mfd/palmas.h
-> +++ b/include/linux/mfd/palmas.h
-> @@ -53,6 +53,8 @@ struct palmas_pmic;
->  struct palmas_gpadc;
->  struct palmas_resource;
->  struct palmas_usb;
-> +struct palmas_pmic_driver_data;
-> +struct palmas_pmic_platform_data;
->  
->  enum palmas_usb_state {
->  	PALMAS_USB_STATE_DISCONNECT,
-> @@ -76,6 +78,8 @@ struct palmas {
->  	struct mutex irq_lock;
->  	struct regmap_irq_chip_data *irq_data;
->  
-> +	struct palmas_pmic_driver_data *pmic_ddata;
-> +
->  	/* Child Devices */
->  	struct palmas_pmic *pmic;
->  	struct palmas_gpadc *gpadc;
-> @@ -107,6 +111,27 @@ struct regs_info {
->  	int	sleep_id;
->  };
->  
-> +struct palmas_pmic_driver_data {
-> +	int smps_start;
-> +	int smps_end;
-> +	int ldo_begin;
-> +	int ldo_end;
-> +	int max_reg;
-> +	struct regs_info *palmas_regs_info;
-> +	struct of_regulator_match *palmas_matches;
-> +	struct palmas_sleep_requestor_info *sleep_req_info;
-> +	int (*smps_register)(struct palmas_pmic *pmic,
-> +			     struct palmas_pmic_driver_data *ddata,
-> +			     struct palmas_pmic_platform_data *pdata,
-> +			     const char *pdev_name,
-> +			     struct regulator_config config);
-> +	int (*ldo_register)(struct palmas_pmic *pmic,
-> +			    struct palmas_pmic_driver_data *ddata,
-> +			    struct palmas_pmic_platform_data *pdata,
-> +			    const char *pdev_name,
-> +			    struct regulator_config config);
+------------------
 
-Are you sure you need to store all of this stuff?
+From: Grant Likely <grant.likely@linaro.org>
 
-Particularly the match pointer.  Do you really re-use it?
+commit 58b116bce13612e5aa6fcd49ecbd4cf8bb59e835 upstream.
 
-> +};
-> +
->  struct palmas_gpadc_platform_data {
->  	/* Channel 3 current source is only enabled during conversion */
->  	int ch3_current;
+When the kernel is built with CONFIG_PREEMPT it is possible to reach a state
+when all modules loaded but some driver still stuck in the deferred list
+and there is a need for external event to kick the deferred queue to probe
+these drivers.
 
+The issue has been observed on embedded systems with CONFIG_PREEMPT enabled,
+audio support built as modules and using nfsroot for root filesystem.
+
+The following log fragment shows such sequence when all audio modules
+were loaded but the sound card is not present since the machine driver has
+failed to probe due to missing dependency during it's probe.
+The board is am335x-evmsk (McASP<->tlv320aic3106 codec) with davinci-evm
+machine driver:
+
+...
+[   12.615118] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: ENTER
+[   12.719969] davinci_evm sound.3: davinci_evm_probe: ENTER
+[   12.725753] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card
+[   12.753846] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component
+[   12.922051] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component DONE
+[   12.950839] davinci_evm sound.3: ASoC: platform (null) not registered
+[   12.957898] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card DONE (-517)
+[   13.099026] davinci-mcasp 4803c000.mcasp: Kicking the deferred list
+[   13.177838] davinci-mcasp 4803c000.mcasp: really_probe: probe_count = 2
+[   13.194130] davinci_evm sound.3: snd_soc_register_card failed (-517)
+[   13.346755] davinci_mcasp_driver_init: LEAVE
+[   13.377446] platform sound.3: Driver davinci_evm requests probe deferral
+[   13.592527] platform sound.3: really_probe: probe_count = 0
+
+In the log the machine driver enters it's probe at 12.719969 (this point it
+has been removed from the deferred lists). McASP driver already executing
+it's probing (since 12.615118).
+The machine driver tries to construct the sound card (12.950839) but did
+not found one of the components so it fails. After this McASP driver
+registers all the ASoC components (the machine driver still in it's probe
+function after it failed to construct the card) and the deferred work is
+prepared at 13.099026 (note that this time the machine driver is not in the
+lists so it is not going to be handled when the work is executing).
+Lastly the machine driver exit from it's probe and the core places it to
+the deferred list but there will be no other driver going to load and the
+deferred queue is not going to be kicked again - till we have external event
+like connecting USB stick, etc.
+
+The proposed solution is to try the deferred queue once more when the last
+driver is asking for deferring and we had drivers loaded while this last
+driver was probing.
+
+This way we can avoid drivers stuck in the deferred queue.
+
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+Reviewed-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Tested-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Mark Brown <broonie@kernel.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/base/dd.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index 61d3e1b..2cb84e6 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -51,6 +51,7 @@ static DEFINE_MUTEX(deferred_probe_mutex);
+ static LIST_HEAD(deferred_probe_pending_list);
+ static LIST_HEAD(deferred_probe_active_list);
+ static struct workqueue_struct *deferred_wq;
++static atomic_t deferred_trigger_count = ATOMIC_INIT(0);
+ 
+ /**
+  * deferred_probe_work_func() - Retry probing devices in the active list.
+@@ -134,6 +135,17 @@ static bool driver_deferred_probe_enable = false;
+  * This functions moves all devices from the pending list to the active
+  * list and schedules the deferred probe workqueue to process them.  It
+  * should be called anytime a driver is successfully bound to a device.
++ *
++ * Note, there is a race condition in multi-threaded probe. In the case where
++ * more than one device is probing at the same time, it is possible for one
++ * probe to complete successfully while another is about to defer. If the second
++ * depends on the first, then it will get put on the pending list after the
++ * trigger event has already occured and will be stuck there.
++ *
++ * The atomic 'deferred_trigger_count' is used to determine if a successful
++ * trigger has occurred in the midst of probing a driver. If the trigger count
++ * changes in the midst of a probe, then deferred processing should be triggered
++ * again.
+  */
+ static void driver_deferred_probe_trigger(void)
+ {
+@@ -146,6 +158,7 @@ static void driver_deferred_probe_trigger(void)
+ 	 * into the active list so they can be retried by the workqueue
+ 	 */
+ 	mutex_lock(&deferred_probe_mutex);
++	atomic_inc(&deferred_trigger_count);
+ 	list_splice_tail_init(&deferred_probe_pending_list,
+ 			      &deferred_probe_active_list);
+ 	mutex_unlock(&deferred_probe_mutex);
+@@ -264,6 +277,7 @@ static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
+ static int really_probe(struct device *dev, struct device_driver *drv)
+ {
+ 	int ret = 0;
++	int local_trigger_count = atomic_read(&deferred_trigger_count);
+ 
+ 	atomic_inc(&probe_count);
+ 	pr_debug("bus: '%s': %s: probing driver %s with device %s\n",
+@@ -303,6 +317,9 @@ probe_failed:
+ 		/* Driver requested deferred probing */
+ 		dev_info(dev, "Driver %s requests probe deferral\n", drv->name);
+ 		driver_deferred_probe_add(dev);
++		/* Did a trigger occur while probing? Need to re-trigger if yes */
++		if (local_trigger_count != atomic_read(&deferred_trigger_count))
++			driver_deferred_probe_trigger();
+ 	} else if (ret != -ENODEV && ret != -ENXIO) {
+ 		/* driver matched but the probe failed */
+ 		printk(KERN_WARNING
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.1
+
