@@ -1,175 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933310AbaFQShD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 14:37:03 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:53735 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932851AbaFQShA (ORCPT
+	id S1756177AbaFQSjK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 14:39:10 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:46967 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754403AbaFQSjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 14:37:00 -0400
-From: Kumar Gala <galak@codeaurora.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kumar Gala <galak@codeaurora.org>, linux-ide@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
-Subject: [PATCH v3 2/3] ata: Add Qualcomm ARM SoC AHCI SATA host controller driver
-Date: Tue, 17 Jun 2014 13:36:57 -0500
-Message-Id: <1403030217-21554-1-git-send-email-galak@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Tue, 17 Jun 2014 14:39:08 -0400
+Message-ID: <53A08B47.3010701@gmail.com>
+Date: Tue, 17 Jun 2014 21:39:03 +0300
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Matthew Wilcox <willy@linux.intel.com>
+CC: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 00/22] Support ext4 on NV-DIMMs
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com> <53A084E3.6080103@gmail.com> <20140617181925.GF12025@linux.intel.com>
+In-Reply-To: <20140617181925.GF12025@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the Qualcomm AHCI SATA controller that exists on several
-SoC and specifically the IPQ806x family of chips.  The IPQ806x SATA support
-requires the associated IPQ806x SATA PHY Driver to be enabled as well.
+On 06/17/2014 09:19 PM, Matthew Wilcox wrote:
+> On Tue, Jun 17, 2014 at 09:11:47PM +0300, Boaz Harrosh wrote:
+> 
+> https://github.com/01org/prd should sort you out with both a git tree
+> and a new block driver.  You'll need to tell it manually what address
+> range to use.  I'm using it against regular DIMMs, and this works pretty
+> well for me since my BIOS doesn't zero DRAM on reset.
+> 
 
-Signed-off-by: Kumar Gala <galak@codeaurora.org>
----
-v3:
-* Added comment about suspend/resume not supported
-* Fixup ahci_platform_init_host for upstream change to interface
-* cleanup error handling of rxoob clk, moved to devm_clk_get/put
+God Yes exactly my missing link, Thanks. How I failed to find it?
 
-v2:
-* Fixed MODULE_LICENSE to be GPL v2
+Yes for us too, BIOS doesn't zero DRAM and we can use it with using
+memmap= on kernel boot.
 
- drivers/ata/Kconfig     | 10 ++++++
- drivers/ata/Makefile    |  1 +
- drivers/ata/ahci_qcom.c | 90 +++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 101 insertions(+)
- create mode 100644 drivers/ata/ahci_qcom.c
+Please include above link in new patchset and Documentation. Just
+to make the overall picture clearer. BTW what prevents from submitting
+this prd driver upstream right now? there are devices out there that will
+need it no? Even for something simple and very smart as putting my
+ext4 or xfs journal device on nv-dimm, no?
+The "manually address range to use" is fine in my book. A user-mode
+udev rule can then be used to cover the gap from sbus or acpi to prd.
 
-diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
-index 7671dba..aa88648 100644
---- a/drivers/ata/Kconfig
-+++ b/drivers/ata/Kconfig
-@@ -132,6 +132,16 @@ config AHCI_MVEBU
- 
- 	  If unsure, say N.
- 
-+config AHCI_QCOM
-+	tristate "Qualcomm AHCI SATA support"
-+	depends on ARCH_QCOM
-+	help
-+	  This option enables support for AHCI SATA controller
-+	  integrated into Qualcomm ARM SoC chipsets. For more
-+	  information please refer to http://www.qualcomm.com/chipsets.
-+
-+	  If unsure, say N.
-+
- config AHCI_SUNXI
- 	tristate "Allwinner sunxi AHCI SATA support"
- 	depends on ARCH_SUNXI
-diff --git a/drivers/ata/Makefile b/drivers/ata/Makefile
-index 5a02aee..15401e9 100644
---- a/drivers/ata/Makefile
-+++ b/drivers/ata/Makefile
-@@ -13,6 +13,7 @@ obj-$(CONFIG_SATA_HIGHBANK)	+= sata_highbank.o libahci.o
- obj-$(CONFIG_AHCI_DA850)	+= ahci_da850.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_IMX)		+= ahci_imx.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_MVEBU)	+= ahci_mvebu.o libahci.o libahci_platform.o
-+obj-$(CONFIG_AHCI_QCOM)		+= ahci_qcom.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_SUNXI)	+= ahci_sunxi.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_ST)		+= ahci_st.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_XGENE)	+= ahci_xgene.o libahci.o libahci_platform.o
-diff --git a/drivers/ata/ahci_qcom.c b/drivers/ata/ahci_qcom.c
-new file mode 100644
-index 0000000..412e878
---- /dev/null
-+++ b/drivers/ata/ahci_qcom.c
-@@ -0,0 +1,90 @@
-+/*
-+ * Qualcomm ARM SoC AHCI SATA platform driver
-+ *
-+ * based on the AHCI SATA platform driver by Jeff Garzik and Anton Vorontsov
-+ *
-+ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/pm.h>
-+#include <linux/device.h>
-+#include <linux/platform_device.h>
-+#include <linux/libata.h>
-+#include <linux/ahci_platform.h>
-+#include "ahci.h"
-+
-+static const struct ata_port_info qcom_ahci_port_info = {
-+	.flags		= AHCI_FLAG_COMMON,
-+	.pio_mask	= ATA_PIO4,
-+	.udma_mask	= ATA_UDMA6,
-+	.port_ops	= &ahci_platform_ops,
-+};
-+
-+static int qcom_ahci_probe(struct platform_device *pdev)
-+{
-+	struct ahci_host_priv *hpriv;
-+	struct clk *rxoob_clk;
-+	int rc;
-+
-+	hpriv = ahci_platform_get_resources(pdev);
-+	if (IS_ERR(hpriv))
-+		return PTR_ERR(hpriv);
-+
-+	/* Try and set the rxoob clk to 100Mhz */
-+	rxoob_clk = devm_clk_get(&pdev->dev, "rxoob");
-+	if (IS_ERR(rxoob_clk))
-+		return PTR_ERR(rxoob_clk);
-+
-+	rc = clk_set_rate(rxoob_clk, 100000000);
-+	if (rc)
-+		return rc;
-+
-+	devm_clk_put(&pdev->dev, rxoob_clk);
-+
-+	rc = ahci_platform_enable_resources(hpriv);
-+	if (rc)
-+		return rc;
-+
-+	rc = ahci_platform_init_host(pdev, hpriv, &qcom_ahci_port_info,
-+				     0, 0, 0);
-+	if (rc)
-+		goto disable_resources;
-+
-+	return 0;
-+disable_resources:
-+	ahci_platform_disable_resources(hpriv);
-+	return rc;
-+}
-+
-+static const struct of_device_id qcom_ahci_of_match[] = {
-+	{ .compatible = "qcom,msm-ahci", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, qcom_ahci_of_match);
-+
-+static struct platform_driver qcom_ahci_driver = {
-+	.probe = qcom_ahci_probe,
-+	.remove = ata_platform_remove_one,
-+	.driver = {
-+		.name = "qcom_ahci_qcom",
-+		.owner = THIS_MODULE,
-+		.of_match_table = qcom_ahci_of_match,
-+	},
-+	/* suspend/resume not currently supported */
-+};
-+module_platform_driver(qcom_ahci_driver);
-+
-+MODULE_DESCRIPTION("Qualcomm AHCI SATA platform driver");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("ahci:qcom");
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Hey actually this tree has everything I need. thanks man
+Boaz
 
