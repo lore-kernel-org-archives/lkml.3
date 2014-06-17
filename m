@@ -1,31 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967691AbaFQWcp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:32:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54155 "EHLO
+	id S966784AbaFQWt6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:49:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53685 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966306AbaFQVtU (ORCPT
+	with ESMTP id S965521AbaFQVpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:49:20 -0400
+	Tue, 17 Jun 2014 17:45:30 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Darren Hart <darren@dvhart.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Clark Williams <williams@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+Cc: Vlad Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 169/212] futex: Prevent attaching to kernel threads
-Date: Tue, 17 Jun 2014 14:44:23 -0700
-Message-Id: <1403041506-13646-170-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 020/212] macvlan: Fix lockdep warnings with stacked macvlan devices
+Date: Tue, 17 Jun 2014 14:41:54 -0700
+Message-Id: <1403041506-13646-21-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -38,57 +28,213 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-commit f0d71b3dcb8332f7971b5f2363632573e6d9486a upstream.
+[ Upstream commit c674ac30c549596295eb0a5af7f4714c0b905b6f ]
 
-We happily allow userspace to declare a random kernel thread to be the
-owner of a user space PI futex.
+Macvlan devices try to avoid stacking, but that's not always
+successfull or even desired.  As an example, the following
+configuration is perefectly legal and valid:
 
-Found while analysing the fallout of Dave Jones syscall fuzzer.
+eth0 <--- macvlan0 <---- vlan0.10 <--- macvlan1
 
-We also should validate the thread group for private futexes and find
-some fast way to validate whether the "alleged" owner has RW access on
-the file which backs the SHM, but that's a separate issue.
+However, this configuration produces the following lockdep
+trace:
+[  115.620418] ======================================================
+[  115.620477] [ INFO: possible circular locking dependency detected ]
+[  115.620516] 3.15.0-rc1+ #24 Not tainted
+[  115.620540] -------------------------------------------------------
+[  115.620577] ip/1704 is trying to acquire lock:
+[  115.620604]  (&vlan_netdev_addr_lock_key/1){+.....}, at: [<ffffffff815df49c>] dev_uc_sync+0x3c/0x80
+[  115.620686]
+but task is already holding lock:
+[  115.620723]  (&macvlan_netdev_addr_lock_key){+.....}, at: [<ffffffff815da5be>] dev_set_rx_mode+0x1e/0x40
+[  115.620795]
+which lock already depends on the new lock.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Darren Hart <darren@dvhart.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Clark Williams <williams@redhat.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Roland McGrath <roland@hack.frob.com>
-Cc: Carlos ODonell <carlos@redhat.com>
-Cc: Jakub Jelinek <jakub@redhat.com>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Link: http://lkml.kernel.org/r/20140512201701.194824402@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[  115.620853]
+the existing dependency chain (in reverse order) is:
+[  115.620894]
+-> #1 (&macvlan_netdev_addr_lock_key){+.....}:
+[  115.620935]        [<ffffffff810d57f2>] lock_acquire+0xa2/0x130
+[  115.620974]        [<ffffffff816f62e7>] _raw_spin_lock_nested+0x37/0x50
+[  115.621019]        [<ffffffffa07296c3>] vlan_dev_set_rx_mode+0x53/0x110 [8021q]
+[  115.621066]        [<ffffffff815da557>] __dev_set_rx_mode+0x57/0xa0
+[  115.621105]        [<ffffffff815da5c6>] dev_set_rx_mode+0x26/0x40
+[  115.621143]        [<ffffffff815da6be>] __dev_open+0xde/0x140
+[  115.621174]        [<ffffffff815da9ad>] __dev_change_flags+0x9d/0x170
+[  115.621174]        [<ffffffff815daaa9>] dev_change_flags+0x29/0x60
+[  115.621174]        [<ffffffff815e7f11>] do_setlink+0x321/0x9a0
+[  115.621174]        [<ffffffff815ea59f>] rtnl_newlink+0x51f/0x730
+[  115.621174]        [<ffffffff815e6e75>] rtnetlink_rcv_msg+0x95/0x250
+[  115.621174]        [<ffffffff81608b19>] netlink_rcv_skb+0xa9/0xc0
+[  115.621174]        [<ffffffff815e6dca>] rtnetlink_rcv+0x2a/0x40
+[  115.621174]        [<ffffffff81608150>] netlink_unicast+0xf0/0x1c0
+[  115.621174]        [<ffffffff8160851f>] netlink_sendmsg+0x2ff/0x740
+[  115.621174]        [<ffffffff815bc9db>] sock_sendmsg+0x8b/0xc0
+[  115.621174]        [<ffffffff815bd4b9>] ___sys_sendmsg+0x369/0x380
+[  115.621174]        [<ffffffff815bdbb2>] __sys_sendmsg+0x42/0x80
+[  115.621174]        [<ffffffff815bdc02>] SyS_sendmsg+0x12/0x20
+[  115.621174]        [<ffffffff816ffd69>] system_call_fastpath+0x16/0x1b
+[  115.621174]
+-> #0 (&vlan_netdev_addr_lock_key/1){+.....}:
+[  115.621174]        [<ffffffff810d4d43>] __lock_acquire+0x1773/0x1a60
+[  115.621174]        [<ffffffff810d57f2>] lock_acquire+0xa2/0x130
+[  115.621174]        [<ffffffff816f62e7>] _raw_spin_lock_nested+0x37/0x50
+[  115.621174]        [<ffffffff815df49c>] dev_uc_sync+0x3c/0x80
+[  115.621174]        [<ffffffffa0696d2a>] macvlan_set_mac_lists+0xca/0x110 [macvlan]
+[  115.621174]        [<ffffffff815da557>] __dev_set_rx_mode+0x57/0xa0
+[  115.621174]        [<ffffffff815da5c6>] dev_set_rx_mode+0x26/0x40
+[  115.621174]        [<ffffffff815da6be>] __dev_open+0xde/0x140
+[  115.621174]        [<ffffffff815da9ad>] __dev_change_flags+0x9d/0x170
+[  115.621174]        [<ffffffff815daaa9>] dev_change_flags+0x29/0x60
+[  115.621174]        [<ffffffff815e7f11>] do_setlink+0x321/0x9a0
+[  115.621174]        [<ffffffff815ea59f>] rtnl_newlink+0x51f/0x730
+[  115.621174]        [<ffffffff815e6e75>] rtnetlink_rcv_msg+0x95/0x250
+[  115.621174]        [<ffffffff81608b19>] netlink_rcv_skb+0xa9/0xc0
+[  115.621174]        [<ffffffff815e6dca>] rtnetlink_rcv+0x2a/0x40
+[  115.621174]        [<ffffffff81608150>] netlink_unicast+0xf0/0x1c0
+[  115.621174]        [<ffffffff8160851f>] netlink_sendmsg+0x2ff/0x740
+[  115.621174]        [<ffffffff815bc9db>] sock_sendmsg+0x8b/0xc0
+[  115.621174]        [<ffffffff815bd4b9>] ___sys_sendmsg+0x369/0x380
+[  115.621174]        [<ffffffff815bdbb2>] __sys_sendmsg+0x42/0x80
+[  115.621174]        [<ffffffff815bdc02>] SyS_sendmsg+0x12/0x20
+[  115.621174]        [<ffffffff816ffd69>] system_call_fastpath+0x16/0x1b
+[  115.621174]
+other info that might help us debug this:
+
+[  115.621174]  Possible unsafe locking scenario:
+
+[  115.621174]        CPU0                    CPU1
+[  115.621174]        ----                    ----
+[  115.621174]   lock(&macvlan_netdev_addr_lock_key);
+[  115.621174]                                lock(&vlan_netdev_addr_lock_key/1);
+[  115.621174]                                lock(&macvlan_netdev_addr_lock_key);
+[  115.621174]   lock(&vlan_netdev_addr_lock_key/1);
+[  115.621174]
+ *** DEADLOCK ***
+
+[  115.621174] 2 locks held by ip/1704:
+[  115.621174]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff815e6dbb>] rtnetlink_rcv+0x1b/0x40
+[  115.621174]  #1:  (&macvlan_netdev_addr_lock_key){+.....}, at: [<ffffffff815da5be>] dev_set_rx_mode+0x1e/0x40
+[  115.621174]
+stack backtrace:
+[  115.621174] CPU: 3 PID: 1704 Comm: ip Not tainted 3.15.0-rc1+ #24
+[  115.621174] Hardware name: Hewlett-Packard HP xw8400 Workstation/0A08h, BIOS 786D5 v02.38 10/25/2010
+[  115.621174]  ffffffff82339ae0 ffff880465f79568 ffffffff816ee20c ffffffff82339ae0
+[  115.621174]  ffff880465f795a8 ffffffff816e9e1b ffff880465f79600 ffff880465b019c8
+[  115.621174]  0000000000000001 0000000000000002 ffff880465b019c8 ffff880465b01230
+[  115.621174] Call Trace:
+[  115.621174]  [<ffffffff816ee20c>] dump_stack+0x4d/0x66
+[  115.621174]  [<ffffffff816e9e1b>] print_circular_bug+0x200/0x20e
+[  115.621174]  [<ffffffff810d4d43>] __lock_acquire+0x1773/0x1a60
+[  115.621174]  [<ffffffff810d3172>] ? trace_hardirqs_on_caller+0xb2/0x1d0
+[  115.621174]  [<ffffffff810d57f2>] lock_acquire+0xa2/0x130
+[  115.621174]  [<ffffffff815df49c>] ? dev_uc_sync+0x3c/0x80
+[  115.621174]  [<ffffffff816f62e7>] _raw_spin_lock_nested+0x37/0x50
+[  115.621174]  [<ffffffff815df49c>] ? dev_uc_sync+0x3c/0x80
+[  115.621174]  [<ffffffff815df49c>] dev_uc_sync+0x3c/0x80
+[  115.621174]  [<ffffffffa0696d2a>] macvlan_set_mac_lists+0xca/0x110 [macvlan]
+[  115.621174]  [<ffffffff815da557>] __dev_set_rx_mode+0x57/0xa0
+[  115.621174]  [<ffffffff815da5c6>] dev_set_rx_mode+0x26/0x40
+[  115.621174]  [<ffffffff815da6be>] __dev_open+0xde/0x140
+[  115.621174]  [<ffffffff815da9ad>] __dev_change_flags+0x9d/0x170
+[  115.621174]  [<ffffffff815daaa9>] dev_change_flags+0x29/0x60
+[  115.621174]  [<ffffffff811e1db1>] ? mem_cgroup_bad_page_check+0x21/0x30
+[  115.621174]  [<ffffffff815e7f11>] do_setlink+0x321/0x9a0
+[  115.621174]  [<ffffffff810d394c>] ? __lock_acquire+0x37c/0x1a60
+[  115.621174]  [<ffffffff815ea59f>] rtnl_newlink+0x51f/0x730
+[  115.621174]  [<ffffffff815ea169>] ? rtnl_newlink+0xe9/0x730
+[  115.621174]  [<ffffffff815e6e75>] rtnetlink_rcv_msg+0x95/0x250
+[  115.621174]  [<ffffffff810d329d>] ? trace_hardirqs_on+0xd/0x10
+[  115.621174]  [<ffffffff815e6dbb>] ? rtnetlink_rcv+0x1b/0x40
+[  115.621174]  [<ffffffff815e6de0>] ? rtnetlink_rcv+0x40/0x40
+[  115.621174]  [<ffffffff81608b19>] netlink_rcv_skb+0xa9/0xc0
+[  115.621174]  [<ffffffff815e6dca>] rtnetlink_rcv+0x2a/0x40
+[  115.621174]  [<ffffffff81608150>] netlink_unicast+0xf0/0x1c0
+[  115.621174]  [<ffffffff8160851f>] netlink_sendmsg+0x2ff/0x740
+[  115.621174]  [<ffffffff815bc9db>] sock_sendmsg+0x8b/0xc0
+[  115.621174]  [<ffffffff8119d4af>] ? might_fault+0x5f/0xb0
+[  115.621174]  [<ffffffff8119d4f8>] ? might_fault+0xa8/0xb0
+[  115.621174]  [<ffffffff8119d4af>] ? might_fault+0x5f/0xb0
+[  115.621174]  [<ffffffff815cb51e>] ? verify_iovec+0x5e/0xe0
+[  115.621174]  [<ffffffff815bd4b9>] ___sys_sendmsg+0x369/0x380
+[  115.621174]  [<ffffffff816faa0d>] ? __do_page_fault+0x11d/0x570
+[  115.621174]  [<ffffffff810cfe9f>] ? up_read+0x1f/0x40
+[  115.621174]  [<ffffffff816fab04>] ? __do_page_fault+0x214/0x570
+[  115.621174]  [<ffffffff8120a10b>] ? mntput_no_expire+0x6b/0x1c0
+[  115.621174]  [<ffffffff8120a0b7>] ? mntput_no_expire+0x17/0x1c0
+[  115.621174]  [<ffffffff8120a284>] ? mntput+0x24/0x40
+[  115.621174]  [<ffffffff815bdbb2>] __sys_sendmsg+0x42/0x80
+[  115.621174]  [<ffffffff815bdc02>] SyS_sendmsg+0x12/0x20
+[  115.621174]  [<ffffffff816ffd69>] system_call_fastpath+0x16/0x1b
+
+Fix this by correctly providing macvlan lockdep class.
+
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/futex.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/net/macvlan.c      | 12 ++++++++++--
+ include/linux/if_macvlan.h |  1 +
+ 2 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 5055418..7876c15 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -668,6 +668,11 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
- 	if (!p)
- 		return -ESRCH;
+diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
+index d7e2907..ac8355f 100644
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -519,6 +519,11 @@ static struct lock_class_key macvlan_netdev_addr_lock_key;
+ #define MACVLAN_STATE_MASK \
+ 	((1<<__LINK_STATE_NOCARRIER) | (1<<__LINK_STATE_DORMANT))
  
-+	if (!p->mm) {
-+		put_task_struct(p);
-+		return -EPERM;
-+	}
++static int macvlan_get_nest_level(struct net_device *dev)
++{
++	return ((struct macvlan_dev *)netdev_priv(dev))->nest_level;
++}
 +
- 	/*
- 	 * We need to look at the task state flags to figure out,
- 	 * whether the task is exiting. To protect against the do_exit
+ static void macvlan_set_lockdep_class_one(struct net_device *dev,
+ 					  struct netdev_queue *txq,
+ 					  void *_unused)
+@@ -529,8 +534,9 @@ static void macvlan_set_lockdep_class_one(struct net_device *dev,
+ 
+ static void macvlan_set_lockdep_class(struct net_device *dev)
+ {
+-	lockdep_set_class(&dev->addr_list_lock,
+-			  &macvlan_netdev_addr_lock_key);
++	lockdep_set_class_and_subclass(&dev->addr_list_lock,
++				       &macvlan_netdev_addr_lock_key,
++				       macvlan_get_nest_level(dev));
+ 	netdev_for_each_tx_queue(dev, macvlan_set_lockdep_class_one, NULL);
+ }
+ 
+@@ -732,6 +738,7 @@ static const struct net_device_ops macvlan_netdev_ops = {
+ 	.ndo_fdb_add		= macvlan_fdb_add,
+ 	.ndo_fdb_del		= macvlan_fdb_del,
+ 	.ndo_fdb_dump		= ndo_dflt_fdb_dump,
++	.ndo_get_lock_subclass  = macvlan_get_nest_level,
+ };
+ 
+ void macvlan_common_setup(struct net_device *dev)
+@@ -867,6 +874,7 @@ int macvlan_common_newlink(struct net *src_net, struct net_device *dev,
+ 	vlan->receive  = receive;
+ 	vlan->forward  = forward;
+ 	vlan->set_features = MACVLAN_FEATURES;
++	vlan->nest_level = dev_get_nest_level(lowerdev, netif_is_macvlan) + 1;
+ 
+ 	vlan->mode     = MACVLAN_MODE_VEPA;
+ 	if (data && data[IFLA_MACVLAN_MODE])
+diff --git a/include/linux/if_macvlan.h b/include/linux/if_macvlan.h
+index 84ba5ac..a4de4b2 100644
+--- a/include/linux/if_macvlan.h
++++ b/include/linux/if_macvlan.h
+@@ -79,6 +79,7 @@ struct macvlan_dev {
+ 	int			numqueues;
+ 	netdev_features_t	tap_features;
+ 	int			minor;
++	int			nest_level;
+ };
+ 
+ static inline void macvlan_count_rx(const struct macvlan_dev *vlan,
 -- 
 1.9.1
 
