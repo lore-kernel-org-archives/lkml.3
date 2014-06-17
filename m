@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965343AbaFQV1o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:27:44 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:49757 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932940AbaFQV1n (ORCPT
+	id S965287AbaFQV31 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:29:27 -0400
+Received: from asavdk3.altibox.net ([109.247.116.14]:33122 "EHLO
+	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965034AbaFQV3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:27:43 -0400
-From: Benson Leung <bleung@chromium.org>
-To: gene.chen@intel.com, moch@chromium.org, mika.westerberg@linux.intel.com,
-        lkml14@scotdoyle.com, kirill.shutemov@linux.intel.com, olof@lixom.net,
-        linux-kernel@vger.kernel.org
-Cc: bleung@chromium.org
-Subject: [PATCHv2 4/4] platform/chrome: chromeos_laptop - Add Toshiba CB35 Touch
-Date: Tue, 17 Jun 2014 14:02:03 -0700
-Message-Id: <1403038923-19444-5-git-send-email-bleung@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <1403038923-19444-1-git-send-email-bleung@chromium.org>
-References: <1401835464-15267-1-git-send-email-bleung@chromium.org>
- <1403038923-19444-1-git-send-email-bleung@chromium.org>
+	Tue, 17 Jun 2014 17:29:25 -0400
+Date: Tue, 17 Jun 2014 23:29:17 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Michal Simek <monstr@monstr.eu>,
+        sparclinux <sparclinux@vger.kernel.org>
+Subject: Re: Build regressions/improvements in v3.16-rc1
+Message-ID: <20140617212917.GA22353@ravnborg.org>
+References: <1403018163-25307-1-git-send-email-geert@linux-m68k.org>
+ <CAMuHMdU2DTt0va67uSKqhhqbVORuY+xEs3uGZ21sKjahE_MSXg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdU2DTt0va67uSKqhhqbVORuY+xEs3uGZ21sKjahE_MSXg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gene Chen <gene.chen@intel.com>
+> 
+> >   + /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_add' [-Werror=implicit-function-declaration]:  => 176:2
+> >   + /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_add_negative' [-Werror=implicit-function-declaration]:  => 211:2
+> >   + /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_add_return' [-Werror=implicit-function-declaration]:  => 218:2
+> >   + /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_dec' [-Werror=implicit-function-declaration]:  => 169:2
+> >   + /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_dec_and_test' [-Werror=implicit-function-declaration]:  => 197:2
+> >   + /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_dec_return' [-Werror=implicit-function-declaration]:  => 239:2
+> >   + /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_inc' [-Werror=implicit-function-declaration]:  => 162:2
+> >   + /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_inc_and_test' [-Werror=implicit-function-declaration]:  => 204:2
+> >   + /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_inc_return' [-Werror=implicit-function-declaration]:  => 232:2
+> >   + /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_set' [-Werror=implicit-function-declaration]:  => 155:2
+> >   + /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_sub' [-Werror=implicit-function-declaration]:  => 183:2
+> >   + /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_sub_and_test' [-Werror=implicit-function-declaration]:  => 190:2
+> >   + /scratch/kisskb/src/include/asm-generic/atomic-long.h: error: implicit declaration of function 'atomic_sub_return' [-Werror=implicit-function-declaration]:  => 225:2
+> >   + /scratch/kisskb/src/include/linux/atomic.h: error: implicit declaration of function '__atomic_add_unless' [-Werror=implicit-function-declaration]:  => 53:2
+> >   + /scratch/kisskb/src/include/linux/atomic.h: error: implicit declaration of function 'atomic_cmpxchg' [-Werror=implicit-function-declaration]:  => 89:3
+> >   + /scratch/kisskb/src/include/linux/atomic.h: error: implicit declaration of function 'atomic_read' [-Werror=implicit-function-declaration]:  => 136:2
+> 
+> sparc-allmodconfig
+Not reproduceable here with linus latest. (-rc1 + two patches).
+Can you help me with a pointer to the original build log?
 
-Add support for Leon touch devices, which is the same as
-falco/peppy/wolf on the same buses using the LynxPoint-LP I2C
-via the i2c-designware-pci driver.
-
-Based on these patches from the chromeos-3.8 kernel:
-https://chromium-review.googlesource.com/168351
-https://chromium-review.googlesource.com/173445
-
-Signed-off-by: Gene Chen <gene.chen@intel.com>
-Signed-off-by: Benson Leung <bleung@chromium.org>
-Tested-by: Scot Doyle <lkml14@scotdoyle.com>
----
- drivers/platform/chrome/chromeos_laptop.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
-
-diff --git a/drivers/platform/chrome/chromeos_laptop.c b/drivers/platform/chrome/chromeos_laptop.c
-index e0a6710..37fa570 100644
---- a/drivers/platform/chrome/chromeos_laptop.c
-+++ b/drivers/platform/chrome/chromeos_laptop.c
-@@ -394,6 +394,13 @@ static struct chromeos_laptop dell_chromebook_11 = {
- 	},
- };
- 
-+static struct chromeos_laptop toshiba_cb35 = {
-+	.i2c_peripherals = {
-+		/* Touchpad. */
-+		{ .add = setup_cyapa_tp, I2C_ADAPTER_DESIGNWARE_0 },
-+	},
-+};
-+
- static struct chromeos_laptop acer_c7_chromebook = {
- 	.i2c_peripherals = {
- 		/* Touchpad. */
-@@ -476,6 +483,14 @@ static struct dmi_system_id chromeos_laptop_dmi_table[] __initdata = {
- 		_CBDD(hp_chromebook_14),
- 	},
- 	{
-+		.ident = "Toshiba CB35",
-+		.matches = {
-+			DMI_MATCH(DMI_BIOS_VENDOR, "coreboot"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Leon"),
-+		},
-+		_CBDD(toshiba_cb35),
-+	},
-+	{
- 		.ident = "Acer C7 Chromebook",
- 		.matches = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "Parrot"),
--- 
-2.0.0.526.g5318336
-
+	Sam
