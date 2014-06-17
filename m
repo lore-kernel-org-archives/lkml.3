@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964946AbaFQQWt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:22:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50695 "EHLO
+	id S964964AbaFQQW7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:22:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50702 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933832AbaFQQWd (ORCPT
+	with ESMTP id S964948AbaFQQW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:22:33 -0400
+	Tue, 17 Jun 2014 12:22:57 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 097/121] s390/bpf,jit: initialize A register if 1st insn is BPF_S_LDX_B_MSH
-Date: Tue, 17 Jun 2014 09:17:55 -0700
-Message-Id: <1403021899-16708-70-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 095/121] skbuff: skb_segment: orphan frags before copying
+Date: Tue, 17 Jun 2014 09:17:53 -0700
+Message-Id: <1403021899-16708-68-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
@@ -27,32 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-commit 6e0de817594c61f3b392a9245deeb09609ec707d upstream.
+commit 1fd819ecb90cc9b822cd84d3056ddba315d3340f upstream.
 
-The A register needs to be initialized to zero in the prolog if the
-first instruction of the BPF program is BPF_S_LDX_B_MSH to prevent
-leaking the content of %r5 to user space.
+skb_segment copies frags around, so we need
+to copy them carefully to avoid accessing
+user memory after reporting completion to userspace
+through a callback.
 
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+skb_segment doesn't normally happen on datapath:
+TSO needs to be disabled - so disabling zero copy
+in this case does not look like a big deal.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+(back ported from commit 1fd819ecb90cc9b822cd84d3056ddba315d3340f)
+CVE-2014-0131
+BugLink: http://bugs.launchpad.net/bugs/1298119
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/s390/net/bpf_jit_comp.c | 1 -
- 1 file changed, 1 deletion(-)
+ net/core/skbuff.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/s390/net/bpf_jit_comp.c b/arch/s390/net/bpf_jit_comp.c
-index 5e92f47..ab9e3f4 100644
---- a/arch/s390/net/bpf_jit_comp.c
-+++ b/arch/s390/net/bpf_jit_comp.c
-@@ -242,7 +242,6 @@ static void bpf_jit_noleaks(struct bpf_jit *jit, struct sock_filter *filter)
- 	case BPF_S_LD_W_IND:
- 	case BPF_S_LD_H_IND:
- 	case BPF_S_LD_B_IND:
--	case BPF_S_LDX_B_MSH:
- 	case BPF_S_LD_IMM:
- 	case BPF_S_LD_MEM:
- 	case BPF_S_MISC_TXA:
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index f97fe58..1cee7e3 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -2826,6 +2826,9 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
+ 						 skb_put(nskb, hsize), hsize);
+ 
+ 		while (pos < offset + len && i < nfrags) {
++			if (unlikely(skb_orphan_frags(skb, GFP_ATOMIC)))
++				goto err;
++
+ 			*frag = skb_shinfo(skb)->frags[i];
+ 			__skb_frag_ref(frag);
+ 			size = skb_frag_size(frag);
 -- 
 1.9.1
 
