@@ -1,62 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361AbaFQKjv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 06:39:51 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:64802 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754121AbaFQKju (ORCPT
+	id S1755828AbaFQKnM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 06:43:12 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65261 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752341AbaFQKnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 06:39:50 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53A01AED.4010008@roeck-us.net>
-Date: Tue, 17 Jun 2014 03:39:41 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 17 Jun 2014 06:43:09 -0400
+Date: Tue, 17 Jun 2014 11:43:04 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Varun Sethi <Varun.Sethi@freescale.com>
+Cc: Stuart Yoder <stuart.yoder@freescale.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Grant Grundler <grundler@chromium.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140617104304.GD13808@arm.com>
+References: <5288123.eXagyPAxNq@wuerfel>
+ <20140602104104.GD3855@e103592.cambridge.arm.com>
+ <20140604143509.GF28484@ulmo>
+ <20140604164132.GF6644@arm.com>
+ <07321368d15d4ad9928ebb83af87e401@DM2PR03MB479.namprd03.prod.outlook.com>
+ <20140616152739.GS16758@arm.com>
+ <8b0492b4697943a0b1f276ef42cc8223@DM2PR03MB352.namprd03.prod.outlook.com>
+ <20140616170416.GA16758@arm.com>
+ <419e67f783524d208ab3be16bcd94bd9@DM2PR03MB352.namprd03.prod.outlook.com>
+ <0587e1f4894546398be0798d2bc2c84f@BL2PR03MB468.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-To: Daniel Borkmann <dborkman@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Markos Chandras <markos.chandras@imgtec.com>
-Subject: Re: mips:allmodconfig build failure in 3.16-rc1 due to bpf_jit code
-References: <539FA6CB.5050703@roeck-us.net> <539FFA6B.9030004@redhat.com> <53A01572.5090603@redhat.com>
-In-Reply-To: <53A01572.5090603@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0587e1f4894546398be0798d2bc2c84f@BL2PR03MB468.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2014 03:16 AM, Daniel Borkmann wrote:
-> On 06/17/2014 10:20 AM, Daniel Borkmann wrote:
->> On 06/17/2014 04:24 AM, Guenter Roeck wrote:
->>> mips:allmodconfig fails in 3.16-rc1 with lots of undefined symbols.
->>>
->>> arch/mips/net/bpf_jit.c: In function 'is_load_to_a':
->>> arch/mips/net/bpf_jit.c:559:7: error: 'BPF_S_LD_W_LEN' undeclared (first use in this function)
->>> arch/mips/net/bpf_jit.c:559:7: note: each undeclared identifier is reported only once for each function it appears in
->>> arch/mips/net/bpf_jit.c:560:7: error: 'BPF_S_LD_W_ABS' undeclared (first use in this function)
->>> arch/mips/net/bpf_jit.c:561:7: error: 'BPF_S_LD_H_ABS' undeclared (first use in this function)
->>> arch/mips/net/bpf_jit.c:562:7: error: 'BPF_S_LD_B_ABS' undeclared (first use in this function)
->>> arch/mips/net/bpf_jit.c:563:7: error: 'BPF_S_ANC_CPU' undeclared (first use in this function)
->>> arch/mips/net/bpf_jit.c:564:7: error: 'BPF_S_ANC_IFINDEX' undeclared (first use in this function)
->>> arch/mips/net/bpf_jit.c:565:7: error: 'BPF_S_ANC_MARK' undeclared (first use in this function)
->>>
->>> and so on.
->>>
->>> Those symbols are not defined anywhere.
->>>
->>> The problem is due to a conflict with commit 348059313 (net: filter: get rid of BPF_S_*
->>> enum), which removed those definitions.
->>
->> Yep, it seems both got in this merge window from different trees. Don't have mips, but
->> I'll have a look, and send you a patch.
->
-> Could you give the attached patch a try?
->
+On Tue, Jun 17, 2014 at 11:26:48AM +0100, Varun Sethi wrote:
+> > The way we generally thought it would work was something like
+> > this:
+> >    -u-boot/bootloader makes any static streamID allocation if needed,
+> >     sets a default streamID  (e.g. 0x0) in device and expresses
+> >     that in the device tree
+> >    -device tree would express relationship between devices
+> >     (including bus controllers) and the SMMU through mmu-masters
+> >     property
+> >    -u-boot would express the range of unused (or used) streamIDs via a
+> > new
+> >     device tree property so the kernel SMMU driver knows what streamIDs
+> > are
+> >     free
+> >    -in the SMMU driver a different vendor specific 'add_device' callback
+> >     could be used to handle our special cases where we need to set/change
+> >     the stream ID for devices added to a domain
+> 
+> Another possibility, could be to program the stream Id in the device
+> registers (reference for the stream ID register can be obtained from the
+> device tree) during device attach. This could be relevant in case of VFIO,
+> when we are assigning multiple devices to a single VM. All the devices can
+> share the same stream ID.
 
-Yes, this fixes the build problem. Obviously I have no idea if it works ;-)
+I think for simple masters (i.e. those that have all their StreamIDs under
+control of one driver), then setting something during attach (or add?)
+based on the DT could work pretty well. The other case is when we have
+masters behind a bridge (such as a PCI RC). In this case, it might actually
+be better to ask the bridge for the IDs and let it sort out the allocation
+itself. That would also move the RequesterID -> StreamID mapping out of
+the SMMU code.
 
-Guenter
+What do you think?
 
+Will
