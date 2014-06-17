@@ -1,80 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965331AbaFQV0p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:26:45 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:43669 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964980AbaFQV0n (ORCPT
+	id S965343AbaFQV1o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:27:44 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:49757 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932940AbaFQV1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:26:43 -0400
-Message-ID: <53A0B27E.5010708@gmail.com>
-Date: Tue, 17 Jun 2014 23:26:22 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        mark.brown@linaro.org
-CC: Tomasz Figa <t.figa@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>, linux-kernel@vger.kernel.org,
-        joshi@samsung.com, vikas.sajjan@samsung.com, chow.kim@samsung.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH RFC] mfd: syscon: Decouple syscon interface from syscon
- devices
-References: <53A05E2D.6020702@samsung.com> <1403019164-12514-1-git-send-email-t.figa@samsung.com> <5027740.B7iVUcUX2T@wuerfel>
-In-Reply-To: <5027740.B7iVUcUX2T@wuerfel>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Jun 2014 17:27:43 -0400
+From: Benson Leung <bleung@chromium.org>
+To: gene.chen@intel.com, moch@chromium.org, mika.westerberg@linux.intel.com,
+        lkml14@scotdoyle.com, kirill.shutemov@linux.intel.com, olof@lixom.net,
+        linux-kernel@vger.kernel.org
+Cc: bleung@chromium.org
+Subject: [PATCHv2 4/4] platform/chrome: chromeos_laptop - Add Toshiba CB35 Touch
+Date: Tue, 17 Jun 2014 14:02:03 -0700
+Message-Id: <1403038923-19444-5-git-send-email-bleung@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <1403038923-19444-1-git-send-email-bleung@chromium.org>
+References: <1401835464-15267-1-git-send-email-bleung@chromium.org>
+ <1403038923-19444-1-git-send-email-bleung@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+From: Gene Chen <gene.chen@intel.com>
 
-On 17.06.2014 17:42, Arnd Bergmann wrote:
-> On Tuesday 17 June 2014 17:32:44 Tomasz Figa wrote:
->> Currently a syscon entity can be only registered directly through a
->> platform device that binds to a dedicated driver. However in certain use
->> cases it is desirable to make a device used with another driver a syscon
->> interface provider. For example, certain SoCs (e.g. Exynos) contain
->> system controller blocks which perform various functions such as power
->> domain control, CPU power management, low power mode control, but in
->> addition contain certain IP integration glue, such as various signal
->> masks, coprocessor power control, etc. In such case, there is a need to
->> have a dedicated driver for such system controller but also share
->> registers with other drivers. The latter is where the syscon interface
->> is helpful.
->>
->> This patch decouples syscon object from syscon driver, so that it can be
->> registered from any driver in addition to the original "syscon" platform
->> driver.
->>
->> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-> 
-> Hi Tomasz,
-> 
-> This seems like a reasonable way of solving the problem, but I think
-> there is an even better one that we have about in the past: if we
-> promote syscon from a platform driver into a a drivers/base/ helper
-> that is independent of the platform device matching, we can use
-> call syscon_regmap_lookup_* for any device node, whether it's already
-> bound to a driver or not, which do what you need. It would also make
-> it easier to call the syscon code before the platform_device
-> infrastructure gets initialized, which is something a number of
-> people have asked for, e.g. for using regmap to do SMP bringup
-> or for clock registration.
+Add support for Leon touch devices, which is the same as
+falco/peppy/wolf on the same buses using the LynxPoint-LP I2C
+via the i2c-designware-pci driver.
 
-Basically, unless I'm missing your point, this is what my patch does,
-except that I don't move it to drivers/base/ and the registration
-function I added require a pointer to struct device. Indeed, decoupling
-it further from the driver model, by adding of_syscon_register() should
-be useful for early users.
+Based on these patches from the chromeos-3.8 kernel:
+https://chromium-review.googlesource.com/168351
+https://chromium-review.googlesource.com/173445
 
-Should I move this to drivers/base/, even though from current location
-it can be used outside the platform driver anyway?
+Signed-off-by: Gene Chen <gene.chen@intel.com>
+Signed-off-by: Benson Leung <bleung@chromium.org>
+Tested-by: Scot Doyle <lkml14@scotdoyle.com>
+---
+ drivers/platform/chrome/chromeos_laptop.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-Best regards,
-Tomasz
+diff --git a/drivers/platform/chrome/chromeos_laptop.c b/drivers/platform/chrome/chromeos_laptop.c
+index e0a6710..37fa570 100644
+--- a/drivers/platform/chrome/chromeos_laptop.c
++++ b/drivers/platform/chrome/chromeos_laptop.c
+@@ -394,6 +394,13 @@ static struct chromeos_laptop dell_chromebook_11 = {
+ 	},
+ };
+ 
++static struct chromeos_laptop toshiba_cb35 = {
++	.i2c_peripherals = {
++		/* Touchpad. */
++		{ .add = setup_cyapa_tp, I2C_ADAPTER_DESIGNWARE_0 },
++	},
++};
++
+ static struct chromeos_laptop acer_c7_chromebook = {
+ 	.i2c_peripherals = {
+ 		/* Touchpad. */
+@@ -476,6 +483,14 @@ static struct dmi_system_id chromeos_laptop_dmi_table[] __initdata = {
+ 		_CBDD(hp_chromebook_14),
+ 	},
+ 	{
++		.ident = "Toshiba CB35",
++		.matches = {
++			DMI_MATCH(DMI_BIOS_VENDOR, "coreboot"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Leon"),
++		},
++		_CBDD(toshiba_cb35),
++	},
++	{
+ 		.ident = "Acer C7 Chromebook",
+ 		.matches = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Parrot"),
+-- 
+2.0.0.526.g5318336
+
