@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932784AbaFQF2R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 01:28:17 -0400
-Received: from mga01.intel.com ([192.55.52.88]:43830 "EHLO mga01.intel.com"
+	id S932880AbaFQF3I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 01:29:08 -0400
+Received: from mga11.intel.com ([192.55.52.93]:64039 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932750AbaFQF2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 01:28:13 -0400
+	id S932854AbaFQF3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 01:29:04 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,492,1400050800"; 
-   d="scan'208";a="549015314"
+   d="scan'208";a="549015374"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>,
@@ -17,19 +17,19 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        x86@kernel.org
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        x86@kernel.org, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [RFC Patch V2 11/16] x86, irq, ACPI: introduce a rwsem to protect IOAPIC operations from hotplug
-Date: Tue, 17 Jun 2014 13:29:50 +0800
-Message-Id: <1402982995-13747-12-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        linux-pm@vger.kernel.org
+Subject: [RFC Patch V2 13/16] x86, irq, ACPI: implement interface to support ACPI based IOAPIC hot-removal
+Date: Tue, 17 Jun 2014 13:29:52 +0800
+Message-Id: <1402982995-13747-14-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1402982995-13747-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1402982995-13747-1-git-send-email-jiang.liu@linux.intel.com>
@@ -37,74 +37,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are going to support ACPI based IOAPIC hotplug, so introduce a rwsem
-to protect IOAPIC data structures from IOAPIC hotplug. We choose to
-serialize in ACPI instead of in the IOAPIC core because:
-1) currently we are only plan to support ACPI based IOAPIC hotplug
-2) it's much more clean and easy
-3) It does't affect IOAPIC discovered by devicetree, SFI and mppparse.
+Implement acpi_unregister_ioapic() to support ACPI based IOAPIC hot-removal.
+An IOAPIC could only be removed when all its pins are unused.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/kernel/acpi/boot.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/io_apic.h |    1 +
+ arch/x86/kernel/acpi/boot.c    |   13 +++++++---
+ arch/x86/kernel/apic/io_apic.c |   55 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 65 insertions(+), 4 deletions(-)
 
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 94d05bd6586f..ce63cf34c93c 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -190,6 +190,7 @@ extern int mp_map_gsi_to_irq(u32 gsi, unsigned int flags);
+ extern void mp_unmap_irq(int irq);
+ extern int mp_register_ioapic(int id, u32 address, u32 gsi_base,
+ 			      struct ioapic_domain_cfg *cfg);
++extern int mp_unregister_ioapic(u32 gsi_base);
+ extern int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
+ 			    irq_hw_number_t hwirq);
+ extern void mp_irqdomain_unmap(struct irq_domain *domain, unsigned int virq);
 diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 8c28023924bf..120b573f1e96 100644
+index 85caf3221cde..8a1b25d2aa4c 100644
 --- a/arch/x86/kernel/acpi/boot.c
 +++ b/arch/x86/kernel/acpi/boot.c
-@@ -76,6 +76,8 @@ int acpi_fix_pin2_polarity __initdata;
- static u64 acpi_lapic_addr __initdata = APIC_DEFAULT_PHYS_BASE;
- #endif
+@@ -804,15 +804,20 @@ int acpi_register_ioapic(acpi_handle handle, u64 phys_addr, u32 gsi_base)
  
-+static DECLARE_RWSEM(acpi_ioapic_rwsem);
+ 	return ret;
+ }
+-
+ EXPORT_SYMBOL(acpi_register_ioapic);
+ 
+ int acpi_unregister_ioapic(acpi_handle handle, u32 gsi_base)
+ {
+-	/* TBD */
+-	return -EINVAL;
+-}
++	int ret = -ENOSYS;
 +
- #ifndef __HAVE_ARCH_CMPXCHG
- #warning ACPI uses CMPXCHG, i486 and later hardware
- #endif
-@@ -608,8 +610,11 @@ void __init acpi_pic_sci_set_trigger(unsigned int irq, u16 trigger)
++#ifdef CONFIG_ACPI_HOTPLUG_IOAPIC
++	down_write(&acpi_ioapic_rwsem);
++	ret  = mp_unregister_ioapic(gsi_base);
++	up_write(&acpi_ioapic_rwsem);
++#endif
  
- int acpi_gsi_to_irq(u32 gsi, unsigned int *irqp)
- {
--	int irq = mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
-+	int irq;
++	return ret;
++}
+ EXPORT_SYMBOL(acpi_unregister_ioapic);
  
-+	down_read(&acpi_ioapic_rwsem);
-+	irq = mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
-+	up_read(&acpi_ioapic_rwsem);
- 	if (irq >= 0) {
- 		*irqp = irq;
- 		return 0;
-@@ -650,7 +655,9 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
- 	int irq = gsi;
+ static int __init acpi_parse_sbf(struct acpi_table_header *table)
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index d26fd3ac1b4b..22bbecb05345 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -112,6 +112,7 @@ static struct ioapic {
+ 	struct ioapic_domain_cfg irqdomain_cfg;
+ 	struct irq_domain *irqdomain;
+ 	struct mp_pin_info *pin_info;
++	struct resource *iomem_res;
+ } ioapics[MAX_IO_APICS];
  
- #ifdef CONFIG_X86_IO_APIC
-+	down_read(&acpi_ioapic_rwsem);
- 	irq = mp_register_gsi(dev, gsi, trigger, polarity);
-+	up_read(&acpi_ioapic_rwsem);
- #endif
- 
- 	return irq;
-@@ -659,7 +666,9 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
- static void acpi_unregister_gsi_ioapic(u32 gsi)
- {
- #ifdef CONFIG_X86_IO_APIC
-+	down_read(&acpi_ioapic_rwsem);
- 	mp_unregister_gsi(gsi);
-+	up_read(&acpi_ioapic_rwsem);
- #endif
+ #define mpc_ioapic_ver(ioapic_idx)	ioapics[ioapic_idx].mp_config.apicver
+@@ -250,6 +251,12 @@ static void alloc_ioapic_saved_registers(int idx)
+ 		pr_err("IOAPIC %d: suspend/resume impossible!\n", idx);
  }
  
-@@ -1185,7 +1194,9 @@ static void __init acpi_process_madt(void)
- 			/*
- 			 * Parse MADT IO-APIC entries
- 			 */
-+			down_write(&acpi_ioapic_rwsem);
- 			error = acpi_parse_madt_ioapic_entries();
-+			up_write(&acpi_ioapic_rwsem);
- 			if (!error) {
- 				acpi_set_irq_model_ioapic();
++static void free_ioapic_saved_registers(int idx)
++{
++	kfree(ioapics[idx].saved_registers);
++	ioapics[idx].saved_registers = NULL;
++}
++
+ int __init arch_early_irq_init(void)
+ {
+ 	struct irq_cfg *cfg;
+@@ -2967,6 +2974,16 @@ static int mp_irqdomain_create(int ioapic)
+ 	return 0;
+ }
  
++static void ioapic_destroy_irqdomain(int idx)
++{
++	if (ioapics[idx].irqdomain) {
++		irq_domain_remove(ioapics[idx].irqdomain);
++		ioapics[idx].irqdomain = NULL;
++	}
++	kfree(ioapics[idx].pin_info);
++	ioapics[idx].pin_info = NULL;
++}
++
+ void __init setup_IO_APIC(void)
+ {
+ 	int ioapic;
+@@ -3724,6 +3741,7 @@ static struct resource * __init ioapic_setup_resources(void)
+ 		snprintf(mem, IOAPIC_RESOURCE_NAME_SIZE, "IOAPIC %u", i);
+ 		mem += IOAPIC_RESOURCE_NAME_SIZE;
+ 		num++;
++		ioapics[i].iomem_res = res;
+ 	}
+ 
+ 	ioapic_resources = res;
+@@ -3946,6 +3964,43 @@ int mp_register_ioapic(int id, u32 address, u32 gsi_base,
+ 	return 0;
+ }
+ 
++int mp_unregister_ioapic(u32 gsi_base)
++{
++	int ioapic, pin;
++	int found = 0;
++	struct mp_pin_info *pin_info;
++
++	for_each_ioapic(ioapic)
++		if (ioapics[ioapic].gsi_config.gsi_base == gsi_base) {
++			found = 1;
++			break;
++		}
++	if (!found) {
++		pr_warn("can't find IOAPIC for GSI %d\n", gsi_base);
++		return -ENODEV;
++	}
++
++	for_each_pin(ioapic, pin) {
++		pin_info = mp_pin_info(ioapic, pin);
++		if (pin_info->count) {
++			pr_warn("pin%d on IOAPIC%d is still in use.\n",
++				pin, ioapic);
++			return -EBUSY;
++		}
++	}
++
++	/* Mark entry not present */
++	ioapics[ioapic].nr_registers  = 0;
++	ioapic_destroy_irqdomain(ioapic);
++	free_ioapic_saved_registers(ioapic);
++	if (ioapics[ioapic].iomem_res)
++		release_resource(ioapics[ioapic].iomem_res);
++	clear_fixmap(FIX_IO_APIC_BASE_0 + ioapic);
++	memset(&ioapics[ioapic], 0, sizeof(ioapics[ioapic]));
++
++	return 0;
++}
++
+ int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
+ 		     irq_hw_number_t hwirq)
+ {
 -- 
 1.7.10.4
 
