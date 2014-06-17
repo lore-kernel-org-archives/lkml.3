@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965518AbaFQQo3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:44:29 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48055 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965461AbaFQQlz (ORCPT
+	id S965588AbaFQQpM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:45:12 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:49777 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964930AbaFQQpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:41:55 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 1/6] ARM: at91/dt: define sam9261ek slow crystal frequency
-Date: Tue, 17 Jun 2014 18:41:43 +0200
-Message-Id: <1403023308-20533-2-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403023308-20533-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1403023308-20533-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Tue, 17 Jun 2014 12:45:08 -0400
+Date: Tue, 17 Jun 2014 17:45:02 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Keerthy <j-keerthy@ti.com>
+Cc: linux-omap@vger.kernel.org, lgirdwood@gmail.com, broonie@kernel.org,
+        linux-kernel@vger.kernel.org, sameo@linux.intel.com
+Subject: Re: [PATCH 8/9] regulator: palmas: add driver data and modularize
+ the probe
+Message-ID: <20140617164502.GS29841@lee--X1>
+References: <1401272423-25761-1-git-send-email-j-keerthy@ti.com>
+ <1401272423-25761-9-git-send-email-j-keerthy@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401272423-25761-9-git-send-email-j-keerthy@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define at91sam9261ek's slow crystal frequencies.
+> add driver data and modularize the probe.
+> 
+> Signed-off-by: Keerthy <j-keerthy@ti.com>
+> ---
+>  drivers/mfd/palmas.c                 |   42 +--
+>  drivers/regulator/palmas-regulator.c |  656 ++++++++++++++++++++--------------
+>  2 files changed, 395 insertions(+), 303 deletions(-)
+> 
+> diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/boot/dts/at91sam9261ek.dts | 4 ++++
- 1 file changed, 4 insertions(+)
+[...]
 
-diff --git a/arch/arm/boot/dts/at91sam9261ek.dts b/arch/arm/boot/dts/at91sam9261ek.dts
-index c6683ea8b743..aa35a7aec9a8 100644
---- a/arch/arm/boot/dts/at91sam9261ek.dts
-+++ b/arch/arm/boot/dts/at91sam9261ek.dts
-@@ -20,6 +20,10 @@
- 		reg = <0x20000000 0x4000000>;
- 	};
- 
-+	slow_xtal {
-+		clock-frequency = <32768>;
-+	};
-+
- 	main_xtal {
- 		clock-frequency = <18432000>;
- 	};
+> @@ -370,6 +334,8 @@ int palmas_ext_control_req_config(struct palmas *palmas,
+>  	int bit_pos;
+>  	int ret;
+>  
+> +	struct palmas_pmic_driver_data *pmic_ddata = palmas->pmic_ddata;
+> +
+
+Nit: I'd prefer the declarations to be grouped together, normally with
+the struct defines above the ints etc.
+
+[...]
+
 -- 
-1.9.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
