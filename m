@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967423AbaFQV52 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:57:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54959 "EHLO
+	id S967425AbaFQV57 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:57:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54930 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967221AbaFQVw7 (ORCPT
+	with ESMTP id S967185AbaFQVwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:52:59 -0400
+	Tue, 17 Jun 2014 17:52:50 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Ivan Vecera <ivecera@redhat.com>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 149/212] perf: Prevent false warning in perf_swevent_add
-Date: Tue, 17 Jun 2014 14:44:03 -0700
-Message-Id: <1403041506-13646-150-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 021/212] tg3: update rx_jumbo_pending ring param only when jumbo frames are enabled
+Date: Tue, 17 Jun 2014 14:41:55 -0700
+Message-Id: <1403041506-13646-22-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -32,123 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Ivan Vecera <ivecera@redhat.com>
 
-commit 39af6b1678afa5880dda7e375cf3f9d395087f6d upstream.
+commit ba67b510035141bd89b40bf65efa0a79834311ca upstream.
 
-The perf cpu offline callback takes down all cpu context
-events and releases swhash->swevent_hlist.
+The patch fixes a problem with dropped jumbo frames after usage of
+'ethtool -G ... rx'.
 
-This could race with task context software event being just
-scheduled on this cpu via perf_swevent_add while cpu hotplug
-code already cleaned up event's data.
+Scenario:
+1. ip link set eth0 up
+2. ethtool -G eth0 rx N # <- This zeroes rx-jumbo
+3. ip link set mtu 9000 dev eth0
 
-The race happens in the gap between the cpu notifier code
-and the cpu being actually taken down. Note that only cpu
-ctx events are terminated in the perf cpu hotplug code.
+The ethtool command set rx_jumbo_pending to zero so any received jumbo
+packets are dropped and you need to use 'ethtool -G eth0 rx-jumbo N'
+to workaround the issue.
+The patch changes the logic so rx_jumbo_pending value is changed only if
+jumbo frames are enabled (MTU > 1500).
 
-It's easily reproduced with:
-  $ perf record -e faults perf bench sched pipe
-
-while putting one of the cpus offline:
-  # echo 0 > /sys/devices/system/cpu/cpu1/online
-
-Console emits following warning:
-  WARNING: CPU: 1 PID: 2845 at kernel/events/core.c:5672 perf_swevent_add+0x18d/0x1a0()
-  Modules linked in:
-  CPU: 1 PID: 2845 Comm: sched-pipe Tainted: G        W    3.14.0+ #256
-  Hardware name: Intel Corporation Montevina platform/To be filled by O.E.M., BIOS AMVACRB1.86C.0066.B00.0805070703 05/07/2008
-   0000000000000009 ffff880077233ab8 ffffffff81665a23 0000000000200005
-   0000000000000000 ffff880077233af8 ffffffff8104732c 0000000000000046
-   ffff88007467c800 0000000000000002 ffff88007a9cf2a0 0000000000000001
-  Call Trace:
-   [<ffffffff81665a23>] dump_stack+0x4f/0x7c
-   [<ffffffff8104732c>] warn_slowpath_common+0x8c/0xc0
-   [<ffffffff8104737a>] warn_slowpath_null+0x1a/0x20
-   [<ffffffff8110fb3d>] perf_swevent_add+0x18d/0x1a0
-   [<ffffffff811162ae>] event_sched_in.isra.75+0x9e/0x1f0
-   [<ffffffff8111646a>] group_sched_in+0x6a/0x1f0
-   [<ffffffff81083dd5>] ? sched_clock_local+0x25/0xa0
-   [<ffffffff811167e6>] ctx_sched_in+0x1f6/0x450
-   [<ffffffff8111757b>] perf_event_sched_in+0x6b/0xa0
-   [<ffffffff81117a4b>] perf_event_context_sched_in+0x7b/0xc0
-   [<ffffffff81117ece>] __perf_event_task_sched_in+0x43e/0x460
-   [<ffffffff81096f1e>] ? put_lock_stats.isra.18+0xe/0x30
-   [<ffffffff8107b3c8>] finish_task_switch+0xb8/0x100
-   [<ffffffff8166a7de>] __schedule+0x30e/0xad0
-   [<ffffffff81172dd2>] ? pipe_read+0x3e2/0x560
-   [<ffffffff8166b45e>] ? preempt_schedule_irq+0x3e/0x70
-   [<ffffffff8166b45e>] ? preempt_schedule_irq+0x3e/0x70
-   [<ffffffff8166b464>] preempt_schedule_irq+0x44/0x70
-   [<ffffffff816707f0>] retint_kernel+0x20/0x30
-   [<ffffffff8109e60a>] ? lockdep_sys_exit+0x1a/0x90
-   [<ffffffff812a4234>] lockdep_sys_exit_thunk+0x35/0x67
-   [<ffffffff81679321>] ? sysret_check+0x5/0x56
-
-Fixing this by tracking the cpu hotplug state and displaying
-the WARN only if current cpu is initialized properly.
-
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1396861448-10097-1-git-send-email-jolsa@redhat.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Ivan Vecera <ivecera@redhat.com>
+Acked-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/events/core.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/broadcom/tg3.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index ad33a96..f0a8ac7 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5391,6 +5391,9 @@ struct swevent_htable {
- 
- 	/* Recursion avoidance in each contexts */
- 	int				recursion[PERF_NR_CONTEXTS];
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index af88893..e71ee9f 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -12208,7 +12208,9 @@ static int tg3_set_ringparam(struct net_device *dev, struct ethtool_ringparam *e
+ 	if (tg3_flag(tp, MAX_RXPEND_64) &&
+ 	    tp->rx_pending > 63)
+ 		tp->rx_pending = 63;
+-	tp->rx_jumbo_pending = ering->rx_jumbo_pending;
 +
-+	/* Keeps track of cpu being initialized/exited */
-+	bool				online;
- };
++	if (tg3_flag(tp, JUMBO_RING_ENABLE))
++		tp->rx_jumbo_pending = ering->rx_jumbo_pending;
  
- static DEFINE_PER_CPU(struct swevent_htable, swevent_htable);
-@@ -5637,8 +5640,14 @@ static int perf_swevent_add(struct perf_event *event, int flags)
- 	hwc->state = !(flags & PERF_EF_START);
- 
- 	head = find_swevent_head(swhash, event);
--	if (WARN_ON_ONCE(!head))
-+	if (!head) {
-+		/*
-+		 * We can race with cpu hotplug code. Do not
-+		 * WARN if the cpu just got unplugged.
-+		 */
-+		WARN_ON_ONCE(swhash->online);
- 		return -EINVAL;
-+	}
- 
- 	hlist_add_head_rcu(&event->hlist_entry, head);
- 
-@@ -7813,6 +7822,7 @@ static void perf_event_init_cpu(int cpu)
- 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
- 
- 	mutex_lock(&swhash->hlist_mutex);
-+	swhash->online = true;
- 	if (swhash->hlist_refcount > 0) {
- 		struct swevent_hlist *hlist;
- 
-@@ -7870,6 +7880,7 @@ static void perf_event_exit_cpu(int cpu)
- 	perf_event_exit_cpu_context(cpu);
- 
- 	mutex_lock(&swhash->hlist_mutex);
-+	swhash->online = false;
- 	swevent_hlist_release(swhash);
- 	mutex_unlock(&swhash->hlist_mutex);
- }
+ 	for (i = 0; i < tp->irq_max; i++)
+ 		tp->napi[i].tx_pending = ering->tx_pending;
 -- 
 1.9.1
 
