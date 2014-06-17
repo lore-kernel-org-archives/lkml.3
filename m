@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755695AbaFQI4t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 04:56:49 -0400
-Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.181]:15196 "EHLO
-	mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753916AbaFQI4r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 04:56:47 -0400
-X-RZG-AUTH: :IWkQb0WIdvqIIwNfJfyiKBgoQwjwJ7eL6yL6M6h2IziqwDGkR4xBpp8qgihxczpINJ3w6w9yL3SuQdkCDxWLQMWA
-X-RZG-CLASS-ID: mo05
-Message-ID: <53A002C8.8090702@samba.org>
-Date: Tue, 17 Jun 2014 10:56:40 +0200
-From: "Stefan (metze) Metzmacher" <metze@samba.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755910AbaFQI4y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 04:56:54 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34241 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753916AbaFQI4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 04:56:50 -0400
+Message-ID: <53A0023D.9010407@ti.com>
+Date: Tue, 17 Jun 2014 14:24:21 +0530
+From: Sricharan R <r.sricharan@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Steve French <smfrench@gmail.com>
-CC: =?UTF-8?B?QmrDtnJuIEJhdW1iYWNo?= <bb@sernet.de>,
-        Steve French <sfrench@samba.org>,
-        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        Pavel Shilovsky <piastryyy@gmail.com>
-Subject: Re: [PATCH] fs/cifs: fix regression in cifs_create_mf_symlink()
-References: <1402394606-7910-1-git-send-email-bb@sernet.de> <539EF5FD.5000307@samba.org> <CAH2r5mt+r3ab_gxZAYhF=buL3s3rz=dx9yEUyFh20mM9Yg08Ag@mail.gmail.com>
-In-Reply-To: <CAH2r5mt+r3ab_gxZAYhF=buL3s3rz=dx9yEUyFh20mM9Yg08Ag@mail.gmail.com>
-X-Enigmail-Version: 1.6
-OpenPGP: id=0E53083F
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="sM8e7f2riKAL7gnJFAxq1pJEk5fAGUX76"
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tony@atomide.com>, <nm@ti.com>, <rnayak@ti.com>,
+        <linux@arm.linux.org.uk>, <tglx@linutronix.de>, <jason@lakedaemon.net>,
+        <joe@perches.com>
+Subject: Re: [PATCH V3 00/16] irqchip: crossbar: driver fixes
+References: <1402917796-31574-1-git-send-email-r.sricharan@ti.com> <539EF985.3080705@ti.com>
+In-Reply-To: <539EF985.3080705@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---sM8e7f2riKAL7gnJFAxq1pJEk5fAGUX76
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Monday 16 June 2014 07:34 PM, Santosh Shilimkar wrote:
+> Sricharan,
+>
+> On Monday 16 June 2014 07:23 AM, Sricharan R wrote:
+>> This series does some cleanups, fixes for handling two interrupts
+>> getting mapped twice to same crossbar and provides support for
+>> hardwired IRQ and crossbar definitions.
+>>
+>> On certain platforms such as DRA7, SPIs 0, 1, 2, 3, 5, 6, 10,
+>> 131, 132, 133 are direct wired to hardware blocks bypassing
+>> crossbar. This quirky implementation is *NOT* supposed to be the
+>> expectation of crossbar hardware usage. This series adds support
+>> to represent such hard-wired irqs through DT and avoid generic
+>> allocation/programming of crossbar in the driver.
+>>
+>> This way of supporting hard-wired irqs was a result of
+>> the below discussions.
+>> http://www.spinics.net/lists/arm-kernel/msg329946.html
+>>
+>> Based on 3.15 mainline.
+>>
+>> All the patches are available here
+>>  git@github.com:Sricharanti/sricharan.git crossbar_updates
+>>
+>> The fixes series[1] earlier posted is merged in to this.
+>> [1] http://www.spinics.net/lists/arm-kernel/msg328273.html
+>>
+>> [V2] Merged the above series and rebased on 3.15 mainline
+>>
+>> [V3] Modified patch#3 to get irqs-skip properties from DT,
+>>      merged path#8 for checkpatch warning to other relevant
+>>      patches and fixed comments for other patches.
+>>
+> I scanned entire series again including your updates on Jason's
+> comments. All look good to my eyes.
+>
+> Hopefully after this series now, we can actually enable the crossbar
+> support on those machines.
+>
+> FWIW,
+> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Thanks Santosh.
 
-Hi Steve,
-
-> Although I have merged this into cifs-2.6.git for-next, in my testing
-> I am also seeing this fail with vers=3D3.0 (and probably 2.0 and 2.1) s=
-o
-> I would like to fix that too (and mfsymlinks may be at least as
-> important there)
-
-Thanks! When can we expect this to be proposed for 3.16 (and stable
-3.14/3.15)?
-
-metze
-
-
---sM8e7f2riKAL7gnJFAxq1pJEk5fAGUX76
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlOgAssACgkQm70gjA5TCD++uQCdE1x35nZppVuyjjgo69ZVZ2jU
-rKEAoJ1Q2V5++AQv+G4fTbEotRqpK6wt
-=iAqo
------END PGP SIGNATURE-----
-
---sM8e7f2riKAL7gnJFAxq1pJEk5fAGUX76--
+Regards,
+ Sricharan
