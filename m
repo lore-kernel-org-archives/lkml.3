@@ -1,119 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756297AbaFQWxT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:53:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53658 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965494AbaFQVp2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:45:28 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Patrick McHardy <kaber@trash.net>, Pablo Neira Ayuso <pablo@netfilter.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 014/212] filter: prevent nla extensions to peek beyond the end of the message
-Date: Tue, 17 Jun 2014 14:41:48 -0700
-Message-Id: <1403041506-13646-15-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S933177AbaFQW6Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:58:24 -0400
+Received: from ozlabs.org ([103.22.144.67]:46689 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932442AbaFQW6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 18:58:23 -0400
+Date: Wed, 18 Jun 2014 08:58:16 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: the cgroup tree has an unnecessary merge
+Message-ID: <20140618085816.09a261f0@canb.auug.org.au>
+In-Reply-To: <20140617225403.GB8838@mtj.dyndns.org>
+References: <20140618084921.07c3b391@canb.auug.org.au>
+	<20140617225159.GA8838@mtj.dyndns.org>
+	<20140617225403.GB8838@mtj.dyndns.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/lZ_Pdy4Rg/w9r9zBKEeFj6w"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
+--Sig_/lZ_Pdy4Rg/w9r9zBKEeFj6w
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi Tejun,
 
-From: Mathias Krause <minipli@googlemail.com>
+On Tue, 17 Jun 2014 18:54:03 -0400 Tejun Heo <tj@kernel.org> wrote:
+>
+> Heh, the mistake was in cgroup/for-3.16-fixes.  I branched it off the
+> wrong base.  Thanks for noticing it early.  Fixed now.
 
-[ Upstream commit 05ab8f2647e4221cbdb3856dd7d32bd5407316b3 ]
+Thanks.
 
-The BPF_S_ANC_NLATTR and BPF_S_ANC_NLATTR_NEST extensions fail to check
-for a minimal message length before testing the supplied offset to be
-within the bounds of the message. This allows the subtraction of the nla
-header to underflow and therefore -- as the data type is unsigned --
-allowing far to big offset and length values for the search of the
-netlink attribute.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-The remainder calculation for the BPF_S_ANC_NLATTR_NEST extension is
-also wrong. It has the minuend and subtrahend mixed up, therefore
-calculates a huge length value, allowing to overrun the end of the
-message while looking for the netlink attribute.
+--Sig_/lZ_Pdy4Rg/w9r9zBKEeFj6w
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-The following three BPF snippets will trigger the bugs when attached to
-a UNIX datagram socket and parsing a message with length 1, 2 or 3.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
- ,-[ PoC for missing size check in BPF_S_ANC_NLATTR ]--
- | ld	#0x87654321
- | ldx	#42
- | ld	#nla
- | ret	a
- `---
+iQIcBAEBCAAGBQJToMgNAAoJEMDTa8Ir7ZwVIJYP/jijdwSYxuCZGTxE/Ri7/vhM
+wWBjykqYtbs4lmu9WOKKdI6/L1dxuLTH133RGmBQmmpbhA9Vu+Vc4XphYDvijuxT
+ip/h9ekRocMR1H1o68qiVfEPFfPYNEgYfxUp3jJg2bkgZSo7K6xYkyA0ocxixmx1
+MQbbphBWqmEt+cyqK5P9PqVTRFEy9QOKgJx5IxNqAeJim1TItCr1vqYHFx0Gh5EY
+wSf3Dhb7HqjFy7MhTBWqWAMJwrM4Ki3Ln8p1ykJCQfsOIaV36q1XN0VWD018mtxB
+8nJ3OEfbe9bvkiRbHSNyaNojAQbcJKGCQ2uOiJOGDCiFuog4wgeLYhZLn8sUjpWD
+ip4tze1J9kiVPfP/MGLzyFHjMdNeHmsHyojMpB7GPvSsN9uFXA32PhRW7L8dfeil
+qmLgLkR5cMomA+9DF+HwbVuA5iIHZVp4G8tfxKGy+6Hx7J52MO6o/CTsG3dDFyLM
+p9dqklREZMuHr9tVsvfKPRq6jMNH9S5AVrcXByGWPFyY+41LFORco2u8tgtz6jUi
+YxlET/m1QXHMokOOAIYAT+B3ihZ46KvE6dSc/8HCKp6sNUcjS56a+Os0gs9rcJFr
+zD1mmIeZQuYJmyr2BJIuza1vprtRk/w70pvRvkU5xE6cIhWhnyGS/daJxf45YgOf
+BXSVklMZQa6/ogcYao+i
+=z79q
+-----END PGP SIGNATURE-----
 
- ,-[ PoC for the same bug in BPF_S_ANC_NLATTR_NEST ]--
- | ld	#0x87654321
- | ldx	#42
- | ld	#nlan
- | ret	a
- `---
-
- ,-[ PoC for wrong remainder calculation in BPF_S_ANC_NLATTR_NEST ]--
- | ; (needs a fake netlink header at offset 0)
- | ld	#0
- | ldx	#42
- | ld	#nlan
- | ret	a
- `---
-
-Fix the first issue by ensuring the message length fulfills the minimal
-size constrains of a nla header. Fix the second bug by getting the math
-for the remainder calculation right.
-
-Fixes: 4738c1db15 ("[SKFILTER]: Add SKF_ADF_NLATTR instruction")
-Fixes: d214c7537b ("filter: add SKF_AD_NLATTR_NEST to look for nested..")
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/core/filter.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/net/core/filter.c b/net/core/filter.c
-index ad30d62..ebce437 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -355,6 +355,8 @@ load_b:
- 
- 			if (skb_is_nonlinear(skb))
- 				return 0;
-+			if (skb->len < sizeof(struct nlattr))
-+				return 0;
- 			if (A > skb->len - sizeof(struct nlattr))
- 				return 0;
- 
-@@ -371,11 +373,13 @@ load_b:
- 
- 			if (skb_is_nonlinear(skb))
- 				return 0;
-+			if (skb->len < sizeof(struct nlattr))
-+				return 0;
- 			if (A > skb->len - sizeof(struct nlattr))
- 				return 0;
- 
- 			nla = (struct nlattr *)&skb->data[A];
--			if (nla->nla_len > A - skb->len)
-+			if (nla->nla_len > skb->len - A)
- 				return 0;
- 
- 			nla = nla_find_nested(nla, X);
--- 
-1.9.1
-
+--Sig_/lZ_Pdy4Rg/w9r9zBKEeFj6w--
