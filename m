@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966003AbaFQRCJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 13:02:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50404 "EHLO
+	id S965986AbaFQRCH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 13:02:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50405 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933636AbaFQQPd (ORCPT
+	with ESMTP id S933639AbaFQQPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:15:33 -0400
+	Tue, 17 Jun 2014 12:15:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Aaron Sanders <aaron.sanders@hp.com>, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 015/121] USB: pl2303: add ids for Hewlett-Packard HP POS pole displays
-Date: Tue, 17 Jun 2014 09:13:28 -0700
-Message-Id: <1403021714-16320-16-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 003/121] mac80211: fix software remain-on-channel implementation
+Date: Tue, 17 Jun 2014 09:13:16 -0700
+Message-Id: <1403021714-16320-4-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021714-16320-1-git-send-email-kamal@canonical.com>
 References: <1403021714-16320-1-git-send-email-kamal@canonical.com>
@@ -28,58 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaron Sanders <aaron.sanders@hp.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit b16c02fbfb963fa2941b7517ebf1f8a21946775e upstream.
+commit 115b943a6ea12656088fa1ff6634c0d30815e55b upstream.
 
-Add device ids to pl2303 for the Hewlett-Packard HP POS pole displays:
+Jouni reported that when doing off-channel transmissions mixed
+with on-channel transmissions, the on-channel ones ended up on
+the off-channel in some cases.
 
-LD960: 03f0:0B39
-LCM220: 03f0:3139
-LCM960: 03f0:3239
+The reason for that is that during the refactoring of the off-
+channel code, I lost the part that stopped all activity and as
+a consequence the on-channel frames (including data frames)
+were no longer queued but would be transmitted on the temporary
+channel.
 
-[ Johan: fix indentation and sort PIDs numerically ]
+Fix this by simply restoring the lost activity stop call.
 
-Signed-off-by: Aaron Sanders <aaron.sanders@hp.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Fixes: 2eb278e083549 ("mac80211: unify SW/offload remain-on-channel")
+Reported-by: Jouni Malinen <j@w1.fi>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/pl2303.c | 3 +++
- drivers/usb/serial/pl2303.h | 5 ++++-
- 2 files changed, 7 insertions(+), 1 deletion(-)
+ net/mac80211/offchannel.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
-index 90569d2..65a6bfd 100644
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -82,6 +82,9 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(YCCABLE_VENDOR_ID, YCCABLE_PRODUCT_ID) },
- 	{ USB_DEVICE(SUPERIAL_VENDOR_ID, SUPERIAL_PRODUCT_ID) },
- 	{ USB_DEVICE(HP_VENDOR_ID, HP_LD220_PRODUCT_ID) },
-+	{ USB_DEVICE(HP_VENDOR_ID, HP_LD960_PRODUCT_ID) },
-+	{ USB_DEVICE(HP_VENDOR_ID, HP_LCM220_PRODUCT_ID) },
-+	{ USB_DEVICE(HP_VENDOR_ID, HP_LCM960_PRODUCT_ID) },
- 	{ USB_DEVICE(CRESSI_VENDOR_ID, CRESSI_EDY_PRODUCT_ID) },
- 	{ USB_DEVICE(ZEAGLE_VENDOR_ID, ZEAGLE_N2ITION3_PRODUCT_ID) },
- 	{ USB_DEVICE(SONY_VENDOR_ID, SONY_QN3USB_PRODUCT_ID) },
-diff --git a/drivers/usb/serial/pl2303.h b/drivers/usb/serial/pl2303.h
-index c38b8c0..42bc082 100644
---- a/drivers/usb/serial/pl2303.h
-+++ b/drivers/usb/serial/pl2303.h
-@@ -121,8 +121,11 @@
- #define SUPERIAL_VENDOR_ID	0x5372
- #define SUPERIAL_PRODUCT_ID	0x2303
+diff --git a/net/mac80211/offchannel.c b/net/mac80211/offchannel.c
+index 7acbdaa..8eb1c81 100644
+--- a/net/mac80211/offchannel.c
++++ b/net/mac80211/offchannel.c
+@@ -357,6 +357,7 @@ void ieee80211_sw_roc_work(struct work_struct *work)
+ 		struct ieee80211_roc_work *dep;
  
--/* Hewlett-Packard LD220-HP POS Pole Display */
-+/* Hewlett-Packard POS Pole Displays */
- #define HP_VENDOR_ID		0x03f0
-+#define HP_LD960_PRODUCT_ID	0x0b39
-+#define HP_LCM220_PRODUCT_ID	0x3139
-+#define HP_LCM960_PRODUCT_ID	0x3239
- #define HP_LD220_PRODUCT_ID	0x3524
+ 		/* start this ROC */
++		ieee80211_offchannel_stop_vifs(local);
  
- /* Cressi Edy (diving computer) PC interface */
+ 		/* switch channel etc */
+ 		ieee80211_recalc_idle(local);
 -- 
 1.9.1
 
