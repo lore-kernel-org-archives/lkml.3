@@ -1,142 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955AbaFQBhY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 21:37:24 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:53647 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753001AbaFQBhX (ORCPT
+	id S1754072AbaFQBjb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 21:39:31 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:32897 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753806AbaFQBja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 21:37:23 -0400
-Message-ID: <539F9B6C.1080802@huawei.com>
-Date: Tue, 17 Jun 2014 09:35:40 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Rafael Aquini <aquini@redhat.com>
-CC: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rik van Riel" <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH 0/8] mm: add page cache limit and reclaim feature
-References: <539EB7D6.8070401@huawei.com> <20140616111422.GA16915@dhcp22.suse.cz> <20140616125040.GA29993@optiplex.redhat.com>
-In-Reply-To: <20140616125040.GA29993@optiplex.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.25.179]
-X-CFilter-Loop: Reflected
+	Mon, 16 Jun 2014 21:39:30 -0400
+From: Laura Abbott <lauraa@codeaurora.org>
+To: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Cc: Laura Abbott <lauraa@codeaurora.org>,
+        David Riley <davidriley@chromium.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Ritesh Harjain <ritesh.harjani@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>
+Subject: [PATCHv3 0/5] Atomic pool for arm64
+Date: Mon, 16 Jun 2014 18:39:20 -0700
+Message-Id: <1402969165-7526-1-git-send-email-lauraa@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/6/16 20:50, Rafael Aquini wrote:
+Hi,
 
-> On Mon, Jun 16, 2014 at 01:14:22PM +0200, Michal Hocko wrote:
->> On Mon 16-06-14 17:24:38, Xishi Qiu wrote:
->>> When system(e.g. smart phone) running for a long time, the cache often takes
->>> a large memory, maybe the free memory is less than 50M, then OOM will happen
->>> if APP allocate a large order pages suddenly and memory reclaim too slowly. 
->>
->> Have you ever seen this to happen? Page cache should be easy to reclaim and
->> if there is too mach dirty memory then you should be able to tune the
->> amount by dirty_bytes/ratio knob. If the page allocator falls back to
->> OOM and there is a lot of page cache then I would call it a bug. I do
->> not think that limiting the amount of the page cache globally makes
->> sense. There are Unix systems which offer this feature but I think it is
->> a bad interface which only papers over the reclaim inefficiency or lack
->> of other isolations between loads.
->>
-> +1
-> 
-> It would be good if you could show some numbers that serve as evidence
-> of your theory on "excessive" pagecache acting as a trigger to your
-> observed OOMs. I'm assuming, by your 'e.g', you're running a swapless
-> system, so I would think your system OOMs are due to inability to
-> reclaim anon memory, instead of pagecache.
-> 
+This is a series to add a pool for atomic allocations for arm64. It was
+previously suggested to try and share more code with arm. I did some
+refactoring to have arm use genalloc and pull out some of the remapping
+code. The end result is a negative diffstat overall for arm dma-mapping.c.
 
-Thank you for your reply.
-I'll try to find some examples in my company. 
+There still might be some room for more refactoring of atomic functions into
+common dma-mapping.c and integration with dma-coherent.c but there should
+be less overlap now.
 
->  
->>> Use "echo 3 > /proc/sys/vm/drop_caches" will drop the whole cache, this will
->>> affect the performance, so it is used for debugging only. 
->>>
-> 
-> If you are able to drop the whole pagecache by issuing the command
-> above, than it means the majority of it is just unmapped cache pages, 
-> and those would be normally reclaimed upon demand by the PFRA. One more 
-> thing that makes me wonder you're just seeing the effect of a leaky app 
-> making the system unable to swap out anon pages.
-> 
-
-I find the page cache will only be reclaimed when there is not enough
-memory. And in some smart phones, there is no swap disk.
-So I add a parameter to reclaim in circles.
+Reviews and testing welcome.
 
 Thanks,
-Xishi Qiu
+Laura
 
-> 
->>> suse has this feature, I tested it before, but it can not limit the page cache
->>> actually. So I rewrite the feature and add some parameters.
->>
->> The feature is there for historic reasons and I _really_ think the
->> interface is not appropriate. If there is a big pagecache usage which
->> affects other loads then Memory cgroup controller can be used to help
->> from interference.
->>
->>> Christoph Lameter has written a patch "Limit the size of the pagecache"
->>> http://marc.info/?l=linux-mm&m=116959990228182&w=2
->>> It changes in zone fallback, this is not a good way.
->>>
->>> The patchset is based on v3.15, it introduces two features, page cache limit
->>> and page cache reclaim in circles.
->>>
->>> Add four parameters in /proc/sys/vm
->>>
->>> 1) cache_limit_mbytes
->>> This is used to limit page cache amount.
->>> The input unit is MB, value range is from 0 to totalram_pages.
->>> If this is set to 0, it will not limit page cache.
->>> When written to the file, cache_limit_ratio will be updated too.
->>> The default value is 0.
->>>
->>> 2) cache_limit_ratio
->>> This is used to limit page cache amount.
->>> The input unit is percent, value range is from 0 to 100.
->>> If this is set to 0, it will not limit page cache.
->>> When written to the file, cache_limit_mbytes will be updated too.
->>> The default value is 0.
->>>
->>> 3) cache_reclaim_s
->>> This is used to reclaim page cache in circles.
->>> The input unit is second, the minimum value is 0.
->>> If this is set to 0, it will disable the feature.
->>> The default value is 0.
->>>
->>> 4) cache_reclaim_weight
->>> This is used to speed up page cache reclaim.
->>> It depend on enabling cache_limit_mbytes/cache_limit_ratio or cache_reclaim_s.
->>> Value range is from 1(slow) to 100(fast).
->>> The default value is 1.
->>>
->>> I tested the two features on my system(x86_64), it seems to work right.
->>> However, as it changes the hot path "add_to_page_cache_lru()", I don't know
->>> how much it will the affect the performance, maybe there are some errors
->>> in the patches too, RFC.
->>
->> I haven't looked at patches yet but you would need to explain why the
->> feature is needed much better and why the existing features are not
->> sufficient.
->> -- 
->> Michal Hocko
->> SUSE Labs
-> 
-> .
-> 
+v3: Now a patch series due to refactoring of arm code. arm and arm64 now both
+use genalloc for atomic pool management. genalloc extensions added.
+DMA remapping code factored out as well.
+
+v2: Various bug fixes pointed out by David and Ritesh (CMA dependency, swapping
+coherent, noncoherent). I'm still not sure how to address the devicetree
+suggestion by Will [1][2]. I added the devicetree mailing list this time around
+to get more input on this.
+
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/249180.html
+[2] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/249528.html
 
 
+Laura Abbott (5):
+  lib/genalloc.c: Add power aligned algorithm
+  lib/genalloc.c: Add genpool range check function
+  common: dma-mapping: Introduce common remapping functions
+  arm: use genalloc for the atomic pool
+  arm64: Add atomic pool for non-coherent and CMA allocaitons.
+
+ arch/arm/Kconfig                         |   1 +
+ arch/arm/mm/dma-mapping.c                | 200 ++++++++-----------------------
+ arch/arm64/Kconfig                       |   1 +
+ arch/arm64/mm/dma-mapping.c              | 154 +++++++++++++++++++++---
+ drivers/base/dma-mapping.c               |  66 ++++++++++
+ include/asm-generic/dma-mapping-common.h |   9 ++
+ include/linux/genalloc.h                 |   7 ++
+ lib/genalloc.c                           |  50 ++++++++
+ 8 files changed, 323 insertions(+), 165 deletions(-)
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
