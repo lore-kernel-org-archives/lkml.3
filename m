@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964857AbaFQQZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:25:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50867 "EHLO
+	id S965135AbaFQQZh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:25:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50905 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934139AbaFQQZL (ORCPT
+	with ESMTP id S933786AbaFQQZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:25:11 -0400
+	Tue, 17 Jun 2014 12:25:28 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tomoki Sekiyama <tomoki.sekiyama@hds.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Leon Ma <xindong.ma@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 115/121] drivers/tty/hvc: don't free hvc_console_setup after init
-Date: Tue, 17 Jun 2014 09:18:13 -0700
-Message-Id: <1403021899-16708-88-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 102/121] hrtimer: Prevent remote enqueue of leftmost timers
+Date: Tue, 17 Jun 2014 09:18:00 -0700
+Message-Id: <1403021899-16708-75-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
@@ -28,36 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+From: Leon Ma <xindong.ma@intel.com>
 
-commit 501fed45b7e8836ee9373f4d31e2d85e3db6103a upstream.
+commit 012a45e3f4af68e86d85cce060c6c2fed56498b2 upstream.
 
-When 'console=hvc0' is specified to the kernel parameter in x86 KVM guest,
-hvc console is setup within a kthread. However, that will cause SEGV
-and the boot will fail when the driver is builtin to the kernel,
-because currently hvc_console_setup() is annotated with '__init'. This
-patch removes '__init' to boot the guest successfully with 'console=hvc0'.
+If a cpu is idle and starts an hrtimer which is not pinned on that
+same cpu, the nohz code might target the timer to a different cpu.
 
-Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+In the case that we switch the cpu base of the timer we already have a
+sanity check in place, which determines whether the timer is earlier
+than the current leftmost timer on the target cpu. In that case we
+enqueue the timer on the current cpu because we cannot reprogram the
+clock event device on the target.
+
+If the timers base is already the target CPU we do not have this
+sanity check in place so we enqueue the timer as the leftmost timer in
+the target cpus rb tree, but we cannot reprogram the clock event
+device on the target cpu. So the timer expires late and subsequently
+prevents the reprogramming of the target cpu clock event device until
+the previously programmed event fires or a timer with an earlier
+expiry time gets enqueued on the target cpu itself.
+
+Add the same target check as we have for the switch base case and
+start the timer on the current cpu if it would become the leftmost
+timer on the target.
+
+[ tglx: Rewrote subject and changelog ]
+
+Signed-off-by: Leon Ma <xindong.ma@intel.com>
+Link: http://lkml.kernel.org/r/1398847391-5994-1-git-send-email-xindong.ma@intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/tty/hvc/hvc_console.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/hrtimer.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
-index 89c1dd1..728572a 100644
---- a/drivers/tty/hvc/hvc_console.c
-+++ b/drivers/tty/hvc/hvc_console.c
-@@ -190,7 +190,7 @@ static struct tty_driver *hvc_console_device(struct console *c, int *index)
- 	return hvc_driver;
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 3c29703..9873816 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -232,6 +232,11 @@ again:
+ 			goto again;
+ 		}
+ 		timer->base = new_base;
++	} else {
++		if (cpu != this_cpu && hrtimer_check_target(timer, new_base)) {
++			cpu = this_cpu;
++			goto again;
++		}
+ 	}
+ 	return new_base;
  }
- 
--static int __init hvc_console_setup(struct console *co, char *options)
-+static int hvc_console_setup(struct console *co, char *options)
- {	
- 	if (co->index < 0 || co->index >= MAX_NR_HVC_CONSOLES)
- 		return -ENODEV;
 -- 
 1.9.1
 
