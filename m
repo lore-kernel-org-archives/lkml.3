@@ -1,111 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964957AbaFQT46 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 15:56:58 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:58471 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933107AbaFQT45 (ORCPT
+	id S933635AbaFQUEb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 16:04:31 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:18464 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932927AbaFQUE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 15:56:57 -0400
-Date: Tue, 17 Jun 2014 12:56:54 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Markus Pargmann <mpa@pengutronix.de>
-cc: Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH] regmap: Add Kconfig option for debugfs register writes
-In-Reply-To: <1403033795-9122-1-git-send-email-mpa@pengutronix.de>
-Message-ID: <alpine.DEB.2.02.1406171254540.18156@chino.kir.corp.google.com>
-References: <1403033795-9122-1-git-send-email-mpa@pengutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 17 Jun 2014 16:04:29 -0400
+Date: Tue, 17 Jun 2014 16:03:29 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Waiman.Long@hp.com
+Cc: Waiman.Long@hp.com, tglx@linutronix.de, mingo@kernel.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        paolo.bonzini@gmail.com, boris.ostrovsky@oracle.com,
+        paulmck@linux.vnet.ibm.com, riel@redhat.com,
+        torvalds@linux-foundation.org, raghavendra.kt@linux.vnet.ibm.com,
+        david.vrabel@citrix.com, oleg@redhat.com, gleb@redhat.com,
+        scott.norton@hp.com, chegu_vinod@hp.com,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 01/11] qspinlock: A simple generic 4-byte queue spinlock
+Message-ID: <20140617200329.GA27400@laptop.dumpdata.com>
+References: <20140615124657.264658593@chello.nl>
+ <20140615130152.912524881@chello.nl>
+ <20140616204918.GA26140@laptop.dumpdata.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140616204918.GA26140@laptop.dumpdata.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jun 2014, Markus Pargmann wrote:
+> > +			new = tail | (val & _Q_LOCKED_MASK);
+> > +
+> > +		old = atomic_cmpxchg(&lock->val, val, new);
+> > +		if (old == val)
+> > +			break;
+> > +
+> > +		val = old;
+> > +	}
+> > +
+> > +	/*
+> > +	 * we won the trylock; forget about queueing.
+> > +	 */
+> > +	if (new == _Q_LOCKED_VAL)
+> > +		goto release;
+> > +
+> > +	/*
+> > +	 * if there was a previous node; link it and wait.
+> > +	 */
+> > +	if (old & ~_Q_LOCKED_MASK) {
+> > +		prev = decode_tail(old);
+> > +		ACCESS_ONCE(prev->next) = node;
+> > +
+> > +		arch_mcs_spin_lock_contended(&node->locked);
 
-> To enable writing of registers through the regmap debugfs interface, it
-> was necessary to alter the regmap-debugfs.c source code. This is not
-> really practical.
-> 
-> As this is a powerful tool for debugging, this patch creates an expert
-> kconfig option for this function. This makes it easier to enable
-> register writing in the kernel.
-> 
-> This patch also fixes the file mode when the regmap debugfs write code is
-> compiled.
-> 
+Could you add a comment here:
 
-Forcing users to enable CONFIG_EXPERT for this doesn't seem appropriate, 
-it enables things by default and has really become a separate config of 
-its own.  You might want to consider removing this dependency unless you 
-have a strong reason for keeping it.
+/* We are spinning forever until the previous node updates locked - which
+it does once the it has updated lock->val with our tail number. */
 
-> Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-> Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
-> ---
->  drivers/base/regmap/Kconfig          | 14 ++++++++++++++
->  drivers/base/regmap/regmap-debugfs.c | 16 ++++++++++------
->  2 files changed, 24 insertions(+), 6 deletions(-)
+> > +	}
+> > +
+> > +	/*
+> > +	 * we're at the head of the waitqueue, wait for the owner to go away.
+> > +	 *
+> > +	 * *,x -> *,0
+> > +	 */
+> > +	while ((val = atomic_read(&lock->val)) & _Q_LOCKED_MASK)
+> > +		cpu_relax();
+> > +
+> > +	/*
+> > +	 * claim the lock:
+> > +	 *
+> > +	 * n,0 -> 0,1 : lock, uncontended
+> > +	 * *,0 -> *,1 : lock, contended
+> > +	 */
+> > +	for (;;) {
+> > +		new = _Q_LOCKED_VAL;
+> > +		if (val != tail)
+> > +			new |= val;
 > 
-> diff --git a/drivers/base/regmap/Kconfig b/drivers/base/regmap/Kconfig
-> index 4251570610c9..ce86600dbe75 100644
-> --- a/drivers/base/regmap/Kconfig
-> +++ b/drivers/base/regmap/Kconfig
-> @@ -23,3 +23,17 @@ config REGMAP_MMIO
->  
->  config REGMAP_IRQ
->  	bool
-> +
-> +config REGMAP_ALLOW_WRITE_DEBUGFS
-> +	default n
-> +	depends on DEBUG_FS
-> +	depends on EXPERT
-> +	depends on REGMAP
-> +	bool "Regmap, allow direct register writes through debugfs"
-> +	help
-> +	  This option enables regmap debugfs write support. If this is enabled,
-> +	  you can directly write registers using the registers file in the
-> +	  regmap debugfs.
-> +
-> +	  This is potentially dangerous. Do not enable this option unless you
-> +	  know what you are doing.
-> diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
-> index 45d812c0ea77..12906f2bdf00 100644
-> --- a/drivers/base/regmap/regmap-debugfs.c
-> +++ b/drivers/base/regmap/regmap-debugfs.c
-> @@ -261,13 +261,10 @@ static ssize_t regmap_map_read_file(struct file *file, char __user *user_buf,
->  				   count, ppos);
->  }
->  
-> -#undef REGMAP_ALLOW_WRITE_DEBUGFS
-> -#ifdef REGMAP_ALLOW_WRITE_DEBUGFS
-> +#if IS_ENABLED(CONFIG_REGMAP_ALLOW_WRITE_DEBUGFS)
->  /*
->   * This can be dangerous especially when we have clients such as
-> - * PMICs, therefore don't provide any real compile time configuration option
-> - * for this feature, people who want to use this will need to modify
-> - * the source code directly.
-> + * PMICs, therefore this function can only be selected in expert kconfig mode.
->   */
->  static ssize_t regmap_map_write_file(struct file *file,
->  				     const char __user *user_buf,
-> @@ -512,7 +509,14 @@ void regmap_debugfs_init(struct regmap *map, const char *name)
->  			    map, &regmap_reg_ranges_fops);
->  
->  	if (map->max_register || regmap_readable(map, 0)) {
-> -		debugfs_create_file("registers", 0400, map->debugfs,
-> +		unsigned int registers_mode;
-> +
-> +		if (IS_ENABLED(CONFIG_REGMAP_ALLOW_WRITE_DEBUGFS))
-> +			registers_mode = 0600;
-> +		else
-> +			registers_mode = 0400;
-> +
-> +		debugfs_create_file("registers", registers_mode, map->debugfs,
->  				    map, &regmap_map_fops);
->  		debugfs_create_file("access", 0400, map->debugfs,
->  				    map, &regmap_access_fops);
+..snip..
+> 
+> Could you help a bit in explaining it in English please?
+
+After looking at the assembler code I finally figured out how
+we can get here. And the 'contended' part threw me off. Somehow
+I imagined there are two more more CPUs stampeding here and 
+trying to update the lock->val. But in reality the other CPUs
+are stuck in the arch_mcs_spin_lock_contended spinning on their
+local value.
+
+Perhaps you could add this comment.
+
+/* Once queue_spin_unlock is called (which _subtracts_ _Q_LOCKED_VAL from
+the lock->val and still preserving the tail data), the winner gets to
+claim the ticket. Since we still need the other CPUs to continue and
+preserve the strict ordering in which they setup node->next, we:
+ 1) update lock->val to the tail value (so tail CPU and its index) with
+    _Q_LOCKED_VAL.
+ 2). Once we are done, we poke the other CPU (the one that linked to
+    us) by writting to node->locked (below) so they can make progress and
+    loop on lock->val changing from _Q_LOCKED_MASK to zero).
+
+*/
