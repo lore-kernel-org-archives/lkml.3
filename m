@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967057AbaFQWaS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:30:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54201 "EHLO
+	id S966964AbaFQWbG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:31:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54173 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966395AbaFQVtd (ORCPT
+	with ESMTP id S966369AbaFQVtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:49:33 -0400
+	Tue, 17 Jun 2014 17:49:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 180/212] virtio_blk: don't crash, report error if virtqueue is broken.
-Date: Tue, 17 Jun 2014 14:44:34 -0700
-Message-Id: <1403041506-13646-181-git-send-email-kamal@canonical.com>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 166/212] Input: synaptics - add min/max quirk for the ThinkPad W540
+Date: Tue, 17 Jun 2014 14:44:20 -0700
+Message-Id: <1403041506-13646-167-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -26,57 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rusty Russell <rusty@rustcorp.com.au>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 5261b85e586afe6ebe54e16e0a8acc32fc6d4902 upstream.
+commit 0b5fe736fe923f1f5e05413878d5990e92ffbdf5 upstream.
 
-A bad implementation of virtio might cause us to mark the virtqueue
-broken: we'll dev_err() in that case, and the device is useless, but
-let's not BUG_ON().
+https://bugzilla.redhat.com/show_bug.cgi?id=1096436
 
-ENOMEM or ENOSPC implies the ring is full, and we should try again
-later (-ENOMEM is documented to happen, but doesn't, as we fall
-through to ENOSPC).
-
-EIO means it's broken.
-
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Tested-and-reported-by: ajayr@bigfoot.com
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/block/virtio_blk.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/input/mouse/synaptics.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index 6a680d4..704d6c8 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -158,6 +158,7 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
- 	unsigned long flags;
- 	unsigned int num;
- 	const bool last = (req->cmd_flags & REQ_END) != 0;
-+	int err;
- 
- 	BUG_ON(req->nr_phys_segments + 2 > vblk->sg_elems);
- 
-@@ -198,11 +199,16 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
- 	}
- 
- 	spin_lock_irqsave(&vblk->vq_lock, flags);
--	if (__virtblk_add_req(vblk->vq, vbr, vbr->sg, num) < 0) {
-+	err = __virtblk_add_req(vblk->vq, vbr, vbr->sg, num);
-+	if (err) {
- 		virtqueue_kick(vblk->vq);
- 		spin_unlock_irqrestore(&vblk->vq_lock, flags);
- 		blk_mq_stop_hw_queue(hctx);
--		return BLK_MQ_RQ_QUEUE_BUSY;
-+		/* Out of mem doesn't actually happen, since we fall back
-+		 * to direct descriptors */
-+		if (err == -ENOMEM || err == -ENOSPC)
-+			return BLK_MQ_RQ_QUEUE_BUSY;
-+		return BLK_MQ_RQ_QUEUE_ERROR;
- 	}
- 
- 	if (last)
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index 3c511c4..fa1dee5 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -1563,6 +1563,14 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
+ 		.driver_data = (int []){1024, 5112, 2024, 4832},
+ 	},
+ 	{
++		/* Lenovo ThinkPad W540 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad W540"),
++		},
++		.driver_data = (int []){1024, 5112, 2024, 4832},
++	},
++	{
+ 		/* Lenovo Yoga S1 */
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
 -- 
 1.9.1
 
