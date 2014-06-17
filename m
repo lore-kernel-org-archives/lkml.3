@@ -1,99 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965462AbaFQQla (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:41:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50874 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934141AbaFQQZN (ORCPT
+	id S965663AbaFQQlq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:41:46 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:45362 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965469AbaFQQln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:25:13 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 111/121] ALSA: usb-audio: work around corrupted TEAC UD-H01 feedback data
-Date: Tue, 17 Jun 2014 09:18:09 -0700
-Message-Id: <1403021899-16708-84-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
-References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 17 Jun 2014 12:41:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <CANq1E4QdGz6cRm2Y-vMQHV1O=VK74XNP8qCAmiAskVaVKpJuxg@mail.gmail.com>
+References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
+ <CALCETrVoE+JO2rLsBUHAOJdvescEEjxikj8iQ339Nxfopfc7pw@mail.gmail.com>
+ <CANq1E4SaWLD=hNEc-CDJbNnrGfXE_PkxZFBhpW4tbK7wor7xPA@mail.gmail.com>
+ <CALCETrU8N9EbnJ3=oQ1WQCG9Vunn3nR9Ba=J48wJm0SuH0YB4A@mail.gmail.com>
+ <CANq1E4QQUKHabheq18AzkVZk3WDtAeC-6W66tVNB+EKgYOx1Vg@mail.gmail.com>
+ <53A01049.6020502@redhat.com> <CANq1E4T3KJZ++=KF2OZ_dd+NvPqg+=4Pw6O7Po3-ZxaaMHPukw@mail.gmail.com>
+ <CALCETrVpZ0vFM4usHK+tQhk234Y2jWzB1522kGcGvdQQFAqsZQ@mail.gmail.com> <CANq1E4QdGz6cRm2Y-vMQHV1O=VK74XNP8qCAmiAskVaVKpJuxg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 17 Jun 2014 09:41:22 -0700
+Message-ID: <CALCETrVerC155vzO-1Js1W8cRTYat0-+OGOxW+kSynJor6rJag@mail.gmail.com>
+Subject: Re: [PATCH v3 0/7] File Sealing & memfd_create()
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>, Greg KH <greg@kroah.com>,
+        Florian Weimer <fweimer@redhat.com>, Hugh Dickins <hughd@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Daniel Mack <zonque@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Tony Battersby <tonyb@cybernetics.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.24 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jun 17, 2014 at 9:36 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
+>
+> On Tue, Jun 17, 2014 at 6:20 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> Can you summarize why holes can't be reliably backed by the zero page?
+>
+> To answer this, I will quote Hugh from "PATCH v2 1/3":
+>
+>> We do already use the ZERO_PAGE instead of allocating when it's a
+>> simple read; and on the face of it, we could extend that to mmap
+>> once the file is sealed.  But I am rather afraid to do so - for
+>> many years there was an mmap /dev/zero case which did that, but
+>> it was an easily forgotten case which caught us out at least
+>> once, so I'm reluctant to reintroduce it now for sealing.
+>>
+>> Anyway, I don't expect you to resolve the issue of sealed holes:
+>> that's very much my territory, to give you support on.
+>
+> Holes can be avoided with a simple fallocate(). I don't understand why
+> I should make SEAL_WRITE do the fallocate for the caller. During the
+> discussion of memfd_create() I was told to drop the "size" parameter,
+> because it is redundant. I don't see how this implicit fallocate()
+> does not fall into the same category?
+>
 
-------------------
+I'm really confused now.
 
-From: Clemens Ladisch <clemens@ladisch.de>
+If I SEAL_WRITE a file, and then I mmap it PROT_READ, and then I read
+it, is that a "simple read"?  If so, doesn't that mean that there's no
+problem?
 
-commit 7040b6d1febfdbd9c1595efb751d492cd2503f96 upstream.
-
-The TEAC UD-H01 firmware sends wrong feedback frequency values, thus
-causing the PC to send the samples at a wrong rate, which results in
-clicks and crackles in the output.
-
-Add a workaround to detect and fix the corruption.
-
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-[mick37@gmx.de: use sender->udh01_fb_quirk rather than
- ep->udh01_fb_quirk in snd_usb_handle_sync_urb()]
-Reported-and-tested-by: Mick <mick37@gmx.de>
-Reported-and-tested-by: Andrea Messa <andr.messa@tiscali.it>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- sound/usb/card.h     |  1 +
- sound/usb/endpoint.c | 15 ++++++++++++++-
- 2 files changed, 15 insertions(+), 1 deletion(-)
-
-diff --git a/sound/usb/card.h b/sound/usb/card.h
-index d32ea41..bcb2f7e 100644
---- a/sound/usb/card.h
-+++ b/sound/usb/card.h
-@@ -88,6 +88,7 @@ struct snd_usb_endpoint {
- 	unsigned int curframesize;      /* current packet size in frames (for capture) */
- 	unsigned int syncmaxsize;	/* sync endpoint packet size */
- 	unsigned int fill_max:1;	/* fill max packet size always */
-+	unsigned int udh01_fb_quirk:1;	/* corrupted feedback data */
- 	unsigned int datainterval;      /* log_2 of data packet interval */
- 	unsigned int syncinterval;	/* P for adaptive mode, 0 otherwise */
- 	unsigned char silence_value;
-diff --git a/sound/usb/endpoint.c b/sound/usb/endpoint.c
-index d5ec603..f46a4e0 100644
---- a/sound/usb/endpoint.c
-+++ b/sound/usb/endpoint.c
-@@ -469,6 +469,10 @@ struct snd_usb_endpoint *snd_usb_add_endpoint(struct snd_usb_audio *chip,
- 			ep->syncinterval = 3;
- 
- 		ep->syncmaxsize = le16_to_cpu(get_endpoint(alts, 1)->wMaxPacketSize);
-+
-+		if (chip->usb_id == USB_ID(0x0644, 0x8038) /* TEAC UD-H01 */ &&
-+		    ep->syncmaxsize == 4)
-+			ep->udh01_fb_quirk = 1;
- 	}
- 
- 	list_add_tail(&ep->list, &chip->ep_list);
-@@ -1068,7 +1072,16 @@ void snd_usb_handle_sync_urb(struct snd_usb_endpoint *ep,
- 	if (f == 0)
- 		return;
- 
--	if (unlikely(ep->freqshift == INT_MIN)) {
-+	if (unlikely(sender->udh01_fb_quirk)) {
-+		/*
-+		 * The TEAC UD-H01 firmware sometimes changes the feedback value
-+		 * by +/- 0x1.0000.
-+		 */
-+		if (f < ep->freqn - 0x8000)
-+			f += 0x10000;
-+		else if (f > ep->freqn + 0x8000)
-+			f -= 0x10000;
-+	} else if (unlikely(ep->freqshift == INT_MIN)) {
- 		/*
- 		 * The first time we see a feedback value, determine its format
- 		 * by shifting it left or right until it matches the nominal
--- 
-1.9.1
-
+--Andy
