@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934101AbaFQQ7r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:59:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50410 "EHLO
+	id S965705AbaFQQ7p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:59:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50412 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933651AbaFQQPe (ORCPT
+	with ESMTP id S933090AbaFQQPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:15:34 -0400
+	Tue, 17 Jun 2014 12:15:35 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexander Usyskin <alexander.usyskin@intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Chris Mason <clm@fb.com>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 009/121] mei: ignore client writing state during cb completion
-Date: Tue, 17 Jun 2014 09:13:22 -0700
-Message-Id: <1403021714-16320-10-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 008/121] mlx4_en: don't use napi_synchronize inside mlx4_en_netpoll
+Date: Tue, 17 Jun 2014 09:13:21 -0700
+Message-Id: <1403021714-16320-9-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021714-16320-1-git-send-email-kamal@canonical.com>
 References: <1403021714-16320-1-git-send-email-kamal@canonical.com>
@@ -29,59 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+From: Chris Mason <clm@fb.com>
 
-commit 34ec43661fe8f1977dd0f05353302ae2ed10aabb upstream.
+commit c98235cb8584a72e95786e17d695a8e5fafcd766 upstream.
 
-Ignore client writing state during cb completion to fix a memory
-leak.
+The mlx4 driver is triggering schedules while atomic inside
+mlx4_en_netpoll:
 
-When moving cbs to the completion list we should not look at
-writing_state as this state can be already overwritten by next
-write, the fact that a cb is on the write waiting list means
-that it was already written to the HW and we can safely complete it.
+	spin_lock_irqsave(&cq->lock, flags);
+	napi_synchronize(&cq->napi);
+		^^^^^ msleep here
+	mlx4_en_process_rx_cq(dev, cq, 0);
+	spin_unlock_irqrestore(&cq->lock, flags);
 
-Same pays for wait in poll handler, we do not have to check the state
-wake is done after completion list processing.
+This was part of a patch by Alexander Guller from Mellanox in 2011,
+but it still isn't upstream.
 
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ kamal: backport to 3.8: context ]
+Signed-off-by: Chris Mason <clm@fb.com>
+Acked-By: Amir Vadai <amirv@mellanox.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/misc/mei/interrupt.c | 3 +--
- drivers/misc/mei/main.c      | 3 +--
- 2 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/mellanox/mlx4/en_cq.c     | 1 -
+ drivers/net/ethernet/mellanox/mlx4/en_netdev.c | 6 +-----
+ drivers/net/ethernet/mellanox/mlx4/mlx4_en.h   | 1 -
+ 3 files changed, 1 insertion(+), 7 deletions(-)
 
-diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
-index 04fa213..b7fed05 100644
---- a/drivers/misc/mei/interrupt.c
-+++ b/drivers/misc/mei/interrupt.c
-@@ -906,8 +906,7 @@ static int mei_irq_thread_write_handler(struct mei_device *dev,
+diff --git a/drivers/net/ethernet/mellanox/mlx4/en_cq.c b/drivers/net/ethernet/mellanox/mlx4/en_cq.c
+index b8d0854..20a0fae 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/en_cq.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_cq.c
+@@ -55,7 +55,6 @@ int mlx4_en_create_cq(struct mlx4_en_priv *priv,
  
- 		cl->status = 0;
- 		list_del(&pos->list);
--		if (MEI_WRITING == cl->writing_state &&
--		    pos->fop_type == MEI_FOP_WRITE &&
-+		if (pos->fop_type == MEI_FOP_WRITE &&
- 		    cl != &dev->iamthif_cl) {
- 			dev_dbg(&dev->pdev->dev, "MEI WRITE COMPLETE\n");
- 			cl->writing_state = MEI_WRITE_COMPLETE;
-diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-index 43fb52f..9ad4ae0 100644
---- a/drivers/misc/mei/main.c
-+++ b/drivers/misc/mei/main.c
-@@ -701,8 +701,7 @@ static unsigned int mei_poll(struct file *file, poll_table *wait)
- 	mutex_unlock(&dev->device_lock);
- 	poll_wait(file, &cl->tx_wait, wait);
- 	mutex_lock(&dev->device_lock);
--	if (MEI_WRITE_COMPLETE == cl->writing_state)
--		mask |= (POLLIN | POLLRDNORM);
-+	mask |= (POLLIN | POLLRDNORM);
+ 	cq->ring = ring;
+ 	cq->is_tx = mode;
+-	spin_lock_init(&cq->lock);
  
- out:
- 	mutex_unlock(&dev->device_lock);
+ 	err = mlx4_alloc_hwq_res(mdev->dev, &cq->wqres,
+ 				cq->buf_size, 2 * PAGE_SIZE);
+diff --git a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+index bf3f4bc..29c8ce3 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+@@ -823,15 +823,11 @@ static void mlx4_en_netpoll(struct net_device *dev)
+ {
+ 	struct mlx4_en_priv *priv = netdev_priv(dev);
+ 	struct mlx4_en_cq *cq;
+-	unsigned long flags;
+ 	int i;
+ 
+ 	for (i = 0; i < priv->rx_ring_num; i++) {
+ 		cq = &priv->rx_cq[i];
+-		spin_lock_irqsave(&cq->lock, flags);
+-		napi_synchronize(&cq->napi);
+-		mlx4_en_process_rx_cq(dev, cq, 0);
+-		spin_unlock_irqrestore(&cq->lock, flags);
++		napi_schedule(&cq->napi);
+ 	}
+ }
+ #endif
+diff --git a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
+index 8d54412..b226e76 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
++++ b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
+@@ -295,7 +295,6 @@ struct mlx4_en_cq {
+ 	struct mlx4_cq          mcq;
+ 	struct mlx4_hwq_resources wqres;
+ 	int                     ring;
+-	spinlock_t              lock;
+ 	struct net_device      *dev;
+ 	struct napi_struct	napi;
+ 	int size;
 -- 
 1.9.1
 
