@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698AbaFQHjP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 03:39:15 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:44384 "EHLO
+	id S1755601AbaFQHjO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 03:39:14 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:44394 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754214AbaFQHjI (ORCPT
+	with ESMTP id S1755427AbaFQHjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 17 Jun 2014 03:39:08 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
@@ -16,9 +16,9 @@ Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-doc@vger.kernel.org, dev@linux-sunxi.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v4 4/7] regulator: axp20x: reset probe data before each probe
-Date: Tue, 17 Jun 2014 09:38:40 +0200
-Message-Id: <1402990723-28138-5-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v4 5/7] regulator: add support for regulator set registration
+Date: Tue, 17 Jun 2014 09:38:41 +0200
+Message-Id: <1402990723-28138-6-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1402990723-28138-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1402990723-28138-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -26,40 +26,288 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The init_data and of_node fields of the axp2xx_matches tables are filled
-at each device probe by the axp20x_regulator_parse_dt function (which then
-calls the of_regulator_match function).
-This means we can probe a new device and consider data initialized during
-the probe of another device as valid.
+PMIC devices often provide several regulators, and these regulators are
+all using the same regmap and are all attached to the same device (the
+PMIC device).
 
-Reset init_data and of_node field to NULL before each probe in order to
-avoid this kind of issue.
+Add helper functions (both simple and resource managed versions) to
+register and unregister such kind of regulator set.
+
+This implementation handles self dependency issues where one regulator
+provided the PMIC depends on another one provided by the same PMIC.
 
 Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 ---
- drivers/regulator/axp20x-regulator.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/regulator/core.c         | 106 +++++++++++++++++++++++++++++++++++++++
+ drivers/regulator/devres.c       |  68 +++++++++++++++++++++++++
+ include/linux/regulator/driver.h |  51 +++++++++++++++++++
+ 3 files changed, 225 insertions(+)
 
-diff --git a/drivers/regulator/axp20x-regulator.c b/drivers/regulator/axp20x-regulator.c
-index 7a30f49..d42bf6d 100644
---- a/drivers/regulator/axp20x-regulator.c
-+++ b/drivers/regulator/axp20x-regulator.c
-@@ -324,6 +324,15 @@ static int axp20x_regulator_probe(struct platform_device *pdev)
- 		nregulators = AXP20X_REG_ID_MAX;
- 	}
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 4c1f999..f37a604 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -3607,6 +3607,112 @@ void regulator_unregister(struct regulator_dev *rdev)
+ EXPORT_SYMBOL_GPL(regulator_unregister);
  
-+	/*
-+	 * Reset matches table (this table might have been modified by a
-+	 * previous AXP2xx device probe).
-+	 */
-+	for (i = 0; i < nmatches; i++) {
-+		matches[i].init_data = NULL;
-+		matches[i].of_node = NULL;
+ /**
++ * regulator_set_register - register a set of regulators
++ * @config: runtime configuration for regulator set
++ *
++ * Called by regulator drivers to register a set of regulators.
++ * Returns a valid pointer to struct regulator_set on success
++ * or an ERR_PTR() on error.
++ */
++struct regulator_set *
++regulator_set_register(const struct regulator_set_config *config)
++{
++	struct regulator_set *rset;
++	int prev_nregistered = -1;
++	int nregistered = 0;
++	int ret;
++	int i;
++
++	if (!config->descs || !config->nregulators)
++		return ERR_PTR(-EINVAL);
++
++	rset = kzalloc(sizeof(*rset) +
++		       (config->nregulators * sizeof(struct regulator_dev *)),
++		       GFP_KERNEL);
++	if (!rset)
++		return ERR_PTR(-ENOMEM);
++
++	rset->nregulators = config->nregulators;
++
++	while (nregistered < config->nregulators &&
++	       prev_nregistered < nregistered) {
++
++		prev_nregistered = nregistered;
++
++		for (i = 0; i < config->nregulators; i++) {
++			struct regulator_config conf;
++			struct regulator_dev *regulator;
++
++			if (rset->regulators[i])
++				continue;
++
++			memset(&conf, 0, sizeof(conf));
++
++			conf.dev = config->dev;
++			conf.regmap = config->regmap;
++			conf.driver_data = config->driver_data;
++			if (config->matches && config->matches[i].init_data)
++				conf.init_data = config->matches[i].init_data;
++			else if (config->init_data)
++				conf.init_data = config->init_data[i];
++
++			if (config->matches)
++				conf.of_node = config->matches[i].of_node;
++
++			regulator = regulator_register(&config->descs[i],
++						       &conf);
++			if (IS_ERR(regulator)) {
++				ret = PTR_ERR(regulator);
++				if (ret == -EPROBE_DEFER)
++					continue;
++
++				goto err;
++			}
++
++			rset->regulators[i] = regulator;
++			nregistered++;
++		}
 +	}
 +
- 	ret = axp20x_regulator_parse_dt(pdev, matches, nmatches);
- 	if (ret)
- 		return ret;
++	if (nregistered < config->nregulators) {
++		ret = -EPROBE_DEFER;
++		goto err;
++	}
++
++	return rset;
++
++err:
++	for (i = 0; i < config->nregulators; i++) {
++		if (rset->regulators[i])
++			regulator_unregister(rset->regulators[i]);
++	}
++
++	kfree(rset);
++
++	return ERR_PTR(ret);
++}
++EXPORT_SYMBOL_GPL(regulator_set_register);
++
++/**
++ * regulator_set_unregister - unregister regulator set
++ * @rset: regulator set to unregister
++ *
++ * Called by regulator drivers to unregister a regulator set.
++ */
++void regulator_set_unregister(struct regulator_set *rset)
++{
++	int i;
++
++	for (i = 0; i < rset->nregulators; i++) {
++		if (rset->regulators[i])
++			regulator_unregister(rset->regulators[i]);
++	}
++
++	kfree(rset);
++}
++EXPORT_SYMBOL_GPL(regulator_set_unregister);
++
++/**
+  * regulator_suspend_prepare - prepare regulators for system wide suspend
+  * @state: system suspend state
+  *
+diff --git a/drivers/regulator/devres.c b/drivers/regulator/devres.c
+index 8f785bc..36ac40a 100644
+--- a/drivers/regulator/devres.c
++++ b/drivers/regulator/devres.c
+@@ -251,6 +251,74 @@ void devm_regulator_unregister(struct device *dev, struct regulator_dev *rdev)
+ }
+ EXPORT_SYMBOL_GPL(devm_regulator_unregister);
+ 
++static void devm_rset_release(struct device *dev, void *res)
++{
++	regulator_set_unregister(*(struct regulator_set **)res);
++}
++
++/**
++ * devm_regulator_set_register - Resource managed regulator_set_register()
++ * @dev: device registering the regulator set
++ * @config: runtime configuration for regulator set
++ *
++ * Called by regulator drivers to register a set of regulators.  Returns a
++ * valid pointer to struct regulator_set on success or an ERR_PTR() on
++ * error.  The regulator will automatically be released when the device
++ * is unbound.
++ */
++struct regulator_set *
++devm_regulator_set_register(struct device *dev,
++			    const struct regulator_set_config *config)
++{
++	struct regulator_set **ptr, *rset;
++
++	ptr = devres_alloc(devm_rset_release, sizeof(*ptr),
++			   GFP_KERNEL);
++	if (!ptr)
++		return ERR_PTR(-ENOMEM);
++
++	rset = regulator_set_register(config);
++	if (!IS_ERR(rset)) {
++		*ptr = rset;
++		devres_add(dev, ptr);
++	} else {
++		devres_free(ptr);
++	}
++
++	return rset;
++}
++EXPORT_SYMBOL_GPL(devm_regulator_set_register);
++
++static int devm_rset_match(struct device *dev, void *res, void *data)
++{
++	struct regulator_set **r = res;
++	if (!r || !*r) {
++		WARN_ON(!r || !*r);
++		return 0;
++	}
++	return *r == data;
++}
++
++/**
++ * devm_regulator_set_unregister - Resource managed regulator_set_unregister()
++ * @dev: device unregistering the regulator set
++ * @rset: regulator set to release
++ *
++ * Unregister a regulator set registered with devm_regulator_set_register().
++ * Normally this function will not need to be called and the resource
++ * management code will ensure that the resource is freed.
++ */
++void devm_regulator_set_unregister(struct device *dev,
++				   struct regulator_set *rset)
++{
++	int rc;
++
++	rc = devres_release(dev, devm_rdev_release, devm_rset_match, rset);
++	if (rc != 0)
++		WARN_ON(rc);
++}
++EXPORT_SYMBOL_GPL(devm_regulator_unregister);
++
+ struct regulator_supply_alias_match {
+ 	struct device *dev;
+ 	const char *id;
+diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
+index bbe03a1..b683f68 100644
+--- a/include/linux/regulator/driver.h
++++ b/include/linux/regulator/driver.h
+@@ -350,6 +350,48 @@ struct regulator_dev {
+ 	unsigned int ena_gpio_state:1;
+ };
+ 
++/**
++ * struct regulator_set_config - Dynamic regulator set descriptor
++ *
++ * This structure describe a regulator and each regulator in this set
++ * will be registered using informations passed through regulator_desc
++ * and of_regulator_match tables.
++ *
++ * @dev: struct device providing the regulator set.
++ * @driver_data: private driver data for this regulator set.
++ * @regmap: regmap to use for core regmap helpers if dev_get_regulator() is
++ *          insufficient.
++ * @descs: table of regulator descriptors.
++ * @matches: table of DT regulator descriptors. This table should have
++ *           been filled by the of_regulator_match function.
++ * @init_data: a table of init_data in case matches is NULL or the init_data
++ *             of the match entry is NULL.
++ * @nregulators: number of regulators in the regulator set.
++ */
++struct regulator_set_config {
++	struct device *dev;
++	void *driver_data;
++	struct regmap *regmap;
++	const struct regulator_desc *descs;
++	const struct of_regulator_match *matches;
++	const struct regulator_init_data **init_data;
++	int nregulators;
++};
++
++/*
++ * struct regulator_set - Regulator set
++ *
++ * This structure stores a set of regulator devices provided by a single
++ * device (e.g. a PMIC device).
++ *
++ * @nregulators: number of regulators in the set
++ * @regulators: regulators table
++ */
++struct regulator_set {
++	int nregulators;
++	struct regulator_dev *regulators[0];
++};
++
+ struct regulator_dev *
+ regulator_register(const struct regulator_desc *regulator_desc,
+ 		   const struct regulator_config *config);
+@@ -360,6 +402,15 @@ devm_regulator_register(struct device *dev,
+ void regulator_unregister(struct regulator_dev *rdev);
+ void devm_regulator_unregister(struct device *dev, struct regulator_dev *rdev);
+ 
++struct regulator_set *
++regulator_set_register(const struct regulator_set_config *config);
++struct regulator_set *
++devm_regulator_set_register(struct device *dev,
++			    const struct regulator_set_config *config);
++void regulator_set_unregister(struct regulator_set *rset);
++void devm_regulator_set_unregister(struct device *dev,
++				   struct regulator_set *rset);
++
+ int regulator_notifier_call_chain(struct regulator_dev *rdev,
+ 				  unsigned long event, void *data);
+ 
 -- 
 1.8.3.2
 
