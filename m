@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966974AbaFQVwC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:52:02 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54694 "EHLO
+	id S967080AbaFQVwW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:52:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54796 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966954AbaFQVv5 (ORCPT
+	with ESMTP id S967033AbaFQVwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:51:57 -0400
+	Tue, 17 Jun 2014 17:52:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+Cc: Paul Bolle <pebolle@tiscali.nl>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 187/212] iwlwifi: mvm: fix setting channel in monitor mode
-Date: Tue, 17 Jun 2014 14:44:41 -0700
-Message-Id: <1403041506-13646-188-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 089/212] ACPI: Remove Kconfig symbol ACPI_PROCFS
+Date: Tue, 17 Jun 2014 14:43:03 -0700
+Message-Id: <1403041506-13646-90-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -27,125 +28,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit 1c4abec0baf25ffb92a28cc99d4231feeaa4d3f3 upstream.
+commit 7919010c4224e07b871f3b5513d245cc029fcd67 upstream.
 
-There was a deadlock in monitor mode when we were setting the
-channel if the channel was not 1.
+Nothing cares about ACPI_PROCFS. This has been the case since v2.6.38.
+This Kconfig symbol serves no purpose and its help text is now
+misleading. It can safely be removed. If this symbol would be needed
+again in the future it can be readded in a commit that adds code that
+actually uses it.
 
-======================================================
-[ INFO: possible circular locking dependency detected ]
-3.14.3 #4 Not tainted
--------------------------------------------------------
-iw/3323 is trying to acquire lock:
- (&local->chanctx_mtx){+.+.+.}, at: [<ffffffffa062e2f2>] ieee80211_vif_release_channel+0x42/0xb0 [mac80211]
-
-but task is already holding lock:
- (&local->iflist_mtx){+.+...}, at: [<ffffffffa0609e0a>] ieee80211_set_monitor_channel+0x5a/0x1b0 [mac80211]
-
-which lock already depends on the new lock.
-
-the existing dependency chain (in reverse order) is:
-
--> #2 (&local->iflist_mtx){+.+...}:
-       [<ffffffff810d95bb>] __lock_acquire+0xb3b/0x13b0
-       [<ffffffff810d9ee0>] lock_acquire+0xb0/0x1f0
-       [<ffffffff817eb9c8>] mutex_lock_nested+0x78/0x4f0
-       [<ffffffffa06225cf>] ieee80211_iterate_active_interfaces+0x2f/0x60 [mac80211]
-       [<ffffffffa0518189>] iwl_mvm_recalc_multicast+0x49/0xa0 [iwlmvm]
-       [<ffffffffa051822e>] iwl_mvm_configure_filter+0x4e/0x70 [iwlmvm]
-       [<ffffffffa05e6d43>] ieee80211_configure_filter+0x153/0x5f0 [mac80211]
-       [<ffffffffa05e71f5>] ieee80211_reconfig_filter+0x15/0x20 [mac80211]
-       [snip]
-
--> #1 (&mvm->mutex){+.+.+.}:
-       [<ffffffff810d95bb>] __lock_acquire+0xb3b/0x13b0
-       [<ffffffff810d9ee0>] lock_acquire+0xb0/0x1f0
-       [<ffffffff817eb9c8>] mutex_lock_nested+0x78/0x4f0
-       [<ffffffffa0517246>] iwl_mvm_add_chanctx+0x56/0xe0 [iwlmvm]
-       [<ffffffffa062ca1e>] ieee80211_new_chanctx+0x13e/0x410 [mac80211]
-       [<ffffffffa062d953>] ieee80211_vif_use_channel+0x1c3/0x5a0 [mac80211]
-       [<ffffffffa06035ab>] ieee80211_add_virtual_monitor+0x1ab/0x6b0 [mac80211]
-       [<ffffffffa06052ea>] ieee80211_do_open+0xe6a/0x15a0 [mac80211]
-       [<ffffffffa0605a79>] ieee80211_open+0x59/0x60 [mac80211]
-       [snip]
-
--> #0 (&local->chanctx_mtx){+.+.+.}:
-       [<ffffffff810d6cb7>] check_prevs_add+0x977/0x980
-       [<ffffffff810d95bb>] __lock_acquire+0xb3b/0x13b0
-       [<ffffffff810d9ee0>] lock_acquire+0xb0/0x1f0
-       [<ffffffff817eb9c8>] mutex_lock_nested+0x78/0x4f0
-       [<ffffffffa062e2f2>] ieee80211_vif_release_channel+0x42/0xb0 [mac80211]
-       [<ffffffffa0609ec3>] ieee80211_set_monitor_channel+0x113/0x1b0 [mac80211]
-       [<ffffffffa058fb37>] cfg80211_set_monitor_channel+0x77/0x2b0 [cfg80211]
-       [<ffffffffa056e0b2>] __nl80211_set_channel+0x122/0x140 [cfg80211]
-       [<ffffffffa0581374>] nl80211_set_wiphy+0x284/0xaf0 [cfg80211]
-       [snip]
-
-other info that might help us debug this:
-
-Chain exists of:
-  &local->chanctx_mtx --> &mvm->mutex --> &local->iflist_mtx
-
- Possible unsafe locking scenario:
-
-       CPU0                    CPU1
-       ----                    ----
-  lock(&local->iflist_mtx);
-                               lock(&mvm->mutex);
-                               lock(&local->iflist_mtx);
-  lock(&local->chanctx_mtx);
-
- *** DEADLOCK ***
-
-This deadlock actually occurs:
-INFO: task iw:3323 blocked for more than 120 seconds.
-      Not tainted 3.14.3 #4
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-iw              D ffff8800c8afcd80  4192  3323   3322 0x00000000
- ffff880078fdb7e0 0000000000000046 ffff8800c8afcd80 ffff880078fdbfd8
- 00000000001d5540 00000000001d5540 ffff8801141b0000 ffff8800c8afcd80
- ffff880078ff9e38 ffff880078ff9e38 ffff880078ff9e40 0000000000000246
-Call Trace:
- [<ffffffff817ea841>] schedule_preempt_disabled+0x31/0x80
- [<ffffffff817ebaed>] mutex_lock_nested+0x19d/0x4f0
- [<ffffffffa06225cf>] ? ieee80211_iterate_active_interfaces+0x2f/0x60 [mac80211]
- [<ffffffffa06225cf>] ? ieee80211_iterate_active_interfaces+0x2f/0x60 [mac80211]
- [<ffffffffa052a680>] ? iwl_mvm_power_mac_update_mode+0xc0/0xc0 [iwlmvm]
- [<ffffffffa06225cf>] ieee80211_iterate_active_interfaces+0x2f/0x60 [mac80211]
- [<ffffffffa0529357>] _iwl_mvm_power_update_binding+0x27/0x80 [iwlmvm]
- [<ffffffffa0516eb1>] iwl_mvm_unassign_vif_chanctx+0x81/0xc0 [iwlmvm]
- [<ffffffffa062d3ff>] __ieee80211_vif_release_channel+0xdf/0x470 [mac80211]
- [<ffffffffa062e2fa>] ieee80211_vif_release_channel+0x4a/0xb0 [mac80211]
- [<ffffffffa0609ec3>] ieee80211_set_monitor_channel+0x113/0x1b0 [mac80211]
- [<ffffffffa058fb37>] cfg80211_set_monitor_channel+0x77/0x2b0 [cfg80211]
- [<ffffffffa056e0b2>] __nl80211_set_channel+0x122/0x140 [cfg80211]
- [<ffffffffa0581374>] nl80211_set_wiphy+0x284/0xaf0 [cfg80211]
-
-This fixes https://bugzilla.kernel.org/show_bug.cgi?id=75541
-
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-[ kamal: backport to 3.13: omit iwl_mvm_recalc_multicast change (not impl.) ]
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[ kamal: 3.13-stable prereq for
+  e2a7c3d ACPI: Revert "ACPI: Remove CONFIG_ACPI_PROCFS_POWER and cm_sbsc.c" ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/iwlwifi/mvm/mac80211.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/ia64/configs/generic_defconfig |  1 -
+ arch/ia64/configs/tiger_defconfig   |  1 -
+ arch/ia64/configs/zx1_defconfig     |  1 -
+ arch/x86/configs/i386_defconfig     |  1 -
+ arch/x86/configs/x86_64_defconfig   |  1 -
+ drivers/acpi/Kconfig                | 13 -------------
+ 6 files changed, 18 deletions(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/mvm/mac80211.c b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-index b3338b1..3960541 100644
---- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-@@ -820,7 +820,7 @@ static int iwl_mvm_configure_mcast_filter(struct iwl_mvm *mvm,
+diff --git a/arch/ia64/configs/generic_defconfig b/arch/ia64/configs/generic_defconfig
+index efbd292..f4a0daa 100644
+--- a/arch/ia64/configs/generic_defconfig
++++ b/arch/ia64/configs/generic_defconfig
+@@ -25,7 +25,6 @@ CONFIG_KEXEC=y
+ CONFIG_CRASH_DUMP=y
+ CONFIG_EFI_VARS=y
+ CONFIG_BINFMT_MISC=m
+-CONFIG_ACPI_PROCFS=y
+ CONFIG_ACPI_BUTTON=m
+ CONFIG_ACPI_FAN=m
+ CONFIG_ACPI_DOCK=y
+diff --git a/arch/ia64/configs/tiger_defconfig b/arch/ia64/configs/tiger_defconfig
+index 0f4e9e4..0fed9ae 100644
+--- a/arch/ia64/configs/tiger_defconfig
++++ b/arch/ia64/configs/tiger_defconfig
+@@ -26,7 +26,6 @@ CONFIG_IA64_PALINFO=y
+ CONFIG_KEXEC=y
+ CONFIG_EFI_VARS=y
+ CONFIG_BINFMT_MISC=m
+-CONFIG_ACPI_PROCFS=y
+ CONFIG_ACPI_BUTTON=m
+ CONFIG_ACPI_FAN=m
+ CONFIG_ACPI_PROCESSOR=m
+diff --git a/arch/ia64/configs/zx1_defconfig b/arch/ia64/configs/zx1_defconfig
+index fc7aba0..54bc72e 100644
+--- a/arch/ia64/configs/zx1_defconfig
++++ b/arch/ia64/configs/zx1_defconfig
+@@ -16,7 +16,6 @@ CONFIG_IA64_PALINFO=y
+ CONFIG_CRASH_DUMP=y
+ CONFIG_EFI_VARS=y
+ CONFIG_BINFMT_MISC=y
+-CONFIG_ACPI_PROCFS=y
+ CONFIG_HOTPLUG_PCI=y
+ CONFIG_HOTPLUG_PCI_ACPI=y
+ CONFIG_PACKET=y
+diff --git a/arch/x86/configs/i386_defconfig b/arch/x86/configs/i386_defconfig
+index a7fef26..619e7f7 100644
+--- a/arch/x86/configs/i386_defconfig
++++ b/arch/x86/configs/i386_defconfig
+@@ -60,7 +60,6 @@ CONFIG_CRASH_DUMP=y
+ CONFIG_HIBERNATION=y
+ CONFIG_PM_DEBUG=y
+ CONFIG_PM_TRACE_RTC=y
+-CONFIG_ACPI_PROCFS=y
+ CONFIG_ACPI_DOCK=y
+ CONFIG_CPU_FREQ=y
+ # CONFIG_CPU_FREQ_STAT is not set
+diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
+index c1119d4..6181c69 100644
+--- a/arch/x86/configs/x86_64_defconfig
++++ b/arch/x86/configs/x86_64_defconfig
+@@ -58,7 +58,6 @@ CONFIG_CRASH_DUMP=y
+ CONFIG_HIBERNATION=y
+ CONFIG_PM_DEBUG=y
+ CONFIG_PM_TRACE_RTC=y
+-CONFIG_ACPI_PROCFS=y
+ CONFIG_ACPI_DOCK=y
+ CONFIG_CPU_FREQ=y
+ # CONFIG_CPU_FREQ_STAT is not set
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 4770de5..436111b 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -43,19 +43,6 @@ config ACPI_SLEEP
+ 	depends on SUSPEND || HIBERNATION
+ 	default y
  
- 	memcpy(mcast_filter_cmd.bssid, vif->bss_conf.bssid, ETH_ALEN);
- 
--	return iwl_mvm_send_cmd_pdu(mvm, MCAST_FILTER_CMD, CMD_SYNC,
-+	return iwl_mvm_send_cmd_pdu(mvm, MCAST_FILTER_CMD, CMD_ASYNC,
- 				    sizeof(mcast_filter_cmd),
- 				    &mcast_filter_cmd);
- }
+-config ACPI_PROCFS
+-	bool "Deprecated /proc/acpi files"
+-	depends on PROC_FS
+-	help
+-	  For backwards compatibility, this option allows
+-	  deprecated /proc/acpi/ files to exist, even when
+-	  they have been replaced by functions in /sys.
+-
+-	  This option has no effect on /proc/acpi/ files
+-	  and functions which do not yet exist in /sys.
+-
+-	  Say N to delete /proc/acpi/ files that have moved to /sys/
+-
+ config ACPI_EC_DEBUGFS
+ 	tristate "EC read/write access through /sys/kernel/debug/ec"
+ 	default n
 -- 
 1.9.1
 
