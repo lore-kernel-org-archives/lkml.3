@@ -1,82 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932638AbaFQJLz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 05:11:55 -0400
-Received: from mga11.intel.com ([192.55.52.93]:42546 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932199AbaFQJLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 05:11:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,493,1400050800"; 
-   d="scan'208";a="556682970"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        linux-sparse@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v2 2/2] lib.c: skip --param parameters
-Date: Tue, 17 Jun 2014 12:11:46 +0300
-Message-Id: <1402996306-6811-3-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1402996306-6811-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1402996306-6811-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1755878AbaFQJPO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 05:15:14 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:51664 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755406AbaFQJPM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 05:15:12 -0400
+From: "Javi Merino" <javi.merino@arm.com>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: punit.agrawal@arm.com, broonie@kernel.org,
+        Javi Merino <javi.merino@arm.com>
+Subject: [RFC PATCH v4 0/7] The power allocator thermal governor
+Date: Tue, 17 Jun 2014 10:14:46 +0100
+Message-Id: <1402996493-3578-1-git-send-email-javi.merino@arm.com>
+X-Mailer: git-send-email 1.9.1
+X-OriginalArrivalTime: 17 Jun 2014 09:14:59.0846 (UTC) FILETIME=[9D304260:01CF8A0C]
+X-MC-Unique: 114061710150816601
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s5H9FMxt005744
 
-Very dumb patch to just skip --param allow-store-data-races=0 introduced in
-newer GCC versions.
+Hi linux-pm,
 
-Without this patch sparse recognizes parameter of the --param option as a file
-name which obviously couldn't be found.
+The power allocator governor allocates device power to control
+temperature.  This requires transforming performance requests into
+requested power, which we do with the aid of power models.  Patch 4
+(thermal: add a basic cpu power actor) implements a simple power model
+for cpus.  The division of power between the actors ensures that power
+is allocated where it is needed the most, based on the current
+workload.
 
-The patch for easy implementation's sake slightly changed behaviour of
---version. Instead of exact keyword it will recognize anything starting with
---version as a correct option.
+Patch 1 is a generic documentation of the current thermal framework
+and can be merged separately.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- lib.c | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+Changes since v3:
+  - Use tz->passive to poll faster when the first trip point is hit.
+  - Don't make a special directory for power_actors
+  - Add a DT property for sustainable-power
+  - Simplify the static power interface and pass the current thermal
+    zone in every power_actor_ops to remove the controversial
+    enum power_actor_types
+  - Use locks with the actor_list list
+  - Use cpufreq_get() to get the frequency of the cpu instead of
+    using the notifiers.
+  - Remove the prompt for THERMAL_POWER_ACTOR_CPU when configuring
+    the kernel
 
-diff --git a/lib.c b/lib.c
-index 4e5a846..d5b94c3 100644
---- a/lib.c
-+++ b/lib.c
-@@ -678,6 +678,18 @@ static char **handle_version(char *arg, char **next)
- 	exit(0);
- }
- 
-+static char **handle_param(char *arg, char **next)
-+{
-+	const char *value = NULL;
-+
-+	/* For now just skip any '--param=*' or '--param *' */
-+	value = split_value_from_arg(arg, value);
-+	if (!value)
-+		++next;
-+
-+	return ++next;
-+}
-+
- struct switches {
- 	const char *name;
- 	char **(*fn)(char *, char **);
-@@ -686,13 +698,14 @@ struct switches {
- static char **handle_long_options(char *arg, char **next)
- {
- 	static struct switches cmd[] = {
-+		{ "param", handle_param },
- 		{ "version", handle_version },
- 		{ NULL, NULL }
- 	};
- 	struct switches *s = cmd;
- 
- 	while (s->name) {
--		if (!strcmp(s->name, arg))
-+		if (!strncmp(arg, s->name, strlen(s->name)))
- 			return s->fn(arg, next);
- 		s++;
- 	}
+Changes since v2:
+  - Changed the PI controller into a PID controller
+  - Added static power to the cpu power model
+  - tz parameter max_dissipatable_power renamed to sustainable_power
+  - Register the cpufreq cooling device as part of the
+    power_cpu_actor registration.
+
+Changes since v1:
+  - Fixed finding cpufreq cooling devices in cpufreq_frequency_change()
+  - Replaced the cooling device interface with a separate power actor
+    API
+  - Addressed most of Eduardo's comments
+  - Incorporated ftrace support for bitmask to trace cpumasks
+
+Todo:
+  - Rethink the use of trip points and make it less intrusive
+  - Let platforms override the power allocator governor parameters
+  - Add more tracing and provide scripts to evaluate the proposal.
+  - Tune it to achieve the temperature stability we are aiming for
+
+Cheers,
+Javi & Punit
+
+Javi Merino (6):
+  thermal: document struct thermal_zone_device and thermal_governor
+  thermal: let governors have private data for each thermal zone
+  thermal: introduce the Power Actor API
+  thermal: add a basic cpu power actor
+  thermal: introduce the Power Allocator governor
+  thermal: add trace events to the power allocator governor
+
+Punit Agrawal (1):
+  of: thermal: Introduce sustainable power for a thermal zone
+
+ .../devicetree/bindings/thermal/thermal.txt        |   4 +
+ Documentation/thermal/power_actor.txt              | 181 ++++++++
+ Documentation/thermal/power_allocator.txt          |  41 ++
+ drivers/thermal/Kconfig                            |  21 +
+ drivers/thermal/Makefile                           |   5 +
+ drivers/thermal/cpu_actor.c                        | 484 +++++++++++++++++++++
+ drivers/thermal/of-thermal.c                       |   4 +
+ drivers/thermal/power_actor.c                      |  68 +++
+ drivers/thermal/power_actor.h                      |  91 ++++
+ drivers/thermal/power_allocator.c                  | 477 ++++++++++++++++++++
+ drivers/thermal/thermal_core.c                     |  90 +++-
+ drivers/thermal/thermal_core.h                     |   8 +
+ include/linux/thermal.h                            |  63 ++-
+ include/trace/events/thermal_power.h               |  62 +++
+ 14 files changed, 1588 insertions(+), 11 deletions(-)
+ create mode 100644 Documentation/thermal/power_actor.txt
+ create mode 100644 Documentation/thermal/power_allocator.txt
+ create mode 100644 drivers/thermal/cpu_actor.c
+ create mode 100644 drivers/thermal/power_actor.c
+ create mode 100644 drivers/thermal/power_actor.h
+ create mode 100644 drivers/thermal/power_allocator.c
+ create mode 100644 include/trace/events/thermal_power.h
+
 -- 
-2.0.0
+1.9.1
+
 
