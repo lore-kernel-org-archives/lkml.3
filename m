@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967389AbaFQVzz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:55:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54999 "EHLO
+	id S966865AbaFQV4U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:56:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54987 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965818AbaFQVxM (ORCPT
+	with ESMTP id S967249AbaFQVxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:53:12 -0400
+	Tue, 17 Jun 2014 17:53:09 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tejun Heo <tj@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 141/212] sysfs: make sure read buffer is zeroed
-Date: Tue, 17 Jun 2014 14:43:55 -0700
-Message-Id: <1403041506-13646-142-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 151/212] drm/radeon: also try GART for CPU accessed buffers
+Date: Tue, 17 Jun 2014 14:44:05 -0700
+Message-Id: <1403041506-13646-152-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,52 +30,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
 
-commit f5c16f29bf5e57ba4051fc7785ba7f035f798c71 upstream.
+commit 544092596e8ac269f70e70961b5e9381909c9b1e upstream.
 
-13c589d5b0ac ("sysfs: use seq_file when reading regular files")
-switched sysfs from custom read implementation to seq_file to enable
-later transition to kernfs.  After the change, the buffer passed to
-->show() is acquired through seq_get_buf(); unfortunately, this
-introduces a subtle behavior change.  Before the commit, the buffer
-passed to ->show() was always zero as it was allocated using
-get_zeroed_page().  Because seq_file doesn't clear buffers on
-allocation and neither does seq_get_buf(), after the commit, depending
-on the behavior of ->show(), we may end up exposing uninitialized data
-to userland thus possibly altering userland visible behavior and
-leaking information.
+Placing them exclusively into VRAM might not work all the time.
 
-Fix it by explicitly clearing the buffer.
+Fixes: https://bugs.freedesktop.org/show_bug.cgi?id=78297
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Ron <ron@debian.org>
-Fixes: 13c589d5b0ac ("sysfs: use seq_file when reading regular files")
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Christian König <christian.koenig@amd.com>
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/sysfs/file.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_object.c | 38 ++++++++++++++++++++--------------
+ 1 file changed, 23 insertions(+), 15 deletions(-)
 
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 35e7d08..ea3e7e2 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -94,12 +94,13 @@ static int sysfs_seq_show(struct seq_file *sf, void *v)
- 	char *buf;
- 	ssize_t count;
- 
--	/* acquire buffer and ensure that it's >= PAGE_SIZE */
-+	/* acquire buffer and ensure that it's >= PAGE_SIZE and clear */
- 	count = seq_get_buf(sf, &buf);
- 	if (count < PAGE_SIZE) {
- 		seq_commit(sf, -1);
- 		return 0;
+diff --git a/drivers/gpu/drm/radeon/radeon_object.c b/drivers/gpu/drm/radeon/radeon_object.c
+index c0fa4aa9..315b8e2 100644
+--- a/drivers/gpu/drm/radeon/radeon_object.c
++++ b/drivers/gpu/drm/radeon/radeon_object.c
+@@ -586,22 +586,30 @@ int radeon_bo_fault_reserve_notify(struct ttm_buffer_object *bo)
+ 	rbo = container_of(bo, struct radeon_bo, tbo);
+ 	radeon_bo_check_tiling(rbo, 0, 0);
+ 	rdev = rbo->rdev;
+-	if (bo->mem.mem_type == TTM_PL_VRAM) {
+-		size = bo->mem.num_pages << PAGE_SHIFT;
+-		offset = bo->mem.start << PAGE_SHIFT;
+-		if ((offset + size) > rdev->mc.visible_vram_size) {
+-			/* hurrah the memory is not visible ! */
+-			radeon_ttm_placement_from_domain(rbo, RADEON_GEM_DOMAIN_VRAM);
+-			rbo->placement.lpfn = rdev->mc.visible_vram_size >> PAGE_SHIFT;
+-			r = ttm_bo_validate(bo, &rbo->placement, false, false);
+-			if (unlikely(r != 0))
+-				return r;
+-			offset = bo->mem.start << PAGE_SHIFT;
+-			/* this should not happen */
+-			if ((offset + size) > rdev->mc.visible_vram_size)
+-				return -EINVAL;
+-		}
++	if (bo->mem.mem_type != TTM_PL_VRAM)
++		return 0;
++
++	size = bo->mem.num_pages << PAGE_SHIFT;
++	offset = bo->mem.start << PAGE_SHIFT;
++	if ((offset + size) <= rdev->mc.visible_vram_size)
++		return 0;
++
++	/* hurrah the memory is not visible ! */
++	radeon_ttm_placement_from_domain(rbo, RADEON_GEM_DOMAIN_VRAM);
++	rbo->placement.lpfn = rdev->mc.visible_vram_size >> PAGE_SHIFT;
++	r = ttm_bo_validate(bo, &rbo->placement, false, false);
++	if (unlikely(r == -ENOMEM)) {
++		radeon_ttm_placement_from_domain(rbo, RADEON_GEM_DOMAIN_GTT);
++		return ttm_bo_validate(bo, &rbo->placement, false, false);
++	} else if (unlikely(r != 0)) {
++		return r;
  	}
-+	memset(buf, 0, PAGE_SIZE);
++
++	offset = bo->mem.start << PAGE_SHIFT;
++	/* this should never happen */
++	if ((offset + size) > rdev->mc.visible_vram_size)
++		return -EINVAL;
++
+ 	return 0;
+ }
  
- 	/*
- 	 * Need @of->sd for attr and ops, its parent for kobj.  @of->mutex
 -- 
 1.9.1
 
