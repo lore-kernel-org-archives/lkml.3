@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966907AbaFQVvk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:51:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54636 "EHLO
+	id S966933AbaFQVvu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:51:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54655 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966886AbaFQVvh (ORCPT
+	with ESMTP id S965856AbaFQVvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:51:37 -0400
+	Tue, 17 Jun 2014 17:51:44 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Leif Lindholm <leif.lindholm@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
+Cc: Wenkai Du <wenkai.du@intel.com>, Wolfram Sang <wsa@the-dreams.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 134/212] arm: dts: Fix missing device_type="memory" for ste-ccu8540
-Date: Tue, 17 Jun 2014 14:43:48 -0700
-Message-Id: <1403041506-13646-135-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 117/212] i2c: designware: Mask all interrupts during i2c controller enable
+Date: Tue, 17 Jun 2014 14:43:31 -0700
+Message-Id: <1403041506-13646-118-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -30,37 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Leif Lindholm <leif.lindholm@linaro.org>
+From: "Du, Wenkai" <wenkai.du@intel.com>
 
-commit bfaed5abad998bfc88a66e6e71c7b08dcf82f04e upstream.
+commit 47bb27e78867997040a228328f2a631c3c7f2c82 upstream.
 
-The current .dts for ste-ccu8540 lacks a 'device_type = "memory"' for
-its memory node, relying on an old ppc quirk in order to discover its
-memory. Fix the data so that all parsing code can handle it correctly.
+There have been "i2c_designware 80860F41:00: controller timed out" errors
+on a number of Baytrail platforms. The issue is caused by incorrect value in
+Interrupt Mask Register (DW_IC_INTR_MASK)  when i2c core is being enabled.
+This causes call to __i2c_dw_enable() to immediately start the transfer which
+leads to timeout. There are 3 failure modes observed:
 
-Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: devicetree@vger.kernel.org
-Cc: Mark Rutland <mark.rutland@arm.com>
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
+1. Failure in S0 to S3 resume path
+
+The default value after reset for DW_IC_INTR_MASK is 0x8ff. When we start
+the first transaction after resuming from system sleep, TX_EMPTY interrupt
+is already unmasked because of the hardware default.
+
+2. Failure in normal operational path
+
+This failure happens rarely and is hard to reproduce. Debug trace showed that
+DW_IC_INTR_MASK had value of 0x254 when failure occurred, which meant
+TX_EMPTY was unmasked.
+
+3. Failure in S3 to S0 suspend path
+
+This failure also happens rarely and is hard to reproduce. Adding debug trace
+that read DW_IC_INTR_MASK made this failure not reproducible. But from ISR
+call trace we could conclude TX_EMPTY was unmasked when problem occurred.
+
+The patch masks all interrupts before the controller is enabled to resolve the
+faulty DW_IC_INTR_MASK conditions.
+
+Signed-off-by: Wenkai Du <wenkai.du@intel.com>
+Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+[wsa: improved the comment and removed typo in commit msg]
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/boot/dts/ste-ccu8540.dts | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/i2c/busses/i2c-designware-core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/arm/boot/dts/ste-ccu8540.dts b/arch/arm/boot/dts/ste-ccu8540.dts
-index 7f3baf5..32dd55e 100644
---- a/arch/arm/boot/dts/ste-ccu8540.dts
-+++ b/arch/arm/boot/dts/ste-ccu8540.dts
-@@ -18,6 +18,7 @@
- 	compatible = "st-ericsson,ccu8540", "st-ericsson,u8540";
+diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+index e89e3e2..cfd5104 100644
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -418,6 +418,9 @@ static void i2c_dw_xfer_init(struct dw_i2c_dev *dev)
+ 	 */
+ 	dw_writel(dev, msgs[dev->msg_write_idx].addr | ic_tar, DW_IC_TAR);
  
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x20000000 0x1f000000>, <0xc0000000 0x3f000000>;
- 	};
++	/* enforce disabled interrupts (due to HW issues) */
++	i2c_dw_disable_int(dev);
++
+ 	/* Enable the adapter */
+ 	__i2c_dw_enable(dev, true);
  
 -- 
 1.9.1
