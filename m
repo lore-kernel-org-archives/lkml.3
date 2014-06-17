@@ -1,153 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967503AbaFQW3D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:29:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54216 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966420AbaFQVti (ORCPT
+	id S967695AbaFQWdO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:33:14 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:61291 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965250AbaFQWdM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:49:38 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Roger Quadros <rogerq@ti.com>, Kevin Hilman <khilman@linaro.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 170/212] ARM: OMAP4: Fix the boot regression with CPU_IDLE enabled
-Date: Tue, 17 Jun 2014 14:44:24 -0700
-Message-Id: <1403041506-13646-171-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 17 Jun 2014 18:33:12 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Stephen Boyd <sboyd@codeaurora.org>,
+        "Russell King" <linux@arm.linux.org.uk>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1402702591-21087-1-git-send-email-sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+References: <1402702591-21087-1-git-send-email-sboyd@codeaurora.org>
+Message-ID: <20140617223305.32686.15540@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH] clkdev: Don't print errors on probe defer
+Date: Tue, 17 Jun 2014 15:33:05 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
+Quoting Stephen Boyd (2014-06-13 16:36:31)
+> This error message can spam the logs if you have lots of probe
+> deferals due to missing clocks. Just silence the error in this
+> case because the driver should try again later.
+> 
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-------------------
+Looks OK to me. Russell?
 
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Regards,
+Mike
 
-commit 4b353a706a86598ba47307c47301c3c428b79e09 upstream.
-
-On OMAP4 panda board, there have been several bug reports about boot
-hang and lock-ups with CPU_IDLE enabled. The root cause of the issue
-is missing interrupts while in idle state. Commit cb7094e8 {cpuidle / omap4 :
-use CPUIDLE_FLAG_TIMER_STOP flag} moved the broadcast notifiers to common
-code for right reasons but on OMAP4 which suffers from a nasty ROM code
-bug with GIC, commit ff999b8a {ARM: OMAP4460: Workaround for ROM bug ..},
-we loose interrupts which leads to issues like lock-up, hangs etc.
-
-Patch reverts commit cb7094 {cpuidle / omap4 : use CPUIDLE_FLAG_TIMER_STOP
-flag} and 54769d6 {cpuidle: OMAP4: remove timer broadcast initialization} to
-avoid the issue. With this change, OMAP4 panda boards, the mentioned
-issues are getting fixed. We no longer loose interrupts which was the cause
-of the regression.
-
-Fixes: cb7094e8 (cpuidle / omap4 : use CPUIDLE_FLAG_TIMER_STOP flag)
-Fixes: ff999b8a (cpuidle: OMAP4: remove timer broadcast initialization)
-Cc: Roger Quadros <rogerq@ti.com>
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-Reported-tested-by: Roger Quadros <rogerq@ti.com>
-Reported-tested-by: Kevin Hilman <khilman@linaro.org>
-Tested-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- arch/arm/mach-omap2/cpuidle44xx.c | 25 +++++++++++++++++++++----
- 1 file changed, 21 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/mach-omap2/cpuidle44xx.c b/arch/arm/mach-omap2/cpuidle44xx.c
-index 4c8982a..d159ec3 100644
---- a/arch/arm/mach-omap2/cpuidle44xx.c
-+++ b/arch/arm/mach-omap2/cpuidle44xx.c
-@@ -14,6 +14,7 @@
- #include <linux/cpuidle.h>
- #include <linux/cpu_pm.h>
- #include <linux/export.h>
-+#include <linux/clockchips.h>
- 
- #include <asm/cpuidle.h>
- #include <asm/proc-fns.h>
-@@ -80,6 +81,7 @@ static int omap_enter_idle_coupled(struct cpuidle_device *dev,
- 			int index)
- {
- 	struct idle_statedata *cx = state_ptr + index;
-+	int cpu_id = smp_processor_id();
- 
- 	/*
- 	 * CPU0 has to wait and stay ON until CPU1 is OFF state.
-@@ -104,6 +106,8 @@ static int omap_enter_idle_coupled(struct cpuidle_device *dev,
- 		}
- 	}
- 
-+	clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu_id);
-+
- 	/*
- 	 * Call idle CPU PM enter notifier chain so that
- 	 * VFP and per CPU interrupt context is saved.
-@@ -147,6 +151,8 @@ static int omap_enter_idle_coupled(struct cpuidle_device *dev,
- 		(cx->mpu_logic_state == PWRDM_POWER_OFF))
- 		cpu_cluster_pm_exit();
- 
-+	clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu_id);
-+
- fail:
- 	cpuidle_coupled_parallel_barrier(dev, &abort_barrier);
- 	cpu_done[dev->cpu] = false;
-@@ -154,6 +160,16 @@ fail:
- 	return index;
- }
- 
-+/*
-+ * For each cpu, setup the broadcast timer because local timers
-+ * stops for the states above C1.
-+ */
-+static void omap_setup_broadcast_timer(void *arg)
-+{
-+	int cpu = smp_processor_id();
-+	clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ON, &cpu);
-+}
-+
- static struct cpuidle_driver omap4_idle_driver = {
- 	.name				= "omap4_idle",
- 	.owner				= THIS_MODULE,
-@@ -171,8 +187,7 @@ static struct cpuidle_driver omap4_idle_driver = {
- 			/* C2 - CPU0 OFF + CPU1 OFF + MPU CSWR */
- 			.exit_latency = 328 + 440,
- 			.target_residency = 960,
--			.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_COUPLED |
--			         CPUIDLE_FLAG_TIMER_STOP,
-+			.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_COUPLED,
- 			.enter = omap_enter_idle_coupled,
- 			.name = "C2",
- 			.desc = "CPUx OFF, MPUSS CSWR",
-@@ -181,8 +196,7 @@ static struct cpuidle_driver omap4_idle_driver = {
- 			/* C3 - CPU0 OFF + CPU1 OFF + MPU OSWR */
- 			.exit_latency = 460 + 518,
- 			.target_residency = 1100,
--			.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_COUPLED |
--			         CPUIDLE_FLAG_TIMER_STOP,
-+			.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_COUPLED,
- 			.enter = omap_enter_idle_coupled,
- 			.name = "C3",
- 			.desc = "CPUx OFF, MPUSS OSWR",
-@@ -213,5 +227,8 @@ int __init omap4_idle_init(void)
- 	if (!cpu_clkdm[0] || !cpu_clkdm[1])
- 		return -ENODEV;
- 
-+	/* Configure the broadcast timer on each cpu */
-+	on_each_cpu(omap_setup_broadcast_timer, NULL, 1);
-+
- 	return cpuidle_register(&omap4_idle_driver, cpu_online_mask);
- }
--- 
-1.9.1
-
+> ---
+>  drivers/clk/clkdev.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
+> index f890b901c6bc..da4bda8b7fc7 100644
+> --- a/drivers/clk/clkdev.c
+> +++ b/drivers/clk/clkdev.c
+> @@ -101,8 +101,9 @@ struct clk *of_clk_get_by_name(struct device_node *np, const char *name)
+>                 if (!IS_ERR(clk))
+>                         break;
+>                 else if (name && index >= 0) {
+> -                       pr_err("ERROR: could not get clock %s:%s(%i)\n",
+> -                               np->full_name, name ? name : "", index);
+> +                       if (PTR_ERR(clk) != -EPROBE_DEFER)
+> +                               pr_err("ERROR: could not get clock %s:%s(%i)\n",
+> +                                       np->full_name, name ? name : "", index);
+>                         return clk;
+>                 }
+>  
+> -- 
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
