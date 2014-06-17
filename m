@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933681AbaFQQPj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:15:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50377 "EHLO
+	id S934162AbaFQQ7u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:59:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50407 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933627AbaFQQPd (ORCPT
+	with ESMTP id S933650AbaFQQPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:15:33 -0400
+	Tue, 17 Jun 2014 12:15:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Kieran Clancy <clancy.kieran@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 007/121] user namespace: fix incorrect memory barriers
-Date: Tue, 17 Jun 2014 09:13:20 -0700
-Message-Id: <1403021714-16320-8-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 002/121] ACPI / EC: Process rather than discard events in acpi_ec_clear
+Date: Tue, 17 Jun 2014 09:13:15 -0700
+Message-Id: <1403021714-16320-3-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021714-16320-1-git-send-email-kamal@canonical.com>
 References: <1403021714-16320-1-git-send-email-kamal@canonical.com>
@@ -28,77 +28,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Kieran Clancy <clancy.kieran@gmail.com>
 
-commit e79323bd87808fdfbc68ce6c5371bd224d9672ee upstream.
+commit 3eba563e280101209bad27d40bfc83ddf1489234 upstream.
 
-smp_read_barrier_depends() can be used if there is data dependency between
-the readers - i.e. if the read operation after the barrier uses address
-that was obtained from the read operation before the barrier.
+Address a regression caused by commit ad332c8a4533:
+(ACPI / EC: Clear stale EC events on Samsung systems)
 
-In this file, there is only control dependency, no data dependecy, so the
-use of smp_read_barrier_depends() is incorrect. The code could fail in the
-following way:
-* the cpu predicts that idx < entries is true and starts executing the
-  body of the for loop
-* the cpu fetches map->extent[0].first and map->extent[0].count
-* the cpu fetches map->nr_extents
-* the cpu verifies that idx < extents is true, so it commits the
-  instructions in the body of the for loop
+After the earlier patch, there was found to be a race condition on some
+earlier Samsung systems (N150/N210/N220). The function acpi_ec_clear was
+sometimes discarding a new EC event before its GPE was triggered by the
+system. In the case of these systems, this meant that the "lid open"
+event was not registered on resume if that was the cause of the wake,
+leading to problems when attempting to close the lid to suspend again.
 
-The problem is that in this scenario, the cpu read map->extent[0].first
-and map->nr_extents in the wrong order. We need a full read memory barrier
-to prevent it.
+After testing on a number of Samsung systems, both those affected by the
+previous EC bug and those affected by the race condition, it seemed that
+the best course of action was to process rather than discard the events.
+On Samsung systems which accumulate stale EC events, there does not seem
+to be any adverse side-effects of running the associated _Q methods.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This patch adds an argument to the static function acpi_ec_sync_query so
+that it may be used within the acpi_ec_clear loop in place of
+acpi_ec_query_unlocked which was used previously.
+
+With thanks to Stefan Biereigel for reporting the issue, and for all the
+people who helped test the new patch on affected systems.
+
+Fixes: ad332c8a4533 (ACPI / EC: Clear stale EC events on Samsung systems)
+References: https://lkml.kernel.org/r/532FE3B2.9060808@biereigel-wb.de
+References: https://bugzilla.kernel.org/show_bug.cgi?id=44161#c173
+Reported-by: Stefan Biereigel <stefan@biereigel.de>
+Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
+Tested-by: Stefan Biereigel <stefan@biereigel.de>
+Tested-by: Dennis Jansen <dennis.jansen@web.de>
+Tested-by: Nicolas Porcel <nicolasporcel06@gmail.com>
+Tested-by: Maurizio D'Addona <mauritiusdadd@gmail.com>
+Tested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
+Tested-by: Giannis Koutsou <giannis.koutsou@gmail.com>
+Tested-by: Kieran Clancy <clancy.kieran@gmail.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/user_namespace.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/acpi/ec.c | 21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
-diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index b9b0b51..372211d 100644
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -147,7 +147,7 @@ static u32 map_id_range_down(struct uid_gid_map *map, u32 id, u32 count)
+diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+index 092f862..c7bce2a 100644
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -213,13 +213,13 @@ unlock:
+ 	spin_unlock_irqrestore(&ec->lock, flags);
+ }
  
- 	/* Find the matching extent */
- 	extents = map->nr_extents;
--	smp_read_barrier_depends();
-+	smp_rmb();
- 	for (idx = 0; idx < extents; idx++) {
- 		first = map->extent[idx].first;
- 		last = first + map->extent[idx].count - 1;
-@@ -171,7 +171,7 @@ static u32 map_id_down(struct uid_gid_map *map, u32 id)
+-static int acpi_ec_sync_query(struct acpi_ec *ec);
++static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
  
- 	/* Find the matching extent */
- 	extents = map->nr_extents;
--	smp_read_barrier_depends();
-+	smp_rmb();
- 	for (idx = 0; idx < extents; idx++) {
- 		first = map->extent[idx].first;
- 		last = first + map->extent[idx].count - 1;
-@@ -194,7 +194,7 @@ static u32 map_id_up(struct uid_gid_map *map, u32 id)
+ static int ec_check_sci_sync(struct acpi_ec *ec, u8 state)
+ {
+ 	if (state & ACPI_EC_FLAG_SCI) {
+ 		if (!test_and_set_bit(EC_FLAGS_QUERY_PENDING, &ec->flags))
+-			return acpi_ec_sync_query(ec);
++			return acpi_ec_sync_query(ec, NULL);
+ 	}
+ 	return 0;
+ }
+@@ -471,10 +471,8 @@ acpi_handle ec_get_handle(void)
  
- 	/* Find the matching extent */
- 	extents = map->nr_extents;
--	smp_read_barrier_depends();
-+	smp_rmb();
- 	for (idx = 0; idx < extents; idx++) {
- 		first = map->extent[idx].lower_first;
- 		last = first + map->extent[idx].count - 1;
-@@ -574,9 +574,8 @@ static ssize_t map_write(struct file *file, const char __user *buf,
- 	 * were written before the count of the extents.
- 	 *
- 	 * To achieve this smp_wmb() is used on guarantee the write
--	 * order and smp_read_barrier_depends() is guaranteed that we
--	 * don't have crazy architectures returning stale data.
--	 *
-+	 * order and smp_rmb() is guaranteed that we don't have crazy
-+	 * architectures returning stale data.
- 	 */
- 	mutex_lock(&id_map_mutex);
+ EXPORT_SYMBOL(ec_get_handle);
+ 
+-static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
+-
+ /*
+- * Clears stale _Q events that might have accumulated in the EC.
++ * Process _Q events that might have accumulated in the EC.
+  * Run with locked ec mutex.
+  */
+ static void acpi_ec_clear(struct acpi_ec *ec)
+@@ -483,7 +481,7 @@ static void acpi_ec_clear(struct acpi_ec *ec)
+ 	u8 value = 0;
+ 
+ 	for (i = 0; i < ACPI_EC_CLEAR_MAX; i++) {
+-		status = acpi_ec_query_unlocked(ec, &value);
++		status = acpi_ec_sync_query(ec, &value);
+ 		if (status || !value)
+ 			break;
+ 	}
+@@ -610,13 +608,18 @@ static void acpi_ec_run(void *cxt)
+ 	kfree(handler);
+ }
+ 
+-static int acpi_ec_sync_query(struct acpi_ec *ec)
++static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data)
+ {
+ 	u8 value = 0;
+ 	int status;
+ 	struct acpi_ec_query_handler *handler, *copy;
+-	if ((status = acpi_ec_query_unlocked(ec, &value)))
++
++	status = acpi_ec_query_unlocked(ec, &value);
++	if (data)
++		*data = value;
++	if (status)
+ 		return status;
++
+ 	list_for_each_entry(handler, &ec->list, node) {
+ 		if (value == handler->query_bit) {
+ 			/* have custom handler for this bit */
+@@ -639,7 +642,7 @@ static void acpi_ec_gpe_query(void *ec_cxt)
+ 	if (!ec)
+ 		return;
+ 	mutex_lock(&ec->mutex);
+-	acpi_ec_sync_query(ec);
++	acpi_ec_sync_query(ec, NULL);
+ 	mutex_unlock(&ec->mutex);
+ }
  
 -- 
 1.9.1
