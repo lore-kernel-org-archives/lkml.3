@@ -1,110 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933205AbaFQOgs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 10:36:48 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:16609 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932696AbaFQOgr (ORCPT
+	id S933236AbaFQOg7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 10:36:59 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:53215 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933101AbaFQOgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 10:36:47 -0400
-Message-ID: <53A05277.7060900@oracle.com>
-Date: Tue, 17 Jun 2014 22:36:39 +0800
-From: Jeff Liu <jeff.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 17 Jun 2014 10:36:54 -0400
+Date: Tue, 17 Jun 2014 15:36:48 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] mfd: arizona: Lower ARIZONA_MAX_CORE_SUPPLIES to 2
+Message-ID: <20140617143648.GF29841@lee--X1>
+References: <1401699043-16835-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1401699043-16835-6-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: gregkh@linuxfoundation.org
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 10/24] drivers/base: return actual error on sysfs init
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401699043-16835-6-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jie Liu <jeff.liu@oracle.com>
+On Mon, 02 Jun 2014, Charles Keepax wrote:
 
-This patch fix all sysfs init functions under drivers core to
-return the actual error code than the hardcoded ENOMEM.
+> There are no Arizona devices with 3 core supplies but we define a fix
+> array with space for 3 core supplies. Lower the ARIZONA_MAX_CORE_SUPPLIES
+> define to 2, to save a few bytes.
+> 
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> ---
+>  include/linux/mfd/arizona/core.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Jie Liu <jeff.liu@oracle.com>
----
- drivers/base/bus.c   | 16 ++++++++--------
- drivers/base/class.c |  4 ++--
- drivers/base/core.c  |  4 ++--
- 3 files changed, 12 insertions(+), 12 deletions(-)
+Applied, thanks.
 
-diff --git a/drivers/base/bus.c b/drivers/base/bus.c
-index 83e910a..b0590a7 100644
---- a/drivers/base/bus.c
-+++ b/drivers/base/bus.c
-@@ -901,15 +901,15 @@ int bus_register(struct bus_type *bus)
- 
- 	priv->devices_kset = kset_create_and_add("devices", NULL,
- 						 &priv->subsys.kobj);
--	if (!priv->devices_kset) {
--		retval = -ENOMEM;
-+	if (IS_ERR(priv->devices_kset)) {
-+		retval = PTR_ERR(priv->devices_kset);
- 		goto bus_devices_fail;
- 	}
- 
- 	priv->drivers_kset = kset_create_and_add("drivers", NULL,
- 						 &priv->subsys.kobj);
--	if (!priv->drivers_kset) {
--		retval = -ENOMEM;
-+	if (IS_ERR(priv->drivers_kset)) {
-+		retval = PTR_ERR(priv->drivers_kset);
- 		goto bus_drivers_fail;
- 	}
- 
-@@ -1261,12 +1261,12 @@ EXPORT_SYMBOL_GPL(subsys_virtual_register);
- int __init buses_init(void)
- {
- 	bus_kset = kset_create_and_add("bus", &bus_uevent_ops, NULL);
--	if (!bus_kset)
--		return -ENOMEM;
-+	if (IS_ERR(bus_kset))
-+		return PTR_ERR(bus_kset);
- 
- 	system_kset = kset_create_and_add("system", NULL, &devices_kset->kobj);
--	if (!system_kset)
--		return -ENOMEM;
-+	if (IS_ERR(system_kset))
-+		return PTR_ERR(system_kset);
- 
- 	return 0;
- }
-diff --git a/drivers/base/class.c b/drivers/base/class.c
-index f96f704..56e16fa 100644
---- a/drivers/base/class.c
-+++ b/drivers/base/class.c
-@@ -584,8 +584,8 @@ EXPORT_SYMBOL_GPL(class_compat_remove_link);
- int __init classes_init(void)
- {
- 	class_kset = kset_create_and_add("class", NULL, NULL);
--	if (!class_kset)
--		return -ENOMEM;
-+	if (IS_ERR(class_kset))
-+		return PTR_ERR(class_kset);
- 	return 0;
- }
- 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 20da3ad..0f729f9 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1364,8 +1364,8 @@ EXPORT_SYMBOL_GPL(device_find_child);
- int __init devices_init(void)
- {
- 	devices_kset = kset_create_and_add("devices", &device_uevent_ops, NULL);
--	if (!devices_kset)
--		return -ENOMEM;
-+	if (IS_ERR(devices_kset))
-+		return PTR_ERR(devices_kset);
- 	dev_kobj = kobject_create_and_add("dev", NULL);
- 	if (!dev_kobj)
- 		goto dev_kobj_err;
+> diff --git a/include/linux/mfd/arizona/core.h b/include/linux/mfd/arizona/core.h
+> index 6acb058..2bf1d74 100644
+> --- a/include/linux/mfd/arizona/core.h
+> +++ b/include/linux/mfd/arizona/core.h
+> @@ -18,7 +18,7 @@
+>  #include <linux/regulator/consumer.h>
+>  #include <linux/mfd/arizona/pdata.h>
+>  
+> -#define ARIZONA_MAX_CORE_SUPPLIES 3
+> +#define ARIZONA_MAX_CORE_SUPPLIES 2
+>  
+>  enum arizona_type {
+>  	WM5102 = 1,
+
 -- 
-1.8.3.2
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
