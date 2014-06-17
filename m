@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933386AbaFQOyG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 10:54:06 -0400
-Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:41446 "EHLO
+	id S933402AbaFQOyJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 10:54:09 -0400
+Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:41464 "EHLO
 	mirror2.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933349AbaFQOyA (ORCPT
+	with ESMTP id S933379AbaFQOyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 10:54:00 -0400
+	Tue, 17 Jun 2014 10:54:07 -0400
 From: Chen-Yu Tsai <wens@csie.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
@@ -20,9 +20,9 @@ Cc: Chen-Yu Tsai <wens@csie.org>, linux-serial@vger.kernel.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>,
         Luc Verhaegen <libv@skynet.be>
-Subject: [PATCH v2 10/20] clk: sunxi: Add support for table-based divider clocks
-Date: Tue, 17 Jun 2014 22:52:47 +0800
-Message-Id: <1403016777-15121-11-git-send-email-wens@csie.org>
+Subject: [PATCH v2 05/20] clk: sunxi: Support factor clocks with N multiplier factor starting from 1
+Date: Tue, 17 Jun 2014 22:52:42 +0800
+Message-Id: <1403016777-15121-6-git-send-email-wens@csie.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1403016777-15121-1-git-send-email-wens@csie.org>
 References: <1403016777-15121-1-git-send-email-wens@csie.org>
@@ -30,45 +30,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A few of the clock modules have odd dividers, such as
-the 2 lowest dividers being the same (2), or have the
-same divider when the highest bit is set.
+The PLLs on newer Allwinner SoC's, such as the A31 and A23, have a
+N multiplier factor that starts from 1, not 0.
 
-This patch adds support for optional divider tables,
-so the clock framework will know about the odd values.
+This patch adds an option to the clock driver's config data structures
+to define the difference.
 
 Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/clk/sunxi/clk-sunxi.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/clk/sunxi/clk-factors.c | 5 ++++-
+ drivers/clk/sunxi/clk-factors.h | 1 +
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-index a086b5b..7e2f015 100644
---- a/drivers/clk/sunxi/clk-sunxi.c
-+++ b/drivers/clk/sunxi/clk-sunxi.c
-@@ -703,6 +703,7 @@ struct div_data {
- 	u8	shift;
- 	u8	pow;
- 	u8	width;
-+	const struct clk_div_table *table;
+diff --git a/drivers/clk/sunxi/clk-factors.c b/drivers/clk/sunxi/clk-factors.c
+index 3806d97..399cf4d 100644
+--- a/drivers/clk/sunxi/clk-factors.c
++++ b/drivers/clk/sunxi/clk-factors.c
+@@ -62,7 +62,10 @@ static unsigned long clk_factors_recalc_rate(struct clk_hw *hw,
+ 		p = FACTOR_GET(config->pshift, config->pwidth, reg);
+ 
+ 	/* Calculate the rate */
+-	rate = (parent_rate * n * (k + 1) >> p) / (m + 1);
++	if (config->n_from_one)
++		rate = (parent_rate * (n + 1) * (k + 1) >> p) / (m + 1);
++	else
++		rate = (parent_rate * n * (k + 1) >> p) / (m + 1);
+ 
+ 	return rate;
+ }
+diff --git a/drivers/clk/sunxi/clk-factors.h b/drivers/clk/sunxi/clk-factors.h
+index 02e1a43..0484a48 100644
+--- a/drivers/clk/sunxi/clk-factors.h
++++ b/drivers/clk/sunxi/clk-factors.h
+@@ -15,6 +15,7 @@ struct clk_factors_config {
+ 	u8 mwidth;
+ 	u8 pshift;
+ 	u8 pwidth;
++	u8 n_from_one;
  };
  
- static const struct div_data sun4i_axi_data __initconst = {
-@@ -743,10 +744,10 @@ static void __init sunxi_divider_clk_setup(struct device_node *node,
- 
- 	of_property_read_string(node, "clock-output-names", &clk_name);
- 
--	clk = clk_register_divider(NULL, clk_name, clk_parent, 0,
--				   reg, data->shift, data->width,
--				   data->pow ? CLK_DIVIDER_POWER_OF_TWO : 0,
--				   &clk_lock);
-+	clk = clk_register_divider_table(NULL, clk_name, clk_parent, 0,
-+					 reg, data->shift, data->width,
-+					 data->pow ? CLK_DIVIDER_POWER_OF_TWO : 0,
-+					 data->table, &clk_lock);
- 	if (clk) {
- 		of_clk_add_provider(node, of_clk_src_simple_get, clk);
- 		clk_register_clkdev(clk, clk_name, NULL);
+ struct clk_factors {
 -- 
 2.0.0
 
