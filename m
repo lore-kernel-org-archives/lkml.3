@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965838AbaFQQvX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:51:23 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:63517 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965190AbaFQQvT (ORCPT
+	id S965349AbaFQQv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:51:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50684 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934042AbaFQQW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:51:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrVerC155vzO-1Js1W8cRTYat0-+OGOxW+kSynJor6rJag@mail.gmail.com>
-References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
-	<CALCETrVoE+JO2rLsBUHAOJdvescEEjxikj8iQ339Nxfopfc7pw@mail.gmail.com>
-	<CANq1E4SaWLD=hNEc-CDJbNnrGfXE_PkxZFBhpW4tbK7wor7xPA@mail.gmail.com>
-	<CALCETrU8N9EbnJ3=oQ1WQCG9Vunn3nR9Ba=J48wJm0SuH0YB4A@mail.gmail.com>
-	<CANq1E4QQUKHabheq18AzkVZk3WDtAeC-6W66tVNB+EKgYOx1Vg@mail.gmail.com>
-	<53A01049.6020502@redhat.com>
-	<CANq1E4T3KJZ++=KF2OZ_dd+NvPqg+=4Pw6O7Po3-ZxaaMHPukw@mail.gmail.com>
-	<CALCETrVpZ0vFM4usHK+tQhk234Y2jWzB1522kGcGvdQQFAqsZQ@mail.gmail.com>
-	<CANq1E4QdGz6cRm2Y-vMQHV1O=VK74XNP8qCAmiAskVaVKpJuxg@mail.gmail.com>
-	<CALCETrVerC155vzO-1Js1W8cRTYat0-+OGOxW+kSynJor6rJag@mail.gmail.com>
-Date: Tue, 17 Jun 2014 18:51:18 +0200
-Message-ID: <CANq1E4RqLLk8_Fn=e-c2g29_uiD-R59u=WKF9Tka33L5G9VA9Q@mail.gmail.com>
-Subject: Re: [PATCH v3 0/7] File Sealing & memfd_create()
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>, Greg KH <greg@kroah.com>,
-        Florian Weimer <fweimer@redhat.com>, Hugh Dickins <hughd@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Daniel Mack <zonque@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Tony Battersby <tonyb@cybernetics.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 17 Jun 2014 12:22:27 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Li RongQing <roy.qing.li@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 075/121] ipv4: initialise the itag variable in __mkroute_input
+Date: Tue, 17 Jun 2014 09:17:33 -0700
+Message-Id: <1403021899-16708-48-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
+References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+3.8.13.24 -stable review patch.  If anyone has any objections, please let me know.
 
-On Tue, Jun 17, 2014 at 6:41 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Tue, Jun 17, 2014 at 9:36 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
->> Hi
->>
->> On Tue, Jun 17, 2014 at 6:20 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> Can you summarize why holes can't be reliably backed by the zero page?
->>
->> To answer this, I will quote Hugh from "PATCH v2 1/3":
->>
->>> We do already use the ZERO_PAGE instead of allocating when it's a
->>> simple read; and on the face of it, we could extend that to mmap
->>> once the file is sealed.  But I am rather afraid to do so - for
->>> many years there was an mmap /dev/zero case which did that, but
->>> it was an easily forgotten case which caught us out at least
->>> once, so I'm reluctant to reintroduce it now for sealing.
->>>
->>> Anyway, I don't expect you to resolve the issue of sealed holes:
->>> that's very much my territory, to give you support on.
->>
->> Holes can be avoided with a simple fallocate(). I don't understand why
->> I should make SEAL_WRITE do the fallocate for the caller. During the
->> discussion of memfd_create() I was told to drop the "size" parameter,
->> because it is redundant. I don't see how this implicit fallocate()
->> does not fall into the same category?
->>
->
-> I'm really confused now.
->
-> If I SEAL_WRITE a file, and then I mmap it PROT_READ, and then I read
-> it, is that a "simple read"?  If so, doesn't that mean that there's no
-> problem?
+------------------
 
-I assumed Hugh was talking about read(). So no, this is not about
-memory-reads on mmap()ed regions.
+From: Li RongQing <roy.qing.li@gmail.com>
 
-Looking at shmem_file_read_iter() I can see a ZERO_PAGE(0) call in
-case shmem_getpage_gfp(SGP_READ) tells us there's a hole. I cannot see
-anything like that in the mmap_region() and shmem_fault() paths.
+[ Upstream commit fbdc0ad095c0a299e9abf5d8ac8f58374951149a ]
 
-Thanks
-David
+the value of itag is a random value from stack, and may not be initiated by
+fib_validate_source, which called fib_combine_itag if CONFIG_IP_ROUTE_CLASSID
+is not set
+
+This will make the cached dst uncertainty
+
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Acked-by: Alexei Starovoitov <ast@plumgrid.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ net/ipv4/route.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index 12ab6de..24ba6e1 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1482,7 +1482,7 @@ static int __mkroute_input(struct sk_buff *skb,
+ 	struct in_device *out_dev;
+ 	unsigned int flags = 0;
+ 	bool do_cache;
+-	u32 itag;
++	u32 itag = 0;
+ 
+ 	/* get a working reference to the output device */
+ 	out_dev = __in_dev_get_rcu(FIB_RES_DEV(*res));
+-- 
+1.9.1
+
