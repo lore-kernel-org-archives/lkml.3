@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257AbaFQB0m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 21:26:42 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:36959 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751605AbaFQB0l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 21:26:41 -0400
-Message-ID: <539F98AC.9050105@huawei.com>
-Date: Tue, 17 Jun 2014 09:23:56 +0800
-From: Wang Weidong <wangweidong1@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1754356AbaFQB0x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 21:26:53 -0400
+Received: from ozlabs.org ([103.22.144.67]:45924 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754296AbaFQB0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 21:26:51 -0400
+Date: Tue, 17 Jun 2014 11:26:44 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Weston Andros Adamson <dros@primarydata.com>
+Subject: linux-next: build warning after merge of the nfs tree
+Message-ID: <20140617112644.56c925f2@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "gregory.clement@free-electrons.com" 
-	<gregory.clement@free-electrons.com>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: Thumb-2: Fix out-of-range offset for Thumb-2 in,
- proc-macros.S
-References: <5396ACF1.1020107@huawei.com> <20140616134908.GI16758@arm.com>
-In-Reply-To: <20140616134908.GI16758@arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.75]
-X-CFilter-Loop: Reflected
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/8dmgjwwI7dQo39.RVT/QRZ9"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/6/16 21:49, Will Deacon wrote:
-> On Tue, Jun 10, 2014 at 08:00:01AM +0100, Wang Weidong wrote:
->> The STR Instruction Encoding T4 points that the <imm> is in the
->> range 0-255.So split the instruction into two for Thumb-2. Just
->> like commit 874d5d3ccc("ARM: 6623/1: Thumb-2: Fix out-of-range
->> offset for Thumb-2 in proc-v7.S").
->>
->> Signed-off-by: Wang Weidong <wangweidong1@huawei.com>
->> ---
->>  arch/arm/mm/proc-macros.S | 4 +++-
->>  1 file changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/mm/proc-macros.S b/arch/arm/mm/proc-macros.S
->> index ee1d805..63f710c 100644
->> --- a/arch/arm/mm/proc-macros.S
->> +++ b/arch/arm/mm/proc-macros.S
->> @@ -252,7 +252,9 @@
->>  	tst	r3, #L_PTE_PRESENT | L_PTE_YOUNG	@ present and young?
->>  	movne	r2, #0				@ no -> fault
->>  
->> -	str	r2, [r0, #2048]!		@ hardware version
->> + ARM(	str	r2, [r0, #2048]! 		) @ hardware version
->> + THUMB( add	r0, r0, #2048 			)
->> + THUMB( str	r2, [r0] 			)
->>  	mov	ip, #0
->>  	mcr	p15, 0, r0, c7, c10, 1		@ clean L1 D line
->>  	mcr	p15, 0, ip, c7, c10, 4		@ data write barrier
-> 
-> AFAICT this is in xscale_set_pte_ext_epilogue which should only be built as
-> ARM. Are you seeing a real issue here?
-> 
-> Will
-> 
+--Sig_/8dmgjwwI7dQo39.RVT/QRZ9
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Hi will,
+Hi Trond,
 
-I don't see any issue here. I just review the codes while I learn thumb-2.
-It does only build as ARM, so ignore it.
+After merging the nfs tree, today's linux-next build (powerpc
+ppc44x_defconfig and probably others) produced this warning:
 
-Regards
-Wang
+fs/nfs/pagelist.c: In function 'nfs_initiate_pgio':
+fs/nfs/pagelist.c:555:16: warning: unused variable 'inode' [-Wunused-variab=
+le]
+  struct inode *inode =3D hdr->inode;
+                ^
 
-> .
-> 
+Introduced by commit 30e4c73543b0 ("nfs: merge nfs_pgio_data into
+_header").
 
+"inode" is only used in a dprintk().
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/8dmgjwwI7dQo39.RVT/QRZ9
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTn5lZAAoJEMDTa8Ir7ZwVHj8P/ixiNUnMBnKPxf/iAk0YTUHC
+7Ix+rb31RkgnRJGIHvsfCFYlnzkVotjEQml0YOYO+Qj5E+6sODajbvwaNCoulPtB
+h8qZE69cOdRhQd11vUN+ozatVzx9D3fqrYUqRalOC9i6PqVFeHq/8v73cEtPu97g
+B6IFquEcRrOnTqs57hwybqGln62ucCf6chyTj76CxU4+0AbvrcejiDtcUNanzhaS
+RILOhMpniPHVDLKTwg4jVHLlAMMN7JtV1zyoE5qDwelb+l5Rf2vTJqzYFz6p7E2l
+6bX+M9xCZOSXpDOIqhZNvctyiVgDyUvxI8TerRwOFQb0kkIkXhxKGJN++6qK0/ZA
+2AUYaND5n8G9KsDNfAY73e39WHkuuOLisNm4LI3gFqzSM0BxZ6dfLfuHJBSZ/AOt
+lmVT3mI4Q2//TkTSHNotgOp/0m2lhKPr2o+pEzesjINCsFj+tX3e6LNovkUN4B5W
+/ViVNwN5vVdvCv3MNi8NSsH6swhKj1jSRM0Ln+JWvYeXMMsCI3etsNpCd4ZyChl2
+tSBbquFwoJb77JxAcBUAywT+NOXvgSg9xLm4NN/2yJQPq7YSLoz4VDFFMbHLy//r
+UwwEmHxqQ3lgACVK+R3beZ0snjJRAExYpYM3zK7MYHaii4cL7cON1VFUG+E6N/IJ
+ZBl2f5O4ER/IehiS7DTC
+=+vqB
+-----END PGP SIGNATURE-----
+
+--Sig_/8dmgjwwI7dQo39.RVT/QRZ9--
