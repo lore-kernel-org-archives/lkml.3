@@ -1,58 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967770AbaFQWiZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:38:25 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:54113 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967757AbaFQWiX (ORCPT
+	id S967233AbaFQWP7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:15:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54541 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966756AbaFQVvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 18:38:23 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Scott J Norton <scott.norton@hp.com>, Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v2 2/2] mm, thp: replace smp_mb after atomic_add by smp_mb__after_atomic
-Date: Tue, 17 Jun 2014 18:37:59 -0400
-Message-Id: <1403044679-9993-3-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1403044679-9993-1-git-send-email-Waiman.Long@hp.com>
-References: <1403044679-9993-1-git-send-email-Waiman.Long@hp.com>
+	Tue, 17 Jun 2014 17:51:12 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Alex Deucher <alexander.deucher@amd.com>, Dave Airlie <airlied@redhat.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 199/212] drm/radeon/dpm: resume fixes for some systems
+Date: Tue, 17 Jun 2014 14:44:53 -0700
+Message-Id: <1403041506-13646-200-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some architectures like x86, atomic_add() is a full memory
-barrier. In that case, an additional smp_mb() is just a waste of time.
-This patch replaces that smp_mb() by smp_mb__after_atomic() which
-will avoid the redundant memory barrier in some architectures.
+3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
 
-With a 3.16-rc1 based kernel, this patch reduced the execution time
-of breaking 1000 transparent huge pages from 38,245us to 30,964us. A
-reduction of 19% which is quite sizeable. It also reduces the %cpu
-time of the __split_huge_page_refcount function in the perf profile
-from 2.18% to 1.15%.
+------------------
 
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+From: Alex Deucher <alexdeucher@gmail.com>
+
+commit 3640da2faa952a2e9439a254c1ce76033ca0a6dc upstream.
+
+Setting the power state prior to restoring the display
+hardware leads to blank screens on some systems.  Drop
+the power state set from dpm resume.  The power state
+will get set as part of the mode set sequence.  Also
+add an explicit power state set after mode set resume
+to cover PX and headless systems.
+
+bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=76761
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+[ kamal: backport to 3.13-stable: context ]
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/huge_memory.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c | 6 ++----
+ drivers/gpu/drm/radeon/radeon_device.c | 5 +++++
+ drivers/gpu/drm/radeon/radeon_pm.c     | 1 -
+ 3 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index be84c71..e2ee131 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1650,7 +1650,7 @@ static void __split_huge_page_refcount(struct page *page,
- 			   &page_tail->_count);
+diff --git a/drivers/gpu/drm/radeon/atombios_crtc.c b/drivers/gpu/drm/radeon/atombios_crtc.c
+index 153aa49..c9ee271 100644
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -270,8 +270,6 @@ void atombios_crtc_dpms(struct drm_crtc *crtc, int mode)
+ 	switch (mode) {
+ 	case DRM_MODE_DPMS_ON:
+ 		radeon_crtc->enabled = true;
+-		/* adjust pm to dpms changes BEFORE enabling crtcs */
+-		radeon_pm_compute_clocks(rdev);
+ 		atombios_enable_crtc(crtc, ATOM_ENABLE);
+ 		if (ASIC_IS_DCE3(rdev) && !ASIC_IS_DCE6(rdev))
+ 			atombios_enable_crtc_memreq(crtc, ATOM_ENABLE);
+@@ -289,10 +287,10 @@ void atombios_crtc_dpms(struct drm_crtc *crtc, int mode)
+ 			atombios_enable_crtc_memreq(crtc, ATOM_DISABLE);
+ 		atombios_enable_crtc(crtc, ATOM_DISABLE);
+ 		radeon_crtc->enabled = false;
+-		/* adjust pm to dpms changes AFTER disabling crtcs */
+-		radeon_pm_compute_clocks(rdev);
+ 		break;
+ 	}
++	/* adjust pm to dpms */
++	radeon_pm_compute_clocks(rdev);
+ }
  
- 		/* after clearing PageTail the gup refcount can be released */
--		smp_mb();
-+		smp_mb__after_atomic();
+ static void
+diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
+index 63069a9..716293c 100644
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -1547,6 +1547,11 @@ int radeon_resume_kms(struct drm_device *dev, bool resume, bool fbcon)
+ 	}
  
- 		/*
- 		 * retain hwpoison flag of the poisoned tail page:
+ 	drm_kms_helper_poll_enable(dev);
++
++	/* set the power state here in case we are a PX system or headless */
++	if ((rdev->pm.pm_method == PM_METHOD_DPM) && rdev->pm.dpm_enabled)
++		radeon_pm_compute_clocks(rdev);
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/gpu/drm/radeon/radeon_pm.c b/drivers/gpu/drm/radeon/radeon_pm.c
+index f5dc5dd..446e67f 100644
+--- a/drivers/gpu/drm/radeon/radeon_pm.c
++++ b/drivers/gpu/drm/radeon/radeon_pm.c
+@@ -1093,7 +1093,6 @@ static void radeon_pm_resume_dpm(struct radeon_device *rdev)
+ 		}
+ 	} else {
+ 		rdev->pm.dpm_enabled = true;
+-		radeon_pm_compute_clocks(rdev);
+ 	}
+ }
+ 
 -- 
-1.7.1
+1.9.1
 
