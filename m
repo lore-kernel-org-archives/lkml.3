@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933141AbaFQO1c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 10:27:32 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:46498 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932696AbaFQO1a (ORCPT
+	id S933152AbaFQO2H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 10:28:07 -0400
+Received: from albert.telenet-ops.be ([195.130.137.90]:46907 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932985AbaFQO2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 10:27:30 -0400
-Date: Tue, 17 Jun 2014 10:27:27 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Mikko Perttunen <mperttunen@nvidia.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] libahci_platform: Fail when PHY required but PHY
- support disabled
-Message-ID: <20140617142727.GB31819@htj.dyndns.org>
-References: <1403006875-22556-1-git-send-email-mperttunen@nvidia.com>
+	Tue, 17 Jun 2014 10:28:05 -0400
+Message-ID: <53A05068.4080702@acm.org>
+Date: Tue, 17 Jun 2014 16:27:52 +0200
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403006875-22556-1-git-send-email-mperttunen@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Christoph Hellwig <hch@lst.de>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
+        Robert Elliot <Elliott@hp.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: scsi-mq
+References: <1402580946-11470-1-git-send-email-hch@lst.de>
+In-Reply-To: <1402580946-11470-1-git-send-email-hch@lst.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 03:07:55PM +0300, Mikko Perttunen wrote:
-> ahci_platform_get_resources handles resource management for
-> platform AHCI drivers, including getting a possible PHY
-> from the device tree. Since not all drivers need a PHY, it
-> ignores -ENODEV and -ENOSYS from devm_get_phy. However, when
-> the PHY subsystem is mistakenly disabled, -ENOSYS can be
-> returned even when a PHY is needed.
-> 
-> This patch modifies the -ENOSYS case to check if a "phys"
-> device tree node exists. If it exists, then clearly the PHY
-> subsystem is mistakenly disabled and the driver cannot work,
-> ahci_platform_get_resources will fail and propagate the error.
-> 
-> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+On 06/12/14 15:48, Christoph Hellwig wrote:
+> Bart and Robert have helped with some very detailed measurements that they
+> might be able to send in reply to this, although these usually involve
+> significantly reworked low level drivers to avoid other bottle necks.
 
-Applied to libata/for-3.17.
+In case someone would like to see the results of the measurements I ran,
+these results can be found here:
+https://docs.google.com/file/d/0B1YQOreL3_FxUXFMSjhmNDBNNTg.
 
-Thanks.
+Two important conclusions from the data in that PDF document are as follows:
+- A small but significant performance improvement for the traditional
+  SCSI mid-layer (use_blk_mq=N).
+- A very significant performance improvement for multithreaded
+  workloads with use_blk_mq=Y. As an example, the number of I/O
+  operations per second reported for the random write test increased
+  with 170%. That means 2.7 times the performance
+  of use_blk_mq=N.
 
--- 
-tejun
+I think this means the scsi-mq patches are ready for wider use.
+
+Bart.
