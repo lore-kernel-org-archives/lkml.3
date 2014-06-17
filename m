@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506AbaFQWpu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:45:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53827 "EHLO
+	id S966990AbaFQWg7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:36:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54028 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965854AbaFQVq5 (ORCPT
+	with ESMTP id S966209AbaFQVsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:46:57 -0400
+	Tue, 17 Jun 2014 17:48:39 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jianyu Zhan <nasa4836@gmail.com>, Tejun Heo <tj@kernel.org>,
+Cc: Sagi Grimberg <sagig@dev.mellanox.co.il>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 067/212] percpu: make pcpu_alloc_chunk() use pcpu_mem_free() instead of kfree()
-Date: Tue, 17 Jun 2014 14:42:41 -0700
-Message-Id: <1403041506-13646-68-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 203/212] iser-target: Add missing target_put_sess_cmd for ImmedateData failure
+Date: Tue, 17 Jun 2014 14:44:57 -0700
+Message-Id: <1403041506-13646-204-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -27,44 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jianyu Zhan <nasa4836@gmail.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 5a838c3b60e3a36ade764cf7751b8f17d7c9c2da upstream.
+commit 6cc44a6fb46e1ecc1c28125aa8fa34d317aa9ea7 upstream.
 
-pcpu_chunk_struct_size = sizeof(struct pcpu_chunk) +
-	BITS_TO_LONGS(pcpu_unit_pages) * sizeof(unsigned long)
+This patch addresses a bug where an early exception for SCSI WRITE
+with ImmediateData=Yes was missing the target_put_sess_cmd() call
+to drop the extra se_cmd->cmd_kref reference obtained during the
+normal iscsit_setup_scsi_cmd() codepath execution.
 
-It hardly could be ever bigger than PAGE_SIZE even for large-scale machine,
-but for consistency with its couterpart pcpu_mem_zalloc(),
-use pcpu_mem_free() instead.
+This bug was manifesting itself during session shutdown within
+isert_cq_rx_comp_err() where target_wait_for_sess_cmds() would
+end up waiting indefinately for the last se_cmd->cmd_kref put to
+occur for the failed SCSI WRITE + ImmediateData descriptors.
 
-Commit b4916cb17c26 ("percpu: make pcpu_free_chunk() use
-pcpu_mem_free() instead of kfree()") addressed this problem, but
-missed this one.
+This fix follows what traditional iscsi-target code already does
+for the same failure case within iscsit_get_immediate_data().
 
-tj: commit message updated
-
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Fixes: 099a19d91ca4 ("percpu: allow limited allocation before slab is online)
+Reported-by: Sagi Grimberg <sagig@dev.mellanox.co.il>
+Cc: Sagi Grimberg <sagig@dev.mellanox.co.il>
+Cc: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/percpu.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/infiniband/ulp/isert/ib_isert.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/mm/percpu.c b/mm/percpu.c
-index 0d10def..7d6ce15 100644
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -612,7 +612,7 @@ static struct pcpu_chunk *pcpu_alloc_chunk(void)
- 	chunk->map = pcpu_mem_zalloc(PCPU_DFL_MAP_ALLOC *
- 						sizeof(chunk->map[0]));
- 	if (!chunk->map) {
--		kfree(chunk);
-+		pcpu_mem_free(chunk, pcpu_chunk_struct_size);
- 		return NULL;
- 	}
+diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
+index 0169850..8ed268d 100644
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -1095,6 +1095,8 @@ sequence_cmd:
  
+ 	if (!rc && dump_payload == false && unsol_data)
+ 		iscsit_set_unsoliticed_dataout(cmd);
++	else if (dump_payload && imm_data)
++		target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
+ 
+ 	return 0;
+ }
 -- 
 1.9.1
 
