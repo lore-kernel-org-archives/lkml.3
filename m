@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966032AbaFQVro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:47:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53903 "EHLO
+	id S966053AbaFQVrv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:47:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53917 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965975AbaFQVrk (ORCPT
+	with ESMTP id S965975AbaFQVrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:47:40 -0400
+	Tue, 17 Jun 2014 17:47:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
+        linaro-networking@linaro.org, fweisbec@gmail.com,
+        arvind.chauhan@arm.com, Thomas Gleixner <tglx@linutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 115/212] [media] V4L2: fix VIDIOC_CREATE_BUFS in 64- / 32-bit compatibility mode
-Date: Tue, 17 Jun 2014 14:43:29 -0700
-Message-Id: <1403041506-13646-116-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 108/212] hrtimer: Set expiry time before switch_hrtimer_base()
+Date: Tue, 17 Jun 2014 14:43:22 -0700
+Message-Id: <1403041506-13646-109-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -28,70 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+From: Viresh Kumar <viresh.kumar@linaro.org>
 
-commit 97d9d23dda6f37d90aefeec4ed619d52df525382 upstream.
+commit 84ea7fe37908254c3bd90910921f6e1045c1747a upstream.
 
-If a struct contains 64-bit fields, it is aligned on 64-bit boundaries
-within containing structs in 64-bit compilations. This is the case with
-struct v4l2_window, which contains pointers and is embedded into struct
-v4l2_format, and that one is embedded into struct v4l2_create_buffers.
-Unlike some other structs, used as a part of the kernel ABI as ioctl()
-arguments, that are packed, these structs aren't packed. This isn't a
-problem per se, but the ioctl-compat code for VIDIOC_CREATE_BUFS contains
-a bug, that triggers in such 64-bit builds. That code wrongly assumes,
-that in struct v4l2_create_buffers, struct v4l2_format immediately follows
-the __u32 memory field, which in fact isn't the case. This bug wasn't
-visible until now, because until recently hardly any applications used
-this ioctl() and mostly embedded 32-bit only drivers implemented it. This
-is changing now with addition of this ioctl() to some USB drivers, e.g.
-UVC. This patch fixes the bug by copying parts of struct
-v4l2_create_buffers separately.
+switch_hrtimer_base() calls hrtimer_check_target() which ensures that
+we do not migrate a timer to a remote cpu if the timer expires before
+the current programmed expiry time on that remote cpu.
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+But __hrtimer_start_range_ns() calls switch_hrtimer_base() before the
+new expiry time is set. So the sanity check in hrtimer_check_target()
+is operating on stale or even uninitialized data.
+
+Update expiry time before calling switch_hrtimer_base().
+
+[ tglx: Rewrote changelog once again ]
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org
+Cc: linaro-networking@linaro.org
+Cc: fweisbec@gmail.com
+Cc: arvind.chauhan@arm.com
+Link: http://lkml.kernel.org/r/81999e148745fc51bbcd0615823fbab9b2e87e23.1399882253.git.viresh.kumar@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/v4l2-core/v4l2-compat-ioctl32.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ kernel/hrtimer.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/media/v4l2-core/v4l2-compat-ioctl32.c b/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
-index 8f7a6a4..1bc9c36 100644
---- a/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
-+++ b/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
-@@ -178,6 +178,9 @@ struct v4l2_create_buffers32 {
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 6de65d8..aa14922 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1002,11 +1002,8 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 	/* Remove an active timer from the queue: */
+ 	ret = remove_hrtimer(timer, base);
  
- static int __get_v4l2_format32(struct v4l2_format *kp, struct v4l2_format32 __user *up)
- {
-+	if (get_user(kp->type, &up->type))
-+		return -EFAULT;
+-	/* Switch the timer base, if necessary: */
+-	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
+-
+ 	if (mode & HRTIMER_MODE_REL) {
+-		tim = ktime_add_safe(tim, new_base->get_time());
++		tim = ktime_add_safe(tim, base->get_time());
+ 		/*
+ 		 * CONFIG_TIME_LOW_RES is a temporary way for architectures
+ 		 * to signal that they simply return xtime in
+@@ -1021,6 +1018,9 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 
+ 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
+ 
++	/* Switch the timer base, if necessary: */
++	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
 +
- 	switch (kp->type) {
- 	case V4L2_BUF_TYPE_VIDEO_CAPTURE:
- 	case V4L2_BUF_TYPE_VIDEO_OUTPUT:
-@@ -204,17 +207,16 @@ static int __get_v4l2_format32(struct v4l2_format *kp, struct v4l2_format32 __us
+ 	timer_stats_hrtimer_set_start_info(timer);
  
- static int get_v4l2_format32(struct v4l2_format *kp, struct v4l2_format32 __user *up)
- {
--	if (!access_ok(VERIFY_READ, up, sizeof(struct v4l2_format32)) ||
--			get_user(kp->type, &up->type))
--			return -EFAULT;
-+	if (!access_ok(VERIFY_READ, up, sizeof(struct v4l2_format32)))
-+		return -EFAULT;
- 	return __get_v4l2_format32(kp, up);
- }
- 
- static int get_v4l2_create32(struct v4l2_create_buffers *kp, struct v4l2_create_buffers32 __user *up)
- {
- 	if (!access_ok(VERIFY_READ, up, sizeof(struct v4l2_create_buffers32)) ||
--	    copy_from_user(kp, up, offsetof(struct v4l2_create_buffers32, format.fmt)))
--			return -EFAULT;
-+	    copy_from_user(kp, up, offsetof(struct v4l2_create_buffers32, format)))
-+		return -EFAULT;
- 	return __get_v4l2_format32(&kp->format, &up->format);
- }
- 
+ 	leftmost = enqueue_hrtimer(timer, new_base);
 -- 
 1.9.1
 
