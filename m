@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965993AbaFQVr2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:47:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53880 "EHLO
+	id S966032AbaFQVro (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:47:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53903 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965975AbaFQVrX (ORCPT
+	with ESMTP id S965975AbaFQVrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:47:23 -0400
+	Tue, 17 Jun 2014 17:47:40 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Igor Mammedov <imammedo@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 099/212] ACPI / processor: do not mark present at boot but not onlined CPU as onlined
-Date: Tue, 17 Jun 2014 14:43:13 -0700
-Message-Id: <1403041506-13646-100-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 115/212] [media] V4L2: fix VIDIOC_CREATE_BUFS in 64- / 32-bit compatibility mode
+Date: Tue, 17 Jun 2014 14:43:29 -0700
+Message-Id: <1403041506-13646-116-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -28,44 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Igor Mammedov <imammedo@redhat.com>
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 
-commit 0b9d46dd7debf8e6dc8614106f1c1909fa8de64d upstream.
+commit 97d9d23dda6f37d90aefeec4ed619d52df525382 upstream.
 
-acpi_processor_add() assumes that present at boot CPUs
-are always onlined, it is not so if a CPU failed to become
-onlined. As result acpi_processor_add() will mark such CPU
-device as onlined in sysfs and following attempts to
-online/offline it using /sys/device/system/cpu/cpuX/online
-attribute will fail.
+If a struct contains 64-bit fields, it is aligned on 64-bit boundaries
+within containing structs in 64-bit compilations. This is the case with
+struct v4l2_window, which contains pointers and is embedded into struct
+v4l2_format, and that one is embedded into struct v4l2_create_buffers.
+Unlike some other structs, used as a part of the kernel ABI as ioctl()
+arguments, that are packed, these structs aren't packed. This isn't a
+problem per se, but the ioctl-compat code for VIDIOC_CREATE_BUFS contains
+a bug, that triggers in such 64-bit builds. That code wrongly assumes,
+that in struct v4l2_create_buffers, struct v4l2_format immediately follows
+the __u32 memory field, which in fact isn't the case. This bug wasn't
+visible until now, because until recently hardly any applications used
+this ioctl() and mostly embedded 32-bit only drivers implemented it. This
+is changing now with addition of this ioctl() to some USB drivers, e.g.
+UVC. This patch fixes the bug by copying parts of struct
+v4l2_create_buffers separately.
 
-Do not poke into device internals in acpi_processor_add()
-and touch "struct device { .offline }" attribute, since
-for CPUs onlined at boot it's set by:
-  topology_init() -> arch_register_cpu() -> register_cpu()
-before ACPI device tree is parsed, and for hotplugged
-CPUs it's set when userspace onlines CPU via sysfs.
-
-Signed-off-by: Igor Mammedov <imammedo@redhat.com>
-Acked-by: Toshi Kani <toshi.kani@hp.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/acpi/acpi_processor.c | 1 -
- 1 file changed, 1 deletion(-)
+ drivers/media/v4l2-core/v4l2-compat-ioctl32.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
-index 3c1d6b0..8df101e 100644
---- a/drivers/acpi/acpi_processor.c
-+++ b/drivers/acpi/acpi_processor.c
-@@ -400,7 +400,6 @@ static int acpi_processor_add(struct acpi_device *device,
- 		goto err;
+diff --git a/drivers/media/v4l2-core/v4l2-compat-ioctl32.c b/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
+index 8f7a6a4..1bc9c36 100644
+--- a/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
++++ b/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
+@@ -178,6 +178,9 @@ struct v4l2_create_buffers32 {
  
- 	pr->dev = dev;
--	dev->offline = pr->flags.need_hotplug_init;
+ static int __get_v4l2_format32(struct v4l2_format *kp, struct v4l2_format32 __user *up)
+ {
++	if (get_user(kp->type, &up->type))
++		return -EFAULT;
++
+ 	switch (kp->type) {
+ 	case V4L2_BUF_TYPE_VIDEO_CAPTURE:
+ 	case V4L2_BUF_TYPE_VIDEO_OUTPUT:
+@@ -204,17 +207,16 @@ static int __get_v4l2_format32(struct v4l2_format *kp, struct v4l2_format32 __us
  
- 	/* Trigger the processor driver's .probe() if present. */
- 	if (device_attach(dev) >= 0)
+ static int get_v4l2_format32(struct v4l2_format *kp, struct v4l2_format32 __user *up)
+ {
+-	if (!access_ok(VERIFY_READ, up, sizeof(struct v4l2_format32)) ||
+-			get_user(kp->type, &up->type))
+-			return -EFAULT;
++	if (!access_ok(VERIFY_READ, up, sizeof(struct v4l2_format32)))
++		return -EFAULT;
+ 	return __get_v4l2_format32(kp, up);
+ }
+ 
+ static int get_v4l2_create32(struct v4l2_create_buffers *kp, struct v4l2_create_buffers32 __user *up)
+ {
+ 	if (!access_ok(VERIFY_READ, up, sizeof(struct v4l2_create_buffers32)) ||
+-	    copy_from_user(kp, up, offsetof(struct v4l2_create_buffers32, format.fmt)))
+-			return -EFAULT;
++	    copy_from_user(kp, up, offsetof(struct v4l2_create_buffers32, format)))
++		return -EFAULT;
+ 	return __get_v4l2_format32(&kp->format, &up->format);
+ }
+ 
 -- 
 1.9.1
 
