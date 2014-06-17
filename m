@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967474AbaFQWID (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:08:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54705 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966956AbaFQVv6 (ORCPT
+	id S967538AbaFQWIb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:08:31 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:36387 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965856AbaFQWI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:51:58 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Marcel Apfelbaum <marcel.a@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 126/212] PCI: shpchp: Check bridge's secondary (not primary) bus speed
-Date: Tue, 17 Jun 2014 14:43:40 -0700
-Message-Id: <1403041506-13646-127-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 17 Jun 2014 18:08:28 -0400
+From: Benson Leung <bleung@chromium.org>
+To: gene.chen@intel.com, moch@chromium.org, mika.westerberg@linux.intel.com,
+        lkml14@scotdoyle.com, kirill.shutemov@linux.intel.com, olof@lixom.net,
+        linux-kernel@vger.kernel.org
+Cc: bleung@chromium.org
+Subject: [PATCHv2 2/4] platform/chrome: chromeos_laptop - Add HP Chromebook 14
+Date: Tue, 17 Jun 2014 14:02:01 -0700
+Message-Id: <1403038923-19444-3-git-send-email-bleung@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <1403038923-19444-1-git-send-email-bleung@chromium.org>
+References: <1401835464-15267-1-git-send-email-bleung@chromium.org>
+ <1403038923-19444-1-git-send-email-bleung@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
+Add support for the trackpad on HP Chromebook 14.
 
-------------------
-
-From: Marcel Apfelbaum <marcel.a@redhat.com>
-
-commit 93fa9d32670f5592c8e56abc9928fc194e1e72fc upstream.
-
-When a new device is added below a hotplug bridge, the bridge's secondary
-bus speed and the device's bus speed must match.  The shpchp driver
-previously checked the bridge's *primary* bus speed, not the secondary bus
-speed.
-
-This caused hot-add errors like:
-
-  shpchp 0000:00:03.0: Speed of bus ff and adapter 0 mismatch
-
-Check the secondary bus speed instead.
-
-[bhelgaas: changelog]
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=75251
-Fixes: 3749c51ac6c1 ("PCI: Make current and maximum bus speeds part of the PCI core")
-Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Benson Leung <bleung@chromium.org>
 ---
- drivers/pci/hotplug/shpchp_ctrl.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/platform/chrome/chromeos_laptop.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-diff --git a/drivers/pci/hotplug/shpchp_ctrl.c b/drivers/pci/hotplug/shpchp_ctrl.c
-index 5849927..6efc2ec 100644
---- a/drivers/pci/hotplug/shpchp_ctrl.c
-+++ b/drivers/pci/hotplug/shpchp_ctrl.c
-@@ -282,8 +282,8 @@ static int board_added(struct slot *p_slot)
- 		return WRONG_BUS_FREQUENCY;
- 	}
+diff --git a/drivers/platform/chrome/chromeos_laptop.c b/drivers/platform/chrome/chromeos_laptop.c
+index a241e5f..02e014b 100644
+--- a/drivers/platform/chrome/chromeos_laptop.c
++++ b/drivers/platform/chrome/chromeos_laptop.c
+@@ -380,6 +380,13 @@ static struct chromeos_laptop chromebook_pixel = {
+ 	},
+ };
  
--	bsp = ctrl->pci_dev->bus->cur_bus_speed;
--	msp = ctrl->pci_dev->bus->max_bus_speed;
-+	bsp = ctrl->pci_dev->subordinate->cur_bus_speed;
-+	msp = ctrl->pci_dev->subordinate->max_bus_speed;
- 
- 	/* Check if there are other slots or devices on the same bus */
- 	if (!list_empty(&ctrl->pci_dev->subordinate->devices))
++static struct chromeos_laptop hp_chromebook_14 = {
++	.i2c_peripherals = {
++		/* Touchpad. */
++		{ .add = setup_cyapa_tp, I2C_ADAPTER_DESIGNWARE_0 },
++	},
++};
++
+ static struct chromeos_laptop acer_c7_chromebook = {
+ 	.i2c_peripherals = {
+ 		/* Touchpad. */
+@@ -446,6 +453,14 @@ static struct dmi_system_id chromeos_laptop_dmi_table[] __initdata = {
+ 		_CBDD(chromebook_pixel),
+ 	},
+ 	{
++		.ident = "HP Chromebook 14",
++		.matches = {
++			DMI_MATCH(DMI_BIOS_VENDOR, "coreboot"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Falco"),
++		},
++		_CBDD(hp_chromebook_14),
++	},
++	{
+ 		.ident = "Acer C7 Chromebook",
+ 		.matches = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Parrot"),
 -- 
-1.9.1
+2.0.0.526.g5318336
 
