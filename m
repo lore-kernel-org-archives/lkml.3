@@ -1,100 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965175AbaFQVIm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:08:42 -0400
-Received: from smtp-69.nebula.fi ([83.145.220.69]:39699 "EHLO smtp.nebula.fi"
+	id S965277AbaFQVNJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:13:09 -0400
+Received: from mga01.intel.com ([192.55.52.88]:23419 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964883AbaFQVIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:08:40 -0400
-Date: Wed, 18 Jun 2014 00:08:30 +0300
-From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-To: Franck Jullien <franck.jullien@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        tomi.valkeinen@ti.com, plagnioj@jcrosoft.com
-Subject: Re: [PATCH] video: OF display-timings support for ocfb
-Message-ID: <20140617210829.GA7753@chokladfabriken.org>
-References: <1402517871-27503-1-git-send-email-franck.jullien@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402517871-27503-1-git-send-email-franck.jullien@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S965215AbaFQVNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 17:13:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,496,1400050800"; 
+   d="scan'208";a="557026021"
+Date: Tue, 17 Jun 2014 14:13:02 -0700
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCH 1/2] tmon: Check log file for common secuirty issues
+Message-ID: <20140617141302.7f5b0434@ultegra>
+In-Reply-To: <1403035509-31815-2-git-send-email-nhorman@tuxdriver.com>
+References: <1403035509-31815-1-git-send-email-nhorman@tuxdriver.com>
+	<1403035509-31815-2-git-send-email-nhorman@tuxdriver.com>
+Organization: OTC
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 10:17:51PM +0200, Franck Jullien wrote:
-> Signed-off-by: Franck Jullien <franck.jullien@gmail.com>
-> ---
->  drivers/video/fbdev/Kconfig |    2 ++
->  drivers/video/fbdev/ocfb.c  |   31 ++++++++++++++++++++++++++-----
->  2 files changed, 28 insertions(+), 5 deletions(-)
+On Tue, 17 Jun 2014 16:05:08 -0400
+Neil Horman <nhorman@tuxdriver.com> wrote:
+
+> The tmon logging system blindly opens its log file on a static path,
+> making it very easy for someone to redirect that log information to
+> inappropriate places or overwrite other users data.  Do some easy
+> checking to make sure we're not logging to a symlink or a file owned
+> by another user.
 > 
-> diff --git a/drivers/video/fbdev/Kconfig b/drivers/video/fbdev/Kconfig
-> index e1f4727..b4ac6bb 100644
-> --- a/drivers/video/fbdev/Kconfig
-> +++ b/drivers/video/fbdev/Kconfig
-> @@ -942,6 +942,8 @@ config FB_OPENCORES
->  	select FB_CFB_FILLRECT
->  	select FB_CFB_COPYAREA
->  	select FB_CFB_IMAGEBLIT
-> +	select VIDEOMODE_HELPERS
-> +	select FB_MODE_HELPERS
->  	help
->  	  This enables support for the OpenCores VGA/LCD core.
+Acked-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+
+> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> CC: Zhang Rui <rui.zhang@intel.com>
+> CC: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> ---
+>  tools/thermal/tmon/tmon.c | 24 ++++++++++++++++++++++++
+>  1 file changed, 24 insertions(+)
+> 
+> diff --git a/tools/thermal/tmon/tmon.c b/tools/thermal/tmon/tmon.c
+> index b30f531..059e0be 100644
+> --- a/tools/thermal/tmon/tmon.c
+> +++ b/tools/thermal/tmon/tmon.c
+> @@ -142,6 +142,7 @@ static void start_syslog(void)
+>  static void prepare_logging(void)
+>  {
+>  	int i;
+> +	struct stat logstat;
 >  
-> diff --git a/drivers/video/fbdev/ocfb.c b/drivers/video/fbdev/ocfb.c
-> index 7f9dc9b..6d15565 100644
-> --- a/drivers/video/fbdev/ocfb.c
-> +++ b/drivers/video/fbdev/ocfb.c
-> @@ -22,6 +22,8 @@
->  #include <linux/string.h>
->  #include <linux/slab.h>
->  
-> +#include <video/of_display_timing.h>
-> +
->  /* OCFB register defines */
->  #define OCFB_CTRL	0x000
->  #define OCFB_STAT	0x004
-> @@ -310,11 +312,30 @@ static int ocfb_probe(struct platform_device *pdev)
->  	fbdev->info.device = &pdev->dev;
->  	fbdev->info.par = fbdev;
->  
-> -	/* Video mode setup */
-> -	if (!fb_find_mode(&fbdev->info.var, &fbdev->info, mode_option,
-> -			  NULL, 0, &default_mode, 16)) {
-> -		dev_err(&pdev->dev, "No valid video modes found\n");
-> -		return -EINVAL;
-> +	if (!mode_option && IS_ENABLED(CONFIG_OF)) {
-> +		struct fb_videomode mode;
-> +		u32 bpp;
-> +
-> +		ret = of_get_fb_videomode(pdev->dev.of_node, &mode,
-> +					  OF_USE_NATIVE_MODE);
-> +		if (ret)
-> +			return ret;
-> +
-> +		fb_videomode_to_var(&fbdev->info.var, &mode);
-> +
-> +		ret = of_property_read_u32(pdev->dev.of_node, "bits-per-pixel",
-> +					   &bpp);
-> +		if (ret)
-> +			return ret;
-> +
-> +		fbdev->info.var.bits_per_pixel = bpp;
-> +
-> +	} else {
-> +		if (!fb_find_mode(&fbdev->info.var, &fbdev->info, mode_option,
-> +				  NULL, 0, &default_mode, 16)) {
-> +			dev_err(&pdev->dev, "No valid video modes found\n");
-> +			return -EINVAL;
-> +		}
+>  	if (!logging)
+>  		return;
+> @@ -152,6 +153,29 @@ static void prepare_logging(void)
+>  		return;
 >  	}
->  	ocfb_init_var(fbdev);
->  	ocfb_init_fix(fbdev);
+>  
+> +	if (lstat(TMON_LOG_FILE, &logstat) < 0) {
+> +		syslog(LOG_ERR, "Unable to stat log file %s\n",
+> TMON_LOG_FILE);
+> +		fclose(tmon_log);
+> +		tmon_log = NULL;
+> +		return;
+> +	}
+> +
+> +	/* The log file must be a regular file owned by us */
+> +	if (S_ISLNK(logstat.st_mode)) {
+> +		syslog(LOG_ERR, "Log file is a symlink.  Will not
+> log\n");
+> +		fclose(tmon_log);
+> +		tmon_log = NULL;
+> +		return;
+> +	}
+> +
+> +	if (logstat.st_uid != getuid()) {
+> +		syslog(LOG_ERR, "We don't own the log file.  Not
+> logging\n");
+> +		fclose(tmon_log);
+> +		tmon_log = NULL;
+> +		return;
+> +	}
+> +
+> +
+>  	fprintf(tmon_log, "#----------- THERMAL SYSTEM CONFIG
+> -------------\n"); for (i = 0; i < ptdata.nr_tz_sensor; i++) {
+>  		char binding_str[33]; /* size of long + 1 */
 
+[Jacob Pan]
 
-Nice, this was something that was discussed as a possible future improvement
-when I first posted this driver.
+-- 
+Thanks,
 
-Acked-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+Jacob
