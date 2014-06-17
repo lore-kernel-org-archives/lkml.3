@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967526AbaFQWgO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:36:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54048 "EHLO
+	id S967734AbaFQWgQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:36:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54045 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966193AbaFQVso (ORCPT
+	with ESMTP id S966229AbaFQVso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 17 Jun 2014 17:48:44 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Dave Jones <davej@redhat.com>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Chris Boot <crb@tiger-computing.co.uk>, Philip Gaw <pgaw@darktech.org.uk>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 105/212] mm, thp: close race between mremap() and split_huge_page()
-Date: Tue, 17 Jun 2014 14:43:19 -0700
-Message-Id: <1403041506-13646-106-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 210/212] target: Fix alua_access_state attribute OOPs for un-configured devices
+Date: Tue, 17 Jun 2014 14:45:04 -0700
+Message-Id: <1403041506-13646-211-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -31,73 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit dd18dbc2d42af75fffa60c77e0f02220bc329829 upstream.
+commit f1453773514bb8b0bba0716301e8c8f17f8d39c7 upstream.
 
-It's critical for split_huge_page() (and migration) to catch and freeze
-all PMDs on rmap walk.  It gets tricky if there's concurrent fork() or
-mremap() since usually we copy/move page table entries on dup_mm() or
-move_page_tables() without rmap lock taken.  To get it work we rely on
-rmap walk order to not miss any entry.  We expect to see destination VMA
-after source one to work correctly.
+This patch fixes a OOPs where an attempt to write to the per-device
+alua_access_state configfs attribute at:
 
-But after switching rmap implementation to interval tree it's not always
-possible to preserve expected walk order.
+  /sys/kernel/config/target/core/$HBA/$DEV/alua/$TG_PT_GP/alua_access_state
 
-It works fine for dup_mm() since new VMA has the same vma_start_pgoff()
-/ vma_last_pgoff() and explicitly insert dst VMA after src one with
-vma_interval_tree_insert_after().
+results in an NULL pointer dereference when the backend device has not
+yet been configured.
 
-But on move_vma() destination VMA can be merged into adjacent one and as
-result shifted left in interval tree.  Fortunately, we can detect the
-situation and prevent race with rmap walk by moving page table entries
-under rmap lock.  See commit 38a76013ad80.
+This patch adds an explicit check for DF_CONFIGURED, and fails with
+-ENODEV to avoid this case.
 
-Problem is that we miss the lock when we move transhuge PMD.  Most
-likely this bug caused the crash[1].
-
-[1] http://thread.gmane.org/gmane.linux.kernel.mm/96473
-
-Fixes: 108d6642ad81 ("mm anon rmap: remove anon_vma_moveto_tail")
-
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Acked-by: Michel Lespinasse <walken@google.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: David Miller <davem@davemloft.net>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Chris Boot <crb@tiger-computing.co.uk>
+Reported-by: Philip Gaw <pgaw@darktech.org.uk>
+Cc: Chris Boot <crb@tiger-computing.co.uk>
+Cc: Philip Gaw <pgaw@darktech.org.uk>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/mremap.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/target/target_core_configfs.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/mm/mremap.c b/mm/mremap.c
-index 0843feb..05f1180 100644
---- a/mm/mremap.c
-+++ b/mm/mremap.c
-@@ -194,10 +194,17 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
- 			break;
- 		if (pmd_trans_huge(*old_pmd)) {
- 			int err = 0;
--			if (extent == HPAGE_PMD_SIZE)
-+			if (extent == HPAGE_PMD_SIZE) {
-+				VM_BUG_ON(vma->vm_file || !vma->anon_vma);
-+				/* See comment in move_ptes() */
-+				if (need_rmap_locks)
-+					anon_vma_lock_write(vma->anon_vma);
- 				err = move_huge_pmd(vma, new_vma, old_addr,
- 						    new_addr, old_end,
- 						    old_pmd, new_pmd);
-+				if (need_rmap_locks)
-+					anon_vma_unlock_write(vma->anon_vma);
-+			}
- 			if (err > 0) {
- 				need_flush = true;
- 				continue;
+diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
+index 272755d..afcbb04 100644
+--- a/drivers/target/target_core_configfs.c
++++ b/drivers/target/target_core_configfs.c
+@@ -2040,6 +2040,11 @@ static ssize_t target_core_alua_tg_pt_gp_store_attr_alua_access_state(
+ 			" tg_pt_gp ID: %hu\n", tg_pt_gp->tg_pt_gp_valid_id);
+ 		return -EINVAL;
+ 	}
++	if (!(dev->dev_flags & DF_CONFIGURED)) {
++		pr_err("Unable to set alua_access_state while device is"
++		       " not configured\n");
++		return -ENODEV;
++	}
+ 
+ 	ret = kstrtoul(page, 0, &tmp);
+ 	if (ret < 0) {
 -- 
 1.9.1
 
