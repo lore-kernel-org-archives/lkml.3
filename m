@@ -1,113 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933120AbaFQOmA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 10:42:00 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:59405 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932873AbaFQOl7 (ORCPT
+	id S933153AbaFQOm5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 10:42:57 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49136 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932870AbaFQOm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 10:41:59 -0400
-Date: Tue, 17 Jun 2014 07:41:51 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Tue, 17 Jun 2014 10:42:56 -0400
+Message-ID: <1403016160.27991.1.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH 01/24] kobject: return actual error on
+ kset_create_and_add
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Jeff Liu <jeff.liu@oracle.com>
+Cc: gregkh@linuxfoundation.org, Christoph Lameter <cl@gentwo.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
- accessors and operations
-Message-ID: <20140617144151.GD4669@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140612135630.GA23606@htj.dyndns.org>
- <20140612153426.GV4581@linux.vnet.ibm.com>
- <20140612155227.GB23606@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140612155227.GB23606@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061714-8236-0000-0000-0000032A2CF6
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, herbert@gondor.apana.org.au,
+        davem@davemloft.net, stefanr@s5r6.in-berlin.de, joro@8bytes.org,
+        jejb@parisc-linux.org, deller@gmx.de, bhelgaas@google.com, clm@fb.com,
+        Josef Bacik <jbacik@fb.com>, swhiteho@redhat.com, bharrosh@panasas.com,
+        bhalevy@primarydata.com, ccaulfie@redhat.com, teigland@redhat.com,
+        "Theodore Ts'o" <tytso@mit.edu>, adilger.kernel@dilger.ca,
+        jaegeuk@kernel.org, cm224.lee@samsung.com,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        casey@schaufler-ca.com, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 17 Jun 2014 07:42:40 -0700
+In-Reply-To: <53A04FF7.5050900@oracle.com>
+References: <53A04FF7.5050900@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 11:52:27AM -0400, Tejun Heo wrote:
-> Hello, Paul.
+On Tue, 2014-06-17 at 22:25 +0800, Jeff Liu wrote:
+> From: Jie Liu <jeff.liu@oracle.com>
 > 
-> On Thu, Jun 12, 2014 at 08:34:26AM -0700, Paul E. McKenney wrote:
-> > > It can be argued that smp_read_barrier_depends() is the responsibility
-> > > of the caller; however, discerning local and remote accesses gets very
-> > > confusing with percpu areas (initialized remotely but local to this
-> > > cpu and vice-versa) and data dependency barrier is free on all archs
-> > > except for alpha, so I think it's better to include it as part of
-> > > percpu accessors and operations.
-> > 
-> > OK, I will bite...  Did you find a bug of this form?  (I do see a
-> > couple of possible bugs on a quick look, so maybe...)
+> It's better to return the actual error rather than NULL because
+> kset_register() can failed due to other reasons.
 > 
-> I don't have an actual bug report or repro case, which isn't too
-> surprising given that this can't happen on x86, but I know of places
-> where percpu pointer is used opportunistically (if allocated) which
-> would be affected by this.
-
-Fair enough.
-
-> > I would argue that the code above should instead say something like:
-> > 
-> > 	smp_store_release(p, alloc_percpu());
+> Cc: Christoph Lameter <cl@linux-foundation.org>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Pekka Enberg <penberg@kernel.org>
+> Cc: Matt Mackall <mpm@selenic.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
+> Cc: Joerg Roedel <joro@8bytes.org>
+> Cc: James E.J. Bottomley <JBottomley@parallels.com>
+> Cc: Helge Deller <deller@gmx.de>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Chris Mason <clm@fb.com>
+> Cc: Josef Bacik <jbacik@fb.com>
+> Cc: Steven Whitehouse <swhiteho@redhat.com>
+> Cc: Boaz Harrosh <bharrosh@panasas.com>
+> Cc: Benny Halevy <bhalevy@primarydata.com>
+> Cc: Christine Caulfield <ccaulfie@redhat.com>
+> Cc: David Teigland <teigland@redhat.com>
+> Cc: Theodore Ts'o <tytso@mit.edu>
+> Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+> Cc: Jaegeuk Kim <jaegeuk@kernel.org>
+> Cc: Changman Lee <cm224.lee@samsung.com>
+> Cc: Mark Fasheh <mfasheh@suse.com>
+> Cc: Joel Becker <jlbec@evilplan.org>
+> Cc: Casey Schaufler <casey@schaufler-ca.com>
+> Signed-off-by: Jie Liu <jeff.liu@oracle.com>
+> ---
+>  lib/kobject.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> Well, we can always say that it's the caller's responsibility to put
-> in enough barriers, but it becomes weird for percpu areas because the
-> ownership of the allocated areas isn't really clear.  Whether each
-> allocated cpu-specific area's queued writes belong to the allocating
-> cpu or the cpu that the area is associated with is an implementation
-> detail which may theoretically change and as such I think it'd be best
-> for the problem to be dealt with in percpu allocator and accessors
-> proper.  I think this is way too subtle to ask the users to handle
-> correctly.
+> diff --git a/lib/kobject.c b/lib/kobject.c
+> index 58751bb..538c617 100644
+> --- a/lib/kobject.c
+> +++ b/lib/kobject.c
+> @@ -919,11 +919,11 @@ struct kset *kset_create_and_add(const char *name,
+>  
+>  	kset = kset_create(name, uevent_ops, parent_kobj);
+>  	if (!kset)
+> -		return NULL;
+> +		return ERR_PTR(-ENOMEM);
+>  	error = kset_register(kset);
+>  	if (error) {
+>  		kfree(kset);
+> -		return NULL;
+> +		return ERR_PTR(error);
+>  	}
+>  	return kset;
+>  }
 
-But in the case where the allocation is initially zeroed, then a few
-fields are initialized to non-zero values, the memory barrier in the
-allocator is insufficient.  I believe that it will be easier for people
-to always use smp_store_release() or whatever than to not need it if
-the initialization is strictly zero, but to need it if additional
-initialization is required.
+This patch series isn't bisectable.  When changing an error signal from
+NULL to non-NULL, you have to do it as one patch, otherwise if a
+bisection lands in here we'll get error returns from all our kobject
+kset code and the kernel won't boot.
 
-> > I was worried about use of per_cpu() by the reading CPU, but of course
-> > in that case, things are initialized at compiler time.
-> 
-> Not really.  The template is initialized on kernel load.  The actual
-> percpu areas have to be allocated dynamically; however, this happens
-> while the machine is still running UP, so this should be okay.
+It's fine if you're sending it out as 24 patches for review, but it has
+to be applied as a single one.
 
-Good point.  How about per-CPU variables that are introduced by
-loadable modules?  (I would guess that there are plenty of memory
-barriers in the load process, given that text and data also needs
-to be visible to other CPUs.)
+James
 
-> > > I wonder whether we also need a smp_wmb() for other __GFP_ZERO
-> > > allocations.  There isn't one and requiring the users to perform
-> > > smp_wmb() to ensure the propagation of zeroing seems too subtle.
-> > 
-> > I would say "no" even if we do decide that alloc_percpu() needs
-> > an smp_wmb().  The reason is that you really do have to store the
-> > pointer at some point, and you should use smp_store_release() for
-> > this task, at least if you are storing to something accessible to
-> > other CPUs.
-> 
-> For normal allocations, I don't have a strong opinion.  I'd prefer to
-> think of memory coming out of the allocator to have memory ordering
-> already taken care of but it is a lot less murky than with percpu
-> areas.
-
-Again, it won't help for the allocator to strongly order the
-initialization to zero if there are additional initializations of some
-fields to non-zero values.  And again, it should be a lot easier to
-require the smp_store_release() or whatever uniformly than only in cases
-where additional initialization occurred.
-
-							Thanx, Paul
 
