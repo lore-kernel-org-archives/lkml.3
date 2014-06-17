@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964964AbaFQQW7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:22:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50702 "EHLO
+	id S964984AbaFQQXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:23:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50708 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964948AbaFQQW5 (ORCPT
+	with ESMTP id S964948AbaFQQXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:22:57 -0400
+	Tue, 17 Jun 2014 12:23:01 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
         "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 095/121] skbuff: skb_segment: orphan frags before copying
-Date: Tue, 17 Jun 2014 09:17:53 -0700
-Message-Id: <1403021899-16708-68-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 092/121] net: qmi_wwan: add a number of Dell devices
+Date: Tue, 17 Jun 2014 09:17:50 -0700
+Message-Id: <1403021899-16708-65-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,45 +31,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit 1fd819ecb90cc9b822cd84d3056ddba315d3340f upstream.
+[ Upstream commit 6f10c5d1b1aeddb63d33070abb8bc5a177beeb1f ]
 
-skb_segment copies frags around, so we need
-to copy them carefully to avoid accessing
-user memory after reporting completion to userspace
-through a callback.
+Dan writes:
 
-skb_segment doesn't normally happen on datapath:
-TSO needs to be disabled - so disabling zero copy
-in this case does not look like a big deal.
+"The Dell drivers use the same configuration for PIDs:
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+81A2: Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card
+81A3: Dell Wireless 5570 HSPA+ (42Mbps) Mobile Broadband Card
+81A4: Dell Wireless 5570e HSPA+ (42Mbps) Mobile Broadband Card
+81A8: Dell Wireless 5808 Gobi(TM) 4G LTE Mobile Broadband Card
+81A9: Dell Wireless 5808e Gobi(TM) 4G LTE Mobile Broadband Card
+
+These devices are all clearly Sierra devices, but are also definitely
+Gobi-based.  The A8 might be the MC7700/7710 and A9 is likely a MC7750.
+
+>From DellGobi5kSetup.exe from the Dell drivers:
+
+usbif0: serial/firmware loader?
+usbif2: nmea
+usbif3: modem/ppp
+usbif8: net/QMI"
+
+Reported-by: AceLan Kao <acelan.kao@canonical.com>
+Reported-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-(back ported from commit 1fd819ecb90cc9b822cd84d3056ddba315d3340f)
-CVE-2014-0131
-BugLink: http://bugs.launchpad.net/bugs/1298119
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/core/skbuff.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/usb/qmi_wwan.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index f97fe58..1cee7e3 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2826,6 +2826,9 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
- 						 skb_put(nskb, hsize), hsize);
+diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+index 102eaf8..4f1397b 100644
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -604,6 +604,11 @@ static const struct usb_device_id products[] = {
+ 	{QMI_FIXED_INTF(0x0b3c, 0xc00b, 4)},	/* Olivetti Olicard 500 */
+ 	{QMI_FIXED_INTF(0x1e2d, 0x0060, 4)},	/* Cinterion PLxx */
+ 	{QMI_FIXED_INTF(0x1e2d, 0x0053, 4)},	/* Cinterion PHxx,PXxx */
++	{QMI_FIXED_INTF(0x413c, 0x81a2, 8)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card */
++	{QMI_FIXED_INTF(0x413c, 0x81a3, 8)},	/* Dell Wireless 5570 HSPA+ (42Mbps) Mobile Broadband Card */
++	{QMI_FIXED_INTF(0x413c, 0x81a4, 8)},	/* Dell Wireless 5570e HSPA+ (42Mbps) Mobile Broadband Card */
++	{QMI_FIXED_INTF(0x413c, 0x81a8, 8)},	/* Dell Wireless 5808 Gobi(TM) 4G LTE Mobile Broadband Card */
++	{QMI_FIXED_INTF(0x413c, 0x81a9, 8)},	/* Dell Wireless 5808e Gobi(TM) 4G LTE Mobile Broadband Card */
  
- 		while (pos < offset + len && i < nfrags) {
-+			if (unlikely(skb_orphan_frags(skb, GFP_ATOMIC)))
-+				goto err;
-+
- 			*frag = skb_shinfo(skb)->frags[i];
- 			__skb_frag_ref(frag);
- 			size = skb_frag_size(frag);
+ 	/* 4. Gobi 1000 devices */
+ 	{QMI_GOBI1K_DEVICE(0x05c6, 0x9212)},	/* Acer Gobi Modem Device */
 -- 
 1.9.1
 
