@@ -1,75 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964877AbaFQQT7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:19:59 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:56606 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933321AbaFQQT4 convert rfc822-to-8bit (ORCPT
+	id S964893AbaFQQUm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:20:42 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:52188 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933321AbaFQQUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:19:56 -0400
+	Tue, 17 Jun 2014 12:20:40 -0400
+Message-ID: <53A06AD4.3000704@wwwdotorg.org>
+Date: Tue, 17 Jun 2014 10:20:36 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <53A060F7.2020304@gmx.de>
-References: <539F1C59.6070308@gmx.de> <CAFLxGvyqPzbmfz1-WxP7z02=V-V5=p5b09HYPOFOS7Qj8eUHGw@mail.gmail.com>
- <CALCETrXqjHPvKw=wcdnxQWO0Y140B=a0E7eh4+PoERvU=z909w@mail.gmail.com>
- <539F297F.7010904@nod.at> <CALCETrU+TmaEjPSHz1LwQJvVDp8fqoDs3O4b+3gS_ewthiwnMA@mail.gmail.com>
- <539F2B2D.6050105@gmx.de> <CALCETrVw6f7iy4qTMgSt8k9N4rOWJ_mm9LbrtVZ9YFORacriSQ@mail.gmail.com>
- <539F3077.7040005@gmx.de> <CALCETrUUC6g_y4nJkSYo7MrKB8ehyXgnnuBHxGCDrq1d4zp2BQ@mail.gmail.com>
- <539F35A0.2050002@gmx.de> <CALCETrVseO=n6TH-msfTHRqB-OMPs_32nRELVYc=V1ZDmvFXVA@mail.gmail.com>
- <539F567F.2050802@gmx.de> <539F5702.5050104@nod.at> <CALCETrW7U4AHG-a9oPbOt31z3wgzhjSu8b+yGpdM4+vNinKgsA@mail.gmail.com>
- <53A060F7.2020304@gmx.de>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 17 Jun 2014 09:19:33 -0700
-Message-ID: <CALCETrV9Ee8CMuSBi9ACrfN2r4=P8eMys8i8iY++yQ392UpMDQ@mail.gmail.com>
-Subject: Re: 3.15: kernel BUG at kernel/auditsc.c:1525!
-To: =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>
-Cc: Richard Weinberger <richard@nod.at>, "H. Peter Anvin" <hpa@zytor.com>,
-        X86 ML <x86@kernel.org>, Eric Paris <eparis@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
+To: Paul Bolle <pebolle@tiscali.nl>, Doug Anderson <dianders@chromium.org>
+CC: Bill Richardson <wfrichar@chromium.org>, Simon Glass <sjg@chromium.org>,
+        Lee Jones <lee.jones@linaro.org>, Stephen Warren <swarren@nvidia.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 5/7] mfd: cros_ec: Sync to the latest cros_ec_commands.h
+ from EC sources
+References: <1398879850-9111-1-git-send-email-dianders@chromium.org>	 <1398879850-9111-6-git-send-email-dianders@chromium.org>	 <20140520084602.GF24991@lee--X1> <1402483068.3798.82.camel@x220>	 <CAD=FV=XL9tnEqza8Zx8mt_Z7-bj8TCzdeyHMhnpewKp_1CR-ig@mail.gmail.com>	 <1402646902.28881.15.camel@x220>	 <CAD=FV=XcK5R1sdNwoJkFPapwWQ9vqxvmQi_L3BqTSt8EKRTNHw@mail.gmail.com> <1402995202.1984.22.camel@x220>
+In-Reply-To: <1402995202.1984.22.camel@x220>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 8:38 AM, Toralf Förster <toralf.foerster@gmx.de> wrote:
-> On 06/16/2014 11:35 PM, Andy Lutomirski wrote:
->> [cc: hpa, x86 list]
->>
->> On Mon, Jun 16, 2014 at 1:43 PM, Richard Weinberger <richard@nod.at> wrote:
->>> Am 16.06.2014 22:41, schrieb Toralf Förster:
->>>> Well, might be the mail:subject should be adapted, b/c the issue can be triggered in a 3.13.11 kernel too.
->>>> Unfortunately it does not appear within an UML guest, therefore an automated bisecting isn't possible I fear.
+On 06/17/2014 02:53 AM, Paul Bolle wrote:
+> Doug,
+> 
+> On Fri, 2014-06-13 at 08:22 -0700, Doug Anderson wrote:
+>> On Fri, Jun 13, 2014 at 1:08 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+>>> On Wed, 2014-06-11 at 08:11 -0700, Doug Anderson wrote:
+>>>> This is a config option on the ChromeOS EC
+>>>> <https://chromium.googlesource.com/chromiumos/platform/ec>.  Doing a
+>>>> grep there:
+>>>>
+>>>> board/samus/board.h:#define CONFIG_CHARGER_PROFILE_OVERRIDE
+>>>> common/charge_state_v2.c:#ifdef CONFIG_CHARGER_PROFILE_OVERRIDE
+>>>> common/charge_state_v2.c:#ifdef CONFIG_CHARGER_PROFILE_OVERRIDE
+>>>> common/charge_state_v2.c:#ifdef CONFIG_CHARGER_PROFILE_OVERRIDE
+>>>> driver/battery/samus.c:#ifdef CONFIG_CHARGER_PROFILE_OVERRIDE
+>>>> driver/battery/samus.c:#endif   /* CONFIG_CHARGER_PROFILE_OVERRIDE */
+>>>> include/config.h:#undef CONFIG_CHARGER_PROFILE_OVERRIDE
+>>>> include/ec_commands.h:  /* Range for CONFIG_CHARGER_PROFILE_OVERRIDE params */
+>>>> test/test_config.h:#define CONFIG_CHARGER_PROFILE_OVERRIDE
 >>>
->>> You could try KVM. :)
+>>> I see. So this is not a Kconfig macro but a general macro with a CONFIG_
+>>> prefix. There are quite a bit of those in the tree already, but still,
+>>> would another prefix also do?
 >>
->> Before you do that, just to clarify:
->>
->> What bitness is your kernel?  That is, are you on 32-bit or 64-bit kernel?
->>
->> What bitness is your test case?  'file a.out' will say.
->>
->> What does /proc/cpuinfo say in flags?
->>
->
-> tfoerste@n22 ~/tmp $ uname -a
-> Linux n22 3.15.1 #4 SMP Tue Jun 17 17:22:22 CEST 2014 i686 Intel(R) Core(TM) i5-2540M CPU @ 2.60GHz GenuineIntel GNU/Linux
+>> Given that it's an entirely separate project and this is a valid
+>> CONFIG option in that project, it seems a lot to ask them not to use
+>> the CONFIG_ prefix.  Also: the part you are objecting to is only a
+>> comment, right?
+> 
+> So all the hits you quoted above are actually from code that's never
+> going to be included in the kernel tree, right? If so, then yes, we're
+> only discussing a single comment.
+> 
+>> We could certainly add extra wording in the comment to make it obvious
+>> that this is a CONFIG option for the EC and not the kernel.  Would
+>> that be enough?  ...or are you trying to use some scripts to
+>> automatically process files to look for CONFIG options?
+> 
+> Yes, I'm using a script to check for Kconfig macros, among other things.
+> It doesn't care about comments (because every now and then mistakes are
+> made in comments too, and some of those can get surprisingly confusing).
+> 
+> Anyhow, the CONFIG_ prefix used in the kernel tree is quite generic, but
+> we're stuck with it. Would it be bothersome to drop it in that comment?
+> Mentioning a preprocessor macro from a separate project is a bit
+> confusing to begin with. How is one supposed to know that this is a
+> reference to something out of tree?
+> 
+> So, in summary, while we're apparently only discussing a single comment,
+> I would appreciate it if it could be reworded, preferably by dropping
+> that the CONFIG_ prefix. But other people might care very little, as
+> they don't share this particular pet peeve.
 
-So entry_32.S is in play.
-
-> flags           : ... sep ...
-
-And sysenter is in use, barring weird boot-time options.
-
->
->
->> Can you try the attached patch?  It's only compile-tested.
->>
-> applied both on top of 3.14.8 and 3.15.1 - issue solved
-
-So I guess I diagnosed it right.  Yay for reading ugly code.
-
-hpa, should I resend a real emailed patch or is my attached thing ok?
-Presumably this, or something like it, should cc: stable and go in
-3.16, too.
-
---Andy
+Can't your tool maintain a whitelist or ignore list? There are many
+cases where the kernel can pull in headers/data from other projects
+(Firmware interfaces to an arbitrarily large set of HW, Device trees,
+IO/network protocools, perhaps more). It feels quite unreasonable for
+the kernel to decide that it exclusively owns the CONFIG_* namespace
+even in comments, and that every other project it interacts with must
+not use that namespace.
