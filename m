@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966957AbaFQWix (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:38:53 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:54098 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966205AbaFQWiV (ORCPT
+	id S966423AbaFQWtB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:49:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53699 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965215AbaFQVph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 18:38:21 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Scott J Norton <scott.norton@hp.com>, Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v2 1/2] mm, thp: move invariant bug check out of loop in __split_huge_page_map
-Date: Tue, 17 Jun 2014 18:37:58 -0400
-Message-Id: <1403044679-9993-2-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1403044679-9993-1-git-send-email-Waiman.Long@hp.com>
-References: <1403044679-9993-1-git-send-email-Waiman.Long@hp.com>
+	Tue, 17 Jun 2014 17:45:37 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 055/212] ipv6: fix calculation of option len in ip6_append_data
+Date: Tue, 17 Jun 2014 14:42:29 -0700
+Message-Id: <1403041506-13646-56-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the __split_huge_page_map() function, the check for
-page_mapcount(page) is invariant within the for loop. Because of the
-fact that the macro is implemented using atomic_read(), the redundant
-check cannot be optimized away by the compiler leading to unnecessary
-read to the page structure.
+3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
 
-This patch moves the invariant bug check out of the loop so that it
-will be done only once. On a 3.16-rc1 based kernel, the execution
-time of a microbenchmark that broke up 1000 transparent huge pages
-using munmap() had an execution time of 38,245us and 38,548us with
-and without the patch respectively. The performance gain is about 1%.
+------------------
 
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+
+[ Upstream commit 3a1cebe7e05027a1c96f2fc1a8eddf5f19b78f42 ]
+
+tot_len does specify the size of struct ipv6_txoptions. We need opt_flen +
+opt_nflen to calculate the overall length of additional ipv6 extensions.
+
+I found this while auditing the ipv6 output path for a memory corruption
+reported by Alexey Preobrazhensky while he fuzzed an instrumented
+AddressSanitizer kernel with trinity. This may or may not be the cause
+of the original bug.
+
+Fixes: 4df98e76cde7c6 ("ipv6: pmtudisc setting not respected with UFO/CORK")
+Reported-by: Alexey Preobrazhensky <preobr@google.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/huge_memory.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ net/ipv6/ip6_output.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index e60837d..be84c71 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1744,6 +1744,8 @@ static int __split_huge_page_map(struct page *page,
- 	if (pmd) {
- 		pgtable = pgtable_trans_huge_withdraw(mm, pmd);
- 		pmd_populate(mm, &_pmd, pgtable);
-+		if (pmd_write(*pmd))
-+			BUG_ON(page_mapcount(page) != 1);
+diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+index 92bc3b4..e86c22e 100644
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -1216,7 +1216,7 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
+ 		unsigned int maxnonfragsize, headersize;
  
- 		haddr = address;
- 		for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
-@@ -1753,8 +1755,6 @@ static int __split_huge_page_map(struct page *page,
- 			entry = maybe_mkwrite(pte_mkdirty(entry), vma);
- 			if (!pmd_write(*pmd))
- 				entry = pte_wrprotect(entry);
--			else
--				BUG_ON(page_mapcount(page) != 1);
- 			if (!pmd_young(*pmd))
- 				entry = pte_mkold(entry);
- 			if (pmd_numa(*pmd))
+ 		headersize = sizeof(struct ipv6hdr) +
+-			     (opt ? opt->tot_len : 0) +
++			     (opt ? opt->opt_flen + opt->opt_nflen : 0) +
+ 			     (dst_allfrag(&rt->dst) ?
+ 			      sizeof(struct frag_hdr) : 0) +
+ 			     rt->rt6i_nfheader_len;
 -- 
-1.7.1
+1.9.1
 
