@@ -1,42 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967784AbaFQWwG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:52:06 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:45597 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965497AbaFQWwD (ORCPT
+	id S967475AbaFQWhq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:37:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54025 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966205AbaFQVsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 18:52:03 -0400
-Date: Tue, 17 Jun 2014 18:51:59 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: the cgroup tree has an unnecessary merge
-Message-ID: <20140617225159.GA8838@mtj.dyndns.org>
-References: <20140618084921.07c3b391@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140618084921.07c3b391@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 17 Jun 2014 17:48:39 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: David Henningsson <david.henningsson@canonical.com>,
+        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 101/212] ALSA: hda - add headset mic detect quirks for three Dell laptops
+Date: Tue, 17 Jun 2014 14:43:15 -0700
+Message-Id: <1403041506-13646-102-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Stephen.
+3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
 
-On Wed, Jun 18, 2014 at 08:49:21AM +1000, Stephen Rothwell wrote:
-> The cgroup tree has a merge of 963649d735c8 and c731ae1d0f02 both of
-> which are already merged into v3.16-rc1.  Why did you just not use
-> v3.16-rc1 itself (or the point where Linus merged your tree) (and then
-> add the other commit on top?  That would have removed any chance that
-> you resolved the merged differently to how it was resolved in Linus'
-> tree (I don't know if there is a difference, but I have had conflicts
-> from different merge resolutions in the past).
+------------------
 
-Oops, my mistake.  Reset to for-3.16-fixes.
+From: Hui Wang <hui.wang@canonical.com>
 
-Thanks.
+commit a1f3b5fa11dfc636288b9e0190a0289f23d95af6 upstream.
 
+When we plug a 3-ring headset on the Dell machines (VID: 0x10ec0255,
+SID: 0x1028065c; VID: 0x10ec0255, SID: 0x10280680; VID: 0x10ec0292,
+SID: 0x10280684), the headset mic can't be detected, after apply this
+patch, the headset mic can work well.
+
+And on the machine with SID 0x10280684, and the Lineout and external
+microphone should be routed to docking, this patch also fix this
+problem.
+
+BugLink: https://bugs.launchpad.net/bugs/1297581
+Cc: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Hui Wang <hui.wang@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ sound/pci/hda/patch_realtek.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index bfc69e2..0e9e33b 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4406,12 +4406,15 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x1028, 0x0653, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0657, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0658, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
++	SND_PCI_QUIRK(0x1028, 0x065c, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x065f, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0662, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0667, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0674, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x067e, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x067f, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
++	SND_PCI_QUIRK(0x1028, 0x0680, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
++	SND_PCI_QUIRK(0x1028, 0x0684, "Dell", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x15cc, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x15cd, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x103c, 0x1586, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC2),
 -- 
-tejun
+1.9.1
+
