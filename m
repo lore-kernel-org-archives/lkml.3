@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967272AbaFQVxP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:53:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54990 "EHLO
+	id S967254AbaFQVzO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:55:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55007 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967254AbaFQVxJ (ORCPT
+	with ESMTP id S965649AbaFQVxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:53:09 -0400
+	Tue, 17 Jun 2014 17:53:14 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?J=C3=A9r=C3=B4me=20Glisse?= <jglisse@redhat.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 154/212] drm/radeon: avoid segfault on device open when accel is not working.
-Date: Tue, 17 Jun 2014 14:44:08 -0700
-Message-Id: <1403041506-13646-155-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 153/212] drm/radeon: fix register typo on si
+Date: Tue, 17 Jun 2014 14:44:07 -0700
+Message-Id: <1403041506-13646-154-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -31,100 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?J=C3=A9r=C3=B4me=20Glisse?= <jglisse@redhat.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 24f47acc78b0ab5e2201f859fe1f693ae90c7c83 upstream.
+commit 4955bb073f1be6dd884b5d10041ba4bade6495bf upstream.
 
-When accel is not working on device with virtual address space radeon
-segfault because the ib buffer is NULL and trying to map it inside the
-virtual address space trigger segfault. This patch only map the ib
-buffer if accel is working.
+Probably a copy paste typo.
 
-Signed-off-by: Jérôme Glisse <jglisse@redhat.com>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Christian König <christian.koenig@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_kms.c | 57 +++++++++++++++++++------------------
- 1 file changed, 30 insertions(+), 27 deletions(-)
+ drivers/gpu/drm/radeon/sid.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_kms.c b/drivers/gpu/drm/radeon/radeon_kms.c
-index e0315d2..5ef56ad 100644
---- a/drivers/gpu/drm/radeon/radeon_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_kms.c
-@@ -542,28 +542,29 @@ int radeon_driver_open_kms(struct drm_device *dev, struct drm_file *file_priv)
+diff --git a/drivers/gpu/drm/radeon/sid.h b/drivers/gpu/drm/radeon/sid.h
+index 9a68e76..91f415c 100644
+--- a/drivers/gpu/drm/radeon/sid.h
++++ b/drivers/gpu/drm/radeon/sid.h
+@@ -102,8 +102,8 @@
+ #define	CG_SPLL_FUNC_CNTL_4				0x60c
  
- 		radeon_vm_init(rdev, &fpriv->vm);
+ #define	SPLL_CNTL_MODE					0x618
+-#	define SPLL_REFCLK_SEL(x)			((x) << 8)
+-#	define SPLL_REFCLK_SEL_MASK			0xFF00
++#	define SPLL_REFCLK_SEL(x)			((x) << 26)
++#	define SPLL_REFCLK_SEL_MASK			(3 << 26)
  
--		r = radeon_bo_reserve(rdev->ring_tmp_bo.bo, false);
--		if (r) {
--			radeon_vm_fini(rdev, &fpriv->vm);
--			kfree(fpriv);
--			return r;
--		}
-+		if (rdev->accel_working) {
-+			r = radeon_bo_reserve(rdev->ring_tmp_bo.bo, false);
-+			if (r) {
-+				radeon_vm_fini(rdev, &fpriv->vm);
-+				kfree(fpriv);
-+				return r;
-+			}
- 
--		/* map the ib pool buffer read only into
--		 * virtual address space */
--		bo_va = radeon_vm_bo_add(rdev, &fpriv->vm,
--					 rdev->ring_tmp_bo.bo);
--		r = radeon_vm_bo_set_addr(rdev, bo_va, RADEON_VA_IB_OFFSET,
--					  RADEON_VM_PAGE_READABLE |
--					  RADEON_VM_PAGE_SNOOPED);
--
--		radeon_bo_unreserve(rdev->ring_tmp_bo.bo);
--		if (r) {
--			radeon_vm_fini(rdev, &fpriv->vm);
--			kfree(fpriv);
--			return r;
--		}
-+			/* map the ib pool buffer read only into
-+			 * virtual address space */
-+			bo_va = radeon_vm_bo_add(rdev, &fpriv->vm,
-+						 rdev->ring_tmp_bo.bo);
-+			r = radeon_vm_bo_set_addr(rdev, bo_va, RADEON_VA_IB_OFFSET,
-+						  RADEON_VM_PAGE_READABLE |
-+						  RADEON_VM_PAGE_SNOOPED);
- 
-+			radeon_bo_unreserve(rdev->ring_tmp_bo.bo);
-+			if (r) {
-+				radeon_vm_fini(rdev, &fpriv->vm);
-+				kfree(fpriv);
-+				return r;
-+			}
-+		}
- 		file_priv->driver_priv = fpriv;
- 	}
- 
-@@ -591,13 +592,15 @@ void radeon_driver_postclose_kms(struct drm_device *dev,
- 		struct radeon_bo_va *bo_va;
- 		int r;
- 
--		r = radeon_bo_reserve(rdev->ring_tmp_bo.bo, false);
--		if (!r) {
--			bo_va = radeon_vm_bo_find(&fpriv->vm,
--						  rdev->ring_tmp_bo.bo);
--			if (bo_va)
--				radeon_vm_bo_rmv(rdev, bo_va);
--			radeon_bo_unreserve(rdev->ring_tmp_bo.bo);
-+		if (rdev->accel_working) {
-+			r = radeon_bo_reserve(rdev->ring_tmp_bo.bo, false);
-+			if (!r) {
-+				bo_va = radeon_vm_bo_find(&fpriv->vm,
-+							  rdev->ring_tmp_bo.bo);
-+				if (bo_va)
-+					radeon_vm_bo_rmv(rdev, bo_va);
-+				radeon_bo_unreserve(rdev->ring_tmp_bo.bo);
-+			}
- 		}
- 
- 		radeon_vm_fini(rdev, &fpriv->vm);
+ #define	CG_SPLL_SPREAD_SPECTRUM				0x620
+ #define		SSEN					(1 << 0)
 -- 
 1.9.1
 
