@@ -1,185 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400AbaFQHFA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 03:05:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48253 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751690AbaFQHE5 (ORCPT
+	id S1753312AbaFQHJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 03:09:56 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34150 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172AbaFQHJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 03:04:57 -0400
-Message-ID: <1402988692.7595.106.camel@i7.infradead.org>
-Subject: Re: [PATCH v2] iommu/intel: Exclude devices using RMRRs from IOMMU
- API domains
-From: David Woodhouse <dwmw2@infradead.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: iommu@lists.linux-foundation.org, chegu_vinod@hp.com,
-        linux-kernel@vger.kernel.org,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
-Date: Tue, 17 Jun 2014 08:04:52 +0100
-In-Reply-To: <1402983303.3707.94.camel@ul30vt.home>
-References: <20140613162901.4550.94476.stgit@bling.home>
-	 <1402983303.3707.94.camel@ul30vt.home>
-Content-Type: multipart/signed; micalg="sha-1"; protocol="application/x-pkcs7-signature";
-	boundary="=-lGTPeRK2STXRkiUEePjF"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 17 Jun 2014 03:09:55 -0400
+Message-ID: <539FE9A1.7040409@ti.com>
+Date: Tue, 17 Jun 2014 10:09:21 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>
+CC: Benoit Cousson <bcousson@baylibre.org>, Paul Walmsley <paul@pwsan.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Sathya Prakash M R <sathyap@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RESEND PATCH 1/2] ARM: AM43xx: hwmod: add DSS hwmod data
+References: <1402676147-3711-1-git-send-email-balbi@ti.com> <1402676147-3711-2-git-send-email-balbi@ti.com> <20140616092219.GZ17845@atomide.com>
+In-Reply-To: <20140616092219.GZ17845@atomide.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="oqoebKgLU15r7lD6grmrISgRbXqhpMfG6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-lGTPeRK2STXRkiUEePjF
-Content-Type: text/plain; charset="UTF-8"
+--oqoebKgLU15r7lD6grmrISgRbXqhpMfG6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, 2014-06-16 at 23:35 -0600, Alex Williamson wrote:
+On 16/06/14 12:22, Tony Lindgren wrote:
+> * Felipe Balbi <balbi@ti.com> [140613 09:17]:
+>> From: Sathya Prakash M R <sathyap@ti.com>
+>>
+>> Add DSS hwmod data for AM43xx.
+>>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Acked-by: Rajendra Nayak <rnayak@ti.com>
+>> Signed-off-by: Sathya Prakash M R <sathyap@ti.com>
+>> Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+>> Signed-off-by: Felipe Balbi <balbi@ti.com>
+>> ---
+>>
+>> Note that this patch was originally send on May 9th [1], changes were =
+requested
+>> and a new version was sent on May 19th [2], then on May 27th [3] Tomi =
+pinged
+>> maintainer again and go no response.
+>>
+>> Without this patch, we cannot get display working on any AM437x device=
+s.
+>>
+>> [1] http://marc.info/?l=3Dlinux-arm-kernel&m=3D139963677925227&w=3D2
+>> [2] http://marc.info/?l=3Dlinux-arm-kernel&m=3D140049799425512&w=3D2
+>> [3] http://marc.info/?l=3Dlinux-arm-kernel&m=3D140117232826754&w=3D2
+>>
+>>  arch/arm/mach-omap2/omap_hwmod_43xx_data.c | 98 +++++++++++++++++++++=
++++++++++
+>>  arch/arm/mach-omap2/prcm43xx.h             |  1 +
+>>  2 files changed, 99 insertions(+)
+>>
+>> diff --git a/arch/arm/mach-omap2/omap_hwmod_43xx_data.c b/arch/arm/mac=
+h-omap2/omap_hwmod_43xx_data.c
+>> index 5c2cc80..d2a7b6d 100644
+>> --- a/arch/arm/mach-omap2/omap_hwmod_43xx_data.c
+>> +++ b/arch/arm/mach-omap2/omap_hwmod_43xx_data.c
+>> @@ -19,6 +19,8 @@
+>>  #include "omap_hwmod.h"
+>>  #include "omap_hwmod_33xx_43xx_common_data.h"
+>>  #include "prcm43xx.h"
+>> +#include "omap_hwmod_common_data.h"
+>> +
+>> =20
+>>  /* IP blocks */
+>>  static struct omap_hwmod am43xx_l4_hs_hwmod =3D {
+>> @@ -415,6 +417,70 @@ static struct omap_hwmod am43xx_qspi_hwmod =3D {
+>>  	},
+>>  };
+>> =20
+>> +/* Display sub system - DSS */
+>> +
+>> +struct omap_dss_dispc_dev_attr am43xx_dss_dispc_dev_attr =3D {
+>> +	.manager_count		=3D 1,
+>> +	.has_framedonetv_irq	=3D 0
+>> +};
+>> +
+>> +
+>> +static struct omap_hwmod_class_sysconfig am43xx_dispc_sysc =3D {
+>> +	.rev_offs	=3D 0x0000,
+>> +	.sysc_offs	=3D 0x0010,
+>> +	.syss_offs	=3D 0x0014,
+>> +	.sysc_flags	=3D (SYSC_HAS_SIDLEMODE | SYSC_HAS_MIDLEMODE),
+>> +	.idlemodes	=3D (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
+>> +	.sysc_fields	=3D &omap_hwmod_sysc_type1,
+>> +};
 >=20
-> Any idea what an off-the-shelf Asus motherboard would be doing with an
-> RMRR on the Intel HD graphics?
+> Looking at the TRM, "Table 13-43. DISPC_SYSCFG Register Field
+> Descriptions" seems to list the folowing bits available:
 >=20
-> dmar: RMRR base: 0x000000bb800000 end: 0x000000bf9fffff
-> IOMMU: Setting identity map for device 0000:00:02.0 [0xbb800000 - 0xbf9ff=
-fff]
+> 13-12	MIDLEMODE=20
+> 9-8	CLOCK_ACTIVITY=20
+> 4-3	SIDLEMODE=20
+> 2	ENWAKEUP=20
+> 1	SOFTRESET=20
+> 0	AUTOIDLE=20
+>=20
+> Have I missed something or how come we don't define them all
+> as available?
 
-Hm, we should have thought of that sooner. That's quite normal =E2=80=94 it=
-'s
-for the 'stolen' memory used for the framebuffer. And maybe also the
-GTT, and shadow GTT and other things; I forget precisely what, and it
-varies from one setup to another.
+Yes, you're right. I don't see why they shouldn't be there.
 
-I'd expect fairly much all systems to have an RMRR for the integrated
-graphics device if they have one, and your patch=C2=B9 is going to prevent
-assignment of those to guests... as you've presumably noticed.
+> The .idlemodes available values and .sysc_fields seems to match
+> the TRM.
 
-I'm not sure if the i915 driver is capable of fully reprogramming the
-hardware to completely stop using that region, to allow assignment to a
-guest with a 'pure' memory map and no stolen region. I suppose it must,
-if assignment to guests was working correctly before?
+Shouldn't idlemodes also have:
 
-Perhaps the better answer here is not to have the special cases in
-'device_is_rmrr_locked()', and instead allow a device driver to call a
-'iommu_release_rmrrs()' function once it's reset the hardware to *stop*
-doing whatever DMA the BIOS set it up with.
+	MSTANDBY_FORCE | MSTANDBY_NO | MSTANDBY_SMART
 
+I changed the dispc flags to:
 
---=20
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
+	.sysc_flags	=3D (SYSC_HAS_AUTOIDLE | SYSC_HAS_SOFTRESET |
+		SYSC_HAS_ENAWAKEUP | SYSC_HAS_SIDLEMODE |
+		SYSC_HAS_CLOCKACTIVITY | SYSC_HAS_MIDLEMODE),
+	.idlemodes	=3D (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
+		MSTANDBY_FORCE | MSTANDBY_NO | MSTANDBY_SMART),
 
-=C2=B9 Alex's patch prevents assignment to VM guests of *any* device which =
-has
-  RMRRs (reserved regions requiring an IOMMU 1:1 mapping) in its DMAR
-  table.
+and DSS seems to work fine for me. Then again, I don't think there's any
+proper PM going on (or at least things like debugfs/pm_debug/count shows
+no sensible values), so it could well be that those flags are not even
+used at the moment.
 
---=-lGTPeRK2STXRkiUEePjF
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIISxDCCBjQw
-ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
-Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
-BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
-DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
-KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
-dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
-AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
-75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
-+y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
-z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
-/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
-ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
-fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
-MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
-aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
-Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
-b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
-XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
-UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
-HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
-sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
-sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
-+n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
-zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
-Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
-9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIGQjCCBSqg
-AwIBAgIDCdkyMA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
-b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
-A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
-MTQwNTA0MTczMDIyWhcNMTUwNTA0MjM0MTAxWjBdMRkwFwYDVQQNExAzODNCMTVkSHFQSUR0cDZO
-MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
-YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy7K+t+REIdZGFUfgR8Io
-QrJ/VLZil9I00JcwqTo8BiGy1dqSIB2y923siya5SDKMh1YurtCPsX96cNzwPmmN2cs0MKeVPQWz
-iQhHk3uKcB6LvvS7pzTahRWMRmTyW3CH+RphRM9plvyClY23GEeEnpBnGz4GaJJiPcJjGgzyZ/tI
-q473pOlSrDPZnZk43vt/5CJN46nIZOZ2I+PzlgINI+EbiwsXVn3VohHB7nVTwGaRLk5oywGt8ZT7
-tDdxn3BQ3inO1sr5MtkV1o2cHlenIC8mlU8nL/mrqqVve7Vib1YQUycW+Pj4CBYm4FTeuctAvNzK
-U/daeBclOZ8ofgQe2wIDAQABo4IC2TCCAtUwCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
-BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBRAjCSCV70BpLBeXge5DXi+mPhHTTAf
-BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
-YWQub3JnMIIBTAYDVR0gBIIBQzCCAT8wggE7BgsrBgEEAYG1NwECAzCCASowLgYIKwYBBQUHAgEW
-Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0
-YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdh
-cyBpc3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRz
-IG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRl
-ZCBwdXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMu
-MDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmww
-gY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9z
-dWIvY2xhc3MxL2NsaWVudC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20v
-Y2VydHMvc3ViLmNsYXNzMS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3Rh
-cnRzc2wuY29tLzANBgkqhkiG9w0BAQUFAAOCAQEAWS2KNN7O3vZVtNHXVqgbmijeptKwt+8b6yiF
-wT3kJoywInPl5U+OeKRZfQKTHghM4Ohof6lF244ZMxhir/xp7l/zkZ/BUbxLwp6kIL27Gi5pgP4D
-KLnTZheQL9N5Yi/vMONxMWcpcW+ZNv5hnDCfEsfVcLXC8sNLPjx2ezfMIhSSPwBuJpmOun70te4E
-P0YBqjSalPfvc5fC5KgaYtqTDFwo9Mw25X5HHDC0r6BK5aNrF1nD/xYTX7cdvZZWl7cUApr4PCrn
-uI2DEn7OWQ/rY407ytV1c5pjvmuv/IT/ZUb/kXV6Q47UvrJp2Ifi2VhsBcnHHasKavjtRCmpDsGM
-rTCCBkIwggUqoAMCAQICAwnZMjANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNV
-BAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xp
-ZW50IENBMB4XDTE0MDUwNDE3MzAyMloXDTE1MDUwNDIzNDEwMVowXTEZMBcGA1UEDRMQMzgzQjE1
-ZEhxUElEdHA2TjEcMBoGA1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYT
-ZHdtdzJAaW5mcmFkZWFkLm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMuyvrfk
-RCHWRhVH4EfCKEKyf1S2YpfSNNCXMKk6PAYhstXakiAdsvdt7IsmuUgyjIdWLq7Qj7F/enDc8D5p
-jdnLNDCnlT0Fs4kIR5N7inAei770u6c02oUVjEZk8ltwh/kaYUTPaZb8gpWNtxhHhJ6QZxs+BmiS
-Yj3CYxoM8mf7SKuO96TpUqwz2Z2ZON77f+QiTeOpyGTmdiPj85YCDSPhG4sLF1Z91aIRwe51U8Bm
-kS5OaMsBrfGU+7Q3cZ9wUN4pztbK+TLZFdaNnB5XpyAvJpVPJy/5q6qlb3u1Ym9WEFMnFvj4+AgW
-JuBU3rnLQLzcylP3WngXJTmfKH4EHtsCAwEAAaOCAtkwggLVMAkGA1UdEwQCMAAwCwYDVR0PBAQD
-AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUQIwkgle9AaSwXl4H
-uQ14vpj4R00wHwYDVR0jBBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdt
-dzJAaW5mcmFkZWFkLm9yZzCCAUwGA1UdIASCAUMwggE/MIIBOwYLKwYBBAGBtTcBAgMwggEqMC4G
-CCsGAQUFBwIBFiJodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMIH3BggrBgEFBQcC
-AjCB6jAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0
-aWZpY2F0ZSB3YXMgaXNzdWVkIGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJl
-cXVpcmVtZW50cyBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0
-aGUgaW50ZW5kZWQgcHVycG9zZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9i
-bGlnYXRpb25zLjA2BgNVHR8ELzAtMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1
-MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFy
-dHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3Rh
-cnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xpZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRw
-Oi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQEFBQADggEBAFktijTezt72VbTR11aoG5oo
-3qbSsLfvG+sohcE95CaMsCJz5eVPjnikWX0Ckx4ITODoaH+pRduOGTMYYq/8ae5f85GfwVG8S8Ke
-pCC9uxouaYD+Ayi502YXkC/TeWIv7zDjcTFnKXFvmTb+YZwwnxLH1XC1wvLDSz48dns3zCIUkj8A
-biaZjrp+9LXuBD9GAao0mpT373OXwuSoGmLakwxcKPTMNuV+RxwwtK+gSuWjaxdZw/8WE1+3Hb2W
-Vpe3FAKa+Dwq57iNgxJ+zlkP62ONO8rVdXOaY75rr/yE/2VG/5F1ekOO1L6yadiH4tlYbAXJxx2r
-Cmr47UQpqQ7BjK0xggNvMIIDawIBATCBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
-Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2
-BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMJ
-2TIwCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-DxcNMTQwNjE3MDcwNDUyWjAjBgkqhkiG9w0BCQQxFgQUgv53HOHYa5H3ysjfRt1rjegkNc8wgaUG
-CSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4x
-KzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0
-YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMJ2TIwgacGCyqG
-SIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjEr
-MCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3Rh
-cnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAwnZMjANBgkqhkiG
-9w0BAQEFAASCAQBd4c8ejSLbm/gVe6cjljSXJQ8Q+TQuEizXChQWnQlZvUBkSOw5soW48AEsLZoB
-Od33AO5M+eBdOeKQWsHuWRMg6lgEeyR6w1PJ0jLGFVzZnGZhjzlRuVMZw/vY0LE+uyd78HTjqDDt
-D0Av9beS44SLcyNNsrX1IiIz5XiXMcTiWvb087OsIjWhQrJI7ga/snfIXLI3P30gUf2qDyuCr/Xy
-tb04gDQISORIc/QuG9CoBRq5mXZn4AHw2k6LUVaEPUPJc3cyVB3OmQbMPnaLzwt7zYFWsbuQfI1W
-vN+uY60d/ZwW6DrsRreCdZgXvBI+YM01/UsJPlbvGdXCembBLMKtAAAAAAAA
+ Tomi
 
 
---=-lGTPeRK2STXRkiUEePjF--
 
+--oqoebKgLU15r7lD6grmrISgRbXqhpMfG6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTn+mkAAoJEPo9qoy8lh71XnAQAIZQy7OP66ONNS+KBbip/Kog
+l8dPO7k28b2pExm1CFUoJrTo64uEBd0LLD1CBOTYnDqvCs5b0ltCvQvJZ+9jRzoa
+NkhczXikQzAsSuSmNbUAWK7cz3x0LdvuoOLemxkzfsFxeGmgkGEBb7Sy8PGQLYBs
+vSZ34U0mRmiDfTjyCzO7E2Ihf6MtEaCjYbq9Z50aI1VCaqKz50XuHUVsWi9HsjVF
+AMSKSmv9jWYaHEZrDzq54ec5J8vmKiiRG9UpdZWMp/WKpOjkHerRSb3m22AjB1gw
+r3ITijetAXWlHIS3N8M2+5ZvUh4BpdD+i/g0JLFrfeBcopaZh06V6D8OyTbC/Z9b
++iWyCmhOJuPXDizXyn6norWVLJZe44Cw1ecU9E8Oqm/KzGYMlDQ+lS74E8rLiqle
+goA0GNqNCvGlbc/VOxrVeVBxRWAOcN5GZ0UDNxaLy2g5q2MhagKoQDWYnakx7ra7
+CmP/45b0RjDiV8vn0Ktt+NgHMU2yY51YWjEyuckqZQS3Vjko8Giujjqx20Gs0iSC
+zK2pSM3aERLyyStiicGdb2URp/lXbtzjtfNZoupkzvfrNrMXC29T4xFeygRWR8A9
+rj3jiAydp5LjehcPqqoWXSqywF/Qt2QQfxri+CGoYTZaigBSfgVgI0dk4R6FsnWZ
+/tsZyfboDxf3Z0qinQ/7
+=/b+u
+-----END PGP SIGNATURE-----
+
+--oqoebKgLU15r7lD6grmrISgRbXqhpMfG6--
