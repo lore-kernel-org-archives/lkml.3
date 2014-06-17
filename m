@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356AbaFQB0x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 21:26:53 -0400
-Received: from ozlabs.org ([103.22.144.67]:45924 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754296AbaFQB0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 21:26:51 -0400
-Date: Tue, 17 Jun 2014 11:26:44 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Weston Andros Adamson <dros@primarydata.com>
-Subject: linux-next: build warning after merge of the nfs tree
-Message-ID: <20140617112644.56c925f2@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1754511AbaFQB1b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 21:27:31 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:2781 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754078AbaFQB1a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 21:27:30 -0400
+X-IronPort-AV: E=Sophos;i="5.00,721,1396972800"; 
+   d="scan'208";a="31996685"
+Message-ID: <1402968140.9806.6.camel@localhost.localdomain>
+Subject: Re: [PATCH v4] lib: add size unit t/p/e to memparse
+From: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
+To: David Rientjes <rientjes@google.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-btrfs@vger.kernel.org>,
+        <akpm@linux-foundation.org>
+Date: Tue, 17 Jun 2014 09:22:20 +0800
+In-Reply-To: <alpine.DEB.2.02.1406131457480.31981@chino.kir.corp.google.com>
+References: <1402623746-1171-1-git-send-email-guihc.fnst@cn.fujitsu.com>
+	 <alpine.DEB.2.02.1406131457480.31981@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/8dmgjwwI7dQo39.RVT/QRZ9"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.111]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/8dmgjwwI7dQo39.RVT/QRZ9
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2014-06-13 at 14:58 -0700, David Rientjes wrote:
+> On Fri, 13 Jun 2014, Gui Hecheng wrote:
+> 
+> > diff --git a/lib/cmdline.c b/lib/cmdline.c
+> > index d4932f7..76a712e 100644
+> > --- a/lib/cmdline.c
+> > +++ b/lib/cmdline.c
+> > @@ -121,11 +121,7 @@ EXPORT_SYMBOL(get_options);
+> >   *	@retptr: (output) Optional pointer to next char after parse completes
+> >   *
+> >   *	Parses a string into a number.  The number stored at @ptr is
+> > - *	potentially suffixed with %K (for kilobytes, or 1024 bytes),
+> > - *	%M (for megabytes, or 1048576 bytes), or %G (for gigabytes, or
+> > - *	1073741824).  If the number is suffixed with K, M, or G, then
+> > - *	the return value is the number multiplied by one kilobyte, one
+> > - *	megabyte, or one gigabyte, respectively.
+> > + *	potentially suffixed with K, M, G, T, P, E.
+> >   */
+> >  
+> >  unsigned long long memparse(const char *ptr, char **retptr)
+> > @@ -135,6 +131,15 @@ unsigned long long memparse(const char *ptr, char **retptr)
+> >  	unsigned long long ret = simple_strtoull(ptr, &endptr, 0);
+> >  
+> >  	switch (*endptr) {
+> > +	case 'E':
+> > +	case 'e':
+> > +		ret <<= 10;
+> > +	case 'P':
+> > +	case 'p':
+> > +		ret <<= 10;
+> > +	case 'T':
+> > +	case 't':
+> > +		ret <<= 10;
+> >  	case 'G':
+> >  	case 'g':
+> >  		ret <<= 10;
+> 
+> Seems fine since unsigned long long is always at least 64 bits, but 
+> perhaps also change simple_strtoull() to use kstrtoull() at the same time 
+> since the former is deprecated?
 
-Hi Trond,
+Yes, that is a point. But the deprecated function is a separate problem
+and may not be included in this patch.
+Also, I find that simple_strtoull is used in many places in the kernel
+code, it is better to replace it globally?
 
-After merging the nfs tree, today's linux-next build (powerpc
-ppc44x_defconfig and probably others) produced this warning:
+-Gui
 
-fs/nfs/pagelist.c: In function 'nfs_initiate_pgio':
-fs/nfs/pagelist.c:555:16: warning: unused variable 'inode' [-Wunused-variab=
-le]
-  struct inode *inode =3D hdr->inode;
-                ^
-
-Introduced by commit 30e4c73543b0 ("nfs: merge nfs_pgio_data into
-_header").
-
-"inode" is only used in a dprintk().
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/8dmgjwwI7dQo39.RVT/QRZ9
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTn5lZAAoJEMDTa8Ir7ZwVHj8P/ixiNUnMBnKPxf/iAk0YTUHC
-7Ix+rb31RkgnRJGIHvsfCFYlnzkVotjEQml0YOYO+Qj5E+6sODajbvwaNCoulPtB
-h8qZE69cOdRhQd11vUN+ozatVzx9D3fqrYUqRalOC9i6PqVFeHq/8v73cEtPu97g
-B6IFquEcRrOnTqs57hwybqGln62ucCf6chyTj76CxU4+0AbvrcejiDtcUNanzhaS
-RILOhMpniPHVDLKTwg4jVHLlAMMN7JtV1zyoE5qDwelb+l5Rf2vTJqzYFz6p7E2l
-6bX+M9xCZOSXpDOIqhZNvctyiVgDyUvxI8TerRwOFQb0kkIkXhxKGJN++6qK0/ZA
-2AUYaND5n8G9KsDNfAY73e39WHkuuOLisNm4LI3gFqzSM0BxZ6dfLfuHJBSZ/AOt
-lmVT3mI4Q2//TkTSHNotgOp/0m2lhKPr2o+pEzesjINCsFj+tX3e6LNovkUN4B5W
-/ViVNwN5vVdvCv3MNi8NSsH6swhKj1jSRM0Ln+JWvYeXMMsCI3etsNpCd4ZyChl2
-tSBbquFwoJb77JxAcBUAywT+NOXvgSg9xLm4NN/2yJQPq7YSLoz4VDFFMbHLy//r
-UwwEmHxqQ3lgACVK+R3beZ0snjJRAExYpYM3zK7MYHaii4cL7cON1VFUG+E6N/IJ
-ZBl2f5O4ER/IehiS7DTC
-=+vqB
------END PGP SIGNATURE-----
-
---Sig_/8dmgjwwI7dQo39.RVT/QRZ9--
