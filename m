@@ -1,94 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342AbaFQEEk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 00:04:40 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:58413 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750942AbaFQEEi (ORCPT
+	id S1755187AbaFQEHr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 00:07:47 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:61395 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751040AbaFQEHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 00:04:38 -0400
-X-IronPort-AV: E=Sophos;i="5.00,723,1396972800"; 
-   d="scan'208";a="32003488"
-Message-ID: <1402977569.5755.3.camel@localhost.localdomain>
-Subject: Re: [PATCH v4] lib: add size unit t/p/e to memparse
-From: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
-To: David Rientjes <rientjes@google.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-btrfs@vger.kernel.org>,
-        <akpm@linux-foundation.org>
-Date: Tue, 17 Jun 2014 11:59:29 +0800
-In-Reply-To: <alpine.DEB.2.02.1406161828180.21018@chino.kir.corp.google.com>
-References: <1402623746-1171-1-git-send-email-guihc.fnst@cn.fujitsu.com>
-	 <alpine.DEB.2.02.1406131457480.31981@chino.kir.corp.google.com>
-	 <1402968140.9806.6.camel@localhost.localdomain>
-	 <alpine.DEB.2.02.1406161828180.21018@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Tue, 17 Jun 2014 00:07:45 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.111]
+In-Reply-To: <CAC5m3Byeu5zdM=PeK5MkgsEOFRjrPd1Vrk1a3FaM7VPTOFyYOg@mail.gmail.com>
+References: <1402464739-19044-1-git-send-email-tushar.b@samsung.com>
+	<1402464739-19044-4-git-send-email-tushar.b@samsung.com>
+	<CAD=FV=XqqP7+xDOAKCixivzgaO0xvJX7L+CCN+unAEuf-6aUbQ@mail.gmail.com>
+	<539ED2C0.8030405@gmail.com>
+	<CAD=FV=UaaRQVq3TmXMTv9OkER+zORC89YfPNjwZwfCQKmuavrw@mail.gmail.com>
+	<CAC5m3Byeu5zdM=PeK5MkgsEOFRjrPd1Vrk1a3FaM7VPTOFyYOg@mail.gmail.com>
+Date: Mon, 16 Jun 2014 21:07:44 -0700
+Message-ID: <CAD=FV=U51f+sL_hSGdzusthC3OEgv3kbQ9t1G28JRgXueFYQEQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ARM: dts: Enable audio support for Peach-pi board
+From: Doug Anderson <dianders@google.com>
+To: Tushar Behera <trblinux@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Kevin Hilman <khilman@linaro.org>, Mark Brown <broonie@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-16 at 18:29 -0700, David Rientjes wrote:
-> On Tue, 17 Jun 2014, Gui Hecheng wrote:
-> 
-> > > > diff --git a/lib/cmdline.c b/lib/cmdline.c
-> > > > index d4932f7..76a712e 100644
-> > > > --- a/lib/cmdline.c
-> > > > +++ b/lib/cmdline.c
-> > > > @@ -121,11 +121,7 @@ EXPORT_SYMBOL(get_options);
-> > > >   *	@retptr: (output) Optional pointer to next char after parse completes
-> > > >   *
-> > > >   *	Parses a string into a number.  The number stored at @ptr is
-> > > > - *	potentially suffixed with %K (for kilobytes, or 1024 bytes),
-> > > > - *	%M (for megabytes, or 1048576 bytes), or %G (for gigabytes, or
-> > > > - *	1073741824).  If the number is suffixed with K, M, or G, then
-> > > > - *	the return value is the number multiplied by one kilobyte, one
-> > > > - *	megabyte, or one gigabyte, respectively.
-> > > > + *	potentially suffixed with K, M, G, T, P, E.
-> > > >   */
-> > > >  
-> > > >  unsigned long long memparse(const char *ptr, char **retptr)
-> > > > @@ -135,6 +131,15 @@ unsigned long long memparse(const char *ptr, char **retptr)
-> > > >  	unsigned long long ret = simple_strtoull(ptr, &endptr, 0);
-> > > >  
-> > > >  	switch (*endptr) {
-> > > > +	case 'E':
-> > > > +	case 'e':
-> > > > +		ret <<= 10;
-> > > > +	case 'P':
-> > > > +	case 'p':
-> > > > +		ret <<= 10;
-> > > > +	case 'T':
-> > > > +	case 't':
-> > > > +		ret <<= 10;
-> > > >  	case 'G':
-> > > >  	case 'g':
-> > > >  		ret <<= 10;
-> > > 
-> > > Seems fine since unsigned long long is always at least 64 bits, but 
-> > > perhaps also change simple_strtoull() to use kstrtoull() at the same time 
-> > > since the former is deprecated?
-> > 
-> > Yes, that is a point. But the deprecated function is a separate problem
-> > and may not be included in this patch.
-> > Also, I find that simple_strtoull is used in many places in the kernel
-> > code, it is better to replace it globally?
-> > 
-> 
-> If you're going to have a go at replacing the simple_strto*() functions 
-> throughout the kernel, it's probably better to do it per subsystem (as 
-> defined by the separate sections of MAINTAINERS) and propose the patches 
-> individually to those maintainers.  Once it has been removed entirely, you 
-> can submit a patch to remove the functions themselves.
-> 
-> Be aware that there are many callers to the deprecated functions so it may 
-> take a significant amount of time.
+Tushar,
 
-Hmmmm...It may really take a long time. But I am not sure whether this
-is really a good idea to do this big replacement. Let's see whether
-anyone would like to share his opinions.
+On Mon, Jun 16, 2014 at 8:36 PM, Tushar Behera <trblinux@gmail.com> wrote:
+> On Mon, Jun 16, 2014 at 10:19 PM, Doug Anderson <dianders@google.com> wrote:
+>> Tushar,
+>>
+>> On Mon, Jun 16, 2014 at 4:19 AM, Tushar Behera <trblinux@gmail.com> wrote:
+>>> On 06/13/2014 10:33 PM, Doug Anderson wrote:
+>>>> Tushar,
+>>>>
+>>>> On Tue, Jun 10, 2014 at 10:32 PM, Tushar Behera <tushar.b@samsung.com> wrote:
+>>>>> Peach-pi board has MAX98090 audio codec connected on HSI2C-7 bus.
+>>>>
+>>>> If you want to be a stickler about it, peach-pi actually has a
+>>>> max98091.  That requires code changes to the i2c driver, though.
+>>>> ...and unfortunately listing two compatible strings for i2c devices is
+>>>> broken.  :(
+>>>>
+>>> Hi Doug,
+>>>
+>>> You are right. I checked the boot logs, the detected codec type is
+>>> MAX98091. Since both these CODECs are supported through a single driver
+>>> and the detection of chip is done during runtime, I would suggest we go
+>>> ahead with "max98090" compatible string. I will update the commit
+>>> message accordingly.
+>>>
+>>> Does that sound okay to you?
+>>
+>> As per my understanding you shouldn't do this.  You should have two patches:
+>>
+>> 1. Add "max98091".  You could simply post Wonjoon's patch from
+>> <https://chromium-review.googlesource.com/184091>
+>>
+>> 2. Change the device tree to refer to "max98091"
+>>
+>> The argument that the "current kernel driver has a single driver" is
+>> an argument that you're not supposed to make for device tree.  The
+>> same device tree is supposed to work for U-Boot, BSD, or any other
+>> platform.  On those platforms it might not be a shared driver.
+>>
+>
+> My argument is that the device type is getting detected during
+> runtime, hence there is no need to differentiate between these two.
+>
+> But if you prefer that way, I will repost.
 
--Gui
+Yes please.
 
+True that it is possible to detect 98090 vs. 98091.  ...but it's also
+possible to detect exynos5250 vs. exynos5420 vs. exynos5800.  ...yet
+they have different compatible strings.
