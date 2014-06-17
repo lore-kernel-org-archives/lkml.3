@@ -1,137 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932969AbaFQNuO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 09:50:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64890 "EHLO mx1.redhat.com"
+	id S932942AbaFQNxr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 09:53:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52467 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932133AbaFQNuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 09:50:12 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>
-Cc: Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH v2] hugetlb: fix copy_hugetlb_page_range() to handle migration/hwpoisoned entry
-Date: Tue, 17 Jun 2014 09:49:55 -0400
-Message-Id: <1403012995-538-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <alpine.LSU.2.11.1406161750520.1190@eggly.anvils>
-References: <alpine.LSU.2.11.1406161750520.1190@eggly.anvils>
+	id S932133AbaFQNxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 09:53:46 -0400
+Date: Tue, 17 Jun 2014 15:53:44 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 04/12] mm: memcontrol: retry reclaim for oom-disabled and
+ __GFP_NOFAIL charges
+Message-ID: <20140617135344.GC19886@dhcp22.suse.cz>
+References: <1402948472-8175-1-git-send-email-hannes@cmpxchg.org>
+ <1402948472-8175-5-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402948472-8175-5-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's a race between fork() and hugepage migration, as a result we try to
-"dereference" a swap entry as a normal pte, causing kernel panic.
-The cause of the problem is that copy_hugetlb_page_range() can't handle "swap
-entry" family (migration entry and hwpoisoned entry,) so let's fix it.
+On Mon 16-06-14 15:54:24, Johannes Weiner wrote:
+> There is no reason why oom-disabled and __GFP_NOFAIL charges should
+> try to reclaim only once when every other charge tries several times
+> before giving up.  Make them all retry the same number of times.
 
-ChangeLog v2:
-- stop applying is_cow_mapping() in copy_hugetlb_page_range()
-- use set_huge_pte_at() in hugepage code
-- fix stable version
+OK, this makes sense for oom-disabled and __GFP_NOFAIL but does it make
+sense to do additional reclaim for tasks with fatal_signal_pending?
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: stable@vger.kernel.org # v2.6.37+
----
- mm/hugetlb.c | 70 ++++++++++++++++++++++++++++++++++++------------------------
- 1 file changed, 42 insertions(+), 28 deletions(-)
+It is little bit unexpected, because we bypass if the condition happens
+before the reclaim but then we ignore it.
 
-diff --git v3.16-rc1.orig/mm/hugetlb.c v3.16-rc1/mm/hugetlb.c
-index 226910cb7c9b..a3f6349ab5b5 100644
---- v3.16-rc1.orig/mm/hugetlb.c
-+++ v3.16-rc1/mm/hugetlb.c
-@@ -2520,6 +2520,31 @@ static void set_huge_ptep_writable(struct vm_area_struct *vma,
- 		update_mmu_cache(vma, address, ptep);
- }
- 
-+static int is_hugetlb_entry_migration(pte_t pte)
-+{
-+	swp_entry_t swp;
-+
-+	if (huge_pte_none(pte) || pte_present(pte))
-+		return 0;
-+	swp = pte_to_swp_entry(pte);
-+	if (non_swap_entry(swp) && is_migration_entry(swp))
-+		return 1;
-+	else
-+		return 0;
-+}
-+
-+static int is_hugetlb_entry_hwpoisoned(pte_t pte)
-+{
-+	swp_entry_t swp;
-+
-+	if (huge_pte_none(pte) || pte_present(pte))
-+		return 0;
-+	swp = pte_to_swp_entry(pte);
-+	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
-+		return 1;
-+	else
-+		return 0;
-+}
- 
- int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
- 			    struct vm_area_struct *vma)
-@@ -2559,10 +2584,25 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
- 		dst_ptl = huge_pte_lock(h, dst, dst_pte);
- 		src_ptl = huge_pte_lockptr(h, src, src_pte);
- 		spin_lock_nested(src_ptl, SINGLE_DEPTH_NESTING);
--		if (!huge_pte_none(huge_ptep_get(src_pte))) {
-+		entry = huge_ptep_get(src_pte);
-+		if (huge_pte_none(entry)) { /* skip none entry */
-+			;
-+		} else if (unlikely(is_hugetlb_entry_migration(entry) ||
-+				    is_hugetlb_entry_hwpoisoned(entry))) {
-+			swp_entry_t swp_entry = pte_to_swp_entry(entry);
-+			if (is_write_migration_entry(swp_entry) && cow) {
-+				/*
-+				 * COW mappings require pages in both
-+				 * parent and child to be set to read.
-+				 */
-+				make_migration_entry_read(&swp_entry);
-+				entry = swp_entry_to_pte(swp_entry);
-+				set_huge_pte_at(src, addr, src_pte, entry);
-+			}
-+			set_huge_pte_at(dst, addr, dst_pte, entry);
-+		} else {
- 			if (cow)
- 				huge_ptep_set_wrprotect(src, addr, src_pte);
--			entry = huge_ptep_get(src_pte);
- 			ptepage = pte_page(entry);
- 			get_page(ptepage);
- 			page_dup_rmap(ptepage);
-@@ -2578,32 +2618,6 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
- 	return ret;
- }
- 
--static int is_hugetlb_entry_migration(pte_t pte)
--{
--	swp_entry_t swp;
--
--	if (huge_pte_none(pte) || pte_present(pte))
--		return 0;
--	swp = pte_to_swp_entry(pte);
--	if (non_swap_entry(swp) && is_migration_entry(swp))
--		return 1;
--	else
--		return 0;
--}
--
--static int is_hugetlb_entry_hwpoisoned(pte_t pte)
--{
--	swp_entry_t swp;
--
--	if (huge_pte_none(pte) || pte_present(pte))
--		return 0;
--	swp = pte_to_swp_entry(pte);
--	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
--		return 1;
--	else
--		return 0;
--}
--
- void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 			    unsigned long start, unsigned long end,
- 			    struct page *ref_page)
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  mm/memcontrol.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index e946f7439b16..52550bbff1ef 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2566,7 +2566,7 @@ static int mem_cgroup_try_charge(struct mem_cgroup *memcg,
+>  				 bool oom)
+>  {
+>  	unsigned int batch = max(CHARGE_BATCH, nr_pages);
+> -	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
+> +	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
+>  	struct mem_cgroup *mem_over_limit;
+>  	struct res_counter *fail_res;
+>  	unsigned long nr_reclaimed;
+> @@ -2638,6 +2638,9 @@ retry:
+>  	if (mem_cgroup_wait_acct_move(mem_over_limit))
+>  		goto retry;
+>  
+> +	if (nr_retries--)
+> +		goto retry;
+> +
+>  	if (gfp_mask & __GFP_NOFAIL)
+>  		goto bypass;
+>  
+> @@ -2647,9 +2650,6 @@ retry:
+>  	if (!oom)
+>  		goto nomem;
+>  
+> -	if (nr_oom_retries--)
+> -		goto retry;
+> -
+>  	mem_cgroup_oom(mem_over_limit, gfp_mask, get_order(batch));
+>  nomem:
+>  	if (!(gfp_mask & __GFP_NOFAIL))
+> -- 
+> 2.0.0
+> 
+
 -- 
-1.9.3
-
+Michal Hocko
+SUSE Labs
