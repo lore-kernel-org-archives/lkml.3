@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965825AbaFQQvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:51:00 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:23644 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964908AbaFQQu5 (ORCPT
+	id S965838AbaFQQvX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:51:23 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:63517 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965190AbaFQQvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:50:57 -0400
-X-AuditID: cbfee61a-b7fef6d00000200b-28-53a071ee876c
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v2 2/3] ata: Add Qualcomm ARM SoC AHCI SATA host controller
- driver
-Date: Tue, 17 Jun 2014 18:50:01 +0200
-Message-id: <3066194.ZkIxk6z9u6@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <419989CC-5106-4AF7-8911-617B51FD7395@codeaurora.org>
-References: <1402676163-31574-1-git-send-email-galak@codeaurora.org>
- <14174621.WL9ndpHQ2Q@amdc1032>
- <419989CC-5106-4AF7-8911-617B51FD7395@codeaurora.org>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=windows-1252
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsVy+t9jQd13hQuCDRpWC1j0v1nIarHp8TVW
-	i4n7z7JbHNvxiMni8q45bBY/znSzWPxafpTRgd3jcl8vk8emVZ1sHpuX1Ht83iQXwBLFZZOS
-	mpNZllqkb5fAlfH6xgLWgkXsFe1P+lgbGO+xdjFyckgImEj8PfqdEcIWk7hwbz1bFyMXh5DA
-	dEaJluMXmEASQgItTBJ3rhuB2GwCVhIT21eBNYgIqEosn7uZBaSBWeAao8SKX5/ZQRLCAhES
-	7dMegzWzABVtaZgMZvMKaErMPXMYrEZUwFNix/aVbCA2p4CTxNSrS6GWzWWU+PxYGKJeUOLH
-	5HssIDazgLzEvv1Tga7mALL1JO5f1JrAKDALSdUsJFWzEKoWMDKvYhRNLUguKE5KzzXUK07M
-	LS7NS9dLzs/dxAgO62dSOxhXNlgcYhTgYFTi4eXIXRAsxJpYVlyZe4hRgoNZSYT3XBZQiDcl
-	sbIqtSg/vqg0J7X4EKM0B4uSOO+BVutAIYH0xJLU7NTUgtQimCwTB6dUA6PS3kl1rnL5Z6yE
-	HQUmfXv06sO7tqf75vfPeO7KKjp5u2nmruiN0g2C23NKvsasWGieu9mtRnZN7MwJq2UyN4rc
-	M9j0YvX+pes6tH+Xr5kqxeN23H6J85unOvNWly4x9JbMl5ypslLsIYftAQ+uh1HN6cauZ32U
-	3SX/T5j6d1dVbaXvpbwNHc+UWIozEg21mIuKEwE4ysCXZwIAAA==
+	Tue, 17 Jun 2014 12:51:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALCETrVerC155vzO-1Js1W8cRTYat0-+OGOxW+kSynJor6rJag@mail.gmail.com>
+References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
+	<CALCETrVoE+JO2rLsBUHAOJdvescEEjxikj8iQ339Nxfopfc7pw@mail.gmail.com>
+	<CANq1E4SaWLD=hNEc-CDJbNnrGfXE_PkxZFBhpW4tbK7wor7xPA@mail.gmail.com>
+	<CALCETrU8N9EbnJ3=oQ1WQCG9Vunn3nR9Ba=J48wJm0SuH0YB4A@mail.gmail.com>
+	<CANq1E4QQUKHabheq18AzkVZk3WDtAeC-6W66tVNB+EKgYOx1Vg@mail.gmail.com>
+	<53A01049.6020502@redhat.com>
+	<CANq1E4T3KJZ++=KF2OZ_dd+NvPqg+=4Pw6O7Po3-ZxaaMHPukw@mail.gmail.com>
+	<CALCETrVpZ0vFM4usHK+tQhk234Y2jWzB1522kGcGvdQQFAqsZQ@mail.gmail.com>
+	<CANq1E4QdGz6cRm2Y-vMQHV1O=VK74XNP8qCAmiAskVaVKpJuxg@mail.gmail.com>
+	<CALCETrVerC155vzO-1Js1W8cRTYat0-+OGOxW+kSynJor6rJag@mail.gmail.com>
+Date: Tue, 17 Jun 2014 18:51:18 +0200
+Message-ID: <CANq1E4RqLLk8_Fn=e-c2g29_uiD-R59u=WKF9Tka33L5G9VA9Q@mail.gmail.com>
+Subject: Re: [PATCH v3 0/7] File Sealing & memfd_create()
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>, Greg KH <greg@kroah.com>,
+        Florian Weimer <fweimer@redhat.com>, Hugh Dickins <hughd@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Daniel Mack <zonque@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Tony Battersby <tonyb@cybernetics.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 17, 2014 10:42:36 AM Kumar Gala wrote:
-> 
-> On Jun 17, 2014, at 7:25 AM, Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
+Hi
 
-[...]
+On Tue, Jun 17, 2014 at 6:41 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Tue, Jun 17, 2014 at 9:36 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>> Hi
+>>
+>> On Tue, Jun 17, 2014 at 6:20 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> Can you summarize why holes can't be reliably backed by the zero page?
+>>
+>> To answer this, I will quote Hugh from "PATCH v2 1/3":
+>>
+>>> We do already use the ZERO_PAGE instead of allocating when it's a
+>>> simple read; and on the face of it, we could extend that to mmap
+>>> once the file is sealed.  But I am rather afraid to do so - for
+>>> many years there was an mmap /dev/zero case which did that, but
+>>> it was an easily forgotten case which caught us out at least
+>>> once, so I'm reluctant to reintroduce it now for sealing.
+>>>
+>>> Anyway, I don't expect you to resolve the issue of sealed holes:
+>>> that's very much my territory, to give you support on.
+>>
+>> Holes can be avoided with a simple fallocate(). I don't understand why
+>> I should make SEAL_WRITE do the fallocate for the caller. During the
+>> discussion of memfd_create() I was told to drop the "size" parameter,
+>> because it is redundant. I don't see how this implicit fallocate()
+>> does not fall into the same category?
+>>
+>
+> I'm really confused now.
+>
+> If I SEAL_WRITE a file, and then I mmap it PROT_READ, and then I read
+> it, is that a "simple read"?  If so, doesn't that mean that there's no
+> problem?
 
-> >> +static struct platform_driver qcom_ahci_driver = {
-> >> +	.probe = qcom_ahci_probe,
-> >> +	.remove = ata_platform_remove_one,
-> >> +	.driver = {
-> >> +		.name = "qcom_ahci_qcom",
-> >> +		.owner = THIS_MODULE,
-> >> +		.of_match_table = qcom_ahci_of_match,
-> >> +	},
-> > 
-> > This driver lacks PM suspend/resume support.  I assume that
-> > the IPQ806x platform also doesn't support suspend/resume yet
-> > (if so a comment in the driver code about this would be useful),
-> > otherwise the driver should be fixed.
-> 
-> Correct, do you want the comment in the commit message or the driver itself?
+I assumed Hugh was talking about read(). So no, this is not about
+memory-reads on mmap()ed regions.
 
-I would prefer the comment in the driver itself.
+Looking at shmem_file_read_iter() I can see a ZERO_PAGE(0) call in
+case shmem_getpage_gfp(SGP_READ) tells us there's a hole. I cannot see
+anything like that in the mmap_region() and shmem_fault() paths.
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
-
+Thanks
+David
