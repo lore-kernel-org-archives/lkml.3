@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967697AbaFQWdf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:33:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54122 "EHLO
+	id S967630AbaFQW2i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:28:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54230 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966283AbaFQVtG (ORCPT
+	with ESMTP id S966436AbaFQVtl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:49:06 -0400
+	Tue, 17 Jun 2014 17:49:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, Kees Cook <keescook@chromium.org>,
-        Will Drewry <wad@chromium.org>, Darren Hart <dvhart@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Daniel Lezcano <daniel.lezcano@free.fr>, Patrick McHardy <kaber@trash.net>,
+        Andrian Nord <nightnord@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>, Vlad Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 209/212] futex: Make lookup_pi_state more robust
-Date: Tue, 17 Jun 2014 14:45:03 -0700
-Message-Id: <1403041506-13646-210-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 038/212] mactap: Fix checksum errors for non-gso packets in bridge mode
+Date: Tue, 17 Jun 2014 14:42:12 -0700
+Message-Id: <1403041506-13646-39-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -29,281 +32,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-commit 54a217887a7b658e2650c3feff22756ab80c7339 upstream.
+[ Upstream commit cbdb04279ccaefcc702c8757757eea8ed76e50cf ]
 
-The current implementation of lookup_pi_state has ambigous handling of
-the TID value 0 in the user space futex.  We can get into the kernel
-even if the TID value is 0, because either there is a stale waiters bit
-or the owner died bit is set or we are called from the requeue_pi path
-or from user space just for fun.
+The following is a problematic configuration:
 
-The current code avoids an explicit sanity check for pid = 0 in case
-that kernel internal state (waiters) are found for the user space
-address.  This can lead to state leakage and worse under some
-circumstances.
+ VM1: virtio-net device connected to macvtap0@eth0
+ VM2: e1000 device connect to macvtap1@eth0
 
-Handle the cases explicit:
+The problem is is that virtio-net supports checksum offloading
+and thus sends the packets to the host with CHECKSUM_PARTIAL set.
+On the other hand, e1000 does not support any acceleration.
 
-       Waiter | pi_state | pi->owner | uTID      | uODIED | ?
+For small TCP packets (and this includes the 3-way handshake),
+e1000 ends up receiving packets that only have a partial checksum
+set.  This causes TCP to fail checksum validation and to drop
+packets.  As a result tcp connections can not be established.
 
-  [1]  NULL   | ---      | ---       | 0         | 0/1    | Valid
-  [2]  NULL   | ---      | ---       | >0        | 0/1    | Valid
+Commit 3e4f8b787370978733ca6cae452720a4f0c296b8
+	macvtap: Perform GSO on forwarding path.
+fixes this issue for large packets wthat will end up undergoing GSO.
+This commit adds a check for the non-GSO case and attempts to
+compute the checksum for partially checksummed packets in the
+non-GSO case.
 
-  [3]  Found  | NULL     | --        | Any       | 0/1    | Invalid
-
-  [4]  Found  | Found    | NULL      | 0         | 1      | Valid
-  [5]  Found  | Found    | NULL      | >0        | 1      | Invalid
-
-  [6]  Found  | Found    | task      | 0         | 1      | Valid
-
-  [7]  Found  | Found    | NULL      | Any       | 0      | Invalid
-
-  [8]  Found  | Found    | task      | ==taskTID | 0/1    | Valid
-  [9]  Found  | Found    | task      | 0         | 0      | Invalid
-  [10] Found  | Found    | task      | !=taskTID | 0/1    | Invalid
-
- [1] Indicates that the kernel can acquire the futex atomically. We
-     came came here due to a stale FUTEX_WAITERS/FUTEX_OWNER_DIED bit.
-
- [2] Valid, if TID does not belong to a kernel thread. If no matching
-     thread is found then it indicates that the owner TID has died.
-
- [3] Invalid. The waiter is queued on a non PI futex
-
- [4] Valid state after exit_robust_list(), which sets the user space
-     value to FUTEX_WAITERS | FUTEX_OWNER_DIED.
-
- [5] The user space value got manipulated between exit_robust_list()
-     and exit_pi_state_list()
-
- [6] Valid state after exit_pi_state_list() which sets the new owner in
-     the pi_state but cannot access the user space value.
-
- [7] pi_state->owner can only be NULL when the OWNER_DIED bit is set.
-
- [8] Owner and user space value match
-
- [9] There is no transient state which sets the user space TID to 0
-     except exit_robust_list(), but this is indicated by the
-     FUTEX_OWNER_DIED bit. See [4]
-
-[10] There is no transient state which leaves owner and user space
-     TID out of sync.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Will Drewry <wad@chromium.org>
-Cc: Darren Hart <dvhart@linux.intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Daniel Lezcano <daniel.lezcano@free.fr>
+CC: Patrick McHardy <kaber@trash.net>
+CC: Andrian Nord <nightnord@gmail.com>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Michael S. Tsirkin <mst@redhat.com>
+CC: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Acked-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/futex.c | 134 +++++++++++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 106 insertions(+), 28 deletions(-)
+ drivers/net/macvtap.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index ab15ce8..c265aac 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -594,10 +594,58 @@ void exit_pi_state_list(struct task_struct *curr)
- 	raw_spin_unlock_irq(&curr->pi_lock);
- }
- 
-+/*
-+ * We need to check the following states:
-+ *
-+ *      Waiter | pi_state | pi->owner | uTID      | uODIED | ?
-+ *
-+ * [1]  NULL   | ---      | ---       | 0         | 0/1    | Valid
-+ * [2]  NULL   | ---      | ---       | >0        | 0/1    | Valid
-+ *
-+ * [3]  Found  | NULL     | --        | Any       | 0/1    | Invalid
-+ *
-+ * [4]  Found  | Found    | NULL      | 0         | 1      | Valid
-+ * [5]  Found  | Found    | NULL      | >0        | 1      | Invalid
-+ *
-+ * [6]  Found  | Found    | task      | 0         | 1      | Valid
-+ *
-+ * [7]  Found  | Found    | NULL      | Any       | 0      | Invalid
-+ *
-+ * [8]  Found  | Found    | task      | ==taskTID | 0/1    | Valid
-+ * [9]  Found  | Found    | task      | 0         | 0      | Invalid
-+ * [10] Found  | Found    | task      | !=taskTID | 0/1    | Invalid
-+ *
-+ * [1]	Indicates that the kernel can acquire the futex atomically. We
-+ *	came came here due to a stale FUTEX_WAITERS/FUTEX_OWNER_DIED bit.
-+ *
-+ * [2]	Valid, if TID does not belong to a kernel thread. If no matching
-+ *      thread is found then it indicates that the owner TID has died.
-+ *
-+ * [3]	Invalid. The waiter is queued on a non PI futex
-+ *
-+ * [4]	Valid state after exit_robust_list(), which sets the user space
-+ *	value to FUTEX_WAITERS | FUTEX_OWNER_DIED.
-+ *
-+ * [5]	The user space value got manipulated between exit_robust_list()
-+ *	and exit_pi_state_list()
-+ *
-+ * [6]	Valid state after exit_pi_state_list() which sets the new owner in
-+ *	the pi_state but cannot access the user space value.
-+ *
-+ * [7]	pi_state->owner can only be NULL when the OWNER_DIED bit is set.
-+ *
-+ * [8]	Owner and user space value match
-+ *
-+ * [9]	There is no transient state which sets the user space TID to 0
-+ *	except exit_robust_list(), but this is indicated by the
-+ *	FUTEX_OWNER_DIED bit. See [4]
-+ *
-+ * [10] There is no transient state which leaves owner and user space
-+ *	TID out of sync.
-+ */
- static int
- lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
--		union futex_key *key, struct futex_pi_state **ps,
--		struct task_struct *task)
-+		union futex_key *key, struct futex_pi_state **ps)
- {
- 	struct futex_pi_state *pi_state = NULL;
- 	struct futex_q *this, *next;
-@@ -610,12 +658,13 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
- 	plist_for_each_entry_safe(this, next, head, list) {
- 		if (match_futex(&this->key, key)) {
- 			/*
--			 * Another waiter already exists - bump up
--			 * the refcount and return its pi_state:
-+			 * Sanity check the waiter before increasing
-+			 * the refcount and attaching to it.
- 			 */
- 			pi_state = this->pi_state;
- 			/*
--			 * Userspace might have messed up non-PI and PI futexes
-+			 * Userspace might have messed up non-PI and
-+			 * PI futexes [3]
- 			 */
- 			if (unlikely(!pi_state))
- 				return -EINVAL;
-@@ -623,44 +672,70 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
- 			WARN_ON(!atomic_read(&pi_state->refcount));
- 
- 			/*
--			 * When pi_state->owner is NULL then the owner died
--			 * and another waiter is on the fly. pi_state->owner
--			 * is fixed up by the task which acquires
--			 * pi_state->rt_mutex.
--			 *
--			 * We do not check for pid == 0 which can happen when
--			 * the owner died and robust_list_exit() cleared the
--			 * TID.
-+			 * Handle the owner died case:
- 			 */
--			if (pid && pi_state->owner) {
-+			if (uval & FUTEX_OWNER_DIED) {
- 				/*
--				 * Bail out if user space manipulated the
--				 * futex value.
-+				 * exit_pi_state_list sets owner to NULL and
-+				 * wakes the topmost waiter. The task which
-+				 * acquires the pi_state->rt_mutex will fixup
-+				 * owner.
- 				 */
--				if (pid != task_pid_vnr(pi_state->owner))
-+				if (!pi_state->owner) {
-+					/*
-+					 * No pi state owner, but the user
-+					 * space TID is not 0. Inconsistent
-+					 * state. [5]
-+					 */
-+					if (pid)
-+						return -EINVAL;
-+					/*
-+					 * Take a ref on the state and
-+					 * return. [4]
-+					 */
-+					goto out_state;
-+				}
-+
-+				/*
-+				 * If TID is 0, then either the dying owner
-+				 * has not yet executed exit_pi_state_list()
-+				 * or some waiter acquired the rtmutex in the
-+				 * pi state, but did not yet fixup the TID in
-+				 * user space.
-+				 *
-+				 * Take a ref on the state and return. [6]
-+				 */
-+				if (!pid)
-+					goto out_state;
-+			} else {
-+				/*
-+				 * If the owner died bit is not set,
-+				 * then the pi_state must have an
-+				 * owner. [7]
-+				 */
-+				if (!pi_state->owner)
- 					return -EINVAL;
- 			}
- 
- 			/*
--			 * Protect against a corrupted uval. If uval
--			 * is 0x80000000 then pid is 0 and the waiter
--			 * bit is set. So the deadlock check in the
--			 * calling code has failed and we did not fall
--			 * into the check above due to !pid.
-+			 * Bail out if user space manipulated the
-+			 * futex value. If pi state exists then the
-+			 * owner TID must be the same as the user
-+			 * space TID. [9/10]
- 			 */
--			if (task && pi_state->owner == task)
--				return -EDEADLK;
-+			if (pid != task_pid_vnr(pi_state->owner))
-+				return -EINVAL;
- 
-+		out_state:
- 			atomic_inc(&pi_state->refcount);
- 			*ps = pi_state;
--
- 			return 0;
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index 2a89da0..73ffad8 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -315,6 +315,15 @@ static int macvtap_forward(struct net_device *dev, struct sk_buff *skb)
+ 			segs = nskb;
  		}
+ 	} else {
++		/* If we receive a partial checksum and the tap side
++		 * doesn't support checksum offload, compute the checksum.
++		 * Note: it doesn't matter which checksum feature to
++		 *        check, we either support them all or none.
++		 */
++		if (skb->ip_summed == CHECKSUM_PARTIAL &&
++		    !(features & NETIF_F_ALL_CSUM) &&
++		    skb_checksum_help(skb))
++			goto drop;
+ 		skb_queue_tail(&q->sk.sk_receive_queue, skb);
  	}
  
- 	/*
- 	 * We are the first waiter - try to look up the real owner and attach
--	 * the new pi_state to it, but bail out when TID = 0
-+	 * the new pi_state to it, but bail out when TID = 0 [1]
- 	 */
- 	if (!pid)
- 		return -ESRCH;
-@@ -693,6 +768,9 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
- 		return ret;
- 	}
- 
-+	/*
-+	 * No existing pi state. First waiter. [2]
-+	 */
- 	pi_state = alloc_pi_state();
- 
- 	/*
-@@ -813,7 +891,7 @@ retry:
- 	 * We dont have the lock. Look up the PI state (or create it if
- 	 * we are the first waiter):
- 	 */
--	ret = lookup_pi_state(uval, hb, key, ps, task);
-+	ret = lookup_pi_state(uval, hb, key, ps);
- 
- 	if (unlikely(ret)) {
- 		switch (ret) {
-@@ -1416,7 +1494,7 @@ retry_private:
- 			 * rereading and handing potential crap to
- 			 * lookup_pi_state.
- 			 */
--			ret = lookup_pi_state(ret, hb2, &key2, &pi_state, NULL);
-+			ret = lookup_pi_state(ret, hb2, &key2, &pi_state);
- 		}
- 
- 		switch (ret) {
 -- 
 1.9.1
 
