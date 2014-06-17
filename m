@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933834AbaFQUFl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 16:05:41 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:53846 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933313AbaFQUFj (ORCPT
+	id S933885AbaFQUGa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 16:06:30 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:22290 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932927AbaFQUG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 16:05:39 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: Zhang Rui <rui.zhang@intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Neil Horman <nhorman@tuxdriver.com>
-Subject: [PATCH 2/2] tmon: set umask to a reasonable value
-Date: Tue, 17 Jun 2014 16:05:09 -0400
-Message-Id: <1403035509-31815-3-git-send-email-nhorman@tuxdriver.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1403035509-31815-1-git-send-email-nhorman@tuxdriver.com>
-References: <1403035509-31815-1-git-send-email-nhorman@tuxdriver.com>
-X-Spam-Score: -2.9 (--)
+	Tue, 17 Jun 2014 16:06:28 -0400
+Date: Tue, 17 Jun 2014 16:05:31 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Waiman.Long@hp.com
+Cc: Waiman.Long@hp.com, tglx@linutronix.de, mingo@kernel.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        paolo.bonzini@gmail.com, boris.ostrovsky@oracle.com,
+        paulmck@linux.vnet.ibm.com, riel@redhat.com,
+        torvalds@linux-foundation.org, raghavendra.kt@linux.vnet.ibm.com,
+        david.vrabel@citrix.com, oleg@redhat.com, gleb@redhat.com,
+        scott.norton@hp.com, chegu_vinod@hp.com,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 01/11] qspinlock: A simple generic 4-byte queue spinlock
+Message-ID: <20140617200531.GB27242@laptop.dumpdata.com>
+References: <20140615124657.264658593@chello.nl>
+ <20140615130152.912524881@chello.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140615130152.912524881@chello.nl>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-current, the tmon umask value is set to 0, which mean whatever the permission
-mask in the shell are when starting tmon in daemon mode are what the permissions
-of any created files will be.  We should likely set something more explicit, so
-lets go with the usual 022
+> + * The basic principle of a queue-based spinlock can best be understood
+> + * by studying a classic queue-based spinlock implementation called the
+> + * MCS lock. The paper below provides a good description for this kind
+> + * of lock.
+> + *
+> + * http://www.cise.ufl.edu/tr/DOC/REP-1992-71.pdf
+> + *
+> + * This queue spinlock implementation is based on the MCS lock, however to make
+> + * it fit the 4 bytes we assume spinlock_t to be, and preserve its existing
+> + * API, we must modify it some.
+> + *
+> + * In particular; where the traditional MCS lock consists of a tail pointer
+> + * (8 bytes) and needs the next pointer (another 8 bytes) of its own node to
+> + * unlock the next pending (next->locked), we compress both these: {tail,
+> + * next->locked} into a single u32 value.
+> + *
+> + * Since a spinlock disables recursion of its own context and there is a limit
+> + * to the contexts that can nest; namely: task, softirq, hardirq, nmi, we can
+> + * encode the tail as and index indicating this context and a cpu number.
+> + *
+> + * We can further change the first spinner to spin on a bit in the lock word
+> + * instead of its node; whereby avoiding the need to carry a node from lock to
+> + * unlock, and preserving API.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Zhang Rui <rui.zhang@intel.com>
-CC: Jacob Pan <jacob.jun.pan@linux.intel.com>
----
- tools/thermal/tmon/tmon.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+You also made changes (compared to the MCS) in that the unlock path is not
+spinning waiting for the successor and that the job of passing the lock
+is not done in the unlock path either.
 
-diff --git a/tools/thermal/tmon/tmon.c b/tools/thermal/tmon/tmon.c
-index 059e0be..09b7c32 100644
---- a/tools/thermal/tmon/tmon.c
-+++ b/tools/thermal/tmon/tmon.c
-@@ -355,7 +355,7 @@ static void start_daemon_mode()
- 	disable_tui();
- 
- 	/* change the file mode mask */
--	umask(0);
-+	umask(S_IWGRP | S_IWOTH);
- 
- 	/* new SID for the daemon process */
- 	sid = setsid();
--- 
-1.8.3.1
+Instead all of that is now done in the path of the lock acquirer logic. 
 
+Could you update the comment to say that please?
+
+Thanks.
