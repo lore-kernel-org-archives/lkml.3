@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934105AbaFQQYg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:24:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50826 "EHLO
+	id S934118AbaFQQY7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:24:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50833 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934081AbaFQQY1 (ORCPT
+	with ESMTP id S933848AbaFQQY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:24:27 -0400
+	Tue, 17 Jun 2014 12:24:57 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>,
+Cc: Daniele Forsi <dforsi@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 114/121] fsl-usb: do not test for PHY_CLK_VALID bit on controller version 1.6
-Date: Tue, 17 Jun 2014 09:18:12 -0700
-Message-Id: <1403021899-16708-87-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 117/121] USB: Nokia 5300 should be treated as unusual dev
+Date: Tue, 17 Jun 2014 09:18:15 -0700
+Message-Id: <1403021899-16708-90-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
@@ -28,43 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+From: Daniele Forsi <dforsi@gmail.com>
 
-commit d183c81929beeba842b74422f754446ef2b8b49c upstream.
+commit 6ed07d45d09bc2aa60e27b845543db9972e22a38 upstream.
 
-Per reference manuals of Freescale P1020 and P2020 SoCs, USB controller
-present in these SoCs has bit 17 of USBx_CONTROL register marked as
-Reserved - there is no PHY_CLK_VALID bit there.
-
-Testing for this bit in ehci_fsl_setup_phy() behaves differently on two
-P1020RDB boards available here - on one board test passes and fsl-usb
-init succeeds, but on other board test fails, causing fsl-usb init to
-fail.
-
-This patch changes ehci_fsl_setup_phy() not to test PHY_CLK_VALID on
-controller version 1.6 that (per manual) does not have this bit.
-
-Signed-off-by: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+Signed-off-by: Daniele Forsi <dforsi@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/host/ehci-fsl.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/storage/unusual_devs.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/usb/host/ehci-fsl.c b/drivers/usb/host/ehci-fsl.c
-index 512f117..392a65a 100644
---- a/drivers/usb/host/ehci-fsl.c
-+++ b/drivers/usb/host/ehci-fsl.c
-@@ -261,7 +261,8 @@ static int ehci_fsl_setup_phy(struct usb_hcd *hcd,
- 		break;
- 	}
+diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
+index 35cafc2..7ed8b67 100644
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -226,6 +226,13 @@ UNUSUAL_DEV(  0x0421, 0x0495, 0x0370, 0x0370,
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_MAX_SECTORS_64 ),
  
--	if (pdata->have_sysif_regs && pdata->controller_ver &&
-+	if (pdata->have_sysif_regs &&
-+	    pdata->controller_ver > FSL_USB_VER_1_6 &&
- 	    (phy_mode == FSL_USB2_PHY_ULPI)) {
- 		/* check PHY_CLK_VALID to get phy clk valid */
- 		if (!spin_event_timeout(in_be32(non_ehci + FSL_SOC_USB_CTRL) &
++/* Reported by Daniele Forsi <dforsi@gmail.com> */
++UNUSUAL_DEV(  0x0421, 0x04b9, 0x0350, 0x0350,
++		"Nokia",
++		"5300",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_MAX_SECTORS_64 ),
++
+ /* Patch submitted by Victor A. Santos <victoraur.santos@gmail.com> */
+ UNUSUAL_DEV(  0x0421, 0x05af, 0x0742, 0x0742,
+ 		"Nokia",
 -- 
 1.9.1
 
