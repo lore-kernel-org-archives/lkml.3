@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965113AbaFQVDD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:03:03 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:40423 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965083AbaFQVDB (ORCPT
+	id S965079AbaFQVAP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:00:15 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:43624 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933905AbaFQVAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:03:01 -0400
-From: Benson Leung <bleung@chromium.org>
-To: gene.chen@intel.com, moch@chromium.org, mika.westerberg@linux.intel.com,
-        lkml14@scotdoyle.com, kirill.shutemov@linux.intel.com, olof@lixom.net,
-        linux-kernel@vger.kernel.org
-Cc: bleung@chromium.org
-Subject: [PATCHv2 3/4] platform/chrome: chromeos_laptop - Add Dell Chromebook 11 touch
-Date: Tue, 17 Jun 2014 14:02:02 -0700
-Message-Id: <1403038923-19444-4-git-send-email-bleung@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <1403038923-19444-1-git-send-email-bleung@chromium.org>
-References: <1401835464-15267-1-git-send-email-bleung@chromium.org>
- <1403038923-19444-1-git-send-email-bleung@chromium.org>
+	Tue, 17 Jun 2014 17:00:12 -0400
+Date: Tue, 17 Jun 2014 16:59:15 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Waiman Long <waiman.long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v11 14/16] pvqspinlock: Add qspinlock para-virtualization
+ support
+Message-ID: <20140617205915.GC29634@laptop.dumpdata.com>
+References: <1401464642-33890-1-git-send-email-Waiman.Long@hp.com>
+ <1401464642-33890-15-git-send-email-Waiman.Long@hp.com>
+ <20140612081731.GM3213@twins.programming.kicks-ass.net>
+ <539A1229.1050309@hp.com>
+ <20140615131654.GJ11371@laptop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140615131654.GJ11371@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mohammed Habibulla <moch@chromium.org>
+On Sun, Jun 15, 2014 at 03:16:54PM +0200, Peter Zijlstra wrote:
+> On Thu, Jun 12, 2014 at 04:48:41PM -0400, Waiman Long wrote:
+> > I don't have a good understanding of the kernel alternatives mechanism.
+> 
+> I didn't either; I do now, cost me a whole day reading up on
+> alternative/paravirt code patching.
+> 
+> See the patches I just send out; I got the 'native' case with paravirt
+> enabled to be one NOP worse than the native case without paravirt -- for
+> queue_spin_unlock.
+> 
+> The lock slowpath is several nops and some pointless movs more expensive.
 
-Add support for Dell Chromebook 11's touch device, which is the same
-as falco/peppy on the same bus using the LynxPoint-LP I2C via the
-i2c-designware-pci driver.
+You could use the asm goto which would optimize the fast path to be the
+'native' case. That way you wouldn't have the the nops and movs in the
+path.
 
-Based on these patches from the chromeos-3.8 kernel:
-https://chromium-review.googlesource.com/#/c/65320/
-https://chromium-review.googlesource.com/#/c/174664/
-
-Signed-off-by: Mohammed Habibulla <moch@chromium.org>
-Signed-off-by: Benson Leung <bleung@chromium.org>
----
- drivers/platform/chrome/chromeos_laptop.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
-
-diff --git a/drivers/platform/chrome/chromeos_laptop.c b/drivers/platform/chrome/chromeos_laptop.c
-index 02e014b..e0a6710 100644
---- a/drivers/platform/chrome/chromeos_laptop.c
-+++ b/drivers/platform/chrome/chromeos_laptop.c
-@@ -387,6 +387,13 @@ static struct chromeos_laptop hp_chromebook_14 = {
- 	},
- };
- 
-+static struct chromeos_laptop dell_chromebook_11 = {
-+	.i2c_peripherals = {
-+		/* Touchpad. */
-+		{ .add = setup_cyapa_tp, I2C_ADAPTER_DESIGNWARE_0 },
-+	},
-+};
-+
- static struct chromeos_laptop acer_c7_chromebook = {
- 	.i2c_peripherals = {
- 		/* Touchpad. */
-@@ -453,6 +460,14 @@ static struct dmi_system_id chromeos_laptop_dmi_table[] __initdata = {
- 		_CBDD(chromebook_pixel),
- 	},
- 	{
-+		.ident = "Wolf",
-+		.matches = {
-+			DMI_MATCH(DMI_BIOS_VENDOR, "coreboot"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Wolf"),
-+		},
-+		_CBDD(dell_chromebook_11),
-+	},
-+	{
- 		.ident = "HP Chromebook 14",
- 		.matches = {
- 			DMI_MATCH(DMI_BIOS_VENDOR, "coreboot"),
--- 
-2.0.0.526.g5318336
-
+(And asm goto also uses the alternative_asm macros).
