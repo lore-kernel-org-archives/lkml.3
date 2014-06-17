@@ -1,201 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964853AbaFQQBb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:01:31 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:60220 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933705AbaFQQB3 (ORCPT
+	id S933668AbaFQQCa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:02:30 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:17264 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933015AbaFQQC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:01:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140617145419.GE4669@linux.vnet.ibm.com>
-References: <539FAE21.7070702@gmail.com>
-	<20140617145419.GE4669@linux.vnet.ibm.com>
-Date: Tue, 17 Jun 2014 12:01:28 -0400
-Message-ID: <CAJKcOGdUDwdmdkpd0dw5xO9+TK=9W9fvF9Q+f5F_b4R8cEgdTA@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/1] kernel/rcu/tree.c: simplify force_quiescent_state()
-From: Romanov Arya <romanov.arya@gmail.com>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Pranith Kumar <bobby.prani@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
-        Waiman.Long@hp.com
-Content-Type: text/plain; charset=UTF-8
+	Tue, 17 Jun 2014 12:02:28 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-53-53a066906e6b
+Message-id: <53A0667E.6000905@samsung.com>
+Date: Tue, 17 Jun 2014 18:02:06 +0200
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, chow.kim@samsung.com,
+        vikas.sajjan@samsung.com
+Subject: Re: [PATCH v4 08/11] ARM: EXYNOS: Refactored code for using PMU
+ address via DT
+References: <1399704998-13321-1-git-send-email-pankaj.dubey@samsung.com>
+ <1399704998-13321-9-git-send-email-pankaj.dubey@samsung.com>
+In-reply-to: <1399704998-13321-9-git-send-email-pankaj.dubey@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJLMWRmVeSWpSXmKPExsVy+t/xa7oT0hYEG8zcrmuxbNJdNoveBVfZ
+	LDY9vsZqcXnXHDaLGef3MVncvsxrsWjrF3aLm8+2MzlweLQ097B5bF5S79G3ZRWjx+dNcgEs
+	UVw2Kak5mWWpRfp2CVwZ585sZCtYpFdx/uly5gbGJapdjJwcEgImEvOeTWWCsMUkLtxbz9bF
+	yMUhJLCUUeLfqu1QzmdGiU/r34FV8QpoSazYP5kVxGYRUJXoXDWLGcRmE1CT+NzwiA3E5geq
+	WdN0naWLkYNDVCBC4vEFIYhWQYkfk++xgMwUEZjCKHGxZxkjSIJZIFni07kfYHOEBSIlGvds
+	gVrczijRd62DHSTBKeApcf/JN3aIBh2J/a3T2CBseYnNa94yT2AUnIVkySwkZbOQlC1gZF7F
+	KJpamlxQnJSea6RXnJhbXJqXrpecn7uJERL8X3cwLj1mdYhRgINRiYdX4d+cYCHWxLLiytxD
+	jBIczEoivCXiC4KFeFMSK6tSi/Lji0pzUosPMTJxcEo1MF67Ij2jTy3zdrmhnNb6swtKU2YH
+	Ki0yV9vi53qwN1/m6bLwmMQVpz79YQx/su5Lpd2y2Hs7ndOD/07R8ttsld5UdvTGQf9cKZaA
+	TB65yTs+Lns3iXWC5pQ2uyv8Kpams39YztLyVrGKL5niFf6v6mij5a3Z3tsqG3Zxf7HbctNc
+	Ydqddy+tbyuxFGckGmoxFxUnAgBBEJXzXAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 10:54 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Mon, Jun 16, 2014 at 10:55:29PM -0400, Pranith Kumar wrote:
->> This might sound really naive, but please bear with me.
->>
->> force_quiescent_state() used to do a lot of things in the past in addition to
->> forcing a quiescent state. (In my reading of the mailing list I found state
->> transitions for one).
->>
->> Now according to the code, what is being done is multiple callers try to go up
->> the hierarchy of nodes to see who reaches the root node. The caller reaching the
->> root node wins and it acquires root node lock and it gets to set rsp->gp_flags!
->>
->> At each level of the hierarchy we try to acquire fqslock. This is the only place
->> which actually uses fqslock.
->>
->> I guess this was being done to avoid the contention on fqslock, but all we are
->> doing here is setting one flag. This way of acquiring locks might reduce
->> contention if every update is trying to do some independent work, but here all
->> we are doing is setting the same flag with same value.
->
-> Actually, to reduce contention on rnp_root->lock.
->
-> The trick is that the "losers" at each level of ->fqslock acquisition go
-> away.  The "winner" ends up doing the real work of setting RCU_GP_FLAG_FQS.
->
->> We can also remove fqslock completely if we do not need this. Also using
->> cmpxchg() to set the value of the flag looks like a good idea to avoid taking
->> the root node lock. Thoughts?
->
-> The ->fqslock funnel was needed to avoid lockups on large systems (many
-> hundreds or even thousands of CPUs).  Moving grace-period responsibilities
-> from softirq to the grace-period kthreads might have reduced contention
-> sufficienty to make the ->fqslock funnel unnecessary.  However, given
-> that I don't usually have access to such a large system, I will leave it,
-> at least for the time being.
+Hi Pankaj,
 
-Sounds like a good case study for using the newly introduced MCS based
-locks(qspinlock.h).
-Waiman, Peter?
+[Dropped yg1004.jang@samsung.com from CC, as apparently his mailbox is
+"temporarily locked", at least from the point of view of my mail server.]
 
-Btw, is doing the following a bad idea? It reduces contention on
-rnp_root->lock using fqslock
-which seems to be the lock which needs to be taken while forcing a
-quiescent state:
+Please see my comments inline.
 
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index f1ba773..f5a0e7e 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -2401,34 +2401,24 @@ static void force_quiescent_state(struct rcu_state *rsp)
-     unsigned long flags;
-     bool ret;
-     struct rcu_node *rnp;
--    struct rcu_node *rnp_old = NULL;
--
--    /* Funnel through hierarchy to reduce memory contention. */
--    rnp = per_cpu_ptr(rsp->rda, raw_smp_processor_id())->mynode;
--    for (; rnp != NULL; rnp = rnp->parent) {
--        ret = (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) ||
--              !raw_spin_trylock(&rnp->fqslock);
--        if (rnp_old != NULL)
--            raw_spin_unlock(&rnp_old->fqslock);
--        if (ret) {
--            ACCESS_ONCE(rsp->n_force_qs_lh)++;
--            return;
--        }
--        rnp_old = rnp;
-+    struct rcu_node *rnp_root = rcu_get_root(rsp);
-+
-+    if (!raw_spin_trylock(rnp_root->fqslock)) {
-+        ACCESS_ONCE(rsp->n_force_qs_lh)++;
-+        return;  /* Someone is already trying to force */
-     }
--    /* rnp_old == rcu_get_root(rsp), rnp == NULL. */
+On 10.05.2014 08:56, Pankaj Dubey wrote:
+> Under "arm/mach-exynos" many files are using PMU register offsets.
+> Since we have added support for accessing PMU base address via DT,
+> now we can remove PMU mapping from exynosX_iodesc. Let's convert
+> all these access using either of iomapped address or regmap handle.
+> This will help us in removing static mapping of PMU base address
+> as well as help in reducing dependency over machine header files.
+> Thus helping for migration of PMU implementation from machine to
+> driver folder which can be reused for ARM64 bsed SoC.
 
--    /* Reached the root of the rcu_node tree, acquire lock. */
--    raw_spin_lock_irqsave(&rnp_old->lock, flags);
--    smp_mb__after_unlock_lock();
--    raw_spin_unlock(&rnp_old->fqslock);
-     if (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) {
-         ACCESS_ONCE(rsp->n_force_qs_lh)++;
--        raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
-+        raw_spin_unlock(rnp_root->fqslock);
-         return;  /* Someone beat us to it. */
-     }
-+
-+    /* Reached the root of the rcu_node tree, acquire lock. */
-+    raw_spin_lock_irqsave(&rnp_root->lock, flags);
-+    smp_mb__after_unlock_lock();
-     ACCESS_ONCE(rsp->gp_flags) |= RCU_GP_FLAG_FQS;
--    raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
-+    raw_spin_unlock_irqrestore(&rnp_root->lock, flags);
-     wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
- }
+[snip]
 
-Regards,
-Romanov
+> diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
+> index 3b1d245..59eb1f1 100644
+> --- a/arch/arm/mach-exynos/exynos.c
+> +++ b/arch/arm/mach-exynos/exynos.c
 
->
-> But you might be interested in thinking through what else would need to
-> change in order to make cmpxchg() work.  ;-)
->
->                                                         Thanx, Paul
->
->> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
->> ---
->>  kernel/rcu/tree.c | 35 +++++++++++++----------------------
->>  1 file changed, 13 insertions(+), 22 deletions(-)
->>
->> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
->> index f1ba773..9a46f32 100644
->> --- a/kernel/rcu/tree.c
->> +++ b/kernel/rcu/tree.c
->> @@ -2399,36 +2399,27 @@ static void force_qs_rnp(struct rcu_state *rsp,
->>  static void force_quiescent_state(struct rcu_state *rsp)
->>  {
->>       unsigned long flags;
->> -     bool ret;
->> -     struct rcu_node *rnp;
->> -     struct rcu_node *rnp_old = NULL;
->> -
->> -     /* Funnel through hierarchy to reduce memory contention. */
->> -     rnp = per_cpu_ptr(rsp->rda, raw_smp_processor_id())->mynode;
->> -     for (; rnp != NULL; rnp = rnp->parent) {
->> -             ret = (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) ||
->> -                   !raw_spin_trylock(&rnp->fqslock);
->> -             if (rnp_old != NULL)
->> -                     raw_spin_unlock(&rnp_old->fqslock);
->> -             if (ret) {
->> -                     ACCESS_ONCE(rsp->n_force_qs_lh)++;
->> -                     return;
->> -             }
->> -             rnp_old = rnp;
->> +     struct rcu_node *rnp_root = rcu_get_root(rsp);
->> +
->> +     /* early test to see if someone already forced a quiescent state
->> +      */
->> +     if (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) {
->> +             ACCESS_ONCE(rsp->n_force_qs_lh)++;
->> +             return;  /* Someone beat us to it. */
->>       }
->> -     /* rnp_old == rcu_get_root(rsp), rnp == NULL. */
->>
->>       /* Reached the root of the rcu_node tree, acquire lock. */
->> -     raw_spin_lock_irqsave(&rnp_old->lock, flags);
->> +     raw_spin_lock_irqsave(&rnp_root->lock, flags);
->>       smp_mb__after_unlock_lock();
->> -     raw_spin_unlock(&rnp_old->fqslock);
->>       if (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) {
->>               ACCESS_ONCE(rsp->n_force_qs_lh)++;
->> -             raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
->> -             return;  /* Someone beat us to it. */
->> +             raw_spin_unlock_irqrestore(&rnp_root->lock, flags);
->> +             return;  /* Someone actually beat us to it. */
->>       }
->> +
->> +     /* can we use cmpxchg instead of the above lock? */
->>       ACCESS_ONCE(rsp->gp_flags) |= RCU_GP_FLAG_FQS;
->> -     raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
->> +     raw_spin_unlock_irqrestore(&rnp_root->lock, flags);
->>       wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
->>  }
->>
->> --
->> 1.9.1
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+[snip]
+
+> @@ -156,7 +147,7 @@ static void exynos_restart(enum reboot_mode mode, const char *cmd)
+>  {
+>  	struct device_node *np;
+>  	u32 val = 0x1;
+> -	void __iomem *addr = EXYNOS_SWRESET;
+> +	void __iomem *addr = NULL;
+
+This will probably change into addr = exynos_pmu_base + EXYNOS_SWRESET.
+
+>  
+>  	if (of_machine_is_compatible("samsung,exynos5440")) {
+>  		u32 status;
+> @@ -169,9 +160,9 @@ static void exynos_restart(enum reboot_mode mode, const char *cmd)
+>  		val = __raw_readl(addr);
+>  
+>  		val = (val & 0xffff0000) | (status & 0xffff);
+> -	}
+> -
+> -	__raw_writel(val, addr);
+> +		__raw_writel(val, addr);
+> +	} else
+> +		regmap_write(exynos_pmu_regmap, EXYNOS_SWRESET, val);
+>  }
+>  
+>  static struct platform_device exynos_cpuidle = {
+> diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
+> index 73b0b5c..0243ef3 100644
+> --- a/arch/arm/mach-exynos/hotplug.c
+> +++ b/arch/arm/mach-exynos/hotplug.c
+> @@ -13,6 +13,7 @@
+>  #include <linux/errno.h>
+>  #include <linux/smp.h>
+>  #include <linux/io.h>
+> +#include <linux/regmap.h>
+>  
+>  #include <asm/cacheflush.h>
+>  #include <asm/cp15.h>
+> @@ -91,11 +92,12 @@ static inline void cpu_leave_lowpower(void)
+>  
+>  static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
+>  {
+> +	struct regmap *pmu_regmap = get_exynos_pmuregmap();
+>  	for (;;) {
+>  
+>  		/* make cpu1 to be turned off at next WFI command */
+>  		if (cpu == 1)
+> -			__raw_writel(0, S5P_ARM_CORE1_CONFIGURATION);
+> +			regmap_write(pmu_regmap, S5P_ARM_CORE1_CONFIGURATION, 0);
+
+This change should disappear.
+
+[snip]
+
+> diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
+> index 1f63596..33eb364 100644
+> --- a/arch/arm/mach-exynos/platsmp.c
+> +++ b/arch/arm/mach-exynos/platsmp.c
+
+[snip]
+
+> +static void __iomem *pmu_base_addr(void)
+> +{
+> +	struct device_node *np = NULL;
+> +	if (!pmu_base) {
+> +		np = of_find_matching_node(NULL, exynos_dt_pmu_match);
+> +
+> +		if (!np)
+> +			panic("%s, failed to find PMU node\n", __func__);
+> +
+> +		pmu_base = of_iomap(np, 0);
+> +
+> +		if (!pmu_base)
+> +			panic("%s: failed to map registers\n", __func__);
+> +	}
+> +	return pmu_base;
+> +}
+
+As we discussed before, PMU mapping for arch code should be handled in
+the same way as SYSRAM.
+
+>  static DEFINE_SPINLOCK(boot_lock);
+>  
+>  static void exynos_secondary_init(unsigned int cpu)
+> @@ -132,14 +158,14 @@ static int exynos_boot_secondary(unsigned int cpu, struct task_struct *idle)
+>  	 */
+>  	write_pen_release(phys_cpu);
+>  
+> -	if (!(__raw_readl(S5P_ARM_CORE1_STATUS) & S5P_CORE_LOCAL_PWR_EN)) {
+> +	if (!(__raw_readl(pmu_base + S5P_ARM_CORE1_STATUS)
+> +				& S5P_CORE_LOCAL_PWR_EN)) {
+
+Creating a variable to save register value to would probably make the
+code more readable.
+
+>  		__raw_writel(S5P_CORE_LOCAL_PWR_EN,
+> -			     S5P_ARM_CORE1_CONFIGURATION);
+> -
+> +			pmu_base + S5P_ARM_CORE1_CONFIGURATION);
+>  		timeout = 10;
+>  
+>  		/* wait max 10 ms until cpu1 is on */
+> -		while ((__raw_readl(S5P_ARM_CORE1_STATUS)
+> +		while ((__raw_readl(pmu_base + S5P_ARM_CORE1_STATUS)
+>  			& S5P_CORE_LOCAL_PWR_EN) != S5P_CORE_LOCAL_PWR_EN) {
+
+Ditto.
+
+>  			if (timeout-- == 0)
+>  				break;
+> @@ -238,6 +264,8 @@ static void __init exynos_smp_prepare_cpus(unsigned int max_cpus)
+>  {
+>  	int i;
+>  
+> +	pmu_base = pmu_base_addr();
+> +
+>  	if (read_cpuid_part_number() == ARM_CPU_PART_CORTEX_A9)
+>  		scu_enable(scu_base_addr());
+>  
+> diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
+> index f445c49..ee427d7 100644
+> --- a/arch/arm/mach-exynos/pm.c
+> +++ b/arch/arm/mach-exynos/pm.c
+> @@ -21,6 +21,7 @@
+>  #include <linux/irqchip/arm-gic.h>
+>  #include <linux/err.h>
+>  #include <linux/clk.h>
+> +#include <linux/regmap.h>
+>  
+>  #include <asm/cacheflush.h>
+>  #include <asm/hardware/cache-l2x0.h>
+> @@ -38,6 +39,8 @@
+>  #include "regs-pmu.h"
+>  #include "regs-sys.h"
+>  
+> +static struct regmap *pmu_regmap;
+> +
+
+This and other regmap related changes in this file won't be needed anymore.
+
+>  /**
+>   * struct exynos_wkup_irq - Exynos GIC to PMU IRQ mapping
+>   * @hwirq: Hardware IRQ signal of the GIC
+> @@ -104,10 +107,10 @@ static int exynos_irq_set_wake(struct irq_data *data, unsigned int state)
+
+[snip]
+
+> diff --git a/arch/arm/mach-exynos/regs-pmu.h b/arch/arm/mach-exynos/regs-pmu.h
+> index fd8a19d..a72b1bc 100644
+> --- a/arch/arm/mach-exynos/regs-pmu.h
+> +++ b/arch/arm/mach-exynos/regs-pmu.h
+
+[snip]
+
+>  
+> -#define S5P_WAKEUP_STAT				S5P_PMUREG(0x0600)
+> -#define S5P_EINT_WAKEUP_MASK			S5P_PMUREG(0x0604)
+> -#define S5P_WAKEUP_MASK				S5P_PMUREG(0x0608)
+> +#define S5P_WAKEUP_STAT				0x0600
+> +#define S5P_EINT_WAKEUP_MASK			0x0604
+> +#define S5P_WAKEUP_MASK				0x0608
+
+Is it just my mail client or indentation is inconsistent here?
+
+Best regards,
+Tomasz
