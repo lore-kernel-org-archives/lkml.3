@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965655AbaFQVp6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:45:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53731 "EHLO
+	id S965673AbaFQVqR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:46:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53739 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965425AbaFQVpz (ORCPT
+	with ESMTP id S965155AbaFQVqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:45:55 -0400
+	Tue, 17 Jun 2014 17:46:13 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Cong Wang <cwang@twopensource.com>,
+Cc: Florian Westphal <fw@strlen.de>, Pablo Neira Ayuso <pablo@netfilter.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 056/212] rtnetlink: wait for unregistering devices in rtnl_link_unregister()
-Date: Tue, 17 Jun 2014 14:42:30 -0700
-Message-Id: <1403041506-13646-57-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 064/212] netfilter: ipv4: defrag: set local_df flag on defragmented skb
+Date: Tue, 17 Jun 2014 14:42:38 -0700
+Message-Id: <1403041506-13646-65-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -30,135 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cong Wang <cwang@twopensource.com>
+From: Florian Westphal <fw@strlen.de>
 
-[ Upstream commit 200b916f3575bdf11609cb447661b8d5957b0bbf ]
+commit 895162b1101b3ea5db08ca6822ae9672717efec0 upstream.
 
-From: Cong Wang <cwang@twopensource.com>
+else we may fail to forward skb even if original fragments do fit
+outgoing link mtu:
 
-commit 50624c934db18ab90 (net: Delay default_device_exit_batch until no
-devices are unregistering) introduced rtnl_lock_unregistering() for
-default_device_exit_batch(). Same race could happen we when rmmod a driver
-which calls rtnl_link_unregister() as we call dev->destructor without rtnl
-lock.
+1. remote sends 2k packets in two 1000 byte frags, DF set
+2. we want to forward but only see '2k > mtu and DF set'
+3. we then send icmp error saying that outgoing link is 1500
 
-For long term, I think we should clean up the mess of netdev_run_todo()
-and net namespce exit code.
+But original sender never sent a packet that would not fit
+the outgoing link.
 
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-Signed-off-by: Cong Wang <cwang@twopensource.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Setting local_df makes outgoing path test size vs.
+IPCB(skb)->frag_max_size, so we will still send the correct
+error in case the largest original size did not fit
+outgoing link mtu.
+
+Reported-by: Maxime Bizon <mbizon@freebox.fr>
+Suggested-by: Maxime Bizon <mbizon@freebox.fr>
+Fixes: 5f2d04f1f9 (ipv4: fix path MTU discovery with connection tracking)
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/rtnetlink.h |  5 +++++
- net/core/dev.c            |  2 +-
- net/core/net_namespace.c  |  2 +-
- net/core/rtnetlink.c      | 33 ++++++++++++++++++++++++++++++++-
- 4 files changed, 39 insertions(+), 3 deletions(-)
+ net/ipv4/netfilter/nf_defrag_ipv4.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/rtnetlink.h b/include/linux/rtnetlink.h
-index 8e3e66a..953937e 100644
---- a/include/linux/rtnetlink.h
-+++ b/include/linux/rtnetlink.h
-@@ -4,6 +4,7 @@
+diff --git a/net/ipv4/netfilter/nf_defrag_ipv4.c b/net/ipv4/netfilter/nf_defrag_ipv4.c
+index 12e13bd..f40f321 100644
+--- a/net/ipv4/netfilter/nf_defrag_ipv4.c
++++ b/net/ipv4/netfilter/nf_defrag_ipv4.c
+@@ -22,7 +22,6 @@
+ #endif
+ #include <net/netfilter/nf_conntrack_zones.h>
  
- #include <linux/mutex.h>
- #include <linux/netdevice.h>
-+#include <linux/wait.h>
- #include <uapi/linux/rtnetlink.h>
- 
- extern int rtnetlink_send(struct sk_buff *skb, struct net *net, u32 pid, u32 group, int echo);
-@@ -22,6 +23,10 @@ extern void rtnl_lock(void);
- extern void rtnl_unlock(void);
- extern int rtnl_trylock(void);
- extern int rtnl_is_locked(void);
-+
-+extern wait_queue_head_t netdev_unregistering_wq;
-+extern struct mutex net_mutex;
-+
- #ifdef CONFIG_PROVE_LOCKING
- extern int lockdep_rtnl_is_held(void);
- #else
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 1434116..233d1c4 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -5497,7 +5497,7 @@ static int dev_new_index(struct net *net)
- 
- /* Delayed registration/unregisteration */
- static LIST_HEAD(net_todo_list);
--static DECLARE_WAIT_QUEUE_HEAD(netdev_unregistering_wq);
-+DECLARE_WAIT_QUEUE_HEAD(netdev_unregistering_wq);
- 
- static void net_set_todo(struct net_device *dev)
+-/* Returns new sk_buff, or NULL */
+ static int nf_ct_ipv4_gather_frags(struct sk_buff *skb, u_int32_t user)
  {
-diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-index 81d3a9a..7c8ffd9 100644
---- a/net/core/net_namespace.c
-+++ b/net/core/net_namespace.c
-@@ -24,7 +24,7 @@
+ 	int err;
+@@ -33,8 +32,10 @@ static int nf_ct_ipv4_gather_frags(struct sk_buff *skb, u_int32_t user)
+ 	err = ip_defrag(skb, user);
+ 	local_bh_enable();
  
- static LIST_HEAD(pernet_list);
- static struct list_head *first_device = &pernet_list;
--static DEFINE_MUTEX(net_mutex);
-+DEFINE_MUTEX(net_mutex);
- 
- LIST_HEAD(net_namespace_list);
- EXPORT_SYMBOL_GPL(net_namespace_list);
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index 962b253..5e5da43 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -353,15 +353,46 @@ void __rtnl_link_unregister(struct rtnl_link_ops *ops)
- }
- EXPORT_SYMBOL_GPL(__rtnl_link_unregister);
- 
-+/* Return with the rtnl_lock held when there are no network
-+ * devices unregistering in any network namespace.
-+ */
-+static void rtnl_lock_unregistering_all(void)
-+{
-+	struct net *net;
-+	bool unregistering;
-+	DEFINE_WAIT(wait);
-+
-+	for (;;) {
-+		prepare_to_wait(&netdev_unregistering_wq, &wait,
-+				TASK_UNINTERRUPTIBLE);
-+		unregistering = false;
-+		rtnl_lock();
-+		for_each_net(net) {
-+			if (net->dev_unreg_count > 0) {
-+				unregistering = true;
-+				break;
-+			}
-+		}
-+		if (!unregistering)
-+			break;
-+		__rtnl_unlock();
-+		schedule();
+-	if (!err)
++	if (!err) {
+ 		ip_send_check(ip_hdr(skb));
++		skb->local_df = 1;
 +	}
-+	finish_wait(&netdev_unregistering_wq, &wait);
-+}
-+
- /**
-  * rtnl_link_unregister - Unregister rtnl_link_ops from rtnetlink.
-  * @ops: struct rtnl_link_ops * to unregister
-  */
- void rtnl_link_unregister(struct rtnl_link_ops *ops)
- {
--	rtnl_lock();
-+	/* Close the race with cleanup_net() */
-+	mutex_lock(&net_mutex);
-+	rtnl_lock_unregistering_all();
- 	__rtnl_link_unregister(ops);
- 	rtnl_unlock();
-+	mutex_unlock(&net_mutex);
- }
- EXPORT_SYMBOL_GPL(rtnl_link_unregister);
  
+ 	return err;
+ }
 -- 
 1.9.1
 
