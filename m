@@ -1,48 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934231AbaFQQ2Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:28:25 -0400
-Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:55355
-	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933404AbaFQQ2W (ORCPT
+	id S965414AbaFQQ1O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:27:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51078 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965393AbaFQQ1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:28:22 -0400
-Date: Tue, 17 Jun 2014 11:28:19 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Tejun Heo <tj@kernel.org>
-cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
- accessors and operations
-In-Reply-To: <20140617160508.GF31819@htj.dyndns.org>
-Message-ID: <alpine.DEB.2.11.1406171125340.20610@gentwo.org>
-References: <20140612135630.GA23606@htj.dyndns.org> <20140612153426.GV4581@linux.vnet.ibm.com> <20140612155227.GB23606@htj.dyndns.org> <20140617144151.GD4669@linux.vnet.ibm.com> <20140617152752.GC31819@htj.dyndns.org> <alpine.DEB.2.11.1406171053230.20610@gentwo.org>
- <20140617160040.GE31819@htj.dyndns.org> <20140617160508.GF31819@htj.dyndns.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 17 Jun 2014 12:27:08 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: David Gibson <david@gibson.dropbear.id.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 062/121] rtnetlink: Only supply IFLA_VF_PORTS information when RTEXT_FILTER_VF is set
+Date: Tue, 17 Jun 2014 09:17:20 -0700
+Message-Id: <1403021899-16708-35-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
+References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jun 2014, Tejun Heo wrote:
+3.8.13.24 -stable review patch.  If anyone has any objections, please let me know.
 
-> On Tue, Jun 17, 2014 at 12:00:40PM -0400, Tejun Heo wrote:
-> > Hello, Christoph.
-> >
-> > On Tue, Jun 17, 2014 at 10:56:10AM -0500, Christoph Lameter wrote:
-> > > Uhhh no. The percpu stuff and the associated per cpu atomics are to be
-> > > used for stuff that is per cpu specific and runs at the fastest speed
-> > > doable at that level. Introducing implicit barriers is not that good an
-> > > idea.
-> >
-> > Hmmm?  Read barriers are noops on all archs except for alpha and
->
-> Oops, data dependency barriers, not read barrier.
+------------------
 
-Even alpha maintains the illusion of changes becoming visible in the
-proper order for the currently executing thread. No barriers are needed.
+From: David Gibson <david@gibson.dropbear.id.au>
 
+[ Upstream commit c53864fd60227de025cb79e05493b13f69843971 ]
+
+Since 115c9b81928360d769a76c632bae62d15206a94a (rtnetlink: Fix problem with
+buffer allocation), RTM_NEWLINK messages only contain the IFLA_VFINFO_LIST
+attribute if they were solicited by a GETLINK message containing an
+IFLA_EXT_MASK attribute with the RTEXT_FILTER_VF flag.
+
+That was done because some user programs broke when they received more data
+than expected - because IFLA_VFINFO_LIST contains information for each VF
+it can become large if there are many VFs.
+
+However, the IFLA_VF_PORTS attribute, supplied for devices which implement
+ndo_get_vf_port (currently the 'enic' driver only), has the same problem.
+It supplies per-VF information and can therefore become large, but it is
+not currently conditional on the IFLA_EXT_MASK value.
+
+Worse, it interacts badly with the existing EXT_MASK handling.  When
+IFLA_EXT_MASK is not supplied, the buffer for netlink replies is fixed at
+NLMSG_GOODSIZE.  If the information for IFLA_VF_PORTS exceeds this, then
+rtnl_fill_ifinfo() returns -EMSGSIZE on the first message in a packet.
+netlink_dump() will misinterpret this as having finished the listing and
+omit data for this interface and all subsequent ones.  That can cause
+getifaddrs(3) to enter an infinite loop.
+
+This patch addresses the problem by only supplying IFLA_VF_PORTS when
+IFLA_EXT_MASK is supplied with the RTEXT_FILTER_VF flag set.
+
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+Reviewed-by: Jiri Pirko <jiri@resnulli.us>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ net/core/rtnetlink.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 92b6220..1320b73 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -738,7 +738,8 @@ static inline int rtnl_vfinfo_size(const struct net_device *dev,
+ 		return 0;
+ }
+ 
+-static size_t rtnl_port_size(const struct net_device *dev)
++static size_t rtnl_port_size(const struct net_device *dev,
++			     u32 ext_filter_mask)
+ {
+ 	size_t port_size = nla_total_size(4)		/* PORT_VF */
+ 		+ nla_total_size(PORT_PROFILE_MAX)	/* PORT_PROFILE */
+@@ -754,7 +755,8 @@ static size_t rtnl_port_size(const struct net_device *dev)
+ 	size_t port_self_size = nla_total_size(sizeof(struct nlattr))
+ 		+ port_size;
+ 
+-	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent)
++	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent ||
++	    !(ext_filter_mask & RTEXT_FILTER_VF))
+ 		return 0;
+ 	if (dev_num_vf(dev->dev.parent))
+ 		return port_self_size + vf_ports_size +
+@@ -788,7 +790,7 @@ static noinline size_t if_nlmsg_size(const struct net_device *dev,
+ 	       + nla_total_size(ext_filter_mask
+ 			        & RTEXT_FILTER_VF ? 4 : 0) /* IFLA_NUM_VF */
+ 	       + rtnl_vfinfo_size(dev, ext_filter_mask) /* IFLA_VFINFO_LIST */
+-	       + rtnl_port_size(dev) /* IFLA_VF_PORTS + IFLA_PORT_SELF */
++	       + rtnl_port_size(dev, ext_filter_mask) /* IFLA_VF_PORTS + IFLA_PORT_SELF */
+ 	       + rtnl_link_get_size(dev) /* IFLA_LINKINFO */
+ 	       + rtnl_link_get_af_size(dev); /* IFLA_AF_SPEC */
+ }
+@@ -849,11 +851,13 @@ static int rtnl_port_self_fill(struct sk_buff *skb, struct net_device *dev)
+ 	return 0;
+ }
+ 
+-static int rtnl_port_fill(struct sk_buff *skb, struct net_device *dev)
++static int rtnl_port_fill(struct sk_buff *skb, struct net_device *dev,
++			  u32 ext_filter_mask)
+ {
+ 	int err;
+ 
+-	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent)
++	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent ||
++	    !(ext_filter_mask & RTEXT_FILTER_VF))
+ 		return 0;
+ 
+ 	err = rtnl_port_self_fill(skb, dev);
+@@ -1006,7 +1010,7 @@ static int rtnl_fill_ifinfo(struct sk_buff *skb, struct net_device *dev,
+ 		nla_nest_end(skb, vfinfo);
+ 	}
+ 
+-	if (rtnl_port_fill(skb, dev))
++	if (rtnl_port_fill(skb, dev, ext_filter_mask))
+ 		goto nla_put_failure;
+ 
+ 	if (dev->rtnl_link_ops) {
+-- 
+1.9.1
 
