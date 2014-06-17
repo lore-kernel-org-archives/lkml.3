@@ -1,108 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917AbaFQLae (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 07:30:34 -0400
-Received: from mail-by2lp0244.outbound.protection.outlook.com ([207.46.163.244]:52413
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752233AbaFQLac convert rfc822-to-8bit (ORCPT
+	id S1756058AbaFQLby (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 07:31:54 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:49942 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754870AbaFQLbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 07:30:32 -0400
-From: "Pinski, Andrew" <Andrew.Pinski@caviumnetworks.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: "Pinski, Andrew" <Andrew.Pinski@caviumnetworks.com>,
-        Andrew Pinski <apinski@cavium.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2 00/24] ILP32 Support in ARM64
-Thread-Topic: [PATCHv2 00/24] ILP32 Support in ARM64
-Thread-Index: AQHPdx4fltjAVXk9G0qpJdxvxxCbT5t0HNoAgAADL/WAASO4AIAADRiV
-Date: Tue, 17 Jun 2014 11:30:29 +0000
-Message-ID: <E0BB089F-96F6-47D2-AF3A-41CC0788DFB9@caviumnetworks.com>
-References: <1400914939-9708-1-git-send-email-apinski@cavium.com>
- <20140616170808.GA5362@arm.com>
- <6ABA4097-FE5B-4F52-A4A0-C289836919F6@caviumnetworks.com>,<20140617104338.GA21752@arm.com>
-In-Reply-To: <20140617104338.GA21752@arm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [76.253.2.104]
-x-microsoft-antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-x-forefront-prvs: 0245702D7B
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(189002)(199002)(377454003)(164054003)(24454002)(51704005)(31966008)(76176999)(74502001)(83322001)(36756003)(76482001)(80022001)(4396001)(77982001)(93886003)(66066001)(64706001)(19580405001)(19580395003)(101416001)(85306003)(87936001)(83716003)(46102001)(20776003)(82746002)(21056001)(2656002)(81342001)(54356999)(83072002)(81542001)(92566001)(77096002)(33656002)(99396002)(74662001)(79102001)(50986999)(86362001)(92726001)(105586001)(99286002)(85852003)(95666004)(104396001);DIR:OUT;SFP:;SCL:1;SRVR:CO1PR07MB127;H:CO1PR07MB127.namprd07.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=Andrew.Pinski@caviumnetworks.com; 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 17 Jun 2014 07:31:52 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Laight <David.Laight@aculab.com>
+Cc: "'Peter Hurley'" <peter@hurleysoftware.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Karsten Keil <isdn@linux-pingi.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH tty-next 14/22] tty: Remove tty_wait_until_sent_from_close()
+Date: Tue, 17 Jun 2014 13:31:38 +0200
+Message-ID: <8191805.dfI4LbYmWz@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1725DAF6@AcuExch.aculab.com>
+References: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com> <53A01F02.7000202@hurleysoftware.com> <063D6719AE5E284EB5DD2968C1650D6D1725DAF6@AcuExch.aculab.com>
 MIME-Version: 1.0
-X-OriginatorOrg: caviumnetworks.com
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:RAjqZvVdS//tWJw+4S4F9nYUpNURWO0mLBUk8GE7mjG
+ fluACVfp1g8ala6gUfxQfenRzeMTc6C9iGiNGfv/PccH6h8v3f
+ 6uSQA82C0oLLIsEV+oOfpfi4JA33B3Q9KcaskVNZ6+nJSqqbE7
+ Y/gH4OHsBwKNxTKW+mdk4GUoezU9ZAPhKExNkULg+AvpapdFVo
+ IbOiPwHlPhlVAuCDdjOmL16JhX60LRlyVCrHH/X99OkhAN+r2y
+ +pPbDiRiauOPY/9A++6egUrXOzhSug3StsN4htegH0huvaYAZE
+ 1D5BAJh28nuwIhjhsHu4PMIESW2vxH/iX8IStTvwm7xYihAOyw
+ uQir/42esh9aa3lZJO4w=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> On Jun 17, 2014, at 3:48 AM, "Catalin Marinas" <catalin.marinas@arm.com> wrote:
+On Tuesday 17 June 2014 11:03:50 David Laight wrote:
+> From: Peter Hurley
+> ...
+> > > I don't understand the second half of the changelog, it doesn't seem
+> > > to fit here: there deadlock that we are trying to avoid here happens
+> > > when the *same* tty needs the lock to complete the function that
+> > > sends the pending data. I don't think we do still do that any more,
+> > > but it doesn't seem related to the tty lock being system-wide or not.
+> > 
+> > The tty lock is not used in the i/o path; it's purpose is to
+> > mutually exclude state changes in open(), close() and hangup().
+> > 
+> > The commit that added this [1] comments that _other_ ttys may wait
+> > for this tty to complete, and comments in the code note that this
+> > function should be removed when the system-wide tty mutex was removed
+> > (which happened with the commit noted in the changelog).
 > 
-> On Mon, Jun 16, 2014 at 05:19:32PM +0000, Pinski, Andrew wrote:
->>>> On Jun 16, 2014, at 10:08 AM, "Catalin Marinas" <catalin.marinas@arm.com> wrote:
->>>> On Sat, May 24, 2014 at 12:01:55AM -0700, Andrew Pinski wrote:
->>>> New version of the patches with documentation, signal changes are
->>>> simplified, using less compat syscalls and splitting up the patches so
->>>> it is easier to review.  I have tested LTP on both LP64 and ILP32.
->>>> There is a few LTP failures but they are due to LTP being incorrect
->>>> (sigaction structure in glibc is not the one which is used by the
->>>> kernel)
->>> 
->>> Do you have more details about what's wrong here and where the fix
->>> should go? LTP? glibc? Kernel?
->> 
->> LTP assumes some sigaction structure is the same between userland and kernel.
->> Glibc has the correct idea of what the kernel structure will be when
->> passing to the kernel already. The fix should be done in LTP. There is
->> already code in LTP for x86 for a similar issue which we should be
->> able to advantage of. 
+> What happens if another process tries to do a non-blocking open
+> while you are sleeping in close waiting for output to drain?
 > 
-> OK. I guess you are planning to submit the LTP patch at some point (once
-> kernel and glibc changes are agreed).
-> 
-> Any plans for big-endian ILP32?
+> Hopefully this returns before that data has drained.
 
-The support is there already and ltp results are no difference from little-endian. 
+Before the patch, I believe tty_reopen() would return -EIO because
+the TTY_CLOSING flag is set. After the patch, tty_open() blocks
+on tty_lock() before calling tty_reopen(). AFAICT, this is independent
+of O_NONBLOCK.
 
-> 
->>> I'll give you more specific comments on the code in the next couple of
->>> days. But for cosmetics, please wrap the lines around 72 (or whatever)
->>> characters both in emails, commit logs and Documentation/* files (and
->>> you can drop the "Thanks" part in every commit log ;)).
-> 
-> I forgot to mention dropping the full stop at the end of every subject.
-> 
->> Will do this with the rest of the review. 
-> 
-> More coding style issues: please have a look at
-> Documentation/CodingStyle. While I'm not usually bothered with minor
-> aspects, I would like at least some consistency for multi-line comment
-> style.
-> 
-> Also please get the patches through checkpatch.pl (it doesn't need to be
-> 100% pass but it gives some clues).
-
-I did run them through checkpatch already. The only warnings left were over 80 column warnings. 
-
-
-> 
-> There are a few #defines you added without corresponding brackets (hpa
-> commented on one already).
-
-Checkpatch did not warn about these but I will fix them.
-
-Thanks,
-Andrew
-
-
-> 
-> -- 
-> Catalin
+	Arnd
