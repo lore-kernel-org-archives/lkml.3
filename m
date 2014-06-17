@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965739AbaFQVqg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:46:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53777 "EHLO
+	id S965849AbaFQVqy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:46:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53813 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965720AbaFQVqb (ORCPT
+	with ESMTP id S965830AbaFQVqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:46:31 -0400
+	Tue, 17 Jun 2014 17:46:51 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Greg Suarez <gsuarez@smithmicro.com>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 048/212] net: cdc_mbim: handle unaccelerated VLAN tagged frames
-Date: Tue, 17 Jun 2014 14:42:22 -0700
-Message-Id: <1403041506-13646-49-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 069/212] [media] fc2580: fix tuning failure on 32-bit arch
+Date: Tue, 17 Jun 2014 14:42:43 -0700
+Message-Id: <1403041506-13646-70-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,108 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: Antti Palosaari <crope@iki.fi>
 
-[ Upstream commit 6b5eeb7f874b689403e52a646e485d0191ab9507 ]
+commit 8845cc6415ec28ef8d57b3fb81c75ef9bce69c5f upstream.
 
-This driver maps 802.1q VLANs to MBIM sessions. The mapping is based on
-a bogus assumption that all tagged frames will use the acceleration API
-because we enable NETIF_F_HW_VLAN_CTAG_TX. This fails for e.g. frames
-tagged in userspace using packet sockets. Such frames will erroneously
-be considered as untagged and silently dropped based on not being IP.
+There was some frequency calculation overflows which caused tuning
+failure on 32-bit architecture. Use 64-bit numbers where needed in
+order to avoid calculation overflows.
 
-Fix by falling back to looking into the ethernet header for a tag if no
-accelerated tag was found.
+Thanks for the Finnish person, who asked remain anonymous, reporting,
+testing and suggesting the fix.
 
-Fixes: a82c7ce5bc5b ("net: cdc_ncm: map MBIM IPS SessionID to VLAN ID")
-Cc: Greg Suarez <gsuarez@smithmicro.com>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/usb/cdc_mbim.c | 39 ++++++++++++++++++++++++++++-----------
- 1 file changed, 28 insertions(+), 11 deletions(-)
+ drivers/media/tuners/fc2580.c      | 6 +++---
+ drivers/media/tuners/fc2580_priv.h | 1 +
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/usb/cdc_mbim.c b/drivers/net/usb/cdc_mbim.c
-index 13f7705..2e025dd 100644
---- a/drivers/net/usb/cdc_mbim.c
-+++ b/drivers/net/usb/cdc_mbim.c
-@@ -120,6 +120,16 @@ static void cdc_mbim_unbind(struct usbnet *dev, struct usb_interface *intf)
- 	cdc_ncm_unbind(dev, intf);
- }
+diff --git a/drivers/media/tuners/fc2580.c b/drivers/media/tuners/fc2580.c
+index 3aecaf4..f0c9c42 100644
+--- a/drivers/media/tuners/fc2580.c
++++ b/drivers/media/tuners/fc2580.c
+@@ -195,7 +195,7 @@ static int fc2580_set_params(struct dvb_frontend *fe)
  
-+/* verify that the ethernet protocol is IPv4 or IPv6 */
-+static bool is_ip_proto(__be16 proto)
-+{
-+	switch (proto) {
-+	case htons(ETH_P_IP):
-+	case htons(ETH_P_IPV6):
-+		return true;
-+	}
-+	return false;
-+}
+ 	f_ref = 2UL * priv->cfg->clock / r_val;
+ 	n_val = div_u64_rem(f_vco, f_ref, &k_val);
+-	k_val_reg = 1UL * k_val * (1 << 20) / f_ref;
++	k_val_reg = div_u64(1ULL * k_val * (1 << 20), f_ref);
  
- static struct sk_buff *cdc_mbim_tx_fixup(struct usbnet *dev, struct sk_buff *skb, gfp_t flags)
- {
-@@ -128,6 +138,7 @@ static struct sk_buff *cdc_mbim_tx_fixup(struct usbnet *dev, struct sk_buff *skb
- 	struct cdc_ncm_ctx *ctx = info->ctx;
- 	__le32 sign = cpu_to_le32(USB_CDC_MBIM_NDP16_IPS_SIGN);
- 	u16 tci = 0;
-+	bool is_ip;
- 	u8 *c;
+ 	ret = fc2580_wr_reg(priv, 0x18, r18_val | ((k_val_reg >> 16) & 0xff));
+ 	if (ret < 0)
+@@ -348,8 +348,8 @@ static int fc2580_set_params(struct dvb_frontend *fe)
+ 	if (ret < 0)
+ 		goto err;
  
- 	if (!ctx)
-@@ -137,25 +148,32 @@ static struct sk_buff *cdc_mbim_tx_fixup(struct usbnet *dev, struct sk_buff *skb
- 		if (skb->len <= ETH_HLEN)
- 			goto error;
+-	ret = fc2580_wr_reg(priv, 0x37, 1UL * priv->cfg->clock * \
+-			fc2580_if_filter_lut[i].mul / 1000000000);
++	ret = fc2580_wr_reg(priv, 0x37, div_u64(1ULL * priv->cfg->clock *
++			fc2580_if_filter_lut[i].mul, 1000000000));
+ 	if (ret < 0)
+ 		goto err;
  
-+		/* Some applications using e.g. packet sockets will
-+		 * bypass the VLAN acceleration and create tagged
-+		 * ethernet frames directly.  We primarily look for
-+		 * the accelerated out-of-band tag, but fall back if
-+		 * required
-+		 */
-+		skb_reset_mac_header(skb);
-+		if (vlan_get_tag(skb, &tci) < 0 && skb->len > VLAN_ETH_HLEN &&
-+		    __vlan_get_tag(skb, &tci) == 0) {
-+			is_ip = is_ip_proto(vlan_eth_hdr(skb)->h_vlan_encapsulated_proto);
-+			skb_pull(skb, VLAN_ETH_HLEN);
-+		} else {
-+			is_ip = is_ip_proto(eth_hdr(skb)->h_proto);
-+			skb_pull(skb, ETH_HLEN);
-+		}
-+
- 		/* mapping VLANs to MBIM sessions:
- 		 *   no tag     => IPS session <0>
- 		 *   1 - 255    => IPS session <vlanid>
- 		 *   256 - 511  => DSS session <vlanid - 256>
- 		 *   512 - 4095 => unsupported, drop
- 		 */
--		vlan_get_tag(skb, &tci);
--
- 		switch (tci & 0x0f00) {
- 		case 0x0000: /* VLAN ID 0 - 255 */
--			/* verify that datagram is IPv4 or IPv6 */
--			skb_reset_mac_header(skb);
--			switch (eth_hdr(skb)->h_proto) {
--			case htons(ETH_P_IP):
--			case htons(ETH_P_IPV6):
--				break;
--			default:
-+			if (!is_ip)
- 				goto error;
--			}
- 			c = (u8 *)&sign;
- 			c[3] = tci;
- 			break;
-@@ -169,7 +187,6 @@ static struct sk_buff *cdc_mbim_tx_fixup(struct usbnet *dev, struct sk_buff *skb
- 				  "unsupported tci=0x%04x\n", tci);
- 			goto error;
- 		}
--		skb_pull(skb, ETH_HLEN);
- 	}
+diff --git a/drivers/media/tuners/fc2580_priv.h b/drivers/media/tuners/fc2580_priv.h
+index be38a9e..646c994 100644
+--- a/drivers/media/tuners/fc2580_priv.h
++++ b/drivers/media/tuners/fc2580_priv.h
+@@ -22,6 +22,7 @@
+ #define FC2580_PRIV_H
  
- 	spin_lock_bh(&ctx->mtx);
+ #include "fc2580.h"
++#include <linux/math64.h>
+ 
+ struct fc2580_reg_val {
+ 	u8 reg;
 -- 
 1.9.1
 
