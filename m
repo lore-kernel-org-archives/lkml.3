@@ -1,24 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967461AbaFQWKz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:10:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54633 "EHLO
+	id S967275AbaFQWLV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:11:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54626 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966882AbaFQVvg (ORCPT
+	with ESMTP id S966848AbaFQVvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:51:36 -0400
+	Tue, 17 Jun 2014 17:51:35 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Robert N <crshman@gmail.com>,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
+        Jani Nikula <jani.nikula@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 130/212] Target/iser: Fix iscsit_accept_np and rdma_cm racy flow
-Date: Tue, 17 Jun 2014 14:43:44 -0700
-Message-Id: <1403041506-13646-131-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 125/212] drm/i915: Increase WM memory latency values on SNB
+Date: Tue, 17 Jun 2014 14:43:39 -0700
+Message-Id: <1403041506-13646-126-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,116 +33,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
 
-commit 531b7bf4bd795d9a09eac92504322a472c010bc8 upstream.
+commit e95a2f7509f5219177d6821a0a8754f93892ca56 upstream.
 
-RDMA CM and iSCSI target flows are asynchronous and completely
-uncorrelated. Relying on the fact that iscsi_accept_np will be called
-after CM connection request event and will wait for it is a mistake.
+On SNB the BIOS provided WM memory latency values seem insufficient to
+handle high resolution displays.
 
-When attempting to login to a few targets this flow is racy and
-unpredictable, but for parallel login to dozens of targets will
-race and hang every time.
+In this particular case the display mode was a 2560x1440@60Hz, which
+makes the pixel clock 241.5 MHz. It was empirically found that a memory
+latency value if 1.2 usec is enough to avoid underruns, whereas the BIOS
+provided value of 0.7 usec was clearly too low. Incidentally 1.2 usec
+is what the typical BIOS provided values are on IVB systems.
 
-The correct synchronizing mechanism in this case is pending on
-a semaphore rather than a wait_for_event. We keep the pending
-interruptible for iscsi_np cleanup stage.
+Increase the WM memory latency values to at least 1.2 usec on SNB.
+Hopefully this won't have a significant effect on power consumption.
 
-(Squash patch to remove dead code into parent - nab)
+v2: Increase the latency values regardless of the pixel clock
 
-Reported-by: Slava Shwartsman <valyushash@gmail.com>
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Cc: Robert N <crshman@gmail.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=70254
+Tested-by: Robert Navarro <crshman@gmail.com>
+Tested-by: Vitaly Minko <vitaly.minko@gmail.com>
+Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/infiniband/ulp/isert/ib_isert.c | 25 ++++++-------------------
- drivers/infiniband/ulp/isert/ib_isert.h |  2 +-
- 2 files changed, 7 insertions(+), 20 deletions(-)
+ drivers/gpu/drm/i915/intel_pm.c | 40 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
 
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index d2dec1f..0169850 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -28,6 +28,7 @@
- #include <target/target_core_base.h>
- #include <target/target_core_fabric.h>
- #include <target/iscsi/iscsi_transport.h>
-+#include <linux/semaphore.h>
- 
- #include "isert_proto.h"
- #include "ib_isert.h"
-@@ -576,8 +577,8 @@ isert_connect_request(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
- 	list_add_tail(&isert_conn->conn_accept_node, &isert_np->np_accept_list);
- 	mutex_unlock(&isert_np->np_accept_mutex);
- 
--	pr_debug("isert_connect_request() waking up np_accept_wq: %p\n", np);
--	wake_up(&isert_np->np_accept_wq);
-+	pr_debug("isert_connect_request() up np_sem np: %p\n", np);
-+	up(&isert_np->np_sem);
- 	return 0;
- 
- out_conn_dev:
-@@ -2553,7 +2554,7 @@ isert_setup_np(struct iscsi_np *np,
- 		pr_err("Unable to allocate struct isert_np\n");
- 		return -ENOMEM;
+diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
+index e2d10ce..4128d0e 100644
+--- a/drivers/gpu/drm/i915/intel_pm.c
++++ b/drivers/gpu/drm/i915/intel_pm.c
+@@ -2563,6 +2563,43 @@ static void intel_print_wm_latency(struct drm_device *dev,
  	}
--	init_waitqueue_head(&isert_np->np_accept_wq);
-+	sema_init(&isert_np->np_sem, 0);
- 	mutex_init(&isert_np->np_accept_mutex);
- 	INIT_LIST_HEAD(&isert_np->np_accept_list);
- 	init_completion(&isert_np->np_login_comp);
-@@ -2602,18 +2603,6 @@ out:
  }
  
- static int
--isert_check_accept_queue(struct isert_np *isert_np)
--{
--	int empty;
--
--	mutex_lock(&isert_np->np_accept_mutex);
--	empty = list_empty(&isert_np->np_accept_list);
--	mutex_unlock(&isert_np->np_accept_mutex);
--
--	return empty;
--}
--
--static int
- isert_rdma_accept(struct isert_conn *isert_conn)
++static bool ilk_increase_wm_latency(struct drm_i915_private *dev_priv,
++				    uint16_t wm[5], uint16_t min)
++{
++	int level, max_level = ilk_wm_max_level(dev_priv->dev);
++
++	if (wm[0] >= min)
++		return false;
++
++	wm[0] = max(wm[0], min);
++	for (level = 1; level <= max_level; level++)
++		wm[level] = max_t(uint16_t, wm[level], DIV_ROUND_UP(min, 5));
++
++	return true;
++}
++
++static void snb_wm_latency_quirk(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	bool changed;
++
++	/*
++	 * The BIOS provided WM memory latency values are often
++	 * inadequate for high resolution displays. Adjust them.
++	 */
++	changed = ilk_increase_wm_latency(dev_priv, dev_priv->wm.pri_latency, 12) |
++		ilk_increase_wm_latency(dev_priv, dev_priv->wm.spr_latency, 12) |
++		ilk_increase_wm_latency(dev_priv, dev_priv->wm.cur_latency, 12);
++
++	if (!changed)
++		return;
++
++	DRM_DEBUG_KMS("WM latency values increased to avoid potential underruns\n");
++	intel_print_wm_latency(dev, "Primary", dev_priv->wm.pri_latency);
++	intel_print_wm_latency(dev, "Sprite", dev_priv->wm.spr_latency);
++	intel_print_wm_latency(dev, "Cursor", dev_priv->wm.cur_latency);
++}
++
+ static void intel_setup_wm_latency(struct drm_device *dev)
  {
- 	struct rdma_cm_id *cm_id = isert_conn->conn_cm_id;
-@@ -2705,16 +2694,14 @@ isert_accept_np(struct iscsi_np *np, struct iscsi_conn *conn)
- 	int max_accept = 0, ret;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+@@ -2580,6 +2617,9 @@ static void intel_setup_wm_latency(struct drm_device *dev)
+ 	intel_print_wm_latency(dev, "Primary", dev_priv->wm.pri_latency);
+ 	intel_print_wm_latency(dev, "Sprite", dev_priv->wm.spr_latency);
+ 	intel_print_wm_latency(dev, "Cursor", dev_priv->wm.cur_latency);
++
++	if (IS_GEN6(dev))
++		snb_wm_latency_quirk(dev);
+ }
  
- accept_wait:
--	ret = wait_event_interruptible(isert_np->np_accept_wq,
--			!isert_check_accept_queue(isert_np) ||
--			np->np_thread_state == ISCSI_NP_THREAD_RESET);
-+	ret = down_interruptible(&isert_np->np_sem);
- 	if (max_accept > 5)
- 		return -ENODEV;
- 
- 	spin_lock_bh(&np->np_thread_lock);
- 	if (np->np_thread_state == ISCSI_NP_THREAD_RESET) {
- 		spin_unlock_bh(&np->np_thread_lock);
--		pr_err("ISCSI_NP_THREAD_RESET for isert_accept_np\n");
-+		pr_debug("ISCSI_NP_THREAD_RESET for isert_accept_np\n");
- 		return -ENODEV;
- 	}
- 	spin_unlock_bh(&np->np_thread_lock);
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.h b/drivers/infiniband/ulp/isert/ib_isert.h
-index 466dd5e..68d9f35 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.h
-+++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -160,7 +160,7 @@ struct isert_device {
- };
- 
- struct isert_np {
--	wait_queue_head_t	np_accept_wq;
-+	struct semaphore	np_sem;
- 	struct rdma_cm_id	*np_cm_id;
- 	struct mutex		np_accept_mutex;
- 	struct list_head	np_accept_list;
+ static void hsw_compute_wm_parameters(struct drm_crtc *crtc,
 -- 
 1.9.1
 
