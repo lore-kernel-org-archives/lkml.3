@@ -1,134 +1,586 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933449AbaFQOzG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 10:55:06 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:54774 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933162AbaFQOya (ORCPT
+	id S933471AbaFQOzz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 10:55:55 -0400
+Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:41454 "EHLO
+	mirror2.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933355AbaFQOyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 10:54:30 -0400
-Date: Tue, 17 Jun 2014 07:54:19 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [RFC PATCH 1/1] kernel/rcu/tree.c: simplify
- force_quiescent_state()
-Message-ID: <20140617145419.GE4669@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <539FAE21.7070702@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <539FAE21.7070702@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061714-0928-0000-0000-000002B4DCB3
+	Tue, 17 Jun 2014 10:54:04 -0400
+From: Chen-Yu Tsai <wens@csie.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Chen-Yu Tsai <wens@csie.org>, linux-serial@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Luc Verhaegen <libv@skynet.be>
+Subject: [PATCH v2 19/20] ARM: sunxi: Add Allwinner A23 dtsi
+Date: Tue, 17 Jun 2014 22:52:56 +0800
+Message-Id: <1403016777-15121-20-git-send-email-wens@csie.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1403016777-15121-1-git-send-email-wens@csie.org>
+References: <1403016777-15121-1-git-send-email-wens@csie.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 10:55:29PM -0400, Pranith Kumar wrote:
-> This might sound really naive, but please bear with me.
-> 
-> force_quiescent_state() used to do a lot of things in the past in addition to
-> forcing a quiescent state. (In my reading of the mailing list I found state
-> transitions for one). 
-> 
-> Now according to the code, what is being done is multiple callers try to go up
-> the hierarchy of nodes to see who reaches the root node. The caller reaching the
-> root node wins and it acquires root node lock and it gets to set rsp->gp_flags!
-> 
-> At each level of the hierarchy we try to acquire fqslock. This is the only place
-> which actually uses fqslock. 
-> 
-> I guess this was being done to avoid the contention on fqslock, but all we are
-> doing here is setting one flag. This way of acquiring locks might reduce
-> contention if every update is trying to do some independent work, but here all
-> we are doing is setting the same flag with same value.
+The Allwinner A23 is a tablet oriented SoC with 2 Cortex-A7 cores
+and a Mali-400MP2 GPU.
 
-Actually, to reduce contention on rnp_root->lock.
+Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+---
+ arch/arm/boot/dts/sun8i-a23.dtsi | 536 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 536 insertions(+)
+ create mode 100644 arch/arm/boot/dts/sun8i-a23.dtsi
 
-The trick is that the "losers" at each level of ->fqslock acquisition go
-away.  The "winner" ends up doing the real work of setting RCU_GP_FLAG_FQS.
-
-> We can also remove fqslock completely if we do not need this. Also using
-> cmpxchg() to set the value of the flag looks like a good idea to avoid taking
-> the root node lock. Thoughts?
-
-The ->fqslock funnel was needed to avoid lockups on large systems (many
-hundreds or even thousands of CPUs).  Moving grace-period responsibilities
-from softirq to the grace-period kthreads might have reduced contention
-sufficienty to make the ->fqslock funnel unnecessary.  However, given
-that I don't usually have access to such a large system, I will leave it,
-at least for the time being.
-
-But you might be interested in thinking through what else would need to
-change in order to make cmpxchg() work.  ;-)
-
-							Thanx, Paul
-
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> ---
->  kernel/rcu/tree.c | 35 +++++++++++++----------------------
->  1 file changed, 13 insertions(+), 22 deletions(-)
-> 
-> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> index f1ba773..9a46f32 100644
-> --- a/kernel/rcu/tree.c
-> +++ b/kernel/rcu/tree.c
-> @@ -2399,36 +2399,27 @@ static void force_qs_rnp(struct rcu_state *rsp,
->  static void force_quiescent_state(struct rcu_state *rsp)
->  {
->  	unsigned long flags;
-> -	bool ret;
-> -	struct rcu_node *rnp;
-> -	struct rcu_node *rnp_old = NULL;
-> -
-> -	/* Funnel through hierarchy to reduce memory contention. */
-> -	rnp = per_cpu_ptr(rsp->rda, raw_smp_processor_id())->mynode;
-> -	for (; rnp != NULL; rnp = rnp->parent) {
-> -		ret = (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) ||
-> -		      !raw_spin_trylock(&rnp->fqslock);
-> -		if (rnp_old != NULL)
-> -			raw_spin_unlock(&rnp_old->fqslock);
-> -		if (ret) {
-> -			ACCESS_ONCE(rsp->n_force_qs_lh)++;
-> -			return;
-> -		}
-> -		rnp_old = rnp;
-> +	struct rcu_node *rnp_root = rcu_get_root(rsp);
-> +
-> +	/* early test to see if someone already forced a quiescent state
-> +	 */
-> +	if (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) {
-> +		ACCESS_ONCE(rsp->n_force_qs_lh)++;
-> +		return;  /* Someone beat us to it. */
->  	}
-> -	/* rnp_old == rcu_get_root(rsp), rnp == NULL. */
-> 
->  	/* Reached the root of the rcu_node tree, acquire lock. */
-> -	raw_spin_lock_irqsave(&rnp_old->lock, flags);
-> +	raw_spin_lock_irqsave(&rnp_root->lock, flags);
->  	smp_mb__after_unlock_lock();
-> -	raw_spin_unlock(&rnp_old->fqslock);
->  	if (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) {
->  		ACCESS_ONCE(rsp->n_force_qs_lh)++;
-> -		raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
-> -		return;  /* Someone beat us to it. */
-> +		raw_spin_unlock_irqrestore(&rnp_root->lock, flags);
-> +		return;  /* Someone actually beat us to it. */
->  	}
-> +
-> +	/* can we use cmpxchg instead of the above lock? */
->  	ACCESS_ONCE(rsp->gp_flags) |= RCU_GP_FLAG_FQS;
-> -	raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
-> +	raw_spin_unlock_irqrestore(&rnp_root->lock, flags);
->  	wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
->  }
-> 
-> -- 
-> 1.9.1
-> 
+diff --git a/arch/arm/boot/dts/sun8i-a23.dtsi b/arch/arm/boot/dts/sun8i-a23.dtsi
+new file mode 100644
+index 0000000..0721a13
+--- /dev/null
++++ b/arch/arm/boot/dts/sun8i-a23.dtsi
+@@ -0,0 +1,536 @@
++/*
++ * Copyright 2014 Chen-Yu Tsai
++ *
++ * Chen-Yu Tsai <wens@csie.org>
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++
++/include/ "skeleton.dtsi"
++
++/ {
++	interrupt-parent = <&gic>;
++
++	aliases {
++		serial0 = &uart0;
++		serial1 = &uart1;
++		serial2 = &uart2;
++		serial3 = &uart3;
++		serial4 = &uart4;
++		serial5 = &r_uart;
++	};
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@0 {
++			compatible = "arm,cortex-a7";
++			device_type = "cpu";
++			reg = <0>;
++		};
++
++		cpu@1 {
++			compatible = "arm,cortex-a7";
++			device_type = "cpu";
++			reg = <1>;
++		};
++	};
++
++	memory {
++		reg = <0x40000000 0x80000000>;
++	};
++
++	pmu {
++		compatible = "arm,cortex-a7-pmu", "arm,cortex-a15-pmu";
++		interrupts = <0 120 4>,
++			     <0 121 4>;
++	};
++
++	clocks {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++
++		osc24M: osc24M_clk {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <24000000>;
++			clock-output-names = "osc24M";
++		};
++
++		osc32k: osc32k_clk {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <32768>;
++			clock-output-names = "osc32k";
++		};
++
++		pll1: clk@01c20000 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun8i-a23-pll1-clk";
++			reg = <0x01c20000 0x4>;
++			clocks = <&osc24M>;
++			clock-output-names = "pll1";
++		};
++
++		pll5: clk@01c20020 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun6i-a31-pll1-clk";
++			reg = <0x01c20020 0x4>;
++			clocks = <&osc24M>;
++			clock-output-names = "pll5";
++		};
++
++		pll6x2: clk@01c20028 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun6i-a31-pll6-clk";
++			reg = <0x01c20028 0x4>;
++			clocks = <&osc24M>;
++			clock-output-names = "pll6x2";
++		};
++
++		pll6: pll6_clk {
++			#clock-cells = <0>;
++			compatible = "fixed-factor-clock";
++			clock-div = <2>;
++			clock-mult = <1>;
++			clocks = <&pll6x2>;
++			clock-output-names = "pll6";
++		};
++
++		cpu: cpu_clk@01c20050 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-a10-cpu-clk";
++			reg = <0x01c20050 0x4>;
++
++			/*
++			 * PLL1 is listed twice here.
++			 * While it looks suspicious, it's actually documented
++			 * that way both in the datasheet and in the code from
++			 * Allwinner.
++			 */
++			clocks = <&osc32k>, <&osc24M>, <&pll1>, <&pll1>;
++			clock-output-names = "cpu";
++		};
++
++		axi: axi_clk@01c20050 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun8i-a23-axi-clk";
++			reg = <0x01c20050 0x4>;
++			clocks = <&cpu>;
++			clock-output-names = "axi";
++		};
++
++		ahb1_mux: ahb1_mux_clk@01c20054 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun6i-a31-ahb1-mux-clk";
++			reg = <0x01c20054 0x4>;
++			clocks = <&osc32k>, <&osc24M>, <&axi>, <&pll6>;
++			clock-output-names = "ahb1_mux";
++		};
++
++		ahb1: ahb1_clk@01c20054 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-a10-ahb-clk";
++			reg = <0x01c20054 0x4>;
++			clocks = <&ahb1_mux>;
++			clock-output-names = "ahb1";
++		};
++
++		apb1: apb1_clk@01c20054 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-a10-apb0-clk";
++			reg = <0x01c20054 0x4>;
++			clocks = <&ahb1>;
++			clock-output-names = "apb1";
++		};
++
++		ahb1_gates: clk@01c20060 {
++			#clock-cells = <1>;
++			compatible = "allwinner,sun8i-a23-ahb1-gates-clk";
++			reg = <0x01c20060 0x8>;
++			clocks = <&ahb1>;
++			clock-output-names = "ahb1_mipidsi", "ahb1_dma",
++					"ahb1_mmc0", "ahb1_mmc1", "ahb1_mmc2",
++					"ahb1_nand", "ahb1_sdram",
++					"ahb1_hstimer", "ahb1_spi0",
++					"ahb1_spi1", "ahb1_otg", "ahb1_ehci",
++					"ahb1_ohci", "ahb1_ve", "ahb1_lcd",
++					"ahb1_csi", "ahb1_be",	"ahb1_fe",
++					"ahb1_gpu", "ahb1_spinlock",
++					"ahb1_drc";
++		};
++
++		apb1_gates: clk@01c20068 {
++			#clock-cells = <1>;
++			compatible = "allwinner,sun8i-a23-apb1-gates-clk";
++			reg = <0x01c20068 0x4>;
++			clocks = <&apb1>;
++			clock-output-names = "apb1_codec", "apb1_pio",
++					"apb1_daudio0",	"apb1_daudio1";
++		};
++
++		apb2_mux: apb2_mux@01c20058 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-a10-apb1-mux-clk";
++			reg = <0x01c20058 0x4>;
++			clocks = <&osc32k>, <&osc24M>, <&pll6>, <&pll6>;
++			clock-output-names = "apb2_mux";
++		};
++
++		apb2: apb2@01c20058 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun6i-a31-apb2-div-clk";
++			reg = <0x01c20058 0x4>;
++			clocks = <&apb2_mux>;
++			clock-output-names = "apb2";
++		};
++
++		apb2_gates: clk@01c2006c {
++			#clock-cells = <1>;
++			compatible = "allwinner,sun8i-a23-apb2-gates-clk";
++			reg = <0x01c2006c 0x4>;
++			clocks = <&apb2>;
++			clock-output-names = "apb2_i2c0", "apb2_i2c1",
++					"apb2_i2c2", "apb2_uart0",
++					"apb2_uart1", "apb2_uart2",
++					"apb2_uart3", "apb2_uart4";
++		};
++
++		mmc0_clk: clk@01c20088 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-a10-mod0-clk";
++			reg = <0x01c20088 0x4>;
++			clocks = <&osc24M>, <&pll6>;
++			clock-output-names = "mmc0";
++		};
++
++		mmc1_clk: clk@01c2008c {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-a10-mod0-clk";
++			reg = <0x01c2008c 0x4>;
++			clocks = <&osc24M>, <&pll6>;
++			clock-output-names = "mmc1";
++		};
++
++		mmc2_clk: clk@01c20090 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-a10-mod0-clk";
++			reg = <0x01c20090 0x4>;
++			clocks = <&osc24M>, <&pll6>;
++			clock-output-names = "mmc2";
++		};
++
++		spi0_clk: clk@01c200a0 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-a10-mod0-clk";
++			reg = <0x01c200a0 0x4>;
++			clocks = <&osc24M>, <&pll6>;
++			clock-output-names = "spi0";
++		};
++
++		spi1_clk: clk@01c200a4 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-a10-mod0-clk";
++			reg = <0x01c200a4 0x4>;
++			clocks = <&osc24M>, <&pll6>;
++			clock-output-names = "spi1";
++		};
++
++		mbus_clk: clk@01c2015c {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun6i-a31-mbus-clk";
++			reg = <0x01c2015c 0x4>;
++			clocks = <&osc24M>, <&pll6x2>, <&pll5>;
++			clock-output-names = "mbus";
++		};
++	};
++
++	soc@01c00000 {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++
++		pio: pinctrl@01c20800 {
++			compatible = "allwinner,sun8i-a23-pinctrl";
++			reg = <0x01c20800 0x400>;
++			interrupts = <0 11 4>,
++				     <0 15 4>,
++				     <0 17 4>;
++			clocks = <&apb1_gates 5>;
++			gpio-controller;
++			interrupt-controller;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			#gpio-cells = <3>;
++
++			uart0_pins_a: uart0@0 {
++				allwinner,pins = "PF2", "PF4";
++				allwinner,function = "uart0";
++				allwinner,drive = <0>;
++				allwinner,pull = <0>;
++			};
++
++			i2c0_pins_a: i2c0@0 {
++				allwinner,pins = "PH2", "PH3";
++				allwinner,function = "i2c0";
++				allwinner,drive = <0>;
++				allwinner,pull = <0>;
++			};
++
++			i2c1_pins_a: i2c1@0 {
++				allwinner,pins = "PH4", "PH5";
++				allwinner,function = "i2c1";
++				allwinner,drive = <0>;
++				allwinner,pull = <0>;
++			};
++
++			i2c2_pins_a: i2c2@0 {
++				allwinner,pins = "PE12", "PE13";
++				allwinner,function = "i2c2";
++				allwinner,drive = <0>;
++				allwinner,pull = <0>;
++			};
++		};
++
++		ahb1_rst: reset@01c202c0 {
++			#reset-cells = <1>;
++			compatible = "allwinner,sun6i-a31-ahb1-reset";
++			reg = <0x01c202c0 0xc>;
++		};
++
++		apb1_rst: reset@01c202d0 {
++			#reset-cells = <1>;
++			compatible = "allwinner,sun6i-a31-clock-reset";
++			reg = <0x01c202d0 0x4>;
++		};
++
++		apb2_rst: reset@01c202d8 {
++			#reset-cells = <1>;
++			compatible = "allwinner,sun6i-a31-clock-reset";
++			reg = <0x01c202d8 0x4>;
++		};
++
++		timer@01c20c00 {
++			compatible = "allwinner,sun4i-a10-timer";
++			reg = <0x01c20c00 0xa0>;
++			interrupts = <0 18 4>,
++				     <0 19 4>;
++			clocks = <&osc24M>;
++		};
++
++		wdt0: watchdog@01c20ca0 {
++			compatible = "allwinner,sun6i-a31-wdt";
++			reg = <0x01c20ca0 0x20>;
++			interrupts = <0 25 4>;
++		};
++
++		uart0: serial@01c28000 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c28000 0x400>;
++			interrupts = <0 0 4>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&apb2_gates 16>;
++			resets = <&apb2_rst 16>;
++			status = "disabled";
++		};
++
++		uart1: serial@01c28400 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c28400 0x400>;
++			interrupts = <0 1 4>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&apb2_gates 17>;
++			resets = <&apb2_rst 17>;
++			status = "disabled";
++		};
++
++		uart2: serial@01c28800 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c28800 0x400>;
++			interrupts = <0 2 4>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&apb2_gates 18>;
++			resets = <&apb2_rst 18>;
++			status = "disabled";
++		};
++
++		uart3: serial@01c28c00 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c28c00 0x400>;
++			interrupts = <0 3 4>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&apb2_gates 19>;
++			resets = <&apb2_rst 19>;
++			status = "disabled";
++		};
++
++		uart4: serial@01c29000 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c29000 0x400>;
++			interrupts = <0 4 4>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&apb2_gates 20>;
++			resets = <&apb2_rst 20>;
++			status = "disabled";
++		};
++
++		i2c0: i2c@01c2ac00 {
++			compatible = "allwinner,sun6i-a31-i2c";
++			reg = <0x01c2ac00 0x400>;
++			interrupts = <0 6 4>;
++			clocks = <&apb2_gates 0>;
++			clock-frequency = <100000>;
++			resets = <&apb2_rst 0>;
++			status = "disabled";
++		};
++
++		i2c1: i2c@01c2b000 {
++			compatible = "allwinner,sun6i-a31-i2c";
++			reg = <0x01c2b000 0x400>;
++			interrupts = <0 7 4>;
++			clocks = <&apb2_gates 1>;
++			clock-frequency = <100000>;
++			resets = <&apb2_rst 1>;
++			status = "disabled";
++		};
++
++		i2c2: i2c@01c2b400 {
++			compatible = "allwinner,sun6i-a31-i2c";
++			reg = <0x01c2b400 0x400>;
++			interrupts = <0 8 4>;
++			clocks = <&apb2_gates 2>;
++			clock-frequency = <100000>;
++			resets = <&apb2_rst 2>;
++			status = "disabled";
++		};
++
++		spi0: spi@01c68000 {
++			compatible = "allwinner,sun6i-a31-spi";
++			reg = <0x01c68000 0x1000>;
++			interrupts = <0 65 4>;
++			clocks = <&ahb1_gates 20>, <&spi0_clk>;
++			clock-names = "ahb", "mod";
++			resets = <&ahb1_rst 20>;
++			status = "disabled";
++		};
++
++		spi1: spi@01c69000 {
++			compatible = "allwinner,sun6i-a31-spi";
++			reg = <0x01c69000 0x1000>;
++			interrupts = <0 66 4>;
++			clocks = <&ahb1_gates 21>, <&spi1_clk>;
++			clock-names = "ahb", "mod";
++			resets = <&ahb1_rst 21>;
++			status = "disabled";
++		};
++
++		gic: interrupt-controller@01c81000 {
++			compatible = "arm,cortex-a7-gic", "arm,cortex-a15-gic";
++			reg = <0x01c81000 0x1000>,
++			      <0x01c82000 0x1000>,
++			      <0x01c84000 0x2000>,
++			      <0x01c86000 0x2000>;
++			interrupt-controller;
++			#interrupt-cells = <3>;
++			interrupts = <1 9 0xf04>;
++		};
++
++		nmi_intc: interrupt-controller@01f00c0c {
++			compatible = "allwinner,sun6i-a31-sc-nmi";
++			interrupt-controller;
++			#interrupt-cells = <2>;
++			reg = <0x01f00c0c 0x38>;
++			interrupts = <0 32 4>;
++		};
++
++		prcm@01f01400 {
++			compatible = "allwinner,sun8i-a23-prcm";
++			reg = <0x01f01400 0x200>;
++
++			ar100: ar100_clk {
++				compatible = "fixed-factor-clock";
++				#clock-cells = <0>;
++				clock-div = <1>;
++				clock-mult = <1>;
++				clocks = <&osc24M>;
++				clock-output-names = "ar100";
++			};
++
++			ahb0: ahb0_clk {
++				compatible = "fixed-factor-clock";
++				#clock-cells = <0>;
++				clock-div = <1>;
++				clock-mult = <1>;
++				clocks = <&ar100>;
++				clock-output-names = "ahb0";
++			};
++
++			apb0: apb0_clk {
++				compatible = "allwinner,sun8i-a23-apb0-clk";
++				#clock-cells = <0>;
++				clocks = <&ahb0>;
++				clock-output-names = "apb0";
++			};
++
++			apb0_gates: apb0_gates_clk {
++				compatible = "allwinner,sun8i-a23-apb0-gates-clk";
++				#clock-cells = <1>;
++				clocks = <&apb0>;
++				clock-indices = <0>, <2>, <3>, <4>, <6>;
++				clock-output-names = "apb0_pio", "apb0_timer",
++						"apb0_rsb", "apb0_uart",
++						"apb0_i2c";
++			};
++
++			apb0_rst: apb0_rst {
++				compatible = "allwinner,sun6i-a31-clock-reset";
++				#reset-cells = <1>;
++			};
++		};
++
++		r_uart: serial@01f02800 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01f02800 0x400>;
++			interrupts = <0 38 4>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&apb0_gates 4>;
++			resets = <&apb0_rst 4>;
++			status = "disabled";
++		};
++
++		r_pio: pinctrl@01f02c00 {
++			compatible = "allwinner,sun8i-a23-r-pinctrl";
++			reg = <0x01f02c00 0x400>;
++			interrupts = <0 45 4>;
++			clocks = <&apb0_gates 0>;
++			resets = <&apb0_rst 0>;
++			gpio-controller;
++			interrupt-controller;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			#gpio-cells = <3>;
++
++			r_uart_pins_a: r_uart@0 {
++				allwinner,pins = "PL2", "PL3";
++				allwinner,function = "s_uart";
++				allwinner,drive = <0>;
++				allwinner,pull = <0>;
++			};
++
++		};
++	};
++};
+-- 
+2.0.0
 
