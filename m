@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756300AbaFQPrv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 11:47:51 -0400
-Received: from mail-la0-f74.google.com ([209.85.215.74]:64338 "EHLO
-	mail-la0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756098AbaFQPrt (ORCPT
+	id S933303AbaFQPvC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 11:51:02 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50159 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933084AbaFQPvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 11:47:49 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        <stable@vger.kernel.org>, Michal Nazarewicz <mina86@mina86.com>
-Subject: [PATCH] usb: gadget: f_fs: fix NULL pointer dereference when there are no strings
-Date: Tue, 17 Jun 2014 17:47:41 +0200
-Message-Id: <1403020061-20890-1-git-send-email-mina86@mina86.com>
-X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <EC42AA5D-282F-4536-9E81-101A3A16D767@symbolicsound.com>
-References: <EC42AA5D-282F-4536-9E81-101A3A16D767@symbolicsound.com>
+	Tue, 17 Jun 2014 11:51:00 -0400
 MIME-Version: 1.0
+In-Reply-To: <CAJSP0QWaS--gPZ=ONFrXby1DQLw4R0RCro7bpHCdmucyjmqT_w@mail.gmail.com>
+References: <1402680562-8328-1-git-send-email-ming.lei@canonical.com>
+	<1402680562-8328-3-git-send-email-ming.lei@canonical.com>
+	<CAJSP0QWaS--gPZ=ONFrXby1DQLw4R0RCro7bpHCdmucyjmqT_w@mail.gmail.com>
+Date: Tue, 17 Jun 2014 23:50:57 +0800
+Message-ID: <CACVXFVO0SybUKArQbKkj2+hbk6q_gt3SBooNNmw1jErRR8d07A@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/2] block: virtio-blk: support multi virt queues per
+ virtio-blk device
+From: Ming Lei <ming.lei@canonical.com>
+To: Stefan Hajnoczi <stefanha@gmail.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel <linux-kernel@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>, linux-api@vger.kernel.org,
+        Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the descriptors do not need any strings and user space sends empty
-set of strings, the ffs->stringtabs field remains NULL.  Thus
-*ffs->stringtabs in functionfs_bind leads to a NULL pointer
-dereferenece.
+On Tue, Jun 17, 2014 at 10:40 AM, Stefan Hajnoczi <stefanha@gmail.com> wrote:
+> On Sat, Jun 14, 2014 at 1:29 AM, Ming Lei <ming.lei@canonical.com> wrote:
+>> Firstly this patch supports more than one virtual queues for virtio-blk
+>> device.
+>>
+>> Secondly this patch maps the virtual queue to blk-mq's hardware queue.
+>>
+>> With this approach, both scalability and performance problem can be improved.
+>>
+>> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+>> ---
+>>  drivers/block/virtio_blk.c |   75 ++++++++++++++++++++++++++++++++------------
+>>  1 file changed, 55 insertions(+), 20 deletions(-)
+>>
+>> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+>> index f63d358..e0d077d 100644
+>> --- a/drivers/block/virtio_blk.c
+>> +++ b/drivers/block/virtio_blk.c
+>> @@ -16,6 +16,8 @@
+>>
+>>  #define PART_BITS 4
+>>
+>> +#define MAX_NUM_VQ 16
+>
+> It would be nice to allocate virtqueues dynamically instead of
+> hardcoding the limit.  virtio-scsi also allocates virtqueues
+> dynamically.
 
-The bug was introduced by commit [fd7c9a007f: “use usb_string_ids_n()”].
+virtio-scsi may have lots of LUN, but virtio-blk only has one disk
+which needn't lots of hardware queues.
 
-While at it, remove double initialisation of lang local variable in
-that function.
+Also it doesn't matter since it isn't part of ABI.
 
-ffs->strings_count does not need to be checked in any way since in
-the above scenario it will remain zero and usb_string_ids_n() is
-a no-operation when colled with 0 argument.
+If change on virtio_blk_config is agreed, both host side and
+guest side can choose to support dynamic length or pre-defined
+length freely.
 
-Cc: <stable@vger.kernel.org>  # v2.6.36+
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
----
- drivers/usb/gadget/f_fs.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-index 74202d6..8598c27 100644
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -1483,11 +1483,13 @@ static int functionfs_bind(struct ffs_data *ffs, struct usb_composite_dev *cdev)
- 	ffs->ep0req->context = ffs;
- 
- 	lang = ffs->stringtabs;
--	for (lang = ffs->stringtabs; *lang; ++lang) {
--		struct usb_string *str = (*lang)->strings;
--		int id = first_id;
--		for (; str->s; ++id, ++str)
--			str->id = id;
-+	if (lang) {
-+		for (; *lang; ++lang) {
-+			struct usb_string *str = (*lang)->strings;
-+			int id = first_id;
-+			for (; str->s; ++id, ++str)
-+				str->id = id;
-+		}
- 	}
- 
- 	ffs->gadget = cdev->gadget;
--- 
-2.0.0.526.g5318336
-
+Thanks,
+--
+Ming Lei
