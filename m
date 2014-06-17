@@ -1,82 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932283AbaFQLJS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 07:09:18 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60685 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752626AbaFQLJR (ORCPT
+	id S932434AbaFQLJd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 07:09:33 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:34511 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932298AbaFQLJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 07:09:17 -0400
-Date: Tue, 17 Jun 2014 12:09:08 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Rob Clark <robdclark@gmail.com>, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v3] ARM: add get_user() support for 8 byte types
-Message-ID: <20140617110908.GH23430@n2100.arm.linux.org.uk>
-References: <1402587755-29245-1-git-send-email-daniel.thompson@linaro.org> <20140612155843.GK23430@n2100.arm.linux.org.uk> <53A015B3.2070809@linaro.org>
+	Tue, 17 Jun 2014 07:09:32 -0400
+Message-ID: <53A021E8.8020209@imgtec.com>
+Date: Tue, 17 Jun 2014 12:09:28 +0100
+From: Markos Chandras <Markos.Chandras@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53A015B3.2070809@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Daniel Borkmann <dborkman@redhat.com>, Guenter Roeck <linux@roeck-us.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Linux MIPS Mailing List" <linux-mips@linux-mips.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Alexei Starovoitov <ast@plumgrid.com>
+Subject: Re: mips:allmodconfig build failure in 3.16-rc1 due to bpf_jit code
+References: <539FA6CB.5050703@roeck-us.net> <539FFA6B.9030004@redhat.com> <53A01572.5090603@redhat.com> <53A01AED.4010008@roeck-us.net> <53A01ECA.6090504@redhat.com>
+In-Reply-To: <53A01ECA.6090504@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.28]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 11:17:23AM +0100, Daniel Thompson wrote:
-> ... at this point there is a narrowing cast followed by an implicit
-> widening. This results in compiler either ignoring r3 altogether or, if
-> spilling to the stack, generating code to set r3 to zero before doing
-> the store.
+On 06/17/2014 11:56 AM, Daniel Borkmann wrote:
+> On 06/17/2014 12:39 PM, Guenter Roeck wrote:
+>> On 06/17/2014 03:16 AM, Daniel Borkmann wrote:
+>>> On 06/17/2014 10:20 AM, Daniel Borkmann wrote:
+>>>> On 06/17/2014 04:24 AM, Guenter Roeck wrote:
+>>>>> mips:allmodconfig fails in 3.16-rc1 with lots of undefined symbols.
+>>>>>
+>>>>> arch/mips/net/bpf_jit.c: In function 'is_load_to_a':
+>>>>> arch/mips/net/bpf_jit.c:559:7: error: 'BPF_S_LD_W_LEN' undeclared
+>>>>> (first use in this function)
+>>>>> arch/mips/net/bpf_jit.c:559:7: note: each undeclared identifier is
+>>>>> reported only once for each function it appears in
+>>>>> arch/mips/net/bpf_jit.c:560:7: error: 'BPF_S_LD_W_ABS' undeclared
+>>>>> (first use in this function)
+>>>>> arch/mips/net/bpf_jit.c:561:7: error: 'BPF_S_LD_H_ABS' undeclared
+>>>>> (first use in this function)
+>>>>> arch/mips/net/bpf_jit.c:562:7: error: 'BPF_S_LD_B_ABS' undeclared
+>>>>> (first use in this function)
+>>>>> arch/mips/net/bpf_jit.c:563:7: error: 'BPF_S_ANC_CPU' undeclared
+>>>>> (first use in this function)
+>>>>> arch/mips/net/bpf_jit.c:564:7: error: 'BPF_S_ANC_IFINDEX'
+>>>>> undeclared (first use in this function)
+>>>>> arch/mips/net/bpf_jit.c:565:7: error: 'BPF_S_ANC_MARK' undeclared
+>>>>> (first use in this function)
+>>>>>
+>>>>> and so on.
+>>>>>
+>>>>> Those symbols are not defined anywhere.
+>>>>>
+>>>>> The problem is due to a conflict with commit 348059313 (net:
+>>>>> filter: get rid of BPF_S_*
+>>>>> enum), which removed those definitions.
+>>>>
+>>>> Yep, it seems both got in this merge window from different trees.
+>>>> Don't have mips, but
+>>>> I'll have a look, and send you a patch.
+>>>
+>>> Could you give the attached patch a try?
+>>
+>> Yes, this fixes the build problem. Obviously I have no idea if it
+>> works ;-)
+> 
+> Thanks Guenter!
+> 
+> We have a test suite for BPF under lib/test_bpf.c that was designed for the
+> interpreter and for BPF JIT developers in mind and pretty much covers most
+> cases. E.g. one possibility to run it would be:
+> 
+>   0) compile module test_bpf (Kernel Hacking -> Test BPF filter
+> functionality)
+>   1) echo 1 > /proc/sys/net/core/bpf_jit_enable           [<- enables
+> BPF JIT]
+>   2) modprobe test_bpf                                    [<- runs test
+> suite]
+> 
+> The results will be visible in the klog via dmesg (if at least one test
+> fails,
+> the module init handler will return an error).
+> 
+> Best,
+> 
+> Daniel
+Hi Daniel,
 
-In actual fact, there's very little difference between the two
-implementations in terms of generated code.
-
-The difference between them is what happens on the 64-bit big endian
-narrowing case, where we use __get_user_4 with your version.  This
-adds one additional instruction.
-
-The little endian case results in identical code except for register
-usage - for example, with my test for a 32-bit being widened to 64-bit:
-
-        str     lr, [sp, #-4]!
--       mov     r3, r0
-+       mov     ip, r0
-        mov     r0, r1
- #APP
- @ 280 "t-getuser.c" 1
-        bl      __get_user_4
- @ 0 "" 2
--       str     r2, [r3, #0]
--       mov     r2, #0
--       str     r2, [r3, #4]
-+       mov     r3, #0
-+       str     r2, [ip, #0]
-+       str     r3, [ip, #4]
-        ldr     pc, [sp], #4
-
-and 64-bit narrowed to 32-bit:
-
-        str     lr, [sp, #-4]!
--       mov     ip, r0
-+       mov     r3, r0
-        mov     r0, r1
- #APP
- @ 275 "t-getuser.c" 1
--       bl      __get_user_8
-+       bl      __get_user_4
- @ 0 "" 2
--       str     r2, [ip, #0]
-+       str     r2, [r3, #0]
-        ldr     pc, [sp], #4
-
-In terms of type checking, both seem to get it correct (which is something
-I'm concerned about by any implementation since this is just as important
-as the generated code).
+Thanks for these instructions. I will try them myself once I find some
+time since I don't think bpf_jit for MIPS has ever been tested with all
+the opcodes.
 
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+markos
