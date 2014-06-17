@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966390AbaFQVt2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:49:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54141 "EHLO
+	id S966430AbaFQVtj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:49:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54193 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966350AbaFQVtN (ORCPT
+	with ESMTP id S966350AbaFQVta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:49:13 -0400
+	Tue, 17 Jun 2014 17:49:30 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Andy King <acking@vmware.com>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 204/212] iscsi-target: Fix wrong buffer / buffer overrun in iscsi_change_param_value()
-Date: Tue, 17 Jun 2014 14:44:58 -0700
-Message-Id: <1403041506-13646-205-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 041/212] vsock: Make transport the proto owner
+Date: Tue, 17 Jun 2014 14:42:15 -0700
+Message-Id: <1403041506-13646-42-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -28,149 +27,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Andy King <acking@vmware.com>
 
-commit 79d59d08082dd0a0a18f8ceb78c99f9f321d72aa upstream.
+[ Upstream commit 2c4a336e0a3e203fab6aa8d8f7bb70a0ad968a6b ]
 
-In non-leading connection login, iscsi_login_non_zero_tsih_s1() calls
-iscsi_change_param_value() with the buffer it uses to hold the login
-PDU, not a temporary buffer.  This leads to the login header getting
-corrupted and login failing for non-leading connections in MC/S.
+Right now the core vsock module is the owner of the proto family. This
+means there's nothing preventing the transport module from unloading if
+there are open sockets, which results in a panic. Fix that by allowing
+the transport to be the owner, which will refcount it properly.
 
-Fix this by adding a wrapper iscsi_change_param_sprintf() that handles
-the temporary buffer itself to avoid confusion.  Also handle sending a
-reject in case of failure in the wrapper, which lets the calling code
-get quite a bit smaller and easier to read.
+Includes version bump to 1.0.1.0-k
 
-Finally, bump the size of the temporary buffer from 32 to 64 bytes to be
-safe, since "MaxRecvDataSegmentLength=" by itself is 25 bytes; with a
-trailing NUL, a value >= 1M will lead to a buffer overrun.  (This isn't
-the default but we don't need to run right at the ragged edge here)
+Passes checkpatch this time, I swear...
 
-Reported-by: Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[ kamal: backport to 3.13-stable: omit inapplicable bit from
-  iscsi_login_zero_tsih_s2 ]
+Acked-by: Dmitry Torokhov <dtor@vmware.com>
+Signed-off-by: Andy King <acking@vmware.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/target/iscsi/iscsi_target_login.c | 57 +++++++++++++++----------------
- 1 file changed, 28 insertions(+), 29 deletions(-)
+ include/net/af_vsock.h   |  6 +++++-
+ net/vmw_vsock/af_vsock.c | 47 ++++++++++++++++++++++-------------------------
+ 2 files changed, 27 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/target/iscsi/iscsi_target_login.c b/drivers/target/iscsi/iscsi_target_login.c
-index e29279e..369ef10 100644
---- a/drivers/target/iscsi/iscsi_target_login.c
-+++ b/drivers/target/iscsi/iscsi_target_login.c
-@@ -249,6 +249,28 @@ static void iscsi_login_set_conn_values(
- 	mutex_unlock(&auth_id_lock);
- }
+diff --git a/include/net/af_vsock.h b/include/net/af_vsock.h
+index 7d64d36..4282778 100644
+--- a/include/net/af_vsock.h
++++ b/include/net/af_vsock.h
+@@ -155,7 +155,11 @@ struct vsock_transport {
  
-+static __printf(2, 3) int iscsi_change_param_sprintf(
-+	struct iscsi_conn *conn,
-+	const char *fmt, ...)
+ /**** CORE ****/
+ 
+-int vsock_core_init(const struct vsock_transport *t);
++int __vsock_core_init(const struct vsock_transport *t, struct module *owner);
++static inline int vsock_core_init(const struct vsock_transport *t)
 +{
-+	va_list args;
-+	unsigned char buf[64];
++	return __vsock_core_init(t, THIS_MODULE);
++}
+ void vsock_core_exit(void);
+ 
+ /**** UTILS ****/
+diff --git a/net/vmw_vsock/af_vsock.c b/net/vmw_vsock/af_vsock.c
+index 5adfd94..85d232b 100644
+--- a/net/vmw_vsock/af_vsock.c
++++ b/net/vmw_vsock/af_vsock.c
+@@ -1925,9 +1925,23 @@ static struct miscdevice vsock_device = {
+ 	.fops		= &vsock_device_ops,
+ };
+ 
+-static int __vsock_core_init(void)
++int __vsock_core_init(const struct vsock_transport *t, struct module *owner)
+ {
+-	int err;
++	int err = mutex_lock_interruptible(&vsock_register_mutex);
 +
-+	memset(buf, 0, sizeof buf);
++	if (err)
++		return err;
 +
-+	va_start(args, fmt);
-+	vsnprintf(buf, sizeof buf, fmt, args);
-+	va_end(args);
-+
-+	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
-+		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
-+				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-+		return -1;
++	if (transport) {
++		err = -EBUSY;
++		goto err_busy;
 +	}
 +
-+	return 0;
-+}
-+
- /*
-  *	This is the leading connection of a new session,
-  *	or session reinstatement.
-@@ -337,7 +359,6 @@ static int iscsi_login_zero_tsih_s2(
- {
- 	struct iscsi_node_attrib *na;
- 	struct iscsi_session *sess = conn->sess;
--	unsigned char buf[32];
- 	bool iser = false;
++	/* Transport must be the owner of the protocol so that it can't
++	 * unload while there are open sockets.
++	 */
++	vsock_proto.owner = owner;
++	transport = t;
  
- 	sess->tpg = conn->tpg;
-@@ -378,26 +399,16 @@ static int iscsi_login_zero_tsih_s2(
- 	 *
- 	 * In our case, we have already located the struct iscsi_tiqn at this point.
- 	 */
--	memset(buf, 0, 32);
--	sprintf(buf, "TargetPortalGroupTag=%hu", sess->tpg->tpgt);
--	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
--		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
--				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-+	if (iscsi_change_param_sprintf(conn, "TargetPortalGroupTag=%hu", sess->tpg->tpgt))
- 		return -1;
--	}
+ 	vsock_init_tables();
  
- 	/*
- 	 * Workaround for Initiators that have broken connection recovery logic.
- 	 *
- 	 * "We would really like to get rid of this." Linux-iSCSI.org team
- 	 */
--	memset(buf, 0, 32);
--	sprintf(buf, "ErrorRecoveryLevel=%d", na->default_erl);
--	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
--		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
--				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-+	if (iscsi_change_param_sprintf(conn, "ErrorRecoveryLevel=%d", na->default_erl))
- 		return -1;
--	}
- 
- 	if (iscsi_login_disable_FIM_keys(conn->param_list, conn) < 0)
- 		return -1;
-@@ -409,12 +420,9 @@ static int iscsi_login_zero_tsih_s2(
- 		unsigned long mrdsl, off;
- 		int rc;
- 
--		sprintf(buf, "RDMAExtensions=Yes");
--		if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
--			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
--				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-+		if (iscsi_change_param_sprintf(conn, "RDMAExtensions=Yes"))
- 			return -1;
--		}
-+
- 		/*
- 		 * Make MaxRecvDataSegmentLength PAGE_SIZE aligned for
- 		 * Immediate Data + Unsolicitied Data-OUT if necessary..
-@@ -444,12 +452,8 @@ static int iscsi_login_zero_tsih_s2(
- 		pr_warn("Aligning ISER MaxRecvDataSegmentLength: %lu down"
- 			" to PAGE_SIZE\n", mrdsl);
- 
--		sprintf(buf, "MaxRecvDataSegmentLength=%lu\n", mrdsl);
--		if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
--			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
--				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-+		if (iscsi_change_param_sprintf(conn, "MaxRecvDataSegmentLength=%lu\n", mrdsl))
- 			return -1;
--		}
+@@ -1951,36 +1965,19 @@ static int __vsock_core_init(void)
+ 		goto err_unregister_proto;
  	}
  
++	mutex_unlock(&vsock_register_mutex);
  	return 0;
-@@ -591,13 +595,8 @@ static int iscsi_login_non_zero_tsih_s2(
- 	 *
- 	 * In our case, we have already located the struct iscsi_tiqn at this point.
- 	 */
--	memset(buf, 0, 32);
--	sprintf(buf, "TargetPortalGroupTag=%hu", sess->tpg->tpgt);
--	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
--		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
--				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-+	if (iscsi_change_param_sprintf(conn, "TargetPortalGroupTag=%hu", sess->tpg->tpgt))
- 		return -1;
--	}
  
- 	return iscsi_login_disable_FIM_keys(conn->param_list, conn);
+ err_unregister_proto:
+ 	proto_unregister(&vsock_proto);
+ err_misc_deregister:
+ 	misc_deregister(&vsock_device);
+-	return err;
+-}
+-
+-int vsock_core_init(const struct vsock_transport *t)
+-{
+-	int retval = mutex_lock_interruptible(&vsock_register_mutex);
+-	if (retval)
+-		return retval;
+-
+-	if (transport) {
+-		retval = -EBUSY;
+-		goto out;
+-	}
+-
+-	transport = t;
+-	retval = __vsock_core_init();
+-	if (retval)
+-		transport = NULL;
+-
+-out:
++	transport = NULL;
++err_busy:
+ 	mutex_unlock(&vsock_register_mutex);
+-	return retval;
++	return err;
  }
+-EXPORT_SYMBOL_GPL(vsock_core_init);
++EXPORT_SYMBOL_GPL(__vsock_core_init);
+ 
+ void vsock_core_exit(void)
+ {
+@@ -2000,5 +1997,5 @@ EXPORT_SYMBOL_GPL(vsock_core_exit);
+ 
+ MODULE_AUTHOR("VMware, Inc.");
+ MODULE_DESCRIPTION("VMware Virtual Socket Family");
+-MODULE_VERSION("1.0.0.0-k");
++MODULE_VERSION("1.0.1.0-k");
+ MODULE_LICENSE("GPL v2");
 -- 
 1.9.1
 
