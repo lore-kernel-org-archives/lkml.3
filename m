@@ -1,48 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756679AbaFQXWJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 19:22:09 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:63484 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756376AbaFQXWH (ORCPT
+	id S1756341AbaFQWxV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:53:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53657 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965491AbaFQVp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 19:22:07 -0400
-Date: Tue, 17 Jun 2014 19:22:02 -0400
-From: Tejun Heo <tj@kernel.org>
-To: cl@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET percpu/for-3.17] percpu: clean up percpu accessor and
- operation definitions
-Message-ID: <20140617232202.GD8838@mtj.dyndns.org>
-References: <1402590209-31610-1-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402590209-31610-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 17 Jun 2014 17:45:28 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Daniel Borkmann <dborkman@redhat.com>, Vlad Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 004/212] net: sctp: test if association is dead in sctp_wake_up_waiters
+Date: Tue, 17 Jun 2014 14:41:38 -0700
+Message-Id: <1403041506-13646-5-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
 
-On Thu, Jun 12, 2014 at 12:23:17PM -0400, Tejun Heo wrote:
-> Percpu accessor and operation definitions are very difficult to
-> follow.  Things are scattered around different header files without
-> specific reasons.  Definitions of different types are mixed and the
-> ordering sometimes is conventional.  Different definitions use
-> different styles and sometimes lack visual consistency for no good
-> reason.
-...
-> This patchset is on top of
-> 
->   linus master c31c24b8251f ("Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux")
-> + [1] [PATCH RFC] percpu: add data dependency barrier in percpu accessors and operations
+------------------
 
-Omitted the data dependency barrier and applied the series to
-percpu/for-3.17.
+From: Daniel Borkmann <dborkman@redhat.com>
 
-Thanks.
+[ Upstream commit 1e1cdf8ac78793e0875465e98a648df64694a8d0 ]
 
+In function sctp_wake_up_waiters(), we need to involve a test
+if the association is declared dead. If so, we don't have any
+reference to a possible sibling association anymore and need
+to invoke sctp_write_space() instead, and normally walk the
+socket's associations and notify them of new wmem space. The
+reason for special casing is that otherwise, we could run
+into the following issue when a sctp_primitive_SEND() call
+from sctp_sendmsg() fails, and tries to flush an association's
+outq, i.e. in the following way:
+
+sctp_association_free()
+`-> list_del(&asoc->asocs)         <-- poisons list pointer
+    asoc->base.dead = true
+    sctp_outq_free(&asoc->outqueue)
+    `-> __sctp_outq_teardown()
+     `-> sctp_chunk_free()
+      `-> consume_skb()
+       `-> sctp_wfree()
+        `-> sctp_wake_up_waiters() <-- dereferences poisoned pointers
+                                       if asoc->ep->sndbuf_policy=0
+
+Therefore, only walk the list in an 'optimized' way if we find
+that the current association is still active. We could also use
+list_del_init() in addition when we call sctp_association_free(),
+but as Vlad suggests, we want to trap such bugs and thus leave
+it poisoned as is.
+
+Why is it safe to resolve the issue by testing for asoc->base.dead?
+Parallel calls to sctp_sendmsg() are protected under socket lock,
+that is lock_sock()/release_sock(). Only within that path under
+lock held, we're setting skb/chunk owner via sctp_set_owner_w().
+Eventually, chunks are freed directly by an association still
+under that lock. So when traversing association list on destruction
+time from sctp_wake_up_waiters() via sctp_wfree(), a different
+CPU can't be running sctp_wfree() while another one calls
+sctp_association_free() as both happens under the same lock.
+Therefore, this can also not race with setting/testing against
+asoc->base.dead as we are guaranteed for this to happen in order,
+under lock. Further, Vlad says: the times we check asoc->base.dead
+is when we've cached an association pointer for later processing.
+In between cache and processing, the association may have been
+freed and is simply still around due to reference counts. We check
+asoc->base.dead under a lock, so it should always be safe to check
+and not race against sctp_association_free(). Stress-testing seems
+fine now, too.
+
+Fixes: cd253f9f357d ("net: sctp: wake up all assocs if sndbuf policy is per socket")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Vlad Yasevich <vyasevic@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevic@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ net/sctp/socket.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index d9ed737..3e6bd41 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -6591,6 +6591,12 @@ static void sctp_wake_up_waiters(struct sock *sk,
+ 	if (asoc->ep->sndbuf_policy)
+ 		return __sctp_write_space(asoc);
+ 
++	/* If association goes down and is just flushing its
++	 * outq, then just normally notify others.
++	 */
++	if (asoc->base.dead)
++		return sctp_write_space(sk);
++
+ 	/* Accounting for the sndbuf space is per socket, so we
+ 	 * need to wake up others, try to be fair and in case of
+ 	 * other associations, let them have a go first instead
 -- 
-tejun
+1.9.1
+
