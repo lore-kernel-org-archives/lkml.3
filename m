@@ -1,100 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250AbaFQDrq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 23:47:46 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:36053 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754848AbaFQDro (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 23:47:44 -0400
-X-AuditID: cbfee68f-b7fef6d000003970-e3-539fba5e44d8
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-To: "'Tomasz Figa'" <t.figa@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, chow.kim@samsung.com,
-        yg1004.jang@samsung.com, vikas.sajjan@samsung.com
-References: <1399704998-13321-1-git-send-email-pankaj.dubey@samsung.com>
- <1399704998-13321-3-git-send-email-pankaj.dubey@samsung.com>
- <5396EFFB.3040704@samsung.com>
-In-reply-to: <5396EFFB.3040704@samsung.com>
-Subject: RE: [PATCH v4 02/11] ARM: EXYNOS: Move cpufreq and cpuidle device
- registration to init_machine
-Date: Tue, 17 Jun 2014 09:18:25 +0530
-Message-id: <000101cf89de$ffbb1730$ff314590$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQFbr3MzJH2VQYc81U++V3sC+P5mXwIaMGxdAch7DtOcPUklIA==
-Content-language: en-us
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIIsWRmVeSWpSXmKPExsWyRsSkWjdu1/xgg+7XGhbLJt1ls+hdcJXN
-	YtPja6wWl3fNYbOYcX4fk8Xty7wW62e8ZrG4+Ww7kwOHR0tzD5vH5iX1Hn1bVjF6fN4kF8AS
-	xWWTkpqTWZZapG+XwJXxb+ZL1oJWjoqvB98wNzBuZeti5OSQEDCRePHoOpQtJnHh3nowW0hg
-	KaPEr0lSMDVP5q4DinMBxRcxSvxeMpMJwvnLKHF85R9WkCo2AV2JJ+/nMoMkRAT6GSVebv0B
-	lmAWqJFY0LmZBaJjBaPEzN69jCAJTgFtiU+nrrOA2MICmRLzLu4CauDgYBFQldj9Ix4kzCtg
-	KfHtzStGCFtQ4sfkeywQM7Uk1u88zgRhy0tsXvOWGeJUBYkdZ1+D1YsIOElMOrmUGaJGXGLS
-	g4fsIDdICLxkl/jzfT/YnywCAhLfJh9iAdkrISArsekA1BxJiYMrbrBMYJSYhWT1LCSrZyFZ
-	PQvJigWMLKsYRVMLkguKk9KLjPWKE3OLS/PS9ZLzczcxAqP39L9n/TsY7x6wPsSYDLR+IrOU
-	aHI+MPrzSuINjc2MLExNTI2NzC3NSBNWEue9/zApSEggPbEkNTs1tSC1KL6oNCe1+BAjEwen
-	VAMj85Ka88qqW5gFFis5L9qxStH0S2ZjxTHTg90RcW1qAsEr1F8UXZLtl9P/57gorDPqVXzZ
-	M/8GRl3DQ8IpR7wvqb+/e9jxp/6uGwZlX25Nmj7dXcr72uLlOs8N3y8sb5d5LB88g79izyyN
-	4n1r3k389W/j7rJq1l2PjZ5MvCr5TW8d48HNx7Y+UmIpzkg01GIuKk4EAH6lLZz0AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPKsWRmVeSWpSXmKPExsVy+t9jAd24XfODDS5PV7BYNukum0Xvgqts
-	FpseX2O1uLxrDpvFjPP7mCxuX+a1WD/jNYvFzWfbmRw4PFqae9g8Ni+p9+jbsorR4/MmuQCW
-	qAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygK5QU
-	yhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGf9mvmQtaOWo+HrwDXMD41a2
-	LkZODgkBE4knc9dB2WISF+6tB7K5OIQEFjFK/F4ykwnC+csocXzlH1aQKjYBXYkn7+cygyRE
-	BPoZJV5u/QGWYBaokVjQuZkFomMFo8TM3r2MIAlOAW2JT6eus4DYwgKZEvMu7gJq4OBgEVCV
-	2P0jHiTMK2Ap8e3NK0YIW1Dix+R7LBAztSTW7zzOBGHLS2xe85YZ4lQFiR1nX4PViwg4SUw6
-	uZQZokZcYtKDh+wTGIVmIRk1C8moWUhGzULSsoCRZRWjaGpBckFxUnqukV5xYm5xaV66XnJ+
-	7iZGcHJ4Jr2DcVWDxSFGAQ5GJR7eB7Lzg4VYE8uKK3MPMUpwMCuJ8HKZA4V4UxIrq1KL8uOL
-	SnNSiw8xJgM9OpFZSjQ5H5i48kriDY1NzE2NTS1NLEzMLEkTVhLnPdhqHSgkkJ5YkpqdmlqQ
-	WgSzhYmDU6qBUfRnyXmpnM5ZEov/9NkfOpH+UaNH/tAH9jyXsEfezZsavnFFy1vPaTn8ZtWE
-	td4rQ55X9tRdOWrbPM1SLUadf9m2O1ram6TTzbnDrHLWleZzmIq3HPLadudhVWfHzItX7K13
-	VMs/Xq+jsTXFIsgm4sTVqkMebT5HTTtb1gmxrYyRmvN/CccOJZbijERDLeai4kQAdngByVID	AAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1755291AbaFQDs1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 23:48:27 -0400
+Received: from ozlabs.org ([103.22.144.67]:60115 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754848AbaFQDsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 23:48:25 -0400
+Date: Tue, 17 Jun 2014 13:48:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <linux-next@vger.kernel.org>
+Subject: linux-next: stats (Re: Linux 3.16-rc1 - merge window closed)
+Message-ID: <20140617134818.16e116eb@canb.auug.org.au>
+In-Reply-To: <CA+55aFzNDTm_O8rGYdNw1S99P06u6EeSdttXBvtURJocQT2O0g@mail.gmail.com>
+References: <CA+55aFzNDTm_O8rGYdNw1S99P06u6EeSdttXBvtURJocQT2O0g@mail.gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/Fx6N2uABQYJOafJO5_DbR38"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
+--Sig_/Fx6N2uABQYJOafJO5_DbR38
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> 
-> Hi Pankaj,
-> 
-> On 10.05.2014 08:56, Pankaj Dubey wrote:
-> > As exynos_cpuidle_init and exynos_cpufreq_init function have just one
-> > lines of code for registering platform devices. We can move these
-> > lines to exynos_dt_machine_init and delete exynos_cpuidle_init and
-> > exynos_cpufreq_init function. This will help in reducing lines of code
-> > in exynos.c, making it more cleaner.
-> >
-> > Suggested-by: Tomasz Figa <t.figa@samsung.com>
-> > Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> > ---
-> >  arch/arm/mach-exynos/exynos.c |   19 ++++---------------
-> >  1 file changed, 4 insertions(+), 15 deletions(-)
-> >
-> 
-> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-> 
+As usual, the executive friendly graph is at
+http://neuling.org/linux-next-size.html :-)
 
-Thanks for review.
+(No merge commits counted, next-20140602 was the first linux-next after
+the merge window opened.)
 
-> Btw. This and other simple clean-up patches from this series could be
-applied
-> separately, without re-spinning them every time with this series.
-> 
+Commits in v3.16-rc1 (relative to v3.15): 11364		(v3.15-rc1:	12034)
+Commits in next-20140602:		  10283		(next-20140331:	11411)
+Commits with the same SHA1:		   9204		(		10432)
+Commits with the same patch_id:		    559	(1)	(		  581)
+Commits with the same subject line:	     60	(1)	(		   74)
 
-OK, I will separate cleanup patches.
+(1) not counting those in the lines above.
 
-> Best regards,
-> Tomasz
+So commits in -rc1 that were in next-20140602:	 9823	86.4%	(11087	92.1%)
+That is a big drop - presumably caused by the suprise opening of the
+merge window a week early.
 
-Thanks,
-Pankaj Dubey
+Some breakdown of the list of extra commits (relative to next-20140602)
+in -rc1:
 
+Top eleven first word of commit summary:
 
+    243 drm
+     91 btrfs
+     87 net
+     59 mmc
+     57 i40e
+     46 perf
+     45 powerpc
+     34 mips
+     32 reiserfs
+     24 xfs
+     24 alsa
+
+Top eleven authors:
+
+     48 bskeggs@redhat.com
+     41 rmk+kernel@arm.linux.org.uk
+     32 jeffm@suse.com
+     28 namhyung@kernel.org
+     26 fabf@skynet.be
+     25 fdmanana@gmail.com
+     23 james.hogan@imgtec.com
+     21 treding@nvidia.com
+     21 geert+renesas@glider.be
+     21 dchinner@redhat.com
+     21 chuck.lever@oracle.com
+
+Top ten commiters:
+
+    218 davem@davemloft.net
+     93 clm@fb.com
+     76 jeffrey.t.kirsher@intel.com
+     72 torvalds@linux-foundation.org
+     68 bskeggs@redhat.com
+     62 daeinki@gmail.com
+     52 chris@printf.net
+     50 benh@kernel.crashing.org
+     44 alexander.deucher@amd.com
+     39 hch@lst.de
+
+There are also 460 commits in next-20140602 that didn't make it into
+v3.16-rc1.
+
+Top ten first word of commit summary:
+
+     43 arm
+     39 sparc32
+     22 drm
+     21 sparc64
+     21 mm
+     18 arch
+     15 vfs
+     12 drivers
+     12 arm-soc
+     10 sparc
+
+Top nine authors:
+
+     67 sam@ravnborg.org
+     49 akpm@linux-foundation.org
+     23 shawn.guo@freescale.com
+     18 n-horiguchi@ah.jp.nec.com
+     17 gang.chen.5i5j@gmail.com
+     13 ebiederm@xmission.com
+     12 olof@lixom.net
+      9 mhocko@suse.cz
+      9 eparis@redhat.com
+
+Some of Andrew's patches are fixes for other patches in his tree (and
+have been merged into those).
+
+Top ten commiters:
+
+    166 sfr@canb.auug.org.au
+     70 davem@davemloft.net
+     34 shawn.guo@freescale.com
+     28 matthew.garrett@nebula.com
+     21 daniel.vetter@ffwll.ch
+     19 gxt@mprc.pku.edu.cn
+     16 ebiederm@xmission.com
+     14 eparis@redhat.com
+     12 olof@lixom.net
+     10 jason.wessel@windriver.com
+
+Those commits by me are from the quilt series (mainly Andrew's mmotm
+tree).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/Fx6N2uABQYJOafJO5_DbR38
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTn7qHAAoJEMDTa8Ir7ZwV/rsP/2bZa/oH/iOeX984oTK3RyIs
+aXZowkI010cn7aIwDeHCC431eG7SmFBJFJG3XEzHC9mf06QKhb8y1xGz5g2gsfHe
+KO0HhjBqrfW/x8ozb0cFZa6gMzSlAws0AGv5a5nHLwMyakLZ5Vue6Fu6VsCr2E2I
+fCnBD5YvOSl0OTy7RW4uEgbQ2Vmfp5NwDgLDcGxy5b78EgPC9hK7s25U0asKEmqR
+L/7ABdE9bsMYzp66ARuxDd4mVI368ScNZmz88TC6fl5ruPARGFwrFAijOfO4XnyM
+c26bKeMGJ20BALPxY1FWwTviS/Px5vS0awZswfswZWf3T7BS0FeJMtLRnyPFgLXP
+Rt1PRuKmfbPAXe0vh4YK/N9gbLSxIIp8Jvw46MqCzaDkBQ8XJ2ZxJ9eakQUmhqk8
+V+BHRgxvlq6PdR9Py/dcArDcNBYpca3bKgpPASqi8nX6zYrembl76ZvoRjICA5KH
+rwUzV0tSxLO02+sJKuS7gcpE4CbNAdzkPH8TvT8JtbmlMa9peWljDrz1pkKUc9Yv
+XOxKPhBO0VHOWOoZs/6/ieQ3Dtc/BoFoQdQ+uuXy+2qdpjpcK3y7BWKITB00Tsay
+4/+6O10Zh2a75BSNxAE2ITEn6vg1nezd3LWzNL06q/9CUBvKKcTqdKkH6Je3BOUQ
+OPfpT4sCmeMGHJPoEPii
+=HfXs
+-----END PGP SIGNATURE-----
+
+--Sig_/Fx6N2uABQYJOafJO5_DbR38--
