@@ -1,116 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964993AbaFQRad (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 13:30:33 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:38021 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964772AbaFQRaa (ORCPT
+	id S965020AbaFQRa4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 13:30:56 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:25848 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964772AbaFQRax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 13:30:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <539F570C.2000507@wwwdotorg.org>
-References: <1402689965-19397-1-git-send-email-jwerner@chromium.org>
- <CAL_JsqL-K4i54ysugCKSw-aO-9pvnYgZfJ=NdBAot=mwffxmyA@mail.gmail.com>
- <CAODwPW9tRM8kxBVg3apkec2K1rahuENk_b_BD_0jvXON7JzeaA@mail.gmail.com>
- <CAL_Jsq+rGLFcOcs8Rmr8NntbPhGBG+F7yAF0YQ-Rm-UsmmTLSA@mail.gmail.com> <539F570C.2000507@wwwdotorg.org>
-From: Rob Herring <robherring2@gmail.com>
-Date: Tue, 17 Jun 2014 12:30:09 -0500
-Message-ID: <CAL_JsqJ1eMb9CprhuzzhKyN0PYVjxviWjoefR_9ypxhFT0FgBg@mail.gmail.com>
-Subject: Re: [PATCH] firmware: Add device tree binding for coreboot
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Julius Werner <jwerner@chromium.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <stephen.r.warren@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olofj@chromium.org>,
-        Stefan Reinauer <stefan.reinauer@coreboot.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 17 Jun 2014 13:30:53 -0400
+X-AuditID: cbfee61a-b7fef6d00000200b-28-53a07b4b317d
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
+Subject: [PATCH v2 7/9] thermal: exynos: cache non_hw_trigger_levels in pdata
+Date: Tue, 17 Jun 2014 19:27:23 +0200
+Message-id: <1403026045-16024-8-git-send-email-b.zolnierkie@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+In-reply-to: <1403026045-16024-1-git-send-email-b.zolnierkie@samsung.com>
+References: <1403026045-16024-1-git-send-email-b.zolnierkie@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrILMWRmVeSWpSXmKPExsVy+t9jQV3v6gXBBu09fBYNV0MsNs5Yz2qx
+	Zv9PJouzTW/YLS7vmsNm8bn3CKPFjPP7mCzOnL7EavHkYR+bxfoZr1kcuDwW73nJ5LHlajuL
+	R9+WVYwex29sZ/L4vEkugDWKyyYlNSezLLVI3y6BK6OpaTNTwTGNij+NJQ2MBxS7GDk5JARM
+	JA537WOBsMUkLtxbz9bFyMUhJDCdUeLkukssEE4Xk8SSbUuYQarYBKwkJravYgSxRQT0JG68
+	eMIEUsQscJxJ4ufv80DtHBzCAr4Si/sMQWpYBFQlljW/AOvlFfCQ+L16CjPENkWJ7mcT2EBs
+	TgFPiRv3WsBsIaCa+Rc7mSYw8i5gZFjFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERxwz6R2
+	MK5ssDjEKMDBqMTDy5G7IFiINbGsuDL3EKMEB7OSCO+5LKAQb0piZVVqUX58UWlOavEhRmkO
+	FiVx3gOt1oFCAumJJanZqakFqUUwWSYOTqkGxqArVyfMY3mpNYnT47hshcnxkwmHjDIEkleI
+	/M/ov23zyMjqYozq5lVbWL4905AulHn320DI+ObqlPVb4pe9a3nCnnA0PdyHhSVsf+fhI09N
+	brncEVwo0ckt/nvF5Mrtwm7fr6046yvKVS3u8prr2N7ZWXksUbM0XL2945aLRh7c1f1cd/nK
+	2UosxRmJhlrMRcWJAPArgGE0AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 3:43 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 06/16/2014 07:30 AM, Rob Herring wrote:
->> On Fri, Jun 13, 2014 at 4:58 PM, Julius Werner <jwerner@chromium.org> wrote:
-> ...
->>> Rob Herring wrote:
->>>> Don't you need need to keep the kernel from allocating this memory by
->>>> using one of the reserved memory mechanisms? The recently added one
->>>> should be able to specific what the memory is reserved for IIRC.
->>>
->>> Our bootloader is carving the location out of the /memory node and
->>> adding it to the device tree reserve map. As far as I know, that only
->>> contains a list of raw start and size entries. At any rate, I think
->>> it's useful (and in line with other bindings) to add a more explicit
->>> node like this (if only to make it easier accessible through
->>> /proc/device-tree).
->>
->> Understand there are 3 different memory reservation bindings. The
->> original "/memreserve/" method is indeed limited. What I think you
->> should use is the binding documented in
->> Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt.
->> So you could do something like this:
->>
->>         reserved-memory {
->>                 #address-cells = <1>;
->>                 #size-cells = <1>;
->>                 ranges;
->>
->>                 /* global autoconfigured region for contiguous allocations */
->>                 linux,cma {
->>                         compatible = "shared-dma-pool";
->>                         reusable;
->>                         size = <0x4000000>;
->>                         alignment = <0x2000>;
->>                         linux,cma-default;
->>                 };
->>
->>                 coreboot_reserved: coreboot@fdfea000 {
->>                       compatible = "coreboot";
->>                       reg = <0xfdfea000 0x264>,
->>                           <0xfdfea000 0x16000>;
->>                 };
->>
->
-> I thought that the /reserved-memory node was more so that the
-> (preferred?) location of firmware images or data buffers used by HW
-> accelerators could be communicated to the kernel. This feels like pure data.
+Cache number of non-hardware trigger levels in a new pdata field
+(non_hw_trigger_levels) and convert code in exynos_tmu_initialize()
+accordingly.
 
-That was the initial use, but I think this case fits well. PPC may
-have some other uses already. I haven't looked.
+There should be no functional changes caused by this patch.
 
-> The coreboot binding seems to be more about defining an interface to a
-> particular firmware (this feels like semantics), which as a side-effect
-> needs to communicate the location of certain data.
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Reviewed-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+---
+ drivers/thermal/samsung/exynos_tmu.c      | 16 +++-------------
+ drivers/thermal/samsung/exynos_tmu.h      |  2 ++
+ drivers/thermal/samsung/exynos_tmu_data.c |  5 +++++
+ 3 files changed, 10 insertions(+), 13 deletions(-)
 
-The DT is only defining it's presence and location. Knowledge of what
-the data is is (optionally) in the kernel.
+diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+index 34ac081..9455b23 100644
+--- a/drivers/thermal/samsung/exynos_tmu.c
++++ b/drivers/thermal/samsung/exynos_tmu.c
+@@ -91,7 +91,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 	const struct exynos_tmu_registers *reg = pdata->registers;
+ 	unsigned int status, trim_info = 0, con;
+ 	unsigned int rising_threshold = 0, falling_threshold = 0;
+-	int ret = 0, threshold_code, i, trigger_levs = 0;
++	int ret = 0, threshold_code, i;
+ 
+ 	mutex_lock(&data->lock);
+ 	clk_enable(data->clk);
+@@ -142,15 +142,6 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 	    data->temp_error > pdata->max_efuse_value)
+ 		data->temp_error = pdata->efuse_value & EXYNOS_TMU_TEMP_MASK;
+ 
+-	for (i = 0; i < pdata->max_trigger_level; i++) {
+-		if (!pdata->trigger_levels[i])
+-			continue;
+-
+-		/* Count trigger levels except the HW trip*/
+-		if (!(pdata->trigger_type[i] == HW_TRIP))
+-			trigger_levs++;
+-	}
+-
+ 	rising_threshold = readl(data->base + reg->threshold_th0);
+ 
+ 	if (data->soc == SOC_ARCH_EXYNOS4210) {
+@@ -158,15 +149,14 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 		threshold_code = temp_to_code(data, pdata->threshold);
+ 		writeb(threshold_code,
+ 			data->base + reg->threshold_temp);
+-		for (i = 0; i < trigger_levs; i++)
++		for (i = 0; i < pdata->non_hw_trigger_levels; i++)
+ 			writeb(pdata->trigger_levels[i], data->base +
+ 			reg->threshold_th0 + i * sizeof(reg->threshold_th0));
+ 
+ 		writel(reg->intclr_rise_mask, data->base + reg->tmu_intclear);
+ 	} else {
+ 		/* Write temperature code for rising and falling threshold */
+-		for (i = 0;
+-		i < trigger_levs && i < EXYNOS_MAX_TRIGGER_PER_REG; i++) {
++		for (i = 0; i < pdata->non_hw_trigger_levels; i++) {
+ 			threshold_code = temp_to_code(data,
+ 						pdata->trigger_levels[i]);
+ 			rising_threshold &= ~(0xff << 8 * i);
+diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
+index 60ecc61..b1c9f8d 100644
+--- a/drivers/thermal/samsung/exynos_tmu.h
++++ b/drivers/thermal/samsung/exynos_tmu.h
+@@ -186,6 +186,7 @@ struct exynos_tmu_registers {
+  *	1 = enable trigger_level[] interrupt,
+  *	0 = disable trigger_level[] interrupt
+  * @max_trigger_level: max trigger level supported by the TMU
++ * @non_hw_trigger_levels: number of defined non-hardware trigger levels
+  * @gain: gain of amplifier in the positive-TC generator block
+  *	0 <= gain <= 15
+  * @reference_voltage: reference voltage of amplifier
+@@ -216,6 +217,7 @@ struct exynos_tmu_platform_data {
+ 	enum trigger_type trigger_type[MAX_TRIP_COUNT];
+ 	bool trigger_enable[MAX_TRIP_COUNT];
+ 	u8 max_trigger_level;
++	u8 non_hw_trigger_levels;
+ 	u8 gain;
+ 	u8 reference_voltage;
+ 	u8 noise_cancel_mode;
+diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
+index 7a9cee5..4bc6b06 100644
+--- a/drivers/thermal/samsung/exynos_tmu_data.c
++++ b/drivers/thermal/samsung/exynos_tmu_data.c
+@@ -62,6 +62,7 @@ struct exynos_tmu_init_data const exynos4210_default_tmu_data = {
+ 		.trigger_type[1] = THROTTLE_ACTIVE,
+ 		.trigger_type[2] = SW_TRIP,
+ 		.max_trigger_level = 4,
++		.non_hw_trigger_levels = 3,
+ 		.gain = 15,
+ 		.reference_voltage = 7,
+ 		.min_efuse_value = 40,
+@@ -135,6 +136,7 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
+ 	.trigger_type[2] = SW_TRIP, \
+ 	.trigger_type[3] = HW_TRIP, \
+ 	.max_trigger_level = 4, \
++	.non_hw_trigger_levels = 3, \
+ 	.gain = 8, \
+ 	.reference_voltage = 16, \
+ 	.noise_cancel_mode = 4, \
+@@ -231,6 +233,7 @@ static const struct exynos_tmu_registers exynos5260_tmu_registers = {
+ 	.trigger_type[2] = SW_TRIP, \
+ 	.trigger_type[3] = HW_TRIP, \
+ 	.max_trigger_level = 4, \
++	.non_hw_trigger_levels = 3, \
+ 	.gain = 8, \
+ 	.reference_voltage = 16, \
+ 	.noise_cancel_mode = 4, \
+@@ -317,6 +320,7 @@ static const struct exynos_tmu_registers exynos5420_tmu_registers = {
+ 	.trigger_type[2] = SW_TRIP, \
+ 	.trigger_type[3] = HW_TRIP, \
+ 	.max_trigger_level = 4, \
++	.non_hw_trigger_levels = 3, \
+ 	.gain = 8, \
+ 	.reference_voltage = 16, \
+ 	.noise_cancel_mode = 4, \
+@@ -404,6 +408,7 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
+ 	.trigger_type[0] = SW_TRIP, \
+ 	.trigger_type[4] = HW_TRIP, \
+ 	.max_trigger_level = 5, \
++	.non_hw_trigger_levels = 1, \
+ 	.gain = 5, \
+ 	.reference_voltage = 16, \
+ 	.noise_cancel_mode = 4, \
+-- 
+1.8.2.3
 
-> If /reserved-memory is used to communicate the address of the memory
-> regions, I think we still need a /firmware/coreboot node to indicate the
-> semantics of the reserved memory region, and point at the phandle of the
-> region. As such, it seems simpler just to put the addresses in the
-> coreboot node's reg property. The only exception I see to that argument
-> is if putting the region in /reserved-memory automatically carves that
-> region out of the memory the kernel will allocate from. That would
-> simplify the bootloader, since it wouldn't have to fiddle with the
-> /memory node and do the carveout itself.
-
-The semantics are defined by a compatible property which the
-/reserved-memory binding has. Knowledge of what is in that range is in
-the kernel, not the DT. And yes, either /memreserve/ or
-/reserved-memory is needed to prevent kernel allocations.
-
-I'm not tied to /reserved-memory, but I just want a consistent way to
-describe random blocks of static data in memory. DMI tables are
-another similar example. We've already got some scattered usage of
-/firmware. There's also /psci for PSCI. UEFI is using /chosen for its
-tables (probably for good reason since the tables are needed early and
-need to be simple to parse).
-
-Rob
