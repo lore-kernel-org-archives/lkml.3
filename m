@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755721AbaFQKd0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 06:33:26 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:37113 "EHLO
+	id S1755868AbaFQKfd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 06:35:33 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:37134 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754281AbaFQKdZ (ORCPT
+	with ESMTP id S1753236AbaFQKfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 06:33:25 -0400
-Date: Tue, 17 Jun 2014 03:33:23 -0700
+	Tue, 17 Jun 2014 06:35:31 -0400
+Date: Tue, 17 Jun 2014 03:35:31 -0700
 From: Christoph Hellwig <hch@infradead.org>
-To: Joe Lawrence <joe.lawrence@stratus.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Ming Lei <tom.leiming@gmail.com>,
         Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 2/2] block,scsi: convert and handle ERR_PTR from
- blk_get_request
-Message-ID: <20140617103323.GA13101@infradead.org>
-References: <1401396529-17275-1-git-send-email-joe.lawrence@stratus.com>
- <1401396529-17275-3-git-send-email-joe.lawrence@stratus.com>
- <x49mwdtvjtm.fsf@segfault.boston.devel.redhat.com>
- <20140603172646.769e90d6@jlaw-desktop.mno.stratus.com>
- <x498upcpn09.fsf@segfault.boston.devel.redhat.com>
+Subject: Re: [PATCH 0/3] blk-mq: bitmap tag: Fix few races
+Message-ID: <20140617103531.GA13924@infradead.org>
+References: <cover.1402582256.git.agordeev@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <x498upcpn09.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <cover.1402582256.git.agordeev@redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -31,10 +26,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 02:07:02PM -0400, Jeff Moyer wrote:
-> Wow, that's a lot more churn than I expected.  ;-) I think you should go
-> ahead and repost this patch with the change mentioned above (you can add
-> my reviewed-by), and we can revisit this scsi one separately if people
-> are interested.
+Jens, did you plan to pick these up?  There's a few bits of low hanging
+fruit for cleanups / micro-optimizations in this area, but I don't want
+to create conflicts with Alexanders work.
 
-Joe, did you manage to get back to this?
+On Thu, Jun 12, 2014 at 05:05:35PM +0200, Alexander Gordeev wrote:
+> Hi Jens,
+> 
+> This series is against for-3.16/blk-mq-tagging branch.
+> 
+> Cc: Ming Lei <tom.leiming@gmail.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> 
+> Alexander Gordeev (3):
+>   blk-mq: bitmap tag: fix races on shared ::wake_index fields
+>   blk-mq: bitmap tag: fix race on blk_mq_bitmap_tags::wake_cnt
+>   blk-mq: bitmap tag: clean-up bt_get() function
+> 
+>  block/blk-mq-tag.c     |   73 ++++++++++++++++++++++++++---------------------
+>  block/blk-mq-tag.h     |    2 +-
+>  include/linux/blk-mq.h |    2 +-
+>  3 files changed, 42 insertions(+), 35 deletions(-)
+> 
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+---end quoted text---
