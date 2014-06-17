@@ -1,108 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965297AbaFQVZs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:25:48 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:40369 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965117AbaFQVZq (ORCPT
+	id S965331AbaFQV0p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:26:45 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:43669 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964980AbaFQV0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:25:46 -0400
+	Tue, 17 Jun 2014 17:26:43 -0400
+Message-ID: <53A0B27E.5010708@gmail.com>
+Date: Tue, 17 Jun 2014 23:26:22 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.11.1406171244440.3599@eggly.anvils>
-References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>
- <CALCETrVoE+JO2rLsBUHAOJdvescEEjxikj8iQ339Nxfopfc7pw@mail.gmail.com>
- <CANq1E4SaWLD=hNEc-CDJbNnrGfXE_PkxZFBhpW4tbK7wor7xPA@mail.gmail.com>
- <CALCETrU8N9EbnJ3=oQ1WQCG9Vunn3nR9Ba=J48wJm0SuH0YB4A@mail.gmail.com>
- <CANq1E4QQUKHabheq18AzkVZk3WDtAeC-6W66tVNB+EKgYOx1Vg@mail.gmail.com>
- <53A01049.6020502@redhat.com> <CANq1E4T3KJZ++=KF2OZ_dd+NvPqg+=4Pw6O7Po3-ZxaaMHPukw@mail.gmail.com>
- <CALCETrVpZ0vFM4usHK+tQhk234Y2jWzB1522kGcGvdQQFAqsZQ@mail.gmail.com>
- <CANq1E4QdGz6cRm2Y-vMQHV1O=VK74XNP8qCAmiAskVaVKpJuxg@mail.gmail.com>
- <CALCETrVerC155vzO-1Js1W8cRTYat0-+OGOxW+kSynJor6rJag@mail.gmail.com>
- <CANq1E4RqLLk8_Fn=e-c2g29_uiD-R59u=WKF9Tka33L5G9VA9Q@mail.gmail.com>
- <CALCETrWCbc=nhK-_+=uwCpUH0ZYWJXLwObVzAQeT20q8STa4Gw@mail.gmail.com> <alpine.LSU.2.11.1406171244440.3599@eggly.anvils>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 17 Jun 2014 14:25:24 -0700
-Message-ID: <CALCETrUxs2MT9NTpwSE2yoN_SJQAdRfu5_93FvCiVUbYiyBwRw@mail.gmail.com>
-Subject: Re: [PATCH v3 0/7] File Sealing & memfd_create()
-To: Hugh Dickins <hughd@google.com>
-Cc: David Herrmann <dh.herrmann@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, Greg KH <greg@kroah.com>,
-        Florian Weimer <fweimer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Daniel Mack <zonque@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Tony Battersby <tonyb@cybernetics.com>
-Content-Type: text/plain; charset=UTF-8
+To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        mark.brown@linaro.org
+CC: Tomasz Figa <t.figa@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>, linux-kernel@vger.kernel.org,
+        joshi@samsung.com, vikas.sajjan@samsung.com, chow.kim@samsung.com,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH RFC] mfd: syscon: Decouple syscon interface from syscon
+ devices
+References: <53A05E2D.6020702@samsung.com> <1403019164-12514-1-git-send-email-t.figa@samsung.com> <5027740.B7iVUcUX2T@wuerfel>
+In-Reply-To: <5027740.B7iVUcUX2T@wuerfel>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 1:31 PM, Hugh Dickins <hughd@google.com> wrote:
-> On Tue, 17 Jun 2014, Andy Lutomirski wrote:
->> On Tue, Jun 17, 2014 at 9:51 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
->> > On Tue, Jun 17, 2014 at 6:41 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> >> On Tue, Jun 17, 2014 at 9:36 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
->> >>> On Tue, Jun 17, 2014 at 6:20 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> >>>> Can you summarize why holes can't be reliably backed by the zero page?
->> >>>
->> >>> To answer this, I will quote Hugh from "PATCH v2 1/3":
->> >>>
->> >>>> We do already use the ZERO_PAGE instead of allocating when it's a
->> >>>> simple read; and on the face of it, we could extend that to mmap
->> >>>> once the file is sealed.  But I am rather afraid to do so - for
->> >>>> many years there was an mmap /dev/zero case which did that, but
->> >>>> it was an easily forgotten case which caught us out at least
->> >>>> once, so I'm reluctant to reintroduce it now for sealing.
->> >>>>
->> >>>> Anyway, I don't expect you to resolve the issue of sealed holes:
->> >>>> that's very much my territory, to give you support on.
->> >>>
->> >>> Holes can be avoided with a simple fallocate(). I don't understand why
->> >>> I should make SEAL_WRITE do the fallocate for the caller. During the
->> >>> discussion of memfd_create() I was told to drop the "size" parameter,
->> >>> because it is redundant. I don't see how this implicit fallocate()
->> >>> does not fall into the same category?
->> >>>
->> >>
->> >> I'm really confused now.
->> >>
->> >> If I SEAL_WRITE a file, and then I mmap it PROT_READ, and then I read
->> >> it, is that a "simple read"?  If so, doesn't that mean that there's no
->> >> problem?
->> >
->> > I assumed Hugh was talking about read(). So no, this is not about
->> > memory-reads on mmap()ed regions.
->> >
->> > Looking at shmem_file_read_iter() I can see a ZERO_PAGE(0) call in
->> > case shmem_getpage_gfp(SGP_READ) tells us there's a hole. I cannot see
->> > anything like that in the mmap_region() and shmem_fault() paths.
->>
->> Would it be easy to fix this just for SEAL_WRITE files?  Hugh?
->>
->> This would make the interface much nicer, IMO.
->
-> I do agree with you, Andy.
->
-> I agree with David that a fallocate (of the fill-in-holes variety)
-> does not have to be prohibited on a sealed file, that detection of
-> holes is not an issue with respect to sealing, and that fallocate
-> by the recipient could be used to "post-seal" the object to safety.
->
-> But it doesn't feel right, and we shall be re-explaining and apologizing
-> for it for months to come, until we just fix it.  I suspect David didn't
-> want to add a dependency upon me to fix it, and I didn't want to be
-> rushed into fixing it (nor is it a job I'd be comfortable to delegate).
+Hi Arnd,
 
-I suppose it would be possible to merge memfd_create as is, and then
-to fix the zero page thing and make fallocate on a SEAL_WRITEd file be
-a no-op.  It would be silly for code to fallocate actual
-sealed-with-holes files and allocate fresh pages that are guaranteed
-to only ever contain zeros.
+On 17.06.2014 17:42, Arnd Bergmann wrote:
+> On Tuesday 17 June 2014 17:32:44 Tomasz Figa wrote:
+>> Currently a syscon entity can be only registered directly through a
+>> platform device that binds to a dedicated driver. However in certain use
+>> cases it is desirable to make a device used with another driver a syscon
+>> interface provider. For example, certain SoCs (e.g. Exynos) contain
+>> system controller blocks which perform various functions such as power
+>> domain control, CPU power management, low power mode control, but in
+>> addition contain certain IP integration glue, such as various signal
+>> masks, coprocessor power control, etc. In such case, there is a need to
+>> have a dedicated driver for such system controller but also share
+>> registers with other drivers. The latter is where the syscon interface
+>> is helpful.
+>>
+>> This patch decouples syscon object from syscon driver, so that it can be
+>> registered from any driver in addition to the original "syscon" platform
+>> driver.
+>>
+>> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> 
+> Hi Tomasz,
+> 
+> This seems like a reasonable way of solving the problem, but I think
+> there is an even better one that we have about in the past: if we
+> promote syscon from a platform driver into a a drivers/base/ helper
+> that is independent of the platform device matching, we can use
+> call syscon_regmap_lookup_* for any device node, whether it's already
+> bound to a driver or not, which do what you need. It would also make
+> it easier to call the syscon code before the platform_device
+> infrastructure gets initialized, which is something a number of
+> people have asked for, e.g. for using regmap to do SMP bringup
+> or for clock registration.
 
---Andy
+Basically, unless I'm missing your point, this is what my patch does,
+except that I don't move it to drivers/base/ and the registration
+function I added require a pointer to struct device. Indeed, decoupling
+it further from the driver model, by adding of_syscon_register() should
+be useful for early users.
+
+Should I move this to drivers/base/, even though from current location
+it can be used outside the platform driver anyway?
+
+Best regards,
+Tomasz
