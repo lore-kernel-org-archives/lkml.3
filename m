@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933525AbaFQTZK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 15:25:10 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:57528 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933146AbaFQTZH (ORCPT
+	id S933600AbaFQT01 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 15:26:27 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:58132 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932657AbaFQT0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 15:25:07 -0400
+	Tue, 17 Jun 2014 15:26:25 -0400
+Date: Tue, 17 Jun 2014 15:26:21 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 1/5] cgroup: fix broken css_has_online_children()
+Message-ID: <20140617192621.GO31819@htj.dyndns.org>
+References: <53994943.60703@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKh23F=2undAW=nWibOreAM8DJiQKpLx=OboCX=fNZE+OU=AbA@mail.gmail.com>
-References: <1402964326-11147-1-git-send-email-isubramanian@apm.com>
- <1402964326-11147-5-git-send-email-isubramanian@apm.com> <20140616.214247.1154200670003936158.davem@davemloft.net>
- <CAKh23F=2undAW=nWibOreAM8DJiQKpLx=OboCX=fNZE+OU=AbA@mail.gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Tue, 17 Jun 2014 12:24:26 -0700
-Message-ID: <CAGVrzcYWecdwSmHux6yz1M5Nz849BV-sBe8DmnJWV+T8PetTvw@mail.gmail.com>
-Subject: Re: [PATCH v6 4/4] drivers: net: Add APM X-Gene SoC ethernet driver support.
-To: Iyappan Subramanian <isubramanian@apm.com>
-Cc: David Miller <davem@davemloft.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, netdev <netdev@vger.kernel.org>,
-        patches <patches@apm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jcm@redhat.com" <jcm@redhat.com>, Keyur Chudgar <kchudgar@apm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ravi Patel <rapatel@apm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53994943.60703@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-06-17 12:21 GMT-07:00 Iyappan Subramanian <isubramanian@apm.com>:
-> On Mon, Jun 16, 2014 at 9:42 PM, David Miller <davem@davemloft.net> wrote:
->> From: Iyappan Subramanian <isubramanian@apm.com>
->> Date: Mon, 16 Jun 2014 17:18:46 -0700
->>
->>> +static netdev_tx_t xgene_enet_start_xmit(struct sk_buff *skb,
->>> +                                      struct net_device *ndev)
->>> +{
->>> +     struct xgene_enet_pdata *pdata = netdev_priv(ndev);
->>> +     struct xgene_enet_desc_ring *tx_ring = pdata->tx_ring;
->>> +     struct xgene_enet_desc_ring *cp_ring = tx_ring->cp_ring;
->>> +     u32 tx_level, cq_level;
->>> +
->>> +     tx_level = xgene_enet_ring_len(tx_ring);
->>> +     cq_level = xgene_enet_ring_len(cp_ring);
->>> +     if (unlikely(tx_level > pdata->tx_qcnt_hi ||
->>> +                  cq_level > pdata->cp_qcnt_hi)) {
->>> +             netif_stop_queue(ndev);
->>> +             return NETDEV_TX_BUSY;
->>> +     }
->>> +
->>> +     if (xgene_enet_setup_tx_desc(tx_ring, skb))
->>> +             return NETDEV_TX_OK;
->>
->> If you return NETDEV_TX_OK, it is your responsibility to deal with the
->> SKB, because you own it.
->>
->> In particular, you have to free the packet.
->
-> skb freeing happens in xgene_enet_tx_completion().
+On Thu, Jun 12, 2014 at 02:31:31PM +0800, Li Zefan wrote:
+> After running:
+> 
+>   # mount -t cgroup cpu xxx /cgroup && mkdir /cgroup/sub && \
+>     rmdir /cgroup/sub && umount /cgroup
+> 
+> I found the cgroup root still existed:
+> 
+>   # cat /proc/cgroups
+>   #subsys_name    hierarchy       num_cgroups     enabled
+>   cpuset  0       1       1
+>   cpu     1       1       1
+>   ...
+> 
+> It turned out css_has_online_children() is broken.
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-I have not looked at what xgenet_enet_setup_tx_desc() does, but
-David's point is that, if this function fails and has not yet been
-able to queue the SKB for transmission at the HW, you should make sure
-that you free the SKB. Is xgene_enet_tx_completion() called if the
-driver failed to prepare a descriptor for a SKB?
+Applied to cgroup/for-3.16-fixes.
+
+Thanks.
+
 -- 
-Florian
+tejun
