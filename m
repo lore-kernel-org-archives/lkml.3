@@ -1,101 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284AbaFQEBb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 00:01:31 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:65393 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755219AbaFQEB3 (ORCPT
+	id S1755342AbaFQEEk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 00:04:40 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:58413 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750942AbaFQEEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 00:01:29 -0400
-Date: Tue, 17 Jun 2014 00:01:26 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Hagen Paul Pfeifer <hagen@jauu.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] include: kernel.h: rewrite min3, max3 and clamp using
- min and max
-Message-ID: <20140617000126.566a1aa7@gandalf.local.home>
-In-Reply-To: <20140616202120.27364ed9@gandalf.local.home>
-References: <1402952842-12886-1-git-send-email-mina86@mina86.com>
-	<20140616161804.bb06ed842f59371c031d1252@linux-foundation.org>
-	<alpine.DEB.2.02.1406161621530.21018@chino.kir.corp.google.com>
-	<20140616163525.46933b64320e220a6d806bb4@linux-foundation.org>
-	<alpine.DEB.2.02.1406161652490.21018@chino.kir.corp.google.com>
-	<20140616202120.27364ed9@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 17 Jun 2014 00:04:38 -0400
+X-IronPort-AV: E=Sophos;i="5.00,723,1396972800"; 
+   d="scan'208";a="32003488"
+Message-ID: <1402977569.5755.3.camel@localhost.localdomain>
+Subject: Re: [PATCH v4] lib: add size unit t/p/e to memparse
+From: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
+To: David Rientjes <rientjes@google.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-btrfs@vger.kernel.org>,
+        <akpm@linux-foundation.org>
+Date: Tue, 17 Jun 2014 11:59:29 +0800
+In-Reply-To: <alpine.DEB.2.02.1406161828180.21018@chino.kir.corp.google.com>
+References: <1402623746-1171-1-git-send-email-guihc.fnst@cn.fujitsu.com>
+	 <alpine.DEB.2.02.1406131457480.31981@chino.kir.corp.google.com>
+	 <1402968140.9806.6.camel@localhost.localdomain>
+	 <alpine.DEB.2.02.1406161828180.21018@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+X-Originating-IP: [10.167.226.111]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jun 2014 20:21:20 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> On Mon, 16 Jun 2014 16:54:32 -0700 (PDT)
-> David Rientjes <rientjes@google.com> wrote:
+On Mon, 2014-06-16 at 18:29 -0700, David Rientjes wrote:
+> On Tue, 17 Jun 2014, Gui Hecheng wrote:
 > 
+> > > > diff --git a/lib/cmdline.c b/lib/cmdline.c
+> > > > index d4932f7..76a712e 100644
+> > > > --- a/lib/cmdline.c
+> > > > +++ b/lib/cmdline.c
+> > > > @@ -121,11 +121,7 @@ EXPORT_SYMBOL(get_options);
+> > > >   *	@retptr: (output) Optional pointer to next char after parse completes
+> > > >   *
+> > > >   *	Parses a string into a number.  The number stored at @ptr is
+> > > > - *	potentially suffixed with %K (for kilobytes, or 1024 bytes),
+> > > > - *	%M (for megabytes, or 1048576 bytes), or %G (for gigabytes, or
+> > > > - *	1073741824).  If the number is suffixed with K, M, or G, then
+> > > > - *	the return value is the number multiplied by one kilobyte, one
+> > > > - *	megabyte, or one gigabyte, respectively.
+> > > > + *	potentially suffixed with K, M, G, T, P, E.
+> > > >   */
+> > > >  
+> > > >  unsigned long long memparse(const char *ptr, char **retptr)
+> > > > @@ -135,6 +131,15 @@ unsigned long long memparse(const char *ptr, char **retptr)
+> > > >  	unsigned long long ret = simple_strtoull(ptr, &endptr, 0);
+> > > >  
+> > > >  	switch (*endptr) {
+> > > > +	case 'E':
+> > > > +	case 'e':
+> > > > +		ret <<= 10;
+> > > > +	case 'P':
+> > > > +	case 'p':
+> > > > +		ret <<= 10;
+> > > > +	case 'T':
+> > > > +	case 't':
+> > > > +		ret <<= 10;
+> > > >  	case 'G':
+> > > >  	case 'g':
+> > > >  		ret <<= 10;
+> > > 
+> > > Seems fine since unsigned long long is always at least 64 bits, but 
+> > > perhaps also change simple_strtoull() to use kstrtoull() at the same time 
+> > > since the former is deprecated?
 > > 
+> > Yes, that is a point. But the deprecated function is a separate problem
+> > and may not be included in this patch.
+> > Also, I find that simple_strtoull is used in many places in the kernel
+> > code, it is better to replace it globally?
 > > 
-> > On linux-next, allyesconfig has a 0.0001% savings as a result of the 
-> > patch, but I'd be worried about the extra temp variable it allocates on 
-> > the stack that is evident in the mm/slab.c disassembly unless all cases 
-> > can be audited to show that we're not potentially deep.
 > 
-> A 0.0001% change means it's not worth changing, and we may be able to
-> mark this up as a fluke in Michal's results.
+> If you're going to have a go at replacing the simple_strto*() functions 
+> throughout the kernel, it's probably better to do it per subsystem (as 
+> defined by the separate sections of MAINTAINERS) and propose the patches 
+> individually to those maintainers.  Once it has been removed entirely, you 
+> can submit a patch to remove the functions themselves.
 > 
-> I'll give it a try on my 4.6.3 compiler.
-> 
-> -- Steve
-> 
-> > 
-> >    text	   data	    bss	    dec	    hex	filename
-> > 108573045	23488016	51580928	183641989	af22785	vmlinux.before
-> > 108572908	23488016	51580928	183641852	af226fc	vmlinux.after
-> 
+> Be aware that there are many callers to the deprecated functions so it may 
+> take a significant amount of time.
 
-Here's my results:
+Hmmmm...It may really take a long time. But I am not sure whether this
+is really a good idea to do this big replacement. Let's see whether
+anyone would like to share his opinions.
 
-   text    data     bss     dec     hex filename
-108662851       23470256        51580928        183714035       af340f3 /tmp/vmlinux-orig
-108662714       23470224        51580928        183713866	af3404a /tmp/vmlinux-patched
+-Gui
 
-The patched version saved a total of 169 bytes.
-
-Doing a diff on the vmlinux objdumps of do_fault_around, I get this:
-
-  mov    -0x68(%rbp),%rdi
-  mov    -0x70(%rbp),%r8d
-- jae    ffffffff81302bf5 <do_fault_around+0xbd>
-- cmp    %r15,%rax
-- mov    %r15,%r14
-- cmovbe %rax,%r14
-- jmp    ffffffff81302c03 <do_fault_around+0xcb>
-- cmp    %r14,%rax
-- cmovbe %rax,%r14
-- incq   0x8d384b5(%rip)        # ffffffff8a03b0b8 <high_memory+0x14e8>
-- mov    0x8d384be(%rip),%rsi        # ffffffff8a03b0c8 <high_memory+0x14f8>
-- mov    0x8d384bf(%rip),%rdx        # ffffffff8a03b0d0 <high_memory+0x1500>
-- mov    0x8d384a8(%rip),%rax        # ffffffff8a03b0c0 <high_memory+0x14f0>
-+ cmp    %rax,%r15
-+ cmova  %rax,%r15
-+ mov    0x8d384c0(%rip),%rax        # ffffffff8a03b0b8 <high_memory+0x14e8>
-+ cmp    %r14,%r15
-+ cmovbe %r15,%r14
-  sub    %r12,%rsi
-
-
-So for gcc 4.6.3 it does seem to produce nicer assembly. I haven't
-tried it with other versions though (or with clang).
-
-But I'll still give it a:
-
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
