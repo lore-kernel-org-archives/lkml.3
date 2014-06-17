@@ -1,113 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967268AbaFQWQm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:16:42 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:60837 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966010AbaFQWQY (ORCPT
+	id S966547AbaFQVuQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:50:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54316 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966515AbaFQVuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 18:16:24 -0400
-Date: Tue, 17 Jun 2014 16:16:20 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Andreas Noever <andreas.noever@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        yinghai@kernel.org
-Subject: Re: [PATCH] PCI: Do not touch siblings in
- pci_assign_unassigned_bridge_resources
-Message-ID: <20140617221620.GC30559@google.com>
-References: <1402346730-2508-1-git-send-email-andreas.noever@gmail.com>
+	Tue, 17 Jun 2014 17:50:10 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Paul Walmsley <paul@pwsan.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 163/212] ARM: OMAP3: clock: Back-propagate rate change from cam_mclk to dpll4_m5 on all OMAP3 platforms
+Date: Tue, 17 Jun 2014 14:44:17 -0700
+Message-Id: <1403041506-13646-164-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402346730-2508-1-git-send-email-andreas.noever@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Yinghai]
+3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
 
-On Mon, Jun 09, 2014 at 10:45:30PM +0200, Andreas Noever wrote:
-> pci_assign_unassigned_bridge_resources is used to assign resources below
-> a hotplug bridge. If the first attempt fails it will release some
-> resources and try again. If a resource allocation on the hotplug bridge
-> itself fails then pci_assign_unassigned_bridge_resources will invoke
-> pci_bus_release_bridge_resources on the parent bus of the hotplug
-> bridge. This in turn will release resources assigned to siblings of the
-> hotplug bridge which may already be in use.
-> 
-> This patch checks for this case and prevents
-> pci_bus_release_bridge_resources to be invoked on the parent bus.
-> 
-> The problem can be reproduced by having two sibling hotplug bridges A
-> and B. The problem will occour if the parent of A and B does not have
-> enough resources to satisfy window allocations for B during a hotplug
-> event.
-> 
-> Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
-> ---
-> 
-> I must admit that I do not fully understand how
-> pci_assign_unassigned_bridge_resources works. Under which scenario would the
-> second allocation attempt be successful?
+------------------
 
-I don't understand how all this works either.  Yinghai?
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-We definitely don't want to release resources that are already in use.  Can
-you review and ack or nack this?
+commit 98d7e1aee6dd534f468993f8c6a1bc730d4cfa81 upstream.
 
->  drivers/pci/setup-bus.c | 21 +++++++++++++++++++--
->  1 file changed, 19 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-> index 138bdd6..2e418d6 100644
-> --- a/drivers/pci/setup-bus.c
-> +++ b/drivers/pci/setup-bus.c
-> @@ -1560,6 +1560,12 @@ void __init pci_assign_unassigned_resources(void)
->  		pci_assign_unassigned_root_bus_resources(root_bus);
->  }
->  
-> +/**
-> + * pci_assign_unassigned_bridge_resources - greenfield resource allocation
-> + *
-> + * Try to assign io and memory resources on and below @bridge. The caller must
-> + * ensure that no device below @bridge is active.
-> + */
->  void pci_assign_unassigned_bridge_resources(struct pci_dev *bridge)
->  {
->  	struct pci_bus *parent = bridge->subordinate;
-> @@ -1567,7 +1573,7 @@ void pci_assign_unassigned_bridge_resources(struct pci_dev *bridge)
->  					want additional resources */
->  	int tried_times = 0;
->  	LIST_HEAD(fail_head);
-> -	struct pci_dev_resource *fail_res;
-> +	struct pci_dev_resource *fail_res, *tmp;
->  	int retval;
->  	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
->  				  IORESOURCE_PREFETCH;
-> @@ -1594,10 +1600,21 @@ again:
->  	 * Try to release leaf bridge's resources that doesn't fit resource of
->  	 * child device under that bridge
->  	 */
-> -	list_for_each_entry(fail_res, &fail_head, list)
-> +	list_for_each_entry_safe(fail_res, tmp, &fail_head, list) {
-> +		 /*
-> +		  * The allocation of the mem/io window of the top level bridge
-> +		  * can fail.  Without the following check we would release our
-> +		  * siblings' resources.
-> +		  */
-> +		if (fail_res->dev == bridge) {
-> +			list_del(&fail_res->list);
-> +			kfree(fail_res);
-> +			continue;
-> +		}
->  		pci_bus_release_bridge_resources(fail_res->dev->bus,
->  						 fail_res->flags & type_mask,
->  						 whole_subtree);
-> +	}
->  
->  	/* restore size and flags */
->  	list_for_each_entry(fail_res, &fail_head, list) {
-> -- 
-> 2.0.0
-> 
+Commit 7b2e1277598e4187c9be3e61fd9b0f0423f97986 ("ARM: OMAP3: clock:
+Back-propagate rate change from cam_mclk to dpll4_m5") enabled clock
+rate back-propagation from cam_mclk do dpll4_m5 on OMAP3630 only.
+Perform back-propagation on other OMAP3 platforms as well.
+
+Reported-by: Jean-Philippe François <jp.francois@cynove.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ arch/arm/mach-omap2/cclock3xxx_data.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-omap2/cclock3xxx_data.c b/arch/arm/mach-omap2/cclock3xxx_data.c
+index 3b05aea..807e2fc 100644
+--- a/arch/arm/mach-omap2/cclock3xxx_data.c
++++ b/arch/arm/mach-omap2/cclock3xxx_data.c
+@@ -454,7 +454,8 @@ static struct clk_hw_omap dpll4_m5x2_ck_hw = {
+ 	.clkdm_name	= "dpll4_clkdm",
+ };
+ 
+-DEFINE_STRUCT_CLK(dpll4_m5x2_ck, dpll4_m5x2_ck_parent_names, dpll4_m5x2_ck_ops);
++DEFINE_STRUCT_CLK_FLAGS(dpll4_m5x2_ck, dpll4_m5x2_ck_parent_names,
++			dpll4_m5x2_ck_ops, CLK_SET_RATE_PARENT);
+ 
+ static struct clk dpll4_m5x2_ck_3630 = {
+ 	.name		= "dpll4_m5x2_ck",
+-- 
+1.9.1
+
