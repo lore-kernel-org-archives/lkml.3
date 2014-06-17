@@ -1,56 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932528AbaFQLw2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 07:52:28 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:42139 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932394AbaFQLw0 convert rfc822-to-8bit (ORCPT
+	id S932624AbaFQLyG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 07:54:06 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:54795 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753608AbaFQLyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 07:52:26 -0400
-From: "Javi Merino" <javi.merino@arm.com>
-Date: Tue, 17 Jun 2014 12:52:22 +0100
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v4 6/7] thermal: add trace events to the power
- allocator governor
-Message-ID: <20140617115222.GC2801@e104805>
-References: <1402996493-3578-1-git-send-email-javi.merino@arm.com>
- <1402996493-3578-7-git-send-email-javi.merino@arm.com>
- <20140617071838.1b0d8673@gandalf.local.home>
+	Tue, 17 Jun 2014 07:54:04 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: lenb@kernel.org, robert.moore@intel.com, lv.zheng@intel.com,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, bhelgaas@google.com
+Subject: Re: [PATCH 1/4] ACPI: Support _OSI("Darwin") correctly
+Date: Tue, 17 Jun 2014 14:11:36 +0200
+Message-ID: <7712179.sDPAd6Ubry@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1401640436-1947-2-git-send-email-matthew.garrett@nebula.com>
+References: <1401640436-1947-1-git-send-email-matthew.garrett@nebula.com> <1401640436-1947-2-git-send-email-matthew.garrett@nebula.com>
 MIME-Version: 1.0
-In-Reply-To: <20140617071838.1b0d8673@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 17 Jun 2014 11:52:16.0116 (UTC) FILETIME=[95A4CB40:01CF8A22]
-X-MC-Unique: 114061712522403601
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 12:18:38PM +0100, Steven Rostedt wrote:
-> On Tue, 17 Jun 2014 10:14:52 +0100
-> "Javi Merino" <javi.merino@arm.com> wrote:
+On Sunday, June 01, 2014 12:33:53 PM Matthew Garrett wrote:
+> Apple hardware queries _OSI("Darwin") in order to determine whether the
+> system is running OS X, and changes firmware behaviour based on the answer.
+> The most obvious difference in behaviour is that Thunderbolt hardware is
+> forcibly powered down unless the system is running OS X. The obvious solution
+> would be to simply add Darwin to the list of supported _OSI strings, but this
+> causes problems.
 > 
-> > Add trace events for the power allocator governor and the power actor
-> > interface of the cpu cooling device.
-> > 
-> > Cc: Zhang Rui <rui.zhang@intel.com>
-> > Cc: Eduardo Valentin <edubezval@gmail.com>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Ingo Molnar <mingo@redhat.com>
-> > Signed-off-by: Javi Merino <javi.merino@arm.com>
-> > 
-> > ---
-> > 
-> > trace-cmd needs the patched attached in
-> > http://article.gmane.org/gmane.linux.kernel/1704423 for this to work.
+> Recent Apple hardware includes two separate methods for checking _OSI
+> strings. The first will check whether Darwin is supported, and if so will
+> exit. The second will check whether Darwin is supported, but will then
+> continue to check for further operating systems. If a further operating
+> system is found then later firmware code will assume that the OS is not OS X.
+> This results in the unfortunate situation where the Thunderbolt controller is
+> available at boot time but remains powered down after suspend.
 > 
-> The recently released trace-cmd v2.4 contains this.
+> The easiest way to handle this is to special-case it in the Linux-specific
+> OSI handling code. If we see Darwin, we should answer true and then disable
+> all other _OSI vendor strings.
+> 
+> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 
-Good to know, I'll drop the text from future uploads.  Thanks!
-Javi
+Does applying this patch without the rest of the series makes things worse
+or better on the machines in question (or perhaps it doesn't matter at all
+alone)?
 
+Rafael
+
+
+> ---
+>  drivers/acpi/acpica/utosi.c |  1 +
+>  drivers/acpi/osl.c          | 10 ++++++++++
+>  include/acpi/actypes.h      | 25 +++++++++++++------------
+>  3 files changed, 24 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpica/utosi.c b/drivers/acpi/acpica/utosi.c
+> index 685766f..63b0a3b 100644
+> --- a/drivers/acpi/acpica/utosi.c
+> +++ b/drivers/acpi/acpica/utosi.c
+> @@ -87,6 +87,7 @@ ACPI_MODULE_NAME("utosi")
+>  static struct acpi_interface_info acpi_default_supported_interfaces[] = {
+>  	/* Operating System Vendor Strings */
+>  
+> +	{"Darwin", NULL, 0, ACPI_OSI_DARWIN},	/* OS X */
+>  	{"Windows 2000", NULL, 0, ACPI_OSI_WIN_2000},	/* Windows 2000 */
+>  	{"Windows 2001", NULL, 0, ACPI_OSI_WIN_XP},	/* Windows XP */
+>  	{"Windows 2001 SP1", NULL, 0, ACPI_OSI_WIN_XP_SP1},	/* Windows XP SP1 */
+> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+> index 6776c59..312ab5c 100644
+> --- a/drivers/acpi/osl.c
+> +++ b/drivers/acpi/osl.c
+> @@ -152,6 +152,16 @@ static u32 acpi_osi_handler(acpi_string interface, u32 supported)
+>  			osi_linux.dmi ? " via DMI" : "");
+>  	}
+>  
+> +	if (!strcmp("Darwin", interface)) {
+> +		/*
+> +		 * Apple firmware will behave poorly if it receives positive
+> +		 * answers to "Darwin" and any other OS. Respond positively
+> +		 * to Darwin and then disable all other vendor strings.
+> +		 */
+> +		acpi_update_interfaces(ACPI_DISABLE_ALL_VENDOR_STRINGS);
+> +		supported = ACPI_UINT32_MAX;
+> +	}
+> +
+>  	return supported;
+>  }
+>  
+> diff --git a/include/acpi/actypes.h b/include/acpi/actypes.h
+> index e763565..1c2ef56 100644
+> --- a/include/acpi/actypes.h
+> +++ b/include/acpi/actypes.h
+> @@ -1210,17 +1210,18 @@ struct acpi_memory_list {
+>  #define ACPI_ENABLE_ALL_FEATURE_STRINGS     (ACPI_ENABLE_INTERFACES | ACPI_FEATURE_STRINGS)
+>  #define ACPI_ENABLE_ALL_STRINGS             (ACPI_ENABLE_INTERFACES | ACPI_VENDOR_STRINGS | ACPI_FEATURE_STRINGS)
+>  
+> -#define ACPI_OSI_WIN_2000               0x01
+> -#define ACPI_OSI_WIN_XP                 0x02
+> -#define ACPI_OSI_WIN_XP_SP1             0x03
+> -#define ACPI_OSI_WINSRV_2003            0x04
+> -#define ACPI_OSI_WIN_XP_SP2             0x05
+> -#define ACPI_OSI_WINSRV_2003_SP1        0x06
+> -#define ACPI_OSI_WIN_VISTA              0x07
+> -#define ACPI_OSI_WINSRV_2008            0x08
+> -#define ACPI_OSI_WIN_VISTA_SP1          0x09
+> -#define ACPI_OSI_WIN_VISTA_SP2          0x0A
+> -#define ACPI_OSI_WIN_7                  0x0B
+> -#define ACPI_OSI_WIN_8                  0x0C
+> +#define ACPI_OSI_DARWIN                 0x01
+> +#define ACPI_OSI_WIN_2000               0x02
+> +#define ACPI_OSI_WIN_XP                 0x03
+> +#define ACPI_OSI_WIN_XP_SP1             0x04
+> +#define ACPI_OSI_WINSRV_2003            0x05
+> +#define ACPI_OSI_WIN_XP_SP2             0x06
+> +#define ACPI_OSI_WINSRV_2003_SP1        0x07
+> +#define ACPI_OSI_WIN_VISTA              0x08
+> +#define ACPI_OSI_WINSRV_2008            0x09
+> +#define ACPI_OSI_WIN_VISTA_SP1          0x0A
+> +#define ACPI_OSI_WIN_VISTA_SP2          0x0B
+> +#define ACPI_OSI_WIN_7                  0x0C
+> +#define ACPI_OSI_WIN_8                  0x0D
+>  
+>  #endif				/* __ACTYPES_H__ */
+> 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
