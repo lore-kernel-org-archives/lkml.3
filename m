@@ -1,76 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510AbaFQNg3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 09:36:29 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60997 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754462AbaFQNg2 (ORCPT
+	id S932659AbaFQNoR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 09:44:17 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:62417 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932196AbaFQNoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 09:36:28 -0400
-Date: Tue, 17 Jun 2014 14:36:20 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Rob Clark <robdclark@gmail.com>, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v3] ARM: add get_user() support for 8 byte types
-Message-ID: <20140617133620.GJ23430@n2100.arm.linux.org.uk>
-References: <1402587755-29245-1-git-send-email-daniel.thompson@linaro.org> <20140612155843.GK23430@n2100.arm.linux.org.uk> <53A015B3.2070809@linaro.org> <20140617110908.GH23430@n2100.arm.linux.org.uk> <53A0428C.10200@linaro.org>
+	Tue, 17 Jun 2014 09:44:16 -0400
+Date: Tue, 17 Jun 2014 15:44:08 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, iommu@lists.linux-foundation.org,
+        chegu_vinod@hp.com, linux-kernel@vger.kernel.org,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Subject: Re: [Intel-gfx] [PATCH v2] iommu/intel: Exclude devices using RMRRs
+ from IOMMU API domains
+Message-ID: <20140617134408.GM5821@phenom.ffwll.local>
+Mail-Followup-To: Alex Williamson <alex.williamson@redhat.com>,
+	David Woodhouse <dwmw2@infradead.org>,
+	iommu@lists.linux-foundation.org, chegu_vinod@hp.com,
+	linux-kernel@vger.kernel.org,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+References: <20140613162901.4550.94476.stgit@bling.home>
+ <1402983303.3707.94.camel@ul30vt.home>
+ <1402988692.7595.106.camel@i7.infradead.org>
+ <1403007757.3707.100.camel@ul30vt.home>
+ <1403008864.7595.144.camel@i7.infradead.org>
+ <1403010982.3707.123.camel@ul30vt.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <53A0428C.10200@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1403010982.3707.123.camel@ul30vt.home>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 02:28:44PM +0100, Daniel Thompson wrote:
-> On 17/06/14 12:09, Russell King - ARM Linux wrote:
-> > On Tue, Jun 17, 2014 at 11:17:23AM +0100, Daniel Thompson wrote:
-> >> ... at this point there is a narrowing cast followed by an implicit
-> >> widening. This results in compiler either ignoring r3 altogether or, if
-> >> spilling to the stack, generating code to set r3 to zero before doing
-> >> the store.
+On Tue, Jun 17, 2014 at 07:16:22AM -0600, Alex Williamson wrote:
+> On Tue, 2014-06-17 at 13:41 +0100, David Woodhouse wrote:
+> > On Tue, 2014-06-17 at 06:22 -0600, Alex Williamson wrote:
+> > > On Tue, 2014-06-17 at 08:04 +0100, David Woodhouse wrote:
+> > > > On Mon, 2014-06-16 at 23:35 -0600, Alex Williamson wrote:
+> > > > > 
+> > > > > Any idea what an off-the-shelf Asus motherboard would be doing with an
+> > > > > RMRR on the Intel HD graphics?
+> > > > > 
+> > > > > dmar: RMRR base: 0x000000bb800000 end: 0x000000bf9fffff
+> > > > > IOMMU: Setting identity map for device 0000:00:02.0 [0xbb800000 - 0xbf9fffff]
+> > > > 
+> > > > Hm, we should have thought of that sooner. That's quite normal — it's
+> > > > for the 'stolen' memory used for the framebuffer. And maybe also the
+> > > > GTT, and shadow GTT and other things; I forget precisely what, and it
+> > > > varies from one setup to another.
+> > > 
+> > > Why exactly do these things need to be identity mapped through the
+> > > IOMMU?  This sounds like something a normal device might do with a
+> > > coherent mapping.
 > > 
-> > In actual fact, there's very little difference between the two
-> > implementations in terms of generated code.
+> > The BIOS (EFI or VESA) sets up a framebuffer in stolen main memory. It's
+> > accessed by DMA, using the physical address. The RMRR exists because we
+> > need it *not* to suddenly stop working the moment the OS turns on the
+> > IOMMU.
 > > 
-> > The difference between them is what happens on the 64-bit big endian
-> > narrowing case, where we use __get_user_4 with your version.  This
-> > adds one additional instruction.
-> 
-> Good point.
-> 
-> 
-> > and 64-bit narrowed to 32-bit:
+> > The OS graphics driver, if any, is not loaded at this point.
 > > 
-> >         str     lr, [sp, #-4]!
-> > -       mov     ip, r0
-> > +       mov     r3, r0
-> >         mov     r0, r1
-> >  #APP
-> >  @ 275 "t-getuser.c" 1
-> > -       bl      __get_user_8
-> > +       bl      __get_user_4
-> >  @ 0 "" 2
-> > -       str     r2, [ip, #0]
-> > +       str     r2, [r3, #0]
-> >         ldr     pc, [sp], #4
+> > And even later, the OS graphics driver may choose to make use of the
+> > 'stolen' memory for various purposes. And since it was already stolen,
+> > it doesn't go and set up *another* mapping for it; it knows that a
+> > mapping already exists.
+> > 
+> > > > I'd expect fairly much all systems to have an RMRR for the integrated
+> > > > graphics device if they have one, and your patch¹ is going to prevent
+> > > > assignment of those to guests... as you've presumably noticed.
+> > > > 
+> > > > I'm not sure if the i915 driver is capable of fully reprogramming the
+> > > > hardware to completely stop using that region, to allow assignment to a
+> > > > guest with a 'pure' memory map and no stolen region. I suppose it must,
+> > > > if assignment to guests was working correctly before?
+> > > 
+> > > IGD assignment has never worked with KVM.
+> > 
+> > Hm. It works with Xen though, doesn't it?
 > 
-> The later case avoids allocating r3 for the __get_user_x and should
-> reduce register pressure and, potentially, saves a few instructions
-> elsewhere (one of my rather large test functions does demonstrate this
-> effect).
+> Apparently
 > 
-> I don't know if we care about that. If we do I'm certainly happy to put
-> a patch together than exploits this (whilst avoiding the add in the big
-> endian case).
+> > Are we content to say that it'll *never* work with KVM, and thus we can
+> > live with the fact that your patch makes it harder to fix whatever was
+> > wrong in the first place?
+> 
+> Probably not.  However, it seems like you're saying that this RMRR is
+> used by and visible to OS level drivers, versus backchannel
+> communication channels, invisible to the OS.  I think the latter is
+> specifically what we want to prevent by excluding devices with RMRRs.
+> This is a challenging use case, but it seems to be understood.  If when
+> IGD is bound to vfio-pci we can be sure that access to the RMRR area
+> ceases, then we can tear it down and re-establish it from
+> userspace/QEMU, describe it to the guest in an e820 reserved region, and
+> never consider hotplug of the device for guests.  If that's the case,
+> maybe it's another exception, like USB.  I'll need to look through i915
+> more to find how the region is discovered.  Thanks,
 
-No need - the + case is your version, the - case is my version.  So your
-version wins on this point. :)
+We have a bunch of register in the mmio bar set up by the bios that tells
+us the address and size of the stolen range we can use. The address we
+need for programming ptes, the size to know how much there is. We also
+have an early boot pci quirk in x86 nowadays to make sure the pci layer
+doesn't put random stuff in that range.
 
+See drivers/gpu/drm/i915/i915_gem_gtt.c (search for stolen size)
+i915_gem_stolen.c (look at stolen_to_phys) and the early quirks in
+arch/x86/kernel/early-quirks.c for copies of the same code.
+-Daniel
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
