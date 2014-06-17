@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965850AbaFQQxM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:53:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50609 "EHLO
+	id S933692AbaFQQxi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:53:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50602 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933928AbaFQQSy (ORCPT
+	with ESMTP id S933949AbaFQQSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:18:54 -0400
+	Tue, 17 Jun 2014 12:18:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Wu <wuquanming@huawei.com>, Xiangyu Lu <luxiangyu@huawei.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 035/121] ARM: 8027/1: fix do_div() bug in big-endian systems
-Date: Tue, 17 Jun 2014 09:16:53 -0700
-Message-Id: <1403021899-16708-8-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 029/121] genirq: Allow forcing cpu affinity of interrupts
+Date: Tue, 17 Jun 2014 09:16:47 -0700
+Message-Id: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
-References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,47 +31,185 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xiangyu Lu <luxiangyu@huawei.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 80bb3ef109ff40a7593d9481c17de9bbc4d7c0e2 upstream.
+commit 01f8fa4f01d8362358eb90e412bd7ae18a3ec1ad upstream.
 
-In big-endian systems, "%1" get the most significant part of the value, cause the instruction to get the wrong result.
+The current implementation of irq_set_affinity() refuses rightfully to
+route an interrupt to an offline cpu.
 
-When viewing ftrace record in big-endian ARM systems, we found that
-the timestamp errors:
+But there is a special case, where this is actually desired. Some of
+the ARM SoCs have per cpu timers which require setting the affinity
+during cpu startup where the cpu is not yet in the online mask.
 
-swapper-0   [001] 1325.970000:   0:120:R ==> [001]    16:120:R events/1
-events/1-16 [001] 1325.970000:   16:120:S ==> [001]    0:120:R swapper
-swapper-0   [000] 1325.1000000:  0:120:R   + [000]    15:120:R events/0
-swapper-0   [000] 1325.1000000:  0:120:R ==> [000]    15:120:R events/0
-swapper-0   [000] 1326.030000:   0:120:R   + [000]  1150:120:R sshd
-swapper-0   [000] 1326.030000:   0:120:R ==> [000]  1150:120:R sshd
+If we can't do that, then the local timer interrupt for the about to
+become online cpu is routed to some random online cpu.
 
-When viewed ftrace records, it will call the do_div(n, base) function, which achieved arch/arm/include/asm/div64.h in. When n = 10000000, base = 1000000, in do_div(n, base) will execute "umull %Q0, %R0, %1, %Q2".
+The developers of the affected machines tried to work around that
+issue, but that results in a massive mess in that timer code.
 
-Reviewed-by: Dave Martin <Dave.Martin@arm.com>
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Alex Wu <wuquanming@huawei.com>
-Signed-off-by: Xiangyu Lu <luxiangyu@huawei.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+We have a yet unused argument in the set_affinity callbacks of the irq
+chips, which I added back then for a similar reason. It was never
+required so it got not used. But I'm happy that I never removed it.
+
+That allows us to implement a sane handling of the above scenario. So
+the affected SoC drivers can add the required force handling to their
+interrupt chip, switch the timer code to irq_force_affinity() and
+things just work.
+
+This does not affect any existing user of irq_set_affinity().
+
+Tagged for stable to allow a simple fix of the affected SoC clock
+event drivers.
+
+Reported-and-tested-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Tomasz Figa <t.figa@samsung.com>,
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+Link: http://lkml.kernel.org/r/20140416143315.717251504@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/include/asm/div64.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/mips/cavium-octeon/octeon-irq.c |  2 +-
+ include/linux/interrupt.h            | 35 ++++++++++++++++++++++++++++++++++-
+ include/linux/irq.h                  |  3 ++-
+ kernel/irq/manage.c                  | 17 ++++++-----------
+ 4 files changed, 43 insertions(+), 14 deletions(-)
 
-diff --git a/arch/arm/include/asm/div64.h b/arch/arm/include/asm/div64.h
-index fe92ccf..a66061a 100644
---- a/arch/arm/include/asm/div64.h
-+++ b/arch/arm/include/asm/div64.h
-@@ -156,7 +156,7 @@
- 		/* Select the best insn combination to perform the   */	\
- 		/* actual __m * __n / (__p << 64) operation.         */	\
- 		if (!__c) {						\
--			asm (	"umull	%Q0, %R0, %1, %Q2\n\t"		\
-+			asm (	"umull	%Q0, %R0, %Q1, %Q2\n\t"		\
- 				"mov	%Q0, #0"			\
- 				: "=&r" (__res)				\
- 				: "r" (__m), "r" (__n)			\
+diff --git a/arch/mips/cavium-octeon/octeon-irq.c b/arch/mips/cavium-octeon/octeon-irq.c
+index 46f5dbc..2e65798 100644
+--- a/arch/mips/cavium-octeon/octeon-irq.c
++++ b/arch/mips/cavium-octeon/octeon-irq.c
+@@ -635,7 +635,7 @@ static void octeon_irq_cpu_offline_ciu(struct irq_data *data)
+ 		cpumask_clear(&new_affinity);
+ 		cpumask_set_cpu(cpumask_first(cpu_online_mask), &new_affinity);
+ 	}
+-	__irq_set_affinity_locked(data, &new_affinity);
++	irq_set_affinity_locked(data, &new_affinity, false);
+ }
+ 
+ static int octeon_irq_ciu_set_affinity(struct irq_data *data,
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 5fa5afe..e8401d0 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -239,7 +239,40 @@ static inline int check_wakeup_irqs(void) { return 0; }
+ 
+ extern cpumask_var_t irq_default_affinity;
+ 
+-extern int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask);
++/* Internal implementation. Use the helpers below */
++extern int __irq_set_affinity(unsigned int irq, const struct cpumask *cpumask,
++			      bool force);
++
++/**
++ * irq_set_affinity - Set the irq affinity of a given irq
++ * @irq:	Interrupt to set affinity
++ * @mask:	cpumask
++ *
++ * Fails if cpumask does not contain an online CPU
++ */
++static inline int
++irq_set_affinity(unsigned int irq, const struct cpumask *cpumask)
++{
++	return __irq_set_affinity(irq, cpumask, false);
++}
++
++/**
++ * irq_force_affinity - Force the irq affinity of a given irq
++ * @irq:	Interrupt to set affinity
++ * @mask:	cpumask
++ *
++ * Same as irq_set_affinity, but without checking the mask against
++ * online cpus.
++ *
++ * Solely for low level cpu hotplug code, where we need to make per
++ * cpu interrupts affine before the cpu becomes online.
++ */
++static inline int
++irq_force_affinity(unsigned int irq, const struct cpumask *cpumask)
++{
++	return __irq_set_affinity(irq, cpumask, true);
++}
++
+ extern int irq_can_set_affinity(unsigned int irq);
+ extern int irq_select_affinity(unsigned int irq);
+ 
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index fdf2c4a..46e1b1e 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -375,7 +375,8 @@ extern void remove_percpu_irq(unsigned int irq, struct irqaction *act);
+ 
+ extern void irq_cpu_online(void);
+ extern void irq_cpu_offline(void);
+-extern int __irq_set_affinity_locked(struct irq_data *data,  const struct cpumask *cpumask);
++extern int irq_set_affinity_locked(struct irq_data *data,
++				   const struct cpumask *cpumask, bool force);
+ 
+ #ifdef CONFIG_GENERIC_HARDIRQS
+ 
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index f3feefc..edbe80e 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -149,7 +149,7 @@ int irq_do_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	struct irq_chip *chip = irq_data_get_irq_chip(data);
+ 	int ret;
+ 
+-	ret = chip->irq_set_affinity(data, mask, false);
++	ret = chip->irq_set_affinity(data, mask, force);
+ 	switch (ret) {
+ 	case IRQ_SET_MASK_OK:
+ 		cpumask_copy(data->affinity, mask);
+@@ -161,7 +161,8 @@ int irq_do_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	return ret;
+ }
+ 
+-int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
++int irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask,
++			    bool force)
+ {
+ 	struct irq_chip *chip = irq_data_get_irq_chip(data);
+ 	struct irq_desc *desc = irq_data_to_desc(data);
+@@ -171,7 +172,7 @@ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
+ 		return -EINVAL;
+ 
+ 	if (irq_can_move_pcntxt(data)) {
+-		ret = irq_do_set_affinity(data, mask, false);
++		ret = irq_do_set_affinity(data, mask, force);
+ 	} else {
+ 		irqd_set_move_pending(data);
+ 		irq_copy_pending(desc, mask);
+@@ -186,13 +187,7 @@ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
+ 	return ret;
+ }
+ 
+-/**
+- *	irq_set_affinity - Set the irq affinity of a given irq
+- *	@irq:		Interrupt to set affinity
+- *	@mask:		cpumask
+- *
+- */
+-int irq_set_affinity(unsigned int irq, const struct cpumask *mask)
++int __irq_set_affinity(unsigned int irq, const struct cpumask *mask, bool force)
+ {
+ 	struct irq_desc *desc = irq_to_desc(irq);
+ 	unsigned long flags;
+@@ -202,7 +197,7 @@ int irq_set_affinity(unsigned int irq, const struct cpumask *mask)
+ 		return -EINVAL;
+ 
+ 	raw_spin_lock_irqsave(&desc->lock, flags);
+-	ret =  __irq_set_affinity_locked(irq_desc_get_irq_data(desc), mask);
++	ret = irq_set_affinity_locked(irq_desc_get_irq_data(desc), mask, force);
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 	return ret;
+ }
 -- 
 1.9.1
 
