@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966890AbaFQVvh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:51:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54617 "EHLO
+	id S966907AbaFQVvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:51:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54636 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966852AbaFQVvb (ORCPT
+	with ESMTP id S966886AbaFQVvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:51:31 -0400
+	Tue, 17 Jun 2014 17:51:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
+Cc: Leif Lindholm <leif.lindholm@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 184/212] rtmutex: Fix deadlock detector for real
-Date: Tue, 17 Jun 2014 14:44:38 -0700
-Message-Id: <1403041506-13646-185-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 134/212] arm: dts: Fix missing device_type="memory" for ste-ccu8540
+Date: Tue, 17 Jun 2014 14:43:48 -0700
+Message-Id: <1403041506-13646-135-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -29,107 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Leif Lindholm <leif.lindholm@linaro.org>
 
-commit 397335f004f41e5fcf7a795e94eb3ab83411a17c upstream.
+commit bfaed5abad998bfc88a66e6e71c7b08dcf82f04e upstream.
 
-The current deadlock detection logic does not work reliably due to the
-following early exit path:
+The current .dts for ste-ccu8540 lacks a 'device_type = "memory"' for
+its memory node, relying on an old ppc quirk in order to discover its
+memory. Fix the data so that all parsing code can handle it correctly.
 
-	/*
-	 * Drop out, when the task has no waiters. Note,
-	 * top_waiter can be NULL, when we are in the deboosting
-	 * mode!
-	 */
-	if (top_waiter && (!task_has_pi_waiters(task) ||
-			   top_waiter != task_top_pi_waiter(task)))
-		goto out_unlock_pi;
-
-So this not only exits when the task has no waiters, it also exits
-unconditionally when the current waiter is not the top priority waiter
-of the task.
-
-So in a nested locking scenario, it might abort the lock chain walk
-and therefor miss a potential deadlock.
-
-Simple fix: Continue the chain walk, when deadlock detection is
-enabled.
-
-We also avoid the whole enqueue, if we detect the deadlock right away
-(A-A). It's an optimization, but also prevents that another waiter who
-comes in after the detection and before the task has undone the damage
-observes the situation and detects the deadlock and returns
--EDEADLOCK, which is wrong as the other task is not in a deadlock
-situation.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Link: http://lkml.kernel.org/r/20140522031949.725272460@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: devicetree@vger.kernel.org
+Cc: Mark Rutland <mark.rutland@arm.com>
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/locking/rtmutex.c | 32 ++++++++++++++++++++++++++++----
- 1 file changed, 28 insertions(+), 4 deletions(-)
+ arch/arm/boot/dts/ste-ccu8540.dts | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
-index 0dd6aec..16d5356c 100644
---- a/kernel/locking/rtmutex.c
-+++ b/kernel/locking/rtmutex.c
-@@ -225,9 +225,16 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 	 * top_waiter can be NULL, when we are in the deboosting
- 	 * mode!
- 	 */
--	if (top_waiter && (!task_has_pi_waiters(task) ||
--			   top_waiter != task_top_pi_waiter(task)))
--		goto out_unlock_pi;
-+	if (top_waiter) {
-+		if (!task_has_pi_waiters(task))
-+			goto out_unlock_pi;
-+		/*
-+		 * If deadlock detection is off, we stop here if we
-+		 * are not the top pi waiter of the task.
-+		 */
-+		if (!detect_deadlock && top_waiter != task_top_pi_waiter(task))
-+			goto out_unlock_pi;
-+	}
+diff --git a/arch/arm/boot/dts/ste-ccu8540.dts b/arch/arm/boot/dts/ste-ccu8540.dts
+index 7f3baf5..32dd55e 100644
+--- a/arch/arm/boot/dts/ste-ccu8540.dts
++++ b/arch/arm/boot/dts/ste-ccu8540.dts
+@@ -18,6 +18,7 @@
+ 	compatible = "st-ericsson,ccu8540", "st-ericsson,u8540";
  
- 	/*
- 	 * When deadlock detection is off then we check, if further
-@@ -243,7 +250,12 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 		goto retry;
- 	}
+ 	memory@0 {
++		device_type = "memory";
+ 		reg = <0x20000000 0x1f000000>, <0xc0000000 0x3f000000>;
+ 	};
  
--	/* Deadlock detection */
-+	/*
-+	 * Deadlock detection. If the lock is the same as the original
-+	 * lock which caused us to walk the lock chain or if the
-+	 * current lock is owned by the task which initiated the chain
-+	 * walk, we detected a deadlock.
-+	 */
- 	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
- 		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
- 		raw_spin_unlock(&lock->wait_lock);
-@@ -412,6 +424,18 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
- 	unsigned long flags;
- 	int chain_walk = 0, res;
- 
-+	/*
-+	 * Early deadlock detection. We really don't want the task to
-+	 * enqueue on itself just to untangle the mess later. It's not
-+	 * only an optimization. We drop the locks, so another waiter
-+	 * can come in before the chain walk detects the deadlock. So
-+	 * the other will detect the deadlock and return -EDEADLOCK,
-+	 * which is wrong, as the other waiter is not in a deadlock
-+	 * situation.
-+	 */
-+	if (detect_deadlock && owner == task)
-+		return -EDEADLK;
-+
- 	raw_spin_lock_irqsave(&task->pi_lock, flags);
- 	__rt_mutex_adjust_prio(task);
- 	waiter->task = task;
 -- 
 1.9.1
 
