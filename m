@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966766AbaFQVvN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:51:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54527 "EHLO
+	id S967216AbaFQWPi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:15:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54549 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966746AbaFQVvH (ORCPT
+	with ESMTP id S966765AbaFQVvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:51:07 -0400
+	Tue, 17 Jun 2014 17:51:14 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Heinz Mauelshagen <heinzm@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 179/212] dm cache: always split discards on cache block boundaries
-Date: Tue, 17 Jun 2014 14:44:33 -0700
-Message-Id: <1403041506-13646-180-git-send-email-kamal@canonical.com>
+Cc: Wolfram Sang <wsa+renesas@sang-engineering.com>,
+        Wolfram Sang <wsa@the-dreams.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 119/212] i2c: rcar: bail out on zero length transfers
+Date: Tue, 17 Jun 2014 14:43:33 -0700
+Message-Id: <1403041506-13646-120-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -27,35 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heinz Mauelshagen <heinzm@redhat.com>
+From: Wolfram Sang <wsa+renesas@sang-engineering.com>
 
-commit f1daa838e861ae1a0fb7cd9721a21258430fcc8c upstream.
+commit d7653964c590ba846aa11a8f6edf409773cbc492 upstream.
 
-The DM cache target cannot cope with discards that span multiple cache
-blocks, so each discard bio that spans more than one cache block must
-get split by the DM core.
+This hardware does not support zero length transfers. Instead, the
+driver does one (random) byte transfers currently with undefined results
+for the slaves. We now bail out.
 
-Signed-off-by: Heinz Mauelshagen <heinzm@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/dm-cache-target.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/i2c/busses/i2c-rcar.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
-index 1d30f65..fd92101 100644
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -2184,6 +2184,8 @@ static int cache_create(struct cache_args *ca, struct cache **result)
- 	ti->num_discard_bios = 1;
- 	ti->discards_supported = true;
- 	ti->discard_zeroes_data_unsupported = true;
-+	/* Discard bios must be split on a block boundary */
-+	ti->split_discard_bios = true;
+diff --git a/drivers/i2c/busses/i2c-rcar.c b/drivers/i2c/busses/i2c-rcar.c
+index 2c2fd7c..56de337 100644
+--- a/drivers/i2c/busses/i2c-rcar.c
++++ b/drivers/i2c/busses/i2c-rcar.c
+@@ -567,6 +567,12 @@ static int rcar_i2c_master_xfer(struct i2c_adapter *adap,
  
- 	cache->features = ca->features;
- 	ti->per_bio_data_size = get_per_bio_data_size(cache);
+ 	ret = -EINVAL;
+ 	for (i = 0; i < num; i++) {
++		/* This HW can't send STOP after address phase */
++		if (msgs[i].len == 0) {
++			ret = -EOPNOTSUPP;
++			break;
++		}
++
+ 		/*-------------- spin lock -----------------*/
+ 		spin_lock_irqsave(&priv->lock, flags);
+ 
+@@ -631,7 +637,8 @@ static int rcar_i2c_master_xfer(struct i2c_adapter *adap,
+ 
+ static u32 rcar_i2c_func(struct i2c_adapter *adap)
+ {
+-	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
++	/* This HW can't do SMBUS_QUICK and NOSTART */
++	return I2C_FUNC_I2C | (I2C_FUNC_SMBUS_EMUL & ~I2C_FUNC_SMBUS_QUICK);
+ }
+ 
+ static const struct i2c_algorithm rcar_i2c_algo = {
 -- 
 1.9.1
 
