@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966304AbaFQVs7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:48:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54088 "EHLO
+	id S966339AbaFQVtI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:49:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54114 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966283AbaFQVsz (ORCPT
+	with ESMTP id S966306AbaFQVtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:48:55 -0400
+	Tue, 17 Jun 2014 17:49:02 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Joerg Roedel <joro@8bytes.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 112/212] iommu/amd: Fix interrupt remapping for aliased devices
-Date: Tue, 17 Jun 2014 14:43:26 -0700
-Message-Id: <1403041506-13646-113-git-send-email-kamal@canonical.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 202/212] ALSA: hda/realtek - Fix COEF widget NID for ALC260 replacer fixup
+Date: Tue, 17 Jun 2014 14:44:56 -0700
+Message-Id: <1403041506-13646-203-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -27,39 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit e028a9e6b8a637af09ac4114083280df4a7045f1 upstream.
+commit 192a98e280e560510a62aca8cfa83b4ae7c095bb upstream.
 
-An apparent cut and paste error prevents the correct flags from being
-set on the alias device resulting in MSI on conventional PCI devices
-failing to work.  This also produces error events from the IOMMU like:
+The conversion to a fixup table for Replacer model with ALC260 in
+commit 20f7d928 took the wrong widget NID for COEF setups.  Namely,
+NID 0x1a should have been used instead of NID 0x20, which is the
+common node for all Realtek codecs but ALC260.
 
-AMD-Vi: Event logged [INVALID_DEVICE_REQUEST device=00:14.4 address=0x000000fdf8000000 flags=0x0a00]
-
-Where 14.4 is a PCIe-to-PCI bridge with a device behind it trying to
-use MSI interrupts.
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Fixes: 20f7d928fa6e ('ALSA: hda/realtek - Replace ALC260 model=replacer with the auto-parser')
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/iommu/amd_iommu.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 72531f0..76e579a 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -3999,7 +3999,7 @@ static struct irq_remap_table *get_irq_table(u16 devid, bool ioapic)
- 	iommu_flush_dte(iommu, devid);
- 	if (devid != alias) {
- 		irq_lookup_table[alias] = table;
--		set_dte_irq_entry(devid, table);
-+		set_dte_irq_entry(alias, table);
- 		iommu_flush_dte(iommu, alias);
- 	}
- 
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index de8805a..c8a66e0 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -1625,8 +1625,8 @@ static const struct hda_fixup alc260_fixups[] = {
+ 	[ALC260_FIXUP_REPLACER] = {
+ 		.type = HDA_FIXUP_VERBS,
+ 		.v.verbs = (const struct hda_verb[]) {
+-			{ 0x20, AC_VERB_SET_COEF_INDEX, 0x07 },
+-			{ 0x20, AC_VERB_SET_PROC_COEF,  0x3050 },
++			{ 0x1a, AC_VERB_SET_COEF_INDEX, 0x07 },
++			{ 0x1a, AC_VERB_SET_PROC_COEF,  0x3050 },
+ 			{ }
+ 		},
+ 		.chained = true,
 -- 
 1.9.1
 
