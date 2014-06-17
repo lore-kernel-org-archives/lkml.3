@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932743AbaFQMST (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 08:18:19 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33593 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754281AbaFQMSR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 08:18:17 -0400
-Date: Tue, 17 Jun 2014 13:18:11 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Dave P Martin <Dave.Martin@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Joerg Roedel <joro@8bytes.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
+	id S932782AbaFQMTQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 08:19:16 -0400
+Received: from sauhun.de ([89.238.76.85]:43932 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932444AbaFQMTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 08:19:15 -0400
+Date: Tue, 17 Jun 2014 14:19:12 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Jagan Teki <jagannadh.teki@gmail.com>
+Cc: linux-i2c@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
-Message-ID: <20140617121811.GG13808@arm.com>
-References: <1400877395-4235-1-git-send-email-thierry.reding@gmail.com>
- <538757B6.4010109@wwwdotorg.org>
- <20140530073006.GA24748@ulmo>
- <20140530112728.GB3949@e103592.cambridge.arm.com>
- <20140604211237.GC18710@mithrandir>
- <20140616125704.GE16758@arm.com>
- <20140617115829.GB18816@ulmo>
+Subject: Re: I2C Slave monitor mode support
+Message-ID: <20140617121912.GA2683@katana>
+References: <CAD6G_RRa9C0umBrR6CUF3zb5cSKKfZO7y7UPUKHjJOx41A0aJQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bp/iNruPH9dso1Pn"
 Content-Disposition: inline
-In-Reply-To: <20140617115829.GB18816@ulmo>
+In-Reply-To: <CAD6G_RRa9C0umBrR6CUF3zb5cSKKfZO7y7UPUKHjJOx41A0aJQ@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 12:58:30PM +0100, Thierry Reding wrote:
-> On Mon, Jun 16, 2014 at 01:57:04PM +0100, Will Deacon wrote:
-> > On Wed, Jun 04, 2014 at 10:12:38PM +0100, Thierry Reding wrote:
-> > > It can easily be argued that if the algorithm used to remap the ID
-> > > varies, the compatibility of the device changes. Therefore I would
-> > > expect any variant of the GICv3 that deviates from the "standard"
-> > > mapping (if there is such a thing) to have its own compatible string.
-> > 
-> > There is no standard mapping; it's a property defined at system integration
-> > time. I fully expect different SoCs to do different things here.
-> 
-> My point was that the mapping itself seems to be fundamental enough to
-> make devices with different mappings "incompatible". Therefore I think
-> this could probably be handled by using different compatible values,
-> something along the lines of this:
-> 
-> 	compatible = "vendor,soc-gicv3", "arm,gicv3";
-> 
-> Then the mapping can be described in code, which should be a whole lot
-> easier and more flexible than a more or less generic notation in device
-> tree.
 
-I don't think that scales well beyond a handful of unique mappings, and I
-really anticipate everybody doing something different based on their
-integration constraints.
+--bp/iNruPH9dso1Pn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-You'd very quickly end up with sets of tables for each SoC, describing the
-topology and associated IDs in the kernel source, which feels like a giant
-step backwards from where we are today with device tree.
 
-If, for example, the GIC architecture prescribed a fixed set of Device IDs
-and an algorithm for converting from Stream IDs then your approach may have
-some merits, but that's not where we are today (and I also don't think it's
-practical to try and enforce such system-wide properties into an interrupt
-controller architecture).
+> Few of the I2C interfaces are [operated] with slave monitor mode, when
+> there is a requirement for
+> a particular slave may need to wait some time to get the ADDR before
+> sending an ACK.
 
-Will
+Can you describe an existing scenario? Why can't the slave use clock
+stretching?
+
+> This feature is an optional and defined in few of the controllers, Can
+> anyone tell me is this support is
+> added already in kernel, if yes please point to the respective driver
+> or code link.
+
+None that I know of. The above questions should help me understand why
+it is needed on master driver level at all.
+
+
+--bp/iNruPH9dso1Pn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJToDJAAAoJEBQN5MwUoCm2JuAQALDU6i4qYjK2gT9H5dAltd6S
+K4sHq+HhodND0ogAOufLgD0c8uoZzT4G2ucSp+9Ygjxs1H1hKlSaBJ7+9d0C9CGG
+67ODxaWOFc1IVnPQ/btFVlZMCpHexWsUhVCoLdXkwON54PgNmp1g9EnEPEqZy97w
+t5ZNHPcd030cqmAGhMQ95DJyqvMa9xYa5UQo42BYkFcrw8bDATLdxPSa8It3Or4p
+BA6m6/I1AFmsQf1Mj67GDmG8e9BuN7qNRzO5P9iOc19LH3BYLfXvXkiRF3kfUdG9
+vauS84dhXB3NYV7ZwaEI517dEbMQoLbhgR7RSKtXjFYM6Uj2sfUMUsu0YadjJ52h
+3zCGHe5Rvn0bKCJ6jf0HMPDktqTXKW68dKZ4uZTZEbLAUDcySUMDjl4G3Lq3adsl
+44OBEcwbtstG7+cvOVE5+FioFHRf2rhk1jBxZqdJ0BBWmas84qfBupP+aMP5B8Fi
+jrqHUTNhSHTDHZYTASRxglKd9JV8lCCL1cxugCQjhNKslgzeMehbs0egzXoZ00V7
+LPM2CfOde2H+Hdxpumc/Ij+C6LUCoMv58BTgniI8QQgFWBSAJtYPgbazGNyetcft
+T76NDNisc98qLbb9XUPPu8KN/hnK5nXKAd6dVAByuJ47U/ZEDDeZjBrCAS6Hp2TX
+B2YUZndeqZN7HoDXJgoE
+=PhC+
+-----END PGP SIGNATURE-----
+
+--bp/iNruPH9dso1Pn--
