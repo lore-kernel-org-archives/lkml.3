@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933780AbaFQT2I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 15:28:08 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:43771 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932657AbaFQT2E (ORCPT
+	id S964838AbaFQT2z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 15:28:55 -0400
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:28325 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932657AbaFQT2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 15:28:04 -0400
-Message-ID: <53A096C2.7060800@hurleysoftware.com>
-Date: Tue, 17 Jun 2014 15:28:02 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Laurent Vivier <Laurent@Vivier.EU>
-CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Seth Bollinger <sethb@digi.com>
-Subject: Re: Broken serial port
-References: <53A08D64.1060800@Vivier.EU>
-In-Reply-To: <53A08D64.1060800@Vivier.EU>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Tue, 17 Jun 2014 15:28:54 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlQJABeWoFNbsl1t/2dsb2JhbABagw2rKgUBAQEBAQEFAZkmgQ0XdYQxLyOBGjeIRgHLQBeFY4kTHYQtBJpDizCIKIF+gUQ7
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: [PATCH 1/1] drivers/net/ethernet/xilinx/ll_temac_main.c: remove null test before kfree
+Date: Tue, 17 Jun 2014 21:27:33 +0200
+Message-Id: <1403033253-7011-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2014 02:48 PM, Laurent Vivier wrote:
-> Hi,
->
-> I'm not subscribed to these mailing lists, so CC: me.
->
-> I'm playing for some days with a kernel 3.15 on an old mac performa 575
-> and it seems that the serial port is broken. When I log on using the
-> console on the serial port it seems there is an screen refresh added
-> after each character I send.
+Fix checkpatch warning:
+WARNING: kfree(NULL) is safe this check is probably not required
 
-What uart driver is this happening on?
+Cc: Michal Simek <michal.simek@xilinx.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/net/ethernet/xilinx/ll_temac_main.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-This is a known bug being worked on for these uart drivers:
-sunsab
-sunzilog
-ip22zilog
-pmac_zilog
-
-Regards,
-Peter Hurley
-
-> A little demo :
->
-> http://asciinema.org/a/10211 [at 3:20]
->
-> I bisect and I found this commit :
->
-> commit 717f3bbab3c7628736ef738fdbf3d9a28578c26c
-> Author: Seth Bollinger <sethb@digi.com>
-> Date:   Tue Mar 25 12:55:37 2014 -0500
->
->      serial_core: Fix conditional start_tx on ring buffer not empty
->
->      If the serial_core ring buffer empties just as the tty layer receives
->      an XOFF, then start_tx will never be called when the tty layer
->      receives an XON as the serial_core ring buffer is empty.  This will
->      possibly leave a few bytes trapped in the fifo for drivers that
->      disable the transmitter when flow controlled.
->
->      Signed-off-by: Seth Bollinger <sethb@digi.com>
->      Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->
->
-> If I revert it, all works fine :
->
-> http://asciinema.org/a/10212
->
-> Regards,
-> Laurent
->
+diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
+index 4ef818a..21b6e297 100644
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -224,8 +224,7 @@ static void temac_dma_bd_release(struct net_device *ndev)
+ 		dma_free_coherent(ndev->dev.parent,
+ 				sizeof(*lp->tx_bd_v) * TX_BD_NUM,
+ 				lp->tx_bd_v, lp->tx_bd_p);
+-	if (lp->rx_skb)
+-		kfree(lp->rx_skb);
++	kfree(lp->rx_skb);
+ }
+ 
+ /**
+-- 
+1.8.4.5
 
