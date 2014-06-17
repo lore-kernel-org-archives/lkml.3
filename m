@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965969AbaFQRCG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 13:02:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50408 "EHLO
+	id S933746AbaFQRDs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 13:03:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50367 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933649AbaFQQPe (ORCPT
+	with ESMTP id S933618AbaFQQPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:15:34 -0400
+	Tue, 17 Jun 2014 12:15:32 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tristan Bruns <tristan@tristanbruns.de>, Johan Hovold <jhovold@gmail.com>,
+Cc: Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 014/121] USB: cp210x: Add 8281 (Nanotec Plug & Drive)
-Date: Tue, 17 Jun 2014 09:13:27 -0700
-Message-Id: <1403021714-16320-15-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 016/121] USB: usb_wwan: fix handling of missing bulk endpoints
+Date: Tue, 17 Jun 2014 09:13:29 -0700
+Message-Id: <1403021714-16320-17-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021714-16320-1-git-send-email-kamal@canonical.com>
 References: <1403021714-16320-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,30 +31,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tristan Bruns <tristan@tristanbruns.de>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 72b3007951010ce1bbf950e23b19d9839fa905a5 upstream.
+commit bd73bd8831696f189a479a0712ae95208e513d7e upstream.
 
-Signed-off-by: Tristan Bruns <tristan@tristanbruns.de>
+Fix regression introduced by commit 8e493ca1767d ("USB: usb_wwan: fix
+bulk-urb allocation") by making sure to require both bulk-in and out
+endpoints during port probe.
+
+The original option driver (which usb_wwan is based on) was written
+under the assumption that either endpoint could be missing, but
+evidently this cannot have been tested properly. Specifically, it would
+handle opening a device without bulk-in (but would blow up during resume
+which was implemented later), but not a missing bulk-out in write()
+(although it is handled in some places such as write_room()).
+
+Fortunately (?), the driver also got the test for missing endpoints
+wrong so the urbs were in fact always allocated, although they would be
+initialised using the wrong endpoint address (0) and any submission of
+such an urb would fail.
+
+The commit mentioned above fixed the test for missing endpoints but
+thereby exposed the other bugs which would now generate null-pointer
+exceptions rather than failed urb submissions.
+
+The regression was introduced in v3.7, but the offending commit was also
+marked for stable.
+
+Reported-by: Rafał Miłecki <zajec5@gmail.com>
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Tested-by: Rafał Miłecki <zajec5@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/cp210x.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/usb_wwan.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index 3850e92..dca9747 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -104,6 +104,7 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x10C4, 0x8218) }, /* Lipowsky Industrie Elektronik GmbH, HARP-1 */
- 	{ USB_DEVICE(0x10C4, 0x822B) }, /* Modem EDGE(GSM) Comander 2 */
- 	{ USB_DEVICE(0x10C4, 0x826B) }, /* Cygnal Integrated Products, Inc., Fasttrax GPS demonstration module */
-+	{ USB_DEVICE(0x10C4, 0x8281) }, /* Nanotec Plug & Drive */
- 	{ USB_DEVICE(0x10C4, 0x8293) }, /* Telegesis ETRX2USB */
- 	{ USB_DEVICE(0x10C4, 0x82F9) }, /* Procyon AVS */
- 	{ USB_DEVICE(0x10C4, 0x8341) }, /* Siemens MC35PU GPRS Modem */
+diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
+index c9691c8..7dca098 100644
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -476,6 +476,9 @@ int usb_wwan_port_probe(struct usb_serial_port *port)
+ 	int err;
+ 	int i;
+ 
++	if (!port->bulk_in_size || !port->bulk_out_size)
++		return -ENODEV;
++
+ 	portdata = kzalloc(sizeof(*portdata), GFP_KERNEL);
+ 	if (!portdata)
+ 		return -ENOMEM;
+@@ -483,9 +486,6 @@ int usb_wwan_port_probe(struct usb_serial_port *port)
+ 	init_usb_anchor(&portdata->delayed);
+ 
+ 	for (i = 0; i < N_IN_URB; i++) {
+-		if (!port->bulk_in_size)
+-			break;
+-
+ 		buffer = (u8 *)__get_free_page(GFP_KERNEL);
+ 		if (!buffer)
+ 			goto bail_out_error;
+@@ -499,9 +499,6 @@ int usb_wwan_port_probe(struct usb_serial_port *port)
+ 	}
+ 
+ 	for (i = 0; i < N_OUT_URB; i++) {
+-		if (!port->bulk_out_size)
+-			break;
+-
+ 		buffer = kmalloc(OUT_BUFLEN, GFP_KERNEL);
+ 		if (!buffer)
+ 			goto bail_out_error2;
 -- 
 1.9.1
 
