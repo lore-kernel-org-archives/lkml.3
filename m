@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756440AbaFQTYi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 15:24:38 -0400
-Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:49486 "EHLO
-	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755372AbaFQTYh (ORCPT
+	id S933525AbaFQTZK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 15:25:10 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:57528 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933146AbaFQTZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 15:24:37 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlQJACCVoFNbsl1t/2dsb2JhbABagw2rKgUBAQEBAQEFAZkmgQ0XdYQxLyOBGjeIRgHLOBeFY4kTHYQtBJpDk1iDQjs
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Samuel Ortiz <samuel@sortiz.org>,
-        netdev@vger.kernel.org
-Subject: [PATCH 1/1] drivers/net/irda/kingsun-sir.c: remove null test before kfree
-Date: Tue, 17 Jun 2014 21:22:50 +0200
-Message-Id: <1403032970-6471-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Tue, 17 Jun 2014 15:25:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAKh23F=2undAW=nWibOreAM8DJiQKpLx=OboCX=fNZE+OU=AbA@mail.gmail.com>
+References: <1402964326-11147-1-git-send-email-isubramanian@apm.com>
+ <1402964326-11147-5-git-send-email-isubramanian@apm.com> <20140616.214247.1154200670003936158.davem@davemloft.net>
+ <CAKh23F=2undAW=nWibOreAM8DJiQKpLx=OboCX=fNZE+OU=AbA@mail.gmail.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Tue, 17 Jun 2014 12:24:26 -0700
+Message-ID: <CAGVrzcYWecdwSmHux6yz1M5Nz849BV-sBe8DmnJWV+T8PetTvw@mail.gmail.com>
+Subject: Re: [PATCH v6 4/4] drivers: net: Add APM X-Gene SoC ethernet driver support.
+To: Iyappan Subramanian <isubramanian@apm.com>
+Cc: David Miller <davem@davemloft.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, netdev <netdev@vger.kernel.org>,
+        patches <patches@apm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jcm@redhat.com" <jcm@redhat.com>, Keyur Chudgar <kchudgar@apm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ravi Patel <rapatel@apm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch warning:
-WARNING: kfree(NULL) is safe this check is probably not required
+2014-06-17 12:21 GMT-07:00 Iyappan Subramanian <isubramanian@apm.com>:
+> On Mon, Jun 16, 2014 at 9:42 PM, David Miller <davem@davemloft.net> wrote:
+>> From: Iyappan Subramanian <isubramanian@apm.com>
+>> Date: Mon, 16 Jun 2014 17:18:46 -0700
+>>
+>>> +static netdev_tx_t xgene_enet_start_xmit(struct sk_buff *skb,
+>>> +                                      struct net_device *ndev)
+>>> +{
+>>> +     struct xgene_enet_pdata *pdata = netdev_priv(ndev);
+>>> +     struct xgene_enet_desc_ring *tx_ring = pdata->tx_ring;
+>>> +     struct xgene_enet_desc_ring *cp_ring = tx_ring->cp_ring;
+>>> +     u32 tx_level, cq_level;
+>>> +
+>>> +     tx_level = xgene_enet_ring_len(tx_ring);
+>>> +     cq_level = xgene_enet_ring_len(cp_ring);
+>>> +     if (unlikely(tx_level > pdata->tx_qcnt_hi ||
+>>> +                  cq_level > pdata->cp_qcnt_hi)) {
+>>> +             netif_stop_queue(ndev);
+>>> +             return NETDEV_TX_BUSY;
+>>> +     }
+>>> +
+>>> +     if (xgene_enet_setup_tx_desc(tx_ring, skb))
+>>> +             return NETDEV_TX_OK;
+>>
+>> If you return NETDEV_TX_OK, it is your responsibility to deal with the
+>> SKB, because you own it.
+>>
+>> In particular, you have to free the packet.
+>
+> skb freeing happens in xgene_enet_tx_completion().
 
-Cc: Samuel Ortiz <samuel@sortiz.org>
-Cc: netdev@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/net/irda/kingsun-sir.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/irda/kingsun-sir.c b/drivers/net/irda/kingsun-sir.c
-index 96fe365..e638893 100644
---- a/drivers/net/irda/kingsun-sir.c
-+++ b/drivers/net/irda/kingsun-sir.c
-@@ -553,8 +553,8 @@ static int kingsun_probe(struct usb_interface *intf,
- 	return 0;
- 
- free_mem:
--	if (kingsun->out_buf) kfree(kingsun->out_buf);
--	if (kingsun->in_buf) kfree(kingsun->in_buf);
-+	kfree(kingsun->out_buf);
-+	kfree(kingsun->in_buf);
- 	free_netdev(net);
- err_out1:
- 	return ret;
+I have not looked at what xgenet_enet_setup_tx_desc() does, but
+David's point is that, if this function fails and has not yet been
+able to queue the SKB for transmission at the HW, you should make sure
+that you free the SKB. Is xgene_enet_tx_completion() called if the
+driver failed to prepare a descriptor for a SKB?
 -- 
-1.8.4.5
-
+Florian
