@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933456AbaFQTQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 15:16:56 -0400
-Received: from smtp06.smtpout.orange.fr ([80.12.242.128]:45598 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932940AbaFQTQz (ORCPT
+	id S1756296AbaFQTSB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 15:18:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55381 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755767AbaFQTSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 15:16:55 -0400
-X-ME-Helo: beldin
-X-ME-Date: Tue, 17 Jun 2014 21:16:53 +0200
-X-ME-IP: 109.222.192.163
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] regulator: max1586 add device-tree support
-References: <1402757665-15102-1-git-send-email-robert.jarzmik@free.fr>
-	<20140617144323.GU5099@sirena.org.uk>
-X-URL: http://belgarath.falguerolles.org/
-Date: Tue, 17 Jun 2014 21:16:52 +0200
-In-Reply-To: <20140617144323.GU5099@sirena.org.uk> (Mark Brown's message of
-	"Tue, 17 Jun 2014 15:43:23 +0100")
-Message-ID: <87oaxrs5wb.fsf@free.fr>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
+	Tue, 17 Jun 2014 15:18:00 -0400
+Date: Tue, 17 Jun 2014 12:21:52 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Christoph Lameter <cl@gentwo.org>, Jeff Liu <jeff.liu@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, herbert@gondor.apana.org.au,
+        davem@davemloft.net, stefanr@s5r6.in-berlin.de, joro@8bytes.org,
+        jejb@parisc-linux.org, deller@gmx.de, bhelgaas@google.com, clm@fb.com,
+        Josef Bacik <jbacik@fb.com>, swhiteho@redhat.com, bharrosh@panasas.com,
+        bhalevy@primarydata.com, ccaulfie@redhat.com, teigland@redhat.com,
+        "Theodore Ts'o" <tytso@mit.edu>, adilger.kernel@dilger.ca,
+        jaegeuk@kernel.org, cm224.lee@samsung.com,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        casey@schaufler-ca.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/24] kobject: return actual error on kset_create_and_add
+Message-ID: <20140617192152.GA4319@kroah.com>
+References: <53A04FF7.5050900@oracle.com>
+ <20140617154730.GA14153@kroah.com>
+ <alpine.DEB.2.11.1406171057270.20610@gentwo.org>
+ <1403021389.27991.11.camel@dabdike.int.hansenpartnership.com>
+ <alpine.DEB.2.11.1406171128540.20610@gentwo.org>
+ <1403024089.1995.0.camel@jarvis>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403024089.1995.0.camel@jarvis>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown <broonie@kernel.org> writes:
+On Tue, Jun 17, 2014 at 09:54:49AM -0700, James Bottomley wrote:
+> On Tue, 2014-06-17 at 11:29 -0500, Christoph Lameter wrote:
+> > On Tue, 17 Jun 2014, James Bottomley wrote:
+> > 
+> > > What useful information does this supply?  The current assumption on
+> > > NULL return is -ENOMEM ... what's the interesting case where this
+> > > assumption is wrong?
+> > 
+> > No idea. Sysfs just ignored all error codes and returns NULL right now.
+> > If it is indeed just ENOMEN then we have no issue.
+> 
+> Well, I think when we have that justification, then we can decide on the
+> merits of the patch set.
 
-> On Sat, Jun 14, 2014 at 04:54:24PM +0200, Robert Jarzmik wrote:
->
->> +	matched = of_regulator_match(dev, np, rmatch, ARRAY_SIZE(rmatch));
->> +	of_node_put(np);
->> +	if (matched <= 0)
->> +		return matched;
->
-> Why is this treating zero as an error?  We should be able to at least
-> report the current state of regulators even if none are configured in
-> the device tree.
+There is one error patch in this function that is not due to a -ENOMEM
+error, but that will generate a huge message in the syslog describing
+what happened (created with the same name, or some other reason), so it
+would not make sense to duplicate another error message in the log by
+the caller code.
 
-Euh how so an error ?
+So again, I don't see any use for this patch at all, except to cause
+problems (mix of maintainers applying the follow-on patches and others
+not).
 
-If 0 is returned, this means no regulators are found in device-tree. It's not an
-error, it's a lack of regulators (ie. no Output_V3 and no Output_V6), and no
-more handling is necessary in this function, while returning "ok", ie 0 ...
+Everyone, please do not apply any of these patches that were sent to
+you in this series.
 
-As for the "state report", this max1586 doesn't report anything, it cannot even
-be queried about the current voltage, sic ...
+thanks,
 
-If you want me to modify this bit I need a bit more of an explanation to
-understand.
-
-Cheers.
-
--- 
-Robert
+greg k-h
