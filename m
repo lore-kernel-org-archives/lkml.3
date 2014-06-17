@@ -1,136 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965955AbaFQRAY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 13:00:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11565 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965072AbaFQRAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 13:00:21 -0400
-Message-ID: <1403024391.3707.139.camel@ul30vt.home>
-Subject: Re: [Intel-gfx] [PATCH v2] iommu/intel: Exclude devices using RMRRs
- from IOMMU API domains
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: David Woodhouse <dwmw2@infradead.org>, iommu@lists.linux-foundation.org,
-        chegu_vinod@hp.com, linux-kernel@vger.kernel.org,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
-Date: Tue, 17 Jun 2014 10:59:51 -0600
-In-Reply-To: <20140617164531.GQ5821@phenom.ffwll.local>
-References: <20140613162901.4550.94476.stgit@bling.home>
-	 <1402983303.3707.94.camel@ul30vt.home>
-	 <1402988692.7595.106.camel@i7.infradead.org>
-	 <1403007757.3707.100.camel@ul30vt.home>
-	 <1403008864.7595.144.camel@i7.infradead.org>
-	 <1403010982.3707.123.camel@ul30vt.home>
-	 <20140617134408.GM5821@phenom.ffwll.local>
-	 <1403014547.3707.130.camel@ul30vt.home>
-	 <20140617164531.GQ5821@phenom.ffwll.local>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S934137AbaFQQ7s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:59:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50406 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933648AbaFQQPe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 12:15:34 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Kieran Clancy <clancy.kieran@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 001/121] ACPI / EC: Clear stale EC events on Samsung systems
+Date: Tue, 17 Jun 2014 09:13:14 -0700
+Message-Id: <1403021714-16320-2-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403021714-16320-1-git-send-email-kamal@canonical.com>
+References: <1403021714-16320-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-06-17 at 18:45 +0200, Daniel Vetter wrote:
-> On Tue, Jun 17, 2014 at 08:15:47AM -0600, Alex Williamson wrote:
-> > On Tue, 2014-06-17 at 15:44 +0200, Daniel Vetter wrote:
-> > > On Tue, Jun 17, 2014 at 07:16:22AM -0600, Alex Williamson wrote:
-> > > > On Tue, 2014-06-17 at 13:41 +0100, David Woodhouse wrote:
-> > > > > On Tue, 2014-06-17 at 06:22 -0600, Alex Williamson wrote:
-> > > > > > On Tue, 2014-06-17 at 08:04 +0100, David Woodhouse wrote:
-> > > > > > > On Mon, 2014-06-16 at 23:35 -0600, Alex Williamson wrote:
-> > > > > > > > 
-> > > > > > > > Any idea what an off-the-shelf Asus motherboard would be doing with an
-> > > > > > > > RMRR on the Intel HD graphics?
-> > > > > > > > 
-> > > > > > > > dmar: RMRR base: 0x000000bb800000 end: 0x000000bf9fffff
-> > > > > > > > IOMMU: Setting identity map for device 0000:00:02.0 [0xbb800000 - 0xbf9fffff]
-> > > > > > > 
-> > > > > > > Hm, we should have thought of that sooner. That's quite normal — it's
-> > > > > > > for the 'stolen' memory used for the framebuffer. And maybe also the
-> > > > > > > GTT, and shadow GTT and other things; I forget precisely what, and it
-> > > > > > > varies from one setup to another.
-> > > > > > 
-> > > > > > Why exactly do these things need to be identity mapped through the
-> > > > > > IOMMU?  This sounds like something a normal device might do with a
-> > > > > > coherent mapping.
-> > > > > 
-> > > > > The BIOS (EFI or VESA) sets up a framebuffer in stolen main memory. It's
-> > > > > accessed by DMA, using the physical address. The RMRR exists because we
-> > > > > need it *not* to suddenly stop working the moment the OS turns on the
-> > > > > IOMMU.
-> > > > > 
-> > > > > The OS graphics driver, if any, is not loaded at this point.
-> > > > > 
-> > > > > And even later, the OS graphics driver may choose to make use of the
-> > > > > 'stolen' memory for various purposes. And since it was already stolen,
-> > > > > it doesn't go and set up *another* mapping for it; it knows that a
-> > > > > mapping already exists.
-> > > > > 
-> > > > > > > I'd expect fairly much all systems to have an RMRR for the integrated
-> > > > > > > graphics device if they have one, and your patch¹ is going to prevent
-> > > > > > > assignment of those to guests... as you've presumably noticed.
-> > > > > > > 
-> > > > > > > I'm not sure if the i915 driver is capable of fully reprogramming the
-> > > > > > > hardware to completely stop using that region, to allow assignment to a
-> > > > > > > guest with a 'pure' memory map and no stolen region. I suppose it must,
-> > > > > > > if assignment to guests was working correctly before?
-> > > > > > 
-> > > > > > IGD assignment has never worked with KVM.
-> > > > > 
-> > > > > Hm. It works with Xen though, doesn't it?
-> > > > 
-> > > > Apparently
-> > > > 
-> > > > > Are we content to say that it'll *never* work with KVM, and thus we can
-> > > > > live with the fact that your patch makes it harder to fix whatever was
-> > > > > wrong in the first place?
-> > > > 
-> > > > Probably not.  However, it seems like you're saying that this RMRR is
-> > > > used by and visible to OS level drivers, versus backchannel
-> > > > communication channels, invisible to the OS.  I think the latter is
-> > > > specifically what we want to prevent by excluding devices with RMRRs.
-> > > > This is a challenging use case, but it seems to be understood.  If when
-> > > > IGD is bound to vfio-pci we can be sure that access to the RMRR area
-> > > > ceases, then we can tear it down and re-establish it from
-> > > > userspace/QEMU, describe it to the guest in an e820 reserved region, and
-> > > > never consider hotplug of the device for guests.  If that's the case,
-> > > > maybe it's another exception, like USB.  I'll need to look through i915
-> > > > more to find how the region is discovered.  Thanks,
-> > > 
-> > > We have a bunch of register in the mmio bar set up by the bios that tells
-> > > us the address and size of the stolen range we can use. The address we
-> > > need for programming ptes, the size to know how much there is. We also
-> > > have an early boot pci quirk in x86 nowadays to make sure the pci layer
-> > > doesn't put random stuff in that range.
-> > > 
-> > > See drivers/gpu/drm/i915/i915_gem_gtt.c (search for stolen size)
-> > > i915_gem_stolen.c (look at stolen_to_phys) and the early quirks in
-> > > arch/x86/kernel/early-quirks.c for copies of the same code.
-> > 
-> > Thanks for the tips.  If the purpose of the RMRR is to maintain
-> > consistency across the OS enabling VT-d, then there's really no reason
-> > for this to be identity mapped in a guest (where VT-d is not exposed) is
-> > there?  It may waste the memory that's already reserved on the platform
-> > to not setup an identity map, but I could back stolen memory by
-> > non-stolen user memory, couldn't I?  It might be nice to avoid adding an
-> > identity mapping interface to the IOMMU API, even if it costs some
-> > memory to do so.  Or maybe I could expose the RMRR area through the VFIO
-> > device file descriptor, allow it to be mmap'd there, then allow that
-> > mmap to be mapped through the IOMMU.  Thanks,
-> 
-> The stolen range is locked down at boot in the memory controller and at
-> least on some platforms not cpu accessible. Also our gpu is famous for
-> warts in the tlb and pte lookup hw, so I wouldn't be surprised at all if
-> the stolen range couldn't be backed by normal memory. Our driver otoh will
-> survive if you set the stolen size to 0 (with slight feature degration).
+3.8.13.24 -stable review patch.  If anyone has any objections, please let me know.
 
-Do you know if the same is true of the Windows driver for stolen size?
-We can easily set the guest physical address of stolen memory to match
-the physical hardware, which would hopefully keep the GPU happy, but if
-it's special at the memory controller level, it sounds like we'd really
-need to identity map it.  Thanks,
+------------------
 
-Alex
+From: Kieran Clancy <clancy.kieran@gmail.com>
+
+commit ad332c8a45330d170bb38b95209de449b31cd1b4 upstream.
+
+A number of Samsung notebooks (530Uxx/535Uxx/540Uxx/550Pxx/900Xxx/etc)
+continue to log events during sleep (lid open/close, AC plug/unplug,
+battery level change), which accumulate in the EC until a buffer fills.
+After the buffer is full (tests suggest it holds 8 events), GPEs stop
+being triggered for new events. This state persists on wake or even on
+power cycle, and prevents new events from being registered until the EC
+is manually polled.
+
+This is the root cause of a number of bugs, including AC not being
+detected properly, lid close not triggering suspend, and low ambient
+light not triggering the keyboard backlight. The bug also seemed to be
+responsible for performance issues on at least one user's machine.
+
+Juan Manuel Cabo found the cause of bug and the workaround of polling
+the EC manually on wake.
+
+The loop which clears the stale events is based on an earlier patch by
+Lan Tianyu (see referenced attachment).
+
+This patch:
+ - Adds a function acpi_ec_clear() which polls the EC for stale _Q
+   events at most ACPI_EC_CLEAR_MAX (currently 100) times. A warning is
+   logged if this limit is reached.
+ - Adds a flag EC_FLAGS_CLEAR_ON_RESUME which is set to 1 if the DMI
+   system vendor is Samsung. This check could be replaced by several
+   more specific DMI vendor/product pairs, but it's likely that the bug
+   affects more Samsung products than just the five series mentioned
+   above. Further, it should not be harmful to run acpi_ec_clear() on
+   systems without the bug; it will return immediately after finding no
+   data waiting.
+ - Runs acpi_ec_clear() on initialisation (boot), from acpi_ec_add()
+ - Runs acpi_ec_clear() on wake, from acpi_ec_unblock_transactions()
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=44161
+References: https://bugzilla.kernel.org/show_bug.cgi?id=45461
+References: https://bugzilla.kernel.org/show_bug.cgi?id=57271
+References: https://bugzilla.kernel.org/attachment.cgi?id=126801
+Suggested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
+Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
+Reviewed-by: Lan Tianyu <tianyu.lan@intel.com>
+Reviewed-by: Dennis Jansen <dennis.jansen@web.de>
+Tested-by: Kieran Clancy <clancy.kieran@gmail.com>
+Tested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
+Tested-by: Dennis Jansen <dennis.jansen@web.de>
+Tested-by: Maurizio D'Addona <mauritiusdadd@gmail.com>
+Tested-by: San Zamoyski <san@plusnet.pl>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/acpi/ec.c | 64 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 64 insertions(+)
+
+diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+index 97fcfb0..092f862 100644
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -70,6 +70,8 @@ enum ec_command {
+ #define ACPI_EC_DELAY		500	/* Wait 500ms max. during EC ops */
+ #define ACPI_EC_UDELAY_GLK	1000	/* Wait 1ms max. to get global lock */
+ #define ACPI_EC_MSI_UDELAY	550	/* Wait 550us for MSI EC */
++#define ACPI_EC_CLEAR_MAX	100	/* Maximum number of events to query
++					 * when trying to clear the EC */
+ 
+ enum {
+ 	EC_FLAGS_QUERY_PENDING,		/* Query is pending */
+@@ -123,6 +125,7 @@ EXPORT_SYMBOL(first_ec);
+ static int EC_FLAGS_MSI; /* Out-of-spec MSI controller */
+ static int EC_FLAGS_VALIDATE_ECDT; /* ASUStec ECDTs need to be validated */
+ static int EC_FLAGS_SKIP_DSDT_SCAN; /* Not all BIOS survive early DSDT scan */
++static int EC_FLAGS_CLEAR_ON_RESUME; /* Needs acpi_ec_clear() on boot/resume */
+ 
+ /* --------------------------------------------------------------------------
+                              Transaction Management
+@@ -468,6 +471,29 @@ acpi_handle ec_get_handle(void)
+ 
+ EXPORT_SYMBOL(ec_get_handle);
+ 
++static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
++
++/*
++ * Clears stale _Q events that might have accumulated in the EC.
++ * Run with locked ec mutex.
++ */
++static void acpi_ec_clear(struct acpi_ec *ec)
++{
++	int i, status;
++	u8 value = 0;
++
++	for (i = 0; i < ACPI_EC_CLEAR_MAX; i++) {
++		status = acpi_ec_query_unlocked(ec, &value);
++		if (status || !value)
++			break;
++	}
++
++	if (unlikely(i == ACPI_EC_CLEAR_MAX))
++		pr_warn("Warning: Maximum of %d stale EC events cleared\n", i);
++	else
++		pr_info("%d stale EC events cleared\n", i);
++}
++
+ void acpi_ec_block_transactions(void)
+ {
+ 	struct acpi_ec *ec = first_ec;
+@@ -491,6 +517,10 @@ void acpi_ec_unblock_transactions(void)
+ 	mutex_lock(&ec->mutex);
+ 	/* Allow transactions to be carried out again */
+ 	clear_bit(EC_FLAGS_BLOCKED, &ec->flags);
++
++	if (EC_FLAGS_CLEAR_ON_RESUME)
++		acpi_ec_clear(ec);
++
+ 	mutex_unlock(&ec->mutex);
+ }
+ 
+@@ -848,6 +878,13 @@ static int acpi_ec_add(struct acpi_device *device)
+ 
+ 	/* EC is fully operational, allow queries */
+ 	clear_bit(EC_FLAGS_QUERY_PENDING, &ec->flags);
++
++	/* Clear stale _Q events if hardware might require that */
++	if (EC_FLAGS_CLEAR_ON_RESUME) {
++		mutex_lock(&ec->mutex);
++		acpi_ec_clear(ec);
++		mutex_unlock(&ec->mutex);
++	}
+ 	return ret;
+ }
+ 
+@@ -949,6 +986,30 @@ static int ec_enlarge_storm_threshold(const struct dmi_system_id *id)
+ 	return 0;
+ }
+ 
++/*
++ * On some hardware it is necessary to clear events accumulated by the EC during
++ * sleep. These ECs stop reporting GPEs until they are manually polled, if too
++ * many events are accumulated. (e.g. Samsung Series 5/9 notebooks)
++ *
++ * https://bugzilla.kernel.org/show_bug.cgi?id=44161
++ *
++ * Ideally, the EC should also be instructed NOT to accumulate events during
++ * sleep (which Windows seems to do somehow), but the interface to control this
++ * behaviour is not known at this time.
++ *
++ * Models known to be affected are Samsung 530Uxx/535Uxx/540Uxx/550Pxx/900Xxx,
++ * however it is very likely that other Samsung models are affected.
++ *
++ * On systems which don't accumulate _Q events during sleep, this extra check
++ * should be harmless.
++ */
++static int ec_clear_on_resume(const struct dmi_system_id *id)
++{
++	pr_debug("Detected system needing EC poll on resume.\n");
++	EC_FLAGS_CLEAR_ON_RESUME = 1;
++	return 0;
++}
++
+ static struct dmi_system_id __initdata ec_dmi_table[] = {
+ 	{
+ 	ec_skip_dsdt_scan, "Compal JFL92", {
+@@ -992,6 +1053,9 @@ static struct dmi_system_id __initdata ec_dmi_table[] = {
+ 	ec_validate_ecdt, "ASUS hardware", {
+ 	DMI_MATCH(DMI_SYS_VENDOR, "ASUSTek Computer Inc."),
+ 	DMI_MATCH(DMI_PRODUCT_NAME, "L4R"),}, NULL},
++	{
++	ec_clear_on_resume, "Samsung hardware", {
++	DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD.")}, NULL},
+ 	{},
+ };
+ 
+-- 
+1.9.1
 
