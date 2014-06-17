@@ -1,71 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965735AbaFQQmQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:42:16 -0400
-Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:47719 "EHLO
-	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965290AbaFQQmL (ORCPT
+	id S965712AbaFQQmD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:42:03 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48070 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S965692AbaFQQl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:42:11 -0400
-Date: Tue, 17 Jun 2014 18:41:54 +0200
-From: Josef Gajdusek <atx@atx.name>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] acpi/battery: fix wrong value of capacity_now reported
- by few battery types when fully charged (resend)
-Message-ID: <20140617164154.GA21113@dashie>
-References: <20140612145813.GB14085@dashie>
- <3564280.IKKn41NV0x@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3564280.IKKn41NV0x@vostro.rjw.lan>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Tue, 17 Jun 2014 12:41:59 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 4/6] ARM: at91/dt: sam9rl crystals under the clocks node
+Date: Tue, 17 Jun 2014 18:41:46 +0200
+Message-Id: <1403023308-20533-5-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403023308-20533-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1403023308-20533-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems that some batteries (noticed on DELL JYPJ136) assume 
-capacity_now = design_capacity when fully charged. This causes 
-reported capacity to suddenly jump to >full_charge_capacity (and that 
-means capacity reported to userspace is >100% and incorrect) 
-values after 99%. This patch attempts to detect this bug, notifies 
-userspace and trims the value to full_charge_capacity.
+Having clocks grouped in a subnode is common practice, so move the crystals
+under a clocks node for the at91sam9rl SoC and at91sam9rl based boards.
 
-Signed-off-by: Josef Gajdusek <atx@atx.name>
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
-Relaxed the check as you suggested and added printk_once.
+ arch/arm/boot/dts/at91sam9rl.dtsi  | 22 +++++++++++-----------
+ arch/arm/boot/dts/at91sam9rlek.dts | 17 ++++++++---------
+ 2 files changed, 19 insertions(+), 20 deletions(-)
 
-> Why don't you use the
->
->    battery->capacity_now > battery->full_charge_capacity
->
-> check here?  That would be more robust, wouldn't it?
-
-To allow userspace to see that there is some unknown bug we do not know yet 
-with the battery. This is taken care of much more elegantly by the printk 
-now.
-
-diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-index e48fc98..57a800c 100644
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -532,6 +532,18 @@ static int acpi_battery_get_state(struct acpi_battery *battery)
- 			" invalid.\n");
- 	}
+diff --git a/arch/arm/boot/dts/at91sam9rl.dtsi b/arch/arm/boot/dts/at91sam9rl.dtsi
+index 1da183155eee..8d6751a00074 100644
+--- a/arch/arm/boot/dts/at91sam9rl.dtsi
++++ b/arch/arm/boot/dts/at91sam9rl.dtsi
+@@ -50,19 +50,19 @@
+ 		reg = <0x20000000 0x04000000>;
+ 	};
  
-+	/* When fully charged, some batteries wrongly report
-+	 * capacity_now = design_capacity instead of = full_charge_capacity
-+	 */
-+	if (battery->capacity_now > battery->full_charge_capacity) {
-+		battery->capacity_now = battery->full_charge_capacity;
-+		printk_once(KERN_WARNING FW_BUG
-+			"battery: reported current charge level (%d) "
-+			"is higher than reported maximum charge level (%d)."
-+			"This is normal on some systems.\n",
-+			battery->capacity_now, battery->full_charge_capacity);
-+	}
+-	slow_xtal: slow_xtal {
+-		compatible = "fixed-clock";
+-		#clock-cells = <0>;
+-		clock-frequency = <0>;
+-	};
++	clocks {
++		slow_xtal: slow_xtal {
++			compatible = "fixed-clock";
++			#clock-cells = <0>;
++			clock-frequency = <0>;
++		};
+ 
+-	main_xtal: main_xtal {
+-		compatible = "fixed-clock";
+-		#clock-cells = <0>;
+-		clock-frequency = <0>;
+-	};
++		main_xtal: main_xtal {
++			compatible = "fixed-clock";
++			#clock-cells = <0>;
++			clock-frequency = <0>;
++		};
+ 
+-	clocks {
+ 		adc_op_clk: adc_op_clk{
+ 			compatible = "fixed-clock";
+ 			#clock-cells = <0>;
+diff --git a/arch/arm/boot/dts/at91sam9rlek.dts b/arch/arm/boot/dts/at91sam9rlek.dts
+index d4a010e40fe3..9be5b540eebf 100644
+--- a/arch/arm/boot/dts/at91sam9rlek.dts
++++ b/arch/arm/boot/dts/at91sam9rlek.dts
+@@ -20,15 +20,6 @@
+ 		reg = <0x20000000 0x4000000>;
+ 	};
+ 
+-
+-	slow_xtal {
+-		clock-frequency = <32768>;
+-	};
+-
+-	main_xtal {
+-		clock-frequency = <12000000>;
+-	};
+-
+ 	clocks {
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
+@@ -38,6 +29,14 @@
+ 			compatible = "atmel,osc", "fixed-clock";
+ 			clock-frequency = <12000000>;
+ 		};
 +
- 	if (test_bit(ACPI_BATTERY_QUIRK_PERCENTAGE_CAPACITY, &battery->flags)
- 	    && battery->capacity_now >= 0 && battery->capacity_now <= 100)
- 		battery->capacity_now = (battery->capacity_now *
++		slow_xtal {
++			clock-frequency = <32768>;
++		};
++
++		main_xtal {
++			clock-frequency = <12000000>;
++		};
+ 	};
+ 
+ 	ahb {
+-- 
+1.9.1
+
