@@ -1,85 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932942AbaFQNxr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 09:53:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52467 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932133AbaFQNxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 09:53:46 -0400
-Date: Tue, 17 Jun 2014 15:53:44 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 04/12] mm: memcontrol: retry reclaim for oom-disabled and
- __GFP_NOFAIL charges
-Message-ID: <20140617135344.GC19886@dhcp22.suse.cz>
-References: <1402948472-8175-1-git-send-email-hannes@cmpxchg.org>
- <1402948472-8175-5-git-send-email-hannes@cmpxchg.org>
+	id S932979AbaFQNyg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 09:54:36 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:32907 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932133AbaFQNyf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 09:54:35 -0400
+Message-ID: <53A04888.5010204@linaro.org>
+Date: Tue, 17 Jun 2014 14:54:16 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402948472-8175-5-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Rob Clark <robdclark@gmail.com>, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v3] ARM: add get_user() support for 8 byte types
+References: <1402587755-29245-1-git-send-email-daniel.thompson@linaro.org> <20140612155843.GK23430@n2100.arm.linux.org.uk> <53A015B3.2070809@linaro.org> <20140617110908.GH23430@n2100.arm.linux.org.uk> <53A0428C.10200@linaro.org> <20140617133620.GJ23430@n2100.arm.linux.org.uk>
+In-Reply-To: <20140617133620.GJ23430@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 16-06-14 15:54:24, Johannes Weiner wrote:
-> There is no reason why oom-disabled and __GFP_NOFAIL charges should
-> try to reclaim only once when every other charge tries several times
-> before giving up.  Make them all retry the same number of times.
-
-OK, this makes sense for oom-disabled and __GFP_NOFAIL but does it make
-sense to do additional reclaim for tasks with fatal_signal_pending?
-
-It is little bit unexpected, because we bypass if the condition happens
-before the reclaim but then we ignore it.
-
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  mm/memcontrol.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+On 17/06/14 14:36, Russell King - ARM Linux wrote:
+> On Tue, Jun 17, 2014 at 02:28:44PM +0100, Daniel Thompson wrote:
+>> On 17/06/14 12:09, Russell King - ARM Linux wrote:
+>>> On Tue, Jun 17, 2014 at 11:17:23AM +0100, Daniel Thompson wrote:
+>>>> ... at this point there is a narrowing cast followed by an implicit
+>>>> widening. This results in compiler either ignoring r3 altogether or, if
+>>>> spilling to the stack, generating code to set r3 to zero before doing
+>>>> the store.
+>>>
+>>> In actual fact, there's very little difference between the two
+>>> implementations in terms of generated code.
+>>>
+>>> The difference between them is what happens on the 64-bit big endian
+>>> narrowing case, where we use __get_user_4 with your version.  This
+>>> adds one additional instruction.
+>>
+>> Good point.
+>>
+>>
+>>> and 64-bit narrowed to 32-bit:
+>>>
+>>>         str     lr, [sp, #-4]!
+>>> -       mov     ip, r0
+>>> +       mov     r3, r0
+>>>         mov     r0, r1
+>>>  #APP
+>>>  @ 275 "t-getuser.c" 1
+>>> -       bl      __get_user_8
+>>> +       bl      __get_user_4
+>>>  @ 0 "" 2
+>>> -       str     r2, [ip, #0]
+>>> +       str     r2, [r3, #0]
+>>>         ldr     pc, [sp], #4
+>>
+>> The later case avoids allocating r3 for the __get_user_x and should
+>> reduce register pressure and, potentially, saves a few instructions
+>> elsewhere (one of my rather large test functions does demonstrate this
+>> effect).
+>>
+>> I don't know if we care about that. If we do I'm certainly happy to put
+>> a patch together than exploits this (whilst avoiding the add in the big
+>> endian case).
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index e946f7439b16..52550bbff1ef 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2566,7 +2566,7 @@ static int mem_cgroup_try_charge(struct mem_cgroup *memcg,
->  				 bool oom)
->  {
->  	unsigned int batch = max(CHARGE_BATCH, nr_pages);
-> -	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
-> +	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
->  	struct mem_cgroup *mem_over_limit;
->  	struct res_counter *fail_res;
->  	unsigned long nr_reclaimed;
-> @@ -2638,6 +2638,9 @@ retry:
->  	if (mem_cgroup_wait_acct_move(mem_over_limit))
->  		goto retry;
->  
-> +	if (nr_retries--)
-> +		goto retry;
-> +
->  	if (gfp_mask & __GFP_NOFAIL)
->  		goto bypass;
->  
-> @@ -2647,9 +2650,6 @@ retry:
->  	if (!oom)
->  		goto nomem;
->  
-> -	if (nr_oom_retries--)
-> -		goto retry;
-> -
->  	mem_cgroup_oom(mem_over_limit, gfp_mask, get_order(batch));
->  nomem:
->  	if (!(gfp_mask & __GFP_NOFAIL))
-> -- 
-> 2.0.0
-> 
+> No need - the + case is your version, the - case is my version.  So your
+> version wins on this point. :)
 
--- 
-Michal Hocko
-SUSE Labs
+:) Thanks, although credit really goes to Rob Clark...
+
+I think currently:
+
+1. Rob's patch is better for register pressure in the narrowing case
+   (above).
+
+2. Your patch is probably better for big endian due to the add in Rob's
+   version. I say probably because, without proof, I suspect the cost
+   of the add would in most cases outweigh the register pressure
+   benefit.
+
+3. Your patch has better implementation of __get_user_8 (it uses ldrd).
+
+Hence I'm suspect we need to combine elements from both patches.
+
