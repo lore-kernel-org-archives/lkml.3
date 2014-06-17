@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965452AbaFQQ4C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:56:02 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50576 "EHLO
+	id S965946AbaFQQ5M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:57:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50557 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933934AbaFQQSt (ORCPT
+	with ESMTP id S933930AbaFQQSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:18:49 -0400
+	Tue, 17 Jun 2014 12:18:48 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+Cc: Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 046/121] usb: option: add and update a number of CMOTech devices
-Date: Tue, 17 Jun 2014 09:17:04 -0700
-Message-Id: <1403021899-16708-19-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 040/121] USB: io_ti: fix firmware download on big-endian machines
+Date: Tue, 17 Jun 2014 09:16:58 -0700
+Message-Id: <1403021899-16708-13-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,120 +28,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 34f972d6156fe9eea2ab7bb418c71f9d1d5c8e7b upstream.
+commit 5509076d1b4485ce9fb07705fcbcd2695907ab5b upstream.
 
-A number of older CMOTech modems are based on Qualcomm
-chips.  The blacklisted interfaces are QMI/wwan.
+During firmware download the device expects memory addresses in
+big-endian byte order. As the wIndex parameter which hold the address is
+sent in little-endian byte order regardless of host byte order, we need
+to use swab16 rather than cpu_to_be16.
 
-Reported-by: Lars Melin <larsm17@gmail.com>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Also make sure to handle the struct ti_i2c_desc size parameter which is
+returned in little-endian byte order.
+
+Reported-by: Ludovic Drolez <ldrolez@debian.org>
+Tested-by: Ludovic Drolez <ldrolez@debian.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/option.c | 74 ++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 70 insertions(+), 4 deletions(-)
+ drivers/usb/serial/io_ti.c | 50 ++++++++++++++++++++++++++++++----------------
+ 1 file changed, 33 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index b496887..24e9b08 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -234,8 +234,31 @@ static void option_instat_callback(struct urb *urb);
- #define QUALCOMM_VENDOR_ID			0x05C6
+diff --git a/drivers/usb/serial/io_ti.c b/drivers/usb/serial/io_ti.c
+index 1db782d..ce5bcf9 100644
+--- a/drivers/usb/serial/io_ti.c
++++ b/drivers/usb/serial/io_ti.c
+@@ -29,6 +29,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/mutex.h>
+ #include <linux/serial.h>
++#include <linux/swab.h>
+ #include <linux/kfifo.h>
+ #include <linux/ioctl.h>
+ #include <linux/firmware.h>
+@@ -284,7 +285,7 @@ static int read_download_mem(struct usb_device *dev, int start_address,
+ {
+ 	int status = 0;
+ 	__u8 read_length;
+-	__be16 be_start_address;
++	u16 be_start_address;
  
- #define CMOTECH_VENDOR_ID			0x16d8
--#define CMOTECH_PRODUCT_6008			0x6008
--#define CMOTECH_PRODUCT_6280			0x6280
-+#define CMOTECH_PRODUCT_6001			0x6001
-+#define CMOTECH_PRODUCT_CMU_300			0x6002
-+#define CMOTECH_PRODUCT_6003			0x6003
-+#define CMOTECH_PRODUCT_6004			0x6004
-+#define CMOTECH_PRODUCT_6005			0x6005
-+#define CMOTECH_PRODUCT_CGU_628A		0x6006
-+#define CMOTECH_PRODUCT_CHE_628S		0x6007
-+#define CMOTECH_PRODUCT_CMU_301			0x6008
-+#define CMOTECH_PRODUCT_CHU_628			0x6280
-+#define CMOTECH_PRODUCT_CHU_628S		0x6281
-+#define CMOTECH_PRODUCT_CDU_680			0x6803
-+#define CMOTECH_PRODUCT_CDU_685A		0x6804
-+#define CMOTECH_PRODUCT_CHU_720S		0x7001
-+#define CMOTECH_PRODUCT_7002			0x7002
-+#define CMOTECH_PRODUCT_CHU_629K		0x7003
-+#define CMOTECH_PRODUCT_7004			0x7004
-+#define CMOTECH_PRODUCT_7005			0x7005
-+#define CMOTECH_PRODUCT_CGU_629			0x7006
-+#define CMOTECH_PRODUCT_CHU_629S		0x700a
-+#define CMOTECH_PRODUCT_CHU_720I		0x7211
-+#define CMOTECH_PRODUCT_7212			0x7212
-+#define CMOTECH_PRODUCT_7213			0x7213
-+#define CMOTECH_PRODUCT_7251			0x7251
-+#define CMOTECH_PRODUCT_7252			0x7252
-+#define CMOTECH_PRODUCT_7253			0x7253
+ 	dev_dbg(&dev->dev, "%s - @ %x for %d\n", __func__, start_address, length);
  
- #define TELIT_VENDOR_ID				0x1bc7
- #define TELIT_PRODUCT_UC864E			0x1003
-@@ -504,6 +527,10 @@ static const struct option_blacklist_info huawei_cdc12_blacklist = {
- 	.reserved = BIT(1) | BIT(2),
- };
+@@ -300,10 +301,14 @@ static int read_download_mem(struct usb_device *dev, int start_address,
+ 		if (read_length > 1) {
+ 			dev_dbg(&dev->dev, "%s - @ %x for %d\n", __func__, start_address, read_length);
+ 		}
+-		be_start_address = cpu_to_be16(start_address);
++		/*
++		 * NOTE: Must use swab as wIndex is sent in little-endian
++		 *       byte order regardless of host byte order.
++		 */
++		be_start_address = swab16((u16)start_address);
+ 		status = ti_vread_sync(dev, UMPC_MEMORY_READ,
+ 					(__u16)address_type,
+-					(__force __u16)be_start_address,
++					be_start_address,
+ 					buffer, read_length);
  
-+static const struct option_blacklist_info net_intf0_blacklist = {
-+	.reserved = BIT(0),
-+};
-+
- static const struct option_blacklist_info net_intf1_blacklist = {
- 	.reserved = BIT(1),
- };
-@@ -1037,8 +1064,47 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x0023)}, /* ONYX 3G device */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9000)}, /* SIMCom SIM5218 */
--	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6280) }, /* BP3-USB & BP3-EXT HSDPA */
--	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6008) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6001) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CMU_300) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6003),
-+	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6004) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6005) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CGU_628A) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHE_628S),
-+	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CMU_301),
-+	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_628),
-+	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_628S) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CDU_680) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CDU_685A) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_720S),
-+	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7002),
-+	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_629K),
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7004),
-+	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7005) },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CGU_629),
-+	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_629S),
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CHU_720I),
-+	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7212),
-+	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7213),
-+	  .driver_info = (kernel_ulong_t)&net_intf0_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7251),
-+	  .driver_info = (kernel_ulong_t)&net_intf1_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7252),
-+	  .driver_info = (kernel_ulong_t)&net_intf1_blacklist },
-+	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_7253),
-+	  .driver_info = (kernel_ulong_t)&net_intf1_blacklist },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864E) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864G) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_DUAL) },
+ 		if (status) {
+@@ -400,7 +405,7 @@ static int write_i2c_mem(struct edgeport_serial *serial,
+ 	struct device *dev = &serial->serial->dev->dev;
+ 	int status = 0;
+ 	int write_length;
+-	__be16 be_start_address;
++	u16 be_start_address;
+ 
+ 	/* We can only send a maximum of 1 aligned byte page at a time */
+ 
+@@ -415,11 +420,16 @@ static int write_i2c_mem(struct edgeport_serial *serial,
+ 		__func__, start_address, write_length);
+ 	usb_serial_debug_data(dev, __func__, write_length, buffer);
+ 
+-	/* Write first page */
+-	be_start_address = cpu_to_be16(start_address);
++	/*
++	 * Write first page.
++	 *
++	 * NOTE: Must use swab as wIndex is sent in little-endian byte order
++	 *       regardless of host byte order.
++	 */
++	be_start_address = swab16((u16)start_address);
+ 	status = ti_vsend_sync(serial->serial->dev,
+ 				UMPC_MEMORY_WRITE, (__u16)address_type,
+-				(__force __u16)be_start_address,
++				be_start_address,
+ 				buffer,	write_length);
+ 	if (status) {
+ 		dev_dbg(dev, "%s - ERROR %d\n", __func__, status);
+@@ -442,11 +452,16 @@ static int write_i2c_mem(struct edgeport_serial *serial,
+ 			__func__, start_address, write_length);
+ 		usb_serial_debug_data(dev, __func__, write_length, buffer);
+ 
+-		/* Write next page */
+-		be_start_address = cpu_to_be16(start_address);
++		/*
++		 * Write next page.
++		 *
++		 * NOTE: Must use swab as wIndex is sent in little-endian byte
++		 *       order regardless of host byte order.
++		 */
++		be_start_address = swab16((u16)start_address);
+ 		status = ti_vsend_sync(serial->serial->dev, UMPC_MEMORY_WRITE,
+ 				(__u16)address_type,
+-				(__force __u16)be_start_address,
++				be_start_address,
+ 				buffer, write_length);
+ 		if (status) {
+ 			dev_err(dev, "%s - ERROR %d\n", __func__, status);
+@@ -652,8 +667,8 @@ static int get_descriptor_addr(struct edgeport_serial *serial,
+ 		if (rom_desc->Type == desc_type)
+ 			return start_address;
+ 
+-		start_address = start_address + sizeof(struct ti_i2c_desc)
+-							+ rom_desc->Size;
++		start_address = start_address + sizeof(struct ti_i2c_desc) +
++						le16_to_cpu(rom_desc->Size);
+ 
+ 	} while ((start_address < TI_MAX_I2C_SIZE) && rom_desc->Type);
+ 
+@@ -666,7 +681,7 @@ static int valid_csum(struct ti_i2c_desc *rom_desc, __u8 *buffer)
+ 	__u16 i;
+ 	__u8 cs = 0;
+ 
+-	for (i = 0; i < rom_desc->Size; i++)
++	for (i = 0; i < le16_to_cpu(rom_desc->Size); i++)
+ 		cs = (__u8)(cs + buffer[i]);
+ 
+ 	if (cs != rom_desc->CheckSum) {
+@@ -720,7 +735,7 @@ static int check_i2c_image(struct edgeport_serial *serial)
+ 			break;
+ 
+ 		if ((start_address + sizeof(struct ti_i2c_desc) +
+-					rom_desc->Size) > TI_MAX_I2C_SIZE) {
++			le16_to_cpu(rom_desc->Size)) > TI_MAX_I2C_SIZE) {
+ 			status = -ENODEV;
+ 			dev_dbg(dev, "%s - structure too big, erroring out.\n", __func__);
+ 			break;
+@@ -735,7 +750,8 @@ static int check_i2c_image(struct edgeport_serial *serial)
+ 			/* Read the descriptor data */
+ 			status = read_rom(serial, start_address +
+ 						sizeof(struct ti_i2c_desc),
+-						rom_desc->Size, buffer);
++						le16_to_cpu(rom_desc->Size),
++						buffer);
+ 			if (status)
+ 				break;
+ 
+@@ -744,7 +760,7 @@ static int check_i2c_image(struct edgeport_serial *serial)
+ 				break;
+ 		}
+ 		start_address = start_address + sizeof(struct ti_i2c_desc) +
+-								rom_desc->Size;
++						le16_to_cpu(rom_desc->Size);
+ 
+ 	} while ((rom_desc->Type != I2C_DESC_TYPE_ION) &&
+ 				(start_address < TI_MAX_I2C_SIZE));
+@@ -783,7 +799,7 @@ static int get_manuf_info(struct edgeport_serial *serial, __u8 *buffer)
+ 
+ 	/* Read the descriptor data */
+ 	status = read_rom(serial, start_address+sizeof(struct ti_i2c_desc),
+-						rom_desc->Size, buffer);
++					le16_to_cpu(rom_desc->Size), buffer);
+ 	if (status)
+ 		goto exit;
+ 
 -- 
 1.9.1
 
