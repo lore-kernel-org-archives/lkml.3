@@ -1,245 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933455AbaFQPAR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 11:00:17 -0400
-Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:41372 "EHLO
-	mirror2.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932999AbaFQOxZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 10:53:25 -0400
-From: Chen-Yu Tsai <wens@csie.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: Chen-Yu Tsai <wens@csie.org>, linux-serial@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Luc Verhaegen <libv@skynet.be>
-Subject: [PATCH v2 00/20] ARM: sunxi: Introduce Allwinner A23 (sun8i) support
-Date: Tue, 17 Jun 2014 22:52:37 +0800
-Message-Id: <1403016777-15121-1-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 2.0.0
+	id S933468AbaFQPC0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 11:02:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21691 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933047AbaFQPCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 11:02:25 -0400
+Date: Tue, 17 Jun 2014 11:01:59 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm v2 04/11] pagewalk: move pmd_trans_huge_lock() from
+ callbacks to common code
+Message-ID: <20140617150159.GA8524@nhori.redhat.com>
+References: <1402609691-13950-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1402609691-13950-5-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <53A0506C.6040609@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53A0506C.6040609@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On Tue, Jun 17, 2014 at 04:27:56PM +0200, Jerome Marchand wrote:
+> On 06/12/2014 11:48 PM, Naoya Horiguchi wrote:
+> > Now all of current users of page table walker are canonicalized, i.e.
+> > pmd_entry() handles only trans_pmd entry, and pte_entry() handles pte entry.
+> > So we can factorize common code more.
+> > This patch moves pmd_trans_huge_lock() in each pmd_entry() to pagewalk core.
+> > 
+> > ChangeLog v2:
+> > - add null check walk->vma in walk_pmd_range()
+> 
+> An older version of this patch already made it to linux-next (commit
+> b0e08c5) and I've actually hit the NULL pointer dereference.
+> 
+> Moreover, that patch (or maybe another recent pagewalk patch) breaks
+> /proc/<pid>/smaps. All fields that should have been filled by
+> smaps_pte() are almost always zero (and when it isn't, it's always a
+> multiple of 2MB). It seems to me that the page walk never goes below
+> pmd level.
 
-This is v2 of the patch series that introduces basic kernel support for
-Allwinner's A23 SoC, which we will call the sun8i platform. This includes
-basic clocks, timers, interrupts, pinctrl, and UARTs.
+Agreed, I'm now thinking that forcing pte_entry() for every user is not
+good idea, so I'll return to the start point and just will do only the
+necessary changes (i.e. only iron out the vma handling problem for hugepage.)
 
-The series can also be found here:
+Thanks,
+Naoya Horiguchi
 
-    https://github.com/wens/linux/tree/sunxi-a23-v2
-
-
-The A23 is a mix of Allwinner's previous A20 (sun7i) and A31 (sun6i)
-SoC's, but also a step forward. Most of the IP blocks are the same as
-in the A31, with some features stripped out. However it has a Mali GPU,
-Instead of a PowerVR.
-
-The patches are a result of comparing the current working sun6i platform
-with the A23 user manual, and various kernel and u-boot sources for A23
-and A31 from Allwinner.
-
-The series is based on v3.16-rc1, with linux-pinctrl/devel merged in for
-Maxime's pinctrl external interrupts patches.
-
-The first 12 patches are fixes, which will also be used by sun8i.
-Hopefully these won't have any issues so we can get them in and fix
-up some stuff queued up for 3.16.
-
-Patch 1 adds optional support for reset controls to 8250_dw, which is
-used on sun6i. The reset controls must be de-asserted for the UART to
-function.
-
-Patch 2 registers the sunxi clock gates with clkdev, so the "protect
-important clock" code will work with them.
-
-Patch 3 moves "ahb_sdram" clock protection into the protected clocks
-list on sun4i, sun5i, and sun7i.
-
-Patch 4 fixes gate indexing for sun6i PRCM APB0 gates introduced during
-this cycle. The index mapping was incorrect when "clock-indicies" was
-used and there were gaps between the used gates.
-
-Patches 5~7 correct clock factor and clock rate calculations for PLL1
-and PLL6 on sun6i, which have a multiplier factor starting from 1,
-instead of 0 in previous SoC's.
-
-Patch 8 renames PLL6 on sun6i to PLL6x2, to match the rate calculation
-fixes in the previous patch. This patch also adds a fixed-factor clock
-for PLL6, which is PLL6x2 divided by 2.
-
-Patch 9 adds a clock driver for sun6i/sun8i MBUS clock. This clock must
-be protected on sun8i or the system will hang. This series does not add
-this clock to the sun6i DT.
-
-Patch 10 adds divider table support to sunxi divider clocks. This is
-used to support the AXI clock on sun8i.
-
-The remaining patches add new support for A23 related modules.
-
-Patch 11 adds support for the basic clock modules found on the A23.
-
-Patches 12 and 13 add support for the PRCM clocks found on the A23,
-notably the APB0 clock, which has a different divider table.
-
-Patches 14 and 15 add the pin sets for the A23 PIO and A23 R_PIO
-blocks, respectively.
-
-Patch 16 adds A23 PRCM support to the sun6i-prcm mfd driver.
-The A23 PRCM uses a slightly different subdevice list.
-
-Patch 17 add machine support for the A23.
-
-Patch 18 adds a Kconfig option to use R_UART as early console.
-
-Patch 19 adds the DTSI for A23 (sun8i).
-
-Patch 20 adds the DT for the Ippo-q8h (v5) tablet.
-This tablet is one of the earliest available A23 devices.
-So far we have seen 2 revisions of the mainboard inside the tablet.
-The version I have is a v5, which has an unsupported SDIO WiFi chip.
-The other known version uses a RTL8188 USB WiFi chip.
-
-
-Greg, could you pick up the first patch? This patch is independent of
-the rest. It was mostly useful to get the second UART on my tablet
-working.
-
-Emilio, Mike, patches 2~8 are fixes for existing clock drivers, 9~13
-are new stuff for the A23. Please have a look.
-
-Linus, the pinctrl patches (14 and 15) should go through your tree?
-
-Lee, could you take patch 16, the sun6i-prcm mfd patch?
-
-Maxime, I guess the remaining patches are for you.
-
-
-Changes since v1:
-
-  - Rebased on to v3.16-rc1 with Maxime's pinctrl external interrupt
-    patch series
-
-  - Move devm_get_reset_control to 8250_dw main probe function and
-    use IF_ERR to check return values (patch 1)
-
-  - Move incorrectly squashed fixups from patch
-      clk: sunxi: move "ahb_sdram" to protected clock list (patch 3)
-    to patch
-      clk: sunxi: register clock gates with clkdev (patch 2)
-
-  - Add "clk: sunxi: Fix rate_recalc for sun6i PLL1" (patch 6)
-    (sun6i-a31-pll1 is used to support PLL5 on sun8i)
-
-  - Drop "clk: sunxi: Implement A31 PLL6 as a divs clock for 2x output"
-    and related DT patches;
-    use fixed-factor clock for PLL6 normal output, and pll6x2 as name of
-    the current pll6 clock. (patch 8)
-
-  - drop patches for PLL6 pre-divider for AHB1
-      clk: sunxi: Add support for PLL6 pre-divider on AHB1 clock
-      ARM: sun6i: DT: Add PLL6 pre-divider clock for AHB1 mux input
-
-  - Add support for sun6i MBUS clocks (patch 9), which is sourced from
-    PLL6 on sun8i by default and must be protected.
-
-  - Add support for table based divider clocks (patch 10)
-
-  - Add separate protected clock list for sun8i, and drop
-      clk: sunxi: add "pll6" to sun6i protected clock list (patch 11)
-
-  - Add table based sun8i-a23-axi divider clock (patch 11)
-
-  - Add A23 compatible for sun6i-a31-apb0-gates-clk (patch 13)
-
-  - Change sun8i CSI pin comments D8/D9 to SDA/SCK (patch 14)
-
-  - Document "allwinner,sun8i-a23-r-pinctrl" in
-      pinctrl: sunxi: Add A23 R_PIO controller support (patch 15)
-
-  - Fixed depends on for pinctrl drivers (patches 14/15)
-
-  - Add external interrupt support to pinctrl drivers patches 14/15)
-
-  - Change depends on for DEBUG_SUNXI_R_UART (patch 18)
-
-  - Dropped SMP support. I will try to work out PSCI support in u-boot
-
-  - Sort clocks by address (patch 19)
-
-  - Add PLL5 and MBUS clocks to A23 DTSI (patch 19)
-
-  - Added memory node to sun8i DTSI (patch 19)
-
-  - Added i2c2 to sun8i DTSI and DTS (patch 19)
-
-There are a lot of changes. Hopefully I didn't miss any.
-
-Thanks
-ChenYu
-
-
-Chen-Yu Tsai (20):
-  serial: 8250_dw: Add optional reset control support
-  clk: sunxi: register clock gates with clkdev
-  clk: sunxi: move "ahb_sdram" to protected clock list
-  clk: sunxi: Fix gate indexing for sun6i-a31-apb0-gates
-  clk: sunxi: Support factor clocks with N multiplier factor starting
-    from 1
-  clk: sunxi: Fix rate_recalc for sun6i PLL1
-  clk: sunxi: Fix PLL6 calculation on sun6i
-  ARM: sun6i: DT: Rename PLL6 to PLL6x2 and add fixed-factor-clock for
-    PLL6
-  clk: sunxi: Add sun6i MBUS clock support
-  clk: sunxi: Add support for table-based divider clocks
-  clk: sunxi: Add A23 clocks support
-  clk: sunxi: Add A23 APB0 support to sun6i-a31-apb0-clk
-  clk: sunxi: Add A23 specific compatible to sun6i-a31-apb0-gates-clk
-  pinctrl: sunxi: Add A23 PIO controller support
-  pinctrl: sunxi: Add A23 R_PIO controller support
-  mfd: sun6i-prcm: Add support for Allwinner A23 PRCM
-  ARM: sunxi: Introduce Allwinner A23 support
-  ARM: sunxi: Add earlyprintk support using R_UART (sun6i/sun8i)
-  ARM: sunxi: Add Allwinner A23 dtsi
-  ARM: sun8i: dt: Add Ippo-q8h v5 support
-
- Documentation/devicetree/bindings/clock/sunxi.txt  |   8 +
- .../devicetree/bindings/mfd/sun6i-prcm.txt         |   2 +-
- .../bindings/pinctrl/allwinner,sunxi-pinctrl.txt   |   2 +
- .../bindings/serial/snps-dw-apb-uart.txt           |   1 +
- arch/arm/Kconfig.debug                             |  10 +
- arch/arm/boot/dts/Makefile                         |   2 +
- arch/arm/boot/dts/sun6i-a31.dtsi                   |  11 +-
- arch/arm/boot/dts/sun8i-a23-ippo-q8h-v5.dts        |  57 ++
- arch/arm/boot/dts/sun8i-a23.dtsi                   | 536 +++++++++++++++++++
- arch/arm/mach-sunxi/Kconfig                        |   8 +
- arch/arm/mach-sunxi/sunxi.c                        |  10 +
- drivers/clk/sunxi/clk-factors.c                    |   5 +-
- drivers/clk/sunxi/clk-factors.h                    |   1 +
- drivers/clk/sunxi/clk-sun6i-apb0-gates.c           |   7 +-
- drivers/clk/sunxi/clk-sun6i-apb0.c                 |  28 +-
- drivers/clk/sunxi/clk-sunxi.c                      | 195 ++++++-
- drivers/mfd/sun6i-prcm.c                           |  30 ++
- drivers/pinctrl/sunxi/Kconfig                      |   9 +
- drivers/pinctrl/sunxi/Makefile                     |   2 +
- drivers/pinctrl/sunxi/pinctrl-sun8i-a23-r.c        | 142 +++++
- drivers/pinctrl/sunxi/pinctrl-sun8i-a23.c          | 593 +++++++++++++++++++++
- drivers/tty/serial/8250/8250_dw.c                  |   9 +
- 22 files changed, 1638 insertions(+), 30 deletions(-)
- create mode 100644 arch/arm/boot/dts/sun8i-a23-ippo-q8h-v5.dts
- create mode 100644 arch/arm/boot/dts/sun8i-a23.dtsi
- create mode 100644 drivers/pinctrl/sunxi/pinctrl-sun8i-a23-r.c
- create mode 100644 drivers/pinctrl/sunxi/pinctrl-sun8i-a23.c
-
--- 
-2.0.0
-
+> Jerome
+> 
+> > - move comment update into a separate patch
+> > 
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > ---
+> >  arch/powerpc/mm/subpage-prot.c |  2 ++
+> >  fs/proc/task_mmu.c             | 66 ++++++++++++++----------------------------
+> >  mm/memcontrol.c                | 55 ++++++++++-------------------------
+> >  mm/pagewalk.c                  | 18 ++++++++++--
+> >  4 files changed, 55 insertions(+), 86 deletions(-)
+> > 
+> > diff --git mmotm-2014-05-21-16-57.orig/arch/powerpc/mm/subpage-prot.c mmotm-2014-05-21-16-57/arch/powerpc/mm/subpage-prot.c
+> > index fa9fb5b4c66c..d0d94ac606f3 100644
+> > --- mmotm-2014-05-21-16-57.orig/arch/powerpc/mm/subpage-prot.c
+> > +++ mmotm-2014-05-21-16-57/arch/powerpc/mm/subpage-prot.c
+> > @@ -135,7 +135,9 @@ static int subpage_walk_pmd_entry(pmd_t *pmd, unsigned long addr,
+> >  				  unsigned long end, struct mm_walk *walk)
+> >  {
+> >  	struct vm_area_struct *vma = walk->vma;
+> > +	spin_unlock(walk->ptl);
+> >  	split_huge_page_pmd(vma, addr, pmd);
+> > +	spin_lock(walk->ptl);
+> >  	return 0;
+> >  }
+> >  
+> > diff --git mmotm-2014-05-21-16-57.orig/fs/proc/task_mmu.c mmotm-2014-05-21-16-57/fs/proc/task_mmu.c
+> > index fa6d6a4e85b3..059206ea3c6b 100644
+> > --- mmotm-2014-05-21-16-57.orig/fs/proc/task_mmu.c
+> > +++ mmotm-2014-05-21-16-57/fs/proc/task_mmu.c
+> > @@ -496,15 +496,8 @@ static int smaps_pmd(pmd_t *pmd, unsigned long addr, unsigned long end,
+> >  			struct mm_walk *walk)
+> >  {
+> >  	struct mem_size_stats *mss = walk->private;
+> > -	spinlock_t *ptl;
+> > -
+> > -	if (pmd_trans_huge_lock(pmd, walk->vma, &ptl) == 1) {
+> > -		smaps_pte((pte_t *)pmd, addr, addr + HPAGE_PMD_SIZE, walk);
+> > -		spin_unlock(ptl);
+> > -		mss->anonymous_thp += HPAGE_PMD_SIZE;
+> > -		/* don't call smaps_pte() */
+> > -		walk->skip = 1;
+> > -	}
+> > +	smaps_pte((pte_t *)pmd, addr, addr + HPAGE_PMD_SIZE, walk);
+> > +	mss->anonymous_thp += HPAGE_PMD_SIZE;
+> >  	return 0;
+> >  }
+> >  
+> > @@ -983,31 +976,21 @@ static int pagemap_pmd(pmd_t *pmd, unsigned long addr, unsigned long end,
+> >  	struct vm_area_struct *vma = walk->vma;
+> >  	struct pagemapread *pm = walk->private;
+> >  	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
+> > -	spinlock_t *ptl;
+> > -
+> > -	if (!vma)
+> > -		return err;
+> > -	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+> > -		int pmd_flags2;
+> > +	int pmd_flags2;
+> >  
+> > -		if ((vma->vm_flags & VM_SOFTDIRTY) || pmd_soft_dirty(*pmd))
+> > -			pmd_flags2 = __PM_SOFT_DIRTY;
+> > -		else
+> > -			pmd_flags2 = 0;
+> > +	if ((vma->vm_flags & VM_SOFTDIRTY) || pmd_soft_dirty(*pmd))
+> > +		pmd_flags2 = __PM_SOFT_DIRTY;
+> > +	else
+> > +		pmd_flags2 = 0;
+> >  
+> > -		for (; addr != end; addr += PAGE_SIZE) {
+> > -			unsigned long offset;
+> > +	for (; addr != end; addr += PAGE_SIZE) {
+> > +		unsigned long offset;
+> >  
+> > -			offset = (addr & ~PAGEMAP_WALK_MASK) >>
+> > -					PAGE_SHIFT;
+> > -			thp_pmd_to_pagemap_entry(&pme, pm, *pmd, offset, pmd_flags2);
+> > -			err = add_to_pagemap(addr, &pme, pm);
+> > -			if (err)
+> > -				break;
+> > -		}
+> > -		spin_unlock(ptl);
+> > -		/* don't call pagemap_pte() */
+> > -		walk->skip = 1;
+> > +		offset = (addr & ~PAGEMAP_WALK_MASK) >> PAGE_SHIFT;
+> > +		thp_pmd_to_pagemap_entry(&pme, pm, *pmd, offset, pmd_flags2);
+> > +		err = add_to_pagemap(addr, &pme, pm);
+> > +		if (err)
+> > +			break;
+> >  	}
+> >  	return err;
+> >  }
+> > @@ -1277,20 +1260,13 @@ static int gather_pmd_stats(pmd_t *pmd, unsigned long addr,
+> >  {
+> >  	struct numa_maps *md = walk->private;
+> >  	struct vm_area_struct *vma = walk->vma;
+> > -	spinlock_t *ptl;
+> > -
+> > -	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+> > -		pte_t huge_pte = *(pte_t *)pmd;
+> > -		struct page *page;
+> > -
+> > -		page = can_gather_numa_stats(huge_pte, vma, addr);
+> > -		if (page)
+> > -			gather_stats(page, md, pte_dirty(huge_pte),
+> > -				     HPAGE_PMD_SIZE/PAGE_SIZE);
+> > -		spin_unlock(ptl);
+> > -		/* don't call gather_pte_stats() */
+> > -		walk->skip = 1;
+> > -	}
+> > +	pte_t huge_pte = *(pte_t *)pmd;
+> > +	struct page *page;
+> > +
+> > +	page = can_gather_numa_stats(huge_pte, vma, addr);
+> > +	if (page)
+> > +		gather_stats(page, md, pte_dirty(huge_pte),
+> > +			     HPAGE_PMD_SIZE/PAGE_SIZE);
+> >  	return 0;
+> >  }
+> >  #ifdef CONFIG_HUGETLB_PAGE
+> > diff --git mmotm-2014-05-21-16-57.orig/mm/memcontrol.c mmotm-2014-05-21-16-57/mm/memcontrol.c
+> > index 01a66a208769..bb987cb9e043 100644
+> > --- mmotm-2014-05-21-16-57.orig/mm/memcontrol.c
+> > +++ mmotm-2014-05-21-16-57/mm/memcontrol.c
+> > @@ -6723,15 +6723,9 @@ static int mem_cgroup_count_precharge_pmd(pmd_t *pmd,
+> >  					struct mm_walk *walk)
+> >  {
+> >  	struct vm_area_struct *vma = walk->vma;
+> > -	spinlock_t *ptl;
+> > -
+> > -	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+> > -		if (get_mctgt_type_thp(vma, addr, *pmd, NULL) == MC_TARGET_PAGE)
+> > -			mc.precharge += HPAGE_PMD_NR;
+> > -		spin_unlock(ptl);
+> > -		/* don't call mem_cgroup_count_precharge_pte() */
+> > -		walk->skip = 1;
+> > -	}
+> > +
+> > +	if (get_mctgt_type_thp(vma, addr, *pmd, NULL) == MC_TARGET_PAGE)
+> > +		mc.precharge += HPAGE_PMD_NR;
+> >  	return 0;
+> >  }
+> >  
+> > @@ -6952,38 +6946,21 @@ static int mem_cgroup_move_charge_pmd(pmd_t *pmd,
+> >  	struct page *page;
+> >  	struct page_cgroup *pc;
+> >  
+> > -	/*
+> > -	 * We don't take compound_lock() here but no race with splitting thp
+> > -	 * happens because:
+> > -	 *  - if pmd_trans_huge_lock() returns 1, the relevant thp is not
+> > -	 *    under splitting, which means there's no concurrent thp split,
+> > -	 *  - if another thread runs into split_huge_page() just after we
+> > -	 *    entered this if-block, the thread must wait for page table lock
+> > -	 *    to be unlocked in __split_huge_page_splitting(), where the main
+> > -	 *    part of thp split is not executed yet.
+> > -	 */
+> > -	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+> > -		if (mc.precharge < HPAGE_PMD_NR) {
+> > -			spin_unlock(ptl);
+> > -			return 0;
+> > -		}
+> > -		target_type = get_mctgt_type_thp(vma, addr, *pmd, &target);
+> > -		if (target_type == MC_TARGET_PAGE) {
+> > -			page = target.page;
+> > -			if (!isolate_lru_page(page)) {
+> > -				pc = lookup_page_cgroup(page);
+> > -				if (!mem_cgroup_move_account(page, HPAGE_PMD_NR,
+> > -							pc, mc.from, mc.to)) {
+> > -					mc.precharge -= HPAGE_PMD_NR;
+> > -					mc.moved_charge += HPAGE_PMD_NR;
+> > -				}
+> > -				putback_lru_page(page);
+> > +	if (mc.precharge < HPAGE_PMD_NR)
+> > +		return 0;
+> > +	target_type = get_mctgt_type_thp(vma, addr, *pmd, &target);
+> > +	if (target_type == MC_TARGET_PAGE) {
+> > +		page = target.page;
+> > +		if (!isolate_lru_page(page)) {
+> > +			pc = lookup_page_cgroup(page);
+> > +			if (!mem_cgroup_move_account(page, HPAGE_PMD_NR,
+> > +						     pc, mc.from, mc.to)) {
+> > +				mc.precharge -= HPAGE_PMD_NR;
+> > +				mc.moved_charge += HPAGE_PMD_NR;
+> >  			}
+> > -			put_page(page);
+> > +			putback_lru_page(page);
+> >  		}
+> > -		spin_unlock(ptl);
+> > -		/* don't call mem_cgroup_move_charge_pte() */
+> > -		walk->skip = 1;
+> > +		put_page(page);
+> >  	}
+> >  	return 0;
+> >  }
+> > diff --git mmotm-2014-05-21-16-57.orig/mm/pagewalk.c mmotm-2014-05-21-16-57/mm/pagewalk.c
+> > index 24311d6f5c20..f1a3417d0b51 100644
+> > --- mmotm-2014-05-21-16-57.orig/mm/pagewalk.c
+> > +++ mmotm-2014-05-21-16-57/mm/pagewalk.c
+> > @@ -73,8 +73,22 @@ static int walk_pmd_range(pud_t *pud, unsigned long addr,
+> >  			continue;
+> >  		}
+> >  
+> > -		if (walk->pmd_entry) {
+> > -			err = walk->pmd_entry(pmd, addr, next, walk);
+> > +		/*
+> > +		 * We don't take compound_lock() here but no race with splitting
+> > +		 * thp happens because:
+> > +		 *  - if pmd_trans_huge_lock() returns 1, the relevant thp is
+> > +		 *    not under splitting, which means there's no concurrent
+> > +		 *    thp split,
+> > +		 *  - if another thread runs into split_huge_page() just after
+> > +		 *    we entered this if-block, the thread must wait for page
+> > +		 *    table lock to be unlocked in __split_huge_page_splitting(),
+> > +		 *    where the main part of thp split is not executed yet.
+> > +		 */
+> > +		if (walk->pmd_entry && walk->vma) {
+> > +			if (pmd_trans_huge_lock(pmd, walk->vma, &walk->ptl) == 1) {
+> > +				err = walk->pmd_entry(pmd, addr, next, walk);
+> > +				spin_unlock(walk->ptl);
+> > +			}
+> >  			if (skip_lower_level_walking(walk))
+> >  				continue;
+> >  			if (err)
+> > 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
