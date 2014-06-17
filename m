@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967444AbaFQV67 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:58:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54916 "EHLO
+	id S967337AbaFQV72 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:59:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54912 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967170AbaFQVwr (ORCPT
+	with ESMTP id S967159AbaFQVwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:52:47 -0400
+	Tue, 17 Jun 2014 17:52:45 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Shaun Ruffell <sruffell@digium.com>, Ingo Molnar <mingo@kernel.org>,
+Cc: David Gibson <david@gibson.dropbear.id.au>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 143/212] sched: Sanitize irq accounting madness
-Date: Tue, 17 Jun 2014 14:43:57 -0700
-Message-Id: <1403041506-13646-144-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 023/212] rtnetlink: Warn when interface's information won't fit in our packet
+Date: Tue, 17 Jun 2014 14:41:57 -0700
+Message-Id: <1403041506-13646-24-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -30,122 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: David Gibson <david@gibson.dropbear.id.au>
 
-commit 2d513868e2a33e1d5315490ef4c861ee65babd65 upstream.
+[ Upstream commit 973462bbde79bb827824c73b59027a0aed5c9ca6 ]
 
-Russell reported, that irqtime_account_idle_ticks() takes ages due to:
+Without IFLA_EXT_MASK specified, the information reported for a single
+interface in response to RTM_GETLINK is expected to fit within a netlink
+packet of NLMSG_GOODSIZE.
 
-       for (i = 0; i < ticks; i++)
-               irqtime_account_process_tick(current, 0, rq);
+If it doesn't, however, things will go badly wrong,  When listing all
+interfaces, netlink_dump() will incorrectly treat -EMSGSIZE on the first
+message in a packet as the end of the listing and omit information for
+that interface and all subsequent ones.  This can cause getifaddrs(3) to
+enter an infinite loop.
 
-It's sad, that this code was written way _AFTER_ the NOHZ idle
-functionality was available. I charge myself guitly for not paying
-attention when that crap got merged with commit abb74cefa ("sched:
-Export ns irqtimes through /proc/stat")
+This patch won't fix the problem, but it will WARN_ON() making it easier to
+track down what's going wrong.
 
-So instead of looping nr_ticks times just apply the whole thing at
-once.
-
-As a side note: The whole cputime_t vs. u64 business in that context
-wants to be cleaned up as well. There is no point in having all these
-back and forth conversions. Lets standardise on u64 nsec for all
-kernel internal accounting and be done with it. Everything else does
-not make sense at all for fine grained accounting. Frederic, can you
-please take care of that?
-
-Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Venkatesh Pallipadi <venki@google.com>
-Cc: Shaun Ruffell <sruffell@digium.com>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1405022307000.6261@ionos.tec.linutronix.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+Reviewed-by: Jiri Pirko <jpirko@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/sched/cputime.c | 32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ net/core/rtnetlink.c | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 9994791..cfe2f26 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -326,50 +326,50 @@ out:
-  * softirq as those do not count in task exec_runtime any more.
-  */
- static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
--						struct rq *rq)
-+					 struct rq *rq, int ticks)
- {
--	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
-+	cputime_t scaled = cputime_to_scaled(cputime_one_jiffy);
-+	u64 cputime = (__force u64) cputime_one_jiffy;
- 	u64 *cpustat = kcpustat_this_cpu->cpustat;
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index cc706c9..5bee798 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1070,6 +1070,7 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
+ 	struct hlist_head *head;
+ 	struct nlattr *tb[IFLA_MAX+1];
+ 	u32 ext_filter_mask = 0;
++	int err;
  
- 	if (steal_account_process_tick())
- 		return;
- 
-+	cputime *= ticks;
-+	scaled *= ticks;
+ 	s_h = cb->args[0];
+ 	s_idx = cb->args[1];
+@@ -1090,11 +1091,17 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
+ 		hlist_for_each_entry_rcu(dev, head, index_hlist) {
+ 			if (idx < s_idx)
+ 				goto cont;
+-			if (rtnl_fill_ifinfo(skb, dev, RTM_NEWLINK,
+-					     NETLINK_CB(cb->skb).portid,
+-					     cb->nlh->nlmsg_seq, 0,
+-					     NLM_F_MULTI,
+-					     ext_filter_mask) <= 0)
++			err = rtnl_fill_ifinfo(skb, dev, RTM_NEWLINK,
++					       NETLINK_CB(cb->skb).portid,
++					       cb->nlh->nlmsg_seq, 0,
++					       NLM_F_MULTI,
++					       ext_filter_mask);
++			/* If we ran out of room on the first message,
++			 * we're in trouble
++			 */
++			WARN_ON((err == -EMSGSIZE) && (skb->len == 0));
 +
- 	if (irqtime_account_hi_update()) {
--		cpustat[CPUTIME_IRQ] += (__force u64) cputime_one_jiffy;
-+		cpustat[CPUTIME_IRQ] += cputime;
- 	} else if (irqtime_account_si_update()) {
--		cpustat[CPUTIME_SOFTIRQ] += (__force u64) cputime_one_jiffy;
-+		cpustat[CPUTIME_SOFTIRQ] += cputime;
- 	} else if (this_cpu_ksoftirqd() == p) {
- 		/*
- 		 * ksoftirqd time do not get accounted in cpu_softirq_time.
- 		 * So, we have to handle it separately here.
- 		 * Also, p->stime needs to be updated for ksoftirqd.
- 		 */
--		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
--					CPUTIME_SOFTIRQ);
-+		__account_system_time(p, cputime, scaled, CPUTIME_SOFTIRQ);
- 	} else if (user_tick) {
--		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
-+		account_user_time(p, cputime, scaled);
- 	} else if (p == rq->idle) {
--		account_idle_time(cputime_one_jiffy);
-+		account_idle_time(cputime);
- 	} else if (p->flags & PF_VCPU) { /* System time or guest time */
--		account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
-+		account_guest_time(p, cputime, scaled);
- 	} else {
--		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
--					CPUTIME_SYSTEM);
-+		__account_system_time(p, cputime, scaled,	CPUTIME_SYSTEM);
- 	}
- }
++			if (err <= 0)
+ 				goto out;
  
- static void irqtime_account_idle_ticks(int ticks)
- {
--	int i;
- 	struct rq *rq = this_rq();
- 
--	for (i = 0; i < ticks; i++)
--		irqtime_account_process_tick(current, 0, rq);
-+	irqtime_account_process_tick(current, 0, rq, ticks);
- }
- #else /* CONFIG_IRQ_TIME_ACCOUNTING */
- static inline void irqtime_account_idle_ticks(int ticks) {}
- static inline void irqtime_account_process_tick(struct task_struct *p, int user_tick,
--						struct rq *rq) {}
-+						struct rq *rq, int nr_ticks) {}
- #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
- 
- /*
-@@ -458,7 +458,7 @@ void account_process_tick(struct task_struct *p, int user_tick)
- 		return;
- 
- 	if (sched_clock_irqtime) {
--		irqtime_account_process_tick(p, user_tick, rq);
-+		irqtime_account_process_tick(p, user_tick, rq, 1);
- 		return;
- 	}
- 
+ 			nl_dump_check_consistent(cb, nlmsg_hdr(skb));
 -- 
 1.9.1
 
