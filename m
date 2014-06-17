@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105AbaFQK4d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 06:56:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56698 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754695AbaFQK4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 06:56:32 -0400
-Message-ID: <53A01ECA.6090504@redhat.com>
-Date: Tue, 17 Jun 2014 12:56:10 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S932236AbaFQK5P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 06:57:15 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:44025 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755953AbaFQK5N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 06:57:13 -0400
+Message-ID: <53A01F02.7000202@hurleysoftware.com>
+Date: Tue, 17 Jun 2014 06:57:06 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Markos Chandras <markos.chandras@imgtec.com>
-Subject: Re: mips:allmodconfig build failure in 3.16-rc1 due to bpf_jit code
-References: <539FA6CB.5050703@roeck-us.net> <539FFA6B.9030004@redhat.com> <53A01572.5090603@redhat.com> <53A01AED.4010008@roeck-us.net>
-In-Reply-To: <53A01AED.4010008@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Arnd Bergmann <arnd@arndb.de>, linuxppc-dev@lists.ozlabs.org
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Karsten Keil <isdn@linux-pingi.de>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH tty-next 14/22] tty: Remove tty_wait_until_sent_from_close()
+References: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com> <1402924639-5164-15-git-send-email-peter@hurleysoftware.com> <4575870.N9RCpZ4UMg@wuerfel>
+In-Reply-To: <4575870.N9RCpZ4UMg@wuerfel>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2014 12:39 PM, Guenter Roeck wrote:
-> On 06/17/2014 03:16 AM, Daniel Borkmann wrote:
->> On 06/17/2014 10:20 AM, Daniel Borkmann wrote:
->>> On 06/17/2014 04:24 AM, Guenter Roeck wrote:
->>>> mips:allmodconfig fails in 3.16-rc1 with lots of undefined symbols.
->>>>
->>>> arch/mips/net/bpf_jit.c: In function 'is_load_to_a':
->>>> arch/mips/net/bpf_jit.c:559:7: error: 'BPF_S_LD_W_LEN' undeclared (first use in this function)
->>>> arch/mips/net/bpf_jit.c:559:7: note: each undeclared identifier is reported only once for each function it appears in
->>>> arch/mips/net/bpf_jit.c:560:7: error: 'BPF_S_LD_W_ABS' undeclared (first use in this function)
->>>> arch/mips/net/bpf_jit.c:561:7: error: 'BPF_S_LD_H_ABS' undeclared (first use in this function)
->>>> arch/mips/net/bpf_jit.c:562:7: error: 'BPF_S_LD_B_ABS' undeclared (first use in this function)
->>>> arch/mips/net/bpf_jit.c:563:7: error: 'BPF_S_ANC_CPU' undeclared (first use in this function)
->>>> arch/mips/net/bpf_jit.c:564:7: error: 'BPF_S_ANC_IFINDEX' undeclared (first use in this function)
->>>> arch/mips/net/bpf_jit.c:565:7: error: 'BPF_S_ANC_MARK' undeclared (first use in this function)
->>>>
->>>> and so on.
->>>>
->>>> Those symbols are not defined anywhere.
->>>>
->>>> The problem is due to a conflict with commit 348059313 (net: filter: get rid of BPF_S_*
->>>> enum), which removed those definitions.
->>>
->>> Yep, it seems both got in this merge window from different trees. Don't have mips, but
->>> I'll have a look, and send you a patch.
+On 06/17/2014 04:00 AM, Arnd Bergmann wrote:
+> On Monday 16 June 2014 09:17:11 Peter Hurley wrote:
+>> tty_wait_until_sent_from_close() drops the tty lock while waiting
+>> for the tty driver to finish sending previously accepted data (ie.,
+>> data remaining in its write buffer and transmit fifo).
 >>
->> Could you give the attached patch a try?
+>> However, dropping the tty lock is a hold-over from when the tty
+>> lock was system-wide; ie., one lock for all ttys.
+>>
+>> Since commit 89c8d91e31f267703e365593f6bfebb9f6d2ad01,
+>> 'tty: localise the lock', dropping the tty lock has not been necessary.
+>>
+>> CC: Karsten Keil <isdn@linux-pingi.de>
+>> CC: linuxppc-dev@lists.ozlabs.org
+>> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 >
-> Yes, this fixes the build problem. Obviously I have no idea if it works ;-)
+> I don't understand the second half of the changelog, it doesn't seem
+> to fit here: there deadlock that we are trying to avoid here happens
+> when the *same* tty needs the lock to complete the function that
+> sends the pending data. I don't think we do still do that any more,
+> but it doesn't seem related to the tty lock being system-wide or not.
 
-Thanks Guenter!
+The tty lock is not used in the i/o path; it's purpose is to
+mutually exclude state changes in open(), close() and hangup().
 
-We have a test suite for BPF under lib/test_bpf.c that was designed for the
-interpreter and for BPF JIT developers in mind and pretty much covers most
-cases. E.g. one possibility to run it would be:
+The commit that added this [1] comments that _other_ ttys may wait
+for this tty to complete, and comments in the code note that this
+function should be removed when the system-wide tty mutex was removed
+(which happened with the commit noted in the changelog).
 
-   0) compile module test_bpf (Kernel Hacking -> Test BPF filter functionality)
-   1) echo 1 > /proc/sys/net/core/bpf_jit_enable           [<- enables BPF JIT]
-   2) modprobe test_bpf                                    [<- runs test suite]
+Regards,
+Peter Hurley
 
-The results will be visible in the klog via dmesg (if at least one test fails,
-the module init handler will return an error).
 
-Best,
+[1]
+commit a57a7bf3fc7eff00f07eb9c805774d911a3f2472
+Author: Jiri Slaby <jslaby@suse.cz>
+Date:   Thu Aug 25 15:12:06 2011 +0200
 
-Daniel
+     TTY: define tty_wait_until_sent_from_close
+
+     We need this helper to fix system stalls. The issue is that the rest
+     of the system TTYs wait for us to finish waiting. This wasn't an issue
+     with BKL. BKL used to unlock implicitly.
+
+     This is based on the Arnd suggestion.
+
+     Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+     Acked-by: Arnd Bergmann <arnd@arndb.de>
+     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
