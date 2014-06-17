@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966053AbaFQVrv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:47:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53917 "EHLO
+	id S966013AbaFQVri (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:47:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53891 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965975AbaFQVrq (ORCPT
+	with ESMTP id S965975AbaFQVrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:47:46 -0400
+	Tue, 17 Jun 2014 17:47:32 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
-        linaro-networking@linaro.org, fweisbec@gmail.com,
-        arvind.chauhan@arm.com, Thomas Gleixner <tglx@linutronix.de>,
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 108/212] hrtimer: Set expiry time before switch_hrtimer_base()
-Date: Tue, 17 Jun 2014 14:43:22 -0700
-Message-Id: <1403041506-13646-109-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 097/212] ACPI / blacklist: Add dmi_enable_osi_linux quirk for Asus EEE PC 1015PX
+Date: Tue, 17 Jun 2014 14:43:11 -0700
+Message-Id: <1403041506-13646-98-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -29,61 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 84ea7fe37908254c3bd90910921f6e1045c1747a upstream.
+commit f6e6e1b9fee88c90586787b71dc49bb3ce62bb89 upstream.
 
-switch_hrtimer_base() calls hrtimer_check_target() which ensures that
-we do not migrate a timer to a remote cpu if the timer expires before
-the current programmed expiry time on that remote cpu.
+Without this this EEE PC exports a non working WMI interface, with this it
+exports a working "good old" eeepc_laptop interface, fixing brightness control
+not working as well as rfkill being stuck in a permanent wireless blocked
+state.
 
-But __hrtimer_start_range_ns() calls switch_hrtimer_base() before the
-new expiry time is set. So the sanity check in hrtimer_check_target()
-is operating on stale or even uninitialized data.
+This is not an ideal way to fix this, but various attempts to fix this
+otherwise have failed, see:
 
-Update expiry time before calling switch_hrtimer_base().
-
-[ tglx: Rewrote changelog once again ]
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org
-Cc: linaro-networking@linaro.org
-Cc: fweisbec@gmail.com
-Cc: arvind.chauhan@arm.com
-Link: http://lkml.kernel.org/r/81999e148745fc51bbcd0615823fbab9b2e87e23.1399882253.git.viresh.kumar@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+References: https://bugzilla.redhat.com/show_bug.cgi?id=1067181
+Reported-and-tested-by: lou.cardone@gmail.com
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/hrtimer.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/acpi/blacklist.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 6de65d8..aa14922 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1002,11 +1002,8 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 	/* Remove an active timer from the queue: */
- 	ret = remove_hrtimer(timer, base);
+diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
+index 3591dd7..dc3bc3d 100644
+--- a/drivers/acpi/blacklist.c
++++ b/drivers/acpi/blacklist.c
+@@ -391,6 +391,19 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+ 		     DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T500"),
+ 		},
+ 	},
++	/*
++	 * Without this this EEEpc exports a non working WMI interface, with
++	 * this it exports a working "good old" eeepc_laptop interface, fixing
++	 * both brightness control, and rfkill not working.
++	 */
++	{
++	.callback = dmi_enable_osi_linux,
++	.ident = "Asus EEE PC 1015PX",
++	.matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer INC."),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "1015PX"),
++		},
++	},
+ 	{}
+ };
  
--	/* Switch the timer base, if necessary: */
--	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
--
- 	if (mode & HRTIMER_MODE_REL) {
--		tim = ktime_add_safe(tim, new_base->get_time());
-+		tim = ktime_add_safe(tim, base->get_time());
- 		/*
- 		 * CONFIG_TIME_LOW_RES is a temporary way for architectures
- 		 * to signal that they simply return xtime in
-@@ -1021,6 +1018,9 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 
- 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
- 
-+	/* Switch the timer base, if necessary: */
-+	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
-+
- 	timer_stats_hrtimer_set_start_info(timer);
- 
- 	leftmost = enqueue_hrtimer(timer, new_base);
 -- 
 1.9.1
 
