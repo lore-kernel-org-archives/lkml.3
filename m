@@ -1,205 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933147AbaFQScP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 14:32:15 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:61449 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932851AbaFQScN convert rfc822-to-8bit (ORCPT
+	id S933273AbaFQSc2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 14:32:28 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:53030 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932851AbaFQScZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 14:32:13 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: David Rientjes <rientjes@google.com>, Mark Salter <msalter@redhat.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm64: fix MAX_ORDER for 64K pagesize
-In-Reply-To: <alpine.DEB.2.02.1406111557030.27885@chino.kir.corp.google.com>
-Organization: http://mina86.com/
-References: <1402522435-13884-1-git-send-email-msalter@redhat.com> <alpine.DEB.2.02.1406111557030.27885@chino.kir.corp.google.com>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:140617:linux-kernel@vger.kernel.org::jgtUMNs94P7AwI8I:0000000000000000000000000000000000xjJ
-X-Hashcash: 1:20:140617:msalter@redhat.com::JRw/LKzlAcffexPU:00000000000000000000000000000000000000000001tg7
-X-Hashcash: 1:20:140617:rientjes@google.com::AxT7Q1sfkbD/tsdr:0000000000000000000000000000000000000000003zXX
-X-Hashcash: 1:20:140617:linux-arm-kernel@lists.infradead.org::UdkNr69hKFlLiTN3:00000000000000000000000003Uq7
-X-Hashcash: 1:20:140617:m.szyprowski@samsung.com::pKX0vi26R01gG3fo:0000000000000000000000000000000000000CV9z
-X-Hashcash: 1:20:140617:catalin.marinas@arm.com::RiVATZTpJBfIvJGR:00000000000000000000000000000000000000EIa1
-Date: Tue, 17 Jun 2014 20:32:09 +0200
-Message-ID: <xa1t61jzwfo6.fsf@mina86.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 17 Jun 2014 14:32:25 -0400
+From: Kumar Gala <galak@codeaurora.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Kumar Gala <galak@codeaurora.org>, linux-ide@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        sboyd@codeaurora.org, b.zolnierkie@samsung.com
+Subject: [PATCH v4 1/2] phy: qcom: Add driver for QCOM IPQ806x SATA PHY
+Date: Tue, 17 Jun 2014 13:32:21 -0500
+Message-Id: <1403029941-20207-1-git-send-email-galak@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11 2014, David Rientjes wrote:
-> On Wed, 11 Jun 2014, Mark Salter wrote:
->
->> With a kernel configured with ARM64_64K_PAGES && !TRANSPARENT_HUGEPAGE
->> I get this at early boot:
->> 
->>   SMP: Total of 8 processors activated.
->>   devtmpfs: initialized
->>   Unable to handle kernel NULL pointer dereference at virtual address 00000008
->>   pgd = fffffe0000050000
->>   [00000008] *pgd=00000043fba00003, *pmd=00000043fba00003, *pte=00e0000078010407
->>   Internal error: Oops: 96000006 [#1] SMP
->>   Modules linked in:
->>   CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc864k+ #44
->>   task: fffffe03bc040000 ti: fffffe03bc080000 task.ti: fffffe03bc080000
->>   PC is at __list_add+0x10/0xd4
->>   LR is at free_one_page+0x270/0x638
->>   ...
->>   Call trace:
->>   [<fffffe00003ee970>] __list_add+0x10/0xd4
->>   [<fffffe000019c478>] free_one_page+0x26c/0x638
->>   [<fffffe000019c8c8>] __free_pages_ok.part.52+0x84/0xbc
->>   [<fffffe000019d5e8>] __free_pages+0x74/0xbc
->>   [<fffffe0000c01350>] init_cma_reserved_pageblock+0xe8/0x104
->>   [<fffffe0000c24de0>] cma_init_reserved_areas+0x190/0x1e4
->>   [<fffffe0000090418>] do_one_initcall+0xc4/0x154
->>   [<fffffe0000bf0a50>] kernel_init_freeable+0x204/0x2a8
->>   [<fffffe00007520a0>] kernel_init+0xc/0xd4
->> 
->> This happens in this configuration because __free_one_page() is called
->> with an order greater than MAX_ORDER, accesses past zone->free_list[]
->> and passes a bogus list_head to list_add().
->> 
->> arch/arm64/Kconfig has:
->> 
->>   config FORCE_MAX_ZONEORDER
->> 	int
->> 	default "14" if (ARM64_64K_PAGES && TRANSPARENT_HUGEPAGE)
->> 	default "11"
->> 
->> So with THP turned off MAX_ORDER == 11 but init_cma_reserved_pageblock()
->> passes __free_pages() an order of pageblock_order which is based on
->> (HPAGE_SHIFT - PAGE_SHIFT) which is 13 for 64K pages. I worked around
->> this by removing the THP test so FORCE_MAX_ZONEORDER is always 14 for
->> ARM64_64K_PAGES.
->> 
->> Signed-off-by: Mark Salter <msalter@redhat.com>
->> ---
->>  arch/arm64/Kconfig | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->> 
->> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
->> index 7295419..42a334e 100644
->> --- a/arch/arm64/Kconfig
->> +++ b/arch/arm64/Kconfig
->> @@ -269,7 +269,7 @@ config XEN
->>  
->>  config FORCE_MAX_ZONEORDER
->>  	int
->> -	default "14" if (ARM64_64K_PAGES && TRANSPARENT_HUGEPAGE)
->> +	default "14" if ARM64_64K_PAGES
->>  	default "11"
->>  
->>  endmenu
->
-> Any reason to not switch this to
->
-> 	ARM64_64K_PAGES && TRANSPARENT_HUGEPAGE && CMA
->
-> instead?  If pageblock_order > MAX_ORDER because of 
-> HPAGE_SHIFT > PAGE_SHIFT, then cma is always going to be passing a 
-> too-large-order to free_pages_prepare() via this path.
->
-> Adding Michal and Marek to the cc.
+Add a PHY driver for uses with AHCI based SATA controller driver on the
+IPQ806x family of SoCs.
 
-The correct fix would be to change init_cma_reserved_pageblock such that
-it checks whether pageblock_order > MAX_ORDER and if so frees each max
-order page of the pageblock individually:
-
---------- >8 ---------------------------------------------------------
-From: Michal Nazarewicz <mina86@mina86.com>
-Subject: [PATCH] mm: cma: fix cases where pageblock is bigger then MAX_ORDER
-
-With a kernel configured with ARM64_64K_PAGES && !TRANSPARENT_HUGEPAGE,
-the following is triggered at early boot:
-
-  SMP: Total of 8 processors activated.
-  devtmpfs: initialized
-  Unable to handle kernel NULL pointer dereference at virtual address 00000008
-  pgd = fffffe0000050000
-  [00000008] *pgd=00000043fba00003, *pmd=00000043fba00003, *pte=00e0000078010407
-  Internal error: Oops: 96000006 [#1] SMP
-  Modules linked in:
-  CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc864k+ #44
-  task: fffffe03bc040000 ti: fffffe03bc080000 task.ti: fffffe03bc080000
-  PC is at __list_add+0x10/0xd4
-  LR is at free_one_page+0x270/0x638
-  ...
-  Call trace:
-  [<fffffe00003ee970>] __list_add+0x10/0xd4
-  [<fffffe000019c478>] free_one_page+0x26c/0x638
-  [<fffffe000019c8c8>] __free_pages_ok.part.52+0x84/0xbc
-  [<fffffe000019d5e8>] __free_pages+0x74/0xbc
-  [<fffffe0000c01350>] init_cma_reserved_pageblock+0xe8/0x104
-  [<fffffe0000c24de0>] cma_init_reserved_areas+0x190/0x1e4
-  [<fffffe0000090418>] do_one_initcall+0xc4/0x154
-  [<fffffe0000bf0a50>] kernel_init_freeable+0x204/0x2a8
-  [<fffffe00007520a0>] kernel_init+0xc/0xd4
-
-This happens in this configuration because __free_one_page() is called
-with an order greater than MAX_ORDER, accesses past zone->free_list[]
-and passes a bogus list_head to list_add().
-
-arch/arm64/Kconfig has:
-
-  config FORCE_MAX_ZONEORDER
-	int
-	default "14" if (ARM64_64K_PAGES && TRANSPARENT_HUGEPAGE)
-	default "11"
-
-So with THP turned off MAX_ORDER == 11 but init_cma_reserved_pageblock()
-passes __free_pages() an order of pageblock_order which is based on
-(HPAGE_SHIFT - PAGE_SHIFT) which is 13 for 64K pages.
-
-Fix the problem by changing init_cma_reserved_pageblock() such that it
-splits pageblock into individual MAX_ORDER pages if pageblock is
-bigger than a MAX_ORDER page.
-
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Reported-by: Mark Salter <msalter@redhat.com>
+Signed-off-by: Kumar Gala <galak@codeaurora.org>
 ---
- mm/page_alloc.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+v4:
+* removed qcom_ipq806x_sata_delay_us as it was only used one
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5dba293..6e657ce 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -801,7 +801,15 @@ void __init init_cma_reserved_pageblock(struct page *page)
+v3:
+* Added Kconfig HAS_IOMEM dep
+* re-ordered probe function so phy_provider_register is last
  
- 	set_page_refcounted(page);
- 	set_pageblock_migratetype(page, MIGRATE_CMA);
--	__free_pages(page, pageblock_order);
-+	if (pageblock_order > MAX_ORDER) {
-+		struct page *subpage = p;
-+		unsigned count = 1 << (pageblock_order - MAX_ORDER);
-+		do {
-+			__free_pages(subpage, pageblock_order);
-+		} while (subpage += MAX_ORDER_NR_PAGES, --count);
-+	} else {
-+		__free_pages(page, pageblock_order);
+v2:
+* dropped unused dev pointer in struct qcom_ipq806x_sata_phy
+* remove unnecessary reg initializaiton
+* Removed unneeded error message
+* Added remove function to disable the clock
+
+ drivers/phy/Kconfig                 |   7 ++
+ drivers/phy/Makefile                |   1 +
+ drivers/phy/phy-qcom-ipq806x-sata.c | 206 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 214 insertions(+)
+ create mode 100644 drivers/phy/phy-qcom-ipq806x-sata.c
+
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index 16a2f06..b7b6bce 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -178,4 +178,11 @@ config PHY_XGENE
+ 	help
+ 	  This option enables support for APM X-Gene SoC multi-purpose PHY.
+ 
++config PHY_QCOM_IPQ806X_SATA
++	tristate "Qualcomm IPQ806x SATA SerDes/PHY driver"
++	depends on ARCH_QCOM
++	depends on HAS_IOMEM
++	depends on OF
++	select GENERIC_PHY
++
+ endmenu
+diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+index b4f1d57..d950317 100644
+--- a/drivers/phy/Makefile
++++ b/drivers/phy/Makefile
+@@ -20,3 +20,4 @@ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS4X12_USB2)	+= phy-exynos4x12-usb2.o
+ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
+ obj-$(CONFIG_PHY_EXYNOS5_USBDRD)	+= phy-exynos5-usbdrd.o
+ obj-$(CONFIG_PHY_XGENE)			+= phy-xgene.o
++obj-$(CONFIG_PHY_QCOM_IPQ806X_SATA)	+= phy-qcom-ipq806x-sata.o
+diff --git a/drivers/phy/phy-qcom-ipq806x-sata.c b/drivers/phy/phy-qcom-ipq806x-sata.c
+new file mode 100644
+index 0000000..f58ab6d
+--- /dev/null
++++ b/drivers/phy/phy-qcom-ipq806x-sata.c
+@@ -0,0 +1,206 @@
++/*
++ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/time.h>
++#include <linux/delay.h>
++#include <linux/clk.h>
++#include <linux/slab.h>
++#include <linux/platform_device.h>
++#include <linux/phy/phy.h>
++
++struct qcom_ipq806x_sata_phy {
++	void __iomem *mmio;
++	struct clk *cfg_clk;
++};
++
++#define __set(v, a, b)	(((v) << (b)) & GENMASK(a, b))
++
++#define SATA_PHY_P0_PARAM0		0x200
++#define SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN3(x)	__set(x, 17, 12)
++#define SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN3_MASK	GENMASK(17, 12)
++#define SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN2(x)	__set(x, 11, 6)
++#define SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN2_MASK	GENMASK(11, 6)
++#define SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN1(x)	__set(x, 5, 0)
++#define SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN1_MASK	GENMASK(5, 0)
++
++#define SATA_PHY_P0_PARAM1		0x204
++#define SATA_PHY_P0_PARAM1_RESERVED_BITS31_21(x)	__set(x, 31, 21)
++#define SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN3(x)	__set(x, 20, 14)
++#define SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN3_MASK	GENMASK(20, 14)
++#define SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN2(x)	__set(x, 13, 7)
++#define SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN2_MASK	GENMASK(13, 7)
++#define SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN1(x)	__set(x, 6, 0)
++#define SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN1_MASK	GENMASK(6, 0)
++
++#define SATA_PHY_P0_PARAM2		0x208
++#define SATA_PHY_P0_PARAM2_RX_EQ(x)	__set(x, 20, 18)
++#define SATA_PHY_P0_PARAM2_RX_EQ_MASK	GENMASK(20, 18)
++
++#define SATA_PHY_P0_PARAM3		0x20C
++#define SATA_PHY_SSC_EN			0x8
++#define SATA_PHY_P0_PARAM4		0x210
++#define SATA_PHY_REF_SSP_EN		0x2
++#define SATA_PHY_RESET			0x1
++
++static int qcom_ipq806x_sata_phy_init(struct phy *generic_phy)
++{
++	struct qcom_ipq806x_sata_phy *phy = phy_get_drvdata(generic_phy);
++	u32 reg;
++
++	/* Setting SSC_EN to 1 */
++	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM3);
++	reg = reg | SATA_PHY_SSC_EN;
++	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM3);
++
++	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM0) &
++			~(SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN3_MASK |
++			  SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN2_MASK |
++			  SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN1_MASK);
++	reg |= SATA_PHY_P0_PARAM0_P0_TX_PREEMPH_GEN3(0xf);
++	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM0);
++
++	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM1) &
++			~(SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN3_MASK |
++			  SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN2_MASK |
++			  SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN1_MASK);
++	reg |= SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN3(0x55) |
++		SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN2(0x55) |
++		SATA_PHY_P0_PARAM1_P0_TX_AMPLITUDE_GEN1(0x55);
++	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM1);
++
++	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM2) &
++		~SATA_PHY_P0_PARAM2_RX_EQ_MASK;
++	reg |= SATA_PHY_P0_PARAM2_RX_EQ(0x3);
++	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM2);
++
++	/* Setting PHY_RESET to 1 */
++	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM4);
++	reg = reg | SATA_PHY_RESET;
++	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM4);
++
++	/* Setting REF_SSP_EN to 1 */
++	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM4);
++	reg = reg | SATA_PHY_REF_SSP_EN | SATA_PHY_RESET;
++	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM4);
++	mb();
++	/* sleep for max. 50us more to combine processor wakeups */
++	usleep_range(delay, delay + 50);
++
++	/* Clearing PHY_RESET to 0 */
++	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM4);
++	reg = reg & ~SATA_PHY_RESET;
++	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM4);
++
++	return 0;
++}
++
++static int qcom_ipq806x_sata_phy_exit(struct phy *generic_phy)
++{
++	struct qcom_ipq806x_sata_phy *phy = phy_get_drvdata(generic_phy);
++	u32 reg;
++
++	/* Setting PHY_RESET to 1 */
++	reg = readl_relaxed(phy->mmio + SATA_PHY_P0_PARAM4);
++	reg = reg | SATA_PHY_RESET;
++	writel_relaxed(reg, phy->mmio + SATA_PHY_P0_PARAM4);
++
++	return 0;
++}
++
++static struct phy_ops qcom_ipq806x_sata_phy_ops = {
++	.init		= qcom_ipq806x_sata_phy_init,
++	.exit		= qcom_ipq806x_sata_phy_exit,
++	.owner		= THIS_MODULE,
++};
++
++static int qcom_ipq806x_sata_phy_probe(struct platform_device *pdev)
++{
++	struct qcom_ipq806x_sata_phy *phy;
++	struct device *dev = &pdev->dev;
++	struct resource *res;
++	struct phy_provider *phy_provider;
++	struct phy *generic_phy;
++	int ret;
++
++	phy = devm_kzalloc(dev, sizeof(*phy), GFP_KERNEL);
++	if (!phy) {
++		dev_err(dev, "%s: failed to allocate phy\n", __func__);
++		return -ENOMEM;
 +	}
- 	adjust_managed_page_count(page, pageblock_nr_pages);
- }
- #endif
---------- >8 ---------------------------------------------------------
-
-Thoughts?  This has not been tested and I think it may cause performance
-degradation in some cases since pageblock_order is not always
-a constant, so the comparison may end up not being stripped away even on
-systems where it's always false.
-
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	phy->mmio = devm_ioremap_resource(dev, res);
++	if (IS_ERR(phy->mmio))
++		return PTR_ERR(phy->mmio);
++
++	generic_phy = devm_phy_create(dev, &qcom_ipq806x_sata_phy_ops, NULL);
++	if (IS_ERR(generic_phy)) {
++		dev_err(dev, "%s: failed to create phy\n", __func__);
++		return PTR_ERR(generic_phy);
++	}
++
++	phy_set_drvdata(generic_phy, phy);
++
++	phy->cfg_clk = devm_clk_get(dev, "cfg");
++	if (IS_ERR(phy->cfg_clk)) {
++		dev_err(dev, "Failed to get sata cfg clock\n");
++		return PTR_ERR(phy->cfg_clk);
++	}
++
++	ret = clk_prepare_enable(phy->cfg_clk);
++	if (ret)
++		return ret;
++
++	phy_provider = devm_of_phy_provider_register(dev, of_phy_simple_xlate);
++	if (IS_ERR(phy_provider)) {
++		clk_disable_unprepare(phy->cfg_clk);
++		dev_err(dev, "%s: failed to register phy\n", __func__);
++		return PTR_ERR(phy_provider);
++	}
++
++	return 0;
++}
++
++static int qcom_ipq806x_sata_phy_remove(struct platform_device *pdev)
++{
++	struct qcom_ipq806x_sata_phy *phy = platform_get_drvdata(pdev);
++
++	clk_disable_unprepare(phy->cfg_clk);
++
++	return 0;
++}
++
++static const struct of_device_id qcom_ipq806x_sata_phy_of_match[] = {
++	{ .compatible = "qcom,ipq806x-sata-phy" },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, qcom_ipq806x_sata_phy_of_match);
++
++static struct platform_driver qcom_ipq806x_sata_phy_driver = {
++	.probe	= qcom_ipq806x_sata_phy_probe,
++	.remove	= qcom_ipq806x_sata_phy_remove,
++	.driver = {
++		.name	= "qcom-ipq806x-sata-phy",
++		.owner	= THIS_MODULE,
++		.of_match_table	= qcom_ipq806x_sata_phy_of_match,
++	}
++};
++module_platform_driver(qcom_ipq806x_sata_phy_driver);
++
++MODULE_DESCRIPTION("QCOM IPQ806x SATA PHY driver");
++MODULE_LICENSE("GPL v2");
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
