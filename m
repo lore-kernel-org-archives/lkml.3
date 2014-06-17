@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964855AbaFQUOS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 16:14:18 -0400
-Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:55200 "EHLO
-	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932927AbaFQUOR (ORCPT
+	id S964904AbaFQUOf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 16:14:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55988 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932927AbaFQUOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 16:14:17 -0400
-Date: Tue, 17 Jun 2014 22:14:00 +0200
-From: Josef Gajdusek <atx@atx.name>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] acpi/battery: fix wrong value of capacity_now reported
- by few battery types when fully charged (resend)
-Message-ID: <20140617201359.GA6988@dashie>
-References: <20140612145813.GB14085@dashie>
- <3564280.IKKn41NV0x@vostro.rjw.lan>
- <20140617164154.GA21113@dashie>
- <4697863.VH2Gj7n1J0@vostro.rjw.lan>
+	Tue, 17 Jun 2014 16:14:34 -0400
+Date: Tue, 17 Jun 2014 13:18:31 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Nick Krause <xerofoify@gmail.com>
+Cc: devel@driverdev.osuosl.org, ben@decadent.org.uk, lisa@xenapiadmin.com,
+        Valentina Manea <valentina.manea.m@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] Check if skb_alloc returns Null in function
+ fw_download_code
+Message-ID: <20140617201831.GB6061@kroah.com>
+References: <1403017516-4050-1-git-send-email-xerofoify@gmail.com>
+ <20140617154600.GA14106@kroah.com>
+ <CAPDOMVii1ZHTSsW5J4tjCgvqY1N-cJmULSFt1sB5fw2aabHnBA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4697863.VH2Gj7n1J0@vostro.rjw.lan>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPDOMVii1ZHTSsW5J4tjCgvqY1N-cJmULSFt1sB5fw2aabHnBA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems that some batteries (noticed on DELL JYPJ136) assume 
-capacity_now = design_capacity when fully charged. This causes 
-reported capacity to suddenly jump to >full_charge_capacity (and that 
-means capacity reported to userspace is >100% and incorrect) 
-values after 99%. This patch attempts to detect this bug, notifies 
-userspace and trims the value to full_charge_capacity.
+On Tue, Jun 17, 2014 at 12:04:59PM -0400, Nick Krause wrote:
+> I created it using  git-format patch and check my condition is
+> wrong should be !skb to check for Nulls .
 
-Signed-off-by: Josef Gajdusek <atx@atx.name>
----
-> 
-> But it still is necessary to check if battery->full_charge_capacity is
-> not ACPI_BATTERY_VALUE_UNKNOWN, isn't it?
-> 
+That's not the real problem here.
 
-Fixed, my mistake. When changing the checks, I somehow missed that the values 
-are not unsigned.
+The real issue is you can not apply your patch to any tree.  Please
+remove all patches from your tree that you might have made and rebase
+your change on top of a "clean" 3.16-rc1 kernel tree.
 
-diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-index e48fc98..2e8f699 100644
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -532,6 +532,19 @@ static int acpi_battery_get_state(struct acpi_battery *battery)
- 			" invalid.\n");
- 	}
- 
-+	/* When fully charged, some batteries wrongly report
-+	 * capacity_now = design_capacity instead of = full_charge_capacity
-+	 */
-+	if (battery->capacity_now > battery->full_charge_capacity &&
-+		battery->full_charge_capacity != ACPI_BATTERY_VALUE_UNKNOWN) {
-+		battery->capacity_now = battery->full_charge_capacity;
-+		printk_once(KERN_WARNING FW_BUG
-+			"battery: reported current charge level (%d) "
-+			"is higher than reported maximum charge level (%d)."
-+			"This is normal on some systems.\n",
-+			battery->capacity_now, battery->full_charge_capacity);
-+	}
-+
- 	if (test_bit(ACPI_BATTERY_QUIRK_PERCENTAGE_CAPACITY, &battery->flags)
- 	    && battery->capacity_now >= 0 && battery->capacity_now <= 100)
- 		battery->capacity_now = (battery->capacity_now *
+thanks,
 
+greg k-h
