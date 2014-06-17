@@ -1,138 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934175AbaFQQZQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:25:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50849 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934137AbaFQQZG (ORCPT
+	id S965371AbaFQQk1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:40:27 -0400
+Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:34666 "EHLO
+	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964795AbaFQQkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:25:06 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Dongjun Shin <d.j.shin@samsung.com>,
-        Sunghwan Yun <sunghwan.yun@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	Tue, 17 Jun 2014 12:40:22 -0400
+Message-ID: <53A06F75.5020803@akamai.com>
+Date: Tue, 17 Jun 2014 12:40:21 -0400
+From: Jason Baron <jbaron@akamai.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 121/121] mm/compaction: make isolate_freepages start at pageblock boundary
-Date: Tue, 17 Jun 2014 09:18:19 -0700
-Message-Id: <1403021899-16708-94-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
-References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+        Stable <stable@vger.kernel.org>
+Subject: Re: [PATCH] epoll: fix use-after-free in eventpoll_release_file
+References: <20140617025805.29539.22007.stgit@zurg>
+In-Reply-To: <20140617025805.29539.22007.stgit@zurg>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.24 -stable review patch.  If anyone has any objections, please let me know.
+Hi,
 
-------------------
+Indeed, eventpoll_release_file() is on the 'write' side of the rcu
+here (the read-side being in reverse_path_check_proc()). It's a race,
+in that 'struct epitem' has to be freed by rcu before the next loop
+iteration such that epi->fllink.next pointer is no longer valid. So,
+I suspect that makes this more difficult to hit, but obviously it
+happens.
 
-From: Vlastimil Babka <vbabka@suse.cz>
+Thanks for finding/fixing this!
 
-commit 49e068f0b73dd042c186ffa9b420a9943e90389a upstream.
+Acked-by: Jason Baron <jbaron@akamai.com>
 
-The compaction freepage scanner implementation in isolate_freepages()
-starts by taking the current cc->free_pfn value as the first pfn.  In a
-for loop, it scans from this first pfn to the end of the pageblock, and
-then subtracts pageblock_nr_pages from the first pfn to obtain the first
-pfn for the next for loop iteration.
 
-This means that when cc->free_pfn starts at offset X rather than being
-aligned on pageblock boundary, the scanner will start at offset X in all
-scanned pageblock, ignoring potentially many free pages.  Currently this
-can happen when
-
- a) zone's end pfn is not pageblock aligned, or
-
- b) through zone->compact_cached_free_pfn with CONFIG_HOLES_IN_ZONE
-    enabled and a hole spanning the beginning of a pageblock
-
-This patch fixes the problem by aligning the initial pfn in
-isolate_freepages() to pageblock boundary.  This also permits replacing
-the end-of-pageblock alignment within the for loop with a simple
-pageblock_nr_pages increment.
-
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Reported-by: Heesub Shin <heesub.shin@samsung.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Dongjun Shin <d.j.shin@samsung.com>
-Cc: Sunghwan Yun <sunghwan.yun@samsung.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ kamal: backport to 3.8-stable: context ]
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- mm/compaction.c | 22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
-
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 3ddb08b..37b848d 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -654,16 +654,20 @@ static void isolate_freepages(struct zone *zone,
- 				struct compact_control *cc)
- {
- 	struct page *page;
--	unsigned long high_pfn, low_pfn, pfn, zone_end_pfn, end_pfn;
-+	unsigned long high_pfn, low_pfn, pfn, zone_end_pfn;
- 	int nr_freepages = cc->nr_freepages;
- 	struct list_head *freelist = &cc->freepages;
- 
- 	/*
- 	 * Initialise the free scanner. The starting point is where we last
--	 * scanned from (or the end of the zone if starting). The low point
--	 * is the end of the pageblock the migration scanner is using.
-+	 * successfully isolated from, zone-cached value, or the end of the
-+	 * zone when isolating for the first time. We need this aligned to
-+	 * the pageblock boundary, because we do pfn -= pageblock_nr_pages
-+	 * in the for loop.
-+	 * The low boundary is the end of the pageblock the migration scanner
-+	 * is using.
- 	 */
--	pfn = cc->free_pfn;
-+	pfn = cc->free_pfn & ~(pageblock_nr_pages-1);
- 	low_pfn = cc->migrate_pfn + pageblock_nr_pages;
- 
- 	/*
-@@ -683,6 +687,7 @@ static void isolate_freepages(struct zone *zone,
- 	for (; pfn > low_pfn && cc->nr_migratepages > nr_freepages;
- 					pfn -= pageblock_nr_pages) {
- 		unsigned long isolated;
-+		unsigned long end_pfn;
- 
- 		if (!pfn_valid(pfn))
- 			continue;
-@@ -710,13 +715,10 @@ static void isolate_freepages(struct zone *zone,
- 		isolated = 0;
- 
- 		/*
--		 * As pfn may not start aligned, pfn+pageblock_nr_page
--		 * may cross a MAX_ORDER_NR_PAGES boundary and miss
--		 * a pfn_valid check. Ensure isolate_freepages_block()
--		 * only scans within a pageblock
-+		 * Take care when isolating in last pageblock of a zone which
-+		 * ends in the middle of a pageblock.
- 		 */
--		end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
--		end_pfn = min(end_pfn, zone_end_pfn);
-+		end_pfn = min(pfn + pageblock_nr_pages, zone_end_pfn);
- 		isolated = isolate_freepages_block(cc, pfn, end_pfn,
- 						   freelist, false);
- 		nr_freepages += isolated;
--- 
-1.9.1
+On 06/16/2014 10:58 PM, Konstantin Khlebnikov wrote:
+> This fixes use-after-free of epi->fllink.next inside list loop macro.
+> This loop actually releases elements in the body. List is rcu-protected
+> but here we cannot hold rcu_read_lock because we need to lock mutex inside.
+> 
+> Obvious solution is to use list_for_each_entry_safe(). RCU-ness isn't essential
+> because nobody can change this list under us, it's final fput for this file.
+> 
+> Bug is here since ae10b2b4eb01bedc91d29d5c5bb9e416fd806c40
+> ("epoll: optimize EPOLL_CTL_DEL using rcu")
+> 
+> Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+> Reported-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> Cc: Stable <stable@vger.kernel.org> # 3.13+
+> Cc: Sasha Levin <sasha.levin@oracle.com>
+> Cc: Jason Baron <jbaron@akamai.com>
+> ---
+>  fs/eventpoll.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+> index b73e062..b10b48c 100644
+> --- a/fs/eventpoll.c
+> +++ b/fs/eventpoll.c
+> @@ -910,7 +910,7 @@ static const struct file_operations eventpoll_fops = {
+>  void eventpoll_release_file(struct file *file)
+>  {
+>  	struct eventpoll *ep;
+> -	struct epitem *epi;
+> +	struct epitem *epi, *next;
+>  
+>  	/*
+>  	 * We don't want to get "file->f_lock" because it is not
+> @@ -926,7 +926,7 @@ void eventpoll_release_file(struct file *file)
+>  	 * Besides, ep_remove() acquires the lock, so we can't hold it here.
+>  	 */
+>  	mutex_lock(&epmutex);
+> -	list_for_each_entry_rcu(epi, &file->f_ep_links, fllink) {
+> +	list_for_each_entry_safe(epi, next, &file->f_ep_links, fllink) {
+>  		ep = epi->ep;
+>  		mutex_lock_nested(&ep->mtx, 0);
+>  		ep_remove(ep, epi);
+> 
 
