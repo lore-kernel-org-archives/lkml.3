@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967509AbaFQWUX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:20:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57631 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965844AbaFQWUV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 18:20:21 -0400
-Date: Tue, 17 Jun 2014 15:20:20 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] init: make rootdelay=N consistent with rootwait
- behaviour
-Message-Id: <20140617152020.f23032953c83b621ded3901e@linux-foundation.org>
-In-Reply-To: <1401904895-18791-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1401904895-18791-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756632AbaFQWzo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:55:44 -0400
+Received: from ozlabs.org ([103.22.144.67]:42959 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756597AbaFQWzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 18:55:43 -0400
+Date: Wed, 18 Jun 2014 08:55:35 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: the vfs tree needs cleaning up
+Message-ID: <20140618085535.689388ac@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/p5KmPTLCRZ0pjhDlWpzi1zH"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Jun 2014 14:01:35 -0400 Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+--Sig_/p5KmPTLCRZ0pjhDlWpzi1zH
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> Currently rootdelay=N and rootwait behave differently (aside
-> from the obvious unbounded wait duration) because they are
-> at different places in the init sequence.
-> 
-> The difference manifests itself for md devices because the
-> call to md_run_setup() lives between rootdelay and rootwait,
-> so if you try to use rootdelay=20 to try and allow a slow
-> RAID0 array to assemble, you get this:
-> 
-> [    4.526011] sd 6:0:0:0: [sdc] Attached SCSI removable disk
-> [   22.972079] md: Waiting for all devices to be available before autodetect
-> 
-> i.e. you've achieved nothing other than delaying the probing
-> 20s, when what you wanted was a 20s delay _after_ the probing
-> for md devices was initiated.
-> 
-> Here we move the rootdelay code to be right beside the rootwait
-> code, so that their behaviour is consistent.
-> 
-> It should be noted that in doing so, the actions based on the
-> saved_root_name[0] and initrd_load() were previously put on
-> hold by rootdelay=N and now currently will not be delayed.
-> However, I think consistent behaviour is more important than
-> matching historical behaviour of delaying the above two operations.
+Hi Al,
 
-hm.  There may be good reasons for inserting a delay between scsi init
-and MD init - give things time to settle down before MD starts playing
-with the disks?  And I think your patch takes away that option?
+If I rebase the vfs tree
+(git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git#for-next)
+onto v3.16-rc1, it ends up empty which means that its commits were all
+rewritten before Linus merged them.  Please clean up your tree.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-The kernel-parameters.txt documentation for these things is rather
-vague.  We have three distinct phases, I think?
+--Sig_/p5KmPTLCRZ0pjhDlWpzi1zH
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-a) scsi init
-b) [md init]
-c) root mount
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-It's not terribly clear where rootdelay and rootwait are operating and
-I expect there are gaps in the implementation anyway.
+iQIcBAEBCAAGBQJToMdsAAoJEMDTa8Ir7ZwV0KgQAJA/E/3jiXXDAGTmjH6QLXYG
+rqZDzYZflKNJGByQsg5uzCPl0HiLpcAWF09JMVmixQn7/RP1zE0gwj5fKT/uxv5U
+EU4YrttI2/5AiaMBkYjWy5lUMbB0Mwl5to/3/RrMW2XdjFB9Kx7858ckqyph5jWz
+6hVY4sEuFGJ+M47/oG5ZHAcbWPtgHnLe1lYZg0q4TEuhq9wQ3mVGrog7U9dI1Aqp
+N6NmhRt9OcXmBcl9RSv71wC46zcExPqGsWTSQ4n6CoPosYikUmfZKNBmS5HWo8dd
+2lKGp0Wr8K/StNh1o67L60qjiQYLX/U+OXjUCjXKy4LGX7DvoUtPeTBO6w+i3j/Z
+nJvSv1PQMBnLlcvDSoyUx7gMK0GLyf4sNTzT42LqVwpGuSp6MfF7FKjpFRZXCVB7
+VGLIyozamUPgjKi+mtwCJ/rpjsoEQUCEhABZXj6XeON2L3y/WOEGKuCIn2Mtvl8o
+D27iU3XLRNlLGcPWq7ZX4HuFXjX5ubW3IbsmxOB6U579uVq3lPkM3d6XsMtzEhEQ
+dlubZpDRipVHHF7+/iTbZQ+YBemq5zLGbh1Gvv2s9zUO/lPouwWtziijuT92JgBv
+Qs3Q7J+HQ0zsorAKSjx1Fu/dFNypX5wQ9iNMTbO7oSYK8PoJv2feW9GIxYSwSPbD
+T7eHJhRPqzZPC5D274rO
+=zNV8
+-----END PGP SIGNATURE-----
 
-Do you think it's worth cleaning and clearing all this up in some fashion?
-
-The whole thing is a bit of an admission of failure anyway, isn't it? 
-Why should the kernel ever need to perform arbitrary dopey delays like
-this?  Are we working around unresolved underlying bugs?
-
+--Sig_/p5KmPTLCRZ0pjhDlWpzi1zH--
