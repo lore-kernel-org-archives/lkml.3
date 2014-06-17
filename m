@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933872AbaFQQ11 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:27:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51102 "EHLO
+	id S965432AbaFQQ1S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:27:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51077 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964823AbaFQQ1X (ORCPT
+	with ESMTP id S965322AbaFQQ1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:27:23 -0400
+	Tue, 17 Jun 2014 12:27:08 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kumar Sundararajan <kumar@fb.com>, Chris Mason <clm@fb.com>,
+Cc: Sergey Popovich <popovich_sergei@mail.ru>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 063/121] ipv6: fib: fix fib dump restart
-Date: Tue, 17 Jun 2014 09:17:21 -0700
-Message-Id: <1403021899-16708-36-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 071/121] ipv4: fib_semantics: increment fib_info_cnt after fib_info allocation
+Date: Tue, 17 Jun 2014 09:17:29 -0700
+Message-Id: <1403021899-16708-44-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
@@ -28,48 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kumar Sundararajan <kumar@fb.com>
+From: Sergey Popovich <popovich_sergei@mail.ru>
 
-[ Upstream commit 1c2658545816088477e91860c3a645053719cb54 ]
+[ Upstream commit aeefa1ecfc799b0ea2c4979617f14cecd5cccbfd ]
 
-When the ipv6 fib changes during a table dump, the walk is
-restarted and the number of nodes dumped are skipped. But the existing
-code doesn't advance to the next node after a node is skipped. This can
-cause the dump to loop or produce lots of duplicates when the fib
-is modified during the dump.
+Increment fib_info_cnt in fib_create_info() right after successfuly
+alllocating fib_info structure, overwise fib_metrics allocation failure
+leads to fib_info_cnt incorrectly decremented in free_fib_info(), called
+on error path from fib_create_info().
 
-This change advances the walk to the next node if the current node is
-skipped after a restart.
-
-Signed-off-by: Kumar Sundararajan <kumar@fb.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+Signed-off-by: Sergey Popovich <popovich_sergei@mail.ru>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/ip6_fib.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/ipv4/fib_semantics.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv6/ip6_fib.c b/net/ipv6/ip6_fib.c
-index b3adb7f..e85fdd7 100644
---- a/net/ipv6/ip6_fib.c
-+++ b/net/ipv6/ip6_fib.c
-@@ -1420,7 +1420,7 @@ static int fib6_walk_continue(struct fib6_walker_t *w)
+diff --git a/net/ipv4/fib_semantics.c b/net/ipv4/fib_semantics.c
+index 4797a80..43502e6 100644
+--- a/net/ipv4/fib_semantics.c
++++ b/net/ipv4/fib_semantics.c
+@@ -820,13 +820,13 @@ struct fib_info *fib_create_info(struct fib_config *cfg)
+ 	fi = kzalloc(sizeof(*fi)+nhs*sizeof(struct fib_nh), GFP_KERNEL);
+ 	if (fi == NULL)
+ 		goto failure;
++	fib_info_cnt++;
+ 	if (cfg->fc_mx) {
+ 		fi->fib_metrics = kzalloc(sizeof(u32) * RTAX_MAX, GFP_KERNEL);
+ 		if (!fi->fib_metrics)
+ 			goto failure;
+ 	} else
+ 		fi->fib_metrics = (u32 *) dst_default_metrics;
+-	fib_info_cnt++;
  
- 				if (w->skip) {
- 					w->skip--;
--					continue;
-+					goto skip;
- 				}
- 
- 				err = w->func(w);
-@@ -1430,6 +1430,7 @@ static int fib6_walk_continue(struct fib6_walker_t *w)
- 				w->count++;
- 				continue;
- 			}
-+skip:
- 			w->state = FWS_U;
- 		case FWS_U:
- 			if (fn == w->root)
+ 	fi->fib_net = hold_net(net);
+ 	fi->fib_protocol = cfg->fc_protocol;
 -- 
 1.9.1
 
