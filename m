@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300AbaFQCXo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 22:23:44 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:47956 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932084AbaFQCXd (ORCPT
+	id S932245AbaFQCXm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 22:23:42 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:55045 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932081AbaFQCXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 22:23:33 -0400
+	Mon, 16 Jun 2014 22:23:31 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: x86@kernel.org, linux-kernel@vger.kernel.org
 Cc: Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 6/8] x86_64: Move getcpu code from vsyscall_64.c to vdso/vma.c
-Date: Mon, 16 Jun 2014 19:23:13 -0700
-Message-Id: <b4ab8e898f6d59698e2c7eb21ea3a0f487dd3876.1402971639.git.luto@amacapital.net>
+Subject: [PATCH 5/8] x86,vdso: Replace vgetcpu_mode with static_cpu_has
+Date: Mon, 16 Jun 2014 19:23:12 -0700
+Message-Id: <bf8e4f307638fd71b807e848f48de03f8227eec6.1402971639.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1402971639.git.luto@amacapital.net>
 References: <cover.1402971639.git.luto@amacapital.net>
@@ -22,171 +22,193 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is pure cut-and-paste.  At this point, vsyscall_64.c contains
-only code needed for vsyscall emulation, but some of the comments
-and function names are still confused.
+The vdso has supported alternatives for a while; use them instead of
+a vvar to select the vgetcpu mode.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/kernel/vsyscall_64.c | 57 ----------------------------------------
- arch/x86/vdso/vma.c           | 61 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 61 insertions(+), 57 deletions(-)
+ arch/x86/include/asm/vgtod.h    | 21 +++++++++++++++++++++
+ arch/x86/include/asm/vsyscall.h | 29 -----------------------------
+ arch/x86/include/asm/vvar.h     |  1 -
+ arch/x86/kernel/cpu/common.c    | 10 ----------
+ arch/x86/kernel/vsyscall_64.c   |  2 --
+ arch/x86/vdso/vclock_gettime.c  |  3 +++
+ arch/x86/vdso/vgetcpu.c         |  4 +++-
+ arch/x86/vdso/vma.c             |  1 +
+ 8 files changed, 28 insertions(+), 43 deletions(-)
 
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index dd1b322..5029be3 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -332,49 +332,6 @@ int in_gate_area_no_mm(unsigned long addr)
- 	return vsyscall_mode != NONE && (addr & PAGE_MASK) == VSYSCALL_ADDR;
+diff --git a/arch/x86/include/asm/vgtod.h b/arch/x86/include/asm/vgtod.h
+index 3c3366c..44e0037 100644
+--- a/arch/x86/include/asm/vgtod.h
++++ b/arch/x86/include/asm/vgtod.h
+@@ -70,4 +70,25 @@ static inline void gtod_write_end(struct vsyscall_gtod_data *s)
+ 	++s->seq;
  }
  
--/*
-- * Assume __initcall executes before all user space. Hopefully kmod
-- * doesn't violate that. We'll find out if it does.
-- */
--static void vsyscall_set_cpu(int cpu)
++#ifdef CONFIG_X86_64
++
++#define VGETCPU_CPU_MASK 0xfff
++
++static inline unsigned int __getcpu(void)
++{
++	unsigned int p;
++
++	if (static_cpu_has(X86_FEATURE_RDTSCP)) {
++		/* Load per CPU data from RDTSCP */
++		native_read_tscp(&p);
++	} else {
++		/* Load per CPU data from GDT */
++		asm("lsl %1,%0" : "=r" (p) : "r" (__PER_CPU_SEG));
++	}
++
++	return p;
++}
++
++#endif /* CONFIG_X86_64 */
++
+ #endif /* _ASM_X86_VGTOD_H */
+diff --git a/arch/x86/include/asm/vsyscall.h b/arch/x86/include/asm/vsyscall.h
+index 2a46ca7..34f7d88 100644
+--- a/arch/x86/include/asm/vsyscall.h
++++ b/arch/x86/include/asm/vsyscall.h
+@@ -4,15 +4,6 @@
+ #include <linux/seqlock.h>
+ #include <uapi/asm/vsyscall.h>
+ 
+-#define VGETCPU_RDTSCP	1
+-#define VGETCPU_LSL	2
+-
+-/* kernel space (writeable) */
+-extern int vgetcpu_mode;
+-extern struct timezone sys_tz;
+-
+-#include <asm/vvar.h>
+-
+ extern void map_vsyscall(void);
+ 
+ /*
+@@ -21,24 +12,4 @@ extern void map_vsyscall(void);
+  */
+ extern bool emulate_vsyscall(struct pt_regs *regs, unsigned long address);
+ 
+-#ifdef CONFIG_X86_64
+-
+-#define VGETCPU_CPU_MASK 0xfff
+-
+-static inline unsigned int __getcpu(void)
 -{
--	unsigned long d;
--	unsigned long node = 0;
--#ifdef CONFIG_NUMA
--	node = cpu_to_node(cpu);
--#endif
--	if (cpu_has(&cpu_data(cpu), X86_FEATURE_RDTSCP))
--		write_rdtscp_aux((node << 12) | cpu);
+-	unsigned int p;
 -
--	/*
--	 * Store cpu number in limit so that it can be loaded quickly
--	 * in user space in vgetcpu. (12 bits for the CPU and 8 bits for the node)
--	 */
--	d = 0x0f40000000000ULL;
--	d |= cpu;
--	d |= (node & 0xf) << 12;
--	d |= (node >> 4) << 48;
+-	if (VVAR(vgetcpu_mode) == VGETCPU_RDTSCP) {
+-		/* Load per CPU data from RDTSCP */
+-		native_read_tscp(&p);
+-	} else {
+-		/* Load per CPU data from GDT */
+-		asm("lsl %1,%0" : "=r" (p) : "r" (__PER_CPU_SEG));
+-	}
 -
--	write_gdt_entry(get_cpu_gdt_table(cpu), GDT_ENTRY_PER_CPU, &d, DESCTYPE_S);
+-	return p;
 -}
+-#endif /* CONFIG_X86_64 */
 -
--static void cpu_vsyscall_init(void *arg)
--{
--	/* preemption should be already off */
--	vsyscall_set_cpu(raw_smp_processor_id());
--}
--
--static int
--cpu_vsyscall_notifier(struct notifier_block *n, unsigned long action, void *arg)
--{
--	long cpu = (long)arg;
--
--	if (action == CPU_ONLINE || action == CPU_ONLINE_FROZEN)
--		smp_call_function_single(cpu, cpu_vsyscall_init, NULL, 1);
--
--	return NOTIFY_DONE;
--}
--
- void __init map_vsyscall(void)
- {
- 	extern char __vsyscall_page;
-@@ -389,17 +346,3 @@ void __init map_vsyscall(void)
- 	BUILD_BUG_ON((unsigned long)__fix_to_virt(VSYSCALL_PAGE) !=
- 		     (unsigned long)VSYSCALL_ADDR);
+ #endif /* _ASM_X86_VSYSCALL_H */
+diff --git a/arch/x86/include/asm/vvar.h b/arch/x86/include/asm/vvar.h
+index 5f6d407..3f32dfc 100644
+--- a/arch/x86/include/asm/vvar.h
++++ b/arch/x86/include/asm/vvar.h
+@@ -44,7 +44,6 @@ extern char __vvar_page;
+ 
+ /* DECLARE_VVAR(offset, type, name) */
+ 
+-DECLARE_VVAR(16, int, vgetcpu_mode)
+ DECLARE_VVAR(128, struct vsyscall_gtod_data, vsyscall_gtod_data)
+ 
+ #undef DECLARE_VVAR
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 2cbbf88..cc41df0 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -947,14 +947,6 @@ static void identify_cpu(struct cpuinfo_x86 *c)
  }
--
--static int __init vsyscall_init(void)
+ 
+ #ifdef CONFIG_X86_64
+-static void vgetcpu_set_mode(void)
 -{
--	cpu_notifier_register_begin();
--
--	on_each_cpu(cpu_vsyscall_init, NULL, 1);
--	/* notifier priority > KVM */
--	__hotcpu_notifier(cpu_vsyscall_notifier, 30);
--
--	cpu_notifier_register_done();
--
--	return 0;
+-	if (cpu_has(&boot_cpu_data, X86_FEATURE_RDTSCP))
+-		vgetcpu_mode = VGETCPU_RDTSCP;
+-	else
+-		vgetcpu_mode = VGETCPU_LSL;
 -}
--__initcall(vsyscall_init);
+-
+ /* May not be __init: called during resume */
+ static void syscall32_cpu_init(void)
+ {
+@@ -995,8 +987,6 @@ void __init identify_boot_cpu(void)
+ #ifdef CONFIG_X86_32
+ 	sysenter_setup();
+ 	enable_sep_cpu();
+-#else
+-	vgetcpu_set_mode();
+ #endif
+ 	cpu_detect_tlb(&boot_cpu_data);
+ }
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index 6463f9e..dd1b322 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -52,8 +52,6 @@
+ #define CREATE_TRACE_POINTS
+ #include "vsyscall_trace.h"
+ 
+-DEFINE_VVAR(int, vgetcpu_mode);
+-
+ static enum { EMULATE, NATIVE, NONE } vsyscall_mode = EMULATE;
+ 
+ static int __init vsyscall_setup(char *str)
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index b2e4f49..87df0af 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -14,6 +14,9 @@
+ /* Disable profiling for userspace code: */
+ #define DISABLE_BRANCH_PROFILING
+ 
++/* Disable static_cpu_has debugging; it doesn't work in the vDSO */
++#undef CONFIG_X86_DEBUG_STATIC_CPU_HAS
++
+ #include <uapi/linux/time.h>
+ #include <asm/vgtod.h>
+ #include <asm/hpet.h>
+diff --git a/arch/x86/vdso/vgetcpu.c b/arch/x86/vdso/vgetcpu.c
+index add1d98..fd8470c 100644
+--- a/arch/x86/vdso/vgetcpu.c
++++ b/arch/x86/vdso/vgetcpu.c
+@@ -5,10 +5,12 @@
+  * Fast user context implementation of getcpu()
+  */
+ 
++/* Disable static_cpu_has debugging; it doesn't work in the vDSO */
++#undef CONFIG_X86_DEBUG_STATIC_CPU_HAS
++
+ #include <linux/kernel.h>
+ #include <linux/getcpu.h>
+ #include <linux/time.h>
+-#include <asm/vsyscall.h>
+ #include <asm/vgtod.h>
+ 
+ notrace long
 diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index 67a8b6c..8973b4e 100644
+index e1513c4..67a8b6c 100644
 --- a/arch/x86/vdso/vma.c
 +++ b/arch/x86/vdso/vma.c
-@@ -10,6 +10,7 @@
- #include <linux/init.h>
- #include <linux/random.h>
- #include <linux/elf.h>
-+#include <linux/cpu.h>
- #include <asm/vsyscall.h>
- #include <asm/vgtod.h>
- #include <asm/proto.h>
-@@ -17,6 +18,7 @@
+@@ -16,6 +16,7 @@
+ #include <asm/vdso.h>
  #include <asm/page.h>
  #include <asm/hpet.h>
- #include <asm/vvar.h>
-+#include <asm/desc.h>
++#include <asm/vvar.h>
  
  #if defined(CONFIG_X86_64)
  unsigned int __read_mostly vdso64_enabled = 1;
-@@ -233,3 +235,62 @@ static __init int vdso_setup(char *s)
- }
- __setup("vdso=", vdso_setup);
- #endif
-+
-+#ifdef CONFIG_X86_64
-+/*
-+ * Assume __initcall executes before all user space. Hopefully kmod
-+ * doesn't violate that. We'll find out if it does.
-+ */
-+static void vsyscall_set_cpu(int cpu)
-+{
-+	unsigned long d;
-+	unsigned long node = 0;
-+#ifdef CONFIG_NUMA
-+	node = cpu_to_node(cpu);
-+#endif
-+	if (cpu_has(&cpu_data(cpu), X86_FEATURE_RDTSCP))
-+		write_rdtscp_aux((node << 12) | cpu);
-+
-+	/*
-+	 * Store cpu number in limit so that it can be loaded quickly
-+	 * in user space in vgetcpu. (12 bits for the CPU and 8 bits for the node)
-+	 */
-+	d = 0x0f40000000000ULL;
-+	d |= cpu;
-+	d |= (node & 0xf) << 12;
-+	d |= (node >> 4) << 48;
-+
-+	write_gdt_entry(get_cpu_gdt_table(cpu), GDT_ENTRY_PER_CPU, &d, DESCTYPE_S);
-+}
-+
-+static void cpu_vsyscall_init(void *arg)
-+{
-+	/* preemption should be already off */
-+	vsyscall_set_cpu(raw_smp_processor_id());
-+}
-+
-+static int
-+cpu_vsyscall_notifier(struct notifier_block *n, unsigned long action, void *arg)
-+{
-+	long cpu = (long)arg;
-+
-+	if (action == CPU_ONLINE || action == CPU_ONLINE_FROZEN)
-+		smp_call_function_single(cpu, cpu_vsyscall_init, NULL, 1);
-+
-+	return NOTIFY_DONE;
-+}
-+
-+static int __init vsyscall_init(void)
-+{
-+	cpu_notifier_register_begin();
-+
-+	on_each_cpu(cpu_vsyscall_init, NULL, 1);
-+	/* notifier priority > KVM */
-+	__hotcpu_notifier(cpu_vsyscall_notifier, 30);
-+
-+	cpu_notifier_register_done();
-+
-+	return 0;
-+}
-+__initcall(vsyscall_init);
-+#endif
 -- 
 1.9.3
 
