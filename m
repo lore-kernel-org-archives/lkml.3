@@ -1,36 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756587AbaFQWzF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:55:05 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:61182 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756569AbaFQWzB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 18:55:01 -0400
+	id S967540AbaFQWi6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:38:58 -0400
+Received: from fieldses.org ([174.143.236.118]:53693 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965461AbaFQWiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 18:38:55 -0400
+Date: Tue, 17 Jun 2014 18:38:54 -0400
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: relative objtree change broke tar builds?
+Message-ID: <20140617223854.GC6168@fieldses.org>
 MIME-Version: 1.0
-In-Reply-To: <5398749B.4090209@zytor.com>
-References: <CA+5PVA4srNrj2xqMYH40N13rV+jC-PbLdyNpoURomTq48cJNBA@mail.gmail.com>
- <CA+5PVA7gL6T2eXAy6G4hGJzhKZ_8KHd0qauKqzuHAP4oTJ97QA@mail.gmail.com>
- <CALCETrXG=752GrPhP8zKJUciiagCVRO0kenDOqL78eP73Y3ryA@mail.gmail.com> <5398749B.4090209@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 17 Jun 2014 15:54:40 -0700
-Message-ID: <CALCETrXMxn1-qqTkf271+=7F1Aiy7c=rNsnq9cRoB=e1k-Q3UQ@mail.gmail.com>
-Subject: Re: vdso_install target broken post-3.15
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just a heads up: gdb can't debug the vdso on 3.16-rc1.  I filed a bug:
+The scripts I use for my kernel testing rely on the targz-pkg make
+target.  After updating to 3.16-rc1 my scripts started failing.  In
+scripts/package/buildtar:
 
-https://sourceware.org/bugzilla/show_bug.cgi?id=17064
+  tmpdir="${objtree}/tar-install"
+  tarball="${objtree}/linux-${KERNELRELEASE}-${ARCH}.tar"
+..
+  #
+  # Create the tarball
+  #
+  (
+        cd "${tmpdir}"
+        opts=
+        if tar --owner=root --group=root --help >/dev/null 2>&1; then
+                opts="--owner=root --group=root"
+        fi
+        tar cf - boot/* lib/* $opts | ${compress} > "${tarball}${file_ext}"
+  )
 
-We may need to extend the fake section header hack to all vdso
-versions and stick the ELF notes in there.
 
-hpa, can I depend on an x32 toolchain for the x32 build?
+After 7e1c04779efd511 "kbuild: Use relative path for $(objtree)", that's a
+relative instead of absolute path so the tarball's dumped by default into
+tmpdir, not what was intended.
 
---Andy
+The changelog there says
+
+	The main Makefile sets its working directory to the object tree
+	and never changes it again. Therefore, we can use '.' instead of
+	the absolute path.
+
+But the main Makefile also exports objtree, and a quick grep suggests
+lots of other uses outside the main Makefile.
+
+--b.
