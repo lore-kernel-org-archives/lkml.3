@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967682AbaFQWcO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:32:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54162 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966361AbaFQVtW (ORCPT
+	id S967509AbaFQWUX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:20:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57631 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965844AbaFQWUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:49:22 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 031/212] net: qmi_wwan: add Olivetti Olicard 500
-Date: Tue, 17 Jun 2014 14:42:05 -0700
-Message-Id: <1403041506-13646-32-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Extended-Stable: 3.13
+	Tue, 17 Jun 2014 18:20:21 -0400
+Date: Tue, 17 Jun 2014 15:20:20 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] init: make rootdelay=N consistent with rootwait
+ behaviour
+Message-Id: <20140617152020.f23032953c83b621ded3901e@linux-foundation.org>
+In-Reply-To: <1401904895-18791-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1401904895-18791-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, 4 Jun 2014 14:01:35 -0400 Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
 
-------------------
+> Currently rootdelay=N and rootwait behave differently (aside
+> from the obvious unbounded wait duration) because they are
+> at different places in the init sequence.
+> 
+> The difference manifests itself for md devices because the
+> call to md_run_setup() lives between rootdelay and rootwait,
+> so if you try to use rootdelay=20 to try and allow a slow
+> RAID0 array to assemble, you get this:
+> 
+> [    4.526011] sd 6:0:0:0: [sdc] Attached SCSI removable disk
+> [   22.972079] md: Waiting for all devices to be available before autodetect
+> 
+> i.e. you've achieved nothing other than delaying the probing
+> 20s, when what you wanted was a 20s delay _after_ the probing
+> for md devices was initiated.
+> 
+> Here we move the rootdelay code to be right beside the rootwait
+> code, so that their behaviour is consistent.
+> 
+> It should be noted that in doing so, the actions based on the
+> saved_root_name[0] and initrd_load() were previously put on
+> hold by rootdelay=N and now currently will not be delayed.
+> However, I think consistent behaviour is more important than
+> matching historical behaviour of delaying the above two operations.
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+hm.  There may be good reasons for inserting a delay between scsi init
+and MD init - give things time to settle down before MD starts playing
+with the disks?  And I think your patch takes away that option?
 
-[ Upstream commit efc0b25c3add97717ece57bf5319792ca98f348e ]
 
-Device interface layout:
-0: ff/ff/ff - serial
-1: ff/ff/ff - serial AT+PPP
-2: 08/06/50 - storage
-3: ff/ff/ff - serial
-4: ff/ff/ff - QMI/wwan
+The kernel-parameters.txt documentation for these things is rather
+vague.  We have three distinct phases, I think?
 
-Reported-by: Julio Araujo <julio.araujo@wllctel.com.br>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/net/usb/qmi_wwan.c | 1 +
- 1 file changed, 1 insertion(+)
+a) scsi init
+b) [md init]
+c) root mount
 
-diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
-index b75676c..0e2798d 100644
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -735,6 +735,7 @@ static const struct usb_device_id products[] = {
- 	{QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},	/* Telit LE920 */
- 	{QMI_FIXED_INTF(0x1bc7, 0x1201, 2)},	/* Telit LE920 */
- 	{QMI_FIXED_INTF(0x0b3c, 0xc005, 6)},    /* Olivetti Olicard 200 */
-+	{QMI_FIXED_INTF(0x0b3c, 0xc00b, 4)},	/* Olivetti Olicard 500 */
- 	{QMI_FIXED_INTF(0x1e2d, 0x0060, 4)},	/* Cinterion PLxx */
- 
- 	/* 4. Gobi 1000 devices */
--- 
-1.9.1
+It's not terribly clear where rootdelay and rootwait are operating and
+I expect there are gaps in the implementation anyway.
+
+Do you think it's worth cleaning and clearing all this up in some fashion?
+
+The whole thing is a bit of an admission of failure anyway, isn't it? 
+Why should the kernel ever need to perform arbitrary dopey delays like
+this?  Are we working around unresolved underlying bugs?
 
