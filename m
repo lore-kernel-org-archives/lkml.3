@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967485AbaFQWCh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:02:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54829 "EHLO
+	id S967488AbaFQWDA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:03:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54807 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966018AbaFQVw0 (ORCPT
+	with ESMTP id S967062AbaFQVwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:52:26 -0400
+	Tue, 17 Jun 2014 17:52:20 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>,
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 086/212] ARM: dts: kirkwood: fix mislocated pcie-controller nodes
-Date: Tue, 17 Jun 2014 14:43:00 -0700
-Message-Id: <1403041506-13646-87-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 072/212] workqueue: make rescuer_thread() empty wq->maydays list before exiting
+Date: Tue, 17 Jun 2014 14:42:46 -0700
+Message-Id: <1403041506-13646-73-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -28,104 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 788296b2d19d16ec33aba0a5ad1544d50bb58601 upstream.
+commit 4d595b866d2c653dc90a492b9973a834eabfa354 upstream.
 
-Commit 54397d85349f
- ("ARM: kirkwood: Relocate PCIe device tree nodes")
+After a @pwq is scheduled for emergency execution, other workers may
+consume the affectd work items before the rescuer gets to them.  This
+means that a workqueue many have pwqs queued on @wq->maydays list
+while not having any work item pending or in-flight.  If
+destroy_workqueue() executes in such condition, the rescuer may exit
+without emptying @wq->maydays.
 
-moved the pcie-controller nodes for the Kirkwood SoCs to the mbus
-bus node. For some reason, two boards were not properly converted
-and have their pci-controller nodes still in the ocp bus node.
+This currently doesn't cause any actual harm.  destroy_workqueue() can
+safely destroy all the involved data structures whether @wq->maydays
+is populated or not as nobody access the list once the rescuer exits.
 
-As the corresponding SoC pcie-controller does not exist anymore,
-it is likely that pcie is broken on those boards since above commit.
-Fix it by moving the pcie related nodes to the correct location.
+However, this is nasty and makes future development difficult.  Let's
+update rescuer_thread() so that it empties @wq->maydays after seeing
+should_stop to guarantee that the list is empty on rescuer exit.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Fixes: 54397d85349f ("ARM: kirkwood: Relocate PCIe device tree nodes")
-Acked-by: Andrew Lunn <andrew@lunn.ch>
-Link: https://lkml.kernel.org/r/1398862602-29595-2-git-send-email-sebastian.hesselbarth@gmail.com
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+tj: Updated comment and patch description.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts | 18 ++++++++++--------
- arch/arm/boot/dts/kirkwood-nsa310-common.dtsi  | 18 ++++++++++--------
- 2 files changed, 20 insertions(+), 16 deletions(-)
+ kernel/workqueue.c | 21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts b/arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts
-index 6317e1d..e650e35 100644
---- a/arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts
-+++ b/arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts
-@@ -30,6 +30,16 @@
- 		bootargs = "console=ttyS0,115200n8 earlyprintk";
- 	};
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 6b1b746..df9d7e8 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2391,6 +2391,7 @@ static int rescuer_thread(void *__rescuer)
+ 	struct worker *rescuer = __rescuer;
+ 	struct workqueue_struct *wq = rescuer->rescue_wq;
+ 	struct list_head *scheduled = &rescuer->scheduled;
++	bool should_stop;
  
-+	mbus {
-+		pcie-controller {
-+			status = "okay";
+ 	set_user_nice(current, RESCUER_NICE_LEVEL);
+ 
+@@ -2402,11 +2403,15 @@ static int rescuer_thread(void *__rescuer)
+ repeat:
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 
+-	if (kthread_should_stop()) {
+-		__set_current_state(TASK_RUNNING);
+-		rescuer->task->flags &= ~PF_WQ_WORKER;
+-		return 0;
+-	}
++	/*
++	 * By the time the rescuer is requested to stop, the workqueue
++	 * shouldn't have any work pending, but @wq->maydays may still have
++	 * pwq(s) queued.  This can happen by non-rescuer workers consuming
++	 * all the work items before the rescuer got to them.  Go through
++	 * @wq->maydays processing before acting on should_stop so that the
++	 * list is always empty on exit.
++	 */
++	should_stop = kthread_should_stop();
+ 
+ 	/* see whether any pwq is asking for help */
+ 	spin_lock_irq(&wq_mayday_lock);
+@@ -2452,6 +2457,12 @@ repeat:
+ 
+ 	spin_unlock_irq(&wq_mayday_lock);
+ 
++	if (should_stop) {
++		__set_current_state(TASK_RUNNING);
++		rescuer->task->flags &= ~PF_WQ_WORKER;
++		return 0;
++	}
 +
-+			pcie@1,0 {
-+				status = "okay";
-+			};
-+		};
-+        };
-+
- 	ocp@f1000000 {
- 		pinctrl@10000 {
- 			pmx_usb_led: pmx-usb-led {
-@@ -73,14 +83,6 @@
- 		ehci@50000 {
- 			status = "okay";
- 		};
--
--		pcie-controller {
--			status = "okay";
--
--			pcie@1,0 {
--				status = "okay";
--			};
--		};
- 	};
- 
- 	gpio-leds {
-diff --git a/arch/arm/boot/dts/kirkwood-nsa310-common.dtsi b/arch/arm/boot/dts/kirkwood-nsa310-common.dtsi
-index e3f915d..5dff4cf 100644
---- a/arch/arm/boot/dts/kirkwood-nsa310-common.dtsi
-+++ b/arch/arm/boot/dts/kirkwood-nsa310-common.dtsi
-@@ -4,6 +4,16 @@
- / {
- 	model = "ZyXEL NSA310";
- 
-+	mbus {
-+		pcie-controller {
-+			status = "okay";
-+
-+			pcie@1,0 {
-+				status = "okay";
-+			};
-+		};
-+	};
-+
- 	ocp@f1000000 {
- 		pinctrl: pinctrl@10000 {
- 
-@@ -26,14 +36,6 @@
- 			status = "okay";
- 			nr-ports = <2>;
- 		};
--
--		pcie-controller {
--			status = "okay";
--
--			pcie@1,0 {
--				status = "okay";
--			};
--		};
- 	};
- 
- 	gpio_poweroff {
+ 	/* rescuers should never participate in concurrency management */
+ 	WARN_ON_ONCE(!(rescuer->flags & WORKER_NOT_RUNNING));
+ 	schedule();
 -- 
 1.9.1
 
