@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933795AbaFQQQQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:16:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50450 "EHLO
+	id S933813AbaFQQQX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:16:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50458 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933535AbaFQQQM (ORCPT
+	with ESMTP id S933535AbaFQQQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:16:12 -0400
+	Tue, 17 Jun 2014 12:16:18 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tejun Heo <tj@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 024/121] pata_at91: fix ata_host_activate() failure handling
-Date: Tue, 17 Jun 2014 09:13:37 -0700
-Message-Id: <1403021714-16320-25-git-send-email-kamal@canonical.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Jeff Layton <jlayton@redhat.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 028/121] locks: allow __break_lease to sleep even when break_time is 0
+Date: Tue, 17 Jun 2014 09:13:41 -0700
+Message-Id: <1403021714-16320-29-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021714-16320-1-git-send-email-kamal@canonical.com>
 References: <1403021714-16320-1-git-send-email-kamal@canonical.com>
@@ -31,53 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 27aa64b9d1bd0d23fd692c91763a48309b694311 upstream.
+commit f1c6bb2cb8b81013e8979806f8e15e3d53efb96d upstream.
 
-Add missing clk_put() call to ata_host_activate() failure path.
+A fl->fl_break_time of 0 has a special meaning to the lease break code
+that basically means "never break the lease". knfsd uses this to ensure
+that leases don't disappear out from under it.
 
-Sergei says,
+Unfortunately, the code in __break_lease can end up passing this value
+to wait_event_interruptible as a timeout, which prevents it from going
+to sleep at all. This makes __break_lease to spin in a tight loop and
+causes soft lockups.
 
-  "Hm, I have once fixed that (see that *if* (!ret)) but looks like a
-   later commit 477c87e90853d136b188c50c0e4a93d01cad872e (ARM:
-   at91/pata: use gpio_is_valid to check the gpio) broke it again. :-(
-   Would be good if the changelog did mention that..."
+Fix this by ensuring that we pass a minimum value of 1 as a timeout
+instead.
 
-Cc: Andrew Victor <linux@maxim.org.za>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: J. Bruce Fields <bfields@fieldses.org>
+Reported-by: Terry Barnaby <terry1@beam.ltd.uk>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/pata_at91.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ fs/locks.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/ata/pata_at91.c b/drivers/ata/pata_at91.c
-index 033f3f4..fa28859 100644
---- a/drivers/ata/pata_at91.c
-+++ b/drivers/ata/pata_at91.c
-@@ -408,12 +408,13 @@ static int pata_at91_probe(struct platform_device *pdev)
+diff --git a/fs/locks.c b/fs/locks.c
+index a94e331..7e5fa22 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -1243,11 +1243,10 @@ int __break_lease(struct inode *inode, unsigned int mode)
  
- 	host->private_data = info;
- 
--	return ata_host_activate(host, gpio_is_valid(irq) ? gpio_to_irq(irq) : 0,
--			gpio_is_valid(irq) ? ata_sff_interrupt : NULL,
--			irq_flags, &pata_at91_sht);
-+	ret = ata_host_activate(host, gpio_is_valid(irq) ? gpio_to_irq(irq) : 0,
-+				gpio_is_valid(irq) ? ata_sff_interrupt : NULL,
-+				irq_flags, &pata_at91_sht);
-+	if (ret)
-+		goto err_put;
- 
--	if (!ret)
--		return 0;
-+	return 0;
- 
- err_put:
- 	clk_put(info->mck);
+ restart:
+ 	break_time = flock->fl_break_time;
+-	if (break_time != 0) {
++	if (break_time != 0)
+ 		break_time -= jiffies;
+-		if (break_time == 0)
+-			break_time++;
+-	}
++	if (break_time == 0)
++		break_time++;
+ 	locks_insert_block(flock, new_fl);
+ 	unlock_flocks();
+ 	error = wait_event_interruptible_timeout(new_fl->fl_wait,
 -- 
 1.9.1
 
