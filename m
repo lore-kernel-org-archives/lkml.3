@@ -1,66 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756026AbaFQLft (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 07:35:49 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:44568 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752233AbaFQLfr (ORCPT
+	id S1756205AbaFQLhQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 07:37:16 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:58547 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754825AbaFQLhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 07:35:47 -0400
-Date: Tue, 17 Jun 2014 07:35:32 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Cong Wang <cwang@twopensource.com>
-Cc: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        David Miller <davem@davemloft.net>, bridge@lists.linux-foundation.org,
-        Linux Netdev List <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: netconsole breaks netpoll on bridge
-Message-ID: <20140617113532.GD8539@hmsreliant.think-freely.org>
-References: <539EE86E.6030806@profihost.ag>
- <CAHA+R7OrT+x_jvDeqKgFc=ndebhB6qwecJBcT5y0ZAA+hBCJ3Q@mail.gmail.com>
+	Tue, 17 Jun 2014 07:37:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHA+R7OrT+x_jvDeqKgFc=ndebhB6qwecJBcT5y0ZAA+hBCJ3Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Spam-Score: -2.9 (--)
+X-Originating-IP: [80.246.32.33]
+In-Reply-To: <1402952842-12886-1-git-send-email-mina86@mina86.com>
+References: <1402952842-12886-1-git-send-email-mina86@mina86.com>
+Date: Tue, 17 Jun 2014 13:37:13 +0200
+Message-ID: <CAPh34mfF60+yB2O03WYM0D6QitZzjnQUF86irG8o42b0TeJYCA@mail.gmail.com>
+Subject: Re: [PATCH] include: kernel.h: rewrite min3, max3 and clamp using min
+ and max
+From: Hagen Paul Pfeifer <hagen@jauu.net>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 11:05:57AM -0700, Cong Wang wrote:
-> On Mon, Jun 16, 2014 at 5:51 AM, Stefan Priebe - Profihost AG
-> <s.priebe@profihost.ag> wrote:
-> > Hi,
-> >
-> > i'm using a vanilla 3.10.43 kernel and netconsole on top of a bridge.
-> >
-> > netconsole is used with vmbr0 (bridge) which is on top of bond0.
-> >
-> > If i want to add another bridge to vmbr0 is fails as long as netconsole
-> > is in use.
-> >
-> > # brctl addif vmbr0 fwpr2004p0
-> > can't add fwpr2004p0 to bridge vmbr0: Unknown error 524
-> >
-> > Kernel output:
-> > netpoll: (null): fwpr2004p0 doesn't support polling, aborting
-> >
-> > If i do rmmod netconsole - everything is working fine again.
-> >
-> 
-> This is expected, you can't add an interface which doesn't support
-> netpoll to a bridge which is running netpoll.
-> 
-> You should stop netpoll before adding it.
-Or alternatively, update the driver for the fwpr2004p0 to support netpoll, and
-you'll be able to add it with netpoll running
+Wow, back in the days where I submitted the patch I saw improvement in
+the generated code (focus on number of instructions). Don't know what
+happends with gcc in the meantime. Anyway, patch and analysis looks
+good. So from a clean-patch perspective you get an:
 
-Neil
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Signed-off-by: Hagen Paul Pfeifer <hagen@jauu.net>
