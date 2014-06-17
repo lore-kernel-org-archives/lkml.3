@@ -1,149 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934162AbaFQQ7u (ORCPT <rfc822;w@1wt.eu>);
+	id S965779AbaFQQ7x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:59:53 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:55856 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934149AbaFQQ7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 17 Jun 2014 12:59:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50407 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933650AbaFQQPe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:15:34 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Kieran Clancy <clancy.kieran@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 002/121] ACPI / EC: Process rather than discard events in acpi_ec_clear
-Date: Tue, 17 Jun 2014 09:13:15 -0700
-Message-Id: <1403021714-16320-3-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403021714-16320-1-git-send-email-kamal@canonical.com>
-References: <1403021714-16320-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+Message-ID: <53A073F7.20700@kapsi.fi>
+Date: Tue, 17 Jun 2014 19:59:35 +0300
+From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Airlie <airlied@linux.ie>,
+        Mike Turquette <mturquette@linaro.org>, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, devicetree@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [RFC PATCH 1/4] memory: tegra124-emc: Add EMC driver
+References: <1402925713-25426-1-git-send-email-tomeu.vizoso@collabora.com> <1402925713-25426-2-git-send-email-tomeu.vizoso@collabora.com> <539F4D44.3070309@wwwdotorg.org> <53A03186.3040703@collabora.com> <53A069B6.6070902@wwwdotorg.org>
+In-Reply-To: <53A069B6.6070902@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:be5f:f4ff:fe47:6518
+X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.24 -stable review patch.  If anyone has any objections, please let me know.
+On 06/17/2014 07:15 PM, Stephen Warren wrote:
+> On 06/17/2014 06:16 AM, Tomeu Vizoso wrote:
+>> On 06/16/2014 10:02 PM, Stephen Warren wrote:
+>>> On 06/16/2014 07:35 AM, Tomeu Vizoso wrote:
+>
+>>> This binding looks quite anaemic vs.
+>>> Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-emc.txt; I
+>>> would expect that this binding needs all the EMC register data from the
+>>> tegra20-emc binding too. Can the two bindings be identical?
+>>
+>> There's even less stuff needed right now, as all what ultimately the EMC
+>> driver does is call clk_set_rate on the EMC clock. As the T124 EMC
+>> driver gains more features, they should get more similar.
+>
+> IIRC, even changing the EMC clock rate requires modifying the memory
+> controller's programming (e.g. delays/taps/tuning etc.). That's exactly
+> what the more complex stuff in the nvidia,tegra20-emc.txt is all about.
+> I not convinced that a driver that just modifies the clock rate without
+> adjusting the EMC programming will work reliably.
 
-------------------
-
-From: Kieran Clancy <clancy.kieran@gmail.com>
-
-commit 3eba563e280101209bad27d40bfc83ddf1489234 upstream.
-
-Address a regression caused by commit ad332c8a4533:
-(ACPI / EC: Clear stale EC events on Samsung systems)
-
-After the earlier patch, there was found to be a race condition on some
-earlier Samsung systems (N150/N210/N220). The function acpi_ec_clear was
-sometimes discarding a new EC event before its GPE was triggered by the
-system. In the case of these systems, this meant that the "lid open"
-event was not registered on resume if that was the cause of the wake,
-leading to problems when attempting to close the lid to suspend again.
-
-After testing on a number of Samsung systems, both those affected by the
-previous EC bug and those affected by the race condition, it seemed that
-the best course of action was to process rather than discard the events.
-On Samsung systems which accumulate stale EC events, there does not seem
-to be any adverse side-effects of running the associated _Q methods.
-
-This patch adds an argument to the static function acpi_ec_sync_query so
-that it may be used within the acpi_ec_clear loop in place of
-acpi_ec_query_unlocked which was used previously.
-
-With thanks to Stefan Biereigel for reporting the issue, and for all the
-people who helped test the new patch on affected systems.
-
-Fixes: ad332c8a4533 (ACPI / EC: Clear stale EC events on Samsung systems)
-References: https://lkml.kernel.org/r/532FE3B2.9060808@biereigel-wb.de
-References: https://bugzilla.kernel.org/show_bug.cgi?id=44161#c173
-Reported-by: Stefan Biereigel <stefan@biereigel.de>
-Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
-Tested-by: Stefan Biereigel <stefan@biereigel.de>
-Tested-by: Dennis Jansen <dennis.jansen@web.de>
-Tested-by: Nicolas Porcel <nicolasporcel06@gmail.com>
-Tested-by: Maurizio D'Addona <mauritiusdadd@gmail.com>
-Tested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
-Tested-by: Giannis Koutsou <giannis.koutsou@gmail.com>
-Tested-by: Kieran Clancy <clancy.kieran@gmail.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/acpi/ec.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index 092f862..c7bce2a 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -213,13 +213,13 @@ unlock:
- 	spin_unlock_irqrestore(&ec->lock, flags);
- }
- 
--static int acpi_ec_sync_query(struct acpi_ec *ec);
-+static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
- 
- static int ec_check_sci_sync(struct acpi_ec *ec, u8 state)
- {
- 	if (state & ACPI_EC_FLAG_SCI) {
- 		if (!test_and_set_bit(EC_FLAGS_QUERY_PENDING, &ec->flags))
--			return acpi_ec_sync_query(ec);
-+			return acpi_ec_sync_query(ec, NULL);
- 	}
- 	return 0;
- }
-@@ -471,10 +471,8 @@ acpi_handle ec_get_handle(void)
- 
- EXPORT_SYMBOL(ec_get_handle);
- 
--static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
--
- /*
-- * Clears stale _Q events that might have accumulated in the EC.
-+ * Process _Q events that might have accumulated in the EC.
-  * Run with locked ec mutex.
-  */
- static void acpi_ec_clear(struct acpi_ec *ec)
-@@ -483,7 +481,7 @@ static void acpi_ec_clear(struct acpi_ec *ec)
- 	u8 value = 0;
- 
- 	for (i = 0; i < ACPI_EC_CLEAR_MAX; i++) {
--		status = acpi_ec_query_unlocked(ec, &value);
-+		status = acpi_ec_sync_query(ec, &value);
- 		if (status || !value)
- 			break;
- 	}
-@@ -610,13 +608,18 @@ static void acpi_ec_run(void *cxt)
- 	kfree(handler);
- }
- 
--static int acpi_ec_sync_query(struct acpi_ec *ec)
-+static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data)
- {
- 	u8 value = 0;
- 	int status;
- 	struct acpi_ec_query_handler *handler, *copy;
--	if ((status = acpi_ec_query_unlocked(ec, &value)))
-+
-+	status = acpi_ec_query_unlocked(ec, &value);
-+	if (data)
-+		*data = value;
-+	if (status)
- 		return status;
-+
- 	list_for_each_entry(handler, &ec->list, node) {
- 		if (value == handler->query_bit) {
- 			/* have custom handler for this bit */
-@@ -639,7 +642,7 @@ static void acpi_ec_gpe_query(void *ec_cxt)
- 	if (!ec)
- 		return;
- 	mutex_lock(&ec->mutex);
--	acpi_ec_sync_query(ec);
-+	acpi_ec_sync_query(ec, NULL);
- 	mutex_unlock(&ec->mutex);
- }
- 
--- 
-1.9.1
+Indeed, changing the EMC clock rate is a somewhat complicated sequence 
+of ~10 steps. The kernel even won't let one the rate be change directly, 
+as the change would be propagated to PLL_M which cannot have its rate 
+changed while it is enabled. I suppose the sequence should be hidden in 
+the EMC clk's set_rate implementation, which I guess would leave just 
+the rate policy to this driver.
 
