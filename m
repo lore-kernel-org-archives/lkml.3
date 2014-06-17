@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933667AbaFQQHn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:07:43 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:62040 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933335AbaFQQHl (ORCPT
+	id S1756243AbaFQQJz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:09:55 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49627 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755631AbaFQQJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:07:41 -0400
-Date: Tue, 17 Jun 2014 12:07:38 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        linaro-networking@linaro.org, Ben Dooks <ben.dooks@codethink.co.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: zImage: ensure header in LE format for BE8
- kernels
-In-Reply-To: <20140617142917.GA31861@n2100.arm.linux.org.uk>
-Message-ID: <alpine.LFD.2.11.1406171200220.16842@knanqh.ubzr>
-References: <1397147232-28516-1-git-send-email-taras.kondratiuk@linaro.org> <20140617142917.GA31861@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 17 Jun 2014 12:09:54 -0400
+Message-ID: <1403021389.27991.11.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH 01/24] kobject: return actual error on
+ kset_create_and_add
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Jeff Liu <jeff.liu@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, herbert@gondor.apana.org.au,
+        davem@davemloft.net, stefanr@s5r6.in-berlin.de, joro@8bytes.org,
+        jejb@parisc-linux.org, deller@gmx.de, bhelgaas@google.com, clm@fb.com,
+        Josef Bacik <jbacik@fb.com>, swhiteho@redhat.com, bharrosh@panasas.com,
+        bhalevy@primarydata.com, ccaulfie@redhat.com, teigland@redhat.com,
+        "Theodore Ts'o" <tytso@mit.edu>, adilger.kernel@dilger.ca,
+        jaegeuk@kernel.org, cm224.lee@samsung.com,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        casey@schaufler-ca.com, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 17 Jun 2014 09:09:49 -0700
+In-Reply-To: <alpine.DEB.2.11.1406171057270.20610@gentwo.org>
+References: <53A04FF7.5050900@oracle.com> <20140617154730.GA14153@kroah.com>
+	 <alpine.DEB.2.11.1406171057270.20610@gentwo.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jun 2014, Russell King - ARM Linux wrote:
-
-> Given that we're now passing the linker script through GCC for C
-> preprocessing, it seems to me that we don't need to do the sed trick
-> anymore - we can pass TEXTADDR and ZBSSADDR into GCC via definitions
-> instead, so I've committed this patch after this one.  No changes to
-> the vmlinux.lds.* file, it's just a pure rename.  Ack?
+On Tue, 2014-06-17 at 11:00 -0500, Christoph Lameter wrote:
+> On Tue, 17 Jun 2014, Greg KH wrote:
 > 
-> From: Russell King <rmk+kernel@arm.linux.org.uk>
-> Subject: [PATCH] ARM: Simplify generation of compressed vmlinux.lds file
+> > Who really cares about that?  What can do you do with that additional
+> > information that will help anything out?
 > 
-> As we are now using the C preprocessor, we do not need to use sed to
-> edit constants in this file, and then pass the resulting file through
-> the C preprocessor.  Instead, rely solely on the C preprocessor to
-> rewrite TEXT_START and BSS_ADDR.
+> The obvious reason for doing so is so that one can put the error code into
+> a log message to get more detailed information on why the call failed.
 > 
-> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> ---
->  arch/arm/boot/compressed/.gitignore     |  1 -
->  arch/arm/boot/compressed/Makefile       |  5 +-
->  arch/arm/boot/compressed/vmlinux.lds.S  | 90 +++++++++++++++++++++++++++++++++
->  arch/arm/boot/compressed/vmlinux.lds.in | 90 ---------------------------------
+> In this particular case the slab allocator can give an error message that
+> gives a hint why the sysfs support could not be enabled.
 
-Would be easier to review with git diff -M.
+What useful information does this supply?  The current assumption on
+NULL return is -ENOMEM ... what's the interesting case where this
+assumption is wrong?
 
-> diff --git a/arch/arm/boot/compressed/vmlinux.lds.S b/arch/arm/boot/compressed/vmlinux.lds.S
-> new file mode 100644
-> index 000000000000..60162231c7ea
-[...]
-> diff --git a/arch/arm/boot/compressed/vmlinux.lds.in b/arch/arm/boot/compressed/vmlinux.lds.in
-> deleted file mode 100644
-> index 60162231c7ea..000000000000
-
-OK, the SHA1 is the same so both files are identical.
-
-> --- a/arch/arm/boot/compressed/vmlinux.lds.in
-> +++ /dev/null
-> @@ -1,90 +0,0 @@
-> -/*
-> - *  linux/arch/arm/boot/compressed/vmlinux.lds.in
-
-You might want to update this comment though.
-
-Other than that...
-
-Acked-by: Nicolas Pitre <nico@linaro.org>
+James
 
 
-Nicolas
