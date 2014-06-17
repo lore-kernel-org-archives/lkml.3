@@ -1,111 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756341AbaFQWxV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:53:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53657 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965491AbaFQVp2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:45:28 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Daniel Borkmann <dborkman@redhat.com>, Vlad Yasevich <vyasevic@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 004/212] net: sctp: test if association is dead in sctp_wake_up_waiters
-Date: Tue, 17 Jun 2014 14:41:38 -0700
-Message-Id: <1403041506-13646-5-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S966915AbaFQWk5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:40:57 -0400
+Received: from ozlabs.org ([103.22.144.67]:35888 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965424AbaFQWkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 18:40:55 -0400
+Date: Wed, 18 Jun 2014 08:40:46 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Moore <paul@paul-moore.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: the selinux tree needs cleaning up
+Message-ID: <20140618084046.1bce12cc@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/mpC1UCafwyvkeyBMK41XvF4"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
+--Sig_/mpC1UCafwyvkeyBMK41XvF4
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi Paul,
 
-From: Daniel Borkmann <dborkman@redhat.com>
+The selinux tree (git://git.infradead.org/users/pcmoore/selinux#next)
+contains some commits going back to January and also has merges of
+v3.13, v3.14 and v3.15 in it.  If you rebase that tree onto v3.16-rc1,
+you find that it has onlt 2 unique commits (the most recent 2) which
+means that the others were merged upstream after being rewritten.  :-(
 
-[ Upstream commit 1e1cdf8ac78793e0875465e98a648df64694a8d0 ]
+Please clean this up.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-In function sctp_wake_up_waiters(), we need to involve a test
-if the association is declared dead. If so, we don't have any
-reference to a possible sibling association anymore and need
-to invoke sctp_write_space() instead, and normally walk the
-socket's associations and notify them of new wmem space. The
-reason for special casing is that otherwise, we could run
-into the following issue when a sctp_primitive_SEND() call
-from sctp_sendmsg() fails, and tries to flush an association's
-outq, i.e. in the following way:
+--Sig_/mpC1UCafwyvkeyBMK41XvF4
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-sctp_association_free()
-`-> list_del(&asoc->asocs)         <-- poisons list pointer
-    asoc->base.dead = true
-    sctp_outq_free(&asoc->outqueue)
-    `-> __sctp_outq_teardown()
-     `-> sctp_chunk_free()
-      `-> consume_skb()
-       `-> sctp_wfree()
-        `-> sctp_wake_up_waiters() <-- dereferences poisoned pointers
-                                       if asoc->ep->sndbuf_policy=0
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Therefore, only walk the list in an 'optimized' way if we find
-that the current association is still active. We could also use
-list_del_init() in addition when we call sctp_association_free(),
-but as Vlad suggests, we want to trap such bugs and thus leave
-it poisoned as is.
+iQIcBAEBCAAGBQJToMP0AAoJEMDTa8Ir7ZwVV8UP/RbVpgHfvJ3x+08+M0CxV38m
+6BcsoD/DiOLHoE14KSdjwPhT5cF6aVpjW0lxeuOT4O2pjyuSR7HxXo8krzNgU2zB
+rc+XnWvN367w68uhlCPithA7AwqhCxYBwHXuo7fLnEt6kmFmA9x9hm+iChgpGsmw
+EzG+8SkHBO0dNQGD1Ui3kPLHGqfDHCQaRfZLdI8izGnht7WlK7ZSpKk2lgHn96fQ
+4RhjIgsvkD4nFY/RSF9cyhQawml4Yb/VsjotW3R3POVa97eCWPLhcbSObiUMO7hu
++j+hkbd1fv6l3+dPPZODtQ/3rGC5GiBuh6Dwue1u33UIJdqrAbl0eh813bcoQITf
+L7l+GOhQe45NKcXYCDHvsp6crUIu38/1MfrbeJt4Ad/OgVVsJ4t9rIXvVmSOLWwE
+P/PCWnlo6ZejeSWQxqzOLIY18VuaAbtqJdrYsc5PPKeiSfYhLELX3pEDWCwvbP+Q
+VyfQxUqzmhyREZ3iSktLNKR32GI1A8IfKNR0UtZROiXqFaRu2Ja1J/eOC6qPQiAY
+6+pyAxKbAd9giiG+JmrX5qUoTHAa1umlhqNW1nJF0pNbqGOe/gntiOV8F9YJ9Zmt
+6cpLU+qgHTjYpRIPknJq9gLbUu2VS1dX8tHL2bTA3wAjS0VjG9rCIh6JmvfOS3F9
+V3LblGemn7tEjY09HdhY
+=0PR1
+-----END PGP SIGNATURE-----
 
-Why is it safe to resolve the issue by testing for asoc->base.dead?
-Parallel calls to sctp_sendmsg() are protected under socket lock,
-that is lock_sock()/release_sock(). Only within that path under
-lock held, we're setting skb/chunk owner via sctp_set_owner_w().
-Eventually, chunks are freed directly by an association still
-under that lock. So when traversing association list on destruction
-time from sctp_wake_up_waiters() via sctp_wfree(), a different
-CPU can't be running sctp_wfree() while another one calls
-sctp_association_free() as both happens under the same lock.
-Therefore, this can also not race with setting/testing against
-asoc->base.dead as we are guaranteed for this to happen in order,
-under lock. Further, Vlad says: the times we check asoc->base.dead
-is when we've cached an association pointer for later processing.
-In between cache and processing, the association may have been
-freed and is simply still around due to reference counts. We check
-asoc->base.dead under a lock, so it should always be safe to check
-and not race against sctp_association_free(). Stress-testing seems
-fine now, too.
-
-Fixes: cd253f9f357d ("net: sctp: wake up all assocs if sndbuf policy is per socket")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Vlad Yasevich <vyasevic@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevic@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/sctp/socket.c | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/net/sctp/socket.c b/net/sctp/socket.c
-index d9ed737..3e6bd41 100644
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -6591,6 +6591,12 @@ static void sctp_wake_up_waiters(struct sock *sk,
- 	if (asoc->ep->sndbuf_policy)
- 		return __sctp_write_space(asoc);
- 
-+	/* If association goes down and is just flushing its
-+	 * outq, then just normally notify others.
-+	 */
-+	if (asoc->base.dead)
-+		return sctp_write_space(sk);
-+
- 	/* Accounting for the sndbuf space is per socket, so we
- 	 * need to wake up others, try to be fair and in case of
- 	 * other associations, let them have a go first instead
--- 
-1.9.1
-
+--Sig_/mpC1UCafwyvkeyBMK41XvF4--
