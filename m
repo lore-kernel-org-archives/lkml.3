@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933865AbaFQQyg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:54:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50588 "EHLO
+	id S965866AbaFQQyx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:54:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50585 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933939AbaFQQSu (ORCPT
+	with ESMTP id S933936AbaFQQSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:18:50 -0400
+	Tue, 17 Jun 2014 12:18:49 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Jiang <dave.jiang@intel.com>,
-        Ed Ciechanowski <ed.ciechanowski@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>, Tejun Heo <tj@kernel.org>,
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 031/121] libata/ahci: accommodate tag ordered controllers
-Date: Tue, 17 Jun 2014 09:16:49 -0700
-Message-Id: <1403021899-16708-4-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 045/121] usb: option: add Alcatel L800MA
+Date: Tue, 17 Jun 2014 09:17:03 -0700
+Message-Id: <1403021899-16708-18-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,100 +31,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit 8a4aeec8d2d6a3edeffbdfae451cdf05cbf0fefd upstream.
+commit dd6b48ecec2ea7d15f28d5e5474388681899a5e1 upstream.
 
-The AHCI spec allows implementations to issue commands in tag order
-rather than FIFO order:
+Device interface layout:
+0: ff/ff/ff - serial
+1: ff/00/00 - serial AT+PPP
+2: ff/ff/ff - QMI/wwan
+3: 08/06/50 - storage
 
-	5.3.2.12 P:SelectCmd
-	HBA sets pSlotLoc = (pSlotLoc + 1) mod (CAP.NCS + 1)
-	or HBA selects the command to issue that has had the
-	PxCI bit set to '1' longer than any other command
-	pending to be issued.
-
-The result is that commands posted sequentially (time-wise) may play out
-of sequence when issued by hardware.
-
-This behavior has likely been hidden by drives that arrange for commands
-to complete in issue order.  However, it appears recent drives (two from
-different vendors that we have found so far) inflict out-of-order
-completions as a matter of course.  So, we need to take care to maintain
-ordered submission, otherwise we risk triggering a drive to fall out of
-sequential-io automation and back to random-io processing, which incurs
-large latency and degrades throughput.
-
-This issue was found in simple benchmarks where QD=2 seq-write
-performance was 30-50% *greater* than QD=32 seq-write performance.
-
-Tagging for -stable and making the change globally since it has a low
-risk-to-reward ratio.  Also, word is that recent versions of an unnamed
-OS also does it this way now.  So, drives in the field are already
-experienced with this tag ordering scheme.
-
-Cc: Dave Jiang <dave.jiang@intel.com>
-Cc: Ed Ciechanowski <ed.ciechanowski@intel.com>
-Reviewed-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/libata-core.c | 21 +++++++++++++--------
- include/linux/libata.h    |  1 +
- 2 files changed, 14 insertions(+), 8 deletions(-)
+ drivers/usb/serial/option.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index a93366f..97c7a05 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4763,21 +4763,26 @@ void swap_buf_le16(u16 *buf, unsigned int buf_words)
- static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
- {
- 	struct ata_queued_cmd *qc = NULL;
--	unsigned int i;
-+	unsigned int i, tag;
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 5aa3512..b496887 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -287,6 +287,7 @@ static void option_instat_callback(struct urb *urb);
+ #define ALCATEL_PRODUCT_X060S_X200		0x0000
+ #define ALCATEL_PRODUCT_X220_X500D		0x0017
+ #define ALCATEL_PRODUCT_L100V			0x011e
++#define ALCATEL_PRODUCT_L800MA			0x0203
  
- 	/* no command while frozen */
- 	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
- 		return NULL;
- 
--	/* the last tag is reserved for internal command. */
--	for (i = 0; i < ATA_MAX_QUEUE - 1; i++)
--		if (!test_and_set_bit(i, &ap->qc_allocated)) {
--			qc = __ata_qc_from_tag(ap, i);
-+	for (i = 0; i < ATA_MAX_QUEUE; i++) {
-+		tag = (i + ap->last_tag + 1) % ATA_MAX_QUEUE;
-+
-+		/* the last tag is reserved for internal command. */
-+		if (tag == ATA_TAG_INTERNAL)
-+			continue;
-+
-+		if (!test_and_set_bit(tag, &ap->qc_allocated)) {
-+			qc = __ata_qc_from_tag(ap, tag);
-+			qc->tag = tag;
-+			ap->last_tag = tag;
- 			break;
- 		}
--
--	if (qc)
--		qc->tag = i;
-+	}
- 
- 	return qc;
- }
-diff --git a/include/linux/libata.h b/include/linux/libata.h
-index a55de7b..b80f08b1 100644
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -768,6 +768,7 @@ struct ata_port {
- 	unsigned long		qc_allocated;
- 	unsigned int		qc_active;
- 	int			nr_active_links; /* #links with active qcs */
-+	unsigned int		last_tag;	/* track next tag hw expects */
- 
- 	struct ata_link		link;		/* host default link */
- 	struct ata_link		*slave_link;	/* see ata_slave_link_init() */
+ #define PIRELLI_VENDOR_ID			0x1266
+ #define PIRELLI_PRODUCT_C100_1			0x1002
+@@ -1501,6 +1502,8 @@ static const struct usb_device_id option_ids[] = {
+ 	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
+ 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L100V),
+ 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
++	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L800MA),
++	  .driver_info = (kernel_ulong_t)&net_intf2_blacklist },
+ 	{ USB_DEVICE(AIRPLUS_VENDOR_ID, AIRPLUS_PRODUCT_MCD650) },
+ 	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
 -- 
 1.9.1
 
