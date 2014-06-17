@@ -1,110 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756613AbaFQWzm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:55:42 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:59211 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756597AbaFQWzk (ORCPT
+	id S967558AbaFQWVv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:21:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54404 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966615AbaFQVud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 18:55:40 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53A0C763.7080003@roeck-us.net>
-Date: Tue, 17 Jun 2014 15:55:31 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, Myron Stowe <myron.stowe@redhat.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rajat Jain <rajatjain.linux@gmail.com>
-Subject: Re: [PATCH] PCI: pciehp: Include the Data Link Layer State Changed
- bit when clearing the Slot Status register's event bits
-References: <20140617192734.30783.71260.stgit@amt.stowe> <CAErSpo7t2kXj2ZULLXCJSWb_awS+DCtCg51dnLbb8ztWmQdYog@mail.gmail.com>
-In-Reply-To: <CAErSpo7t2kXj2ZULLXCJSWb_awS+DCtCg51dnLbb8ztWmQdYog@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Jun 2014 17:50:33 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 167/212] ARM: OMAP2+: nand: Fix NAND on OMAP2 and OMAP3 boards
+Date: Tue, 17 Jun 2014 14:44:21 -0700
+Message-Id: <1403041506-13646-168-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2014 02:07 PM, Bjorn Helgaas wrote:
-> On Tue, Jun 17, 2014 at 1:27 PM, Myron Stowe <myron.stowe@redhat.com> wrote:
->> During PCIe hot-plug initialization - pciehp_probe - data structures
->> related to slot capabilities are set up.  As part of this set up, ISRs are
->> put in place to handle slot events and all event bits are cleared out.
->>
->> This patch adds the Data Link Layer State Changed (PCI_EXP_SLTSTA_DLLSC)
->> Slot Status bit to the event bits that are cleared out during
->> initialization.
->
-> I think this is related to e48f1b67f668 ("PCI: pciehp: Use link change
-> notifications for hot-plug and removal").  Prior to that, pcie_isr()
-> didn't look at the PCI_EXP_SLTSTA_DLLSC bit.
->
-> Apparently there's a non-public report of spurious messages like this
-> at boot-time, with no actual hotplug events:
->
->    pciehp 0000:82:04.0:pcie24: slot(4): Link Up event
->    pciehp 0000:82:04.0:pcie24: Device 0000:83:00.0 already exists at
-> 0000:83:00, cannot hot-add
->    pciehp 0000:82:04.0:pcie24: Cannot add device at 0000:83:00
->
+3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
 
-I think I have seen that message once in a while in our systems.
-Rajat, didn't we talk about this a while ago ?
+------------------
 
-Guenter
+From: Roger Quadros <rogerq@ti.com>
 
-> Device 0000:83:00.0 was enumerated previously, during the normal PCI
-> device enumeration.  I suspect DLLSC was set by the hardware when the
-> link came up after power-on, and it remained set until Linux booted.
-> Then when we take the first pciehp interrupt, we notice DLLSC is set
-> and think it's a new link state change.
->
-> This might be system-specific, because some BIOSes might clear DLLSC
-> before handing off to the OS.  Or my theory might be all wet.
->
-> But I think we should clear DLLSC in any case.  We clear all the other
-> RW1C bits in Slot Status, and I think we should clear DLLSC as well.
->
-> I'd like to include a bugzilla or mailing list reference for the
-> spurious message, and I'd also like confirmation that this changes
-> actually fixes it.
->
-> Bjorn
->
->> Reference:
->>    PCI-SIG.  PCI Express Base Specification Revision 4.0 Version 0.3
->>    (PCI-SIG, 2014): 7.8.11. Slot Status Register (Offset 1Ah).
->>
->> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
->> ---
->>
->>   drivers/pci/hotplug/pciehp_hpc.c |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
->> index 42914e0..0568416 100644
->> --- a/drivers/pci/hotplug/pciehp_hpc.c
->> +++ b/drivers/pci/hotplug/pciehp_hpc.c
->> @@ -794,7 +794,7 @@ struct controller *pcie_init(struct pcie_device *dev)
->>          pcie_capability_write_word(pdev, PCI_EXP_SLTSTA,
->>                  PCI_EXP_SLTSTA_ABP | PCI_EXP_SLTSTA_PFD |
->>                  PCI_EXP_SLTSTA_MRLSC | PCI_EXP_SLTSTA_PDC |
->> -               PCI_EXP_SLTSTA_CC);
->> +               PCI_EXP_SLTSTA_CC | PCI_EXP_SLTSTA_DLLSC);
->>
->>          /* Disable software notification */
->>          pcie_disable_notification(ctrl);
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
->
->
+commit 5005e0b76781c37d0a16dd6dd17d015098e8ce92 upstream.
+
+Commit c66d039197e4 broke NAND for non-DT boot on all OMAP2 and OMAP3
+boards using board_nand_init(). Following error is seen at boot
+
+[    0.154998]  (null): Unsupported NAND ECC scheme selected
+
+For OMAP2 and OMAP3 platforms, the ecc_opt parameter in platform data
+must be set to OMAP_ECC_HAM1_CODE_HW to work properly.
+
+Tested on omap3-beagle c4.
+
+Fixes: c66d039197e4 (mtd: nand: omap: combine different flavours of 1-bit hamming ecc schemes)
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ arch/arm/mach-omap2/board-flash.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-omap2/board-flash.c b/arch/arm/mach-omap2/board-flash.c
+index ac82512..b6885e4 100644
+--- a/arch/arm/mach-omap2/board-flash.c
++++ b/arch/arm/mach-omap2/board-flash.c
+@@ -142,7 +142,7 @@ __init board_nand_init(struct mtd_partition *nand_parts, u8 nr_parts, u8 cs,
+ 	board_nand_data.nr_parts	= nr_parts;
+ 	board_nand_data.devsize		= nand_type;
+ 
+-	board_nand_data.ecc_opt = OMAP_ECC_BCH8_CODE_HW;
++	board_nand_data.ecc_opt = OMAP_ECC_HAM1_CODE_HW;
+ 	gpmc_nand_init(&board_nand_data, gpmc_t);
+ }
+ #endif /* CONFIG_MTD_NAND_OMAP2 || CONFIG_MTD_NAND_OMAP2_MODULE */
+-- 
+1.9.1
 
