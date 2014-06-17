@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756632AbaFQWzo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:55:44 -0400
-Received: from ozlabs.org ([103.22.144.67]:42959 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756597AbaFQWzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 18:55:43 -0400
-Date: Wed, 18 Jun 2014 08:55:35 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: the vfs tree needs cleaning up
-Message-ID: <20140618085535.689388ac@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S966052AbaFQWsl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:48:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53711 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965589AbaFQVpm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 17:45:42 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: =?UTF-8?q?Martin=20Hundeb=C3=B8ll?= <martin@hundeboll.net>,
+        Antonio Quartulli <antonio@open-mesh.com>,
+        Marek Lindner <mareklindner@neomailbox.ch>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 058/212] batman-adv: fix reference counting imbalance while sending fragment
+Date: Tue, 17 Jun 2014 14:42:32 -0700
+Message-Id: <1403041506-13646-59-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/p5KmPTLCRZ0pjhDlWpzi1zH"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/p5KmPTLCRZ0pjhDlWpzi1zH
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
 
-Hi Al,
+------------------
 
-If I rebase the vfs tree
-(git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git#for-next)
-onto v3.16-rc1, it ends up empty which means that its commits were all
-rewritten before Linus merged them.  Please clean up your tree.
+From: Antonio Quartulli <antonio@open-mesh.com>
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+[ Upstream commit be181015a189cd141398b761ba4e79d33fe69949 ]
 
---Sig_/p5KmPTLCRZ0pjhDlWpzi1zH
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+In the new fragmentation code the batadv_frag_send_packet()
+function obtains a reference to the primary_if, but it does
+not release it upon return.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+This reference imbalance prevents the primary_if (and then
+the related netdevice) to be properly released on shut down.
 
-iQIcBAEBCAAGBQJToMdsAAoJEMDTa8Ir7ZwV0KgQAJA/E/3jiXXDAGTmjH6QLXYG
-rqZDzYZflKNJGByQsg5uzCPl0HiLpcAWF09JMVmixQn7/RP1zE0gwj5fKT/uxv5U
-EU4YrttI2/5AiaMBkYjWy5lUMbB0Mwl5to/3/RrMW2XdjFB9Kx7858ckqyph5jWz
-6hVY4sEuFGJ+M47/oG5ZHAcbWPtgHnLe1lYZg0q4TEuhq9wQ3mVGrog7U9dI1Aqp
-N6NmhRt9OcXmBcl9RSv71wC46zcExPqGsWTSQ4n6CoPosYikUmfZKNBmS5HWo8dd
-2lKGp0Wr8K/StNh1o67L60qjiQYLX/U+OXjUCjXKy4LGX7DvoUtPeTBO6w+i3j/Z
-nJvSv1PQMBnLlcvDSoyUx7gMK0GLyf4sNTzT42LqVwpGuSp6MfF7FKjpFRZXCVB7
-VGLIyozamUPgjKi+mtwCJ/rpjsoEQUCEhABZXj6XeON2L3y/WOEGKuCIn2Mtvl8o
-D27iU3XLRNlLGcPWq7ZX4HuFXjX5ubW3IbsmxOB6U579uVq3lPkM3d6XsMtzEhEQ
-dlubZpDRipVHHF7+/iTbZQ+YBemq5zLGbh1Gvv2s9zUO/lPouwWtziijuT92JgBv
-Qs3Q7J+HQ0zsorAKSjx1Fu/dFNypX5wQ9iNMTbO7oSYK8PoJv2feW9GIxYSwSPbD
-T7eHJhRPqzZPC5D274rO
-=zNV8
------END PGP SIGNATURE-----
+Fix this by releasing the primary_if in batadv_frag_send_packet().
 
---Sig_/p5KmPTLCRZ0pjhDlWpzi1zH--
+Introduced by ee75ed88879af88558818a5c6609d85f60ff0df4
+("batman-adv: Fragment and send skbs larger than mtu")
+
+Cc: Martin Hundebøll <martin@hundeboll.net>
+Signed-off-by: Antonio Quartulli <antonio@open-mesh.com>
+Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
+Acked-by: Martin Hundebøll <martin@hundeboll.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ net/batman-adv/fragmentation.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/net/batman-adv/fragmentation.c b/net/batman-adv/fragmentation.c
+index 6ddb614..a674034 100644
+--- a/net/batman-adv/fragmentation.c
++++ b/net/batman-adv/fragmentation.c
+@@ -420,12 +420,13 @@ bool batadv_frag_send_packet(struct sk_buff *skb,
+ 			     struct batadv_neigh_node *neigh_node)
+ {
+ 	struct batadv_priv *bat_priv;
+-	struct batadv_hard_iface *primary_if;
++	struct batadv_hard_iface *primary_if = NULL;
+ 	struct batadv_frag_packet frag_header;
+ 	struct sk_buff *skb_fragment;
+ 	unsigned mtu = neigh_node->if_incoming->net_dev->mtu;
+ 	unsigned header_size = sizeof(frag_header);
+ 	unsigned max_fragment_size, max_packet_size;
++	bool ret = false;
+ 
+ 	/* To avoid merge and refragmentation at next-hops we never send
+ 	 * fragments larger than BATADV_FRAG_MAX_FRAG_SIZE
+@@ -485,7 +486,11 @@ bool batadv_frag_send_packet(struct sk_buff *skb,
+ 			   skb->len + ETH_HLEN);
+ 	batadv_send_skb_packet(skb, neigh_node->if_incoming, neigh_node->addr);
+ 
+-	return true;
++	ret = true;
++
+ out_err:
+-	return false;
++	if (primary_if)
++		batadv_hardif_free_ref(primary_if);
++
++	return ret;
+ }
+-- 
+1.9.1
+
