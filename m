@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966713AbaFQVu6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:50:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54486 "EHLO
+	id S966563AbaFQVuT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:50:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54332 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965292AbaFQVu4 (ORCPT
+	with ESMTP id S966494AbaFQVuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:50:56 -0400
+	Tue, 17 Jun 2014 17:50:14 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Fabio Baltieri <fabio.baltieri@gmail.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 190/212] can: only rename enabled led triggers when changing the netdev name
-Date: Tue, 17 Jun 2014 14:44:44 -0700
-Message-Id: <1403041506-13646-191-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 034/212] net: qmi_wwan: add a number of Dell devices
+Date: Tue, 17 Jun 2014 14:42:08 -0700
+Message-Id: <1403041506-13646-35-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,45 +31,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Hartkopp <socketcan@hartkopp.net>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit 45fb4f8d81578e0a17c45c4593a3305afbf7a48b upstream.
+[ Upstream commit 6f10c5d1b1aeddb63d33070abb8bc5a177beeb1f ]
 
-Commit a1ef7bd9fce8 ("can: rename LED trigger name on netdev renames") renames
-the led trigger names according to the changed netdevice name.
+Dan writes:
 
-As not every CAN driver supports and initializes the led triggers, checking for
-the CAN private datastructure with safe_candev_priv() in the notifier chain is
-not enough.
+"The Dell drivers use the same configuration for PIDs:
 
-This patch adds a check when CONFIG_CAN_LEDS is enabled and the driver does not
-support led triggers.
+81A2: Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card
+81A3: Dell Wireless 5570 HSPA+ (42Mbps) Mobile Broadband Card
+81A4: Dell Wireless 5570e HSPA+ (42Mbps) Mobile Broadband Card
+81A8: Dell Wireless 5808 Gobi(TM) 4G LTE Mobile Broadband Card
+81A9: Dell Wireless 5808e Gobi(TM) 4G LTE Mobile Broadband Card
 
-For stable 3.9+
+These devices are all clearly Sierra devices, but are also definitely
+Gobi-based.  The A8 might be the MC7700/7710 and A9 is likely a MC7750.
 
-Cc: Fabio Baltieri <fabio.baltieri@gmail.com>
-Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
-Acked-by: Kurt Van Dijck <dev.kurt@vandijck-laurijssen.be>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+>From DellGobi5kSetup.exe from the Dell drivers:
+
+usbif0: serial/firmware loader?
+usbif2: nmea
+usbif3: modem/ppp
+usbif8: net/QMI"
+
+Reported-by: AceLan Kao <acelan.kao@canonical.com>
+Reported-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/can/led.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/usb/qmi_wwan.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/net/can/led.c b/drivers/net/can/led.c
-index a3d99a8..ab7f1b0 100644
---- a/drivers/net/can/led.c
-+++ b/drivers/net/can/led.c
-@@ -97,6 +97,9 @@ static int can_led_notifier(struct notifier_block *nb, unsigned long msg,
- 	if (!priv)
- 		return NOTIFY_DONE;
+diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+index c1dc9ce..aea1e93 100644
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -754,6 +754,11 @@ static const struct usb_device_id products[] = {
+ 	{QMI_FIXED_INTF(0x0b3c, 0xc005, 6)},    /* Olivetti Olicard 200 */
+ 	{QMI_FIXED_INTF(0x0b3c, 0xc00b, 4)},	/* Olivetti Olicard 500 */
+ 	{QMI_FIXED_INTF(0x1e2d, 0x0060, 4)},	/* Cinterion PLxx */
++	{QMI_FIXED_INTF(0x413c, 0x81a2, 8)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card */
++	{QMI_FIXED_INTF(0x413c, 0x81a3, 8)},	/* Dell Wireless 5570 HSPA+ (42Mbps) Mobile Broadband Card */
++	{QMI_FIXED_INTF(0x413c, 0x81a4, 8)},	/* Dell Wireless 5570e HSPA+ (42Mbps) Mobile Broadband Card */
++	{QMI_FIXED_INTF(0x413c, 0x81a8, 8)},	/* Dell Wireless 5808 Gobi(TM) 4G LTE Mobile Broadband Card */
++	{QMI_FIXED_INTF(0x413c, 0x81a9, 8)},	/* Dell Wireless 5808e Gobi(TM) 4G LTE Mobile Broadband Card */
  
-+	if (!priv->tx_led_trig || !priv->rx_led_trig)
-+		return NOTIFY_DONE;
-+
- 	if (msg == NETDEV_CHANGENAME) {
- 		snprintf(name, sizeof(name), "%s-tx", netdev->name);
- 		led_trigger_rename_static(name, priv->tx_led_trig);
+ 	/* 4. Gobi 1000 devices */
+ 	{QMI_GOBI1K_DEVICE(0x05c6, 0x9212)},	/* Acer Gobi Modem Device */
 -- 
 1.9.1
 
