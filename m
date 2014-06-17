@@ -1,133 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933442AbaFQP15 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 11:27:57 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:56902 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932869AbaFQP14 (ORCPT
+	id S933306AbaFQPaH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 11:30:07 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:56681 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932869AbaFQPaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 11:27:56 -0400
-Date: Tue, 17 Jun 2014 11:27:52 -0400
-From: Tejun Heo <tj@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
- accessors and operations
-Message-ID: <20140617152752.GC31819@htj.dyndns.org>
-References: <20140612135630.GA23606@htj.dyndns.org>
- <20140612153426.GV4581@linux.vnet.ibm.com>
- <20140612155227.GB23606@htj.dyndns.org>
- <20140617144151.GD4669@linux.vnet.ibm.com>
+	Tue, 17 Jun 2014 11:30:05 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Andrew Pinski <apinski@cavium.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/24] ARM64:UAPI: Set the correct __BITS_PER_LONG for ILP32.
+Date: Tue, 17 Jun 2014 17:29:33 +0200
+Message-ID: <13888874.KX24HfA3hx@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140617152250.GC21752@arm.com>
+References: <1400914939-9708-1-git-send-email-apinski@cavium.com> <1400914939-9708-6-git-send-email-apinski@cavium.com> <20140617152250.GC21752@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140617144151.GD4669@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:vhVVe0j8WjYm6EF01CY1mEPn5wdbJ2zR8Ybk+0QG+ud
+ FbMFrCPmevzJmRzJ+LOTaEAuDY5x/XzvHVu0NGJjkc+71CRsA/
+ Mk+KynITYjuxvVm1IOo9b68wNFyZxeFkNc3yUOTfs3aVzYJcvH
+ 7nc24z4DGbLZGAlaa0TaI/AQ816cow2apIVfQEkgjSGHUzJ7pw
+ i7YWBs3bu5SwoR7aSeG4YnuV1vjzdGOW60QUV+5cdNjUWRJDYs
+ PHoAWgA/ebmOes76LFFzsd3x4k0KNBb1AYZOou6JdxlVwr2bPx
+ oUrBr1apVmDyoL83Co39rnHNTv9W7T7EbwBbabd8gsPlgBUfGW
+ OQ43xrO4LxBDxVTcW8Lg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Paul.
-
-On Tue, Jun 17, 2014 at 07:41:51AM -0700, Paul E. McKenney wrote:
-> > Well, we can always say that it's the caller's responsibility to put
-> > in enough barriers, but it becomes weird for percpu areas because the
-> > ownership of the allocated areas isn't really clear.  Whether each
-> > allocated cpu-specific area's queued writes belong to the allocating
-> > cpu or the cpu that the area is associated with is an implementation
-> > detail which may theoretically change and as such I think it'd be best
-> > for the problem to be dealt with in percpu allocator and accessors
-> > proper.  I think this is way too subtle to ask the users to handle
-> > correctly.
+On Tuesday 17 June 2014 16:22:50 Catalin Marinas wrote:
+> On Sat, May 24, 2014 at 12:02:00AM -0700, Andrew Pinski wrote:
+> > diff --git a/arch/arm64/include/uapi/asm/bitsperlong.h b/arch/arm64/include/uapi/asm/bitsperlong.h
+> > index fce9c29..5e06c59 100644
+> > --- a/arch/arm64/include/uapi/asm/bitsperlong.h
+> > +++ b/arch/arm64/include/uapi/asm/bitsperlong.h
+> > @@ -16,7 +16,12 @@
+> >  #ifndef __ASM_BITSPERLONG_H
+> >  #define __ASM_BITSPERLONG_H
+> >  
+> > -#define __BITS_PER_LONG 64
+> > +/* Assuming __LP64__ will be defined for native ELF64's and not for ILP32. */
+> > +#ifdef __LP64__
+> > +# define __BITS_PER_LONG 64
+> > +#else
+> > +# define __BITS_PER_LONG 32
+> > +#endif
 > 
-> But in the case where the allocation is initially zeroed, then a few
-> fields are initialized to non-zero values, the memory barrier in the
-> allocator is insufficient.  I believe that it will be easier for people
-
-Oh, definitely but in those cases it's clear whose responsbility it
-is.  The task/cpu which modified the memory owns the in-flight
-modifications and is responsible for propagation.  The problem with
-zeroed allocation, especially for percpu areas, is that it isn't clear
-who owns the zeroing.  Again, there's no reason the zeroing can't
-belong to the each local cpu, which could have performance benefits if
-we ever get frequent enough with percpu allocations.  To me, this
-really seems like an implementation detail which shouldn't leak to the
-users of the allocator.
-
-> to always use smp_store_release() or whatever than to not need it if
-> the initialization is strictly zero, but to need it if additional
-> initialization is required.
-
-That goes further and would require dedicated assignment macros for
-percpu pointers, a la rcu_assign_pointer().  Yeah, I think that would
-be helpful.  It'd take quite a bit of work but percpu allocator usage
-is still in low hundreds, so it should be doable.  The whole thing is
-way too subtle to require each user to handle it manually.
-
-So, how about the followings?
-
-* Add data dependency barrier to percpu accessors and write barrier to
-  the allocator with the comment that this will be replaced with
-  proper assignment macros and mark this change w/ -stable.
-
-* Later, introduce percpu pointer assignment macros and convert all
-  users and remove the wmb added above.
-
-> > > I was worried about use of per_cpu() by the reading CPU, but of course
-> > > in that case, things are initialized at compiler time.
-> > 
-> > Not really.  The template is initialized on kernel load.  The actual
-> > percpu areas have to be allocated dynamically; however, this happens
-> > while the machine is still running UP, so this should be okay.
+> I think it's enough to just define it for the __LP64__ case.
 > 
-> Good point.  How about per-CPU variables that are introduced by
-> loadable modules?  (I would guess that there are plenty of memory
-> barriers in the load process, given that text and data also needs
-> to be visible to other CPUs.)
-
-(cc'ing Rusty, hi!)
-
-Percpu initialization happens in post_relocation() before
-module_finalize().  There seem to be enough operations which can act
-as write barrier afterwards but nothing seems explicit.
-
-I have no idea how we're guaranteeing that .data is visible to all
-cpus without barrier from reader side.  Maybe we don't allow something
-like the following?
-
-  module init				built-in code
-
-  static int mod_static_var = X;	if (builtin_ptr)
-  builtin_ptr = &mod_static_var;		WARN_ON(*builtin_ptr != X);
-
-Rusty, can you please enlighten me?
-
-> > For normal allocations, I don't have a strong opinion.  I'd prefer to
-> > think of memory coming out of the allocator to have memory ordering
-> > already taken care of but it is a lot less murky than with percpu
-> > areas.
+> >  #include <asm-generic/bitsperlong.h>
 > 
-> Again, it won't help for the allocator to strongly order the
-> initialization to zero if there are additional initializations of some
-> fields to non-zero values.  And again, it should be a lot easier to
-> require the smp_store_release() or whatever uniformly than only in cases
-> where additional initialization occurred.
+> The asm-generic definition if 32 by default.
 
-This one is less murky as we can say that the cpu which allocated owns
-the zeroing; however, it still deviates from requiring the one which
-makes changes to take care of barriering for those changes, which is
-what makes me feel a bit uneasy.  IOW, it's the allocator which
-cleared the memory, why should its users worry about in-flight
-operations from it?  That said, this poses a lot less issues compared
-to percpu ones as passing normal pointers to other cpus w/o going
-through proper set of barriers is a special thing to do anyway.
+Andrew's version does seem more readable though, and is obviously correct.
 
-Thanks.
-
--- 
-tejun
+	Arnd
