@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933656AbaFQTol (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 15:44:41 -0400
-Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:56305 "EHLO
-	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933009AbaFQTok (ORCPT
+	id S933672AbaFQTqs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 15:46:48 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:38598 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933009AbaFQTqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 15:44:40 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlQJABCaoFNbsl1t/2dsb2JhbABagw2rKgUBAQEBAQEFAZkmgQ4XdYRgI4EaN4hGActZhWOJEx2ELQSaQ5NYg0I7
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Julia Lawall <Julia.Lawall@lip6.fr>,
-        Gilles Muller <Gilles.Muller@lip6.fr>, Joe Perches <joe@perches.com>
-Subject: [PATCH 1/1] scripts/coccinelle/free: add conditional kfree test
-Date: Tue, 17 Jun 2014 21:43:19 +0200
-Message-Id: <1403034199-9824-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Tue, 17 Jun 2014 15:46:47 -0400
+Date: Tue, 17 Jun 2014 12:46:45 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Martin Kepplinger <martink@posteo.de>
+cc: drbd-dev@lists.linbit.com, drbd-user@lists.linbit.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] drbd: change one-bit bitfield to be an unsigned int
+In-Reply-To: <1402988047-16364-1-git-send-email-martink@posteo.de>
+Message-ID: <alpine.DEB.2.02.1406171243260.18156@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1406160225510.30205@chino.kir.corp.google.com> <1402988047-16364-1-git-send-email-martink@posteo.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a trivial script warning on
+On Tue, 17 Jun 2014, Martin Kepplinger wrote:
 
-if(foo)
-	kfree(foo)
+> The one-bit bitfields are assigned true (1) or false (0) and checked
+> for them respectively. While it should work either way and -1 is true
+> as well it is more clear to see what's going on when using an unsigned int
+> because 1 doesn't silently become -1 behind the label true.
+> 
 
-(based on checkpatch)
+Nothing is silently becoming anything, I have no idea what you're trying 
+to address.  Is there something in drivers/block/drbd that needs this 
+change?
 
-Cc: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Gilles Muller <Gilles.Muller@lip6.fr>
-Cc: Joe Perches <joe@perches.com>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- scripts/coccinelle/free/cond_kfree.cocci | 34 ++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
- create mode 100644 scripts/coccinelle/free/cond_kfree.cocci
+> Signed-off-by: Martin Kepplinger <martink@posteo.de>
+> ---
+> Thanks for looking at it. This is more of a question: Does this make sense
+> to you now? I can be mistaken. It just wasn't totally clear to me at first
+> sight and even though it should be, why not try to improve it.
+> 
 
-diff --git a/scripts/coccinelle/free/cond_kfree.cocci b/scripts/coccinelle/free/cond_kfree.cocci
-new file mode 100644
-index 0000000..0b8093e
---- /dev/null
-+++ b/scripts/coccinelle/free/cond_kfree.cocci
-@@ -0,0 +1,34 @@
-+/// conditional kfree - NULL check before kfree is not needed.
-+///
-+/// Based on checkpatch warning
-+/// "kfree(NULL) is safe this check is probably not required"
-+/// and kfreeaddr.cocci by Julia Lawall.
-+///
-+/// Comments: -
-+/// Options: --no-includes --include-headers
-+
-+virtual org
-+virtual report
-+virtual context
-+
-+@r depends on context || report || org @
-+expression E;
-+position p;
-+@@
-+
-+* if (E)
-+*	kfree@p(E);
-+
-+@script:python depends on org@
-+p << r.p;
-+@@
-+
-+cocci.print_main("kfree", p)
-+
-+@script:python depends on report@
-+p << r.p;
-+@@
-+
-+msg = "WARNING: checking value to avoid kfree(NULL) is unnecessary."
-+coccilib.report.print_report(p[0], msg)
-+
--- 
-1.8.4.5
+There's no improvement here, you realize that the sign of one-bit 
+bitfields are implementation defined, correct?  On what implementation 
+does this patch make a difference?
 
+If you are trying to convert these to unsigned for consistency, then just 
+say so in the changelog and don't talk about silent changes or comparisons 
+to true and false that obfuscate the fact that this is just a trivial 
+cleanup that is based on the author's own preference rather than anything 
+else.
+
+> sparse called it 'dubious' before the change.
+> 
+> (built but untested)
+> 
+>  drivers/block/drbd/drbd_interval.h |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/block/drbd/drbd_interval.h b/drivers/block/drbd/drbd_interval.h
+> index f38fcb0..8d670e6 100644
+> --- a/drivers/block/drbd/drbd_interval.h
+> +++ b/drivers/block/drbd/drbd_interval.h
+> @@ -9,8 +9,8 @@ struct drbd_interval {
+>  	sector_t sector;	/* start sector of the interval */
+>  	unsigned int size;	/* size in bytes */
+>  	sector_t end;		/* highest interval end in subtree */
+> -	int local:1		/* local or remote request? */;
+> -	int waiting:1;
+> +	unsigned int local:1;	/* local or remote request? */
+> +	unsigned int waiting:1;
+>  };
+>  
+>  static inline void drbd_clear_interval(struct drbd_interval *i)
