@@ -1,75 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965383AbaFQVSG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:18:06 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:39741 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965359AbaFQVSE (ORCPT
+	id S965207AbaFQVJr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:09:47 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:38173 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965179AbaFQVJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:18:04 -0400
-Date: Tue, 17 Jun 2014 22:17:47 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 07/10] regulator: Add driver for Maxim 77802 PMIC
- regulators
-Message-ID: <20140617211747.GY29841@lee--X1>
-References: <1402941758-11216-1-git-send-email-javier.martinez@collabora.co.uk>
- <1402941758-11216-8-git-send-email-javier.martinez@collabora.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1402941758-11216-8-git-send-email-javier.martinez@collabora.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 17 Jun 2014 17:09:46 -0400
+From: Benson Leung <bleung@chromium.org>
+To: gene.chen@intel.com, moch@chromium.org, mika.westerberg@linux.intel.com,
+        lkml14@scotdoyle.com, kirill.shutemov@linux.intel.com, olof@lixom.net,
+        linux-kernel@vger.kernel.org
+Cc: bleung@chromium.org
+Subject: [PATCHv2 1/4] platform/chrome: chromeos_laptop - Add support for Acer C720
+Date: Tue, 17 Jun 2014 14:02:00 -0700
+Message-Id: <1403038923-19444-2-git-send-email-bleung@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <1403038923-19444-1-git-send-email-bleung@chromium.org>
+References: <1401835464-15267-1-git-send-email-bleung@chromium.org>
+ <1403038923-19444-1-git-send-email-bleung@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The MAX77802 PMIC has 10 high-efficiency Buck and 32 Low-dropout
-> (LDO) regulators. This patch adds support for all these regulators
-> found on the MAX77802 PMIC and is based on a driver added by Simon
-> Glass to the Chrome OS kernel 3.8 tree.
-> 
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> ---
-> 
-> Changes since v1:
->  - Remove unneeded check if num_regulators != MAX77802_MAX_REGULATORS.
->  - Fix .set_suspend_mode handler comment and split regulators ops for
->    regulators that behave differently. Suggested by Mark Brown.
->  - Use module_platform_driver() instead of having init/exit functions.
->    Suggested by Mark Brown.
->  - Use the new descriptor-based GPIO interface instead of the deprecated
->    integer based GPIO one. Suggested by Mark Brown.
->  - Look for "regulators" child node instead of "voltage-regulators" to be
->    consistent with other PMIC drivers. Suggested by Mark Brown.
-> 
->  drivers/mfd/max77802.c       |   1 +
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-Can you remove all of the MFD changes from patches 7, 8 and 9 and
-create new one.  That way there's no requirement for any cross
-subsystem messiness.
+Acer C720 has touchpad and light sensor connected to a separate I2C buses.
+Since the designware I2C host controller driver has two instances on this
+particular machine we need a way to match the correct instance. Add support
+for this and then register both C720 touchpad and light sensor.
 
->  drivers/regulator/Kconfig    |   9 +
->  drivers/regulator/Makefile   |   1 +
->  drivers/regulator/max77802.c | 701 +++++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 712 insertions(+)
->  create mode 100644 drivers/regulator/max77802.c
+This code is based on following patch from Benson Leung:
 
+https://patchwork.kernel.org/patch/3074411/
+
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Tested-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Benson Leung <bleung@chromium.org>
+---
+ drivers/platform/chrome/chromeos_laptop.c | 45 ++++++++++++++++++++++++++-----
+ 1 file changed, 39 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/platform/chrome/chromeos_laptop.c b/drivers/platform/chrome/chromeos_laptop.c
+index 7f1a2e2..a241e5f 100644
+--- a/drivers/platform/chrome/chromeos_laptop.c
++++ b/drivers/platform/chrome/chromeos_laptop.c
+@@ -45,6 +45,8 @@ static const char *i2c_adapter_names[] = {
+ 	"SMBus I801 adapter",
+ 	"i915 gmbus vga",
+ 	"i915 gmbus panel",
++	"i2c-designware-pci",
++	"i2c-designware-pci",
+ };
+ 
+ /* Keep this enum consistent with i2c_adapter_names */
+@@ -52,6 +54,8 @@ enum i2c_adapter_type {
+ 	I2C_ADAPTER_SMBUS = 0,
+ 	I2C_ADAPTER_VGADDC,
+ 	I2C_ADAPTER_PANEL,
++	I2C_ADAPTER_DESIGNWARE_0,
++	I2C_ADAPTER_DESIGNWARE_1,
+ };
+ 
+ struct i2c_peripheral {
+@@ -172,29 +176,42 @@ static struct i2c_client *__add_probed_i2c_device(
+ 	return client;
+ }
+ 
++struct i2c_lookup {
++	const char *name;
++	int instance;
++	int n;
++};
++
+ static int __find_i2c_adap(struct device *dev, void *data)
+ {
+-	const char *name = data;
++	struct i2c_lookup *lookup = data;
+ 	static const char *prefix = "i2c-";
+ 	struct i2c_adapter *adapter;
+ 	if (strncmp(dev_name(dev), prefix, strlen(prefix)) != 0)
+ 		return 0;
+ 	adapter = to_i2c_adapter(dev);
+-	return (strncmp(adapter->name, name, strlen(name)) == 0);
++	if (strncmp(adapter->name, lookup->name, strlen(lookup->name)) == 0 &&
++	    lookup->n++ == lookup->instance)
++		return 1;
++	return 0;
+ }
+ 
+ static int find_i2c_adapter_num(enum i2c_adapter_type type)
+ {
+ 	struct device *dev = NULL;
+ 	struct i2c_adapter *adapter;
+-	const char *name = i2c_adapter_names[type];
++	struct i2c_lookup lookup;
++
++	memset(&lookup, 0, sizeof(lookup));
++	lookup.name = i2c_adapter_names[type];
++	lookup.instance = (type == I2C_ADAPTER_DESIGNWARE_1) ? 1 : 0;
++
+ 	/* find the adapter by name */
+-	dev = bus_find_device(&i2c_bus_type, NULL, (void *)name,
+-			      __find_i2c_adap);
++	dev = bus_find_device(&i2c_bus_type, NULL, &lookup, __find_i2c_adap);
+ 	if (!dev) {
+ 		/* Adapters may appear later. Deferred probing will retry */
+ 		pr_notice("%s: i2c adapter %s not found on system.\n", __func__,
+-			  name);
++			  lookup.name);
+ 		return -ENODEV;
+ 	}
+ 	adapter = to_i2c_adapter(dev);
+@@ -377,6 +394,15 @@ static struct chromeos_laptop acer_ac700 = {
+ 	},
+ };
+ 
++static struct chromeos_laptop acer_c720 = {
++	.i2c_peripherals = {
++		/* Touchpad. */
++		{ .add = setup_cyapa_tp, I2C_ADAPTER_DESIGNWARE_0 },
++		/* Light Sensor. */
++		{ .add = setup_isl29018_als, I2C_ADAPTER_DESIGNWARE_1 },
++	},
++};
++
+ static struct chromeos_laptop hp_pavilion_14_chromebook = {
+ 	.i2c_peripherals = {
+ 		/* Touchpad. */
+@@ -434,6 +460,13 @@ static struct dmi_system_id chromeos_laptop_dmi_table[] __initdata = {
+ 		_CBDD(acer_ac700),
+ 	},
+ 	{
++		.ident = "Acer C720",
++		.matches = {
++			DMI_MATCH(DMI_PRODUCT_NAME, "Peppy"),
++		},
++		_CBDD(acer_c720),
++	},
++	{
+ 		.ident = "HP Pavilion 14 Chromebook",
+ 		.matches = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Butterfly"),
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+2.0.0.526.g5318336
+
