@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756375AbaFQXjP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 19:39:15 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:39971 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756032AbaFQXjN (ORCPT
+	id S1756461AbaFQXse (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 19:48:34 -0400
+Received: from granite.fifsource.com ([173.255.216.206]:33780 "EHLO
+	granite.fifsource.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756396AbaFQXsd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 19:39:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140617221620.GC30559@google.com>
-References: <1402346730-2508-1-git-send-email-andreas.noever@gmail.com>
-	<20140617221620.GC30559@google.com>
-Date: Tue, 17 Jun 2014 16:39:12 -0700
-X-Google-Sender-Auth: _63GxXCrAuBsl_naQtDI4boeQkU
-Message-ID: <CAE9FiQXD7hvt0cUYMzvq0r6CbZn=iJZc7BHRaF2nACbG7qwuBQ@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Do not touch siblings in pci_assign_unassigned_bridge_resources
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Andreas Noever <andreas.noever@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=047d7b10ca01aae09504fc10a6a3
+	Tue, 17 Jun 2014 19:48:33 -0400
+Message-ID: <1403048912.5372.10.camel@niobium.home.fifi.org>
+Subject: Re: Phantom ACL-related xattrs on 3.14.4 NFS client
+From: Philippe Troin <phil@fifi.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
+Date: Tue, 17 Jun 2014 16:48:32 -0700
+In-Reply-To: <20140611162238.GA28340@infradead.org>
+References: <1402082953.28220.7.camel@ceramic.home.fifi.org>
+	 <CAHQdGtS2BL9u4DV=FZ0HaXO-iTNPU4hTGVR--HubNa4A_6UNog@mail.gmail.com>
+	 <20140607140414.GA26534@infradead.org>
+	 <1402195701.12743.18.camel@ceramic.home.fifi.org>
+	 <1402435203.24047.9.camel@ceramic.home.fifi.org>
+	 <20140611072402.GA2683@infradead.org>
+	 <1402503318.27314.12.camel@niobium.home.fifi.org>
+	 <20140611162238.GA28340@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b10ca01aae09504fc10a6a3
-Content-Type: text/plain; charset=UTF-8
+Hi Christopher,
 
-On Tue, Jun 17, 2014 at 3:16 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> [+cc Yinghai]
->
-> On Mon, Jun 09, 2014 at 10:45:30PM +0200, Andreas Noever wrote:
->> The problem can be reproduced by having two sibling hotplug bridges A
->> and B. The problem will occour if the parent of A and B does not have
->> enough resources to satisfy window allocations for B during a hotplug
->> event.
+On Wed, 2014-06-11 at 09:22 -0700, Christoph Hellwig wrote:
+> On Wed, Jun 11, 2014 at 09:15:18AM -0700, Philippe Troin wrote:
+> > So, the only regression remaining between 3.13.11 and 3.14.6 + your
+> > patch is the one where listxattr(2) and friends do not NUL-terminate the
+> > xattr names they return.  This is detailed in
+> > <1402435203.24047.9.camel@ceramic.home.fifi.org> I sent yesterday.
+> 
+> Oh, that's a bug in my patch.  The following incremental patch should
+> fix it:
+> 
+> diff --git a/fs/nfs/nfs3acl.c b/fs/nfs/nfs3acl.c
+> index e083827..8f854dd 100644
+> --- a/fs/nfs/nfs3acl.c
+> +++ b/fs/nfs/nfs3acl.c
+> @@ -262,6 +262,7 @@ nfs3_list_one_acl(struct inode *inode, int type, const char *name, void *data,
+>  	posix_acl_release(acl);
+>  
+>  	*result += strlen(name);
+> +	*result += 1;
+>  	if (!size)
+>  		return 0;
+>  	if (*result > size)
 
-> I don't understand how all this works either.  Yinghai?
->
-> We definitely don't want to release resources that are already in use.  Can
-> you review and ack or nack this?
 
-Hi Andreas,
+I'm belatedly confirming that both patches applied together in
+<20140607140414.GA26534@infradead.org> and
+<20140611162238.GA28340@infradead.org> fix the problem I was seeing with
+NFSv3 client mounts on 3.6.14.x.
 
-Can you check if attached patch fix the problem on your test case?
+I've tried vanilla 3.6.14.6 + both patches and the regression is gone.
+Remains the issue where on a NFSv3 client.
 
-In some case, if we can not assign pref mmio properly for the bridge,
-we may need to even clear non-pref mmio for the bridge.
+Phil.
 
-Thanks
-
-Yinghai
-
---047d7b10ca01aae09504fc10a6a3
-Content-Type: text/x-patch; charset=US-ASCII; name="fix_release_sibling_bridge_res.patch"
-Content-Disposition: attachment; 
-	filename="fix_release_sibling_bridge_res.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hwjuot350
-
-U3ViamVjdDogW1BBVENIXSBwY2k6IERvbid0IHJlbGVhc2Ugc2liaWxpbmcgYnJpZGdlIHJlc291
-cmNlcwoKT24gaG90cGx1ZyBjYXNlLCB3ZSBzaG91bGQgbm90IHRvdWNoIHNpYmxpbmcgYnJpZGdl
-cyB0aGF0IGlzIG91dApzaWRlIG9mIHRoZSBzbG90cy4KClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkg
-THUgPHlpbmdoYWlAa2VybmVsLm9yZz4KCi0tLQogZHJpdmVycy9wY2kvc2V0dXAtYnVzLmMgfCAg
-IDEwICsrKysrKysrLS0KIDEgZmlsZSBjaGFuZ2VkLCA4IGluc2VydGlvbnMoKyksIDIgZGVsZXRp
-b25zKC0pCgpJbmRleDogbGludXgtMi42L2RyaXZlcnMvcGNpL3NldHVwLWJ1cy5jCj09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvcGNpL3NldHVwLWJ1cy5jCisrKyBsaW51eC0y
-LjYvZHJpdmVycy9wY2kvc2V0dXAtYnVzLmMKQEAgLTE2NzYsMTAgKzE2NzYsMTYgQEAgYWdhaW46
-CiAJICogVHJ5IHRvIHJlbGVhc2UgbGVhZiBicmlkZ2UncyByZXNvdXJjZXMgdGhhdCBkb2Vzbid0
-IGZpdCByZXNvdXJjZSBvZgogCSAqIGNoaWxkIGRldmljZSB1bmRlciB0aGF0IGJyaWRnZQogCSAq
-LwotCWxpc3RfZm9yX2VhY2hfZW50cnkoZmFpbF9yZXMsICZmYWlsX2hlYWQsIGxpc3QpCi0JCXBj
-aV9idXNfcmVsZWFzZV9icmlkZ2VfcmVzb3VyY2VzKGZhaWxfcmVzLT5kZXYtPmJ1cywKKwlsaXN0
-X2Zvcl9lYWNoX2VudHJ5KGZhaWxfcmVzLCAmZmFpbF9oZWFkLCBsaXN0KSB7CisJCXN0cnVjdCBw
-Y2lfYnVzICpidXMgPSBmYWlsX3Jlcy0+ZGV2LT5idXM7CisKKwkJaWYgKGZhaWxfcmVzLT5kZXYg
-PT0gYnJpZGdlKQorCQkJYnVzID0gYnJpZGdlLT5zdWJvcmRpbmF0ZTsKKworCQlwY2lfYnVzX3Jl
-bGVhc2VfYnJpZGdlX3Jlc291cmNlcyhidXMsCiAJCQkJCQkgZmFpbF9yZXMtPmZsYWdzICYgdHlw
-ZV9tYXNrLAogCQkJCQkJIHdob2xlX3N1YnRyZWUpOworCX0KIAogCS8qIHJlc3RvcmUgc2l6ZSBh
-bmQgZmxhZ3MgKi8KIAlsaXN0X2Zvcl9lYWNoX2VudHJ5KGZhaWxfcmVzLCAmZmFpbF9oZWFkLCBs
-aXN0KSB7Cg==
---047d7b10ca01aae09504fc10a6a3--
