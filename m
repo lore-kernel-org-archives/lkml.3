@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528AbaFQWyB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:54:01 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:51412 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756509AbaFQWx7 (ORCPT
+	id S967614AbaFQW1f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:27:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54277 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965477AbaFQVuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 18:53:59 -0400
-MIME-Version: 1.0
-From: Rob Herring <robherring2@gmail.com>
-Date: Tue, 17 Jun 2014 17:53:37 -0500
-Message-ID: <CAL_Jsq+Xje_=M_ExuGkw63mp0N5AWaWiDaRjWK9gzP5j53zNAA@mail.gmail.com>
-Subject: [GIT PULL] DeviceTree fixes for 3.16
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 17 Jun 2014 17:50:01 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Stephen Hemminger <shemminger@vyatta.com>, Liu Yu <allanyuliu@tencent.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 040/212] tcp_cubic: fix the range of delayed_ack
+Date: Tue, 17 Jun 2014 14:42:14 -0700
+Message-Id: <1403041506-13646-41-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
 
-Please pull a few small DT fixes for 3.16.
+------------------
 
-Rob
+From: Liu Yu <allanyuliu@tencent.com>
 
-The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
+[ Upstream commit 0cda345d1b2201dd15591b163e3c92bad5191745 ]
 
-  Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
+commit b9f47a3aaeab (tcp_cubic: limit delayed_ack ratio to prevent
+divide error) try to prevent divide error, but there is still a little
+chance that delayed_ack can reach zero. In case the param cnt get
+negative value, then ratio+cnt would overflow and may happen to be zero.
+As a result, min(ratio, ACK_RATIO_LIMIT) will calculate to be zero.
 
-are available in the git repository at:
+In some old kernels, such as 2.6.32, there is a bug that would
+pass negative param, which then ultimately leads to this divide error.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/robh/linux.git
-tags/dt-fixes-for-3.16
+commit 5b35e1e6e9c (tcp: fix tcp_trim_head() to adjust segment count
+with skb MSS) fixed the negative param issue. However,
+it's safe that we fix the range of delayed_ack as well,
+to make sure we do not hit a divide by zero.
 
-for you to fetch changes up to 99de64984c3a7c9bf56a50e6dcc51006c9485620:
+CC: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: Liu Yu <allanyuliu@tencent.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ net/ipv4/tcp_cubic.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-  OF: fix of_find_node_by_path() assumption that of_allnodes is root
-(2014-06-16 13:31:44 -0500)
+diff --git a/net/ipv4/tcp_cubic.c b/net/ipv4/tcp_cubic.c
+index 828e4c3..121a9a2 100644
+--- a/net/ipv4/tcp_cubic.c
++++ b/net/ipv4/tcp_cubic.c
+@@ -409,7 +409,7 @@ static void bictcp_acked(struct sock *sk, u32 cnt, s32 rtt_us)
+ 		ratio -= ca->delayed_ack >> ACK_RATIO_SHIFT;
+ 		ratio += cnt;
+ 
+-		ca->delayed_ack = min(ratio, ACK_RATIO_LIMIT);
++		ca->delayed_ack = clamp(ratio, 1U, ACK_RATIO_LIMIT);
+ 	}
+ 
+ 	/* Some calls are for duplicates without timetamps */
+-- 
+1.9.1
 
-----------------------------------------------------------------
-- Fix microblaze compiling due to conflicting merge window changes
-- A fix in of_attach_node due to of_find_node_by_path changes
-- Prevent format strings in DT kobject names
-
-----------------------------------------------------------------
-Frank Rowand (1):
-      OF: fix of_find_node_by_path() assumption that of_allnodes is root
-
-Guenter Roeck (1):
-      of/platform: Fix microblaze build failure
-
-Kees Cook (1):
-      of: avoid format string parsing in kobject names
-
- drivers/of/base.c     | 7 ++++---
- drivers/of/platform.c | 4 ----
- 2 files changed, 4 insertions(+), 7 deletions(-)
