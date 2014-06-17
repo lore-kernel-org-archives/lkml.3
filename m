@@ -1,33 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964939AbaFQToA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 15:44:00 -0400
-Received: from [219.94.179.30] ([219.94.179.30]:46966 "EHLO
-	mail.yamagata-onsen.net" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S964910AbaFQTn7 (ORCPT
+	id S933656AbaFQTol (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 15:44:41 -0400
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:56305 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933009AbaFQTok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 15:43:59 -0400
+	Tue, 17 Jun 2014 15:44:40 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlQJABCaoFNbsl1t/2dsb2JhbABagw2rKgUBAQEBAQEFAZkmgQ4XdYRgI4EaN4hGActZhWOJEx2ELQSaQ5NYg0I7
+From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
-Subject: Re: Its Your Family.
-From: John ven den Berg <johnjacknwanne@gmail.com>
-Reply-To: venderbergdjj@gmx.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <20140617194230.285B927E793E@mail.yamagata-onsen.net>
-Date: Wed, 18 Jun 2014 04:42:30 +0900 (JST)
+Cc: Fabian Frederick <fabf@skynet.be>, Julia Lawall <Julia.Lawall@lip6.fr>,
+        Gilles Muller <Gilles.Muller@lip6.fr>, Joe Perches <joe@perches.com>
+Subject: [PATCH 1/1] scripts/coccinelle/free: add conditional kfree test
+Date: Tue, 17 Jun 2014 21:43:19 +0200
+Message-Id: <1403034199-9824-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds a trivial script warning on
 
+if(foo)
+	kfree(foo)
 
-Compliments. This is in regards to my previous message concerning a deceased client with similar last name with you, I have given you all necessary details about this and I haven't gotten any positive response from you, so kindly get back to me today.
+(based on checkpatch)
 
-Thank you,
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Gilles Muller <Gilles.Muller@lip6.fr>
+Cc: Joe Perches <joe@perches.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ scripts/coccinelle/free/cond_kfree.cocci | 34 ++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+ create mode 100644 scripts/coccinelle/free/cond_kfree.cocci
 
-John.
-
-
-
+diff --git a/scripts/coccinelle/free/cond_kfree.cocci b/scripts/coccinelle/free/cond_kfree.cocci
+new file mode 100644
+index 0000000..0b8093e
+--- /dev/null
++++ b/scripts/coccinelle/free/cond_kfree.cocci
+@@ -0,0 +1,34 @@
++/// conditional kfree - NULL check before kfree is not needed.
++///
++/// Based on checkpatch warning
++/// "kfree(NULL) is safe this check is probably not required"
++/// and kfreeaddr.cocci by Julia Lawall.
++///
++/// Comments: -
++/// Options: --no-includes --include-headers
++
++virtual org
++virtual report
++virtual context
++
++@r depends on context || report || org @
++expression E;
++position p;
++@@
++
++* if (E)
++*	kfree@p(E);
++
++@script:python depends on org@
++p << r.p;
++@@
++
++cocci.print_main("kfree", p)
++
++@script:python depends on report@
++p << r.p;
++@@
++
++msg = "WARNING: checking value to avoid kfree(NULL) is unnecessary."
++coccilib.report.print_report(p[0], msg)
++
+-- 
+1.8.4.5
 
