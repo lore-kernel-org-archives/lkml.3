@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966630AbaFQVue (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:50:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54382 "EHLO
+	id S966681AbaFQVuq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:50:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54406 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965250AbaFQVuZ (ORCPT
+	with ESMTP id S966620AbaFQVue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:50:25 -0400
+	Tue, 17 Jun 2014 17:50:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Florian Westphal <fw@strlen.de>, "David S. Miller" <davem@davemloft.net>,
+Cc: Xufeng Zhang <xufeng.zhang@windriver.com>, Julian Anastasov <ja@ssi.bg>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 046/212] net: ipv6: send pkttoobig immediately if orig frag size > mtu
-Date: Tue, 17 Jun 2014 14:42:20 -0700
-Message-Id: <1403041506-13646-47-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 027/212] sctp: reset flowi4_oif parameter on route lookup
+Date: Tue, 17 Jun 2014 14:42:01 -0700
+Message-Id: <1403041506-13646-28-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -27,52 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-[ Upstream commit 418a31561d594a2b636c1e2fa94ecd9e1245abb1 ]
+[ Upstream commit 85350871317a5adb35519d9dc6fc9e80809d42ad ]
 
-If conntrack defragments incoming ipv6 frags it stores largest original
-frag size in ip6cb and sets ->local_df.
+commit 813b3b5db83 (ipv4: Use caller's on-stack flowi as-is
+in output route lookups.) introduces another regression which
+is very similar to the problem of commit e6b45241c (ipv4: reset
+flowi parameters on route connect) wants to fix:
+Before we call ip_route_output_key() in sctp_v4_get_dst() to
+get a dst that matches a bind address as the source address,
+we have already called this function previously and the flowi
+parameters have been initialized including flowi4_oif, so when
+we call this function again, the process in __ip_route_output_key()
+will be different because of the setting of flowi4_oif, and we'll
+get a networking device which corresponds to the inputted flowi4_oif
+as the output device, this is wrong because we'll never hit this
+place if the previously returned source address of dst match one
+of the bound addresses.
 
-We must thus first test the largest original frag size vs. mtu, and not
-vice versa.
+To reproduce this problem, a vlan setting is enough:
+  # ifconfig eth0 up
+  # route del default
+  # vconfig add eth0 2
+  # vconfig add eth0 3
+  # ifconfig eth0.2 10.0.1.14 netmask 255.255.255.0
+  # route add default gw 10.0.1.254 dev eth0.2
+  # ifconfig eth0.3 10.0.0.14 netmask 255.255.255.0
+  # ip rule add from 10.0.0.14 table 4
+  # ip route add table 4 default via 10.0.0.254 src 10.0.0.14 dev eth0.3
+  # sctp_darn -H 10.0.0.14 -P 36422 -h 10.1.4.134 -p 36422 -s -I
+You'll detect that all the flow are routed to eth0.2(10.0.1.254).
 
-Without this patch PKTTOOBIG is still generated in ip6_fragment() later
-in the stack, but
-
-1) IPSTATS_MIB_INTOOBIGERRORS won't increment
-2) packet did (needlessly) traverse netfilter postrouting hook.
-
-Fixes: fe6cc55f3a9 ("net: ip, ipv6: handle gso skbs in forwarding path")
-Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/ip6_output.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ net/sctp/protocol.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index 345742f..92bc3b4 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -323,12 +323,16 @@ static inline int ip6_forward_finish(struct sk_buff *skb)
- 
- static bool ip6_pkt_too_big(const struct sk_buff *skb, unsigned int mtu)
- {
--	if (skb->len <= mtu || skb->local_df)
-+	if (skb->len <= mtu)
- 		return false;
- 
-+	/* ipv6 conntrack defrag sets max_frag_size + local_df */
- 	if (IP6CB(skb)->frag_max_size && IP6CB(skb)->frag_max_size > mtu)
- 		return true;
- 
-+	if (skb->local_df)
-+		return false;
+diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
+index 5e17092..2b216f1 100644
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -492,8 +492,13 @@ static void sctp_v4_get_dst(struct sctp_transport *t, union sctp_addr *saddr,
+ 			continue;
+ 		if ((laddr->state == SCTP_ADDR_SRC) &&
+ 		    (AF_INET == laddr->a.sa.sa_family)) {
+-			fl4->saddr = laddr->a.v4.sin_addr.s_addr;
+ 			fl4->fl4_sport = laddr->a.v4.sin_port;
++			flowi4_update_output(fl4,
++					     asoc->base.sk->sk_bound_dev_if,
++					     RT_CONN_FLAGS(asoc->base.sk),
++					     daddr->v4.sin_addr.s_addr,
++					     laddr->a.v4.sin_addr.s_addr);
 +
- 	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
- 		return false;
- 
+ 			rt = ip_route_output_key(sock_net(sk), fl4);
+ 			if (!IS_ERR(rt)) {
+ 				dst = &rt->dst;
 -- 
 1.9.1
 
