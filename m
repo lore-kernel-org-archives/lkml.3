@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934135AbaFQQZE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:25:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50845 "EHLO
+	id S964857AbaFQQZV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:25:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50867 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933848AbaFQQZB (ORCPT
+	with ESMTP id S934139AbaFQQZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:25:01 -0400
+	Tue, 17 Jun 2014 12:25:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Tomoki Sekiyama <tomoki.sekiyama@hds.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 104/121] rt2x00: fix beaconing on USB
-Date: Tue, 17 Jun 2014 09:18:02 -0700
-Message-Id: <1403021899-16708-77-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 115/121] drivers/tty/hvc: don't free hvc_console_setup after init
+Date: Tue, 17 Jun 2014 09:18:13 -0700
+Message-Id: <1403021899-16708-88-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
@@ -28,69 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
 
-commit 8834d3608cc516f13e2e510f4057c263f3d2ce42 upstream.
+commit 501fed45b7e8836ee9373f4d31e2d85e3db6103a upstream.
 
-When disable beaconing we clear register with beacon and newer set it
-back, what make we stop send beacons infinitely.
+When 'console=hvc0' is specified to the kernel parameter in x86 KVM guest,
+hvc console is setup within a kthread. However, that will cause SEGV
+and the boot will fail when the driver is builtin to the kernel,
+because currently hvc_console_setup() is annotated with '__init'. This
+patch removes '__init' to boot the guest successfully with 'console=hvc0'.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/rt2x00/rt2x00mac.c | 22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+ drivers/tty/hvc/hvc_console.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2x00mac.c b/drivers/net/wireless/rt2x00/rt2x00mac.c
-index 9b00fcb..65225fa 100644
---- a/drivers/net/wireless/rt2x00/rt2x00mac.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
-@@ -623,20 +623,18 @@ void rt2x00mac_bss_info_changed(struct ieee80211_hw *hw,
- 				      bss_conf->bssid);
+diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
+index 89c1dd1..728572a 100644
+--- a/drivers/tty/hvc/hvc_console.c
++++ b/drivers/tty/hvc/hvc_console.c
+@@ -190,7 +190,7 @@ static struct tty_driver *hvc_console_device(struct console *c, int *index)
+ 	return hvc_driver;
+ }
  
- 	/*
--	 * Update the beacon. This is only required on USB devices. PCI
--	 * devices fetch beacons periodically.
--	 */
--	if (changes & BSS_CHANGED_BEACON && rt2x00_is_usb(rt2x00dev))
--		rt2x00queue_update_beacon(rt2x00dev, vif);
--
--	/*
- 	 * Start/stop beaconing.
- 	 */
- 	if (changes & BSS_CHANGED_BEACON_ENABLED) {
- 		if (!bss_conf->enable_beacon && intf->enable_beacon) {
--			rt2x00queue_clear_beacon(rt2x00dev, vif);
- 			rt2x00dev->intf_beaconing--;
- 			intf->enable_beacon = false;
-+			/*
-+			 * Clear beacon in the H/W for this vif. This is needed
-+			 * to disable beaconing on this particular interface
-+			 * and keep it running on other interfaces.
-+			 */
-+			rt2x00queue_clear_beacon(rt2x00dev, vif);
- 
- 			if (rt2x00dev->intf_beaconing == 0) {
- 				/*
-@@ -647,11 +645,15 @@ void rt2x00mac_bss_info_changed(struct ieee80211_hw *hw,
- 				rt2x00queue_stop_queue(rt2x00dev->bcn);
- 				mutex_unlock(&intf->beacon_skb_mutex);
- 			}
--
--
- 		} else if (bss_conf->enable_beacon && !intf->enable_beacon) {
- 			rt2x00dev->intf_beaconing++;
- 			intf->enable_beacon = true;
-+			/*
-+			 * Upload beacon to the H/W. This is only required on
-+			 * USB devices. PCI devices fetch beacons periodically.
-+			 */
-+			if (rt2x00_is_usb(rt2x00dev))
-+				rt2x00queue_update_beacon(rt2x00dev, vif);
- 
- 			if (rt2x00dev->intf_beaconing == 1) {
- 				/*
+-static int __init hvc_console_setup(struct console *co, char *options)
++static int hvc_console_setup(struct console *co, char *options)
+ {	
+ 	if (co->index < 0 || co->index >= MAX_NR_HVC_CONSOLES)
+ 		return -ENODEV;
 -- 
 1.9.1
 
