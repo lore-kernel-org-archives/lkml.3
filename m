@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933708AbaFQQPl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:15:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50379 "EHLO
+	id S934086AbaFQQ7G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:59:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50419 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933629AbaFQQPd (ORCPT
+	with ESMTP id S933627AbaFQQPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:15:33 -0400
+	Tue, 17 Jun 2014 12:15:40 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Ulbricht <michael.ulbricht@systec-electronic.com>,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        Oliver Neukum <oliver@neukum.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Felix Fietkau <nbd@openwrt.org>, Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 018/121] USB: cdc-acm: Remove Motorola/Telit H24 serial interfaces from ACM driver
-Date: Tue, 17 Jun 2014 09:13:31 -0700
-Message-Id: <1403021714-16320-19-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 004/121] mac80211: exclude AP_VLAN interfaces from tx power calculation
+Date: Tue, 17 Jun 2014 09:13:17 -0700
+Message-Id: <1403021714-16320-5-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021714-16320-1-git-send-email-kamal@canonical.com>
 References: <1403021714-16320-1-git-send-email-kamal@canonical.com>
@@ -30,62 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Ulbricht <michael.ulbricht@systec-electronic.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 895d240d1db0b2736d779200788e4c4aea28a0c6 upstream.
+commit 764152ff66f4a8be1f9d7981e542ffdaa5bd7aff upstream.
 
-By specifying NO_UNION_NORMAL the ACM driver does only use the first two
-USB interfaces (modem data & control). The AT Port, Diagnostic and NMEA
-interfaces are left to the USB serial driver.
+Their power value is initialized to zero. This patch fixes an issue
+where the configured power drops to the minimum value when AP_VLAN
+interfaces are created/removed.
 
-Signed-off-by: Michael Ulbricht <michael.ulbricht@systec-electronic.com>
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
-Signed-off-by: Oliver Neukum <oliver@neukum.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/class/cdc-acm.c | 28 +++++++++++++++++++++-------
- 1 file changed, 21 insertions(+), 7 deletions(-)
+ net/mac80211/main.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index c4564e3..f12fed0 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1587,13 +1587,27 @@ static const struct usb_device_id acm_ids[] = {
- 	},
- 	/* Motorola H24 HSPA module: */
- 	{ USB_DEVICE(0x22b8, 0x2d91) }, /* modem                                */
--	{ USB_DEVICE(0x22b8, 0x2d92) }, /* modem           + diagnostics        */
--	{ USB_DEVICE(0x22b8, 0x2d93) }, /* modem + AT port                      */
--	{ USB_DEVICE(0x22b8, 0x2d95) }, /* modem + AT port + diagnostics        */
--	{ USB_DEVICE(0x22b8, 0x2d96) }, /* modem                         + NMEA */
--	{ USB_DEVICE(0x22b8, 0x2d97) }, /* modem           + diagnostics + NMEA */
--	{ USB_DEVICE(0x22b8, 0x2d99) }, /* modem + AT port               + NMEA */
--	{ USB_DEVICE(0x22b8, 0x2d9a) }, /* modem + AT port + diagnostics + NMEA */
-+	{ USB_DEVICE(0x22b8, 0x2d92),   /* modem           + diagnostics        */
-+	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-+	},
-+	{ USB_DEVICE(0x22b8, 0x2d93),   /* modem + AT port                      */
-+	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-+	},
-+	{ USB_DEVICE(0x22b8, 0x2d95),   /* modem + AT port + diagnostics        */
-+	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-+	},
-+	{ USB_DEVICE(0x22b8, 0x2d96),   /* modem                         + NMEA */
-+	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-+	},
-+	{ USB_DEVICE(0x22b8, 0x2d97),   /* modem           + diagnostics + NMEA */
-+	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-+	},
-+	{ USB_DEVICE(0x22b8, 0x2d99),   /* modem + AT port               + NMEA */
-+	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-+	},
-+	{ USB_DEVICE(0x22b8, 0x2d9a),   /* modem + AT port + diagnostics + NMEA */
-+	.driver_info = NO_UNION_NORMAL, /* handle only modem interface          */
-+	},
- 
- 	{ USB_DEVICE(0x0572, 0x1329), /* Hummingbird huc56s (Conexant) */
- 	.driver_info = NO_UNION_NORMAL, /* union descriptor misplaced on
+diff --git a/net/mac80211/main.c b/net/mac80211/main.c
+index e93d39d..6079959 100644
+--- a/net/mac80211/main.c
++++ b/net/mac80211/main.c
+@@ -157,6 +157,8 @@ static u32 ieee80211_hw_conf_chan(struct ieee80211_local *local)
+ 	list_for_each_entry_rcu(sdata, &local->interfaces, list) {
+ 		if (!rcu_access_pointer(sdata->vif.chanctx_conf))
+ 			continue;
++		if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN)
++			continue;
+ 		power = min(power, sdata->vif.bss_conf.txpower);
+ 	}
+ 	rcu_read_unlock();
 -- 
 1.9.1
 
