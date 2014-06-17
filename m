@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965277AbaFQVNJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:13:09 -0400
-Received: from mga01.intel.com ([192.55.52.88]:23419 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965215AbaFQVNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:13:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,496,1400050800"; 
-   d="scan'208";a="557026021"
-Date: Tue, 17 Jun 2014 14:13:02 -0700
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCH 1/2] tmon: Check log file for common secuirty issues
-Message-ID: <20140617141302.7f5b0434@ultegra>
-In-Reply-To: <1403035509-31815-2-git-send-email-nhorman@tuxdriver.com>
-References: <1403035509-31815-1-git-send-email-nhorman@tuxdriver.com>
-	<1403035509-31815-2-git-send-email-nhorman@tuxdriver.com>
-Organization: OTC
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S965383AbaFQVSG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:18:06 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:39741 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965359AbaFQVSE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 17:18:04 -0400
+Date: Tue, 17 Jun 2014 22:17:47 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Daniel Stone <daniels@collabora.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 07/10] regulator: Add driver for Maxim 77802 PMIC
+ regulators
+Message-ID: <20140617211747.GY29841@lee--X1>
+References: <1402941758-11216-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1402941758-11216-8-git-send-email-javier.martinez@collabora.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1402941758-11216-8-git-send-email-javier.martinez@collabora.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jun 2014 16:05:08 -0400
-Neil Horman <nhorman@tuxdriver.com> wrote:
-
-> The tmon logging system blindly opens its log file on a static path,
-> making it very easy for someone to redirect that log information to
-> inappropriate places or overwrite other users data.  Do some easy
-> checking to make sure we're not logging to a symlink or a file owned
-> by another user.
+> The MAX77802 PMIC has 10 high-efficiency Buck and 32 Low-dropout
+> (LDO) regulators. This patch adds support for all these regulators
+> found on the MAX77802 PMIC and is based on a driver added by Simon
+> Glass to the Chrome OS kernel 3.8 tree.
 > 
-Acked-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-
-> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-> CC: Zhang Rui <rui.zhang@intel.com>
-> CC: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 > ---
->  tools/thermal/tmon/tmon.c | 24 ++++++++++++++++++++++++
->  1 file changed, 24 insertions(+)
 > 
-> diff --git a/tools/thermal/tmon/tmon.c b/tools/thermal/tmon/tmon.c
-> index b30f531..059e0be 100644
-> --- a/tools/thermal/tmon/tmon.c
-> +++ b/tools/thermal/tmon/tmon.c
-> @@ -142,6 +142,7 @@ static void start_syslog(void)
->  static void prepare_logging(void)
->  {
->  	int i;
-> +	struct stat logstat;
->  
->  	if (!logging)
->  		return;
-> @@ -152,6 +153,29 @@ static void prepare_logging(void)
->  		return;
->  	}
->  
-> +	if (lstat(TMON_LOG_FILE, &logstat) < 0) {
-> +		syslog(LOG_ERR, "Unable to stat log file %s\n",
-> TMON_LOG_FILE);
-> +		fclose(tmon_log);
-> +		tmon_log = NULL;
-> +		return;
-> +	}
-> +
-> +	/* The log file must be a regular file owned by us */
-> +	if (S_ISLNK(logstat.st_mode)) {
-> +		syslog(LOG_ERR, "Log file is a symlink.  Will not
-> log\n");
-> +		fclose(tmon_log);
-> +		tmon_log = NULL;
-> +		return;
-> +	}
-> +
-> +	if (logstat.st_uid != getuid()) {
-> +		syslog(LOG_ERR, "We don't own the log file.  Not
-> logging\n");
-> +		fclose(tmon_log);
-> +		tmon_log = NULL;
-> +		return;
-> +	}
-> +
-> +
->  	fprintf(tmon_log, "#----------- THERMAL SYSTEM CONFIG
-> -------------\n"); for (i = 0; i < ptdata.nr_tz_sensor; i++) {
->  		char binding_str[33]; /* size of long + 1 */
+> Changes since v1:
+>  - Remove unneeded check if num_regulators != MAX77802_MAX_REGULATORS.
+>  - Fix .set_suspend_mode handler comment and split regulators ops for
+>    regulators that behave differently. Suggested by Mark Brown.
+>  - Use module_platform_driver() instead of having init/exit functions.
+>    Suggested by Mark Brown.
+>  - Use the new descriptor-based GPIO interface instead of the deprecated
+>    integer based GPIO one. Suggested by Mark Brown.
+>  - Look for "regulators" child node instead of "voltage-regulators" to be
+>    consistent with other PMIC drivers. Suggested by Mark Brown.
+> 
+>  drivers/mfd/max77802.c       |   1 +
 
-[Jacob Pan]
+Can you remove all of the MFD changes from patches 7, 8 and 9 and
+create new one.  That way there's no requirement for any cross
+subsystem messiness.
+
+>  drivers/regulator/Kconfig    |   9 +
+>  drivers/regulator/Makefile   |   1 +
+>  drivers/regulator/max77802.c | 701 +++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 712 insertions(+)
+>  create mode 100644 drivers/regulator/max77802.c
 
 -- 
-Thanks,
-
-Jacob
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
