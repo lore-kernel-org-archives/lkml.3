@@ -1,78 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766AbaFQCr7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 22:47:59 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:42756 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753719AbaFQCr6 (ORCPT
+	id S1754811AbaFQCzY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 22:55:24 -0400
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:63817 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754329AbaFQCzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 22:47:58 -0400
+	Mon, 16 Jun 2014 22:55:23 -0400
+Message-ID: <539FAE21.7070702@gmail.com>
+Date: Mon, 16 Jun 2014 22:55:29 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1402928339-29785-1-git-send-email-mmarek@suse.cz>
-References: <CAOi1vP9YvbroujXEut6Xn-tvv07MNuxanwDrRvDFhS_-HT_5Lg@mail.gmail.com>
-	<1402928339-29785-1-git-send-email-mmarek@suse.cz>
-Date: Mon, 16 Jun 2014 19:47:57 -0700
-Message-ID: <CAADnVQJakSFP8VHJUwh6Z94XkYH7neuamUxHUZ16Q4-YP7O9OQ@mail.gmail.com>
-Subject: Re: [PATCH] deb-pkg: Fix for relative paths
-From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Ilya Dryomov <idryomov@gmail.com>, linux-kbuild@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: paulmck@linux.vnet.ibm.com, Josh Triplett <josh@joshtriplett.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: [RFC PATCH 1/1] kernel/rcu/tree.c: simplify force_quiescent_state()
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 7:18 AM, Michal Marek <mmarek@suse.cz> wrote:
-> When $srctree or $objtree are relative paths, we cannot change directory
-> and refer to them in the same subshell. Do the redirection outside of
-> the subshell to fix this.
->
-> Reported-by: Ilya Dryomov <idryomov@gmail.com>
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
-> ---
->  scripts/package/builddeb | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
+This might sound really naive, but please bear with me.
 
-this patch didn't help to fix the broken deb-pkg for me:
+force_quiescent_state() used to do a lot of things in the past in addition to
+forcing a quiescent state. (In my reading of the mailing list I found state
+transitions for one). 
 
-../scripts/Makefile.build:44: ../../scripts/package/Makefile: No such
-file or directory
-make[2]: *** No rule to make target `../../scripts/package/Makefile'.  Stop.
-make[1]: *** [deb-pkg] Error 2
+Now according to the code, what is being done is multiple callers try to go up
+the hierarchy of nodes to see who reaches the root node. The caller reaching the
+root node wins and it acquires root node lock and it gets to set rsp->gp_flags!
 
-steps to reproduce:
-$ export KBUILD_OUTPUT=/make it out of src tree
-$ make deb-pkg
+At each level of the hierarchy we try to acquire fqslock. This is the only place
+which actually uses fqslock. 
 
-> diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-> index b5f08f7..9a38e85 100644
-> --- a/scripts/package/builddeb
-> +++ b/scripts/package/builddeb
-> @@ -290,13 +290,13 @@ EOF
->  fi
->
->  # Build header package
-> -(cd $srctree; find . -name Makefile\* -o -name Kconfig\* -o -name \*.pl > "$objtree/debian/hdrsrcfiles")
-> -(cd $srctree; find arch/$SRCARCH/include include scripts -type f >> "$objtree/debian/hdrsrcfiles")
-> -(cd $objtree; find arch/$SRCARCH/include Module.symvers include scripts -type f >> "$objtree/debian/hdrobjfiles")
-> +(cd $srctree; find . -name Makefile\* -o -name Kconfig\* -o -name \*.pl) > "$objtree/debian/hdrsrcfiles"
-> +(cd $srctree; find arch/$SRCARCH/include include scripts -type f) >> "$objtree/debian/hdrsrcfiles"
-> +(cd $objtree; find arch/$SRCARCH/include Module.symvers include scripts -type f) >> "$objtree/debian/hdrobjfiles"
->  destdir=$kernel_headers_dir/usr/src/linux-headers-$version
->  mkdir -p "$destdir"
-> -(cd $srctree; tar -c -f - -T "$objtree/debian/hdrsrcfiles") | (cd $destdir; tar -xf -)
-> -(cd $objtree; tar -c -f - -T "$objtree/debian/hdrobjfiles") | (cd $destdir; tar -xf -)
-> +(cd $srctree; tar -c -f - -T -) < "$objtree/debian/hdrsrcfiles" | (cd $destdir; tar -xf -)
-> +(cd $objtree; tar -c -f - -T -) < "$objtree/debian/hdrobjfiles" | (cd $destdir; tar -xf -)
->  (cd $objtree; cp $KCONFIG_CONFIG $destdir/.config) # copy .config manually to be where it's expected to be
->  ln -sf "/usr/src/linux-headers-$version" "$kernel_headers_dir/lib/modules/$version/build"
->  rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
-> --
-> 1.9.2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I guess this was being done to avoid the contention on fqslock, but all we are
+doing here is setting one flag. This way of acquiring locks might reduce
+contention if every update is trying to do some independent work, but here all
+we are doing is setting the same flag with same value.
+
+We can also remove fqslock completely if we do not need this. Also using
+cmpxchg() to set the value of the flag looks like a good idea to avoid taking
+the root node lock. Thoughts?
+
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+---
+ kernel/rcu/tree.c | 35 +++++++++++++----------------------
+ 1 file changed, 13 insertions(+), 22 deletions(-)
+
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index f1ba773..9a46f32 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -2399,36 +2399,27 @@ static void force_qs_rnp(struct rcu_state *rsp,
+ static void force_quiescent_state(struct rcu_state *rsp)
+ {
+ 	unsigned long flags;
+-	bool ret;
+-	struct rcu_node *rnp;
+-	struct rcu_node *rnp_old = NULL;
+-
+-	/* Funnel through hierarchy to reduce memory contention. */
+-	rnp = per_cpu_ptr(rsp->rda, raw_smp_processor_id())->mynode;
+-	for (; rnp != NULL; rnp = rnp->parent) {
+-		ret = (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) ||
+-		      !raw_spin_trylock(&rnp->fqslock);
+-		if (rnp_old != NULL)
+-			raw_spin_unlock(&rnp_old->fqslock);
+-		if (ret) {
+-			ACCESS_ONCE(rsp->n_force_qs_lh)++;
+-			return;
+-		}
+-		rnp_old = rnp;
++	struct rcu_node *rnp_root = rcu_get_root(rsp);
++
++	/* early test to see if someone already forced a quiescent state
++	 */
++	if (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) {
++		ACCESS_ONCE(rsp->n_force_qs_lh)++;
++		return;  /* Someone beat us to it. */
+ 	}
+-	/* rnp_old == rcu_get_root(rsp), rnp == NULL. */
+ 
+ 	/* Reached the root of the rcu_node tree, acquire lock. */
+-	raw_spin_lock_irqsave(&rnp_old->lock, flags);
++	raw_spin_lock_irqsave(&rnp_root->lock, flags);
+ 	smp_mb__after_unlock_lock();
+-	raw_spin_unlock(&rnp_old->fqslock);
+ 	if (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) {
+ 		ACCESS_ONCE(rsp->n_force_qs_lh)++;
+-		raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
+-		return;  /* Someone beat us to it. */
++		raw_spin_unlock_irqrestore(&rnp_root->lock, flags);
++		return;  /* Someone actually beat us to it. */
+ 	}
++
++	/* can we use cmpxchg instead of the above lock? */
+ 	ACCESS_ONCE(rsp->gp_flags) |= RCU_GP_FLAG_FQS;
+-	raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
++	raw_spin_unlock_irqrestore(&rnp_root->lock, flags);
+ 	wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
+ }
+ 
+-- 
+1.9.1
