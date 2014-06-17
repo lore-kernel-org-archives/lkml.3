@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697AbaFQCXg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 22:23:36 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:45068 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454AbaFQCXX (ORCPT
+	id S932300AbaFQCXo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 22:23:44 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:47956 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932084AbaFQCXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 22:23:23 -0400
+	Mon, 16 Jun 2014 22:23:33 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: x86@kernel.org, linux-kernel@vger.kernel.org
-Cc: Andy Lutomirski <luto@amacapital.net>, stable@vger.kernel.org
-Subject: [PATCH 1/8] x86_64,vsyscall: Fix warn_bad_vsyscall log output
-Date: Mon, 16 Jun 2014 19:23:08 -0700
-Message-Id: <a7781f1035319a79cf3148c5a0556dee3a31c7e1.1402971639.git.luto@amacapital.net>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 6/8] x86_64: Move getcpu code from vsyscall_64.c to vdso/vma.c
+Date: Mon, 16 Jun 2014 19:23:13 -0700
+Message-Id: <b4ab8e898f6d59698e2c7eb21ea3a0f487dd3876.1402971639.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1402971639.git.luto@amacapital.net>
 References: <cover.1402971639.git.luto@amacapital.net>
@@ -22,46 +22,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit in Linux 3.6:
+This is pure cut-and-paste.  At this point, vsyscall_64.c contains
+only code needed for vsyscall emulation, but some of the comments
+and function names are still confused.
 
-    commit c767a54ba0657e52e6edaa97cbe0b0a8bf1c1655
-    Author: Joe Perches <joe@perches.com>
-    Date:   Mon May 21 19:50:07 2012 -0700
-
-        x86/debug: Add KERN_<LEVEL> to bare printks, convert printks to pr_<level>
-
-caused warn_bad_vsyscall to output garbage in the middle of the
-line.  Revert the bad part of it.
-
-The printk in question isn't actually bare; the level is "%s".
-
-The bug this fixes is purely cosmetic; backports are optional.
-
-Cc: stable@vger.kernel.org
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/kernel/vsyscall_64.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/kernel/vsyscall_64.c | 57 ----------------------------------------
+ arch/x86/vdso/vma.c           | 61 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 61 insertions(+), 57 deletions(-)
 
 diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index ea5b570..e1e1e80 100644
+index dd1b322..5029be3 100644
 --- a/arch/x86/kernel/vsyscall_64.c
 +++ b/arch/x86/kernel/vsyscall_64.c
-@@ -81,10 +81,10 @@ static void warn_bad_vsyscall(const char *level, struct pt_regs *regs,
- 	if (!show_unhandled_signals)
- 		return;
- 
--	pr_notice_ratelimited("%s%s[%d] %s ip:%lx cs:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
--			      level, current->comm, task_pid_nr(current),
--			      message, regs->ip, regs->cs,
--			      regs->sp, regs->ax, regs->si, regs->di);
-+	printk_ratelimited("%s%s[%d] %s ip:%lx cs:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
-+			   level, current->comm, task_pid_nr(current),
-+			   message, regs->ip, regs->cs,
-+			   regs->sp, regs->ax, regs->si, regs->di);
+@@ -332,49 +332,6 @@ int in_gate_area_no_mm(unsigned long addr)
+ 	return vsyscall_mode != NONE && (addr & PAGE_MASK) == VSYSCALL_ADDR;
  }
  
- static int addr_to_vsyscall_nr(unsigned long addr)
+-/*
+- * Assume __initcall executes before all user space. Hopefully kmod
+- * doesn't violate that. We'll find out if it does.
+- */
+-static void vsyscall_set_cpu(int cpu)
+-{
+-	unsigned long d;
+-	unsigned long node = 0;
+-#ifdef CONFIG_NUMA
+-	node = cpu_to_node(cpu);
+-#endif
+-	if (cpu_has(&cpu_data(cpu), X86_FEATURE_RDTSCP))
+-		write_rdtscp_aux((node << 12) | cpu);
+-
+-	/*
+-	 * Store cpu number in limit so that it can be loaded quickly
+-	 * in user space in vgetcpu. (12 bits for the CPU and 8 bits for the node)
+-	 */
+-	d = 0x0f40000000000ULL;
+-	d |= cpu;
+-	d |= (node & 0xf) << 12;
+-	d |= (node >> 4) << 48;
+-
+-	write_gdt_entry(get_cpu_gdt_table(cpu), GDT_ENTRY_PER_CPU, &d, DESCTYPE_S);
+-}
+-
+-static void cpu_vsyscall_init(void *arg)
+-{
+-	/* preemption should be already off */
+-	vsyscall_set_cpu(raw_smp_processor_id());
+-}
+-
+-static int
+-cpu_vsyscall_notifier(struct notifier_block *n, unsigned long action, void *arg)
+-{
+-	long cpu = (long)arg;
+-
+-	if (action == CPU_ONLINE || action == CPU_ONLINE_FROZEN)
+-		smp_call_function_single(cpu, cpu_vsyscall_init, NULL, 1);
+-
+-	return NOTIFY_DONE;
+-}
+-
+ void __init map_vsyscall(void)
+ {
+ 	extern char __vsyscall_page;
+@@ -389,17 +346,3 @@ void __init map_vsyscall(void)
+ 	BUILD_BUG_ON((unsigned long)__fix_to_virt(VSYSCALL_PAGE) !=
+ 		     (unsigned long)VSYSCALL_ADDR);
+ }
+-
+-static int __init vsyscall_init(void)
+-{
+-	cpu_notifier_register_begin();
+-
+-	on_each_cpu(cpu_vsyscall_init, NULL, 1);
+-	/* notifier priority > KVM */
+-	__hotcpu_notifier(cpu_vsyscall_notifier, 30);
+-
+-	cpu_notifier_register_done();
+-
+-	return 0;
+-}
+-__initcall(vsyscall_init);
+diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+index 67a8b6c..8973b4e 100644
+--- a/arch/x86/vdso/vma.c
++++ b/arch/x86/vdso/vma.c
+@@ -10,6 +10,7 @@
+ #include <linux/init.h>
+ #include <linux/random.h>
+ #include <linux/elf.h>
++#include <linux/cpu.h>
+ #include <asm/vsyscall.h>
+ #include <asm/vgtod.h>
+ #include <asm/proto.h>
+@@ -17,6 +18,7 @@
+ #include <asm/page.h>
+ #include <asm/hpet.h>
+ #include <asm/vvar.h>
++#include <asm/desc.h>
+ 
+ #if defined(CONFIG_X86_64)
+ unsigned int __read_mostly vdso64_enabled = 1;
+@@ -233,3 +235,62 @@ static __init int vdso_setup(char *s)
+ }
+ __setup("vdso=", vdso_setup);
+ #endif
++
++#ifdef CONFIG_X86_64
++/*
++ * Assume __initcall executes before all user space. Hopefully kmod
++ * doesn't violate that. We'll find out if it does.
++ */
++static void vsyscall_set_cpu(int cpu)
++{
++	unsigned long d;
++	unsigned long node = 0;
++#ifdef CONFIG_NUMA
++	node = cpu_to_node(cpu);
++#endif
++	if (cpu_has(&cpu_data(cpu), X86_FEATURE_RDTSCP))
++		write_rdtscp_aux((node << 12) | cpu);
++
++	/*
++	 * Store cpu number in limit so that it can be loaded quickly
++	 * in user space in vgetcpu. (12 bits for the CPU and 8 bits for the node)
++	 */
++	d = 0x0f40000000000ULL;
++	d |= cpu;
++	d |= (node & 0xf) << 12;
++	d |= (node >> 4) << 48;
++
++	write_gdt_entry(get_cpu_gdt_table(cpu), GDT_ENTRY_PER_CPU, &d, DESCTYPE_S);
++}
++
++static void cpu_vsyscall_init(void *arg)
++{
++	/* preemption should be already off */
++	vsyscall_set_cpu(raw_smp_processor_id());
++}
++
++static int
++cpu_vsyscall_notifier(struct notifier_block *n, unsigned long action, void *arg)
++{
++	long cpu = (long)arg;
++
++	if (action == CPU_ONLINE || action == CPU_ONLINE_FROZEN)
++		smp_call_function_single(cpu, cpu_vsyscall_init, NULL, 1);
++
++	return NOTIFY_DONE;
++}
++
++static int __init vsyscall_init(void)
++{
++	cpu_notifier_register_begin();
++
++	on_each_cpu(cpu_vsyscall_init, NULL, 1);
++	/* notifier priority > KVM */
++	__hotcpu_notifier(cpu_vsyscall_notifier, 30);
++
++	cpu_notifier_register_done();
++
++	return 0;
++}
++__initcall(vsyscall_init);
++#endif
 -- 
 1.9.3
 
