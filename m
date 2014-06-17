@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754338AbaFQCXW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 22:23:22 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:63363 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753384AbaFQCXV (ORCPT
+	id S1754697AbaFQCXg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 22:23:36 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:45068 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754454AbaFQCXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 22:23:21 -0400
+	Mon, 16 Jun 2014 22:23:23 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: x86@kernel.org, linux-kernel@vger.kernel.org
-Cc: Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 0/8] x86: vdso and vsyscall round 1 for 3.17
-Date: Mon, 16 Jun 2014 19:23:07 -0700
-Message-Id: <cover.1402971639.git.luto@amacapital.net>
+Cc: Andy Lutomirski <luto@amacapital.net>, stable@vger.kernel.org
+Subject: [PATCH 1/8] x86_64,vsyscall: Fix warn_bad_vsyscall log output
+Date: Mon, 16 Jun 2014 19:23:08 -0700
+Message-Id: <a7781f1035319a79cf3148c5a0556dee3a31c7e1.1402971639.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <cover.1402971639.git.luto@amacapital.net>
+References: <cover.1402971639.git.luto@amacapital.net>
+In-Reply-To: <cover.1402971639.git.luto@amacapital.net>
+References: <cover.1402971639.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is mostly cleanups.  Patch 1 fixes a minor bug; it might make sense
-to backport it.
+This commit in Linux 3.6:
 
-Patch 3 removes the vsyscall mapping when vsyscall=none.
+    commit c767a54ba0657e52e6edaa97cbe0b0a8bf1c1655
+    Author: Joe Perches <joe@perches.com>
+    Date:   Mon May 21 19:50:07 2012 -0700
 
-Patches 4 and 5 remove everything except gtod from the vvar page; the
-other vvars weren't really necessary.
+        x86/debug: Add KERN_<LEVEL> to bare printks, convert printks to pr_<level>
 
-Patch 2, 6, 7, and 8 are pure cleanups.
+caused warn_bad_vsyscall to output garbage in the middle of the
+line.  Revert the bad part of it.
 
-This is based on tip/x86/vdso.
+The printk in question isn't actually bare; the level is "%s".
 
-Andy Lutomirski (8):
-  x86_64,vsyscall: Fix warn_bad_vsyscall log output
-  x86_64,vsyscall: Move all of the gate_area code to vsyscall_64.c
-  x86_64,vsyscall: Turn vsyscalls all the way off when vsyscall=none
-  x86_64,vdso: Remove jiffies from the vvar page
-  x86,vdso: Replace vgetcpu_mode with static_cpu_has
-  x86_64: Move getcpu code from vsyscall_64.c to vdso/vma.c
-  x86_64,vsyscall: Rewrite comment and clean up headers in vsyscall code
-  x86_64,vdso: Clean up vgetcpu init and merge the vdso initcalls
+The bug this fixes is purely cosmetic; backports are optional.
 
- arch/x86/include/asm/vgtod.h    |  21 ++++++
- arch/x86/include/asm/vsyscall.h |  29 --------
- arch/x86/include/asm/vvar.h     |   2 -
- arch/x86/kernel/cpu/common.c    |  10 ---
- arch/x86/kernel/time.c          |   2 +-
- arch/x86/kernel/vsyscall_64.c   | 155 +++++++++++++++++-----------------------
- arch/x86/mm/init_64.c           |  49 -------------
- arch/x86/vdso/vclock_gettime.c  |   3 +
- arch/x86/vdso/vgetcpu.c         |   5 +-
- arch/x86/vdso/vma.c             |  81 ++++++++++++++++-----
- 10 files changed, 158 insertions(+), 199 deletions(-)
+Cc: stable@vger.kernel.org
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ arch/x86/kernel/vsyscall_64.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index ea5b570..e1e1e80 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -81,10 +81,10 @@ static void warn_bad_vsyscall(const char *level, struct pt_regs *regs,
+ 	if (!show_unhandled_signals)
+ 		return;
+ 
+-	pr_notice_ratelimited("%s%s[%d] %s ip:%lx cs:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
+-			      level, current->comm, task_pid_nr(current),
+-			      message, regs->ip, regs->cs,
+-			      regs->sp, regs->ax, regs->si, regs->di);
++	printk_ratelimited("%s%s[%d] %s ip:%lx cs:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
++			   level, current->comm, task_pid_nr(current),
++			   message, regs->ip, regs->cs,
++			   regs->sp, regs->ax, regs->si, regs->di);
+ }
+ 
+ static int addr_to_vsyscall_nr(unsigned long addr)
 -- 
 1.9.3
 
