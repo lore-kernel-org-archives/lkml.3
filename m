@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967175AbaFQVwr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:52:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54883 "EHLO
+	id S967444AbaFQV67 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:58:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54916 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965390AbaFQVwj (ORCPT
+	with ESMTP id S967170AbaFQVwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:52:39 -0400
+	Tue, 17 Jun 2014 17:52:47 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 074/212] spi: core: Ignore unsupported Dual/Quad Transfer Mode bits
-Date: Tue, 17 Jun 2014 14:42:48 -0700
-Message-Id: <1403041506-13646-75-git-send-email-kamal@canonical.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Shaun Ruffell <sruffell@digium.com>, Ingo Molnar <mingo@kernel.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 143/212] sched: Sanitize irq accounting madness
+Date: Tue, 17 Jun 2014 14:43:57 -0700
+Message-Id: <1403041506-13646-144-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -27,58 +30,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert+renesas@glider.be>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 83596fbeb5d28e8cb8878786133945d4dc7c0090 upstream.
+commit 2d513868e2a33e1d5315490ef4c861ee65babd65 upstream.
 
-The availability of SPI Dual or Quad Transfer Mode as indicated by the
-"spi-tx-bus-width" and "spi-rx-bus-width" properties in the device tree is
-a hardware property of the SPI master, SPI slave, and board wiring.  Hence
-the SPI core should not reject an SPI slave because an SPI master driver
-doesn't (yet) support Dual or Quad Transfer Mode.
+Russell reported, that irqtime_account_idle_ticks() takes ages due to:
 
-Change the lack of Dual or Quad Transfer Mode support in the SPI master
-driver from an error condition to a warning condition, and ignore the
-unsupported mode bits, falling back to Single Transfer Mode, to avoid
-breakages when running old kernels with new device trees.
+       for (i = 0; i < ticks; i++)
+               irqtime_account_process_tick(current, 0, rq);
 
-Fixes: f477b7fb13df (spi: DUAL and QUAD support)
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+It's sad, that this code was written way _AFTER_ the NOHZ idle
+functionality was available. I charge myself guitly for not paying
+attention when that crap got merged with commit abb74cefa ("sched:
+Export ns irqtimes through /proc/stat")
+
+So instead of looping nr_ticks times just apply the whole thing at
+once.
+
+As a side note: The whole cputime_t vs. u64 business in that context
+wants to be cleaned up as well. There is no point in having all these
+back and forth conversions. Lets standardise on u64 nsec for all
+kernel internal accounting and be done with it. Everything else does
+not make sense at all for fine grained accounting. Frederic, can you
+please take care of that?
+
+Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Venkatesh Pallipadi <venki@google.com>
+Cc: Shaun Ruffell <sruffell@digium.com>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1405022307000.6261@ionos.tec.linutronix.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/spi/spi.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ kernel/sched/cputime.c | 32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 349ebba..a416aec 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -1551,7 +1551,7 @@ EXPORT_SYMBOL_GPL(spi_busnum_to_master);
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index 9994791..cfe2f26 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -326,50 +326,50 @@ out:
+  * softirq as those do not count in task exec_runtime any more.
   */
- int spi_setup(struct spi_device *spi)
+ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+-						struct rq *rq)
++					 struct rq *rq, int ticks)
  {
--	unsigned	bad_bits;
-+	unsigned	bad_bits, ugly_bits;
- 	int		status = 0;
+-	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
++	cputime_t scaled = cputime_to_scaled(cputime_one_jiffy);
++	u64 cputime = (__force u64) cputime_one_jiffy;
+ 	u64 *cpustat = kcpustat_this_cpu->cpustat;
  
- 	/* check mode to prevent that DUAL and QUAD set at the same time
-@@ -1571,6 +1571,15 @@ int spi_setup(struct spi_device *spi)
- 	 * that aren't supported with their current master
- 	 */
- 	bad_bits = spi->mode & ~spi->master->mode_bits;
-+	ugly_bits = bad_bits &
-+		    (SPI_TX_DUAL | SPI_TX_QUAD | SPI_RX_DUAL | SPI_RX_QUAD);
-+	if (ugly_bits) {
-+		dev_warn(&spi->dev,
-+			 "setup: ignoring unsupported mode bits %x\n",
-+			 ugly_bits);
-+		spi->mode &= ~ugly_bits;
-+		bad_bits &= ~ugly_bits;
-+	}
- 	if (bad_bits) {
- 		dev_err(&spi->dev, "setup: unsupported mode bits %x\n",
- 			bad_bits);
+ 	if (steal_account_process_tick())
+ 		return;
+ 
++	cputime *= ticks;
++	scaled *= ticks;
++
+ 	if (irqtime_account_hi_update()) {
+-		cpustat[CPUTIME_IRQ] += (__force u64) cputime_one_jiffy;
++		cpustat[CPUTIME_IRQ] += cputime;
+ 	} else if (irqtime_account_si_update()) {
+-		cpustat[CPUTIME_SOFTIRQ] += (__force u64) cputime_one_jiffy;
++		cpustat[CPUTIME_SOFTIRQ] += cputime;
+ 	} else if (this_cpu_ksoftirqd() == p) {
+ 		/*
+ 		 * ksoftirqd time do not get accounted in cpu_softirq_time.
+ 		 * So, we have to handle it separately here.
+ 		 * Also, p->stime needs to be updated for ksoftirqd.
+ 		 */
+-		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
+-					CPUTIME_SOFTIRQ);
++		__account_system_time(p, cputime, scaled, CPUTIME_SOFTIRQ);
+ 	} else if (user_tick) {
+-		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
++		account_user_time(p, cputime, scaled);
+ 	} else if (p == rq->idle) {
+-		account_idle_time(cputime_one_jiffy);
++		account_idle_time(cputime);
+ 	} else if (p->flags & PF_VCPU) { /* System time or guest time */
+-		account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
++		account_guest_time(p, cputime, scaled);
+ 	} else {
+-		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
+-					CPUTIME_SYSTEM);
++		__account_system_time(p, cputime, scaled,	CPUTIME_SYSTEM);
+ 	}
+ }
+ 
+ static void irqtime_account_idle_ticks(int ticks)
+ {
+-	int i;
+ 	struct rq *rq = this_rq();
+ 
+-	for (i = 0; i < ticks; i++)
+-		irqtime_account_process_tick(current, 0, rq);
++	irqtime_account_process_tick(current, 0, rq, ticks);
+ }
+ #else /* CONFIG_IRQ_TIME_ACCOUNTING */
+ static inline void irqtime_account_idle_ticks(int ticks) {}
+ static inline void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+-						struct rq *rq) {}
++						struct rq *rq, int nr_ticks) {}
+ #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
+ 
+ /*
+@@ -458,7 +458,7 @@ void account_process_tick(struct task_struct *p, int user_tick)
+ 		return;
+ 
+ 	if (sched_clock_irqtime) {
+-		irqtime_account_process_tick(p, user_tick, rq);
++		irqtime_account_process_tick(p, user_tick, rq, 1);
+ 		return;
+ 	}
+ 
 -- 
 1.9.1
 
