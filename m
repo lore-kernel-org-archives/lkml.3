@@ -1,104 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964971AbaFQRaN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 13:30:13 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:25792 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964942AbaFQRaK (ORCPT
+	id S964993AbaFQRad (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 13:30:33 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:38021 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964772AbaFQRaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 13:30:10 -0400
-X-AuditID: cbfee61b-b7fbb6d000001be3-1b-53a07b208c97
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
-Subject: [PATCH v2 4/9] thermal: exynos: remove redundant pdata checks from
- exynos_tmu_initialize()
-Date: Tue, 17 Jun 2014 19:27:20 +0200
-Message-id: <1403026045-16024-5-git-send-email-b.zolnierkie@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1403026045-16024-1-git-send-email-b.zolnierkie@samsung.com>
-References: <1403026045-16024-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrELMWRmVeSWpSXmKPExsVy+t9jQV3F6gXBBk2vGS0aroZYbJyxntVi
-	zf6fTBZnm96wW1zeNYfN4nPvEUaLGef3MVmcOX2J1eLJwz42i/UzXrM4cHks3vOSyWPL1XYW
-	j74tqxg9jt/YzuTxeZNcAGsUl01Kak5mWWqRvl0CV8aCJ+3sBU+EKlr/nmJuYLzG38XIySEh
-	YCIx8fliJghbTOLCvfVsXYxcHEIC0xkl9n2+xg7hdDFJLJjSxw5SxSZgJTGxfRUjiC0ioCdx
-	48UTJpAiZoHjTBI/f59nA0kIC6RK/No9F8xmEVCV2DRlNlAzBwevgIfEjKnuENsUJbqfTQAr
-	4RTwlLhxrwXMFgIqmX+xk2kCI+8CRoZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMEh90x6
-	B+OqBotDjAIcjEo8vBy5C4KFWBPLiitzDzFKcDArifCeywIK8aYkVlalFuXHF5XmpBYfYpTm
-	YFES5z3Yah0oJJCeWJKanZpakFoEk2Xi4JRqYFzYKqL+brqAwaH7k/fzmhluiD91ZU6rshz7
-	pk+vpxyWnCiUuPCW9s0UqVVCKnUZQvOXX7E62Hhy3qZCHc5ah2qf2bdm/rq1c3qXqP//dkm3
-	rTeqjx5mi21aorhwZ+l1vU2LhadOPacceCn4q8GU34/O3MmYmpJfn7xi196QCInie/tncMke
-	d7qhxFKckWioxVxUnAgAulXAPDUCAAA=
+	Tue, 17 Jun 2014 13:30:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <539F570C.2000507@wwwdotorg.org>
+References: <1402689965-19397-1-git-send-email-jwerner@chromium.org>
+ <CAL_JsqL-K4i54ysugCKSw-aO-9pvnYgZfJ=NdBAot=mwffxmyA@mail.gmail.com>
+ <CAODwPW9tRM8kxBVg3apkec2K1rahuENk_b_BD_0jvXON7JzeaA@mail.gmail.com>
+ <CAL_Jsq+rGLFcOcs8Rmr8NntbPhGBG+F7yAF0YQ-Rm-UsmmTLSA@mail.gmail.com> <539F570C.2000507@wwwdotorg.org>
+From: Rob Herring <robherring2@gmail.com>
+Date: Tue, 17 Jun 2014 12:30:09 -0500
+Message-ID: <CAL_JsqJ1eMb9CprhuzzhKyN0PYVjxviWjoefR_9ypxhFT0FgBg@mail.gmail.com>
+Subject: Re: [PATCH] firmware: Add device tree binding for coreboot
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Julius Werner <jwerner@chromium.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <stephen.r.warren@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olofj@chromium.org>,
+        Stefan Reinauer <stefan.reinauer@coreboot.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove runtime checks for pdata sanity from exynos_tmu_initialize().
+On Mon, Jun 16, 2014 at 3:43 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 06/16/2014 07:30 AM, Rob Herring wrote:
+>> On Fri, Jun 13, 2014 at 4:58 PM, Julius Werner <jwerner@chromium.org> wrote:
+> ...
+>>> Rob Herring wrote:
+>>>> Don't you need need to keep the kernel from allocating this memory by
+>>>> using one of the reserved memory mechanisms? The recently added one
+>>>> should be able to specific what the memory is reserved for IIRC.
+>>>
+>>> Our bootloader is carving the location out of the /memory node and
+>>> adding it to the device tree reserve map. As far as I know, that only
+>>> contains a list of raw start and size entries. At any rate, I think
+>>> it's useful (and in line with other bindings) to add a more explicit
+>>> node like this (if only to make it easier accessible through
+>>> /proc/device-tree).
+>>
+>> Understand there are 3 different memory reservation bindings. The
+>> original "/memreserve/" method is indeed limited. What I think you
+>> should use is the binding documented in
+>> Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt.
+>> So you could do something like this:
+>>
+>>         reserved-memory {
+>>                 #address-cells = <1>;
+>>                 #size-cells = <1>;
+>>                 ranges;
+>>
+>>                 /* global autoconfigured region for contiguous allocations */
+>>                 linux,cma {
+>>                         compatible = "shared-dma-pool";
+>>                         reusable;
+>>                         size = <0x4000000>;
+>>                         alignment = <0x2000>;
+>>                         linux,cma-default;
+>>                 };
+>>
+>>                 coreboot_reserved: coreboot@fdfea000 {
+>>                       compatible = "coreboot";
+>>                       reg = <0xfdfea000 0x264>,
+>>                           <0xfdfea000 0x16000>;
+>>                 };
+>>
+>
+> I thought that the /reserved-memory node was more so that the
+> (preferred?) location of firmware images or data buffers used by HW
+> accelerators could be communicated to the kernel. This feels like pure data.
 
-The current values hardcoded in pdata will never trigger the checks
-and checking itself is not proper.  The checks in question are done
-at runtime in a production code for data that is hardcoded inside
-driver during development time and later it doesn't change.  Such
-data should be verified during development and review time (i.e. by
-a script parsing relevant data from exynos_tmu_data.c, one can also
-argue that verification to be done is so simple that the review by
-a maintainer should be enough).
+That was the initial use, but I think this case fits well. PPC may
+have some other uses already. I haven't looked.
 
-There should be no functional changes caused by this patch.
+> The coreboot binding seems to be more about defining an interface to a
+> particular firmware (this feels like semantics), which as a side-effect
+> needs to communicate the location of certain data.
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/thermal/samsung/exynos_thermal_common.h |  1 -
- drivers/thermal/samsung/exynos_tmu.c            | 13 -------------
- 2 files changed, 14 deletions(-)
+The DT is only defining it's presence and location. Knowledge of what
+the data is is (optionally) in the kernel.
 
-diff --git a/drivers/thermal/samsung/exynos_thermal_common.h b/drivers/thermal/samsung/exynos_thermal_common.h
-index 3eb2ed9..cd44719 100644
---- a/drivers/thermal/samsung/exynos_thermal_common.h
-+++ b/drivers/thermal/samsung/exynos_thermal_common.h
-@@ -27,7 +27,6 @@
- #define SENSOR_NAME_LEN	16
- #define MAX_TRIP_COUNT	8
- #define MAX_COOLING_DEVICE 4
--#define MAX_THRESHOLD_LEVS 5
- 
- #define ACTIVE_INTERVAL 500
- #define IDLE_INTERVAL 10000
-diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index 1c64508..f061580 100644
---- a/drivers/thermal/samsung/exynos_tmu.c
-+++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -166,23 +166,10 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- 	    data->temp_error > pdata->max_efuse_value)
- 		data->temp_error = pdata->efuse_value & EXYNOS_TMU_TEMP_MASK;
- 
--	if (pdata->max_trigger_level > MAX_THRESHOLD_LEVS) {
--		dev_err(&pdev->dev, "Invalid max trigger level\n");
--		ret = -EINVAL;
--		goto out;
--	}
--
- 	for (i = 0; i < pdata->max_trigger_level; i++) {
- 		if (!pdata->trigger_levels[i])
- 			continue;
- 
--		if ((pdata->trigger_type[i] == HW_TRIP) &&
--		(!pdata->trigger_levels[pdata->max_trigger_level - 1])) {
--			dev_err(&pdev->dev, "Invalid hw trigger level\n");
--			ret = -EINVAL;
--			goto out;
--		}
--
- 		/* Count trigger levels except the HW trip*/
- 		if (!(pdata->trigger_type[i] == HW_TRIP))
- 			trigger_levs++;
--- 
-1.8.2.3
+> If /reserved-memory is used to communicate the address of the memory
+> regions, I think we still need a /firmware/coreboot node to indicate the
+> semantics of the reserved memory region, and point at the phandle of the
+> region. As such, it seems simpler just to put the addresses in the
+> coreboot node's reg property. The only exception I see to that argument
+> is if putting the region in /reserved-memory automatically carves that
+> region out of the memory the kernel will allocate from. That would
+> simplify the bootloader, since it wouldn't have to fiddle with the
+> /memory node and do the carveout itself.
 
+The semantics are defined by a compatible property which the
+/reserved-memory binding has. Knowledge of what is in that range is in
+the kernel, not the DT. And yes, either /memreserve/ or
+/reserved-memory is needed to prevent kernel allocations.
+
+I'm not tied to /reserved-memory, but I just want a consistent way to
+describe random blocks of static data in memory. DMI tables are
+another similar example. We've already got some scattered usage of
+/firmware. There's also /psci for PSCI. UEFI is using /chosen for its
+tables (probably for good reason since the tables are needed early and
+need to be simple to parse).
+
+Rob
