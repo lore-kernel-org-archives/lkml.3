@@ -1,205 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967192AbaFQVwu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:52:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54889 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967138AbaFQVwk (ORCPT
+	id S967315AbaFQV6Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:58:25 -0400
+Received: from smtprelay0052.hostedemail.com ([216.40.44.52]:33309 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S965326AbaFQV6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:52:40 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, Sekhar Nori <nsekhar@ti.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 083/212] ARM: common: edma: Fix xbar mapping
-Date: Tue, 17 Jun 2014 14:42:57 -0700
-Message-Id: <1403041506-13646-84-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 17 Jun 2014 17:58:22 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:965:966:967:968:973:981:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2525:2553:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3354:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:4385:4390:4395:5007:6119:7652:7875:7903:8660:9025:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12740:13019:13069:13095:13148:13230:13311:13357:13845:14096:14097,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: sail97_2bc5c3782f42c
+X-Filterd-Recvd-Size: 2734
+Message-ID: <1403042299.2649.3.camel@joe-AO725>
+Subject: Re: [PATCH 1/1] scripts/coccinelle/free: add conditional kfree test
+From: Joe Perches <joe@perches.com>
+To: Julia Lawall <julia.lawall@lip6.fr>, Jesper Juhl <jj@chaosbits.net>
+Cc: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org,
+        Gilles Muller <Gilles.Muller@lip6.fr>
+Date: Tue, 17 Jun 2014 14:58:19 -0700
+In-Reply-To: <alpine.DEB.2.02.1406172331001.2055@localhost6.localdomain6>
+References: <1403034199-9824-1-git-send-email-fabf@skynet.be>
+	 <1403035539.2722.3.camel@joe-AO725>
+	 <alpine.DEB.2.02.1406172331001.2055@localhost6.localdomain6>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
+(adding Jesper Juhl)
 
-------------------
+On Tue, 2014-06-17 at 23:33 +0200, Julia Lawall wrote:
+> On Tue, 17 Jun 2014, Joe Perches wrote:
+> > On Tue, 2014-06-17 at 21:43 +0200, Fabian Frederick wrote:
+> > > This patch adds a trivial script warning on
+> > > 
+> > > if(foo)
+> > > 	kfree(foo)
+> > > 
+> > > (based on checkpatch)
+> > []
+> > > diff --git a/scripts/coccinelle/free/cond_kfree.cocci b/scripts/coccinelle/free/cond_kfree.cocci
+> > []
+> > > +* if (E)
+> > > +*	kfree@p(E);
+> > 
+> > You should probably add all of the unnecessary
+> > conditional tests that checkpatch uses:
+> > 
+> > kfree
+> > usb_free_urb
+> > debugfs_remove
+> > debugfs_remove_recursive
+> 
+> Personally, I would prefer that the message encourage the user to consider 
+> whether it is necessary to call these functions with NULL as an argument 
+> in any case.
 
-From: Thomas Gleixner <tglx@linutronix.de>
+Jesper quite awhile ago wrote:
 
-commit cf7eb979116c2568e8bc3b6a7269c7a359864ace upstream.
+https://lkml.org/lkml/2005/10/13/81
 
-This is another great example of trainwreck engineering:
+- Since kfree always checks for a NULL argument there's no reason to have an
+additional check prior to calling kfree. It's redundant.
+- In many cases gcc produce significantly smaller code without the redundant
+check before the call.
+- It's been shown in the past (in discussions on LKML) that it's generally a
+win performance wise to avoid the extra NULL check even though it might save
+a function call. Only when the NULL check avoids the function call in the vast
+majority of cases and the code is in a hot path does it make sense to have it.
+- This patch removes quite a few more source lines than it adds, cutting down
+on the overall number of source lines is generally a good thing.
+- This patch reduces the indentation level, which is nice when the kfree call
+is inside some deeply nested construct.
 
-commit 2646a0e529 (ARM: edma: Add EDMA crossbar event mux support)
-added support for using EDMA on peripherals which have no direct EDMA
-event mapping.
 
-The code compiles and does not explode in your face, but that's it.
-
-1) Reading an u16 array from an u32 device tree array simply does not
-   work. Even if the function is named "edma_of_read_u32_to_s16_array".
-
-   It merily calls of_property_read_u16_array. So the resulting 16bit
-   array will have every other entry = 0.
-
-2) The DT entry for the xbar registers related to xbar has length 0x10
-   instead of the real length: 0xfd0 - 0xf90 = 0x40.
-
-   Not a real problem as it does not cross a page boundary, but
-   wrong nevertheless.
-
-3) But none of this matters as the mapping never happens:
-
-   After reading nonsense edma_of_read_u32_to_s16_array() invalidates
-   the first array entry pair, so nobody can ever notice the
-   braindamage by immediate explosion.
-
-Seems the QA criteria for this code was solely not to explode when
-someone adds edma-xbar-event-map entries to the DT. Goal achieved,
-congratulations!
-
-Not really helpful if someone wants to use edma on a device which
-requires a xbar mapping.
-
-Fix the issues by:
-
-- annotating the device tree entry with "/bits/ 16" as documented in
-  the of_property_read_u16_array kernel doc
-
-- make the size of the xbar register mapping correct
-
-- invalidating the end of the array and not the start
-
-This convoluted mess wants to be completely rewritten as there is no
-point to keep the xbar_chan array memory and the iomapping of the xbar
-regs around forever. Marking the xbar mapped channels as used should
-be done right there.
-
-But that's a different issue and this patch is small enough to make it
-work and allows a simple backport for stable.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Sekhar Nori <nsekhar@ti.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- Documentation/devicetree/bindings/dma/ti-edma.txt |  4 +-
- arch/arm/boot/dts/am33xx.dtsi                     |  2 +-
- arch/arm/common/edma.c                            | 48 +++++++----------------
- 3 files changed, 18 insertions(+), 36 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/dma/ti-edma.txt b/Documentation/devicetree/bindings/dma/ti-edma.txt
-index 9fbbdb7..68ff213 100644
---- a/Documentation/devicetree/bindings/dma/ti-edma.txt
-+++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
-@@ -29,6 +29,6 @@ edma: edma@49000000 {
- 	dma-channels = <64>;
- 	ti,edma-regions = <4>;
- 	ti,edma-slots = <256>;
--	ti,edma-xbar-event-map = <1 12
--				  2 13>;
-+	ti,edma-xbar-event-map = /bits/ 16 <1 12
-+					    2 13>;
- };
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index bb98f30..e86232b 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -114,7 +114,7 @@
- 			compatible = "ti,edma3";
- 			ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
- 			reg =	<0x49000000 0x10000>,
--				<0x44e10f90 0x10>;
-+				<0x44e10f90 0x40>;
- 			interrupts = <12 13 14>;
- 			#dma-cells = <1>;
- 			dma-channels = <64>;
-diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-index 41bca32..5339009 100644
---- a/arch/arm/common/edma.c
-+++ b/arch/arm/common/edma.c
-@@ -1423,55 +1423,38 @@ EXPORT_SYMBOL(edma_clear_event);
- 
- #if IS_ENABLED(CONFIG_OF) && IS_ENABLED(CONFIG_DMADEVICES)
- 
--static int edma_of_read_u32_to_s16_array(const struct device_node *np,
--					 const char *propname, s16 *out_values,
--					 size_t sz)
-+static int edma_xbar_event_map(struct device *dev, struct device_node *node,
-+			       struct edma_soc_info *pdata, size_t sz)
- {
--	int ret;
--
--	ret = of_property_read_u16_array(np, propname, out_values, sz);
--	if (ret)
--		return ret;
--
--	/* Terminate it */
--	*out_values++ = -1;
--	*out_values++ = -1;
--
--	return 0;
--}
--
--static int edma_xbar_event_map(struct device *dev,
--			       struct device_node *node,
--			       struct edma_soc_info *pdata, int len)
--{
--	int ret, i;
-+	const char pname[] = "ti,edma-xbar-event-map";
- 	struct resource res;
- 	void __iomem *xbar;
--	const s16 (*xbar_chans)[2];
-+	s16 (*xbar_chans)[2];
-+	size_t nelm = sz / sizeof(s16);
- 	u32 shift, offset, mux;
-+	int ret, i;
- 
--	xbar_chans = devm_kzalloc(dev,
--				  len/sizeof(s16) + 2*sizeof(s16),
--				  GFP_KERNEL);
-+	xbar_chans = devm_kzalloc(dev, (nelm + 2) * sizeof(s16), GFP_KERNEL);
- 	if (!xbar_chans)
- 		return -ENOMEM;
- 
- 	ret = of_address_to_resource(node, 1, &res);
- 	if (ret)
--		return -EIO;
-+		return -ENOMEM;
- 
- 	xbar = devm_ioremap(dev, res.start, resource_size(&res));
- 	if (!xbar)
- 		return -ENOMEM;
- 
--	ret = edma_of_read_u32_to_s16_array(node,
--					    "ti,edma-xbar-event-map",
--					    (s16 *)xbar_chans,
--					    len/sizeof(u32));
-+	ret = of_property_read_u16_array(node, pname, (u16 *)xbar_chans, nelm);
- 	if (ret)
- 		return -EIO;
- 
--	for (i = 0; xbar_chans[i][0] != -1; i++) {
-+	/* Invalidate last entry for the other user of this mess */
-+	nelm >>= 1;
-+	xbar_chans[nelm][0] = xbar_chans[nelm][1] = -1;
-+
-+	for (i = 0; i < nelm; i++) {
- 		shift = (xbar_chans[i][1] & 0x03) << 3;
- 		offset = xbar_chans[i][1] & 0xfffffffc;
- 		mux = readl(xbar + offset);
-@@ -1480,8 +1463,7 @@ static int edma_xbar_event_map(struct device *dev,
- 		writel(mux, (xbar + offset));
- 	}
- 
--	pdata->xbar_chans = xbar_chans;
--
-+	pdata->xbar_chans = (const s16 (*)[2]) xbar_chans;
- 	return 0;
- }
- 
--- 
-1.9.1
 
