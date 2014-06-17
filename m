@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965863AbaFQQxg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:53:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50605 "EHLO
+	id S933789AbaFQQyM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:54:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50597 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933953AbaFQQSx (ORCPT
+	with ESMTP id S933944AbaFQQSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:18:53 -0400
+	Tue, 17 Jun 2014 12:18:51 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Miao Xie <miaox@cn.fujitsu.com>, Wang Shilong <wangsl.fnst@cn.fujitsu.com>,
-        Chris Mason <clm@fb.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 038/121] Btrfs: fix inode caching vs tree log
-Date: Tue, 17 Jun 2014 09:16:56 -0700
-Message-Id: <1403021899-16708-11-git-send-email-kamal@canonical.com>
+Cc: Denis Turischev <denis@compulab.co.il>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 039/121] xhci: Switch Intel Lynx Point ports to EHCI on shutdown.
+Date: Tue, 17 Jun 2014 09:16:57 -0700
+Message-Id: <1403021899-16708-12-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
@@ -27,99 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miao Xie <miaox@cn.fujitsu.com>
+From: Denis Turischev <denis.turischev@compulab.co.il>
 
-commit 1c70d8fb4dfa95bee491816b2a6767b5ca1080e7 upstream.
+commit c09ec25d3684cad74d851c0f028a495999591279 upstream.
 
-Currently, with inode cache enabled, we will reuse its inode id immediately
-after unlinking file, we may hit something like following:
+The same issue like with Panther Point chipsets. If the USB ports are
+switched to xHCI on shutdown, the xHCI host will send a spurious interrupt,
+which will wake the system. Some BIOS have work around for this, but not all.
+One example is Compulab's mini-desktop, the Intense-PC2.
 
-|->iput inode
-|->return inode id into inode cache
-|->create dir,fsync
-|->power off
+The bug can be avoided if the USB ports are switched back to EHCI on
+shutdown.
 
-An easy way to reproduce this problem is:
+This patch should be backported to stable kernels as old as 3.12,
+that contain the commit 638298dc66ea36623dbc2757a24fc2c4ab41b016
+"xhci: Fix spurious wakeups after S5 on Haswell"
 
-mkfs.btrfs -f /dev/sdb
-mount /dev/sdb /mnt -o inode_cache,commit=100
-dd if=/dev/zero of=/mnt/data bs=1M count=10 oflag=sync
-inode_id=`ls -i /mnt/data | awk '{print $1}'`
-rm -f /mnt/data
-
-i=1
-while [ 1 ]
-do
-        mkdir /mnt/dir_$i
-        test1=`stat /mnt/dir_$i | grep Inode: | awk '{print $4}'`
-        if [ $test1 -eq $inode_id ]
-        then
-		dd if=/dev/zero of=/mnt/dir_$i/data bs=1M count=1 oflag=sync
-		echo b > /proc/sysrq-trigger
-	fi
-	sleep 1
-        i=$(($i+1))
-done
-
-mount /dev/sdb /mnt
-umount /dev/sdb
-btrfs check /dev/sdb
-
-We fix this problem by adding unlinked inode's id into pinned tree,
-and we can not reuse them until committing transaction.
-
-Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
-Signed-off-by: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
-Signed-off-by: Chris Mason <clm@fb.com>
-[ kamal: backport to 3.8-stable: context ]
+Signed-off-by: Denis Turischev <denis@compulab.co.il>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/btrfs/inode-map.c | 18 ++----------------
- 1 file changed, 2 insertions(+), 16 deletions(-)
+ drivers/usb/host/xhci-pci.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/fs/btrfs/inode-map.c b/fs/btrfs/inode-map.c
-index d26f67a..9e2a340 100644
---- a/fs/btrfs/inode-map.c
-+++ b/fs/btrfs/inode-map.c
-@@ -207,24 +207,14 @@ again:
- 
- void btrfs_return_ino(struct btrfs_root *root, u64 objectid)
- {
--	struct btrfs_free_space_ctl *ctl = root->free_ino_ctl;
- 	struct btrfs_free_space_ctl *pinned = root->free_ino_pinned;
- 
- 	if (!btrfs_test_opt(root, INODE_MAP_CACHE))
- 		return;
--
- again:
- 	if (root->cached == BTRFS_CACHE_FINISHED) {
--		__btrfs_add_free_space(ctl, objectid, 1);
-+		__btrfs_add_free_space(pinned, objectid, 1);
- 	} else {
--		/*
--		 * If we are in the process of caching free ino chunks,
--		 * to avoid adding the same inode number to the free_ino
--		 * tree twice due to cross transaction, we'll leave it
--		 * in the pinned tree until a transaction is committed
--		 * or the caching work is done.
--		 */
--
- 		mutex_lock(&root->fs_commit_mutex);
- 		spin_lock(&root->cache_lock);
- 		if (root->cached == BTRFS_CACHE_FINISHED) {
-@@ -236,11 +226,7 @@ again:
- 
- 		start_caching(root);
- 
--		if (objectid <= root->cache_progress ||
--		    objectid > root->highest_objectid)
--			__btrfs_add_free_space(ctl, objectid, 1);
--		else
--			__btrfs_add_free_space(pinned, objectid, 1);
-+		__btrfs_add_free_space(pinned, objectid, 1);
- 
- 		mutex_unlock(&root->fs_commit_mutex);
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index dc5f94e..14c679d 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -130,6 +130,8 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
+ 		 */
+ 		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
+ 			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
++
++		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
  	}
+ 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
+ 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
 -- 
 1.9.1
 
