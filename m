@@ -1,133 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673AbaFQXUf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 19:20:35 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:60391 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754825AbaFQXUe (ORCPT
+	id S966651AbaFQVuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:50:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54420 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966632AbaFQVuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 19:20:34 -0400
-Date: Tue, 17 Jun 2014 19:20:30 -0400
-From: Tejun Heo <tj@kernel.org>
-To: cl@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH UPDATED 12/12] percpu: invoke __verify_pcpu_ptr() from the
- generic part of accessors and operations
-Message-ID: <20140617232030.GC8838@mtj.dyndns.org>
-References: <1402590209-31610-1-git-send-email-tj@kernel.org>
- <1402590209-31610-13-git-send-email-tj@kernel.org>
+	Tue, 17 Jun 2014 17:50:37 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 033/212] net: qmi_wwan: add a number of CMOTech devices
+Date: Tue, 17 Jun 2014 14:42:07 -0700
+Message-Id: <1403041506-13646-34-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402590209-31610-13-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 6fbc07bbe2b5a898532f970c5a397f8789ace0d5 Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Tue, 17 Jun 2014 19:12:40 -0400
+3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
 
-__verify_pcpu_ptr() is used to verify that a specified parameter is
-actually an percpu pointer by percpu accessor and operation
-implementations.  Currently, where it's called isn't clearly defined
-and we just ensure that it's invoked at least once for all accessors
-and operations.
+------------------
 
-The lack of clarity on when it should be called isn't nice and given
-that this is a completely generic issue, there's no reason to make
-archs worry about it.
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-This patch updates __verify_pcpu_ptr() invocations such that it's
-always invoked from the final generic wrapper once per access or
-operation.  As this is already the case for {raw|this}_cpu_*()
-definitions through __pcpu_size_*(), only the {raw|per|this}_cpu_ptr()
-accessors need to be updated.
+[ Upstream commit 41be7d90993b1502d445bfc59e58348c258ce66a ]
 
-This change makes it unnecessary for archs to worry about
-__verify_pcpu_ptr().  x86's arch_raw_cpu_ptr() is updated accordingly.
+A number of older CMOTech modems are based on Qualcomm
+chips and exporting a QMI/wwan function.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
+Reported-by: Lars Melin <larsm17@gmail.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
-Description updated to reflect dropping of data dependency barrier
-patch.
+ drivers/net/usb/qmi_wwan.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-Thanks.
-
- arch/x86/include/asm/percpu.h |  1 -
- include/linux/percpu-defs.h   | 29 +++++++++++++++++++++--------
- 2 files changed, 21 insertions(+), 9 deletions(-)
-
-diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
-index 9bc23f1..fd47218 100644
---- a/arch/x86/include/asm/percpu.h
-+++ b/arch/x86/include/asm/percpu.h
-@@ -55,7 +55,6 @@
- #define arch_raw_cpu_ptr(ptr)				\
- ({							\
- 	unsigned long tcp_ptr__;			\
--	__verify_pcpu_ptr(ptr);				\
- 	asm volatile("add " __percpu_arg(1) ", %0"	\
- 		     : "=r" (tcp_ptr__)			\
- 		     : "m" (this_cpu_off), "0" (ptr));	\
-diff --git a/include/linux/percpu-defs.h b/include/linux/percpu-defs.h
-index d8bb6e0..c93fff1 100644
---- a/include/linux/percpu-defs.h
-+++ b/include/linux/percpu-defs.h
-@@ -191,9 +191,12 @@
- #ifndef __ASSEMBLY__
- 
- /*
-- * Macro which verifies @ptr is a percpu pointer without evaluating
-- * @ptr.  This is to be used in percpu accessors to verify that the
-- * input parameter is a percpu pointer.
-+ * __verify_pcpu_ptr() verifies @ptr is a percpu pointer without evaluating
-+ * @ptr and is invoked once before a percpu area is accessed by all
-+ * accessors and operations.  This is performed in the generic part of
-+ * percpu and arch overrides don't need to worry about it; however, if an
-+ * arch wants to implement an arch-specific percpu accessor or operation,
-+ * it may use __verify_pcpu_ptr() to verify the parameters.
-  *
-  * + 0 is required in order to convert the pointer type from a
-  * potential array type to a pointer to a single item of the array.
-@@ -212,16 +215,26 @@ do {									\
-  * pointer value.  The weird cast keeps both GCC and sparse happy.
-  */
- #define SHIFT_PERCPU_PTR(__p, __offset)					\
-+	RELOC_HIDE((typeof(*(__p)) __kernel __force *)(__p), (__offset))
-+
-+#define per_cpu_ptr(ptr, cpu)						\
- ({									\
--	__verify_pcpu_ptr(__p);						\
--	RELOC_HIDE((typeof(*(__p)) __kernel __force *)(__p), (__offset)); \
-+	__verify_pcpu_ptr(ptr);						\
-+	SHIFT_PERCPU_PTR((ptr), per_cpu_offset((cpu)));			\
- })
- 
--#define per_cpu_ptr(ptr, cpu)	SHIFT_PERCPU_PTR(ptr, per_cpu_offset(cpu))
--#define raw_cpu_ptr(ptr)	arch_raw_cpu_ptr(ptr)
-+#define raw_cpu_ptr(ptr)						\
-+({									\
-+	__verify_pcpu_ptr(ptr);						\
-+	arch_raw_cpu_ptr(ptr);						\
-+})
- 
- #ifdef CONFIG_DEBUG_PREEMPT
--#define this_cpu_ptr(ptr) SHIFT_PERCPU_PTR(ptr, my_cpu_offset)
-+#define this_cpu_ptr(ptr)						\
-+({									\
-+	__verify_pcpu_ptr(ptr);						\
-+	SHIFT_PERCPU_PTR(ptr, my_cpu_offset);				\
-+})
- #else
- #define this_cpu_ptr(ptr) raw_cpu_ptr(ptr)
- #endif
+diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+index b4fa268..c1dc9ce 100644
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -662,6 +662,22 @@ static const struct usb_device_id products[] = {
+ 	{QMI_FIXED_INTF(0x05c6, 0x920d, 5)},
+ 	{QMI_FIXED_INTF(0x12d1, 0x140c, 1)},	/* Huawei E173 */
+ 	{QMI_FIXED_INTF(0x12d1, 0x14ac, 1)},	/* Huawei E1820 */
++	{QMI_FIXED_INTF(0x16d8, 0x6003, 0)},	/* CMOTech 6003 */
++	{QMI_FIXED_INTF(0x16d8, 0x6007, 0)},	/* CMOTech CHE-628S */
++	{QMI_FIXED_INTF(0x16d8, 0x6008, 0)},	/* CMOTech CMU-301 */
++	{QMI_FIXED_INTF(0x16d8, 0x6280, 0)},	/* CMOTech CHU-628 */
++	{QMI_FIXED_INTF(0x16d8, 0x7001, 0)},	/* CMOTech CHU-720S */
++	{QMI_FIXED_INTF(0x16d8, 0x7002, 0)},	/* CMOTech 7002 */
++	{QMI_FIXED_INTF(0x16d8, 0x7003, 4)},	/* CMOTech CHU-629K */
++	{QMI_FIXED_INTF(0x16d8, 0x7004, 3)},	/* CMOTech 7004 */
++	{QMI_FIXED_INTF(0x16d8, 0x7006, 5)},	/* CMOTech CGU-629 */
++	{QMI_FIXED_INTF(0x16d8, 0x700a, 4)},	/* CMOTech CHU-629S */
++	{QMI_FIXED_INTF(0x16d8, 0x7211, 0)},	/* CMOTech CHU-720I */
++	{QMI_FIXED_INTF(0x16d8, 0x7212, 0)},	/* CMOTech 7212 */
++	{QMI_FIXED_INTF(0x16d8, 0x7213, 0)},	/* CMOTech 7213 */
++	{QMI_FIXED_INTF(0x16d8, 0x7251, 1)},	/* CMOTech 7251 */
++	{QMI_FIXED_INTF(0x16d8, 0x7252, 1)},	/* CMOTech 7252 */
++	{QMI_FIXED_INTF(0x16d8, 0x7253, 1)},	/* CMOTech 7253 */
+ 	{QMI_FIXED_INTF(0x19d2, 0x0002, 1)},
+ 	{QMI_FIXED_INTF(0x19d2, 0x0012, 1)},
+ 	{QMI_FIXED_INTF(0x19d2, 0x0017, 3)},
 -- 
-1.9.3
+1.9.1
 
