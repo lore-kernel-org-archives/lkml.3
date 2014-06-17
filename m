@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964984AbaFQQXF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:23:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50708 "EHLO
+	id S965001AbaFQQXM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:23:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50720 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964948AbaFQQXB (ORCPT
+	with ESMTP id S964948AbaFQQXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:23:01 -0400
+	Tue, 17 Jun 2014 12:23:07 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 092/121] net: qmi_wwan: add a number of Dell devices
-Date: Tue, 17 Jun 2014 09:17:50 -0700
-Message-Id: <1403021899-16708-65-git-send-email-kamal@canonical.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 098/121] ftrace/module: Hardcode ftrace_module_init() call into load_module()
+Date: Tue, 17 Jun 2014 09:17:56 -0700
+Message-Id: <1403021899-16708-71-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,55 +26,159 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-[ Upstream commit 6f10c5d1b1aeddb63d33070abb8bc5a177beeb1f ]
+commit a949ae560a511fe4e3adf48fa44fefded93e5c2b upstream.
 
-Dan writes:
+A race exists between module loading and enabling of function tracer.
 
-"The Dell drivers use the same configuration for PIDs:
+	CPU 1				CPU 2
+	-----				-----
+  load_module()
+   module->state = MODULE_STATE_COMING
 
-81A2: Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card
-81A3: Dell Wireless 5570 HSPA+ (42Mbps) Mobile Broadband Card
-81A4: Dell Wireless 5570e HSPA+ (42Mbps) Mobile Broadband Card
-81A8: Dell Wireless 5808 Gobi(TM) 4G LTE Mobile Broadband Card
-81A9: Dell Wireless 5808e Gobi(TM) 4G LTE Mobile Broadband Card
+				register_ftrace_function()
+				 mutex_lock(&ftrace_lock);
+				 ftrace_startup()
+				  update_ftrace_function();
+				   ftrace_arch_code_modify_prepare()
+				    set_all_module_text_rw();
+				   <enables-ftrace>
+				    ftrace_arch_code_modify_post_process()
+				     set_all_module_text_ro();
 
-These devices are all clearly Sierra devices, but are also definitely
-Gobi-based.  The A8 might be the MC7700/7710 and A9 is likely a MC7750.
+				[ here all module text is set to RO,
+				  including the module that is
+				  loading!! ]
 
->From DellGobi5kSetup.exe from the Dell drivers:
+   blocking_notifier_call_chain(MODULE_STATE_COMING);
+    ftrace_init_module()
 
-usbif0: serial/firmware loader?
-usbif2: nmea
-usbif3: modem/ppp
-usbif8: net/QMI"
+     [ tries to modify code, but it's RO, and fails!
+       ftrace_bug() is called]
 
-Reported-by: AceLan Kao <acelan.kao@canonical.com>
-Reported-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+When this race happens, ftrace_bug() will produces a nasty warning and
+all of the function tracing features will be disabled until reboot.
+
+The simple solution is to treate module load the same way the core
+kernel is treated at boot. To hardcode the ftrace function modification
+of converting calls to mcount into nops. This is done in init/main.c
+there's no reason it could not be done in load_module(). This gives
+a better control of the changes and doesn't tie the state of the
+module to its notifiers as much. Ftrace is special, it needs to be
+treated as such.
+
+The reason this would work, is that the ftrace_module_init() would be
+called while the module is in MODULE_STATE_UNFORMED, which is ignored
+by the set_all_module_text_ro() call.
+
+Link: http://lkml.kernel.org/r/1395637826-3312-1-git-send-email-indou.takao@jp.fujitsu.com
+
+Reported-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[ kamal: backport to 3.8: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/usb/qmi_wwan.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ include/linux/ftrace.h |  2 ++
+ kernel/module.c        |  3 +++
+ kernel/trace/ftrace.c  | 27 ++++-----------------------
+ 3 files changed, 9 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
-index 102eaf8..4f1397b 100644
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -604,6 +604,11 @@ static const struct usb_device_id products[] = {
- 	{QMI_FIXED_INTF(0x0b3c, 0xc00b, 4)},	/* Olivetti Olicard 500 */
- 	{QMI_FIXED_INTF(0x1e2d, 0x0060, 4)},	/* Cinterion PLxx */
- 	{QMI_FIXED_INTF(0x1e2d, 0x0053, 4)},	/* Cinterion PHxx,PXxx */
-+	{QMI_FIXED_INTF(0x413c, 0x81a2, 8)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card */
-+	{QMI_FIXED_INTF(0x413c, 0x81a3, 8)},	/* Dell Wireless 5570 HSPA+ (42Mbps) Mobile Broadband Card */
-+	{QMI_FIXED_INTF(0x413c, 0x81a4, 8)},	/* Dell Wireless 5570e HSPA+ (42Mbps) Mobile Broadband Card */
-+	{QMI_FIXED_INTF(0x413c, 0x81a8, 8)},	/* Dell Wireless 5808 Gobi(TM) 4G LTE Mobile Broadband Card */
-+	{QMI_FIXED_INTF(0x413c, 0x81a9, 8)},	/* Dell Wireless 5808e Gobi(TM) 4G LTE Mobile Broadband Card */
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 616603d..2d12e0b 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -516,6 +516,7 @@ static inline int ftrace_modify_call(struct dyn_ftrace *rec, unsigned long old_a
+ extern int ftrace_arch_read_dyn_info(char *buf, int size);
  
- 	/* 4. Gobi 1000 devices */
- 	{QMI_GOBI1K_DEVICE(0x05c6, 0x9212)},	/* Acer Gobi Modem Device */
+ extern int skip_trace(unsigned long ip);
++extern void ftrace_module_init(struct module *mod);
+ 
+ extern void ftrace_disable_daemon(void);
+ extern void ftrace_enable_daemon(void);
+@@ -525,6 +526,7 @@ static inline int ftrace_force_update(void) { return 0; }
+ static inline void ftrace_disable_daemon(void) { }
+ static inline void ftrace_enable_daemon(void) { }
+ static inline void ftrace_release_mod(struct module *mod) {}
++static inline void ftrace_module_init(struct module *mod) {}
+ static inline int register_ftrace_command(struct ftrace_func_command *cmd)
+ {
+ 	return -EINVAL;
+diff --git a/kernel/module.c b/kernel/module.c
+index af2c7e6..039aa33 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -3238,6 +3238,9 @@ again:
+ 
+ 	dynamic_debug_setup(info->debug, info->num_debug);
+ 
++	/* Ftrace init must be called in the MODULE_STATE_UNFORMED state */
++	ftrace_module_init(mod);
++
+ 	mutex_lock(&module_mutex);
+ 	/* Find duplicate symbols (must be called under lock). */
+ 	err = verify_export_symbols(mod);
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 384cb73..8ca28af 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -4048,16 +4048,11 @@ static void ftrace_init_module(struct module *mod,
+ 	ftrace_process_locs(mod, start, end);
+ }
+ 
+-static int ftrace_module_notify_enter(struct notifier_block *self,
+-				      unsigned long val, void *data)
++void ftrace_module_init(struct module *mod)
+ {
+-	struct module *mod = data;
+-
+-	if (val == MODULE_STATE_COMING)
+-		ftrace_init_module(mod, mod->ftrace_callsites,
+-				   mod->ftrace_callsites +
+-				   mod->num_ftrace_callsites);
+-	return 0;
++	ftrace_init_module(mod, mod->ftrace_callsites,
++			   mod->ftrace_callsites +
++			   mod->num_ftrace_callsites);
+ }
+ 
+ static int ftrace_module_notify_exit(struct notifier_block *self,
+@@ -4071,11 +4066,6 @@ static int ftrace_module_notify_exit(struct notifier_block *self,
+ 	return 0;
+ }
+ #else
+-static int ftrace_module_notify_enter(struct notifier_block *self,
+-				      unsigned long val, void *data)
+-{
+-	return 0;
+-}
+ static int ftrace_module_notify_exit(struct notifier_block *self,
+ 				     unsigned long val, void *data)
+ {
+@@ -4083,11 +4073,6 @@ static int ftrace_module_notify_exit(struct notifier_block *self,
+ }
+ #endif /* CONFIG_MODULES */
+ 
+-struct notifier_block ftrace_module_enter_nb = {
+-	.notifier_call = ftrace_module_notify_enter,
+-	.priority = INT_MAX,	/* Run before anything that can use kprobes */
+-};
+-
+ struct notifier_block ftrace_module_exit_nb = {
+ 	.notifier_call = ftrace_module_notify_exit,
+ 	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
+@@ -4124,10 +4109,6 @@ void __init ftrace_init(void)
+ 				  __start_mcount_loc,
+ 				  __stop_mcount_loc);
+ 
+-	ret = register_module_notifier(&ftrace_module_enter_nb);
+-	if (ret)
+-		pr_warning("Failed to register trace ftrace module enter notifier\n");
+-
+ 	ret = register_module_notifier(&ftrace_module_exit_nb);
+ 	if (ret)
+ 		pr_warning("Failed to register trace ftrace module exit notifier\n");
 -- 
 1.9.1
 
