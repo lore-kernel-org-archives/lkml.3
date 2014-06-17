@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966801AbaFQVvT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:51:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54554 "EHLO
+	id S966838AbaFQVvZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:51:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54577 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966746AbaFQVvO (ORCPT
+	with ESMTP id S966798AbaFQVvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:51:14 -0400
+	Tue, 17 Jun 2014 17:51:19 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 195/212] md: always set MD_RECOVERY_INTR when aborting a reshape or other "resync".
-Date: Tue, 17 Jun 2014 14:44:49 -0700
-Message-Id: <1403041506-13646-196-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 197/212] md: always set MD_RECOVERY_INTR when interrupting a reshape thread.
+Date: Tue, 17 Jun 2014 14:44:51 -0700
+Message-Id: <1403041506-13646-198-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -28,45 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: NeilBrown <neilb@suse.de>
 
-commit 3991b31ea072b070081ca3bfa860a077eda67de5 upstream.
+commit 2ac295a544dcae9299cba13ce250419117ae7fd1 upstream.
 
-If mddev->ro is set, md_to_sync will (correctly) abort.
-However in that case MD_RECOVERY_INTR isn't set.
+Commit 8313b8e57f55b15e5b7f7fc5d1630bbf686a9a97
+   md: fix problem when adding device to read-only array with bitmap.
 
-If a RESHAPE had been requested, then ->finish_reshape() will be
-called and it will think the reshape was successful even though
-nothing happened.
+added a called to md_reap_sync_thread() which cause a reshape thread
+to be interrupted (in particular, it could cause md_thread() to never even
+call md_do_sync()).
+However it didn't set MD_RECOVERY_INTR so ->finish_reshape() would not
+know that the reshape didn't complete.
 
-Normally a resync will not be requested if ->ro is set, but if an
-array is stopped while a reshape is on-going, then when the array is
-started, the reshape will be restarted.  If the array is also set
-read-only at this point, the reshape will instantly appear to success,
-resulting in data corruption.
+This only happens when mddev->ro is set and normally reshape threads
+don't run in that situation.  But raid5 and raid10 can start a reshape
+thread during "run" is the array is in the middle of a reshape.
+They do this even if ->ro is set.
 
-Consequently, this patch is suitable for any -stable kernel.
+So it is best to set MD_RECOVERY_INTR before abortingg the
+sync thread, just in case.
 
+Though it rare for this to trigger a problem it can cause data corruption
+because the reshape isn't finished properly.
+So it is suitable for any stable which the offending commit was applied to.
+(3.2 or later)
+
+Fixes: 8313b8e57f55b15e5b7f7fc5d1630bbf686a9a97
 Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/md.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/md/md.c | 1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/drivers/md/md.c b/drivers/md/md.c
-index ddb71d8..c0ceacf 100644
+index c0ceacf..aa0eba3 100644
 --- a/drivers/md/md.c
 +++ b/drivers/md/md.c
-@@ -7358,8 +7358,10 @@ void md_do_sync(struct md_thread *thread)
- 	/* just incase thread restarts... */
- 	if (test_bit(MD_RECOVERY_DONE, &mddev->recovery))
- 		return;
--	if (mddev->ro) /* never try to sync a read-only array */
-+	if (mddev->ro) {/* never try to sync a read-only array */
-+		set_bit(MD_RECOVERY_INTR, &mddev->recovery);
- 		return;
-+	}
- 
- 	if (test_bit(MD_RECOVERY_SYNC, &mddev->recovery)) {
- 		if (test_bit(MD_RECOVERY_CHECK, &mddev->recovery)) {
+@@ -7802,6 +7802,7 @@ void md_check_recovery(struct mddev *mddev)
+ 			/* There is no thread, but we need to call
+ 			 * ->spare_active and clear saved_raid_disk
+ 			 */
++			set_bit(MD_RECOVERY_INTR, &mddev->recovery);
+ 			md_reap_sync_thread(mddev);
+ 			clear_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
+ 			goto unlock;
 -- 
 1.9.1
 
