@@ -1,134 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679AbaFQFfb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 01:35:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5626 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932510AbaFQFf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 01:35:29 -0400
-Message-ID: <1402983303.3707.94.camel@ul30vt.home>
-Subject: Re: [PATCH v2] iommu/intel: Exclude devices using RMRRs from IOMMU
- API domains
-From: Alex Williamson <alex.williamson@redhat.com>
-To: iommu@lists.linux-foundation.org
-Cc: dwmw2@infradead.org, chegu_vinod@hp.com, linux-kernel@vger.kernel.org
-Date: Mon, 16 Jun 2014 23:35:03 -0600
-In-Reply-To: <20140613162901.4550.94476.stgit@bling.home>
-References: <20140613162901.4550.94476.stgit@bling.home>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932446AbaFQFjW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 01:39:22 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:45426 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932093AbaFQFjU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 01:39:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140617053332.GA9117@glanzmann.de>
+References: <20140613095820.GA21162@glanzmann.de>
+	<CACAvsv5dVMKcF67SO1qT=Foh4F0DkHeWNUztf8sQf++8GF-eMw@mail.gmail.com>
+	<20140617053332.GA9117@glanzmann.de>
+Date: Tue, 17 Jun 2014 15:39:19 +1000
+Message-ID: <CACAvsv6nyu4cw6Yc1r5L8XNbS_Dyrka7o1JH=2Kc6URUWVcxjA@mail.gmail.com>
+Subject: Re: [Nouveau] REGRESSION: Kernel PANIC 8777c5c11764d8336d8270f96778158c34c92108
+ - drm/nouveau/dp: probe dpcd to determine connectedness
+From: Ben Skeggs <skeggsb@gmail.com>
+To: Ben Skeggs <skeggsb@gmail.com>, Ben Skeggs <bskeggs@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        nouveau <nouveau@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-13 at 10:30 -0600, Alex Williamson wrote:
-> The user of the IOMMU API domain expects to have full control of
-> the IOVA space for the domain.  RMRRs are fundamentally incompatible
-> with that idea.  We can neither map the RMRR into the IOMMU API
-> domain, nor can we guarantee that the device won't continue DMA with
-> the area described by the RMRR as part of the new domain.  Therefore
-> we must prevent such devices from being used by the IOMMU API.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> Cc: stable@vger.kernel.org
-> ---
+On Tue, Jun 17, 2014 at 3:33 PM, Thomas Glanzmann <thomas@glanzmann.de> wrote:
+> Hello Ben,
+>
+>> Are you able to double-check that bisect?  I'm not at all sure how
+>> that particular commit could trigger the issue you're seeing.  Some of
+>> the others, certainly.  It might be worth trying a couple of times
+>> before marking something as "good", in case there's a timing aspect to
+>> the problem.
+>
+> please CC me, otherwise I might not see your message. The bug is very
+> clear, I boot my machine, the screen turns black as soon as the X server
+> is booted and the system does not ping anymore. I rebooted several times
+> before the bisect and the bug always hit me. For my taste the offending
+> commit is to large. So maybe I can split it in multiple smaller commits
+> and than debug it. However I'm currently out of the office, so maybe
+> tomorrow. If you do any progress on this, please CC me in order to avoid
+> duplicate effort.
+8777c5c11764d8336d8270f96778158c34c92108 (which is mentioned as the
+first bad commit above...) is a tiny commit, so I have no idea what
+you mean by "too large for your taste".
 
-David,
-
-Any idea what an off-the-shelf Asus motherboard would be doing with an
-RMRR on the Intel HD graphics?
-
-dmar: RMRR base: 0x000000bb800000 end: 0x000000bf9fffff
-IOMMU: Setting identity map for device 0000:00:02.0 [0xbb800000 - 0xbf9fffff]
+In any case, I encountered the oops myself earlier (absolutely nothing
+to do with that commit) and fixed it here.  I've sent it onto Dave for
+the next -fixes merge, so hopefully it'll help your case too.
 
 Thanks,
+Ben.
 
-Alex
-
-> v2: consolidate test to a single, well documented function.
-> 
->  drivers/iommu/intel-iommu.c |   49 ++++++++++++++++++++++++++++++++++---------
->  1 file changed, 39 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-> index c4f11c0..253d598 100644
-> --- a/drivers/iommu/intel-iommu.c
-> +++ b/drivers/iommu/intel-iommu.c
-> @@ -2511,22 +2511,46 @@ static bool device_has_rmrr(struct device *dev)
->  	return false;
->  }
->  
-> +/*
-> + * There are a couple cases where we need to restrict the functionality of
-> + * devices associated with RMRRs.  The first is when evaluating a device for
-> + * identity mapping because problems exist when devices are moved in and out
-> + * of domains and their respective RMRR information is lost.  This means that
-> + * a device with associated RMRRs will never be in a "passthrough" domain.
-> + * The second is use of the device through the IOMMU API.  This interface
-> + * expects to have full control of the IOVA space for the device.  We cannot
-> + * satisfy both the requirement that RMRR access is maintained and have an
-> + * unencumbered IOVA space.  We also have no ability to quiesce the device's
-> + * use of the RMRR space or even inform the IOMMU API user of the restriction.
-> + * We therefore prevent devices associated with an RMRR from participating in
-> + * the IOMMU API, which eliminates them from device assignment.
-> + *
-> + * In both cases we assume that PCI USB devices with RMRRs have them largely
-> + * for historical reasons and that the RMRR space is not actively used post
-> + * boot.  This exclusion may change if vendors begin to abuse it.
-> + */
-> +static bool device_is_rmrr_locked(struct device *dev)
-> +{
-> +	if (!device_has_rmrr(dev))
-> +		return false;
-> +
-> +	if (dev_is_pci(dev)) {
-> +		struct pci_dev *pdev = to_pci_dev(dev);
-> +
-> +		if ((pdev->class >> 8) == PCI_CLASS_SERIAL_USB)
-> +			return false;
-> +	}
-> +
-> +	return true;
-> +}
-> +
->  static int iommu_should_identity_map(struct device *dev, int startup)
->  {
->  
->  	if (dev_is_pci(dev)) {
->  		struct pci_dev *pdev = to_pci_dev(dev);
->  
-> -		/*
-> -		 * We want to prevent any device associated with an RMRR from
-> -		 * getting placed into the SI Domain. This is done because
-> -		 * problems exist when devices are moved in and out of domains
-> -		 * and their respective RMRR info is lost. We exempt USB devices
-> -		 * from this process due to their usage of RMRRs that are known
-> -		 * to not be needed after BIOS hand-off to OS.
-> -		 */
-> -		if (device_has_rmrr(dev) &&
-> -		    (pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
-> +		if (device_is_rmrr_locked(dev))
->  			return 0;
->  
->  		if ((iommu_identity_mapping & IDENTMAP_AZALIA) && IS_AZALIA(pdev))
-> @@ -4171,6 +4195,11 @@ static int intel_iommu_attach_device(struct iommu_domain *domain,
->  	int addr_width;
->  	u8 bus, devfn;
->  
-> +	if (device_is_rmrr_locked(dev)) {
-> +		dev_warn(dev, "Device is ineligible for IOMMU domain attach due to platform RMRR requirement.  Contact your platform vendor.\n");
-> +		return -EPERM;
-> +	}
-> +
->  	/* normally dev is not mapped */
->  	if (unlikely(domain_context_mapped(dev))) {
->  		struct dmar_domain *old_domain;
-> 
-> _______________________________________________
-> iommu mailing list
-> iommu@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/iommu
-
-
-
+>
+> Cheers,
+>         Thomas
