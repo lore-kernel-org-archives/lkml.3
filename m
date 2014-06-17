@@ -1,56 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933702AbaFQQBM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:01:12 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:35293 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933337AbaFQQBJ (ORCPT
+	id S964853AbaFQQBb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:01:31 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:60220 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933705AbaFQQB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:01:09 -0400
+	Tue, 17 Jun 2014 12:01:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFpqb=pSR0ZKXdgqJOAWioC+x2OqA7nVR4Q74iVQPfqXMg@mail.gmail.com>
-References: <1402189798-7665-1-git-send-email-houcheng@gmail.com>
-	<CAPDyKFpqb=pSR0ZKXdgqJOAWioC+x2OqA7nVR4Q74iVQPfqXMg@mail.gmail.com>
-Date: Wed, 18 Jun 2014 00:01:08 +0800
-Message-ID: <CAL8JtxB3DoWRwox4zn5mkP6UjejPWUYxzmuxZMLPxyMmPW8MNg@mail.gmail.com>
-Subject: Re: [RFC PATCH] gpio: Add a defer reset object to send board specific reset
-From: Houcheng Lin <houcheng@gmail.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+In-Reply-To: <20140617145419.GE4669@linux.vnet.ibm.com>
+References: <539FAE21.7070702@gmail.com>
+	<20140617145419.GE4669@linux.vnet.ibm.com>
+Date: Tue, 17 Jun 2014 12:01:28 -0400
+Message-ID: <CAJKcOGdUDwdmdkpd0dw5xO9+TK=9W9fvF9Q+f5F_b4R8cEgdTA@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/1] kernel/rcu/tree.c: simplify force_quiescent_state()
+From: Romanov Arya <romanov.arya@gmail.com>
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Pranith Kumar <bobby.prani@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
+        Waiman.Long@hp.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-2014-06-16 21:18 GMT+08:00 Ulf Hansson <ulf.hansson@linaro.org>:
+On Tue, Jun 17, 2014 at 10:54 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Mon, Jun 16, 2014 at 10:55:29PM -0400, Pranith Kumar wrote:
+>> This might sound really naive, but please bear with me.
+>>
+>> force_quiescent_state() used to do a lot of things in the past in addition to
+>> forcing a quiescent state. (In my reading of the mailing list I found state
+>> transitions for one).
+>>
+>> Now according to the code, what is being done is multiple callers try to go up
+>> the hierarchy of nodes to see who reaches the root node. The caller reaching the
+>> root node wins and it acquires root node lock and it gets to set rsp->gp_flags!
+>>
+>> At each level of the hierarchy we try to acquire fqslock. This is the only place
+>> which actually uses fqslock.
+>>
+>> I guess this was being done to avoid the contention on fqslock, but all we are
+>> doing here is setting one flag. This way of acquiring locks might reduce
+>> contention if every update is trying to do some independent work, but here all
+>> we are doing is setting the same flag with same value.
 >
-> If I understand correct, you need a per device reset functionality?
-> And obviously the reset implementation is board/SoC specific.
+> Actually, to reduce contention on rnp_root->lock.
 >
-> We have the "Reset Controller framework", drivers/reset. Could this help you?
+> The trick is that the "losers" at each level of ->fqslock acquisition go
+> away.  The "winner" ends up doing the real work of setting RCU_GP_FLAG_FQS.
 >
-> Kind regards
-> Ulf Hansson
+>> We can also remove fqslock completely if we do not need this. Also using
+>> cmpxchg() to set the value of the flag looks like a good idea to avoid taking
+>> the root node lock. Thoughts?
 >
+> The ->fqslock funnel was needed to avoid lockups on large systems (many
+> hundreds or even thousands of CPUs).  Moving grace-period responsibilities
+> from softirq to the grace-period kthreads might have reduced contention
+> sufficienty to make the ->fqslock funnel unnecessary.  However, given
+> that I don't usually have access to such a large system, I will leave it,
+> at least for the time being.
 
-Thanks for your information. The defer reset object is to send
-board specific reset signal and this signal has to be sent after
-some device is intialized. For example, a USB device may need extra
-reset signal after root hub is initialized.
+Sounds like a good case study for using the newly introduced MCS based
+locks(qspinlock.h).
+Waiman, Peter?
 
-As machine init code is run before driver init-call, can not add reset
-sending here if it depends on a specific device's initialization.
+Btw, is doing the following a bad idea? It reduces contention on
+rnp_root->lock using fqslock
+which seems to be the lock which needs to be taken while forcing a
+quiescent state:
 
-Also it provides a DT node that helps both HW/SW developer to use this
-feature.
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index f1ba773..f5a0e7e 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -2401,34 +2401,24 @@ static void force_quiescent_state(struct rcu_state *rsp)
+     unsigned long flags;
+     bool ret;
+     struct rcu_node *rnp;
+-    struct rcu_node *rnp_old = NULL;
+-
+-    /* Funnel through hierarchy to reduce memory contention. */
+-    rnp = per_cpu_ptr(rsp->rda, raw_smp_processor_id())->mynode;
+-    for (; rnp != NULL; rnp = rnp->parent) {
+-        ret = (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) ||
+-              !raw_spin_trylock(&rnp->fqslock);
+-        if (rnp_old != NULL)
+-            raw_spin_unlock(&rnp_old->fqslock);
+-        if (ret) {
+-            ACCESS_ONCE(rsp->n_force_qs_lh)++;
+-            return;
+-        }
+-        rnp_old = rnp;
++    struct rcu_node *rnp_root = rcu_get_root(rsp);
++
++    if (!raw_spin_trylock(rnp_root->fqslock)) {
++        ACCESS_ONCE(rsp->n_force_qs_lh)++;
++        return;  /* Someone is already trying to force */
+     }
+-    /* rnp_old == rcu_get_root(rsp), rnp == NULL. */
 
-Best regards,
-Houcheng Lin
+-    /* Reached the root of the rcu_node tree, acquire lock. */
+-    raw_spin_lock_irqsave(&rnp_old->lock, flags);
+-    smp_mb__after_unlock_lock();
+-    raw_spin_unlock(&rnp_old->fqslock);
+     if (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) {
+         ACCESS_ONCE(rsp->n_force_qs_lh)++;
+-        raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
++        raw_spin_unlock(rnp_root->fqslock);
+         return;  /* Someone beat us to it. */
+     }
++
++    /* Reached the root of the rcu_node tree, acquire lock. */
++    raw_spin_lock_irqsave(&rnp_root->lock, flags);
++    smp_mb__after_unlock_lock();
+     ACCESS_ONCE(rsp->gp_flags) |= RCU_GP_FLAG_FQS;
+-    raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
++    raw_spin_unlock_irqrestore(&rnp_root->lock, flags);
+     wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
+ }
+
+Regards,
+Romanov
+
+>
+> But you might be interested in thinking through what else would need to
+> change in order to make cmpxchg() work.  ;-)
+>
+>                                                         Thanx, Paul
+>
+>> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+>> ---
+>>  kernel/rcu/tree.c | 35 +++++++++++++----------------------
+>>  1 file changed, 13 insertions(+), 22 deletions(-)
+>>
+>> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+>> index f1ba773..9a46f32 100644
+>> --- a/kernel/rcu/tree.c
+>> +++ b/kernel/rcu/tree.c
+>> @@ -2399,36 +2399,27 @@ static void force_qs_rnp(struct rcu_state *rsp,
+>>  static void force_quiescent_state(struct rcu_state *rsp)
+>>  {
+>>       unsigned long flags;
+>> -     bool ret;
+>> -     struct rcu_node *rnp;
+>> -     struct rcu_node *rnp_old = NULL;
+>> -
+>> -     /* Funnel through hierarchy to reduce memory contention. */
+>> -     rnp = per_cpu_ptr(rsp->rda, raw_smp_processor_id())->mynode;
+>> -     for (; rnp != NULL; rnp = rnp->parent) {
+>> -             ret = (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) ||
+>> -                   !raw_spin_trylock(&rnp->fqslock);
+>> -             if (rnp_old != NULL)
+>> -                     raw_spin_unlock(&rnp_old->fqslock);
+>> -             if (ret) {
+>> -                     ACCESS_ONCE(rsp->n_force_qs_lh)++;
+>> -                     return;
+>> -             }
+>> -             rnp_old = rnp;
+>> +     struct rcu_node *rnp_root = rcu_get_root(rsp);
+>> +
+>> +     /* early test to see if someone already forced a quiescent state
+>> +      */
+>> +     if (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) {
+>> +             ACCESS_ONCE(rsp->n_force_qs_lh)++;
+>> +             return;  /* Someone beat us to it. */
+>>       }
+>> -     /* rnp_old == rcu_get_root(rsp), rnp == NULL. */
+>>
+>>       /* Reached the root of the rcu_node tree, acquire lock. */
+>> -     raw_spin_lock_irqsave(&rnp_old->lock, flags);
+>> +     raw_spin_lock_irqsave(&rnp_root->lock, flags);
+>>       smp_mb__after_unlock_lock();
+>> -     raw_spin_unlock(&rnp_old->fqslock);
+>>       if (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) {
+>>               ACCESS_ONCE(rsp->n_force_qs_lh)++;
+>> -             raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
+>> -             return;  /* Someone beat us to it. */
+>> +             raw_spin_unlock_irqrestore(&rnp_root->lock, flags);
+>> +             return;  /* Someone actually beat us to it. */
+>>       }
+>> +
+>> +     /* can we use cmpxchg instead of the above lock? */
+>>       ACCESS_ONCE(rsp->gp_flags) |= RCU_GP_FLAG_FQS;
+>> -     raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
+>> +     raw_spin_unlock_irqrestore(&rnp_root->lock, flags);
+>>       wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
+>>  }
+>>
+>> --
+>> 1.9.1
+>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
