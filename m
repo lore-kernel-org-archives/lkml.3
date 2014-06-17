@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933095AbaFQOZa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 10:25:30 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:52874 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932585AbaFQOZ2 (ORCPT
+	id S933111AbaFQO0N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 10:26:13 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:38604 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932935AbaFQO0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 10:25:28 -0400
-Date: Tue, 17 Jun 2014 15:25:06 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: Re: [RFC PATCH] mfd: syscon: add child device support
-Message-ID: <20140617142506.GA29841@lee--X1>
-References: <1401198917-16077-1-git-send-email-p.zabel@pengutronix.de>
+	Tue, 17 Jun 2014 10:26:11 -0400
+Date: Tue, 17 Jun 2014 10:26:10 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] USB: EHCI: tegra: Fix use-after-free in .remove()
+In-Reply-To: <1403014660-15509-1-git-send-email-ttynkkynen@nvidia.com>
+Message-ID: <Pine.LNX.4.44L0.1406171025530.1187-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401198917-16077-1-git-send-email-p.zabel@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FAO DT chaps,
+On Tue, 17 Jun 2014, Tuomas Tynkkynen wrote:
 
-I'd be interested to hear your opinion about this.
-
-> For devices which have a complete register for themselves, it is possible to
-> place them next to the syscon device with overlapping reg ranges. The same is
-> not possible for devices which only occupy bitfields in registers shared with
-> other users.
-> For devices that are completely controlled by bitfields in the syscon address
-> range, such as multiplexers or voltage regulators, allow to put child devices
-> into the syscon device node.
+> The tegra_ehci_hcd structure is located in the private space allocated
+> by the core USB code so it must not be accessed after the HCD is
+> freed.
 > 
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 > ---
->  Documentation/devicetree/bindings/mfd/syscon.txt | 11 +++++++++++
->  drivers/mfd/syscon.c                             |  2 ++
->  2 files changed, 13 insertions(+)
+>  drivers/usb/host/ehci-tegra.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> diff --git a/Documentation/devicetree/bindings/mfd/syscon.txt b/Documentation/devicetree/bindings/mfd/syscon.txt
-> index fe8150b..a7e11d5 100644
-> --- a/Documentation/devicetree/bindings/mfd/syscon.txt
-> +++ b/Documentation/devicetree/bindings/mfd/syscon.txt
-> @@ -9,10 +9,21 @@ using a specific compatible value), interrogate the node (or associated
->  OS driver) to determine the location of the registers, and access the
->  registers directly.
+> diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+> index 6fdcb8a..5590567 100644
+> --- a/drivers/usb/host/ehci-tegra.c
+> +++ b/drivers/usb/host/ehci-tegra.c
+> @@ -479,10 +479,11 @@ static int tegra_ehci_remove(struct platform_device *pdev)
 >  
-> +Optionally, devices that are only controlled through single syscon
-> +registers or bitfields can also be added as child nodes to the syscon
-> +device node. These devices can implicitly assume their parent node
-> +as syscon provider without referencing it explicitly via phandle.
-> +In this case, the syscon node should have #address-cells = <1> and
-> +#size-cells = <0> and no ranges property.
-> +
->  Required properties:
->  - compatible: Should contain "syscon".
->  - reg: the register region can be accessed from syscon
+>  	usb_phy_shutdown(hcd->phy);
+>  	usb_remove_hcd(hcd);
+> -	usb_put_hcd(hcd);
 >  
-> +Optional properties:
-> +- #address-cells: Should be 1.
-> +- #size-cells: Should be 0.
-> +
->  Examples:
->  gpr: iomuxc-gpr@020e0000 {
->  	compatible = "fsl,imx6q-iomuxc-gpr", "syscon";
-> diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
-> index dbea55d..1dde475 100644
-> --- a/drivers/mfd/syscon.c
-> +++ b/drivers/mfd/syscon.c
-> @@ -147,6 +147,8 @@ static int syscon_probe(struct platform_device *pdev)
+>  	clk_disable_unprepare(tegra->clk);
 >  
->  	dev_dbg(dev, "regmap %pR registered\n", res);
->  
-> +	of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
+> +	usb_put_hcd(hcd);
 > +
 >  	return 0;
 >  }
->  
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
