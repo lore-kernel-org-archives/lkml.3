@@ -1,55 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753791AbaFQBAb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 21:00:31 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:57900 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753423AbaFQBA3 (ORCPT
+	id S1753914AbaFQBEf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 21:04:35 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:55404 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751592AbaFQBEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 21:00:29 -0400
-Date: Mon, 16 Jun 2014 17:59:07 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] hugetlb: fix copy_hugetlb_page_range() to handle
- migration/hwpoisoned entry
-In-Reply-To: <20140616195950.GA21801@nhori.bos.redhat.com>
-Message-ID: <alpine.LSU.2.11.1406161750520.1190@eggly.anvils>
-References: <1402081620-1247-1-git-send-email-n-horiguchi@ah.jp.nec.com> <alpine.LSU.2.11.1406151642020.25482@eggly.anvils> <20140616195950.GA21801@nhori.bos.redhat.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Mon, 16 Jun 2014 21:04:34 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s5H140UP008394, This message is accepted by code: ctloc85258
+Message-ID: <539F9521.50706@realsil.com.cn>
+Date: Tue, 17 Jun 2014 09:08:49 +0800
+From: micky <micky_ching@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Lee Jones <lee.jones@linaro.org>
+CC: <sameo@linux.intel.com>, <chris@printf.net>, <ulf.hansson@linaro.org>,
+        <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <dan.carpenter@oracle.com>, <rogerable@realtek.com>,
+        <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH 1/2] mfd: rtsx: add dma transfer function
+References: <cover.1402037562.git.micky_ching@realsil.com.cn> <9021eae37d96aa027d00ae4a7b6cd84dbbd1b6b5.1402037564.git.micky_ching@realsil.com.cn> <20140616122032.GS14323@lee--X1>
+In-Reply-To: <20140616122032.GS14323@lee--X1>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jun 2014, Naoya Horiguchi wrote:
-> On Sun, Jun 15, 2014 at 05:19:29PM -0700, Hugh Dickins wrote:
-> > 
-> > Hold on, that restriction of hugepage migration was marked for stable
-> > 3.12+, whereas this is marked for stable 2.6.36+ (a glance at my old
-> > trees suggests 2.6.37+, but you may know better - perhaps hugepage
-> > migration got backported to 2.6.36-stable, though hardly seems
-> > stable material).
-> 
-> Sorry, I misinterpreted one thing.
-> I thought hugepage migration was merged at 2.6.36 because git-describe
-> shows v2.6.36-rc7-73-g290408d4a2 for commit 290408d4a2 "hugetlb: hugepage
-> migration core." But actually that's merged at commit f1ebdd60cc, or
-> v2.6.36-5792-gf1ebdd60cc73. So this is 2.6.37 stuff.
-> 
-> Originally hugepage migration was used only for soft offlining in
-> mm/memory-failure.c which is available only in x86_64, so we implicitly
-> assumed that hugepage migration was restricted to x86_64.
-> At 3.12, hugepage migration became available for numa APIs like mbind(),
-> which are used for other architectures, so the restriction with
-> hugepage_migration_supported() became necessary since then.
-> This is the reason why the disablement was marked for 3.12+.
-> This patch are helpful before extension in 3.12, so it should be marked 2.6.37+.
+On 06/16/2014 08:20 PM, Lee Jones wrote:
+> I don't see any glaring issues with this patch.  Does it rely on the
+> first patch, or vise versa, or can it just be applied?
+Hi Jones,
 
-That all makes sense to me now: thanks a lot for explaining the history.
+[PATCH 2/2] need function defined in [PATCH 1/2]，
+so we provide interface in [mfd] and called in [mmc].
 
-Hugh
+Best Regards.
+micky.
