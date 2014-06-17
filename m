@@ -1,145 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965100AbaFQQYE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:24:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50799 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965080AbaFQQXz (ORCPT
+	id S933985AbaFQQYT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:24:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:9856 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964824AbaFQQYP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:23:55 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Egbert Eich <eich@suse.de>, Jani Nikula <jani.nikula@linux.intel.com>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 108/121] drm/i915: Break encoder->crtc link separately in intel_sanitize_crtc()
-Date: Tue, 17 Jun 2014 09:18:06 -0700
-Message-Id: <1403021899-16708-81-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
-References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 17 Jun 2014 12:24:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,495,1400050800"; 
+   d="scan'208";a="556877156"
+From: "Dilger, Andreas" <andreas.dilger@intel.com>
+To: Anil Belur <askb23@gmail.com>, "Drokin, Oleg" <oleg.drokin@intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpdd-discuss@lists.01.org" <hpdd-discuss@ml01.01.org>
+Subject: Re: [PATCH v6 7/8] staging: lustre: lclient: lcommon_cl.c fixing
+ coding style issues
+Thread-Topic: [PATCH v6 7/8] staging: lustre: lclient: lcommon_cl.c fixing
+ coding style issues
+Thread-Index: AQHPie/HHDHzDcNn/kms2lFugs0Jgpt1jf6A
+Date: Tue, 17 Jun 2014 16:23:01 +0000
+Message-ID: <CFC5C64E.ABDAF%andreas.dilger@intel.com>
+References: <1402983839-3549-1-git-send-email-askb23@gmail.com>
+ <1402983839-3549-8-git-send-email-askb23@gmail.com>
+In-Reply-To: <1402983839-3549-8-git-send-email-askb23@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.252.132.85]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <11A5DEF70A92084689CAC01B2252F690@intel.com>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.24 -stable review patch.  If anyone has any objections, please let me know.
+On 2014/06/16, 11:43 PM, "Anil Belur" <askb23@gmail.com> wrote:
 
-------------------
+>From: Anil Belur <askb23@gmail.com>
+>
+>fixed: WARNING: line over 80 characters, used a new variable 'size_index'
+>to
+>store the offset. Replaceed "unsigned long" with  "loff_t" type for
+>'cur_index'
+>
+>Signed-off-by: Anil Belur <askb23@gmail.com>
+>---
+> drivers/staging/lustre/lustre/lclient/lcommon_cl.c | 5 +++--
+> 1 file changed, 3 insertions(+), 2 deletions(-)
+>
+>diff --git a/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
+>b/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
+>index 2f51b76..e2da397 100644
+>--- a/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
+>+++ b/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
+>@@ -821,10 +821,11 @@ int ccc_prep_size(const struct lu_env *env, struct
+>cl_object *obj,
+> 				 * linux-2.6.18-128.1.1 miss to do that.
+> 				 * --bug 17336 */
+> 				loff_t size = cl_isize_read(inode);
+>-				unsigned long cur_index = start >> PAGE_CACHE_SHIFT;
+>+				loff_t cur_index = start >> PAGE_CACHE_SHIFT;
+>+				loff_t size_index = ((size - 1) >> PAGE_CACHE_SHIFT);
 
-From: Egbert Eich <eich@suse.de>
+Should be an empty line between variable declarations and code.
 
-commit 7f1950fbb989e8fc5463b307e062b4529d51c862 upstream.
+> 
+> 				if ((size == 0 && cur_index != 0) ||
+>-				    (((size - 1) >> PAGE_CACHE_SHIFT) < cur_index))
+>+				    (size_index < cur_index))
+> 				*exceed = 1;
+> 			}
+> 			return result;
+>-- 
+>1.9.0
+>
+>
 
-Depending on the SDVO output_flags SDVO may have multiple connectors
-linking to the same encoder (in intel_connector->encoder->base).
-Only one of those connectors should be active (ie link to the encoder
-thru drm_connector->encoder).
-If intel_connector_break_all_links() is called from intel_sanitize_crtc()
-we may break the crtc connection of an encoder thru an inactive connector
-in which case intel_connector_break_all_links() will not be called again
-for the active connector if this happens to come later in the list due to:
-    if (connector->encoder->base.crtc != &crtc->base)
-                                 continue;
-in intel_sanitize_crtc().
-This will however leave the drm_connector->encoder linkage for this
-active connector in place. Subsequently this will cause multiple
-warnings in intel_connector_check_state() to trigger and the driver
-will eventually die in drm_encoder_crtc_ok() (because of crtc == NULL).
 
-To avoid this remove intel_connector_break_all_links() and move its
-code to its two calling functions: intel_sanitize_crtc() and
-intel_sanitize_encoder().
-This allows to implement the link breaking more flexibly matching
-the surrounding code: ie. in intel_sanitize_crtc() we can break the
-crtc link separatly after the links to the encoders have been
-broken which avoids above problem.
-
-This regression has been introduced in:
-
-commit 24929352481f085c5f85d4d4cbc919ddf106d381
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Mon Jul 2 20:28:59 2012 +0200
-
-    drm/i915: read out the modeset hw state at load and resume time
-
-so goes back to the very beginning of the modeset rework.
-
-v2: This patch takes care of the concernes voiced by Chris Wilson
-and Daniel Vetter that only breaking links if the drm_connector
-is linked to an encoder may miss some links.
-v3: move all encoder handling to encoder loop as suggested by
-Daniel Vetter.
-
-Signed-off-by: Egbert Eich <eich@suse.de>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/gpu/drm/i915/intel_display.c | 26 ++++++++++++++------------
- 1 file changed, 14 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 4611505..60d0a34 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -9062,15 +9062,6 @@ void intel_modeset_init(struct drm_device *dev)
- 	intel_setup_outputs(dev);
- }
- 
--static void
--intel_connector_break_all_links(struct intel_connector *connector)
--{
--	connector->base.dpms = DRM_MODE_DPMS_OFF;
--	connector->base.encoder = NULL;
--	connector->encoder->connectors_active = false;
--	connector->encoder->base.crtc = NULL;
--}
--
- static void intel_enable_pipe_a(struct drm_device *dev)
- {
- 	struct intel_connector *connector;
-@@ -9152,8 +9143,17 @@ static void intel_sanitize_crtc(struct intel_crtc *crtc)
- 			if (connector->encoder->base.crtc != &crtc->base)
- 				continue;
- 
--			intel_connector_break_all_links(connector);
-+			connector->base.dpms = DRM_MODE_DPMS_OFF;
-+			connector->base.encoder = NULL;
- 		}
-+		/* multiple connectors may have the same encoder:
-+		 *  handle them and break crtc link separately */
-+		list_for_each_entry(connector, &dev->mode_config.connector_list,
-+				    base.head)
-+			if (connector->encoder->base.crtc == &crtc->base) {
-+				connector->encoder->base.crtc = NULL;
-+				connector->encoder->connectors_active = false;
-+			}
- 
- 		WARN_ON(crtc->active);
- 		crtc->base.enabled = false;
-@@ -9224,6 +9224,8 @@ static void intel_sanitize_encoder(struct intel_encoder *encoder)
- 				      drm_get_encoder_name(&encoder->base));
- 			encoder->disable(encoder);
- 		}
-+		encoder->base.crtc = NULL;
-+		encoder->connectors_active = false;
- 
- 		/* Inconsistent output/port/pipe state happens presumably due to
- 		 * a bug in one of the get_hw_state functions. Or someplace else
-@@ -9234,8 +9236,8 @@ static void intel_sanitize_encoder(struct intel_encoder *encoder)
- 				    base.head) {
- 			if (connector->encoder != encoder)
- 				continue;
--
--			intel_connector_break_all_links(connector);
-+			connector->base.dpms = DRM_MODE_DPMS_OFF;
-+			connector->base.encoder = NULL;
- 		}
- 	}
- 	/* Enabled encoders without active connectors will be fixed in
+Cheers, Andreas
 -- 
-1.9.1
+Andreas Dilger
+
+Lustre Software Architect
+Intel High Performance Data Division
+
 
