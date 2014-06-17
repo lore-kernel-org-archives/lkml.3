@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933717AbaFQTaY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 15:30:24 -0400
-Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:60453 "EHLO
-	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932657AbaFQTaX (ORCPT
+	id S933808AbaFQTah (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 15:30:37 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:38753 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932657AbaFQTaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 15:30:23 -0400
-Date: Tue, 17 Jun 2014 14:30:21 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Jeff Liu <jeff.liu@oracle.com>
-cc: Greg KH <gregkh@linuxfoundation.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 02/24] sample/kobject: update kset-example code
-In-Reply-To: <20140617192256.GE4319@kroah.com>
-Message-ID: <alpine.DEB.2.11.1406171428351.22064@gentwo.org>
-References: <53A05027.5020407@oracle.com> <20140617192256.GE4319@kroah.com>
+	Tue, 17 Jun 2014 15:30:35 -0400
+Date: Tue, 17 Jun 2014 15:30:34 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Stephen Warren <swarren@wwwdotorg.org>
+cc: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] USB: EHCI: tegra: Fix use-after-free in .remove()
+In-Reply-To: <53A0653F.7090001@wwwdotorg.org>
+Message-ID: <Pine.LNX.4.44L0.1406171423120.1187-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jun 2014, Greg KH wrote:
+On Tue, 17 Jun 2014, Stephen Warren wrote:
 
-> On Tue, Jun 17, 2014 at 10:26:47PM +0800, Jeff Liu wrote:
-> > From: Jie Liu <jeff.liu@oracle.com>
-> > Subject: sample/kobject: update kset-example code
-> >
-> > Check and return the error ptr if call kset_create_and_add() failed
-> >
-> > Cc: Christoph Lameter <cl@linux-foundation.org>
-> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Signed-off-by: Jie Liu <jeff.liu@oracle.com>
-> > ---
-> >  samples/kobject/kset-example.c | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> Nope, not taking this, sorry.
+> On 06/17/2014 08:17 AM, Tuomas Tynkkynen wrote:
+> > The tegra_ehci_hcd structure is located in the private space allocated
+> > by the core USB code so it must not be accessed after the HCD is
+> > freed.
+> 
+> > diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+> 
+> This seems to be a persistent problem. Witness commit ecc8a0cdca18 "usb:
+> host: tegra: fix warning messages in ehci_remove". So, I wonder if ...
+> 
+> > @@ -479,10 +479,11 @@ static int tegra_ehci_remove(struct platform_device *pdev)
+> >  
+> >  	usb_phy_shutdown(hcd->phy);
+> >  	usb_remove_hcd(hcd);
+> > -	usb_put_hcd(hcd);
+> >  
+> >  	clk_disable_unprepare(tegra->clk);
+> >  
+> 
+> It's worth putting a comment here:
+> 
+> 	/* This must be last, since *tegra is part of *hcd */
+> > +	usb_put_hcd(hcd);
+> > +
+> >  	return 0;
+> >  }
 
-Ok. I will then accept the first patch to slub.c that you sent which
-simply returns -ENOMEM. Please resend that one.
+Well, maybe.  At this stage it's not too likely that anything will be 
+added after the usb_put_hcd().
+
+> Of course, that could be a separate commit if you want.
+
+This affects more than ehci-tegra.  The same concept applies to all the 
+EHCI and OHCI platform drivers that use the platform-private area.
+
+Alan Stern
 
