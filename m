@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967068AbaFQWuq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:50:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53683 "EHLO
+	id S967169AbaFQWWW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:22:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54396 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965513AbaFQVpa (ORCPT
+	with ESMTP id S966603AbaFQVua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:45:30 -0400
+	Tue, 17 Jun 2014 17:50:30 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dmitry Kozlov <xeb@mail.ru>, Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Jens Axboe <axboe@kernel.dk>, Rusty Russell <rusty@rustcorp.com.au>,
+        Ming Lei <tom.leiming@gmail.com>, Jens Axboe <axboe@fb.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 015/212] ip6_gre: don't allow to remove the fb_tunnel_dev
-Date: Tue, 17 Jun 2014 14:41:49 -0700
-Message-Id: <1403041506-13646-16-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 181/212] virtio_blk: fix race between start and stop queue
+Date: Tue, 17 Jun 2014 14:44:35 -0700
+Message-Id: <1403041506-13646-182-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -28,55 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Ming Lei <tom.leiming@gmail.com>
 
-[ Upstream commit 54d63f787b652755e66eb4dd8892ee6d3f5197fc ]
+commit aa0818c6ee8d8e4772725a43550823347bc1ad30 upstream.
 
-It's possible to remove the FB tunnel with the command 'ip link del ip6gre0' but
-this is unsafe, the module always supposes that this device exists. For example,
-ip6gre_tunnel_lookup() may use it unconditionally.
+When there isn't enough vring descriptor for adding to vq,
+blk-mq will be put as stopped state until some of pending
+descriptors are completed & freed.
 
-Let's add a rtnl handler for dellink, which will never remove the FB tunnel (we
-let ip6gre_destroy_tunnels() do the job).
+Unfortunately, the vq's interrupt may come just before
+blk-mq's BLK_MQ_S_STOPPED flag is set, so the blk-mq will
+still be kept as stopped even though lots of descriptors
+are completed and freed in the interrupt handler. The worst
+case is that all pending descriptors are freed in the
+interrupt handler, and the queue is kept as stopped forever.
 
-Introduced by commit c12b395a4664 ("gre: Support GRE over IPv6").
+This patch fixes the problem by starting/stopping blk-mq
+with holding vq_lock.
 
-CC: Dmitry Kozlov <xeb@mail.ru>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/ip6_gre.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/block/virtio_blk.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv6/ip6_gre.c b/net/ipv6/ip6_gre.c
-index 8acb286..01ee297 100644
---- a/net/ipv6/ip6_gre.c
-+++ b/net/ipv6/ip6_gre.c
-@@ -1569,6 +1569,15 @@ static int ip6gre_changelink(struct net_device *dev, struct nlattr *tb[],
- 	return 0;
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 704d6c8..9b734f2 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -144,11 +144,11 @@ static void virtblk_done(struct virtqueue *vq)
+ 		if (unlikely(virtqueue_is_broken(vq)))
+ 			break;
+ 	} while (!virtqueue_enable_cb(vq));
+-	spin_unlock_irqrestore(&vblk->vq_lock, flags);
+ 
+ 	/* In case queue is stopped waiting for more buffers. */
+ 	if (req_done)
+ 		blk_mq_start_stopped_hw_queues(vblk->disk->queue);
++	spin_unlock_irqrestore(&vblk->vq_lock, flags);
  }
  
-+static void ip6gre_dellink(struct net_device *dev, struct list_head *head)
-+{
-+	struct net *net = dev_net(dev);
-+	struct ip6gre_net *ign = net_generic(net, ip6gre_net_id);
-+
-+	if (dev != ign->fb_tunnel_dev)
-+		unregister_netdevice_queue(dev, head);
-+}
-+
- static size_t ip6gre_get_size(const struct net_device *dev)
- {
- 	return
-@@ -1646,6 +1655,7 @@ static struct rtnl_link_ops ip6gre_link_ops __read_mostly = {
- 	.validate	= ip6gre_tunnel_validate,
- 	.newlink	= ip6gre_newlink,
- 	.changelink	= ip6gre_changelink,
-+	.dellink	= ip6gre_dellink,
- 	.get_size	= ip6gre_get_size,
- 	.fill_info	= ip6gre_fill_info,
- };
+ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
+@@ -202,8 +202,8 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
+ 	err = __virtblk_add_req(vblk->vq, vbr, vbr->sg, num);
+ 	if (err) {
+ 		virtqueue_kick(vblk->vq);
+-		spin_unlock_irqrestore(&vblk->vq_lock, flags);
+ 		blk_mq_stop_hw_queue(hctx);
++		spin_unlock_irqrestore(&vblk->vq_lock, flags);
+ 		/* Out of mem doesn't actually happen, since we fall back
+ 		 * to direct descriptors */
+ 		if (err == -ENOMEM || err == -ENOSPC)
 -- 
 1.9.1
 
