@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967734AbaFQWgQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:36:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54045 "EHLO
+	id S967670AbaFQWv7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:51:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53664 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966229AbaFQVso (ORCPT
+	with ESMTP id S965497AbaFQVp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:48:44 -0400
+	Tue, 17 Jun 2014 17:45:29 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Boot <crb@tiger-computing.co.uk>, Philip Gaw <pgaw@darktech.org.uk>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Thomas Richter <tmricht@linux.vnet.ibm.com>,
+        Jay Vosburgh <j.vosburgh@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 210/212] target: Fix alua_access_state attribute OOPs for un-configured devices
-Date: Tue, 17 Jun 2014 14:45:04 -0700
-Message-Id: <1403041506-13646-211-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 007/212] bonding: Remove debug_fs files when module init fails
+Date: Tue, 17 Jun 2014 14:41:41 -0700
+Message-Id: <1403041506-13646-8-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -28,47 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Thomas Richter <tmricht@linux.vnet.ibm.com>
 
-commit f1453773514bb8b0bba0716301e8c8f17f8d39c7 upstream.
+[ Upstream commit db29868653394937037d71dc3545768302dda643 ]
 
-This patch fixes a OOPs where an attempt to write to the per-device
-alua_access_state configfs attribute at:
+Remove the bonding debug_fs entries when the
+module initialization fails. The debug_fs
+entries should be removed together with all other
+already allocated resources.
 
-  /sys/kernel/config/target/core/$HBA/$DEV/alua/$TG_PT_GP/alua_access_state
-
-results in an NULL pointer dereference when the backend device has not
-yet been configured.
-
-This patch adds an explicit check for DF_CONFIGURED, and fails with
--ENODEV to avoid this case.
-
-Reported-by: Chris Boot <crb@tiger-computing.co.uk>
-Reported-by: Philip Gaw <pgaw@darktech.org.uk>
-Cc: Chris Boot <crb@tiger-computing.co.uk>
-Cc: Philip Gaw <pgaw@darktech.org.uk>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Thomas Richter <tmricht@linux.vnet.ibm.com>
+Signed-off-by: Jay Vosburgh <j.vosburgh@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/target/target_core_configfs.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/net/bonding/bond_main.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
-index 272755d..afcbb04 100644
---- a/drivers/target/target_core_configfs.c
-+++ b/drivers/target/target_core_configfs.c
-@@ -2040,6 +2040,11 @@ static ssize_t target_core_alua_tg_pt_gp_store_attr_alua_access_state(
- 			" tg_pt_gp ID: %hu\n", tg_pt_gp->tg_pt_gp_valid_id);
- 		return -EINVAL;
- 	}
-+	if (!(dev->dev_flags & DF_CONFIGURED)) {
-+		pr_err("Unable to set alua_access_state while device is"
-+		       " not configured\n");
-+		return -ENODEV;
-+	}
- 
- 	ret = kstrtoul(page, 0, &tmp);
- 	if (ret < 0) {
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 4b8c58b..1091fa2 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -4512,6 +4512,7 @@ static int __init bonding_init(void)
+ out:
+ 	return res;
+ err:
++	bond_destroy_debugfs();
+ 	bond_netlink_fini();
+ err_link:
+ 	unregister_pernet_subsys(&bond_net_ops);
 -- 
 1.9.1
 
