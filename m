@@ -1,105 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755040AbaFQJw2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 05:52:28 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64621 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754771AbaFQJw0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 05:52:26 -0400
-Date: Tue, 17 Jun 2014 10:51:56 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Abhimanyu Kapur <abhimany@codeaurora.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: [PATCH] ARM64: TTY: hvc_dcc: Add support for ARM64 dcc
-Message-ID: <20140617095155.GD13020@arm.com>
-References: <1402957778-13830-1-git-send-email-abhimany@codeaurora.org>
+	id S1753522AbaFQJyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 05:54:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63342 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752415AbaFQJyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 05:54:36 -0400
+Message-ID: <53A01049.6020502@redhat.com>
+Date: Tue, 17 Jun 2014 11:54:17 +0200
+From: Florian Weimer <fweimer@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402957778-13830-1-git-send-email-abhimany@codeaurora.org>
-Thread-Topic: [PATCH] ARM64: TTY: hvc_dcc: Add support for ARM64 dcc
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: David Herrmann <dh.herrmann@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Hugh Dickins <hughd@google.com>,
+        Tony Battersby <tonyb@cybernetics.com>
+Subject: Re: [PATCH v3 0/7] File Sealing & memfd_create()
+References: <1402655819-14325-1-git-send-email-dh.herrmann@gmail.com>	<CALCETrVoE+JO2rLsBUHAOJdvescEEjxikj8iQ339Nxfopfc7pw@mail.gmail.com>	<CANq1E4SaWLD=hNEc-CDJbNnrGfXE_PkxZFBhpW4tbK7wor7xPA@mail.gmail.com>	<CALCETrU8N9EbnJ3=oQ1WQCG9Vunn3nR9Ba=J48wJm0SuH0YB4A@mail.gmail.com> <CANq1E4QQUKHabheq18AzkVZk3WDtAeC-6W66tVNB+EKgYOx1Vg@mail.gmail.com>
+In-Reply-To: <CANq1E4QQUKHabheq18AzkVZk3WDtAeC-6W66tVNB+EKgYOx1Vg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 11:29:38PM +0100, Abhimanyu Kapur wrote:
-> Add support for debug communications channel based
-> hvc console for arm64 cpus.
+On 06/13/2014 05:33 PM, David Herrmann wrote:
+> On Fri, Jun 13, 2014 at 5:17 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> Isn't the point of SEAL_SHRINK to allow servers to mmap and read
+>> safely without worrying about SIGBUS?
+>
+> No, I don't think so.
+> The point of SEAL_SHRINK is to prevent a file from shrinking. SIGBUS
+> is an effect, not a cause. It's only a coincidence that "OOM during
+> reads" and "reading beyond file-boundaries" has the same effect:
+> SIGBUS.
+> We only protect against reading beyond file-boundaries due to
+> shrinking. Therefore, OOM-SIGBUS is unrelated to SEAL_SHRINK.
+>
+> Anyone dealing with mmap() _has_ to use mlock() to protect against
+> OOM-SIGBUS. Making SEAL_SHRINK protect against OOM-SIGBUS would be
+> redundant, because you can achieve the same with SEAL_SHRINK+mlock().
 
-Should we be setting MDSCR_EL1.TDCC to prevent userspace access to the DCC?
+I don't think this is what potential users expect because mlock requires 
+capabilities which are not available to them.
 
-> Signed-off-by: Abhimanyu Kapur <abhimany@codeaurora.org>
-> ---
->  arch/arm64/include/asm/dcc.h | 41 +++++++++++++++++++++++++++++++++++++++++
->  drivers/tty/hvc/Kconfig      |  2 +-
->  2 files changed, 42 insertions(+), 1 deletion(-)
->  create mode 100644 arch/arm64/include/asm/dcc.h
-> 
-> diff --git a/arch/arm64/include/asm/dcc.h b/arch/arm64/include/asm/dcc.h
-> new file mode 100644
-> index 0000000..ef74324
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/dcc.h
-> @@ -0,0 +1,41 @@
-> +/* Copyright (c) 2014 The Linux Foundation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <asm/barrier.h>
-> +
-> +static inline u32 __dcc_getstatus(void)
-> +{
-> +	u32 __ret;
+A couple of weeks ago, sealing was to be applied to anonymous shared 
+memory.  Has this changed?  Why should *reading* it trigger OOM?
 
-Can this result in the mrs receiving a W register?
-
-> +	asm volatile("mrs %0, mdccsr_el0" : "=r" (__ret)
-> +			: : "cc");
-
-Why the CC clobber? Why volatile?
-
-> +
-> +	return __ret;
-> +}
-> +
-> +static inline char __dcc_getchar(void)
-> +{
-> +	char __c;
-> +
-> +	asm volatile("mrs %0, dbgdtrrx_el0" : "=r" (__c));
-> +	isb();
-
-Why the isb and why volatile??
-
-> +
-> +	return __c;
-> +}
-> +
-> +static inline void __dcc_putchar(char c)
-> +{
-> +	asm volatile("msr dbgdtrtx_el0, %0"
-> +			: /* No output register */
-> +			: "r" (c));
-
-Can you guarantee that GCC hasn't put junk in the upper bits of c?
-
-> +	isb();
-
-Why the isb?
-
-Will
+-- 
+Florian Weimer / Red Hat Product Security Team
