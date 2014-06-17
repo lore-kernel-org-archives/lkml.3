@@ -1,178 +1,371 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932428AbaFQIJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 04:09:59 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:51313 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932133AbaFQIJ4 (ORCPT
+	id S1755470AbaFQIMJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 04:12:09 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:59463 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753641AbaFQIMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 04:09:56 -0400
+	Tue, 17 Jun 2014 04:12:02 -0400
+X-Auth-Info: IA4Og+P+XS/9toEGG9OOMcbYtYce4pKgE5JfJiXXtdU=
+From: Heiko Schocher <hs@denx.de>
+To: lm-sensors@lm-sensors.org
+Cc: Heiko Schocher <hs@denx.de>, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: [PATCH v4] hwmon: Driver for TI TMP103 temperature sensor
+Date: Tue, 17 Jun 2014 10:11:53 +0200
+Message-Id: <1402992713-22711-1-git-send-email-hs@denx.de>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-Date: Tue, 17 Jun 2014 13:39:54 +0530
-X-Google-Sender-Auth: eqk9zu1UzDLjcohf8oKEyIhQsHs
-Message-ID: <CAK5sBcEJOJDtt_7ow=q=hiN8-JRHzOUg6t=T3hTNOwzKq5dodw@mail.gmail.com>
-Subject: Boot warnings on exynos5420 based boards
-From: Sachin Kamat <sachin.kamat@samsung.com>
-To: linux-kernel@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc@vger.kernel.org
-Cc: Sachin Kamat <spk.linux@gmail.com>, srivatsa.bhat@linux.vnet.ibm.com,
-        Arnd Bergmann <arnd@arndb.de>, nicolas.pitre@linaro.org,
-        fweisbec@gmail.com, akpm@linux-foundation.org
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Driver for the TI TMP103.
 
-I observe the below warnings while trying to boot Exynos5420 based boards
-since yesterday's linux-next (next-20140616) using multi_v7_defconfig. Looks
-like it is triggered by the commit 56e6921829 ("CPU hotplug, smp:
-flush any pending IPI callbacks before CPU offline"). Any ideas?
+The TI TMP103 is similar to the TMP102.  It differs from the TMP102
+by having only 8 bit registers.
 
+Signed-off-by: Heiko Schocher <hs@denx.de>
 
-*************************************************************
-[    0.046521] Exynos MCPM support installed
-[    0.048939] CPU1: Booted secondary processor
-[    0.065005] CPU1: update cpu_capacity 1535
-[    0.065011] CPU1: thread -1, cpu 1, socket 0, mpidr 80000001
-[    0.065660] CPU2: Booted secondary processor
-[    0.085005] CPU2: update cpu_capacity 1535
-[    0.085012] CPU2: thread -1, cpu 2, socket 0, mpidr 80000002
-[    0.085662] CPU3: Booted secondary processor
-[    0.105005] CPU3: update cpu_capacity 1535
-[    0.105011] CPU3: thread -1, cpu 3, socket 0, mpidr 80000003
-[    1.105031] CPU4: failed to come online
-[    1.105081] ------------[ cut here ]------------
-[    1.105104] WARNING: CPU: 0 PID: 1 at kernel/smp.c:228
-flush_smp_call_function_queue+0xc0/0x178()
-[    1.105112] Modules linked in:
-[    1.105129] CPU: 0 PID: 1 Comm: swapper/0 Not tainted
-3.15.0-next-20140616-00002-g38f9385a061b #2035
-[    1.105157] [<c02160f0>] (unwind_backtrace) from [<c0211c8c>]
-(show_stack+0x10/0x14)
-[    1.105179] [<c0211c8c>] (show_stack) from [<c0853794>]
-(dump_stack+0x8c/0x9c)
-[    1.105198] [<c0853794>] (dump_stack) from [<c024bdf4>]
-(warn_slowpath_common+0x70/0x8c)
-[    1.105216] [<c024bdf4>] (warn_slowpath_common) from [<c024beac>]
-(warn_slowpath_null+0x1c/0x24)
-[    1.105235] [<c024beac>] (warn_slowpath_null) from [<c02a3944>]
-(flush_smp_call_function_queue+0xc0/0x178)
-[    1.105253] [<c02a3944>] (flush_smp_call_function_queue) from
-[<c02a3a94>] (hotplug_cfd+0x98/0xd8)
-[    1.105269] [<c02a3a94>] (hotplug_cfd) from [<c026b064>]
-(notifier_call_chain+0x44/0x84)
-[    1.105285] [<c026b064>] (notifier_call_chain) from [<c024c1a4>]
-(_cpu_up+0x120/0x170)
-[    1.105302] [<c024c1a4>] (_cpu_up) from [<c024c264>] (cpu_up+0x70/0x94)
-[    1.105319] [<c024c264>] (cpu_up) from [<c0b5839c>] (smp_init+0xac/0xb0)
-[    1.105337] [<c0b5839c>] (smp_init) from [<c0b2fc54>]
-(kernel_init_freeable+0x90/0x1dc)
-[    1.105353] [<c0b2fc54>] (kernel_init_freeable) from [<c0851248>]
-(kernel_init+0xc/0xe8)
-[    1.105368] [<c0851248>] (kernel_init) from [<c020e7f8>]
-(ret_from_fork+0x14/0x3c)
-[    1.105389] ---[ end trace bc66942e4ab63168 ]---
-[    2.105047] CPU5: failed to come online
-[    2.105073] ------------[ cut here ]------------
-[    2.105091] WARNING: CPU: 0 PID: 1 at kernel/smp.c:228
-flush_smp_call_function_queue+0xc0/0x178()
-[    2.105099] Modules linked in:
-[    2.105114] CPU: 0 PID: 1 Comm: swapper/0 Tainted: G        W
-3.15.0-next-20140616-00002-g38f9385a061b #2035
-[    2.105135] [<c02160f0>] (unwind_backtrace) from [<c0211c8c>]
-(show_stack+0x10/0x14)
-[    2.105153] [<c0211c8c>] (show_stack) from [<c0853794>]
-(dump_stack+0x8c/0x9c)
-[    2.105170] [<c0853794>] (dump_stack) from [<c024bdf4>]
-(warn_slowpath_common+0x70/0x8c)
-[    2.105187] [<c024bdf4>] (warn_slowpath_common) from [<c024beac>]
-(warn_slowpath_null+0x1c/0x24)
-[    2.105205] [<c024beac>] (warn_slowpath_null) from [<c02a3944>]
-(flush_smp_call_function_queue+0xc0/0x178)
-[    2.105222] [<c02a3944>] (flush_smp_call_function_queue) from
-[<c02a3a94>] (hotplug_cfd+0x98/0xd8)
-[    2.105237] [<c02a3a94>] (hotplug_cfd) from [<c026b064>]
-(notifier_call_chain+0x44/0x84)
-[    2.105252] [<c026b064>] (notifier_call_chain) from [<c024c1a4>]
-(_cpu_up+0x120/0x170)
-[    2.105268] [<c024c1a4>] (_cpu_up) from [<c024c264>] (cpu_up+0x70/0x94)
-[    2.105285] [<c024c264>] (cpu_up) from [<c0b5839c>] (smp_init+0xac/0xb0)
-[    2.105301] [<c0b5839c>] (smp_init) from [<c0b2fc54>]
-(kernel_init_freeable+0x90/0x1dc)
-[    2.105316] [<c0b2fc54>] (kernel_init_freeable) from [<c0851248>]
-(kernel_init+0xc/0xe8)
-[    2.105330] [<c0851248>] (kernel_init) from [<c020e7f8>]
-(ret_from_fork+0x14/0x3c)
-[    2.105339] ---[ end trace bc66942e4ab63169 ]---
-[    3.105064] CPU6: failed to come online
-[    3.105089] ------------[ cut here ]------------
-[    3.105107] WARNING: CPU: 0 PID: 1 at kernel/smp.c:228
-flush_smp_call_function_queue+0xc0/0x178()
-[    3.105115] Modules linked in:
-[    3.105131] CPU: 0 PID: 1 Comm: swapper/0 Tainted: G        W
-3.15.0-next-20140616-00002-g38f9385a061b #2035
-[    3.105150] [<c02160f0>] (unwind_backtrace) from [<c0211c8c>]
-(show_stack+0x10/0x14)
-[    3.105168] [<c0211c8c>] (show_stack) from [<c0853794>]
-(dump_stack+0x8c/0x9c)
-[    3.105185] [<c0853794>] (dump_stack) from [<c024bdf4>]
-(warn_slowpath_common+0x70/0x8c)
-[    3.105202] [<c024bdf4>] (warn_slowpath_common) from [<c024beac>]
-(warn_slowpath_null+0x1c/0x24)
-[    3.105220] [<c024beac>] (warn_slowpath_null) from [<c02a3944>]
-(flush_smp_call_function_queue+0xc0/0x178)
-[    3.105237] [<c02a3944>] (flush_smp_call_function_queue) from
-[<c02a3a94>] (hotplug_cfd+0x98/0xd8)
-[    3.105252] [<c02a3a94>] (hotplug_cfd) from [<c026b064>]
-(notifier_call_chain+0x44/0x84)
-[    3.105267] [<c026b064>] (notifier_call_chain) from [<c024c1a4>]
-(_cpu_up+0x120/0x170)
-[    3.105283] [<c024c1a4>] (_cpu_up) from [<c024c264>] (cpu_up+0x70/0x94)
-[    3.105299] [<c024c264>] (cpu_up) from [<c0b5839c>] (smp_init+0xac/0xb0)
-[    3.105315] [<c0b5839c>] (smp_init) from [<c0b2fc54>]
-(kernel_init_freeable+0x90/0x1dc)
-[    3.105330] [<c0b2fc54>] (kernel_init_freeable) from [<c0851248>]
-(kernel_init+0xc/0xe8)
-[    3.105344] [<c0851248>] (kernel_init) from [<c020e7f8>]
-(ret_from_fork+0x14/0x3c)
-[    3.105353] ---[ end trace bc66942e4ab6316a ]---
-[    4.105081] CPU7: failed to come online
-[    4.105106] ------------[ cut here ]------------
-[    4.105124] WARNING: CPU: 0 PID: 1 at kernel/smp.c:228
-flush_smp_call_function_queue+0xc0/0x178()
-[    4.105132] Modules linked in:
-[    4.105147] CPU: 0 PID: 1 Comm: swapper/0 Tainted: G        W
-3.15.0-next-20140616-00002-g38f9385a061b #2035
-[    4.105167] [<c02160f0>] (unwind_backtrace) from [<c0211c8c>]
-(show_stack+0x10/0x14)
-[    4.105184] [<c0211c8c>] (show_stack) from [<c0853794>]
-(dump_stack+0x8c/0x9c)
-[    4.105201] [<c0853794>] (dump_stack) from [<c024bdf4>]
-(warn_slowpath_common+0x70/0x8c)
-[    4.105218] [<c024bdf4>] (warn_slowpath_common) from [<c024beac>]
-(warn_slowpath_null+0x1c/0x24)
-[    4.105236] [<c024beac>] (warn_slowpath_null) from [<c02a3944>]
-(flush_smp_call_function_queue+0xc0/0x178)
-[    4.105253] [<c02a3944>] (flush_smp_call_function_queue) from
-[<c02a3a94>] (hotplug_cfd+0x98/0xd8)
-[    4.105268] [<c02a3a94>] (hotplug_cfd) from [<c026b064>]
-(notifier_call_chain+0x44/0x84)
-[    4.105283] [<c026b064>] (notifier_call_chain) from [<c024c1a4>]
-(_cpu_up+0x120/0x170)
-[    4.105299] [<c024c1a4>] (_cpu_up) from [<c024c264>] (cpu_up+0x70/0x94)
-[    4.105315] [<c024c264>] (cpu_up) from [<c0b5839c>] (smp_init+0xac/0xb0)
-[    4.105331] [<c0b5839c>] (smp_init) from [<c0b2fc54>]
-(kernel_init_freeable+0x90/0x1dc)
-[    4.105346] [<c0b2fc54>] (kernel_init_freeable) from [<c0851248>]
-(kernel_init+0xc/0xe8)
-[    4.105360] [<c0851248>] (kernel_init) from [<c020e7f8>]
-(ret_from_fork+0x14/0x3c)
-[    4.105370] ---[ end trace bc66942e4ab6316b ]---
-[    4.105380] Brought up 4 CPUs
+---
 
-Regards,
-Sachin
+Cc: Jean Delvare <khali@linux-fr.org>
+Cc: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org
+Cc: devicetree@vger.kernel.org
+Cc: linux-doc@vger.kernel.org
+
+- change for v2:
+  - add comments from GuenterRoeck:
+    - remove Cc from commit subject
+    - add devicetree maintainer
+    - move Documentation to Documentation/hwmon/tmp103
+    - remove devicetree bindings from Documentation
+    - add compatible string to
+      "Documentation/devicetree/bindings/i2c/trivial-devices.txt"
+    - remove CamelCase
+    - fix Codingstyle issues
+    - use ATTRIBUTE_GROUPS and devm_hwmon_device_register_with_groups()
+    - remove unsused define TMP103_CONFIG_RD_ONLY
+    - restore config register when exit()
+    - use regmap
+- changes for v3:
+  again a lot of fantastic tips how to use regmap efficiently
+  from Guenter Roeck:
+  - get rid of "struct tmp103"
+  - get rid of "static const u8 tmp103_reg[]"
+  - get rid of mutex lock
+  - drop config_orig entirely
+  - use regmap_update_bits()
+- changes for v4:
+  - add comment from Guenter Roeck:
+    define TMP103_CONFIG_MASK and TMP103_CONF_SD_MASK
+    separately to ensure you catch all the to-be-cleared bits.
+
+ .../devicetree/bindings/i2c/trivial-devices.txt    |   1 +
+ Documentation/hwmon/tmp103                         |  28 +++
+ drivers/hwmon/Kconfig                              |  10 +
+ drivers/hwmon/Makefile                             |   1 +
+ drivers/hwmon/tmp103.c                             | 207 +++++++++++++++++++++
+ 5 files changed, 247 insertions(+)
+ create mode 100644 Documentation/hwmon/tmp103
+ create mode 100644 drivers/hwmon/tmp103.c
+
+diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+index bef86e5..fc944e0 100644
+--- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
++++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+@@ -83,5 +83,6 @@ stm,m41t80		M41T80 - SERIAL ACCESS RTC WITH ALARMS
+ taos,tsl2550		Ambient Light Sensor with SMBUS/Two Wire Serial Interface
+ ti,tsc2003		I2C Touch-Screen Controller
+ ti,tmp102		Low Power Digital Temperature Sensor with SMBUS/Two Wire Serial Interface
++ti,tmp103		Low Power Digital Temperature Sensor with SMBUS/Two Wire Serial Interface
+ ti,tmp275		Digital Temperature Sensor
+ winbond,wpct301		i2c trusted platform module (TPM)
+diff --git a/Documentation/hwmon/tmp103 b/Documentation/hwmon/tmp103
+new file mode 100644
+index 0000000..ec00a15
+--- /dev/null
++++ b/Documentation/hwmon/tmp103
+@@ -0,0 +1,28 @@
++Kernel driver tmp103
++====================
++
++Supported chips:
++  * Texas Instruments TMP103
++    Prefix: 'tmp103'
++    Addresses scanned: none
++    Product info and datasheet: http://www.ti.com/product/tmp103
++
++Author:
++	Heiko Schocher <hs@denx.de>
++
++Description
++-----------
++
++The TMP103 is a digital output temperature sensor in a four-ball
++wafer chip-scale package (WCSP). The TMP103 is capable of reading
++temperatures to a resolution of 1°C. The TMP103 is specified for
++operation over a temperature range of –40°C to +125°C.
++
++Resolution: 8 Bits
++Accuracy: ±1°C Typ (–10°C to +100°C)
++
++The driver provides the common sysfs-interface for temperatures (see
++Documentation/hwmon/sysfs-interface under Temperatures).
++
++Please refer how to instantiate this driver:
++Documentation/i2c/instantiating-devices
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 08531a1..c882d4b 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -1391,6 +1391,16 @@ config SENSORS_TMP102
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called tmp102.
+ 
++config SENSORS_TMP103
++	tristate "Texas Instruments TMP103"
++	depends on I2C
++	help
++	  If you say yes here you get support for Texas Instruments TMP103
++	  sensor chips.
++
++	  This driver can also be built as a module.  If so, the module
++	  will be called tmp103.
++
+ config SENSORS_TMP401
+ 	tristate "Texas Instruments TMP401 and compatibles"
+ 	depends on I2C
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index 3dc0f02..cc0df1ef 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -135,6 +135,7 @@ obj-$(CONFIG_SENSORS_SMSC47M192)+= smsc47m192.o
+ obj-$(CONFIG_SENSORS_AMC6821)	+= amc6821.o
+ obj-$(CONFIG_SENSORS_THMC50)	+= thmc50.o
+ obj-$(CONFIG_SENSORS_TMP102)	+= tmp102.o
++obj-$(CONFIG_SENSORS_TMP103)	+= tmp103.o
+ obj-$(CONFIG_SENSORS_TMP401)	+= tmp401.o
+ obj-$(CONFIG_SENSORS_TMP421)	+= tmp421.o
+ obj-$(CONFIG_SENSORS_TWL4030_MADC)+= twl4030-madc-hwmon.o
+diff --git a/drivers/hwmon/tmp103.c b/drivers/hwmon/tmp103.c
+new file mode 100644
+index 0000000..d133d09
+--- /dev/null
++++ b/drivers/hwmon/tmp103.c
+@@ -0,0 +1,207 @@
++/*
++ * Texas Instruments TMP103 SMBus temperature sensor driver
++ * Copyright (C) 2014 Heiko Schocher <hs@denx.de>
++ *
++ * Based on:
++ * Texas Instruments TMP102 SMBus temperature sensor driver
++ *
++ * Copyright (C) 2010 Steven King <sfking@fdwdc.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/err.h>
++#include <linux/mutex.h>
++#include <linux/device.h>
++#include <linux/jiffies.h>
++#include <linux/regmap.h>
++
++#define	DRIVER_NAME "tmp103"
++
++#define TMP103_TEMP_REG		0x00
++#define TMP103_CONF_REG		0x01
++#define TMP103_TLOW_REG		0x02
++#define TMP103_THIGH_REG	0x03
++
++#define TMP103_CONF_M0		0x01
++#define TMP103_CONF_M1		0x02
++#define TMP103_CONF_LC		0x04
++#define TMP103_CONF_FL		0x08
++#define TMP103_CONF_FH		0x10
++#define TMP103_CONF_CR0		0x20
++#define TMP103_CONF_CR1		0x40
++#define TMP103_CONF_ID		0x80
++#define TMP103_CONF_SD		(TMP103_CONF_M0 | TMP103_CONF_M1)
++#define TMP103_CONF_SD_MASK	(TMP103_CONF_M0 | TMP103_CONF_M1)
++
++#define TMP103_CONFIG		(TMP103_CONF_CR1 | TMP103_CONF_M1)
++#define TMP103_CONFIG_MASK	(TMP103_CONF_CR0 | TMP103_CONF_CR1 | \
++				 TMP103_CONF_M0 | TMP103_CONF_M1)
++
++static inline int tmp103_reg_to_mc(s8 val)
++{
++	return val * 1000;
++}
++
++static inline u8 tmp103_mc_to_reg(int val)
++{
++	return DIV_ROUND_CLOSEST(val, 1000);
++}
++
++static ssize_t tmp103_show_temp(struct device *dev,
++				struct device_attribute *attr,
++				char *buf)
++{
++	struct sensor_device_attribute *sda = to_sensor_dev_attr(attr);
++	struct regmap *regmap = dev_get_drvdata(dev);
++	unsigned int regval;
++	int ret;
++
++	ret = regmap_read(regmap, sda->index, &regval);
++	if (ret < 0)
++		return ret;
++
++	return sprintf(buf, "%d\n", tmp103_reg_to_mc(regval));
++}
++
++static ssize_t tmp103_set_temp(struct device *dev,
++			       struct device_attribute *attr,
++			       const char *buf, size_t count)
++{
++	struct sensor_device_attribute *sda = to_sensor_dev_attr(attr);
++	struct regmap *regmap = dev_get_drvdata(dev);
++	long val;
++	int ret;
++
++	if (kstrtol(buf, 10, &val) < 0)
++		return -EINVAL;
++
++	val = clamp_val(val, -55000, 127000);
++	ret = regmap_write(regmap, sda->index, tmp103_mc_to_reg(val));
++	return ret ? ret : count;
++}
++
++static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, tmp103_show_temp, NULL ,
++			  TMP103_TEMP_REG);
++
++static SENSOR_DEVICE_ATTR(temp1_min, S_IWUSR | S_IRUGO, tmp103_show_temp,
++			  tmp103_set_temp, TMP103_TLOW_REG);
++
++static SENSOR_DEVICE_ATTR(temp1_max, S_IWUSR | S_IRUGO, tmp103_show_temp,
++			  tmp103_set_temp, TMP103_THIGH_REG);
++
++static struct attribute *tmp103_attrs[] = {
++	&sensor_dev_attr_temp1_input.dev_attr.attr,
++	&sensor_dev_attr_temp1_min.dev_attr.attr,
++	&sensor_dev_attr_temp1_max.dev_attr.attr,
++	NULL
++};
++ATTRIBUTE_GROUPS(tmp103);
++
++static bool tmp103_regmap_is_volatile(struct device *dev, unsigned int reg)
++{
++	return reg == TMP103_TEMP_REG;
++}
++
++static struct regmap_config tmp103_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.max_register = TMP103_THIGH_REG,
++	.volatile_reg = tmp103_regmap_is_volatile,
++};
++
++static int tmp103_probe(struct i2c_client *client,
++			const struct i2c_device_id *id)
++{
++	struct device *dev = &client->dev;
++	struct device *hwmon_dev;
++	struct regmap *regmap;
++	int ret;
++
++	if (!i2c_check_functionality(client->adapter,
++				     I2C_FUNC_SMBUS_BYTE_DATA)) {
++		dev_err(&client->dev,
++			"adapter doesn't support SMBus byte transactions\n");
++		return -ENODEV;
++	}
++
++	regmap = devm_regmap_init_i2c(client, &tmp103_regmap_config);
++	if (IS_ERR(regmap)) {
++		dev_err(dev, "failed to allocate register map\n");
++		return PTR_ERR(regmap);
++	}
++
++	ret = regmap_update_bits(regmap, TMP103_CONF_REG, TMP103_CONFIG_MASK,
++				 TMP103_CONFIG);
++	if (ret < 0) {
++		dev_err(&client->dev, "error writing config register\n");
++		return ret;
++	}
++
++	hwmon_dev = hwmon_device_register_with_groups(dev, client->name,
++						      regmap, tmp103_groups);
++	return PTR_ERR_OR_ZERO(hwmon_dev);
++}
++
++#ifdef CONFIG_PM
++static int tmp103_suspend(struct device *dev)
++{
++	struct regmap *regmap = dev_get_drvdata(dev);
++
++	return regmap_update_bits(regmap, TMP103_CONF_REG,
++				  TMP103_CONF_SD_MASK, 0);
++}
++
++static int tmp103_resume(struct device *dev)
++{
++	struct regmap *regmap = dev_get_drvdata(dev);
++
++	return regmap_update_bits(regmap, TMP103_CONF_REG,
++				  TMP103_CONF_SD_MASK, TMP103_CONF_SD);
++}
++
++static const struct dev_pm_ops tmp103_dev_pm_ops = {
++	.suspend	= tmp103_suspend,
++	.resume		= tmp103_resume,
++};
++
++#define TMP103_DEV_PM_OPS (&tmp103_dev_pm_ops)
++#else
++#define	TMP103_DEV_PM_OPS NULL
++#endif /* CONFIG_PM */
++
++static const struct i2c_device_id tmp103_id[] = {
++	{ DRIVER_NAME, 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, tmp103_id);
++
++static struct i2c_driver tmp103_driver = {
++	.driver = {
++		.name	= DRIVER_NAME,
++		.pm	= TMP103_DEV_PM_OPS,
++	},
++	.probe		= tmp103_probe,
++	.id_table	= tmp103_id,
++};
++
++module_i2c_driver(tmp103_driver);
++
++MODULE_AUTHOR("Heiko Schocher <hs@denx.de>");
++MODULE_DESCRIPTION("Texas Instruments TMP103 temperature sensor driver");
++MODULE_LICENSE("GPL");
+-- 
+1.8.3.1
+
