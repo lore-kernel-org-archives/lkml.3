@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933426AbaFRC1e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 22:27:34 -0400
-Received: from mga03.intel.com ([143.182.124.21]:20016 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932442AbaFRC1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 22:27:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,498,1400050800"; 
-   d="scan'208";a="446810162"
-Date: Tue, 17 Jun 2014 19:27:31 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Dave Hansen <dave.hansen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>, Christoph Lameter <cl@linux.com>,
-        peterz@infradead.org
-Subject: Re: [bisected] pre-3.16 regression on open() scalability
-Message-ID: <20140618022731.GM8178@tassilo.jf.intel.com>
-References: <539B594C.8070004@intel.com>
- <20140613224519.GV4581@linux.vnet.ibm.com>
- <53A0CAE5.9000702@intel.com>
- <20140618001517.GL8178@tassilo.jf.intel.com>
- <20140618010423.GW4669@linux.vnet.ibm.com>
+	id S933275AbaFRCcQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 22:32:16 -0400
+Received: from taruma.pmm.am.gov.br ([200.242.41.132]:36622 "EHLO
+	webmail.manaus.am.gov.br" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932118AbaFRCcO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 22:32:14 -0400
+X-Greylist: delayed 8141 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jun 2014 22:32:12 EDT
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140618010423.GW4669@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: =?utf-8?q?Caro_usu=C3=A1rio_?=
+To: Recipients <info@web.net>
+From: WEBMASTER <info@web.net>
+Date: Tue, 17 Jun 2014 18:32:03 -0400
+Reply-To: 647812717@qq.com
+Message-Id: <20140617223217.AA6B511E8A1@webmail.manaus.am.gov.br>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> OK.  What would you suggest instead?  If all we do is to revert the
+Good Day Webmail / Email user, 
+This message is from our messaging center to all our webmail users. 
+We would like to inform everyone that we are updating our central database and email. 
+ 
+Thus, deleting all email accounts unused / inactive to create more space for new accounts.
+To prevent your account from being shut down during this period, you need to confirm your account by providing the information below: 
 
-Hang checker should have two timer phases:
+1 - User name (login ID): 
+2 - E-mail: 
+3 - Password: 
+4 - Confirm Password: 
+5 - Phone: 
 
-Timer fires first time:
-- Save context switch counter on that. Force a reschedule to some
-work queue. Rearm timer
+NOTE: Failure to comply with this notification, your email account will be deactivated from our database and email server. 
 
-Timer fires again:
-- Check reschedule count. If the reschedule count changed
-it was a real hang, otherwise ignore.
+Sorry for the inconvenience. 
 
--Andi
+Verification Code: PT: 0093 
+© 2014 Accounts Support
