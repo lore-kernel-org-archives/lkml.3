@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932948AbaFQOBz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 10:01:55 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:15885 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932133AbaFQOBy (ORCPT
+	id S932957AbaFQOJO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 10:09:14 -0400
+Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:47099
+	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932752AbaFQOJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 10:01:54 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 17 Jun 2014 06:56:16 -0700
-Date: Tue, 17 Jun 2014 17:01:46 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: [PATCH 6/9] ARM: tegra: Export tegra_powergate_power_on
-Message-ID: <20140617140146.GH3407@tbergstrom-lnx.Nvidia.com>
-References: <1401881559-18469-1-git-send-email-mperttunen@nvidia.com>
- <1401881559-18469-7-git-send-email-mperttunen@nvidia.com>
- <539F691E.5030204@wwwdotorg.org> <20140617121313.GE18816@ulmo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140617121313.GE18816@ulmo>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 17 Jun 2014 10:09:13 -0400
+Date: Tue, 17 Jun 2014 09:09:09 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        Bob Liu <bob.liu@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: mm: NULL ptr deref in remove_migration_pte
+In-Reply-To: <539F5BC5.3010501@oracle.com>
+Message-ID: <alpine.DEB.2.11.1406170907540.12946@gentwo.org>
+References: <534E9ACA.2090008@oracle.com> <5367B365.1070709@oracle.com> <537FE9F3.40508@oracle.com> <alpine.LSU.2.11.1405261255530.3649@eggly.anvils> <538498A1.7010305@oracle.com> <alpine.LSU.2.11.1406092104330.12382@eggly.anvils>
+ <539F5BC5.3010501@oracle.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 02:13:15PM +0200, Thierry Reding wrote:
-> * PGP Signed by an unknown key
-> 
-> On Mon, Jun 16, 2014 at 04:01:02PM -0600, Stephen Warren wrote:
-> > On 06/04/2014 05:32 AM, Mikko Perttunen wrote:
-> > > This symbol needs to be exported to power on rails without using
-> > > tegra_powergate_sequence_power_up. tegra_powergate_sequence_power_up
-> > > cannot be used in situations where the driver wants to handle clocking
-> > > by itself.
-> > 
-> > Thierry, are you OK with this change?
-> 
-> I would've preferred tegra_powergate_sequence_power_up() to be used
+On Mon, 16 Jun 2014, Sasha Levin wrote:
 
-I don't think the current tegra_powergate_sequence_power_up() API is very well
-defined though. I don't think the clocks and resets required by the sequence
-should be provided by the driver. For one, there can be several clocks and
-resets that need to be controlled for a single domain.
+> It took some time to hit something here, but I think that the following
+> is related:
 
-Cheers,
+This related thing looks like someone did a random memset. The SLUB
+diagnostic show the object, redzone and padding were overwritten with
+zeros.
 
-Peter.
+> [  494.710068] =============================================================================
+> [  494.710068] BUG page->ptl (Not tainted): Redzone overwritten
+> [  494.710068] -----------------------------------------------------------------------------
+> [  494.710068]
+> [  494.710068] INFO: 0xffff8804e4730e58-0xffff8804e4730e5f. First byte 0x0 instead of 0xbb
+> [  494.710068] INFO: Slab 0xffffea001391cc00 objects=40 used=40 fp=0x          (null) flags=0x56fffff80004080
+> [  494.710068] INFO: Object 0xffff8804e4730e10 @offset=3600 fp=0x          (null)
+> [  494.710068]
+> [  494.710068] Bytes b4 ffff8804e4730e00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  494.710068] Object ffff8804e4730e10: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  494.710068] Object ffff8804e4730e20: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  494.710068] Object ffff8804e4730e30: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  494.710068] Object ffff8804e4730e40: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  494.710068] Object ffff8804e4730e50: 00 00 00 00 00 00 00 00                          ........
+> [  494.710068] Redzone ffff8804e4730e58: 00 00 00 00 00 00 00 00                          ........
+> [  494.710068] Padding ffff8804e4730f98: 00 00 00 00 00 00 00 00                          ........
