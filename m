@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933542AbaFQPnf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 11:43:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53365 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932989AbaFQPne (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 11:43:34 -0400
-Date: Tue, 17 Jun 2014 08:47:30 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jeff Liu <jeff.liu@oracle.com>
-Cc: Christoph Lameter <cl@gentwo.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, herbert@gondor.apana.org.au,
-        davem@davemloft.net, stefanr@s5r6.in-berlin.de, joro@8bytes.org,
-        jejb@parisc-linux.org, deller@gmx.de, bhelgaas@google.com, clm@fb.com,
-        Josef Bacik <jbacik@fb.com>, swhiteho@redhat.com, bharrosh@panasas.com,
-        bhalevy@primarydata.com, ccaulfie@redhat.com, teigland@redhat.com,
-        "Theodore Ts'o" <tytso@mit.edu>, adilger.kernel@dilger.ca,
-        jaegeuk@kernel.org, cm224.lee@samsung.com,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        casey@schaufler-ca.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/24] kobject: return actual error on kset_create_and_add
-Message-ID: <20140617154730.GA14153@kroah.com>
-References: <53A04FF7.5050900@oracle.com>
+	id S933475AbaFQPoS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 11:44:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18638 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932989AbaFQPoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 11:44:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,494,1400050800"; 
+   d="scan'208";a="556855651"
+Message-ID: <53A06546.3090001@intel.com>
+Date: Tue, 17 Jun 2014 18:56:54 +0300
+From: Mathias Nyman <mathias.nyman@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53A04FF7.5050900@oracle.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Lu Baolu <baolu.lu@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] xhci: clear root port wake on bits if controller
+ isn't wake-up capable
+References: <1402617975-34702-1-git-send-email-baolu.lu@linux.intel.com>
+In-Reply-To: <1402617975-34702-1-git-send-email-baolu.lu@linux.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 10:25:59PM +0800, Jeff Liu wrote:
-> From: Jie Liu <jeff.liu@oracle.com>
+On 06/13/2014 03:06 AM, Lu Baolu wrote:
+> When xHCI PCI host is suspended, if do_wakeup is false in xhci_pci_suspend,
+> xhci_bus_suspend needs to clear all root port wake on bits. Otherwise some Intel
+> platforms may get a spurious wakeup, even if PCI PME# is disabled.
 > 
-> It's better to return the actual error rather than NULL because
-> kset_register() can failed due to other reasons.
+> This patch should be back-ported to kernels as old as 2.6.37, that
+> contains the commit 9777e3ce907d4cb5a513902a87ecd03b52499569
+> "USB: xHCI: bus power management implementation". 
+> 
+> Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
+> ---
+>  drivers/usb/host/xhci-hub.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+> index 6231ce6..fb771bd 100644
+> --- a/drivers/usb/host/xhci-hub.c
+> +++ b/drivers/usb/host/xhci-hub.c
+> @@ -22,6 +22,7 @@
+>  
+>  
+>  #include <linux/slab.h>
+> +#include <linux/device.h>
+>  #include <asm/unaligned.h>
+>  
+>  #include "xhci.h"
+> @@ -1139,7 +1140,9 @@ int xhci_bus_suspend(struct usb_hcd *hcd)
+>  		 * including the USB 3.0 roothub, but only if CONFIG_PM_RUNTIME
+>  		 * is enabled, so also enable remote wake here.
+>  		 */
+> -		if (hcd->self.root_hub->do_remote_wakeup) {
+> +		if (hcd->self.root_hub->do_remote_wakeup
+> +				&& device_may_wakeup(hcd->self.controller)) {
+> +
+>  			if (t1 & PORT_CONNECT) {
+>  				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
+>  				t2 &= ~PORT_WKCONN_E;
+> 
 
-Why?
+Looks good to me, thanks for fixing.
+I can take it, add the "cc: stable" tag and send it forward to Greg once his trees get updated to 3.16 release candidates
 
-Who really cares about that?  What can do you do with that additional
-information that will help anything out?
-
-In other words, what benifit does this patch create to justify the large
-churn it is going to cause?
-
-thanks,
-
-greg k-h
+-Mathias
