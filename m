@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932527AbaFQWra (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:47:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53759 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965678AbaFQVqV (ORCPT
+	id S965071AbaFQWsQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:48:16 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:33360 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932818AbaFQWsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:46:21 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Peter Christensen <pch@ordbogen.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 049/212] macvlan: Don't propagate IFF_ALLMULTI changes on down interfaces.
-Date: Tue, 17 Jun 2014 14:42:23 -0700
-Message-Id: <1403041506-13646-50-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 17 Jun 2014 18:48:12 -0400
+Date: Tue, 17 Jun 2014 23:48:06 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] clkdev: Don't print errors on probe defer
+Message-ID: <20140617224805.GN23430@n2100.arm.linux.org.uk>
+References: <1402702591-21087-1-git-send-email-sboyd@codeaurora.org> <20140617223305.32686.15540@quantum>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140617223305.32686.15540@quantum>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jun 17, 2014 at 03:33:05PM -0700, Mike Turquette wrote:
+> Quoting Stephen Boyd (2014-06-13 16:36:31)
+> > This error message can spam the logs if you have lots of probe
+> > deferals due to missing clocks. Just silence the error in this
+> > case because the driver should try again later.
+> > 
+> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> 
+> Looks OK to me. Russell?
 
-------------------
+Looks fine to me too.  Should I assume you're looking to take it?
 
-From: Peter Christensen <pch@ordbogen.com>
+Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
 
-[ Upstream commit bbeb0eadcf9fe74fb2b9b1a6fea82cd538b1e556 ]
-
-Clearing the IFF_ALLMULTI flag on a down interface could cause an allmulti
-overflow on the underlying interface.
-
-Attempting the set IFF_ALLMULTI on the underlying interface would cause an
-error and the log message:
-
-"allmulti touches root, set allmulti failed."
-
-Signed-off-by: Peter Christensen <pch@ordbogen.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/net/macvlan.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-index fbb21fa..9687122 100644
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -459,8 +459,10 @@ static void macvlan_change_rx_flags(struct net_device *dev, int change)
- 	struct macvlan_dev *vlan = netdev_priv(dev);
- 	struct net_device *lowerdev = vlan->lowerdev;
- 
--	if (change & IFF_ALLMULTI)
--		dev_set_allmulti(lowerdev, dev->flags & IFF_ALLMULTI ? 1 : -1);
-+	if (dev->flags & IFF_UP) {
-+		if (change & IFF_ALLMULTI)
-+			dev_set_allmulti(lowerdev, dev->flags & IFF_ALLMULTI ? 1 : -1);
-+	}
- }
- 
- static void macvlan_set_mac_lists(struct net_device *dev)
 -- 
-1.9.1
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
