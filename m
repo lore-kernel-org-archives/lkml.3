@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965371AbaFQQk1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:40:27 -0400
-Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:34666 "EHLO
-	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964795AbaFQQkW (ORCPT
+	id S965403AbaFQQkx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:40:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50880 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934160AbaFQQZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:40:22 -0400
-Message-ID: <53A06F75.5020803@akamai.com>
-Date: Tue, 17 Jun 2014 12:40:21 -0400
-From: Jason Baron <jbaron@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] epoll: fix use-after-free in eventpoll_release_file
-References: <20140617025805.29539.22007.stgit@zurg>
-In-Reply-To: <20140617025805.29539.22007.stgit@zurg>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Jun 2014 12:25:15 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jiri Bohac <jbohac@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 103/121] timer: Prevent overflow in apply_slack
+Date: Tue, 17 Jun 2014 09:18:01 -0700
+Message-Id: <1403021899-16708-76-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
+References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+3.8.13.24 -stable review patch.  If anyone has any objections, please let me know.
 
-Indeed, eventpoll_release_file() is on the 'write' side of the rcu
-here (the read-side being in reverse_path_check_proc()). It's a race,
-in that 'struct epitem' has to be freed by rcu before the next loop
-iteration such that epi->fllink.next pointer is no longer valid. So,
-I suspect that makes this more difficult to hit, but obviously it
-happens.
+------------------
 
-Thanks for finding/fixing this!
+From: Jiri Bohac <jbohac@suse.cz>
 
-Acked-by: Jason Baron <jbaron@akamai.com>
+commit 98a01e779f3c66b0b11cd7e64d531c0e41c95762 upstream.
 
+On architectures with sizeof(int) < sizeof (long), the
+computation of mask inside apply_slack() can be undefined if the
+computed bit is > 32.
 
-On 06/16/2014 10:58 PM, Konstantin Khlebnikov wrote:
-> This fixes use-after-free of epi->fllink.next inside list loop macro.
-> This loop actually releases elements in the body. List is rcu-protected
-> but here we cannot hold rcu_read_lock because we need to lock mutex inside.
-> 
-> Obvious solution is to use list_for_each_entry_safe(). RCU-ness isn't essential
-> because nobody can change this list under us, it's final fput for this file.
-> 
-> Bug is here since ae10b2b4eb01bedc91d29d5c5bb9e416fd806c40
-> ("epoll: optimize EPOLL_CTL_DEL using rcu")
-> 
-> Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
-> Reported-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> Cc: Stable <stable@vger.kernel.org> # 3.13+
-> Cc: Sasha Levin <sasha.levin@oracle.com>
-> Cc: Jason Baron <jbaron@akamai.com>
-> ---
->  fs/eventpoll.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-> index b73e062..b10b48c 100644
-> --- a/fs/eventpoll.c
-> +++ b/fs/eventpoll.c
-> @@ -910,7 +910,7 @@ static const struct file_operations eventpoll_fops = {
->  void eventpoll_release_file(struct file *file)
->  {
->  	struct eventpoll *ep;
-> -	struct epitem *epi;
-> +	struct epitem *epi, *next;
->  
->  	/*
->  	 * We don't want to get "file->f_lock" because it is not
-> @@ -926,7 +926,7 @@ void eventpoll_release_file(struct file *file)
->  	 * Besides, ep_remove() acquires the lock, so we can't hold it here.
->  	 */
->  	mutex_lock(&epmutex);
-> -	list_for_each_entry_rcu(epi, &file->f_ep_links, fllink) {
-> +	list_for_each_entry_safe(epi, next, &file->f_ep_links, fllink) {
->  		ep = epi->ep;
->  		mutex_lock_nested(&ep->mtx, 0);
->  		ep_remove(ep, epi);
-> 
+E.g. with: expires = 0xffffe6f5 and slack = 25, we get:
+
+expires_limit = 0x20000000e
+bit = 33
+mask = (1 << 33) - 1  /* undefined */
+
+On x86, mask becomes 1 and and the slack is not applied properly.
+On s390, mask is -1, expires is set to 0 and the timer fires immediately.
+
+Use 1UL << bit to solve that issue.
+
+Suggested-by: Deborah Townsend <dstownse@us.ibm.com>
+Signed-off-by: Jiri Bohac <jbohac@suse.cz>
+Link: http://lkml.kernel.org/r/20140418152310.GA13654@midget.suse.cz
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ kernel/timer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 1f8a6bd..1666e01 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -820,7 +820,7 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
+ 
+ 	bit = find_last_bit(&mask, BITS_PER_LONG);
+ 
+-	mask = (1 << bit) - 1;
++	mask = (1UL << bit) - 1;
+ 
+ 	expires_limit = expires_limit & ~(mask);
+ 
+-- 
+1.9.1
 
