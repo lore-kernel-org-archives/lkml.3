@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933259AbaFQQAf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:00:35 -0400
-Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:36469 "EHLO
-	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933681AbaFQQAc (ORCPT
+	id S933691AbaFQQAq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:00:46 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:58393 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933015AbaFQQAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:00:32 -0400
-Date: Tue, 17 Jun 2014 11:00:25 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-cc: Jeff Liu <jeff.liu@oracle.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, herbert@gondor.apana.org.au,
-        davem@davemloft.net, stefanr@s5r6.in-berlin.de, joro@8bytes.org,
-        jejb@parisc-linux.org, deller@gmx.de, bhelgaas@google.com, clm@fb.com,
-        Josef Bacik <jbacik@fb.com>, swhiteho@redhat.com, bharrosh@panasas.com,
-        bhalevy@primarydata.com, ccaulfie@redhat.com, teigland@redhat.com,
-        "Theodore Ts'o" <tytso@mit.edu>, adilger.kernel@dilger.ca,
-        jaegeuk@kernel.org, cm224.lee@samsung.com,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        casey@schaufler-ca.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/24] kobject: return actual error on
- kset_create_and_add
-In-Reply-To: <20140617154730.GA14153@kroah.com>
-Message-ID: <alpine.DEB.2.11.1406171057270.20610@gentwo.org>
-References: <53A04FF7.5050900@oracle.com> <20140617154730.GA14153@kroah.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 17 Jun 2014 12:00:44 -0400
+Date: Tue, 17 Jun 2014 12:00:40 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
+ accessors and operations
+Message-ID: <20140617160040.GE31819@htj.dyndns.org>
+References: <20140612135630.GA23606@htj.dyndns.org>
+ <20140612153426.GV4581@linux.vnet.ibm.com>
+ <20140612155227.GB23606@htj.dyndns.org>
+ <20140617144151.GD4669@linux.vnet.ibm.com>
+ <20140617152752.GC31819@htj.dyndns.org>
+ <alpine.DEB.2.11.1406171053230.20610@gentwo.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1406171053230.20610@gentwo.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jun 2014, Greg KH wrote:
+Hello, Christoph.
 
-> Who really cares about that?  What can do you do with that additional
-> information that will help anything out?
+On Tue, Jun 17, 2014 at 10:56:10AM -0500, Christoph Lameter wrote:
+> Uhhh no. The percpu stuff and the associated per cpu atomics are to be
+> used for stuff that is per cpu specific and runs at the fastest speed
+> doable at that level. Introducing implicit barriers is not that good an
+> idea.
 
-The obvious reason for doing so is so that one can put the error code into
-a log message to get more detailed information on why the call failed.
+Hmmm?  Read barriers are noops on all archs except for alpha and
+percpu pointer assignments aren't exactly a high frequency operation
+and I'm pretty sure we'll end up with a raw variant anyway.
 
-In this particular case the slab allocator can give an error message that
-gives a hint why the sysfs support could not be enabled.
+> The concurrency guarantees for the per cpu operations are related to being
+> interrupted or rescheduled but not for accesses from other processors.
+> 
+> Cpus maintain at least the appearance of operations being visible in
+> sequence for code running on the same processor. Therefore no barriers are
+> needed.
 
+Huh?  We're talking about percpu *pointer* assignments not assignments
+to percpu areas.
 
+Thanks.
+
+-- 
+tejun
