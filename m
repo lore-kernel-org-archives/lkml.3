@@ -1,94 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933575AbaFQQFi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:05:38 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:55360 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755414AbaFQQFg (ORCPT
+	id S933637AbaFQQF6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:05:58 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:51346 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933601AbaFQQFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:05:36 -0400
-Message-ID: <53A06749.1010606@collabora.co.uk>
-Date: Tue, 17 Jun 2014 18:05:29 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Tue, 17 Jun 2014 12:05:54 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 07/10] regulator: Add driver for Maxim 77802 PMIC regulators
-References: <1402941758-11216-1-git-send-email-javier.martinez@collabora.co.uk> <1402941758-11216-8-git-send-email-javier.martinez@collabora.co.uk> <20140616192500.GJ5099@sirena.org.uk> <53A01D54.10506@collabora.co.uk> <20140617141254.GP5099@sirena.org.uk>
-In-Reply-To: <20140617141254.GP5099@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1402982995-13747-4-git-send-email-jiang.liu@linux.intel.com>
+References: <1402982995-13747-1-git-send-email-jiang.liu@linux.intel.com> <1402982995-13747-4-git-send-email-jiang.liu@linux.intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 17 Jun 2014 10:05:33 -0600
+Message-ID: <CAErSpo4y9HQB-OcX8XwpXHW=xCvDQOJZgokG5iMqg705XZnevg@mail.gmail.com>
+Subject: Re: [RFC Patch V2 03/16] ACPI, x86/PCI: Move resource_to_addr() to
+ acpi generic
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, Len Brown <lenb@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mark,
-
-On 06/17/2014 04:12 PM, Mark Brown wrote:
-> On Tue, Jun 17, 2014 at 12:49:56PM +0200, Javier Martinez Canillas wrote:
->> On 06/16/2014 09:25 PM, Mark Brown wrote:
-> 
->> >> +	config.dev = &pdev->dev;
-> 
->> > Are you sure this shouldn't be the MFD?
-> 
->> I just looked at regulator_register() and saw that it does rdev->dev.parent =
->> dev, so yes this has to be the MFD.
+On Mon, Jun 16, 2014 at 11:29 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
+> From: Yinghai Lu <yinghai@kernel.org>
 >
+> Rui Wang reported ioapic hot-add does not work on his machine
+> that _CRS have MEMORY_FIXED.
+> He also proposed to expose resource_to_addr() and use it for ioapic.
+>
+> We should move it to acpi generic, as ioapi.c current is in
 
-I noticed that many drivers set config.dev = &pdev->dev. The original Chrome OS
-max77xxx driver and max77686 are two examples but others drivers do the same:
+s/ioapi.c/ioapic.c/
 
-$ git grep "config.dev = &pdev->dev" drivers/regulator/ | wc -l
-35
-$ git grep "config.dev = pdev->dev.parent" drivers/regulator/ | wc -l
-11
+> drivers/pci/.
+>
+> Or should move it to acpica?
+>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 
-And also I see that mfd_add_device() calls
-devm_regulator_bulk_register_supply_alias(&pdev->dev,...) so I'm confused now
-about what the correct device should be...
+> diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
+> index 0bdacc5e26a3..e91deebf0930 100644
+> --- a/drivers/acpi/resource.c
+> +++ b/drivers/acpi/resource.c
+> @@ -424,6 +424,52 @@ void acpi_dev_free_resource_list(struct list_head *list)
+>  }
+>  EXPORT_SYMBOL_GPL(acpi_dev_free_resource_list);
+>
+> +acpi_status acpi_mem_addr_resource_to_address64(struct acpi_resource *resource,
+> +                       struct acpi_resource_address64 *addr)
+> +{
+> +       acpi_status status;
+> +       struct acpi_resource_memory24 *memory24;
+> +       struct acpi_resource_memory32 *memory32;
+> +       struct acpi_resource_fixed_memory32 *fixed_memory32;
+> +
+> +       memset(addr, 0, sizeof(*addr));
+> +       switch (resource->type) {
+> +       case ACPI_RESOURCE_TYPE_MEMORY24:
+> +               memory24 = &resource->data.memory24;
+> +               addr->resource_type = ACPI_MEMORY_RANGE;
+> +               addr->minimum = memory24->minimum;
+> +               addr->address_length = memory24->address_length;
+> +               addr->maximum = addr->minimum + addr->address_length - 1;
+> +               return AE_OK;
+> +       case ACPI_RESOURCE_TYPE_MEMORY32:
+> +               memory32 = &resource->data.memory32;
+> +               addr->resource_type = ACPI_MEMORY_RANGE;
+> +               addr->minimum = memory32->minimum;
+> +               addr->address_length = memory32->address_length;
+> +               addr->maximum = addr->minimum + addr->address_length - 1;
+> +               return AE_OK;
+> +       case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
+> +               fixed_memory32 = &resource->data.fixed_memory32;
+> +               addr->resource_type = ACPI_MEMORY_RANGE;
+> +               addr->minimum = fixed_memory32->address;
+> +               addr->address_length = fixed_memory32->address_length;
+> +               addr->maximum = addr->minimum + addr->address_length - 1;
+> +               return AE_OK;
+> +       case ACPI_RESOURCE_TYPE_ADDRESS16:
+> +       case ACPI_RESOURCE_TYPE_ADDRESS32:
+> +       case ACPI_RESOURCE_TYPE_ADDRESS64:
+> +               status = acpi_resource_to_address64(resource, addr);
+> +               if (ACPI_SUCCESS(status) &&
+> +                   (addr->resource_type == ACPI_MEMORY_RANGE ||
+> +                   addr->resource_type == ACPI_IO_RANGE) &&
+> +                   addr->address_length > 0) {
+> +                       return AE_OK;
+> +               }
+> +               break;
+> +       }
+> +       return AE_ERROR;
+> +}
 
-> Do the regulators manage to get their supplies?
-> 
+There's already very similar-looking code in acpi/resource.c, e.g.,
+acpi_dev_resource_address_space() and acpi_dev_resource_memory().  Can
+you use that existing code instead of adding new code that's mostly a
+duplication?
 
-There are no current support in mainline for the devices that use the regulators
-in this PMIC so I can't tell you if consumers manage to get their supplies
-correctly (e.g: if regulator_dev_lookup succeeds).
-
-But I see in the kernel log that the regulators are registered and configured as
-expected [0] and also the driver in the Chrome OS 3.8 kernel is working for sure
-and sets config.dev to &pdev->dev instead of the MFD.
-
->> So, for now I thought it made sense to set the operating mode to normal on
->> probe() but I'll change it to read from the hardware if that is better.
-> 
-> Yes, otherwise if the device is configured otherwise then when we change
-> the configuration we may break something.
-> 
->> I guess I should check in the datasheet if a sane default operating mode for
->> LDOs is expected when the chip is reseted or if this is left undefined and also
->> if the bootloader already set this.
-> 
-> You can't do anything based on the particular bootloader you're using in
-> your current system, this has to work in other systems.
-> 
-
-Yes, that's why I thought it was a good idea to set to a default operational
-mode but I'll change it to read from the hardware instead.
-
-Thanks a lot and best regards,
-Javier
-
-[0]: http://pastebin.com/raw.php?i=8yyMXcGD
+Bjorn
