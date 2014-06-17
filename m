@@ -1,85 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932790AbaFQMfY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 08:35:24 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:54379 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754281AbaFQMfW (ORCPT
+	id S932804AbaFQMkj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 08:40:39 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:46946 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932444AbaFQMkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 08:35:22 -0400
-X-AuditID: cbfee61a-b7fef6d00000200b-da-53a03608b777
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Mikko Perttunen <mperttunen@nvidia.com>
-Cc: tj@kernel.org, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] libahci_platform: Fail when PHY required but PHY
- support disabled
-Date: Tue, 17 Jun 2014 14:33:58 +0200
-Message-id: <1661226.KiZhVLZAOz@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <1403006875-22556-1-git-send-email-mperttunen@nvidia.com>
-References: <1403006875-22556-1-git-send-email-mperttunen@nvidia.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t9jAV0OswXBBt1vFC2O7XjEZHF51xw2
-	iwdXp7FZ/Fp+lNGBxWPTqk42j97md2wenzfJBTBHcdmkpOZklqUW6dslcGW8XG9csJO34uGE
-	52wNjO+5uhg5OSQETCTm/Z7NDmGLSVy4t56ti5GLQ0hgEaPEpr0fmCCcFiaJrikLGUGq2ASs
-	JCa2rwKzRQS0Jbr7PjGD2MwCXhKnLp4As4UF4iV+LrvKCmKzCKhKHFj/Hsjm4OAV0JS4uIYD
-	JCwq4CmxY/tKNhCbU8BN4urc2WDlQgKuEju6fjCB2LwCghI/Jt9jgRgvL7Fv/1RWCFtHYn/r
-	NLYJjAKzkJTNQlI2C0nZAkbmVYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxjBAftMagfjygaL
-	Q4wCHIxKPLwPZecHC7EmlhVX5h5ilOBgVhLhLRFfECzEm5JYWZValB9fVJqTWnyIUZqDRUmc
-	90CrdaCQQHpiSWp2ampBahFMlomDU6qB8dyRa/e6WzxfSV+NF5iWEBS92mSG0O7QnqU+j2ZM
-	OLz56ObAOqYlb52erbp2m+dNdZ6Slt3/p8lLj25UT3mqt2eq00bu18sZXM0FBDmMTRvbffcy
-	PPZe28/LpBQarLSxi09W/nz2q8st+/2mWz1P1/FJFAg4IfZZqOP9I0anCN4Xzj0bJ+7YocRS
-	nJFoqMVcVJwIAA4U9n1UAgAA
+	Tue, 17 Jun 2014 08:40:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <539915B3.9050904@codeaurora.org>
+References: <CAMuHMdXm_fT251+ih2cJS+hRkrPuVQi3sMFgYe+k18xe-Wd21w@mail.gmail.com>
+ <539892BD.8020403@codeaurora.org> <CAMuHMdWZutiNpGScEhCzgM70jJ+MZ1ErmKtNfMHVLDB+d5Lyzw@mail.gmail.com>
+ <539915B3.9050904@codeaurora.org>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Tue, 17 Jun 2014 13:40:16 +0100
+X-Google-Sender-Auth: KJlvqHpJpIApIN2m3ILUwjpBvk4
+Message-ID: <CACxGe6vkcfeEf0TNE5gstFs0jCm+GUT7RuJt+D8Ngq2e9Lf_fg@mail.gmail.com>
+Subject: Re: BUG: Bad page state in process swapper pfn:00000
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 17, 2014 03:07:55 PM Mikko Perttunen wrote:
-> ahci_platform_get_resources handles resource management for
-> platform AHCI drivers, including getting a possible PHY
-> from the device tree. Since not all drivers need a PHY, it
-> ignores -ENODEV and -ENOSYS from devm_get_phy. However, when
-> the PHY subsystem is mistakenly disabled, -ENOSYS can be
-> returned even when a PHY is needed.
-> 
-> This patch modifies the -ENOSYS case to check if a "phys"
-> device tree node exists. If it exists, then clearly the PHY
-> subsystem is mistakenly disabled and the driver cannot work,
-> ahci_platform_get_resources will fail and propagate the error.
-> 
-> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+On Thu, Jun 12, 2014 at 3:51 AM, Laura Abbott <lauraa@codeaurora.org> wrote:
+> On 6/11/2014 12:19 PM, Geert Uytterhoeven wrote:
+>> Hi Laura,
+>>
+>> On Wed, Jun 11, 2014 at 7:32 PM, Laura Abbott <lauraa@codeaurora.org> wrote:
+>>> On 6/11/2014 4:40 AM, Geert Uytterhoeven wrote:
+>>>> With current mainline, I get an early crash on r8a7791/koelsch:
+>>>>
+>>>> BUG: Bad page state in process swapper  pfn:00000
+>>>> page:ee20b000 count:0 mapcount:0 mapping:66756200 index:0x65726566
+>>>> page flags: 0x74656b63(locked|error|lru|active|owner_priv_1|arch_1|private|writeback|head|swapcache
+>>>> |reclaim|mlocked)
+>>>> page dumped because: PAGE_FLAGS_CHECK_AT_FREE flag(s) set
+>>>> bad because of flags:
+>>>> page flags: 0x212861(locked|lru|active|private|writeback|swapcache|mlocked)
+>>>>
+>>>> I bisected it to
+>>>>
+>>>> commit 1c2f87c22566cd057bc8cde10c37ae9da1a1bb76
+>>>> Author: Laura Abbott <lauraa@codeaurora.org>
+>>>> Date:   Sun Apr 13 22:54:58 2014 +0100
+>>>>
+>>>>     ARM: 8025/1: Get rid of meminfo
+>>
+>>>> -Truncating RAM at 40000000-bfffffff to -6f7fffff (vmalloc region overlap).
+>>>> +Truncating RAM at 0x00000000-0xc0000000 to -0x6f800000
+>>>
+>>> I'm guessing this is the issue right there.
+>>>
+>>>         memory@40000000 {
+>>>                 device_type = "memory";
+>>>                 reg = <0 0x40000000 0 0x40000000>;
+>>>         };
+>>>
+>>>         memory@200000000 {
+>>>                 device_type = "memory";
+>>>                 reg = <2 0x00000000 0 0x40000000>;
+>>>         };
+>>>
+>>> Those are the memory nodes from r8a7791-koelsch.dts. It looks like the memory
+>>> outside 32-bit address range is not being dropped. It was suggested to drop
+>>> early_init_dt_add_memory_arch which called arm_add_memory and just use the
+>>> generic of code directly but the problem is arm_add_memory does additional
+>>> bounds checking. It looks like early_init_dt_add_memory_arch in
+>>> drivers/of/fdt.c checks for overflow on u64 types but not for overflow
+>>> on phys_addr_t (32 bits) which is what memblock_add actually uses.
+>>>
+>>> For a quick test, can you try bringing back early_init_dt_add_memory_arch
+>>> and see if that fixes the problem:
+>>>
+>>> diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
+>>> index e94a157..ea9ce92 100644
+>>> --- a/arch/arm/kernel/devtree.c
+>>> +++ b/arch/arm/kernel/devtree.c
+>>> @@ -27,6 +27,10 @@
+>>>  #include <asm/mach/arch.h>
+>>>  #include <asm/mach-types.h>
+>>>
+>>> +void __init early_init_dt_add_memory_arch(u64 base, u64 size)
+>>> +{
+>>> +       arm_add_memory(base, size);
+>>> +}
+>>>
+>>>  #ifdef CONFIG_SMP
+>>>  extern struct of_cpu_method __cpu_method_of_table[];
+>>
+>> Thanks, my board boots again after applying this quick hack.
+>>
+>
+> Great! Russell are you okay with taking the above as a fix or would you prefer
+> I fixup drivers/of/fdt.c right now?
 
-Acked-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+I would rather see the fix directly in fdt.c.
 
+g.
+
+>
+>
+> Thanks,
+> Laura
+>
+> ----8<----
+> From 14bda557a108ad197e7c5f040f50ca024b45cc17 Mon Sep 17 00:00:00 2001
+> From: Laura Abbott <lauraa@codeaurora.org>
+> Date: Wed, 11 Jun 2014 19:39:29 -0700
+> Subject: [PATCH] arm: Bring back early_init_dt_add_memory_arch
+>
+> Commit 1c2f87c (ARM: 8025/1: Get rid of meminfo) removed
+> early_init_dt_add_memory_arch in favor of using the common method.
+> The common method does not currently check for memory outside of
+> 32-bit bounds which may lead to memory being incorrectly added to
+> the system. Bring back early_init_dt_add_memory_arch for now until
+> the generic function can be fixed up.
+>
+> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
 > ---
->  drivers/ata/libahci_platform.c | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/ata/libahci_platform.c b/drivers/ata/libahci_platform.c
-> index 3a5b4ed..b007758 100644
-> --- a/drivers/ata/libahci_platform.c
-> +++ b/drivers/ata/libahci_platform.c
-> @@ -250,8 +250,13 @@ struct ahci_host_priv *ahci_platform_get_resources(struct platform_device *pdev)
->  	if (IS_ERR(hpriv->phy)) {
->  		rc = PTR_ERR(hpriv->phy);
->  		switch (rc) {
-> -		case -ENODEV:
->  		case -ENOSYS:
-> +			/* No PHY support. Check if PHY is required. */
-> +			if (of_find_property(dev->of_node, "phys", NULL)) {
-> +				dev_err(dev, "couldn't get sata-phy: ENOSYS\n");
-> +				goto err_out;
-> +			}
-> +		case -ENODEV:
->  			/* continue normally */
->  			hpriv->phy = NULL;
->  			break;
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
-
+>  arch/arm/kernel/devtree.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+>
+> diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
+> index e94a157..ea9ce92 100644
+> --- a/arch/arm/kernel/devtree.c
+> +++ b/arch/arm/kernel/devtree.c
+> @@ -27,6 +27,10 @@
+>  #include <asm/mach/arch.h>
+>  #include <asm/mach-types.h>
+>
+> +void __init early_init_dt_add_memory_arch(u64 base, u64 size)
+> +{
+> +       arm_add_memory(base, size);
+> +}
+>
+>  #ifdef CONFIG_SMP
+>  extern struct of_cpu_method __cpu_method_of_table[];
+> --
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
