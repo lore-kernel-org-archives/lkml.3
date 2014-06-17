@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965154AbaFQQZp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:25:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50921 "EHLO
+	id S965120AbaFQQZf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:25:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50897 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965137AbaFQQZj (ORCPT
+	with ESMTP id S934193AbaFQQZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:25:39 -0400
+	Tue, 17 Jun 2014 12:25:20 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Grant Likely <grant.likely@linaro.org>, Mark Brown <broonie@kernel.org>,
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 100/121] drivercore: deferral race condition fix
-Date: Tue, 17 Jun 2014 09:17:58 -0700
-Message-Id: <1403021899-16708-73-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 119/121] Input: elantech - fix touchpad initialization on Gigabyte U2442
+Date: Tue, 17 Jun 2014 09:18:17 -0700
+Message-Id: <1403021899-16708-92-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
@@ -27,125 +28,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Grant Likely <grant.likely@linaro.org>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 58b116bce13612e5aa6fcd49ecbd4cf8bb59e835 upstream.
+commit 36189cc3cd57ab0f1cd75241f93fe01de928ac06 upstream.
 
-When the kernel is built with CONFIG_PREEMPT it is possible to reach a state
-when all modules loaded but some driver still stuck in the deferred list
-and there is a need for external event to kick the deferred queue to probe
-these drivers.
+The hw_version 3 Elantech touchpad on the Gigabyte U2442 does not accept
+0x0b as initialization value for r10, this stand-alone version of the
+driver: http://planet76.com/drivers/elantech/psmouse-elantech-v6.tar.bz2
 
-The issue has been observed on embedded systems with CONFIG_PREEMPT enabled,
-audio support built as modules and using nfsroot for root filesystem.
+Uses 0x03 which does work, so this means not setting bit 3 of r10 which
+sets: "Enable Real H/W Resolution In Absolute mode"
 
-The following log fragment shows such sequence when all audio modules
-were loaded but the sound card is not present since the machine driver has
-failed to probe due to missing dependency during it's probe.
-The board is am335x-evmsk (McASP<->tlv320aic3106 codec) with davinci-evm
-machine driver:
+Which will result in half the x and y resolution we get with that bit set,
+so simply not setting it everywhere is not a solution. We've been unable to
+find a way to identify touchpads where setting the bit will fail, so this
+patch uses a dmi based blacklist for this.
 
-...
-[   12.615118] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: ENTER
-[   12.719969] davinci_evm sound.3: davinci_evm_probe: ENTER
-[   12.725753] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card
-[   12.753846] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component
-[   12.922051] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component DONE
-[   12.950839] davinci_evm sound.3: ASoC: platform (null) not registered
-[   12.957898] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card DONE (-517)
-[   13.099026] davinci-mcasp 4803c000.mcasp: Kicking the deferred list
-[   13.177838] davinci-mcasp 4803c000.mcasp: really_probe: probe_count = 2
-[   13.194130] davinci_evm sound.3: snd_soc_register_card failed (-517)
-[   13.346755] davinci_mcasp_driver_init: LEAVE
-[   13.377446] platform sound.3: Driver davinci_evm requests probe deferral
-[   13.592527] platform sound.3: really_probe: probe_count = 0
+https://bugzilla.kernel.org/show_bug.cgi?id=61151
 
-In the log the machine driver enters it's probe at 12.719969 (this point it
-has been removed from the deferred lists). McASP driver already executing
-it's probing (since 12.615118).
-The machine driver tries to construct the sound card (12.950839) but did
-not found one of the components so it fails. After this McASP driver
-registers all the ASoC components (the machine driver still in it's probe
-function after it failed to construct the card) and the deferred work is
-prepared at 13.099026 (note that this time the machine driver is not in the
-lists so it is not going to be handled when the work is executing).
-Lastly the machine driver exit from it's probe and the core places it to
-the deferred list but there will be no other driver going to load and the
-deferred queue is not going to be kicked again - till we have external event
-like connecting USB stick, etc.
-
-The proposed solution is to try the deferred queue once more when the last
-driver is asking for deferring and we had drivers loaded while this last
-driver was probing.
-
-This way we can avoid drivers stuck in the deferred queue.
-
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Reviewed-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Tested-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Mark Brown <broonie@kernel.org>
+Reported-by: Philipp Wolfer <ph.wolfer@gmail.com>
+Tested-by: Philipp Wolfer <ph.wolfer@gmail.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/base/dd.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ Documentation/input/elantech.txt |  5 ++++-
+ drivers/input/mouse/elantech.c   | 26 +++++++++++++++++++++++++-
+ drivers/input/mouse/elantech.h   |  1 +
+ 3 files changed, 30 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index 61d3e1b..2cb84e6 100644
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -51,6 +51,7 @@ static DEFINE_MUTEX(deferred_probe_mutex);
- static LIST_HEAD(deferred_probe_pending_list);
- static LIST_HEAD(deferred_probe_active_list);
- static struct workqueue_struct *deferred_wq;
-+static atomic_t deferred_trigger_count = ATOMIC_INIT(0);
+diff --git a/Documentation/input/elantech.txt b/Documentation/input/elantech.txt
+index 5602eb7..e1ae127 100644
+--- a/Documentation/input/elantech.txt
++++ b/Documentation/input/elantech.txt
+@@ -504,9 +504,12 @@ byte 5:
+ * reg_10
  
- /**
-  * deferred_probe_work_func() - Retry probing devices in the active list.
-@@ -134,6 +135,17 @@ static bool driver_deferred_probe_enable = false;
-  * This functions moves all devices from the pending list to the active
-  * list and schedules the deferred probe workqueue to process them.  It
-  * should be called anytime a driver is successfully bound to a device.
-+ *
-+ * Note, there is a race condition in multi-threaded probe. In the case where
-+ * more than one device is probing at the same time, it is possible for one
-+ * probe to complete successfully while another is about to defer. If the second
-+ * depends on the first, then it will get put on the pending list after the
-+ * trigger event has already occured and will be stuck there.
-+ *
-+ * The atomic 'deferred_trigger_count' is used to determine if a successful
-+ * trigger has occurred in the midst of probing a driver. If the trigger count
-+ * changes in the midst of a probe, then deferred processing should be triggered
-+ * again.
+    bit   7   6   5   4   3   2   1   0
+-         0   0   0   0   0   0   0   A
++         0   0   0   0   R   F   T   A
+ 
+          A: 1 = enable absolute tracking
++         T: 1 = enable two finger mode auto correct
++         F: 1 = disable ABS Position Filter
++         R: 1 = enable real hardware resolution
+ 
+ 6.2 Native absolute mode 6 byte packet format
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+index 57b2637..c7bd58e 100644
+--- a/drivers/input/mouse/elantech.c
++++ b/drivers/input/mouse/elantech.c
+@@ -11,6 +11,7 @@
   */
- static void driver_deferred_probe_trigger(void)
- {
-@@ -146,6 +158,7 @@ static void driver_deferred_probe_trigger(void)
- 	 * into the active list so they can be retried by the workqueue
- 	 */
- 	mutex_lock(&deferred_probe_mutex);
-+	atomic_inc(&deferred_trigger_count);
- 	list_splice_tail_init(&deferred_probe_pending_list,
- 			      &deferred_probe_active_list);
- 	mutex_unlock(&deferred_probe_mutex);
-@@ -264,6 +277,7 @@ static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
- static int really_probe(struct device *dev, struct device_driver *drv)
- {
- 	int ret = 0;
-+	int local_trigger_count = atomic_read(&deferred_trigger_count);
  
- 	atomic_inc(&probe_count);
- 	pr_debug("bus: '%s': %s: probing driver %s with device %s\n",
-@@ -303,6 +317,9 @@ probe_failed:
- 		/* Driver requested deferred probing */
- 		dev_info(dev, "Driver %s requests probe deferral\n", drv->name);
- 		driver_deferred_probe_add(dev);
-+		/* Did a trigger occur while probing? Need to re-trigger if yes */
-+		if (local_trigger_count != atomic_read(&deferred_trigger_count))
-+			driver_deferred_probe_trigger();
- 	} else if (ret != -ENODEV && ret != -ENXIO) {
- 		/* driver matched but the probe failed */
- 		printk(KERN_WARNING
+ #include <linux/delay.h>
++#include <linux/dmi.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/input.h>
+@@ -800,7 +801,11 @@ static int elantech_set_absolute_mode(struct psmouse *psmouse)
+ 		break;
+ 
+ 	case 3:
+-		etd->reg_10 = 0x0b;
++		if (etd->set_hw_resolution)
++			etd->reg_10 = 0x0b;
++		else
++			etd->reg_10 = 0x03;
++
+ 		if (elantech_write_reg(psmouse, 0x10, etd->reg_10))
+ 			rc = -1;
+ 
+@@ -1262,6 +1267,22 @@ static int elantech_reconnect(struct psmouse *psmouse)
+ }
+ 
+ /*
++ * Some hw_version 3 models go into error state when we try to set bit 3 of r10
++ */
++static const struct dmi_system_id no_hw_res_dmi_table[] = {
++#if defined(CONFIG_DMI) && defined(CONFIG_X86)
++	{
++		/* Gigabyte U2442 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "GIGABYTE"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "U2442"),
++		},
++	},
++#endif
++	{ }
++};
++
++/*
+  * determine hardware version and set some properties according to it.
+  */
+ static int elantech_set_properties(struct elantech_data *etd)
+@@ -1313,6 +1334,9 @@ static int elantech_set_properties(struct elantech_data *etd)
+ 			etd->reports_pressure = true;
+ 	}
+ 
++	/* Enable real hardware resolution on hw_version 3 ? */
++	etd->set_hw_resolution = !dmi_check_system(no_hw_res_dmi_table);
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/input/mouse/elantech.h b/drivers/input/mouse/elantech.h
+index 46db3be..c1c15ab 100644
+--- a/drivers/input/mouse/elantech.h
++++ b/drivers/input/mouse/elantech.h
+@@ -129,6 +129,7 @@ struct elantech_data {
+ 	bool paritycheck;
+ 	bool jumpy_cursor;
+ 	bool reports_pressure;
++	bool set_hw_resolution;
+ 	unsigned char hw_version;
+ 	unsigned int fw_version;
+ 	unsigned int single_finger_reports;
 -- 
 1.9.1
 
