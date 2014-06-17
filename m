@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756442AbaFQWxY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:53:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53642 "EHLO
+	id S1755506AbaFQWpu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:45:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53827 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965489AbaFQVp2 (ORCPT
+	with ESMTP id S965854AbaFQVq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:45:28 -0400
+	Tue, 17 Jun 2014 17:46:57 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Florian Westphal <fw@strlen.de>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Jianyu Zhan <nasa4836@gmail.com>, Tejun Heo <tj@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 006/212] net: core: don't account for udp header size when computing seglen
-Date: Tue, 17 Jun 2014 14:41:40 -0700
-Message-Id: <1403041506-13646-7-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 067/212] percpu: make pcpu_alloc_chunk() use pcpu_mem_free() instead of kfree()
+Date: Tue, 17 Jun 2014 14:42:41 -0700
+Message-Id: <1403041506-13646-68-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -28,53 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Jianyu Zhan <nasa4836@gmail.com>
 
-[ Upstream commit 6d39d589bb76ee8a1c6cde6822006ae0053decff ]
+commit 5a838c3b60e3a36ade764cf7751b8f17d7c9c2da upstream.
 
-In case of tcp, gso_size contains the tcpmss.
+pcpu_chunk_struct_size = sizeof(struct pcpu_chunk) +
+	BITS_TO_LONGS(pcpu_unit_pages) * sizeof(unsigned long)
 
-For UFO (udp fragmentation offloading) skbs, gso_size is the fragment
-payload size, i.e. we must not account for udp header size.
+It hardly could be ever bigger than PAGE_SIZE even for large-scale machine,
+but for consistency with its couterpart pcpu_mem_zalloc(),
+use pcpu_mem_free() instead.
 
-Otherwise, when using virtio drivers, a to-be-forwarded UFO GSO packet
-will be needlessly fragmented in the forward path, because we think its
-individual segments are too large for the outgoing link.
+Commit b4916cb17c26 ("percpu: make pcpu_free_chunk() use
+pcpu_mem_free() instead of kfree()") addressed this problem, but
+missed this one.
 
-Fixes: fe6cc55f3a9a053 ("net: ip, ipv6: handle gso skbs in forwarding path")
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Reported-by: Tobias Brunner <tobias@strongswan.org>
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+tj: commit message updated
+
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Fixes: 099a19d91ca4 ("percpu: allow limited allocation before slab is online)
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/core/skbuff.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ mm/percpu.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 9a9898e..bdd6955 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -3583,12 +3583,14 @@ EXPORT_SYMBOL_GPL(skb_scrub_packet);
- unsigned int skb_gso_transport_seglen(const struct sk_buff *skb)
- {
- 	const struct skb_shared_info *shinfo = skb_shinfo(skb);
--	unsigned int hdr_len;
+diff --git a/mm/percpu.c b/mm/percpu.c
+index 0d10def..7d6ce15 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -612,7 +612,7 @@ static struct pcpu_chunk *pcpu_alloc_chunk(void)
+ 	chunk->map = pcpu_mem_zalloc(PCPU_DFL_MAP_ALLOC *
+ 						sizeof(chunk->map[0]));
+ 	if (!chunk->map) {
+-		kfree(chunk);
++		pcpu_mem_free(chunk, pcpu_chunk_struct_size);
+ 		return NULL;
+ 	}
  
- 	if (likely(shinfo->gso_type & (SKB_GSO_TCPV4 | SKB_GSO_TCPV6)))
--		hdr_len = tcp_hdrlen(skb);
--	else
--		hdr_len = sizeof(struct udphdr);
--	return hdr_len + shinfo->gso_size;
-+		return tcp_hdrlen(skb) + shinfo->gso_size;
-+
-+	/* UFO sets gso_size to the size of the fragmentation
-+	 * payload, i.e. the size of the L4 (UDP) header is already
-+	 * accounted for.
-+	 */
-+	return shinfo->gso_size;
- }
- EXPORT_SYMBOL_GPL(skb_gso_transport_seglen);
 -- 
 1.9.1
 
