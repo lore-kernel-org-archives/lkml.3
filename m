@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967241AbaFQVxD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:53:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54955 "EHLO
+	id S967253AbaFQVxJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:53:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54970 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967216AbaFQVw7 (ORCPT
+	with ESMTP id S967242AbaFQVxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:52:59 -0400
+	Tue, 17 Jun 2014 17:53:04 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Gibson <david@gibson.dropbear.id.au>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 024/212] rtnetlink: Only supply IFLA_VF_PORTS information when RTEXT_FILTER_VF is set
-Date: Tue, 17 Jun 2014 14:41:58 -0700
-Message-Id: <1403041506-13646-25-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 146/212] mac80211: fix on-channel remain-on-channel
+Date: Tue, 17 Jun 2014 14:44:00 -0700
+Message-Id: <1403041506-13646-147-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -28,101 +27,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Gibson <david@gibson.dropbear.id.au>
+From: Johannes Berg <johannes.berg@intel.com>
 
-[ Upstream commit c53864fd60227de025cb79e05493b13f69843971 ]
+commit b4b177a5556a686909e643f1e9b6434c10de079f upstream.
 
-Since 115c9b81928360d769a76c632bae62d15206a94a (rtnetlink: Fix problem with
-buffer allocation), RTM_NEWLINK messages only contain the IFLA_VFINFO_LIST
-attribute if they were solicited by a GETLINK message containing an
-IFLA_EXT_MASK attribute with the RTEXT_FILTER_VF flag.
+Jouni reported that if a remain-on-channel was active on the
+same channel as the current operating channel, then the ROC
+would start, but any frames transmitted using mgmt-tx on the
+same channel would get delayed until after the ROC.
 
-That was done because some user programs broke when they received more data
-than expected - because IFLA_VFINFO_LIST contains information for each VF
-it can become large if there are many VFs.
+The reason for this is that the ROC starts, but doesn't have
+any handling for "remain on the same channel", so it stops
+the interface queues. The later mgmt-tx then puts the frame
+on the interface queues (since it's on the current operating
+channel) and thus they get delayed until after the ROC.
 
-However, the IFLA_VF_PORTS attribute, supplied for devices which implement
-ndo_get_vf_port (currently the 'enic' driver only), has the same problem.
-It supplies per-VF information and can therefore become large, but it is
-not currently conditional on the IFLA_EXT_MASK value.
+To fix this, add some logic to handle remaining on the same
+channel specially and not stop the queues etc. in this case.
+This not only fixes the bug but also improves behaviour in
+this case as data frames etc. can continue to flow.
 
-Worse, it interacts badly with the existing EXT_MASK handling.  When
-IFLA_EXT_MASK is not supplied, the buffer for netlink replies is fixed at
-NLMSG_GOODSIZE.  If the information for IFLA_VF_PORTS exceeds this, then
-rtnl_fill_ifinfo() returns -EMSGSIZE on the first message in a packet.
-netlink_dump() will misinterpret this as having finished the listing and
-omit data for this interface and all subsequent ones.  That can cause
-getifaddrs(3) to enter an infinite loop.
-
-This patch addresses the problem by only supplying IFLA_VF_PORTS when
-IFLA_EXT_MASK is supplied with the RTEXT_FILTER_VF flag set.
-
-Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
-Reviewed-by: Jiri Pirko <jiri@resnulli.us>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Jouni Malinen <j@w1.fi>
+Tested-by: Jouni Malinen <j@w1.fi>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/core/rtnetlink.c | 16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ net/mac80211/ieee80211_i.h |  1 +
+ net/mac80211/offchannel.c  | 27 ++++++++++++++++++++-------
+ 2 files changed, 21 insertions(+), 7 deletions(-)
 
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index 5bee798..962b253 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -714,7 +714,8 @@ static inline int rtnl_vfinfo_size(const struct net_device *dev,
- 		return 0;
- }
+diff --git a/net/mac80211/ieee80211_i.h b/net/mac80211/ieee80211_i.h
+index 1fc9190..980d863 100644
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -315,6 +315,7 @@ struct ieee80211_roc_work {
  
--static size_t rtnl_port_size(const struct net_device *dev)
-+static size_t rtnl_port_size(const struct net_device *dev,
-+			     u32 ext_filter_mask)
- {
- 	size_t port_size = nla_total_size(4)		/* PORT_VF */
- 		+ nla_total_size(PORT_PROFILE_MAX)	/* PORT_PROFILE */
-@@ -730,7 +731,8 @@ static size_t rtnl_port_size(const struct net_device *dev)
- 	size_t port_self_size = nla_total_size(sizeof(struct nlattr))
- 		+ port_size;
+ 	bool started, abort, hw_begun, notified;
+ 	bool to_be_freed;
++	bool on_channel;
  
--	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent)
-+	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent ||
-+	    !(ext_filter_mask & RTEXT_FILTER_VF))
- 		return 0;
- 	if (dev_num_vf(dev->dev.parent))
- 		return port_self_size + vf_ports_size +
-@@ -765,7 +767,7 @@ static noinline size_t if_nlmsg_size(const struct net_device *dev,
- 	       + nla_total_size(ext_filter_mask
- 			        & RTEXT_FILTER_VF ? 4 : 0) /* IFLA_NUM_VF */
- 	       + rtnl_vfinfo_size(dev, ext_filter_mask) /* IFLA_VFINFO_LIST */
--	       + rtnl_port_size(dev) /* IFLA_VF_PORTS + IFLA_PORT_SELF */
-+	       + rtnl_port_size(dev, ext_filter_mask) /* IFLA_VF_PORTS + IFLA_PORT_SELF */
- 	       + rtnl_link_get_size(dev) /* IFLA_LINKINFO */
- 	       + rtnl_link_get_af_size(dev) /* IFLA_AF_SPEC */
- 	       + nla_total_size(MAX_PHYS_PORT_ID_LEN); /* IFLA_PHYS_PORT_ID */
-@@ -827,11 +829,13 @@ static int rtnl_port_self_fill(struct sk_buff *skb, struct net_device *dev)
- 	return 0;
- }
+ 	unsigned long hw_start_time;
  
--static int rtnl_port_fill(struct sk_buff *skb, struct net_device *dev)
-+static int rtnl_port_fill(struct sk_buff *skb, struct net_device *dev,
-+			  u32 ext_filter_mask)
- {
- 	int err;
+diff --git a/net/mac80211/offchannel.c b/net/mac80211/offchannel.c
+index 6fb3855..7a17dec 100644
+--- a/net/mac80211/offchannel.c
++++ b/net/mac80211/offchannel.c
+@@ -333,7 +333,7 @@ void ieee80211_sw_roc_work(struct work_struct *work)
+ 		container_of(work, struct ieee80211_roc_work, work.work);
+ 	struct ieee80211_sub_if_data *sdata = roc->sdata;
+ 	struct ieee80211_local *local = sdata->local;
+-	bool started;
++	bool started, on_channel;
  
--	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent)
-+	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent ||
-+	    !(ext_filter_mask & RTEXT_FILTER_VF))
- 		return 0;
+ 	mutex_lock(&local->mtx);
  
- 	err = rtnl_port_self_fill(skb, dev);
-@@ -1016,7 +1020,7 @@ static int rtnl_fill_ifinfo(struct sk_buff *skb, struct net_device *dev,
- 		nla_nest_end(skb, vfinfo);
- 	}
+@@ -354,14 +354,26 @@ void ieee80211_sw_roc_work(struct work_struct *work)
+ 	if (!roc->started) {
+ 		struct ieee80211_roc_work *dep;
  
--	if (rtnl_port_fill(skb, dev))
-+	if (rtnl_port_fill(skb, dev, ext_filter_mask))
- 		goto nla_put_failure;
+-		/* start this ROC */
+-		ieee80211_offchannel_stop_vifs(local);
++		WARN_ON(local->use_chanctx);
++
++		/* If actually operating on the desired channel (with at least
++		 * 20 MHz channel width) don't stop all the operations but still
++		 * treat it as though the ROC operation started properly, so
++		 * other ROC operations won't interfere with this one.
++		 */
++		roc->on_channel = roc->chan == local->_oper_chandef.chan &&
++				  local->_oper_chandef.width != NL80211_CHAN_WIDTH_5 &&
++				  local->_oper_chandef.width != NL80211_CHAN_WIDTH_10;
  
- 	if (dev->rtnl_link_ops) {
+-		/* switch channel etc */
++		/* start this ROC */
+ 		ieee80211_recalc_idle(local);
+ 
+-		local->tmp_channel = roc->chan;
+-		ieee80211_hw_config(local, 0);
++		if (!roc->on_channel) {
++			ieee80211_offchannel_stop_vifs(local);
++
++			local->tmp_channel = roc->chan;
++			ieee80211_hw_config(local, 0);
++		}
+ 
+ 		/* tell userspace or send frame */
+ 		ieee80211_handle_roc_started(roc);
+@@ -380,9 +392,10 @@ void ieee80211_sw_roc_work(struct work_struct *work)
+  finish:
+ 		list_del(&roc->list);
+ 		started = roc->started;
++		on_channel = roc->on_channel;
+ 		ieee80211_roc_notify_destroy(roc, !roc->abort);
+ 
+-		if (started) {
++		if (started && !on_channel) {
+ 			ieee80211_flush_queues(local, NULL);
+ 
+ 			local->tmp_channel = NULL;
 -- 
 1.9.1
 
