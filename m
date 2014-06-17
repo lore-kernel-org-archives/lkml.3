@@ -1,99 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967180AbaFQWv0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:51:26 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:48486 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965515AbaFQWvY (ORCPT
+	id S967325AbaFQWXY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:23:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54359 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965034AbaFQVuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 18:51:24 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Russell King <linux@arm.linux.org.uk>, Rob Herring <robh@kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [PATCH v2] platform_get_irq: Revert to platform_get_resource if of_irq_get fails
-Date: Tue, 17 Jun 2014 15:51:02 -0700
-Message-Id: <1403045462-24204-1-git-send-email-linux@roeck-us.net>
+	Tue, 17 Jun 2014 17:50:22 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Xuelin Shi <xuelin.shi@freescale.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 160/212] dmaengine: fix dmaengine_unmap failure
+Date: Tue, 17 Jun 2014 14:44:14 -0700
+Message-Id: <1403041506-13646-161-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commits 9ec36ca (of/irq: do irq resolution in platform_get_irq)
-and ad69674 (of/irq: do irq resolution in platform_get_irq_byname)
-change the semantics of platform_get_irq and platform_get_irq_byname
-to always rely on devicetree information if devicetree is enabled
-and if a devicetree node is attached to the device. The functions
-now return an error if the devicetree data does not include interrupt
-information, even if the information is available as platform resource
-data.
+3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
 
-This causes mfd client drivers to fail if the interrupt number is
-passed via platform resources. Therefore, if of_irq_get fails, try
-platform_get_resource as method of last resort. This restores the
-original functionality for drivers depending on platform resources
-to get irq information.
+------------------
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Rob Herring <robh@kernel.org>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+From: Xuelin Shi <xuelin.shi@freescale.com>
+
+commit c1f43dd9c20d85e66c4d77e284f64ac114abe3f8 upstream.
+
+The count which is used to get_unmap_data maybe not the same as the
+count computed in dmaengine_unmap which causes to free data in a
+wrong pool.
+
+This patch fixes this issue by keeping the map count with unmap_data
+structure and use this count to get the pool.
+
+Signed-off-by: Xuelin Shi <xuelin.shi@freescale.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
-v2: Include change for platform_get_irq_byname
-    Handle EPROBE_DEFER
+ drivers/dma/dmaengine.c   | 2 ++
+ include/linux/dmaengine.h | 1 +
+ 2 files changed, 3 insertions(+)
 
-It looks like v1 got lost in space, so you may not have seen it.
-I am sending this patch as v2 anyway to avoid confusion, just in case
-v1 shows up somewhere.
-
-At least 9ec36ca has been applied to -stable, so if this patch is
-accepted it may make sense to apply it to the same -stable releases.
-
- drivers/base/platform.c | 18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index 9e9227e..eee48c4 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -89,8 +89,13 @@ int platform_get_irq(struct platform_device *dev, unsigned int num)
- 	return dev->archdata.irqs[num];
- #else
- 	struct resource *r;
--	if (IS_ENABLED(CONFIG_OF_IRQ) && dev->dev.of_node)
--		return of_irq_get(dev->dev.of_node, num);
-+	if (IS_ENABLED(CONFIG_OF_IRQ) && dev->dev.of_node) {
-+		int ret;
-+
-+		ret = of_irq_get(dev->dev.of_node, num);
-+		if (ret >= 0 || ret == -EPROBE_DEFER)
-+			return ret;
-+	}
+diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+index ef63b90..b4c711d 100644
+--- a/drivers/dma/dmaengine.c
++++ b/drivers/dma/dmaengine.c
+@@ -959,6 +959,7 @@ static void dmaengine_unmap(struct kref *kref)
+ 		dma_unmap_page(dev, unmap->addr[i], unmap->len,
+ 			       DMA_BIDIRECTIONAL);
+ 	}
++	cnt = unmap->map_cnt;
+ 	mempool_free(unmap, __get_unmap_pool(cnt)->pool);
+ }
  
- 	r = platform_get_resource(dev, IORESOURCE_IRQ, num);
+@@ -1024,6 +1025,7 @@ dmaengine_get_unmap_data(struct device *dev, int nr, gfp_t flags)
+ 	memset(unmap, 0, sizeof(*unmap));
+ 	kref_init(&unmap->kref);
+ 	unmap->dev = dev;
++	unmap->map_cnt = nr;
  
-@@ -133,8 +138,13 @@ int platform_get_irq_byname(struct platform_device *dev, const char *name)
- {
- 	struct resource *r;
+ 	return unmap;
+ }
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 41cf0c3..ed6c1f1 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -405,6 +405,7 @@ typedef bool (*dma_filter_fn)(struct dma_chan *chan, void *filter_param);
+ typedef void (*dma_async_tx_callback)(void *dma_async_param);
  
--	if (IS_ENABLED(CONFIG_OF_IRQ) && dev->dev.of_node)
--		return of_irq_get_byname(dev->dev.of_node, name);
-+	if (IS_ENABLED(CONFIG_OF_IRQ) && dev->dev.of_node) {
-+		int ret;
-+
-+		ret = of_irq_get_byname(dev->dev.of_node, name);
-+		if (ret >= 0 || ret == -EPROBE_DEFER)
-+			return ret;
-+	}
- 
- 	r = platform_get_resource_byname(dev, IORESOURCE_IRQ, name);
- 	return r ? r->start : -ENXIO;
+ struct dmaengine_unmap_data {
++	u8 map_cnt;
+ 	u8 to_cnt;
+ 	u8 from_cnt;
+ 	u8 bidi_cnt;
 -- 
 1.9.1
 
