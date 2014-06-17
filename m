@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006AbaFQKxx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 06:53:53 -0400
-Received: from zimbra13.linbit.com ([212.69.166.240]:55611 "EHLO
-	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755754AbaFQKxv (ORCPT
+	id S1756082AbaFQKyb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 06:54:31 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:36089 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756012AbaFQKy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 06:53:51 -0400
-Date: Tue, 17 Jun 2014 12:53:48 +0200
-From: Lars Ellenberg <lars.ellenberg@linbit.com>
-To: Martin Kepplinger <martink@posteo.de>
-Cc: rientjes@google.com, linux-kernel@vger.kernel.org,
-        drbd-dev@lists.linbit.com
-Subject: Re: [Drbd-dev] [PATCH v2] drbd: change one-bit bitfield to be an
- unsigned int
-Message-ID: <20140617105348.GH28884@soda.linbit>
-Mail-Followup-To: Martin Kepplinger <martink@posteo.de>,
-	rientjes@google.com, linux-kernel@vger.kernel.org,
-	drbd-dev@lists.linbit.com
-References: <alpine.DEB.2.02.1406160225510.30205@chino.kir.corp.google.com>
- <1402988047-16364-1-git-send-email-martink@posteo.de>
+	Tue, 17 Jun 2014 06:54:29 -0400
+Message-ID: <53A01E61.3090600@imgtec.com>
+Date: Tue, 17 Jun 2014 11:54:25 +0100
+From: Markos Chandras <Markos.Chandras@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402988047-16364-1-git-send-email-martink@posteo.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Daniel Borkmann <dborkman@redhat.com>, Guenter Roeck <linux@roeck-us.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Linux MIPS Mailing List" <linux-mips@linux-mips.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Alexei Starovoitov <ast@plumgrid.com>
+Subject: Re: mips:allmodconfig build failure in 3.16-rc1 due to bpf_jit code
+References: <539FA6CB.5050703@roeck-us.net> <539FFA6B.9030004@redhat.com> <53A01572.5090603@redhat.com>
+In-Reply-To: <53A01572.5090603@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.28]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 08:54:07AM +0200, Martin Kepplinger wrote:
-> The one-bit bitfields are assigned true (1) or false (0) and checked
-> for them respectively. While it should work either way and -1 is true
-> as well it is more clear to see what's going on when using an unsigned int
-> because 1 doesn't silently become -1 behind the label true.
+On 06/17/2014 11:16 AM, Daniel Borkmann wrote:
+> On 06/17/2014 10:20 AM, Daniel Borkmann wrote:
+>> On 06/17/2014 04:24 AM, Guenter Roeck wrote:
+>>> mips:allmodconfig fails in 3.16-rc1 with lots of undefined symbols.
+>>>
+>>> arch/mips/net/bpf_jit.c: In function 'is_load_to_a':
+>>> arch/mips/net/bpf_jit.c:559:7: error: 'BPF_S_LD_W_LEN' undeclared
+>>> (first use in this function)
+>>> arch/mips/net/bpf_jit.c:559:7: note: each undeclared identifier is
+>>> reported only once for each function it appears in
+>>> arch/mips/net/bpf_jit.c:560:7: error: 'BPF_S_LD_W_ABS' undeclared
+>>> (first use in this function)
+>>> arch/mips/net/bpf_jit.c:561:7: error: 'BPF_S_LD_H_ABS' undeclared
+>>> (first use in this function)
+>>> arch/mips/net/bpf_jit.c:562:7: error: 'BPF_S_LD_B_ABS' undeclared
+>>> (first use in this function)
+>>> arch/mips/net/bpf_jit.c:563:7: error: 'BPF_S_ANC_CPU' undeclared
+>>> (first use in this function)
+>>> arch/mips/net/bpf_jit.c:564:7: error: 'BPF_S_ANC_IFINDEX' undeclared
+>>> (first use in this function)
+>>> arch/mips/net/bpf_jit.c:565:7: error: 'BPF_S_ANC_MARK' undeclared
+>>> (first use in this function)
+>>>
+>>> and so on.
+>>>
+>>> Those symbols are not defined anywhere.
+>>>
+>>> The problem is due to a conflict with commit 348059313 (net: filter:
+>>> get rid of BPF_S_*
+>>> enum), which removed those definitions.
+>>
+>> Yep, it seems both got in this merge window from different trees.
+>> Don't have mips, but
+>> I'll have a look, and send you a patch.
 > 
-> Signed-off-by: Martin Kepplinger <martink@posteo.de>
-> ---
-> Thanks for looking at it. This is more of a question: Does this make sense
-> to you now? I can be mistaken. It just wasn't totally clear to me at first
-> sight and even though it should be, why not try to improve it.
+> Could you give the attached patch a try?
 > 
-> sparse called it 'dubious' before the change.
+> Thanks,
 > 
-> (built but untested)
+> Daniel
 
-Patch is completely pointless, really,
-and I don't get the motivation for it at all.
-BUT.
+Hi Daniel,
 
-If it makes someone happy,
-and since all of our other bitfields in fact are declared "unsigned xyz:N",
-for consistency we can make this unsigned as well.
-Will probably fold this with some upcoming change in that struct anyways.
+This fixes the build and seems to work ok (tried with dhcp and tcpdump).
+Thanks for fixing it.
 
-    Lars
+Reviewed-by: Markos Chandras <markos.chandras@imgtec.com>
+Tested-by: Markos Chandras <markos.chandras@imgtec.com>
 
-> 
->  drivers/block/drbd/drbd_interval.h |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/block/drbd/drbd_interval.h b/drivers/block/drbd/drbd_interval.h
-> index f38fcb0..8d670e6 100644
-> --- a/drivers/block/drbd/drbd_interval.h
-> +++ b/drivers/block/drbd/drbd_interval.h
-> @@ -9,8 +9,8 @@ struct drbd_interval {
->  	sector_t sector;	/* start sector of the interval */
->  	unsigned int size;	/* size in bytes */
->  	sector_t end;		/* highest interval end in subtree */
-> -	int local:1		/* local or remote request? */;
-> -	int waiting:1;
-> +	unsigned int local:1;	/* local or remote request? */
-> +	unsigned int waiting:1;
->  };
->  
->  static inline void drbd_clear_interval(struct drbd_interval *i)
+-- 
+markos
