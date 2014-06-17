@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386AbaFQHQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 03:16:15 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:37767 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755105AbaFQHQL (ORCPT
+	id S1755498AbaFQHQu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 03:16:50 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48844 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752768AbaFQHQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 03:16:11 -0400
+	Tue, 17 Jun 2014 03:16:07 -0400
 From: Varka Bhadram <varkabhadram@gmail.com>
 X-Google-Original-From: Varka Bhadram <varkab@cdac.in>
 To: netdev@vger.kernel.org
 Cc: alex.bluesman.smirnov@gmail.com, dbaryshkov@gmail.com,
         linux-zigbee-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         davem@davemloft.net, Varka Bhadram <varkab@cdac.in>
-Subject: [PATCH net-next v1 3/3] devicetree: add device tree bindings for cc2520 driver
-Date: Tue, 17 Jun 2014 12:44:58 +0530
-Message-Id: <1402989298-8898-4-git-send-email-varkab@cdac.in>
+Subject: [PATCH net-next v1 2/3] ieee802154: cc2520: add driver to kernel build system
+Date: Tue, 17 Jun 2014 12:44:57 +0530
+Message-Id: <1402989298-8898-3-git-send-email-varkab@cdac.in>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1402989298-8898-1-git-send-email-varkab@cdac.in>
 References: <1402989298-8898-1-git-send-email-varkab@cdac.in>
@@ -23,46 +23,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the devicetree bindings for cc2520 driver.
+This patch creates a hook into kernel build system for cc2520 radio.
 
 Signed-off-by: Varka Bhadram <varkab@cdac.in>
 ---
- .../devicetree/bindings/net/ieee802154/cc2520.txt  |   26 ++++++++++++++++++++
- 1 file changed, 26 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/net/ieee802154/cc2520.txt
+ drivers/net/ieee802154/Kconfig  |   11 +++++++++++
+ drivers/net/ieee802154/Makefile |    1 +
+ 2 files changed, 12 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/net/ieee802154/cc2520.txt b/Documentation/devicetree/bindings/net/ieee802154/cc2520.txt
-new file mode 100644
-index 0000000..f0a749d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/net/ieee802154/cc2520.txt
-@@ -0,0 +1,26 @@
-+CC2520 IEEE 802.15.4 Compatible Radio
+diff --git a/drivers/net/ieee802154/Kconfig b/drivers/net/ieee802154/Kconfig
+index 3e89bea..680422f 100644
+--- a/drivers/net/ieee802154/Kconfig
++++ b/drivers/net/ieee802154/Kconfig
+@@ -51,3 +51,14 @@ config IEEE802154_MRF24J40
+ 
+ 	  This driver can also be built as a module. To do so, say M here.
+ 	  the module will be called 'mrf24j40'.
 +
-+Required properties:
-+	- compatible:		should be "ti,cc2520"
-+	- spi-max-frequency:	maximal bus speed (8000000), should be set to 4000000 depends
-+				sync or async operation mode
-+	- reg:			the chipselect index
-+	- mode:			SPI mode
-+Example:
++config IEEE802154_CC2520
++	depends on IEEE802154_DRIVERS && MAC802154
++	tristate "cc2520 transceiver driver"
++	depends on SPI
++	---help---
++	  Say Y here to enable the CC2520 SPI 802.15.4 wireless
++	  controller.
 +
-+	cc2520@0 {
-+		compatible = "ti,cc2520";
-+		reg = <0>;
-+		spi-max-frequency = <4000000>;
-+		mode = <1>;
-+
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&cc2520_cape_pins>;	/*GPIO pin muxing details*/
-+
-+		fifo-gpio = <&gpio1 18 0>;
-+		fifop-gpio = <&gpio1 19 0>;
-+		sfd-gpio = <&gpio1 13 0>;
-+		cca-gpio = <&gpio1 16 0>;
-+		vreg-gpio = <&gpio0 31 0>;
-+		reset-gpio = <&gpio1 12 0>;
-+	};
++	  This driver can also be built as a module. To do so, say M here.
++	  the module will be called 'cc2520'.
+diff --git a/drivers/net/ieee802154/Makefile b/drivers/net/ieee802154/Makefile
+index abb0c08..655cb95 100644
+--- a/drivers/net/ieee802154/Makefile
++++ b/drivers/net/ieee802154/Makefile
+@@ -2,3 +2,4 @@ obj-$(CONFIG_IEEE802154_FAKEHARD) += fakehard.o
+ obj-$(CONFIG_IEEE802154_FAKELB) += fakelb.o
+ obj-$(CONFIG_IEEE802154_AT86RF230) += at86rf230.o
+ obj-$(CONFIG_IEEE802154_MRF24J40) += mrf24j40.o
++obj-$(CONFIG_IEEE802154_CC2520) += cc2520.o
 -- 
 1.7.9.5
 
