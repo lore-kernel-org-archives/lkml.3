@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967541AbaFQWIy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:08:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54686 "EHLO
+	id S967545AbaFQWJU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:09:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54679 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966944AbaFQVvz (ORCPT
+	with ESMTP id S966942AbaFQVvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:51:55 -0400
+	Tue, 17 Jun 2014 17:51:54 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: John David Anglin <dave.anglin@bell.net>, Helge Deller <deller@gmx.de>,
+Cc: George McCollister <george.mccollister@gmail.com>,
+        Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 128/212] parisc: Improve LWS-CAS performance
-Date: Tue, 17 Jun 2014 14:43:42 -0700
-Message-Id: <1403041506-13646-129-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 192/212] USB: ftdi_sio: add NovaTech OrionLXm product ID
+Date: Tue, 17 Jun 2014 14:44:46 -0700
+Message-Id: <1403041506-13646-193-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -27,87 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John David Anglin <dave.anglin@bell.net>
+From: George McCollister <george.mccollister@gmail.com>
 
-commit c776cd89fc705fc8b5c2e5ad906bf5d791620fed upstream.
+commit d0839d757e6294921c31b1c4ca4f1dcc5df63bcd upstream.
 
-The attached change significantly improves the performance of the LWS-CAS code
-in syscall.S.
-This allows a number of packages to build (e.g., zeromq3, gtest and libxs)
-that previously failed because slow LWS-CAS performance under contention. In
-particular, interrupts taken while the lock was taken degraded performance
-significantly.
+The NovaTech OrionLXm uses an onboard FTDI serial converter for JTAG and
+console access.
 
-The change does the following:
+Here is the lsusb output:
+Bus 004 Device 123: ID 0403:7c90 Future Technology Devices
+International, Ltd
 
-1) Disables interrupts around the CAS operation, and
-2) Changes the loads and stores to use the ordered completer, "o", on
-PA 2.0. "o" and "ma" with a zero offset are equivalent. The latter is
-accepted on both PA 1.X and 2.0.
-
-The use of ordered loads and stores probably makes no difference on all
-existing hardware, but it seemed pedantically correct. In particular, the CAS
-operation must complete before LDCW lock is released. As written before, a
-processor could reorder the operations.
-
-I don't believe the period interrupts are disabled is long enough to
-significantly increase interrupt latency. For example, the TLB insert code is
-longer. Worst case is a memory fault in the CAS operation.
-
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: George McCollister <george.mccollister@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/parisc/kernel/syscall.S | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     | 2 ++
+ drivers/usb/serial/ftdi_sio_ids.h | 5 +++++
+ 2 files changed, 7 insertions(+)
 
-diff --git a/arch/parisc/kernel/syscall.S b/arch/parisc/kernel/syscall.S
-index a63bb179..8387860 100644
---- a/arch/parisc/kernel/syscall.S
-+++ b/arch/parisc/kernel/syscall.S
-@@ -589,10 +589,13 @@ cas_nocontend:
- # endif
- /* ENABLE_LWS_DEBUG */
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index ae49336..f009887 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -581,6 +581,8 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_TAVIR_STK500_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_TIAO_UMPA_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
++	{ USB_DEVICE(FTDI_VID, FTDI_NT_ORIONLXM_PID),
++		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	/*
+ 	 * ELV devices:
+ 	 */
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 993c93d..500474c 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -538,6 +538,11 @@
+  */
+ #define FTDI_TIAO_UMPA_PID	0x8a98	/* TIAO/DIYGADGET USB Multi-Protocol Adapter */
  
-+	rsm	PSW_SM_I, %r0				/* Disable interrupts */
-+	/* COW breaks can cause contention on UP systems */
- 	LDCW	0(%sr2,%r20), %r28			/* Try to acquire the lock */
- 	cmpb,<>,n	%r0, %r28, cas_action		/* Did we get it? */
- cas_wouldblock:
- 	ldo	2(%r0), %r28				/* 2nd case */
-+	ssm	PSW_SM_I, %r0
- 	b	lws_exit				/* Contended... */
- 	ldo	-EAGAIN(%r0), %r21			/* Spin in userspace */
++/*
++ * NovaTech product ids (FTDI_VID)
++ */
++#define FTDI_NT_ORIONLXM_PID	0x7c90	/* OrionLXm Substation Automation Platform */
++
  
-@@ -619,15 +622,17 @@ cas_action:
- 	stw	%r1, 4(%sr2,%r20)
- #endif
- 	/* The load and store could fail */
--1:	ldw	0(%sr3,%r26), %r28
-+1:	ldw,ma	0(%sr3,%r26), %r28
- 	sub,<>	%r28, %r25, %r0
--2:	stw	%r24, 0(%sr3,%r26)
-+2:	stw,ma	%r24, 0(%sr3,%r26)
- 	/* Free lock */
--	stw	%r20, 0(%sr2,%r20)
-+	stw,ma	%r20, 0(%sr2,%r20)
- #if ENABLE_LWS_DEBUG
- 	/* Clear thread register indicator */
- 	stw	%r0, 4(%sr2,%r20)
- #endif
-+	/* Enable interrupts */
-+	ssm	PSW_SM_I, %r0
- 	/* Return to userspace, set no error */
- 	b	lws_exit
- 	copy	%r0, %r21
-@@ -639,6 +644,7 @@ cas_action:
- #if ENABLE_LWS_DEBUG
- 	stw	%r0, 4(%sr2,%r20)
- #endif
-+	ssm	PSW_SM_I, %r0
- 	b	lws_exit
- 	ldo	-EFAULT(%r0),%r21	/* set errno */
- 	nop
+ /********************************/
+ /** third-party VID/PID combos **/
 -- 
 1.9.1
 
