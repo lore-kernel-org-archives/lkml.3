@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965414AbaFQQ1O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:27:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51078 "EHLO
+	id S934247AbaFQQ3E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:29:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51084 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965393AbaFQQ1I (ORCPT
+	with ESMTP id S965397AbaFQQ1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:27:08 -0400
+	Tue, 17 Jun 2014 12:27:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Gibson <david@gibson.dropbear.id.au>,
+Cc: Dmitry Petukhov <dmgenp@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 062/121] rtnetlink: Only supply IFLA_VF_PORTS information when RTEXT_FILTER_VF is set
-Date: Tue, 17 Jun 2014 09:17:20 -0700
-Message-Id: <1403021899-16708-35-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 050/121] l2tp: take PMTU from tunnel UDP socket
+Date: Tue, 17 Jun 2014 09:17:08 -0700
+Message-Id: <1403021899-16708-23-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
@@ -28,101 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Gibson <david@gibson.dropbear.id.au>
+From: Dmitry Petukhov <dmgenp@gmail.com>
 
-[ Upstream commit c53864fd60227de025cb79e05493b13f69843971 ]
+[ Upstream commit f34c4a35d87949fbb0e0f31eba3c054e9f8199ba ]
 
-Since 115c9b81928360d769a76c632bae62d15206a94a (rtnetlink: Fix problem with
-buffer allocation), RTM_NEWLINK messages only contain the IFLA_VFINFO_LIST
-attribute if they were solicited by a GETLINK message containing an
-IFLA_EXT_MASK attribute with the RTEXT_FILTER_VF flag.
+When l2tp driver tries to get PMTU for the tunnel destination, it uses
+the pointer to struct sock that represents PPPoX socket, while it
+should use the pointer that represents UDP socket of the tunnel.
 
-That was done because some user programs broke when they received more data
-than expected - because IFLA_VFINFO_LIST contains information for each VF
-it can become large if there are many VFs.
-
-However, the IFLA_VF_PORTS attribute, supplied for devices which implement
-ndo_get_vf_port (currently the 'enic' driver only), has the same problem.
-It supplies per-VF information and can therefore become large, but it is
-not currently conditional on the IFLA_EXT_MASK value.
-
-Worse, it interacts badly with the existing EXT_MASK handling.  When
-IFLA_EXT_MASK is not supplied, the buffer for netlink replies is fixed at
-NLMSG_GOODSIZE.  If the information for IFLA_VF_PORTS exceeds this, then
-rtnl_fill_ifinfo() returns -EMSGSIZE on the first message in a packet.
-netlink_dump() will misinterpret this as having finished the listing and
-omit data for this interface and all subsequent ones.  That can cause
-getifaddrs(3) to enter an infinite loop.
-
-This patch addresses the problem by only supplying IFLA_VF_PORTS when
-IFLA_EXT_MASK is supplied with the RTEXT_FILTER_VF flag set.
-
-Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
-Reviewed-by: Jiri Pirko <jiri@resnulli.us>
+Signed-off-by: Dmitry Petukhov <dmgenp@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/core/rtnetlink.c | 16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ net/l2tp/l2tp_ppp.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index 92b6220..1320b73 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -738,7 +738,8 @@ static inline int rtnl_vfinfo_size(const struct net_device *dev,
- 		return 0;
- }
+diff --git a/net/l2tp/l2tp_ppp.c b/net/l2tp/l2tp_ppp.c
+index ddf43a3..26dbd9a 100644
+--- a/net/l2tp/l2tp_ppp.c
++++ b/net/l2tp/l2tp_ppp.c
+@@ -781,9 +781,9 @@ static int pppol2tp_connect(struct socket *sock, struct sockaddr *uservaddr,
+ 	session->deref = pppol2tp_session_sock_put;
  
--static size_t rtnl_port_size(const struct net_device *dev)
-+static size_t rtnl_port_size(const struct net_device *dev,
-+			     u32 ext_filter_mask)
- {
- 	size_t port_size = nla_total_size(4)		/* PORT_VF */
- 		+ nla_total_size(PORT_PROFILE_MAX)	/* PORT_PROFILE */
-@@ -754,7 +755,8 @@ static size_t rtnl_port_size(const struct net_device *dev)
- 	size_t port_self_size = nla_total_size(sizeof(struct nlattr))
- 		+ port_size;
- 
--	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent)
-+	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent ||
-+	    !(ext_filter_mask & RTEXT_FILTER_VF))
- 		return 0;
- 	if (dev_num_vf(dev->dev.parent))
- 		return port_self_size + vf_ports_size +
-@@ -788,7 +790,7 @@ static noinline size_t if_nlmsg_size(const struct net_device *dev,
- 	       + nla_total_size(ext_filter_mask
- 			        & RTEXT_FILTER_VF ? 4 : 0) /* IFLA_NUM_VF */
- 	       + rtnl_vfinfo_size(dev, ext_filter_mask) /* IFLA_VFINFO_LIST */
--	       + rtnl_port_size(dev) /* IFLA_VF_PORTS + IFLA_PORT_SELF */
-+	       + rtnl_port_size(dev, ext_filter_mask) /* IFLA_VF_PORTS + IFLA_PORT_SELF */
- 	       + rtnl_link_get_size(dev) /* IFLA_LINKINFO */
- 	       + rtnl_link_get_af_size(dev); /* IFLA_AF_SPEC */
- }
-@@ -849,11 +851,13 @@ static int rtnl_port_self_fill(struct sk_buff *skb, struct net_device *dev)
- 	return 0;
- }
- 
--static int rtnl_port_fill(struct sk_buff *skb, struct net_device *dev)
-+static int rtnl_port_fill(struct sk_buff *skb, struct net_device *dev,
-+			  u32 ext_filter_mask)
- {
- 	int err;
- 
--	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent)
-+	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent ||
-+	    !(ext_filter_mask & RTEXT_FILTER_VF))
- 		return 0;
- 
- 	err = rtnl_port_self_fill(skb, dev);
-@@ -1006,7 +1010,7 @@ static int rtnl_fill_ifinfo(struct sk_buff *skb, struct net_device *dev,
- 		nla_nest_end(skb, vfinfo);
- 	}
- 
--	if (rtnl_port_fill(skb, dev))
-+	if (rtnl_port_fill(skb, dev, ext_filter_mask))
- 		goto nla_put_failure;
- 
- 	if (dev->rtnl_link_ops) {
+ 	/* If PMTU discovery was enabled, use the MTU that was discovered */
+-	dst = sk_dst_get(sk);
++	dst = sk_dst_get(tunnel->sock);
+ 	if (dst != NULL) {
+-		u32 pmtu = dst_mtu(__sk_dst_get(sk));
++		u32 pmtu = dst_mtu(__sk_dst_get(tunnel->sock));
+ 		if (pmtu != 0)
+ 			session->mtu = session->mru = pmtu -
+ 				PPPOL2TP_HEADER_OVERHEAD;
 -- 
 1.9.1
 
