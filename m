@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966132AbaFQVsN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:48:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53956 "EHLO
+	id S966118AbaFQVsL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:48:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53949 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966109AbaFQVsK (ORCPT
+	with ESMTP id S966078AbaFQVsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:48:10 -0400
+	Tue, 17 Jun 2014 17:48:08 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Levente Kurusa <levex@linux.com>, Tejun Heo <tj@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 092/212] NFSd: Move default initialisers from create_client() to alloc_client()
-Date: Tue, 17 Jun 2014 14:43:06 -0700
-Message-Id: <1403041506-13646-93-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 095/212] libata: clean up ZPODD when a port is detached
+Date: Tue, 17 Jun 2014 14:43:09 -0700
+Message-Id: <1403041506-13646-96-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -28,73 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Levente Kurusa <levex@linux.com>
 
-commit 5694c93e6c4954fa9424c215f75eeb919bddad64 upstream.
+commit a6f9bf4d2f965b862b95213303d154e02957eed8 upstream.
 
-Aside from making it clearer what is non-trivial in create_client(), it
-also fixes a bug whereby we can call free_client() before idr_init()
-has been called.
+When a ZPODD device is unbound via sysfs, the ACPI notify handler
+is not removed. This causes panics as observed in Bug #74601. The
+panic only happens when the wake happens from outside the kernel
+(i.e. inserting a media or pressing a button). Add a loop to
+ata_port_detach which loops through the port's devices and checks
+if zpodd is enabled, if so call zpodd_exit.
 
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Reviewed-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Levente Kurusa <levex@linux.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfsd/nfs4state.c | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ drivers/ata/libata-core.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index e0d91d7..3fcd3ba 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -1074,6 +1074,18 @@ static struct nfs4_client *alloc_client(struct xdr_netobj name)
- 		return NULL;
- 	}
- 	clp->cl_name.len = name.len;
-+	INIT_LIST_HEAD(&clp->cl_sessions);
-+	idr_init(&clp->cl_stateids);
-+	atomic_set(&clp->cl_refcount, 0);
-+	clp->cl_cb_state = NFSD4_CB_UNKNOWN;
-+	INIT_LIST_HEAD(&clp->cl_idhash);
-+	INIT_LIST_HEAD(&clp->cl_openowners);
-+	INIT_LIST_HEAD(&clp->cl_delegations);
-+	INIT_LIST_HEAD(&clp->cl_lru);
-+	INIT_LIST_HEAD(&clp->cl_callbacks);
-+	INIT_LIST_HEAD(&clp->cl_revoked);
-+	spin_lock_init(&clp->cl_lock);
-+	rpc_init_wait_queue(&clp->cl_cb_waitq, "Backchannel slot table");
- 	return clp;
- }
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 5ab4e3d..62fda16 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -6329,6 +6329,8 @@ int ata_host_activate(struct ata_host *host, int irq,
+ static void ata_port_detach(struct ata_port *ap)
+ {
+ 	unsigned long flags;
++	struct ata_link *link;
++	struct ata_device *dev;
  
-@@ -1343,7 +1355,6 @@ static struct nfs4_client *create_client(struct xdr_netobj name,
- 	if (clp == NULL)
- 		return NULL;
+ 	if (!ap->ops->error_handler)
+ 		goto skip_eh;
+@@ -6348,6 +6350,13 @@ static void ata_port_detach(struct ata_port *ap)
+ 	cancel_delayed_work_sync(&ap->hotplug_task);
  
--	INIT_LIST_HEAD(&clp->cl_sessions);
- 	ret = copy_cred(&clp->cl_cred, &rqstp->rq_cred);
- 	if (ret) {
- 		spin_lock(&nn->client_lock);
-@@ -1351,20 +1362,9 @@ static struct nfs4_client *create_client(struct xdr_netobj name,
- 		spin_unlock(&nn->client_lock);
- 		return NULL;
- 	}
--	idr_init(&clp->cl_stateids);
--	atomic_set(&clp->cl_refcount, 0);
--	clp->cl_cb_state = NFSD4_CB_UNKNOWN;
--	INIT_LIST_HEAD(&clp->cl_idhash);
--	INIT_LIST_HEAD(&clp->cl_openowners);
--	INIT_LIST_HEAD(&clp->cl_delegations);
--	INIT_LIST_HEAD(&clp->cl_lru);
--	INIT_LIST_HEAD(&clp->cl_callbacks);
--	INIT_LIST_HEAD(&clp->cl_revoked);
--	spin_lock_init(&clp->cl_lock);
- 	nfsd4_init_callback(&clp->cl_cb_null);
- 	clp->cl_time = get_seconds();
- 	clear_bit(0, &clp->cl_cb_slot_busy);
--	rpc_init_wait_queue(&clp->cl_cb_waitq, "Backchannel slot table");
- 	copy_verf(clp, verf);
- 	rpc_copy_addr((struct sockaddr *) &clp->cl_addr, sa);
- 	gen_confirm(clp);
+  skip_eh:
++	/* clean up zpodd on port removal */
++	ata_for_each_link(link, ap, HOST_FIRST) {
++		ata_for_each_dev(dev, link, ALL) {
++			if (zpodd_dev_enabled(dev))
++				zpodd_exit(dev);
++		}
++	}
+ 	if (ap->pmp_link) {
+ 		int i;
+ 		for (i = 0; i < SATA_PMP_MAX_PORTS; i++)
 -- 
 1.9.1
 
