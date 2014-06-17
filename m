@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964824AbaFQTha (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 15:37:30 -0400
-Received: from 99-65-72-227.uvs.sntcca.sbcglobal.net ([99.65.72.227]:59686
-	"EHLO stargate3.asicdesigners.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933325AbaFQTh3 (ORCPT
+	id S1756400AbaFQThs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 15:37:48 -0400
+Received: from mailrelay010.isp.belgacom.be ([195.238.6.177]:37611 "EHLO
+	mailrelay010.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756338AbaFQThq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 15:37:29 -0400
-Message-ID: <53A098F5.6040104@chelsio.com>
-Date: Tue, 17 Jun 2014 12:37:25 -0700
-From: Anish Bhatt <anish@chelsio.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH] checkpatch: Warn on unnecessary void function return
- statements
-References: <1401728316.5770.9.camel@joe-AO725>	 <1402961300-17985-1-git-send-email-anish@chelsio.com>	 <1402964898.11561.2.camel@joe-AO725> <539F8F62.4000805@chelsio.com> <1402970429.2797.3.camel@joe-AO725>
-In-Reply-To: <1402970429.2797.3.camel@joe-AO725>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Jun 2014 15:37:46 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlQJAPOXoFNbsl1t/2dsb2JhbABagw2rKgUBAQEBAQEFAZkmgQ4XdYQxLyOBAhg3iC4DFQHEew2GNheFY4ZwgiMdhC0EmEqBeY1YhgCBfoFEOw
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Ivo van Doorn <IvDoorn@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>
+Subject: [PATCH 1/1] drivers/net/wireless/rt2x00/rt2x00dev.c: remove null test before kfree
+Date: Tue, 17 Jun 2014 21:36:28 +0200
+Message-Id: <1403033788-8315-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2014 07:00 PM, Joe Perches wrote:
-> On Mon, 2014-06-16 at 17:44 -0700, Anish Bhatt wrote:
->> My code has multiple exit lables:
->> void function(void)
->> {
->> 	...
->>
->> 	if (err1)
->> 		goto exit1;
->> 	...
->> 	if (err2)
->> 		goto exit2;
->>
->> 	...
->> 	return; /* Good return, no errors */
->> exit1:
->> 	printk(err1);
->> 	return;
->> exit2:
->> 	printk(err2);
->> }
->>
->> The single tabbed return was required to prevent the good return & err1 
->> messages cascading down. The extra exit label with a noop looks weird, 
->> but is passing checkpatch.pl --strict, so I will go with that, thanks.
->> -Anish
->>
-> 
-> Hmm, those return uses seem reasonable
-> to me.
-> 
-> Perhaps the test should warn only on
-> this specific 3 line sequence:
-> 
-> [any line but a label]
-> 	return;
-> }
-> 
-> Andrew?  Anyone else?  Opinions?
-> 
-I think simply 
+Fix checkpatch warning:
+WARNING: kfree(NULL) is safe this check is probably not required
 
-	return;
-}
+Cc: Ivo van Doorn <IvDoorn@gmail.com>
+Cc: Helmut Schaa <helmut.schaa@googlemail.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/net/wireless/rt2x00/rt2x00dev.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-should trigger the warning. If you are using a label just to exit, you could just do it in-place (though possibly someone might want to a goto instead of multiple returns)
-
--Anish
+diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless/rt2x00/rt2x00dev.c
+index 2bde672..c2c2300 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00dev.c
++++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
+@@ -1452,8 +1452,7 @@ void rt2x00lib_remove_dev(struct rt2x00_dev *rt2x00dev)
+ 	/*
+ 	 * Free the driver data.
+ 	 */
+-	if (rt2x00dev->drv_data)
+-		kfree(rt2x00dev->drv_data);
++	kfree(rt2x00dev->drv_data);
+ }
+ EXPORT_SYMBOL_GPL(rt2x00lib_remove_dev);
+ 
+-- 
+1.8.4.5
 
