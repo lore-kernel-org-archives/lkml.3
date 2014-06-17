@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933720AbaFQRHm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 13:07:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12352 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933099AbaFQRHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 13:07:41 -0400
-From: Mark Salter <msalter@redhat.com>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Mark Salter <msalter@redhat.com>
-Subject: [PATCH] arm64: remove define of ARCH_HAS_DMA_GET_REQUIRED_MASK
-Date: Tue, 17 Jun 2014 13:07:03 -0400
-Message-Id: <1403024823-2180-1-git-send-email-msalter@redhat.com>
+	id S933980AbaFQRIE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 13:08:04 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:59027 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933790AbaFQRIA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 13:08:00 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Lee Jones <lee.jones@linaro.org>,
+        Josh Cartwright <joshc@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-arm-msm@vger.kernel.org>, Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH v3 0/3] Qualcomm Resource Power Manager driver
+References: <1402944372-31901-1-git-send-email-bjorn.andersson@sonymobile.com>
+Date: Tue, 17 Jun 2014 10:07:57 -0700
+In-Reply-To: <1402944372-31901-1-git-send-email-bjorn.andersson@sonymobile.com>
+	(Bjorn Andersson's message of "Mon, 16 Jun 2014 11:46:09 -0700")
+Message-ID: <7hvbrzbh1u.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arm64 defines ARCH_HAS_DMA_GET_REQUIRED_MASK but provides
-no dma_get_required_mask() function. This leads to a link
-error in drivers using dma_get_required_mask(). Remove the
-define so the default dma_get_required_mask() is available.
++Paul Walmsley
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
----
- arch/arm64/include/asm/dma-mapping.h | 2 --
- 1 file changed, 2 deletions(-)
+Bjorn Andersson <bjorn.andersson@sonymobile.com> writes:
 
-diff --git a/arch/arm64/include/asm/dma-mapping.h b/arch/arm64/include/asm/dma-mapping.h
-index 3a4572e..dc82e52 100644
---- a/arch/arm64/include/asm/dma-mapping.h
-+++ b/arch/arm64/include/asm/dma-mapping.h
-@@ -26,8 +26,6 @@
- #include <xen/xen.h>
- #include <asm/xen/hypervisor.h>
- 
--#define ARCH_HAS_DMA_GET_REQUIRED_MASK
--
- #define DMA_ERROR_CODE	(~(dma_addr_t)0)
- extern struct dma_map_ops *dma_ops;
- extern struct dma_map_ops coherent_swiotlb_dma_ops;
--- 
-1.9.0
+> This series adds a regulator driver for the Resource Power Manager found in
+> Qualcomm 8660, 8960 and 8064 based devices.
+>
+> The RPM driver exposes resources to its child devices, that can be accessed to
+> implement drivers for the regulators, clocks and bus frequency control that's
+> owned by the RPM in these devices.
+>
+> Changes since v2:
+>   - Fix copy-paste error in dt binding
+>   - Correct incomplete move from mfd to soc
+>   - Correct const mistake in regulator driver
+>
+> Changes since v1:
+>   - Moved rpm driver to drivers/soc
 
+I'm not sure I follow the motivation for having this under drivers/soc?
+
+In fact, my (possibly incorrect) understanding of this Resource Power
+Manager is that it's actually to manage communication/control of
+resources that are actually handled off the SoC by a microcontroller.
+
+I added Paul W. to Cc so he can correct me, but I think this is a ways
+off from the goal of what drivers/soc was for.
+
+Kevin
