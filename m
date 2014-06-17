@@ -1,165 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933121AbaFQSf5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 14:35:57 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:62060 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932851AbaFQSf4 (ORCPT
+	id S933310AbaFQShD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 14:37:03 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:53735 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932851AbaFQShA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 14:35:56 -0400
-Date: Tue, 17 Jun 2014 11:34:31 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v2] hugetlb: fix copy_hugetlb_page_range() to handle
- migration/hwpoisoned entry
-In-Reply-To: <1403012995-538-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-Message-ID: <alpine.LSU.2.11.1406171049150.2862@eggly.anvils>
-References: <alpine.LSU.2.11.1406161750520.1190@eggly.anvils> <1403012995-538-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 17 Jun 2014 14:37:00 -0400
+From: Kumar Gala <galak@codeaurora.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Kumar Gala <galak@codeaurora.org>, linux-ide@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
+Subject: [PATCH v3 2/3] ata: Add Qualcomm ARM SoC AHCI SATA host controller driver
+Date: Tue, 17 Jun 2014 13:36:57 -0500
+Message-Id: <1403030217-21554-1-git-send-email-galak@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jun 2014, Naoya Horiguchi wrote:
+Add support for the Qualcomm AHCI SATA controller that exists on several
+SoC and specifically the IPQ806x family of chips.  The IPQ806x SATA support
+requires the associated IPQ806x SATA PHY Driver to be enabled as well.
 
-> There's a race between fork() and hugepage migration, as a result we try to
-> "dereference" a swap entry as a normal pte, causing kernel panic.
-> The cause of the problem is that copy_hugetlb_page_range() can't handle "swap
-> entry" family (migration entry and hwpoisoned entry,) so let's fix it.
-> 
-> ChangeLog v2:
-> - stop applying is_cow_mapping() in copy_hugetlb_page_range()
-> - use set_huge_pte_at() in hugepage code
-> - fix stable version
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: stable@vger.kernel.org # v2.6.37+
+Signed-off-by: Kumar Gala <galak@codeaurora.org>
+---
+v3:
+* Added comment about suspend/resume not supported
+* Fixup ahci_platform_init_host for upstream change to interface
+* cleanup error handling of rxoob clk, moved to devm_clk_get/put
 
-Acked-by: Hugh Dickins <hughd@google.com>
+v2:
+* Fixed MODULE_LICENSE to be GPL v2
 
-But I do hope that you have made an unmissable note somewhere, that
-the s390 and sparc set_huge_pte_at() will probably need fixing to handle
-this non-present case, before hugepage migration can be allowed on them.
+ drivers/ata/Kconfig     | 10 ++++++
+ drivers/ata/Makefile    |  1 +
+ drivers/ata/ahci_qcom.c | 90 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 101 insertions(+)
+ create mode 100644 drivers/ata/ahci_qcom.c
 
-There's probably an easy patch for s390. but not so obvious for sparc
-(which did not pretend to support hugepage migration before anyway).
+diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
+index 7671dba..aa88648 100644
+--- a/drivers/ata/Kconfig
++++ b/drivers/ata/Kconfig
+@@ -132,6 +132,16 @@ config AHCI_MVEBU
+ 
+ 	  If unsure, say N.
+ 
++config AHCI_QCOM
++	tristate "Qualcomm AHCI SATA support"
++	depends on ARCH_QCOM
++	help
++	  This option enables support for AHCI SATA controller
++	  integrated into Qualcomm ARM SoC chipsets. For more
++	  information please refer to http://www.qualcomm.com/chipsets.
++
++	  If unsure, say N.
++
+ config AHCI_SUNXI
+ 	tristate "Allwinner sunxi AHCI SATA support"
+ 	depends on ARCH_SUNXI
+diff --git a/drivers/ata/Makefile b/drivers/ata/Makefile
+index 5a02aee..15401e9 100644
+--- a/drivers/ata/Makefile
++++ b/drivers/ata/Makefile
+@@ -13,6 +13,7 @@ obj-$(CONFIG_SATA_HIGHBANK)	+= sata_highbank.o libahci.o
+ obj-$(CONFIG_AHCI_DA850)	+= ahci_da850.o libahci.o libahci_platform.o
+ obj-$(CONFIG_AHCI_IMX)		+= ahci_imx.o libahci.o libahci_platform.o
+ obj-$(CONFIG_AHCI_MVEBU)	+= ahci_mvebu.o libahci.o libahci_platform.o
++obj-$(CONFIG_AHCI_QCOM)		+= ahci_qcom.o libahci.o libahci_platform.o
+ obj-$(CONFIG_AHCI_SUNXI)	+= ahci_sunxi.o libahci.o libahci_platform.o
+ obj-$(CONFIG_AHCI_ST)		+= ahci_st.o libahci.o libahci_platform.o
+ obj-$(CONFIG_AHCI_XGENE)	+= ahci_xgene.o libahci.o libahci_platform.o
+diff --git a/drivers/ata/ahci_qcom.c b/drivers/ata/ahci_qcom.c
+new file mode 100644
+index 0000000..412e878
+--- /dev/null
++++ b/drivers/ata/ahci_qcom.c
+@@ -0,0 +1,90 @@
++/*
++ * Qualcomm ARM SoC AHCI SATA platform driver
++ *
++ * based on the AHCI SATA platform driver by Jeff Garzik and Anton Vorontsov
++ *
++ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/pm.h>
++#include <linux/device.h>
++#include <linux/platform_device.h>
++#include <linux/libata.h>
++#include <linux/ahci_platform.h>
++#include "ahci.h"
++
++static const struct ata_port_info qcom_ahci_port_info = {
++	.flags		= AHCI_FLAG_COMMON,
++	.pio_mask	= ATA_PIO4,
++	.udma_mask	= ATA_UDMA6,
++	.port_ops	= &ahci_platform_ops,
++};
++
++static int qcom_ahci_probe(struct platform_device *pdev)
++{
++	struct ahci_host_priv *hpriv;
++	struct clk *rxoob_clk;
++	int rc;
++
++	hpriv = ahci_platform_get_resources(pdev);
++	if (IS_ERR(hpriv))
++		return PTR_ERR(hpriv);
++
++	/* Try and set the rxoob clk to 100Mhz */
++	rxoob_clk = devm_clk_get(&pdev->dev, "rxoob");
++	if (IS_ERR(rxoob_clk))
++		return PTR_ERR(rxoob_clk);
++
++	rc = clk_set_rate(rxoob_clk, 100000000);
++	if (rc)
++		return rc;
++
++	devm_clk_put(&pdev->dev, rxoob_clk);
++
++	rc = ahci_platform_enable_resources(hpriv);
++	if (rc)
++		return rc;
++
++	rc = ahci_platform_init_host(pdev, hpriv, &qcom_ahci_port_info,
++				     0, 0, 0);
++	if (rc)
++		goto disable_resources;
++
++	return 0;
++disable_resources:
++	ahci_platform_disable_resources(hpriv);
++	return rc;
++}
++
++static const struct of_device_id qcom_ahci_of_match[] = {
++	{ .compatible = "qcom,msm-ahci", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, qcom_ahci_of_match);
++
++static struct platform_driver qcom_ahci_driver = {
++	.probe = qcom_ahci_probe,
++	.remove = ata_platform_remove_one,
++	.driver = {
++		.name = "qcom_ahci_qcom",
++		.owner = THIS_MODULE,
++		.of_match_table = qcom_ahci_of_match,
++	},
++	/* suspend/resume not currently supported */
++};
++module_platform_driver(qcom_ahci_driver);
++
++MODULE_DESCRIPTION("Qualcomm AHCI SATA platform driver");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("ahci:qcom");
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-And a followup not-for-stable cleanup to this patch would be nice:
-testing is_hugetlb_entry_migration() and is_huge_tlb_entry_hwpoisoned()
-separately, when they're doing almost the same thing, seems a bit daft.
-
-Hmm, but maybe that should be part of a larger job: the handling of
-non-swap swap-entries is tiresome in lots of places, I wonder if
-there's a more convenient way of handling them everywhere.
-
-Hugh
-
-> ---
->  mm/hugetlb.c | 70 ++++++++++++++++++++++++++++++++++++------------------------
->  1 file changed, 42 insertions(+), 28 deletions(-)
-> 
-> diff --git v3.16-rc1.orig/mm/hugetlb.c v3.16-rc1/mm/hugetlb.c
-> index 226910cb7c9b..a3f6349ab5b5 100644
-> --- v3.16-rc1.orig/mm/hugetlb.c
-> +++ v3.16-rc1/mm/hugetlb.c
-> @@ -2520,6 +2520,31 @@ static void set_huge_ptep_writable(struct vm_area_struct *vma,
->  		update_mmu_cache(vma, address, ptep);
->  }
->  
-> +static int is_hugetlb_entry_migration(pte_t pte)
-> +{
-> +	swp_entry_t swp;
-> +
-> +	if (huge_pte_none(pte) || pte_present(pte))
-> +		return 0;
-> +	swp = pte_to_swp_entry(pte);
-> +	if (non_swap_entry(swp) && is_migration_entry(swp))
-> +		return 1;
-> +	else
-> +		return 0;
-> +}
-> +
-> +static int is_hugetlb_entry_hwpoisoned(pte_t pte)
-> +{
-> +	swp_entry_t swp;
-> +
-> +	if (huge_pte_none(pte) || pte_present(pte))
-> +		return 0;
-> +	swp = pte_to_swp_entry(pte);
-> +	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
-> +		return 1;
-> +	else
-> +		return 0;
-> +}
->  
->  int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
->  			    struct vm_area_struct *vma)
-> @@ -2559,10 +2584,25 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
->  		dst_ptl = huge_pte_lock(h, dst, dst_pte);
->  		src_ptl = huge_pte_lockptr(h, src, src_pte);
->  		spin_lock_nested(src_ptl, SINGLE_DEPTH_NESTING);
-> -		if (!huge_pte_none(huge_ptep_get(src_pte))) {
-> +		entry = huge_ptep_get(src_pte);
-> +		if (huge_pte_none(entry)) { /* skip none entry */
-> +			;
-> +		} else if (unlikely(is_hugetlb_entry_migration(entry) ||
-> +				    is_hugetlb_entry_hwpoisoned(entry))) {
-> +			swp_entry_t swp_entry = pte_to_swp_entry(entry);
-> +			if (is_write_migration_entry(swp_entry) && cow) {
-> +				/*
-> +				 * COW mappings require pages in both
-> +				 * parent and child to be set to read.
-> +				 */
-> +				make_migration_entry_read(&swp_entry);
-> +				entry = swp_entry_to_pte(swp_entry);
-> +				set_huge_pte_at(src, addr, src_pte, entry);
-> +			}
-> +			set_huge_pte_at(dst, addr, dst_pte, entry);
-> +		} else {
->  			if (cow)
->  				huge_ptep_set_wrprotect(src, addr, src_pte);
-> -			entry = huge_ptep_get(src_pte);
->  			ptepage = pte_page(entry);
->  			get_page(ptepage);
->  			page_dup_rmap(ptepage);
-> @@ -2578,32 +2618,6 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
->  	return ret;
->  }
->  
-> -static int is_hugetlb_entry_migration(pte_t pte)
-> -{
-> -	swp_entry_t swp;
-> -
-> -	if (huge_pte_none(pte) || pte_present(pte))
-> -		return 0;
-> -	swp = pte_to_swp_entry(pte);
-> -	if (non_swap_entry(swp) && is_migration_entry(swp))
-> -		return 1;
-> -	else
-> -		return 0;
-> -}
-> -
-> -static int is_hugetlb_entry_hwpoisoned(pte_t pte)
-> -{
-> -	swp_entry_t swp;
-> -
-> -	if (huge_pte_none(pte) || pte_present(pte))
-> -		return 0;
-> -	swp = pte_to_swp_entry(pte);
-> -	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
-> -		return 1;
-> -	else
-> -		return 0;
-> -}
-> -
->  void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
->  			    unsigned long start, unsigned long end,
->  			    struct page *ref_page)
-> -- 
-> 1.9.3
