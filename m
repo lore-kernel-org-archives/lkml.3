@@ -1,83 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965684AbaFQWXs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:23:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54346 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966549AbaFQVuS (ORCPT
+	id S967548AbaFQWVY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:21:24 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:56162 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966901AbaFQWVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:50:18 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 026/212] bridge: Handle IFLA_ADDRESS correctly when creating bridge device
-Date: Tue, 17 Jun 2014 14:42:00 -0700
-Message-Id: <1403041506-13646-27-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 17 Jun 2014 18:21:21 -0400
+Date: Tue, 17 Jun 2014 15:21:18 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
+cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH v4] lib: add size unit t/p/e to memparse
+In-Reply-To: <1402623746-1171-1-git-send-email-guihc.fnst@cn.fujitsu.com>
+Message-ID: <alpine.DEB.2.02.1406171520510.517@chino.kir.corp.google.com>
+References: <1402623746-1171-1-git-send-email-guihc.fnst@cn.fujitsu.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, 13 Jun 2014, Gui Hecheng wrote:
 
-------------------
+> For modern filesystems such as btrfs, t/p/e size level operations
+> are common.
+> add size unit t/p/e parsing to memparse
+> 
+> Signed-off-by: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
 
-From: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+Acked-by: David Rientjes <rientjes@google.com>
 
-[ Upstream commit 30313a3d5794472c3548d7288e306a5492030370 ]
-
-When bridge device is created with IFLA_ADDRESS, we are not calling
-br_stp_change_bridge_id(), which leads to incorrect local fdb
-management and bridge id calculation, and prevents us from receiving
-frames on the bridge device.
-
-Reported-by: Tom Gundersen <teg@jklm.no>
-Signed-off-by: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/bridge/br_netlink.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
-
-diff --git a/net/bridge/br_netlink.c b/net/bridge/br_netlink.c
-index f75d92e..b47b344e 100644
---- a/net/bridge/br_netlink.c
-+++ b/net/bridge/br_netlink.c
-@@ -446,6 +446,20 @@ static int br_validate(struct nlattr *tb[], struct nlattr *data[])
- 	return 0;
- }
- 
-+static int br_dev_newlink(struct net *src_net, struct net_device *dev,
-+			  struct nlattr *tb[], struct nlattr *data[])
-+{
-+	struct net_bridge *br = netdev_priv(dev);
-+
-+	if (tb[IFLA_ADDRESS]) {
-+		spin_lock_bh(&br->lock);
-+		br_stp_change_bridge_id(br, nla_data(tb[IFLA_ADDRESS]));
-+		spin_unlock_bh(&br->lock);
-+	}
-+
-+	return register_netdevice(dev);
-+}
-+
- static size_t br_get_link_af_size(const struct net_device *dev)
- {
- 	struct net_port_vlans *pv;
-@@ -474,6 +488,7 @@ struct rtnl_link_ops br_link_ops __read_mostly = {
- 	.priv_size	= sizeof(struct net_bridge),
- 	.setup		= br_dev_setup,
- 	.validate	= br_validate,
-+	.newlink	= br_dev_newlink,
- 	.dellink	= br_dev_delete,
- };
- 
--- 
-1.9.1
-
+Sorry, didn't do this before.  Good luck with the simple_strto*() work!
