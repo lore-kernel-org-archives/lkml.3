@@ -1,116 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967209AbaFQWPB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:15:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54559 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966775AbaFQVvP (ORCPT
+	id S965933AbaFQVrQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:47:16 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:39848 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965220AbaFQVrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:51:15 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 123/212] x86-64, modify_ldt: Make support for 16-bit segments a runtime option
-Date: Tue, 17 Jun 2014 14:43:37 -0700
-Message-Id: <1403041506-13646-124-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 17 Jun 2014 17:47:13 -0400
+Date: Tue, 17 Jun 2014 15:47:09 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-pci@vger.kernel.org, ben@decadent.org.uk, gwshan@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pci: Fix unaligned access testing AF transaction pending
+Message-ID: <20140617214709.GA30559@google.com>
+References: <20140612152732.4162.23298.stgit@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140612152732.4162.23298.stgit@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, Jun 12, 2014 at 09:28:07AM -0600, Alex Williamson wrote:
+> pci_wait_for_pending() uses word access, so we shouldn't be passing
+> an offset that is only byte aligned.  Use the control register offset
+> instead, shifting the mask to match.
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> Reported-by: Ben Hutchings <ben@decadent.org.uk>
+> Cc: stable@vger.kernel.org
 
-------------------
+Applied with Gavin's ack to for-linus for v3.16, thanks!
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-
-commit fa81511bb0bbb2b1aace3695ce869da9762624ff upstream.
-
-Checkin:
-
-b3b42ac2cbae x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
-
-disabled 16-bit segments on 64-bit kernels due to an information
-leak.  However, it does seem that people are genuinely using Wine to
-run old 16-bit Windows programs on Linux.
-
-A proper fix for this ("espfix64") is coming in the upcoming merge
-window, but as a temporary fix, create a sysctl to allow the
-administrator to re-enable support for 16-bit segments.
-
-It adds a "/proc/sys/abi/ldt16" sysctl that defaults to zero (off). If
-you hit this issue and care about your old Windows program more than
-you care about a kernel stack address information leak, you can do
-
-   echo 1 > /proc/sys/abi/ldt16
-
-as root (add it to your startup scripts), and you should be ok.
-
-The sysctl table is only added if you have COMPAT support enabled on
-x86-64, but I assume anybody who runs old windows binaries very much
-does that ;)
-
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/CA%2B55aFw9BPoD10U1LfHbOMpHWZkvJTkMcfCs9s3urPr1YyWBxw@mail.gmail.com
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- arch/x86/kernel/ldt.c        | 4 +++-
- arch/x86/vdso/vdso32-setup.c | 8 ++++++++
- 2 files changed, 11 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
-index af1d14a..dcbbaa1 100644
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -20,6 +20,8 @@
- #include <asm/mmu_context.h>
- #include <asm/syscalls.h>
- 
-+int sysctl_ldt16 = 0;
-+
- #ifdef CONFIG_SMP
- static void flush_ldt(void *current_mm)
- {
-@@ -234,7 +236,7 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
- 	 * IRET leaking the high bits of the kernel stack address.
- 	 */
- #ifdef CONFIG_X86_64
--	if (!ldt_info.seg_32bit) {
-+	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
- 		error = -EINVAL;
- 		goto out_unlock;
- 	}
-diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-index d6bfb87..f1d633a 100644
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -41,6 +41,7 @@ enum {
- #ifdef CONFIG_X86_64
- #define vdso_enabled			sysctl_vsyscall32
- #define arch_setup_additional_pages	syscall32_setup_pages
-+extern int sysctl_ldt16;
- #endif
- 
- /*
-@@ -380,6 +381,13 @@ static struct ctl_table abi_table2[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec
- 	},
-+	{
-+		.procname	= "ldt16",
-+		.data		= &sysctl_ldt16,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec
-+	},
- 	{}
- };
- 
--- 
-1.9.1
-
+> ---
+>  drivers/pci/pci.c |    9 +++++++--
+>  1 file changed, 7 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index 759475e..81012ec 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -3109,8 +3109,13 @@ static int pci_af_flr(struct pci_dev *dev, int probe)
+>  	if (probe)
+>  		return 0;
+>  
+> -	/* Wait for Transaction Pending bit clean */
+> -	if (pci_wait_for_pending(dev, pos + PCI_AF_STATUS, PCI_AF_STATUS_TP))
+> +	/*
+> +	 * Wait for Transaction Pending bit to clear.  A word-aligned test
+> +	 * is used, so we use the conrol offset rather than status and shift
+> +	 * the test bit to match.
+> +	 */
+> +	if (pci_wait_for_pending(dev, pos + PCI_AF_CTRL,
+> +				 PCI_AF_STATUS_TP << 8))
+>  		goto clear;
+>  
+>  	dev_err(&dev->dev, "transaction is not cleared; "
+> 
