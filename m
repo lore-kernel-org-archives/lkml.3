@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964831AbaFQXK5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 19:10:57 -0400
-Received: from fgwmail4.fujitsu.co.jp ([164.71.1.141]:54305 "EHLO
-	fgwmail4.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755233AbaFQXKz (ORCPT
+	id S1754503AbaFQWpN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:45:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53840 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965875AbaFQVrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 19:10:55 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-4
-Message-ID: <53A0CAE6.9030805@jp.fujitsu.com>
-Date: Wed, 18 Jun 2014 08:10:30 +0900
-From: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>,
-        Gui Hecheng <guihc.fnst@cn.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-btrfs@vger.kernel.org>,
-        <akpm@linux-foundation.org>
-Subject: Re: [PATCH v4] lib: add size unit t/p/e to memparse
-References: <1402623746-1171-1-git-send-email-guihc.fnst@cn.fujitsu.com> <alpine.DEB.2.02.1406171520510.517@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1406171520510.517@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
-X-TM-AS-MML: No
+	Tue, 17 Jun 2014 17:47:04 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Antonio Quartulli <antonio@open-mesh.com>,
+        Marek Lindner <mareklindner@neomailbox.ch>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 060/212] batman-adv: fix local TT check for outgoing arp requests in DAT
+Date: Tue, 17 Jun 2014 14:42:34 -0700
+Message-Id: <1403041506-13646-61-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gui,
+3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
 
-(2014/06/18 7:21), David Rientjes wrote:
-> On Fri, 13 Jun 2014, Gui Hecheng wrote:
->
->> For modern filesystems such as btrfs, t/p/e size level operations
->> are common.
->> add size unit t/p/e parsing to memparse
->>
->> Signed-off-by: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
->
-> Acked-by: David Rientjes <rientjes@google.com>
+------------------
 
-It looks good to me.
+From: Antonio Quartulli <antonio@open-mesh.com>
 
-Reviewed-by: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+[ Upstream commit cc2f33860cea0e48ebec096130bd0f7c4bf6e0bc ]
 
-Thanks,
-Satoru
+Change introduced by 88e48d7b3340ef07b108eb8a8b3813dd093cc7f7
+("batman-adv: make DAT drop ARP requests targeting local clients")
+implements a check that prevents DAT from using the caching
+mechanism when the client that is supposed to provide a reply
+to an arp request is local.
 
->
-> Sorry, didn't do this before.  Good luck with the simple_strto*() work!
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+However change brought by be1db4f6615b5e6156c807ea8985171c215c2d57
+("batman-adv: make the Distributed ARP Table vlan aware")
+has not converted the above check into its vlan aware version
+thus making it useless when the local client is behind a vlan.
+
+Fix the behaviour by properly specifying the vlan when
+checking for a client being local or not.
+
+Reported-by: Simon Wunderlich <simon@open-mesh.com>
+Signed-off-by: Antonio Quartulli <antonio@open-mesh.com>
+Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ net/batman-adv/distributed-arp-table.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/net/batman-adv/distributed-arp-table.c b/net/batman-adv/distributed-arp-table.c
+index b316a4c..e086dab 100644
+--- a/net/batman-adv/distributed-arp-table.c
++++ b/net/batman-adv/distributed-arp-table.c
+@@ -941,8 +941,7 @@ bool batadv_dat_snoop_outgoing_arp_request(struct batadv_priv *bat_priv,
+ 		 * additional DAT answer may trigger kernel warnings about
+ 		 * a packet coming from the wrong port.
+ 		 */
+-		if (batadv_is_my_client(bat_priv, dat_entry->mac_addr,
+-					BATADV_NO_FLAGS)) {
++		if (batadv_is_my_client(bat_priv, dat_entry->mac_addr, vid)) {
+ 			ret = true;
+ 			goto out;
+ 		}
+-- 
+1.9.1
 
