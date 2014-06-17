@@ -1,130 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967253AbaFQVxJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:53:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54970 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967242AbaFQVxE (ORCPT
+	id S967290AbaFQVxS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:53:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57503 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967264AbaFQVxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:53:04 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 146/212] mac80211: fix on-channel remain-on-channel
-Date: Tue, 17 Jun 2014 14:44:00 -0700
-Message-Id: <1403041506-13646-147-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 17 Jun 2014 17:53:12 -0400
+Date: Tue, 17 Jun 2014 14:57:09 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Nicholas Krause <xerofoify@gmail.com>
+Cc: devel@driverdev.osuosl.org, lisa@xenapiadmin.com, ben@decadent.org.uk,
+        valentina.manea.m@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] Fixes function fw_download_code to check for Null
+ return from dev_skb_alloc
+Message-ID: <20140617215709.GA20496@kroah.com>
+References: <1403039881-16050-1-git-send-email-xerofoify@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403039881-16050-1-git-send-email-xerofoify@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
+Lots of things wrong here, please step back, and slow down.
 
-------------------
+Your subject, this really isn't "v2", is it?
 
-From: Johannes Berg <johannes.berg@intel.com>
+On Tue, Jun 17, 2014 at 05:18:01PM -0400, Nicholas Krause wrote:
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
 
-commit b4b177a5556a686909e643f1e9b6434c10de079f upstream.
+You aren't saying what you are doing here in the body of the patch, why
+not?
 
-Jouni reported that if a remain-on-channel was active on the
-same channel as the current operating channel, then the ROC
-would start, but any frames transmitted using mgmt-tx on the
-same channel would get delayed until after the ROC.
+> ---
+>  drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+> index 11e915e..e4c8224 100644
+> --- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+> +++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+> @@ -62,12 +62,14 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+>  
+>  		skb  = dev_alloc_skb(frag_length + 4);
+>  		if (!skb){
+> +			rt_status = false;
+> +			return rt_status;
+> +		}
 
-The reason for this is that the ROC starts, but doesn't have
-any handling for "remain on the same channel", so it stops
-the interface queues. The later mgmt-tx then puts the frame
-on the interface queues (since it's on the current operating
-channel) and thus they get delayed until after the ROC.
+Again, this patch will not apply to the tree, you are making it against
+your previous patch, which was rejected.  There is no way I can take
+this, right?
 
-To fix this, add some logic to handle remaining on the same
-channel specially and not stop the queues etc. in this case.
-This not only fixes the bug but also improves behaviour in
-this case as data frames etc. can continue to flow.
+Please start over and try again from a "clean" kernel tree.
 
-Reported-by: Jouni Malinen <j@w1.fi>
-Tested-by: Jouni Malinen <j@w1.fi>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/mac80211/ieee80211_i.h |  1 +
- net/mac80211/offchannel.c  | 27 ++++++++++++++++++++-------
- 2 files changed, 21 insertions(+), 7 deletions(-)
+thanks,
 
-diff --git a/net/mac80211/ieee80211_i.h b/net/mac80211/ieee80211_i.h
-index 1fc9190..980d863 100644
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -315,6 +315,7 @@ struct ieee80211_roc_work {
- 
- 	bool started, abort, hw_begun, notified;
- 	bool to_be_freed;
-+	bool on_channel;
- 
- 	unsigned long hw_start_time;
- 
-diff --git a/net/mac80211/offchannel.c b/net/mac80211/offchannel.c
-index 6fb3855..7a17dec 100644
---- a/net/mac80211/offchannel.c
-+++ b/net/mac80211/offchannel.c
-@@ -333,7 +333,7 @@ void ieee80211_sw_roc_work(struct work_struct *work)
- 		container_of(work, struct ieee80211_roc_work, work.work);
- 	struct ieee80211_sub_if_data *sdata = roc->sdata;
- 	struct ieee80211_local *local = sdata->local;
--	bool started;
-+	bool started, on_channel;
- 
- 	mutex_lock(&local->mtx);
- 
-@@ -354,14 +354,26 @@ void ieee80211_sw_roc_work(struct work_struct *work)
- 	if (!roc->started) {
- 		struct ieee80211_roc_work *dep;
- 
--		/* start this ROC */
--		ieee80211_offchannel_stop_vifs(local);
-+		WARN_ON(local->use_chanctx);
-+
-+		/* If actually operating on the desired channel (with at least
-+		 * 20 MHz channel width) don't stop all the operations but still
-+		 * treat it as though the ROC operation started properly, so
-+		 * other ROC operations won't interfere with this one.
-+		 */
-+		roc->on_channel = roc->chan == local->_oper_chandef.chan &&
-+				  local->_oper_chandef.width != NL80211_CHAN_WIDTH_5 &&
-+				  local->_oper_chandef.width != NL80211_CHAN_WIDTH_10;
- 
--		/* switch channel etc */
-+		/* start this ROC */
- 		ieee80211_recalc_idle(local);
- 
--		local->tmp_channel = roc->chan;
--		ieee80211_hw_config(local, 0);
-+		if (!roc->on_channel) {
-+			ieee80211_offchannel_stop_vifs(local);
-+
-+			local->tmp_channel = roc->chan;
-+			ieee80211_hw_config(local, 0);
-+		}
- 
- 		/* tell userspace or send frame */
- 		ieee80211_handle_roc_started(roc);
-@@ -380,9 +392,10 @@ void ieee80211_sw_roc_work(struct work_struct *work)
-  finish:
- 		list_del(&roc->list);
- 		started = roc->started;
-+		on_channel = roc->on_channel;
- 		ieee80211_roc_notify_destroy(roc, !roc->abort);
- 
--		if (started) {
-+		if (started && !on_channel) {
- 			ieee80211_flush_queues(local, NULL);
- 
- 			local->tmp_channel = NULL;
--- 
-1.9.1
-
+greg k-h
