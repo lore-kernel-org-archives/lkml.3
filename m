@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965397AbaFQQbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:31:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51029 "EHLO
+	id S965459AbaFQQcQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:32:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51027 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965302AbaFQQ0r (ORCPT
+	with ESMTP id S965289AbaFQQ0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:26:47 -0400
+	Tue, 17 Jun 2014 12:26:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chuansheng Liu <chuansheng.liu@intel.com>,
-        Zhang Dongxing <dongxing.zhang@intel.com>,
-        xiaoming wang <xiaoming.wang@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Florian Westphal <fw@strlen.de>, Pablo Neira Ayuso <pablo@netfilter.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 054/121] net: ipv4: current group_info should be put after using.
-Date: Tue, 17 Jun 2014 09:17:12 -0700
-Message-Id: <1403021899-16708-27-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 069/121] netfilter: ipv4: defrag: set local_df flag on defragmented skb
+Date: Tue, 17 Jun 2014 09:17:27 -0700
+Message-Id: <1403021899-16708-42-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
@@ -30,67 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
+From: Florian Westphal <fw@strlen.de>
 
-[ Upstream commit b04c46190219a4f845e46a459e3102137b7f6cac ]
+commit 895162b1101b3ea5db08ca6822ae9672717efec0 upstream.
 
-Plug a group_info refcount leak in ping_init.
-group_info is only needed during initialization and
-the code failed to release the reference on exit.
-While here move grabbing the reference to a place
-where it is actually needed.
+else we may fail to forward skb even if original fragments do fit
+outgoing link mtu:
 
-Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
-Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
-Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+1. remote sends 2k packets in two 1000 byte frags, DF set
+2. we want to forward but only see '2k > mtu and DF set'
+3. we then send icmp error saying that outgoing link is 1500
+
+But original sender never sent a packet that would not fit
+the outgoing link.
+
+Setting local_df makes outgoing path test size vs.
+IPCB(skb)->frag_max_size, so we will still send the correct
+error in case the largest original size did not fit
+outgoing link mtu.
+
+Reported-by: Maxime Bizon <mbizon@freebox.fr>
+Suggested-by: Maxime Bizon <mbizon@freebox.fr>
+Fixes: 5f2d04f1f9 (ipv4: fix path MTU discovery with connection tracking)
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/ping.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ net/ipv4/netfilter/nf_defrag_ipv4.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
-index 3d8ddd9..69f3f3e 100644
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -204,26 +204,33 @@ static int ping_init_sock(struct sock *sk)
+diff --git a/net/ipv4/netfilter/nf_defrag_ipv4.c b/net/ipv4/netfilter/nf_defrag_ipv4.c
+index 7428155..4cfb3bd 100644
+--- a/net/ipv4/netfilter/nf_defrag_ipv4.c
++++ b/net/ipv4/netfilter/nf_defrag_ipv4.c
+@@ -22,7 +22,6 @@
+ #endif
+ #include <net/netfilter/nf_conntrack_zones.h>
+ 
+-/* Returns new sk_buff, or NULL */
+ static int nf_ct_ipv4_gather_frags(struct sk_buff *skb, u_int32_t user)
  {
- 	struct net *net = sock_net(sk);
- 	kgid_t group = current_egid();
--	struct group_info *group_info = get_current_groups();
--	int i, j, count = group_info->ngroups;
-+	struct group_info *group_info;
-+	int i, j, count;
- 	kgid_t low, high;
-+	int ret = 0;
+ 	int err;
+@@ -33,8 +32,10 @@ static int nf_ct_ipv4_gather_frags(struct sk_buff *skb, u_int32_t user)
+ 	err = ip_defrag(skb, user);
+ 	local_bh_enable();
  
- 	inet_get_ping_group_range_net(net, &low, &high);
- 	if (gid_lte(low, group) && gid_lte(group, high))
- 		return 0;
+-	if (!err)
++	if (!err) {
+ 		ip_send_check(ip_hdr(skb));
++		skb->local_df = 1;
++	}
  
-+	group_info = get_current_groups();
-+	count = group_info->ngroups;
- 	for (i = 0; i < group_info->nblocks; i++) {
- 		int cp_count = min_t(int, NGROUPS_PER_BLOCK, count);
- 		for (j = 0; j < cp_count; j++) {
- 			kgid_t gid = group_info->blocks[i][j];
- 			if (gid_lte(low, gid) && gid_lte(gid, high))
--				return 0;
-+				goto out_release_group;
- 		}
- 
- 		count -= cp_count;
- 	}
- 
--	return -EACCES;
-+	ret = -EACCES;
-+
-+out_release_group:
-+	put_group_info(group_info);
-+	return ret;
+ 	return err;
  }
- 
- static void ping_close(struct sock *sk, long timeout)
 -- 
 1.9.1
 
