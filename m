@@ -1,127 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213AbaFQXhX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 19:37:23 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:52715 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753920AbaFQXhU (ORCPT
+	id S1756375AbaFQXjP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 19:39:15 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:39971 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756032AbaFQXjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 19:37:20 -0400
-Date: Wed, 18 Jun 2014 01:37:16 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Dave P Martin <Dave.Martin@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Joerg Roedel <joro@8bytes.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
-Message-ID: <20140617233714.GD25525@mithrandir>
-References: <1400877395-4235-1-git-send-email-thierry.reding@gmail.com>
- <538757B6.4010109@wwwdotorg.org>
- <20140530073006.GA24748@ulmo>
- <20140530112728.GB3949@e103592.cambridge.arm.com>
- <20140604211237.GC18710@mithrandir>
- <20140616125704.GE16758@arm.com>
- <20140617115829.GB18816@ulmo>
- <20140617121811.GG13808@arm.com>
+	Tue, 17 Jun 2014 19:39:13 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5gxpn/Q6ypwruk0T"
-Content-Disposition: inline
-In-Reply-To: <20140617121811.GG13808@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140617221620.GC30559@google.com>
+References: <1402346730-2508-1-git-send-email-andreas.noever@gmail.com>
+	<20140617221620.GC30559@google.com>
+Date: Tue, 17 Jun 2014 16:39:12 -0700
+X-Google-Sender-Auth: _63GxXCrAuBsl_naQtDI4boeQkU
+Message-ID: <CAE9FiQXD7hvt0cUYMzvq0r6CbZn=iJZc7BHRaF2nACbG7qwuBQ@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Do not touch siblings in pci_assign_unassigned_bridge_resources
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Andreas Noever <andreas.noever@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=047d7b10ca01aae09504fc10a6a3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--047d7b10ca01aae09504fc10a6a3
+Content-Type: text/plain; charset=UTF-8
 
---5gxpn/Q6ypwruk0T
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jun 17, 2014 at 3:16 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> [+cc Yinghai]
+>
+> On Mon, Jun 09, 2014 at 10:45:30PM +0200, Andreas Noever wrote:
+>> The problem can be reproduced by having two sibling hotplug bridges A
+>> and B. The problem will occour if the parent of A and B does not have
+>> enough resources to satisfy window allocations for B during a hotplug
+>> event.
 
-On Tue, Jun 17, 2014 at 01:18:11PM +0100, Will Deacon wrote:
-> On Tue, Jun 17, 2014 at 12:58:30PM +0100, Thierry Reding wrote:
-> > On Mon, Jun 16, 2014 at 01:57:04PM +0100, Will Deacon wrote:
-> > > On Wed, Jun 04, 2014 at 10:12:38PM +0100, Thierry Reding wrote:
-> > > > It can easily be argued that if the algorithm used to remap the ID
-> > > > varies, the compatibility of the device changes. Therefore I would
-> > > > expect any variant of the GICv3 that deviates from the "standard"
-> > > > mapping (if there is such a thing) to have its own compatible strin=
-g.
-> > >=20
-> > > There is no standard mapping; it's a property defined at system integ=
-ration
-> > > time. I fully expect different SoCs to do different things here.
-> >=20
-> > My point was that the mapping itself seems to be fundamental enough to
-> > make devices with different mappings "incompatible". Therefore I think
-> > this could probably be handled by using different compatible values,
-> > something along the lines of this:
-> >=20
-> > 	compatible =3D "vendor,soc-gicv3", "arm,gicv3";
-> >=20
-> > Then the mapping can be described in code, which should be a whole lot
-> > easier and more flexible than a more or less generic notation in device
-> > tree.
->=20
-> I don't think that scales well beyond a handful of unique mappings, and I
-> really anticipate everybody doing something different based on their
-> integration constraints.
->=20
-> You'd very quickly end up with sets of tables for each SoC, describing the
-> topology and associated IDs in the kernel source, which feels like a giant
-> step backwards from where we are today with device tree.
+> I don't understand how all this works either.  Yinghai?
+>
+> We definitely don't want to release resources that are already in use.  Can
+> you review and ack or nack this?
 
-Well, today we don't have a generic binding at all, so anything will
-really be a giant step forward in my opinion.
+Hi Andreas,
 
-But seriously, from what you said earlier I got the impression that some
-of the mappings may not be easy or possible to represent in DT, which is
-why I proposed to encode it into the compatible property so that it can
-be handled in code instead.
+Can you check if attached patch fix the problem on your test case?
 
-We've had similar discussions before (power sequences anyone?) where we
-tried to come up with a generic way to describe something in device tree
-that just didn't work out too well. Some things are better done in code,
-so I think we should at least consider that possibility rather than
-blindly try and force everything into device tree.
+In some case, if we can not assign pref mmio properly for the bridge,
+we may need to even clear non-pref mmio for the bridge.
 
-Thierry
+Thanks
 
---5gxpn/Q6ypwruk0T
-Content-Type: application/pgp-signature
+Yinghai
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+--047d7b10ca01aae09504fc10a6a3
+Content-Type: text/x-patch; charset=US-ASCII; name="fix_release_sibling_bridge_res.patch"
+Content-Disposition: attachment; 
+	filename="fix_release_sibling_bridge_res.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hwjuot350
 
-iQIcBAEBAgAGBQJToNEqAAoJEN0jrNd/PrOhHfkP/20CokZ/MGSysULm7FBTbZfY
-9rpRrhTmEWx4gZxW+m8geyWRYroUsxW+M1EXuRSN/fCAPXHA/5tsYZwvX9HB+lrv
-ZzkalhrUzVSStM2IA0dG5VcZCJhe9ZIOIbtWnt3xDhnkBw3PCr4yK6gEww6hcOZX
-mfV/cqyqQrkT4b5uZXz4zmcGNyE552b1J0DG837f6OpHnFbsm4Nw9PxttdMetiCF
-fh/VDgDWxkYP77Sqn56kBRVonYEPPk3AYeouJ3h9vX3yyUzXlPuISBIQX8jXEmp5
-qhK9X2XSn0GRUJh7k2fZh/UYdf7DA+hz00zNdpK3KCm83VBt78GK6p+gE3kUSxkm
-pITIFAzqJQWJV5PlwVU0g6uS3JRrvmpkMeKkeKx/NNoiAY9PnAhiJC2thm2DTqHp
-+HsMeIyPJpi9fUyR/LmlOpMREIt530mhZhCIBoOWa0iPAZ0B2hEAMTlA+S6iDzQN
-pZ8Lpbt4sZwPRk16BAFAaLrIs2ErXGtFccoy6ATImjbF5+8bvEB5udVRU93VTImY
-6q1lRRMkE7JwXHtm072uP6xXFVUi1Mbl3JPoS2v57X6NQl6DJjMnaPnai9XVV/AM
-VMJlrDNBI/TC+ZaE1wTbk81exJ5HGqpP0WwpVqhblssB5bieQcPC0r/NUCm+wFi0
-sQNECjGapTL5xAhbmgmP
-=sJ1K
------END PGP SIGNATURE-----
-
---5gxpn/Q6ypwruk0T--
+U3ViamVjdDogW1BBVENIXSBwY2k6IERvbid0IHJlbGVhc2Ugc2liaWxpbmcgYnJpZGdlIHJlc291
+cmNlcwoKT24gaG90cGx1ZyBjYXNlLCB3ZSBzaG91bGQgbm90IHRvdWNoIHNpYmxpbmcgYnJpZGdl
+cyB0aGF0IGlzIG91dApzaWRlIG9mIHRoZSBzbG90cy4KClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkg
+THUgPHlpbmdoYWlAa2VybmVsLm9yZz4KCi0tLQogZHJpdmVycy9wY2kvc2V0dXAtYnVzLmMgfCAg
+IDEwICsrKysrKysrLS0KIDEgZmlsZSBjaGFuZ2VkLCA4IGluc2VydGlvbnMoKyksIDIgZGVsZXRp
+b25zKC0pCgpJbmRleDogbGludXgtMi42L2RyaXZlcnMvcGNpL3NldHVwLWJ1cy5jCj09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvcGNpL3NldHVwLWJ1cy5jCisrKyBsaW51eC0y
+LjYvZHJpdmVycy9wY2kvc2V0dXAtYnVzLmMKQEAgLTE2NzYsMTAgKzE2NzYsMTYgQEAgYWdhaW46
+CiAJICogVHJ5IHRvIHJlbGVhc2UgbGVhZiBicmlkZ2UncyByZXNvdXJjZXMgdGhhdCBkb2Vzbid0
+IGZpdCByZXNvdXJjZSBvZgogCSAqIGNoaWxkIGRldmljZSB1bmRlciB0aGF0IGJyaWRnZQogCSAq
+LwotCWxpc3RfZm9yX2VhY2hfZW50cnkoZmFpbF9yZXMsICZmYWlsX2hlYWQsIGxpc3QpCi0JCXBj
+aV9idXNfcmVsZWFzZV9icmlkZ2VfcmVzb3VyY2VzKGZhaWxfcmVzLT5kZXYtPmJ1cywKKwlsaXN0
+X2Zvcl9lYWNoX2VudHJ5KGZhaWxfcmVzLCAmZmFpbF9oZWFkLCBsaXN0KSB7CisJCXN0cnVjdCBw
+Y2lfYnVzICpidXMgPSBmYWlsX3Jlcy0+ZGV2LT5idXM7CisKKwkJaWYgKGZhaWxfcmVzLT5kZXYg
+PT0gYnJpZGdlKQorCQkJYnVzID0gYnJpZGdlLT5zdWJvcmRpbmF0ZTsKKworCQlwY2lfYnVzX3Jl
+bGVhc2VfYnJpZGdlX3Jlc291cmNlcyhidXMsCiAJCQkJCQkgZmFpbF9yZXMtPmZsYWdzICYgdHlw
+ZV9tYXNrLAogCQkJCQkJIHdob2xlX3N1YnRyZWUpOworCX0KIAogCS8qIHJlc3RvcmUgc2l6ZSBh
+bmQgZmxhZ3MgKi8KIAlsaXN0X2Zvcl9lYWNoX2VudHJ5KGZhaWxfcmVzLCAmZmFpbF9oZWFkLCBs
+aXN0KSB7Cg==
+--047d7b10ca01aae09504fc10a6a3--
