@@ -1,49 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965413AbaFQVSX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:18:23 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:38551 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965386AbaFQVSV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:18:21 -0400
-From: Nicholas Krause <xerofoify@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: valentina.manea.m@gmail.com, ben@decadent.org.uk, lisa@xenapiadmin.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2] Fixes function fw_download_code to check for Null return from dev_skb_alloc
-Date: Tue, 17 Jun 2014 17:18:01 -0400
-Message-Id: <1403039881-16050-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S965175AbaFQVIm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:08:42 -0400
+Received: from smtp-69.nebula.fi ([83.145.220.69]:39699 "EHLO smtp.nebula.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964883AbaFQVIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 17:08:40 -0400
+Date: Wed, 18 Jun 2014 00:08:30 +0300
+From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+To: Franck Jullien <franck.jullien@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        tomi.valkeinen@ti.com, plagnioj@jcrosoft.com
+Subject: Re: [PATCH] video: OF display-timings support for ocfb
+Message-ID: <20140617210829.GA7753@chokladfabriken.org>
+References: <1402517871-27503-1-git-send-email-franck.jullien@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402517871-27503-1-git-send-email-franck.jullien@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
----
- drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+On Wed, Jun 11, 2014 at 10:17:51PM +0200, Franck Jullien wrote:
+> Signed-off-by: Franck Jullien <franck.jullien@gmail.com>
+> ---
+>  drivers/video/fbdev/Kconfig |    2 ++
+>  drivers/video/fbdev/ocfb.c  |   31 ++++++++++++++++++++++++++-----
+>  2 files changed, 28 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/video/fbdev/Kconfig b/drivers/video/fbdev/Kconfig
+> index e1f4727..b4ac6bb 100644
+> --- a/drivers/video/fbdev/Kconfig
+> +++ b/drivers/video/fbdev/Kconfig
+> @@ -942,6 +942,8 @@ config FB_OPENCORES
+>  	select FB_CFB_FILLRECT
+>  	select FB_CFB_COPYAREA
+>  	select FB_CFB_IMAGEBLIT
+> +	select VIDEOMODE_HELPERS
+> +	select FB_MODE_HELPERS
+>  	help
+>  	  This enables support for the OpenCores VGA/LCD core.
+>  
+> diff --git a/drivers/video/fbdev/ocfb.c b/drivers/video/fbdev/ocfb.c
+> index 7f9dc9b..6d15565 100644
+> --- a/drivers/video/fbdev/ocfb.c
+> +++ b/drivers/video/fbdev/ocfb.c
+> @@ -22,6 +22,8 @@
+>  #include <linux/string.h>
+>  #include <linux/slab.h>
+>  
+> +#include <video/of_display_timing.h>
+> +
+>  /* OCFB register defines */
+>  #define OCFB_CTRL	0x000
+>  #define OCFB_STAT	0x004
+> @@ -310,11 +312,30 @@ static int ocfb_probe(struct platform_device *pdev)
+>  	fbdev->info.device = &pdev->dev;
+>  	fbdev->info.par = fbdev;
+>  
+> -	/* Video mode setup */
+> -	if (!fb_find_mode(&fbdev->info.var, &fbdev->info, mode_option,
+> -			  NULL, 0, &default_mode, 16)) {
+> -		dev_err(&pdev->dev, "No valid video modes found\n");
+> -		return -EINVAL;
+> +	if (!mode_option && IS_ENABLED(CONFIG_OF)) {
+> +		struct fb_videomode mode;
+> +		u32 bpp;
+> +
+> +		ret = of_get_fb_videomode(pdev->dev.of_node, &mode,
+> +					  OF_USE_NATIVE_MODE);
+> +		if (ret)
+> +			return ret;
+> +
+> +		fb_videomode_to_var(&fbdev->info.var, &mode);
+> +
+> +		ret = of_property_read_u32(pdev->dev.of_node, "bits-per-pixel",
+> +					   &bpp);
+> +		if (ret)
+> +			return ret;
+> +
+> +		fbdev->info.var.bits_per_pixel = bpp;
+> +
+> +	} else {
+> +		if (!fb_find_mode(&fbdev->info.var, &fbdev->info, mode_option,
+> +				  NULL, 0, &default_mode, 16)) {
+> +			dev_err(&pdev->dev, "No valid video modes found\n");
+> +			return -EINVAL;
+> +		}
+>  	}
+>  	ocfb_init_var(fbdev);
+>  	ocfb_init_fix(fbdev);
 
-diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-index 11e915e..e4c8224 100644
---- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-+++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-@@ -62,12 +62,14 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
- 
- 		skb  = dev_alloc_skb(frag_length + 4);
- 		if (!skb){
-+			rt_status = false;
-+			return rt_status;
-+		}
- 		memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
- 		tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
- 		tcb_desc->queue_index = TXCMD_QUEUE;
- 		tcb_desc->bCmdOrInit = DESC_PACKET_TYPE_INIT;
- 		tcb_desc->bLastIniPkt = bLastIniPkt;
--		}
- 
- 		seg_ptr = skb->data;
- 		for (i = 0; i < frag_length; i += 4) {
--- 
-1.9.1
 
+Nice, this was something that was discussed as a possible future improvement
+when I first posted this driver.
+
+Acked-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
