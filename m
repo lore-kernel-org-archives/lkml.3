@@ -1,43 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933390AbaFQPhq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 11:37:46 -0400
-Received: from mail-ie0-f195.google.com ([209.85.223.195]:64480 "EHLO
-	mail-ie0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755401AbaFQPhp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 11:37:45 -0400
-From: Nicholas Krause <xerofoify@gmail.com>
-To: akpm@linux-foundation.org
-Cc: viro@zeniv.linux.org.uk, fabf@skynet.be, dan.carpenter@oracle.com,
-        kirill.shutemov@linux.intel.com, linux-fsdevel@vger.kernel.org,
+	id S933435AbaFQPiY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 11:38:24 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:37054 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932869AbaFQPiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 11:38:22 -0400
+Date: Tue, 17 Jun 2014 11:38:14 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] Check for Null return of affs_bread in function affs_truncate
-Date: Tue, 17 Jun 2014 11:37:39 -0400
-Message-Id: <1403019459-5547-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
+Subject: Re: [patch 03/12] mm: huge_memory: use GFP_TRANSHUGE when charging
+ huge pages
+Message-ID: <20140617153814.GB7331@cmpxchg.org>
+References: <1402948472-8175-1-git-send-email-hannes@cmpxchg.org>
+ <1402948472-8175-4-git-send-email-hannes@cmpxchg.org>
+ <20140617142317.GD19886@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140617142317.GD19886@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+On Tue, Jun 17, 2014 at 04:23:17PM +0200, Michal Hocko wrote:
+> On Mon 16-06-14 15:54:23, Johannes Weiner wrote:
+> > Transparent huge page charges prefer falling back to regular pages
+> > rather than spending a lot of time in direct reclaim.
+> > 
+> > Desired reclaim behavior is usually declared in the gfp mask, but THP
+> > charges use GFP_KERNEL and then rely on the fact that OOM is disabled
+> > for THP charges, and that OOM-disabled charges currently skip reclaim.
+> > Needless to say, this is anything but obvious and quite error prone.
+> > 
+> > Convert THP charges to use GFP_TRANSHUGE instead, which implies
+> > __GFP_NORETRY, to indicate the low-latency requirement.
+> 
+> Maybe we can get one step further and even get rid of oom parameter.
+> It is only THP (handled by this patch) and mem_cgroup_do_precharge that
+> want OOM disabled explicitly.
+
+Great idea!
+
+> GFP_KERNEL & (~__GFP_NORETRY) is ugly and something like GFP_NO_OOM
+> would be better but this is just a quick scratch.
+
+I think it's fine, actually.
+
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 52550bbff1ef..5d247822b03a 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2555,15 +2555,13 @@ static int memcg_cpu_hotplug_callback(struct notifier_block *nb,
+>   * mem_cgroup_try_charge - try charging a memcg
+>   * @memcg: memcg to charge
+>   * @nr_pages: number of pages to charge
+> - * @oom: trigger OOM if reclaim fails
+>   *
+>   * Returns 0 if @memcg was charged successfully, -EINTR if the charge
+>   * was bypassed to root_mem_cgroup, and -ENOMEM if the charge failed.
+>   */
+>  static int mem_cgroup_try_charge(struct mem_cgroup *memcg,
+>  				 gfp_t gfp_mask,
+> -				 unsigned int nr_pages,
+> -				 bool oom)
+> +				 unsigned int nr_pages)
+>  {
+>  	unsigned int batch = max(CHARGE_BATCH, nr_pages);
+>  	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
+> @@ -2647,7 +2645,7 @@ retry:
+>  	if (fatal_signal_pending(current))
+>  		goto bypass;
+>  
+> -	if (!oom)
+> +	if (!oom_gfp_allowed(gfp_mask))
+>  		goto nomem;
+
+We don't actually need that check: if __GFP_NORETRY is set, we goto
+nomem directly after reclaim fails and don't even reach here.
+
+So here is the patch I have now - can I get your sign-off on this?
+
 ---
- fs/affs/file.c | 2 ++
- 1 file changed, 2 insertions(+)
+>From eda800d2aa2376d347d6d4f7660e3450bd4c5dbb Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Tue, 17 Jun 2014 11:10:59 -0400
+Subject: [patch] mm: memcontrol: remove explicit OOM parameter in charge path
 
-diff --git a/fs/affs/file.c b/fs/affs/file.c
-index a7fe57d..a227cec 100644
---- a/fs/affs/file.c
-+++ b/fs/affs/file.c
-@@ -923,6 +923,8 @@ affs_truncate(struct inode *inode)
+For the page allocator, __GFP_NORETRY implies that no OOM should be
+triggered, whereas memcg has an explicit parameter to disable OOM.
+
+The only callsites that want OOM disabled are THP charges and charge
+moving.  THP already uses __GFP_NORETRY and charge moving can use it
+as well - one full reclaim cycle should be plenty.  Switch it over,
+then remove the OOM parameter.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/memcontrol.c | 32 ++++++++++----------------------
+ 1 file changed, 10 insertions(+), 22 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 9c646b9b56f4..c765125694e2 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2555,15 +2555,13 @@ static int memcg_cpu_hotplug_callback(struct notifier_block *nb,
+  * mem_cgroup_try_charge - try charging a memcg
+  * @memcg: memcg to charge
+  * @nr_pages: number of pages to charge
+- * @oom: trigger OOM if reclaim fails
+  *
+  * Returns 0 if @memcg was charged successfully, -EINTR if the charge
+  * was bypassed to root_mem_cgroup, and -ENOMEM if the charge failed.
+  */
+ static int mem_cgroup_try_charge(struct mem_cgroup *memcg,
+ 				 gfp_t gfp_mask,
+-				 unsigned int nr_pages,
+-				 bool oom)
++				 unsigned int nr_pages)
+ {
+ 	unsigned int batch = max(CHARGE_BATCH, nr_pages);
+ 	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
+@@ -2647,9 +2645,6 @@ retry:
+ 	if (fatal_signal_pending(current))
+ 		goto bypass;
  
- 	while (ext_key) {
- 		ext_bh = affs_bread(sb, ext_key);
-+		if (!ext_bh)
-+			goto err;
- 		size = AFFS_SB(sb)->s_hashsize;
- 		if (size > blkcnt - blk)
- 			size = blkcnt - blk;
+-	if (!oom)
+-		goto nomem;
+-
+ 	mem_cgroup_oom(mem_over_limit, gfp_mask, get_order(batch));
+ nomem:
+ 	if (!(gfp_mask & __GFP_NOFAIL))
+@@ -2675,15 +2670,14 @@ done:
+  */
+ static struct mem_cgroup *mem_cgroup_try_charge_mm(struct mm_struct *mm,
+ 				 gfp_t gfp_mask,
+-				 unsigned int nr_pages,
+-				 bool oom)
++				 unsigned int nr_pages)
+ 
+ {
+ 	struct mem_cgroup *memcg;
+ 	int ret;
+ 
+ 	memcg = get_mem_cgroup_from_mm(mm);
+-	ret = mem_cgroup_try_charge(memcg, gfp_mask, nr_pages, oom);
++	ret = mem_cgroup_try_charge(memcg, gfp_mask, nr_pages);
+ 	css_put(&memcg->css);
+ 	if (ret == -EINTR)
+ 		memcg = root_mem_cgroup;
+@@ -2900,8 +2894,7 @@ static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = mem_cgroup_try_charge(memcg, gfp, size >> PAGE_SHIFT,
+-				    oom_gfp_allowed(gfp));
++	ret = mem_cgroup_try_charge(memcg, gfp, size >> PAGE_SHIFT);
+ 	if (ret == -EINTR)  {
+ 		/*
+ 		 * mem_cgroup_try_charge() chosed to bypass to root due to
+@@ -3650,7 +3643,6 @@ int mem_cgroup_charge_anon(struct page *page,
+ {
+ 	unsigned int nr_pages = 1;
+ 	struct mem_cgroup *memcg;
+-	bool oom = true;
+ 
+ 	if (mem_cgroup_disabled())
+ 		return 0;
+@@ -3662,14 +3654,9 @@ int mem_cgroup_charge_anon(struct page *page,
+ 	if (PageTransHuge(page)) {
+ 		nr_pages <<= compound_order(page);
+ 		VM_BUG_ON_PAGE(!PageTransHuge(page), page);
+-		/*
+-		 * Never OOM-kill a process for a huge page.  The
+-		 * fault handler will fall back to regular pages.
+-		 */
+-		oom = false;
+ 	}
+ 
+-	memcg = mem_cgroup_try_charge_mm(mm, gfp_mask, nr_pages, oom);
++	memcg = mem_cgroup_try_charge_mm(mm, gfp_mask, nr_pages);
+ 	if (!memcg)
+ 		return -ENOMEM;
+ 	__mem_cgroup_commit_charge(memcg, page, nr_pages,
+@@ -3706,7 +3693,7 @@ static int __mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+ 		memcg = try_get_mem_cgroup_from_page(page);
+ 	if (!memcg)
+ 		memcg = get_mem_cgroup_from_mm(mm);
+-	ret = mem_cgroup_try_charge(memcg, mask, 1, true);
++	ret = mem_cgroup_try_charge(memcg, mask, 1);
+ 	css_put(&memcg->css);
+ 	if (ret == -EINTR)
+ 		memcg = root_mem_cgroup;
+@@ -3733,7 +3720,7 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm, struct page *page,
+ 	if (!PageSwapCache(page)) {
+ 		struct mem_cgroup *memcg;
+ 
+-		memcg = mem_cgroup_try_charge_mm(mm, gfp_mask, 1, true);
++		memcg = mem_cgroup_try_charge_mm(mm, gfp_mask, 1);
+ 		if (!memcg)
+ 			return -ENOMEM;
+ 		*memcgp = memcg;
+@@ -3802,7 +3789,7 @@ int mem_cgroup_charge_file(struct page *page, struct mm_struct *mm,
+ 		return 0;
+ 	}
+ 
+-	memcg = mem_cgroup_try_charge_mm(mm, gfp_mask, 1, true);
++	memcg = mem_cgroup_try_charge_mm(mm, gfp_mask, 1);
+ 	if (!memcg)
+ 		return -ENOMEM;
+ 	__mem_cgroup_commit_charge(memcg, page, 1, type, false);
+@@ -6414,7 +6401,8 @@ one_by_one:
+ 			batch_count = PRECHARGE_COUNT_AT_ONCE;
+ 			cond_resched();
+ 		}
+-		ret = mem_cgroup_try_charge(memcg, GFP_KERNEL, 1, false);
++		ret = mem_cgroup_try_charge(memcg,
++					    GFP_KERNEL & ~__GFP_NORETRY, 1);
+ 		if (ret)
+ 			/* mem_cgroup_clear_mc() will do uncharge later */
+ 			return ret;
 -- 
-1.9.1
-
+2.0.0
