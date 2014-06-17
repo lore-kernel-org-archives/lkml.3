@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933153AbaFQOm5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 10:42:57 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49136 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932870AbaFQOm4 (ORCPT
+	id S933175AbaFQOnd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 10:43:33 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45989 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932972AbaFQOnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 10:42:56 -0400
-Message-ID: <1403016160.27991.1.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH 01/24] kobject: return actual error on
- kset_create_and_add
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Jeff Liu <jeff.liu@oracle.com>
-Cc: gregkh@linuxfoundation.org, Christoph Lameter <cl@gentwo.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, herbert@gondor.apana.org.au,
-        davem@davemloft.net, stefanr@s5r6.in-berlin.de, joro@8bytes.org,
-        jejb@parisc-linux.org, deller@gmx.de, bhelgaas@google.com, clm@fb.com,
-        Josef Bacik <jbacik@fb.com>, swhiteho@redhat.com, bharrosh@panasas.com,
-        bhalevy@primarydata.com, ccaulfie@redhat.com, teigland@redhat.com,
-        "Theodore Ts'o" <tytso@mit.edu>, adilger.kernel@dilger.ca,
-        jaegeuk@kernel.org, cm224.lee@samsung.com,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        casey@schaufler-ca.com, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 17 Jun 2014 07:42:40 -0700
-In-Reply-To: <53A04FF7.5050900@oracle.com>
-References: <53A04FF7.5050900@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Jun 2014 10:43:31 -0400
+Date: Tue, 17 Jun 2014 15:43:23 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140617144323.GU5099@sirena.org.uk>
+References: <1402757665-15102-1-git-send-email-robert.jarzmik@free.fr>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IcaJnnNV5xAPxpBT"
+Content-Disposition: inline
+In-Reply-To: <1402757665-15102-1-git-send-email-robert.jarzmik@free.fr>
+X-Cookie: Ditat Deus.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] regulator: max1586 add device-tree support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-06-17 at 22:25 +0800, Jeff Liu wrote:
-> From: Jie Liu <jeff.liu@oracle.com>
-> 
-> It's better to return the actual error rather than NULL because
-> kset_register() can failed due to other reasons.
-> 
-> Cc: Christoph Lameter <cl@linux-foundation.org>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: Matt Mackall <mpm@selenic.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
-> Cc: Joerg Roedel <joro@8bytes.org>
-> Cc: James E.J. Bottomley <JBottomley@parallels.com>
-> Cc: Helge Deller <deller@gmx.de>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Chris Mason <clm@fb.com>
-> Cc: Josef Bacik <jbacik@fb.com>
-> Cc: Steven Whitehouse <swhiteho@redhat.com>
-> Cc: Boaz Harrosh <bharrosh@panasas.com>
-> Cc: Benny Halevy <bhalevy@primarydata.com>
-> Cc: Christine Caulfield <ccaulfie@redhat.com>
-> Cc: David Teigland <teigland@redhat.com>
-> Cc: Theodore Ts'o <tytso@mit.edu>
-> Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-> Cc: Jaegeuk Kim <jaegeuk@kernel.org>
-> Cc: Changman Lee <cm224.lee@samsung.com>
-> Cc: Mark Fasheh <mfasheh@suse.com>
-> Cc: Joel Becker <jlbec@evilplan.org>
-> Cc: Casey Schaufler <casey@schaufler-ca.com>
-> Signed-off-by: Jie Liu <jeff.liu@oracle.com>
-> ---
->  lib/kobject.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/lib/kobject.c b/lib/kobject.c
-> index 58751bb..538c617 100644
-> --- a/lib/kobject.c
-> +++ b/lib/kobject.c
-> @@ -919,11 +919,11 @@ struct kset *kset_create_and_add(const char *name,
->  
->  	kset = kset_create(name, uevent_ops, parent_kobj);
->  	if (!kset)
-> -		return NULL;
-> +		return ERR_PTR(-ENOMEM);
->  	error = kset_register(kset);
->  	if (error) {
->  		kfree(kset);
-> -		return NULL;
-> +		return ERR_PTR(error);
->  	}
->  	return kset;
->  }
 
-This patch series isn't bisectable.  When changing an error signal from
-NULL to non-NULL, you have to do it as one patch, otherwise if a
-bisection lands in here we'll get error returns from all our kobject
-kset code and the kernel won't boot.
+--IcaJnnNV5xAPxpBT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-It's fine if you're sending it out as 24 patches for review, but it has
-to be applied as a single one.
+On Sat, Jun 14, 2014 at 04:54:24PM +0200, Robert Jarzmik wrote:
 
-James
+> +	matched = of_regulator_match(dev, np, rmatch, ARRAY_SIZE(rmatch));
+> +	of_node_put(np);
+> +	if (matched <= 0)
+> +		return matched;
 
+Why is this treating zero as an error?  We should be able to at least
+report the current state of regulators even if none are configured in
+the device tree.
 
+Otherwise this looks good.
+
+--IcaJnnNV5xAPxpBT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJToFQIAAoJELSic+t+oim9RRsP/2hzlXNDuwY6wMSbgdBheJI4
+GZP9G56PpI2xk8VKnOLmKDsO8/dam3W14gcAHK/LR9N9fwFQchmlKNcVqWpDlUWE
+bGjV6d9Qq3RF2Dd8zShWIL7QUTzqOoCLDBWWp1Ldfg52/p5lPpZLT6ia6f+gqFwT
+gNysJ+eP9VojZ3H7nnZHv2Nccj1lL3DwJzvKtfWZIPRmH85lgj5Kpx5h4QFws2y2
+ZZzlSdfMd7lopjgkTVldJpWfAQr8BaS0GiEeKU6vXzatrkaru50kL4VrK3E6hLdA
+xxJ0Eglq7E/7j+mkeTthmLmptjeGCFgnYkfdBK6tYZv4D0Bxy7Z0fgw8EKv1tQ9D
+Zh3NXXy0d5InH077AdUe99HW+h+bdXnfQv3uKzJfqUGelMNUK45NQ0VNISAGJVdP
+fWf/Z8RREiUyMs8idbsK90RlOBfKIkXMXnVBHg0LGurIgcAGqa7UgeX/ZjAnmFq/
+EolqwUzbWTf+qnEVlK+v8N3OPWf+tISBSvo2ny98/xg8r9xEZujP6BMaPhDgcvnK
+1JeQvCnwFVneqF+aWezF6zlgViaVhJTIJeyV6ZsBCV1YKYligiE84iA0wu0w5wAi
+wnGsu3FkN0nqun3bmG5m2ZWTflLR5pobJpDCJmof9PEq58E5brq5KaNL4/AH04n8
+XssZraXsBupRdOV+zAP2
+=oYZV
+-----END PGP SIGNATURE-----
+
+--IcaJnnNV5xAPxpBT--
