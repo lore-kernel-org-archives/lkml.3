@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933885AbaFQUGa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 16:06:30 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:22290 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932927AbaFQUG2 (ORCPT
+	id S933912AbaFQUGs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 16:06:48 -0400
+Received: from g5t1625.atlanta.hp.com ([15.192.137.8]:48326 "EHLO
+	g5t1625.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932927AbaFQUGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 16:06:28 -0400
-Date: Tue, 17 Jun 2014 16:05:31 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Waiman.Long@hp.com
-Cc: Waiman.Long@hp.com, tglx@linutronix.de, mingo@kernel.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        paolo.bonzini@gmail.com, boris.ostrovsky@oracle.com,
-        paulmck@linux.vnet.ibm.com, riel@redhat.com,
-        torvalds@linux-foundation.org, raghavendra.kt@linux.vnet.ibm.com,
-        david.vrabel@citrix.com, oleg@redhat.com, gleb@redhat.com,
-        scott.norton@hp.com, chegu_vinod@hp.com,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 01/11] qspinlock: A simple generic 4-byte queue spinlock
-Message-ID: <20140617200531.GB27242@laptop.dumpdata.com>
-References: <20140615124657.264658593@chello.nl>
- <20140615130152.912524881@chello.nl>
+	Tue, 17 Jun 2014 16:06:46 -0400
+X-Greylist: delayed 88242 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jun 2014 16:06:46 EDT
+Message-ID: <53A09FD3.1050709@hp.com>
+Date: Tue, 17 Jun 2014 16:06:43 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140615130152.912524881@chello.nl>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: paulmck@linux.vnet.ibm.com
+CC: Romanov Arya <romanov.arya@gmail.com>,
+        Pranith Kumar <bobby.prani@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org
+Subject: Re: [RFC PATCH 1/1] kernel/rcu/tree.c: simplify force_quiescent_state()
+References: <539FAE21.7070702@gmail.com> <20140617145419.GE4669@linux.vnet.ibm.com> <CAJKcOGdUDwdmdkpd0dw5xO9+TK=9W9fvF9Q+f5F_b4R8cEgdTA@mail.gmail.com> <53A07336.7030704@hp.com> <20140617171116.GH4669@linux.vnet.ibm.com> <20140617173717.GA28198@linux.vnet.ibm.com>
+In-Reply-To: <20140617173717.GA28198@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> + * The basic principle of a queue-based spinlock can best be understood
-> + * by studying a classic queue-based spinlock implementation called the
-> + * MCS lock. The paper below provides a good description for this kind
-> + * of lock.
-> + *
-> + * http://www.cise.ufl.edu/tr/DOC/REP-1992-71.pdf
-> + *
-> + * This queue spinlock implementation is based on the MCS lock, however to make
-> + * it fit the 4 bytes we assume spinlock_t to be, and preserve its existing
-> + * API, we must modify it some.
-> + *
-> + * In particular; where the traditional MCS lock consists of a tail pointer
-> + * (8 bytes) and needs the next pointer (another 8 bytes) of its own node to
-> + * unlock the next pending (next->locked), we compress both these: {tail,
-> + * next->locked} into a single u32 value.
-> + *
-> + * Since a spinlock disables recursion of its own context and there is a limit
-> + * to the contexts that can nest; namely: task, softirq, hardirq, nmi, we can
-> + * encode the tail as and index indicating this context and a cpu number.
-> + *
-> + * We can further change the first spinner to spin on a bit in the lock word
-> + * instead of its node; whereby avoiding the need to carry a node from lock to
-> + * unlock, and preserving API.
+On 06/17/2014 01:37 PM, Paul E. McKenney wrote:
+>
+> Oh, and to answer the implicit question...  A properly configured 4096-CPU
+> system will have two funnel levels, with 64 nodes at the leaf level
+> and a single node at the root level.  If the system is not properly
+> configured, it will have three funnel levels.  The maximum number of
+> funnel levels is four, which would handle more than four million CPUs
+> (sixteen million if properly configured), so we should be good.  ;-)
+>
+> The larger numbers of levels are intended strictly for testing.  I set
+> CONFIG_RCU_FANOUT_LEAF=2 and CONFIG_RCU_FANOUT=2 on a 16-CPU system just
+> to make sure that I am testing something uglier than what will be running
+> in production.  A large system should have both of these set to 64,
+> though this requires also booting with skew_tick=1 as well.
+>
+> 							Thanx, Paul
 
-You also made changes (compared to the MCS) in that the unlock path is not
-spinning waiting for the successor and that the job of passing the lock
-is not done in the unlock path either.
+Thank for the clarification as I haven't looked deep into the code to 
+see how many levels there are. I totally understand the impact cacheline 
+contention can have on system performance. After all, this is what many 
+of my patches are trying to address.
 
-Instead all of that is now done in the path of the lock acquirer logic. 
-
-Could you update the comment to say that please?
-
-Thanks.
+-Longman
