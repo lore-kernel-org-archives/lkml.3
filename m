@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932071AbaFQB2u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 21:28:50 -0400
-Received: from mga14.intel.com ([192.55.52.115]:28008 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753339AbaFQB2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 21:28:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,490,1400050800"; 
-   d="scan'208";a="548941950"
-Message-ID: <539F999A.8070902@intel.com>
-Date: Tue, 17 Jun 2014 09:27:54 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S932094AbaFQB3h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 21:29:37 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:62821 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752954AbaFQB3f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 21:29:35 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 17 Jun 2014 10:33:50 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Alexander Graf <agraf@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v3 -next 1/9] DMA, CMA: fix possible memory leak
+Message-ID: <20140617013349.GB6825@js1304-P5Q-DELUXE>
+References: <1402897251-23639-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1402897251-23639-2-git-send-email-iamjoonsoo.kim@lge.com>
+ <20140616062719.GA18790@bbox>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: rjw@rjwysocki.net, lenb@kernel.org, naszar@ya.ru,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI/Battery: Retry to get Battery information if failed
- during probing
-References: <1402552946-14704-1-git-send-email-tianyu.lan@intel.com> <alpine.DEB.2.02.1406112354070.23724@chino.kir.corp.google.com> <53995488.20308@intel.com> <alpine.DEB.2.02.1406120025050.23724@chino.kir.corp.google.com> <53996152.2000407@intel.com> <alpine.DEB.2.02.1406121415150.8305@chino.kir.corp.google.com> <539A60FC.1050301@intel.com> <alpine.DEB.2.02.1406131445130.31981@chino.kir.corp.google.com> <539E528B.90908@intel.com> <alpine.DEB.2.02.1406161827320.21018@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1406161827320.21018@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140616062719.GA18790@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年06月17日 09:27, David Rientjes wrote:
-> On Mon, 16 Jun 2014, Lan Tianyu wrote:
+On Mon, Jun 16, 2014 at 03:27:19PM +0900, Minchan Kim wrote:
+> Hi, Joonsoo
 > 
->>>> How about this?
->>>>
->>>> -       result = acpi_battery_update(battery, false);
->>>> -       if (result)
->>>> +
->>>> +       /*
->>>> +        * Some machines'(E,G Lenovo Z480) ECs are not stable
->>>> +        * during boot up and this causes battery driver fails to be
->>>> +        * probed due to failure of getting battery information
->>>> +        * from EC sometimes. After several retries, the operation
->>>> +        * may work. So add retry code here and 20ms sleep between
->>>> +        * every retries.
->>>> +        */
->>>> +       while (acpi_battery_update(battery, false) && retry--)
->>>> +               msleep(20);
->>>> +       if (!retry) {
->>>> +               result = -ENODEV;
->>>>                 goto fail;
->>>> +       }
->>>> +
->>>
->>> I think you want --retry and not retry--.
->>
->> My original purpose is to retry 5 times after the first try fails.
->> If use "--retry" here, it just retries 4 times.
->>
->>>  Otherwise it's possible for the 
->>> final call to acpi_battery_update() to succeed and now it's returning 
->>> -ENODEV.
->>>
->>
->> Yes, it maybe and I will change code like the following.
->>
->> while ((result = acpi_battery_update(battery, false)) && retry--)
->>        msleep(20);
->> if (result)
->>        goto fail;
->>
+> On Mon, Jun 16, 2014 at 02:40:43PM +0900, Joonsoo Kim wrote:
+> > We should free memory for bitmap when we find zone mis-match,
+> > otherwise this memory will leak.
+> > 
+> > Additionally, I copy code comment from PPC KVM's CMA code to inform
+> > why we need to check zone mis-match.
+> > 
+> > * Note
+> > Minchan suggested to add a tag for the stable, but, I don't do it,
+> > because I found this possibility during code-review and, IMO,
+> > this patch isn't suitable for stable tree.
 > 
-> Looks good.
+> Nice idea to put the comment in here. Thanks Joonsoo.
 > 
+> It seems you obey "It must fix a real bug that bothers people"
+> on Documentation/stable_kernel_rules.txt but it's a really obvious
+> bug and hard to get a report from people because limited user and
+> hard to detect small such small memory leak.
+> 
+> In my experince, Andrew perfered stable marking for such a obvious
+> problem but simple fix like this but not sure so let's pass the decision
+> to him and will learn a lesson from him and will follow the decision
+> from now on.
 
-Great. Thanks for review. :)
+Yes, I intended to pass the decision to others. :)
 
+> 
+> Thanks.
+> 
+> Acked-by: Minchan Kim <minchan@kernel.org>
 
--- 
-Best regards
-Tianyu Lan
+Thanks.
