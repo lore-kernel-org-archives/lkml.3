@@ -1,109 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966999AbaFQVwI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:52:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54729 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966973AbaFQVwD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:52:03 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: James Hogan <james.hogan@imgtec.com>, Helge Deller <deller@gmx.de>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        linux-parisc@vger.kernel.org, linux-metag@vger.kernel.org,
-        John David Anglin <dave.anglin@bell.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 122/212] metag: Reduce maximum stack size to 256MB
-Date: Tue, 17 Jun 2014 14:43:36 -0700
-Message-Id: <1403041506-13646-123-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S967229AbaFQWGb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:06:31 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53706 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965989AbaFQWG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 18:06:27 -0400
+From: Borislav Petkov <bp@alien8.de>
+To: X86 ML <x86@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86, CPU: Convert more features to bugs
+Date: Wed, 18 Jun 2014 00:06:23 +0200
+Message-Id: <1403042783-23278-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
+From: Borislav Petkov <bp@suse.de>
 
-------------------
+X86_FEATURE_FXSAVE_LEAK, X86_FEATURE_11AP and
+X86_FEATURE_CLFLUSH_MONITOR are not really features but synthetic bits
+we use for applying different bug workarounds. Call them what they
+really are.
 
-From: James Hogan <james.hogan@imgtec.com>
-
-commit d71f290b4e98a39f49f2595a13be3b4d5ce8e1f1 upstream.
-
-Specify the maximum stack size for arches where the stack grows upward
-(parisc and metag) in asm/processor.h rather than hard coding in
-fs/exec.c so that metag can specify a smaller value of 256MB rather than
-1GB.
-
-This fixes a BUG on metag if the RLIMIT_STACK hard limit is increased
-beyond a safe value by root. E.g. when starting a process after running
-"ulimit -H -s unlimited" it will then attempt to use a stack size of the
-maximum 1GB which is far too big for metag's limited user virtual
-address space (stack_top is usually 0x3ffff000):
-
-BUG: failure at fs/exec.c:589/shift_arg_pages()!
-
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Helge Deller <deller@gmx.de>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: linux-parisc@vger.kernel.org
-Cc: linux-metag@vger.kernel.org
-Cc: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
- arch/metag/include/asm/processor.h  | 2 ++
- arch/parisc/include/asm/processor.h | 2 ++
- fs/exec.c                           | 6 +++---
- 3 files changed, 7 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/apic.h         |  2 +-
+ arch/x86/include/asm/cpufeature.h   | 31 +++++++++++++++++--------------
+ arch/x86/include/asm/fpu-internal.h |  2 +-
+ arch/x86/include/asm/mwait.h        |  2 +-
+ arch/x86/kernel/cpu/amd.c           |  2 +-
+ arch/x86/kernel/cpu/intel.c         |  4 ++--
+ 6 files changed, 23 insertions(+), 20 deletions(-)
 
-diff --git a/arch/metag/include/asm/processor.h b/arch/metag/include/asm/processor.h
-index f16477d..3be8581 100644
---- a/arch/metag/include/asm/processor.h
-+++ b/arch/metag/include/asm/processor.h
-@@ -22,6 +22,8 @@
- /* Add an extra page of padding at the top of the stack for the guard page. */
- #define STACK_TOP	(TASK_SIZE - PAGE_SIZE)
- #define STACK_TOP_MAX	STACK_TOP
-+/* Maximum virtual space for stack */
-+#define STACK_SIZE_MAX	(1 << 28)	/* 256 MB */
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index 19b0ebafcd3e..79752f2bdec5 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -99,7 +99,7 @@ static inline void native_apic_mem_write(u32 reg, u32 v)
+ {
+ 	volatile u32 *addr = (volatile u32 *)(APIC_BASE + reg);
  
- /* This decides where the kernel will search for a free chunk of vm
-  * space during mmap's.
-diff --git a/arch/parisc/include/asm/processor.h b/arch/parisc/include/asm/processor.h
-index cc2290a..c6ee865 100644
---- a/arch/parisc/include/asm/processor.h
-+++ b/arch/parisc/include/asm/processor.h
-@@ -53,6 +53,8 @@
- #define STACK_TOP	TASK_SIZE
- #define STACK_TOP_MAX	DEFAULT_TASK_SIZE
+-	alternative_io("movl %0, %1", "xchgl %0, %1", X86_FEATURE_11AP,
++	alternative_io("movl %0, %1", "xchgl %0, %1", X86_BUG_11AP,
+ 		       ASM_OUTPUT2("=r" (v), "=m" (*addr)),
+ 		       ASM_OUTPUT2("0" (v), "m" (*addr)));
+ }
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index b82f95144a05..52df22bde0dd 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -81,7 +81,7 @@
+ #define X86_FEATURE_P4		( 3*32+ 7) /* "" P4 */
+ #define X86_FEATURE_CONSTANT_TSC ( 3*32+ 8) /* TSC ticks at a constant rate */
+ #define X86_FEATURE_UP		( 3*32+ 9) /* smp kernel running on up */
+-#define X86_FEATURE_FXSAVE_LEAK ( 3*32+10) /* "" FXSAVE leaks FOP/FIP/FOP */
++/* free, was #define X86_FEATURE_FXSAVE_LEAK ( 3*32+10) * "" FXSAVE leaks FOP/FIP/FOP */
+ #define X86_FEATURE_ARCH_PERFMON ( 3*32+11) /* Intel Architectural PerfMon */
+ #define X86_FEATURE_PEBS	( 3*32+12) /* Precise-Event Based Sampling */
+ #define X86_FEATURE_BTS		( 3*32+13) /* Branch Trace Store */
+@@ -90,13 +90,13 @@
+ #define X86_FEATURE_REP_GOOD	( 3*32+16) /* rep microcode works well */
+ #define X86_FEATURE_MFENCE_RDTSC ( 3*32+17) /* "" Mfence synchronizes RDTSC */
+ #define X86_FEATURE_LFENCE_RDTSC ( 3*32+18) /* "" Lfence synchronizes RDTSC */
+-#define X86_FEATURE_11AP	( 3*32+19) /* "" Bad local APIC aka 11AP */
++/* free, was #define X86_FEATURE_11AP	( 3*32+19) * "" Bad local APIC aka 11AP */
+ #define X86_FEATURE_NOPL	( 3*32+20) /* The NOPL (0F 1F) instructions */
+ #define X86_FEATURE_ALWAYS	( 3*32+21) /* "" Always-present feature */
+ #define X86_FEATURE_XTOPOLOGY	( 3*32+22) /* cpu topology enum extensions */
+ #define X86_FEATURE_TSC_RELIABLE ( 3*32+23) /* TSC is known to be reliable */
+ #define X86_FEATURE_NONSTOP_TSC	( 3*32+24) /* TSC does not stop in C states */
+-#define X86_FEATURE_CLFLUSH_MONITOR ( 3*32+25) /* "" clflush reqd with monitor */
++/* free, was #define X86_FEATURE_CLFLUSH_MONITOR ( 3*32+25) * "" clflush reqd with monitor */
+ #define X86_FEATURE_EXTD_APICID	( 3*32+26) /* has extended APICID (8 bits) */
+ #define X86_FEATURE_AMD_DCM     ( 3*32+27) /* multi-node processor */
+ #define X86_FEATURE_APERFMPERF	( 3*32+28) /* APERFMPERF */
+@@ -241,6 +241,9 @@
+ #define X86_BUG_COMA		X86_BUG(2) /* Cyrix 6x86 coma */
+ #define X86_BUG_AMD_TLB_MMATCH	X86_BUG(3) /* AMD Erratum 383 */
+ #define X86_BUG_AMD_APIC_C1E	X86_BUG(4) /* AMD Erratum 400 */
++#define X86_BUG_11AP		X86_BUG(5) /* Bad local APIC aka 11AP */
++#define X86_BUG_FXSAVE_LEAK	X86_BUG(6) /* FXSAVE leaks FOP/FIP/FOP */
++#define X86_BUG_CLFLUSH_MONITOR	X86_BUG(7) /* AAI65, CLFLUSH required before MONITOR */
  
-+#define STACK_SIZE_MAX	(1 << 30)	/* 1 GB */
-+
+ #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
+ 
+@@ -545,20 +548,20 @@ static __always_inline __pure bool _static_cpu_has_safe(u16 bit)
+ #define static_cpu_has_safe(bit)	boot_cpu_has(bit)
  #endif
  
- #ifndef __ASSEMBLY__
-diff --git a/fs/exec.c b/fs/exec.c
-index 7ea097f..5743b8f 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -655,10 +655,10 @@ int setup_arg_pages(struct linux_binprm *bprm,
- 	unsigned long rlim_stack;
+-#define cpu_has_bug(c, bit)	cpu_has(c, (bit))
+-#define set_cpu_bug(c, bit)	set_cpu_cap(c, (bit))
+-#define clear_cpu_bug(c, bit)	clear_cpu_cap(c, (bit));
++#define cpu_has_bug(c, bit)		cpu_has(c, (bit))
++#define set_cpu_bug(c, bit)		set_cpu_cap(c, (bit))
++#define clear_cpu_bug(c, bit)		clear_cpu_cap(c, (bit))
  
- #ifdef CONFIG_STACK_GROWSUP
--	/* Limit stack size to 1GB */
-+	/* Limit stack size */
- 	stack_base = rlimit_max(RLIMIT_STACK);
--	if (stack_base > (1 << 30))
--		stack_base = 1 << 30;
-+	if (stack_base > STACK_SIZE_MAX)
-+		stack_base = STACK_SIZE_MAX;
+-#define static_cpu_has_bug(bit)	static_cpu_has((bit))
+-#define boot_cpu_has_bug(bit)	cpu_has_bug(&boot_cpu_data, (bit))
++#define static_cpu_has_bug(bit)		static_cpu_has((bit))
++#define static_cpu_has_bug_safe(bit)	static_cpu_has_safe((bit))
++#define boot_cpu_has_bug(bit)		cpu_has_bug(&boot_cpu_data, (bit))
  
- 	/* Make sure we didn't let the argument array grow too large. */
- 	if (vma->vm_end - vma->vm_start > stack_base)
+-#define MAX_CPU_FEATURES	(NCAPINTS * 32)
+-#define cpu_have_feature	boot_cpu_has
++#define MAX_CPU_FEATURES		(NCAPINTS * 32)
++#define cpu_have_feature		boot_cpu_has
+ 
+-#define CPU_FEATURE_TYPEFMT	"x86,ven%04Xfam%04Xmod%04X"
+-#define CPU_FEATURE_TYPEVAL	boot_cpu_data.x86_vendor, boot_cpu_data.x86, \
+-				boot_cpu_data.x86_model
++#define CPU_FEATURE_TYPEFMT		"x86,ven%04Xfam%04Xmod%04X"
++#define CPU_FEATURE_TYPEVAL		boot_cpu_data.x86_vendor, boot_cpu_data.x86, \
++					boot_cpu_data.x86_model
+ 
+ #endif /* defined(__KERNEL__) && !defined(__ASSEMBLY__) */
+-
+ #endif /* _ASM_X86_CPUFEATURE_H */
+diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
+index 5aef105652a4..412ececa00b9 100644
+--- a/arch/x86/include/asm/fpu-internal.h
++++ b/arch/x86/include/asm/fpu-internal.h
+@@ -293,7 +293,7 @@ static inline int restore_fpu_checking(struct task_struct *tsk)
+ 	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
+ 	   is pending.  Clear the x87 state here by setting it to fixed
+ 	   values. "m" is a random variable that should be in L1 */
+-	if (unlikely(static_cpu_has_safe(X86_FEATURE_FXSAVE_LEAK))) {
++	if (unlikely(static_cpu_has_bug_safe(X86_BUG_FXSAVE_LEAK))) {
+ 		asm volatile(
+ 			"fnclex\n\t"
+ 			"emms\n\t"
+diff --git a/arch/x86/include/asm/mwait.h b/arch/x86/include/asm/mwait.h
+index 1da25a5f96f9..a1410db38a1a 100644
+--- a/arch/x86/include/asm/mwait.h
++++ b/arch/x86/include/asm/mwait.h
+@@ -43,7 +43,7 @@ static inline void __mwait(unsigned long eax, unsigned long ecx)
+ static inline void mwait_idle_with_hints(unsigned long eax, unsigned long ecx)
+ {
+ 	if (!current_set_polling_and_test()) {
+-		if (static_cpu_has(X86_FEATURE_CLFLUSH_MONITOR)) {
++		if (static_cpu_has_bug(X86_BUG_CLFLUSH_MONITOR)) {
+ 			mb();
+ 			clflush((void *)&current_thread_info()->flags);
+ 			mb();
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index ce8b8ff0e0ef..8714a78414bf 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -595,7 +595,7 @@ static void init_amd(struct cpuinfo_x86 *c)
+ 
+ 	/* Enable workaround for FXSAVE leak */
+ 	if (c->x86 >= 6)
+-		set_cpu_cap(c, X86_FEATURE_FXSAVE_LEAK);
++		set_cpu_bug(c, X86_BUG_FXSAVE_LEAK);
+ 
+ 	if (!c->x86_model_id[0]) {
+ 		switch (c->x86) {
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index a80029035bf2..0fd955778f35 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -253,7 +253,7 @@ static void intel_workarounds(struct cpuinfo_x86 *c)
+ 	 */
+ 	if (cpu_has_apic && (c->x86<<8 | c->x86_model<<4) == 0x520 &&
+ 	    (c->x86_mask < 0x6 || c->x86_mask == 0xb))
+-		set_cpu_cap(c, X86_FEATURE_11AP);
++		set_cpu_bug(c, X86_BUG_11AP);
+ 
+ 
+ #ifdef CONFIG_X86_INTEL_USERCOPY
+@@ -391,7 +391,7 @@ static void init_intel(struct cpuinfo_x86 *c)
+ 
+ 	if (c->x86 == 6 && cpu_has_clflush &&
+ 	    (c->x86_model == 29 || c->x86_model == 46 || c->x86_model == 47))
+-		set_cpu_cap(c, X86_FEATURE_CLFLUSH_MONITOR);
++		set_cpu_bug(c, X86_BUG_CLFLUSH_MONITOR);
+ 
+ #ifdef CONFIG_X86_64
+ 	if (c->x86 == 15)
 -- 
-1.9.1
+2.0.0
 
