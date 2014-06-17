@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934137AbaFQQ7s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:59:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50406 "EHLO
+	id S934101AbaFQQ7r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:59:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50410 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933648AbaFQQPe (ORCPT
+	with ESMTP id S933651AbaFQQPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 17 Jun 2014 12:15:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kieran Clancy <clancy.kieran@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Alexander Usyskin <alexander.usyskin@intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 001/121] ACPI / EC: Clear stale EC events on Samsung systems
-Date: Tue, 17 Jun 2014 09:13:14 -0700
-Message-Id: <1403021714-16320-2-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 009/121] mei: ignore client writing state during cb completion
+Date: Tue, 17 Jun 2014 09:13:22 -0700
+Message-Id: <1403021714-16320-10-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021714-16320-1-git-send-email-kamal@canonical.com>
 References: <1403021714-16320-1-git-send-email-kamal@canonical.com>
@@ -28,179 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kieran Clancy <clancy.kieran@gmail.com>
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
-commit ad332c8a45330d170bb38b95209de449b31cd1b4 upstream.
+commit 34ec43661fe8f1977dd0f05353302ae2ed10aabb upstream.
 
-A number of Samsung notebooks (530Uxx/535Uxx/540Uxx/550Pxx/900Xxx/etc)
-continue to log events during sleep (lid open/close, AC plug/unplug,
-battery level change), which accumulate in the EC until a buffer fills.
-After the buffer is full (tests suggest it holds 8 events), GPEs stop
-being triggered for new events. This state persists on wake or even on
-power cycle, and prevents new events from being registered until the EC
-is manually polled.
+Ignore client writing state during cb completion to fix a memory
+leak.
 
-This is the root cause of a number of bugs, including AC not being
-detected properly, lid close not triggering suspend, and low ambient
-light not triggering the keyboard backlight. The bug also seemed to be
-responsible for performance issues on at least one user's machine.
+When moving cbs to the completion list we should not look at
+writing_state as this state can be already overwritten by next
+write, the fact that a cb is on the write waiting list means
+that it was already written to the HW and we can safely complete it.
 
-Juan Manuel Cabo found the cause of bug and the workaround of polling
-the EC manually on wake.
+Same pays for wait in poll handler, we do not have to check the state
+wake is done after completion list processing.
 
-The loop which clears the stale events is based on an earlier patch by
-Lan Tianyu (see referenced attachment).
-
-This patch:
- - Adds a function acpi_ec_clear() which polls the EC for stale _Q
-   events at most ACPI_EC_CLEAR_MAX (currently 100) times. A warning is
-   logged if this limit is reached.
- - Adds a flag EC_FLAGS_CLEAR_ON_RESUME which is set to 1 if the DMI
-   system vendor is Samsung. This check could be replaced by several
-   more specific DMI vendor/product pairs, but it's likely that the bug
-   affects more Samsung products than just the five series mentioned
-   above. Further, it should not be harmful to run acpi_ec_clear() on
-   systems without the bug; it will return immediately after finding no
-   data waiting.
- - Runs acpi_ec_clear() on initialisation (boot), from acpi_ec_add()
- - Runs acpi_ec_clear() on wake, from acpi_ec_unblock_transactions()
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=44161
-References: https://bugzilla.kernel.org/show_bug.cgi?id=45461
-References: https://bugzilla.kernel.org/show_bug.cgi?id=57271
-References: https://bugzilla.kernel.org/attachment.cgi?id=126801
-Suggested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
-Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
-Reviewed-by: Lan Tianyu <tianyu.lan@intel.com>
-Reviewed-by: Dennis Jansen <dennis.jansen@web.de>
-Tested-by: Kieran Clancy <clancy.kieran@gmail.com>
-Tested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
-Tested-by: Dennis Jansen <dennis.jansen@web.de>
-Tested-by: Maurizio D'Addona <mauritiusdadd@gmail.com>
-Tested-by: San Zamoyski <san@plusnet.pl>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ kamal: backport to 3.8: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/acpi/ec.c | 64 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 64 insertions(+)
+ drivers/misc/mei/interrupt.c | 3 +--
+ drivers/misc/mei/main.c      | 3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index 97fcfb0..092f862 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -70,6 +70,8 @@ enum ec_command {
- #define ACPI_EC_DELAY		500	/* Wait 500ms max. during EC ops */
- #define ACPI_EC_UDELAY_GLK	1000	/* Wait 1ms max. to get global lock */
- #define ACPI_EC_MSI_UDELAY	550	/* Wait 550us for MSI EC */
-+#define ACPI_EC_CLEAR_MAX	100	/* Maximum number of events to query
-+					 * when trying to clear the EC */
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index 04fa213..b7fed05 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -906,8 +906,7 @@ static int mei_irq_thread_write_handler(struct mei_device *dev,
  
- enum {
- 	EC_FLAGS_QUERY_PENDING,		/* Query is pending */
-@@ -123,6 +125,7 @@ EXPORT_SYMBOL(first_ec);
- static int EC_FLAGS_MSI; /* Out-of-spec MSI controller */
- static int EC_FLAGS_VALIDATE_ECDT; /* ASUStec ECDTs need to be validated */
- static int EC_FLAGS_SKIP_DSDT_SCAN; /* Not all BIOS survive early DSDT scan */
-+static int EC_FLAGS_CLEAR_ON_RESUME; /* Needs acpi_ec_clear() on boot/resume */
+ 		cl->status = 0;
+ 		list_del(&pos->list);
+-		if (MEI_WRITING == cl->writing_state &&
+-		    pos->fop_type == MEI_FOP_WRITE &&
++		if (pos->fop_type == MEI_FOP_WRITE &&
+ 		    cl != &dev->iamthif_cl) {
+ 			dev_dbg(&dev->pdev->dev, "MEI WRITE COMPLETE\n");
+ 			cl->writing_state = MEI_WRITE_COMPLETE;
+diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
+index 43fb52f..9ad4ae0 100644
+--- a/drivers/misc/mei/main.c
++++ b/drivers/misc/mei/main.c
+@@ -701,8 +701,7 @@ static unsigned int mei_poll(struct file *file, poll_table *wait)
+ 	mutex_unlock(&dev->device_lock);
+ 	poll_wait(file, &cl->tx_wait, wait);
+ 	mutex_lock(&dev->device_lock);
+-	if (MEI_WRITE_COMPLETE == cl->writing_state)
+-		mask |= (POLLIN | POLLRDNORM);
++	mask |= (POLLIN | POLLRDNORM);
  
- /* --------------------------------------------------------------------------
-                              Transaction Management
-@@ -468,6 +471,29 @@ acpi_handle ec_get_handle(void)
- 
- EXPORT_SYMBOL(ec_get_handle);
- 
-+static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
-+
-+/*
-+ * Clears stale _Q events that might have accumulated in the EC.
-+ * Run with locked ec mutex.
-+ */
-+static void acpi_ec_clear(struct acpi_ec *ec)
-+{
-+	int i, status;
-+	u8 value = 0;
-+
-+	for (i = 0; i < ACPI_EC_CLEAR_MAX; i++) {
-+		status = acpi_ec_query_unlocked(ec, &value);
-+		if (status || !value)
-+			break;
-+	}
-+
-+	if (unlikely(i == ACPI_EC_CLEAR_MAX))
-+		pr_warn("Warning: Maximum of %d stale EC events cleared\n", i);
-+	else
-+		pr_info("%d stale EC events cleared\n", i);
-+}
-+
- void acpi_ec_block_transactions(void)
- {
- 	struct acpi_ec *ec = first_ec;
-@@ -491,6 +517,10 @@ void acpi_ec_unblock_transactions(void)
- 	mutex_lock(&ec->mutex);
- 	/* Allow transactions to be carried out again */
- 	clear_bit(EC_FLAGS_BLOCKED, &ec->flags);
-+
-+	if (EC_FLAGS_CLEAR_ON_RESUME)
-+		acpi_ec_clear(ec);
-+
- 	mutex_unlock(&ec->mutex);
- }
- 
-@@ -848,6 +878,13 @@ static int acpi_ec_add(struct acpi_device *device)
- 
- 	/* EC is fully operational, allow queries */
- 	clear_bit(EC_FLAGS_QUERY_PENDING, &ec->flags);
-+
-+	/* Clear stale _Q events if hardware might require that */
-+	if (EC_FLAGS_CLEAR_ON_RESUME) {
-+		mutex_lock(&ec->mutex);
-+		acpi_ec_clear(ec);
-+		mutex_unlock(&ec->mutex);
-+	}
- 	return ret;
- }
- 
-@@ -949,6 +986,30 @@ static int ec_enlarge_storm_threshold(const struct dmi_system_id *id)
- 	return 0;
- }
- 
-+/*
-+ * On some hardware it is necessary to clear events accumulated by the EC during
-+ * sleep. These ECs stop reporting GPEs until they are manually polled, if too
-+ * many events are accumulated. (e.g. Samsung Series 5/9 notebooks)
-+ *
-+ * https://bugzilla.kernel.org/show_bug.cgi?id=44161
-+ *
-+ * Ideally, the EC should also be instructed NOT to accumulate events during
-+ * sleep (which Windows seems to do somehow), but the interface to control this
-+ * behaviour is not known at this time.
-+ *
-+ * Models known to be affected are Samsung 530Uxx/535Uxx/540Uxx/550Pxx/900Xxx,
-+ * however it is very likely that other Samsung models are affected.
-+ *
-+ * On systems which don't accumulate _Q events during sleep, this extra check
-+ * should be harmless.
-+ */
-+static int ec_clear_on_resume(const struct dmi_system_id *id)
-+{
-+	pr_debug("Detected system needing EC poll on resume.\n");
-+	EC_FLAGS_CLEAR_ON_RESUME = 1;
-+	return 0;
-+}
-+
- static struct dmi_system_id __initdata ec_dmi_table[] = {
- 	{
- 	ec_skip_dsdt_scan, "Compal JFL92", {
-@@ -992,6 +1053,9 @@ static struct dmi_system_id __initdata ec_dmi_table[] = {
- 	ec_validate_ecdt, "ASUS hardware", {
- 	DMI_MATCH(DMI_SYS_VENDOR, "ASUSTek Computer Inc."),
- 	DMI_MATCH(DMI_PRODUCT_NAME, "L4R"),}, NULL},
-+	{
-+	ec_clear_on_resume, "Samsung hardware", {
-+	DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD.")}, NULL},
- 	{},
- };
- 
+ out:
+ 	mutex_unlock(&dev->device_lock);
 -- 
 1.9.1
 
