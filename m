@@ -1,148 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208AbaFQEBL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 00:01:11 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:51084 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755098AbaFQEBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 00:01:08 -0400
-From: George Cherian <george.cherian@ti.com>
-To: <cw00.choi@samsung.com>, <myungjoo.ham@samsung.com>,
-        <grant.likely@linaro.org>, <rdunlap@infradead.org>,
-        <galak@codeaurora.org>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <linux@roeck-us.net>
-CC: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <george.cherian@ti.com>
-Subject: [PATCH 2/2] extcon: gpio: Add dt support for the driver.
-Date: Tue, 17 Jun 2014 09:28:20 +0530
-Message-ID: <1402977500-19987-3-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1402977500-19987-1-git-send-email-george.cherian@ti.com>
-References: <1402977500-19987-1-git-send-email-george.cherian@ti.com>
+	id S1755284AbaFQEBb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 00:01:31 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:65393 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755219AbaFQEB3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 00:01:29 -0400
+Date: Tue, 17 Jun 2014 00:01:26 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Hagen Paul Pfeifer <hagen@jauu.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] include: kernel.h: rewrite min3, max3 and clamp using
+ min and max
+Message-ID: <20140617000126.566a1aa7@gandalf.local.home>
+In-Reply-To: <20140616202120.27364ed9@gandalf.local.home>
+References: <1402952842-12886-1-git-send-email-mina86@mina86.com>
+	<20140616161804.bb06ed842f59371c031d1252@linux-foundation.org>
+	<alpine.DEB.2.02.1406161621530.21018@chino.kir.corp.google.com>
+	<20140616163525.46933b64320e220a6d806bb4@linux-foundation.org>
+	<alpine.DEB.2.02.1406161652490.21018@chino.kir.corp.google.com>
+	<20140616202120.27364ed9@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree support to extcon-gpio driver.
-Add devicetree binding documentation
+On Mon, 16 Jun 2014 20:21:20 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
- .../devicetree/bindings/extcon/extcon-gpio.txt     | 34 ++++++++++++++++++++++
- drivers/extcon/extcon-gpio.c                       | 29 ++++++++++++++++++
- 2 files changed, 63 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/extcon/extcon-gpio.txt
+> On Mon, 16 Jun 2014 16:54:32 -0700 (PDT)
+> David Rientjes <rientjes@google.com> wrote:
+> 
+> > 
+> > 
+> > On linux-next, allyesconfig has a 0.0001% savings as a result of the 
+> > patch, but I'd be worried about the extra temp variable it allocates on 
+> > the stack that is evident in the mm/slab.c disassembly unless all cases 
+> > can be audited to show that we're not potentially deep.
+> 
+> A 0.0001% change means it's not worth changing, and we may be able to
+> mark this up as a fluke in Michal's results.
+> 
+> I'll give it a try on my 4.6.3 compiler.
+> 
+> -- Steve
+> 
+> > 
+> >    text	   data	    bss	    dec	    hex	filename
+> > 108573045	23488016	51580928	183641989	af22785	vmlinux.before
+> > 108572908	23488016	51580928	183641852	af226fc	vmlinux.after
+> 
 
-diff --git a/Documentation/devicetree/bindings/extcon/extcon-gpio.txt b/Documentation/devicetree/bindings/extcon/extcon-gpio.txt
-new file mode 100644
-index 0000000..80b791b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/extcon/extcon-gpio.txt
-@@ -0,0 +1,34 @@
-+GPIO based EXTCON
-+
-+EXTCON GPIO
-+-----------
-+
-+Required Properties:
-+ - compatible: should be:
-+   * "ti,extcon-gpio"
-+ - gpios: specifies the gpio pin used.
-+ - debounce: Debounce time for GPIO IRQ in ms
-+ - irq-flags: IRQ flag to be used ( eg: IRQ_TYPE_EDGE_FALLING)
-+
-+Optional Properties:
-+ - gpio-active-low: Property describing whether gpio active state is 1 or 0
-+		    If defined , low state of gpio means active.
-+ - check-on-resume: Property describing whether to check the gpio state
-+		    while resuming from SLEEP.
-+ - state-on: print_state is overriden with state_on string if provided.
-+	     If NULL, default method of extcon class is used.
-+ - state_off: print_state is overriden with state_off string  if provided.
-+	      If NUll, default method of extcon class is used.
-+
-+Eg:
-+
-+        extcon1: am43_usbid_extcon1 {
-+                compatible = "ti,extcon-gpio";
-+                gpios = <&gpio3 12 GPIO_ACTIVE_HIGH>;
-+                gpio-active-low;
-+                debounce = <20>;
-+                irq-flags = <IRQ_TYPE_EDGE_FALLING>;
-+                state-on = "USB ID FLOAT";
-+                state-off = "USB ID GND";
-+
-+        };
-diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
-index 6c268b4..14d999d 100644
---- a/drivers/extcon/extcon-gpio.c
-+++ b/drivers/extcon/extcon-gpio.c
-@@ -27,6 +27,7 @@
- #include <linux/interrupt.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/of_gpio.h>
- #include <linux/platform_device.h>
- #include <linux/slab.h>
- #include <linux/workqueue.h>
-@@ -83,12 +84,34 @@ static ssize_t extcon_gpio_print_state(struct extcon_dev *edev, char *buf)
- 
- static int gpio_extcon_probe(struct platform_device *pdev)
- {
-+	struct device_node *np = pdev->dev.of_node;
- 	struct gpio_extcon_platform_data *pdata = dev_get_platdata(&pdev->dev);
- 	struct gpio_extcon_data *extcon_data;
- 	int ret;
- 
-+	if (np) {
-+		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-+		if (!pdata)
-+			return -ENOMEM;
-+
-+		pdata->gpio = of_get_gpio(np, 0);
-+		if (!gpio_is_valid(pdata->gpio))
-+			return -EPROBE_DEFER;
-+
-+		pdata->name = np->name;
-+		pdata->gpio_active_low = of_property_read_bool(np,
-+						"gpio-active-low");
-+		pdata->check_on_resume = of_property_read_bool(np,
-+						"check-on-resume");
-+		of_property_read_u32(np, "debounce", (u32 *)&pdata->debounce);
-+		of_property_read_u32(np, "irq-flags", (u32 *)&pdata->irq_flags);
-+		of_property_read_string(np, "state-on", &pdata->state_on);
-+		of_property_read_string(np, "state-off", &pdata->state_off);
-+	}
-+
- 	if (!pdata)
- 		return -EBUSY;
-+
- 	if (!pdata->irq_flags) {
- 		dev_err(&pdev->dev, "IRQ flag is not specified.\n");
- 		return -EINVAL;
-@@ -177,6 +200,11 @@ static int gpio_extcon_resume(struct device *dev)
- 
- static SIMPLE_DEV_PM_OPS(gpio_extcon_pm_ops, NULL, gpio_extcon_resume);
- 
-+static struct of_device_id of_extcon_gpio_match_tbl[] = {
-+	{ .compatible = "ti,extcon-gpio", },
-+	{ /* end */ }
-+};
-+
- static struct platform_driver gpio_extcon_driver = {
- 	.probe		= gpio_extcon_probe,
- 	.remove		= gpio_extcon_remove,
-@@ -184,6 +212,7 @@ static struct platform_driver gpio_extcon_driver = {
- 		.name	= "extcon-gpio",
- 		.owner	= THIS_MODULE,
- 		.pm	= &gpio_extcon_pm_ops,
-+		.of_match_table = of_extcon_gpio_match_tbl,
- 	},
- };
- 
--- 
-1.8.3.1
+Here's my results:
 
+   text    data     bss     dec     hex filename
+108662851       23470256        51580928        183714035       af340f3 /tmp/vmlinux-orig
+108662714       23470224        51580928        183713866	af3404a /tmp/vmlinux-patched
+
+The patched version saved a total of 169 bytes.
+
+Doing a diff on the vmlinux objdumps of do_fault_around, I get this:
+
+  mov    -0x68(%rbp),%rdi
+  mov    -0x70(%rbp),%r8d
+- jae    ffffffff81302bf5 <do_fault_around+0xbd>
+- cmp    %r15,%rax
+- mov    %r15,%r14
+- cmovbe %rax,%r14
+- jmp    ffffffff81302c03 <do_fault_around+0xcb>
+- cmp    %r14,%rax
+- cmovbe %rax,%r14
+- incq   0x8d384b5(%rip)        # ffffffff8a03b0b8 <high_memory+0x14e8>
+- mov    0x8d384be(%rip),%rsi        # ffffffff8a03b0c8 <high_memory+0x14f8>
+- mov    0x8d384bf(%rip),%rdx        # ffffffff8a03b0d0 <high_memory+0x1500>
+- mov    0x8d384a8(%rip),%rax        # ffffffff8a03b0c0 <high_memory+0x14f0>
++ cmp    %rax,%r15
++ cmova  %rax,%r15
++ mov    0x8d384c0(%rip),%rax        # ffffffff8a03b0b8 <high_memory+0x14e8>
++ cmp    %r14,%r15
++ cmovbe %r15,%r14
+  sub    %r12,%rsi
+
+
+So for gcc 4.6.3 it does seem to produce nicer assembly. I haven't
+tried it with other versions though (or with clang).
+
+But I'll still give it a:
+
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
