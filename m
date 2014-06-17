@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966447AbaFQVtm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:49:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54195 "EHLO
+	id S966462AbaFQVts (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:49:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54233 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966392AbaFQVtb (ORCPT
+	with ESMTP id S966443AbaFQVtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:49:31 -0400
+	Tue, 17 Jun 2014 17:49:42 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lucas Stach <l.stach@pengutronix.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 172/212] cpufreq: cpu0: drop wrong devm usage
-Date: Tue, 17 Jun 2014 14:44:26 -0700
-Message-Id: <1403041506-13646-173-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 182/212] powerpc: Fix 64 bit builds with binutils 2.24
+Date: Tue, 17 Jun 2014 14:44:36 -0700
+Message-Id: <1403041506-13646-183-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -28,78 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lucas Stach <l.stach@pengutronix.de>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit e3beb0ac521d50d158a9d253373eae8421ac3998 upstream.
+commit 7998eb3dc700aaf499f93f50b3d77da834ef9e1d upstream.
 
-This driver is using devres managed calls incorrectly, giving the cpu0
-device as first parameter instead of the cpufreq platform device.
-This results in resources not being freed if the cpufreq platform device
-is unbound, for example if probing has to be deferred for a missing
-regulator.
+With binutils 2.24, various 64 bit builds fail with relocation errors
+such as
 
-Signed-off-by: Lucas Stach <l.stach@pengutronix.de>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+arch/powerpc/kernel/built-in.o: In function `exc_debug_crit_book3e':
+	(.text+0x165ee): relocation truncated to fit: R_PPC64_ADDR16_HI
+	against symbol `interrupt_base_book3e' defined in .text section
+	in arch/powerpc/kernel/built-in.o
+arch/powerpc/kernel/built-in.o: In function `exc_debug_crit_book3e':
+	(.text+0x16602): relocation truncated to fit: R_PPC64_ADDR16_HI
+	against symbol `interrupt_end_book3e' defined in .text section
+	in arch/powerpc/kernel/built-in.o
+
+The assembler maintainer says:
+
+ I changed the ABI, something that had to be done but unfortunately
+ happens to break the booke kernel code.  When building up a 64-bit
+ value with lis, ori, shl, oris, ori or similar sequences, you now
+ should use @high and @higha in place of @h and @ha.  @h and @ha
+ (and their associated relocs R_PPC64_ADDR16_HI and R_PPC64_ADDR16_HA)
+ now report overflow if the value is out of 32-bit signed range.
+ ie. @h and @ha assume you're building a 32-bit value. This is needed
+ to report out-of-range -mcmodel=medium toc pointer offsets in @toc@h
+ and @toc@ha expressions, and for consistency I did the same for all
+ other @h and @ha relocs.
+
+Replacing @h with @high in one strategic location fixes the relocation
+errors. This has to be done conditionally since the assembler either
+supports @h or @high but not both.
+
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/cpufreq/cpufreq-cpu0.c | 16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ arch/powerpc/Makefile              | 4 +++-
+ arch/powerpc/include/asm/ppc_asm.h | 7 ++++++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-index d4585ce..27b5ba6 100644
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -131,7 +131,7 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 		return -ENOENT;
- 	}
+diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
+index 0f4344e..8289e2b 100644
+--- a/arch/powerpc/Makefile
++++ b/arch/powerpc/Makefile
+@@ -149,7 +149,9 @@ endif
  
--	cpu_reg = devm_regulator_get_optional(cpu_dev, "cpu0");
-+	cpu_reg = regulator_get_optional(cpu_dev, "cpu0");
- 	if (IS_ERR(cpu_reg)) {
- 		/*
- 		 * If cpu0 regulator supply node is present, but regulator is
-@@ -146,23 +146,23 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 			PTR_ERR(cpu_reg));
- 	}
+ CFLAGS-$(CONFIG_TUNE_CELL) += $(call cc-option,-mtune=cell)
  
--	cpu_clk = devm_clk_get(cpu_dev, NULL);
-+	cpu_clk = clk_get(cpu_dev, NULL);
- 	if (IS_ERR(cpu_clk)) {
- 		ret = PTR_ERR(cpu_clk);
- 		pr_err("failed to get cpu0 clock: %d\n", ret);
--		goto out_put_node;
-+		goto out_put_reg;
- 	}
+-KBUILD_CPPFLAGS	+= -Iarch/$(ARCH)
++asinstr := $(call as-instr,lis 9$(comma)foo@high,-DHAVE_AS_ATHIGH=1)
++
++KBUILD_CPPFLAGS	+= -Iarch/$(ARCH) $(asinstr)
+ KBUILD_AFLAGS	+= -Iarch/$(ARCH)
+ KBUILD_CFLAGS	+= -msoft-float -pipe -Iarch/$(ARCH) $(CFLAGS-y)
+ CPP		= $(CC) -E $(KBUILD_CFLAGS)
+diff --git a/arch/powerpc/include/asm/ppc_asm.h b/arch/powerpc/include/asm/ppc_asm.h
+index f595b98..7c04486 100644
+--- a/arch/powerpc/include/asm/ppc_asm.h
++++ b/arch/powerpc/include/asm/ppc_asm.h
+@@ -306,11 +306,16 @@ n:
+  *      ld	rY,ADDROFF(name)(rX)
+  */
+ #ifdef __powerpc64__
++#ifdef HAVE_AS_ATHIGH
++#define __AS_ATHIGH high
++#else
++#define __AS_ATHIGH h
++#endif
+ #define LOAD_REG_IMMEDIATE(reg,expr)		\
+ 	lis     reg,(expr)@highest;		\
+ 	ori     reg,reg,(expr)@higher;	\
+ 	rldicr  reg,reg,32,31;		\
+-	oris    reg,reg,(expr)@h;		\
++	oris    reg,reg,(expr)@__AS_ATHIGH;	\
+ 	ori     reg,reg,(expr)@l;
  
- 	ret = of_init_opp_table(cpu_dev);
- 	if (ret) {
- 		pr_err("failed to init OPP table: %d\n", ret);
--		goto out_put_node;
-+		goto out_put_clk;
- 	}
- 
- 	ret = dev_pm_opp_init_cpufreq_table(cpu_dev, &freq_table);
- 	if (ret) {
- 		pr_err("failed to init cpufreq table: %d\n", ret);
--		goto out_put_node;
-+		goto out_put_clk;
- 	}
- 
- 	of_property_read_u32(np, "voltage-tolerance", &voltage_tolerance);
-@@ -206,6 +206,12 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 
- out_free_table:
- 	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
-+out_put_clk:
-+	if (!IS_ERR(cpu_clk))
-+		clk_put(cpu_clk);
-+out_put_reg:
-+	if (!IS_ERR(cpu_reg))
-+		regulator_put(cpu_reg);
- out_put_node:
- 	of_node_put(np);
- 	return ret;
+ #define LOAD_REG_ADDR(reg,name)			\
 -- 
 1.9.1
 
