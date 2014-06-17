@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966920AbaFQVvs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:51:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54648 "EHLO
+	id S967555AbaFQWKE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:10:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54662 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966897AbaFQVvj (ORCPT
+	with ESMTP id S966914AbaFQVvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:51:39 -0400
+	Tue, 17 Jun 2014 17:51:48 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 118/212] i2c: s3c2410: resume race fix
-Date: Tue, 17 Jun 2014 14:43:32 -0700
-Message-Id: <1403041506-13646-119-git-send-email-kamal@canonical.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 121/212] metag: fix memory barriers
+Date: Tue, 17 Jun 2014 14:43:35 -0700
+Message-Id: <1403041506-13646-122-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -27,42 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olof Johansson <olof@lixom.net>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit ce78cc071f5f541480e381cc0241d37590041a9d upstream.
+commit 2425ce84026c385b73ae72039f90d042d49e0394 upstream.
 
-Don't unmark the device as suspended until after it's been re-setup.
+Volatile access doesn't really imply the compiler barrier. Volatile access
+is only ordered with respect to other volatile accesses, it isn't ordered
+with respect to general memory accesses. Gcc may reorder memory accesses
+around volatile access, as we can see in this simple example (if we
+compile it with optimization, both increments of *b will be collapsed to
+just one):
 
-The main race would be w.r.t. an i2c driver that gets resumed at the same
-time (asyncronously), that is allowed to do a transfer since suspended
-is set to 0 before reinit, but really should have seen the -EIO return
-instead.
+void fn(volatile int *a, long *b)
+{
+	(*b)++;
+	*a = 10;
+	(*b)++;
+}
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Consequently, we need the compiler barrier after a write to the volatile
+variable, to make sure that the compiler doesn't reorder the volatile
+write with something else.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/i2c/busses/i2c-s3c2410.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/metag/include/asm/barrier.h | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-index bf8fb94..2729e40 100644
---- a/drivers/i2c/busses/i2c-s3c2410.c
-+++ b/drivers/i2c/busses/i2c-s3c2410.c
-@@ -1201,10 +1201,10 @@ static int s3c24xx_i2c_resume(struct device *dev)
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct s3c24xx_i2c *i2c = platform_get_drvdata(pdev);
- 
--	i2c->suspended = 0;
- 	clk_prepare_enable(i2c->clk);
- 	s3c24xx_i2c_init(i2c);
- 	clk_disable_unprepare(i2c->clk);
-+	i2c->suspended = 0;
- 
- 	return 0;
+diff --git a/arch/metag/include/asm/barrier.h b/arch/metag/include/asm/barrier.h
+index c90bfc6..e355a4c 100644
+--- a/arch/metag/include/asm/barrier.h
++++ b/arch/metag/include/asm/barrier.h
+@@ -15,6 +15,7 @@ static inline void wr_fence(void)
+ 	volatile int *flushptr = (volatile int *) LINSYSEVENT_WR_FENCE;
+ 	barrier();
+ 	*flushptr = 0;
++	barrier();
  }
+ 
+ #else /* CONFIG_METAG_META21 */
+@@ -35,6 +36,7 @@ static inline void wr_fence(void)
+ 	*flushptr = 0;
+ 	*flushptr = 0;
+ 	*flushptr = 0;
++	barrier();
+ }
+ 
+ #endif /* !CONFIG_METAG_META21 */
+@@ -68,6 +70,7 @@ static inline void fence(void)
+ 	volatile int *flushptr = (volatile int *) LINSYSEVENT_WR_ATOMIC_UNLOCK;
+ 	barrier();
+ 	*flushptr = 0;
++	barrier();
+ }
+ #define smp_mb()        fence()
+ #define smp_rmb()       fence()
 -- 
 1.9.1
 
