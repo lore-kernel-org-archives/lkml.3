@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966872AbaFQVve (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:51:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54615 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966848AbaFQVvb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S966856AbaFQVvb (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 17 Jun 2014 17:51:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54592 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966837AbaFQVv0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 17:51:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mark Salter <msalter@redhat.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
+Cc: Leif Lindholm <leif.lindholm@linaro.org>, linux-mips@linux-mips.org,
+        devicetree@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 136/212] arm64: fix pud_huge() for 2-level pagetables
-Date: Tue, 17 Jun 2014 14:43:50 -0700
-Message-Id: <1403041506-13646-137-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 135/212] mips: dts: Fix missing device_type="memory" property in memory nodes
+Date: Tue, 17 Jun 2014 14:43:49 -0700
+Message-Id: <1403041506-13646-136-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -28,63 +29,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Salter <msalter@redhat.com>
+From: Leif Lindholm <leif.lindholm@linaro.org>
 
-commit 4797ec2dc83a43be35bad56037d1b53db9e2b5d5 upstream.
+commit dfc44f8030653b345fc6fb337558c3a07536823f upstream.
 
-The following happens when trying to run a kvm guest on a kernel
-configured for 64k pages. This doesn't happen with 4k pages:
+A few platforms lack a 'device_type = "memory"' for their memory
+nodes, relying on an old ppc quirk in order to discover its memory.
+Add the missing data so that all parsing code can find memory nodes
+correctly.
 
-  BUG: failure at include/linux/mm.h:297/put_page_testzero()!
-  Kernel panic - not syncing: BUG!
-  CPU: 2 PID: 4228 Comm: qemu-system-aar Tainted: GF            3.13.0-0.rc7.31.sa2.k32v1.aarch64.debug #1
-  Call trace:
-  [<fffffe0000096034>] dump_backtrace+0x0/0x16c
-  [<fffffe00000961b4>] show_stack+0x14/0x1c
-  [<fffffe000066e648>] dump_stack+0x84/0xb0
-  [<fffffe0000668678>] panic+0xf4/0x220
-  [<fffffe000018ec78>] free_reserved_area+0x0/0x110
-  [<fffffe000018edd8>] free_pages+0x50/0x88
-  [<fffffe00000a759c>] kvm_free_stage2_pgd+0x30/0x40
-  [<fffffe00000a5354>] kvm_arch_destroy_vm+0x18/0x44
-  [<fffffe00000a1854>] kvm_put_kvm+0xf0/0x184
-  [<fffffe00000a1938>] kvm_vm_release+0x10/0x1c
-  [<fffffe00001edc1c>] __fput+0xb0/0x288
-  [<fffffe00001ede4c>] ____fput+0xc/0x14
-  [<fffffe00000d5a2c>] task_work_run+0xa8/0x11c
-  [<fffffe0000095c14>] do_notify_resume+0x54/0x58
-
-In arch/arm/kvm/mmu.c:unmap_range(), we end up doing an extra put_page()
-on the stage2 pgd which leads to the BUG in put_page_testzero(). This
-happens because a pud_huge() test in unmap_range() returns true when it
-should always be false with 2-level pages tables used by 64k pages.
-This patch removes support for huge puds if 2-level pagetables are
-being used.
-
-Signed-off-by: Mark Salter <msalter@redhat.com>
-[catalin.marinas@arm.com: removed #ifndef around PUD_SIZE check]
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: linux-mips@linux-mips.org
+Cc: devicetree@vger.kernel.org
+Cc: Mark Rutland <mark.rutland@arm.com>
+Acked-by: John Crispin <blogic@openwrt.org>
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm64/mm/hugetlbpage.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/mips/lantiq/dts/easy50712.dts    | 1 +
+ arch/mips/ralink/dts/mt7620a_eval.dts | 1 +
+ arch/mips/ralink/dts/rt2880_eval.dts  | 1 +
+ arch/mips/ralink/dts/rt3052_eval.dts  | 1 +
+ arch/mips/ralink/dts/rt3883_eval.dts  | 1 +
+ 5 files changed, 5 insertions(+)
 
-diff --git a/arch/arm64/mm/hugetlbpage.c b/arch/arm64/mm/hugetlbpage.c
-index 5e9aec3..31eb959 100644
---- a/arch/arm64/mm/hugetlbpage.c
-+++ b/arch/arm64/mm/hugetlbpage.c
-@@ -51,7 +51,11 @@ int pmd_huge(pmd_t pmd)
+diff --git a/arch/mips/lantiq/dts/easy50712.dts b/arch/mips/lantiq/dts/easy50712.dts
+index fac1f5b..143b8a3 100644
+--- a/arch/mips/lantiq/dts/easy50712.dts
++++ b/arch/mips/lantiq/dts/easy50712.dts
+@@ -8,6 +8,7 @@
+ 	};
  
- int pud_huge(pud_t pud)
- {
-+#ifndef __PAGETABLE_PMD_FOLDED
- 	return !(pud_val(pud) & PUD_TABLE_BIT);
-+#else
-+	return 0;
-+#endif
- }
+ 	memory@0 {
++		device_type = "memory";
+ 		reg = <0x0 0x2000000>;
+ 	};
  
- int pmd_huge_support(void)
+diff --git a/arch/mips/ralink/dts/mt7620a_eval.dts b/arch/mips/ralink/dts/mt7620a_eval.dts
+index 35eb874..709f581 100644
+--- a/arch/mips/ralink/dts/mt7620a_eval.dts
++++ b/arch/mips/ralink/dts/mt7620a_eval.dts
+@@ -7,6 +7,7 @@
+ 	model = "Ralink MT7620A evaluation board";
+ 
+ 	memory@0 {
++		device_type = "memory";
+ 		reg = <0x0 0x2000000>;
+ 	};
+ 
+diff --git a/arch/mips/ralink/dts/rt2880_eval.dts b/arch/mips/ralink/dts/rt2880_eval.dts
+index 322d700..0a685db 100644
+--- a/arch/mips/ralink/dts/rt2880_eval.dts
++++ b/arch/mips/ralink/dts/rt2880_eval.dts
+@@ -7,6 +7,7 @@
+ 	model = "Ralink RT2880 evaluation board";
+ 
+ 	memory@0 {
++		device_type = "memory";
+ 		reg = <0x8000000 0x2000000>;
+ 	};
+ 
+diff --git a/arch/mips/ralink/dts/rt3052_eval.dts b/arch/mips/ralink/dts/rt3052_eval.dts
+index 0ac73ea..ec9e9a0 100644
+--- a/arch/mips/ralink/dts/rt3052_eval.dts
++++ b/arch/mips/ralink/dts/rt3052_eval.dts
+@@ -7,6 +7,7 @@
+ 	model = "Ralink RT3052 evaluation board";
+ 
+ 	memory@0 {
++		device_type = "memory";
+ 		reg = <0x0 0x2000000>;
+ 	};
+ 
+diff --git a/arch/mips/ralink/dts/rt3883_eval.dts b/arch/mips/ralink/dts/rt3883_eval.dts
+index 2fa6b33..e8df21a 100644
+--- a/arch/mips/ralink/dts/rt3883_eval.dts
++++ b/arch/mips/ralink/dts/rt3883_eval.dts
+@@ -7,6 +7,7 @@
+ 	model = "Ralink RT3883 evaluation board";
+ 
+ 	memory@0 {
++		device_type = "memory";
+ 		reg = <0x0 0x2000000>;
+ 	};
+ 
 -- 
 1.9.1
 
