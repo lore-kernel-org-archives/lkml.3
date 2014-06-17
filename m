@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966085AbaFQVsD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:48:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53930 "EHLO
+	id S932527AbaFQWra (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:47:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53759 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965454AbaFQVr6 (ORCPT
+	with ESMTP id S965678AbaFQVqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:47:58 -0400
+	Tue, 17 Jun 2014 17:46:21 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
+Cc: Peter Christensen <pch@ordbogen.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 110/212] hwmon: (emc1403) Fix resource leak on module unload
-Date: Tue, 17 Jun 2014 14:43:24 -0700
-Message-Id: <1403041506-13646-111-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 049/212] macvlan: Don't propagate IFF_ALLMULTI changes on down interfaces.
+Date: Tue, 17 Jun 2014 14:42:23 -0700
+Message-Id: <1403041506-13646-50-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -27,42 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <jdelvare@suse.de>
+From: Peter Christensen <pch@ordbogen.com>
 
-commit 8759f9046550f463098148bf577ccd32cdb895e3 upstream.
+[ Upstream commit bbeb0eadcf9fe74fb2b9b1a6fea82cd538b1e556 ]
 
-Commit 454aee17f claims to convert driver emc1403 to use
-devm_hwmon_device_register_with_groups, however the patch itself makes
-use of hwmon_device_register_with_groups instead. As the driver remove
-function was still dropped, the hwmon device is no longer unregistered
-on driver removal, leading to a resource leak.
+Clearing the IFF_ALLMULTI flag on a down interface could cause an allmulti
+overflow on the underlying interface.
 
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Fixes: 454aee17f hwmon: (emc1403) Convert to use devm_hwmon_device_register_with_groups
-Cc: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Attempting the set IFF_ALLMULTI on the underlying interface would cause an
+error and the log message:
+
+"allmulti touches root, set allmulti failed."
+
+Signed-off-by: Peter Christensen <pch@ordbogen.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hwmon/emc1403.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/macvlan.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hwmon/emc1403.c b/drivers/hwmon/emc1403.c
-index 61d89d6..42a3cfc 100644
---- a/drivers/hwmon/emc1403.c
-+++ b/drivers/hwmon/emc1403.c
-@@ -355,9 +355,9 @@ static int emc1403_probe(struct i2c_client *client,
- 	if (id->driver_data)
- 		data->groups[1] = &emc1404_group;
+diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
+index fbb21fa..9687122 100644
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -459,8 +459,10 @@ static void macvlan_change_rx_flags(struct net_device *dev, int change)
+ 	struct macvlan_dev *vlan = netdev_priv(dev);
+ 	struct net_device *lowerdev = vlan->lowerdev;
  
--	hwmon_dev = hwmon_device_register_with_groups(&client->dev,
--						      client->name, data,
--						      data->groups);
-+	hwmon_dev = devm_hwmon_device_register_with_groups(&client->dev,
-+							   client->name, data,
-+							   data->groups);
- 	if (IS_ERR(hwmon_dev))
- 		return PTR_ERR(hwmon_dev);
+-	if (change & IFF_ALLMULTI)
+-		dev_set_allmulti(lowerdev, dev->flags & IFF_ALLMULTI ? 1 : -1);
++	if (dev->flags & IFF_UP) {
++		if (change & IFF_ALLMULTI)
++			dev_set_allmulti(lowerdev, dev->flags & IFF_ALLMULTI ? 1 : -1);
++	}
+ }
  
+ static void macvlan_set_mac_lists(struct net_device *dev)
 -- 
 1.9.1
 
