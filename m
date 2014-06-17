@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966101AbaFQVsG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:48:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53938 "EHLO
+	id S966132AbaFQVsN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:48:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53956 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966078AbaFQVsB (ORCPT
+	with ESMTP id S966109AbaFQVsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:48:01 -0400
+	Tue, 17 Jun 2014 17:48:10 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 094/212] genirq: Provide irq_force_affinity fallback for non-SMP
-Date: Tue, 17 Jun 2014 14:43:08 -0700
-Message-Id: <1403041506-13646-95-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 092/212] NFSd: Move default initialisers from create_client() to alloc_client()
+Date: Tue, 17 Jun 2014 14:43:06 -0700
+Message-Id: <1403041506-13646-93-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -29,50 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 4c88d7f9b0d5fb0588c3386be62115cc2eaa8f9f upstream.
+commit 5694c93e6c4954fa9424c215f75eeb919bddad64 upstream.
 
-Patch 01f8fa4f01d "genirq: Allow forcing cpu affinity of interrupts" added
-an irq_force_affinity() function, and 30ccf03b4a6 "clocksource: Exynos_mct:
-Use irq_force_affinity() in cpu bringup" subsequently uses it. However, the
-driver can be used with CONFIG_SMP disabled, but the function declaration
-is only available for CONFIG_SMP, leading to this build error:
+Aside from making it clearer what is non-trivial in create_client(), it
+also fixes a bug whereby we can call free_client() before idr_init()
+has been called.
 
-drivers/clocksource/exynos_mct.c:431:3: error: implicit declaration of function 'irq_force_affinity' [-Werror=implicit-function-declaration]
-   irq_force_affinity(mct_irqs[MCT_L0_IRQ + cpu], cpumask_of(cpu));
-
-This patch introduces a dummy helper function for the non-SMP case
-that always returns success, to get rid of the build error.
-Since the patches causing the problem are marked for stable backports,
-this one should be as well.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-Link: http://lkml.kernel.org/r/5619084.0zmrrIUZLV@wuerfel
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/interrupt.h | 5 +++++
- 1 file changed, 5 insertions(+)
+ fs/nfsd/nfs4state.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index c88e76c..402db89 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -266,6 +266,11 @@ static inline int irq_set_affinity(unsigned int irq, const struct cpumask *m)
- 	return -EINVAL;
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index e0d91d7..3fcd3ba 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -1074,6 +1074,18 @@ static struct nfs4_client *alloc_client(struct xdr_netobj name)
+ 		return NULL;
+ 	}
+ 	clp->cl_name.len = name.len;
++	INIT_LIST_HEAD(&clp->cl_sessions);
++	idr_init(&clp->cl_stateids);
++	atomic_set(&clp->cl_refcount, 0);
++	clp->cl_cb_state = NFSD4_CB_UNKNOWN;
++	INIT_LIST_HEAD(&clp->cl_idhash);
++	INIT_LIST_HEAD(&clp->cl_openowners);
++	INIT_LIST_HEAD(&clp->cl_delegations);
++	INIT_LIST_HEAD(&clp->cl_lru);
++	INIT_LIST_HEAD(&clp->cl_callbacks);
++	INIT_LIST_HEAD(&clp->cl_revoked);
++	spin_lock_init(&clp->cl_lock);
++	rpc_init_wait_queue(&clp->cl_cb_waitq, "Backchannel slot table");
+ 	return clp;
  }
  
-+static inline int irq_force_affinity(unsigned int irq, const struct cpumask *cpumask)
-+{
-+	return 0;
-+}
-+
- static inline int irq_can_set_affinity(unsigned int irq)
- {
- 	return 0;
+@@ -1343,7 +1355,6 @@ static struct nfs4_client *create_client(struct xdr_netobj name,
+ 	if (clp == NULL)
+ 		return NULL;
+ 
+-	INIT_LIST_HEAD(&clp->cl_sessions);
+ 	ret = copy_cred(&clp->cl_cred, &rqstp->rq_cred);
+ 	if (ret) {
+ 		spin_lock(&nn->client_lock);
+@@ -1351,20 +1362,9 @@ static struct nfs4_client *create_client(struct xdr_netobj name,
+ 		spin_unlock(&nn->client_lock);
+ 		return NULL;
+ 	}
+-	idr_init(&clp->cl_stateids);
+-	atomic_set(&clp->cl_refcount, 0);
+-	clp->cl_cb_state = NFSD4_CB_UNKNOWN;
+-	INIT_LIST_HEAD(&clp->cl_idhash);
+-	INIT_LIST_HEAD(&clp->cl_openowners);
+-	INIT_LIST_HEAD(&clp->cl_delegations);
+-	INIT_LIST_HEAD(&clp->cl_lru);
+-	INIT_LIST_HEAD(&clp->cl_callbacks);
+-	INIT_LIST_HEAD(&clp->cl_revoked);
+-	spin_lock_init(&clp->cl_lock);
+ 	nfsd4_init_callback(&clp->cl_cb_null);
+ 	clp->cl_time = get_seconds();
+ 	clear_bit(0, &clp->cl_cb_slot_busy);
+-	rpc_init_wait_queue(&clp->cl_cb_waitq, "Backchannel slot table");
+ 	copy_verf(clp, verf);
+ 	rpc_copy_addr((struct sockaddr *) &clp->cl_addr, sa);
+ 	gen_confirm(clp);
 -- 
 1.9.1
 
