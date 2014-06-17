@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965866AbaFQQyx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:54:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50585 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933936AbaFQQSt (ORCPT
+	id S965883AbaFQQy4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:54:56 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:50000 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965868AbaFQQyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:18:49 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 045/121] usb: option: add Alcatel L800MA
-Date: Tue, 17 Jun 2014 09:17:03 -0700
-Message-Id: <1403021899-16708-18-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
-References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Extended-Stable: 3.8
+	Tue, 17 Jun 2014 12:54:54 -0400
+Message-ID: <1403024089.1995.0.camel@jarvis>
+Subject: Re: [PATCH 01/24] kobject: return actual error on
+ kset_create_and_add
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Jeff Liu <jeff.liu@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, herbert@gondor.apana.org.au,
+        davem@davemloft.net, stefanr@s5r6.in-berlin.de, joro@8bytes.org,
+        jejb@parisc-linux.org, deller@gmx.de, bhelgaas@google.com, clm@fb.com,
+        Josef Bacik <jbacik@fb.com>, swhiteho@redhat.com, bharrosh@panasas.com,
+        bhalevy@primarydata.com, ccaulfie@redhat.com, teigland@redhat.com,
+        "Theodore Ts'o" <tytso@mit.edu>, adilger.kernel@dilger.ca,
+        jaegeuk@kernel.org, cm224.lee@samsung.com,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        casey@schaufler-ca.com, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 17 Jun 2014 09:54:49 -0700
+In-Reply-To: <alpine.DEB.2.11.1406171128540.20610@gentwo.org>
+References: <53A04FF7.5050900@oracle.com> <20140617154730.GA14153@kroah.com>
+	 <alpine.DEB.2.11.1406171057270.20610@gentwo.org>
+	 <1403021389.27991.11.camel@dabdike.int.hansenpartnership.com>
+	 <alpine.DEB.2.11.1406171128540.20610@gentwo.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.24 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, 2014-06-17 at 11:29 -0500, Christoph Lameter wrote:
+> On Tue, 17 Jun 2014, James Bottomley wrote:
+> 
+> > What useful information does this supply?  The current assumption on
+> > NULL return is -ENOMEM ... what's the interesting case where this
+> > assumption is wrong?
+> 
+> No idea. Sysfs just ignored all error codes and returns NULL right now.
+> If it is indeed just ENOMEN then we have no issue.
 
-------------------
+Well, I think when we have that justification, then we can decide on the
+merits of the patch set.
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+James
 
-commit dd6b48ecec2ea7d15f28d5e5474388681899a5e1 upstream.
-
-Device interface layout:
-0: ff/ff/ff - serial
-1: ff/00/00 - serial AT+PPP
-2: ff/ff/ff - QMI/wwan
-3: 08/06/50 - storage
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/usb/serial/option.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 5aa3512..b496887 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -287,6 +287,7 @@ static void option_instat_callback(struct urb *urb);
- #define ALCATEL_PRODUCT_X060S_X200		0x0000
- #define ALCATEL_PRODUCT_X220_X500D		0x0017
- #define ALCATEL_PRODUCT_L100V			0x011e
-+#define ALCATEL_PRODUCT_L800MA			0x0203
- 
- #define PIRELLI_VENDOR_ID			0x1266
- #define PIRELLI_PRODUCT_C100_1			0x1002
-@@ -1501,6 +1502,8 @@ static const struct usb_device_id option_ids[] = {
- 	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L100V),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L800MA),
-+	  .driver_info = (kernel_ulong_t)&net_intf2_blacklist },
- 	{ USB_DEVICE(AIRPLUS_VENDOR_ID, AIRPLUS_PRODUCT_MCD650) },
- 	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
--- 
-1.9.1
 
