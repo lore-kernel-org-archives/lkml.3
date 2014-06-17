@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967695AbaFQWdO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:33:14 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:61291 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965250AbaFQWdM convert rfc822-to-8bit (ORCPT
+	id S966935AbaFQWYf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:24:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54333 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966532AbaFQVuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 18:33:12 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Stephen Boyd <sboyd@codeaurora.org>,
-        "Russell King" <linux@arm.linux.org.uk>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1402702591-21087-1-git-send-email-sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1402702591-21087-1-git-send-email-sboyd@codeaurora.org>
-Message-ID: <20140617223305.32686.15540@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH] clkdev: Don't print errors on probe defer
-Date: Tue, 17 Jun 2014 15:33:05 -0700
+	Tue, 17 Jun 2014 17:50:14 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Lior Amsalem <alior@marvell.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 159/212] dma: mv_xor: Flush descriptors before activating a channel
+Date: Tue, 17 Jun 2014 14:44:13 -0700
+Message-Id: <1403041506-13646-160-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stephen Boyd (2014-06-13 16:36:31)
-> This error message can spam the logs if you have lots of probe
-> deferals due to missing clocks. Just silence the error in this
-> case because the driver should try again later.
-> 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
 
-Looks OK to me. Russell?
+------------------
 
-Regards,
-Mike
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 
-> ---
->  drivers/clk/clkdev.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-> index f890b901c6bc..da4bda8b7fc7 100644
-> --- a/drivers/clk/clkdev.c
-> +++ b/drivers/clk/clkdev.c
-> @@ -101,8 +101,9 @@ struct clk *of_clk_get_by_name(struct device_node *np, const char *name)
->                 if (!IS_ERR(clk))
->                         break;
->                 else if (name && index >= 0) {
-> -                       pr_err("ERROR: could not get clock %s:%s(%i)\n",
-> -                               np->full_name, name ? name : "", index);
-> +                       if (PTR_ERR(clk) != -EPROBE_DEFER)
-> +                               pr_err("ERROR: could not get clock %s:%s(%i)\n",
-> +                                       np->full_name, name ? name : "", index);
->                         return clk;
->                 }
->  
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
+commit 5a9a55bf9157d3490b0c8c4c81d4708602c26e07 upstream.
+
+We need to use writel() instead of writel_relaxed() when starting
+a channel, to ensure all the descriptors have been flushed before
+the activation.
+
+While at it, remove the unneeded read-modify-write and make the
+code simpler.
+
+Signed-off-by: Lior Amsalem <alior@marvell.com>
+Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/dma/mv_xor.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
+index 53fb0c8..29c8a06 100644
+--- a/drivers/dma/mv_xor.c
++++ b/drivers/dma/mv_xor.c
+@@ -191,12 +191,10 @@ static void mv_set_mode(struct mv_xor_chan *chan,
+ 
+ static void mv_chan_activate(struct mv_xor_chan *chan)
+ {
+-	u32 activation;
+-
+ 	dev_dbg(mv_chan_to_devp(chan), " activate chan.\n");
+-	activation = readl_relaxed(XOR_ACTIVATION(chan));
+-	activation |= 0x1;
+-	writel_relaxed(activation, XOR_ACTIVATION(chan));
++
++	/* writel ensures all descriptors are flushed before activation */
++	writel(BIT(0), XOR_ACTIVATION(chan));
+ }
+ 
+ static char mv_chan_is_busy(struct mv_xor_chan *chan)
+-- 
+1.9.1
+
