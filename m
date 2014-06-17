@@ -1,89 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012AbaFQDSd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 23:18:33 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:36359 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754609AbaFQDSb (ORCPT
+	id S1754992AbaFQDXT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 23:23:19 -0400
+Received: from mail-ie0-f196.google.com ([209.85.223.196]:37043 "EHLO
+	mail-ie0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754607AbaFQDXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 23:18:31 -0400
-Message-ID: <539FB363.1070302@oracle.com>
-Date: Mon, 16 Jun 2014 23:17:55 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Dan Aloni <dan@kernelim.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: mm/sched/net: BUG when running simple code
-References: <539A6850.4090408@oracle.com> <20140613032754.GA20729@gmail.com> <539A77A1.60700@oracle.com> <20140613041331.GA31688@redhat.com>
-In-Reply-To: <20140613041331.GA31688@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 16 Jun 2014 23:23:18 -0400
+From: Nicholas Krause <xerofoify@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: valentina.manea.m@gmail.com, lisa@xenapiadmin.com, ben@decadent.org.uk,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Check if skb_alloc returns Null in function fw_download_code
+Date: Mon, 16 Jun 2014 23:23:13 -0400
+Message-Id: <1402975393-26830-1-git-send-email-xerofoify@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2014 12:13 AM, Dave Jones wrote:
-> On Fri, Jun 13, 2014 at 12:01:37AM -0400, Sasha Levin wrote:
->  > On 06/12/2014 11:27 PM, Dan Aloni wrote:
->  > > On Thu, Jun 12, 2014 at 10:56:16PM -0400, Sasha Levin wrote:
->  > >> > Hi all,
->  > >> > 
->  > >> > Okay, I'm really lost. I got the following when fuzzing, and can't really explain what's
->  > >> > going on. It seems that we get a "unable to handle kernel paging request" when running
->  > >> > rather simple code, and I can't figure out how it would cause it.
->  > > [..]
->  > >> > Which agrees with the trace I got:
->  > >> > 
->  > >> > [  516.309720] BUG: unable to handle kernel paging request at ffffffffa0f12560
->  > >> > [  516.309720] IP: netlink_getsockopt (net/netlink/af_netlink.c:2271)
->  > > [..]
->  > >> > [  516.309720] RIP netlink_getsockopt (net/netlink/af_netlink.c:2271)
->  > >> > [  516.309720]  RSP <ffff8803fc85fed8>
->  > >> > [  516.309720] CR2: ffffffffa0f12560
->  > >> > 
->  > >> > They only theory I had so far is that netlink is a module, and has gone away while the code
->  > >> > was executing, but netlink isn't a module on my kernel.
->  > > The RIP - 0xffffffffa0f12560 is in the range (from Documentation/x86/x86_64/mm.txt):
->  > > 
->  > >     ffffffffa0000000 - ffffffffff5fffff (=1525 MB) module mapping space
->  > > 
->  > > So seems it was in a module.
->  > 
->  > Yup, that's why that theory came up, but when I checked my config:
->  > ... 
->  > that theory went away. (also confirmed by not finding a netlink module.)
->  > 
->  > What about the kernel .text overflowing into the modules space? The loader
->  > checks for that, but can something like that happen after everything is
->  > up and running? I'll look into that tomorrow.
-> 
-> another theory: Trinity can sometimes generate plausible looking module
-> addresses and pass those in structs etc.
-> 
-> I wonder if there's somewhere in that path that isn't checking that the address
-> in the optval it got is actually a userspace address before it tries to write to it.
+Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+---
+ drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-It happened again, and this time I've left the kernel addresses in, and it's quite
-interesting:
-
-[   88.837926] Call Trace:
-[   88.837926]  [<ffffffff9ff6a792>] __sock_create+0x292/0x3c0
-[   88.837926]  [<ffffffff9ff6a610>] ? __sock_create+0x110/0x3c0
-[   88.837926]  [<ffffffff9ff6a920>] sock_create+0x30/0x40
-[   88.837926]  [<ffffffff9ff6ad4c>] SyS_socket+0x2c/0x70
-[   88.837926]  [<ffffffffa0561c30>] ? tracesys+0x7e/0xe6
-[   88.837926]  [<ffffffffa0561c93>] tracesys+0xe1/0xe6
-
-tracesys() seems to live inside a module space here?
-
-
-Thanks,
-Sasha
+diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+index 1a95d1f..11e915e 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
++++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+@@ -61,11 +61,13 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+ 		}
+ 
+ 		skb  = dev_alloc_skb(frag_length + 4);
++		if (!skb) {
+ 		memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
+ 		tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
+ 		tcb_desc->queue_index = TXCMD_QUEUE;
+ 		tcb_desc->bCmdOrInit = DESC_PACKET_TYPE_INIT;
+ 		tcb_desc->bLastIniPkt = bLastIniPkt;
++		}
+ 
+ 		seg_ptr = skb->data;
+ 		for (i = 0; i < frag_length; i += 4) {
+-- 
+1.9.1
 
