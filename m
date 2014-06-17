@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501AbaFQGAH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 02:00:07 -0400
-Received: from mail.windriver.com ([147.11.1.11]:45564 "EHLO
+	id S1755554AbaFQGCE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 02:02:04 -0400
+Received: from mail.windriver.com ([147.11.1.11]:45853 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160AbaFQGAF (ORCPT
+	with ESMTP id S1755188AbaFQGCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 02:00:05 -0400
-Message-ID: <539FD94A.8030004@windriver.com>
-Date: Tue, 17 Jun 2014 13:59:38 +0800
+	Tue, 17 Jun 2014 02:02:02 -0400
+Message-ID: <539FD9A9.1070307@windriver.com>
+Date: Tue, 17 Jun 2014 14:01:13 +0800
 From: "Yang,Wei" <Wei.Yang@windriver.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: "Yang,Wei" <Wei.Yang@windriver.com>, <Wei.Yang@windriver.com>,
-        <stern@rowland.harvard.edu>, <mina86@mina86.com>
-CC: <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] USB:gadget: Fix a warning while loading g_mass_storage
-References: <1401856367-12553-1-git-send-email-Wei.Yang@windriver.com> <1402800030-17078-1-git-send-email-Wei.Yang@windriver.com> <539D0817.2080402@windriver.com>
-In-Reply-To: <539D0817.2080402@windriver.com>
+To: <Wei.Yang@windriver.com>, <horms@verge.net.au>
+CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v1] fs2dt: Refine kdump device_tree sort
+References: <1402550168-7826-1-git-send-email-Wei.Yang@windriver.com>
+In-Reply-To: <1402550168-7826-1-git-send-email-Wei.Yang@windriver.com>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [128.224.162.170]
@@ -26,88 +25,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2014 10:42 AM, Yang,Wei wrote:
-> Its v4, sorry for missing it in subject.
+Hi Simon,
 
-Alan, How about this version?
+How about this patch?
 
-Cheers
+Thanks
 Wei
+On 06/12/2014 01:16 PM, Wei.Yang@windriver.com wrote:
+> From: Yang Wei <Wei.Yang@windriver.com>
 >
-> Regards
-> Wei
-> On 06/15/2014 10:40 AM, Wei.Yang@windriver.com wrote:
->> From: Yang Wei <Wei.Yang@windriver.com>
->>
->> While loading g_mass_storage module, the following warning
->> is triggered.
->>
->> WARNING: at drivers/usb/gadget/composite.c:
->> usb_composite_setup_continue: Unexpected call
->> Modules linked in: fat vfat minix nls_cp437 nls_iso8859_1 g_mass_storage
->> [<800179cc>] (unwind_backtrace+0x0/0x104) from [<80619608>] 
->> (dump_stack+0x20/0x24)
->> [<80619608>] (dump_stack+0x20/0x24) from [<80025100>] 
->> (warn_slowpath_common+0x64/0x74)
->> [<80025100>] (warn_slowpath_common+0x64/0x74) from [<800251cc>] 
->> (warn_slowpath_fmt+0x40/0x48)
->> [<800251cc>] (warn_slowpath_fmt+0x40/0x48) from [<7f047774>] 
->> (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage])
->> [<7f047774>] (usb_composite_setup_continue+0xb4/0xbc 
->> [g_mass_storage]) from [<7f047ad4>] (handle_exception+0x358/0x3e4 
->> [g_mass_storage])
->> [<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage]) from 
->> [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage])
->> [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage]) from 
->> [<8004bc90>] (kthread+0x98/0x9c)
->> [<8004bc90>] (kthread+0x98/0x9c) from [<8000faec>] 
->> (kernel_thread_exit+0x0/0x8)
->>
->> The root cause is that the existing code fails to take into
->> account the possibility that common->new_fsg can change while
->> do_set_interface() is running, so the value of common->new_fsg
->> that gets tested after do_set_interface returns needs to be
->> the same as the value used by do_set_interface.
->>
->> Signed-off-by: Yang Wei <Wei.Yang@windriver.com>
->> Acked-by: Alan Stern <stern@rowland.harvard.edu>
->> ---
->>   drivers/usb/gadget/f_mass_storage.c |    6 ++++--
->>   1 file changed, 4 insertions(+), 2 deletions(-)
->>
->> Changes in v3 ----> v4
->>
->> move "new_fsg = common->new_fsg" out of comm->lock protection, and 
->> refine the commit log.
->>
->> Thanks
->> Wei
->>
->> diff --git a/drivers/usb/gadget/f_mass_storage.c 
->> b/drivers/usb/gadget/f_mass_storage.c
->> index b963939..a7e24c8 100644
->> --- a/drivers/usb/gadget/f_mass_storage.c
->> +++ b/drivers/usb/gadget/f_mass_storage.c
->> @@ -2342,6 +2342,7 @@ static void handle_exception(struct fsg_common 
->> *common)
->>       struct fsg_buffhd    *bh;
->>       enum fsg_state        old_state;
->>       struct fsg_lun        *curlun;
->> +    struct fsg_dev        *new_fsg;
->>       unsigned int        exception_req_tag;
->>         /*
->> @@ -2460,8 +2461,9 @@ static void handle_exception(struct fsg_common 
->> *common)
->>           break;
->>         case FSG_STATE_CONFIG_CHANGE:
->> -        do_set_interface(common, common->new_fsg);
->> -        if (common->new_fsg)
->> +        new_fsg = common->new_fsg;
->> +        do_set_interface(common, new_fsg);
->> +        if (new_fsg)
->>               usb_composite_setup_continue(common->cdev);
->>           break;
+> The commit b02d735bf was to rearrange the device-tree entries, and
+> assumed that these entries are sorted in the ascending order. but
+> acctually when I was validating kexec and kdump, the order of
+> serial node still is changed. We should not only compare the length
+> of directory name, but also compare the directory name, it would
+> ensure that the order of device node is really in ascending order.
 >
+> Signed-off-by: Yang Wei <Wei.Yang@windriver.com>
+> ---
+>   kexec/fs2dt.c |   13 ++++++++++---
+>   1 file changed, 10 insertions(+), 3 deletions(-)
 >
+> 		It is validated on Freescale t4240qds.
 >
+> diff --git a/kexec/fs2dt.c b/kexec/fs2dt.c
+> index 1e5f074..0bffaf5 100644
+> --- a/kexec/fs2dt.c
+> +++ b/kexec/fs2dt.c
+> @@ -479,6 +479,9 @@ static int comparefunc(const struct dirent **dentry1,
+>   {
+>   	char *str1 = (*(struct dirent **)dentry1)->d_name;
+>   	char *str2 = (*(struct dirent **)dentry2)->d_name;
+> +	char* ptr1 = strchr(str1, '@');
+> +	char* ptr2 = strchr(str2, '@');
+> +	int len1, len2;
+>   
+>   	/*
+>   	 * strcmp scans from left to right and fails to idetify for some
+> @@ -486,9 +489,13 @@ static int comparefunc(const struct dirent **dentry1,
+>   	 * Therefore, we get the wrong sorted order like memory@10000000 and
+>   	 * memory@f000000.
+>   	 */
+> -	if (strchr(str1, '@') && strchr(str2, '@') &&
+> -		(strlen(str1) > strlen(str2)))
+> -		return 1;
+> +	if (ptr1 && ptr2) {
+> +		len1 = ptr1 - str1;
+> +		len2 = ptr2 - str2;
+> +		if (!strncmp(str1, str2, len1 >len2 ? len1: len2) &&
+> +					(strlen(str1) > strlen(str2)))
+> +				return 1;
+> +	}
+>   
+>   	return strcmp(str1, str2);
+>   }
 
