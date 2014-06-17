@@ -1,80 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786AbaFQB3w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 21:29:52 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:57514 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753554AbaFQB3v (ORCPT
+	id S1753955AbaFQBhY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 21:37:24 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:53647 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753001AbaFQBhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 21:29:51 -0400
-Date: Mon, 16 Jun 2014 18:29:48 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
-cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH v4] lib: add size unit t/p/e to memparse
-In-Reply-To: <1402968140.9806.6.camel@localhost.localdomain>
-Message-ID: <alpine.DEB.2.02.1406161828180.21018@chino.kir.corp.google.com>
-References: <1402623746-1171-1-git-send-email-guihc.fnst@cn.fujitsu.com> <alpine.DEB.2.02.1406131457480.31981@chino.kir.corp.google.com> <1402968140.9806.6.camel@localhost.localdomain>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 16 Jun 2014 21:37:23 -0400
+Message-ID: <539F9B6C.1080802@huawei.com>
+Date: Tue, 17 Jun 2014 09:35:40 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Rafael Aquini <aquini@redhat.com>
+CC: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rik van Riel" <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH 0/8] mm: add page cache limit and reclaim feature
+References: <539EB7D6.8070401@huawei.com> <20140616111422.GA16915@dhcp22.suse.cz> <20140616125040.GA29993@optiplex.redhat.com>
+In-Reply-To: <20140616125040.GA29993@optiplex.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.25.179]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jun 2014, Gui Hecheng wrote:
+On 2014/6/16 20:50, Rafael Aquini wrote:
 
-> > > diff --git a/lib/cmdline.c b/lib/cmdline.c
-> > > index d4932f7..76a712e 100644
-> > > --- a/lib/cmdline.c
-> > > +++ b/lib/cmdline.c
-> > > @@ -121,11 +121,7 @@ EXPORT_SYMBOL(get_options);
-> > >   *	@retptr: (output) Optional pointer to next char after parse completes
-> > >   *
-> > >   *	Parses a string into a number.  The number stored at @ptr is
-> > > - *	potentially suffixed with %K (for kilobytes, or 1024 bytes),
-> > > - *	%M (for megabytes, or 1048576 bytes), or %G (for gigabytes, or
-> > > - *	1073741824).  If the number is suffixed with K, M, or G, then
-> > > - *	the return value is the number multiplied by one kilobyte, one
-> > > - *	megabyte, or one gigabyte, respectively.
-> > > + *	potentially suffixed with K, M, G, T, P, E.
-> > >   */
-> > >  
-> > >  unsigned long long memparse(const char *ptr, char **retptr)
-> > > @@ -135,6 +131,15 @@ unsigned long long memparse(const char *ptr, char **retptr)
-> > >  	unsigned long long ret = simple_strtoull(ptr, &endptr, 0);
-> > >  
-> > >  	switch (*endptr) {
-> > > +	case 'E':
-> > > +	case 'e':
-> > > +		ret <<= 10;
-> > > +	case 'P':
-> > > +	case 'p':
-> > > +		ret <<= 10;
-> > > +	case 'T':
-> > > +	case 't':
-> > > +		ret <<= 10;
-> > >  	case 'G':
-> > >  	case 'g':
-> > >  		ret <<= 10;
-> > 
-> > Seems fine since unsigned long long is always at least 64 bits, but 
-> > perhaps also change simple_strtoull() to use kstrtoull() at the same time 
-> > since the former is deprecated?
+> On Mon, Jun 16, 2014 at 01:14:22PM +0200, Michal Hocko wrote:
+>> On Mon 16-06-14 17:24:38, Xishi Qiu wrote:
+>>> When system(e.g. smart phone) running for a long time, the cache often takes
+>>> a large memory, maybe the free memory is less than 50M, then OOM will happen
+>>> if APP allocate a large order pages suddenly and memory reclaim too slowly. 
+>>
+>> Have you ever seen this to happen? Page cache should be easy to reclaim and
+>> if there is too mach dirty memory then you should be able to tune the
+>> amount by dirty_bytes/ratio knob. If the page allocator falls back to
+>> OOM and there is a lot of page cache then I would call it a bug. I do
+>> not think that limiting the amount of the page cache globally makes
+>> sense. There are Unix systems which offer this feature but I think it is
+>> a bad interface which only papers over the reclaim inefficiency or lack
+>> of other isolations between loads.
+>>
+> +1
 > 
-> Yes, that is a point. But the deprecated function is a separate problem
-> and may not be included in this patch.
-> Also, I find that simple_strtoull is used in many places in the kernel
-> code, it is better to replace it globally?
+> It would be good if you could show some numbers that serve as evidence
+> of your theory on "excessive" pagecache acting as a trigger to your
+> observed OOMs. I'm assuming, by your 'e.g', you're running a swapless
+> system, so I would think your system OOMs are due to inability to
+> reclaim anon memory, instead of pagecache.
 > 
 
-If you're going to have a go at replacing the simple_strto*() functions 
-throughout the kernel, it's probably better to do it per subsystem (as 
-defined by the separate sections of MAINTAINERS) and propose the patches 
-individually to those maintainers.  Once it has been removed entirely, you 
-can submit a patch to remove the functions themselves.
+Thank you for your reply.
+I'll try to find some examples in my company. 
 
-Be aware that there are many callers to the deprecated functions so it may 
-take a significant amount of time.
+>  
+>>> Use "echo 3 > /proc/sys/vm/drop_caches" will drop the whole cache, this will
+>>> affect the performance, so it is used for debugging only. 
+>>>
+> 
+> If you are able to drop the whole pagecache by issuing the command
+> above, than it means the majority of it is just unmapped cache pages, 
+> and those would be normally reclaimed upon demand by the PFRA. One more 
+> thing that makes me wonder you're just seeing the effect of a leaky app 
+> making the system unable to swap out anon pages.
+> 
+
+I find the page cache will only be reclaimed when there is not enough
+memory. And in some smart phones, there is no swap disk.
+So I add a parameter to reclaim in circles.
+
+Thanks,
+Xishi Qiu
+
+> 
+>>> suse has this feature, I tested it before, but it can not limit the page cache
+>>> actually. So I rewrite the feature and add some parameters.
+>>
+>> The feature is there for historic reasons and I _really_ think the
+>> interface is not appropriate. If there is a big pagecache usage which
+>> affects other loads then Memory cgroup controller can be used to help
+>> from interference.
+>>
+>>> Christoph Lameter has written a patch "Limit the size of the pagecache"
+>>> http://marc.info/?l=linux-mm&m=116959990228182&w=2
+>>> It changes in zone fallback, this is not a good way.
+>>>
+>>> The patchset is based on v3.15, it introduces two features, page cache limit
+>>> and page cache reclaim in circles.
+>>>
+>>> Add four parameters in /proc/sys/vm
+>>>
+>>> 1) cache_limit_mbytes
+>>> This is used to limit page cache amount.
+>>> The input unit is MB, value range is from 0 to totalram_pages.
+>>> If this is set to 0, it will not limit page cache.
+>>> When written to the file, cache_limit_ratio will be updated too.
+>>> The default value is 0.
+>>>
+>>> 2) cache_limit_ratio
+>>> This is used to limit page cache amount.
+>>> The input unit is percent, value range is from 0 to 100.
+>>> If this is set to 0, it will not limit page cache.
+>>> When written to the file, cache_limit_mbytes will be updated too.
+>>> The default value is 0.
+>>>
+>>> 3) cache_reclaim_s
+>>> This is used to reclaim page cache in circles.
+>>> The input unit is second, the minimum value is 0.
+>>> If this is set to 0, it will disable the feature.
+>>> The default value is 0.
+>>>
+>>> 4) cache_reclaim_weight
+>>> This is used to speed up page cache reclaim.
+>>> It depend on enabling cache_limit_mbytes/cache_limit_ratio or cache_reclaim_s.
+>>> Value range is from 1(slow) to 100(fast).
+>>> The default value is 1.
+>>>
+>>> I tested the two features on my system(x86_64), it seems to work right.
+>>> However, as it changes the hot path "add_to_page_cache_lru()", I don't know
+>>> how much it will the affect the performance, maybe there are some errors
+>>> in the patches too, RFC.
+>>
+>> I haven't looked at patches yet but you would need to explain why the
+>> feature is needed much better and why the existing features are not
+>> sufficient.
+>> -- 
+>> Michal Hocko
+>> SUSE Labs
+> 
+> .
+> 
+
+
+
