@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933692AbaFQQxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:53:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50602 "EHLO
+	id S965863AbaFQQxg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:53:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50605 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933949AbaFQQSw (ORCPT
+	with ESMTP id S933953AbaFQQSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:18:52 -0400
+	Tue, 17 Jun 2014 12:18:53 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 029/121] genirq: Allow forcing cpu affinity of interrupts
-Date: Tue, 17 Jun 2014 09:16:47 -0700
-Message-Id: <1403021899-16708-2-git-send-email-kamal@canonical.com>
+Cc: Miao Xie <miaox@cn.fujitsu.com>, Wang Shilong <wangsl.fnst@cn.fujitsu.com>,
+        Chris Mason <clm@fb.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 038/121] Btrfs: fix inode caching vs tree log
+Date: Tue, 17 Jun 2014 09:16:56 -0700
+Message-Id: <1403021899-16708-11-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
+References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,185 +27,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Miao Xie <miaox@cn.fujitsu.com>
 
-commit 01f8fa4f01d8362358eb90e412bd7ae18a3ec1ad upstream.
+commit 1c70d8fb4dfa95bee491816b2a6767b5ca1080e7 upstream.
 
-The current implementation of irq_set_affinity() refuses rightfully to
-route an interrupt to an offline cpu.
+Currently, with inode cache enabled, we will reuse its inode id immediately
+after unlinking file, we may hit something like following:
 
-But there is a special case, where this is actually desired. Some of
-the ARM SoCs have per cpu timers which require setting the affinity
-during cpu startup where the cpu is not yet in the online mask.
+|->iput inode
+|->return inode id into inode cache
+|->create dir,fsync
+|->power off
 
-If we can't do that, then the local timer interrupt for the about to
-become online cpu is routed to some random online cpu.
+An easy way to reproduce this problem is:
 
-The developers of the affected machines tried to work around that
-issue, but that results in a massive mess in that timer code.
+mkfs.btrfs -f /dev/sdb
+mount /dev/sdb /mnt -o inode_cache,commit=100
+dd if=/dev/zero of=/mnt/data bs=1M count=10 oflag=sync
+inode_id=`ls -i /mnt/data | awk '{print $1}'`
+rm -f /mnt/data
 
-We have a yet unused argument in the set_affinity callbacks of the irq
-chips, which I added back then for a similar reason. It was never
-required so it got not used. But I'm happy that I never removed it.
+i=1
+while [ 1 ]
+do
+        mkdir /mnt/dir_$i
+        test1=`stat /mnt/dir_$i | grep Inode: | awk '{print $4}'`
+        if [ $test1 -eq $inode_id ]
+        then
+		dd if=/dev/zero of=/mnt/dir_$i/data bs=1M count=1 oflag=sync
+		echo b > /proc/sysrq-trigger
+	fi
+	sleep 1
+        i=$(($i+1))
+done
 
-That allows us to implement a sane handling of the above scenario. So
-the affected SoC drivers can add the required force handling to their
-interrupt chip, switch the timer code to irq_force_affinity() and
-things just work.
+mount /dev/sdb /mnt
+umount /dev/sdb
+btrfs check /dev/sdb
 
-This does not affect any existing user of irq_set_affinity().
+We fix this problem by adding unlinked inode's id into pinned tree,
+and we can not reuse them until committing transaction.
 
-Tagged for stable to allow a simple fix of the affected SoC clock
-event drivers.
-
-Reported-and-tested-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Tomasz Figa <t.figa@samsung.com>,
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-Link: http://lkml.kernel.org/r/20140416143315.717251504@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
+Signed-off-by: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+Signed-off-by: Chris Mason <clm@fb.com>
+[ kamal: backport to 3.8-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/mips/cavium-octeon/octeon-irq.c |  2 +-
- include/linux/interrupt.h            | 35 ++++++++++++++++++++++++++++++++++-
- include/linux/irq.h                  |  3 ++-
- kernel/irq/manage.c                  | 17 ++++++-----------
- 4 files changed, 43 insertions(+), 14 deletions(-)
+ fs/btrfs/inode-map.c | 18 ++----------------
+ 1 file changed, 2 insertions(+), 16 deletions(-)
 
-diff --git a/arch/mips/cavium-octeon/octeon-irq.c b/arch/mips/cavium-octeon/octeon-irq.c
-index 46f5dbc..2e65798 100644
---- a/arch/mips/cavium-octeon/octeon-irq.c
-+++ b/arch/mips/cavium-octeon/octeon-irq.c
-@@ -635,7 +635,7 @@ static void octeon_irq_cpu_offline_ciu(struct irq_data *data)
- 		cpumask_clear(&new_affinity);
- 		cpumask_set_cpu(cpumask_first(cpu_online_mask), &new_affinity);
- 	}
--	__irq_set_affinity_locked(data, &new_affinity);
-+	irq_set_affinity_locked(data, &new_affinity, false);
- }
+diff --git a/fs/btrfs/inode-map.c b/fs/btrfs/inode-map.c
+index d26f67a..9e2a340 100644
+--- a/fs/btrfs/inode-map.c
++++ b/fs/btrfs/inode-map.c
+@@ -207,24 +207,14 @@ again:
  
- static int octeon_irq_ciu_set_affinity(struct irq_data *data,
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 5fa5afe..e8401d0 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -239,7 +239,40 @@ static inline int check_wakeup_irqs(void) { return 0; }
- 
- extern cpumask_var_t irq_default_affinity;
- 
--extern int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask);
-+/* Internal implementation. Use the helpers below */
-+extern int __irq_set_affinity(unsigned int irq, const struct cpumask *cpumask,
-+			      bool force);
-+
-+/**
-+ * irq_set_affinity - Set the irq affinity of a given irq
-+ * @irq:	Interrupt to set affinity
-+ * @mask:	cpumask
-+ *
-+ * Fails if cpumask does not contain an online CPU
-+ */
-+static inline int
-+irq_set_affinity(unsigned int irq, const struct cpumask *cpumask)
-+{
-+	return __irq_set_affinity(irq, cpumask, false);
-+}
-+
-+/**
-+ * irq_force_affinity - Force the irq affinity of a given irq
-+ * @irq:	Interrupt to set affinity
-+ * @mask:	cpumask
-+ *
-+ * Same as irq_set_affinity, but without checking the mask against
-+ * online cpus.
-+ *
-+ * Solely for low level cpu hotplug code, where we need to make per
-+ * cpu interrupts affine before the cpu becomes online.
-+ */
-+static inline int
-+irq_force_affinity(unsigned int irq, const struct cpumask *cpumask)
-+{
-+	return __irq_set_affinity(irq, cpumask, true);
-+}
-+
- extern int irq_can_set_affinity(unsigned int irq);
- extern int irq_select_affinity(unsigned int irq);
- 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index fdf2c4a..46e1b1e 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -375,7 +375,8 @@ extern void remove_percpu_irq(unsigned int irq, struct irqaction *act);
- 
- extern void irq_cpu_online(void);
- extern void irq_cpu_offline(void);
--extern int __irq_set_affinity_locked(struct irq_data *data,  const struct cpumask *cpumask);
-+extern int irq_set_affinity_locked(struct irq_data *data,
-+				   const struct cpumask *cpumask, bool force);
- 
- #ifdef CONFIG_GENERIC_HARDIRQS
- 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index f3feefc..edbe80e 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -149,7 +149,7 @@ int irq_do_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 	struct irq_chip *chip = irq_data_get_irq_chip(data);
- 	int ret;
- 
--	ret = chip->irq_set_affinity(data, mask, false);
-+	ret = chip->irq_set_affinity(data, mask, force);
- 	switch (ret) {
- 	case IRQ_SET_MASK_OK:
- 		cpumask_copy(data->affinity, mask);
-@@ -161,7 +161,8 @@ int irq_do_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 	return ret;
- }
- 
--int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
-+int irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask,
-+			    bool force)
+ void btrfs_return_ino(struct btrfs_root *root, u64 objectid)
  {
- 	struct irq_chip *chip = irq_data_get_irq_chip(data);
- 	struct irq_desc *desc = irq_data_to_desc(data);
-@@ -171,7 +172,7 @@ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
- 		return -EINVAL;
+-	struct btrfs_free_space_ctl *ctl = root->free_ino_ctl;
+ 	struct btrfs_free_space_ctl *pinned = root->free_ino_pinned;
  
- 	if (irq_can_move_pcntxt(data)) {
--		ret = irq_do_set_affinity(data, mask, false);
-+		ret = irq_do_set_affinity(data, mask, force);
+ 	if (!btrfs_test_opt(root, INODE_MAP_CACHE))
+ 		return;
+-
+ again:
+ 	if (root->cached == BTRFS_CACHE_FINISHED) {
+-		__btrfs_add_free_space(ctl, objectid, 1);
++		__btrfs_add_free_space(pinned, objectid, 1);
  	} else {
- 		irqd_set_move_pending(data);
- 		irq_copy_pending(desc, mask);
-@@ -186,13 +187,7 @@ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
- 	return ret;
- }
+-		/*
+-		 * If we are in the process of caching free ino chunks,
+-		 * to avoid adding the same inode number to the free_ino
+-		 * tree twice due to cross transaction, we'll leave it
+-		 * in the pinned tree until a transaction is committed
+-		 * or the caching work is done.
+-		 */
+-
+ 		mutex_lock(&root->fs_commit_mutex);
+ 		spin_lock(&root->cache_lock);
+ 		if (root->cached == BTRFS_CACHE_FINISHED) {
+@@ -236,11 +226,7 @@ again:
  
--/**
-- *	irq_set_affinity - Set the irq affinity of a given irq
-- *	@irq:		Interrupt to set affinity
-- *	@mask:		cpumask
-- *
-- */
--int irq_set_affinity(unsigned int irq, const struct cpumask *mask)
-+int __irq_set_affinity(unsigned int irq, const struct cpumask *mask, bool force)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
- 	unsigned long flags;
-@@ -202,7 +197,7 @@ int irq_set_affinity(unsigned int irq, const struct cpumask *mask)
- 		return -EINVAL;
+ 		start_caching(root);
  
- 	raw_spin_lock_irqsave(&desc->lock, flags);
--	ret =  __irq_set_affinity_locked(irq_desc_get_irq_data(desc), mask);
-+	ret = irq_set_affinity_locked(irq_desc_get_irq_data(desc), mask, force);
- 	raw_spin_unlock_irqrestore(&desc->lock, flags);
- 	return ret;
- }
+-		if (objectid <= root->cache_progress ||
+-		    objectid > root->highest_objectid)
+-			__btrfs_add_free_space(ctl, objectid, 1);
+-		else
+-			__btrfs_add_free_space(pinned, objectid, 1);
++		__btrfs_add_free_space(pinned, objectid, 1);
+ 
+ 		mutex_unlock(&root->fs_commit_mutex);
+ 	}
 -- 
 1.9.1
 
