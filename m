@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967568AbaFQWm4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:42:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53897 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965999AbaFQVrh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:47:37 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Josef Gajdusek <atx@atx.name>, Guenter Roeck <linux@roeck-us.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 109/212] hwmon: (emc1403) fix inverted store_hyst()
-Date: Tue, 17 Jun 2014 14:43:23 -0700
-Message-Id: <1403041506-13646-110-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S966723AbaFQWtg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:49:36 -0400
+Received: from ozlabs.org ([103.22.144.67]:35333 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965537AbaFQWtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 18:49:33 -0400
+Date: Wed, 18 Jun 2014 08:49:21 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: the cgroup tree has an unnecessary merge
+Message-ID: <20140618084921.07c3b391@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/ABg9P+6gYD0JuDacTjLrBia"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.4 -stable review patch.  If anyone has any objections, please let me know.
+--Sig_/ABg9P+6gYD0JuDacTjLrBia
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi Tejun,
 
-From: Josef Gajdusek <atx@atx.name>
+The cgroup tree has a merge of 963649d735c8 and c731ae1d0f02 both of
+which are already merged into v3.16-rc1.  Why did you just not use
+v3.16-rc1 itself (or the point where Linus merged your tree) (and then
+add the other commit on top?  That would have removed any chance that
+you resolved the merged differently to how it was resolved in Linus'
+tree (I don't know if there is a difference, but I have had conflicts
+from different merge resolutions in the past).
 
-commit 17c048fc4bd95efea208a1920f169547d8588f1f upstream.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Attempts to set the hysteresis value to a temperature below the target
-limit fails with "write error: Numerical result out of range" due to
-an inverted comparison.
+--Sig_/ABg9P+6gYD0JuDacTjLrBia
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Signed-off-by: Josef Gajdusek <atx@atx.name>
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
-[Guenter Roeck: Updated headline and description]
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/hwmon/emc1403.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-diff --git a/drivers/hwmon/emc1403.c b/drivers/hwmon/emc1403.c
-index 90ec117..61d89d6 100644
---- a/drivers/hwmon/emc1403.c
-+++ b/drivers/hwmon/emc1403.c
-@@ -163,7 +163,7 @@ static ssize_t store_hyst(struct device *dev,
- 	if (retval < 0)
- 		goto fail;
- 
--	hyst = val - retval * 1000;
-+	hyst = retval * 1000 - val;
- 	hyst = DIV_ROUND_CLOSEST(hyst, 1000);
- 	if (hyst < 0 || hyst > 255) {
- 		retval = -ERANGE;
--- 
-1.9.1
+iQIcBAEBCAAGBQJToMX7AAoJEMDTa8Ir7ZwVZy8QAI9Q+WGFT4lfguPftwK1J/c6
+fq3RjC81hEjhheo3+tqoonASO5ySifCH/TH2Ow90ono4mvPh6jT3GrQPpPTvp3lZ
+F1DliAIdHh37RumNes2ECTyiXv+mOaQ4bl+Oo6W9zA/ni5+rvvCE+G5Z9QcDBFzH
+jZ2SRSJpU28JMDI16HW56kzAsROYBmf+nNcdTt7LDv3lUvquAhPqAcYG6PC9ltyS
+JZjjL1zXfWNRMIorXsdCtodONRiFJ9HCC/VLT9W7Lt/B7Q44oTXjqAj/5vGBhlyL
+ZQYV+dzS7RWMyuFZRWcRR5BNQU5Tbk8WWCX9OR9ye1CYk+rcOzh8kNHmvEsi1/fT
+HGLeTmJtYgBz+YB13IbY1jHHBtnY4Q+aQpjf5sZ62R7JufJQt4zo54CC9a5e9pUd
+snovff7xuqrR3QBIeQ6bwtoqX0v4CSTkQbiEQdow5yZF9TlX/ujYDd6MmYK/zdYu
+XUFpRPb5RNGzI36HiEWolMcynNS3SLIYYaXDANXFUBt0v5qUtZgj7KfKyLDJ2Tlg
+MNtOoIWbwKmj/9hh2D1GK3qT/Oo4Cu/4WU6Au7bOzSnzmNDNOCyDK/4TxlGrEF2t
+oxc3DKF9v8QMlc2iNbDAXRchULmoJooCDLNBoS0GHbCmijRQfitAP4YqDEXW7vQM
+bu16ndceE3grPn5snwy/
+=ySI5
+-----END PGP SIGNATURE-----
 
+--Sig_/ABg9P+6gYD0JuDacTjLrBia--
