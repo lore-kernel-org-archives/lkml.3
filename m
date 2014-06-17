@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967519AbaFQWEw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:04:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54778 "EHLO
+	id S967504AbaFQWEv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:04:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54781 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966975AbaFQVwM (ORCPT
+	with ESMTP id S967018AbaFQVwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 17 Jun 2014 17:52:12 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiada Wang <jiada_wang@mentor.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Mike Turquette <mturquette@linaro.org>,
+Cc: Willy Tarreau <w@1wt.eu>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 084/212] clk: Fix double free due to devm_clk_register()
-Date: Tue, 17 Jun 2014 14:42:58 -0700
-Message-Id: <1403041506-13646-85-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 076/212] PCI: mvebu: fix off-by-one in the computed size of the mbus windows
+Date: Tue, 17 Jun 2014 14:42:50 -0700
+Message-Id: <1403041506-13646-77-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -31,165 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Willy Tarreau <w@1wt.eu>
 
-commit 293ba3b4a4fd54891b900f2911d1a57e1ed4a843 upstream.
+commit b6d07e0273d3296cfbdc88145b8a00ddbefb310a upstream.
 
-Now that clk_unregister() frees the struct clk we're
-unregistering we'll free memory twice: first we'll call kfree()
-in __clk_release() with an address kmalloc doesn't know about and
-second we'll call kfree() in the devres layer. Remove the
-allocation of struct clk in devm_clk_register() and let
-clk_release() handle it. This fixes slab errors like:
+mvebu_pcie_handle_membase_change() and
+mvebu_pcie_handle_iobase_change() do not correctly compute the window
+size. PCI uses an inclusive start/end address pair, which requires a
++1 when converting to size.
 
-=============================================================================
-BUG kmalloc-128 (Not tainted): Invalid object pointer 0xed08e8d0
------------------------------------------------------------------------------
+This only worked because a bug in the mbus driver allowed it to
+silently accept and round up bogus sizes.
 
-Disabling lock debugging due to kernel taint
-INFO: Slab 0xeec503f8 objects=25 used=15 fp=0xed08ea00 flags=0x4081
-CPU: 2 PID: 73 Comm: rmmod Tainted: G    B         3.14.0-11032-g526e9c764381 #34
-[<c0014be0>] (unwind_backtrace) from [<c0012240>] (show_stack+0x10/0x14)
-[<c0012240>] (show_stack) from [<c04b74dc>] (dump_stack+0x70/0xbc)
-[<c04b74dc>] (dump_stack) from [<c00f6778>] (slab_err+0x74/0x84)
-[<c00f6778>] (slab_err) from [<c04b6278>] (free_debug_processing+0x2cc/0x31c)
-[<c04b6278>] (free_debug_processing) from [<c04b6300>] (__slab_free+0x38/0x41c)
-[<c04b6300>] (__slab_free) from [<c03931bc>] (clk_unregister+0xd4/0x140)
-[<c03931bc>] (clk_unregister) from [<c02fb774>] (release_nodes+0x164/0x1d8)
-[<c02fb774>] (release_nodes) from [<c02f8698>] (__device_release_driver+0x60/0xb0)
-[<c02f8698>] (__device_release_driver) from [<c02f9080>] (driver_detach+0xb4/0xb8)
-[<c02f9080>] (driver_detach) from [<c02f8480>] (bus_remove_driver+0x5c/0xc4)
-[<c02f8480>] (bus_remove_driver) from [<c008c9b8>] (SyS_delete_module+0x148/0x1d8)
-[<c008c9b8>] (SyS_delete_module) from [<c000ef80>] (ret_fast_syscall+0x0/0x48)
-FIX kmalloc-128: Object at 0xed08e8d0 not freed
+Fix this by adding one to the computed size.
 
-Fixes: fcb0ee6a3d33 (clk: Implement clk_unregister)
-Cc: Jiada Wang <jiada_wang@mentor.com>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
+Fixes: 45361a4fe446 ('PCIe driver for Marvell Armada 370/XP systems')
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+Reviewed-By: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Link: https://lkml.kernel.org/r/1397823593-1932-5-git-send-email-thomas.petazzoni@free-electrons.com
+Tested-by: Neil Greatorex <neil@fatboyfat.co.uk>
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/clk/clk.c | 71 +++++++++++++++++++++++--------------------------------
- 1 file changed, 30 insertions(+), 41 deletions(-)
+ drivers/pci/host/pci-mvebu.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 2cf2ea6..ec3dde3 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -1819,9 +1819,28 @@ struct clk *__clk_register(struct device *dev, struct clk_hw *hw)
- }
- EXPORT_SYMBOL_GPL(__clk_register);
+diff --git a/drivers/pci/host/pci-mvebu.c b/drivers/pci/host/pci-mvebu.c
+index f26731c..045cbb5 100644
+--- a/drivers/pci/host/pci-mvebu.c
++++ b/drivers/pci/host/pci-mvebu.c
+@@ -317,7 +317,7 @@ static void mvebu_pcie_handle_iobase_change(struct mvebu_pcie_port *port)
+ 	port->iowin_base = port->pcie->io.start + iobase;
+ 	port->iowin_size = ((0xFFF | ((port->bridge.iolimit & 0xF0) << 8) |
+ 			    (port->bridge.iolimitupper << 16)) -
+-			    iobase);
++			    iobase) + 1;
  
--static int _clk_register(struct device *dev, struct clk_hw *hw, struct clk *clk)
-+/**
-+ * clk_register - allocate a new clock, register it and return an opaque cookie
-+ * @dev: device that is registering this clock
-+ * @hw: link to hardware-specific clock data
-+ *
-+ * clk_register is the primary interface for populating the clock tree with new
-+ * clock nodes.  It returns a pointer to the newly allocated struct clk which
-+ * cannot be dereferenced by driver code but may be used in conjuction with the
-+ * rest of the clock API.  In the event of an error clk_register will return an
-+ * error code; drivers must test for an error code after calling clk_register.
-+ */
-+struct clk *clk_register(struct device *dev, struct clk_hw *hw)
- {
- 	int i, ret;
-+	struct clk *clk;
-+
-+	clk = kzalloc(sizeof(*clk), GFP_KERNEL);
-+	if (!clk) {
-+		pr_err("%s: could not allocate clk\n", __func__);
-+		ret = -ENOMEM;
-+		goto fail_out;
-+	}
+ 	mvebu_mbus_add_window_remap_by_id(port->io_target, port->io_attr,
+ 					  port->iowin_base, port->iowin_size,
+@@ -351,7 +351,7 @@ static void mvebu_pcie_handle_membase_change(struct mvebu_pcie_port *port)
+ 	port->memwin_base  = ((port->bridge.membase & 0xFFF0) << 16);
+ 	port->memwin_size  =
+ 		(((port->bridge.memlimit & 0xFFF0) << 16) | 0xFFFFF) -
+-		port->memwin_base;
++		port->memwin_base + 1;
  
- 	clk->name = kstrdup(hw->init->name, GFP_KERNEL);
- 	if (!clk->name) {
-@@ -1859,7 +1878,7 @@ static int _clk_register(struct device *dev, struct clk_hw *hw, struct clk *clk)
- 
- 	ret = __clk_init(dev, clk);
- 	if (!ret)
--		return 0;
-+		return clk;
- 
- fail_parent_names_copy:
- 	while (--i >= 0)
-@@ -1868,36 +1887,6 @@ fail_parent_names_copy:
- fail_parent_names:
- 	kfree(clk->name);
- fail_name:
--	return ret;
--}
--
--/**
-- * clk_register - allocate a new clock, register it and return an opaque cookie
-- * @dev: device that is registering this clock
-- * @hw: link to hardware-specific clock data
-- *
-- * clk_register is the primary interface for populating the clock tree with new
-- * clock nodes.  It returns a pointer to the newly allocated struct clk which
-- * cannot be dereferenced by driver code but may be used in conjuction with the
-- * rest of the clock API.  In the event of an error clk_register will return an
-- * error code; drivers must test for an error code after calling clk_register.
-- */
--struct clk *clk_register(struct device *dev, struct clk_hw *hw)
--{
--	int ret;
--	struct clk *clk;
--
--	clk = kzalloc(sizeof(*clk), GFP_KERNEL);
--	if (!clk) {
--		pr_err("%s: could not allocate clk\n", __func__);
--		ret = -ENOMEM;
--		goto fail_out;
--	}
--
--	ret = _clk_register(dev, hw, clk);
--	if (!ret)
--		return clk;
--
- 	kfree(clk);
- fail_out:
- 	return ERR_PTR(ret);
-@@ -1915,7 +1904,7 @@ EXPORT_SYMBOL_GPL(clk_unregister);
- 
- static void devm_clk_release(struct device *dev, void *res)
- {
--	clk_unregister(res);
-+	clk_unregister(*(struct clk **)res);
- }
- 
- /**
-@@ -1930,18 +1919,18 @@ static void devm_clk_release(struct device *dev, void *res)
- struct clk *devm_clk_register(struct device *dev, struct clk_hw *hw)
- {
- 	struct clk *clk;
--	int ret;
-+	struct clk **clkp;
- 
--	clk = devres_alloc(devm_clk_release, sizeof(*clk), GFP_KERNEL);
--	if (!clk)
-+	clkp = devres_alloc(devm_clk_release, sizeof(*clkp), GFP_KERNEL);
-+	if (!clkp)
- 		return ERR_PTR(-ENOMEM);
- 
--	ret = _clk_register(dev, hw, clk);
--	if (!ret) {
--		devres_add(dev, clk);
-+	clk = clk_register(dev, hw);
-+	if (!IS_ERR(clk)) {
-+		*clkp = clk;
-+		devres_add(dev, clkp);
- 	} else {
--		devres_free(clk);
--		clk = ERR_PTR(ret);
-+		devres_free(clkp);
- 	}
- 
- 	return clk;
+ 	mvebu_mbus_add_window_by_id(port->mem_target, port->mem_attr,
+ 				    port->memwin_base, port->memwin_size);
 -- 
 1.9.1
 
