@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245AbaFQCXm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 22:23:42 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:55045 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932081AbaFQCXb (ORCPT
+	id S932212AbaFQCXl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 22:23:41 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:44932 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754546AbaFQCX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 22:23:31 -0400
+	Mon, 16 Jun 2014 22:23:29 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: x86@kernel.org, linux-kernel@vger.kernel.org
 Cc: Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 5/8] x86,vdso: Replace vgetcpu_mode with static_cpu_has
-Date: Mon, 16 Jun 2014 19:23:12 -0700
-Message-Id: <bf8e4f307638fd71b807e848f48de03f8227eec6.1402971639.git.luto@amacapital.net>
+Subject: [PATCH 4/8] x86_64,vdso: Remove jiffies from the vvar page
+Date: Mon, 16 Jun 2014 19:23:11 -0700
+Message-Id: <0dc0031c4de3bc394204540577d731900cca0fe0.1402971639.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1402971639.git.luto@amacapital.net>
 References: <cover.1402971639.git.luto@amacapital.net>
@@ -22,193 +22,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The vdso has supported alternatives for a while; use them instead of
-a vvar to select the vgetcpu mode.
+I think that the jiffies vvar was once used for the vgetcpu cache.
+That code is long gone, so let's just make jiffies be a normal
+variable.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/include/asm/vgtod.h    | 21 +++++++++++++++++++++
- arch/x86/include/asm/vsyscall.h | 29 -----------------------------
- arch/x86/include/asm/vvar.h     |  1 -
- arch/x86/kernel/cpu/common.c    | 10 ----------
- arch/x86/kernel/vsyscall_64.c   |  2 --
- arch/x86/vdso/vclock_gettime.c  |  3 +++
- arch/x86/vdso/vgetcpu.c         |  4 +++-
- arch/x86/vdso/vma.c             |  1 +
- 8 files changed, 28 insertions(+), 43 deletions(-)
+ arch/x86/include/asm/vvar.h | 1 -
+ arch/x86/kernel/time.c      | 2 +-
+ arch/x86/vdso/vgetcpu.c     | 1 -
+ 3 files changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/vgtod.h b/arch/x86/include/asm/vgtod.h
-index 3c3366c..44e0037 100644
---- a/arch/x86/include/asm/vgtod.h
-+++ b/arch/x86/include/asm/vgtod.h
-@@ -70,4 +70,25 @@ static inline void gtod_write_end(struct vsyscall_gtod_data *s)
- 	++s->seq;
- }
- 
-+#ifdef CONFIG_X86_64
-+
-+#define VGETCPU_CPU_MASK 0xfff
-+
-+static inline unsigned int __getcpu(void)
-+{
-+	unsigned int p;
-+
-+	if (static_cpu_has(X86_FEATURE_RDTSCP)) {
-+		/* Load per CPU data from RDTSCP */
-+		native_read_tscp(&p);
-+	} else {
-+		/* Load per CPU data from GDT */
-+		asm("lsl %1,%0" : "=r" (p) : "r" (__PER_CPU_SEG));
-+	}
-+
-+	return p;
-+}
-+
-+#endif /* CONFIG_X86_64 */
-+
- #endif /* _ASM_X86_VGTOD_H */
-diff --git a/arch/x86/include/asm/vsyscall.h b/arch/x86/include/asm/vsyscall.h
-index 2a46ca7..34f7d88 100644
---- a/arch/x86/include/asm/vsyscall.h
-+++ b/arch/x86/include/asm/vsyscall.h
-@@ -4,15 +4,6 @@
- #include <linux/seqlock.h>
- #include <uapi/asm/vsyscall.h>
- 
--#define VGETCPU_RDTSCP	1
--#define VGETCPU_LSL	2
--
--/* kernel space (writeable) */
--extern int vgetcpu_mode;
--extern struct timezone sys_tz;
--
--#include <asm/vvar.h>
--
- extern void map_vsyscall(void);
- 
- /*
-@@ -21,24 +12,4 @@ extern void map_vsyscall(void);
-  */
- extern bool emulate_vsyscall(struct pt_regs *regs, unsigned long address);
- 
--#ifdef CONFIG_X86_64
--
--#define VGETCPU_CPU_MASK 0xfff
--
--static inline unsigned int __getcpu(void)
--{
--	unsigned int p;
--
--	if (VVAR(vgetcpu_mode) == VGETCPU_RDTSCP) {
--		/* Load per CPU data from RDTSCP */
--		native_read_tscp(&p);
--	} else {
--		/* Load per CPU data from GDT */
--		asm("lsl %1,%0" : "=r" (p) : "r" (__PER_CPU_SEG));
--	}
--
--	return p;
--}
--#endif /* CONFIG_X86_64 */
--
- #endif /* _ASM_X86_VSYSCALL_H */
 diff --git a/arch/x86/include/asm/vvar.h b/arch/x86/include/asm/vvar.h
-index 5f6d407..3f32dfc 100644
+index 5d2b9ad..5f6d407 100644
 --- a/arch/x86/include/asm/vvar.h
 +++ b/arch/x86/include/asm/vvar.h
 @@ -44,7 +44,6 @@ extern char __vvar_page;
  
  /* DECLARE_VVAR(offset, type, name) */
  
--DECLARE_VVAR(16, int, vgetcpu_mode)
+-DECLARE_VVAR(0, volatile unsigned long, jiffies)
+ DECLARE_VVAR(16, int, vgetcpu_mode)
  DECLARE_VVAR(128, struct vsyscall_gtod_data, vsyscall_gtod_data)
  
- #undef DECLARE_VVAR
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 2cbbf88..cc41df0 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -947,14 +947,6 @@ static void identify_cpu(struct cpuinfo_x86 *c)
- }
+diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
+index bf7ef5c..822773b 100644
+--- a/arch/x86/kernel/time.c
++++ b/arch/x86/kernel/time.c
+@@ -23,7 +23,7 @@
+ #include <asm/time.h>
  
  #ifdef CONFIG_X86_64
--static void vgetcpu_set_mode(void)
--{
--	if (cpu_has(&boot_cpu_data, X86_FEATURE_RDTSCP))
--		vgetcpu_mode = VGETCPU_RDTSCP;
--	else
--		vgetcpu_mode = VGETCPU_LSL;
--}
--
- /* May not be __init: called during resume */
- static void syscall32_cpu_init(void)
- {
-@@ -995,8 +987,6 @@ void __init identify_boot_cpu(void)
- #ifdef CONFIG_X86_32
- 	sysenter_setup();
- 	enable_sep_cpu();
--#else
--	vgetcpu_set_mode();
+-__visible DEFINE_VVAR(volatile unsigned long, jiffies) = INITIAL_JIFFIES;
++__visible volatile unsigned long jiffies __cacheline_aligned = INITIAL_JIFFIES;
  #endif
- 	cpu_detect_tlb(&boot_cpu_data);
- }
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 6463f9e..dd1b322 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -52,8 +52,6 @@
- #define CREATE_TRACE_POINTS
- #include "vsyscall_trace.h"
  
--DEFINE_VVAR(int, vgetcpu_mode);
--
- static enum { EMULATE, NATIVE, NONE } vsyscall_mode = EMULATE;
- 
- static int __init vsyscall_setup(char *str)
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index b2e4f49..87df0af 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -14,6 +14,9 @@
- /* Disable profiling for userspace code: */
- #define DISABLE_BRANCH_PROFILING
- 
-+/* Disable static_cpu_has debugging; it doesn't work in the vDSO */
-+#undef CONFIG_X86_DEBUG_STATIC_CPU_HAS
-+
- #include <uapi/linux/time.h>
- #include <asm/vgtod.h>
- #include <asm/hpet.h>
+ unsigned long profile_pc(struct pt_regs *regs)
 diff --git a/arch/x86/vdso/vgetcpu.c b/arch/x86/vdso/vgetcpu.c
-index add1d98..fd8470c 100644
+index 2f94b03..add1d98 100644
 --- a/arch/x86/vdso/vgetcpu.c
 +++ b/arch/x86/vdso/vgetcpu.c
-@@ -5,10 +5,12 @@
-  * Fast user context implementation of getcpu()
-  */
+@@ -7,7 +7,6 @@
  
-+/* Disable static_cpu_has debugging; it doesn't work in the vDSO */
-+#undef CONFIG_X86_DEBUG_STATIC_CPU_HAS
-+
  #include <linux/kernel.h>
  #include <linux/getcpu.h>
+-#include <linux/jiffies.h>
  #include <linux/time.h>
--#include <asm/vsyscall.h>
+ #include <asm/vsyscall.h>
  #include <asm/vgtod.h>
- 
- notrace long
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index e1513c4..67a8b6c 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -16,6 +16,7 @@
- #include <asm/vdso.h>
- #include <asm/page.h>
- #include <asm/hpet.h>
-+#include <asm/vvar.h>
- 
- #if defined(CONFIG_X86_64)
- unsigned int __read_mostly vdso64_enabled = 1;
 -- 
 1.9.3
 
