@@ -1,162 +1,450 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933096AbaFQOuo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 10:50:44 -0400
-Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:12704
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932975AbaFQOul convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 10:50:41 -0400
-From: Stuart Yoder <stuart.yoder@freescale.com>
-To: Varun Sethi <Varun.Sethi@freescale.com>, Will Deacon <will.deacon@arm.com>
-CC: Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, "Pawel Moll" <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Grundler <grundler@chromium.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
-Thread-Topic: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
-Thread-Index: AQHPdsaiUOp/jHgCJ0WWjZOTtpbJjZtZJRKAgABh1wCAAAcqgIAABQyAgAQdoQCAA2YSAIAAI08AgAG4pNCAEQ6xgIAAEv9AgAAIAACAAA57IIABBsywgAASjACAAAUA0IAAPgNA
-Date: Tue, 17 Jun 2014 14:50:25 +0000
-Message-ID: <7c03c5cffa174b20962bff3b09de0eb8@DM2PR03MB352.namprd03.prod.outlook.com>
-References: <5288123.eXagyPAxNq@wuerfel>
-	<20140602104104.GD3855@e103592.cambridge.arm.com>
-	<20140604143509.GF28484@ulmo> <20140604164132.GF6644@arm.com>
-	<07321368d15d4ad9928ebb83af87e401@DM2PR03MB479.namprd03.prod.outlook.com>
-	<20140616152739.GS16758@arm.com>
-	<8b0492b4697943a0b1f276ef42cc8223@DM2PR03MB352.namprd03.prod.outlook.com>
-	<20140616170416.GA16758@arm.com>
-	<419e67f783524d208ab3be16bcd94bd9@DM2PR03MB352.namprd03.prod.outlook.com>
-	<0587e1f4894546398be0798d2bc2c84f@BL2PR03MB468.namprd03.prod.outlook.com>
- <20140617104304.GD13808@arm.com>
- <32165315f0b84be9948f489fd87bf6a9@BL2PR03MB468.namprd03.prod.outlook.com>
-In-Reply-To: <32165315f0b84be9948f489fd87bf6a9@BL2PR03MB468.namprd03.prod.outlook.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.168.49]
-x-microsoft-antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-x-forefront-prvs: 0245702D7B
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(13464003)(24454002)(51704005)(377454003)(189002)(199002)(33646001)(79102001)(81342001)(85852003)(81542001)(99396002)(101416001)(66066001)(80022001)(50986999)(86362001)(95666004)(76176999)(83072002)(20776003)(4396001)(99286002)(19580405001)(83322001)(46102001)(85306003)(93886003)(77982001)(21056001)(2656002)(76482001)(31966008)(87936001)(74502001)(105586001)(74316001)(19580395003)(92566001)(76576001)(64706001)(54356999)(74662001)(41533002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB480;H:DM2PR03MB352.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=stuart.yoder@freescale.com; 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S933156AbaFQOwG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 10:52:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54126 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932973AbaFQOwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 10:52:04 -0400
+Date: Tue, 17 Jun 2014 16:52:01 +0200
+From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: hpa@linux.intel.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Michal Hocko <mhocko@suse.cz>, Joe Perches <joe@perches.com>,
+        Arun KS <arunks.linux@gmail.com>, Kees Cook <keescook@chromium.org>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [RFT v5h printk: allow increasing the ring buffer depending on
+ the number of CPUs
+Message-ID: <20140617145200.GA634@pathway.suse.cz>
+References: <1402965464-11202-1-git-send-email-mcgrof@do-not-panic.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402965464-11202-1-git-send-email-mcgrof@do-not-panic.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Sethi Varun-B16395
-> Sent: Tuesday, June 17, 2014 6:22 AM
-> To: Will Deacon
-> Cc: Mark Rutland; devicetree@vger.kernel.org; linux-samsung-
-> soc@vger.kernel.org; Arnd Bergmann; Pawel Moll; Ian Campbell; Grant
-> Grundler; Stephen Warren; Yoder Stuart-B08248; Rob Herring; linux-
-> kernel@vger.kernel.org; Marc Zyngier; Linux IOMMU; Thierry Reding; Kumar
-> Gala; linux-tegra@vger.kernel.org; Cho KyongHo; Dave P Martin; linux-arm-
-> kernel@lists.infradead.org
-> Subject: RE: [PATCH v2] devicetree: Add generic IOMMU device tree
-> bindings
+On Mon 2014-06-16 17:37:44, Luis R. Rodriguez wrote:
+> From: "Luis R. Rodriguez" <mcgrof@suse.com>
 > 
+> The default size of the ring buffer is too small for machines
+> with a large amount of CPUs under heavy load. What ends up
+> happening when debugging is the ring buffer overlaps and chews
+> up old messages making debugging impossible unless the size is
+> passed as a kernel parameter. An idle system upon boot up will
+> on average spew out only about one or two extra lines but where
+> this really matters is on heavy load and that will vary widely
+> depending on the system and environment.
 > 
+> There are mechanisms to help increase the kernel ring buffer
+> for tracing through debugfs, and those interfaces even allow growing
+> the kernel ring buffer per CPU. We also have a static value which
+> can be passed upon boot. Relying on debugfs however is not ideal
+> for production, and relying on the value passed upon bootup is
+> can only used *after* an issue has creeped up. Instead of being
+> reactive this adds a proactive measure which lets you scale the
+> amount of contributions you'd expect to the kernel ring buffer
+> under load by each CPU in the worst case scenario.
 > 
-> > -----Original Message-----
-> > From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
-> > bounces@lists.linux-foundation.org] On Behalf Of Will Deacon
-> > Sent: Tuesday, June 17, 2014 4:13 PM
-> > To: Sethi Varun-B16395
-> > Cc: Mark Rutland; devicetree@vger.kernel.org; linux-samsung-
-> > soc@vger.kernel.org; Arnd Bergmann; Pawel Moll; Ian Campbell; Grant
-> > Grundler; Stephen Warren; Yoder Stuart-B08248; Rob Herring; linux-
-> > kernel@vger.kernel.org; Marc Zyngier; Linux IOMMU; Thierry Reding;
-> Kumar
-> > Gala; linux-tegra@vger.kernel.org; Cho KyongHo; Dave P Martin; linux-
-> arm-
-> > kernel@lists.infradead.org
-> > Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree
-> > bindings
-> >
-> > On Tue, Jun 17, 2014 at 11:26:48AM +0100, Varun Sethi wrote:
-> > > > The way we generally thought it would work was something like
-> > > > this:
-> > > >    -u-boot/bootloader makes any static streamID allocation if
-> needed,
-> > > >     sets a default streamID  (e.g. 0x0) in device and expresses
-> > > >     that in the device tree
-> > > >    -device tree would express relationship between devices
-> > > >     (including bus controllers) and the SMMU through mmu-masters
-> > > >     property
-> > > >    -u-boot would express the range of unused (or used) streamIDs
-> via
-> > > > a new
-> > > >     device tree property so the kernel SMMU driver knows what
-> > > > streamIDs are
-> > > >     free
-> > > >    -in the SMMU driver a different vendor specific 'add_device'
-> > callback
-> > > >     could be used to handle our special cases where we need to
-> > set/change
-> > > >     the stream ID for devices added to a domain
-> > >
-> > > Another possibility, could be to program the stream Id in the device
-> > > registers (reference for the stream ID register can be obtained from
-> > > the device tree) during device attach. This could be relevant in case
-> > > of VFIO, when we are assigning multiple devices to a single VM. All
-> > > the devices can share the same stream ID.
-> >
-> > I think for simple masters (i.e. those that have all their StreamIDs
-> > under control of one driver), then setting something during attach (or
-> > add?) based on the DT could work pretty well. The other case is when we
-> > have masters behind a bridge (such as a PCI RC). In this case, it might
-> > actually be better to ask the bridge for the IDs and let it sort out
-> the
-> > allocation itself. That would also move the RequesterID -> StreamID
-> > mapping out of the SMMU code.
-> >
-> > What do you think?
-> The PCI bus iommu group creation code would be part of the SMMU driver
-> (it is handled by other IOMMU drivers as well). My understanding is that
-> there would be one is to one correspondence between the requestor ID and
-> the iommu group. May be, we can have an API provided by the PCI bridge
-> (architecture specific) for setting the stream ID.
+> We use num_possible_cpus() to avoid complexities which could be
+> introduced by dynamically changing the ring buffer size at run
+> time, num_possible_cpus() lets us use the upper limit on possible
+> number of CPUs therefore avoiding having to deal with hotplugging
+> CPUs on and off. This introduces the kernel configuration option
+> LOG_CPU_MIN_BUF_SHIFT which is used to specify the maximum amount
+> of contributions to the kernel ring buffer in the worst case before
+> the kernel ring buffer flips over, the size is specified as a power
+> of 2. The total amount of contributions made by each CPU must be
+> greater than half of the default kernel ring buffer size
+> (1 << LOG_BUF_SHIFT bytes) in order to trigger an increase upon
+> bootup. The kernel ring buffer is increased to the next power of
+> two that would fit the required minimum kernel ring buffer size
+> plus the additional CPU contribution. For example if LOG_BUF_SHIFT
+> is 18 (256 KB) you'd require at least 128 KB contributions by
+> other CPUs in order to trigger an increase of the kernel ring buffer.
+> With a LOG_CPU_BUF_SHIFT of 12 (4 KB) you'd require at least
+> anything over > 64 possible CPUs to trigger an increase. If you
+> had 128 possible CPUs the amount of minimum required kernel ring
+> buffer bumps to:
+> 
+>    ((1 << 18) + ((128 - 1) * (1 << 12))) / 1024 = 764 KB
+> 
+> Since we require the ring buffer to be a power of two this would
+> the new required size would be 1024 KB.
+> 
+> This CPU contributions are ignored when the "log_buf_len" kernel parameter
+> is used as it forces the exact size of the ring buffer to an expected power
+> of two value.
+> 
+> In order to make this code a bit more legible, add a small enum to keep
+> track of when the reasons of setting the ring buffer, and extend the
+> documentation quite a bit to make all this clear.
+> 
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Petr Mladek <pmladek@suse.cz>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Joe Perches <joe@perches.com>
+> Cc: Arun KS <arunks.linux@gmail.com>
+> Cc: Kees Cook <keescook@chromium.org>
+> Cc: Davidlohr Bueso <davidlohr@hp.com>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> ---
+> 
+> I've modified the computation to just go to the next power of two. All
+> other implementations do that, and although its not well documented 
+> I rather follow that logic. Without the enum stuff this code can get
+> ugly easy, while at it I also extended the documentation a bit more.
+> 
+>  Documentation/kernel-parameters.txt |   8 ++-
+>  init/Kconfig                        |  53 +++++++++++++++++-
+>  kernel/printk/printk.c              | 108 ++++++++++++++++++++++++++++++++++--
+>  3 files changed, 162 insertions(+), 7 deletions(-)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 6eaa9cd..229d031 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -1685,8 +1685,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  			7 (KERN_DEBUG)		debug-level messages
+>  
+>  	log_buf_len=n[KMG]	Sets the size of the printk ring buffer,
+> -			in bytes.  n must be a power of two.  The default
+> -			size is set in the kernel config file.
+> +			in bytes.  n must be a power of two and greater
+> +			than the minimal size. The minimal size is defined
+> +			by LOG_BUF_SHIFT kernel config parameter. There is
+> +			also CONFIG_LOG_CPU_MIN_BUF_SHIFT config parameter
+> +			that allows to increase the default size depending on
+> +			the number of CPUs. See init/Kconfig for more details.
+>  
+>  	logo.nologo	[FB] Disables display of the built-in Linux logo.
+>  			This may be used to provide more screen space for
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 9d76b99..69bdbcf 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -807,7 +807,11 @@ config LOG_BUF_SHIFT
+>  	range 12 21
+>  	default 17
+>  	help
+> -	  Select kernel log buffer size as a power of 2.
+> +	  Select the minimal kernel log buffer size as a power of 2.
+> +	  The final size is affected by LOG_CPU_MIN_BUF_SHIFT config
+> +	  parameter, see below. Any higher size also might be forced
+> +	  by "log_buf_len" boot parameter.
+> +
+>  	  Examples:
+>  	  	     17 => 128 KB
+>  		     16 => 64 KB
+> @@ -816,6 +820,53 @@ config LOG_BUF_SHIFT
+>  		     13 =>  8 KB
+>  		     12 =>  4 KB
+>  
+> +config LOG_CPU_MIN_BUF_SHIFT
+> +	int "CPU kernel log buffer size contribution (13 => 8 KB, 17 => 128KB)"
+> +	range 0 21
+> +	default 12
+> +	depends on SMP
+> +	depends on !BASE_SMALL
+> +	help
+> +	  The kernel ring buffer will get additional data logged onto it
+> +	  when multiple CPUs are supported. Typically the contributions are
+> +	  only a few lines when idle however under under load this can vary
+> +	  and in the worst case it can mean losing logging information. You
+> +	  can use this to set the maximum expected mount of amount of logging
+> +	  contribution under load by each CPU in the worst case scenario, as
+> +	  a power of 2. The total amount of contributions made by each CPU
+> +	  must be greater than half of the default kernel ring buffer size
+> +	  ((1 << LOG_BUF_SHIFT / 2 bytes)) in order to trigger an increase upon
+> +	  bootup. If an increase is required the ring buffer is increated to
+> +	  the next power of 2 that can fit both the minimum kernel ring buffer
+> +	  (LOG_BUF_SHIFT) plus the additional worst case CPU contributions.
+> +	  For example if LOG_BUF_SHIFT is 18 (256 KB) you'd require at laest
+> +	  128 KB contributions by other CPUs in order to trigger an increase.
+> +	  With a LOG_CPU_BUF_SHIFT of 12 (4 KB) you'd require at least anything
+> +	  over > 64 possible CPUs to trigger an increase. If you had 128
+> +	  possible CPUs the new minimum required kernel ring buffer size
+> +	  would be:
+> +
+> +	     ((1 << 18) + ((128 - 1) * (1 << 12))) / 1024 = 764 KB
+> +
+> +	  Since we only allow powers of two for the kernel ring buffer size the
+> +	  new kernel ring buffer size would be 1024 KB.
+> +
+> +	  CPU contributions are ignored when "log_buf_len" kernel parameter is
+> +	  used as it forces an exact (power of two) size of the ring buffer to
+> +	  an expected value.
+> +
+> +	  The number of possible CPUs is used for this computation ignoring
+> +	  hotplugging making the compuation optimal for the the worst case
+> +	  scenerio while allowing a simple algorithm to be used from bootup.
+> +
+> +	  Examples shift values and their meaning:
+> +		     17 => 128 KB for each CPU
+> +		     16 =>  64 KB for each CPU
+> +		     15 =>  32 KB for each CPU
+> +		     14 =>  16 KB for each CPU
+> +		     13 =>   8 KB for each CPU
+> +		     12 =>   4 KB for each CPU
+> +
+>  #
+>  # Architectures with an unreliable sched_clock() should select this:
+>  #
+> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+> index ea2d5f6..54632a0c 100644
+> --- a/kernel/printk/printk.c
+> +++ b/kernel/printk/printk.c
+> @@ -214,6 +214,67 @@ enum log_flags {
+>  	LOG_CONT	= 8,	/* text is a fragment of a continuation line */
+>  };
+>  
+> +/**
+> + * DOC: Kernel ring buffer setup
+> + *
+> + * The size of the kernel ring buffer is always set to a size as a power of 2.
+> + * By default the kernel ring buffer size is set up using static data through
+> + * LOG_BUF_SHIFT. You can manually override the kernel ring buffer on boot by
+> + * using the log_buf_len=n parameter. On really large CPU systems (default is
+> + * more than 64 CPUs) an extra CPU contribution is computed in which case the
+> + * ring buffer is adjusted to the next power 2 that can fit the expected worst
+> + * case CPU contributions to the kernel ring buffer. The LOG_CPU_MIN_BUF_SHIFT
+> + * contributions are computed late after setup_arch() in order to make use of
+> + * num_possible_cpus(). LOG_CPU_MIN_BUF_SHIFT is a proactive measure for large
+> + * systems. With a LOG_BUF_SHIFT of 18 and LOG_CPU_MIN_BUF_SHIFT 12 you'd need
+> + * at least 64 CPUs in order to trigger an increase.
+> + *
+> + * setup_log_buf() can be called at early init during setup_arch(), at
+> + * which point the early parameter must be set to true, this varies accross
+> + * architectures but currently only x86 uses this. The early case of
+> + * setup_log_buf() cannot use num_possible_cpus() as set_cpu_possible()
+> + * is not guaranteed to have been called then.
+> + */
+> +
+> +
+> +/**
+> + * enum klog_setup_state - states for the kernel ring buffer setup
+> + *
+> + * This is used by by setup_log_buf() to keep track of the state of the
+> + * kernel ring buffer via klog_state.
+> + *
+> + * @KLOG_STATIC: the minimum configured kernel ring buffer size is used. The
+> + * 	ring buffer size is set from static kernel data. The size is set with
+> + * 	LOG_BUF_SHIFT. Each architecture can define its own default size
+> + * 	through its respective architecture defconfig. This is a power of 2.
+> + * 	The maximum allowed value is 21, allowing for a maximum static size
+> + * 	of 2 GiB.
+> + * @KLOG_PARAM: the log_buf_len=n kernel parameter was passed, the passsed
+> + * 	size will be used, it must be a power of 2 and greater than the
+> + * 	mimimum required size set with LOG_BUF_SHIFT. When the kernel parameter
+> + * 	is set CPU contributions set by LOG_CPU_MIN_BUF_SHIFT will be ignored.
+> + *	Architectures can require the kernel ring buffer to be set up
+> + * 	early in the boot process during setup_arch(). These architectures must
+> + * 	call setup_log_buf() with the early parameter set. Since the kernel
+> + * 	ring buffer is already set with the minimum required size an early
+> + * 	allocation can only occur when the log_buf_len=n parameter is used.
+> + * 	Currently only the x86 architectures requires the early setup.
+> + * @KLOG_CPU_EXTRA: after setup_arch() has been called setup_log_buf() will
+> + * 	be called for all architectures. For architectures that did not use
+> + * 	the early call during its setup_arch() this is where the log_buf_len=n
+> + * 	kernel parameter is checked for. The LOG_CPU_MIN_BUF_SHIFT
+> + * 	contributions will be ignored if klog_state is already set to
+> + * 	KLOG_PARAM. Architecures are expected to have prefilled the possible
+> + * 	CPU bits cpu_possible_bits with set_cpu_possible() during setup_arch()
+> + * 	in order for this extra CPU computation to work, for those that haven't
+> + * 	this evaluation will have no effect.
+> + */
+> +enum klog_setup_state {
+> +	KLOG_STATIC,
+> +	KLOG_PARAM,
+> +	KLOG_CPU_EXTRA,
+> +};
+> +
+>  struct printk_log {
+>  	u64 ts_nsec;		/* timestamp in nanoseconds */
+>  	u16 len;		/* length of entire record */
+> @@ -266,9 +327,11 @@ static u32 clear_idx;
+>  #define LOG_ALIGN __alignof__(struct printk_log)
+>  #endif
+>  #define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
+> +#define __LOG_CPU_MIN_BUF_LEN (1 << CONFIG_LOG_CPU_MIN_BUF_SHIFT)
+>  static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
+>  static char *log_buf = __log_buf;
+>  static u32 log_buf_len = __LOG_BUF_LEN;
+> +static enum klog_setup_state klog_state = KLOG_STATIC;
+>  
+>  /* human readable text of the record */
+>  static char *log_text(const struct printk_log *msg)
+> @@ -842,20 +905,56 @@ static int __init log_buf_len_setup(char *str)
+>  }
+>  early_param("log_buf_len", log_buf_len_setup);
+>  
+> +static unsigned __init compute_cpu_contrib(void)
 
-I think Will is suggesting something along those lines-- I think it's a
-question of where the streamID allocation happens.  You could
-either do something like the following in the SMMU driver when attaching
-a PCI device:
+The function name is slightly misleading. It does not compute the
+extra space but the whole length of the ring buffer. What about using
+default_len_by_cpu_num() or so?
 
-    id = alloc_stream_id(...);
-    pci_set_streamid(pci-dev, id);
+> +{
+> +	int cpu_extra;
+> +	unsigned extra_cpu_log_size;
+> +
+> +	/*
+> +	 * archs should set up cpu_possible_bits properly with
+> +	 * set_cpu_possible() after setup_arch() but just in
+> +	 * case lets ensure this is valid.
+> +	 */
+> +	if (num_possible_cpus() <= 1)
+> +		return 0;
+> +
+> +	cpu_extra = (num_possible_cpus() - 1) * __LOG_CPU_MIN_BUF_LEN;
+> +	extra_cpu_log_size = roundup_pow_of_two(cpu_extra +
+> __LOG_BUF_LEN);
 
-    or
+Great catch. Well, I am not sure if this is really
+needed. memblock_virt_alloc() is called on another locations with "any" size.
 
-    id = pci_get_streamid(pci-dev);
+It might be enough to make sure that the size is aligned to
+LOG_ALIGN. This is how the messages are aligned. I would do:
 
-...i.e the PCI RC could allocate (from some TBD
-allocator) and set the stream ID itself.
+	cpu_extra %= LOG_ALIGN;
 
-Not sure how big a deal it is to extend PCI RC interfaces for 
-something like that.
+Another possibility would be to set the minimal size of
+LOG_CPU_MIN_BUF_SHIFT to "6" or so. I hope that the alignment of the
+"struct printk_log" newer would be bigger than 64 bytes. Well, we
+could add a compile check if we want to be sure.
 
-Stuart
+Anyway, I do not have any strong opinion here. I might be too careful
+and the roundup_pow_of_two() is perfectly fine.
+
+> +
+> +	if (cpu_extra <= __LOG_BUF_LEN / 2)
+> +		return 0;
+> +
+> +	pr_info("log_buf_len cpu_extra contribution: %d\n", cpu_extra);
+> +	pr_info("log_buf_len min size: %d\n", __LOG_BUF_LEN);
+> +
+> +	return extra_cpu_log_size;
+> +}
+> +
+>
+>  void __init setup_log_buf(int early)
+>  {
+>  	unsigned long flags;
+>  	char *new_log_buf;
+>  	int free;
+> -
+> -	if (!new_log_buf_len)
+> -		return;
+> +	enum klog_setup_state new_klog_state;
+>  
+>  	if (early) {
+> +		if (!new_log_buf_len)
+> +			return;
+>  		new_log_buf =
+>  			memblock_virt_alloc(new_log_buf_len, PAGE_SIZE);
+> +		new_klog_state = KLOG_PARAM;
+>  	} else {
+> -		new_log_buf = memblock_virt_alloc_nopanic(new_log_buf_len, 0);
+> +		if (klog_state == KLOG_PARAM)
+> +			return;
+> +		if (new_log_buf_len)
+> +			new_klog_state = KLOG_PARAM;
+> +		else {
+> +			new_log_buf_len = compute_cpu_contrib();
+> +			new_klog_state = KLOG_CPU_EXTRA;
+> +		}
+> +		if (!new_log_buf_len)
+> +			return;
+> +		new_log_buf = memblock_virt_alloc(new_log_buf_len,
+> PAGE_SIZE);
+
+We should call memblock_virt_allocc_nopanic() in this else part.
+
+
+Well, I am not sure if the new klog states make the code really better
+readable. I wonder where we lost the simplicity from v3 of this patch ;-)
+
+What about replacing the above changes in kernel/printk/printk.c with
+the following ones:
+
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index ea2d5f6962ed..e00a9600f5fa 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -266,6 +266,7 @@ static u32 clear_idx;
+ #define LOG_ALIGN __alignof__(struct printk_log)
+ #endif
+ #define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
++#define __LOG_CPU_MIN_BUF_LEN (1 << CONFIG_LOG_CPU_MIN_BUF_SHIFT)
+ static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
+ static char *log_buf = __log_buf;
+ static u32 log_buf_len = __LOG_BUF_LEN;
+@@ -842,12 +843,52 @@ static int __init log_buf_len_setup(char *str)
+ }
+ early_param("log_buf_len", log_buf_len_setup);
+ 
++static unsigned __init default_len_by_cpu_num(void)
++{
++	int cpu_extra;
++	unsigned extra_cpu_log_size;
++
++	/*
++	 * archs should set up cpu_possible_bits properly with
++	 * set_cpu_possible() after setup_arch() but just in
++	 * case lets ensure this is valid.
++	 */
++	if (num_possible_cpus() <= 1)
++		return 0;
++
++	cpu_extra = (num_possible_cpus() - 1) * __LOG_CPU_MIN_BUF_LEN;
++	/* make sure that the buffer is aligned */
++	cpu_extra %= LOG_ALIGN;
++	extra_cpu_log_size = roundup_pow_of_two(cpu_extra + __LOG_BUF_LEN);
++
++	if (cpu_extra <= __LOG_BUF_LEN / 2)
++		return 0;
++
++	pr_info("log_buf_len cpu_extra contribution: %d\n", cpu_extra);
++	pr_info("log_buf_len min size: %d\n", __LOG_BUF_LEN);
++
++	return extra_cpu_log_size;
++}
++
+ void __init setup_log_buf(int early)
+ {
+ 	unsigned long flags;
+ 	char *new_log_buf;
+ 	int free;
+ 
++	/* nope when already allocated earlier */
++	if (log_buf != __log_buf)
++		return;
++
++	/*
++	 * The default size need to be increased on systems with many CPUs.
++	 * It is done only when an exact size is not forced by log_buf_len=n
++	 * kernel parameter.
++	 */
++	if (!new_log_buf_len)
++		new_log_buf_len = default_len_by_cpu_num();
++
++	/* nope when nobody wants to increase the size after all */
+ 	if (!new_log_buf_len)
+ 		return;
+ 
+-- 
+1.8.4
+
+
+I think that it is better readable than the two level if-magic with
+the three new flags. The long description of the three flags looked
+scary in itself ;-)
+
+Best Regards,
+Petr
