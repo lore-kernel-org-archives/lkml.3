@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965673AbaFQVqR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:46:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53739 "EHLO
+	id S965702AbaFQVqW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:46:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53753 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965155AbaFQVqN (ORCPT
+	with ESMTP id S965155AbaFQVqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:46:13 -0400
+	Tue, 17 Jun 2014 17:46:18 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Florian Westphal <fw@strlen.de>, Pablo Neira Ayuso <pablo@netfilter.org>,
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 064/212] netfilter: ipv4: defrag: set local_df flag on defragmented skb
-Date: Tue, 17 Jun 2014 14:42:38 -0700
-Message-Id: <1403041506-13646-65-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 071/212] ARM: orion5x: fix target ID for crypto SRAM window
+Date: Tue, 17 Jun 2014 14:42:45 -0700
+Message-Id: <1403041506-13646-72-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -27,59 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit 895162b1101b3ea5db08ca6822ae9672717efec0 upstream.
+commit 1cc9d48145b81e307fab94a5cf6ee66ec2f0de60 upstream.
 
-else we may fail to forward skb even if original fragments do fit
-outgoing link mtu:
+In commit 4ca2c04085a1caa903e92a5fc0da25362150aac2 ('ARM: orion5x:
+Move to ID based window creation'), the mach-orion5x code was changed
+to use the new mvebu-mbus API. However, in the process, a mistake was
+made on the crypto SRAM window target ID: it should have been 0x9
+(verified in the datasheet) and not 0x0.
 
-1. remote sends 2k packets in two 1000 byte frags, DF set
-2. we want to forward but only see '2k > mtu and DF set'
-3. we then send icmp error saying that outgoing link is 1500
-
-But original sender never sent a packet that would not fit
-the outgoing link.
-
-Setting local_df makes outgoing path test size vs.
-IPCB(skb)->frag_max_size, so we will still send the correct
-error in case the largest original size did not fit
-outgoing link mtu.
-
-Reported-by: Maxime Bizon <mbizon@freebox.fr>
-Suggested-by: Maxime Bizon <mbizon@freebox.fr>
-Fixes: 5f2d04f1f9 (ipv4: fix path MTU discovery with connection tracking)
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Link: https://lkml.kernel.org/r/1397400006-4315-2-git-send-email-thomas.petazzoni@free-electrons.com
+Fixes: 4ca2c04085a1 ('ARM: orion5x: Move to ID based window creation')
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/netfilter/nf_defrag_ipv4.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/arm/mach-orion5x/common.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv4/netfilter/nf_defrag_ipv4.c b/net/ipv4/netfilter/nf_defrag_ipv4.c
-index 12e13bd..f40f321 100644
---- a/net/ipv4/netfilter/nf_defrag_ipv4.c
-+++ b/net/ipv4/netfilter/nf_defrag_ipv4.c
-@@ -22,7 +22,6 @@
- #endif
- #include <net/netfilter/nf_conntrack_zones.h>
+diff --git a/arch/arm/mach-orion5x/common.h b/arch/arm/mach-orion5x/common.h
+index f565f99..7548db2 100644
+--- a/arch/arm/mach-orion5x/common.h
++++ b/arch/arm/mach-orion5x/common.h
+@@ -21,7 +21,7 @@ struct mv_sata_platform_data;
+ #define ORION_MBUS_DEVBUS_BOOT_ATTR   0x0f
+ #define ORION_MBUS_DEVBUS_TARGET(cs)  0x01
+ #define ORION_MBUS_DEVBUS_ATTR(cs)    (~(1 << cs))
+-#define ORION_MBUS_SRAM_TARGET        0x00
++#define ORION_MBUS_SRAM_TARGET        0x09
+ #define ORION_MBUS_SRAM_ATTR          0x00
  
--/* Returns new sk_buff, or NULL */
- static int nf_ct_ipv4_gather_frags(struct sk_buff *skb, u_int32_t user)
- {
- 	int err;
-@@ -33,8 +32,10 @@ static int nf_ct_ipv4_gather_frags(struct sk_buff *skb, u_int32_t user)
- 	err = ip_defrag(skb, user);
- 	local_bh_enable();
- 
--	if (!err)
-+	if (!err) {
- 		ip_send_check(ip_hdr(skb));
-+		skb->local_df = 1;
-+	}
- 
- 	return err;
- }
+ /*
 -- 
 1.9.1
 
