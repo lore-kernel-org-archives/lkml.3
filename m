@@ -1,111 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932458AbaFQCZh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 22:25:37 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:42076 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754621AbaFQCXf (ORCPT
+	id S1754537AbaFQCeD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 22:34:03 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:22272 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753719AbaFQCeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 22:23:35 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-Cc: Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 7/8] x86_64,vsyscall: Rewrite comment and clean up headers in vsyscall code
-Date: Mon, 16 Jun 2014 19:23:14 -0700
-Message-Id: <617e07c1fcf585f78a2567b6bbc2b94ca90148bb.1402971639.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1402971639.git.luto@amacapital.net>
-References: <cover.1402971639.git.luto@amacapital.net>
-In-Reply-To: <cover.1402971639.git.luto@amacapital.net>
-References: <cover.1402971639.git.luto@amacapital.net>
+	Mon, 16 Jun 2014 22:34:00 -0400
+X-AuditID: cbfee61a-b7fef6d00000200b-e1-539fa91696e9
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+References: <001201cf87c6$92b9fad0$b82df070$@samsung.com>
+In-reply-to: <001201cf87c6$92b9fad0$b82df070$@samsung.com>
+Subject: RE: [f2fs-dev] [PATCH] f2fs: refactor flush_nat_entries codes for
+ reducing NAT writes
+Date: Tue, 17 Jun 2014 10:33:12 +0800
+Message-id: <002301cf89d4$97aaf7f0$c700e7d0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQHh8KYP10dtC0PDSzBuBmpl0+4OWptPxSuA
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9jQV2xlfODDX7/lrV4sn4Ws8WlRe4W
+	e/aeZLG4vGsOmwOLx6ZVnWweuxd8ZvL4vEkugDmKyyYlNSezLLVI3y6BK+P3qbdMBW+4Kjbs
+	OMTWwHiVo4uRk0NCwETiwYyT7BC2mMSFe+vZQGwhgemMEhdmuHQxcgHZPxglZiz9xgSSYBNQ
+	kVje8R/MFhFQk+jdNwXMZhbIlJjzejIrRLOlxJojPxi7GDk4OAWsJJYsMwMJCwskSCz5e5UZ
+	xGYRUJV4unEWWDkvUPmd3e+YIWxBiR+T77FAjNSSWL/zONR4eYnNa94yQ9ypILHj7GtGiBOM
+	JPaemsoKUSMusfHILZYJjEKzkIyahWTULCSjZiFpWcDIsopRNLUguaA4KT3XUK84Mbe4NC9d
+	Lzk/dxMjOOyfSe1gXNlgcYhRgINRiYf3oez8YCHWxLLiytxDjBIczEoivFzmQCHelMTKqtSi
+	/Pii0pzU4kOM0hwsSuK8B1qtA4UE0hNLUrNTUwtSi2CyTBycUg2MZyzWp24617rwhKhhVMiv
+	96/LsxqPfhRNOWXx5cZkcZN+pWqOGRxzJEuC01Y+7Kxn3pl/z9/6n5CHLz/X19YVE9zW+/I9
+	dLrEzSTJEc32+6P7xB0PT2y9d9J+42oT/vkPs19v02hTWsTdoPmummX+Q9blfeERxW65Upln
+	Y07GLmj2L7YOsrVXYinOSDTUYi4qTgQAW+tUQHcCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vsyscall_64.c is just vsyscall emulation.  Tidy it up accordingly.
+Hi all,
 
-If my comment editing offends anyone, let me know and I can fix it.
+There are problem in this patch, please ignore this patch, sorry for the noise.
+I will resend later.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/x86/kernel/vsyscall_64.c | 51 +++++++++++++++----------------------------
- 1 file changed, 18 insertions(+), 33 deletions(-)
+> -----Original Message-----
+> From: Chao Yu [mailto:chao2.yu@samsung.com]
+> Sent: Saturday, June 14, 2014 7:48 PM
+> To: Jaegeuk Kim
+> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
+> linux-f2fs-devel@lists.sourceforge.net
+> Subject: [f2fs-dev] [PATCH] f2fs: refactor flush_nat_entries codes for reducing NAT writes
+> 
+> Although building NAT journal in cursum reduce the read/write work for NAT
+> block, but previous design leave us lower performance when write checkpoint
+> frequently for these cases:
+> 1. if journal in cursum has already full, it's a bit of waste that we flush all
+>    nat entries to page for persistence, but not to cache any entries.
+> 2. if journal in cursum is not full, we fill nat entries to journal util
+>    journal is full, then flush the left dirty entries to disk without merge
+>    journaled entries, so these journaled entries may be flushed to disk at next
+>    checkpoint but lost chance to flushed last time.
+> 
+> In this patch we merge dirty entries located in same NAT block to nat entry set,
+> and linked all set to list, sorted ascending order by entries' count of set.
+> Later we flush entries in sparse set into journal as many as we can, and then
+> flush merged entries to disk.
+> 
 
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 5029be3..1ea34e7 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -1,52 +1,37 @@
- /*
-- *  Copyright (C) 2001 Andrea Arcangeli <andrea@suse.de> SuSE
-- *  Copyright 2003 Andi Kleen, SuSE Labs.
-+ * Mostly copyright (c) 2012-2014 Andy Lutomirski <luto@amacapital.net>
-  *
-- *  [ NOTE: this mechanism is now deprecated in favor of the vDSO. ]
-+ * This file implements vsyscall emulation.  vsyscalls are a legacy ABI:
-+ * userspace can request certain kernel services by calling fixed
-+ * addresses.  This concept is problematic:
-  *
-- *  Thanks to hpa@transmeta.com for some useful hint.
-- *  Special thanks to Ingo Molnar for his early experience with
-- *  a different vsyscall implementation for Linux/IA32 and for the name.
-+ * - It interferes with ASLR.
-+ * - It's awkward to write code that lives in kernel addresses but is
-+ *   callable by userspace at fixed addresses.
-+ * - The whole concept is impossible for 32-bit compat userspace.
-+ * - UML cannot easily virtualize a vsyscall.
-  *
-- *  vsyscall 1 is located at -10Mbyte, vsyscall 2 is located
-- *  at virtual address -10Mbyte+1024bytes etc... There are at max 4
-- *  vsyscalls. One vsyscall can reserve more than 1 slot to avoid
-- *  jumping out of line if necessary. We cannot add more with this
-- *  mechanism because older kernels won't return -ENOSYS.
-+ * As of mid-2014, I believe that there is no new userspace code that
-+ * will use a vsyscall if the vDSO is present.  I hope that there will
-+ * soon be no new userspace code that will ever use a vsyscall.
-  *
-- *  Note: the concept clashes with user mode linux.  UML users should
-- *  use the vDSO.
-+ * The code in this file emulates vsyscalls when notified of a page
-+ * fault to a vsyscall address.
-+ *
-+ * The original version of this code is:
-+ * Copyright (C) 2001 Andrea Arcangeli <andrea@suse.de> SuSE
-+ * Copyright 2003 Andi Kleen, SuSE Labs.
-  */
- 
--#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
--#include <linux/time.h>
--#include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/timer.h>
--#include <linux/seqlock.h>
--#include <linux/jiffies.h>
--#include <linux/sysctl.h>
--#include <linux/topology.h>
--#include <linux/timekeeper_internal.h>
--#include <linux/getcpu.h>
--#include <linux/cpu.h>
--#include <linux/smp.h>
--#include <linux/notifier.h>
- #include <linux/syscalls.h>
- #include <linux/ratelimit.h>
- 
- #include <asm/vsyscall.h>
--#include <asm/pgtable.h>
--#include <asm/compat.h>
--#include <asm/page.h>
- #include <asm/unistd.h>
- #include <asm/fixmap.h>
--#include <asm/errno.h>
--#include <asm/io.h>
--#include <asm/segment.h>
--#include <asm/desc.h>
--#include <asm/topology.h>
- #include <asm/traps.h>
- 
- #define CREATE_TRACE_POINTS
--- 
-1.9.3
 
