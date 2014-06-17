@@ -1,125 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204AbaFQPqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 11:46:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53405 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756098AbaFQPqd (ORCPT
+	id S1756300AbaFQPrv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 11:47:51 -0400
+Received: from mail-la0-f74.google.com ([209.85.215.74]:64338 "EHLO
+	mail-la0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756098AbaFQPrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 11:46:33 -0400
-Date: Tue, 17 Jun 2014 08:50:30 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jeff Liu <jeff.liu@oracle.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Christoph Lameter <cl@gentwo.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, herbert@gondor.apana.org.au,
-        davem@davemloft.net, stefanr@s5r6.in-berlin.de, joro@8bytes.org,
-        jejb@parisc-linux.org, deller@gmx.de, bhelgaas@google.com, clm@fb.com,
-        Josef Bacik <jbacik@fb.com>, swhiteho@redhat.com, bharrosh@panasas.com,
-        bhalevy@primarydata.com, ccaulfie@redhat.com, teigland@redhat.com,
-        "Theodore Ts'o" <tytso@mit.edu>, adilger.kernel@dilger.ca,
-        jaegeuk@kernel.org, cm224.lee@samsung.com,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        casey@schaufler-ca.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/24] kobject: return actual error on kset_create_and_add
-Message-ID: <20140617155030.GA14259@kroah.com>
-References: <53A04FF7.5050900@oracle.com>
- <1403016160.27991.1.camel@dabdike.int.hansenpartnership.com>
- <53A05704.4070203@oracle.com>
+	Tue, 17 Jun 2014 11:47:49 -0400
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        <stable@vger.kernel.org>, Michal Nazarewicz <mina86@mina86.com>
+Subject: [PATCH] usb: gadget: f_fs: fix NULL pointer dereference when there are no strings
+Date: Tue, 17 Jun 2014 17:47:41 +0200
+Message-Id: <1403020061-20890-1-git-send-email-mina86@mina86.com>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <EC42AA5D-282F-4536-9E81-101A3A16D767@symbolicsound.com>
+References: <EC42AA5D-282F-4536-9E81-101A3A16D767@symbolicsound.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53A05704.4070203@oracle.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 10:56:04PM +0800, Jeff Liu wrote:
-> 
-> On 06/17/2014 22:42 PM, James Bottomley wrote:
-> > On Tue, 2014-06-17 at 22:25 +0800, Jeff Liu wrote:
-> >> From: Jie Liu <jeff.liu@oracle.com>
-> >>
-> >> It's better to return the actual error rather than NULL because
-> >> kset_register() can failed due to other reasons.
-> >>
-> >> Cc: Christoph Lameter <cl@linux-foundation.org>
-> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >> Cc: Andrew Morton <akpm@linux-foundation.org>
-> >> Cc: Pekka Enberg <penberg@kernel.org>
-> >> Cc: Matt Mackall <mpm@selenic.com>
-> >> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> >> Cc: Paul Mackerras <paulus@samba.org>
-> >> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> >> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> >> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> >> Cc: David S. Miller <davem@davemloft.net>
-> >> Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
-> >> Cc: Joerg Roedel <joro@8bytes.org>
-> >> Cc: James E.J. Bottomley <JBottomley@parallels.com>
-> >> Cc: Helge Deller <deller@gmx.de>
-> >> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> >> Cc: Chris Mason <clm@fb.com>
-> >> Cc: Josef Bacik <jbacik@fb.com>
-> >> Cc: Steven Whitehouse <swhiteho@redhat.com>
-> >> Cc: Boaz Harrosh <bharrosh@panasas.com>
-> >> Cc: Benny Halevy <bhalevy@primarydata.com>
-> >> Cc: Christine Caulfield <ccaulfie@redhat.com>
-> >> Cc: David Teigland <teigland@redhat.com>
-> >> Cc: Theodore Ts'o <tytso@mit.edu>
-> >> Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-> >> Cc: Jaegeuk Kim <jaegeuk@kernel.org>
-> >> Cc: Changman Lee <cm224.lee@samsung.com>
-> >> Cc: Mark Fasheh <mfasheh@suse.com>
-> >> Cc: Joel Becker <jlbec@evilplan.org>
-> >> Cc: Casey Schaufler <casey@schaufler-ca.com>
-> >> Signed-off-by: Jie Liu <jeff.liu@oracle.com>
-> >> ---
-> >>  lib/kobject.c | 4 ++--
-> >>  1 file changed, 2 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/lib/kobject.c b/lib/kobject.c
-> >> index 58751bb..538c617 100644
-> >> --- a/lib/kobject.c
-> >> +++ b/lib/kobject.c
-> >> @@ -919,11 +919,11 @@ struct kset *kset_create_and_add(const char *name,
-> >>  
-> >>  	kset = kset_create(name, uevent_ops, parent_kobj);
-> >>  	if (!kset)
-> >> -		return NULL;
-> >> +		return ERR_PTR(-ENOMEM);
-> >>  	error = kset_register(kset);
-> >>  	if (error) {
-> >>  		kfree(kset);
-> >> -		return NULL;
-> >> +		return ERR_PTR(error);
-> >>  	}
-> >>  	return kset;
-> >>  }
-> > 
-> > This patch series isn't bisectable.  When changing an error signal from
-> > NULL to non-NULL, you have to do it as one patch, otherwise if a
-> > bisection lands in here we'll get error returns from all our kobject
-> > kset code and the kernel won't boot.
-> 
-> Thanks for pointing this out.
-> 
-> > It's fine if you're sending it out as 24 patches for review, but it has
-> > to be applied as a single one.
-> 
-> Ok, I'll post the v2 patch as a single one once this series has been reviewed.
+If the descriptors do not need any strings and user space sends empty
+set of strings, the ffs->stringtabs field remains NULL.  Thus
+*ffs->stringtabs in functionfs_bind leads to a NULL pointer
+dereferenece.
 
-Also, now that you sent a bunch of different patches out, some
-maintainers will not realize that this first one has to be applied (i.e.
-you gave them no sense that there was a dependancy.)
+The bug was introduced by commit [fd7c9a007f: “use usb_string_ids_n()”].
 
-You will have to watch very carefully to ensure that those patches do
-not now get accepted, as they will break the existing code.
+While at it, remove double initialisation of lang local variable in
+that function.
 
-Not good.
+ffs->strings_count does not need to be checked in any way since in
+the above scenario it will remain zero and usb_string_ids_n() is
+a no-operation when colled with 0 argument.
 
-greg k-h
+Cc: <stable@vger.kernel.org>  # v2.6.36+
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+---
+ drivers/usb/gadget/f_fs.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index 74202d6..8598c27 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -1483,11 +1483,13 @@ static int functionfs_bind(struct ffs_data *ffs, struct usb_composite_dev *cdev)
+ 	ffs->ep0req->context = ffs;
+ 
+ 	lang = ffs->stringtabs;
+-	for (lang = ffs->stringtabs; *lang; ++lang) {
+-		struct usb_string *str = (*lang)->strings;
+-		int id = first_id;
+-		for (; str->s; ++id, ++str)
+-			str->id = id;
++	if (lang) {
++		for (; *lang; ++lang) {
++			struct usb_string *str = (*lang)->strings;
++			int id = first_id;
++			for (; str->s; ++id, ++str)
++				str->id = id;
++		}
+ 	}
+ 
+ 	ffs->gadget = cdev->gadget;
+-- 
+2.0.0.526.g5318336
+
