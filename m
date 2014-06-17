@@ -1,165 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291AbaFQDs1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 23:48:27 -0400
-Received: from ozlabs.org ([103.22.144.67]:60115 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754848AbaFQDsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 23:48:25 -0400
-Date: Tue, 17 Jun 2014 13:48:18 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <linux-next@vger.kernel.org>
-Subject: linux-next: stats (Re: Linux 3.16-rc1 - merge window closed)
-Message-ID: <20140617134818.16e116eb@canb.auug.org.au>
-In-Reply-To: <CA+55aFzNDTm_O8rGYdNw1S99P06u6EeSdttXBvtURJocQT2O0g@mail.gmail.com>
-References: <CA+55aFzNDTm_O8rGYdNw1S99P06u6EeSdttXBvtURJocQT2O0g@mail.gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1755321AbaFQDuZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 23:50:25 -0400
+Received: from mail-by2lp0240.outbound.protection.outlook.com ([207.46.163.240]:52070
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754848AbaFQDuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jun 2014 23:50:23 -0400
+Date: Mon, 16 Jun 2014 20:50:17 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Jongsung Kim <neidhard.kim@lge.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hayun Hwang <hwang.hayun@lge.com>,
+        Youngkyu Choi <youngkyu7.choi@lge.com>
+Subject: Re: [PATCH] net/cadence/macb: clear interrupts simply and correctly
+References: <1402563054-8546-1-git-send-email-neidhard.kim@lge.com>
+ <9f5be687-d127-49a4-90ea-c1033505452d@BN1BFFO11FD019.protection.gbl>
+ <539E79F1.1090006@lge.com>
+ <ea57b37f-1f1c-40a0-84a6-46b0b78ec6b4@BY2FFO11FD034.protection.gbl>
+ <539FAA34.9030002@lge.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/Fx6N2uABQYJOafJO5_DbR38"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <539FAA34.9030002@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <0f1d404c-89a7-4bbd-99ff-973d4f26d2c6@BY2FFO11FD005.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438001)(479174003)(164054003)(377454003)(377424004)(199002)(189002)(51704005)(24454002)(21056001)(46102001)(81542001)(4396001)(44976005)(6806004)(80022001)(83322001)(74662001)(74502001)(81342001)(70736001)(23676002)(102836001)(33646001)(92726001)(31696002)(86362001)(87936001)(85852003)(83072002)(99396002)(54356999)(76176999)(50986999)(85306003)(77096002)(104016002)(95666004)(74316001)(93886003)(1496007)(53416004)(50466002)(77982001)(76482001)(47776003)(20776003)(85202002)(79102001)(85182001)(64706001)(83506001);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB036;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+X-Forefront-PRVS: 0245702D7B
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Fx6N2uABQYJOafJO5_DbR38
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2014-06-17 at 11:38AM +0900, Jongsung Kim wrote:
+> On 06/16/2014 11:56 PM, Sören Brinkmann wrote:
+> > On Mon, 2014-06-16 at 02:00PM +0900, Jongsung Kim wrote:
+> >> On 06/13/2014 12:44 AM, Sören Brinkmann wrote:
+> >>> This is now clearing all IRQ flags which is probably not what we want
+> >>> here. This is handling RX only. We still want the non-RX interrupts to go to
+> >>> the actual interrupt service routing.
+> >>
+> >> The ISR(Interrupt Status Register) is read only in the interrupt service
+> >> routine, macb_interrupt. But is partially cleared here and there. Further
+> >> handler-functions decide jobs to be done by reading/checking other status
+> >> registers. (e.g., TSR, RSR) So, clearing the ISR after reading looks not
+> >> a bad idea.
+> >
+> > But you are clearing _all_ interrupt flags in the RX NAPI handler.
+> > Doesn't that mean we might miss certain events?
+> 
+> Please inspect my patch again. What I did in the macb_poll is removing
+> statements clearing the Rx-complete interrupt, not clearing all the
+> interrupts.
 
-As usual, the executive friendly graph is at
-http://neuling.org/linux-next-size.html :-)
+Oh, you're right. I misread the patch, sorry. The call to macb_read_isr was
+already a different hunk.
+Why is clearing those bits removed? It's probably not a big hit, but it might
+result in a pointless interrupt which could be avoided. But it should
+probably clear all RX interrupts - MACB_RX_INT_FLAGS - instead of just RCOMP.
+For clear-on-read implementations it shouldn't make a difference.
 
-(No merge commits counted, next-20140602 was the first linux-next after
-the merge window opened.)
+And in the if-condition in that new helper, I'd add '&& status' to
+avoid writing back zeros.
 
-Commits in v3.16-rc1 (relative to v3.15): 11364		(v3.15-rc1:	12034)
-Commits in next-20140602:		  10283		(next-20140331:	11411)
-Commits with the same SHA1:		   9204		(		10432)
-Commits with the same patch_id:		    559	(1)	(		  581)
-Commits with the same subject line:	     60	(1)	(		   74)
-
-(1) not counting those in the lines above.
-
-So commits in -rc1 that were in next-20140602:	 9823	86.4%	(11087	92.1%)
-That is a big drop - presumably caused by the suprise opening of the
-merge window a week early.
-
-Some breakdown of the list of extra commits (relative to next-20140602)
-in -rc1:
-
-Top eleven first word of commit summary:
-
-    243 drm
-     91 btrfs
-     87 net
-     59 mmc
-     57 i40e
-     46 perf
-     45 powerpc
-     34 mips
-     32 reiserfs
-     24 xfs
-     24 alsa
-
-Top eleven authors:
-
-     48 bskeggs@redhat.com
-     41 rmk+kernel@arm.linux.org.uk
-     32 jeffm@suse.com
-     28 namhyung@kernel.org
-     26 fabf@skynet.be
-     25 fdmanana@gmail.com
-     23 james.hogan@imgtec.com
-     21 treding@nvidia.com
-     21 geert+renesas@glider.be
-     21 dchinner@redhat.com
-     21 chuck.lever@oracle.com
-
-Top ten commiters:
-
-    218 davem@davemloft.net
-     93 clm@fb.com
-     76 jeffrey.t.kirsher@intel.com
-     72 torvalds@linux-foundation.org
-     68 bskeggs@redhat.com
-     62 daeinki@gmail.com
-     52 chris@printf.net
-     50 benh@kernel.crashing.org
-     44 alexander.deucher@amd.com
-     39 hch@lst.de
-
-There are also 460 commits in next-20140602 that didn't make it into
-v3.16-rc1.
-
-Top ten first word of commit summary:
-
-     43 arm
-     39 sparc32
-     22 drm
-     21 sparc64
-     21 mm
-     18 arch
-     15 vfs
-     12 drivers
-     12 arm-soc
-     10 sparc
-
-Top nine authors:
-
-     67 sam@ravnborg.org
-     49 akpm@linux-foundation.org
-     23 shawn.guo@freescale.com
-     18 n-horiguchi@ah.jp.nec.com
-     17 gang.chen.5i5j@gmail.com
-     13 ebiederm@xmission.com
-     12 olof@lixom.net
-      9 mhocko@suse.cz
-      9 eparis@redhat.com
-
-Some of Andrew's patches are fixes for other patches in his tree (and
-have been merged into those).
-
-Top ten commiters:
-
-    166 sfr@canb.auug.org.au
-     70 davem@davemloft.net
-     34 shawn.guo@freescale.com
-     28 matthew.garrett@nebula.com
-     21 daniel.vetter@ffwll.ch
-     19 gxt@mprc.pku.edu.cn
-     16 ebiederm@xmission.com
-     14 eparis@redhat.com
-     12 olof@lixom.net
-     10 jason.wessel@windriver.com
-
-Those commits by me are from the quilt series (mainly Andrew's mmotm
-tree).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/Fx6N2uABQYJOafJO5_DbR38
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTn7qHAAoJEMDTa8Ir7ZwV/rsP/2bZa/oH/iOeX984oTK3RyIs
-aXZowkI010cn7aIwDeHCC431eG7SmFBJFJG3XEzHC9mf06QKhb8y1xGz5g2gsfHe
-KO0HhjBqrfW/x8ozb0cFZa6gMzSlAws0AGv5a5nHLwMyakLZ5Vue6Fu6VsCr2E2I
-fCnBD5YvOSl0OTy7RW4uEgbQ2Vmfp5NwDgLDcGxy5b78EgPC9hK7s25U0asKEmqR
-L/7ABdE9bsMYzp66ARuxDd4mVI368ScNZmz88TC6fl5ruPARGFwrFAijOfO4XnyM
-c26bKeMGJ20BALPxY1FWwTviS/Px5vS0awZswfswZWf3T7BS0FeJMtLRnyPFgLXP
-Rt1PRuKmfbPAXe0vh4YK/N9gbLSxIIp8Jvw46MqCzaDkBQ8XJ2ZxJ9eakQUmhqk8
-V+BHRgxvlq6PdR9Py/dcArDcNBYpca3bKgpPASqi8nX6zYrembl76ZvoRjICA5KH
-rwUzV0tSxLO02+sJKuS7gcpE4CbNAdzkPH8TvT8JtbmlMa9peWljDrz1pkKUc9Yv
-XOxKPhBO0VHOWOoZs/6/ieQ3Dtc/BoFoQdQ+uuXy+2qdpjpcK3y7BWKITB00Tsay
-4/+6O10Zh2a75BSNxAE2ITEn6vg1nezd3LWzNL06q/9CUBvKKcTqdKkH6Je3BOUQ
-OPfpT4sCmeMGHJPoEPii
-=HfXs
------END PGP SIGNATURE-----
-
---Sig_/Fx6N2uABQYJOafJO5_DbR38--
+	Thanks,
+	Sören
