@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966033AbaFQRCN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 13:02:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50397 "EHLO
+	id S966019AbaFQRCL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 13:02:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50399 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933631AbaFQQPd (ORCPT
+	with ESMTP id S933632AbaFQQPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 17 Jun 2014 12:15:33 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 017/121] USB: fix crash during hotplug of PCI USB controller card
-Date: Tue, 17 Jun 2014 09:13:30 -0700
-Message-Id: <1403021714-16320-18-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 006/121] ALSA: hda/realtek - Add support of ALC288 codec
+Date: Tue, 17 Jun 2014 09:13:19 -0700
+Message-Id: <1403021714-16320-7-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021714-16320-1-git-send-email-kamal@canonical.com>
 References: <1403021714-16320-1-git-send-email-kamal@canonical.com>
@@ -28,49 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Kailang Yang <kailang@realtek.com>
 
-commit a2ff864b53eac9a0e9b05bfe9d1781ccd6c2af71 upstream.
+commit 7c66593286bcd153e4868383e675673a27071bd5 upstream.
 
-The code in hcd-pci.c that matches up EHCI controllers with their
-companion UHCI or OHCI controllers assumes that the private drvdata
-fields don't get set too early.  However, it turns out that this field
-gets set by usb_create_hcd(), before hcd-pci expects it, and this can
-result in a crash when two controllers are probed in parallel (as can
-happen when a new controller card is hotplugged).
-
-The companions_rwsem lock was supposed to prevent this sort of thing,
-but usb_create_hcd() is called outside the scope of the rwsem.
-
-A simple solution is to check that the root-hub pointer has been
-initialized as well as the drvdata field.  This doesn't happen until
-usb_add_hcd() is called; that call and the check are both protected by
-the rwsem.
-
-This patch should be applied to stable kernels from 3.10 onward.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Stefani Seibold <stefani@seibold.net>
-Tested-by: Stefani Seibold <stefani@seibold.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Kailang Yang <kailang@realtek.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/core/hcd-pci.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
-index 2b487d4..50ebe6c 100644
---- a/drivers/usb/core/hcd-pci.c
-+++ b/drivers/usb/core/hcd-pci.c
-@@ -71,7 +71,7 @@ static void companion_common(struct pci_dev *pdev, struct usb_hcd *hcd,
- 			continue;
- 
- 		companion_hcd = pci_get_drvdata(companion);
--		if (!companion_hcd)
-+		if (!companion_hcd || !companion_hcd->self.root_hub)
- 			continue;
- 
- 		/* For SET_HS_COMPANION, store a pointer to the EHCI bus in
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 68ac714..61b2990 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6530,6 +6530,7 @@ static int patch_alc269(struct hda_codec *codec)
+ 		spec->codec_variant = ALC269_TYPE_ALC284;
+ 		break;
+ 	case 0x10ec0286:
++	case 0x10ec0288:
+ 		spec->codec_variant = ALC269_TYPE_ALC286;
+ 		break;
+ 	case 0x10ec0255:
+@@ -7263,6 +7264,7 @@ static const struct hda_codec_preset snd_hda_preset_realtek[] = {
+ 	{ .id = 0x10ec0283, .name = "ALC283", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0284, .name = "ALC284", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0286, .name = "ALC286", .patch = patch_alc269 },
++	{ .id = 0x10ec0288, .name = "ALC288", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0290, .name = "ALC290", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0292, .name = "ALC292", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0861, .rev = 0x100340, .name = "ALC660",
 -- 
 1.9.1
 
