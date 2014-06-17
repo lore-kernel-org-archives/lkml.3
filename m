@@ -1,84 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933927AbaFQUrY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 16:47:24 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62462 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933410AbaFQUrX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 16:47:23 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Josef Gajdusek <atx@atx.name>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] acpi/battery: fix wrong value of capacity_now reported by few battery types when fully charged (resend)
-Date: Tue, 17 Jun 2014 23:04:57 +0200
-Message-ID: <2828453.ZgdXeiReHi@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140617201359.GA6988@dashie>
-References: <20140612145813.GB14085@dashie> <4697863.VH2Gj7n1J0@vostro.rjw.lan> <20140617201359.GA6988@dashie>
+	id S964916AbaFQUst (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 16:48:49 -0400
+Received: from alfter.us ([96.126.100.72]:56602 "EHLO alfter.us"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933410AbaFQUss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 16:48:48 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jun 2014 16:48:48 EDT
+Message-ID: <31a597fc9f165ccc4998451b0ae91fc6.squirrel@webmail.alfter.us>
+Date: Tue, 17 Jun 2014 20:42:05 -0000
+Subject: revised driver: w1_ds2406
+To: linux-kernel@vger.kernel.org
+Cc: zbr@ioremap.net
+User-Agent: SquirrelMail/1.4.23 [SVN]
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/mixed;boundary="----=_20140617204205_89759"
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Delivery-Agent: TMDA/1.1.12 (Macallan)
+From: Scott Alfter <scott@alfter.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 17, 2014 10:14:00 PM Josef Gajdusek wrote:
-> It seems that some batteries (noticed on DELL JYPJ136) assume 
-> capacity_now = design_capacity when fully charged. This causes 
-> reported capacity to suddenly jump to >full_charge_capacity (and that 
-> means capacity reported to userspace is >100% and incorrect) 
-> values after 99%. This patch attempts to detect this bug, notifies 
-> userspace and trims the value to full_charge_capacity.
-> 
-> Signed-off-by: Josef Gajdusek <atx@atx.name>
-> ---
-> > 
-> > But it still is necessary to check if battery->full_charge_capacity is
-> > not ACPI_BATTERY_VALUE_UNKNOWN, isn't it?
-> > 
-> 
-> Fixed, my mistake. When changing the checks, I somehow missed that the values 
-> are not unsigned.
-> 
-> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-> index e48fc98..2e8f699 100644
-> --- a/drivers/acpi/battery.c
-> +++ b/drivers/acpi/battery.c
-> @@ -532,6 +532,19 @@ static int acpi_battery_get_state(struct acpi_battery *battery)
->  			" invalid.\n");
->  	}
->  
-> +	/* When fully charged, some batteries wrongly report
-> +	 * capacity_now = design_capacity instead of = full_charge_capacity
-> +	 */
-> +	if (battery->capacity_now > battery->full_charge_capacity &&
-> +		battery->full_charge_capacity != ACPI_BATTERY_VALUE_UNKNOWN) {
-> +		battery->capacity_now = battery->full_charge_capacity;
+------=_20140617204205_89759
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 
-Thinking more about the printk_once().  Perhaps it only needs to be printed
-when battery->capacity_now != battery->design_capacity (it's a known issue
-otherwise).
+Some preliminary work at making use of this driver led me to implement
+CRC-16 checks on read and write to deal with the occasional glitchiness of
+the 1-Wire bus.  The revised driver (attached) returns an I/O error if the
+CRC check fails.  When reading the chip's state, either you get a valid
+indication or you get an I/O error.  When changing its state, either the
+change is successful or an I/O error is returned.
 
-> +		printk_once(KERN_WARNING FW_BUG
-> +			"battery: reported current charge level (%d) "
-> +			"is higher than reported maximum charge level (%d)."
-> +			"This is normal on some systems.\n",
+This patch supersedes the patch I had previously submitted.
 
-Also I think that the line above doesn't add any real value. :-)
+Signed-off-by: Scott Alfter <scott@alfter.us>
 
-> +			battery->capacity_now, battery->full_charge_capacity);
-> +	}
-> +
->  	if (test_bit(ACPI_BATTERY_QUIRK_PERCENTAGE_CAPACITY, &battery->flags)
->  	    && battery->capacity_now >= 0 && battery->capacity_now <= 100)
->  		battery->capacity_now = (battery->capacity_now *
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Scott Alfter
+scott@alfter.us
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+
+------=_20140617204205_89759
+Content-Type: text/plain; name="w1_ds2406.patch.txt"
+Content-Transfer-Encoding: 8bit
+Content-Disposition: attachment; filename="w1_ds2406.patch.txt"
+
+diff --git a/drivers/w1/slaves/Kconfig b/drivers/w1/slaves/Kconfig
+index 5e6a3c9..6b04f0f 100644
+--- a/drivers/w1/slaves/Kconfig
++++ b/drivers/w1/slaves/Kconfig
+@@ -38,6 +38,13 @@ config W1_SLAVE_DS2413
+ 	  Say Y here if you want to use a 1-wire
+ 	  DS2413 Dual Channel Addressable Switch device support
+ 
++config W1_SLAVE_DS2406
++	tristate "Dual Channel Addressable Switch 0x12 family support (DS2406)"
++	help
++	  Say Y or M here if you want to use a 1-wire
++	  DS2406 Dual Channel Addressable Switch.  EPROM read/write
++	  support for these devices is not implemented.
++
+ config W1_SLAVE_DS2423
+ 	tristate "Counter 1-wire device (DS2423)"
+ 	select CRC16
+diff --git a/drivers/w1/slaves/Makefile b/drivers/w1/slaves/Makefile
+index 06529f3..1e9989a 100644
+--- a/drivers/w1/slaves/Makefile
++++ b/drivers/w1/slaves/Makefile
+@@ -6,6 +6,7 @@ obj-$(CONFIG_W1_SLAVE_THERM)	+= w1_therm.o
+ obj-$(CONFIG_W1_SLAVE_SMEM)	+= w1_smem.o
+ obj-$(CONFIG_W1_SLAVE_DS2408)	+= w1_ds2408.o
+ obj-$(CONFIG_W1_SLAVE_DS2413)	+= w1_ds2413.o
++obj-$(CONFIG_W1_SLAVE_DS2406)	+= w1_ds2406.o
+ obj-$(CONFIG_W1_SLAVE_DS2423)	+= w1_ds2423.o
+ obj-$(CONFIG_W1_SLAVE_DS2431)	+= w1_ds2431.o
+ obj-$(CONFIG_W1_SLAVE_DS2433)	+= w1_ds2433.o
+diff --git a/drivers/w1/w1_family.h b/drivers/w1/w1_family.h
+index 625dd08..56d8a0c 100644
+--- a/drivers/w1/w1_family.h
++++ b/drivers/w1/w1_family.h
+@@ -40,6 +40,7 @@
+ #define W1_FAMILY_DS2760	0x30
+ #define W1_FAMILY_DS2780	0x32
+ #define W1_FAMILY_DS2413	0x3A
++#define W1_FAMILY_DS2406	0x12
+ #define W1_THERM_DS1825		0x3B
+ #define W1_FAMILY_DS2781	0x3D
+ #define W1_THERM_DS28EA00	0x42
+diff --git a/Documentation/w1/slaves/w1_ds2406 b/Documentation/w1/slaves/w1_ds2406
+new file mode 100644
+index 0000000..8137fe6
+--- /dev/null
++++ b/Documentation/w1/slaves/w1_ds2406
+@@ -0,0 +1,25 @@
++w1_ds2406 kernel driver
++=======================
++
++Supported chips:
++  * Maxim DS2406 (and other family 0x12) addressable switches
++
++Author: Scott Alfter <scott@alfter.us>
++
++Description
++-----------
++
++The w1_ds2406 driver allows connected devices to be switched on and off. 
++These chips also provide 128 bytes of OTP EPROM, but reading/writing it is
++not supported.  In TSOC-6 form, the DS2406 provides two switch outputs and
++can be provided with power on a dedicated input.  In TO-92 form, it provides
++one output and uses parasitic power only.
++
++The driver provides two sysfs files.  state is readable; it gives the
++current state of each switch, with PIO A in bit 0 and PIO B in bit 1.  The
++driver ORs this state with 0x30, so shell scripts get an ASCII 0/1/2/3 to
++work with.  output is writable; bits 0 and 1 control PIO A and B,
++respectively.  Bits 2-7 are ignored, so it's safe to write ASCII data.
++
++CRCs are checked on read and write.  Failed checks cause an I/O error to be
++returned.  On a failed write, the switch status is not changed.
+diff --git a/drivers/w1/slaves/w1_ds2406.c b/drivers/w1/slaves/w1_ds2406.c
+new file mode 100644
+index 0000000..d488961
+--- /dev/null
++++ b/drivers/w1/slaves/w1_ds2406.c
+@@ -0,0 +1,168 @@
++/*
++ * w1_ds2406.c - w1 family 12 (DS2406) driver
++ * based on w1_ds2413.c by Mariusz Bialonczyk <manio@skyboo.net>
++ *
++ * Copyright (c) 2014 Scott Alfter <scott@alfter.us>
++ *
++ * This source code is licensed under the GNU General Public License,
++ * Version 2. See the file COPYING for more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/moduleparam.h>
++#include <linux/device.h>
++#include <linux/types.h>
++#include <linux/delay.h>
++#include <linux/slab.h>
++#include <linux/crc16.h>
++
++#include "../w1.h"
++#include "../w1_int.h"
++#include "../w1_family.h"
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Scott Alfter <scott@alfter.us>");
++MODULE_DESCRIPTION("w1 family 12 driver for DS2406 2 Pin IO");
++
++#define W1_F12_FUNC_READ_STATUS		   0xAA
++#define W1_F12_FUNC_WRITE_STATUS	   0x55
++
++static ssize_t w1_f12_read_state(
++	struct file *filp, struct kobject *kobj,
++	struct bin_attribute *bin_attr,
++	char *buf, loff_t off, size_t count)
++{
++	u8 w1_buf[6]={W1_F12_FUNC_READ_STATUS, 7, 0, 0, 0, 0};
++	struct w1_slave *sl = kobj_to_w1_slave(kobj);
++	u16 crc=0;
++	int i;
++	ssize_t rtnval=1;
++
++	if (off != 0)
++		return 0;
++	if (!buf)
++		return -EINVAL;
++
++	mutex_lock(&sl->master->bus_mutex);
++
++	if (w1_reset_select_slave(sl)) {
++		mutex_unlock(&sl->master->bus_mutex);
++		return -EIO;
++	}
++
++	w1_write_block(sl->master, w1_buf, 3);
++	w1_read_block(sl->master, w1_buf+3, 3);
++	for (i=0; i<6; i++)
++		crc=crc16_byte(crc, w1_buf[i]);
++	if (crc==0xb001) /* good read? */
++		*buf=((w1_buf[3]>>5)&3)|0x30;
++	else
++		rtnval=-EIO;
++
++	mutex_unlock(&sl->master->bus_mutex);
++
++	return rtnval;
++}
++
++static ssize_t w1_f12_write_output(
++	struct file *filp, struct kobject *kobj,
++	struct bin_attribute *bin_attr,
++	char *buf, loff_t off, size_t count)
++{
++	struct w1_slave *sl = kobj_to_w1_slave(kobj);
++	u8 w1_buf[6]={W1_F12_FUNC_WRITE_STATUS, 7, 0, 0, 0, 0};
++	u16 crc=0;
++	int i;
++	ssize_t rtnval=1;
++
++	if (count != 1 || off != 0)
++		return -EFAULT;
++
++	mutex_lock(&sl->master->bus_mutex);
++
++	if (w1_reset_select_slave(sl)) {
++		mutex_unlock(&sl->master->bus_mutex);
++		return -EIO;
++	}
++
++	w1_buf[3] = (((*buf)&3)<<5)|0x1F;
++	w1_write_block(sl->master, w1_buf, 4);
++	w1_read_block(sl->master, w1_buf+4, 2);
++	for (i=0; i<6; i++)
++		crc=crc16_byte(crc, w1_buf[i]);
++	if (crc==0xb001) /* good read? */
++		w1_write_8(sl->master, 0xFF);
++	else
++		rtnval=-EIO;
++
++	mutex_unlock(&sl->master->bus_mutex);
++	return rtnval;
++}
++
++#define NB_SYSFS_BIN_FILES 2
++static struct bin_attribute w1_f12_sysfs_bin_files[NB_SYSFS_BIN_FILES] = {
++	{
++		.attr = {
++			.name = "state",
++			.mode = S_IRUGO,
++		},
++		.size = 1,
++		.read = w1_f12_read_state,
++	},
++	{
++		.attr = {
++			.name = "output",
++			.mode = S_IRUGO | S_IWUSR | S_IWGRP,
++		},
++		.size = 1,
++		.write = w1_f12_write_output,
++	}
++};
++
++static int w1_f12_add_slave(struct w1_slave *sl)
++{
++	int err = 0;
++	int i;
++
++	for (i = 0; i < NB_SYSFS_BIN_FILES && !err; ++i)
++		err = sysfs_create_bin_file(
++			&sl->dev.kobj,
++			&(w1_f12_sysfs_bin_files[i]));
++	if (err)
++		while (--i >= 0)
++			sysfs_remove_bin_file(&sl->dev.kobj,
++				&(w1_f12_sysfs_bin_files[i]));
++	return err;
++}
++
++static void w1_f12_remove_slave(struct w1_slave *sl)
++{
++	int i;
++	for (i = NB_SYSFS_BIN_FILES - 1; i >= 0; --i)
++		sysfs_remove_bin_file(&sl->dev.kobj,
++			&(w1_f12_sysfs_bin_files[i]));
++}
++
++static struct w1_family_ops w1_f12_fops = {
++	.add_slave      = w1_f12_add_slave,
++	.remove_slave   = w1_f12_remove_slave,
++};
++
++static struct w1_family w1_family_12 = {
++	.fid = W1_FAMILY_DS2406,
++	.fops = &w1_f12_fops,
++};
++
++static int __init w1_f12_init(void)
++{
++	return w1_register_family(&w1_family_12);
++}
++
++static void __exit w1_f12_exit(void)
++{
++	w1_unregister_family(&w1_family_12);
++}
++
++module_init(w1_f12_init);
++module_exit(w1_f12_exit);
+------=_20140617204205_89759--
+
