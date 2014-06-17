@@ -1,74 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655AbaFQMJq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 08:09:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49349 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932070AbaFQMJp (ORCPT
+	id S932709AbaFQMNS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 08:13:18 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:62950 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932444AbaFQMNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 08:09:45 -0400
-Date: Tue, 17 Jun 2014 14:09:38 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>, Jason Low <jason.low2@hp.com>,
-        Davidlohr Bueson <davidlohr@hp.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched: Fast idling of CPU when system is partially loaded
-Message-ID: <20140617120938.GN3213@twins.programming.kicks-ass.net>
-References: <1402608359.2970.548.camel@schen9-DESK>
- <20140615161921.GL11371@laptop.programming.kicks-ass.net>
- <1402933807.2970.577.camel@schen9-DESK>
+	Tue, 17 Jun 2014 08:13:16 -0400
+Message-ID: <53A030DB.3090009@linaro.org>
+Date: Tue, 17 Jun 2014 14:13:15 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="S4drRqups3dkeHIl"
-Content-Disposition: inline
-In-Reply-To: <1402933807.2970.577.camel@schen9-DESK>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Doug Anderson <dianders@chromium.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>
+CC: Vincent Guittot <vincent.guittot@linaro.org>,
+        Chirantan Ekbote <chirantan@chromium.org>,
+        David Riley <davidriley@chromium.org>, olof@lixom.net,
+        linux-samsung-soc@vger.kernel.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] clocksource: exynos_mct: Fix ftrace
+References: <1401903034-20074-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1401903034-20074-1-git-send-email-dianders@chromium.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/04/2014 07:30 PM, Doug Anderson wrote:
+> In (93bfb76 clocksource: exynos_mct: register sched_clock callback) we
+> supported using the MCT as a scheduler clock.  We properly marked
+> exynos4_read_sched_clock() as notrace.  However, we then went and
+> called another function that _wasn't_ notrace.  That means if you do:
+>
+>    cd /sys/kernel/debug/tracing/
+>    echo function_graph > current_tracer
+>
+> You'll get a crash.
+>
+> Fix this (but still let other readers of the MCT be trace-enabled) by
+> adding an extra function.  It's important to keep other users of MCT
+> traceable because the MCT is actually quite slow.
 
---S4drRqups3dkeHIl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks for the explanation in the other email.
 
-On Mon, Jun 16, 2014 at 08:50:07AM -0700, Tim Chen wrote:
-> > The worry I have is that this update is 'slow'. We could have grown many
-> > tasks since the last update.
->=20
-> The update to turn on the indicator is immediate and triggered in
-> add_nr_running. So if there are more than one tasks on any cpu,=20
-> we start load balancing again right away.  It is only the=20
-> clearing of the indicator in update_sd_lb_stats that takes time.
-> That does no harm as the cleared indicator is for the skipping of load
-> balance, which can be delayed.
->=20
+I think the last sentence is a bit confusing because you are implicitly 
+saying you need these traces to investigate why the timer is slow which 
+is referring to something not related to this fix.
 
-Oh right, shows me I shouldn't be reading patches on sunday or similarly
-daft times ;)
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+>   drivers/clocksource/exynos_mct.c | 9 +++++++--
+>   1 file changed, 7 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
+> index 8d64200..ba3a683 100644
+> --- a/drivers/clocksource/exynos_mct.c
+> +++ b/drivers/clocksource/exynos_mct.c
+> @@ -165,7 +165,7 @@ static void exynos4_mct_frc_start(u32 hi, u32 lo)
+>   	exynos4_mct_write(reg, EXYNOS4_MCT_G_TCON);
+>   }
+>
+> -static cycle_t exynos4_frc_read(struct clocksource *cs)
+> +static inline cycle_t notrace _exynos4_frc_read(void)
 
---S4drRqups3dkeHIl
-Content-Type: application/pgp-signature
+Why inline ?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+>   {
+>   	unsigned int lo, hi;
+>   	u32 hi2 = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_U);
+> @@ -179,6 +179,11 @@ static cycle_t exynos4_frc_read(struct clocksource *cs)
+>   	return ((cycle_t)hi << 32) | lo;
+>   }
+>
+> +static cycle_t exynos4_frc_read(struct clocksource *cs)
+> +{
+> +	return _exynos4_frc_read();
+> +}
+> +
+>   static void exynos4_frc_resume(struct clocksource *cs)
+>   {
+>   	exynos4_mct_frc_start(0, 0);
+> @@ -195,7 +200,7 @@ struct clocksource mct_frc = {
+>
+>   static u64 notrace exynos4_read_sched_clock(void)
+>   {
+> -	return exynos4_frc_read(&mct_frc);
+> +	return _exynos4_frc_read();
+>   }
+>
+>   static void __init exynos4_clocksource_init(void)
+>
 
-iQIcBAEBAgAGBQJToDACAAoJEHZH4aRLwOS69+IP/0AW0439ziqhgHzyPin2mQ2+
-vUDq6fPsQNvHuOvgIlPFUyV0X2NIJKLBXJd+NJ9qHPizo+u4bIRG76YLm5eYbsII
-dLVBb2yysyjM3kSsg13D51tFjj7LucUG32FY7AEP8Y1sz9jhtHJjZL7kYuknogWB
-RlzGMBCXqQLOe0L6Q+6NSImJpfBaBXyYgSbGB8z6ZxfWWP0IMAgG0h0Aqzpzk7ka
-grwtTBX+rXYdAumWNhJ88C4KjjbRAZ5lEbyHpwuLN72r4J1aUtkuFzS3jMTw3Wnn
-ydw+wtLFrWZDH9AT9OvnTIb5sC8FGW2kMOS3lKnZAb3jkbM18/FA6kDNKLZIzAii
-sNc5qCK1ihukIY2t5rb2aoW9EuyYtXprDQcxCYmAsFlvcMWl+DHooxLriBTaBSI6
-LEeAHmM1P11OlFZnu0sR1UOzzDSctjvwKX4aAZ6PFKolZqnfT0DIFBEAbai3XKcT
-EEr64gilwS5uaCdYzpkoCbcR+ptv1mvEniG4eMoi9y1Jkq4jlmzr9oMMIKFHjc1l
-uxbzgfPeNdCJaLjKeQPwPQsA+CU/ts0vNoFR0//+4011GSlOV5wz8m1/uvaQh0M2
-6ZC73rJvaxB/H7gYimjWTcKXkzc7Fwn2iLS9HAvMtlsD3pf/6GfKyKarTSVR0MK0
-OWqy/DBm3j+7vFhYoUcO
-=8kmZ
------END PGP SIGNATURE-----
 
---S4drRqups3dkeHIl--
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
