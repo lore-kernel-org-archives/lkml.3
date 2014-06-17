@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964928AbaFQQWf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:22:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50691 "EHLO
+	id S964946AbaFQQWt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:22:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50695 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934056AbaFQQWb (ORCPT
+	with ESMTP id S933832AbaFQQWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:22:31 -0400
+	Tue, 17 Jun 2014 12:22:33 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 090/121] net: qmi_wwan: add Alcatel L800MA
-Date: Tue, 17 Jun 2014 09:17:48 -0700
-Message-Id: <1403021899-16708-63-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 097/121] s390/bpf,jit: initialize A register if 1st insn is BPF_S_LDX_B_MSH
+Date: Tue, 17 Jun 2014 09:17:55 -0700
+Message-Id: <1403021899-16708-70-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,35 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-[ Upstream commit 75573660c47a0db7cc931dcf154945610e02130a ]
+commit 6e0de817594c61f3b392a9245deeb09609ec707d upstream.
 
-Device interface layout:
-0: ff/ff/ff - serial
-1: ff/00/00 - serial AT+PPP
-2: ff/ff/ff - QMI/wwan
-3: 08/06/50 - storage
+The A register needs to be initialized to zero in the prolog if the
+first instruction of the BPF program is BPF_S_LDX_B_MSH to prevent
+leaking the content of %r5 to user space.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/usb/qmi_wwan.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/s390/net/bpf_jit_comp.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
-index da128a4..d9f2088 100644
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -579,6 +579,7 @@ static const struct usb_device_id products[] = {
- 	{QMI_FIXED_INTF(0x1199, 0x9041, 8)},	/* Sierra Wireless MC7305/MC7355 */
- 	{QMI_FIXED_INTF(0x1199, 0x9051, 8)},	/* Netgear AirCard 340U */
- 	{QMI_FIXED_INTF(0x1bbb, 0x011e, 4)},	/* Telekom Speedstick LTE II (Alcatel One Touch L100V LTE) */
-+	{QMI_FIXED_INTF(0x1bbb, 0x0203, 2)},	/* Alcatel L800MA */
- 	{QMI_FIXED_INTF(0x2357, 0x0201, 4)},	/* TP-LINK HSUPA Modem MA180 */
- 	{QMI_FIXED_INTF(0x2357, 0x9000, 4)},	/* TP-LINK MA260 */
- 	{QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},	/* Telit LE920 */
+diff --git a/arch/s390/net/bpf_jit_comp.c b/arch/s390/net/bpf_jit_comp.c
+index 5e92f47..ab9e3f4 100644
+--- a/arch/s390/net/bpf_jit_comp.c
++++ b/arch/s390/net/bpf_jit_comp.c
+@@ -242,7 +242,6 @@ static void bpf_jit_noleaks(struct bpf_jit *jit, struct sock_filter *filter)
+ 	case BPF_S_LD_W_IND:
+ 	case BPF_S_LD_H_IND:
+ 	case BPF_S_LD_B_IND:
+-	case BPF_S_LDX_B_MSH:
+ 	case BPF_S_LD_IMM:
+ 	case BPF_S_LD_MEM:
+ 	case BPF_S_MISC_TXA:
 -- 
 1.9.1
 
