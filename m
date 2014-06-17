@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966355AbaFQVtO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:49:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54132 "EHLO
+	id S966390AbaFQVt2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:49:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54141 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966306AbaFQVtK (ORCPT
+	with ESMTP id S966350AbaFQVtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:49:10 -0400
+	Tue, 17 Jun 2014 17:49:13 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, Kees Cook <keescook@chromium.org>,
-        Will Drewry <wad@chromium.org>, Darren Hart <dvhart@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 208/212] futex: Always cleanup owner tid in unlock_pi
-Date: Tue, 17 Jun 2014 14:45:02 -0700
-Message-Id: <1403041506-13646-209-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 204/212] iscsi-target: Fix wrong buffer / buffer overrun in iscsi_change_param_value()
+Date: Tue, 17 Jun 2014 14:44:58 -0700
+Message-Id: <1403041506-13646-205-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -29,102 +28,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 13fbca4c6ecd96ec1a1cfa2e4f2ce191fe928a5e upstream.
+commit 79d59d08082dd0a0a18f8ceb78c99f9f321d72aa upstream.
 
-If the owner died bit is set at futex_unlock_pi, we currently do not
-cleanup the user space futex.  So the owner TID of the current owner
-(the unlocker) persists.  That's observable inconsistant state,
-especially when the ownership of the pi state got transferred.
+In non-leading connection login, iscsi_login_non_zero_tsih_s1() calls
+iscsi_change_param_value() with the buffer it uses to hold the login
+PDU, not a temporary buffer.  This leads to the login header getting
+corrupted and login failing for non-leading connections in MC/S.
 
-Clean it up unconditionally.
+Fix this by adding a wrapper iscsi_change_param_sprintf() that handles
+the temporary buffer itself to avoid confusion.  Also handle sending a
+reject in case of failure in the wrapper, which lets the calling code
+get quite a bit smaller and easier to read.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Will Drewry <wad@chromium.org>
-Cc: Darren Hart <dvhart@linux.intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Finally, bump the size of the temporary buffer from 32 to 64 bytes to be
+safe, since "MaxRecvDataSegmentLength=" by itself is 25 bytes; with a
+trailing NUL, a value >= 1M will lead to a buffer overrun.  (This isn't
+the default but we don't need to run right at the ragged edge here)
+
+Reported-by: Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+[ kamal: backport to 3.13-stable: omit inapplicable bit from
+  iscsi_login_zero_tsih_s2 ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/futex.c | 40 ++++++++++++++++++----------------------
- 1 file changed, 18 insertions(+), 22 deletions(-)
+ drivers/target/iscsi/iscsi_target_login.c | 57 +++++++++++++++----------------
+ 1 file changed, 28 insertions(+), 29 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 9c6b0e1..ab15ce8 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -905,6 +905,7 @@ static int wake_futex_pi(u32 __user *uaddr, u32 uval, struct futex_q *this)
- 	struct task_struct *new_owner;
- 	struct futex_pi_state *pi_state = this->pi_state;
- 	u32 uninitialized_var(curval), newval;
-+	int ret = 0;
+diff --git a/drivers/target/iscsi/iscsi_target_login.c b/drivers/target/iscsi/iscsi_target_login.c
+index e29279e..369ef10 100644
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -249,6 +249,28 @@ static void iscsi_login_set_conn_values(
+ 	mutex_unlock(&auth_id_lock);
+ }
  
- 	if (!pi_state)
- 		return -EINVAL;
-@@ -928,23 +929,19 @@ static int wake_futex_pi(u32 __user *uaddr, u32 uval, struct futex_q *this)
- 		new_owner = this->task;
++static __printf(2, 3) int iscsi_change_param_sprintf(
++	struct iscsi_conn *conn,
++	const char *fmt, ...)
++{
++	va_list args;
++	unsigned char buf[64];
++
++	memset(buf, 0, sizeof buf);
++
++	va_start(args, fmt);
++	vsnprintf(buf, sizeof buf, fmt, args);
++	va_end(args);
++
++	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
++		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
++				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++		return -1;
++	}
++
++	return 0;
++}
++
+ /*
+  *	This is the leading connection of a new session,
+  *	or session reinstatement.
+@@ -337,7 +359,6 @@ static int iscsi_login_zero_tsih_s2(
+ {
+ 	struct iscsi_node_attrib *na;
+ 	struct iscsi_session *sess = conn->sess;
+-	unsigned char buf[32];
+ 	bool iser = false;
+ 
+ 	sess->tpg = conn->tpg;
+@@ -378,26 +399,16 @@ static int iscsi_login_zero_tsih_s2(
+ 	 *
+ 	 * In our case, we have already located the struct iscsi_tiqn at this point.
+ 	 */
+-	memset(buf, 0, 32);
+-	sprintf(buf, "TargetPortalGroupTag=%hu", sess->tpg->tpgt);
+-	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
+-		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
+-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++	if (iscsi_change_param_sprintf(conn, "TargetPortalGroupTag=%hu", sess->tpg->tpgt))
+ 		return -1;
+-	}
  
  	/*
--	 * We pass it to the next owner. (The WAITERS bit is always
--	 * kept enabled while there is PI state around. We must also
--	 * preserve the owner died bit.)
-+	 * We pass it to the next owner. The WAITERS bit is always
-+	 * kept enabled while there is PI state around. We cleanup the
-+	 * owner died bit, because we are the owner.
+ 	 * Workaround for Initiators that have broken connection recovery logic.
+ 	 *
+ 	 * "We would really like to get rid of this." Linux-iSCSI.org team
  	 */
--	if (!(uval & FUTEX_OWNER_DIED)) {
--		int ret = 0;
--
--		newval = FUTEX_WAITERS | task_pid_vnr(new_owner);
-+	newval = FUTEX_WAITERS | task_pid_vnr(new_owner);
+-	memset(buf, 0, 32);
+-	sprintf(buf, "ErrorRecoveryLevel=%d", na->default_erl);
+-	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
+-		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
+-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++	if (iscsi_change_param_sprintf(conn, "ErrorRecoveryLevel=%d", na->default_erl))
+ 		return -1;
+-	}
  
--		if (cmpxchg_futex_value_locked(&curval, uaddr, uval, newval))
--			ret = -EFAULT;
--		else if (curval != uval)
--			ret = -EINVAL;
--		if (ret) {
--			raw_spin_unlock(&pi_state->pi_mutex.wait_lock);
--			return ret;
+ 	if (iscsi_login_disable_FIM_keys(conn->param_list, conn) < 0)
+ 		return -1;
+@@ -409,12 +420,9 @@ static int iscsi_login_zero_tsih_s2(
+ 		unsigned long mrdsl, off;
+ 		int rc;
+ 
+-		sprintf(buf, "RDMAExtensions=Yes");
+-		if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
+-			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
+-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++		if (iscsi_change_param_sprintf(conn, "RDMAExtensions=Yes"))
+ 			return -1;
 -		}
-+	if (cmpxchg_futex_value_locked(&curval, uaddr, uval, newval))
-+		ret = -EFAULT;
-+	else if (curval != uval)
-+		ret = -EINVAL;
-+	if (ret) {
-+		raw_spin_unlock(&pi_state->pi_mutex.wait_lock);
-+		return ret;
++
+ 		/*
+ 		 * Make MaxRecvDataSegmentLength PAGE_SIZE aligned for
+ 		 * Immediate Data + Unsolicitied Data-OUT if necessary..
+@@ -444,12 +452,8 @@ static int iscsi_login_zero_tsih_s2(
+ 		pr_warn("Aligning ISER MaxRecvDataSegmentLength: %lu down"
+ 			" to PAGE_SIZE\n", mrdsl);
+ 
+-		sprintf(buf, "MaxRecvDataSegmentLength=%lu\n", mrdsl);
+-		if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
+-			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
+-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++		if (iscsi_change_param_sprintf(conn, "MaxRecvDataSegmentLength=%lu\n", mrdsl))
+ 			return -1;
+-		}
  	}
  
- 	raw_spin_lock_irq(&pi_state->owner->pi_lock);
-@@ -2189,9 +2186,10 @@ retry:
- 	/*
- 	 * To avoid races, try to do the TID -> 0 atomic transition
- 	 * again. If it succeeds then we can return without waking
--	 * anyone else up:
-+	 * anyone else up. We only try this if neither the waiters nor
-+	 * the owner died bit are set.
+ 	return 0;
+@@ -591,13 +595,8 @@ static int iscsi_login_non_zero_tsih_s2(
+ 	 *
+ 	 * In our case, we have already located the struct iscsi_tiqn at this point.
  	 */
--	if (!(uval & FUTEX_OWNER_DIED) &&
-+	if (!(uval & ~FUTEX_TID_MASK) &&
- 	    cmpxchg_futex_value_locked(&uval, uaddr, vpid, 0))
- 		goto pi_faulted;
- 	/*
-@@ -2223,11 +2221,9 @@ retry:
- 	/*
- 	 * No waiters - kernel unlocks the futex:
- 	 */
--	if (!(uval & FUTEX_OWNER_DIED)) {
--		ret = unlock_futex_pi(uaddr, uval);
--		if (ret == -EFAULT)
--			goto pi_faulted;
+-	memset(buf, 0, 32);
+-	sprintf(buf, "TargetPortalGroupTag=%hu", sess->tpg->tpgt);
+-	if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
+-		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
+-				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++	if (iscsi_change_param_sprintf(conn, "TargetPortalGroupTag=%hu", sess->tpg->tpgt))
+ 		return -1;
 -	}
-+	ret = unlock_futex_pi(uaddr, uval);
-+	if (ret == -EFAULT)
-+		goto pi_faulted;
  
- out_unlock:
- 	spin_unlock(&hb->lock);
+ 	return iscsi_login_disable_FIM_keys(conn->param_list, conn);
+ }
 -- 
 1.9.1
 
