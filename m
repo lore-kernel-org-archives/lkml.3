@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932309AbaFQEmw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 00:42:52 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45367 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754202AbaFQEmt (ORCPT
+	id S1755356AbaFQEmu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 00:42:50 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:51368 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529AbaFQEmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 17 Jun 2014 00:42:49 -0400
-X-Original-SENDERIP: 10.178.37.74
-X-Original-MAILFROM: neidhard.kim@lge.com
-Message-ID: <539FC747.3060908@lge.com>
-Date: Tue, 17 Jun 2014 13:42:47 +0900
-From: Jongsung Kim <neidhard.kim@lge.com>
-Organization: LG Electronics
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Hayun Hwang <hwang.hayun@lge.com>,
-        Youngkyu Choi <youngkyu7.choi@lge.com>
-Subject: Re: [PATCH] net/cadence/macb: clear interrupts simply and correctly
-References: <1402563054-8546-1-git-send-email-neidhard.kim@lge.com> <9f5be687-d127-49a4-90ea-c1033505452d@BN1BFFO11FD019.protection.gbl> <539E79F1.1090006@lge.com> <ea57b37f-1f1c-40a0-84a6-46b0b78ec6b4@BY2FFO11FD034.protection.gbl> <539FAA34.9030002@lge.com> <0f1d404c-89a7-4bbd-99ff-973d4f26d2c6@BY2FFO11FD005.protection.gbl>
-In-Reply-To: <0f1d404c-89a7-4bbd-99ff-973d4f26d2c6@BY2FFO11FD005.protection.gbl>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Date: Mon, 16 Jun 2014 21:42:47 -0700 (PDT)
+Message-Id: <20140616.214247.1154200670003936158.davem@davemloft.net>
+To: isubramanian@apm.com
+Cc: netdev@vger.kernel.org, devicetree@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
+        rapatel@apm.com, kchudgar@apm.com
+Subject: Re: [PATCH v6 4/4] drivers: net: Add APM X-Gene SoC ethernet
+ driver support.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1402964326-11147-5-git-send-email-isubramanian@apm.com>
+References: <1402964326-11147-1-git-send-email-isubramanian@apm.com>
+	<1402964326-11147-5-git-send-email-isubramanian@apm.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 16 Jun 2014 21:42:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2014 12:50 PM, Sören Brinkmann wrote:
-> On Tue, 2014-06-17 at 11:38AM +0900, Jongsung Kim wrote:
->> On 06/16/2014 11:56 PM, Sören Brinkmann wrote:
->>> On Mon, 2014-06-16 at 02:00PM +0900, Jongsung Kim wrote:
->>>> On 06/13/2014 12:44 AM, Sören Brinkmann wrote:
->>>>> This is now clearing all IRQ flags which is probably not what we want
->>>>> here. This is handling RX only. We still want the non-RX interrupts to go to
->>>>> the actual interrupt service routing.
->>>>
->>>> The ISR(Interrupt Status Register) is read only in the interrupt service
->>>> routine, macb_interrupt. But is partially cleared here and there. Further
->>>> handler-functions decide jobs to be done by reading/checking other status
->>>> registers. (e.g., TSR, RSR) So, clearing the ISR after reading looks not
->>>> a bad idea.
->>>
->>> But you are clearing _all_ interrupt flags in the RX NAPI handler.
->>> Doesn't that mean we might miss certain events?
->>
->> Please inspect my patch again. What I did in the macb_poll is removing
->> statements clearing the Rx-complete interrupt, not clearing all the
->> interrupts.
-> 
-> Why is clearing those bits removed? It's probably not a big hit, but it might
-> result in a pointless interrupt which could be avoided. But it should
-> probably clear all RX interrupts - MACB_RX_INT_FLAGS - instead of just RCOMP.
-> For clear-on-read implementations it shouldn't make a difference.
+From: Iyappan Subramanian <isubramanian@apm.com>
+Date: Mon, 16 Jun 2014 17:18:46 -0700
 
-I agree. But I removed it because I think stepping the same procedure
-regardless of the "gem_irq_clear_read" implementation is better than
-implementation-specific optimization.
+> +static netdev_tx_t xgene_enet_start_xmit(struct sk_buff *skb,
+> +					 struct net_device *ndev)
+> +{
+> +	struct xgene_enet_pdata *pdata = netdev_priv(ndev);
+> +	struct xgene_enet_desc_ring *tx_ring = pdata->tx_ring;
+> +	struct xgene_enet_desc_ring *cp_ring = tx_ring->cp_ring;
+> +	u32 tx_level, cq_level;
+> +
+> +	tx_level = xgene_enet_ring_len(tx_ring);
+> +	cq_level = xgene_enet_ring_len(cp_ring);
+> +	if (unlikely(tx_level > pdata->tx_qcnt_hi ||
+> +		     cq_level > pdata->cp_qcnt_hi)) {
+> +		netif_stop_queue(ndev);
+> +		return NETDEV_TX_BUSY;
+> +	}
+> +
+> +	if (xgene_enet_setup_tx_desc(tx_ring, skb))
+> +		return NETDEV_TX_OK;
 
-> And in the if-condition in that new helper, I'd add '&& status' to
-> avoid writing back zeros.
+If you return NETDEV_TX_OK, it is your responsibility to deal with the
+SKB, because you own it.
 
-Good point. I'll add it when I resend v2.
-
-Jongsung
+In particular, you have to free the packet.
