@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966198AbaFQVsf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:48:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53997 "EHLO
+	id S966249AbaFQVsr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:48:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54016 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966159AbaFQVsa (ORCPT
+	with ESMTP id S965396AbaFQVsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:48:30 -0400
+	Tue, 17 Jun 2014 17:48:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Edward Lin <yidi.lin@canonical.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 093/212] NFSd: call rpc_destroy_wait_queue() from free_client()
-Date: Tue, 17 Jun 2014 14:43:07 -0700
-Message-Id: <1403041506-13646-94-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 096/212] ACPI: blacklist win8 OSI for Dell Inspiron 7737
+Date: Tue, 17 Jun 2014 14:43:10 -0700
+Message-Id: <1403041506-13646-97-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -28,31 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Edward Lin <yidi.lin@canonical.com>
 
-commit 4cb57e3032d4e4bf5e97780e9907da7282b02b0c upstream.
+commit b753631b3576bf343151a82513c5d56fcda1e24f upstream.
 
-Mainly to ensure that we don't leave any hanging timers.
+With win8 capabiltiy, the machine will boot itself immediately after
+shutdown command has executed.
 
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Work around this issue by disabling win8 capcability.  This workaround
+also makes wireless hotkey work.
+
+Signed-off-by: Edward Lin <yidi.lin@canonical.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfsd/nfs4state.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/acpi/blacklist.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 3fcd3ba..c3f6fdc 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -1103,6 +1103,7 @@ free_client(struct nfs4_client *clp)
- 		WARN_ON_ONCE(atomic_read(&ses->se_ref));
- 		free_session(ses);
- 	}
-+	rpc_destroy_wait_queue(&clp->cl_cb_waitq);
- 	free_svc_cred(&clp->cl_cred);
- 	kfree(clp->cl_name.data);
- 	idr_destroy(&clp->cl_stateids);
+diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
+index 078c4f7..3591dd7 100644
+--- a/drivers/acpi/blacklist.c
++++ b/drivers/acpi/blacklist.c
+@@ -323,6 +323,14 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+ 		     DMI_MATCH(DMI_PRODUCT_VERSION, "2349D15"),
+ 		},
+ 	},
++	{
++	.callback = dmi_disable_osi_win8,
++	.ident = "Dell Inspiron 7737",
++	.matches = {
++		    DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++		    DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 7737"),
++		},
++	},
+ 
+ 	/*
+ 	 * BIOS invocation of _OSI(Linux) is almost always a BIOS bug.
 -- 
 1.9.1
 
