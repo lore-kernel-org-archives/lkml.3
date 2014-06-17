@@ -1,21 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965330AbaFQQj4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:39:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50885 "EHLO
+	id S934175AbaFQQZQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:25:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50849 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934137AbaFQQZR (ORCPT
+	with ESMTP id S934137AbaFQQZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:25:17 -0400
+	Tue, 17 Jun 2014 12:25:06 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Victor A. Santos" <victoraur.santos@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Dongjun Shin <d.j.shin@samsung.com>,
+        Sunghwan Yun <sunghwan.yun@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 116/121] USB: Nokia 305 should be treated as unusual dev
-Date: Tue, 17 Jun 2014 09:18:14 -0700
-Message-Id: <1403021899-16708-89-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 121/121] mm/compaction: make isolate_freepages start at pageblock boundary
+Date: Tue, 17 Jun 2014 09:18:19 -0700
+Message-Id: <1403021899-16708-94-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
 References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
@@ -28,35 +34,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Victor A. Santos" <victoraur.santos@gmail.com>
+From: Vlastimil Babka <vbabka@suse.cz>
 
-commit f0ef5d41792a46a1085dead9dfb0bdb2c574638e upstream.
+commit 49e068f0b73dd042c186ffa9b420a9943e90389a upstream.
 
-Signed-off-by: Victor A. Santos <victoraur.santos@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The compaction freepage scanner implementation in isolate_freepages()
+starts by taking the current cc->free_pfn value as the first pfn.  In a
+for loop, it scans from this first pfn to the end of the pageblock, and
+then subtracts pageblock_nr_pages from the first pfn to obtain the first
+pfn for the next for loop iteration.
+
+This means that when cc->free_pfn starts at offset X rather than being
+aligned on pageblock boundary, the scanner will start at offset X in all
+scanned pageblock, ignoring potentially many free pages.  Currently this
+can happen when
+
+ a) zone's end pfn is not pageblock aligned, or
+
+ b) through zone->compact_cached_free_pfn with CONFIG_HOLES_IN_ZONE
+    enabled and a hole spanning the beginning of a pageblock
+
+This patch fixes the problem by aligning the initial pfn in
+isolate_freepages() to pageblock boundary.  This also permits replacing
+the end-of-pageblock alignment within the for loop with a simple
+pageblock_nr_pages increment.
+
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Reported-by: Heesub Shin <heesub.shin@samsung.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Dongjun Shin <d.j.shin@samsung.com>
+Cc: Sunghwan Yun <sunghwan.yun@samsung.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ kamal: backport to 3.8-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/storage/unusual_devs.h | 7 +++++++
- 1 file changed, 7 insertions(+)
+ mm/compaction.c | 22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
-index 15bb781..35cafc2 100644
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -226,6 +226,13 @@ UNUSUAL_DEV(  0x0421, 0x0495, 0x0370, 0x0370,
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_MAX_SECTORS_64 ),
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 3ddb08b..37b848d 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -654,16 +654,20 @@ static void isolate_freepages(struct zone *zone,
+ 				struct compact_control *cc)
+ {
+ 	struct page *page;
+-	unsigned long high_pfn, low_pfn, pfn, zone_end_pfn, end_pfn;
++	unsigned long high_pfn, low_pfn, pfn, zone_end_pfn;
+ 	int nr_freepages = cc->nr_freepages;
+ 	struct list_head *freelist = &cc->freepages;
  
-+/* Patch submitted by Victor A. Santos <victoraur.santos@gmail.com> */
-+UNUSUAL_DEV(  0x0421, 0x05af, 0x0742, 0x0742,
-+		"Nokia",
-+		"305",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_MAX_SECTORS_64),
-+
- /* Patch submitted by Mikhail Zolotaryov <lebon@lebon.org.ua> */
- UNUSUAL_DEV(  0x0421, 0x06aa, 0x1110, 0x1110,
- 		"Nokia",
+ 	/*
+ 	 * Initialise the free scanner. The starting point is where we last
+-	 * scanned from (or the end of the zone if starting). The low point
+-	 * is the end of the pageblock the migration scanner is using.
++	 * successfully isolated from, zone-cached value, or the end of the
++	 * zone when isolating for the first time. We need this aligned to
++	 * the pageblock boundary, because we do pfn -= pageblock_nr_pages
++	 * in the for loop.
++	 * The low boundary is the end of the pageblock the migration scanner
++	 * is using.
+ 	 */
+-	pfn = cc->free_pfn;
++	pfn = cc->free_pfn & ~(pageblock_nr_pages-1);
+ 	low_pfn = cc->migrate_pfn + pageblock_nr_pages;
+ 
+ 	/*
+@@ -683,6 +687,7 @@ static void isolate_freepages(struct zone *zone,
+ 	for (; pfn > low_pfn && cc->nr_migratepages > nr_freepages;
+ 					pfn -= pageblock_nr_pages) {
+ 		unsigned long isolated;
++		unsigned long end_pfn;
+ 
+ 		if (!pfn_valid(pfn))
+ 			continue;
+@@ -710,13 +715,10 @@ static void isolate_freepages(struct zone *zone,
+ 		isolated = 0;
+ 
+ 		/*
+-		 * As pfn may not start aligned, pfn+pageblock_nr_page
+-		 * may cross a MAX_ORDER_NR_PAGES boundary and miss
+-		 * a pfn_valid check. Ensure isolate_freepages_block()
+-		 * only scans within a pageblock
++		 * Take care when isolating in last pageblock of a zone which
++		 * ends in the middle of a pageblock.
+ 		 */
+-		end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
+-		end_pfn = min(end_pfn, zone_end_pfn);
++		end_pfn = min(pfn + pageblock_nr_pages, zone_end_pfn);
+ 		isolated = isolate_freepages_block(cc, pfn, end_pfn,
+ 						   freelist, false);
+ 		nr_freepages += isolated;
 -- 
 1.9.1
 
