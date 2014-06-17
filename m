@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965459AbaFQQcQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 12:32:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51027 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965289AbaFQQ0q (ORCPT
+	id S965473AbaFQQcf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 12:32:35 -0400
+Received: from blu004-omc2s21.hotmail.com ([65.55.111.96]:51289 "EHLO
+	BLU004-OMC2S21.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964771AbaFQQcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 12:26:46 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Florian Westphal <fw@strlen.de>, Pablo Neira Ayuso <pablo@netfilter.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 069/121] netfilter: ipv4: defrag: set local_df flag on defragmented skb
-Date: Tue, 17 Jun 2014 09:17:27 -0700
-Message-Id: <1403021899-16708-42-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403021899-16708-2-git-send-email-kamal@canonical.com>
-References: <1403021899-16708-2-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 17 Jun 2014 12:32:33 -0400
+X-TMN: [lKYfO6odi1irHJrTIujvzviQ/1+ULpGW]
+X-Originating-Email: [registosites@hotmail.com]
+Message-ID: <BLU436-SMTP1654CD288024E13F3E9027EC6110@phx.gbl>
+Date: Tue, 17 Jun 2014 17:32:26 +0100
+From: Mauro <registosites@hotmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Arjan van de Ven <arjan@linux.intel.com>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Zhang Rui <rui.zhang@intel.com>, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa@mit.edu>
+Subject: Re: [PATCH 11/15] x86: Rewrite cyc2ns to avoid the need to disable
+ IRQs
+References: <20131212140835.729222186@infradead.org>	<20131212141655.238445339@infradead.org>	<CAOh2x=mgeozUMGYQubQ4GKPEB6k_TkcV3CSTzNLqjKok-gROQg@mail.gmail.com>	<20140617121535.GY6758@twins.programming.kicks-ass.net> <CAKohpo=6t-VHgJfrq7wz35y_zKfL+wb8amgj0ZV9cezb39r=uA@mail.gmail.com>
+In-Reply-To: <CAKohpo=6t-VHgJfrq7wz35y_zKfL+wb8amgj0ZV9cezb39r=uA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 17 Jun 2014 16:32:31.0566 (UTC) FILETIME=[BC6ED6E0:01CF8A49]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.24 -stable review patch.  If anyone has any objections, please let me know.
+On 17-06-2014 13:42, Viresh Kumar wrote:
+>> So what you can try is force a cyc2ns read before the write in
+>> set_cyc2ns_scale(). I think its possible that if we do not do the read,
+>> the write will wait for a 'free' slot indefinitely.
+> 
+> Hmm, I see. Thanks for your quick response.
+> 
+> Are you suggesting something like this ? :
+> 
+> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+> index 57e5ce1..290ac03 100644
+> --- a/arch/x86/kernel/tsc.c
+> +++ b/arch/x86/kernel/tsc.c
+> @@ -249,6 +249,9 @@ static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
+>         if (!cpu_khz)
+>                 goto done;
+> 
+> +       data = cyc2ns_read_begin();
+> +       cyc2ns_read_end(data);
+> +
+>         data = cyc2ns_write_begin(cpu);
+> 
+>         rdtscll(tsc_now);
+> 
+> 
+> @Mauro: Please try this once Peter confirms.
 
-------------------
-
-From: Florian Westphal <fw@strlen.de>
-
-commit 895162b1101b3ea5db08ca6822ae9672717efec0 upstream.
-
-else we may fail to forward skb even if original fragments do fit
-outgoing link mtu:
-
-1. remote sends 2k packets in two 1000 byte frags, DF set
-2. we want to forward but only see '2k > mtu and DF set'
-3. we then send icmp error saying that outgoing link is 1500
-
-But original sender never sent a packet that would not fit
-the outgoing link.
-
-Setting local_df makes outgoing path test size vs.
-IPCB(skb)->frag_max_size, so we will still send the correct
-error in case the largest original size did not fit
-outgoing link mtu.
-
-Reported-by: Maxime Bizon <mbizon@freebox.fr>
-Suggested-by: Maxime Bizon <mbizon@freebox.fr>
-Fixes: 5f2d04f1f9 (ipv4: fix path MTU discovery with connection tracking)
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/ipv4/netfilter/nf_defrag_ipv4.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/net/ipv4/netfilter/nf_defrag_ipv4.c b/net/ipv4/netfilter/nf_defrag_ipv4.c
-index 7428155..4cfb3bd 100644
---- a/net/ipv4/netfilter/nf_defrag_ipv4.c
-+++ b/net/ipv4/netfilter/nf_defrag_ipv4.c
-@@ -22,7 +22,6 @@
- #endif
- #include <net/netfilter/nf_conntrack_zones.h>
- 
--/* Returns new sk_buff, or NULL */
- static int nf_ct_ipv4_gather_frags(struct sk_buff *skb, u_int32_t user)
- {
- 	int err;
-@@ -33,8 +32,10 @@ static int nf_ct_ipv4_gather_frags(struct sk_buff *skb, u_int32_t user)
- 	err = ip_defrag(skb, user);
- 	local_bh_enable();
- 
--	if (!err)
-+	if (!err) {
- 		ip_send_check(ip_hdr(skb));
-+		skb->local_df = 1;
-+	}
- 
- 	return err;
- }
--- 
-1.9.1
-
+I have tried this and it doesn't solve the problem, the machine still
+hangs after the second frequency change after cpu offline/online.
