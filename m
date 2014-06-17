@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094AbaFQB3h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jun 2014 21:29:37 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:62821 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954AbaFQB3f (ORCPT
+	id S1754786AbaFQB3w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jun 2014 21:29:52 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:57514 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753554AbaFQB3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jun 2014 21:29:35 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 17 Jun 2014 10:33:50 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v3 -next 1/9] DMA, CMA: fix possible memory leak
-Message-ID: <20140617013349.GB6825@js1304-P5Q-DELUXE>
-References: <1402897251-23639-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1402897251-23639-2-git-send-email-iamjoonsoo.kim@lge.com>
- <20140616062719.GA18790@bbox>
+	Mon, 16 Jun 2014 21:29:51 -0400
+Date: Mon, 16 Jun 2014 18:29:48 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
+cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH v4] lib: add size unit t/p/e to memparse
+In-Reply-To: <1402968140.9806.6.camel@localhost.localdomain>
+Message-ID: <alpine.DEB.2.02.1406161828180.21018@chino.kir.corp.google.com>
+References: <1402623746-1171-1-git-send-email-guihc.fnst@cn.fujitsu.com> <alpine.DEB.2.02.1406131457480.31981@chino.kir.corp.google.com> <1402968140.9806.6.camel@localhost.localdomain>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140616062719.GA18790@bbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 03:27:19PM +0900, Minchan Kim wrote:
-> Hi, Joonsoo
-> 
-> On Mon, Jun 16, 2014 at 02:40:43PM +0900, Joonsoo Kim wrote:
-> > We should free memory for bitmap when we find zone mis-match,
-> > otherwise this memory will leak.
+On Tue, 17 Jun 2014, Gui Hecheng wrote:
+
+> > > diff --git a/lib/cmdline.c b/lib/cmdline.c
+> > > index d4932f7..76a712e 100644
+> > > --- a/lib/cmdline.c
+> > > +++ b/lib/cmdline.c
+> > > @@ -121,11 +121,7 @@ EXPORT_SYMBOL(get_options);
+> > >   *	@retptr: (output) Optional pointer to next char after parse completes
+> > >   *
+> > >   *	Parses a string into a number.  The number stored at @ptr is
+> > > - *	potentially suffixed with %K (for kilobytes, or 1024 bytes),
+> > > - *	%M (for megabytes, or 1048576 bytes), or %G (for gigabytes, or
+> > > - *	1073741824).  If the number is suffixed with K, M, or G, then
+> > > - *	the return value is the number multiplied by one kilobyte, one
+> > > - *	megabyte, or one gigabyte, respectively.
+> > > + *	potentially suffixed with K, M, G, T, P, E.
+> > >   */
+> > >  
+> > >  unsigned long long memparse(const char *ptr, char **retptr)
+> > > @@ -135,6 +131,15 @@ unsigned long long memparse(const char *ptr, char **retptr)
+> > >  	unsigned long long ret = simple_strtoull(ptr, &endptr, 0);
+> > >  
+> > >  	switch (*endptr) {
+> > > +	case 'E':
+> > > +	case 'e':
+> > > +		ret <<= 10;
+> > > +	case 'P':
+> > > +	case 'p':
+> > > +		ret <<= 10;
+> > > +	case 'T':
+> > > +	case 't':
+> > > +		ret <<= 10;
+> > >  	case 'G':
+> > >  	case 'g':
+> > >  		ret <<= 10;
 > > 
-> > Additionally, I copy code comment from PPC KVM's CMA code to inform
-> > why we need to check zone mis-match.
-> > 
-> > * Note
-> > Minchan suggested to add a tag for the stable, but, I don't do it,
-> > because I found this possibility during code-review and, IMO,
-> > this patch isn't suitable for stable tree.
+> > Seems fine since unsigned long long is always at least 64 bits, but 
+> > perhaps also change simple_strtoull() to use kstrtoull() at the same time 
+> > since the former is deprecated?
 > 
-> Nice idea to put the comment in here. Thanks Joonsoo.
+> Yes, that is a point. But the deprecated function is a separate problem
+> and may not be included in this patch.
+> Also, I find that simple_strtoull is used in many places in the kernel
+> code, it is better to replace it globally?
 > 
-> It seems you obey "It must fix a real bug that bothers people"
-> on Documentation/stable_kernel_rules.txt but it's a really obvious
-> bug and hard to get a report from people because limited user and
-> hard to detect small such small memory leak.
-> 
-> In my experince, Andrew perfered stable marking for such a obvious
-> problem but simple fix like this but not sure so let's pass the decision
-> to him and will learn a lesson from him and will follow the decision
-> from now on.
 
-Yes, I intended to pass the decision to others. :)
+If you're going to have a go at replacing the simple_strto*() functions 
+throughout the kernel, it's probably better to do it per subsystem (as 
+defined by the separate sections of MAINTAINERS) and propose the patches 
+individually to those maintainers.  Once it has been removed entirely, you 
+can submit a patch to remove the functions themselves.
 
-> 
-> Thanks.
-> 
-> Acked-by: Minchan Kim <minchan@kernel.org>
-
-Thanks.
+Be aware that there are many callers to the deprecated functions so it may 
+take a significant amount of time.
