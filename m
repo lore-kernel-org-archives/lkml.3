@@ -1,101 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308AbaFQNY3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 09:24:29 -0400
-Received: from relay.parallels.com ([195.214.232.42]:34445 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755944AbaFQNY1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 09:24:27 -0400
-Message-ID: <1403011462.27674.46.camel@tkhai>
-Subject: [PATCH 3/3] sched: Rework check_for_tasks()
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        <tkhai@yandex.ru>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "Mike Galbraith" <umgwanakikbuti@gmail.com>,
-        Konstantin Khorenko <khorenko@parallels.com>
-Date: Tue, 17 Jun 2014 17:24:22 +0400
-In-Reply-To: <20140617130442.29933.54945.stgit@tkhai>
-References: <20140617130442.29933.54945.stgit@tkhai>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	id S932563AbaFQNZP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 09:25:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37217 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932332AbaFQNZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 09:25:13 -0400
+Date: Tue, 17 Jun 2014 09:24:26 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, jkosina@suse.cz, dyoung@redhat.com,
+        chaowang@redhat.com, bhe@redhat.com, akpm@linux-foundation.org
+Subject: Re: [RFC PATCH 00/13][V3] kexec: A new system call to allow in
+ kernel loading
+Message-ID: <20140617132426.GB28340@redhat.com>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <20140616211328.GK8170@pd.tnic>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.26.172]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140616211328.GK8170@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 16, 2014 at 11:13:28PM +0200, Borislav Petkov wrote:
+> On Tue, Jun 03, 2014 at 09:06:49AM -0400, Vivek Goyal wrote:
+> > This patch series does not do kernel signature verification yet. I
+> > plan to post another patch series for that. Now bzImage is already
+> > signed with PKCS7 signature I plan to parse and verify those
+> > signatures.
+> 
+> Btw, do you have a brief outline on how you are going to do the
+> extension to signature verification? Nothing formal, just enough of an
+> outline that I can see where in the flow it will be plugged in.
+> 
+> I was wondering how the whole signature signing and verification will
+> be done, i.e., where do I get the signature, how and who will verify it
+> (I'm guessing the purgatory code), etc, etc.
 
-1)Iterate throw all of threads in the system.
-  Check for all threads, not only for group leaders.
+Hi Boris,
 
-2)Check for p->on_rq instead of p->state and cputime.
-  Preempted task in !TASK_RUNNING state  OR just
-  created task may be queued, that we want to be
-  reported too.
+I am still working on signing patches. I have uploaded them here for you
+to have a look.
 
-3)Use read_lock() instead of write_lock().
-  This function does not change any structures, and
-  read_lock() is enough.
+http://people.redhat.com/vgoyal/kdump-secureboot/in-kernel-kexec/bzimage-sig-verification/
 
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-CC: Mike Galbraith <umgwanakikbuti@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>
----
- kernel/cpu.c |   33 ++++++++++++++++++++-------------
- 1 file changed, 20 insertions(+), 13 deletions(-)
+Last patch should give you a good idea how signature verification hooks
+into kexec.
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index a343bde..81e2a38 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -274,21 +274,28 @@ void clear_tasks_mm_cpumask(int cpu)
- 	rcu_read_unlock();
- }
- 
--static inline void check_for_tasks(int cpu)
-+static inline void check_for_tasks(int dead_cpu)
- {
--	struct task_struct *p;
--	cputime_t utime, stime;
-+	struct task_struct *g, *p;
- 
--	write_lock_irq(&tasklist_lock);
--	for_each_process(p) {
--		task_cputime(p, &utime, &stime);
--		if (task_cpu(p) == cpu && p->state == TASK_RUNNING &&
--		    (utime || stime))
--			pr_warn("Task %s (pid = %d) is on cpu %d (state = %ld, flags = %x)\n",
--				p->comm, task_pid_nr(p), cpu,
--				p->state, p->flags);
--	}
--	write_unlock_irq(&tasklist_lock);
-+	read_lock_irq(&tasklist_lock);
-+	do_each_thread(g, p) {
-+		if (!p->on_rq)
-+			continue;
-+		/*
-+		 * We do the check with unlocked task_rq(p)->lock.
-+		 * Order the reading to do not warn about a task,
-+		 * which was running on this cpu in the past, and
-+		 * it's just been woken on another cpu.
-+		 */
-+		rmb();
-+		if (task_cpu(p) != dead_cpu)
-+			continue;
-+
-+		pr_warn("Task %s (pid=%d) is on cpu %d (state=%ld, flags=%x)\n",
-+			p->comm, task_pid_nr(p), dead_cpu, p->state, p->flags);
-+	} while_each_thread(g, p);
-+	read_unlock_irq(&tasklist_lock);
- }
- 
- struct take_cpu_down_param {
+Signature verification patches are based on David Howell's work.
 
+There is no purgatory involved here. Once we have copied kernel image
+into kernel space, first thing we do is call into arch image loader
+and ask it to verify signature of image. And bzImage loader in turn
+calls into helper functions which can parse a PE signed file and
+verify image signature.
 
+I have yet to cleanup the code, implement a config option which enforces
+signature verification.
 
+Automatic enforncement of signature verification if secureboot is
+enabled will happen once matthew's secureboot patches are merged 
+into mainline.
+
+Thanks
+Vivek
