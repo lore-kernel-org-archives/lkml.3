@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967216AbaFQWPi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:15:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54549 "EHLO
+	id S966665AbaFQVun (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:50:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54412 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966765AbaFQVvO (ORCPT
+	with ESMTP id S965250AbaFQVuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:51:14 -0400
+	Tue, 17 Jun 2014 17:50:35 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wolfram Sang <wsa+renesas@sang-engineering.com>,
-        Wolfram Sang <wsa@the-dreams.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 119/212] i2c: rcar: bail out on zero length transfers
-Date: Tue, 17 Jun 2014 14:43:33 -0700
-Message-Id: <1403041506-13646-120-git-send-email-kamal@canonical.com>
+Cc: "J. Bruce Fields" <bfields@redhat.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 158/212] nfsd4: warn on finding lockowner without stateid's
+Date: Tue, 17 Jun 2014 14:44:12 -0700
+Message-Id: <1403041506-13646-159-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -27,48 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <wsa+renesas@sang-engineering.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit d7653964c590ba846aa11a8f6edf409773cbc492 upstream.
+commit 27b11428b7de097c42f205beabb1764f4365443b upstream.
 
-This hardware does not support zero length transfers. Instead, the
-driver does one (random) byte transfers currently with undefined results
-for the slaves. We now bail out.
+The current code assumes a one-to-one lockowner<->lock stateid
+correspondance.
 
-Signed-off-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/i2c/busses/i2c-rcar.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ fs/nfsd/nfs4state.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/i2c/busses/i2c-rcar.c b/drivers/i2c/busses/i2c-rcar.c
-index 2c2fd7c..56de337 100644
---- a/drivers/i2c/busses/i2c-rcar.c
-+++ b/drivers/i2c/busses/i2c-rcar.c
-@@ -567,6 +567,12 @@ static int rcar_i2c_master_xfer(struct i2c_adapter *adap,
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index f1fa0ec..63b6cdc 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -4153,6 +4153,10 @@ static bool same_lockowner_ino(struct nfs4_lockowner *lo, struct inode *inode, c
  
- 	ret = -EINVAL;
- 	for (i = 0; i < num; i++) {
-+		/* This HW can't send STOP after address phase */
-+		if (msgs[i].len == 0) {
-+			ret = -EOPNOTSUPP;
-+			break;
-+		}
-+
- 		/*-------------- spin lock -----------------*/
- 		spin_lock_irqsave(&priv->lock, flags);
- 
-@@ -631,7 +637,8 @@ static int rcar_i2c_master_xfer(struct i2c_adapter *adap,
- 
- static u32 rcar_i2c_func(struct i2c_adapter *adap)
- {
--	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
-+	/* This HW can't do SMBUS_QUICK and NOSTART */
-+	return I2C_FUNC_I2C | (I2C_FUNC_SMBUS_EMUL & ~I2C_FUNC_SMBUS_QUICK);
- }
- 
- static const struct i2c_algorithm rcar_i2c_algo = {
+ 	if (!same_owner_str(&lo->lo_owner, owner, clid))
+ 		return false;
++	if (list_empty(&lo->lo_owner.so_stateids)) {
++		WARN_ON_ONCE(1);
++		return false;
++	}
+ 	lst = list_first_entry(&lo->lo_owner.so_stateids,
+ 			       struct nfs4_ol_stateid, st_perstateowner);
+ 	return lst->st_file->fi_inode == inode;
 -- 
 1.9.1
 
