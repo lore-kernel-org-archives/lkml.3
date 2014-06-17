@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965610AbaFQVpo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 17:45:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53708 "EHLO
+	id S965637AbaFQVpt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 17:45:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53721 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965487AbaFQVpk (ORCPT
+	with ESMTP id S965614AbaFQVpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:45:40 -0400
+	Tue, 17 Jun 2014 17:45:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Borkmann <dborkman@redhat.com>, Thomas Graf <tgraf@suug.ch>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Vlad Yasevich <vyasevic@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Antonio Quartulli <antonio@open-mesh.com>,
+        Marek Lindner <mareklindner@neomailbox.ch>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 003/212] net: sctp: wake up all assocs if sndbuf policy is per socket
-Date: Tue, 17 Jun 2014 14:41:37 -0700
-Message-Id: <1403041506-13646-4-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 059/212] batman-adv: increase orig refcount when storing ref in gw_node
+Date: Tue, 17 Jun 2014 14:42:33 -0700
+Message-Id: <1403041506-13646-60-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -30,119 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Antonio Quartulli <antonio@open-mesh.com>
 
-[ Upstream commit 52c35befb69b005c3fc5afdaae3a5717ad013411 ]
+[ Upstream commit 377fe0f968b30a1a714fab53a908061914f30e26 ]
 
-SCTP charges chunks for wmem accounting via skb->truesize in
-sctp_set_owner_w(), and sctp_wfree() respectively as the
-reverse operation. If a sender runs out of wmem, it needs to
-wait via sctp_wait_for_sndbuf(), and gets woken up by a call
-to __sctp_write_space() mostly via sctp_wfree().
+A pointer to the orig_node representing a bat-gateway is
+stored in the gw_node->orig_node member, but the refcount
+for such orig_node is never increased.
+This leads to memory faults when gw_node->orig_node is accessed
+and the originator has already been freed.
 
-__sctp_write_space() is being called per association. Although
-we assign sk->sk_write_space() to sctp_write_space(), which
-is then being done per socket, it is only used if send space
-is increased per socket option (SO_SNDBUF), as SOCK_USE_WRITE_QUEUE
-is set and therefore not invoked in sock_wfree().
+Fix this by increasing the refcount on gw_node creation
+and decreasing it on gw_node free.
 
-Commit 4c3a5bdae293 ("sctp: Don't charge for data in sndbuf
-again when transmitting packet") fixed an issue where in case
-sctp_packet_transmit() manages to queue up more than sndbuf
-bytes, sctp_wait_for_sndbuf() will never be woken up again
-unless it is interrupted by a signal. However, a still
-remaining issue is that if net.sctp.sndbuf_policy=0, that is
-accounting per socket, and one-to-many sockets are in use,
-the reclaimed write space from sctp_wfree() is 'unfairly'
-handed back on the server to the association that is the lucky
-one to be woken up again via __sctp_write_space(), while
-the remaining associations are never be woken up again
-(unless by a signal).
-
-The effect disappears with net.sctp.sndbuf_policy=1, that
-is wmem accounting per association, as it guarantees a fair
-share of wmem among associations.
-
-Therefore, if we have reclaimed memory in case of per socket
-accounting, wake all related associations to a socket in a
-fair manner, that is, traverse the socket association list
-starting from the current neighbour of the association and
-issue a __sctp_write_space() to everyone until we end up
-waking ourselves. This guarantees that no association is
-preferred over another and even if more associations are
-taken into the one-to-many session, all receivers will get
-messages from the server and are not stalled forever on
-high load. This setting still leaves the advantage of per
-socket accounting in touch as an association can still use
-up global limits if unused by others.
-
-Fixes: 4eb701dfc618 ("[SCTP] Fix SCTP sendbuffer accouting.")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Thomas Graf <tgraf@suug.ch>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Vlad Yasevich <vyasevic@redhat.com>
-Acked-by: Vlad Yasevich <vyasevic@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Antonio Quartulli <antonio@open-mesh.com>
+Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/sctp/socket.c | 36 +++++++++++++++++++++++++++++++++++-
- 1 file changed, 35 insertions(+), 1 deletion(-)
+ net/batman-adv/gateway_client.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/net/sctp/socket.c b/net/sctp/socket.c
-index 146b35d..d9ed737 100644
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -6580,6 +6580,40 @@ static void __sctp_write_space(struct sctp_association *asoc)
- 	}
- }
+diff --git a/net/batman-adv/gateway_client.c b/net/batman-adv/gateway_client.c
+index 2449afa..68676cd 100644
+--- a/net/batman-adv/gateway_client.c
++++ b/net/batman-adv/gateway_client.c
+@@ -38,8 +38,10 @@
  
-+static void sctp_wake_up_waiters(struct sock *sk,
-+				 struct sctp_association *asoc)
-+{
-+	struct sctp_association *tmp = asoc;
-+
-+	/* We do accounting for the sndbuf space per association,
-+	 * so we only need to wake our own association.
-+	 */
-+	if (asoc->ep->sndbuf_policy)
-+		return __sctp_write_space(asoc);
-+
-+	/* Accounting for the sndbuf space is per socket, so we
-+	 * need to wake up others, try to be fair and in case of
-+	 * other associations, let them have a go first instead
-+	 * of just doing a sctp_write_space() call.
-+	 *
-+	 * Note that we reach sctp_wake_up_waiters() only when
-+	 * associations free up queued chunks, thus we are under
-+	 * lock and the list of associations on a socket is
-+	 * guaranteed not to change.
-+	 */
-+	for (tmp = list_next_entry(tmp, asocs); 1;
-+	     tmp = list_next_entry(tmp, asocs)) {
-+		/* Manually skip the head element. */
-+		if (&tmp->asocs == &((sctp_sk(sk))->ep->asocs))
-+			continue;
-+		/* Wake up association. */
-+		__sctp_write_space(tmp);
-+		/* We've reached the end. */
-+		if (tmp == asoc)
-+			break;
+ static void batadv_gw_node_free_ref(struct batadv_gw_node *gw_node)
+ {
+-	if (atomic_dec_and_test(&gw_node->refcount))
++	if (atomic_dec_and_test(&gw_node->refcount)) {
++		batadv_orig_node_free_ref(gw_node->orig_node);
+ 		kfree_rcu(gw_node, rcu);
 +	}
-+}
-+
- /* Do accounting for the sndbuf space.
-  * Decrement the used sndbuf space of the corresponding association by the
-  * data size which was just transmitted(freed).
-@@ -6607,7 +6641,7 @@ static void sctp_wfree(struct sk_buff *skb)
- 	sk_mem_uncharge(sk, skb->truesize);
- 
- 	sock_wfree(skb);
--	__sctp_write_space(asoc);
-+	sctp_wake_up_waiters(sk, asoc);
- 
- 	sctp_association_put(asoc);
  }
+ 
+ static struct batadv_gw_node *
+@@ -351,9 +353,14 @@ static void batadv_gw_node_add(struct batadv_priv *bat_priv,
+ 	if (gateway->bandwidth_down == 0)
+ 		return;
+ 
++	if (!atomic_inc_not_zero(&orig_node->refcount))
++		return;
++
+ 	gw_node = kzalloc(sizeof(*gw_node), GFP_ATOMIC);
+-	if (!gw_node)
++	if (!gw_node) {
++		batadv_orig_node_free_ref(orig_node);
+ 		return;
++	}
+ 
+ 	INIT_HLIST_NODE(&gw_node->list);
+ 	gw_node->orig_node = orig_node;
 -- 
 1.9.1
 
