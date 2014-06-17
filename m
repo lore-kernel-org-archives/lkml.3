@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967295AbaFQWHq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 18:07:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54711 "EHLO
+	id S967161AbaFQWIF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 18:08:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54702 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966958AbaFQVv7 (ORCPT
+	with ESMTP id S965856AbaFQVv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 17:51:59 -0400
+	Tue, 17 Jun 2014 17:51:58 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Mark Rustad <mark.d.rustad@intel.com>,
+        Robert Love <robert.w.love@intel.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 189/212] USB: Avoid runtime suspend loops for HCDs that can't handle suspend/resume
-Date: Tue, 17 Jun 2014 14:44:43 -0700
-Message-Id: <1403041506-13646-190-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 132/212] tcm_fc: Fix free-after-use regression in ft_free_cmd
+Date: Tue, 17 Jun 2014 14:43:46 -0700
+Message-Id: <1403041506-13646-133-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403041506-13646-1-git-send-email-kamal@canonical.com>
 References: <1403041506-13646-1-git-send-email-kamal@canonical.com>
@@ -28,90 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 8ef42ddd9a53b73e6fc3934278710c27f80f324f upstream.
+commit ed8ec8f707ed4760c124d47b27c93df8ec5b1eba upstream.
 
-Not all host controller drivers have bus-suspend and bus-resume
-methods.  When one doesn't, it will cause problems if runtime PM is
-enabled in the kernel.  The PM core will attempt to suspend the
-controller's root hub, the suspend will fail because there is no
-bus-suspend routine, and a -EBUSY error code will be returned to the
-PM core.  This will cause the suspend attempt to be repeated shortly
-thereafter, in a never-ending loop.
+This patch fixes a free-after-use regression in ft_free_cmd(), where
+ft_sess_put() is called with cmd->sess after percpu_ida_free() has
+already released the tag.
 
-Part of the problem is that the original error code -ENOENT gets
-changed to -EBUSY in usb_runtime_suspend(), on the grounds that the PM
-core will interpret -ENOENT as meaning that the root hub has gotten
-into a runtime-PM error state.  While this change is appropriate for
-real USB devices, it's not such a good idea for a root hub.  In fact,
-considering the root hub to be in a runtime-PM error state would not
-be far from the truth.  Therefore this patch updates
-usb_runtime_suspend() so that it adjusts error codes only for
-non-root-hub devices.
+Fix this bug by saving the ft_sess pointer ahead of percpu_ida_free(),
+and pass it directly to ft_sess_put().
 
-Furthermore, the patch attempts to prevent the problem from occurring
-in the first place by not enabling runtime PM by default for root hubs
-whose host controller driver doesn't have bus_suspend and bus_resume
-methods.
+The regression was originally introduced in v3.13-rc1 commit:
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Will Deacon <will.deacon@arm.com>
-Tested-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+  commit 5f544cfac956971099e906f94568bc3fd1a7108a
+  Author: Nicholas Bellinger <nab@daterainc.com>
+  Date:   Mon Sep 23 12:12:42 2013 -0700
+
+      tcm_fc: Convert to per-cpu command map pre-allocation of ft_cmd
+
+Reported-by: Jun Wu <jwu@stormojo.com>
+Cc: Mark Rustad <mark.d.rustad@intel.com>
+Cc: Robert Love <robert.w.love@intel.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/core/driver.c |  9 ++++++---
- drivers/usb/core/hub.c    | 15 +++++++++++++--
- 2 files changed, 19 insertions(+), 5 deletions(-)
+ drivers/target/tcm_fc/tfc_cmd.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/core/driver.c b/drivers/usb/core/driver.c
-index 04b55e1..2ff20e1 100644
---- a/drivers/usb/core/driver.c
-+++ b/drivers/usb/core/driver.c
-@@ -1770,10 +1770,13 @@ int usb_runtime_suspend(struct device *dev)
- 	if (status == -EAGAIN || status == -EBUSY)
- 		usb_mark_last_busy(udev);
+diff --git a/drivers/target/tcm_fc/tfc_cmd.c b/drivers/target/tcm_fc/tfc_cmd.c
+index 8b2c1aa..d22cdc7 100644
+--- a/drivers/target/tcm_fc/tfc_cmd.c
++++ b/drivers/target/tcm_fc/tfc_cmd.c
+@@ -90,18 +90,18 @@ static void ft_free_cmd(struct ft_cmd *cmd)
+ {
+ 	struct fc_frame *fp;
+ 	struct fc_lport *lport;
+-	struct se_session *se_sess;
++	struct ft_sess *sess;
  
--	/* The PM core reacts badly unless the return code is 0,
--	 * -EAGAIN, or -EBUSY, so always return -EBUSY on an error.
-+	/*
-+	 * The PM core reacts badly unless the return code is 0,
-+	 * -EAGAIN, or -EBUSY, so always return -EBUSY on an error
-+	 * (except for root hubs, because they don't suspend through
-+	 * an upstream port like other USB devices).
- 	 */
--	if (status != 0)
-+	if (status != 0 && udev->parent)
- 		return -EBUSY;
- 	return status;
+ 	if (!cmd)
+ 		return;
+-	se_sess = cmd->sess->se_sess;
++	sess = cmd->sess;
+ 	fp = cmd->req_frame;
+ 	lport = fr_dev(fp);
+ 	if (fr_seq(fp))
+ 		lport->tt.seq_release(fr_seq(fp));
+ 	fc_frame_free(fp);
+-	percpu_ida_free(&se_sess->sess_tag_pool, cmd->se_cmd.map_tag);
+-	ft_sess_put(cmd->sess);	/* undo get from lookup at recv */
++	percpu_ida_free(&sess->se_sess->sess_tag_pool, cmd->se_cmd.map_tag);
++	ft_sess_put(sess);	/* undo get from lookup at recv */
  }
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 4874744..7f139f3 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1685,8 +1685,19 @@ static int hub_probe(struct usb_interface *intf, const struct usb_device_id *id)
- 	 */
- 	pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
  
--	/* Hubs have proper suspend/resume support. */
--	usb_enable_autosuspend(hdev);
-+	/*
-+	 * Hubs have proper suspend/resume support, except for root hubs
-+	 * where the controller driver doesn't have bus_suspend and
-+	 * bus_resume methods.
-+	 */
-+	if (hdev->parent) {		/* normal device */
-+		usb_enable_autosuspend(hdev);
-+	} else {			/* root hub */
-+		const struct hc_driver *drv = bus_to_hcd(hdev->bus)->driver;
-+
-+		if (drv->bus_suspend && drv->bus_resume)
-+			usb_enable_autosuspend(hdev);
-+	}
- 
- 	if (hdev->level == MAX_TOPO_LEVEL) {
- 		dev_err(&intf->dev,
+ void ft_release_cmd(struct se_cmd *se_cmd)
 -- 
 1.9.1
 
