@@ -1,70 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933622AbaFRDf6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 23:35:58 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:59950 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932192AbaFRDf5 (ORCPT
+	id S933792AbaFRDhH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 23:37:07 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:16982 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932192AbaFRDhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 23:35:57 -0400
+	Tue, 17 Jun 2014 23:37:05 -0400
+X-IronPort-AV: E=Sophos;i="5.00,729,1396972800"; 
+   d="scan'208";a="32066952"
+Message-ID: <53A1097F.3060400@cn.fujitsu.com>
+Date: Wed, 18 Jun 2014 11:37:35 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <1402954800-28215-5-git-send-email-dianders@chromium.org>
-References: <1402954800-28215-1-git-send-email-dianders@chromium.org>
-	<1402954800-28215-5-git-send-email-dianders@chromium.org>
-Date: Tue, 17 Jun 2014 20:35:56 -0700
-X-Google-Sender-Auth: B9yUMpWKWH4nqURSZlIjcs-RuaY
-Message-ID: <CAPnjgZ0Ofds_atZRVxfM4RCtiDNjbZpcdAvZBM_fCbniKTFmig@mail.gmail.com>
-Subject: Re: [PATCH 04/10] mfd: cros_ec: Tweak struct cros_ec_device for clarity
-From: Simon Glass <sjg@chromium.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Bill Richardson <wfrichar@chromium.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Mark Brown <broonie@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        lk <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: <cl@linux-foundation.org>, <kmo@daterainc.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/6] percpu-refcount: implement percpu_ref_reinit() and
+ percpu_ref_is_zero()
+References: <1403053685-28240-1-git-send-email-tj@kernel.org> <1403053685-28240-7-git-send-email-tj@kernel.org>
+In-Reply-To: <1403053685-28240-7-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug,
-
-On 16 June 2014 14:39, Doug Anderson <dianders@chromium.org> wrote:
-> From: Bill Richardson <wfrichar@chromium.org>
->
-> The members of struct cros_ec_device were improperly commented, and
-> intermixed the private and public sections. This is just cleanup to make it
-> more obvious what goes with what.
->
-> [dianders: left lock in the structure but gave it the name that will
-> eventually be used.]
->
-> Signed-off-by: Bill Richardson <wfrichar@chromium.org>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+On 06/18/2014 09:08 AM, Tejun Heo wrote:
+> Now that explicit invocation of percpu_ref_exit() is necessary to free
+> the percpu counter, we can implement percpu_ref_reinit() which
+> reinitializes a released percpu_ref.  This can be used implement
+> scalable gating switch which can be drained and then re-opened without
+> worrying about memory allocation failures.
+> 
+> percpu_ref_is_zero() is added to be used in a sanity check in
+> percpu_ref_exit().  As this function will be useful for other purposes
+> too, make it a public interface.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Kent Overstreet <kmo@daterainc.com>
+> Cc: Christoph Lameter <cl@linux-foundation.org>
 > ---
->  drivers/mfd/cros_ec.c       |  2 +-
->  drivers/mfd/cros_ec_i2c.c   |  4 +--
->  drivers/mfd/cros_ec_spi.c   | 10 +++----
->  include/linux/mfd/cros_ec.h | 65 ++++++++++++++++++++++++---------------------
->  4 files changed, 43 insertions(+), 38 deletions(-)
->
-> diff --git a/drivers/mfd/cros_ec.c b/drivers/mfd/cros_ec.c
-> index bd6f936..a9eede5 100644
-> --- a/drivers/mfd/cros_ec.c
-> +++ b/drivers/mfd/cros_ec.c
-> @@ -57,7 +57,7 @@ static int cros_ec_command_sendrecv(struct cros_ec_device *ec_dev,
->         msg.in_buf = in_buf;
->         msg.in_len = in_len;
->
-> -       return ec_dev->command_xfer(ec_dev, &msg);
-> +       return ec_dev->cmd_xfer(ec_dev, &msg);
+>  include/linux/percpu-refcount.h | 21 ++++++++++++++++++++-
+>  lib/percpu-refcount.c           | 35 +++++++++++++++++++++++++++++++++++
+>  2 files changed, 55 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
+> index 0ddd283..80f21ea 100644
+> --- a/include/linux/percpu-refcount.h
+> +++ b/include/linux/percpu-refcount.h
+> @@ -67,6 +67,7 @@ struct percpu_ref {
+>  
+>  int __must_check percpu_ref_init(struct percpu_ref *ref,
+>  				 percpu_ref_func_t *release);
+> +void percpu_ref_reinit(struct percpu_ref *ref);
+>  void percpu_ref_exit(struct percpu_ref *ref);
+>  void percpu_ref_kill_and_confirm(struct percpu_ref *ref,
+>  				 percpu_ref_func_t *confirm_kill);
+> @@ -97,7 +98,10 @@ static inline void percpu_ref_kill(struct percpu_ref *ref)
+>  static inline bool __pcpu_ref_alive(struct percpu_ref *ref,
+>  				    unsigned __percpu **pcpu_countp)
+>  {
+> -	unsigned long pcpu_ptr = ACCESS_ONCE(ref->pcpu_count_ptr);
+> +	unsigned long pcpu_ptr;
+> +
+> +	/* paired with smp_store_release() in percpu_ref_reinit() */
+> +	pcpu_ptr = smp_load_acquire(&ref->pcpu_count_ptr);
 
-Why do this rename? It makes it different from the other members.
 
-Regards,
-Simon
+Does "smp_load_acquire()" hurts the performance of percpu_ref_get/put()
+in non-x86 system?
+
+>  
+>  	if (unlikely(pcpu_ptr & PCPU_REF_DEAD))
+>  		return false;
+> @@ -206,4 +210,19 @@ static inline void percpu_ref_put(struct percpu_ref *ref)
+>  	rcu_read_unlock_sched();
+>  }
+>  
+> +/**
+> + * percpu_ref_is_zero - test whether a percpu refcount reached zero
+> + * @ref: percpu_ref to test
+> + *
+> + * Returns %true if @ref reached zero.
+> + */
+> +static inline bool percpu_ref_is_zero(struct percpu_ref *ref)
+> +{
+> +	unsigned __percpu *pcpu_count;
+> +
+> +	if (__pcpu_ref_alive(ref, &pcpu_count))
+> +		return false;
+> +	return !atomic_read(&ref->count);
+> +}
+> +
+>  #endif
+> diff --git a/lib/percpu-refcount.c b/lib/percpu-refcount.c
+> index ac42991..b348a2f 100644
+> --- a/lib/percpu-refcount.c
+> +++ b/lib/percpu-refcount.c
+> @@ -61,6 +61,41 @@ int percpu_ref_init(struct percpu_ref *ref, percpu_ref_func_t *release)
+>  EXPORT_SYMBOL_GPL(percpu_ref_init);
+>  
+>  /**
+> + * percpu_ref_reinit - re-initialize a percpu refcount
+> + * @ref: perpcu_ref to re-initialize
+> + *
+> + * Re-initialize @ref so that it's in the same state as when it finished
+> + * percpu_ref_init().  @ref must have been initialized successfully, killed
+> + * and reached 0 but not exited.
+> + *
+> + * Note that percpu_ref_tryget[_live]() are safe to perform on @ref while
+> + * this function is in progress.
+> + */
+> +void percpu_ref_reinit(struct percpu_ref *ref)
+> +{
+> +	unsigned __percpu *pcpu_count = pcpu_count_ptr(ref);
+> +	int cpu;
+> +
+> +	BUG_ON(!pcpu_count);
+> +	WARN_ON(!percpu_ref_is_zero(ref));
+> +
+> +	atomic_set(&ref->count, 1 + PCPU_COUNT_BIAS);
+> +
+> +	/*
+> +	 * Restore per-cpu operation.  smp_store_release() is paired with
+> +	 * smp_load_acquire() in __pcpu_ref_alive() and guarantees that the
+> +	 * zeroing is visible to all percpu accesses which can see the
+> +	 * following PCPU_REF_DEAD clearing.
+> +	 */
+> +	for_each_possible_cpu(cpu)
+> +		*per_cpu_ptr(pcpu_count, cpu) = 0;
+> +
+> +	smp_store_release(&ref->pcpu_count_ptr,
+> +			  ref->pcpu_count_ptr & ~PCPU_REF_DEAD);
+> +}
+> +EXPORT_SYMBOL_GPL(percpu_ref_reinit);
+> +
+> +/**
+>   * percpu_ref_exit - undo percpu_ref_init()
+>   * @ref: percpu_ref to exit
+>   *
+
