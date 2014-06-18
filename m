@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747AbaFRRcK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 13:32:10 -0400
-Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:43775 "EHLO
-	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752555AbaFRRcI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 13:32:08 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ao0KAGDMoVNbtAr8/2dsb2JhbABagw2rOgUBAQEBAQEFAZkogQsXdYRgI4EaN4hGAc0lF4ViiRMdhC0Ej2yKV5NYg0Q7
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Phillip Lougher <phillip@squashfs.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] fs/squashfs/super.c: Logging clean-up
-Date: Wed, 18 Jun 2014 19:30:47 +0200
-Message-Id: <1403112647-7068-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	id S1753854AbaFRRdo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 13:33:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29924 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750862AbaFRRdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 13:33:43 -0400
+From: Bandan Das <bsd@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Nadav Amit <namit@cs.technion.ac.il>, gleb@kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, joro@8bytes.org
+Subject: Re: [PATCH 3/3] KVM: x86: correct mwait and monitor emulation
+References: <1403101176-23664-1-git-send-email-namit@cs.technion.ac.il>
+	<1403101176-23664-4-git-send-email-namit@cs.technion.ac.il>
+	<jpg7g4ew4m6.fsf@redhat.com> <53A1C1F2.4010909@redhat.com>
+Date: Wed, 18 Jun 2014 13:33:27 -0400
+In-Reply-To: <53A1C1F2.4010909@redhat.com> (Paolo Bonzini's message of "Wed,
+	18 Jun 2014 18:44:34 +0200")
+Message-ID: <jpgtx7iazrs.fsf@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--Convert printk to pr_foo()
--Add pr_fmt for future logging entries
--Coalesce formats
+Paolo Bonzini <pbonzini@redhat.com> writes:
 
-Cc: Phillip Lougher <phillip@squashfs.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/squashfs/super.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+> Il 18/06/2014 18:43, Bandan Das ha scritto:
+>>> > mwait and monitor are currently handled as nop. Considering this behavior, they
+>>> > should still be handled correctly, i.e., check execution conditions and generate
+>>> > exceptions when required. mwait and monitor may also be executed in real-mode
+>> Is this necessary ? They are NOPs and kvm prints that out (correctly so) to dmesg.
+>> Implementing them correctly is a different thing, but adding extra checks for NOPs
+>> just seems like adding extra cycles.
+>
+> Raising the correct exception is a good thing, though.  The guest is
+> going to busy wait anyway, it doesn't matter how fast it does that. :)
 
-diff --git a/fs/squashfs/super.c b/fs/squashfs/super.c
-index 031c8d67..5056bab 100644
---- a/fs/squashfs/super.c
-+++ b/fs/squashfs/super.c
-@@ -27,6 +27,8 @@
-  * the filesystem.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/fs.h>
- #include <linux/vfs.h>
- #include <linux/slab.h>
-@@ -448,8 +450,7 @@ static int __init init_squashfs_fs(void)
- 		return err;
- 	}
- 
--	printk(KERN_INFO "squashfs: version 4.0 (2009/01/31) "
--		"Phillip Lougher\n");
-+	pr_info("version 4.0 (2009/01/31) Phillip Lougher\n");
- 
- 	return 0;
- }
--- 
-1.8.4.5
+Thanks, makes sense. I was also thinking why to advertise it at all, but it's 
+probably more common than I think it is.
 
+> Paolo
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
