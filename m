@@ -1,59 +1,56 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933783AbaFRDbZ (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Tue, 17 Jun 2014 23:31:25 -0400
-Received: from f152.i.mail.ru ([94.100.178.201]:50149 "EHLO f152.i.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933616AbaFRDbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 23:31:24 -0400
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?TGVlIEpvbmVz?= <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?B?U2FtdWVsIE9ydGl6?= <sameo@linux.intel.com>,
-        =?UTF-8?B?U2FzY2hhIEhhdWVy?= <kernel@pengutronix.de>,
-        =?UTF-8?B?U2hhd24gR3Vv?= <shawn.guo@freescale.com>
-Subject: =?UTF-8?B?UmU6IFtQQVRDSF0gbWZkOiBtYzEzeHh4OiBVc2UgcmVnbWFwIGlycSBmcmFt?=
- =?UTF-8?B?ZXdvcmsgZm9yIGludGVycnVwdHM=?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [5.18.98.7]
-Date: Wed, 18 Jun 2014 07:31:19 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1403062279.528598806@f152.i.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Mras: Ok
-X-Spam: undefined
-In-Reply-To: <20140617200459.GU29841@lee--X1>
-References: <1402122010-28843-1-git-send-email-shc_work@mail.ru>
- <20140617200459.GU29841@lee--X1>
+	id S1753967AbaFRR52 (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Wed, 18 Jun 2014 13:57:28 -0400
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:12351 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751352AbaFRR51 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 13:57:27 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ao0KAETSoVNbtAr8/2dsb2JhbABagw2rOgUBAQEBAQEFAZkogQsXdYRgIytvN4hGAc05hWKIL2QdhC0EmkOLMIgog0Q7gTE
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-wireless@vger.kernel.org
+Subject: [PATCH 1/1] PCMCIA_HERMES: ioport_map/unmap relies on HAS_IOPORT_MAP
+Date: Wed, 18 Jun 2014 19:55:38 +0200
+Message-Id: <1403114138-7989-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by spinics.net id s5I3VY2c028745
 
-Tue, 17 Jun 2014 21:04:59 +0100 –æ—Ç Lee Jones <lee.jones@linaro.org>:
-> On Sat, 07 Jun 2014, Alexander Shiyan wrote:
-> 
-> > This patch convert mc13xxx MFD driver to use regmap irq framework
-> > for interrupt registration.
-> > 
-> > Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
-> > ---
-> >  drivers/mfd/Kconfig         |   1 +
-> >  drivers/mfd/mc13xxx-core.c  | 299 ++++++--------------------------------------
-> >  drivers/mfd/mc13xxx.h       |   7 +-
-> >  include/linux/mfd/mc13xxx.h |  21 +++-
-> >  4 files changed, 59 insertions(+), 269 deletions(-)
-> 
-> Patch looks good to me and I love the diffstat.  If any problems occur
-> as a result of applying this patch we can fix it up as subsequent
-> patch submissions.
+Fixing following sh-allmodconfig errors reported on kisskb
 
-Unfortunately, prolonged use of the modified version, revealed two errors.
-I will try to make incremental patch quickly, or can send a second version
-of the patch.
+"
+drivers/net/wireless/orinoco/orinoco_cs.c:153:2: error: implicit declaration of function 'ioport_map' [-Werror=implicit-function-declaration]
+drivers/net/wireless/orinoco/orinoco_cs.c:205:3: error: implicit declaration of function 'ioport_unmap' [-Werror=implicit-function-declaration]
+"
 
+Cc: "John W. Linville" <linville@tuxdriver.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-wireless@vger.kernel.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
+ drivers/net/wireless/orinoco/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+diff --git a/drivers/net/wireless/orinoco/Kconfig b/drivers/net/wireless/orinoco/Kconfig
+index 60819bc..d5ca942 100644
+--- a/drivers/net/wireless/orinoco/Kconfig
++++ b/drivers/net/wireless/orinoco/Kconfig
+@@ -107,7 +107,7 @@ config PCI_HERMES
+ 
+ config PCMCIA_HERMES
+ 	tristate "Hermes PCMCIA card support"
+-	depends on PCMCIA && HERMES
++	depends on PCMCIA && HERMES && HAS_IOPORT_MAP
+ 	---help---
+ 	  A driver for "Hermes" chipset based PCMCIA wireless adaptors, such
+ 	  as the Lucent WavelanIEEE/Orinoco cards and their OEM (Cabletron/
+-- 
+1.8.4.5
+
