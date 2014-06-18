@@ -1,182 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872AbaFRRfn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 13:35:43 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:44162 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750862AbaFRRfm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 13:35:42 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ao0KACHNoVNbtAr8/2dsb2JhbABagw2rOgUBAQEBAQEFAZkogQsXdYQxLyOBGjeIRgHNPoViiROESgSPbIpXk1iDRDs
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] fs/sysv/namei.c: code clean-up
-Date: Wed, 18 Jun 2014 19:34:22 +0200
-Message-Id: <1403112862-7158-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	id S1753895AbaFRRg3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 13:36:29 -0400
+Received: from mga09.intel.com ([134.134.136.24]:31997 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753499AbaFRRg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 13:36:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,501,1400050800"; 
+   d="scan'208";a="559683416"
+Message-ID: <53A1CE19.7040103@intel.com>
+Date: Wed, 18 Jun 2014 10:36:25 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [bisected] pre-3.16 regression on open() scalability
+References: <539B594C.8070004@intel.com> <20140613224519.GV4581@linux.vnet.ibm.com> <53A0CAE5.9000702@intel.com> <20140618001836.GV4669@linux.vnet.ibm.com> <53A132D4.60408@intel.com> <20140618125831.GB4669@linux.vnet.ibm.com>
+In-Reply-To: <20140618125831.GB4669@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixing checkpatch errors:
+On 06/18/2014 05:58 AM, Paul E. McKenney wrote:
+>> > This is the previous kernel, plus RCU tracing, so it's not 100%
+>> > apples-to-apples (and it peaks a bit lower than the other kernel).  But
+>> > here's the will-it-scale open1 throughput on the y axis vs
+>> > RCU_COND_RESCHED_EVERY_THIS_JIFFIES on x:
+>> > 
+>> > 	http://sr71.net/~dave/intel/jiffies-vs-openops.png
+>> > 
+>> > This was a quick and dirty single run with very little averaging, so I
+>> > expect there to be a good amount of noise.  I ran it from 1->100, but it
+>> > seemed to peak at about 30.
+> OK, so a default setting on the order of 20-30 jiffies looks promising.
 
-"foo * bar" should be "foo *bar"
-code indent should use tabs where possible
-trailing whitespace
+For the biggest machine I have today, yeah.  But, we need to be a bit
+careful here.  The CPUs I'm running it on were released 3 years ago and
+I think we need to be planning at _least_ for today's large systems.  I
+would guess that by raising ...EVERY_THIS_JIFFIES, we're shifting this
+curve out to the right:
 
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/sysv/namei.c | 56 ++++++++++++++++++++++++++++----------------------------
- 1 file changed, 28 insertions(+), 28 deletions(-)
+	http://sr71.net/~dave/intel/3.16-open1regression-0.png
 
-diff --git a/fs/sysv/namei.c b/fs/sysv/namei.c
-index 731b2bb..be0e2f6 100644
---- a/fs/sysv/namei.c
-+++ b/fs/sysv/namei.c
-@@ -42,9 +42,9 @@ const struct dentry_operations sysv_dentry_operations = {
- 	.d_hash		= sysv_hash,
- };
- 
--static struct dentry *sysv_lookup(struct inode * dir, struct dentry * dentry, unsigned int flags)
-+static struct dentry *sysv_lookup(struct inode *dir, struct dentry *dentry, unsigned int flags)
- {
--	struct inode * inode = NULL;
-+	struct inode *inode = NULL;
- 	ino_t ino;
- 
- 	if (dentry->d_name.len > SYSV_NAMELEN)
-@@ -60,9 +60,9 @@ static struct dentry *sysv_lookup(struct inode * dir, struct dentry * dentry, un
- 	return NULL;
- }
- 
--static int sysv_mknod(struct inode * dir, struct dentry * dentry, umode_t mode, dev_t rdev)
-+static int sysv_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t rdev)
- {
--	struct inode * inode;
-+	struct inode *inode;
- 	int err;
- 
- 	if (!old_valid_dev(rdev))
-@@ -79,17 +79,17 @@ static int sysv_mknod(struct inode * dir, struct dentry * dentry, umode_t mode,
- 	return err;
- }
- 
--static int sysv_create(struct inode * dir, struct dentry * dentry, umode_t mode, bool excl)
-+static int sysv_create(struct inode *dir, struct dentry *dentry, umode_t mode, bool excl)
- {
- 	return sysv_mknod(dir, dentry, mode, 0);
- }
- 
--static int sysv_symlink(struct inode * dir, struct dentry * dentry, 
--	const char * symname)
-+static int sysv_symlink(struct inode *dir, struct dentry *dentry,
-+	const char *symname)
- {
- 	int err = -ENAMETOOLONG;
- 	int l = strlen(symname)+1;
--	struct inode * inode;
-+	struct inode *inode;
- 
- 	if (l > dir->i_sb->s_blocksize)
- 		goto out;
-@@ -115,8 +115,8 @@ out_fail:
- 	goto out;
- }
- 
--static int sysv_link(struct dentry * old_dentry, struct inode * dir, 
--	struct dentry * dentry)
-+static int sysv_link(struct dentry *old_dentry, struct inode *dir,
-+	struct dentry *dentry)
- {
- 	struct inode *inode = old_dentry->d_inode;
- 
-@@ -127,9 +127,9 @@ static int sysv_link(struct dentry * old_dentry, struct inode * dir,
- 	return add_nondir(dentry, inode);
- }
- 
--static int sysv_mkdir(struct inode * dir, struct dentry *dentry, umode_t mode)
-+static int sysv_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
- {
--	struct inode * inode;
-+	struct inode *inode;
- 	int err;
- 
- 	inode_inc_link_count(dir);
-@@ -151,7 +151,7 @@ static int sysv_mkdir(struct inode * dir, struct dentry *dentry, umode_t mode)
- 	if (err)
- 		goto out_fail;
- 
--        d_instantiate(dentry, inode);
-+	d_instantiate(dentry, inode);
- out:
- 	return err;
- 
-@@ -164,11 +164,11 @@ out_dir:
- 	goto out;
- }
- 
--static int sysv_unlink(struct inode * dir, struct dentry * dentry)
-+static int sysv_unlink(struct inode *dir, struct dentry *dentry)
- {
--	struct inode * inode = dentry->d_inode;
--	struct page * page;
--	struct sysv_dir_entry * de;
-+	struct inode *inode = dentry->d_inode;
-+	struct page *page;
-+	struct sysv_dir_entry *de;
- 	int err = -ENOENT;
- 
- 	de = sysv_find_entry(dentry, &page);
-@@ -185,7 +185,7 @@ out:
- 	return err;
- }
- 
--static int sysv_rmdir(struct inode * dir, struct dentry * dentry)
-+static int sysv_rmdir(struct inode *dir, struct dentry *dentry)
- {
- 	struct inode *inode = dentry->d_inode;
- 	int err = -ENOTEMPTY;
-@@ -205,15 +205,15 @@ static int sysv_rmdir(struct inode * dir, struct dentry * dentry)
-  * Anybody can rename anything with this: the permission checks are left to the
-  * higher-level routines.
-  */
--static int sysv_rename(struct inode * old_dir, struct dentry * old_dentry,
--		  struct inode * new_dir, struct dentry * new_dentry)
-+static int sysv_rename(struct inode *old_dir, struct dentry *old_dentry,
-+		  struct inode *new_dir, struct dentry *new_dentry)
- {
--	struct inode * old_inode = old_dentry->d_inode;
--	struct inode * new_inode = new_dentry->d_inode;
--	struct page * dir_page = NULL;
--	struct sysv_dir_entry * dir_de = NULL;
--	struct page * old_page;
--	struct sysv_dir_entry * old_de;
-+	struct inode *old_inode = old_dentry->d_inode;
-+	struct inode *new_inode = new_dentry->d_inode;
-+	struct page *dir_page = NULL;
-+	struct sysv_dir_entry *dir_de = NULL;
-+	struct page *old_page;
-+	struct sysv_dir_entry *old_de;
- 	int err = -ENOENT;
- 
- 	old_de = sysv_find_entry(old_dentry, &old_page);
-@@ -228,8 +228,8 @@ static int sysv_rename(struct inode * old_dir, struct dentry * old_dentry,
- 	}
- 
- 	if (new_inode) {
--		struct page * new_page;
--		struct sysv_dir_entry * new_de;
-+		struct page *new_page;
-+		struct sysv_dir_entry *new_de;
- 
- 		err = -ENOTEMPTY;
- 		if (dir_de && !sysv_empty_dir(new_inode))
--- 
-1.8.4.5
+so that we're _just_ before the regression hits us.  But that just
+guarantees I'll hit this again when I get new CPUs. :)
 
+If we go this route, I think we should probably take it up in to the
+100-200 range, or even scale it to something on the order of what the
+rcu stall timeout is.  Other than the stall detector, is there some
+other reason to be forcing frequent quiescent states?
