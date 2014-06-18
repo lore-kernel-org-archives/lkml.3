@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570AbaFRO7u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 10:59:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58188 "EHLO mx1.redhat.com"
+	id S1752722AbaFRPAJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 11:00:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39965 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752433AbaFRO7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 10:59:49 -0400
+	id S1750962AbaFRPAF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 11:00:05 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,18 +15,21 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 13/18] perf tools: Add ordered_events_queue_free function
-Date: Wed, 18 Jun 2014 16:58:54 +0200
-Message-Id: <1403103539-16807-14-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 18/18] perf tools: Allow out of order messages in forced flush
+Date: Wed, 18 Jun 2014 16:58:59 +0200
+Message-Id: <1403103539-16807-19-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
 References: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding ordered_events_queue_free function to release all
-the struct ordered_events_queue data. It's replacement
-for former perf_session_free_sample_buffers function.
+In forced flush (OEQ_FLUSH__HALF) we break the rules of the
+flush timestamp via PERF_RECORD_FINISHED_ROUND event, so
+we could get out of order event.
+
+Do not force error in this case and also changing the
+output warning to use WARN_ONCE.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -39,82 +42,85 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/ordered-events.c | 11 +++++++++++
- tools/perf/util/ordered-events.h |  1 +
- tools/perf/util/session.c        | 17 ++---------------
- 3 files changed, 14 insertions(+), 15 deletions(-)
+ tools/perf/util/ordered-events.c | 4 ++++
+ tools/perf/util/ordered-events.h | 2 ++
+ tools/perf/util/session.c        | 8 ++++++--
+ 3 files changed, 12 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/util/ordered-events.c b/tools/perf/util/ordered-events.c
-index 42b1bbc..946619c 100644
+index aa98b6a..bfaf065 100644
 --- a/tools/perf/util/ordered-events.c
 +++ b/tools/perf/util/ordered-events.c
-@@ -201,3 +201,14 @@ void ordered_events_queue_init(struct ordered_events_queue *q)
- 	q->max_alloc_size = (u64) -1;
- 	q->cur_alloc_size = 0;
- }
+@@ -213,12 +213,14 @@ int ordered_events_flush(struct perf_session *s, struct perf_tool *tool,
+ 	}
+ 
+ 	case OEQ_FLUSH__ROUND:
++	case OEQ_FLUSH__NONE:
+ 	default:
+ 		break;
+ 	};
+ 
+ 	if (unlikely(debug_sample_queue)) {
+ 		static const char * const str[] = {
++			"NONE",
+ 			"FINAL",
+ 			"ROUND",
+ 			"HALF ",
+@@ -235,6 +237,8 @@ int ordered_events_flush(struct perf_session *s, struct perf_tool *tool,
+ 	if (!err) {
+ 		if (how == OEQ_FLUSH__ROUND)
+ 			q->next_flush = q->max_timestamp;
 +
-+void ordered_events_queue_free(struct ordered_events_queue *q)
-+{
-+	while (!list_empty(&q->to_free)) {
-+		struct ordered_event *event;
-+
-+		event = list_entry(q->to_free.next, struct ordered_event, list);
-+		list_del(&event->list);
-+		free(event);
-+	}
-+}
++		q->last_flush_type = how;
+ 	}
+ 
+ 	if (unlikely(debug_sample_queue)) {
 diff --git a/tools/perf/util/ordered-events.h b/tools/perf/util/ordered-events.h
-index 0633b09..25ec273 100644
+index 8a717de..7e92688 100644
 --- a/tools/perf/util/ordered-events.h
 +++ b/tools/perf/util/ordered-events.h
-@@ -41,4 +41,5 @@ void ordered_event_put(struct ordered_events_queue *q,
- int ordered_events_flush(struct perf_session *s, struct perf_tool *tool,
- 			 enum oeq_flush how);
- void ordered_events_queue_init(struct ordered_events_queue *q);
-+void ordered_events_queue_free(struct ordered_events_queue *q);
- #endif /* __ORDERED_EVENTS_H */
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 59d13a7..28fe6a1 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -444,19 +444,6 @@ static perf_event__swap_op perf_event__swap_ops[] = {
- 	[PERF_RECORD_HEADER_MAX]	  = NULL,
+@@ -14,6 +14,7 @@ struct ordered_event {
  };
  
--static void perf_session_free_sample_buffers(struct perf_session *session)
--{
--	struct ordered_events_queue *q = &session->ordered_events;
--
--	while (!list_empty(&q->to_free)) {
--		struct ordered_event *sq;
--
--		sq = list_entry(q->to_free.next, struct ordered_event, list);
--		list_del(&sq->list);
--		free(sq);
--	}
--}
--
- /*
-  * When perf record finishes a pass on every buffers, it records this pseudo
-  * event.
-@@ -1092,7 +1079,7 @@ done:
- out_err:
- 	free(buf);
- 	perf_session__warn_about_errors(session, tool);
--	perf_session_free_sample_buffers(session);
-+	ordered_events_queue_free(&session->ordered_events);
- 	return err;
- }
+ enum oeq_flush {
++	OEQ_FLUSH__NONE,
+ 	OEQ_FLUSH__FINAL,
+ 	OEQ_FLUSH__ROUND,
+ 	OEQ_FLUSH__HALF,
+@@ -32,6 +33,7 @@ struct ordered_events_queue {
+ 	struct ordered_event	*last;
+ 	int			buffer_idx;
+ 	unsigned int		nr_events;
++	enum oeq_flush		last_flush_type;
+ };
  
-@@ -1227,7 +1214,7 @@ out:
- out_err:
- 	ui_progress__finish();
- 	perf_session__warn_about_errors(session, tool);
--	perf_session_free_sample_buffers(session);
-+	ordered_events_queue_free(&session->ordered_events);
- 	return err;
- }
+ struct ordered_event *ordered_events_get(struct ordered_events_queue *q,
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 28fe6a1..337a783 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -15,6 +15,7 @@
+ #include "cpumap.h"
+ #include "perf_regs.h"
+ #include "vdso.h"
++#include "asm/bug.h"
  
+ static int perf_session__open(struct perf_session *session)
+ {
+@@ -502,8 +503,11 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
+ 		return -ETIME;
+ 
+ 	if (timestamp < s->ordered_events.last_flush) {
+-		printf("Warning: Timestamp below last timeslice flush\n");
+-		return -EINVAL;
++		WARN_ONCE(1, "Timestamp below last timeslice flush\n");
++
++		/* We could get out of order messages after forced flush. */
++		if (q->last_flush_type != OEQ_FLUSH__HALF)
++			return -EINVAL;
+ 	}
+ 
+ 	new = ordered_events_get(q, timestamp);
 -- 
 1.8.3.1
 
