@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965437AbaFRIw1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 04:52:27 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:51848 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964920AbaFRIwJ (ORCPT
+	id S965370AbaFRIwY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 04:52:24 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:54096 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965279AbaFRIwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 04:52:09 -0400
+	Wed, 18 Jun 2014 04:52:11 -0400
 From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 To: dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
         linux-kernel@vger.kernel.org, airlied@linux.ie
 Cc: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Subject: [PATCH v5 09/11] drm: sti: add Mixer
-Date: Wed, 18 Jun 2014 10:51:26 +0200
-Message-Id: <1403081488-13114-10-git-send-email-benjamin.gaignard@linaro.org>
+Subject: [PATCH v5 10/11] drm: sti: add Compositor
+Date: Wed, 18 Jun 2014 10:51:27 +0200
+Message-Id: <1403081488-13114-11-git-send-email-benjamin.gaignard@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403081488-13114-1-git-send-email-benjamin.gaignard@linaro.org>
 References: <1403081488-13114-1-git-send-email-benjamin.gaignard@linaro.org>
@@ -21,39 +21,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mixer hardware IP is responsible of mixing the different inputs layers.
-Z-order is managed by the mixer.
-We could 2 mixers: one for main path and one for auxillary path
+Compositor control all the input sub-device (VID, GDP)
+and the mixer(s).
+It is the main entry point for composition.
+Layer interface is used to control the abstracted layers.
 
-Mixers are part of Compositor hardware block
+Add debug in mixer and GDP
 
 Signed-off-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 ---
- drivers/gpu/drm/sti/Makefile    |   1 +
- drivers/gpu/drm/sti/sti_mixer.c | 243 ++++++++++++++++++++++++++++++++++++++++
- drivers/gpu/drm/sti/sti_mixer.h |  54 +++++++++
- 3 files changed, 298 insertions(+)
- create mode 100644 drivers/gpu/drm/sti/sti_mixer.c
- create mode 100644 drivers/gpu/drm/sti/sti_mixer.h
+ drivers/gpu/drm/sti/Kconfig          |   1 +
+ drivers/gpu/drm/sti/Makefile         |   2 +
+ drivers/gpu/drm/sti/sti_compositor.c | 252 +++++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/sti/sti_compositor.h |  90 +++++++++++++
+ drivers/gpu/drm/sti/sti_gdp.c        |  33 +++++
+ drivers/gpu/drm/sti/sti_layer.c      | 206 ++++++++++++++++++++++++++++
+ drivers/gpu/drm/sti/sti_mixer.c      |   6 +
+ 7 files changed, 590 insertions(+)
+ create mode 100644 drivers/gpu/drm/sti/sti_compositor.c
+ create mode 100644 drivers/gpu/drm/sti/sti_compositor.h
+ create mode 100644 drivers/gpu/drm/sti/sti_layer.c
 
+diff --git a/drivers/gpu/drm/sti/Kconfig b/drivers/gpu/drm/sti/Kconfig
+index cbd664b..1013570 100644
+--- a/drivers/gpu/drm/sti/Kconfig
++++ b/drivers/gpu/drm/sti/Kconfig
+@@ -1,5 +1,6 @@
+ config DRM_STI
+ 	bool "DRM Support for STMicroelectronics SoC stiH41x Series"
+ 	depends on DRM && (SOC_STIH415 || SOC_STIH416 || ARCH_MULTIPLATFORM)
++	select DRM_KMS_CMA_HELPER
+ 	help
+ 	  Choose this option to enable DRM on STM stiH41x chipset
 diff --git a/drivers/gpu/drm/sti/Makefile b/drivers/gpu/drm/sti/Makefile
-index bb0f6b3..ce03e15 100644
+index ce03e15..a0612cc 100644
 --- a/drivers/gpu/drm/sti/Makefile
 +++ b/drivers/gpu/drm/sti/Makefile
-@@ -6,5 +6,6 @@ obj-$(CONFIG_DRM_STI) += \
+@@ -1,11 +1,13 @@
+ obj-$(CONFIG_DRM_STI) += \
+ 	sti_vtg.o \
+ 	sti_vtac.o \
++	sti_compositor.o \
+ 	sti_hdmi.o \
+ 	sti_hdmi_tx3g0c55phy.o \
  	sti_hdmi_tx3g4c28phy.o \
  	sti_hda.o \
  	sti_tvout.o \
-+	sti_mixer.o \
++	sti_layer.o \
+ 	sti_mixer.o \
  	sti_gdp.o \
  	sti_vid.o
 \ No newline at end of file
-diff --git a/drivers/gpu/drm/sti/sti_mixer.c b/drivers/gpu/drm/sti/sti_mixer.c
+diff --git a/drivers/gpu/drm/sti/sti_compositor.c b/drivers/gpu/drm/sti/sti_compositor.c
 new file mode 100644
-index 0000000..5fa6dc5
+index 0000000..46c224d
 --- /dev/null
-+++ b/drivers/gpu/drm/sti/sti_mixer.c
-@@ -0,0 +1,243 @@
++++ b/drivers/gpu/drm/sti/sti_compositor.c
+@@ -0,0 +1,252 @@
 +/*
 + * Copyright (C) STMicroelectronics SA 2014
 + * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
@@ -62,301 +86,696 @@ index 0000000..5fa6dc5
 + * License terms:  GNU General Public License (GPL), version 2
 + */
 +
-+#include "sti_mixer.h"
-+#include "sti_vtg.h"
-+
-+/* Identity: G=Y , B=Cb , R=Cr */
-+static const u32 mixerColorSpaceMatIdentity[] = {
-+	0x10000000, 0x00000000, 0x10000000, 0x00001000,
-+	0x00000000, 0x00000000, 0x00000000, 0x00000000
-+};
-+
-+/* regs offset */
-+#define GAM_MIXER_CTL      0x00
-+#define GAM_MIXER_BKC      0x04
-+#define GAM_MIXER_BCO      0x0C
-+#define GAM_MIXER_BCS      0x10
-+#define GAM_MIXER_AVO      0x28
-+#define GAM_MIXER_AVS      0x2C
-+#define GAM_MIXER_CRB      0x34
-+#define GAM_MIXER_ACT      0x38
-+#define GAM_MIXER_MBP      0x3C
-+#define GAM_MIXER_MX0      0x80
-+
-+/* id for depth of CRB reg */
-+#define GAM_DEPTH_VID0_ID  1
-+#define GAM_DEPTH_VID1_ID  2
-+#define GAM_DEPTH_GDP0_ID  3
-+#define GAM_DEPTH_GDP1_ID  4
-+#define GAM_DEPTH_GDP2_ID  5
-+#define GAM_DEPTH_GDP3_ID  6
-+#define GAM_DEPTH_MASK_ID  7
-+
-+/* mask in CTL reg */
-+#define GAM_CTL_BACK_MASK  BIT(0)
-+#define GAM_CTL_VID0_MASK  BIT(1)
-+#define GAM_CTL_VID1_MASK  BIT(2)
-+#define GAM_CTL_GDP0_MASK  BIT(3)
-+#define GAM_CTL_GDP1_MASK  BIT(4)
-+#define GAM_CTL_GDP2_MASK  BIT(5)
-+#define GAM_CTL_GDP3_MASK  BIT(6)
-+
-+const char *sti_mixer_to_str(struct sti_mixer *mixer)
-+{
-+	switch (mixer->id) {
-+	case STI_MIXER_MAIN:
-+		return "MAIN_MIXER";
-+	case STI_MIXER_AUX:
-+		return "AUX_MIXER";
-+	default:
-+		return "<UNKNOWN MIXER>";
-+	}
-+}
-+
-+static inline u32 sti_mixer_reg_read(struct sti_mixer *mixer, u32 reg_id)
-+{
-+	return readl(mixer->regs + reg_id);
-+}
-+
-+static inline void sti_mixer_reg_write(struct sti_mixer *mixer,
-+				       u32 reg_id, u32 val)
-+{
-+	writel(val, mixer->regs + reg_id);
-+}
-+
-+void sti_mixer_set_background_status(struct sti_mixer *mixer, bool enable)
-+{
-+	u32 val = sti_mixer_reg_read(mixer, GAM_MIXER_CTL);
-+
-+	val &= ~GAM_CTL_BACK_MASK;
-+	val |= enable;
-+	sti_mixer_reg_write(mixer, GAM_MIXER_CTL, val);
-+}
-+
-+static void sti_mixer_set_background_color(struct sti_mixer *mixer,
-+					   u8 red, u8 green, u8 blue)
-+{
-+	u32 val = (red << 16) | (green << 8) | blue;
-+
-+	sti_mixer_reg_write(mixer, GAM_MIXER_BKC, val);
-+}
-+
-+static void sti_mixer_set_background_area(struct sti_mixer *mixer,
-+					  struct drm_display_mode *mode)
-+{
-+	u32 ydo, xdo, yds, xds;
-+
-+	ydo = sti_vtg_get_line_number(*mode, 0);
-+	yds = sti_vtg_get_line_number(*mode, mode->vdisplay - 1);
-+	xdo = sti_vtg_get_pixel_number(*mode, 0);
-+	xds = sti_vtg_get_pixel_number(*mode, mode->hdisplay - 1);
-+
-+	sti_mixer_reg_write(mixer, GAM_MIXER_BCO, ydo << 16 | xdo);
-+	sti_mixer_reg_write(mixer, GAM_MIXER_BCS, yds << 16 | xds);
-+}
-+
-+int sti_mixer_set_layer_depth(struct sti_mixer *mixer, struct sti_layer *layer)
-+{
-+	int layer_id = 0, depth = layer->zorder;
-+	u32 mask, val;
-+
-+	if (depth >= GAM_MIXER_NB_DEPTH_LEVEL)
-+		return 1;
-+
-+	switch (layer->desc) {
-+	case STI_GDP_0:
-+		layer_id = GAM_DEPTH_GDP0_ID;
-+		break;
-+	case STI_GDP_1:
-+		layer_id = GAM_DEPTH_GDP1_ID;
-+		break;
-+	case STI_GDP_2:
-+		layer_id = GAM_DEPTH_GDP2_ID;
-+		break;
-+	case STI_GDP_3:
-+		layer_id = GAM_DEPTH_GDP3_ID;
-+		break;
-+	case STI_VID_0:
-+		layer_id = GAM_DEPTH_VID0_ID;
-+		break;
-+	case STI_VID_1:
-+		layer_id = GAM_DEPTH_VID1_ID;
-+		break;
-+	default:
-+		DRM_ERROR("Unknown layer %d\n", layer->desc);
-+		return 1;
-+	}
-+	mask = GAM_DEPTH_MASK_ID << (3 * depth);
-+	layer_id = layer_id << (3 * depth);
-+
-+	dev_dbg(mixer->dev, "GAM_MIXER_CRB val 0x%x mask 0x%x\n",
-+		layer_id, mask);
-+
-+	val = sti_mixer_reg_read(mixer, GAM_MIXER_CRB);
-+	val &= ~mask;
-+	val |= layer_id;
-+	sti_mixer_reg_write(mixer, GAM_MIXER_CRB, val);
-+
-+	dev_dbg(mixer->dev, "Read GAM_MIXER_CRB 0x%x\n",
-+		sti_mixer_reg_read(mixer, GAM_MIXER_CRB));
-+	return 0;
-+}
-+
-+int sti_mixer_active_video_area(struct sti_mixer *mixer,
-+				struct drm_display_mode *mode)
-+{
-+	u32 ydo, xdo, yds, xds;
-+
-+	ydo = sti_vtg_get_line_number(*mode, 0);
-+	yds = sti_vtg_get_line_number(*mode, mode->vdisplay - 1);
-+	xdo = sti_vtg_get_pixel_number(*mode, 0);
-+	xds = sti_vtg_get_pixel_number(*mode, mode->hdisplay - 1);
-+
-+	DRM_DEBUG_DRIVER("%s active video area xdo:%d ydo:%d xds:%d yds:%d\n",
-+			 sti_mixer_to_str(mixer), xdo, ydo, xds, yds);
-+	sti_mixer_reg_write(mixer, GAM_MIXER_AVO, ydo << 16 | xdo);
-+	sti_mixer_reg_write(mixer, GAM_MIXER_AVS, yds << 16 | xds);
-+
-+	sti_mixer_set_background_color(mixer, 0xFF, 0, 0);
-+
-+	sti_mixer_set_background_area(mixer, mode);
-+	sti_mixer_set_background_status(mixer, true);
-+	return 0;
-+}
-+
-+static u32 sti_mixer_get_layer_mask(struct sti_layer *layer)
-+{
-+	switch (layer->desc) {
-+	case STI_BACK:
-+		return GAM_CTL_BACK_MASK;
-+	case STI_GDP_0:
-+		return GAM_CTL_GDP0_MASK;
-+	case STI_GDP_1:
-+		return GAM_CTL_GDP1_MASK;
-+	case STI_GDP_2:
-+		return GAM_CTL_GDP2_MASK;
-+	case STI_GDP_3:
-+		return GAM_CTL_GDP3_MASK;
-+	case STI_VID_0:
-+		return GAM_CTL_VID0_MASK;
-+	case STI_VID_1:
-+		return GAM_CTL_VID1_MASK;
-+	default:
-+		return 0;
-+	}
-+}
-+
-+int sti_mixer_set_layer_status(struct sti_mixer *mixer,
-+			       struct sti_layer *layer, bool status)
-+{
-+	u32 mask, val;
-+
-+	mask = sti_mixer_get_layer_mask(layer);
-+	if (!mask) {
-+		DRM_ERROR("Can not find layer mask\n");
-+		return -EINVAL;
-+	}
-+
-+	val = sti_mixer_reg_read(mixer, GAM_MIXER_CTL);
-+	val &= ~mask;
-+	val |= status ? mask : 0;
-+	sti_mixer_reg_write(mixer, GAM_MIXER_CTL, val);
-+
-+	return 0;
-+}
-+
-+void sti_mixer_set_matrix(struct sti_mixer *mixer)
-+{
-+	unsigned int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(mixerColorSpaceMatIdentity); i++)
-+		sti_mixer_reg_write(mixer, GAM_MIXER_MX0 + (i * 4),
-+				    mixerColorSpaceMatIdentity[i]);
-+}
-+
-+struct sti_mixer *sti_mixer_create(struct device *dev, int id,
-+				   void __iomem *baseaddr)
-+{
-+	struct sti_mixer *mixer = devm_kzalloc(dev, sizeof(*mixer), GFP_KERNEL);
-+	struct device_node *np = dev->of_node;
-+
-+	dev_dbg(dev, "%s\n", __func__);
-+	if (!mixer) {
-+		DRM_ERROR("Failed to allocated memory for mixer\n");
-+		return NULL;
-+	}
-+	mixer->regs = baseaddr;
-+	mixer->dev = dev;
-+	mixer->id = id;
-+
-+	if (of_device_is_compatible(np, "st,stih416-compositor"))
-+		sti_mixer_set_matrix(mixer);
-+
-+	DRM_DEBUG_DRIVER("%s created. Regs=%p\n",
-+			 sti_mixer_to_str(mixer), mixer->regs);
-+
-+	return mixer;
-+}
-diff --git a/drivers/gpu/drm/sti/sti_mixer.h b/drivers/gpu/drm/sti/sti_mixer.h
-new file mode 100644
-index 0000000..8743721
---- /dev/null
-+++ b/drivers/gpu/drm/sti/sti_mixer.h
-@@ -0,0 +1,54 @@
-+/*
-+ * Copyright (C) STMicroelectronics SA 2014
-+ * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
-+ *          Fabien Dessenne <fabien.dessenne@st.com>
-+ *          for STMicroelectronics.
-+ * License terms:  GNU General Public License (GPL), version 2
-+ */
-+
-+#ifndef _STI_MIXER_H_
-+#define _STI_MIXER_H_
++#include <linux/component.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/reset.h>
 +
 +#include <drm/drmP.h>
 +
-+#include "sti_layer.h"
++#include "sti_compositor.h"
++#include "sti_gdp.h"
++#include "sti_vtg.h"
 +
-+#define to_sti_mixer(x) container_of(x, struct sti_mixer, drm_crtc)
-+
-+/**
-+ * STI Mixer subdevice structure
-+ *
-+ * @dev: driver device
-+ * @regs: mixer registers
-+ * @id: id of the mixer
-+ * @drm_crtc: crtc object link to the mixer
-+ * @pending_event: set if a flip event is pending on crtc
++/*
++ * stiH407 compositor properties
 + */
-+struct sti_mixer {
-+	struct device *dev;
-+	void __iomem *regs;
-+	int id;
-+	struct drm_crtc	drm_crtc;
-+	struct drm_pending_vblank_event *pending_event;
++struct sti_compositor_data stih407_compositor_data = {
++	.nb_subdev = 6,
++	.subdev_desc = {
++			{STI_GPD_SUBDEV, (int)STI_GDP_0, 0x100},
++			{STI_GPD_SUBDEV, (int)STI_GDP_1, 0x200},
++			{STI_GPD_SUBDEV, (int)STI_GDP_2, 0x300},
++			{STI_GPD_SUBDEV, (int)STI_GDP_3, 0x400},
++			{STI_VID_SUBDEV, (int)STI_VID_0, 0x700},
++			{STI_MIXER_MAIN_SUBDEV, STI_MIXER_MAIN, 0xC00}
++	},
 +};
 +
-+const char *sti_mixer_to_str(struct sti_mixer *mixer);
++/*
++ * stiH416 compositor properties
++ * Note:
++ * on stih416 MIXER_AUX has a different base address from MIXER_MAIN
++ * Moreover, GDPx is different for Main and Aux Mixer. So this subdev map does
++ * not fit for stiH416 if we want to enable the MIXER_AUX.
++ */
++struct sti_compositor_data stih416_compositor_data = {
++	.nb_subdev = 3,
++	.subdev_desc = {
++			{STI_GPD_SUBDEV, (int)STI_GDP_0, 0x100},
++			{STI_GPD_SUBDEV, (int)STI_GDP_1, 0x200},
++			{STI_MIXER_MAIN_SUBDEV, STI_MIXER_MAIN, 0xC00}
++	},
++};
 +
-+struct sti_mixer *sti_mixer_create(struct device *dev, int id,
-+		void __iomem *baseaddr);
++static int sti_compositor_init_subdev(struct sti_compositor *compo,
++		struct sti_compositor_subdev_descriptor *desc,
++		unsigned int array_size)
++{
++	unsigned int i, mixer_id = 0, layer_id = 0;
 +
-+int sti_mixer_set_layer_status(struct sti_mixer *mixer,
-+		struct sti_layer *layer, bool status);
-+int sti_mixer_set_layer_depth(struct sti_mixer *mixer, struct sti_layer *layer);
-+int sti_mixer_active_video_area(struct sti_mixer *mixer,
-+		struct drm_display_mode *mode);
++	for (i = 0; i < array_size; i++) {
++		switch (desc[i].type) {
++		case STI_MIXER_MAIN_SUBDEV:
++		case STI_MIXER_AUX_SUBDEV:
++			compo->mixer[mixer_id++] =
++			    sti_mixer_create(compo->dev, desc[i].id,
++					     compo->regs + desc[i].offset);
++			break;
++		case STI_GPD_SUBDEV:
++		case STI_VID_SUBDEV:
++			compo->layer[layer_id++] =
++			    sti_layer_create(compo->dev, desc[i].id,
++					     compo->regs + desc[i].offset);
++			break;
++			/* case STI_CURSOR_SUBDEV : TODO */
++		default:
++			DRM_ERROR("Unknow subdev compoment type\n");
++			return 1;
++		}
 +
-+void sti_mixer_set_background_status(struct sti_mixer *mixer, bool enable);
++	}
++	compo->nb_mixers = mixer_id;
++	compo->nb_layers = layer_id;
 +
-+/* depth in Cross-bar control = z order */
-+#define GAM_MIXER_NB_DEPTH_LEVEL 7
++	return 0;
++}
 +
-+#define STI_MIXER_MAIN 0
-+#define STI_MIXER_AUX  1
++static int sti_compositor_bind(struct device *dev, struct device *master,
++	void *data)
++{
++	struct sti_compositor *compo = dev_get_drvdata(dev);
++	struct drm_device *drm_dev = data;
++	unsigned int i, crtc = 0, plane = 0;
++
++	for (i = 0; i < compo->nb_mixers; i++) {
++		if (compo->mixer[i])
++			crtc++;
++	}
++	if (crtc == 0) {
++		DRM_ERROR("No CRTC available\n");
++		return 1;
++	}
++
++	drm_vblank_init(drm_dev, crtc);
++	/* Allow usage of vblank without having to call drm_irq_install */
++	drm_dev->irq_enabled = 1;
++
++	for (i = 0; i < compo->nb_layers; i++) {
++		if (compo->layer[i]) {
++			/* Create planes for GDP.
++			 * except GDP0 as it is reserved for CRTC FB */
++			enum sti_layer_desc desc = compo->layer[i]->desc;
++			enum sti_layer_type type = desc & STI_LAYER_TYPE_MASK;
++
++			if ((type == STI_GDP) && (desc != STI_GDP_0))
++				plane++;
++		}
++	}
++
++	DRM_DEBUG_DRIVER("Initialized %d DRM CRTC(s) and %d DRM plane(s)\n",
++			 crtc, plane);
++	DRM_DEBUG_DRIVER("DRM plane(s) for VID/VDP not created yet\n");
++
++	return 0;
++}
++
++static void sti_compositor_unbind(struct device *dev, struct device *master,
++	void *data)
++{
++	/* do nothing */
++}
++
++static const struct component_ops sti_compositor_ops = {
++	.bind	= sti_compositor_bind,
++	.unbind	= sti_compositor_unbind,
++};
++
++static const struct of_device_id compositor_of_match[] = {
++	{
++		.compatible = "st,stih416-compositor",
++		.data = &stih416_compositor_data,
++	}, {
++		.compatible = "st,stih407-compositor",
++		.data = &stih407_compositor_data,
++	}, {
++		/* end node */
++	}
++};
++MODULE_DEVICE_TABLE(of, compositor_of_match);
++
++static int sti_compositor_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device_node *np = dev->of_node;
++	struct device_node *vtg_np;
++	struct sti_compositor *compo;
++	struct resource *res;
++	int err;
++
++	compo = devm_kzalloc(dev, sizeof(*compo), GFP_KERNEL);
++	if (!compo) {
++		DRM_ERROR("Failed to allocate compositor context\n");
++		return -ENOMEM;
++	}
++	compo->dev = dev;
++
++	/* populate data structure depending on compatibility */
++	BUG_ON(!of_match_node(compositor_of_match, np)->data);
++
++	memcpy(&compo->data, of_match_node(compositor_of_match, np)->data,
++	       sizeof(struct sti_compositor_data));
++
++	/* Get Memory ressources */
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (res == NULL) {
++		DRM_ERROR("Get memory resource failed\n");
++		return -ENXIO;
++	}
++	compo->regs = devm_ioremap(dev, res->start, resource_size(res));
++	if (compo->regs == NULL) {
++		DRM_ERROR("Register mapping failed\n");
++		return -ENXIO;
++	}
++
++	/* Get clock resources */
++	compo->clk_compo_main = devm_clk_get(dev, "compo_main");
++	if (IS_ERR(compo->clk_compo_main)) {
++		DRM_ERROR("Cannot get compo_main clock\n");
++		return PTR_ERR(compo->clk_compo_main);
++	}
++
++	compo->clk_compo_aux = devm_clk_get(dev, "compo_aux");
++	if (IS_ERR(compo->clk_compo_aux)) {
++		DRM_ERROR("Cannot get compo_aux clock\n");
++		return PTR_ERR(compo->clk_compo_aux);
++	}
++
++	compo->clk_pix_main = devm_clk_get(dev, "pix_main");
++	if (IS_ERR(compo->clk_pix_main)) {
++		DRM_ERROR("Cannot get pix_main clock\n");
++		return PTR_ERR(compo->clk_pix_main);
++	}
++
++	compo->clk_pix_aux = devm_clk_get(dev, "pix_aux");
++	if (IS_ERR(compo->clk_pix_aux)) {
++		DRM_ERROR("Cannot get pix_aux clock\n");
++		return PTR_ERR(compo->clk_pix_aux);
++	}
++
++	/* Get reset resources */
++	compo->rst_main = devm_reset_control_get(dev, "compo-main");
++	/* Take compo main out of reset */
++	if (!IS_ERR(compo->rst_main))
++		reset_control_deassert(compo->rst_main);
++
++	compo->rst_aux = devm_reset_control_get(dev, "compo-aux");
++	/* Take compo aux out of reset */
++	if (!IS_ERR(compo->rst_aux))
++		reset_control_deassert(compo->rst_aux);
++
++	vtg_np = of_parse_phandle(pdev->dev.of_node, "st,vtg", 0);
++	if (vtg_np)
++		compo->vtg_main = of_vtg_find(vtg_np);
++
++	vtg_np = of_parse_phandle(pdev->dev.of_node, "st,vtg", 1);
++	if (vtg_np)
++		compo->vtg_aux = of_vtg_find(vtg_np);
++
++	/* Initialize compositor subdevices */
++	err = sti_compositor_init_subdev(compo, compo->data.subdev_desc,
++					 compo->data.nb_subdev);
++	if (err)
++		return err;
++
++	platform_set_drvdata(pdev, compo);
++
++	return component_add(&pdev->dev, &sti_compositor_ops);
++}
++
++static int sti_compositor_remove(struct platform_device *pdev)
++{
++	component_del(&pdev->dev, &sti_compositor_ops);
++	return 0;
++}
++
++static struct platform_driver sti_compositor_driver = {
++	.driver = {
++		.name = "sti-compositor",
++		.owner = THIS_MODULE,
++		.of_match_table = compositor_of_match,
++	},
++	.probe = sti_compositor_probe,
++	.remove = sti_compositor_remove,
++};
++
++module_platform_driver(sti_compositor_driver);
+diff --git a/drivers/gpu/drm/sti/sti_compositor.h b/drivers/gpu/drm/sti/sti_compositor.h
+new file mode 100644
+index 0000000..3ea19db
+--- /dev/null
++++ b/drivers/gpu/drm/sti/sti_compositor.h
+@@ -0,0 +1,90 @@
++/*
++ * Copyright (C) STMicroelectronics SA 2014
++ * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
++ *          Fabien Dessenne <fabien.dessenne@st.com>
++ *          for STMicroelectronics.
++ * License terms:  GNU General Public License (GPL), version 2
++ */
++
++#ifndef _STI_COMPOSITOR_H_
++#define _STI_COMPOSITOR_H_
++
++#include <linux/clk.h>
++#include <linux/kernel.h>
++
++#include "sti_layer.h"
++#include "sti_mixer.h"
++
++#define WAIT_NEXT_VSYNC_MS      50 /*ms*/
++
++#define STI_MAX_LAYER 8
++#define STI_MAX_MIXER 2
++
++enum sti_compositor_subdev_type {
++	STI_MIXER_MAIN_SUBDEV,
++	STI_MIXER_AUX_SUBDEV,
++	STI_GPD_SUBDEV,
++	STI_VID_SUBDEV,
++	STI_CURSOR_SUBDEV,
++};
++
++struct sti_compositor_subdev_descriptor {
++	enum sti_compositor_subdev_type type;
++	int id;
++	unsigned int offset;
++};
++
++/**
++ * STI Compositor data structure
++ *
++ * @nb_subdev: number of subdevices supported by the compositor
++ * @subdev_desc: subdev list description
++ */
++#define MAX_SUBDEV 9
++struct sti_compositor_data {
++	unsigned int nb_subdev;
++	struct sti_compositor_subdev_descriptor subdev_desc[MAX_SUBDEV];
++};
++
++/**
++ * STI Compositor structure
++ *
++ * @dev: driver device
++ * @regs: registers (main)
++ * @data: device data
++ * @clk_compo_main: clock for main compo
++ * @clk_compo_aux: clock for aux compo
++ * @clk_pix_main: pixel clock for main path
++ * @clk_pix_aux: pixel clock for aux path
++ * @rst_main: reset control of the main path
++ * @rst_aux: reset control of the aux path
++ * @mixer: array of mixers
++ * @vtg_main: vtg for main data path
++ * @vtg_aux: vtg for auxillary data path
++ * @layer: array of layers
++ * @nb_mixers: number of mixers for this compositor
++ * @nb_layers: number of layers (GDP,VID,...) for this compositor
++ * @enable: true if compositor is enable else false
++ * @vtg_vblank_nb: callback for VTG VSYNC notification
++ */
++struct sti_compositor {
++	struct device *dev;
++	void __iomem *regs;
++	struct sti_compositor_data data;
++	struct clk *clk_compo_main;
++	struct clk *clk_compo_aux;
++	struct clk *clk_pix_main;
++	struct clk *clk_pix_aux;
++	struct reset_control *rst_main;
++	struct reset_control *rst_aux;
++	struct sti_mixer *mixer[STI_MAX_MIXER];
++	struct sti_vtg *vtg_main;
++	struct sti_vtg *vtg_aux;
++	struct sti_layer *layer[STI_MAX_LAYER];
++	int nb_mixers;
++	int nb_layers;
++	bool enable;
++	struct notifier_block vtg_vblank_nb;
++};
 +
 +#endif
+diff --git a/drivers/gpu/drm/sti/sti_gdp.c b/drivers/gpu/drm/sti/sti_gdp.c
+index 7f55767..4e30b74 100644
+--- a/drivers/gpu/drm/sti/sti_gdp.c
++++ b/drivers/gpu/drm/sti/sti_gdp.c
+@@ -9,6 +9,7 @@
+ #include <linux/clk.h>
+ #include <linux/dma-mapping.h>
+ 
++#include "sti_compositor.h"
+ #include "sti_gdp.h"
+ #include "sti_layer.h"
+ #include "sti_vtg.h"
+@@ -182,6 +183,10 @@ static struct sti_gdp_node_list *sti_gdp_get_free_nodes(struct sti_layer *layer)
+ 		    (virt_nvn != gdp->node_list[i].top_field))
+ 			return &gdp->node_list[i];
+ 
++	/* in hazardious cases restart with the first node */
++	DRM_ERROR("inconsistent NVN for %s: 0x%08X\n",
++			sti_layer_to_str(layer), hw_nvn);
++
+ end:
+ 	return &gdp->node_list[0];
+ }
+@@ -215,6 +220,9 @@ struct sti_gdp_node_list *sti_gdp_get_current_nodes(struct sti_layer *layer)
+ 			return &gdp->node_list[i];
+ 
+ end:
++	DRM_DEBUG_DRIVER("Warning, NVN 0x%08X for %s does not match any node\n",
++				hw_nvn, sti_layer_to_str(layer));
++
+ 	return NULL;
+ }
+ 
+@@ -235,6 +243,7 @@ static int sti_gdp_prepare_layer(struct sti_layer *layer, bool first_prepare)
+ 	struct drm_display_mode *mode = layer->mode;
+ 	struct device *dev = layer->dev;
+ 	struct sti_gdp *gdp = to_sti_gdp(layer);
++	struct sti_compositor *compo = dev_get_drvdata(dev);
+ 	int format;
+ 	unsigned int depth, bpp;
+ 	int rate = mode->clock * 1000;
+@@ -245,6 +254,9 @@ static int sti_gdp_prepare_layer(struct sti_layer *layer, bool first_prepare)
+ 	top_field = list->top_field;
+ 	btm_field = list->btm_field;
+ 
++	dev_dbg(dev, "%s %s top_node:0x%p btm_node:0x%p\n", __func__,
++			sti_layer_to_str(layer), top_field, btm_field);
++
+ 	/* Build the top field from layer params */
+ 	top_field->gam_gdp_agc = GAM_GDP_AGC_FULL_RANGE;
+ 	top_field->gam_gdp_ctl = WAIT_NEXT_VSYNC;
+@@ -289,6 +301,14 @@ static int sti_gdp_prepare_layer(struct sti_layer *layer, bool first_prepare)
+ 		    layer->pitches[0];
+ 
+ 	if (first_prepare) {
++		/* Register gdp callback */
++		if (sti_vtg_register_client(layer->mixer_id == STI_MIXER_MAIN ?
++				compo->vtg_main : compo->vtg_aux,
++				&gdp->vtg_field_nb, layer->mixer_id)) {
++			DRM_ERROR("Cannot register VTG notifier\n");
++			return 1;
++		}
++
+ 		/* Set and enable gdp clock */
+ 		if (gdp->clk_pix) {
+ 			res = clk_set_rate(gdp->clk_pix, rate);
+@@ -333,6 +353,9 @@ static int sti_gdp_commit_layer(struct sti_layer *layer)
+ 	u32 dma_updated_btm = virt_to_dma(layer->dev, updated_btm_node);
+ 	struct sti_gdp_node_list *curr_list = sti_gdp_get_current_nodes(layer);
+ 
++	dev_dbg(layer->dev, "%s %s top/btm_node:0x%p/0x%p\n", __func__,
++			sti_layer_to_str(layer),
++			updated_top_node, updated_btm_node);
+ 	dev_dbg(layer->dev, "Current NVN:0x%X\n",
+ 		readl(layer->regs + GAM_GDP_NVN_OFFSET));
+ 	dev_dbg(layer->dev, "Posted buff: %lx current buff: %x\n",
+@@ -342,6 +365,9 @@ static int sti_gdp_commit_layer(struct sti_layer *layer)
+ 	if (curr_list == NULL) {
+ 		/* First update or invalid node should directly write in the
+ 		 * hw register */
++		DRM_DEBUG_DRIVER("%s first update (or invalid node)",
++				sti_layer_to_str(layer));
++
+ 		writel(gdp->is_curr_top == true ?
+ 				dma_updated_btm : dma_updated_top,
+ 				layer->regs + GAM_GDP_NVN_OFFSET);
+@@ -380,6 +406,9 @@ static int sti_gdp_disable_layer(struct sti_layer *layer)
+ {
+ 	unsigned int i;
+ 	struct sti_gdp *gdp = to_sti_gdp(layer);
++	struct sti_compositor *compo = dev_get_drvdata(layer->dev);
++
++	DRM_DEBUG_DRIVER("%s\n", sti_layer_to_str(layer));
+ 
+ 	/* Set the nodes as 'to be ignored on mixer' */
+ 	for (i = 0; i < GDP_NODE_NB_BANK; i++) {
+@@ -387,6 +416,10 @@ static int sti_gdp_disable_layer(struct sti_layer *layer)
+ 		gdp->node_list[i].btm_field->gam_gdp_ppt |= GAM_GDP_PPT_IGNORE;
+ 	}
+ 
++	if (sti_vtg_unregister_client(layer->mixer_id == STI_MIXER_MAIN ?
++			compo->vtg_main : compo->vtg_aux, &gdp->vtg_field_nb))
++		DRM_DEBUG_DRIVER("Warning: cannot unregister VTG notifier\n");
++
+ 	if (gdp->clk_pix)
+ 		clk_disable_unprepare(gdp->clk_pix);
+ 
+diff --git a/drivers/gpu/drm/sti/sti_layer.c b/drivers/gpu/drm/sti/sti_layer.c
+new file mode 100644
+index 0000000..669e063
+--- /dev/null
++++ b/drivers/gpu/drm/sti/sti_layer.c
+@@ -0,0 +1,206 @@
++/*
++ * Copyright (C) STMicroelectronics SA 2014
++ * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
++ *          Fabien Dessenne <fabien.dessenne@st.com>
++ *          for STMicroelectronics.
++ * License terms:  GNU General Public License (GPL), version 2
++ */
++
++#include <drm/drmP.h>
++#include <drm/drm_gem_cma_helper.h>
++#include <drm/drm_fb_cma_helper.h>
++
++#include "sti_compositor.h"
++#include "sti_gdp.h"
++#include "sti_layer.h"
++#include "sti_vid.h"
++
++struct sti_layer *sti_layer_find_layer(struct sti_layer *layer[],
++				       enum sti_layer_desc desc)
++{
++	unsigned int i;
++
++	for (i = 0; i < STI_MAX_LAYER; i++)
++		if (layer[i] && (layer[i]->desc == desc))
++			return layer[i];
++	return NULL;
++}
++
++const char *sti_layer_to_str(struct sti_layer *layer)
++{
++	switch (layer->desc) {
++	case STI_GDP_0:
++		return "GDP0";
++	case STI_GDP_1:
++		return "GDP1";
++	case STI_GDP_2:
++		return "GDP2";
++	case STI_GDP_3:
++		return "GDP3";
++	case STI_VID_0:
++		return "VID0";
++	case STI_VID_1:
++		return "VID1";
++	case STI_CURSOR:
++		return "CURSOR";
++	default:
++		return "<UNKNOWN LAYER>";
++	}
++}
++
++struct sti_layer *sti_layer_create(struct device *dev, int desc,
++				   void __iomem *baseaddr)
++{
++
++	struct sti_layer *layer = NULL;
++
++	switch (desc & STI_LAYER_TYPE_MASK) {
++	case STI_GDP:
++		layer = sti_gdp_create(dev, desc);
++		break;
++	case STI_VID:
++		layer = sti_vid_create(dev, baseaddr);
++		break;
++	}
++
++	if (!layer) {
++		DRM_ERROR("Failed to create layer\n");
++		return NULL;
++	}
++
++	layer->desc = desc;
++	layer->dev = dev;
++	layer->regs = baseaddr;
++
++	DRM_DEBUG_DRIVER("%s created\n", sti_layer_to_str(layer));
++
++	return layer;
++}
++
++int sti_layer_prepare(struct sti_layer *layer, struct drm_framebuffer *fb,
++		      struct drm_display_mode *mode, int mixer_id,
++		      int dest_x, int dest_y, int dest_w, int dest_h,
++		      int src_x, int src_y, int src_w, int src_h)
++{
++	int ret;
++	unsigned int i;
++	struct drm_gem_cma_object *cma_obj;
++
++	if (!layer || !fb || !mode) {
++		DRM_ERROR("Null fb, layer or mode\n");
++		return 1;
++	}
++
++	cma_obj = drm_fb_cma_get_gem_obj(fb, 0);
++	if (!cma_obj) {
++		DRM_ERROR("Can't get CMA GEM object for fb\n");
++		return 1;
++	}
++
++	layer->fb = fb;
++	layer->mode = mode;
++	layer->mixer_id = mixer_id;
++	layer->dst_x = dest_x;
++	layer->dst_y = dest_y;
++	layer->dst_w = clamp_val(dest_w, 0, mode->crtc_hdisplay - dest_x);
++	layer->dst_h = clamp_val(dest_h, 0, mode->crtc_vdisplay - dest_y);
++	layer->src_x = src_x;
++	layer->src_y = src_y;
++	layer->src_w = src_w;
++	layer->src_h = src_h;
++	layer->format = fb->pixel_format;
++	layer->paddr = cma_obj->paddr;
++	for (i = 0; i < 4; i++) {
++		layer->pitches[i] = fb->pitches[i];
++		layer->offsets[i] = fb->offsets[i];
++	}
++
++	DRM_DEBUG_DRIVER("%s is associated with mixer_id %d\n",
++			 sti_layer_to_str(layer),
++			 layer->mixer_id);
++	DRM_DEBUG_DRIVER("%s dst=(%dx%d)@(%d,%d) - src=(%dx%d)@(%d,%d)\n",
++			 sti_layer_to_str(layer),
++			 layer->dst_w, layer->dst_h, layer->dst_x, layer->dst_y,
++			 layer->src_w, layer->src_h, layer->src_x,
++			 layer->src_y);
++
++	DRM_DEBUG_DRIVER("drm FB:%d format:%.4s phys@:0x%lx\n", fb->base.id,
++			 (char *)&layer->format, (unsigned long)layer->paddr);
++
++	if (!layer->ops->prepare)
++		goto err_no_prepare;
++
++	ret = layer->ops->prepare(layer, !layer->enabled);
++	if (!ret)
++		layer->enabled = true;
++
++	return ret;
++
++err_no_prepare:
++	DRM_ERROR("Cannot prepare\n");
++	return 1;
++}
++
++int sti_layer_commit(struct sti_layer *layer)
++{
++	if (!layer)
++		return 1;
++
++	if (!layer->ops->commit)
++		goto err_no_commit;
++
++	return layer->ops->commit(layer);
++
++err_no_commit:
++	DRM_ERROR("Cannot commit\n");
++	return 1;
++}
++
++int sti_layer_disable(struct sti_layer *layer)
++{
++	int ret;
++
++	DRM_DEBUG_DRIVER("%s\n", sti_layer_to_str(layer));
++	if (!layer)
++		return 1;
++
++	if (!layer->enabled)
++		return 0;
++
++	if (!layer->ops->disable)
++		goto err_no_disable;
++
++	ret = layer->ops->disable(layer);
++	if (!ret)
++		layer->enabled = false;
++	else
++		DRM_ERROR("Disable failed\n");
++
++	return ret;
++
++err_no_disable:
++	DRM_ERROR("Cannot disable\n");
++	return 1;
++}
++
++const uint32_t *sti_layer_get_formats(struct sti_layer *layer)
++{
++	if (!layer)
++		return NULL;
++
++	if (!layer->ops->get_formats)
++		return NULL;
++
++	return layer->ops->get_formats();
++}
++
++unsigned int sti_layer_get_nb_formats(struct sti_layer *layer)
++{
++	if (!layer)
++		return 0;
++
++	if (!layer->ops->get_nb_formats)
++		return 0;
++
++	return layer->ops->get_nb_formats();
++}
+diff --git a/drivers/gpu/drm/sti/sti_mixer.c b/drivers/gpu/drm/sti/sti_mixer.c
+index 5fa6dc5..79f369d 100644
+--- a/drivers/gpu/drm/sti/sti_mixer.c
++++ b/drivers/gpu/drm/sti/sti_mixer.c
+@@ -6,6 +6,7 @@
+  * License terms:  GNU General Public License (GPL), version 2
+  */
+ 
++#include "sti_compositor.h"
+ #include "sti_mixer.h"
+ #include "sti_vtg.h"
+ 
+@@ -133,6 +134,8 @@ int sti_mixer_set_layer_depth(struct sti_mixer *mixer, struct sti_layer *layer)
+ 	mask = GAM_DEPTH_MASK_ID << (3 * depth);
+ 	layer_id = layer_id << (3 * depth);
+ 
++	DRM_DEBUG_DRIVER("%s %s depth=%d\n", sti_mixer_to_str(mixer),
++			 sti_layer_to_str(layer), depth);
+ 	dev_dbg(mixer->dev, "GAM_MIXER_CRB val 0x%x mask 0x%x\n",
+ 		layer_id, mask);
+ 
+@@ -195,6 +198,9 @@ int sti_mixer_set_layer_status(struct sti_mixer *mixer,
+ {
+ 	u32 mask, val;
+ 
++	DRM_DEBUG_DRIVER("%s %s %s\n", status ? "enable" : "disable",
++			 sti_mixer_to_str(mixer), sti_layer_to_str(layer));
++
+ 	mask = sti_mixer_get_layer_mask(layer);
+ 	if (!mask) {
+ 		DRM_ERROR("Can not find layer mask\n");
 -- 
 1.9.1
 
