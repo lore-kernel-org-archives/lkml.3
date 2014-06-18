@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611AbaFRUlH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 16:41:07 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:37537 "EHLO zene.cmpxchg.org"
+	id S1755761AbaFRUlU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 16:41:20 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:37571 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755561AbaFRUlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 16:41:03 -0400
+	id S1755647AbaFRUlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 16:41:11 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
         Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
         linux-mm@kvack.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [patch 05/13] mm: memcontrol: retry reclaim for oom-disabled and __GFP_NOFAIL charges
-Date: Wed, 18 Jun 2014 16:40:37 -0400
-Message-Id: <1403124045-24361-6-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 10/13] mm: memcontrol: remove ordering between pc->mem_cgroup and PageCgroupUsed
+Date: Wed, 18 Jun 2014 16:40:42 -0400
+Message-Id: <1403124045-24361-11-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
 References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
@@ -22,49 +22,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no reason why oom-disabled and __GFP_NOFAIL charges should
-try to reclaim only once when every other charge tries several times
-before giving up.  Make them all retry the same number of times.
+There is a write barrier between setting pc->mem_cgroup and
+PageCgroupUsed, which was added to allow LRU operations to lookup the
+memcg LRU list of a page without acquiring the page_cgroup lock.
+
+But ever since 38c5d72f3ebe ("memcg: simplify LRU handling by new
+rule"), pages are ensured to be off-LRU while charging, so nobody else
+is changing LRU state while pc->mem_cgroup is being written, and there
+are no read barriers anymore.
+
+Remove the unnecessary write barrier.
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 Acked-by: Michal Hocko <mhocko@suse.cz>
 ---
- mm/memcontrol.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ mm/memcontrol.c | 9 ---------
+ 1 file changed, 9 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 16f0206696ce..9c646b9b56f4 100644
+index d2b8429002c0..199bd50359ad 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -2566,7 +2566,7 @@ static int mem_cgroup_try_charge(struct mem_cgroup *memcg,
- 				 bool oom)
- {
- 	unsigned int batch = max(CHARGE_BATCH, nr_pages);
--	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
-+	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
- 	struct mem_cgroup *mem_over_limit;
- 	struct res_counter *fail_res;
- 	unsigned long nr_reclaimed;
-@@ -2638,6 +2638,9 @@ retry:
- 	if (mem_cgroup_wait_acct_move(mem_over_limit))
- 		goto retry;
+@@ -2795,14 +2795,6 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+ 	}
  
-+	if (nr_retries--)
-+		goto retry;
-+
- 	if (gfp_mask & __GFP_NOFAIL)
- 		goto bypass;
+ 	pc->mem_cgroup = memcg;
+-	/*
+-	 * We access a page_cgroup asynchronously without lock_page_cgroup().
+-	 * Especially when a page_cgroup is taken from a page, pc->mem_cgroup
+-	 * is accessed after testing USED bit. To make pc->mem_cgroup visible
+-	 * before USED bit, we need memory barrier here.
+-	 * See mem_cgroup_add_lru_list(), etc.
+-	 */
+-	smp_wmb();
+ 	SetPageCgroupUsed(pc);
  
-@@ -2647,9 +2650,6 @@ retry:
- 	if (!oom)
- 		goto nomem;
- 
--	if (nr_oom_retries--)
--		goto retry;
--
- 	mem_cgroup_oom(mem_over_limit, gfp_mask, get_order(batch));
- nomem:
- 	if (!(gfp_mask & __GFP_NOFAIL))
+ 	if (lrucare) {
+@@ -3483,7 +3475,6 @@ void mem_cgroup_split_huge_fixup(struct page *head)
+ 	for (i = 1; i < HPAGE_PMD_NR; i++) {
+ 		pc = head_pc + i;
+ 		pc->mem_cgroup = memcg;
+-		smp_wmb();/* see __commit_charge() */
+ 		pc->flags = head_pc->flags & ~PCGF_NOCOPY_AT_SPLIT;
+ 	}
+ 	__this_cpu_sub(memcg->stat->count[MEM_CGROUP_STAT_RSS_HUGE],
 -- 
 2.0.0
 
