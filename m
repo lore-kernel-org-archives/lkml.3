@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966503AbaFRMZW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 08:25:22 -0400
-Received: from mta-out1.inet.fi ([62.71.2.198]:44141 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966264AbaFRMZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 08:25:19 -0400
-Date: Wed, 18 Jun 2014 15:24:42 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v2 1/2] mm, thp: move invariant bug check out of loop in
- __split_huge_page_map
-Message-ID: <20140618122442.GB5957@node.dhcp.inet.fi>
-References: <1403044679-9993-1-git-send-email-Waiman.Long@hp.com>
- <1403044679-9993-2-git-send-email-Waiman.Long@hp.com>
+	id S966436AbaFRMaK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 08:30:10 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:52946 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S966285AbaFRMaE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 08:30:04 -0400
+Date: Wed, 18 Jun 2014 14:29:03 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Luc Verhaegen <libv@skynet.be>
+Subject: Re: [PATCH v2 18/20] ARM: sunxi: Add earlyprintk support using
+ R_UART (sun6i/sun8i)
+Message-ID: <20140618122903.GT19730@lukather>
+References: <1403016777-15121-1-git-send-email-wens@csie.org>
+ <1403016777-15121-19-git-send-email-wens@csie.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Q43QQdzFtqSKgsg+"
 Content-Disposition: inline
-In-Reply-To: <1403044679-9993-2-git-send-email-Waiman.Long@hp.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <1403016777-15121-19-git-send-email-wens@csie.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 06:37:58PM -0400, Waiman Long wrote:
-> In the __split_huge_page_map() function, the check for
-> page_mapcount(page) is invariant within the for loop. Because of the
-> fact that the macro is implemented using atomic_read(), the redundant
-> check cannot be optimized away by the compiler leading to unnecessary
-> read to the page structure.
-> 
-> This patch moves the invariant bug check out of the loop so that it
-> will be done only once. On a 3.16-rc1 based kernel, the execution
-> time of a microbenchmark that broke up 1000 transparent huge pages
-> using munmap() had an execution time of 38,245us and 38,548us with
-> and without the patch respectively. The performance gain is about 1%.
 
-For this low difference it would be nice to average over few runs +
-stddev. It can easily can be a noise.
+--Q43QQdzFtqSKgsg+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+On Tue, Jun 17, 2014 at 10:52:55PM +0800, Chen-Yu Tsai wrote:
+> sun6i/sun8i have a UART in the RTC block group, which can be used
+> as an early console. This is most useful on sun8i as UART0 is muxed
+> with MMC0, which is not available if we boot from MMC.
+>=20
+> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
 
-But okay:
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Maxime
 
--- 
- Kirill A. Shutemov
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--Q43QQdzFtqSKgsg+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJToYYPAAoJEBx+YmzsjxAgIQsP/2tedrS0v6LTLdvfngQkTDfg
+/qlHdMkkyMY7cZwAamr1k/isVJ2GUrTAE8ERyY7Hq1wjc/DwTXVQIf9fI2xfSzjN
+ePYhCwTPxDeEv0QZIjJHiWvIkteT9tsBCFm6X9Jp0v7tz3ZPx0EdslCCaaRhnTKL
+jFSOS0nhUXBxn8RrOQ0fHkMlrAhjAqCiPzeksqEdwGOH8LeNQVduxm/j/dlF8mmu
+9gUvF09ExtB+4g3fly/s4Tf5ki+R47uP6YTT3rjbkjQ4AXCa5l5vMlcjJSE2hPTt
+vsK4Tq6O668xg9HbOqQaS5270wEgYIJdOJYaQCBMAa5a1C5om9nEFXwx52pr/KJ2
+5fsfRu6jc4LuHk5A5m3DuDVmBImXPAMedPvLxTN3fDBWqQNrZf6VOHjt4D4FVMh7
+nHNhis2UlFWwuarvODw5eOXPytlgsXJPP2DqFLyxgoWSVY463umLIjirRchx6ZGF
+/YmC+pPf2tCiOjfLkdI281iagHg/l0v+sufVq1CSep5fZn7aPJYAv7BS+UZacLt5
+I96H4yELqVA8+Apger5m7LHyTUuCHS0ybFEI5zEyRryyy5qoUjgIJZZ4WV+6odef
+lfLFoUtXBTNyKkCkFr+WCKJLj/P2O8kLXbLvkZW632lokRIPkBMGCOgQ8825lnUa
+ptj8vs559PfAekHd59k0
+=Asgi
+-----END PGP SIGNATURE-----
+
+--Q43QQdzFtqSKgsg+--
