@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755107AbaFRWz2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 18:55:28 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:39724 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752788AbaFRWz0 (ORCPT
+	id S1755693AbaFRWzw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 18:55:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42911 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754422AbaFRWzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 18:55:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMEtUuzbPExM5dT+xDqbHtV5LZ3+E2Q0eq4xdmKWzLOZbTmuUQ@mail.gmail.com>
-References: <20140618223457.GA31568@www.outflux.net>
-	<CAMEtUuzbPExM5dT+xDqbHtV5LZ3+E2Q0eq4xdmKWzLOZbTmuUQ@mail.gmail.com>
-Date: Wed, 18 Jun 2014 15:55:25 -0700
-X-Google-Sender-Auth: hF-SMP2aAf2C8IBeVAhAp83fVhc
-Message-ID: <CAGXu5jLYZ0jrFhd54aUhooLBWBUT28TQTLb41G107s=4U7ZxqA@mail.gmail.com>
-Subject: Re: [PATCH] net: filter: fix upper BPF instruction limit
-From: Kees Cook <keescook@chromium.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Eric Dumazet <edumazet@google.com>, Chema Gonzalez <chema@google.com>,
-        Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 18 Jun 2014 18:55:51 -0400
+Date: Wed, 18 Jun 2014 15:55:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jack Miller <millerjo@us.ibm.com>
+Cc: linux-kernel@vger.kernel.org, davidlohr@hp.com, miltonm@us.ibm.com,
+        anton@au1.ibm.com, Manfred Spraul <manfred@colorfullife.com>
+Subject: Re: [RESEND] shm: shm exit scalability fixes
+Message-Id: <20140618155549.c54b11347ac9c9a2ba10e176@linux-foundation.org>
+In-Reply-To: <1403026067-14272-1-git-send-email-millerjo@us.ibm.com>
+References: <1403026067-14272-1-git-send-email-millerjo@us.ibm.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 3:48 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Wed, Jun 18, 2014 at 3:34 PM, Kees Cook <keescook@chromium.org> wrote:
->> The original checks (via sk_chk_filter) for instruction count uses ">",
->> not ">=", so changing this in sk_convert_filter has the potential to break
->> existing seccomp filters that used exactly BPF_MAXINSNS many instructions.
->>
->> Fixes: bd4cf0ed331a ("net: filter: rework/optimize internal BPF interpreter's instruction set")
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> Cc: stable@vger.kernel.org # v3.15+
->
-> Acked-by: Alexei Starovoitov <ast@plumgrid.com>
->
-> I wonder how did you catch this? :)
-> Just code inspection or seccomp actually generating such programs?
+On Tue, 17 Jun 2014 12:27:44 -0500 Jack Miller <millerjo@us.ibm.com> wrote:
 
-In the process of merging my seccomp thread-sync series back with
-mainline, I got uncomfortable that I was moving filter size validation
-around without actually testing it. When I added it, I was happy that
-my series was correctly checking size limits, but then discovered my
-newly added check actually failed on an earlier kernel (3.2). Tracking
-it down found the corner case under 3.15.
+> [ RESEND note: Adding relevant CCs, fixed a couple of typos in commit message,
+> patches unchanged. Original intro follows. ]
+> 
+> All -
+> 
+> This is small set of patches our team has had kicking around for a few versions
+> internally that fixes tasks getting hung on shm_exit when there are many
+> threads hammering it at once.
+> 
+> Anton wrote a simple test to cause the issue:
+> 
+> http://ozlabs.org/~anton/junkcode/bust_shm_exit.c
+> 
+> Before applying this patchset, this test code will cause either hanging
+> tracebacks or pthread out of memory errors.
+> 
+> After this patchset, it will still produce output like:
+> 
+> root@somehost:~# ./bust_shm_exit 1024 160
+> ...
+> INFO: rcu_sched detected stalls on CPUs/tasks: {} (detected by 116, t=2111
+> jiffies, g=241, c=240, q=7113)
+> INFO: Stall ended before state dump start
+> ...
+> But the task will continue to run along happily, so we consider this an
+> improvement over hanging, even if it's a bit noisy.
+> 
+> I didn't author these patches, but I'd be happy to take any feedback and
+> address any issues.
 
-Here's the test I added to the seccomp regression tests, if you're interested:
-https://github.com/kees/seccomp/commit/794d54a340cde70a3bdf7fe0ade1f95d160b2883
+As it stands, these patches will be recorded as authored by yourself. 
+You can override this by putting
 
--Kees
+From: Someone Else <email-address>
 
--- 
-Kees Cook
-Chrome OS Security
+at the start of the changelog.  Please let me know if you'd like me to
+make such changes.
+
+
+I agree that adding 8/16 bytes to the task_struct (if CONFIG_SYSVIPC)
+is regrettable.  But the poor thing is a dumping ground anyway :( I
+suppose one could replace this and sysvsem with a
+
+	struct ipc_stuff *ipc_stuff;	/* NULL if I never used IPC */
+
+but there are probably lots of similar changes we could (and one day
+may) make to the task_struct.
+
+I queued the patches, tagged for 3.16-rc1 - hopefully Davidlohr and
+Manfred will be able to find the time to go over them closely.
+
