@@ -1,66 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966271AbaFRLb7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 07:31:59 -0400
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:48998 "EHLO dev.rtsoft.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933954AbaFRLb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 07:31:58 -0400
-Message-ID: <53A178AD.3060003@dev.rtsoft.ru>
-Date: Wed, 18 Jun 2014 15:31:57 +0400
-From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-Organization: RTSoft Software Development Center
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+	id S966202AbaFRLgt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 07:36:49 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:36936 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933954AbaFRLgq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 07:36:46 -0400
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lugovskoy@dev.rtsoft.ru
-Subject: Re: [PATCH 11/21] mfd: use devm_irq_of_parse_and_map() where appropriate
-References: <1401880402-30091-1-git-send-email-nyushchenko@dev.rtsoft.ru> <1401880402-30091-12-git-send-email-nyushchenko@dev.rtsoft.ru> <20140617151226.GM29841@lee--X1> <53A0606C.6030400@dev.rtsoft.ru> <20140618084838.GR21030@lee--X1>
-In-Reply-To: <20140618084838.GR21030@lee--X1>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alexander Graf <agraf@suse.de>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+Subject: [PATCH] vfio: Fix endianness handling for emulated BARs
+Date: Wed, 18 Jun 2014 21:36:31 +1000
+Message-Id: <1403091391-31780-1-git-send-email-aik@ozlabs.ru>
+X-Mailer: git-send-email 2.0.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061811-0260-0000-0000-0000052CFACC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Hmm...  probably it was too early to apply this?  I was just going
->> to prepare v2, based on discussion...
->
-> Which discussion?
+VFIO exposes BARs to user space as a byte stream so userspace can
+read it using pread()/pwrite(). Since this is a byte stream, VFIO should
+not do byte swapping and simply return values as it gets them from
+PCI device.
 
-One you are replying in?
+Instead, the existing code assumes that byte stream in read/write is
+little-endian and it fixes endianness for values which it passes to
+ioreadXX/iowriteXX helpers. This works for little-endian as PCI is
+little endian and le32_to_cpu/... are stubs.
 
-https://lkml.org/lkml/2014/6/4/136
+This also works for big endian but rather by an accident: it reads 4 bytes
+from the stream (@val is big endian), converts to CPU format (which should
+be big endian) as it was little endian (@val becomes actually little
+endian) and calls iowrite32() which does not do swapping on big endian
+system.
 
->> Also, applying only 11/21, without 01/21, will just cause build errors ...
->
-> CC'ing me on this patch alone when you know you have build
-> dependencies on other patches in the set is a bad idea.  Failing to
-> mention that you wanted the patch to be handled in a special and/or
-> unconventional way is an even worse idea.
->
-> How are you expecting this patch(-set) to be handled?
+This removes byte swapping and makes use ioread32be/iowrite32be
+(and 16bit versions) on big-endian systems. The "be" helpers take
+native endian values and do swapping at the moment of writing to a PCI
+register using one of "store byte-reversed" instructions.
 
-Sorry but I did not CC you this patch.
+Suggested-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+---
+ drivers/vfio/pci/vfio_pci_rdwr.c | 20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
 
-I sent entire patchset to mailing lists and to maintainers of IRQ and 
-device tree subsystems.
-I used git send-email, and all mails went out to the same recipients.
-Recipient addresses extracted using scripts/get_maintainer.pl applied to 
-the "main" patch of the patchset.
-I did not sent entire patchset to maintainers of individual changed 
-drivers because this makes recipient address too big and too much looks 
-like spamming.
-I did not send individual patches to individual addresses to avoid cases 
-of partially-applied patchset that will just break things (actually this 
-is what happened with 11/21)
-
-I'm quite sorry if I did things wrong, it was my first attempt to sent 
-patchset with tree-wide fixes. However, I don't see what I've done 
-wrong... any hints on that will be appreciated.
-
-Nikita
+diff --git a/drivers/vfio/pci/vfio_pci_rdwr.c b/drivers/vfio/pci/vfio_pci_rdwr.c
+index 210db24..f363b5a 100644
+--- a/drivers/vfio/pci/vfio_pci_rdwr.c
++++ b/drivers/vfio/pci/vfio_pci_rdwr.c
+@@ -21,6 +21,18 @@
+ 
+ #include "vfio_pci_private.h"
+ 
++#ifdef __BIG_ENDIAN__
++#define ioread16_native		ioread16be
++#define ioread32_native		ioread32be
++#define iowrite16_native	iowrite16be
++#define iowrite32_native	iowrite32be
++#else
++#define ioread16_native		ioread16
++#define ioread32_native		ioread32
++#define iowrite16_native	iowrite16
++#define iowrite32_native	iowrite32
++#endif
++
+ /*
+  * Read or write from an __iomem region (MMIO or I/O port) with an excluded
+  * range which is inaccessible.  The excluded range drops writes and fills
+@@ -50,9 +62,9 @@ static ssize_t do_io_rw(void __iomem *io, char __user *buf,
+ 				if (copy_from_user(&val, buf, 4))
+ 					return -EFAULT;
+ 
+-				iowrite32(le32_to_cpu(val), io + off);
++				iowrite32_native(val, io + off);
+ 			} else {
+-				val = cpu_to_le32(ioread32(io + off));
++				val = ioread32_native(io + off);
+ 
+ 				if (copy_to_user(buf, &val, 4))
+ 					return -EFAULT;
+@@ -66,9 +78,9 @@ static ssize_t do_io_rw(void __iomem *io, char __user *buf,
+ 				if (copy_from_user(&val, buf, 2))
+ 					return -EFAULT;
+ 
+-				iowrite16(le16_to_cpu(val), io + off);
++				iowrite16_native(val, io + off);
+ 			} else {
+-				val = cpu_to_le16(ioread16(io + off));
++				val = ioread16_native(io + off);
+ 
+ 				if (copy_to_user(buf, &val, 2))
+ 					return -EFAULT;
+-- 
+2.0.0
 
