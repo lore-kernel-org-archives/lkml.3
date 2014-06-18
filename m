@@ -1,87 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755733AbaFRX2Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 19:28:25 -0400
-Received: from smtprelay0182.hostedemail.com ([216.40.44.182]:58434 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752276AbaFRX2Y (ORCPT
+	id S1756389AbaFRX2r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 19:28:47 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:58648 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753602AbaFRX2q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 19:28:24 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 13,1.2,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2551:2553:2559:2562:2693:2828:3138:3139:3140:3141:3142:3353:3622:3867:3868:3870:3871:3872:4321:4605:5007:7652:7809:7903:10008:10400:10848:11232:11658:11914:12043:12050:12517:12519:12555:12679:12740:13161:13229:13846:14093:14096:14097,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
-X-HE-Tag: suit08_edf5e5b4925f
-X-Filterd-Recvd-Size: 3107
-Message-ID: <1403134100.14018.8.camel@joe-AO725>
-Subject: Re: [PATCH] MAINTAINERS: add entry for VMware Balloon driver
-From: Joe Perches <joe@perches.com>
-To: Dmitry Torokhov <dtor@vmware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, pv-drivers@vmware.com
-Date: Wed, 18 Jun 2014 16:28:20 -0700
-In-Reply-To: <4389061.FeVMqoJiMc@dtor-d630.eng.vmware.com>
-References: <1403132941-1394-1-git-send-email-dtor@vmware.com>
-	 <20140618231742.GB7234@kroah.com>
-	 <4389061.FeVMqoJiMc@dtor-d630.eng.vmware.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Jun 2014 19:28:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMEtUuwPug7Bbgi2ccOx4jxd2Q80AnVoiHeeBW2av=_sQMiSfg@mail.gmail.com>
+References: <20140618223457.GA31568@www.outflux.net>
+	<CAMEtUuzbPExM5dT+xDqbHtV5LZ3+E2Q0eq4xdmKWzLOZbTmuUQ@mail.gmail.com>
+	<CAGXu5jLYZ0jrFhd54aUhooLBWBUT28TQTLb41G107s=4U7ZxqA@mail.gmail.com>
+	<CAMEtUuwPug7Bbgi2ccOx4jxd2Q80AnVoiHeeBW2av=_sQMiSfg@mail.gmail.com>
+Date: Wed, 18 Jun 2014 16:28:45 -0700
+X-Google-Sender-Auth: ZnmRrdts1jaPYmUPio2N3tuHcYs
+Message-ID: <CAGXu5j+ZW9f8gW71_r5gRsEZoO_2fC3F4YXh_J1CwxRY6Vfx1Q@mail.gmail.com>
+Subject: Re: [PATCH] net: filter: fix upper BPF instruction limit
+From: Kees Cook <keescook@chromium.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, Chema Gonzalez <chema@google.com>,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-18 at 16:19 -0700, Dmitry Torokhov wrote:
-> On Wednesday, June 18, 2014 04:17:42 PM Greg Kroah-Hartman wrote:
-> > On Wed, Jun 18, 2014 at 04:09:01PM -0700, Dmitry Torokhov wrote:
-> > > Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
-> > > ---
-> > > 
-> > >  MAINTAINERS                |    6 ++++++
-> > >  drivers/misc/vmw_balloon.c |    2 +-
-> > >  2 files changed, 7 insertions(+), 1 deletions(-)
-> > > 
-> > > diff --git a/MAINTAINERS b/MAINTAINERS
-> > > index 6c484ac..3a446e8 100644
-> > > --- a/MAINTAINERS
-> > > +++ b/MAINTAINERS
-> > > @@ -9645,6 +9645,12 @@ L:	virtualization@lists.linux-foundation.org
-> > > 
-> > >  S:	Supported
-> > >  F:	arch/x86/kernel/cpu/vmware.c
-> > > 
-> > > +VMWARE BALLOON DRIVER
-> > > +M:	"VMware, Inc." <pv-drivers@vmware.com>
-> > > +L:	linux-kernel@vger.kernel.org
-> > > +S:	Maintained
-> > > +F:	drivers/misc/vmw_balloon.c
-> > 
-> > I really hate having a "alias" as a maintainer, and not a "real" name.
-> > Kernel development is done by individuals, we don't have companies as
-> > authors or signed-off-by lines, we have developers.
-> > 
-> > So I will not accept this, sorry.  Please find a real person who is
-> > willing to maintain this code, or just mark it unsupported.
-> > 
-> 
-> OK, fair enough, we'll find a real name to attach here.
+On Wed, Jun 18, 2014 at 4:19 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+> On Wed, Jun 18, 2014 at 3:55 PM, Kees Cook <keescook@chromium.org> wrote:
+>> On Wed, Jun 18, 2014 at 3:48 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>>> On Wed, Jun 18, 2014 at 3:34 PM, Kees Cook <keescook@chromium.org> wrote:
+>>>> The original checks (via sk_chk_filter) for instruction count uses ">",
+>>>> not ">=", so changing this in sk_convert_filter has the potential to break
+>>>> existing seccomp filters that used exactly BPF_MAXINSNS many instructions.
+>>>>
+>>>> Fixes: bd4cf0ed331a ("net: filter: rework/optimize internal BPF interpreter's instruction set")
+>>>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>>>> Cc: stable@vger.kernel.org # v3.15+
+>>>
+>>> Acked-by: Alexei Starovoitov <ast@plumgrid.com>
+>>>
+>>> I wonder how did you catch this? :)
+>>> Just code inspection or seccomp actually generating such programs?
+>>
+>> In the process of merging my seccomp thread-sync series back with
+>> mainline, I got uncomfortable that I was moving filter size validation
+>> around without actually testing it. When I added it, I was happy that
+>> my series was correctly checking size limits, but then discovered my
+>> newly added check actually failed on an earlier kernel (3.2). Tracking
+>> it down found the corner case under 3.15.
+>>
+>> Here's the test I added to the seccomp regression tests, if you're interested:
+>> https://github.com/kees/seccomp/commit/794d54a340cde70a3bdf7fe0ade1f95d160b2883
+>
+> Nice. I'm assuming https://github.com/redpig/seccomp is still the main tree
+> for seccomp testsuite…
 
-It's definitely better to have a person's name there but
-there are many company exploders/aliases in MAINTAINERS.
+Yes. Will hasn't pulled this most recent set of changes.
 
-There already is a pv-drivers@vmware.com too.
+>
+> btw I've tried to add 'real' test to it (one generated by chrome)
+>
+> +TEST(chrome_syscalls) {
+> +       static struct sock_filter filter[] = {
+> +               { 32, 240, 61, 4 },          /* 0:      ld [4] */
+> +               { 21, 1, 0, -1073741762 },   /* 1:      jeq #0xc000003e, 3, 2 */
+> +               { 5, 0, 0, 271 },            /* 2:      ja 274 */
+> +               { 32, 208, 198, 0 },         /* 3:      ld [0] */
+> +               { 69, 0, 1, 1073741824 },    /* 4:      jset
+> #0x40000000, 5, 6 */
+> +               { 6, 0, 0, 196615 },         /* 5:      ret #0x30007 */
+> +               { 53, 0, 7, 121 },           /* 6:      jge #0x79, 7, 14 */
+> +               { 53, 0, 12, 214 },          /* 7:      jge #0xd6, 8, 20 */
+> …
+> +               { 6, 0, 0, 2147418112 },     /* 272:    ret #0x7fff0000 */
+> +               { 6, 0, 0, 327681 },         /* 273:    ret #0x50001 */
+> +               { 6, 0, 0, 196610 },         /* 274:    ret #0x30002 */
+> +       };
+> ...
+> +       for (i = 0; i < MAX_SYSCALLS; i++) {
+> +               ch_pid = fork();
+> +               ASSERT_LE(0, ch_pid);
+> +
+> +               if (ch_pid == 0) {
+> +                       ret = prctl(PR_SET_SECCOMP,
+> +                              SECCOMP_MODE_FILTER, &prog);
+> +                       ASSERT_EQ(0, ret);
+> +#define MAGIC (-1ll << 2)
+> +                       err = syscall(i, MAGIC, MAGIC, MAGIC,
+> +                              MAGIC, MAGIC, MAGIC);
+> +                       syscall(__NR_exit, 0);
+> +               }
+> +               wait(&status);
+> +               if (status != expected_status[i])
+> …
+>
+> but it's really x64 only and looks ugly. Do you have better ideas
+> on how to test all possible paths through auto-generated branch tree?
 
-MAINTAINERS:M:  Adaptec OEM Raid Solutions <aacraid@adaptec.com>
-MAINTAINERS:M:  dm-devel@redhat.com
-MAINTAINERS:M:  Intel Linux Wireless <ilw@linux.intel.com>
-MAINTAINERS:M:  Intel SCU Linux support <intel-linux-scu@intel.com>
-MAINTAINERS:M:  iscsi-driver@qlogic.com
-MAINTAINERS:M:  linux-driver@qlogic.com
-MAINTAINERS:M:  Linux NICS <linux.nics@intel.com>
-MAINTAINERS:M:  linux-wimax@intel.com
-MAINTAINERS:M:  qla2xxx-upstream@qlogic.com
-MAINTAINERS:M:  Solarflare linux maintainers <linux-net-drivers@solarflare.com>
-MAINTAINERS:M:  support@lsi.com
-MAINTAINERS:M:  Support Opensource <support.opensource@diasemi.com>
-MAINTAINERS:M:  "VMware, Inc." <pv-drivers@vmware.com>
+For testing BPF application filter logic itself, I lean on the test
+suite in libseccomp, which does a ton of filter generation and
+testing. The seccomp regression tests in the github tree tend to focus
+on validating the basic behavioral elements (kill, trace, trap, etc).
 
+-Kees
 
+-- 
+Kees Cook
+Chrome OS Security
