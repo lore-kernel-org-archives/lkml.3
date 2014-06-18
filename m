@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756434AbaFRHYo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 03:24:44 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:48870 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755372AbaFRHYm (ORCPT
+	id S933445AbaFRH3T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 03:29:19 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51115 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932665AbaFRH3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 03:24:42 -0400
-Date: Wed, 18 Jun 2014 08:24:36 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Keerthy <a0393675@ti.com>
-Cc: Keerthy <j-keerthy@ti.com>, linux-omap@vger.kernel.org,
-        lgirdwood@gmail.com, broonie@kernel.org, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com
-Subject: Re: [PATCH 7/9] regulator: palmas: Add palmas_pmic_driver_data
- structure
-Message-ID: <20140618072436.GA21030@lee--X1>
-References: <1401272423-25761-1-git-send-email-j-keerthy@ti.com>
- <1401272423-25761-8-git-send-email-j-keerthy@ti.com>
- <20140617163721.GR29841@lee--X1>
- <53A11D40.7020201@ti.com>
+	Wed, 18 Jun 2014 03:29:18 -0400
+Message-ID: <53A13FCC.6060906@free-electrons.com>
+Date: Wed, 18 Jun 2014 09:29:16 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53A11D40.7020201@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] ARM: at91: more clocks fixes for 3.16
+References: <1403023308-20533-1-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1403023308-20533-1-git-send-email-alexandre.belloni@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>Add palmas_pmic_driver_data structure.
-> >>
-> >>Signed-off-by: Keerthy <j-keerthy@ti.com>
-> >>---
-> >>  include/linux/mfd/palmas.h |   25 +++++++++++++++++++++++++
-> >>  1 file changed, 25 insertions(+)
-> >>
-> >>diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
-> >>index 8d68452..70f0695 100644
-> >>--- a/include/linux/mfd/palmas.h
-> >>+++ b/include/linux/mfd/palmas.h
-[...]
+Hello,
 
-> >>+struct palmas_pmic_driver_data {
-> >>+	int smps_start;
-> >>+	int smps_end;
-> >>+	int ldo_begin;
-> >>+	int ldo_end;
-> >>+	int max_reg;
-> >>+	struct regs_info *palmas_regs_info;
-> >>+	struct of_regulator_match *palmas_matches;
-> >>+	struct palmas_sleep_requestor_info *sleep_req_info;
-> >>+	int (*smps_register)(struct palmas_pmic *pmic,
-> >>+			     struct palmas_pmic_driver_data *ddata,
-> >>+			     struct palmas_pmic_platform_data *pdata,
-> >>+			     const char *pdev_name,
-> >>+			     struct regulator_config config);
-> >>+	int (*ldo_register)(struct palmas_pmic *pmic,
-> >>+			    struct palmas_pmic_driver_data *ddata,
-> >>+			    struct palmas_pmic_platform_data *pdata,
-> >>+			    const char *pdev_name,
-> >>+			    struct regulator_config config);
-> >Are you sure you need to store all of this stuff?
-> >
-> >Particularly the match pointer.  Do you really re-use it?
-> 
-> Match pointer is used extensively in the palmas_regulator.c.
-> This structure is very much used by regulator driver.
+On 17/06/2014 18:41, Alexandre Belloni wrote:
+> Hi,
+>
+> This patch set fixes more issues with the clocks on AT91:
+>
+> The first patch define the slow crystal on the at91sam9261ek board
+>
+> The next patchs are moving all the clocks that were under the root under a
+> "clocks" node to be consistent accross all architecture.
 
-On closer inspection, I now see that it's a 'of_regulator_match',
-rather than an 'of_match' pointer, which were my initial thoughts.  I
-think it would have been weird to carry the 'of_match', but the
-reality sounds sane.
+I'm just nitpicking here, but you could swap patch 1 and 2 so that
+slow_xtal node appears directly under clocks node.
+
+Apart from that,
+
+Acked-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+
+>
+> Alexandre Belloni (6):
+>   ARM: at91/dt: define sam9261ek slow crystal frequency
+>   ARM: at91/dt: sam9261 crystals under the clocks node
+>   ARM: at91/dt: sam9n12 crystals under the clocks node
+>   ARM: at91/dt: sam9rl crystals under the clocks node
+>   ARM: at91/dt: sam9x5 crystals under the clocks node
+>   ARM: at91/dt: sama5d3 crystals under the clocks node
+>
+>  arch/arm/boot/dts/at91-sama5d3_xplained.dts | 12 +++++++-----
+>  arch/arm/boot/dts/at91sam9261.dtsi          | 20 ++++++++++---------
+>  arch/arm/boot/dts/at91sam9261ek.dts         | 12 ++++++++----
+>  arch/arm/boot/dts/at91sam9n12.dtsi          | 20 ++++++++++---------
+>  arch/arm/boot/dts/at91sam9n12ek.dts         | 16 +++++++--------
+>  arch/arm/boot/dts/at91sam9rl.dtsi           | 22 ++++++++++-----------
+>  arch/arm/boot/dts/at91sam9rlek.dts          | 17 ++++++++--------
+>  arch/arm/boot/dts/at91sam9x5.dtsi           | 30 +++++++++++++++--------------
+>  arch/arm/boot/dts/at91sam9x5cm.dtsi         | 12 +++++++-----
+>  arch/arm/boot/dts/sama5d3.dtsi              | 22 ++++++++++-----------
+>  arch/arm/boot/dts/sama5d3xcm.dtsi           | 12 +++++++-----
+>  11 files changed, 105 insertions(+), 90 deletions(-)
+>
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
+
