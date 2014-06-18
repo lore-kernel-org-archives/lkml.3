@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046AbaFRP1Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 11:27:16 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:39562 "EHLO mail.skyhub.de"
+	id S1752968AbaFRP22 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 11:28:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46534 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752614AbaFRP1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 11:27:14 -0400
-Date: Wed, 18 Jun 2014 17:27:10 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Dave Hansen <dave.hansen@intel.com>, Qiaowei Ren <qiaowei.ren@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 03/10] x86, mpx: add macro cpu_has_mpx
-Message-ID: <20140618152710.GF24024@pd.tnic>
-References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
- <1403084656-27284-4-git-send-email-qiaowei.ren@intel.com>
- <20140618095739.GA24419@pd.tnic>
- <53A1A3A5.9010109@intel.com>
- <20140618144429.GD24024@pd.tnic>
- <53A1A98D.8050408@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <53A1A98D.8050408@zytor.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751377AbaFRP21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 11:28:27 -0400
+From: Michal Marek <mmarek@suse.cz>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: [PATCH] Documentation: Fix DocBook build with relative $(srctree)
+Date: Wed, 18 Jun 2014 17:27:42 +0200
+Message-Id: <1403105262-16367-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <539F2926.4020004@infradead.org>
+References: <539F2926.4020004@infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 08:00:29AM -0700, H. Peter Anvin wrote:
-> We have people working hard to shave kilobytes off the smallest
-> configurations, because they want to fit into a megabyte of memory
-> with the kernel and application.
->
-> Let's try to not make their life harder than it needs to be.
+After commits 890676c6 (kbuild: Use relative path when building in the source
+tree) and 9da0763b (kbuild: Use relative path when building in a subdir
+of the source tree), the $(srctree) variable can be a relative path.
+This breaks Documentation/DocBook/media/Makefile, because it tries to
+create symlinks from a subdirectory of the object tree to the source
+tree. Fix this by using a full path in this case.
 
-Oh sure - I'm simply asking how this is going to be handled practically
-by asking stupid questions. You know me :)
+Reported-by: Randy Dunlap <rdunlap@infradead.org>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+---
+ Documentation/DocBook/media/Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/Documentation/DocBook/media/Makefile b/Documentation/DocBook/media/Makefile
+index 1d27f0a..639e748 100644
+--- a/Documentation/DocBook/media/Makefile
++++ b/Documentation/DocBook/media/Makefile
+@@ -202,8 +202,8 @@ $(MEDIA_OBJ_DIR)/%: $(MEDIA_SRC_DIR)/%.b64
+ 
+ $(MEDIA_OBJ_DIR)/v4l2.xml: $(OBJIMGFILES)
+ 	@$($(quiet)gen_xml)
+-	@(ln -sf $(MEDIA_SRC_DIR)/v4l/*xml $(MEDIA_OBJ_DIR)/)
+-	@(ln -sf $(MEDIA_SRC_DIR)/dvb/*xml $(MEDIA_OBJ_DIR)/)
++	@(ln -sf `cd $(MEDIA_SRC_DIR) && /bin/pwd`/v4l/*xml $(MEDIA_OBJ_DIR)/)
++	@(ln -sf `cd $(MEDIA_SRC_DIR) && /bin/pwd`/dvb/*xml $(MEDIA_OBJ_DIR)/)
+ 
+ $(MEDIA_OBJ_DIR)/videodev2.h.xml: $(srctree)/include/uapi/linux/videodev2.h $(MEDIA_OBJ_DIR)/v4l2.xml
+ 	@$($(quiet)gen_xml)
 -- 
-Regards/Gruss,
-    Boris.
+1.9.2
 
-Sent from a fat crate under my desk. Formatting is fine.
---
