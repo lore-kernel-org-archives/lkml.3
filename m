@@ -1,114 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966696AbaFRN0T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 09:26:19 -0400
-Received: from smtp105.biz.mail.gq1.yahoo.com ([98.137.12.180]:32613 "HELO
-	smtp105.biz.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S966671AbaFRN0S (ORCPT
+	id S966717AbaFRN1D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 09:27:03 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49683 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966671AbaFRN1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 09:26:18 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: KIfffjsVM1nsDraLE9xzIEIkie4j0SnADYjkCGQWPpZ8HEb
- oFHY10aye6IB17YULVS4O.Xsl9gM0PxUNE6HHHMBkLmkj2dDRI9UvTqLUCGH
- bJuymfU38lRUpDw2TxDkQFRFi3vqroYvfCB.LSLQprqqXttlqMucc5wek33_
- y11saLo7HWwh7Y0zP_Yw9uz_eJhth_iXMaevevqrn6frvfUYak9bmw8aMWdT
- g8Js8L8GQGEyLtlfCtz26bwJWrGHDmakZpA1Q5CHwLqbGigH0KZWF2jtXKQ5
- klW_K_s4kmqEnIOTFS5CLyc3tZbdA0rEwAaOD7ltpm_vmQrJFnkNAfX9NV4r
- iS9YxvPyGECvt4_623oT9YFNiZTkrgrPt.OXMUYKpux7FfGlpPj5j54ByqmX
- J4dGLq9yyzsnNtQcb_EDr5kAKEUd4D2ZJxkKOsUuLRRS5G1qxhIDZWhk4A4c
- Ax8ThcRC2GGsdj25ZGlccc3dT8p4ksf95fN80uEKX411PJbsW_O5rxExJFek
- gTGAVgCevO4v7uNI1K_9pQg--
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-Rocket-Received: from [192.168.0.105] (casey@67.180.103.242 with plain [208.71.40.208])
-        by smtp105.biz.mail.gq1.yahoo.com with SMTP; 18 Jun 2014 06:26:17 -0700 PDT
-Message-ID: <53A1937F.5090806@schaufler-ca.com>
-Date: Wed, 18 Jun 2014 06:26:23 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 18 Jun 2014 09:27:01 -0400
+Date: Wed, 18 Jun 2014 14:26:23 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: "msalter@redhat.com" <msalter@redhat.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm64: support reboot and power off via EFI runtime
+Message-ID: <20140618132623.GF26461@leverpostej>
+References: <1403023514-1352-1-git-send-email-msalter@redhat.com>
 MIME-Version: 1.0
-To: Chanho Park <chanho61.park@samsung.com>
-CC: james.l.morris@oracle.com, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH] Smack: separate smackfstransmute and smackfsroot
-References: <1403095304-15368-1-git-send-email-chanho61.park@samsung.com>
-In-Reply-To: <1403095304-15368-1-git-send-email-chanho61.park@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403023514-1352-1-git-send-email-msalter@redhat.com>
+Thread-Topic: [PATCH] arm64: support reboot and power off via EFI runtime
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/18/2014 5:41 AM, Chanho Park wrote:
-> According to previous commit(e830b39: Smack: Add smkfstransmute mount option),
-> the smackfstransmute option is the smackfsroot option + transmute option.
-> I think it can be confused because the transmute option can only have "TRUE".
-> Before the patch, you cannot use the smackfsroot and the smackfstransmute at
-> the same time. If you use the options simultaenously, the previous option will
-> be omitted. In the below example, the smackfsroot option will be omitted.
-> mount -t tmpfs -o size=128M,smackfsroot=*,smackfstransmute=_ tmpfs /tmp
->
-> After the patch, now you can use the smackfstransmute option like below:
-> mount -t tmpfs -o size=128M,smackfsroot=*,smackfstransmute=TRUE tmpfs /tmp
->
-> Signed-off-by: Chanho Park <chanho61.park@samsung.com>
+Hi Mark,
 
-Nacked-by: Casey Schaufler <casey@schaufler-ca.com>
-
-The smackfsroot option behaves as intended.
-The smackfstransmute option behaves as intended.
-There is no case where you want to mark the root inode
-transmuting where you do not also want to set the
-Smack label of that inode. Making the smackfstransmute
-option require the smackfsroot option as well would be
-unnecessary and inconvenient.
-
+On Tue, Jun 17, 2014 at 05:45:14PM +0100, Mark Salter wrote:
+> Add handlers for arm_pm_resestart and pm_power_off which use EFI
+> runtime services ResetSystem call to perform the functions. These
+> handlers are only installed if no handler currently exists. This
+> allows PSCI to take priority over EFI for these functions.
+> 
+> Signed-off-by: Mark Salter <msalter@redhat.com>
 > ---
->  Documentation/security/Smack.txt | 3 +++
->  security/smack/smack.h           | 2 ++
->  security/smack/smack_lsm.c       | 5 ++---
->  3 files changed, 7 insertions(+), 3 deletions(-)
->
-> diff --git a/Documentation/security/Smack.txt b/Documentation/security/Smack.txt
-> index b6ef7e9..27290d8 100644
-> --- a/Documentation/security/Smack.txt
-> +++ b/Documentation/security/Smack.txt
-> @@ -669,6 +669,9 @@ Smack supports some mount options:
->  	smackfsfloor=label: specifies a label to which all labels set on the
->  	filesystem must have read access. Not yet enforced.
+>  arch/arm64/kernel/efi.c | 40 ++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 40 insertions(+)
+> 
+> diff --git a/arch/arm64/kernel/efi.c b/arch/arm64/kernel/efi.c
+> index 14db1f6..e8c0476 100644
+> --- a/arch/arm64/kernel/efi.c
+> +++ b/arch/arm64/kernel/efi.c
+> @@ -19,11 +19,14 @@
+>  #include <linux/of_fdt.h>
+>  #include <linux/sched.h>
+>  #include <linux/slab.h>
+> +#include <linux/reboot.h>
+> +#include <linux/pm.h>
 >  
-> +	smackfstransmute=TRUE: assign a transmute option for the root of the
-> +	file system if it lacks the Smack extended attribute.
+>  #include <asm/cacheflush.h>
+>  #include <asm/efi.h>
+>  #include <asm/tlbflush.h>
+>  #include <asm/mmu_context.h>
+> +#include <asm/system_misc.h>
+>  
+>  struct efi_memory_map memmap;
+>  
+> @@ -467,3 +470,40 @@ static int __init arm64_enter_virtual_mode(void)
+>  	return 0;
+>  }
+>  early_initcall(arm64_enter_virtual_mode);
 > +
->  These mount options apply to all file system types.
->  
->  Smack auditing
-> diff --git a/security/smack/smack.h b/security/smack/smack.h
-> index 020307e..d4f75e6 100644
-> --- a/security/smack/smack.h
-> +++ b/security/smack/smack.h
-> @@ -146,6 +146,8 @@ struct smk_port_label {
->  #define SMK_FSROOT	"smackfsroot="
->  #define SMK_FSTRANS	"smackfstransmute="
->  
-> +#define SMK_FSTRANS_ON	"TRUE"
+> +static void efi_restart(enum reboot_mode reboot_mode, const char *cmd)
+> +{
+> +	int efi_mode;
 > +
->  #define SMACK_CIPSO_OPTION 	"-CIPSO"
->  
->  /*
-> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> index f2c3080..7d3f40d 100644
-> --- a/security/smack/smack_lsm.c
-> +++ b/security/smack/smack_lsm.c
-> @@ -450,9 +450,8 @@ static int smack_sb_kern_mount(struct super_block *sb, int flags, void *data)
->  			}
->  		} else if (strncmp(op, SMK_FSTRANS, strlen(SMK_FSTRANS)) == 0) {
->  			op += strlen(SMK_FSTRANS);
-> -			nsp = smk_import(op, 0);
-> -			if (nsp != NULL) {
-> -				sp->smk_root = nsp;
-> +			if (strncmp(op, SMK_FSTRANS_ON,
-> +				    strlen(SMK_FSTRANS_ON)) == 0) {
->  				transmute = 1;
->  				specified = 1;
->  			}
+> +	switch (reboot_mode) {
+> +	case REBOOT_WARM:
+> +	case REBOOT_SOFT:
+> +		efi_mode = EFI_RESET_WARM;
+> +		break;
+> +	default:
+> +		efi_mode = EFI_RESET_COLD;
+> +		break;
+> +	}
+> +	efi.reset_system(efi_mode, 0, 0, NULL);
+> +}
+> +
+> +static void efi_power_off(void)
+> +{
+> +	efi.reset_system(EFI_RESET_SHUTDOWN, 0, 0, NULL);
+> +}
+> +
+> +static int __init setup_efi_reset(void)
+> +{
+> +	if (efi_enabled(EFI_RUNTIME_SERVICES)) {
+> +		/*
+> +		 * If something (psci, etc) hasn't already registered
+> +		 * a handler, use EFI.
+> +		 */
+> +		if (arm_pm_restart == NULL)
+> +			arm_pm_restart = efi_restart;
+> +		if (pm_power_off == NULL)
+> +			pm_power_off = efi_power_off;
+> +	}
+> +	return 0;
+> +}
+> +pure_initcall(setup_efi_reset);
 
+This doesn't seem to match the definition of a pure initcall, given that
+it depends on the state of EFI runtime services and
+arm_{pm_restart,power_off}.
+
+Is there any reason this needs to run so early? Can this not be
+called later, when we have more of a guarantee of other reboot /
+shutdown mechanisms having been registered?
+
+Cheers,
+Mark.
