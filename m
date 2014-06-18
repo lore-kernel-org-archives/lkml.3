@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965926AbaFRKBH (ORCPT <rfc822;w@1wt.eu>);
+	id S965965AbaFRKBM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 06:01:12 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47931 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965903AbaFRKBH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Jun 2014 06:01:07 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60658 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965123AbaFRKBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 06:01:01 -0400
-From: Keerthy <j-keerthy@ti.com>
-To: <linux-omap@vger.kernel.org>
-CC: <lgirdwood@gmail.com>, <broonie@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
-        <lee.jones@linaro.org>, Keerthy <j-keerthy@ti.com>
-Subject: [PATCH v2 5/9] regulator: palmas: Shift the reg_info structure definition to the header file
-Date: Wed, 18 Jun 2014 15:28:56 +0530
-Message-ID: <1403085540-20014-6-git-send-email-j-keerthy@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403085540-20014-1-git-send-email-j-keerthy@ti.com>
-References: <1403085540-20014-1-git-send-email-j-keerthy@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: t.figa@samsung.com, mturquette@linaro.org
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] clk: s3c64xx: Hookup SPI clocks correctly
+Date: Wed, 18 Jun 2014 10:52:23 +0100
+Message-Id: <1403085143-3257-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shift the reg_info structure definition to the header file.
+In the move to this clock driver the hookups for the SPI clocks were
+dropped, which causes my system Cragganmore (s3c6410 based) to be unable
+to locate any spibus clocks. This patch adds them back in.
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Keerthy <j-keerthy@ti.com>
+When taking the clock from the epll clock (SCLK) the rates on the SPI
+bus are incorrect, this needs further debugging but the hookup here
+should be correct and the problem should be else where.
+
+The USBCLK case has been dropped because this requires the USB PHY to be
+enabled.
+
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- drivers/regulator/palmas-regulator.c |    9 ---------
- include/linux/mfd/palmas.h           |    9 +++++++++
- 2 files changed, 9 insertions(+), 9 deletions(-)
+ drivers/clk/samsung/clk-s3c64xx.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-index b982f0f..1cf462f 100644
---- a/drivers/regulator/palmas-regulator.c
-+++ b/drivers/regulator/palmas-regulator.c
-@@ -27,15 +27,6 @@
- #include <linux/of_platform.h>
- #include <linux/regulator/of_regulator.h>
- 
--struct regs_info {
--	char	*name;
--	char	*sname;
--	u8	vsel_addr;
--	u8	ctrl_addr;
--	u8	tstep_addr;
--	int	sleep_id;
--};
--
- static const struct regulator_linear_range smps_low_ranges[] = {
- 	REGULATOR_LINEAR_RANGE(0, 0x0, 0x0, 0),
- 	REGULATOR_LINEAR_RANGE(500000, 0x1, 0x6, 0),
-diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
-index f760a07..c123666 100644
---- a/include/linux/mfd/palmas.h
-+++ b/include/linux/mfd/palmas.h
-@@ -88,6 +88,15 @@ struct palmas {
- 	u8 pwm_muxed;
- };
- 
-+struct regs_info {
-+	char	*name;
-+	char	*sname;
-+	u8	vsel_addr;
-+	u8	ctrl_addr;
-+	u8	tstep_addr;
-+	int	sleep_id;
-+};
-+
- struct palmas_gpadc_platform_data {
- 	/* Channel 3 current source is only enabled during conversion */
- 	int ch3_current;
+diff --git a/drivers/clk/samsung/clk-s3c64xx.c b/drivers/clk/samsung/clk-s3c64xx.c
+index efa16ee..8889ff1c 100644
+--- a/drivers/clk/samsung/clk-s3c64xx.c
++++ b/drivers/clk/samsung/clk-s3c64xx.c
+@@ -418,8 +418,10 @@ static struct samsung_clock_alias s3c64xx_clock_aliases[] = {
+ 	ALIAS(SCLK_MMC2, "s3c-sdhci.2", "mmc_busclk.2"),
+ 	ALIAS(SCLK_MMC1, "s3c-sdhci.1", "mmc_busclk.2"),
+ 	ALIAS(SCLK_MMC0, "s3c-sdhci.0", "mmc_busclk.2"),
+-	ALIAS(SCLK_SPI1, "s3c6410-spi.1", "spi-bus"),
+-	ALIAS(SCLK_SPI0, "s3c6410-spi.0", "spi-bus"),
++	ALIAS(PCLK_SPI1, "s3c6410-spi.1", "spi_busclk0"),
++	ALIAS(SCLK_SPI1, "s3c6410-spi.1", "spi_busclk2"),
++	ALIAS(PCLK_SPI0, "s3c6410-spi.0", "spi_busclk0"),
++	ALIAS(SCLK_SPI0, "s3c6410-spi.0", "spi_busclk2"),
+ 	ALIAS(SCLK_AUDIO1, "samsung-pcm.1", "audio-bus"),
+ 	ALIAS(SCLK_AUDIO1, "samsung-i2s.1", "audio-bus"),
+ 	ALIAS(SCLK_AUDIO0, "samsung-pcm.0", "audio-bus"),
 -- 
-1.7.9.5
+1.7.2.5
 
