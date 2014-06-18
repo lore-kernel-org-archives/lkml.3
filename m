@@ -1,332 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964842AbaFRF17 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 01:27:59 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:49720 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933861AbaFRF14 (ORCPT
+	id S1756658AbaFRFaZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 01:30:25 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:27958 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752032AbaFRFaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 01:27:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <1403058061-24271-2-git-send-email-cw00.choi@samsung.com>
-References: <1403058061-24271-1-git-send-email-cw00.choi@samsung.com> <1403058061-24271-2-git-send-email-cw00.choi@samsung.com>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Wed, 18 Jun 2014 10:57:35 +0530
-Message-ID: <CAHfPSqDjthqrV0X_XXBRvQk8C-yzBmcMB91OS8gpj9Q-tyKfRQ@mail.gmail.com>
-Subject: Re: [PATCHv4 1/4] iio: adc: exynos_adc: Add exynos_adc_ops structure
- to improve readability
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: jic23@kernel.org, My self <ch.naveen@samsung.com>, t.figa@samsung.com,
-        Kukjin Kim <kgene.kim@samsung.com>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, sachin.kamat@linaro.org,
-        linux-iio@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 18 Jun 2014 01:30:23 -0400
+X-AuditID: cbfee68e-b7fb96d000004bfc-2b-53a123eee373
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Chanwoo Choi'" <cw00.choi@samsung.com>
+Cc: "'MyungJoo Ham'" <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Charles Keepax'" <ckeepax@opensource.wolfsonmicro.com>,
+        "'Krzysztof Kozlowski'" <k.kozlowski@samsung.com>
+Subject: [PATCH] extcon: Remove unnecessary OOM messages
+Date: Wed, 18 Jun 2014 14:30:21 +0900
+Message-id: <000401cf8ab6$6613d350$323b79f0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac+KtmXlpqSQ3jFeSEyhVZYM4WdN+g==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsVy+t8zQ913yguDDda/5bD4N+UGu8X1L89Z
+	LS4vvMRq8fqFocXlXXPYLG43rmBzYPN4OfE3m0ffllWMHp83yQUwR3HZpKTmZJalFunbJXBl
+	HOnvYC04Llqxs3UBawNji1AXIyeHhICJxNS29UwQtpjEhXvr2boYuTiEBJYxSrS//cvexcgB
+	VtS2QgOkRkhgOqPEgrecEDW/GSUaZ39lB0mwCahJfPlyGMwWEdCSmNg5kwmkiFngHqPEjEvv
+	2UASwgIWEjtXfWICGcoioCpx8SAXSJhXwFbi9bYfrBC2oMSPyfdYQGxmoDnrdx5ngrDlJTav
+	ecsMcY+6xKO/uhCr9CT23L/EClEiIrHvxTtGiF92sUu83Qc2hkVAQOLb5EMsEK2yEpsOMEOU
+	SEocXHGDZQKj2Cwki2chWTwLyeJZSDYsYGRZxSiaWpBcUJyUXmSkV5yYW1yal66XnJ+7iRES
+	aX07GG8esD7EmAy0fiKzlGhyPjBS80riDY3NjCxMTUyNjcwtzUgTVhLnXfQwKUhIID2xJDU7
+	NbUgtSi+qDQntfgQIxMHp1QDI+fqPWxfLRYX+bn637vxgYXjeFDk8knVjhUt77uyc9JaLvqV
+	dTnP8vYKWZ7t/3rCTweJu/NfnH573jH+v8BehcV2vw3tf0xtzDw1efJ9CY0V2+IaOQzymZ4X
+	Be87qvhkyivHo9t5oyW5584raMn6U27pdNVX//GJLukX9Qbr6u6ttYr8bLj2pBJLcUaioRZz
+	UXEiAE1drMbKAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKKsWRmVeSWpSXmKPExsVy+t9jQd13yguDDR48ZbH4N+UGu8X1L89Z
+	LS4vvMRq8fqFocXlXXPYLG43rmBzYPN4OfE3m0ffllWMHp83yQUwRzUw2mSkJqakFimk5iXn
+	p2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYA7VVSKEvMKQUKBSQWFyvp22Ga
+	EBripmsB0xih6xsSBNdjZIAGEtYxZhzp72AtOC5asbN1AWsDY4tQFyMHh4SAiUTbCo0uRk4g
+	U0ziwr31bCC2kMB0RokFbzm7GLmA7N+MEo2zv7KDJNgE1CS+fDkMZosIaElM7JzJBFLELHCP
+	UWLGpfdg3cICFhI7V31iAlnAIqAqcfEgF0iYV8BW4vW2H6wQtqDEj8n3WEBsZqA563ceZ4Kw
+	5SU2r3nLDHGbusSjv7oQq/Qk9ty/xApRIiKx78U7xgmMArOQTJqFZNIsJJNmIWlZwMiyilE0
+	tSC5oDgpPddIrzgxt7g0L10vOT93EyM4kp9J72Bc1WBxiFGAg1GJh5cjd0GwEGtiWXFl7iFG
+	CQ5mJRHe90wLg4V4UxIrq1KL8uOLSnNSiw8xJgP9OZFZSjQ5H5hk8kriDY1NzIwsjcwsjEzM
+	zUkTVhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBkWeGTMOeh3l6/3Z9UDz+Si07UmynCUPT
+	y29zP8XP4T9kOKFN+z3PE8cyu5MzmEs327AmrZ3/8IH09J97OvI+npRmu6Cao2EeLCRo+8yR
+	t7+Zi2cF0/SXO9q+7XT2mnHtwIZo4Y7jt5wbIpxsw24c5GT6ri+iNLknvUe2bp/kjKl+S14Y
+	33j4UImlOCPRUIu5qDgRAEt+M8woAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Chanwoo,
+The site-specific OOM messages are unnecessary, because they
+duplicate the MM subsystem generic OOM message. The following
+checkpatch warning is also removed.
 
-On 18 June 2014 07:50, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> This patchset add 'exynos_adc_ops' structure which includes some functions
-> to control ADC operation according to ADC version (v1 or v2).
->
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+  WARNING: Possible unnecessary 'out of memory' message
 
-This is a good piece of change, Thanks.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/extcon/extcon-arizona.c  |    4 +---
+ drivers/extcon/extcon-max14577.c |    5 ++---
+ drivers/extcon/extcon-max77693.c |    5 ++---
+ drivers/extcon/extcon-max8997.c  |    4 +---
+ 4 files changed, 6 insertions(+), 12 deletions(-)
 
-Reviewed-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> ---
->  drivers/iio/adc/exynos_adc.c | 174 +++++++++++++++++++++++++++++--------------
->  1 file changed, 120 insertions(+), 54 deletions(-)
->
-> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
-> index 010578f..c30def6 100644
-> --- a/drivers/iio/adc/exynos_adc.c
-> +++ b/drivers/iio/adc/exynos_adc.c
-> @@ -90,6 +90,7 @@ struct exynos_adc {
->         struct clk              *clk;
->         unsigned int            irq;
->         struct regulator        *vdd;
-> +       struct exynos_adc_ops   *ops;
->
->         struct completion       completion;
->
-> @@ -97,6 +98,13 @@ struct exynos_adc {
->         unsigned int            version;
->  };
->
-> +struct exynos_adc_ops {
-> +       void (*init_hw)(struct exynos_adc *info);
-> +       void (*clear_irq)(struct exynos_adc *info);
-> +       void (*start_conv)(struct exynos_adc *info, unsigned long addr);
-> +       void (*stop_conv)(struct exynos_adc *info);
-> +};
-> +
->  static const struct of_device_id exynos_adc_match[] = {
->         { .compatible = "samsung,exynos-adc-v1", .data = (void *)ADC_V1 },
->         { .compatible = "samsung,exynos-adc-v2", .data = (void *)ADC_V2 },
-> @@ -112,30 +120,98 @@ static inline unsigned int exynos_adc_get_version(struct platform_device *pdev)
->         return (unsigned int)match->data;
->  }
->
-> -static void exynos_adc_hw_init(struct exynos_adc *info)
-> +static void exynos_adc_v1_init_hw(struct exynos_adc *info)
-> +{
-> +       u32 con1;
-> +
-> +       /* set default prescaler values and Enable prescaler */
-> +       con1 =  ADC_V1_CON_PRSCLV(49) | ADC_V1_CON_PRSCEN;
-> +
-> +       /* Enable 12-bit ADC resolution */
-> +       con1 |= ADC_V1_CON_RES;
-> +       writel(con1, ADC_V1_CON(info->regs));
-> +}
-> +
-> +static void exynos_adc_v1_start_conv(struct exynos_adc *info, unsigned long addr)
-> +{
-> +       u32 con1;
-> +
-> +       writel(addr, ADC_V1_MUX(info->regs));
-> +
-> +       con1 = readl(ADC_V1_CON(info->regs));
-> +       writel(con1 | ADC_CON_EN_START, ADC_V1_CON(info->regs));
-> +}
-> +
-> +static void exynos_adc_v1_clear_irq(struct exynos_adc *info)
-> +{
-> +       writel(1, ADC_V1_INTCLR(info->regs));
-> +}
-> +
-> +static void exynos_adc_v1_stop_conv(struct exynos_adc *info)
-> +{
-> +       u32 con;
-> +
-> +       con = readl(ADC_V1_CON(info->regs));
-> +       con |= ADC_V1_CON_STANDBY;
-> +       writel(con, ADC_V1_CON(info->regs));
-> +}
-> +
-> +static struct exynos_adc_ops exynos_adc_v1_ops = {
-> +       .init_hw        = exynos_adc_v1_init_hw,
-> +       .clear_irq      = exynos_adc_v1_clear_irq,
-> +       .start_conv     = exynos_adc_v1_start_conv,
-> +       .stop_conv      = exynos_adc_v1_stop_conv,
-> +};
-> +
-> +static void exynos_adc_v2_init_hw(struct exynos_adc *info)
->  {
->         u32 con1, con2;
->
-> -       if (info->version == ADC_V2) {
-> -               con1 = ADC_V2_CON1_SOFT_RESET;
-> -               writel(con1, ADC_V2_CON1(info->regs));
-> +       con1 = ADC_V2_CON1_SOFT_RESET;
-> +       writel(con1, ADC_V2_CON1(info->regs));
->
-> -               con2 = ADC_V2_CON2_OSEL | ADC_V2_CON2_ESEL |
-> -                       ADC_V2_CON2_HIGHF | ADC_V2_CON2_C_TIME(0);
-> -               writel(con2, ADC_V2_CON2(info->regs));
-> +       con2 = ADC_V2_CON2_OSEL | ADC_V2_CON2_ESEL |
-> +               ADC_V2_CON2_HIGHF | ADC_V2_CON2_C_TIME(0);
-> +       writel(con2, ADC_V2_CON2(info->regs));
->
-> -               /* Enable interrupts */
-> -               writel(1, ADC_V2_INT_EN(info->regs));
-> -       } else {
-> -               /* set default prescaler values and Enable prescaler */
-> -               con1 =  ADC_V1_CON_PRSCLV(49) | ADC_V1_CON_PRSCEN;
-> +       /* Enable interrupts */
-> +       writel(1, ADC_V2_INT_EN(info->regs));
-> +}
->
-> -               /* Enable 12-bit ADC resolution */
-> -               con1 |= ADC_V1_CON_RES;
-> -               writel(con1, ADC_V1_CON(info->regs));
-> -       }
-> +static void exynos_adc_v2_start_conv(struct exynos_adc *info, unsigned long addr)
-> +{
-> +       u32 con1, con2;
-> +
-> +       con2 = readl(ADC_V2_CON2(info->regs));
-> +       con2 &= ~ADC_V2_CON2_ACH_MASK;
-> +       con2 |= ADC_V2_CON2_ACH_SEL(addr);
-> +       writel(con2, ADC_V2_CON2(info->regs));
-> +
-> +       con1 = readl(ADC_V2_CON1(info->regs));
-> +       writel(con1 | ADC_CON_EN_START, ADC_V2_CON1(info->regs));
-> +}
-> +
-> +static void exynos_adc_v2_clear_irq(struct exynos_adc *info)
-> +{
-> +       writel(1, ADC_V2_INT_ST(info->regs));
-> +}
-> +
-> +static void exynos_adc_v2_stop_conv(struct exynos_adc *info)
-> +{
-> +       u32 con;
-> +
-> +       con = readl(ADC_V2_CON1(info->regs));
-> +       con &= ~ADC_CON_EN_START;
-> +       writel(con, ADC_V2_CON1(info->regs));
->  }
->
-> +static struct exynos_adc_ops exynos_adc_v2_ops = {
-> +       .init_hw        = exynos_adc_v2_init_hw,
-> +       .start_conv     = exynos_adc_v2_start_conv,
-> +       .clear_irq      = exynos_adc_v2_clear_irq,
-> +       .stop_conv      = exynos_adc_v2_stop_conv,
-> +};
-> +
->  static int exynos_read_raw(struct iio_dev *indio_dev,
->                                 struct iio_chan_spec const *chan,
->                                 int *val,
-> @@ -144,7 +220,6 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
->  {
->         struct exynos_adc *info = iio_priv(indio_dev);
->         unsigned long timeout;
-> -       u32 con1, con2;
->         int ret;
->
->         if (mask != IIO_CHAN_INFO_RAW)
-> @@ -154,28 +229,15 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
->         reinit_completion(&info->completion);
->
->         /* Select the channel to be used and Trigger conversion */
-> -       if (info->version == ADC_V2) {
-> -               con2 = readl(ADC_V2_CON2(info->regs));
-> -               con2 &= ~ADC_V2_CON2_ACH_MASK;
-> -               con2 |= ADC_V2_CON2_ACH_SEL(chan->address);
-> -               writel(con2, ADC_V2_CON2(info->regs));
-> -
-> -               con1 = readl(ADC_V2_CON1(info->regs));
-> -               writel(con1 | ADC_CON_EN_START,
-> -                               ADC_V2_CON1(info->regs));
-> -       } else {
-> -               writel(chan->address, ADC_V1_MUX(info->regs));
-> -
-> -               con1 = readl(ADC_V1_CON(info->regs));
-> -               writel(con1 | ADC_CON_EN_START,
-> -                               ADC_V1_CON(info->regs));
-> -       }
-> +       if (info->ops->start_conv)
-> +               info->ops->start_conv(info, chan->address);
->
->         timeout = wait_for_completion_timeout
->                         (&info->completion, EXYNOS_ADC_TIMEOUT);
->         if (timeout == 0) {
->                 dev_warn(&indio_dev->dev, "Conversion timed out! Resetting\n");
-> -               exynos_adc_hw_init(info);
-> +               if (info->ops->init_hw)
-> +                       info->ops->init_hw(info);
->                 ret = -ETIMEDOUT;
->         } else {
->                 *val = info->value;
-> @@ -193,13 +255,11 @@ static irqreturn_t exynos_adc_isr(int irq, void *dev_id)
->         struct exynos_adc *info = (struct exynos_adc *)dev_id;
->
->         /* Read value */
-> -       info->value = readl(ADC_V1_DATX(info->regs)) &
-> -                                               ADC_DATX_MASK;
-> +       info->value = readl(ADC_V1_DATX(info->regs)) & ADC_DATX_MASK;
-> +
->         /* clear irq */
-> -       if (info->version == ADC_V2)
-> -               writel(1, ADC_V2_INT_ST(info->regs));
-> -       else
-> -               writel(1, ADC_V1_INTCLR(info->regs));
-> +       if (info->ops->clear_irq)
-> +               info->ops->clear_irq(info);
->
->         complete(&info->completion);
->
-> @@ -277,6 +337,19 @@ static int exynos_adc_probe(struct platform_device *pdev)
->
->         info = iio_priv(indio_dev);
->
-> +       info->version = exynos_adc_get_version(pdev);
-> +       switch (info->version) {
-> +       case ADC_V1:
-> +               info->ops = &exynos_adc_v1_ops;
-> +               break;
-> +       case ADC_V2:
-> +               info->ops = &exynos_adc_v2_ops;
-> +               break;
-> +       default:
-> +               dev_err(&pdev->dev, "failed to identify ADC version\n");
-> +               return -EINVAL;
-> +       };
-> +
->         mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->         info->regs = devm_ioremap_resource(&pdev->dev, mem);
->         if (IS_ERR(info->regs))
-> @@ -321,8 +394,6 @@ static int exynos_adc_probe(struct platform_device *pdev)
->
->         writel(1, info->enable_reg);
->
-> -       info->version = exynos_adc_get_version(pdev);
-> -
->         platform_set_drvdata(pdev, indio_dev);
->
->         indio_dev->name = dev_name(&pdev->dev);
-> @@ -349,7 +420,8 @@ static int exynos_adc_probe(struct platform_device *pdev)
->         if (ret)
->                 goto err_irq;
->
-> -       exynos_adc_hw_init(info);
-> +       if (info->ops->init_hw)
-> +               info->ops->init_hw(info);
->
->         ret = of_platform_populate(np, exynos_adc_match, NULL, &indio_dev->dev);
->         if (ret < 0) {
-> @@ -394,17 +466,9 @@ static int exynos_adc_suspend(struct device *dev)
->  {
->         struct iio_dev *indio_dev = dev_get_drvdata(dev);
->         struct exynos_adc *info = iio_priv(indio_dev);
-> -       u32 con;
->
-> -       if (info->version == ADC_V2) {
-> -               con = readl(ADC_V2_CON1(info->regs));
-> -               con &= ~ADC_CON_EN_START;
-> -               writel(con, ADC_V2_CON1(info->regs));
-> -       } else {
-> -               con = readl(ADC_V1_CON(info->regs));
-> -               con |= ADC_V1_CON_STANDBY;
-> -               writel(con, ADC_V1_CON(info->regs));
-> -       }
-> +       if (info->ops->stop_conv)
-> +               info->ops->stop_conv(info);
->
->         writel(0, info->enable_reg);
->         clk_disable_unprepare(info->clk);
-> @@ -428,7 +492,9 @@ static int exynos_adc_resume(struct device *dev)
->                 return ret;
->
->         writel(1, info->enable_reg);
-> -       exynos_adc_hw_init(info);
-> +
-> +       if (info->ops->init_hw)
-> +               info->ops->init_hw(info);
->
->         return 0;
->  }
-> --
-> 1.8.0
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
+diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+index 6c84e3d..90223a3 100644
+--- a/drivers/extcon/extcon-arizona.c
++++ b/drivers/extcon/extcon-arizona.c
+@@ -1103,10 +1103,8 @@ static int arizona_extcon_probe(struct platform_device *pdev)
+ 		return -EPROBE_DEFER;
+ 
+ 	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
+-	if (!info) {
+-		dev_err(&pdev->dev, "Failed to allocate memory\n");
++	if (!info)
+ 		return -ENOMEM;
+-	}
+ 
+ 	info->micvdd = devm_regulator_get(arizona->dev, "MICVDD");
+ 	if (IS_ERR(info->micvdd)) {
+diff --git a/drivers/extcon/extcon-max14577.c b/drivers/extcon/extcon-max14577.c
+index d49e891..7309743 100644
+--- a/drivers/extcon/extcon-max14577.c
++++ b/drivers/extcon/extcon-max14577.c
+@@ -692,10 +692,9 @@ static int max14577_muic_probe(struct platform_device *pdev)
+ 	u8 id;
+ 
+ 	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
+-	if (!info) {
+-		dev_err(&pdev->dev, "failed to allocate memory\n");
++	if (!info)
+ 		return -ENOMEM;
+-	}
++
+ 	info->dev = &pdev->dev;
+ 	info->max14577 = max14577;
+ 
+diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+index 2c7c3e1..47998a2 100644
+--- a/drivers/extcon/extcon-max77693.c
++++ b/drivers/extcon/extcon-max77693.c
+@@ -1099,10 +1099,9 @@ static int max77693_muic_probe(struct platform_device *pdev)
+ 
+ 	info = devm_kzalloc(&pdev->dev, sizeof(struct max77693_muic_info),
+ 				   GFP_KERNEL);
+-	if (!info) {
+-		dev_err(&pdev->dev, "failed to allocate memory\n");
++	if (!info)
+ 		return -ENOMEM;
+-	}
++
+ 	info->dev = &pdev->dev;
+ 	info->max77693 = max77693;
+ 	if (info->max77693->regmap_muic) {
+diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
+index d9f7f1b..045e230 100644
+--- a/drivers/extcon/extcon-max8997.c
++++ b/drivers/extcon/extcon-max8997.c
+@@ -661,10 +661,8 @@ static int max8997_muic_probe(struct platform_device *pdev)
+ 
+ 	info = devm_kzalloc(&pdev->dev, sizeof(struct max8997_muic_info),
+ 			    GFP_KERNEL);
+-	if (!info) {
+-		dev_err(&pdev->dev, "failed to allocate memory\n");
++	if (!info)
+ 		return -ENOMEM;
+-	}
+ 
+ 	info->dev = &pdev->dev;
+ 	info->muic = max8997->muic;
 -- 
-Shine bright,
-(: Nav :)
+1.7.10.4
+
+
