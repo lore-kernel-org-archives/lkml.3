@@ -1,187 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934114AbaFRGlg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 02:41:36 -0400
-Received: from fgwmail3.fujitsu.co.jp ([164.71.1.134]:59687 "EHLO
-	fgwmail4.fujitsu.co.jp" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934088AbaFRGld (ORCPT
+	id S1756733AbaFRGl5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 02:41:57 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:59748 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756716AbaFRGly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 02:41:33 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <53A133ED.2090005@jp.fujitsu.com>
-Date: Wed, 18 Jun 2014 15:38:37 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 18 Jun 2014 02:41:54 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53A134A5.9020308@roeck-us.net>
+Date: Tue, 17 Jun 2014 23:41:41 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: <akpm@linux-foundation.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <hpa@zytor.com>
-CC: <tangchen@cn.fujitsu.com>, <toshi.kani@hp.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <x86@kernel.org>,
-        <guz.fnst@cn.fujitsu.com>, <zhangyanfei@cn.fujitsu.com>
-Subject: [PATCH 2/2] x86,mem-hotplug: modify PGD entry when removing memory
-References: <53A132E2.9000605@jp.fujitsu.com>
-In-Reply-To: <53A132E2.9000605@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
+To: Varka Bhadram <varkabhadram@gmail.com>, Heiko Schocher <hs@denx.de>,
+        lm-sensors@lm-sensors.org
+CC: Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH v5] hwmon: Driver for TI TMP103 temperature sensor
+References: <1403069837-15651-1-git-send-email-hs@denx.de> <53A127BB.7090802@gmail.com> <53A12DBB.50704@roeck-us.net> <53A12F37.8020206@gmail.com>
+In-Reply-To: <53A12F37.8020206@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
-X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When hot-adding/removing memory, sync_global_pgds() is called for
-synchronizing PGD to PGD entries of all processes MM. But when
-hot-removing memory, sync_global_pgds() does not work correctly.
+On 06/17/2014 11:18 PM, Varka Bhadram wrote:
 
-At first, sync_global_pgds() checks whether target PGD is none or not.
-And if PGD is none, the PGD is skipped. But when hot-removing memory,
-PGD may be none since PGD may be cleared by free_pud_table(). So
-when sync_global_pgds() is called after hot-removing memory,
-sync_global_pgds() should not skip PGD even if the PGD is none.
-And sync_global_pgds() must clear PGD entries of all processes MM.
+>>>>   ti,tmp102        Low Power Digital Temperature Sensor with SMBUS/Two Wire Serial Interface
+>>>> +ti,tmp103        Low Power Digital Temperature Sensor with SMBUS/Two Wire Serial Interface
+> May i know about this binding compatible property ?
 
-Currently sync_global_pgds() does not clear PGD entries of all processes
-MM when hot-removing memory. So when hot adding memory which is same memory
-range as removed memory after hot-removing memory, following call traces
-are shown:
+At some point someone will have to document how trivial i2c device mappings
+work in detail. Every other time another trivial i2c device is added
+to this file, the same argument starts all over again.
 
-kernel BUG at arch/x86/mm/init_64.c:206!
-...
- [<ffffffff815e0c80>] kernel_physical_mapping_init+0x1b2/0x1d2
- [<ffffffff815ced94>] init_memory_mapping+0x1d4/0x380
- [<ffffffff8104aebd>] arch_add_memory+0x3d/0xd0
- [<ffffffff815d03d9>] add_memory+0xb9/0x1b0
- [<ffffffff81352415>] acpi_memory_device_add+0x1af/0x28e
- [<ffffffff81325dc4>] acpi_bus_device_attach+0x8c/0xf0
- [<ffffffff813413b9>] acpi_ns_walk_namespace+0xc8/0x17f
- [<ffffffff81325d38>] ? acpi_bus_type_and_status+0xb7/0xb7
- [<ffffffff81325d38>] ? acpi_bus_type_and_status+0xb7/0xb7
- [<ffffffff813418ed>] acpi_walk_namespace+0x95/0xc5
- [<ffffffff81326b4c>] acpi_bus_scan+0x9a/0xc2
- [<ffffffff81326bff>] acpi_scan_bus_device_check+0x8b/0x12e
- [<ffffffff81326cb5>] acpi_scan_device_check+0x13/0x15
- [<ffffffff81320122>] acpi_os_execute_deferred+0x25/0x32
- [<ffffffff8107e02b>] process_one_work+0x17b/0x460
- [<ffffffff8107edfb>] worker_thread+0x11b/0x400
- [<ffffffff8107ece0>] ? rescuer_thread+0x400/0x400
- [<ffffffff81085aef>] kthread+0xcf/0xe0
- [<ffffffff81085a20>] ? kthread_create_on_node+0x140/0x140
- [<ffffffff815fc76c>] ret_from_fork+0x7c/0xb0
- [<ffffffff81085a20>] ? kthread_create_on_node+0x140/0x140
+An attempt to document the trivial i2c device mappings implementation
+was rejected with the argument that it would be implementation (Linux)
+specific. The proposed patch [1] may however help understanding how
+it works.
 
-This patch clears PGD entries of all processes MM when sync_global_pgds()
-is called after hot-removing memory
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Hope that helps,
+Guenter
 
 ---
- arch/x86/include/asm/pgtable_64.h |  3 ++-
- arch/x86/mm/fault.c               |  2 +-
- arch/x86/mm/init_64.c             | 27 +++++++++++++++++++--------
- 3 files changed, 22 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable_64.h b/arch/x86/include/asm/pgtable_64.h
-index 5be9063..809abb3 100644
---- a/arch/x86/include/asm/pgtable_64.h
-+++ b/arch/x86/include/asm/pgtable_64.h
-@@ -115,7 +115,8 @@ static inline void native_pgd_clear(pgd_t *pgd)
- 	native_set_pgd(pgd, native_make_pgd(0));
- }
-
--extern void sync_global_pgds(unsigned long start, unsigned long end);
-+extern void sync_global_pgds(unsigned long start, unsigned long end,
-+			     int removed);
-
- /*
-  * Conversion functions: convert a page and protection to a page entry,
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 3664279..0193a32 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -350,7 +350,7 @@ out:
-
- void vmalloc_sync_all(void)
- {
--	sync_global_pgds(VMALLOC_START & PGDIR_MASK, VMALLOC_END);
-+	sync_global_pgds(VMALLOC_START & PGDIR_MASK, VMALLOC_END, 0);
- }
-
- /*
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index a5b245d..8f68032 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -178,7 +178,7 @@ __setup("noexec32=", nonx32_setup);
-  * When memory was added/removed make sure all the processes MM have
-  * suitable PGD entries in the local PGD level page.
-  */
--void sync_global_pgds(unsigned long start, unsigned long end)
-+void sync_global_pgds(unsigned long start, unsigned long end, int removed)
- {
- 	unsigned long address;
-
-@@ -186,7 +186,12 @@ void sync_global_pgds(unsigned long start, unsigned long end)
- 		const pgd_t *pgd_ref = pgd_offset_k(address);
- 		struct page *page;
-
--		if (pgd_none(*pgd_ref))
-+		/*
-+		 * When it is called after memory hot remove, pgd_none()
-+		 * returns true. In this case (removed == 1), we must clear
-+		 * the PGD entries in the local PGD level page.
-+		 */
-+		if (pgd_none(*pgd_ref) && !removed)
- 			continue;
-
- 		spin_lock(&pgd_lock);
-@@ -199,12 +204,18 @@ void sync_global_pgds(unsigned long start, unsigned long end)
- 			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
- 			spin_lock(pgt_lock);
-
--			if (pgd_none(*pgd))
--				set_pgd(pgd, *pgd_ref);
--			else
-+			if (!pgd_none(*pgd_ref) && !pgd_none(*pgd))
- 				BUG_ON(pgd_page_vaddr(*pgd)
- 				       != pgd_page_vaddr(*pgd_ref));
-
-+			if (removed) {
-+				if (pgd_none(*pgd_ref) && !pgd_none(*pgd))
-+					pgd_clear(pgd);
-+			} else {
-+				if (pgd_none(*pgd))
-+					set_pgd(pgd, *pgd_ref);
-+			}
-+
- 			spin_unlock(pgt_lock);
- 		}
- 		spin_unlock(&pgd_lock);
-@@ -633,7 +644,7 @@ kernel_physical_mapping_init(unsigned long start,
- 	}
-
- 	if (pgd_changed)
--		sync_global_pgds(addr, end - 1);
-+		sync_global_pgds(addr, end - 1, 0);
-
- 	__flush_tlb_all();
-
-@@ -994,7 +1005,7 @@ remove_pagetable(unsigned long start, unsigned long end, bool direct)
- 	}
-
- 	if (pgd_changed)
--		sync_global_pgds(start, end - 1);
-+		sync_global_pgds(start, end - 1, 1);
-
- 	flush_tlb_all();
- }
-@@ -1341,7 +1352,7 @@ int __meminit vmemmap_populate(unsigned long start, unsigned long end, int node)
- 	else
- 		err = vmemmap_populate_basepages(start, end, node);
- 	if (!err)
--		sync_global_pgds(start, end - 1);
-+		sync_global_pgds(start, end - 1, 0);
- 	return err;
- }
-
+[1] http://patchwork.ozlabs.org/patch/301938/
 
