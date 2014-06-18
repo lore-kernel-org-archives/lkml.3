@@ -1,78 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755209AbaFRWlE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 18:41:04 -0400
-Received: from 1wt.eu ([62.212.114.60]:43441 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754786AbaFRWlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 18:41:01 -0400
-Date: Thu, 19 Jun 2014 00:40:59 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Linux 2.6.32.63
-Message-ID: <20140618224059.GA7101@1wt.eu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.3i
+	id S1755535AbaFRWnL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 18:43:11 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:63158 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752157AbaFRWnJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 18:43:09 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: David Rientjes <rientjes@google.com>
+Cc: Lan Tianyu <tianyu.lan@intel.com>, lenb@kernel.org, naszar@ya.ru,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] ACPI/Battery: Retry to get Battery information if failed during probing
+Date: Thu, 19 Jun 2014 01:00:44 +0200
+Message-ID: <2223803.V8Foed99uq@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <alpine.DEB.2.02.1406181515160.21927@chino.kir.corp.google.com>
+References: <1402988994-27067-1-git-send-email-tianyu.lan@intel.com> <1474004.fDjayHqHT9@vostro.rjw.lan> <alpine.DEB.2.02.1406181515160.21927@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've just released Linux 2.6.32.63.
+On Wednesday, June 18, 2014 03:15:47 PM David Rientjes wrote:
+> On Tue, 17 Jun 2014, Rafael J. Wysocki wrote:
+> 
+> > > diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+> > > index e48fc98..8ed93a3 100644
+> > > --- a/drivers/acpi/battery.c
+> > > +++ b/drivers/acpi/battery.c
+> > > @@ -34,6 +34,7 @@
+> > >  #include <linux/dmi.h>
+> > >  #include <linux/slab.h>
+> > >  #include <linux/suspend.h>
+> > > +#include <linux/delay.h>
+> > >  #include <asm/unaligned.h>
+> > >  
+> > >  #ifdef CONFIG_ACPI_PROCFS_POWER
+> > > @@ -1119,7 +1120,7 @@ static struct dmi_system_id bat_dmi_table[] = {
+> > >  
+> > >  static int acpi_battery_add(struct acpi_device *device)
+> > >  {
+> > > -	int result = 0;
+> > > +	int result = 0, retry = 5;
+> > >  	struct acpi_battery *battery = NULL;
+> > >  
+> > >  	if (!device)
+> > > @@ -1135,9 +1136,20 @@ static int acpi_battery_add(struct acpi_device *device)
+> > >  	mutex_init(&battery->sysfs_lock);
+> > >  	if (acpi_has_method(battery->device->handle, "_BIX"))
+> > >  		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
+> > > -	result = acpi_battery_update(battery, false);
+> > > +
+> > > +	/*
+> > > +	 * Some machines'(E,G Lenovo Z480) ECs are not stable
+> > > +	 * during boot up and this causes battery driver fails to be
+> > > +	 * probed due to failure of getting battery information
+> > > +	 * from EC sometimes. After several retries, the operation
+> > > +	 * may work. So add retry code here and 20ms sleep between
+> > > +	 * every retries.
+> > > +	 */
+> > > +	while ((result = acpi_battery_update(battery, false)) && retry--)
+> > > +		msleep(20);
+> > >  	if (result)
+> > >  		goto fail;
+> > 
+> > Why not to write this as
+> > 
+> > 	for (;;) {
+> > 		result = acpi_battery_update(battery, false);
+> > 		if (!result)
+> > 			break;
+> > 		else if (!--retry)
+> > 			goto fail;
+> > 
+> > 		msleep(20);
+> > 	}
+> > 
+> 
+> I suggested a similar for loop earlier, I think it's cleaner.
 
-The patch and changelog will appear soon at the following locations:
-  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.32/
-  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.32/patch-2.6.32.63.bz2
-  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.32/patch-2.6.32.63.xz
-  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.32/patch-2.6.32.63.gz
-  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.32/ChangeLog-2.6.32.63
+Precisely.  And it would be even more clean to introduce
 
-The updated 2.6.32.y git tree can be found at:
-   git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.32.y
-  http://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.32.y
+static bool acpi_battery_update_retry(struct acpi_battery *battery)
+{
+	int retry, ret;
 
-The tree can be browsed on the gitweb interface:
-  http://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/log/?id=refs/heads/linux-2.6.32.y
+	for (retry = 5; retry; retry--) {
+		ret = acpi_battery_update(battery, false);
+		if (!ret)
+			break;
 
-Testing status (build/boot, OK/FAIL, otherwise not tested) :
+		msleep(20);
+	}
+	return ret;
+}
 
-         ARCH  |         CONFIGURATION
-       --------+-----------------------------------
-               |  allmodconfig     other-config
-        x86_64 |    build:OK            -
-          i386 |    build:OK            -
+and use that instead of the open-coded loop.
 
-Thanks to all reviewers, and to Greg for the final packaging.
-Willy
-
----------
- Makefile                   |   2 +-
- include/linux/ethtool.h    |   4 +-
- kernel/auditsc.c           |  25 +++--
- kernel/futex.c             | 243 +++++++++++++++++++++++++++++++++++----------
- net/core/ethtool.c         |  17 +++-
- net/core/sysctl_net_core.c |   3 +-
- net/ipv4/sysctl_net_ipv4.c |   3 +-
- 7 files changed, 229 insertions(+), 68 deletions(-)
-
-Summary of changes from 2.6.32.62 to 2.6.32.63
-==============================================
-Andy Lutomirski (1):
-      auditsc: audit_krule mask accesses need bounds checking
-
-Ben Hutchings (1):
-      ethtool: Report link-down while interface is down
-
-Thomas Gleixner (6):
-      futex: Add another early deadlock detection check
-      futex: Prevent attaching to kernel threads
-      futex-prevent-requeue-pi-on-same-futex.patch futex: Forbid uaddr == uaddr2 in futex_requeue(..., requeue_pi=1)
-      futex: Validate atomic acquisition in futex_lock_pi_atomic()
-      futex: Always cleanup owner tid in unlock_pi
-      futex: Make lookup_pi_state more robust
-
-Willy Tarreau (2):
-      net: fix regression introduced in 2.6.32.62 by sysctl fixes
-      Linux 2.6.32.63
+Rafael
 
