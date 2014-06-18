@@ -1,79 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933984AbaFRGiM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 02:38:12 -0400
-Received: from fgwmail4.fujitsu.co.jp ([164.71.1.141]:56461 "EHLO
-	fgwmail4.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756638AbaFRGiK (ORCPT
+	id S934035AbaFRGiy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 02:38:54 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:59537 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933990AbaFRGiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 02:38:10 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <53A1339E.2000000@jp.fujitsu.com>
-Date: Wed, 18 Jun 2014 15:37:18 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 18 Jun 2014 02:38:52 -0400
+Date: Wed, 18 Jun 2014 12:07:07 +0530
+From: Pratyush Anand <pratyush.anand@st.com>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mohit KUMAR DCG <Mohit.KUMAR@st.com>,
+        Jingoo Han <jg1.han@samsung.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Richard Zhu <r65037@freescale.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH v2 1/8] PCI: designware: add rd[wr]_other_conf API
+Message-ID: <20140618063706.GA6098@pratyush-vbox>
+References: <1402426287-31157-1-git-send-email-m-karicheri2@ti.com>
+ <1402426287-31157-2-git-send-email-m-karicheri2@ti.com>
 MIME-Version: 1.0
-To: <akpm@linux-foundation.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <hpa@zytor.com>
-CC: <tangchen@cn.fujitsu.com>, <toshi.kani@hp.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <x86@kernel.org>,
-        <guz.fnst@cn.fujitsu.com>, <zhangyanfei@cn.fujitsu.com>
-Subject: [PATCH 1/2] x86,mem-hotplug: pass sync_global_pgds() a correct argument
- in remove_pagetable()
-References: <53A132E2.9000605@jp.fujitsu.com>
-In-Reply-To: <53A132E2.9000605@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
-X-TM-AS-MML: No
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1402426287-31157-2-git-send-email-m-karicheri2@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-18_03:2014-06-17,2014-06-18,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-remove_pagetable() gets start argument and passes the argument to
-sync_global_pgds(). In this case, the argument must not be modified.
-If the argument is modified and passed to sync_global_pgds(),
-sync_global_pgds() does not correctly synchronize PGD to PGD entries
-of all processes MM since synchronized range of memory [start, end]
-is wrong.
+On Wed, Jun 11, 2014 at 02:51:20AM +0800, Murali Karicheri wrote:
+> v3.65 version of the designware h/w, requires application space
+> registers to be configured to access the remote EP config space.
+> To support this, add rd[wr]_other_conf API in the pcie_host_opts
+> 
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> 
+> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> CC: Russell King <linux@arm.linux.org.uk>
+> CC: Grant Likely <grant.likely@linaro.org>
+> CC: Rob Herring <robh+dt@kernel.org>
+> CC: Mohit Kumar <mohit.kumar@st.com>
+> CC: Jingoo Han <jg1.han@samsung.com>
+> CC: Bjorn Helgaas <bhelgaas@google.com>
+> CC: Pratyush Anand <pratyush.anand@st.com>
+> CC: Richard Zhu <r65037@freescale.com>
+> CC: Kishon Vijay Abraham I <kishon@ti.com>
+> CC: Marek Vasut <marex@denx.de>
+> CC: Arnd Bergmann <arnd@arndb.de>
+> CC: Pawel Moll <pawel.moll@arm.com>
+> CC: Mark Rutland <mark.rutland@arm.com>
+> CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> CC: Kumar Gala <galak@codeaurora.org>
+> CC: Randy Dunlap <rdunlap@infradead.org>
+> CC: Grant Likely <grant.likely@linaro.org> 
+> 
+> ---
+>  drivers/pci/host/pcie-designware.c |   12 ++++++++++--
+>  drivers/pci/host/pcie-designware.h |    4 ++++
+>  2 files changed, 14 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+> index c4e3732..e8f5d8d 100644
+> --- a/drivers/pci/host/pcie-designware.c
+> +++ b/drivers/pci/host/pcie-designware.c
+> @@ -654,7 +654,11 @@ static int dw_pcie_rd_conf(struct pci_bus *bus, u32 devfn, int where,
+>  
+>  	spin_lock_irqsave(&pp->conf_lock, flags);
+>  	if (bus->number != pp->root_bus_nr)
+> -		ret = dw_pcie_rd_other_conf(pp, bus, devfn,
+> +		if (pp->ops->rd_other_conf)
+> +			ret = pp->ops->rd_other_conf(pp, bus, devfn,
+> +						where, size, val);
+> +		else
+> +			ret = dw_pcie_rd_other_conf(pp, bus, devfn,
+>  						where, size, val);
+>  	else
+>  		ret = dw_pcie_rd_own_conf(pp, where, size, val);
+> @@ -680,7 +684,11 @@ static int dw_pcie_wr_conf(struct pci_bus *bus, u32 devfn,
+>  
+>  	spin_lock_irqsave(&pp->conf_lock, flags);
+>  	if (bus->number != pp->root_bus_nr)
+> -		ret = dw_pcie_wr_other_conf(pp, bus, devfn,
+> +		if (pp->ops->wr_other_conf)
+> +			ret = pp->ops->wr_other_conf(pp, bus, devfn,
+> +						where, size, val);
+> +		else
+> +			ret = dw_pcie_wr_other_conf(pp, bus, devfn,
+>  						where, size, val);
+>  	else
+>  		ret = dw_pcie_wr_own_conf(pp, where, size, val);
+> diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
+> index 3063b35..2d6dd66 100644
+> --- a/drivers/pci/host/pcie-designware.h
+> +++ b/drivers/pci/host/pcie-designware.h
+> @@ -62,6 +62,10 @@ struct pcie_host_ops {
+>  			u32 val, void __iomem *dbi_base);
+>  	int (*rd_own_conf)(struct pcie_port *pp, int where, int size, u32 *val);
+>  	int (*wr_own_conf)(struct pcie_port *pp, int where, int size, u32 val);
+> +	int (*rd_other_conf)(struct pcie_port *pp, struct pci_bus *bus,
+> +			unsigned int devfn, int where, int size, u32 *val);
+> +	int (*wr_other_conf)(struct pcie_port *pp, struct pci_bus *bus,
+> +			unsigned int devfn, int where, int size, u32 val);
+>  	int (*link_up)(struct pcie_port *pp);
+>  	void (*host_init)(struct pcie_port *pp);
+>  };
 
-Unfortunately the start argument is modified in remove_pagetable().
-So this patch fixes the issue.
+Reviewed-by: Pratyush Anand <pratyush.anand@st.com> 
 
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-
----
- arch/x86/mm/init_64.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index df1a992..a5b245d 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -975,19 +975,20 @@ static void __meminit
- remove_pagetable(unsigned long start, unsigned long end, bool direct)
- {
- 	unsigned long next;
-+	unsigned long addr;
- 	pgd_t *pgd;
- 	pud_t *pud;
- 	bool pgd_changed = false;
-
--	for (; start < end; start = next) {
--		next = pgd_addr_end(start, end);
-+	for (addr = start; addr < end; addr = next) {
-+		next = pgd_addr_end(addr, end);
-
--		pgd = pgd_offset_k(start);
-+		pgd = pgd_offset_k(addr);
- 		if (!pgd_present(*pgd))
- 			continue;
-
- 		pud = (pud_t *)pgd_page_vaddr(*pgd);
--		remove_pud_table(pud, start, next, direct);
-+		remove_pud_table(pud, addr, next, direct);
- 		if (free_pud_table(pud, pgd))
- 			pgd_changed = true;
- 	}
-
+> -- 
+> 1.7.9.5
