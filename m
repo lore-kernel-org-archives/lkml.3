@@ -1,117 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417AbaFRUa5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 16:30:57 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:59074 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754876AbaFRUaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 16:30:55 -0400
-Date: Wed, 18 Jun 2014 13:27:48 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Will Deacon <will.deacon@arm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        =?iso-8859-1?Q?Andr=E9?= Hentschel <nerv@dawncrow.de>,
-        Oleg Nesterov <oleg@redhat.com>, linux-arm-kernel@lists.infradead.org,
-        Ricky Zhou <rickyz@google.com>
-Subject: [PATCH] arm: ptrace: fix syscall modification under
- PTRACE_O_TRACESECCOMP
-Message-ID: <20140618202748.GA9022@www.outflux.net>
+	id S1752864AbaFRUbQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 16:31:16 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:41295 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755096AbaFRUa4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 16:30:56 -0400
+Date: Wed, 18 Jun 2014 13:30:52 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [bisected] pre-3.16 regression on open() scalability
+Message-ID: <20140618203052.GT4669@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <539B594C.8070004@intel.com>
+ <20140613224519.GV4581@linux.vnet.ibm.com>
+ <53A0CAE5.9000702@intel.com>
+ <20140618001836.GV4669@linux.vnet.ibm.com>
+ <53A132D4.60408@intel.com>
+ <20140618125831.GB4669@linux.vnet.ibm.com>
+ <53A1CE19.7040103@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-HELO: www.outflux.net
+In-Reply-To: <53A1CE19.7040103@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061820-0928-0000-0000-000002BE85BB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An x86 tracer wanting to change the syscall uses PTRACE_SETREGS
-(stored to regs->orig_ax), and an ARM tracer uses PTRACE_SET_SYSCALL
-(stored to current_thread_info()->syscall). When this happens, the
-syscall can change across the call to secure_computing(), since it may
-block on tracer notification, and the tracer can then make changes
-to the process, before we return from secure_computing(). This
-means the code must respect the changed syscall after the
-secure_computing() call in syscall_trace_enter(). The same is true
-for tracehook_report_syscall_entry() which may also block and change
-the syscall.
+On Wed, Jun 18, 2014 at 10:36:25AM -0700, Dave Hansen wrote:
+> On 06/18/2014 05:58 AM, Paul E. McKenney wrote:
+> >> > This is the previous kernel, plus RCU tracing, so it's not 100%
+> >> > apples-to-apples (and it peaks a bit lower than the other kernel).  But
+> >> > here's the will-it-scale open1 throughput on the y axis vs
+> >> > RCU_COND_RESCHED_EVERY_THIS_JIFFIES on x:
+> >> > 
+> >> > 	http://sr71.net/~dave/intel/jiffies-vs-openops.png
+> >> > 
+> >> > This was a quick and dirty single run with very little averaging, so I
+> >> > expect there to be a good amount of noise.  I ran it from 1->100, but it
+> >> > seemed to peak at about 30.
+> > OK, so a default setting on the order of 20-30 jiffies looks promising.
+> 
+> For the biggest machine I have today, yeah.  But, we need to be a bit
+> careful here.  The CPUs I'm running it on were released 3 years ago and
+> I think we need to be planning at _least_ for today's large systems.  I
+> would guess that by raising ...EVERY_THIS_JIFFIES, we're shifting this
+> curve out to the right:
+> 
+> 	http://sr71.net/~dave/intel/3.16-open1regression-0.png
+> 
+> so that we're _just_ before the regression hits us.  But that just
+> guarantees I'll hit this again when I get new CPUs. :)
 
-The x86 code handles this (it expects orig_ax to always be the
-desired syscall). In the ARM case, this means we should not be touching
-current_thread_info()->syscall after its initial assignment. All failures
-should result in a -1 syscall, though.
+Understood.  One approach would be to scale this in a manner similar
+to the scaling of the delay from the beginning of the grace period
+to the start of quiescent-state forcing, which is about three jiffies
+on small systems scaling up to about 20 jiffies on large systems.
 
-Based on patch by Ricky Zhou.
+> If we go this route, I think we should probably take it up in to the
+> 100-200 range, or even scale it to something on the order of what the
+> rcu stall timeout is.  Other than the stall detector, is there some
+> other reason to be forcing frequent quiescent states?
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Ricky Zhou <rickyz@google.com>
-Cc: stable@vger.kernel.org
----
- arch/arm/kernel/ptrace.c |   20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
+Yep.  CONFIG_NO_HZ_FULL+nohz_full kernels running in kernel mode don't
+progress RCU grace periods.  But they should not need to be all that
+frequent.
 
-diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
-index 0dd3b79b15c3..97bd95f6aa01 100644
---- a/arch/arm/kernel/ptrace.c
-+++ b/arch/arm/kernel/ptrace.c
-@@ -911,6 +911,7 @@ enum ptrace_syscall_dir {
- static int tracehook_report_syscall(struct pt_regs *regs,
- 				    enum ptrace_syscall_dir dir)
- {
-+	int ret = 0;
- 	unsigned long ip;
- 
- 	/*
-@@ -923,30 +924,35 @@ static int tracehook_report_syscall(struct pt_regs *regs,
- 	if (dir == PTRACE_SYSCALL_EXIT)
- 		tracehook_report_syscall_exit(regs, 0);
- 	else if (tracehook_report_syscall_entry(regs))
--		current_thread_info()->syscall = -1;
-+		ret = -1;
- 
- 	regs->ARM_ip = ip;
--	return current_thread_info()->syscall;
-+	return ret;
- }
- 
- asmlinkage int syscall_trace_enter(struct pt_regs *regs, int scno)
- {
-+	int ret = 0;
-+
-+	/* set up syscall, which may be changed in secure_computing */
- 	current_thread_info()->syscall = scno;
- 
- 	/* Do the secure computing check first; failures should be fast. */
- 	if (secure_computing(scno) == -1)
- 		return -1;
- 
--	if (test_thread_flag(TIF_SYSCALL_TRACE))
--		scno = tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
-+	if (test_thread_flag(TIF_SYSCALL_TRACE) &&
-+	    tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER))
-+		ret = -1;
- 
- 	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
--		trace_sys_enter(regs, scno);
-+		trace_sys_enter(regs, current_thread_info()->syscall);
- 
--	audit_syscall_entry(AUDIT_ARCH_ARM, scno, regs->ARM_r0, regs->ARM_r1,
-+	audit_syscall_entry(AUDIT_ARCH_ARM, current_thread_info()->syscall,
-+			    regs->ARM_r0, regs->ARM_r1,
- 			    regs->ARM_r2, regs->ARM_r3);
- 
--	return scno;
-+	return ret ?: current_thread_info()->syscall;
- }
- 
- asmlinkage void syscall_trace_exit(struct pt_regs *regs)
--- 
-1.7.9.5
+							Thanx, Paul
 
-
--- 
-Kees Cook
-Chrome OS Security
