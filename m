@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017AbaFRWG6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 18:06:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42556 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451AbaFRWG5 (ORCPT
+	id S1753678AbaFRWIO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 18:08:14 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:44016 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106AbaFRWIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 18:06:57 -0400
-Date: Wed, 18 Jun 2014 15:10:56 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: comedi: describe members involved when
- reading/writing buffer
-Message-ID: <20140618221056.GA27292@kroah.com>
-References: <1401970286-32676-1-git-send-email-abbotti@mev.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401970286-32676-1-git-send-email-abbotti@mev.co.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 18 Jun 2014 18:08:12 -0400
+From: Nicholas Krause <xerofoify@gmail.com>
+To: akpm@linux-foundation.org
+Cc: viro@zeniv.linux.org.uk, fabf@skynet.be, kirill.shutemov@linux.intel.com,
+        dan.carpenter@oracle.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Check for Null return of function of affs_bread  in function affs_truncate
+Date: Wed, 18 Jun 2014 18:08:05 -0400
+Message-Id: <1403129285-5038-1-git-send-email-xerofoify@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 05, 2014 at 01:11:26PM +0100, Ian Abbott wrote:
-> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-> ---
-> I was originally going to put it in comedidev.h but as that gets passed
-> through the compiler more often, I thought it would be better in
-> comedi_buf.c.
+Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+---
+ fs/affs/file.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Stripping out comments is fast, please put it in the .h file in
-kerneldoc format so that tools can pick it out properly.
+diff --git a/fs/affs/file.c b/fs/affs/file.c
+index a7fe57d..f26482d 100644
+--- a/fs/affs/file.c
++++ b/fs/affs/file.c
+@@ -923,6 +923,8 @@ affs_truncate(struct inode *inode)
+ 
+ 	while (ext_key) {
+ 		ext_bh = affs_bread(sb, ext_key);
++		if (!ext_bh)
++			return;
+ 		size = AFFS_SB(sb)->s_hashsize;
+ 		if (size > blkcnt - blk)
+ 			size = blkcnt - blk;
+-- 
+1.9.1
 
-Oh, and please remove the trailing whitespace you added :)
-
-thanks,
-
-greg k-h
