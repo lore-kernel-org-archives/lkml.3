@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822AbaFRRYA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 13:24:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:33156 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753762AbaFRRX5 (ORCPT
+	id S1753794AbaFRR1O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 13:27:14 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:55936 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751366AbaFRR1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 13:23:57 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-To: kamal.mostafa@canonical.com
-Cc: clm@fb.com, jbacik@fb.com, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [3.13.y][SRU][PATCH 0/1] btrfs: fix defrag 32-bit integer overflow
-Date: Wed, 18 Jun 2014 13:23:53 -0400
-Message-Id: <cover.1403107937.git.joseph.salisbury@canonical.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 18 Jun 2014 13:27:13 -0400
+Date: Wed, 18 Jun 2014 13:27:08 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jet Chen <jet.chen@intel.com>
+Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: Re: [tracing] 939c7a4f04f: -46.4% cpuidle.C3-IVT.time
+Message-ID: <20140618132708.38f1a7fc@gandalf.local.home>
+In-Reply-To: <53A10460.1040705@intel.com>
+References: <53A10460.1040705@intel.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BugLink: http://bugs.launchpad.net/bugs/1324953
+On Wed, 18 Jun 2014 11:15:44 +0800
+Jet Chen <jet.chen@intel.com> wrote:
 
+> Hi Yoshihiro,
+> 
+> FYI, we noticed the below changes on
+> 
+> commit 939c7a4f04fcd2162109744e8bf88194948a6e65 ("tracing: Introduce saved_cmdlines_size file")
+> 
+> test case: brickland3/aim7/3000-brk_test
 
-Hello,
+Um, do these tests run with tracing enabled and on? If not, the code in
+the above mentioned commit is never executed.
 
-Please consider including upstream commit c41570c9 in the next v3.13.y release.  It was included upstream as of v3.14-rc2.  It has been tested and confirmed to resolve http://bugs.launchpad.net/bugs/1324953 .
+Something may be whacky with your bisect.
 
-commit c41570c9d29764f797fa35490d72b7395a0105c3
-Author: Justin Maggard <jmaggard10@gmail.com>
-Date:   Tue Jan 21 11:18:29 2014 -0800
+-- Steve
 
-    btrfs: fix defrag 32-bit integer overflow
-
-This commit is a clean cherry-pick against 3.13.y.
-
-Sincerely,
-Joseph Salisbury
-
-
-Justin Maggard (1):
-  btrfs: fix defrag 32-bit integer overflow
-
- fs/btrfs/ioctl.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
--- 
-2.0.0
+> 
+> beba4bb096201ce  939c7a4f04fcd2162109744e8
+> ---------------  -------------------------
 
