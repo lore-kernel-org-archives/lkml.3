@@ -1,125 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966136AbaFRKDm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 06:03:42 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:52297 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965419AbaFRKDi (ORCPT
+	id S966146AbaFRKEN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 06:04:13 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:42316 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965285AbaFRKEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 06:03:38 -0400
-X-IronPort-AV: E=Sophos;i="5.00,731,1396972800"; 
-   d="scan'208";a="32085266"
-From: "chenhanxiao@cn.fujitsu.com" <chenhanxiao@cn.fujitsu.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        David Howells <dhowells@redhat.com>,
-        "Richard Weinberger" <richard.weinberger@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segooon@gmail.com>,
-        "Gotou, Yasunori" <y-goto@jp.fujitsu.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        "Michael Kerrisk-manpages" <mtk.manpages@gmail.com>
-Subject: RE: [PATCH] ns: introduce getnspid syscall
-Thread-Topic: [PATCH] ns: introduce getnspid syscall
-Thread-Index: AQHPipUv5TGMUpp1ZEKRqyXdY2YAqJt2Fd6Q
-Date: Wed, 18 Jun 2014 10:03:40 +0000
-Message-ID: <5871495633F38949900D2BF2DC04883E548592@G08CNEXMBPEKD02.g08.fujitsu.local>
-References: <1403000496-10094-1-git-send-email-chenhanxiao@cn.fujitsu.com>
- <87fvj3ngv0.fsf@x220.int.ebiederm.org>
-In-Reply-To: <87fvj3ngv0.fsf@x220.int.ebiederm.org>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.226.240]
-Content-Type: text/plain; charset="gb2312"
+	Wed, 18 Jun 2014 06:04:10 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s5IA3W22023560, This message is accepted by code: ctloc85258
+Message-ID: <53A16517.7050705@realsil.com.cn>
+Date: Wed, 18 Jun 2014 18:08:23 +0800
+From: micky <micky_ching@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
+To: Ulf Hansson <ulf.hansson@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Chris Ball <chris@printf.net>, <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Roger <rogerable@realtek.com>, Wei WANG <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH 2/2] mmc: rtsx: add support for async request
+References: <cover.1402037562.git.micky_ching@realsil.com.cn>	<7b58fb0b0915ea0b0838404c74ec22a3b6e5f5a8.1402037565.git.micky_ching@realsil.com.cn>	<CAPDyKFq1wYZRbuwhLjTMbwN1KYgKuNuZDb7t8FV78Pa=W85oqg@mail.gmail.com>	<539EB43B.8070707@realsil.com.cn>	<CAPDyKFqKDAqvacwCVKM8KLjxfykpBq38MS_RgWCcA7+He4_S5w@mail.gmail.com>	<539F9412.3010209@realsil.com.cn>	<CAPDyKFqK8mLGc82FfEoxdHG7mioX7JmtFDO=18XZRkwQ4ykU2g@mail.gmail.com>	<53A0E89F.9010006@realsil.com.cn> <CAPDyKFqBy2jamW3EwMk64Cj85RvUmvAtE-ZFef-8R-Jt1Wu40Q@mail.gmail.com>
+In-Reply-To: <CAPDyKFqBy2jamW3EwMk64Cj85RvUmvAtE-ZFef-8R-Jt1Wu40Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5IA3lKF017277
 
-Hi,
+On 06/18/2014 03:39 PM, Ulf Hansson wrote:
+> On 18 June 2014 03:17, micky <micky_ching@realsil.com.cn> wrote:
+>> On 06/17/2014 03:45 PM, Ulf Hansson wrote:
+>>> On 17 June 2014 03:04, micky <micky_ching@realsil.com.cn> wrote:
+>>>> On 06/16/2014 08:40 PM, Ulf Hansson wrote:
+>>>>> On 16 June 2014 11:09, micky <micky_ching@realsil.com.cn> wrote:
+>>>>>> On 06/16/2014 04:42 PM, Ulf Hansson wrote:
+>>>>>>>> @@ -36,7 +37,10 @@ struct realtek_pci_sdmmc {
+>>>>>>>>>            struct rtsx_pcr         *pcr;
+>>>>>>>>>            struct mmc_host         *mmc;
+>>>>>>>>>            struct mmc_request      *mrq;
+>>>>>>>>> +       struct workqueue_struct *workq;
+>>>>>>>>> +#define SDMMC_WORKQ_NAME       "rtsx_pci_sdmmc_workq"
+>>>>>>>>>
+>>>>>>>>> +       struct work_struct      work;
+>>>>>>> I am trying to understand why you need a work/workqueue to implement
+>>>>>>> this feature. Is that really the case?
+>>>>>>>
+>>>>>>> Could you elaborate on the reasons?
+>>>>>> Hi Uffe,
+>>>>>>
+>>>>>> we need return as fast as possible in mmc_host_ops
+>>>>>> request(ops->request)
+>>>>>> callback,
+>>>>>> so the mmc core can continue handle next request.
+>>>>>> when next request everything is ready, it will wait previous done(if
+>>>>>> not
+>>>>>> done),
+>>>>>> then call ops->request().
+>>>>>>
+>>>>>> we can't use atomic context, because we use mutex_lock() to protect
+>>>>> ops->request should never executed in atomic context. Is that your
+>>>>> concern?
+>>>> Yes.
+>>> Okay. Unless I missed your point, I don't think you need the
+>>> work/workqueue.
+>> any other method?
+>>
+>>> Because, ops->request isn't ever executed in atomic context. That's
+>>> due to the mmc core, which handles the async mechanism, are waiting
+>>> for a completion variable in process context, before it invokes the
+>>> ops->request() callback.
+>>>
+>>> That completion variable will be kicked, from your host driver, when
+>>> you invoke mmc_request_done(), .
+>> Sorry, I don't understand here, how kicked?
+> mmc_request_done()
+>      ->mrq->done()
+>          ->mmc_wait_done()
+>              ->complete(&mrq->completion);
+>
+>> I think the flow is:
+>> - not wait for first req
+>> - init mrq->done
+>> - ops->request()                         ---         A.rtsx: start queue
+>> work.
+>> - continue fetch next req
+>> - prepare next req ok,
+>> - wait previous done.                --- B.(mmc_request_done() may be called
+>> at any time from A to B)
+>> - init mrq->done
+>> - ops->request()                         ---         C.rtsx: start queue
+>> next work.
+>> ...
+>> and seems no problem.
+> Right, I don't think there are any _problem_ by using the workqueue as
+> you have implemented, but I am questioning if it's correct. Simply
+> because I don't think there are any reasons to why you need a
+> workqueue, it doesn't solve any problem for you - it just adds
+> overhead.
+Hi Uffe,
 
-> -----Original Message-----
-> From: Eric W. Biederman [mailto:ebiederm@xmission.com]
-> Sent: Wednesday, June 18, 2014 9:31 AM
-> To: Chen, Hanxiao/³Â êÏÏö
-> Cc: containers@lists.linux-foundation.org; linux-kernel@vger.kernel.org;
-> Andrew Morton; Serge Hallyn; Daniel P. Berrange; Oleg Nesterov; Al Viro; David
-> Howells; Richard Weinberger; Pavel Emelyanov; Vasiliy Kulikov; Gotou, Yasunori/
-> Îåu ¿µÎÄ; Linux API; Michael Kerrisk-manpages
-> Subject: Re: [PATCH] ns: introduce getnspid syscall
-> 
-> Chen Hanxiao <chenhanxiao@cn.fujitsu.com> writes:
-> 
-> > We need a direct method of getting the pid inside containers.
-> > If some issues occurred inside container guest, host user
-> > could not know which process is in trouble just by guest pid:
-> > the users of container guest only knew the pid inside containers.
-> > This will bring obstacle for trouble shooting.
-> 
-> There is also some ongoing work to export this information via a proc
-> file which seems more appropriate for solving your problem.  Certainly
-> for debugging something easily human discoverable is needed.
-> 
+we have two driver under mfd, the rtsx-mmc and rtsx-ms,
+we use mutex lock(pcr_mutex) to protect resource,
+when we handle mmc request, we need hold the mutex until we finish the 
+request,
+so it will not interruptted by rtsx-ms request.
 
-Do you mean this patch:
-/proc/pid/status: show all sets of pid according to ns
-https://lkml.org/lkml/2014/5/26/145
+If we not use workq, once the request hold the mutex, we have to wait 
+until the request finish,
+then release mutex, so the mmc core is blocking at here.
+To implement nonblocking request, we have to use workq.
 
-But no new comments on this patch,
-Pavel suggested that a syscall should be a good choice.
-Do we should continue this kind of work?
+Best Regards.
+micky.
 
-> > int getnspid(pid_t pid, int fd1, int fd2, int pidtype);
-> 
-> The pidtype is nonsense.  The translation of a pid does not depend upon
-> type.  Using that kind of nonsense will lead you and others into confusion.
-> 
+>
+> Kind regards
+> Ulf Hansson
+> .
+>
 
-I see.
-
-> > pid: the pid number need to be translated.
-> >
-> > fd: a file descriptor referring to one of
-> >     the namespace entries in a /proc/[pid]/ns/pid.
-> >     fd1 for destination ns(ns1), where the pid came from.
-> >     fd2 for reference ns(ns2), while fd2 = -2 means for current ns.
-> >
-> > pidtype: 0 PIDTYPE_PID; 1 PIDTYPE_PGID; 2 PIDTYPE_SID.
-> >
-> > return value:
-> >     >0: translated pid in ns1(fd1) seen from ns2(fd2).
-> >     <0: on failure.
-> 
-> Elsewhere we use 0 on pid translation failure.  Why be different here?
-> 
-
-It should be <=0. And <0 means some other failures.
-
-> Eric
-> 
-> 
-> > Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
-> > +
-> > +	rcu_read_lock();
-> > +	task = find_task_by_pid_ns(pid, ns1);
-> 
-> The functions you want to be using here are:
-> find_pid_ns and pid_nr_ns.
-> 
-
-Thanks for your hint.
-
-- Chen
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
