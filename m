@@ -1,46 +1,731 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939AbaFRPB5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 11:01:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46896 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751251AbaFRPBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 11:01:07 -0400
-Message-ID: <53A1A98D.8050408@zytor.com>
-Date: Wed, 18 Jun 2014 08:00:29 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752983AbaFRPCK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 11:02:10 -0400
+Received: from mail-by2lp0244.outbound.protection.outlook.com ([207.46.163.244]:13838
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752953AbaFRPCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 11:02:06 -0400
+Date: Wed, 18 Jun 2014 23:01:53 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+CC: Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sascha Hauer <kernel@pengutronix.de>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: dts: add support for Ka-Ro TX51
+Message-ID: <20140618150152.GP8860@dragon>
+References: <1402578584-12640-1-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Dave Hansen <dave.hansen@intel.com>
-CC: Qiaowei Ren <qiaowei.ren@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 03/10] x86, mpx: add macro cpu_has_mpx
-References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com> <1403084656-27284-4-git-send-email-qiaowei.ren@intel.com> <20140618095739.GA24419@pd.tnic> <53A1A3A5.9010109@intel.com> <20140618144429.GD24024@pd.tnic>
-In-Reply-To: <20140618144429.GD24024@pd.tnic>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1402578584-12640-1-git-send-email-LW@KARO-electronics.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(51704005)(189002)(199002)(24454002)(50466002)(83072002)(50986999)(46102001)(23756003)(54356999)(76176999)(76482001)(21056001)(77982001)(79102001)(105606002)(74662001)(81542001)(74502001)(575784001)(86362001)(31966008)(26826002)(92566001)(97736001)(99396002)(81156003)(92726001)(85852003)(95666004)(85306003)(33716001)(104016002)(15202345003)(6806004)(19580405001)(19580395003)(80022001)(68736004)(81342001)(83506001)(15975445006)(83322001)(44976005)(84676001)(69596002)(57986006)(47776003)(33656002)(102836001)(64706001)(87936001)(4396001)(20776003)(414714003)(473944003);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR0301MB0629;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02462830BE
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Shawn.Guo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2014 07:44 AM, Borislav Petkov wrote:
+On Thu, Jun 12, 2014 at 03:09:44PM +0200, Lothar Waﬂmann wrote:
+> Add support for Ka-Ro electronics i.MX51 based TX51 modules
 > 
-> Why?
+> Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
+> ---
+>  arch/arm/boot/dts/Makefile       |    1 +
+>  arch/arm/boot/dts/imx51-tx51.dts |  620 ++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 621 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/imx51-tx51.dts
 > 
-> Practically, distros will have it enabled anyway (you have X86_INTEL_MPX
-> depend on CPU_SUP_INTEL).
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index 0f1e8be..8dd4dbc 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -177,6 +177,7 @@ dtb-$(CONFIG_ARCH_MXC) += \
+>  	imx51-babbage.dtb \
+>  	imx51-digi-connectcore-jsk.dtb \
+>  	imx51-eukrea-mbimxsd51-baseboard.dtb \
+> +	imx51-tx51.dtb \
+>  	imx53-ard.dtb \
+>  	imx53-m53evk.dtb \
+>  	imx53-mba53.dtb \
+> diff --git a/arch/arm/boot/dts/imx51-tx51.dts b/arch/arm/boot/dts/imx51-tx51.dts
+> new file mode 100644
+> index 0000000..9ae7758
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/imx51-tx51.dts
+> @@ -0,0 +1,620 @@
+> +/*
+> + * Copyright 2012-2014 Lothar Waﬂmann <LW@KARO-electronics.de>
+> + *
+> + * The code contained herein is licensed under the GNU General Public
+> + * License. You may obtain a copy of the GNU General Public License
+> + * Version 2 at the following locations:
+> + *
+> + * http://www.opensource.org/licenses/gpl-license.html
+> + * http://www.gnu.org/copyleft/gpl.html
+> + */
+> +
+> +/dts-v1/;
+> +#include "imx51.dtsi"
+> +#include <dt-bindings/gpio/gpio.h>
+> +#include <dt-bindings/input/input.h>
+
+imx51.dtsi already includes them.
+
+> +#include <dt-bindings/pwm/pwm.h>
+> +
+> +/ {
+> +	model = "Ka-Ro electronics TX51 module";
+> +	compatible = "karo,tx51", "fsl,imx51";
+> +
+> +	aliases {
+> +		backlight = &backlight;
+> +		display = &display;
+> +		i2c1 = &i2c_gpio;
+> +		usbotg = &usbotg;
+> +	};
+> +
+> +	chosen {
+> +		stdout-path = &uart1;
+> +	};
+> +
+> +	backlight: pwm-backlight {
+> +		compatible = "pwm-backlight";
+> +
+
+Drop this new line.
+
+> +		pwms = <&pwm1 0 500000 PWM_POLARITY_INVERTED>;
+> +		power-supply = <&reg_3v3>;
+> +		brightness-levels = <
+> +			  0  1  2  3  4  5  6  7  8  9
+> +			 10 11 12 13 14 15 16 17 18 19
+> +			 20 21 22 23 24 25 26 27 28 29
+> +			 30 31 32 33 34 35 36 37 38 39
+> +			 40 41 42 43 44 45 46 47 48 49
+> +			 50 51 52 53 54 55 56 57 58 59
+> +			 60 61 62 63 64 65 66 67 68 69
+> +			 70 71 72 73 74 75 76 77 78 79
+> +			 80 81 82 83 84 85 86 87 88 89
+> +			 90 91 92 93 94 95 96 97 98 99
+> +			100
+> +		>;
+> +		default-brightness-level = <50>;
+> +	};
+> +
+> +	clocks {
+> +		ckih1 {
+> +			clock-frequency = <0>;
+> +		};
+> +
+> +		mclk: clock@0 {
+> +			compatible = "fixed-clock";
+> +			reg = <0>;
+> +			#clock-cells = <0>;
+> +			clock-frequency = <27000000>;
+> +		};
+> +
+> +		clk_26M: clock@1 {
+
+When using generic name, you will need clock-output-names property.
+Otherwise, the clocks will fail in registration except the first one,
+because of clock name collision.
+
+> +			compatible = "fixed-clock";
+> +			reg = <1>;
+> +			#clock-cells = <0>;
+> +			clock-frequency = <26000000>;
+> +			gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
+> +		};
+> +	};
+> +
+> +	display: display@di0 {
+> +		compatible = "fsl,imx-parallel-display";
+> +		interface-pix-fmt = "rgb24";
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <&pinctrl_ipu_disp0>;
+> +
+> +		port {
+> +			display0_in: endpoint {
+> +				remote-endpoint = <&ipu_di0_disp0>;
+> +			};
+> +		};
+> +
+> +		display-timings {
+> +			VGA {
+> +				clock-frequency = <25200000>;
+> +				hactive = <640>;
+> +				vactive = <480>;
+> +				hback-porch = <48>;
+> +				hsync-len = <96>;
+> +				hfront-porch = <16>;
+> +				vback-porch = <31>;
+> +				vsync-len = <2>;
+> +				vfront-porch = <12>;
+> +				hsync-active = <0>;
+> +				vsync-active = <0>;
+> +				de-active = <1>;
+> +				pixelclk-active = <0>;
+> +			};
+> +
+> +			ETV570 {
+> +				clock-frequency = <25200000>;
+> +				hactive = <640>;
+> +				vactive = <480>;
+> +				hback-porch = <114>;
+> +				hsync-len = <30>;
+> +				hfront-porch = <16>;
+> +				vback-porch = <32>;
+> +				vsync-len = <3>;
+> +				vfront-porch = <10>;
+> +				hsync-active = <0>;
+> +				vsync-active = <0>;
+> +				de-active = <1>;
+> +				pixelclk-active = <0>;
+> +			};
+> +
+> +			ET0350 {
+> +				clock-frequency = <6413760>;
+> +				hactive = <320>;
+> +				vactive = <240>;
+> +				hback-porch = <34>;
+> +				hsync-len = <34>;
+> +				hfront-porch = <20>;
+> +				vback-porch = <15>;
+> +				vsync-len = <3>;
+> +				vfront-porch = <4>;
+> +				hsync-active = <0>;
+> +				vsync-active = <0>;
+> +				de-active = <1>;
+> +				pixelclk-active = <0>;
+> +			};
+> +
+> +			ET0430 {
+> +				clock-frequency = <9009000>;
+> +				hactive = <480>;
+> +				vactive = <272>;
+> +				hback-porch = <2>;
+> +				hsync-len = <41>;
+> +				hfront-porch = <2>;
+> +				vback-porch = <2>;
+> +				vsync-len = <10>;
+> +				vfront-porch = <2>;
+> +				hsync-active = <0>;
+> +				vsync-active = <0>;
+> +				de-active = <1>;
+> +				pixelclk-active = <1>;
+> +			};
+> +
+> +			ET0500 {
+> +				clock-frequency = <33264000>;
+> +				hactive = <800>;
+> +				vactive = <480>;
+> +				hback-porch = <88>;
+> +				hsync-len = <128>;
+> +				hfront-porch = <40>;
+> +				vback-porch = <33>;
+> +				vsync-len = <2>;
+> +				vfront-porch = <10>;
+> +				hsync-active = <0>;
+> +				vsync-active = <0>;
+> +				de-active = <1>;
+> +				pixelclk-active = <0>;
+> +			};
+> +
+> +			ET0700 { /* same as ET0500 */
+> +				clock-frequency = <33264000>;
+> +				hactive = <800>;
+> +				vactive = <480>;
+> +				hback-porch = <88>;
+> +				hsync-len = <128>;
+> +				hfront-porch = <40>;
+> +				vback-porch = <33>;
+> +				vsync-len = <2>;
+> +				vfront-porch = <10>;
+> +				hsync-active = <0>;
+> +				vsync-active = <0>;
+> +				de-active = <1>;
+> +				pixelclk-active = <0>;
+> +			};
+> +
+> +			ETQ570 {
+> +				clock-frequency = <6596040>;
+> +				hactive = <320>;
+> +				vactive = <240>;
+> +				hback-porch = <38>;
+> +				hsync-len = <30>;
+> +				hfront-porch = <30>;
+> +				vback-porch = <16>;
+> +				vsync-len = <3>;
+> +				vfront-porch = <4>;
+> +				hsync-active = <0>;
+> +				vsync-active = <0>;
+> +				de-active = <1>;
+> +				pixelclk-active = <0>;
+> +			};
+> +		};
+> +	};
+> +
+> +	i2c_gpio: i2c-gpio {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		compatible = "i2c-gpio";
+> +		gpios = <&gpio4 17 0
+> +			 &gpio4 16 0>;
+> +		clock-frequency = <400000>;
+> +
+> +		rtc1: ds1339@68 {
+> +			compatible = "dallas,ds1339";
+> +			reg = <0x68>;
+> +		};
+> +	};
+> +
+> +	leds {
+> +		compatible = "gpio-leds";
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <&pinctrl_stk5led>;
+> +
+> +		user {
+> +			label = "Heartbeat";
+> +			gpios = <&gpio4 10 0 GPIO_ACTIVE_HIGH>;
+> +			linux,default-trigger = "heartbeat";
+> +		};
+> +	};
+> +
+> +	regulators {
+> +		compatible = "simple-bus";
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +
+> +		reg_2v5: regulator@0 {
+> +			compatible = "regulator-fixed";
+> +			reg = <0>;
+> +			regulator-name = "2V5";
+> +			regulator-min-microvolt = <2500000>;
+> +			regulator-max-microvolt = <2500000>;
+> +			regulator-always-on;
+> +		};
+> +
+> +		reg_3v3: regulator@1 {
+> +			compatible = "regulator-fixed";
+> +			reg = <1>;
+> +			regulator-name = "3V3";
+> +			regulator-min-microvolt = <3300000>;
+> +			regulator-max-microvolt = <3300000>;
+> +			regulator-always-on;
+> +		};
+> +
+> +		reg_etn_phy: regulator@2 {
+> +			compatible = "regulator-fixed";
+> +			reg = <2>;
+> +			regulator-name = "ETN PHY Power";
+> +			regulator-min-microvolt = <3300000>;
+> +			regulator-max-microvolt = <3300000>;
+> +			gpio = <&gpio1 3 GPIO_ACTIVE_HIGH>;
+> +			enable-active-high;
+> +			regulator-boot-on;
+> +			regulator-always-on;
+> +		};
+> +
+> +		reg_lcd_pwr: regulator@5 {
+> +			compatible = "regulator-fixed";
+> +			reg = <5>;
+> +			regulator-name = "LCD POWER";
+> +			regulator-min-microvolt = <3300000>;
+> +			regulator-max-microvolt = <3300000>;
+> +			gpio = <&gpio4 14 GPIO_ACTIVE_HIGH>;
+> +			enable-active-high;
+> +			regulator-boot-on;
+> +			regulator-always-on;
+> +		};
+> +
+> +		reg_lcd_reset: regulator@6 {
+> +			compatible = "regulator-fixed";
+> +			reg = <6>;
+> +			regulator-name = "LCD RESET";
+> +			regulator-min-microvolt = <3300000>;
+> +			regulator-max-microvolt = <3300000>;
+> +			pinctrl-names = "default";
+> +			pinctrl-0 = <&pinctrl_lcd_reset>;
+> +			gpio = <&gpio4 13 GPIO_ACTIVE_HIGH>;
+> +			enable-active-high;
+> +			regulator-boot-on;
+> +			regulator-always-on;
+> +		};
+> +	};
+> +
+> +	sound {
+> +		compatible = "karo,tx51-audio-sgtl5000", "fsl,imx-sgtl5000";
+> +		model = "tx53-audio-sgtl5000";
+> +		ssi-controller = <&ssi1>;
+> +		audio-codec = <&sgtl5000>;
+> +		audio-routing =
+> +			"MIC_IN", "Mic Jack",
+> +			"Mic Jack", "Mic Bias",
+> +			"Headphone Jack", "HP_OUT";
+> +		/* '1' based port numbers according to datasheet names */
+> +		mux-int-port = <1>;
+> +		mux-ext-port = <3>;
+> +		sysclk = <26000000>;
+> +	};
+> +
+> +	usbphy {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		compatible = "simple-bus";
+> +
+> +		usbh1phy: usbh1phy@0 {
+
+The node name should be something generic like usbphy?
+
+> +			compatible = "usb-nop-xceiv";
+> +			reg = <0>;
+> +			clocks = <&clk_26M>;
+> +			clock-names = "main_clk";
+> +		};
+> +	};
+> +};
+> +
+> +&audmux {
+> +	status = "okay";
+> +};
+> +
+> +&fec {
+> +	pinctrl-names = "default";
+> +	pinctrl-0 = <&pinctrl_fec>;
+> +	phy-mode = "mii";
+> +//	phy-reset-gpios = <&gpio2 14 GPIO_ACTIVE_LOW>;
+
+Drop it?
+
+> +	phy-handle = <&phy0>;
+> +	mac-address = [000000000000]; /* will be set by U-Boot */
+
+Shouldn't it be local-mac-address?
+
+> +	status = "okay";
+> +
+> +	phy0: ethernet-phy@0 {
+> +		interrupt-parent = <&gpio3>;
+> +		interrupts = <18 0>;
+> +		device_type = "ethernet-phy";
+> +	};
+> +};
+> +
+> +&ipu {
+> +	status = "okay";
+> +};
+> +
+> +&i2c2 {
+> +	status = "okay";
+> +
+> +	sgtl5000: sgtl5000@0a {
+> +		compatible = "fsl,sgtl5000";
+> +		reg = <0x0a>;
+> +		clocks = <&mclk>;
+> +		VDDA-supply = <&reg_2v5>;
+> +		VDDIO-supply = <&reg_3v3>;
+> +	};
+> +
+> +	polytouch: edt-ft5x06@38 {
+> +		compatible = "edt,edt-ft5x06";
+> +		reg = <0x38>;
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <&pinctrl_edt_ft5x06>;
+> +		interrupt-parent = <&gpio1>;
+> +		interrupts = <5 0>;
+> +		reset-gpios = <&gpio4 15 GPIO_ACTIVE_LOW>;
+> +		wake-gpios = <&gpio4 9 GPIO_ACTIVE_HIGH>;
+> +	};
+> +
+> +	touchscreen: tsc2007@48 {
+> +		compatible = "ti,tsc2007";
+> +		reg = <0x48>;
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <&pinctrl_tsc2007>;
+> +		interrupt-parent = <&gpio3>;
+> +		interrupts = <3 0>;
+> +		gpios = <&gpio3 3 GPIO_ACTIVE_LOW>;
+> +		ti,x-plate-ohms = <660>;
+> +		linux,wakeup;
+> +	};
+> +};
+> +
+> +&iomuxc {
+> +	imx51-tx51 {
+> +		pinctrl_hog: hoggrp {
+> +			fsl,pins = <
+> +				MX51_PAD_GPIO1_7__GPIO1_7	0x20e0	/* 26MHz osc enable */
+> +			>;
+> +		};
+> +
+> +		pinctrl_edt_ft5x06: edt-ft5x056grp {
+> +			fsl,pins = <
+> +				MX51_PAD_GPIO1_5__GPIO1_5	0x20e0	/* Interrupt */
+> +				MX51_PAD_CSI2_PIXCLK__GPIO4_15	0x20e0	/* Reset */
+> +				MX51_PAD_CSI2_D12__GPIO4_9	0x20e0	/* Wake */
+> +			>;
+> +		};
+> +
+> +		pinctrl_fec: fecgrp {
+> +			fsl,pins = <
+> +				MX51_PAD_EIM_A20__GPIO2_14	0x20e4	/* PHY reset */
+> +				MX51_PAD_GPIO1_3__GPIO1_3	0x20e4	/* PHY power */
+> +				MX51_PAD_NANDF_CS3__FEC_MDC	0x2004
+> +				MX51_PAD_EIM_EB2__FEC_MDIO	0x0005
+> +				MX51_PAD_NANDF_RB3__FEC_RX_CLK	0x2000
+> +				MX51_PAD_NANDF_D11__FEC_RX_DV	0x2000
+> +				MX51_PAD_NANDF_D9__FEC_RDATA0	0x2000
+> +				MX51_PAD_EIM_EB3__FEC_RDATA1	0x0001
+> +				MX51_PAD_EIM_CS2__FEC_RDATA2	0x0001
+> +				MX51_PAD_EIM_CS3__FEC_RDATA3	0x0001
+> +				MX51_PAD_EIM_CS4__FEC_RX_ER	0x0001
+> +				MX51_PAD_NANDF_RDY_INT__FEC_TX_CLK 0x2000
+> +				MX51_PAD_NANDF_CS7__FEC_TX_EN	0x2004
+> +				MX51_PAD_NANDF_D8__FEC_TDATA0	0x2004
+> +				MX51_PAD_NANDF_CS4__FEC_TDATA1	0x2004
+> +				MX51_PAD_NANDF_CS5__FEC_TDATA2	0x2004
+> +				MX51_PAD_NANDF_CS6__FEC_TDATA3	0x2004
+> +				MX51_PAD_NANDF_RB2__FEC_COL	0x2000
+> +				MX51_PAD_EIM_CS5__FEC_CRS	0x0005
+> +				MX51_PAD_NANDF_CS2__GPIO3_18	0x20e4
+> +			>;
+> +		};
+> +
+> +		pinctrl_fec_gpio: fec-gpiogrp {
+> +			fsl,pins = <
+> +				MX51_PAD_EIM_A20__GPIO2_14	0x20e4	/* PHY reset */
+> +				MX51_PAD_GPIO1_3__GPIO1_3	0x20e4	/* PHY power */
+> +				MX51_PAD_NANDF_RB3__GPIO3_11	0x20e4	/* RX_CLK/REGOFF */
+> +				MX51_PAD_NANDF_D9__GPIO3_31	0x20e4	/* RXD0/Mode0 */
+> +				MX51_PAD_EIM_EB3__GPIO2_23	0x20e4	/* RXD1/Mode1 */
+> +				MX51_PAD_EIM_CS2__GPIO2_27	0x20e4	/* RXD2/Mode2 */
+> +				MX51_PAD_EIM_CS3__GPIO2_28	0x20e4	/* RXD3/nINTSEL */
+> +				MX51_PAD_NANDF_RB2__GPIO3_10	0x20e4	/* COL/RMII/CRSDV */
+> +				MX51_PAD_EIM_CS5__GPIO2_30	0x20e4	/* CRS/PHYAD4 */
+> +			>;
+> +		};
+> +
+> +		pinctrl_ipu_disp0: ipu-disp0grp {
+> +			fsl,pins = <
+> +			>;
+> +		};
+> +
+> +		pinctrl_kpp_2: kppgrp-2 {
+> +			fsl,pins = <
+> +				MX51_PAD_KEY_ROW0__KEY_ROW0	0xe0
+> +				MX51_PAD_KEY_ROW1__KEY_ROW1	0xe0
+> +				MX51_PAD_KEY_ROW2__KEY_ROW2	0xe0
+> +				MX51_PAD_KEY_ROW3__KEY_ROW3	0xe0
+> +				MX51_PAD_KEY_COL0__KEY_COL0	0xe8
+> +				MX51_PAD_KEY_COL1__KEY_COL1	0xe8
+> +				MX51_PAD_KEY_COL2__KEY_COL2	0xe8
+> +				MX51_PAD_KEY_COL3__KEY_COL3	0xe8
+> +				MX51_PAD_KEY_COL4__KEY_COL4	0xe8
+> +				MX51_PAD_KEY_COL5__KEY_COL5	0xe8
+> +			>;
+> +		};
+> +
+> +		pinctrl_lcd_pwr: lcd-pwrgrp {
+> +			fsl,pins = <
+> +				MX51_PAD_CSI2_HSYNC__GPIO4_14	0x04
+> +			>;
+> +		};
+> +
+> +		pinctrl_lcd_reset: lcd-resetgrp {
+> +			fsl,pins = <
+> +				MX51_PAD_CSI2_VSYNC__GPIO4_13	0x04
+> +			>;
+> +		};
+> +
+> +		pinctrl_pwm1: pwm1grp {
+> +			fsl,pins = <
+> +				MX51_PAD_GPIO1_2__PWM1_PWMO	0x0f4
+> +			>;
+> +		};
+> +
+> +		pinctrl_stk5led: stk5ledgrp {
+> +			fsl,pins = <
+> +				MX51_PAD_CSI2_D13__GPIO4_10	0x20e4
+> +			>;
+> +		};
+> +
+> +		pinctrl_tsc2007: tsc2007grp {
+> +			fsl,pins = <
+> +				MX51_PAD_DI1_D0_CS__GPIO3_3	0xc0	/* Interrupt */
+> +			>;
+> +		};
+> +
+> +		pinctrl_uart1: uart1grp {
+> +			fsl,pins = <
+> +				MX51_PAD_UART1_RXD__UART1_RXD	0x1c1
+> +				MX51_PAD_UART1_TXD__UART1_TXD	0x1c5
+> +				MX51_PAD_UART1_RTS__UART1_RTS	0x1c1
+> +				MX51_PAD_UART1_CTS__UART1_CTS	0x1c5
+> +			>;
+> +		};
+> +
+> +		pinctrl_uart2: uart2grp {
+> +			fsl,pins = <
+> +				MX51_PAD_UART2_RXD__UART2_RXD	0x1c1
+> +				MX51_PAD_UART2_TXD__UART2_TXD	0x1c5
+> +				MX51_PAD_EIM_D26__UART2_RTS	0x1c1
+> +				MX51_PAD_EIM_D25__UART2_CTS	0x1c5
+> +			>;
+> +		};
+> +
+> +		pinctrl_uart3: uart3grp {
+> +			fsl,pins = <
+> +				MX51_PAD_UART3_RXD__UART3_RXD	0x1c1
+> +				MX51_PAD_UART3_TXD__UART3_TXD	0x1c5
+> +				MX51_PAD_EIM_D18__UART3_RTS	0x1c1
+> +				MX51_PAD_EIM_D17__UART3_CTS	0x1c5
+> +			>;
+> +		};
+> +	};
+> +};
+> +
+> +&ipu_di0_disp0 {
+> +	remote-endpoint = <&display0_in>;
+> +};
+> +
+> +&kpp {
+> +	status = "okay";
+
+Put 'status' at the bottom of property list.
+> +
+> +	linux,keymap = <	/* sample keymap */
+> +		MATRIX_KEY(0, 0, KEY_POWER)
+> +		MATRIX_KEY(0, 1, KEY_KP0)
+> +		MATRIX_KEY(0, 2, KEY_KP1)
+> +		MATRIX_KEY(0, 3, KEY_KP2)
+> +		MATRIX_KEY(1, 0, KEY_KP3)
+> +		MATRIX_KEY(1, 1, KEY_KP4)
+> +		MATRIX_KEY(1, 2, KEY_KP5)
+> +		MATRIX_KEY(1, 3, KEY_KP6)
+> +		MATRIX_KEY(2, 0, KEY_KP7)
+> +		MATRIX_KEY(2, 1, KEY_KP8)
+> +		MATRIX_KEY(2, 2, KEY_KP9)
+> +	>;
+> +};
+> +
+> +&esdhc1 {
+> +	cd-gpios = <&gpio3 8 GPIO_ACTIVE_LOW>;
+> +	fsl,wp-controller;
+
+Does it work for you, since the driver does not support it as of today?
+
+> +	status = "okay";
+> +};
+> +
+> +&esdhc2 {
+> +	cd-gpios = <&gpio3 6 GPIO_ACTIVE_LOW>;
+> +	fsl,wp-controller;
+> +	status = "okay";
+> +};
+> +
+> +&pwm1 {
+> +	pinctrl-names = "default";
+> +	pinctrl-0 = <&pinctrl_pwm1>;
+> +};
+> +
+> +&ecspi1 {
+> +	fsl,spi-num-chipselects = <2>;
+> +	cs-gpios = <&gpio4 24 GPIO_ACTIVE_LOW &gpio4 25 GPIO_ACTIVE_LOW>;
+
+More readable to write it like below?
+
+	cs-gpios = <&gpio4 24 GPIO_ACTIVE_LOW>,
+		   <&gpio4 25 GPIO_ACTIVE_LOW>;
+
+> +	status = "okay";
+> +
+> +	spidev0: spi@0 {
+> +		compatible = "spidev";
+> +		reg = <0>;
+> +		spi-max-frequency = <54000000>;
+> +	};
+> +
+> +	spidev1: spi@1 {
+> +		compatible = "spidev";
+> +		reg = <1>;
+> +		spi-max-frequency = <54000000>;
+> +	};
+
+I'm not sure we should have these two devices.
+
+> +};
+> +
+> +&ssi1 {
+> +	fsl,mode = "i2s-slave";
+> +	codec-handle = <&sgtl5000>;
+> +	status = "okay";
+> +};
+> +
+> +&ssi2 {
+> +	status = "disabled";
+> +};
+
+Why is this needed, since the device is disabled in imx51.dtsi?
+
+> +
+> +&uart1 {
+> +	pinctrl-names = "default";
+> +	pinctrl-0 = <&pinctrl_uart1>;
+> +	fsl,uart-has-rtscts;
+> +	status = "okay";
+> +};
+> +
+> +&uart2 {
+> +	pinctrl-names = "default";
+> +	pinctrl-0 = <&pinctrl_uart2>;
+> +	fsl,uart-has-rtscts;
+> +	status = "okay";
+> +};
+> +
+> +&uart3 {
+> +	pinctrl-names = "default";
+> +	pinctrl-0 = <&pinctrl_uart3>;
+> +	fsl,uart-has-rtscts;
+> +	status = "okay";
+> +};
+> +
+> +&usbh1 {
+> +	phy_type = "ulpi";
+> +	fsl,usbphy = <&usbh1phy>;
+> +	ignore-overcurrent;
+> +	enable-wakeup;
+> +	status = "okay";
+> +};
+> +
+> +&usbotg {
+> +	ignore-overcurrent;
+> +	enable-wakeup;
+> +	phy_type = "utmi_wide";
+> +	status = "okay";
+> +};
+> +
+> +&nfc {
+
+Please sort the nodes alphabetically.
+
+Shawn
+
+> +	nand-bus-width = <8>;
+> +	nand-ecc-mode = "hw";
+> +	nand-on-flash-bbt;
+> +	status = "okay";
+> +};
+> -- 
+> 1.7.10.4
 > 
-> Are you talking about the miniscule percentage of people building their
-> own kernels?
-> 
-
-We have people working hard to shave kilobytes off the smallest
-configurations, because they want to fit into a megabyte of memory with
-the kernel and application.
-
-Let's try to not make their life harder than it needs to be.
-
-	-hpa
-
