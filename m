@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966037AbaFRJuw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 05:50:52 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39081 "EHLO comal.ext.ti.com"
+	id S966061AbaFRJvP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 05:51:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:24700 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964840AbaFRJut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 05:50:49 -0400
-Message-ID: <53A160D1.8000908@ti.com>
-Date: Wed, 18 Jun 2014 15:20:09 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        devicetree <devicetree@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] phy: miphy365x: Add Device Tree bindings for the
- MiPHY365x
-References: <1400766819-22286-1-git-send-email-lee.jones@linaro.org> <1400766819-22286-2-git-send-email-lee.jones@linaro.org> <5396E561.4020805@ti.com> <20140617112353.GB4139@lee--X1>
-In-Reply-To: <20140617112353.GB4139@lee--X1>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S965781AbaFRJsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 05:48:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,499,1400050800"; 
+   d="scan'208";a="530353782"
+From: Qiaowei Ren <qiaowei.ren@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Dave Hansen <dave.hansen@intel.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Qiaowei Ren <qiaowei.ren@intel.com>
+Subject: [PATCH v6 03/10] x86, mpx: add macro cpu_has_mpx
+Date: Wed, 18 Jun 2014 17:44:09 +0800
+Message-Id: <1403084656-27284-4-git-send-email-qiaowei.ren@intel.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
+References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+In order to do performance optimization, this patch adds macro
+cpu_has_mpx which will directly return 0 when MPX is not supported
+by kernel.
 
-On Tuesday 17 June 2014 04:53 PM, Lee Jones wrote:
->>> The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
->>> devices. It has 2 ports which it can use for either; both SATA, both
->>> PCIe or one of each in any configuration.
->>
->> I've asked others who wrote multi-phy PHY providers to model each individual
->> PHY as sub-node of the PHY provider. So It's only fair I ask you the same to
->> do. So in this case the dt node should look something like:
->>
->> 	miphy365x_phy: miphy365x@fe382000 {
->> 		compatible = "st,miphy365x-phy";
->> 		#phy-cells = <2>;
->> 		st,syscfg = <&syscfg_rear>;
->> 		channel@0 {
->> 			reg =	<0xfe382000 0x100>, <0xfe394000 0x100>;
->> 			reg-names = "sata", "pcie";
->> 		}
->>
->> 		channel@1{
->> 			reg =	<0xfe38a000 0x100>, <0xfe804000 0x100>;
->> 			reg-names = "sata", "pcie";
->> 		}
->>
->> 	};
-> 
-> I'm interested to know why you've taken this approach, as it makes the
-> code much more complex.  The DT framework goes to the trouble of
+Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+---
+ arch/x86/include/asm/cpufeature.h |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-It looks to be much closer representation of the hardware in dt. It also
-enables to have more control of each individual PHYs. For example, we can have
-something like status="disabled" for channels which is disabled.
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index e265ff9..f302d08 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -339,6 +339,12 @@ extern const char * const x86_power_flags[32];
+ #define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
+ #define cpu_has_topoext		boot_cpu_has(X86_FEATURE_TOPOEXT)
+ 
++#ifdef CONFIG_X86_INTEL_MPX
++#define cpu_has_mpx boot_cpu_has(X86_FEATURE_MPX)
++#else
++#define cpu_has_mpx 0
++#endif /* CONFIG_X86_INTEL_MPX */
++
+ #ifdef CONFIG_X86_64
+ 
+ #undef  cpu_has_vme
+-- 
+1.7.1
 
-> converting all addresses to to resources so drivers can easily pull
-> them out using platform_get_resource() and friends.  Pushing the reg
-
-right. Can't we use of_address_to_resource here?
-> properties down into a child node means that we have to now iterate
-> over the sub-nodes and pull them out manually.  This will lead to a
-
-You anyway iterate while creating PHYs based on some constant. Now you have to
-iterate over the sub-nodes.
-> pretty messy implementation IMHO.
-
-
-> 
-> Can you point me in the direction of previous implementations where you
-> have stipulated the same set of constraints please?
-
-ah.. there isn't any. The author of the other multi-phy driver [1] also feels
-this will just add to the complexity of the driver.
-
-Maybe we should ask the opinion of others?
-
-[1] -> http://www.spinics.net/lists/linux-sh/msg32087.html
-> 
