@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756787AbaFRXwg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 19:52:36 -0400
+	id S1756733AbaFRXwb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 19:52:31 -0400
 Received: from mailout3.samsung.com ([203.254.224.33]:18757 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756767AbaFRXwe (ORCPT
+	with ESMTP id S1755154AbaFRXwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 19:52:34 -0400
-X-AuditID: cbfee691-b7f2f6d0000040c4-30-53a2263dccef
+	Wed, 18 Jun 2014 19:52:30 -0400
+X-AuditID: cbfee68f-b7fef6d000003970-36-53a2263cd891
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: lee.jones@linaro.org, sbkim73@samsung.com, sameo@linux.intel.com,
         broonie@kernel.org
 Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
         linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv7 3/4] dt-bindings: mfd: s2mps11: Add support S2MPU02 PMIC
-Date: Thu, 19 Jun 2014 08:52:24 +0900
-Message-id: <1403135545-7451-4-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCHv7 0/4] mfd: sec-core: Add support S2MPU02 PMIC device
+Date: Thu, 19 Jun 2014 08:52:21 +0900
+Message-id: <1403135545-7451-1-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
-In-reply-to: <1403135545-7451-1-git-send-email-cw00.choi@samsung.com>
-References: <1403135545-7451-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFLMWRmVeSWpSXmKPExsWyRsSkQNdWbVGwwdNWc4upD5+wWVz/8pzV
-	4mzTG3aL+1+PMlpc3jWHzeJ24wo2i9PdrBYXV3xhcuDw2LSqk83jzrU9bB7zTgZ69G1Zxejx
-	eZNcAGsUl01Kak5mWWqRvl0CV8a03U/ZCrr5Kv6t6GNqYFzL3cXIySEhYCJx6+FTJghbTOLC
-	vfVsXYxcHEICSxkltkx9zwZT9GzxNHaIxCJGic/ft0E5TUwSOxetBmtnE9CS2P/iBliHiECU
-	xNyF38FsZoFaiX3XmlhBbGEBL4mbP6YxgtgsAqoSzz+8ArN5BVwkFjzdAnWGnMSHPY/YQWxO
-	AVeJV38es4DYQkA1vx41sIIslhBYxC7xakEHE8QgAYlvkw8BFXEAJWQlNh1ghpgjKXFwxQ2W
-	CYzCCxgZVjGKphYkFxQnpReZ6hUn5haX5qXrJefnbmIEhvvpf88m7mC8f8D6EGMy0LiJzFKi
-	yfnAeMkriTc0NjOyMDUxNTYytzQjTVhJnDf9UVKQkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6p
-	BkYu3z3fxT5/Ps64/nDKBEk+y+SVz8+JdUVfLr3LP1HKV9ditWbTqQ2vDJfIHXs/pZVb1WfW
-	H7nOaqtnc7cl7Zcxa+v5qcPFWrtvdzjLtw/xTBO+Hp3v869zh++7yAe/WKb0OojHyFp23p2s
-	v/8nx8GPWZeyf+xgqbVaxna9K/2l09qDc2ZLirUqsRRnJBpqMRcVJwIA/NdRNI0CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t9jAV1btUXBBit2G1hMffiEzeL6l+es
-	Fmeb3rBb3P96lNHi8q45bBa3G1ewWZzuZrW4uOILkwOHx6ZVnWwed67tYfOYdzLQo2/LKkaP
-	z5vkAlijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0y
-	c4BOUVIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBmTNv9lK2gm6/i34o+
-	pgbGtdxdjJwcEgImEs8WT2OHsMUkLtxbz9bFyMUhJLCIUeLz923sEE4Tk8TORauZQKrYBLQk
-	9r+4wQZiiwhEScxd+B3MZhaoldh3rYkVxBYW8JK4+WMaI4jNIqAq8fzDKzCbV8BFYsHTLUwQ
-	2+QkPux5BLaZU8BV4tWfxywgthBQza9HDawTGHkXMDKsYhRNLUguKE5KzzXUK07MLS7NS9dL
-	zs/dxAiOpmdSOxhXNlgcYhTgYFTi4fW4uDBYiDWxrLgy9xCjBAezkgiv/C+gEG9KYmVValF+
-	fFFpTmrxIcZkoKsmMkuJJucDIz2vJN7Q2MTMyNLI3NDCyNicNGElcd4DrdaBQgLpiSWp2amp
-	BalFMFuYODilGhjbJ/OFv0pcMHXX9ISD64yui997E7Ah/fFhGe32e4sFdp3bdHme16y9/Wff
-	Bb1ykNyz2HfymXWV8gJLr27Qj2x3PbdvsYlOlIPCcrEL7Gsv7dxqXeUWFqrXP+f9mSccOxum
-	svq7zHP+OyGfXfuuW3pvxOPKuXKPnBeLr21weGyjdLP9578PB2xSlFiKMxINtZiLihMBX3Kz
-	b+oCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsWyRsSkWNdGbVGwwbNLbBZTHz5hs7j+5Tmr
+	xdmmN+wW978eZbS4vGsOm8XtxhVsFqe7WS0urvjC5MDhsWlVJ5vHnWt72DzmnQz06NuyitHj
+	8ya5ANYoLpuU1JzMstQifbsEroyHF6azFNzkr+ibe5StgXEKTxcjJ4eEgInE6y87mSBsMYkL
+	99azdTFycQgJLGWUuLP3EQtM0b4N69ghEosYJabdO8wI4TQxSUzZ2sAMUsUmoCWx/8UNNhBb
+	RCBKYu7C72A2s0CtxL5rTawgtrCAq8S/pyfB6lkEVCXWXF8LZvMKuEj0NE2FOkNO4sOeR2Db
+	JATa2SXuXLoE1SAg8W3yIaCTOIASshKbDjBD1EtKHFxxg2UCo+ACRoZVjKKpBckFxUnpRcZ6
+	xYm5xaV56XrJ+bmbGIHhe/rfs/4djHcPWB9iTAYaN5FZSjQ5Hxj+eSXxhsZmRhamJqbGRuaW
+	ZqQJK4nz3n+YFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBUfBhrSeX4Lx8ybCfa1M/MM1h
+	dTeZxmo/Z0bs1X9xctxHfz1Yd3XqIwX+L8tnqEzoCjQ+rcWwW3S9kJ+zjle8fuckvd66ZnXd
+	VRGTDG8bGkrKFVZ/5H49UTu3Zd7HdOMjNaLrnrxa865iLy9XzITJe+Xz9E0+O+3W39kwMdfl
+	sfbUy2FRVwLnK7EUZyQaajEXFScCAGnS11J1AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t9jAV1rtUXBBi07rS2mPnzCZnH9y3NW
+	i7NNb9gt7n89ymhxedccNovbjSvYLE53s1pcXPGFyYHDY9OqTjaPO9f2sHnMOxno0bdlFaPH
+	501yAaxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6Z
+	OUCnKCmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJaxgzHl6YzlJwk7+ib+5R
+	tgbGKTxdjJwcEgImEvs2rGOHsMUkLtxbz9bFyMUhJLCIUWLavcOMEE4Tk8SUrQ3MIFVsAloS
+	+1/cYAOxRQSiJOYu/A5mMwvUSuy71sQKYgsLuEr8e3oSrJ5FQFVizfW1YDavgItET9NUJoht
+	chIf9jxin8DIvYCRYRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcHQ8k9rBuLLB4hCjAAej
+	Eg+vx8WFwUKsiWXFlbmHGCU4mJVEeOV/AYV4UxIrq1KL8uOLSnNSiw8xJgNtn8gsJZqcD4zc
+	vJJ4Q2MTMyNLI3NDCyNjc9KElcR5D7RaBwoJpCeWpGanphakFsFsYeLglGpglOWaHcMs8GvJ
+	pt/rDRey8uyYMeG33fxjTxSaKrZfzDbS6qr7OL1h37ey+s1T4i+tjmI5eq4wIdM5++HsoAn3
+	WT4vrY9ZfzVSYhn3BDODldF3+W/9+SowSd6LyS7mzH2rtay6n5ZPWu7Atyj05a4jJ3atlb3M
+	ePqU3Ql3g9I6z0czmd+JV4dOVlViKc5INNRiLipOBABW0+yo0gIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -50,50 +47,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add documentation for S2MPU02 PMIC device. S2MPU02 has a little
-difference from S2MPS11/S2MPS14 PMIC and has LDO[1-28]/Buck[1-7].
+This patchset add Samsung S2MPU02 PMIC device driver in exiting S2MPS11 PMIC
+driver because S2MPU02 has a little different between S2MPU02 and S2MPS1x.
+The S2MPU02 PMIC has LDO[1-28] and BUCK[1-7] regulators.
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- Documentation/devicetree/bindings/mfd/s2mps11.txt | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+Changes from v6:
+- Fix bisectable build error
+- This patchset includes separate patch[1]
+ [1] https://lkml.org/lkml/2014/6/9/307
 
-diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-index d81ba30..f7c9180 100644
---- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
-+++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-@@ -1,5 +1,5 @@
- 
--* Samsung S2MPS11 and S2MPS14 Voltage and Current Regulator
-+* Samsung S2MPS11, S2MPS14 and S2MPU02 Voltage and Current Regulator
- 
- The Samsung S2MPS11 is a multi-function device which includes voltage and
- current regulators, RTC, charger controller and other sub-blocks. It is
-@@ -7,7 +7,8 @@ interfaced to the host controller using an I2C interface. Each sub-block is
- addressed by the host system using different I2C slave addresses.
- 
- Required properties:
--- compatible: Should be "samsung,s2mps11-pmic" or "samsung,s2mps14-pmic".
-+- compatible: Should be "samsung,s2mps11-pmic" or "samsung,s2mps14-pmic"
-+              or "samsung,s2mpu02-pmic".
- - reg: Specifies the I2C slave address of the pmic block. It should be 0x66.
- 
- Optional properties:
-@@ -81,11 +82,13 @@ as per the datasheet of s2mps11.
- 		  - valid values for n are:
- 			- S2MPS11: 1 to 38
- 			- S2MPS14: 1 to 25
-+			- S2MPU02: 1 to 28
- 		  - Example: LDO1, LD02, LDO28
- 	- BUCKn
- 		  - valid values for n are:
- 			- S2MPS11: 1 to 10
- 			- S2MPS14: 1 to 5
-+			- S2MPU02: 1 to 7
- 		  - Example: BUCK1, BUCK2, BUCK9
- 
- Example:
+Changes from v5:
+- Remove the duplicate code about mfd_add_devices() and regmap_add_irq_chip()
+- Add acked message by Lee Jones for mfd patch on patch2
+
+Changes from v4:
+- This patchset is rebased on 'Linux 3.16-rc1'.
+
+Changes from v3:
+- Fix bug of s2mps14_regulator_set_suspend_disable()
+
+Changes from v2:
+- Change patchset name
+- Remove un-necessary switch statement
+- Add acked message by Mark Brown for regulator patch
+- Add reviewed message by Krzysztof Kozlowski for all patchs
+
+Changes from v1:
+- Fix typo about patch description
+- Use existing suspend_state variable instead of defining new variable for S2MPU02
+- Remove unnecessary parameter of s2mps11_pmic_dt_parse()
+- Remove unfit comment of s2mpu02.h file
+- Both patch2 and patch3 should be squashed on patch2
+
+Chanwoo Choi (4):
+  mfd: sec-core: Add support for S2MPU02 device
+  regulator: s2mps11: Add support S2MPU02 regulator device
+  dt-bindings: mfd: s2mps11: Add support S2MPU02 PMIC
+  mfd: sec-core: Prepare regulators for suspend state to reduce power-consumption
+
+ Documentation/devicetree/bindings/mfd/s2mps11.txt |   7 +-
+ drivers/mfd/sec-core.c                            |  79 +++++-
+ drivers/mfd/sec-irq.c                             | 110 ++++++--
+ drivers/regulator/s2mps11.c                       | 321 ++++++++++++++++++++--
+ include/linux/mfd/samsung/core.h                  |   1 +
+ include/linux/mfd/samsung/irq.h                   |  24 ++
+ include/linux/mfd/samsung/s2mpu02.h               | 201 ++++++++++++++
+ 7 files changed, 690 insertions(+), 53 deletions(-)
+ create mode 100644 include/linux/mfd/samsung/s2mpu02.h
+
 -- 
 1.8.0
 
