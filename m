@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967402AbaFRObY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 10:31:24 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:19957 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967030AbaFRO14 (ORCPT
+	id S966529AbaFROTi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 10:19:38 -0400
+Received: from mailgw12.technion.ac.il ([132.68.225.12]:38610 "EHLO
+	mailgw12.technion.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256AbaFROTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 10:27:56 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 18 Jun 2014 07:18:34 -0700
-From: Mikko Perttunen <mperttunen@nvidia.com>
-To: <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>, <tj@kernel.org>,
-        <pdeschrijver@nvidia.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <linux-ide@vger.kernel.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Subject: [PATCH v2 1/7] of: Add NVIDIA Tegra SATA controller binding
-Date: Wed, 18 Jun 2014 17:23:20 +0300
-Message-ID: <1403101406-15439-2-git-send-email-mperttunen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1403101406-15439-1-git-send-email-mperttunen@nvidia.com>
-References: <1403101406-15439-1-git-send-email-mperttunen@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 18 Jun 2014 10:19:37 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtcBACOfoVOERCABjGdsb2JhbABarlABAQaZKAGBCRYPAQEBJzyEBAEFeRBRV4hbxxuFXheFYokTBxaELQSKOacn
+X-IPAS-Result: AtcBACOfoVOERCABjGdsb2JhbABarlABAQaZKAGBCRYPAQEBJzyEBAEFeRBRV4hbxxuFXheFYokTBxaELQSKOacn
+X-IronPort-AV: E=Sophos;i="5.01,501,1400014800"; 
+   d="scan'208";a="112034531"
+From: Nadav Amit <namit@cs.technion.ac.il>
+To: pbonzini@redhat.com
+Cc: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Nadav Amit <namit@cs.technion.ac.il>
+Subject: [PATCH v2 0/9] KVM: x86: More emulator bugs
+Date: Wed, 18 Jun 2014 17:19:17 +0300
+Message-Id: <1403101166-23616-1-git-send-email-namit@cs.technion.ac.il>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <539F059F.8050501@redhat.com>
+References: <539F059F.8050501@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree binding documentation for the SATA
-controller found on NVIDIA Tegra SoCs.
+This patch-set resolves several emulator bugs. Each fix is independent of the
+others.  The DR6 bug can occur during DR-access exit (regardless to 
+unrestricted mode, MMIO and SPT).
 
-Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
----
-v2:
-- added target-5v-supply and target-12v-supply
-- changed wording to be similar with other Tegra drivers
 
- .../devicetree/bindings/ata/tegra-sata.txt         | 30 ++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/ata/tegra-sata.txt
+Changes in v2:
 
-diff --git a/Documentation/devicetree/bindings/ata/tegra-sata.txt b/Documentation/devicetree/bindings/ata/tegra-sata.txt
-new file mode 100644
-index 0000000..946f207
---- /dev/null
-+++ b/Documentation/devicetree/bindings/ata/tegra-sata.txt
-@@ -0,0 +1,30 @@
-+Tegra124 SoC SATA AHCI controller
-+
-+Required properties :
-+- compatible : "nvidia,tegra124-ahci".
-+- reg : Should contain 2 entries:
-+  - AHCI register set (SATA BAR5)
-+  - SATA register set
-+- interrupts : Defines the interrupt used by SATA
-+- clocks : Must contain an entry for each entry in clock-names.
-+  See ../clocks/clock-bindings.txt for details.
-+- clock-names : Must include the following entries:
-+  - sata
-+  - sata-oob
-+  - cml1
-+  - pll_e
-+- resets : Must contain an entry for each entry in reset-names.
-+  See ../reset/reset.txt for details.
-+- reset-names : Must include the following entries:
-+  - sata
-+  - sata-oob
-+  - sata-cold
-+- phys : Must contain an entry for each entry in phy-names.
-+  See ../phy/phy-bindings.txt for details.
-+- phy-names : Must include the following entries:
-+  - sata-phy : XUSB PADCTL SATA PHY
-+- hvdd-supply : Defines the SATA HVDD regulator
-+- vddio-supply : Defines the SATA VDDIO regulator
-+- avdd-supply : Defines the SATA AVDD regulator
-+- target-5v-supply : Defines the SATA 5V power regulator
-+- target-12v-supply : Defines the SATA 12V power regulator
+Introduced kvm_register_readl and kvm_register_writel which consider long-mode
+and cs.l when reading the registers.
+
+Fixing the register read to respect 32/64 bit in hypercall handling, CR exit
+handling and VMX instructions handling.
+
+Thanks for re-reviewing the patch
+
+Nadav Amit (9):
+  KVM: x86: bit-ops emulation ignores offset on 64-bit
+  KVM: x86: Wrong emulation on 'xadd X, X'
+  KVM: x86: Inter privilage level ret emulation is not implemeneted
+  KVM: x86: emulation of dword cmov on long-mode should clear [63:32]
+  KVM: x86: NOP emulation clears (incorrectly) the high 32-bits of RAX
+  KVM: x86: check DR6/7 high-bits are clear only on long-mode
+  KVM: x86: Hypercall handling does not considers opsize correctly
+  KVM: vmx: handle_cr ignores 32/64-bit mode
+  KVM: vmx: vmx instructions handling does not consider cs.l
+
+ arch/x86/kvm/emulate.c | 31 ++++++++++++++++++++-----------
+ arch/x86/kvm/vmx.c     | 16 ++++++++--------
+ arch/x86/kvm/x86.c     | 11 ++++++-----
+ arch/x86/kvm/x86.h     | 27 +++++++++++++++++++++++++++
+ 4 files changed, 61 insertions(+), 24 deletions(-)
+
 -- 
-1.8.1.5
+1.9.1
 
