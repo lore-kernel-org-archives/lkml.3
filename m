@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189AbaFRQB5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 12:01:57 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:46163 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752588AbaFRQB4 (ORCPT
+	id S1753230AbaFRQDy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 12:03:54 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:55459 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377AbaFRQDw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 12:01:56 -0400
-Message-ID: <53A1B7EE.7070800@gmail.com>
-Date: Wed, 18 Jun 2014 19:01:50 +0300
-From: Nadav Amit <nadav.amit@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>, Nadav Amit <namit@cs.technion.ac.il>
-CC: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 9/9] KVM: vmx: vmx instructions handling does not consider
- cs.l
-References: <539F059F.8050501@redhat.com> <1403101166-23616-1-git-send-email-namit@cs.technion.ac.il> <1403101166-23616-10-git-send-email-namit@cs.technion.ac.il> <53A1B33A.3080509@redhat.com>
-In-Reply-To: <53A1B33A.3080509@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Jun 2014 12:03:52 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+Subject: Re: [PATCH v3 0/3] Qualcomm Resource Power Manager driver
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <7hzjha8b97.fsf@paris.lan>
+Date: Wed, 18 Jun 2014 11:03:44 -0500
+Cc: Bjorn Andersson <bjorn@kryo.se>, Lee Jones <lee.jones@linaro.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Paul Walmsley <paul@pwsan.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <842A7147-A2CC-42BD-9947-CBADF738DC92@codeaurora.org>
+References: <1402944372-31901-1-git-send-email-bjorn.andersson@sonymobile.com> <7hvbrzbh1u.fsf@paris.lan> <CAJAp7OhHr4Cgcp9pvQ3=MAie_zSnFJxG28Vf37qJ98BK7P1jaQ@mail.gmail.com> <7hzjha8b97.fsf@paris.lan>
+To: Kevin Hilman <khilman@linaro.org>
+X-Mailer: Apple Mail (2.1878.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/18/14, 6:41 PM, Paolo Bonzini wrote:
-> Il 18/06/2014 16:19, Nadav Amit ha scritto:
->> VMX instructions use 32-bit operands in 32-bit mode, and 64-bit
->> operands in
->> 64-bit mode.  The current implementation is broken since it does not
->> use the
->> register operands correctly, and always uses 64-bit for reads and writes.
->> Moreover, write to memory in vmwrite only considers long-mode, so it
->> ignores
->> cs.l. This patch fixes this behavior.  The field of vmread/vmwrite is
->> kept
->> intentionally as 64-bit read since if bits [63:32] are not cleared the
->> instruction should fail, according to Intel SDM.
->
-> This is not how I read the SDM:
->
-> "These instructions fail if given, in 64-bit mode, an operand that sets
-> an encoding bit beyond bit 32." (Section 24.11.1.2)
->
-> "Outside IA-32e mode, the source operand has 32 bits, regardless of the
-> value of CS.D. In 64-bit mode, the source operand has 64 bits; however,
-> if bits 63:32 of the source operand are not zero, VMREAD will fail due
-> to an attempt to access an unsupported VMCS component (see operation
-> section)." (Description of VMREAD in Chapter 30).
->
-> I'll fix up the patch myself.
->
 
-Perhaps I am missing something, but I don't see where my mistake is.
-The VMREAD source operand is always read as 64-bits and I made no 
-changes there. Therefore, if bits 63:32 are not zero, the instruction 
-should fail when attempting to access the field.
+On Jun 18, 2014, at 10:53 AM, Kevin Hilman <khilman@linaro.org> wrote:
 
-The value in the source operand of VMWRITE which represents the value 
-which should be written is zero-extended outside 64-bit mode.
-Quoting: "The effective size of the primary source operand, which may be 
-a register or in memory, is always 32 bits outside IA-32e mode (the 
-setting of CS.D is ignored with respect to operand size) and 64 bits in 
-64-bit mode." (Description of VMWRITE in chapter 30).
+> Bjorn Andersson <bjorn@kryo.se> writes:
+> 
+>> On Tue, Jun 17, 2014 at 10:07 AM, Kevin Hilman <khilman@linaro.org> wrote:
+>>> +Paul Walmsley
+>>> 
+>>> Bjorn Andersson <bjorn.andersson@sonymobile.com> writes:
+>>> 
+>>>> This series adds a regulator driver for the Resource Power Manager found in
+>>>> Qualcomm 8660, 8960 and 8064 based devices.
+>>>> 
+>>>> The RPM driver exposes resources to its child devices, that can be accessed to
+>>>> implement drivers for the regulators, clocks and bus frequency control that's
+>>>> owned by the RPM in these devices.
+>>>> 
+>>>> Changes since v2:
+>>>>  - Fix copy-paste error in dt binding
+>>>>  - Correct incomplete move from mfd to soc
+>>>>  - Correct const mistake in regulator driver
+>>>> 
+>>>> Changes since v1:
+>>>>  - Moved rpm driver to drivers/soc
+>>> 
+>>> I'm not sure I follow the motivation for having this under drivers/soc?
+>>> 
+>> Hi Kevin,
+>> 
+>> I've made the argument that to me this is conceptually a black box
+>> handling regulators, clocks and other stuff; hence similar to a PMIC,
+>> which would fit nicely into drivers/mfd.
+>> 
+>> I still think this is the case and now that I look back I didn't get
+>> any pushback from Lee Jones so maybe the move was premature?
+> 
+> Yes, IMO, the move was premature, but hopefully the drivers/soc folks
+> can chime in an clarify the criteria for inclusion there.
+> 
+> Kevin
 
-Regards,
-Nadav
+I dont agree, I think having this in drivers/soc means that we can clearly go through drivers/soc in the future and look for patterns across SoCs that should be re-factored.  Where MFD seems like its become the new drivers misc.
 
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
