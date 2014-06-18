@@ -1,65 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756379AbaFRBE3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 21:04:29 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:51448 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885AbaFRBE2 (ORCPT
+	id S1756549AbaFRBHU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 21:07:20 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:39671 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756459AbaFRBHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 21:04:28 -0400
-Date: Tue, 17 Jun 2014 18:04:23 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Dave Hansen <dave.hansen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>, Christoph Lameter <cl@linux.com>,
-        peterz@infradead.org
-Subject: Re: [bisected] pre-3.16 regression on open() scalability
-Message-ID: <20140618010423.GW4669@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <539B594C.8070004@intel.com>
- <20140613224519.GV4581@linux.vnet.ibm.com>
- <53A0CAE5.9000702@intel.com>
- <20140618001517.GL8178@tassilo.jf.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140618001517.GL8178@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 17 Jun 2014 21:07:18 -0400
+Message-ID: <1403053631.6929.9.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH v2 1/3] KEYS: make key id matching as a dedicated
+ function
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Cc: dhowells@redhat.com, jwboyer@redhat.com, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 17 Jun 2014 21:07:11 -0400
+In-Reply-To: <3513a5dbfe2fc84eb07006a0fd4b9c929972edc1.1402994752.git.d.kasatkin@samsung.com>
+References: <cover.1402994752.git.d.kasatkin@samsung.com>
+	 <3513a5dbfe2fc84eb07006a0fd4b9c929972edc1.1402994752.git.d.kasatkin@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061801-1542-0000-0000-000002A5354E
+x-cbid: 14061801-1344-0000-0000-00000244ABDB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 05:15:17PM -0700, Andi Kleen wrote:
-> > It also ends up eating a new cacheline in a bunch of pretty hot paths.
-> > It would be nice to be able to keep the fast path part of this as at
-> > least read-only.
-> > 
-> > Could we do something (functionally) like the attached patch?  Instead
-> > of counting cond_resched() calls, we could just specify some future time
-> > by which we want have a quiescent state.  We could even push the time to
-> > be something _just_ before we would have declared a stall.
+On Tue, 2014-06-17 at 11:56 +0300, Dmitry Kasatkin wrote: 
+> Key id matching will also be used in the following patch.
+> To avoid code duplication this patch moves functionality
+> to a separate function.
 > 
-> I still think it's totally the wrong place. cond_resched() is in so
-> many fast paths (every lock, every allocation). It just doesn't
-> make sense to add non essential things like this to it.
+> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+
+In refactoring asymmetric_key_match(), its changed.  The reason for this
+change should be included in the patch description.  (Bug fixes should
+be documented.)
+
+thanks,
+
+Mimi
+
+> ---
+>  crypto/asymmetric_keys/asymmetric_keys.h |  2 ++
+>  crypto/asymmetric_keys/asymmetric_type.c | 50 ++++++++++++++++++++------------
+>  2 files changed, 33 insertions(+), 19 deletions(-)
 > 
-> I would be rather to just revert the original patch.
+> diff --git a/crypto/asymmetric_keys/asymmetric_keys.h b/crypto/asymmetric_keys/asymmetric_keys.h
+> index 515b634..a63c551 100644
+> --- a/crypto/asymmetric_keys/asymmetric_keys.h
+> +++ b/crypto/asymmetric_keys/asymmetric_keys.h
+> @@ -9,6 +9,8 @@
+>   * 2 of the Licence, or (at your option) any later version.
+>   */
+> 
+> +int asymmetric_keyid_match(const char *kid, const char *id);
+> +
+>  static inline const char *asymmetric_key_id(const struct key *key)
+>  {
+>  	return key->type_data.p[1];
+> diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
+> index b77eb53..1fd1d30 100644
+> --- a/crypto/asymmetric_keys/asymmetric_type.c
+> +++ b/crypto/asymmetric_keys/asymmetric_type.c
+> @@ -23,6 +23,34 @@ static LIST_HEAD(asymmetric_key_parsers);
+>  static DECLARE_RWSEM(asymmetric_key_parsers_sem);
+> 
+>  /*
+> + * Match asymmetric key id with partial match
+> + * @id:		key id to match in a form "id:<id>"
+> + */
+> +int asymmetric_keyid_match(const char *kid, const char *id)
+> +{
+> +	size_t idlen, kidlen;
+> +
+> +	if (!kid || !id)
+> +		return 0;
+> +
+> +	/* make it possible to use id as in the request: "id:<id>" */
+> +	if (strncmp(id, "id:", 3) == 0)
+> +		id += 3;
+> +
+> +	/* Anything after here requires a partial match on the ID string */
+> +	idlen = strlen(id);
+> +	kidlen = strlen(kid);
+> +	if (idlen > kidlen)
+> +		return 0;
+> +
+> +	kid += kidlen - idlen;
+> +	if (strcasecmp(id, kid) != 0)
+> +		return 0;
+> +
+> +	return 1;
+> +}
+> +
+> +/*
+>   * Match asymmetric keys on (part of) their name
+>   * We have some shorthand methods for matching keys.  We allow:
+>   *
+> @@ -34,9 +62,8 @@ static int asymmetric_key_match(const struct key *key, const void *description)
+>  {
+>  	const struct asymmetric_key_subtype *subtype = asymmetric_key_subtype(key);
+>  	const char *spec = description;
+> -	const char *id, *kid;
+> +	const char *id;
+>  	ptrdiff_t speclen;
+> -	size_t idlen, kidlen;
+> 
+>  	if (!subtype || !spec || !*spec)
+>  		return 0;
+> @@ -55,23 +82,8 @@ static int asymmetric_key_match(const struct key *key, const void *description)
+>  	speclen = id - spec;
+>  	id++;
+> 
+> -	/* Anything after here requires a partial match on the ID string */
+> -	kid = asymmetric_key_id(key);
+> -	if (!kid)
+> -		return 0;
+> -
+> -	idlen = strlen(id);
+> -	kidlen = strlen(kid);
+> -	if (idlen > kidlen)
+> -		return 0;
+> -
+> -	kid += kidlen - idlen;
+> -	if (strcasecmp(id, kid) != 0)
+> -		return 0;
+> -
+> -	if (speclen == 2 &&
+> -	    memcmp(spec, "id", 2) == 0)
+> -		return 1;
+> +	if (speclen == 2 && memcmp(spec, "id", 2) == 0)
+> +		return asymmetric_keyid_match(asymmetric_key_id(key), id);
+> 
+>  	if (speclen == subtype->name_len &&
+>  	    memcmp(spec, subtype->name, speclen) == 0)
 
-OK.  What would you suggest instead?  If all we do is to revert the
-original patch, we once again end up with long-running in-kernel code
-paths stalling the RCU grace period.  The cond_resched() calls sprinkled
-through them once again won't help with this.
-
-Or are you suggesting leveraging the now-deprecated set_need_resched()
-so that the checks happen deeper in the scheduler?  Looks like grabbing
-the offending CPU's task and doing set_tsk_need_resched() on that task
-is the replacement.
-
-CCing Peter Zijlstra for his thoughts on this.
-
-							Thanx, Paul
 
