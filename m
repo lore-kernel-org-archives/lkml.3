@@ -1,185 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749AbaFRVs7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 17:48:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10554 "EHLO mx1.redhat.com"
+	id S1752839AbaFRVwU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 17:52:20 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:42808 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752601AbaFRVs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 17:48:58 -0400
-Message-ID: <1403128088.3707.223.camel@ul30vt.home>
-Subject: Re: [Intel-gfx] [PATCH v2] iommu/intel: Exclude devices using RMRRs
- from IOMMU API domains
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: David Woodhouse <dwmw2@infradead.org>, iommu@lists.linux-foundation.org,
-        chegu_vinod@hp.com, linux-kernel@vger.kernel.org,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
-Date: Wed, 18 Jun 2014 15:48:08 -0600
-In-Reply-To: <20140617134408.GM5821@phenom.ffwll.local>
-References: <20140613162901.4550.94476.stgit@bling.home>
-	 <1402983303.3707.94.camel@ul30vt.home>
-	 <1402988692.7595.106.camel@i7.infradead.org>
-	 <1403007757.3707.100.camel@ul30vt.home>
-	 <1403008864.7595.144.camel@i7.infradead.org>
-	 <1403010982.3707.123.camel@ul30vt.home>
-	 <20140617134408.GM5821@phenom.ffwll.local>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1751312AbaFRVwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 17:52:18 -0400
+Date: Wed, 18 Jun 2014 16:51:43 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Nishanth Menon <nm@ti.com>
+CC: <balbi@ti.com>, <devicetree@vger.kernel.org>, <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Rajendra Nayak <rnayak@ti.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <r.sricharan@ti.com>, <robh+dt@kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>, <galak@codeaurora.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/2] arm: dts: am4372: let boards enable RTC and
+ Watchdog
+Message-ID: <20140618215143.GA8181@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1403106200-777-1-git-send-email-balbi@ti.com>
+ <1403106200-777-2-git-send-email-balbi@ti.com>
+ <53A1B677.9010909@ti.com>
+ <20140618192553.GB4570@saruman.home>
+ <53A20800.3070301@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
+Content-Disposition: inline
+In-Reply-To: <53A20800.3070301@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-06-17 at 15:44 +0200, Daniel Vetter wrote:
-> On Tue, Jun 17, 2014 at 07:16:22AM -0600, Alex Williamson wrote:
-> > On Tue, 2014-06-17 at 13:41 +0100, David Woodhouse wrote:
-> > > On Tue, 2014-06-17 at 06:22 -0600, Alex Williamson wrote:
-> > > > On Tue, 2014-06-17 at 08:04 +0100, David Woodhouse wrote:
-> > > > > On Mon, 2014-06-16 at 23:35 -0600, Alex Williamson wrote:
-> > > > > > 
-> > > > > > Any idea what an off-the-shelf Asus motherboard would be doing with an
-> > > > > > RMRR on the Intel HD graphics?
-> > > > > > 
-> > > > > > dmar: RMRR base: 0x000000bb800000 end: 0x000000bf9fffff
-> > > > > > IOMMU: Setting identity map for device 0000:00:02.0 [0xbb800000 - 0xbf9fffff]
-> > > > > 
-> > > > > Hm, we should have thought of that sooner. That's quite normal — it's
-> > > > > for the 'stolen' memory used for the framebuffer. And maybe also the
-> > > > > GTT, and shadow GTT and other things; I forget precisely what, and it
-> > > > > varies from one setup to another.
-> > > > 
-> > > > Why exactly do these things need to be identity mapped through the
-> > > > IOMMU?  This sounds like something a normal device might do with a
-> > > > coherent mapping.
-> > > 
-> > > The BIOS (EFI or VESA) sets up a framebuffer in stolen main memory. It's
-> > > accessed by DMA, using the physical address. The RMRR exists because we
-> > > need it *not* to suddenly stop working the moment the OS turns on the
-> > > IOMMU.
-> > > 
-> > > The OS graphics driver, if any, is not loaded at this point.
-> > > 
-> > > And even later, the OS graphics driver may choose to make use of the
-> > > 'stolen' memory for various purposes. And since it was already stolen,
-> > > it doesn't go and set up *another* mapping for it; it knows that a
-> > > mapping already exists.
-> > > 
-> > > > > I'd expect fairly much all systems to have an RMRR for the integrated
-> > > > > graphics device if they have one, and your patch¹ is going to prevent
-> > > > > assignment of those to guests... as you've presumably noticed.
-> > > > > 
-> > > > > I'm not sure if the i915 driver is capable of fully reprogramming the
-> > > > > hardware to completely stop using that region, to allow assignment to a
-> > > > > guest with a 'pure' memory map and no stolen region. I suppose it must,
-> > > > > if assignment to guests was working correctly before?
-> > > > 
-> > > > IGD assignment has never worked with KVM.
-> > > 
-> > > Hm. It works with Xen though, doesn't it?
-> > 
-> > Apparently
-> > 
-> > > Are we content to say that it'll *never* work with KVM, and thus we can
-> > > live with the fact that your patch makes it harder to fix whatever was
-> > > wrong in the first place?
-> > 
-> > Probably not.  However, it seems like you're saying that this RMRR is
-> > used by and visible to OS level drivers, versus backchannel
-> > communication channels, invisible to the OS.  I think the latter is
-> > specifically what we want to prevent by excluding devices with RMRRs.
-> > This is a challenging use case, but it seems to be understood.  If when
-> > IGD is bound to vfio-pci we can be sure that access to the RMRR area
-> > ceases, then we can tear it down and re-establish it from
-> > userspace/QEMU, describe it to the guest in an e820 reserved region, and
-> > never consider hotplug of the device for guests.  If that's the case,
-> > maybe it's another exception, like USB.  I'll need to look through i915
-> > more to find how the region is discovered.  Thanks,
-> 
-> We have a bunch of register in the mmio bar set up by the bios that tells
-> us the address and size of the stolen range we can use. The address we
-> need for programming ptes, the size to know how much there is. We also
-> have an early boot pci quirk in x86 nowadays to make sure the pci layer
-> doesn't put random stuff in that range.
-> 
-> See drivers/gpu/drm/i915/i915_gem_gtt.c (search for stolen size)
-> i915_gem_stolen.c (look at stolen_to_phys) and the early quirks in
-> arch/x86/kernel/early-quirks.c for copies of the same code.
+--SUOF0GtieIMvvwua
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ok, here's what I observe on my system for a few settings of iGPU memory
-size in the BIOS.  The device ID for this IGD is 0152, so I'm using the
-gen6_stolen_funcs stolen functions from early quirks for stolen
-base/size.  I also report the ASL Storage base, ie. the opregion since
-that also needs to be punched through if this device were to be
-assigned.
+Hi,
 
-"1024M"
-[    0.628033] IOMMU: Setting identity map for device 0000:00:02.0 [0xbf800000 - 0xbf9fffff]
-[    0.000000] BIOS-e820: [mem 0x00000000bf800000-0x00000000bf9fffff] reserved
+On Wed, Jun 18, 2014 at 04:43:28PM -0500, Nishanth Menon wrote:
+> On 06/18/2014 02:25 PM, Felipe Balbi wrote:
+> >Hi,
+> >
+> >On Wed, Jun 18, 2014 at 10:55:35AM -0500, Nishanth Menon wrote:
+> >>$subject - ARM: dts:
+> >>
+> >>On 06/18/2014 10:43 AM, Felipe Balbi wrote:
+> >>>by providing phandles to rtc and wdt nodes, we can
+> >>>let boards enable rtc and wdt as necessary.
+> >>>
+> >>>Signed-off-by: Felipe Balbi <balbi@ti.com>
+> >>>---
+> >>>  arch/arm/boot/dts/am4372.dtsi | 4 ++--
+> >>>  1 file changed, 2 insertions(+), 2 deletions(-)
+> >>>
+> >>>diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.=
+dtsi
+> >>>index 49fa596..e3830d4 100644
+> >>>--- a/arch/arm/boot/dts/am4372.dtsi
+> >>>+++ b/arch/arm/boot/dts/am4372.dtsi
+> >>>@@ -270,7 +270,7 @@
+> >>>  			ti,hwmods =3D "counter_32k";
+> >>>  		};
+> >>>
+> >>>-		rtc@44e3e000 {
+> >>>+		rtc: rtc@44e3e000 {
+> >>>  			compatible =3D "ti,am4372-rtc","ti,da830-rtc";
+> >>>  			reg =3D <0x44e3e000 0x1000>;
+> >>>  			interrupts =3D <GIC_SPI 75 IRQ_TYPE_LEVEL_HIGH
+> >>>@@ -279,7 +279,7 @@
+> >>>  			status =3D "disabled";
+> >>>  		};
+> >>>
+> >>>-		wdt@44e35000 {
+> >>>+		wdt: wdt@44e35000 {
+> >>>  			compatible =3D "ti,am4372-wdt","ti,omap3-wdt";
+> >>>  			reg =3D <0x44e35000 0x1000>;
+> >>>  			interrupts =3D <GIC_SPI 91 IRQ_TYPE_LEVEL_HIGH>;
+> >>>
+> >>we might want to fix up any other similar nodes in dtsi as well, no?
+> >>
+> >>examples:
+> >>cpu@0
+> >
+> >and why would you want boards to mess with the cpu node ?
+> >
+> cpu-supply =3D <&regulator>;
+>=20
+> for cpufreq.
 
-setpci -s 2.0 5c.l
-7fa00001
-setpci -s 2.0 50.l
-00000289
+good point, but does thqt even work with AM437x devices in mainline?
 
-(289 >> 3) & 1f = 0x11, 17 * 32M = 544M
+--=20
+balbi
 
-stolen memory range: 7fa00000-a1bfffff
+--SUOF0GtieIMvvwua
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-setpci -s 2.0 fc.l
-7ebb7018
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-So for the max iGPU memory option, our RMRR is 2M and it contains
-neither the stolen memory nor the opregion (it never contains the
-opregion apparently).  If the purpose of the RMRR is to maintain access
-to the framebuffer in stolen memory across VT-d enabling, how does it
-work here?  What's in the 2M RMRR and would it need to be mapped to a
-guest if we wanted to support IGD assignment?
+iQIcBAEBAgAGBQJTognvAAoJEIaOsuA1yqREBskQAKREx6HXEYwke4wo4t3xX8FF
+zFDeDNE+B/UCpydqykKMgzPToNkImg0y2DCIpwvej3Q8yUBZiu2OKA2RSMh6n+F0
+zZViCUhGtZC0YN5pNLmPZtBwg4U9ALX9VgfJml2ex58z6fwyEsrt9v4TOUX8x9Xl
+ZZvN/xBMtMBaFE+GvVlNHHDd1NHLlnoMOJF6FUFuY8cI5G9kfmnQ19w99JmIXz4+
+UrAe0KHe4xezJj/HYlAzbvZESVWs7kv4oQXn4xXK81XYClQ5P7w7ZoAeQ2hJMaCn
+iPlxMTa0XincnP9vRKn1FjnYTdlgdvo+FLY3YiNTVOy3W5Gv0JqTk2Aj9UPc0Zb7
+nWTclbuYk7O5vWUsDUvPr2BF6+GJbn+7EuBXl/i4CZEwH6U0gEonoPqMKef7/dPs
+1tTKYf9vxd4lrCRdQtNiAgY3ilUwNgtpawZqcQG1ro9K9/N7XxNt5yvy5LQGRwKL
+2ZKdO9u7ve+p8qed/ZxUkBJUaQ1ToF5Rrc/qUTHz7qIvLoFiS3ImXFIEEBKfoIu+
+u6imOilXZLcBKsZE9jUE1kZ43C715jqXHu5PmSIzMUuY0J2hMUO2lfhQZr+NV6U/
+mfaFCJb5jhLEePIj38YJc7OIXP9LCrSXooIRKpqumn1cE1eXjyhZPvEwLugBvKJJ
+s6cK6OlZnMEG7QMIgU5n
+=g5Qg
+-----END PGP SIGNATURE-----
 
-"512M"
-[    0.627083] IOMMU: Setting identity map for device 0000:00:02.0 [0x9f800000 - 0xbf9fffff]
-[    0.000000] BIOS-e820: [mem 0x000000009f800000-0x00000000bf9fffff] reserved
-
-setpci -s 2.0 5c.l
-9fa00001
-setpci -s 2.0 50.l
-00000281
-
-(281 >> 3) & 1f = 0x10, 16 * 32M = 512M
-
-stolen memory range: 9fa00000-bf9fffff
-
-setpci -s 2.0 fc.l
-9ebb7018
-
-With 512M iGPU memory, we're at least now using the RMRR for stolen
-memory, but we still have an additional mystery 2M in the RMRR since
-it's actually a 514M range.
-
-"256M"
-[    0.626030] IOMMU: Setting identity map for device 0000:00:02.0 [0xaf800000 - 0xbf9fffff]
-[    0.000000] BIOS-e820: [mem 0x00000000af800000-0x00000000bf9fffff] reserved
-
-setpci -s 2.0 5c.l
-afa00001
-setpci -s 2.0 50.l
-00000241
-
-(241 >> 3) & 1f = 0x8, 8 * 32M = 256M
-
-stolen memory range: afa00000-bf9fffff
-
-setpci -s 2.0 fc.l
-aebb7018
-
-The 256M setting is a repeat of 512M, the RMRR is 258M and 256M of it is
-stolen memory.
-
-So we can say that sometimes the RMRR contains the stolen memory used as
-a framebuffer, but that stolen memory is not always mapped with an RMRR
-and there's an additional 2M in the RMRR that's still a mystery.  If we
-wanted to support assignment of IGD, we could map the stolen memory and
-the opregion, but what do we do that that extra RMRR space?  Ignore it?
-Map it?  How do we find it from the device?  Thanks,
-
-Alex
-
+--SUOF0GtieIMvvwua--
