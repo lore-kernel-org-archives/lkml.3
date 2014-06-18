@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751119AbaFROsi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 10:48:38 -0400
-Received: from mail-wg0-f67.google.com ([74.125.82.67]:63028 "EHLO
-	mail-wg0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998AbaFROsg (ORCPT
+	id S1751274AbaFROxJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 10:53:09 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:36098 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971AbaFROxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 10:48:36 -0400
-Date: Wed, 18 Jun 2014 15:48:33 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        Daniel Kiper <daniel.kiper@oracle.com>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, andrew.cooper3@citrix.com,
-        eshelton@pobox.com, hpa@zytor.com, ian.campbell@citrix.com,
-        jbeulich@suse.com, jeremy@goop.org, matt.fleming@intel.com,
-        mingo@redhat.com, mjg59@srcf.ucam.org,
-        stefano.stabellini@eu.citrix.com, tglx@linutronix.de
-Subject: Re: [PATCH v5 0/7] xen: Add EFI support
-Message-ID: <20140618144833.GO24049@console-pimps.org>
-References: <1402678823-24589-1-git-send-email-daniel.kiper@oracle.com>
- <20140618141541.GM24049@console-pimps.org>
- <20140618143143.GB8545@laptop.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140618143143.GB8545@laptop.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 18 Jun 2014 10:53:07 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, thierry.reding@gmail.com,
+        linux-pwm@vger.kernel.org, maxime.coquelin@st.com,
+        patrice.chotard@st.com, srinivas.kandagatla@gmail.com,
+        devicetree@vger.kernel.org, ajitpal.singh@st.com
+Subject: [PATCH 1/7] ARM: stih407: Add DT nodes for for PWM
+Date: Wed, 18 Jun 2014 15:52:46 +0100
+Message-Id: <1403103172-19856-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jun, at 10:31:43AM, Konrad Rzeszutek Wilk wrote:
-> 
-> Your tree is perfect. I presume you do some automatic regression testing
-> when you have accumulated a tons of patch - so if any of them cause havoc
-> we can catch them before the merge window and fix them.
+Supply top level nodes for the STiH407 based development boards.
+The Pinctrl configuration has already been applied, so the only
+missing piece of the DT puzzle is for a board's DTB to enable
+the nodes.
+
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ arch/arm/boot/dts/stih407.dtsi | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
+
+diff --git a/arch/arm/boot/dts/stih407.dtsi b/arch/arm/boot/dts/stih407.dtsi
+index 4f9024f..6b43ba2 100644
+--- a/arch/arm/boot/dts/stih407.dtsi
++++ b/arch/arm/boot/dts/stih407.dtsi
+@@ -259,5 +259,32 @@
  
-Yeah, I run regression tests to catch breakage to EFI platforms, usually
-as soon as I apply them.
-
-> Nah, lets do your tree. And either Boris, me or David will supply
-> the Acked-by on the drivers/xen* and arch/x86/xen/* so all the
-> right tags are in place.
- 
-Sounds like a plan.
-
-> Thanks again!
-
-My pleasure.
-
+ 			status = "disabled";
+ 		};
++
++		/* COMMS PWM Module */
++		pwm0: pwm@9810000 {
++			compatible      = "st,sti-pwm";
++			status		= "disabled";
++			#pwm-cells	= <2>;
++			reg		= <0x9810000 0x68>;
++			pinctrl-names	= "default";
++                        pinctrl-0	= <&pinctrl_pwm0_chan0_default>;
++			clock-names	= "pwm";
++			clocks          = <&clk_sysin>;
++		};
++
++		/* SBC PWM Module */
++		pwm1: pwm@9510000 {
++			compatible	= "st,sti-pwm";
++			status		= "disabled";
++			#pwm-cells	= <2>;
++			reg		= <0x9510000 0x68>;
++			pinctrl-names	= "default";
++		        pinctrl-0	= <&pinctrl_pwm1_chan0_default
++					&pinctrl_pwm1_chan1_default
++					&pinctrl_pwm1_chan2_default
++					&pinctrl_pwm1_chan3_default>;
++			clock-names	= "pwm";
++			clocks          = <&clk_sysin>;
++		};
+ 	};
+ };
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.8.3.2
+
