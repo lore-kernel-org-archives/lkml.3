@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333AbaFRHPb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 03:15:31 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:34192 "EHLO
+	id S933601AbaFRHSH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 03:18:07 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:45991 "EHLO
 	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751576AbaFRHP2 convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1751798AbaFRHSD convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 03:15:28 -0400
+	Wed, 18 Jun 2014 03:18:03 -0400
 From: Mohit KUMAR DCG <Mohit.KUMAR@st.com>
 To: Murali Karicheri <m-karicheri2@ti.com>,
         "linux-arm-kernel@lists.infradead.org" 
@@ -28,16 +28,16 @@ Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
         Randy Dunlap <rdunlap@infradead.org>
-Date: Wed, 18 Jun 2014 15:13:51 +0800
-Subject: RE: [PATCH v2 3/8] PCI: designware: update pcie core driver to work
- with dw hw version 3.65
-Thread-Topic: [PATCH v2 3/8] PCI: designware: update pcie core driver to
- work with dw hw version 3.65
-Thread-Index: Ac+E3Stpgirfs9GkTf2Y1IvvmJOPPAF50Khw
-Message-ID: <2CC2A0A4A178534D93D5159BF3BCB6619C5F8168DA@EAPEX1MAIL1.st.com>
+Date: Wed, 18 Jun 2014 15:16:35 +0800
+Subject: RE: [PATCH v2 4/8] PCI: designware: add msi controller functions
+ for v3.65 hw
+Thread-Topic: [PATCH v2 4/8] PCI: designware: add msi controller functions
+ for v3.65 hw
+Thread-Index: Ac+E3TAHKgZmRSRtRxiNwJFjgXurEwF59nFA
+Message-ID: <2CC2A0A4A178534D93D5159BF3BCB6619C5F8168DB@EAPEX1MAIL1.st.com>
 References: <1402426287-31157-1-git-send-email-m-karicheri2@ti.com>
- <1402426287-31157-4-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1402426287-31157-4-git-send-email-m-karicheri2@ti.com>
+ <1402426287-31157-5-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <1402426287-31157-5-git-send-email-m-karicheri2@ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -64,29 +64,21 @@ Hello Murali,
 > Mohit KUMAR DCG; Jingoo Han; Bjorn Helgaas; Pratyush ANAND; Richard
 > Zhu; Kishon Vijay Abraham I; Marek Vasut; Arnd Bergmann; Pawel Moll;
 > Mark Rutland; Ian Campbell; Kumar Gala; Randy Dunlap
-> Subject: [PATCH v2 3/8] PCI: designware: update pcie core driver to work
-> with dw hw version 3.65
+> Subject: [PATCH v2 4/8] PCI: designware: add msi controller functions for
+> v3.65 hw
 > 
-> v3.65 version of the dw hw has MSI controller implemented in the application
-> space. Add a version variable in the port struct to identify v3.65 hardware for
-> different code treatment. This variable will have DW_V3_65 bit set when
-> running on this hw version. The host init code is expected to set this version
-> based on compatibility string dw,snps-pcie-v3.65.
+> Add dw msi controller functions for v3.65 hw. This adds dw_v3_65_msi_chip
+> and dw_v3_65_msi_domain_ops so that can be used on this version of the
+> hw.
+> This required since MSI irq registers reside in the application space for v3.65
+> hw. The functions are used by v3.65 dw pci core functions to support
+> implementation of PCI controllers based on this hw version.
 > 
-> Some of the MSI specific functions from current DW driver are re-used on
-> v3.65 hw. However on v3.65, MSI controller registers are in the application
-> register space and PCIE_MSI_INTR0_ENABLE is not applicable.
-> Modify assign_irq() to check for version and not execute the code for
-> PCIE_MSI_INTR0_ENABLE configuration on v3.65 hw. Additionally MSI IRQ
-> register in application space is written by EP to raise an MSI IRQ. So add a
-> get_msi_data() function in pcie_host_ops to retrieve the register address in
-> dw_msi_setup_irq(). v3.65 dw core driver implements this function.
+> While at it, move the ATU hw specific variable and msi irq to a separate struct
+> inside a union and add another struct inside the union to hold dw v3.65
+> specific variables.
 > 
-> Also make some of the functions available in dw core driver global and make
-> their prototypes available in the header file for re-use on v3.65.
-> 
-
-- Pls apply MSI specific changes on the top of Lucas patches:
+- Here also, pls look into Lucas work for MSI cleanup and then apply your changes:
 [PATCH 0/4] proper multi MSI handling for designware host
 
 Thanks
@@ -114,134 +106,263 @@ Mohit
 > CC: Grant Likely <grant.likely@linaro.org>
 > 
 > ---
->  drivers/pci/host/pcie-designware.c |   27 +++++++++++++++++----------
->  drivers/pci/host/pcie-designware.h |   16 ++++++++++++++++
->  2 files changed, 33 insertions(+), 10 deletions(-)
+>  drivers/pci/host/Kconfig            |    5 ++
+>  drivers/pci/host/Makefile           |    1 +
+>  drivers/pci/host/pci-dw-v3_65-msi.c |  149
+> +++++++++++++++++++++++++++++++++++
+>  drivers/pci/host/pci-dw-v3_65.h     |   20 +++++
+>  drivers/pci/host/pcie-designware.h  |   21 +++--
+>  5 files changed, 191 insertions(+), 5 deletions(-)  create mode 100644
+> drivers/pci/host/pci-dw-v3_65-msi.c
+>  create mode 100644 drivers/pci/host/pci-dw-v3_65.h
 > 
-> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-
-> designware.c
-> index e4bd19a..f985811 100644
-> --- a/drivers/pci/host/pcie-designware.c
-> +++ b/drivers/pci/host/pcie-designware.c
-> @@ -277,11 +277,15 @@ static int assign_irq(int no_irqs, struct msi_desc
-> *desc, int *pos)
->  		}
->  		set_bit(pos0 + i, pp->msi_irq_in_use);
->  		/*Enable corresponding interrupt in MSI interrupt controller
-> */
-> -		res = ((pos0 + i) / 32) * 12;
-> -		bit = (pos0 + i) % 32;
-> -		dw_pcie_rd_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res,
-> 4, &val);
-> -		val |= 1 << bit;
-> -		dw_pcie_wr_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res,
-> 4, val);
-> +		if (!(pp->version & DW_V3_65)) {
-> +			res = ((pos0 + i) / 32) * 12;
-> +			bit = (pos0 + i) % 32;
-> +			dw_pcie_rd_own_conf(pp,
-> PCIE_MSI_INTR0_ENABLE + res,
-> +					    4, &val);
-> +			val |= 1 << bit;
-> +			dw_pcie_wr_own_conf(pp,
-> PCIE_MSI_INTR0_ENABLE + res,
-> +					    4, val);
+> diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig index
+> a6f67ec..2fcd9f9 100644
+> --- a/drivers/pci/host/Kconfig
+> +++ b/drivers/pci/host/Kconfig
+> @@ -9,6 +9,11 @@ config PCI_MVEBU
+>  config PCIE_DW
+>  	bool
+> 
+> +config PCI_DW_V3_65
+> +	bool "Designware PCIe h/w v3.65"
+> +	help
+> +	   Say Y here if the DW h/w version is 3.65
+> +
+>  config PCI_EXYNOS
+>  	bool "Samsung Exynos PCIe controller"
+>  	depends on SOC_EXYNOS5440
+> diff --git a/drivers/pci/host/Makefile b/drivers/pci/host/Makefile index
+> 13fb333..28af710 100644
+> --- a/drivers/pci/host/Makefile
+> +++ b/drivers/pci/host/Makefile
+> @@ -4,3 +4,4 @@ obj-$(CONFIG_PCI_IMX6) += pci-imx6.o
+>  obj-$(CONFIG_PCI_MVEBU) += pci-mvebu.o
+>  obj-$(CONFIG_PCI_TEGRA) += pci-tegra.o
+>  obj-$(CONFIG_PCI_RCAR_GEN2) += pci-rcar-gen2.o
+> +obj-$(CONFIG_PCI_DW_V3_65) += pci-dw-v3_65-msi.o
+> diff --git a/drivers/pci/host/pci-dw-v3_65-msi.c b/drivers/pci/host/pci-dw-
+> v3_65-msi.c
+> new file mode 100644
+> index 0000000..a26ffdd
+> --- /dev/null
+> +++ b/drivers/pci/host/pci-dw-v3_65-msi.c
+> @@ -0,0 +1,149 @@
+> +/*
+> + * Designware(dw) MSI controller version 3.65
+> + *
+> + * Copyright (C) 2013-2014 Texas Instruments., Ltd.
+> + *		http://www.ti.com
+> + *
+> + * Author: Murali Karicheri <m-karicheri2@ti.com>
+> + *
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/of_irq.h>
+> +#include <linux/kernel.h>
+> +#include <linux/msi.h>
+> +#include <linux/pci.h>
+> +
+> +#include "pcie-designware.h"
+> +
+> +#define MSI_IRQ				0x054
+> +#define MSI0_IRQ_STATUS			0x104
+> +#define MSI0_IRQ_ENABLE_SET		0x108
+> +#define MSI0_IRQ_ENABLE_CLR		0x10c
+> +#define IRQ_STATUS			0x184
+> +#define IRQ_EOI                         0x050
+> +#define MSI_IRQ_OFFSET			4
+> +
+> +static inline struct pcie_port *sys_to_pcie(struct pci_sys_data *sys) {
+> +	return sys->private_data;
+> +}
+> +
+> +static inline void update_reg_offset_bit_pos(u32 offset, u32 *reg_offset,
+> +					u32 *bit_pos)
+> +{
+> +	*reg_offset = offset % 8;
+> +	*bit_pos = offset >> 3;
+> +}
+> +
+> +inline u32 dw_v3_65_get_msi_data(struct pcie_port *pp) {
+> +	return pp->app.start + MSI_IRQ;
+> +}
+> +
+> +void dw_v3_65_handle_msi_irq(struct pcie_port *pp, int offset) {
+> +	u32 pending, vector;
+> +	int src, virq;
+> +
+> +	pending = readl(pp->va_app_base + MSI0_IRQ_STATUS + (offset <<
+> 4));
+> +	/*
+> +	 * MSI0, Status bit 0-3 shows vectors 0, 8, 16, 24, MSI1 status bit
+> +	 * shows 1, 9, 17, 25 and so forth
+> +	 */
+> +	for (src = 0; src < 4; src++) {
+> +		if (BIT(src) & pending) {
+> +			vector = offset + (src << 3);
+> +			virq = irq_linear_revmap(pp->irq_domain, vector);
+> +			dev_dbg(pp->dev,
+> +				"irq: bit %d, vector %d, virq %d\n",
+> +				 src, vector, virq);
+> +			generic_handle_irq(virq);
 > +		}
->  	}
-> 
->  	*pos = pos0;
-> @@ -349,7 +353,10 @@ static int dw_msi_setup_irq(struct msi_chip *chip,
-> struct pci_dev *pdev,
->  	 */
->  	desc->msi_attrib.multiple = msgvec;
-> 
-> -	msg.address_lo = virt_to_phys((void *)pp->msi_data);
-> +	if (pp->ops->get_msi_data)
-> +		msg.address_lo = pp->ops->get_msi_data(pp);
-> +	else
-> +		msg.address_lo = virt_to_phys((void *)pp->msi_data);
->  	msg.address_hi = 0x0;
->  	msg.data = pos;
->  	write_msi_msg(irq, &msg);
-> @@ -768,7 +775,7 @@ static struct pci_ops dw_pcie_ops = {
->  	.write = dw_pcie_wr_conf,
->  };
-> 
-> -static int dw_pcie_setup(int nr, struct pci_sys_data *sys)
-> +int dw_pcie_setup(int nr, struct pci_sys_data *sys)
->  {
->  	struct pcie_port *pp;
-> 
-> @@ -791,7 +798,7 @@ static int dw_pcie_setup(int nr, struct pci_sys_data
-> *sys)
->  	return 1;
->  }
-> 
-> -static struct pci_bus *dw_pcie_scan_bus(int nr, struct pci_sys_data *sys)
-> +struct pci_bus *dw_pcie_scan_bus(int nr, struct pci_sys_data *sys)
->  {
->  	struct pci_bus *bus;
->  	struct pcie_port *pp = sys_to_pcie(sys); @@ -808,7 +815,7 @@ static
-> struct pci_bus *dw_pcie_scan_bus(int nr, struct pci_sys_data *sys)
->  	return bus;
->  }
-> 
-> -static int dw_pcie_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
-> +int dw_pcie_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
->  {
->  	struct pcie_port *pp = sys_to_pcie(dev->bus->sysdata);
->  	int irq;
-> @@ -820,7 +827,7 @@ static int dw_pcie_map_irq(const struct pci_dev
-> *dev, u8 slot, u8 pin)
->  	return irq;
->  }
-> 
-> -static void dw_pcie_add_bus(struct pci_bus *bus)
-> +void dw_pcie_add_bus(struct pci_bus *bus)
->  {
->  	if (IS_ENABLED(CONFIG_PCI_MSI)) {
->  		struct pcie_port *pp = sys_to_pcie(bus->sysdata); diff --git
-> a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
-> index 2d6dd66..3a6a6eb 100644
+> +	}
+> +}
+> +
+> +static void dw_v3_65_msi_irq_ack(struct irq_data *d) {
+> +	u32 offset, reg_offset, bit_pos;
+> +	unsigned int irq = d->irq;
+> +	struct msi_desc *msi;
+> +	struct pcie_port *pp;
+> +
+> +	msi = irq_get_msi_desc(irq);
+> +	pp = sys_to_pcie(msi->dev->bus->sysdata);
+> +	offset = irq - irq_linear_revmap(pp->irq_domain, 0);
+> +	update_reg_offset_bit_pos(offset, &reg_offset, &bit_pos);
+> +
+> +	writel(BIT(bit_pos),
+> +		pp->va_app_base + MSI0_IRQ_STATUS + (reg_offset << 4));
+> +	writel(reg_offset + MSI_IRQ_OFFSET, pp->va_app_base + IRQ_EOI);
+> }
+> +
+> +static void dw_v3_65_msi_irq_mask(struct irq_data *d) {
+> +	u32 offset, reg_offset, bit_pos;
+> +	unsigned int irq = d->irq;
+> +	struct msi_desc *msi;
+> +	struct pcie_port *pp;
+> +
+> +	msi = irq_get_msi_desc(irq);
+> +	pp = sys_to_pcie(msi->dev->bus->sysdata);
+> +	offset = irq - irq_linear_revmap(pp->irq_domain, 0);
+> +	update_reg_offset_bit_pos(offset, &reg_offset, &bit_pos);
+> +
+> +	/* mask the end point if PVM implemented */
+> +	if (IS_ENABLED(CONFIG_PCI_MSI)) {
+> +		if (msi->msi_attrib.maskbit)
+> +			mask_msi_irq(d);
+> +	}
+> +
+> +	writel(BIT(bit_pos),
+> +		pp->va_app_base + MSI0_IRQ_ENABLE_CLR + (reg_offset <<
+> 4)); }
+> +
+> +static void dw_v3_65_msi_irq_unmask(struct irq_data *d) {
+> +	u32 offset, reg_offset, bit_pos;
+> +	unsigned int irq = d->irq;
+> +	struct msi_desc *msi;
+> +	struct pcie_port *pp;
+> +
+> +	msi = irq_get_msi_desc(irq);
+> +	pp = sys_to_pcie(msi->dev->bus->sysdata);
+> +	offset = irq - irq_linear_revmap(pp->irq_domain, 0);
+> +	update_reg_offset_bit_pos(offset, &reg_offset, &bit_pos);
+> +
+> +	/* mask the end point if PVM implemented */
+> +	if (IS_ENABLED(CONFIG_PCI_MSI)) {
+> +		if (msi->msi_attrib.maskbit)
+> +			unmask_msi_irq(d);
+> +	}
+> +
+> +	writel(BIT(bit_pos),
+> +		pp->va_app_base + MSI0_IRQ_ENABLE_SET + (reg_offset <<
+> 4)); }
+> +
+> +static struct irq_chip dw_v3_65_msi_chip = {
+> +	.name = "PCI-DW-MSI-OLD",
+> +	.irq_ack = dw_v3_65_msi_irq_ack,
+> +	.irq_mask = dw_v3_65_msi_irq_mask,
+> +	.irq_unmask = dw_v3_65_msi_irq_unmask, };
+> +
+> +static int dw_v3_65_msi_map(struct irq_domain *domain, unsigned int irq,
+> +			irq_hw_number_t hwirq)
+> +{
+> +	irq_set_chip_and_handler(irq, &dw_v3_65_msi_chip,
+> handle_level_irq);
+> +	irq_set_chip_data(irq, domain->host_data);
+> +	set_irq_flags(irq, IRQF_VALID);
+> +
+> +	return 0;
+> +}
+> +
+> +const struct irq_domain_ops dw_v3_65_msi_domain_ops = {
+> +	.map = dw_v3_65_msi_map,
+> +};
+> diff --git a/drivers/pci/host/pci-dw-v3_65.h b/drivers/pci/host/pci-dw-
+> v3_65.h new file mode 100644 index 0000000..689256a
+> --- /dev/null
+> +++ b/drivers/pci/host/pci-dw-v3_65.h
+> @@ -0,0 +1,20 @@
+> +/*
+> + * Designware(dw) v3.65 controller common includes
+> + *
+> + * Copyright (C) 2013-2014 Texas Instruments., Ltd.
+> + *		http://www.ti.com
+> + *
+> + * Author: Murali Karicheri <m-karicheri2@ti.com>
+> + *
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#define MAX_LEGACY_IRQS		4
+> +
+> +/* v3.65 specific MSI controller APIs/definitions */ extern const
+> +struct irq_domain_ops dw_v3_65_msi_domain_ops; void
+> +dw_v3_65_handle_msi_irq(struct pcie_port *pp, int offset);
+> +u32 dw_v3_65_get_msi_data(struct pcie_port *pp);
+> diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-
+> designware.h
+> index 3a6a6eb..05bb590 100644
 > --- a/drivers/pci/host/pcie-designware.h
 > +++ b/drivers/pci/host/pcie-designware.h
-> @@ -39,6 +39,12 @@ struct pcie_port {
->  	void __iomem		*va_cfg0_base;
->  	u64			cfg1_base;
->  	void __iomem		*va_cfg1_base;
-> +	/*
-> +	 * v3.65 DW hw implements application register space for
-> +	 * MSI and has no ATU view port
-> +	 */
-> +#define DW_V3_65		BIT(0)
-> +	u32			version;
+> @@ -35,16 +35,27 @@ struct pcie_port {
+>  	struct device		*dev;
+>  	u8			root_bus_nr;
+>  	void __iomem		*dbi_base;
+> -	u64			cfg0_base;
+> -	void __iomem		*va_cfg0_base;
+> -	u64			cfg1_base;
+> -	void __iomem		*va_cfg1_base;
+>  	/*
+>  	 * v3.65 DW hw implements application register space for
+>  	 * MSI and has no ATU view port
+>  	 */
+>  #define DW_V3_65		BIT(0)
+>  	u32			version;
+> +	union {
+> +		/* New DW hw specific */
+> +		struct {
+> +			u64			cfg0_base;
+> +			void __iomem		*va_cfg0_base;
+> +			u64			cfg1_base;
+> +			void __iomem		*va_cfg1_base;
+> +			int			msi_irq;
+> +		};
+> +		/* v3.65 DW hw specific */
+> +		struct  {
+> +			void __iomem		*va_app_base;
+> +			struct resource		app;
+> +		};
+> +	};
 >  	u64			io_base;
 >  	u64			mem_base;
 >  	spinlock_t		conf_lock;
-> @@ -68,6 +74,7 @@ struct pcie_host_ops {
->  			unsigned int devfn, int where, int size, u32 val);
->  	int (*link_up)(struct pcie_port *pp);
->  	void (*host_init)(struct pcie_port *pp);
-> +	u32 (*get_msi_data)(struct pcie_port *pp);
->  };
-> 
->  int dw_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val);
-> @@ -77,5 +84,14 @@ void dw_pcie_msi_init(struct pcie_port *pp);  int
-> dw_pcie_link_up(struct pcie_port *pp);  void dw_pcie_setup_rc(struct
-> pcie_port *pp);  int dw_pcie_host_init(struct pcie_port *pp);
-> +int dw_pcie_setup(int nr, struct pci_sys_data *sys); struct pci_bus
-> +*dw_pcie_scan_bus(int nr, struct pci_sys_data *sys); void
-> +dw_pcie_add_bus(struct pci_bus *bus); int
-> dw_pcie_parse_resource(struct
-> +pcie_port *pp);
-> 
-> +/* internal to DW common core driver */ int
-> +dw_pcie_common_host_init(struct pcie_port *pp, struct hw_pci *hw); int
-> +dw_pcie_msi_host_init(struct pcie_port *pp, struct device_node *np,
-> +			const struct irq_domain_ops *irq_ops); int
-> dw_pcie_map_irq(const
-> +struct pci_dev *dev, u8 slot, u8 pin);
->  #endif /* _PCIE_DESIGNWARE_H */
+> @@ -55,7 +66,7 @@ struct pcie_port {
+>  	int			irq;
+>  	u32			lanes;
+>  	struct pcie_host_ops	*ops;
+> -	int			msi_irq;
+> +	/* msi irq domain */
+>  	struct irq_domain	*irq_domain;
+>  	unsigned long		msi_data;
+>  	DECLARE_BITMAP(msi_irq_in_use, MAX_MSI_IRQS);
 > --
 > 1.7.9.5
 
