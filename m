@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432AbaFRS1h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 14:27:37 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:16108 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871AbaFRS1f (ORCPT
+	id S1754546AbaFRS3G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 14:29:06 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:17430 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752755AbaFRS3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 14:27:35 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 18 Jun 2014 11:21:53 -0700
-From: Aaron Plattner <aplattner@nvidia.com>
-To: <linux-pm@vger.kernel.org>
-CC: Aaron Plattner <aplattner@nvidia.com>, <linux-kernel@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH v2] cpufreq: unlock when failing cpufreq_update_policy()
-Date: Wed, 18 Jun 2014 11:27:32 -0700
-Message-ID: <1403116052-4659-1-git-send-email-aplattner@nvidia.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1403050362-20809-1-git-send-email-aplattner@nvidia.com>
-References: <1403050362-20809-1-git-send-email-aplattner@nvidia.com>
-X-NVConfidentiality: public
+	Wed, 18 Jun 2014 14:29:03 -0400
+Date: Wed, 18 Jun 2014 12:02:32 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, tglx@linutronix.de,
+        mingo@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        paolo.bonzini@gmail.com, boris.ostrovsky@oracle.com,
+        paulmck@linux.vnet.ibm.com, riel@redhat.com,
+        torvalds@linux-foundation.org, raghavendra.kt@linux.vnet.ibm.com,
+        david.vrabel@citrix.com, oleg@redhat.com, gleb@redhat.com,
+        scott.norton@hp.com, chegu_vinod@hp.com,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 04/11] qspinlock: Extract out the exchange of tail code
+ word
+Message-ID: <20140618160232.GB5107@laptop.dumpdata.com>
+References: <20140615124657.264658593@chello.nl>
+ <20140615130153.376621956@chello.nl>
+ <20140617205525.GB29634@laptop.dumpdata.com>
+ <53A17A09.6010007@redhat.com>
+ <20140618135057.GB4729@laptop.dumpdata.com>
+ <53A1B43C.8000009@hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53A1B43C.8000009@hp.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit bd0fa9bb455d introduced a failure path to cpufreq_update_policy() if
-cpufreq_driver->get(cpu) returns NULL.  However, it jumps to the 'no_policy'
-label, which exits without unlocking any of the locks the function acquired
-earlier.  This causes later calls into cpufreq to hang.
+> >>However, I *do* agree with you that it's simpler to just squash this patch
+> >>into 01/11.
+> >Uh, did I say that? Oh I said why don't make it right the first time!
+> >
+> >I meant in terms of seperating the slowpath (aka the bytelock on the pending
+> >bit) from the queue (MCS code). Or renaming the function to be called
+> >'complex' instead of 'slowpath' as it is getting quite hairy.
+> >
+> >The #1 patch is nice by itself - as it lays out the foundation of the
+> >MCS-similar code - and if Ingo decides he does not want this pending
+> >byte-lock bit business - it can be easily reverted or dropped.
+> 
+> The pending bit code is needed for performance parity with ticket spinlock
+> for light load. My own measurement indicates that the queuing overhead will
+> cause the queue spinlock to be slower than ticket spinlock with 2-4
+> contending tasks. The pending bit solves the performance problem with 2
 
-Fix this by creating a new 'unlock' label and jumping to that instead.
+Aha!
 
-v2: Delete the no_policy label and just return early if policy is NULL.
+> contending tasks, leave only the 3-4 tasks cases being a bit slower than the
+> ticket spinlock which should be more than compensated by its superior
+> performance with heavy contention and slightly better performance with no
+> contention.
 
-Fixes: bd0fa9bb455d ("cpufreq: Return error if ->get() failed in cpufreq_update_policy()")
-Link: https://devtalk.nvidia.com/default/topic/751903/kernel-3-15-and-nv-drivers-337-340-failed-to-initialize-the-nvidia-kernel-module-gtx-550-ti-/
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Aaron Plattner <aplattner@nvidia.com>
----
-v1 of this was tested by the user affected by the problem, but I don't have his
-email address so I can't add it as a Tested-by line.
+That should be mentioned in the commit description as the rationale for
+the patch "qspinlock: Add pending bit" and also in the code.
 
- drivers/cpufreq/cpufreq.c | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index aed2b0cb83dc..62259d27f03e 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -2242,10 +2242,8 @@ int cpufreq_update_policy(unsigned int cpu)
- 	struct cpufreq_policy new_policy;
- 	int ret;
- 
--	if (!policy) {
--		ret = -ENODEV;
--		goto no_policy;
--	}
-+	if (!policy)
-+		return -ENODEV;
- 
- 	down_write(&policy->rwsem);
- 
-@@ -2264,7 +2262,7 @@ int cpufreq_update_policy(unsigned int cpu)
- 		new_policy.cur = cpufreq_driver->get(cpu);
- 		if (WARN_ON(!new_policy.cur)) {
- 			ret = -EIO;
--			goto no_policy;
-+			goto unlock;
- 		}
- 
- 		if (!policy->cur) {
-@@ -2279,10 +2277,10 @@ int cpufreq_update_policy(unsigned int cpu)
- 
- 	ret = cpufreq_set_policy(policy, &new_policy);
- 
-+unlock:
- 	up_write(&policy->rwsem);
- 
- 	cpufreq_cpu_put(policy);
--no_policy:
- 	return ret;
- }
- EXPORT_SYMBOL(cpufreq_update_policy);
--- 
-2.0.0
-
+Thank you!
