@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626AbaFRRaM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 13:30:12 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:52242 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398AbaFRRaK (ORCPT
+	id S1753747AbaFRRcK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 13:32:10 -0400
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:43775 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752555AbaFRRcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 13:30:10 -0400
-Message-ID: <53A1CC9E.1060308@kernel.dk>
-Date: Wed, 18 Jun 2014 10:30:06 -0700
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] floppy
-References: <alpine.LNX.2.00.1406181406401.2303@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1406181406401.2303@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Jun 2014 13:32:08 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ao0KAGDMoVNbtAr8/2dsb2JhbABagw2rOgUBAQEBAQEFAZkogQsXdYRgI4EaN4hGAc0lF4ViiRMdhC0Ej2yKV5NYg0Q7
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Phillip Lougher <phillip@squashfs.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] fs/squashfs/super.c: Logging clean-up
+Date: Wed, 18 Jun 2014 19:30:47 +0200
+Message-Id: <1403112647-7068-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-18 05:07, Jiri Kosina wrote:
-> Jens,
->
-> please pull from
->
->    git://git.kernel.org/pub/scm/linux/kernel/git/jikos/linux-block.git for-jens
->
-> to receive formatting fix for floppy driver; preferably for 3.16 still.
-> The branch is based on your for-3.16/drivers.
+-Convert printk to pr_foo()
+-Add pr_fmt for future logging entries
+-Coalesce formats
 
-I'll queue it up for 3.16. Just sent out a pull request, but I'm sure 
-there will be a later one in this cycle as well.
+Cc: Phillip Lougher <phillip@squashfs.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/squashfs/super.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-
+diff --git a/fs/squashfs/super.c b/fs/squashfs/super.c
+index 031c8d67..5056bab 100644
+--- a/fs/squashfs/super.c
++++ b/fs/squashfs/super.c
+@@ -27,6 +27,8 @@
+  * the filesystem.
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/fs.h>
+ #include <linux/vfs.h>
+ #include <linux/slab.h>
+@@ -448,8 +450,7 @@ static int __init init_squashfs_fs(void)
+ 		return err;
+ 	}
+ 
+-	printk(KERN_INFO "squashfs: version 4.0 (2009/01/31) "
+-		"Phillip Lougher\n");
++	pr_info("version 4.0 (2009/01/31) Phillip Lougher\n");
+ 
+ 	return 0;
+ }
 -- 
-Jens Axboe
+1.8.4.5
 
