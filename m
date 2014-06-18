@@ -1,95 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025AbaFRTth (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 15:49:37 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:40658 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754993AbaFRTtg (ORCPT
+	id S1755075AbaFRTtu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 15:49:50 -0400
+Received: from smtprelay0005.hostedemail.com ([216.40.44.5]:44970 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755034AbaFRTtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 15:49:36 -0400
-Message-ID: <53A1ED49.4090201@ti.com>
-Date: Wed, 18 Jun 2014 22:49:29 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Rajendra Nayak <rnayak@ti.com>
-CC: <tony@atomide.com>, <paul@pwsan.com>, <nm@ti.com>, <kishon@ti.com>,
-        <george.cherian@ti.com>, <balbi@ti.com>, <balajitk@ti.com>,
-        <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ARM: DRA7: hwmod: Add OCP2SCP3 module
-References: <1403093816-10960-1-git-send-email-rogerq@ti.com> <1403093816-10960-2-git-send-email-rogerq@ti.com> <53A1876B.2040701@ti.com>
-In-Reply-To: <53A1876B.2040701@ti.com>
+	Wed, 18 Jun 2014 15:49:46 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:966:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2553:2559:2562:2691:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:4385:5007:6120:7652:8603:8957:10004:10400:10848:11026:11232:11658:11914:12295:12296:12438:12517:12519:12679:12740:13019:13069:13095:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: spy82_8f2447ab44854
+X-Filterd-Recvd-Size: 2761
+Message-ID: <1403120982.3839.25.camel@joe-AO725>
+Subject: Re: [RFC PATCH] checkpatch: Attempt to find unnecessary 'out of
+ memory' messages
+From: Joe Perches <joe@perches.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Julia Lawall <julia.lawall@lip6.fr>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>,
+        benoit.taine@lip6.fr
+Date: Wed, 18 Jun 2014 12:49:42 -0700
+In-Reply-To: <20140618193345.GR4669@linux.vnet.ibm.com>
+References: <1402419340.30479.18.camel@joe-AO725>
+	 <20140611074704.GS5015@mwanda> <1402502500.6169.5.camel@joe-AO725>
+	 <alpine.DEB.2.02.1406140937370.2003@localhost6.localdomain6>
+	 <alpine.DEB.2.02.1406141151170.2045@localhost6.localdomain6>
+	 <20140618193345.GR4669@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2014 03:34 PM, Rajendra Nayak wrote:
-> On Wednesday 18 June 2014 05:46 PM, Roger Quadros wrote:
->> This module is needed for the SATA and PCIe PHYs.
->>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> Tested-by: Roger Quadros <rogerq@ti.com>
->> ---
->>  arch/arm/mach-omap2/omap_hwmod_7xx_data.c | 25 +++++++++++++++++++++++++
->>  1 file changed, 25 insertions(+)
->>
->> diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
->> index 20b4398..cedef6b 100644
->> --- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
->> +++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
->> @@ -1215,6 +1215,30 @@ static struct omap_hwmod dra7xx_ocp2scp1_hwmod = {
->>  	},
->>  };
->>  
->> +/* ocp2scp3 */
->> +static struct omap_hwmod dra7xx_ocp2scp3_hwmod;
->> +
->> +/* l4_cfg -> ocp2scp3 */
->> +static struct omap_hwmod_ocp_if dra7xx_l4_cfg__ocp2scp3 = {
->> +	.master		= &dra7xx_l4_cfg_hwmod,
->> +	.slave		= &dra7xx_ocp2scp3_hwmod,
->> +	.clk		= "l4_root_clk_div",
->> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
->> +};
+On Wed, 2014-06-18 at 12:33 -0700, Paul E. McKenney wrote:
+> On Sat, Jun 14, 2014 at 11:51:41AM +0200, Julia Lawall wrote:
+> > On Sat, 14 Jun 2014, Julia Lawall wrote:
+> > > With a semantic patch that searches for the various calls and then a 
+> > > string containing the letters "emory", I get removals of the messages 
+> > > below.  Do any of these messages look useful?  For example, some are 
+> > > generated with specific functions, such as IRDA_ERROR or BT_ERR.  If none 
+> > > of the messages look useful, should just one big patch go to trivial, or 
+> > > should the patches go to the individual maintainers?
+> > 
+> > Sorry, I left out all the strings...
 > 
-> is it not possible to move this down in the file where all interface
-> structs are defined?
-
-yes, i'll send a v2 with this fixed as well as add .main_clk to the hwmod
-like in ocp2scp1.
-
-cheers,
--roger
-
+> I would like the rcu-torture message to stay:
 > 
->> +
->> +static struct omap_hwmod dra7xx_ocp2scp3_hwmod = {
->> +	.name		= "ocp2scp3",
->> +	.class		= &dra7xx_ocp2scp_hwmod_class,
->> +	.clkdm_name	= "l3init_clkdm",
->> +	.prcm = {
->> +		.omap4 = {
->> +			.clkctrl_offs = DRA7XX_CM_L3INIT_OCP2SCP3_CLKCTRL_OFFSET,
->> +			.context_offs = DRA7XX_RM_L3INIT_OCP2SCP3_CONTEXT_OFFSET,
->> +			.modulemode   = MODULEMODE_HWCTRL,
->> +		},
->> +	},
->> +};
->> +
->>  /*
->>   * 'qspi' class
->>   *
->> @@ -2672,6 +2696,7 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
->>  	&dra7xx_l4_per1__mmc4,
->>  	&dra7xx_l4_cfg__mpu,
->>  	&dra7xx_l4_cfg__ocp2scp1,
->> +	&dra7xx_l4_cfg__ocp2scp3,
->>  	&dra7xx_l3_main_1__qspi,
->>  	&dra7xx_l4_cfg__sata,
->>  	&dra7xx_l4_cfg__smartreflex_core,
->>
+> > -		pr_err("rcu-torture: Out of memory, need: %d", size);
 > 
+> This is in a module that is not loaded into any reasonable production
+> kernel, and has helped me to catch typos.
+
+I believe the function doesn't work well.
+
+static void
+rcu_torture_stats_print(void)
+{
+	int size = nr_cpu_ids * 200 + 8192;
+	char *buf;
+
+	buf = kmalloc(size, GFP_KERNEL);
+	if (!buf) {
+		pr_err("rcu-torture: Out of memory, need: %d\n", size);
+		return;
+	}
+	rcu_torture_printk(buf);
+	pr_alert("%s", buf);
+	kfree(buf);
+}
+
+rcu_torture_printk simply fills buf
+
+btw: I believe the arguments should pass size and
+     rcu_torture_printk should use snprintf/size
+
+but all printks are limited to a maximum of 1024
+bytes so the large allocation is senseless and
+would even if it worked, would likely need to be
+vmalloc/vfree
+
+
 
