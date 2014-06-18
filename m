@@ -1,40 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932213AbaFRXBT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 19:01:19 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56509 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756058AbaFRXAK (ORCPT
+	id S1756046AbaFRXAI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 19:00:08 -0400
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:63148 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755408AbaFRXAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 19:00:10 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Sorin Manolache <sorinm@gmail.com>, Zhang Rui <rui.zhang@intel.com>,
-        Lan Tianyu <tianyu.lan@intel.com>
-Cc: linux-kernel@vger.kernel.org,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: drivers/acpi/ac.c, re-enabling CONFIG_ACPI_PROCFS_POWER?
-Date: Thu, 19 Jun 2014 01:17:45 +0200
-Message-ID: <1891948.UFv8RnVsZc@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53A1F65C.9090907@gmail.com>
-References: <53A1F65C.9090907@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Wed, 18 Jun 2014 19:00:03 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: Josh Boyer <jwboyer@fedoraproject.org>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 0/5] x86,vdso: Restore a bunch of section headers
+Date: Wed, 18 Jun 2014 15:59:45 -0700
+Message-Id: <cover.1403129369.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 18, 2014 10:28:12 PM Sorin Manolache wrote:
-> Hello,
-> 
-> Would it be worth considering re-enabling the old procfs interface for 
-> ac.c? There are old tools still around (kpowersave from kde 3.5.10) that 
-> expect /proc/acpi/ac_adapter.
+This series makes me sad.  It brings the 64-bit vdso back above 4kB,
+like it was in 3.15.  It's also just silly, but it seems to be
+needed to keep binutils happy when debugging the vdso.
 
-Can you please CC ACPI-related messages to linux-acpi@vger.kernel.org?
+Patch 5 isn't really necessary, and is likely not 3.16 material.
+It's useful for testing the rest of this series, though.
 
-I'm not sure how much effort that would require at this point.  Rui, Tianyu?
+Andy Lutomirski (5):
+  x86,vdso: Discard the __bug_table section
+  x86,vdso2c: Use better macros for ELF bitness
+  x86,vdso: Improve the fake section headers
+  x86,vdso: Remove some redundant in-memory section headers
+  x86,vdso: Create .build-id links for unstripped vdso files
 
-Rafael
+ arch/x86/vdso/Makefile                   |  13 +-
+ arch/x86/vdso/vdso-fakesections.c        |  41 +++----
+ arch/x86/vdso/vdso-layout.lds.S          |  64 +++++++---
+ arch/x86/vdso/vdso.lds.S                 |   2 +
+ arch/x86/vdso/vdso2c.c                   |  73 ++++++------
+ arch/x86/vdso/vdso2c.h                   | 197 ++++++++++++++++++++++++++-----
+ arch/x86/vdso/vdso32/vdso-fakesections.c |   1 +
+ arch/x86/vdso/vdsox32.lds.S              |   2 +
+ 8 files changed, 279 insertions(+), 114 deletions(-)
+ create mode 100644 arch/x86/vdso/vdso32/vdso-fakesections.c
+
+-- 
+1.9.3
 
