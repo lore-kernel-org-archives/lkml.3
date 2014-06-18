@@ -1,97 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965070AbaFRI1H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 04:27:07 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:56420 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933972AbaFRI1A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 04:27:00 -0400
-Date: Wed, 18 Jun 2014 09:26:53 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        mark.brown@linaro.org, Tomasz Figa <t.figa@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>, linux-kernel@vger.kernel.org,
-        joshi@samsung.com, vikas.sajjan@samsung.com, chow.kim@samsung.com,
-        michal.simek@xilinx.com
-Subject: Re: [PATCH RFC] mfd: syscon: Decouple syscon interface from syscon
- devices
-Message-ID: <20140618082653.GN21030@lee--X1>
-References: <53A05E2D.6020702@samsung.com>
- <1403019164-12514-1-git-send-email-t.figa@samsung.com>
- <5027740.B7iVUcUX2T@wuerfel>
- <53A0B27E.5010708@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53A0B27E.5010708@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S965225AbaFRI2k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 04:28:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38728 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933210AbaFRIXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 04:23:31 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Cc: Jan Kara <jack@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Jens Axboe <axboe@kernel.dk>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 2/4] mm: pagemap: Avoid unnecessary overhead when tracepoints are deactivated
+Date: Wed, 18 Jun 2014 09:23:25 +0100
+Message-Id: <1403079807-24690-3-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1403079807-24690-1-git-send-email-mgorman@suse.de>
+References: <1403079807-24690-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jun 2014, Tomasz Figa wrote:
-> On 17.06.2014 17:42, Arnd Bergmann wrote:
-> > On Tuesday 17 June 2014 17:32:44 Tomasz Figa wrote:
-> >> Currently a syscon entity can be only registered directly through a
-> >> platform device that binds to a dedicated driver. However in certain use
-> >> cases it is desirable to make a device used with another driver a syscon
-> >> interface provider. For example, certain SoCs (e.g. Exynos) contain
-> >> system controller blocks which perform various functions such as power
-> >> domain control, CPU power management, low power mode control, but in
-> >> addition contain certain IP integration glue, such as various signal
-> >> masks, coprocessor power control, etc. In such case, there is a need to
-> >> have a dedicated driver for such system controller but also share
-> >> registers with other drivers. The latter is where the syscon interface
-> >> is helpful.
-> >>
-> >> This patch decouples syscon object from syscon driver, so that it can be
-> >> registered from any driver in addition to the original "syscon" platform
-> >> driver.
+The LRU insertion and activate tracepoints take PFN as a parameter forcing
+the overhead to the caller.  Move the overhead to the tracepoint fast-assign
+method to ensure the cost is only incurred when the tracepoint is active.
 
-+1 for this approach.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/trace/events/pagemap.h | 16 +++++++---------
+ mm/swap.c                      |  4 ++--
+ 2 files changed, 9 insertions(+), 11 deletions(-)
 
-Michal, Pankay,
-  Does it also suit your needs?
-
-> >> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-> > 
-> > Hi Tomasz,
-> > 
-> > This seems like a reasonable way of solving the problem, but I think
-> > there is an even better one that we have about in the past: if we
-> > promote syscon from a platform driver into a a drivers/base/ helper
-> > that is independent of the platform device matching, we can use
-> > call syscon_regmap_lookup_* for any device node, whether it's already
-> > bound to a driver or not, which do what you need. It would also make
-> > it easier to call the syscon code before the platform_device
-> > infrastructure gets initialized, which is something a number of
-> > people have asked for, e.g. for using regmap to do SMP bringup
-> > or for clock registration.
-> 
-> Basically, unless I'm missing your point, this is what my patch does,
-> except that I don't move it to drivers/base/ and the registration
-> function I added require a pointer to struct device. Indeed, decoupling
-> it further from the driver model, by adding of_syscon_register() should
-> be useful for early users.
-
-If agreed by Arnd, I think this work can be completed as a subsequent
-patch.
-
-> Should I move this to drivers/base/, even though from current location
-> it can be used outside the platform driver anyway?
-
-If I'm being honest with myself, I'd say that Syscon wasn't really an
-MFD driver.  I'm happy to keep it in there any continue maintaining
-it, but wouldn't block a move either.
-
+diff --git a/include/trace/events/pagemap.h b/include/trace/events/pagemap.h
+index 1c9fabd..ce0803b 100644
+--- a/include/trace/events/pagemap.h
++++ b/include/trace/events/pagemap.h
+@@ -28,12 +28,10 @@ TRACE_EVENT(mm_lru_insertion,
+ 
+ 	TP_PROTO(
+ 		struct page *page,
+-		unsigned long pfn,
+-		int lru,
+-		unsigned long flags
++		int lru
+ 	),
+ 
+-	TP_ARGS(page, pfn, lru, flags),
++	TP_ARGS(page, lru),
+ 
+ 	TP_STRUCT__entry(
+ 		__field(struct page *,	page	)
+@@ -44,9 +42,9 @@ TRACE_EVENT(mm_lru_insertion,
+ 
+ 	TP_fast_assign(
+ 		__entry->page	= page;
+-		__entry->pfn	= pfn;
++		__entry->pfn	= page_to_pfn(page);
+ 		__entry->lru	= lru;
+-		__entry->flags	= flags;
++		__entry->flags	= trace_pagemap_flags(page);
+ 	),
+ 
+ 	/* Flag format is based on page-types.c formatting for pagemap */
+@@ -64,9 +62,9 @@ TRACE_EVENT(mm_lru_insertion,
+ 
+ TRACE_EVENT(mm_lru_activate,
+ 
+-	TP_PROTO(struct page *page, unsigned long pfn),
++	TP_PROTO(struct page *page),
+ 
+-	TP_ARGS(page, pfn),
++	TP_ARGS(page),
+ 
+ 	TP_STRUCT__entry(
+ 		__field(struct page *,	page	)
+@@ -75,7 +73,7 @@ TRACE_EVENT(mm_lru_activate,
+ 
+ 	TP_fast_assign(
+ 		__entry->page	= page;
+-		__entry->pfn	= pfn;
++		__entry->pfn	= page_to_pfn(page);
+ 	),
+ 
+ 	/* Flag format is based on page-types.c formatting for pagemap */
+diff --git a/mm/swap.c b/mm/swap.c
+index 9e8e347..d10be45 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -501,7 +501,7 @@ static void __activate_page(struct page *page, struct lruvec *lruvec,
+ 		SetPageActive(page);
+ 		lru += LRU_ACTIVE;
+ 		add_page_to_lru_list(page, lruvec, lru);
+-		trace_mm_lru_activate(page, page_to_pfn(page));
++		trace_mm_lru_activate(page);
+ 
+ 		__count_vm_event(PGACTIVATE);
+ 		update_page_reclaim_stat(lruvec, file, 1);
+@@ -996,7 +996,7 @@ static void __pagevec_lru_add_fn(struct page *page, struct lruvec *lruvec,
+ 	SetPageLRU(page);
+ 	add_page_to_lru_list(page, lruvec, lru);
+ 	update_page_reclaim_stat(lruvec, file, active);
+-	trace_mm_lru_insertion(page, page_to_pfn(page), lru, trace_pagemap_flags(page));
++	trace_mm_lru_insertion(page, lru);
+ }
+ 
+ /*
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.4.5
+
