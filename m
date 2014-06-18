@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892AbaFREWw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 00:22:52 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:48652 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970AbaFREWv (ORCPT
+	id S1755560AbaFREW6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 00:22:58 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:47794 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010AbaFREWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 00:22:51 -0400
+	Wed, 18 Jun 2014 00:22:55 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAPnjgZ0Qj=5=5xtBoK7b+1Qn+VbBeeSPr+K5uiSMv3fU2ejXfQ@mail.gmail.com>
-References: <1402954800-28215-1-git-send-email-dianders@chromium.org>
-	<1402954800-28215-8-git-send-email-dianders@chromium.org>
-	<CAPnjgZ0Qj=5=5xtBoK7b+1Qn+VbBeeSPr+K5uiSMv3fU2ejXfQ@mail.gmail.com>
-Date: Tue, 17 Jun 2014 21:22:50 -0700
-X-Google-Sender-Auth: 7sBvntm4nVoAPQh49Gh_dwgILD0
-Message-ID: <CAD=FV=VCe+mf4fM79R2iunrvsS_A=G4Ha1z6M2z7J4Vq1e6=1A@mail.gmail.com>
-Subject: Re: [PATCH 07/10] mfd: cros_ec: cleanup: remove unused fields from
- struct cros_ec_device
-From: Doug Anderson <dianders@chromium.org>
-To: Simon Glass <sjg@chromium.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Bill Richardson <wfrichar@chromium.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Mark Brown <broonie@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        lk <linux-kernel@vger.kernel.org>
+In-Reply-To: <53A10C21.8070101@zytor.com>
+References: <CA+5PVA4srNrj2xqMYH40N13rV+jC-PbLdyNpoURomTq48cJNBA@mail.gmail.com>
+ <CA+5PVA7gL6T2eXAy6G4hGJzhKZ_8KHd0qauKqzuHAP4oTJ97QA@mail.gmail.com>
+ <CALCETrXG=752GrPhP8zKJUciiagCVRO0kenDOqL78eP73Y3ryA@mail.gmail.com>
+ <5398749B.4090209@zytor.com> <CALCETrXMxn1-qqTkf271+=7F1Aiy7c=rNsnq9cRoB=e1k-Q3UQ@mail.gmail.com>
+ <CALCETrUVudD++7i679xVW_NvvVUmHpUqdufjbguQciT5k5sguQ@mail.gmail.com> <53A10C21.8070101@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 17 Jun 2014 21:22:34 -0700
+Message-ID: <CALCETrU2JMsanD__Re+18htJX07paaNBmryej_MigvXqnYbNjA@mail.gmail.com>
+Subject: Re: vdso_install target broken post-3.15
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simon,
-
-On Tue, Jun 17, 2014 at 8:39 PM, Simon Glass <sjg@chromium.org> wrote:
-> Hi Doug,
->
-> On 16 June 2014 14:39, Doug Anderson <dianders@chromium.org> wrote:
->> From: Bill Richardson <wfrichar@chromium.org>
+On Tue, Jun 17, 2014 at 8:48 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 06/17/2014 08:45 PM, Andy Lutomirski wrote:
+>> On Tue, Jun 17, 2014 at 3:54 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> Just a heads up: gdb can't debug the vdso on 3.16-rc1.  I filed a bug:
+>>>
+>>> https://sourceware.org/bugzilla/show_bug.cgi?id=17064
+>>>
+>>> We may need to extend the fake section header hack to all vdso
+>>> versions and stick the ELF notes in there.
 >>
->> struct cros_ec_device has a superfluous "name" field. We can get all the
->> debugging info we need from the existing ec_name and phys_name fields, so
->> let's take out the extra field.
+>> I have a semi-working implementation of a workaround, bit it adds a
+>> fair amount of extra crud to the image, and it's pushing my
+>> configuration past a page boundary.  I suspect that, if we're willing
+>> to abuse the ELF format a bit more, I can get the overhead down,
+>> though.
+>>
+>> Are we okay with regressing here until binutils gets fixed?
+>>
 >
-> Except that it no longer prints I2C/SPI - i.e. the transport that is
-> used. Is that not considered important?
+> Probably not... although I guess it depends just how bad it really is.
 
-Before this change:
-  [    1.895472] cros-ec-spi spi2.0: Chrome EC (SPI)
+AFAICT the only issue is that gdb will fail to find installed debug
+info on systems that install it into .build-id, which AFAIK means
+Fedora and similar users who install kernel RPMs.  This won't effect
+anyone who installs their own kernel, since it never worked correctly
+for those users anyway.
 
-After this change:
-  [    1.910671] cros-ec-spi spi2.0: Chrome EC device registered
+Fortunately, Fedora ought to be able to update its gdb and/or binutils
+rpm by the time that 3.16 kernel RPMs show up.  Josh, is this
+workable?  In my experience, I've never had a sourceware.org bug
+fixed, but I have had bugzilla.redhat.org bugs fixed.  I'm looking at
+the binutils code, and I'm kind of scared of it.  Also, I don't have
+an FSF copyright assignment on file.
 
+I filed this Fedora bug:
 
-I think having SPI in the name twice is probably enough.  ;)
+https://bugzilla.redhat.com/show_bug.cgi?id=1110598
 
--Doug
+Let's see what happens.  Can we give this a little while?
+
+I wrote this:
+
+https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/log/?h=x86/vdso_sections
+
+but it's bad: I'm not allocating space properly, so it doesn't
+reliably build.  Also, it wastes space, and I'd rather just get rid of
+this crap.
+
+--Andy
