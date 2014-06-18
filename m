@@ -1,171 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965963AbaFRJsc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 05:48:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:24728 "EHLO mga02.intel.com"
+	id S965935AbaFRJs3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 05:48:29 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:39773 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965901AbaFRJsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 05:48:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,499,1400050800"; 
-   d="scan'208";a="530353932"
-From: Qiaowei Ren <qiaowei.ren@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Dave Hansen <dave.hansen@intel.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Qiaowei Ren <qiaowei.ren@intel.com>
-Subject: [PATCH v6 10/10] x86, mpx: add documentation on Intel MPX
-Date: Wed, 18 Jun 2014 17:44:16 +0800
-Message-Id: <1403084656-27284-11-git-send-email-qiaowei.ren@intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
-References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
+	id S965726AbaFRJs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 05:48:26 -0400
+Date: Wed, 18 Jun 2014 11:48:22 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Jiri Kosina <trivial@kernel.org>, Richard Weinberger <richard@nod.at>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 05/28] Remove MPILIB_EXTRA
+Message-ID: <20140618094821.GA24024@pd.tnic>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+ <1391971686-9517-6-git-send-email-richard@nod.at>
+ <1391977123.25855.24.camel@x220>
+ <1397552794.1985.19.camel@x220>
+ <20140415092147.GA4302@pd.tnic>
+ <1403078994.1984.47.camel@x220>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1403078994.1984.47.camel@x220>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the Documentation/x86/intel_mpx.txt file with some
-information about Intel MPX.
+On Wed, Jun 18, 2014 at 10:09:54AM +0200, Paul Bolle wrote:
+> This oneliner is neither part of v3.16-rc1 nor part of linux-next. It
+> applies cleanly to next-20140618. Should I hope that Jiri Kosina wants
+> to take it for trivial (CC-ed)?
 
-Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
----
- Documentation/x86/intel_mpx.txt |  127 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 127 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/x86/intel_mpx.txt
+Yeah, he will.
 
-diff --git a/Documentation/x86/intel_mpx.txt b/Documentation/x86/intel_mpx.txt
-new file mode 100644
-index 0000000..1af9809
---- /dev/null
-+++ b/Documentation/x86/intel_mpx.txt
-@@ -0,0 +1,127 @@
-+1. Intel(R) MPX Overview
-+========================
-+
-+Intel(R) Memory Protection Extensions (Intel(R) MPX) is a new
-+capability introduced into Intel Architecture. Intel MPX provides
-+hardware features that can be used in conjunction with compiler
-+changes to check memory references, for those references whose
-+compile-time normal intentions are usurped at runtime due to
-+buffer overflow or underflow.
-+
-+For more information, please refer to Intel(R) Architecture
-+Instruction Set Extensions Programming Reference, Chapter 9:
-+Intel(R) Memory Protection Extensions.
-+
-+Note: Currently no hardware with MPX ISA is available but it is always
-+possible to use SDE (Intel(R) Software Development Emulator) instead,
-+which can be downloaded from
-+http://software.intel.com/en-us/articles/intel-software-development-emulator
-+
-+
-+2. How does MPX kernel code work
-+================================
-+
-+Handling #BR faults caused by MPX
-+---------------------------------
-+
-+When MPX is enabled, there are 2 new situations that can generate
-+#BR faults.
-+  * bounds violation caused by MPX instructions.
-+  * new bounds tables (BT) need to be allocated to save bounds.
-+
-+We hook #BR handler to handle these two new situations.
-+
-+Decoding MPX instructions
-+-------------------------
-+
-+If a #BR is generated due to a bounds violation caused by MPX.
-+We need to decode MPX instructions to get violation address and
-+set this address into extended struct siginfo.
-+
-+The _sigfault feild of struct siginfo is extended as follow:
-+
-+87		/* SIGILL, SIGFPE, SIGSEGV, SIGBUS */
-+88		struct {
-+89			void __user *_addr; /* faulting insn/memory ref. */
-+90 #ifdef __ARCH_SI_TRAPNO
-+91			int _trapno;	/* TRAP # which caused the signal */
-+92 #endif
-+93			short _addr_lsb; /* LSB of the reported address */
-+94			struct {
-+95				void __user *_lower;
-+96				void __user *_upper;
-+97			} _addr_bnd;
-+98		} _sigfault;
-+
-+The '_addr' field refers to violation address, and new '_addr_and'
-+field refers to the upper/lower bounds when a #BR is caused.
-+
-+Glibc will be also updated to support this new siginfo. So user
-+can get violation address and bounds when bounds violations occur.
-+
-+Freeing unused bounds tables
-+----------------------------
-+
-+When a BNDSTX instruction attempts to save bounds to a bounds directory
-+entry marked as invalid, a #BR is generated. This is an indication that
-+no bounds table exists for this entry. In this case the fault handler
-+will allocate a new bounds table on demand.
-+
-+Since the kernel allocated those tables on-demand without userspace
-+knowledge, it is also responsible for freeing them when the associated
-+mappings go away.
-+
-+Here, the solution for this issue is to hook do_munmap() to check
-+whether one process is MPX enabled. If yes, those bounds tables covered
-+in the virtual address region which is being unmapped will be freed also.
-+
-+Adding new prctl commands
-+-------------------------
-+
-+Runtime library in userspace is responsible for allocation of bounds
-+directory. So kernel have to use XSAVE instruction to get the base
-+of bounds directory from BNDCFG register.
-+
-+But XSAVE is expected to be very expensive. In order to do performance
-+optimization, we have to add new prctl command to get the base of
-+bounds directory to be used in future.
-+
-+Two new prctl commands are added to register and unregister MPX related
-+resource.
-+
-+155	#define PR_MPX_REGISTER         41
-+156	#define PR_MPX_UNREGISTER       42
-+
-+The base of the bounds directory is set into mm_struct during
-+PR_MPX_REGISTER command execution. This member can be used to
-+check whether one application is mpx enabled.
-+
-+
-+3. Tips
-+=======
-+
-+1) Users are not allowed to create bounds tables and point the bounds
-+directory at them in the userspace. In fact, it is not also necessary
-+for users to create bounds tables in the userspace.
-+
-+When #BR fault is produced due to invalid entry, bounds table will be
-+created in kernel on demand and kernel will not transfer this fault to
-+userspace. So usersapce can't receive #BR fault for invalid entry, and
-+it is not also necessary for users to create bounds tables by themselves.
-+
-+Certainly users can allocate bounds tables and forcibly point the bounds
-+directory at them through XSAVE instruction, and then set valid bit
-+of bounds entry to have this entry valid. But we have no way to track
-+the memory usage of these user-created bounds tables. In regard to this,
-+this behaviour is outlawed here.
-+
-+2) We will not support the case that multiple bounds directory entries
-+are pointed at the same bounds table.
-+
-+Users can be allowed to take multiple bounds directory entries and point
-+them at the same bounds table. See more information "Intel(R) Architecture
-+Instruction Set Extensions Programming Reference" (9.3.4).
-+
-+If userspace did this, it will be possible for kernel to unmap an in-use
-+bounds table since it does not recognize sharing. So this behavior is
-+also outlawed here.
 -- 
-1.7.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
