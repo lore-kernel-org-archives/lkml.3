@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744AbaFREQu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 00:16:50 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:42192 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970AbaFREQs (ORCPT
+	id S1751892AbaFREWw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 00:22:52 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:48652 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970AbaFREWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 00:16:48 -0400
+	Wed, 18 Jun 2014 00:22:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAPnjgZ0Ofds_atZRVxfM4RCtiDNjbZpcdAvZBM_fCbniKTFmig@mail.gmail.com>
+In-Reply-To: <CAPnjgZ0Qj=5=5xtBoK7b+1Qn+VbBeeSPr+K5uiSMv3fU2ejXfQ@mail.gmail.com>
 References: <1402954800-28215-1-git-send-email-dianders@chromium.org>
-	<1402954800-28215-5-git-send-email-dianders@chromium.org>
-	<CAPnjgZ0Ofds_atZRVxfM4RCtiDNjbZpcdAvZBM_fCbniKTFmig@mail.gmail.com>
-Date: Tue, 17 Jun 2014 21:16:47 -0700
-X-Google-Sender-Auth: 99_DlLluWZ4742uELaXOVQJNWBw
-Message-ID: <CAD=FV=V4Diapvi9utBUH-nwsKunCxOqPVgp8c6_e6P5+qwgYFw@mail.gmail.com>
-Subject: Re: [PATCH 04/10] mfd: cros_ec: Tweak struct cros_ec_device for clarity
+	<1402954800-28215-8-git-send-email-dianders@chromium.org>
+	<CAPnjgZ0Qj=5=5xtBoK7b+1Qn+VbBeeSPr+K5uiSMv3fU2ejXfQ@mail.gmail.com>
+Date: Tue, 17 Jun 2014 21:22:50 -0700
+X-Google-Sender-Auth: 7sBvntm4nVoAPQh49Gh_dwgILD0
+Message-ID: <CAD=FV=VCe+mf4fM79R2iunrvsS_A=G4Ha1z6M2z7J4Vq1e6=1A@mail.gmail.com>
+Subject: Re: [PATCH 07/10] mfd: cros_ec: cleanup: remove unused fields from
+ struct cros_ec_device
 From: Doug Anderson <dianders@chromium.org>
 To: Simon Glass <sjg@chromium.org>
 Cc: Lee Jones <lee.jones@linaro.org>,
@@ -35,50 +36,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Simon,
 
-On Tue, Jun 17, 2014 at 8:35 PM, Simon Glass <sjg@chromium.org> wrote:
+On Tue, Jun 17, 2014 at 8:39 PM, Simon Glass <sjg@chromium.org> wrote:
 > Hi Doug,
 >
 > On 16 June 2014 14:39, Doug Anderson <dianders@chromium.org> wrote:
 >> From: Bill Richardson <wfrichar@chromium.org>
 >>
->> The members of struct cros_ec_device were improperly commented, and
->> intermixed the private and public sections. This is just cleanup to make it
->> more obvious what goes with what.
->>
->> [dianders: left lock in the structure but gave it the name that will
->> eventually be used.]
->>
->> Signed-off-by: Bill Richardson <wfrichar@chromium.org>
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
->> ---
->>  drivers/mfd/cros_ec.c       |  2 +-
->>  drivers/mfd/cros_ec_i2c.c   |  4 +--
->>  drivers/mfd/cros_ec_spi.c   | 10 +++----
->>  include/linux/mfd/cros_ec.h | 65 ++++++++++++++++++++++++---------------------
->>  4 files changed, 43 insertions(+), 38 deletions(-)
->>
->> diff --git a/drivers/mfd/cros_ec.c b/drivers/mfd/cros_ec.c
->> index bd6f936..a9eede5 100644
->> --- a/drivers/mfd/cros_ec.c
->> +++ b/drivers/mfd/cros_ec.c
->> @@ -57,7 +57,7 @@ static int cros_ec_command_sendrecv(struct cros_ec_device *ec_dev,
->>         msg.in_buf = in_buf;
->>         msg.in_len = in_len;
->>
->> -       return ec_dev->command_xfer(ec_dev, &msg);
->> +       return ec_dev->cmd_xfer(ec_dev, &msg);
+>> struct cros_ec_device has a superfluous "name" field. We can get all the
+>> debugging info we need from the existing ec_name and phys_name fields, so
+>> let's take out the extra field.
 >
-> Why do this rename? It makes it different from the other members.
+> Except that it no longer prints I2C/SPI - i.e. the transport that is
+> used. Is that not considered important?
 
-All I know of the history of this change is at
-<http://crosreview.com/57061>.  My best guess is that Bill was trying
-to differentiate public vs. private function pointers.  Perhaps he
-will chime in.
+Before this change:
+  [    1.895472] cros-ec-spi spi2.0: Chrome EC (SPI)
 
-If it helps the other command_xxx() function pointers are removed in
-the later "mfd: cros_ec: cleanup: Remove EC wrapper functions"
+After this change:
+  [    1.910671] cros-ec-spi spi2.0: Chrome EC device registered
 
-If you wish I can skip this rename, just let me know and it won't be
-too much trouble.
+
+I think having SPI in the name twice is probably enough.  ;)
 
 -Doug
