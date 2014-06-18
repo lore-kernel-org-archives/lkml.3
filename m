@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756354AbaFRHVV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 03:21:21 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:61413 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751576AbaFRHVT (ORCPT
+	id S1756434AbaFRHYo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 03:24:44 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:48870 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372AbaFRHYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 03:21:19 -0400
-Message-ID: <53A13DE9.4020001@gmail.com>
-Date: Wed, 18 Jun 2014 10:21:13 +0300
-From: Konstantinos Skarlatos <k.skarlatos@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:32.0) Gecko/20100101 Thunderbird/32.0a2
+	Wed, 18 Jun 2014 03:24:42 -0400
+Date: Wed, 18 Jun 2014 08:24:36 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Keerthy <a0393675@ti.com>
+Cc: Keerthy <j-keerthy@ti.com>, linux-omap@vger.kernel.org,
+        lgirdwood@gmail.com, broonie@kernel.org, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com
+Subject: Re: [PATCH 7/9] regulator: palmas: Add palmas_pmic_driver_data
+ structure
+Message-ID: <20140618072436.GA21030@lee--X1>
+References: <1401272423-25761-1-git-send-email-j-keerthy@ti.com>
+ <1401272423-25761-8-git-send-email-j-keerthy@ti.com>
+ <20140617163721.GR29841@lee--X1>
+ <53A11D40.7020201@ti.com>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@fb.com>, linux-kernel@vger.kernel.org
-CC: linux-btrfs@vger.kernel.org
-Subject: Re: commit 762380a "block: add notion of a chunk size for
- request merging" stops io on btrfs
-References: <53A0B491.1040901@gmail.com> <53A0F54F.2060205@fb.com>
-In-Reply-To: <53A0F54F.2060205@fb.com>
-Content-Type: text/plain; charset=windows-1253; format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <53A11D40.7020201@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/6/2014 5:11 ðì, Jens Axboe wrote:
-> On 2014-06-17 14:35, Konstantinos Skarlatos wrote:
->> Hi all,
->> with 3.16-rc1  rsync stops writing to my btrfs filesystem and stays at a
->> D+ state.
->> git bisect showed that the problematic commit is:
->>
->> 762380ad9322951cea4ce9d24864265f9c66a916 is the first bad commit
->> commit 762380ad9322951cea4ce9d24864265f9c66a916
->> Author: Jens Axboe <axboe@fb.com>
->> Date:   Thu Jun 5 13:38:39 2014 -0600
->>
->>      block: add notion of a chunk size for request merging
->>
->>      Some drivers have different limits on what size a request should
->>      optimally be, depending on the offset of the request. Similar to
->>      dividing a device into chunks. Add a setting that allows the driver
->>      to inform the block layer of such a chunk size. The block layer 
->> will
->>      then prevent merging across the chunks.
->>
->>      This is needed to optimally support NVMe with a non-zero stripe 
->> size.
->>
->>      Signed-off-by: Jens Axboe <axboe@fb.com>
->
-> That's odd, should not have any effect since nobody enables stripe 
-> sizes in the kernel. I'll double check, perhaps it's not always being 
-> cleared.
->
-> Ah wait, does the attached help?
+> >>Add palmas_pmic_driver_data structure.
+> >>
+> >>Signed-off-by: Keerthy <j-keerthy@ti.com>
+> >>---
+> >>  include/linux/mfd/palmas.h |   25 +++++++++++++++++++++++++
+> >>  1 file changed, 25 insertions(+)
+> >>
+> >>diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
+> >>index 8d68452..70f0695 100644
+> >>--- a/include/linux/mfd/palmas.h
+> >>+++ b/include/linux/mfd/palmas.h
+[...]
 
-Yes, it works! I recompiled at commit 
-762380ad9322951cea4ce9d24864265f9c66a916 with your patch and it looks 
-ok. Rebooted back to the unpatched kernel and the bug showed up again 
-immediately.
+> >>+struct palmas_pmic_driver_data {
+> >>+	int smps_start;
+> >>+	int smps_end;
+> >>+	int ldo_begin;
+> >>+	int ldo_end;
+> >>+	int max_reg;
+> >>+	struct regs_info *palmas_regs_info;
+> >>+	struct of_regulator_match *palmas_matches;
+> >>+	struct palmas_sleep_requestor_info *sleep_req_info;
+> >>+	int (*smps_register)(struct palmas_pmic *pmic,
+> >>+			     struct palmas_pmic_driver_data *ddata,
+> >>+			     struct palmas_pmic_platform_data *pdata,
+> >>+			     const char *pdev_name,
+> >>+			     struct regulator_config config);
+> >>+	int (*ldo_register)(struct palmas_pmic *pmic,
+> >>+			    struct palmas_pmic_driver_data *ddata,
+> >>+			    struct palmas_pmic_platform_data *pdata,
+> >>+			    const char *pdev_name,
+> >>+			    struct regulator_config config);
+> >Are you sure you need to store all of this stuff?
+> >
+> >Particularly the match pointer.  Do you really re-use it?
+> 
+> Match pointer is used extensively in the palmas_regulator.c.
+> This structure is very much used by regulator driver.
 
-The funny thing is that the problem only showed on my (multi-disk) btrfs 
-filesystem. / which is on ext4 seems to work fine.
+On closer inspection, I now see that it's a 'of_regulator_match',
+rather than an 'of_match' pointer, which were my initial thoughts.  I
+think it would have been weird to carry the 'of_match', but the
+reality sounds sane.
 
->
->
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
