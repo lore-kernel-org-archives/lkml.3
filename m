@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965022AbaFRFRZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 01:17:25 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:44664 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964782AbaFRFRN (ORCPT
+	id S965121AbaFRFUC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 01:20:02 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:36453 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965073AbaFRFT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 01:17:13 -0400
-From: Varka Bhadram <varkabhadram@gmail.com>
-X-Google-Original-From: Varka Bhadram <varkab@cdac.in>
-To: netdev@vger.kernel.org
-Cc: alex.bluesman.smirnov@gmail.com, dbaryshkov@gmail.com,
-        linux-zigbee-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, devicetree@vger.kernel.org,
-        Varka Bhadram <varkab@cdac.in>
-Subject: [PATCH net-next v2 2/3] ieee802154: cc2520: add driver to kernel build system
-Date: Wed, 18 Jun 2014 10:46:04 +0530
-Message-Id: <1403068565-32224-3-git-send-email-varkab@cdac.in>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403068565-32224-1-git-send-email-varkab@cdac.in>
-References: <1403068565-32224-1-git-send-email-varkab@cdac.in>
+	Wed, 18 Jun 2014 01:19:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <53A0D651.20605@codeaurora.org>
+References: <1402944372-31901-1-git-send-email-bjorn.andersson@sonymobile.com>
+	<1402944372-31901-2-git-send-email-bjorn.andersson@sonymobile.com>
+	<53A0D651.20605@codeaurora.org>
+Date: Tue, 17 Jun 2014 22:19:58 -0700
+Message-ID: <CAJAp7Oi6gqbrVOBnB8YvpR7YtQ_DDdWOAYeEU2j2Mt_=FboNoA@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] soc: devicetree: bindings: Add Qualcomm RPM DT binding
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Lee Jones <lee.jones@linaro.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Varka Bhadram <varkab@cdac.in>
----
- drivers/net/ieee802154/Kconfig  |   11 +++++++++++
- drivers/net/ieee802154/Makefile |    1 +
- 2 files changed, 12 insertions(+)
+On Tue, Jun 17, 2014 at 4:59 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+[...]
+>
+> because ipc is actually a register inside the Krait complex's global
+> clock control/distribution hardware block (it's located at 0x2011000).
+> From what I can tell, this is the only non-clock/power register inside
+> there. I plan to send out a driver for this hardware block so that I can
+> switch the L2 aux source mux over to PLL8 instead of PXO (done with a
+> single register write to 0x2011028) and this mapping/use here is going
+> to conflict with that unless I only map the single register like is done
+> here.
+>
+> I wonder if we'd be better off making this region a separate node and
+> having some phandle to it here in the RPM node? That way we have a
+> driver that provides a clock and some IPC handle the RPM driver can get.
+> The SMD driver also uses the same register to kick other processors so
+> having some generic IPC handle may be useful there too.
 
-diff --git a/drivers/net/ieee802154/Kconfig b/drivers/net/ieee802154/Kconfig
-index 3e89bea..680422f 100644
---- a/drivers/net/ieee802154/Kconfig
-+++ b/drivers/net/ieee802154/Kconfig
-@@ -51,3 +51,14 @@ config IEEE802154_MRF24J40
- 
- 	  This driver can also be built as a module. To do so, say M here.
- 	  the module will be called 'mrf24j40'.
-+
-+config IEEE802154_CC2520
-+	depends on IEEE802154_DRIVERS && MAC802154
-+	tristate "cc2520 transceiver driver"
-+	depends on SPI
-+	---help---
-+	  Say Y here to enable the CC2520 SPI 802.15.4 wireless
-+	  controller.
-+
-+	  This driver can also be built as a module. To do so, say M here.
-+	  the module will be called 'cc2520'.
-diff --git a/drivers/net/ieee802154/Makefile b/drivers/net/ieee802154/Makefile
-index abb0c08..655cb95 100644
---- a/drivers/net/ieee802154/Makefile
-+++ b/drivers/net/ieee802154/Makefile
-@@ -2,3 +2,4 @@ obj-$(CONFIG_IEEE802154_FAKEHARD) += fakehard.o
- obj-$(CONFIG_IEEE802154_FAKELB) += fakelb.o
- obj-$(CONFIG_IEEE802154_AT86RF230) += at86rf230.o
- obj-$(CONFIG_IEEE802154_MRF24J40) += mrf24j40.o
-+obj-$(CONFIG_IEEE802154_CC2520) += cc2520.o
--- 
-1.7.9.5
+Thanks Stephen,
 
+I never connected the dots here but now that I found the right pieces of
+documentation I can only agree with you. This would better be some sort of
+reverse interrupt chip.
+
+Another such use case would be the smsm and smp2p, which in the codeaurora tree
+are modelled with a custom "state change" api and as gpios respectively. Both
+of these seems like they should better just be modelled as incoming virtual
+interrupts and then some sort of outgoing "interrupts" or "signals".
+
+Maybe I'm over optimistic regarding the reusability here, but I definitely
+agree with you that having a "ipc = <&apcs 0>;" does look like a better
+solution.
+
+Regards,
+Bjorn
