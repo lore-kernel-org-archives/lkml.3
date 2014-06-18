@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934206AbaFRIZW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 04:25:22 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:35791 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933705AbaFRIZR (ORCPT
+	id S934224AbaFRIZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 04:25:27 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:57418 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933705AbaFRIZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 04:25:17 -0400
+	Wed, 18 Jun 2014 04:25:24 -0400
 From: Anil Belur <askb23@gmail.com>
 X-Google-Original-From: Anil Belur
 To: andreas.dilger@intel.com, oleg.drokin@intel.com,
         gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, hpdd-discuss@ml01.01.org,
         Anil Belur <askb23@gmail.com>
-Subject: [PATCH v7 7/8] staging: lustre: lclient: lcommon_cl.c fixing coding style issues
-Date: Wed, 18 Jun 2014 18:23:55 +1000
-Message-Id: <1403079836-9304-8-git-send-email-askb23@gmail.com>
+Subject: [PATCH v7 8/8] staging: lustre: lclient: lcommon_cl.c fixing coding style issues
+Date: Wed, 18 Jun 2014 18:23:56 +1000
+Message-Id: <1403079836-9304-9-git-send-email-askb23@gmail.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1403079836-9304-1-git-send-email-askb23@gmail.com>
 References: <1403079836-9304-1-git-send-email-askb23@gmail.com>
@@ -25,33 +25,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Anil Belur <askb23@gmail.com>
 
-fixed: WARNING: line over 80 characters, used a new variable 'size_index' to
-store the offset. Replaced "unsigned long" with  "loff_t" type for
-'cur_index'. Removed the parenthesis around the second part of the if statement following the '||' as its not required.
-
+fixed: WARNING: suspect code indent for conditional statements (32, 32)
 Signed-off-by: Anil Belur <askb23@gmail.com>
 ---
- drivers/staging/lustre/lustre/lclient/lcommon_cl.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/staging/lustre/lustre/lclient/lcommon_cl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/staging/lustre/lustre/lclient/lcommon_cl.c b/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
-index 2f51b76..b8552ab 100644
+index b8552ab..08d6fbd 100644
 --- a/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
 +++ b/drivers/staging/lustre/lustre/lclient/lcommon_cl.c
-@@ -821,10 +821,11 @@ int ccc_prep_size(const struct lu_env *env, struct cl_object *obj,
- 				 * linux-2.6.18-128.1.1 miss to do that.
- 				 * --bug 17336 */
- 				loff_t size = cl_isize_read(inode);
--				unsigned long cur_index = start >> PAGE_CACHE_SHIFT;
-+				loff_t cur_index = start >> PAGE_CACHE_SHIFT;
-+				loff_t size_index = ((size - 1) >> PAGE_CACHE_SHIFT);
+@@ -826,7 +826,7 @@ int ccc_prep_size(const struct lu_env *env, struct cl_object *obj,
  
  				if ((size == 0 && cur_index != 0) ||
--				    (((size - 1) >> PAGE_CACHE_SHIFT) < cur_index))
-+				    size_index < cur_index)
- 				*exceed = 1;
+ 				    size_index < cur_index)
+-				*exceed = 1;
++					*exceed = 1;
  			}
  			return result;
+ 		} else {
 -- 
 1.9.0
 
