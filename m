@@ -1,69 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952AbaFRQMh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 12:12:37 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:33371 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491AbaFRQMd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 12:12:33 -0400
-Message-ID: <53A1BA70.2070702@infradead.org>
-Date: Wed, 18 Jun 2014 09:12:32 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753139AbaFRQO7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 12:14:59 -0400
+Received: from imap.thunk.org ([74.207.234.97]:45871 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751795AbaFRQO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 12:14:58 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+Subject: Display glitching (and possibly related lockup) in 3.16-rc1?
+Date: Wed, 18 Jun 2014 12:14:55 -0400
+Message-ID: <nsxppi6tcsg.fsf@closure.thunk.org>
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH] Documentation: Fix DocBook build with relative $(srctree)
-References: <539F2926.4020004@infradead.org> <1403105262-16367-1-git-send-email-mmarek@suse.cz>
-In-Reply-To: <1403105262-16367-1-git-send-email-mmarek@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/14 08:27, Michal Marek wrote:
-> After commits 890676c6 (kbuild: Use relative path when building in the source
-> tree) and 9da0763b (kbuild: Use relative path when building in a subdir
-> of the source tree), the $(srctree) variable can be a relative path.
-> This breaks Documentation/DocBook/media/Makefile, because it tries to
-> create symlinks from a subdirectory of the object tree to the source
-> tree. Fix this by using a full path in this case.
-> 
-> Reported-by: Randy Dunlap <rdunlap@infradead.org>
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
+Is this a known problem?
 
-Thanks.
+On my T540p, occasionally the display will go black and then be
+completely locked.  One time when this happened, the display started
+glitching and tearing (like what you might see if an analog display had
+a loose connector and it was being wiggled) when the system locked up,
+but the at least 75% of the time when the bug manifests, the screen goes
+black instead.
 
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-Tested-by: Randy Dunlap <rdunlap@infradead.org>
+This appears to only happen when the system is running on battery --- it
+doesn't seem to manifest if I'm plugged into the AC mains.  And I've
+been typing an e-mail message when the system locks up, so I don't think
+it's related to DPMS or the screen saver kicking in.
 
-Please merge to Linus sooner instead of later.
+I can try to bisect this regression (3.15 didn't have this problem), but
+I thought I would ask first if this was a known problem.   I don't know
+for certain that it's an i915 bug, but the symptoms do somewhat point in
+that direction, especially the display glitches.
 
+Thanks!!
 
-> ---
->  Documentation/DocBook/media/Makefile | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/DocBook/media/Makefile b/Documentation/DocBook/media/Makefile
-> index 1d27f0a..639e748 100644
-> --- a/Documentation/DocBook/media/Makefile
-> +++ b/Documentation/DocBook/media/Makefile
-> @@ -202,8 +202,8 @@ $(MEDIA_OBJ_DIR)/%: $(MEDIA_SRC_DIR)/%.b64
->  
->  $(MEDIA_OBJ_DIR)/v4l2.xml: $(OBJIMGFILES)
->  	@$($(quiet)gen_xml)
-> -	@(ln -sf $(MEDIA_SRC_DIR)/v4l/*xml $(MEDIA_OBJ_DIR)/)
-> -	@(ln -sf $(MEDIA_SRC_DIR)/dvb/*xml $(MEDIA_OBJ_DIR)/)
-> +	@(ln -sf `cd $(MEDIA_SRC_DIR) && /bin/pwd`/v4l/*xml $(MEDIA_OBJ_DIR)/)
-> +	@(ln -sf `cd $(MEDIA_SRC_DIR) && /bin/pwd`/dvb/*xml $(MEDIA_OBJ_DIR)/)
->  
->  $(MEDIA_OBJ_DIR)/videodev2.h.xml: $(srctree)/include/uapi/linux/videodev2.h $(MEDIA_OBJ_DIR)/v4l2.xml
->  	@$($(quiet)gen_xml)
-> 
-
-
--- 
-~Randy
+                                        - Ted
