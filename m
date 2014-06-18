@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124AbaFROyu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 10:54:50 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:49896 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025AbaFROxP (ORCPT
+	id S1752155AbaFRO4X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 10:56:23 -0400
+Received: from mail-we0-f196.google.com ([74.125.82.196]:51664 "EHLO
+	mail-we0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101AbaFRO4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 10:53:15 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com, thierry.reding@gmail.com,
-        linux-pwm@vger.kernel.org, maxime.coquelin@st.com,
-        patrice.chotard@st.com, srinivas.kandagatla@gmail.com,
-        devicetree@vger.kernel.org, ajitpal.singh@st.com
-Subject: [PATCH 4/7] ARM: stih416-b2020e: Enable PWM on the B2020 Rev-E
-Date: Wed, 18 Jun 2014 15:52:49 +0100
-Message-Id: <1403103172-19856-4-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1403103172-19856-1-git-send-email-lee.jones@linaro.org>
-References: <1403103172-19856-1-git-send-email-lee.jones@linaro.org>
+	Wed, 18 Jun 2014 10:56:22 -0400
+Date: Wed, 18 Jun 2014 15:56:19 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Daniel Kiper <daniel.kiper@oracle.com>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org, andrew.cooper3@citrix.com,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        eshelton@pobox.com, hpa@zytor.com, ian.campbell@citrix.com,
+        jbeulich@suse.com, jeremy@goop.org, konrad.wilk@oracle.com,
+        matt.fleming@intel.com, mingo@redhat.com, mjg59@srcf.ucam.org,
+        stefano.stabellini@eu.citrix.com, tglx@linutronix.de,
+        Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH v5 1/7] efi: Use early_mem*() instead of early_io*()
+Message-ID: <20140618145619.GP24049@console-pimps.org>
+References: <1402678823-24589-1-git-send-email-daniel.kiper@oracle.com>
+ <1402678823-24589-2-git-send-email-daniel.kiper@oracle.com>
+ <20140618121709.GF24049@console-pimps.org>
+ <20140618125957.GA28489@olila.local.net-space.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140618125957.GA28489@olila.local.net-space.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the infrastructure is now in place for ST's PWM controller.  This
-patch takes the final step and enables the IP on the 2020 Rev-E
-development platform.
+On Wed, 18 Jun, at 02:59:57PM, Daniel Kiper wrote:
+> 
+> I think that it improves readability a bit but if you wish I will not
+> do that in the future.
+ 
+That would be much appreciated.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/boot/dts/stih416-b2020e.dts | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+> > As Matthew pointed out we may also need to access EFI mapped flash
+> > devices.
+> 
+> Right, but I think it does not change a lot in that case. Flash
+> is simply slower type of memory used as permanent storage.
+> Am I missing something?
+ 
+No you're not missing anything, I hit send too quickly while typing my
+reply so the above isn't a complete thought. I don't think this
+distinction between mapped flash and RAM matters in this case.
 
-diff --git a/arch/arm/boot/dts/stih416-b2020e.dts b/arch/arm/boot/dts/stih416-b2020e.dts
-index ba0fa2c..07cbf5b 100644
---- a/arch/arm/boot/dts/stih416-b2020e.dts
-+++ b/arch/arm/boot/dts/stih416-b2020e.dts
-@@ -31,5 +31,15 @@
- 		ethernet1: dwmac@fef08000 {
- 			snps,reset-gpio = <&PIO0 7>;
- 		};
-+
-+		/* SAS PWM Module */
-+		pwm0: pwm@fed10000 {
-+			status		= "okay";
-+		};
-+
-+		/* SBC PWM Module */
-+		pwm1: pwm@fe510000 {
-+			status		= "okay";
-+		};
- 	};
- };
+> As I saw David provided better explanation. If you wish I could include
+> it in commit message.
+
+Yeah, I think that would be very helpful, thanks!
+
 -- 
-1.8.3.2
-
+Matt Fleming, Intel Open Source Technology Center
