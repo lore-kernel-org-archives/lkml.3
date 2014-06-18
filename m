@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756178AbaFRUnz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 16:43:55 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:49231 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754778AbaFRUnx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 16:43:53 -0400
-Date: Wed, 18 Jun 2014 23:43:44 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: devicetree@vger.kernel.org, Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Pavel Machek <pavel@ucw.cz>,
-        Pawel Moll <pawel.moll@arm.com>, Tony Lindgren <tony@atomide.com>,
-        Sebastian Reichel <sre@debian.org>, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] omap3-n900.dts: Rename model name to "Nokia RX-51 board"
-Message-ID: <20140618204344.GC558@drone.musicnaut.iki.fi>
-References: <1403110635-29696-1-git-send-email-pali.rohar@gmail.com>
- <20140618201241.GB558@drone.musicnaut.iki.fi>
- <201406182223.03420@pali>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201406182223.03420@pali>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756206AbaFRUoe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 16:44:34 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:37529 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755305AbaFRUlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 16:41:01 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 04/13] mm: huge_memory: use GFP_TRANSHUGE when charging huge pages
+Date: Wed, 18 Jun 2014 16:40:36 -0400
+Message-Id: <1403124045-24361-5-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
+References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Transparent huge page charges prefer falling back to regular pages
+rather than spending a lot of time in direct reclaim.
 
-On Wed, Jun 18, 2014 at 10:23:03PM +0200, Pali Rohár wrote:
-> On Wednesday 18 June 2014 22:12:41 Aaro Koskinen wrote:
-> > On Wed, Jun 18, 2014 at 06:57:15PM +0200, Pali Rohár wrote:
-> > > Use same name as in legacy board code. There are lot of
-> > > userspace applications which using machine/model name for
-> > > determinating device type.
-> > 
-> > Can you clarify this? Nokia kernel or userspace never had DT,
-> > so they cannot see e.g. /proc/device-tree/model. What other
-> > APIs expose model?
-> 
-> Basically that patch export model name in Hardware /proc/cpuinfo 
-> instead generic DT name. And this patch change name to what 
-> legacy board code reported.
+Desired reclaim behavior is usually declared in the gfp mask, but THP
+charges use GFP_KERNEL and then rely on the fact that OOM is disabled
+for THP charges, and that OOM-disabled charges don't retry reclaim.
+Needless to say, this is anything but obvious and quite error prone.
 
-I don't like the idea of changing the model name from Nokia
-marketing names to those cryptic internal names in DT files.
-There also may be already some userspace relying to find current model
-name from /proc/device-tree/model (e.g. I think my own OS would break).
+Convert THP charges to use GFP_TRANSHUGE instead, which implies
+__GFP_NORETRY, to indicate the low-latency requirement.
 
-A.
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/huge_memory.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index e60837dc785c..10cd7f2bf776 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -827,7 +827,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		count_vm_event(THP_FAULT_FALLBACK);
+ 		return VM_FAULT_FALLBACK;
+ 	}
+-	if (unlikely(mem_cgroup_charge_anon(page, mm, GFP_KERNEL))) {
++	if (unlikely(mem_cgroup_charge_anon(page, mm, GFP_TRANSHUGE))) {
+ 		put_page(page);
+ 		count_vm_event(THP_FAULT_FALLBACK);
+ 		return VM_FAULT_FALLBACK;
+@@ -1101,7 +1101,7 @@ alloc:
+ 		goto out;
+ 	}
+ 
+-	if (unlikely(mem_cgroup_charge_anon(new_page, mm, GFP_KERNEL))) {
++	if (unlikely(mem_cgroup_charge_anon(new_page, mm, GFP_TRANSHUGE))) {
+ 		put_page(new_page);
+ 		if (page) {
+ 			split_huge_page(page);
+@@ -2368,7 +2368,7 @@ static void collapse_huge_page(struct mm_struct *mm,
+ 	if (!new_page)
+ 		return;
+ 
+-	if (unlikely(mem_cgroup_charge_anon(new_page, mm, GFP_KERNEL)))
++	if (unlikely(mem_cgroup_charge_anon(new_page, mm, GFP_TRANSHUGE)))
+ 		return;
+ 
+ 	/*
+-- 
+2.0.0
+
