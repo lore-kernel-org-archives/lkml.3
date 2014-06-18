@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933916AbaFRIKC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 04:10:02 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:54301 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933617AbaFRIJ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 04:09:57 -0400
-Message-ID: <1403078994.1984.47.camel@x220>
-Subject: Re: [PATCH 05/28] Remove MPILIB_EXTRA
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Jiri Kosina <trivial@kernel.org>, Richard Weinberger <richard@nod.at>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 18 Jun 2014 10:09:54 +0200
-In-Reply-To: <20140415092147.GA4302@pd.tnic>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
-	 <1391971686-9517-6-git-send-email-richard@nod.at>
-	 <1391977123.25855.24.camel@x220> <1397552794.1985.19.camel@x220>
-	 <20140415092147.GA4302@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Jun 2014 08:09:54.0779 (UTC) FILETIME=[B00012B0:01CF8ACC]
-X-RcptDomain: vger.kernel.org
+	id S965027AbaFRIXf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 04:23:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38724 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756398AbaFRIXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 04:23:30 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Cc: Jan Kara <jack@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Jens Axboe <axboe@kernel.dk>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 1/4] cfq: Increase default value of target_latency
+Date: Wed, 18 Jun 2014 09:23:24 +0100
+Message-Id: <1403079807-24690-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1403079807-24690-1-git-send-email-mgorman@suse.de>
+References: <1403079807-24690-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-15 at 11:21 +0200, Borislav Petkov wrote:
-> On Tue, Apr 15, 2014 at 11:06:34AM +0200, Paul Bolle wrote:
-> > On Sun, 2014-02-09 at 21:18 +0100, Paul Bolle wrote:
-> > > On Sun, 2014-02-09 at 19:47 +0100, Richard Weinberger wrote:
-> > > > The symbol is an orphan, get rid of it.
-> > > > 
-> > > > Signed-off-by: Richard Weinberger <richard@nod.at>
-> > > 
-> > > Acked-by: Paul Bolle <pebolle@tiscali.nl>
-> > > 
-> > > > ---
-> > > >  crypto/asymmetric_keys/Kconfig | 1 -
-> > > >  1 file changed, 1 deletion(-)
-> > > > 
-> > > > diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-> > > > index 03a6eb9..0320c7d 100644
-> > > > --- a/crypto/asymmetric_keys/Kconfig
-> > > > +++ b/crypto/asymmetric_keys/Kconfig
-> > > > @@ -22,7 +22,6 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
-> > > >  
-> > > >  config PUBLIC_KEY_ALGO_RSA
-> > > >  	tristate "RSA public-key algorithm"
-> > > > -	select MPILIB_EXTRA
-> > > >  	select MPILIB
-> > > >  	help
-> > > >  	  This option enables support for the RSA algorithm (PKCS#1, RFC3447).
-> > > 
-> > > I tried this a year ago (see https://lkml.org/lkml/2013/3/8/142 ).
-> > 
-> > Did anyone else ever find some time to look at this oneliner?
-> 
-> Last time I asked about that part of the tree, Herbert said it should go
-> through James Morris' tree. CCed.
-> 
-> http://lkml.kernel.org/r/20131112182746.GA22711@gondor.apana.org.au
-> 
-> Unless akpm picks it up first. Also CCed.
+The existing CFQ default target_latency results in very poor performance
+for larger numbers of threads doing sequential reads.  While this can be
+easily described as a tuning problem for users, it is one that is tricky
+to detect. This patch the default on the assumption that people with access
+to expensive fast storage also know how to tune their IO scheduler.
 
-This oneliner is neither part of v3.16-rc1 nor part of linux-next. It
-applies cleanly to next-20140618. Should I hope that Jiri Kosina wants
-to take it for trivial (CC-ed)?
+The following is from tiobench run on a mid-range desktop with a single
+spinning disk.
 
+                                      3.16.0-rc1            3.16.0-rc1                 3.0.0
+                                         vanilla          cfq600                     vanilla
+Mean   SeqRead-MB/sec-1         121.88 (  0.00%)      121.60 ( -0.23%)      134.59 ( 10.42%)
+Mean   SeqRead-MB/sec-2         101.99 (  0.00%)      102.35 (  0.36%)      122.59 ( 20.20%)
+Mean   SeqRead-MB/sec-4          97.42 (  0.00%)       99.71 (  2.35%)      114.78 ( 17.82%)
+Mean   SeqRead-MB/sec-8          83.39 (  0.00%)       90.39 (  8.39%)      100.14 ( 20.09%)
+Mean   SeqRead-MB/sec-16         68.90 (  0.00%)       77.29 ( 12.18%)       81.64 ( 18.50%)
 
-Paul Bolle
+As expected, the performance increases for larger number of threads although
+still far short of 3.0-vanilla.  A concern with a patch like this is that
+it would hurt IO latencies but the iostat figures still look reasonable
+
+                  3.16.0-rc1  3.16.0-rc1       3.0.0
+                     vanilla   cfq600        vanilla
+Mean sda-avgqz        912.29      939.89     1000.70
+Mean sda-await       4268.03     4403.99     4887.67
+Mean sda-r_await       79.42       80.33      108.53
+Mean sda-w_await    13073.49    11038.81    11599.83
+Max  sda-avgqz       2194.84     2215.01     2626.78
+Max  sda-await      18157.88    17586.08    24971.00
+Max  sda-r_await      888.40      874.22     5308.00
+Max  sda-w_await   212563.59   190265.33   177698.47
+
+Average read waiting times are barely changed and still short of the
+3.0-vanilla kresult. The worst-case read wait times are also acceptable
+and far better than 3.0.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ block/cfq-iosched.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index cadc378..34b9d8b 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -32,7 +32,7 @@ static int cfq_slice_async = HZ / 25;
+ static const int cfq_slice_async_rq = 2;
+ static int cfq_slice_idle = HZ / 125;
+ static int cfq_group_idle = HZ / 125;
+-static const int cfq_target_latency = HZ * 3/10; /* 300 ms */
++static const int cfq_target_latency = HZ * 6/10; /* 600 ms */
+ static const int cfq_hist_divisor = 4;
+ 
+ /*
+-- 
+1.8.4.5
 
