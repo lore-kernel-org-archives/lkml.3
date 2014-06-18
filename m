@@ -1,236 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933935AbaFRFtP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 01:49:15 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:48018 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756610AbaFRFtN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 01:49:13 -0400
-X-IronPort-AV: E=Sophos;i="5.00,730,1396972800"; 
-   d="scan'208";a="32071738"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: <gleb@kernel.org>, <pbonzini@redhat.com>, <tglx@linutronix.de>,
-        <mingo@redhat.com>, <hpa@zytor.com>, <mgorman@suse.de>,
-        <yinghai@kernel.org>
-CC: <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
-        <laijs@cn.fujitsu.com>, <kvm@vger.kernel.org>, <linux-mm@kvack.org>,
-        <x86@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH 1/1] Move two pinned pages to non-movable node in kvm.
-Date: Wed, 18 Jun 2014 13:50:00 +0800
-Message-ID: <1403070600-6083-1-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S1756683AbaFRFvA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 01:51:00 -0400
+Received: from mx02.posteo.de ([89.146.194.165]:58523 "EHLO posteo.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753026AbaFRFu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 01:50:59 -0400
+Message-ID: <53A128A8.5080206@posteo.de>
+Date: Wed, 18 Jun 2014 07:50:32 +0200
+From: Martin Kepplinger <martink@posteo.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.99]
+To: David Rientjes <rientjes@google.com>
+CC: drbd-dev@lists.linbit.com, drbd-user@lists.linbit.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] drbd: change one-bit bitfield to be an unsigned int
+References: <alpine.DEB.2.02.1406160225510.30205@chino.kir.corp.google.com> <1402988047-16364-1-git-send-email-martink@posteo.de> <alpine.DEB.2.02.1406171243260.18156@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1406171243260.18156@chino.kir.corp.google.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Am 2014-06-17 21:46, schrieb David Rientjes:
+> On Tue, 17 Jun 2014, Martin Kepplinger wrote:
+> 
+>> The one-bit bitfields are assigned true (1) or false (0) and checked
+>> for them respectively. While it should work either way and -1 is true
+>> as well it is more clear to see what's going on when using an unsigned int
+>> because 1 doesn't silently become -1 behind the label true.
+>>
+> 
+> Nothing is silently becoming anything, I have no idea what you're trying 
+> to address.  Is there something in drivers/block/drbd that needs this 
+> change?
 
-I met a problem when offlining memory with a kvm guest running.
+nope.
 
+> 
+>> Signed-off-by: Martin Kepplinger <martink@posteo.de>
+>> ---
+>> Thanks for looking at it. This is more of a question: Does this make sense
+>> to you now? I can be mistaken. It just wasn't totally clear to me at first
+>> sight and even though it should be, why not try to improve it.
+>>
+> 
+> There's no improvement here, you realize that the sign of one-bit 
+> bitfields are implementation defined, correct?  On what implementation 
+> does this patch make a difference?
+> 
+> If you are trying to convert these to unsigned for consistency, then just 
+> say so in the changelog and don't talk about silent changes or comparisons 
+> to true and false that obfuscate the fact that this is just a trivial 
+> cleanup that is based on the author's own preference rather than anything 
+> else.
 
-[Problem]
-When qemu creates vpus, it will call the following two functions
-to allocate two pages:
-1. alloc_apic_access_page(): allocate apic access page for FlexPriority in intel cpu.
-2. alloc_identity_pagetable(): allocate ept identity pagetable for real mode.
+learning learning learning. in this case, why sparse calls this dubious.
+This would be more appropriate on kernelnewbies or the like, sorry.
 
-And unfortunately, these two pages will be pinned in memory, and they cannot
-be migrated. As a result, they cannot be offlined. And memory hot-remove will fail.
-
-
-
-[The way I tried]
-I tried to migrate these two pages, but I think I cannot find a proper way
-to migrate them.
-
-Let's take ept identity pagetable for example:
-In my opinion, since it is pagetable, CPU will access this page every time the guest
-read/write memory. For example, the following code will access memory:
-	int a;
-	a = 0;
-So this ept identity pagetable page can be accessed at any time by CPU automatically.
-
-
-
-[Solution]
-I have a basic idea to solve this problem: allocate these two pages in non-movable nodes.
-(For now, we can only hot-remove memory in movable nodes.)
-
-alloc_identity_pagetable()
-|-> __kvm_set_memory_region()
-|   |-> kvm_arch_prepare_memory_region()
-|       |-> userspace_addr = vm_mmap();
-|       |-> memslot->userspace_addr = userspace_addr;  /* map usespace address (qemu) */
-|
-|   /*
-|    * Here, set memory policy for the mapped but not allocated page,
-|    * make it can only be allocated in non-movable nodes.
-|    * (We can reuse "numa_kernel_nodes" node mask in movable_node functionality.)
-|    */
-|
-|-> page = gfn_to_page()  /* allocate and pin page */
-
-Please refer to the attached patch for detail.
-I did some basic test for the patch, and it will make memory offline succeed.
-
-
-
-[Questions]
-And by the way, would you guys please answer the following questions for me ?
-
-1. What's the ept identity pagetable for ?  Only one page is enough ?
-
-2. Is the ept identity pagetable only used in realmode ?
-   Can we free it once the guest is up (vcpu in protect mode)?
-
-3. Now, ept identity pagetable is allocated in qemu userspace.
-   Can we allocate it in kernel space ?
-
-4. If I want to migrate these two pages, what do you think is the best way ?
-
-Thanks.
-
-
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- arch/x86/include/asm/numa.h | 1 +
- arch/x86/kvm/vmx.c          | 5 +++++
- arch/x86/kvm/x86.c          | 1 +
- arch/x86/mm/numa.c          | 3 ++-
- include/linux/mempolicy.h   | 6 ++++++
- mm/mempolicy.c              | 9 +++++++++
- 6 files changed, 24 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
-index 4064aca..6312577 100644
---- a/arch/x86/include/asm/numa.h
-+++ b/arch/x86/include/asm/numa.h
-@@ -30,6 +30,7 @@ extern int numa_off;
-  */
- extern s16 __apicid_to_node[MAX_LOCAL_APIC];
- extern nodemask_t numa_nodes_parsed __initdata;
-+extern nodemask_t numa_kernel_nodes;
- 
- extern int __init numa_add_memblk(int nodeid, u64 start, u64 end);
- extern void __init numa_set_distance(int from, int to, int distance);
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 801332e..4a3b5b5 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -32,6 +32,7 @@
- #include <linux/slab.h>
- #include <linux/tboot.h>
- #include <linux/hrtimer.h>
-+#include <linux/mempolicy.h>
- #include "kvm_cache_regs.h"
- #include "x86.h"
- 
-@@ -3988,6 +3989,8 @@ static int alloc_apic_access_page(struct kvm *kvm)
- 	if (r)
- 		goto out;
- 
-+	numa_bind_non_movable(kvm_userspace_mem.userspace_addr, PAGE_SIZE);
-+
- 	page = gfn_to_page(kvm, 0xfee00);
- 	if (is_error_page(page)) {
- 		r = -EFAULT;
-@@ -4018,6 +4021,8 @@ static int alloc_identity_pagetable(struct kvm *kvm)
- 	if (r)
- 		goto out;
- 
-+	numa_bind_non_movable(kvm_userspace_mem.userspace_addr, PAGE_SIZE);
-+
- 	page = gfn_to_page(kvm, kvm->arch.ept_identity_map_addr >> PAGE_SHIFT);
- 	if (is_error_page(page)) {
- 		r = -EFAULT;
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index f32a025..3962a23 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -7295,6 +7295,7 @@ int kvm_arch_prepare_memory_region(struct kvm *kvm,
- 			return PTR_ERR((void *)userspace_addr);
- 
- 		memslot->userspace_addr = userspace_addr;
-+		mem->userspace_addr = userspace_addr;
- 	}
- 
- 	return 0;
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index a32b706..d706148 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -22,6 +22,8 @@
- 
- int __initdata numa_off;
- nodemask_t numa_nodes_parsed __initdata;
-+nodemask_t numa_kernel_nodes;
-+EXPORT_SYMBOL(numa_kernel_nodes);
- 
- struct pglist_data *node_data[MAX_NUMNODES] __read_mostly;
- EXPORT_SYMBOL(node_data);
-@@ -557,7 +559,6 @@ static void __init numa_init_array(void)
- static void __init numa_clear_kernel_node_hotplug(void)
- {
- 	int i, nid;
--	nodemask_t numa_kernel_nodes = NODE_MASK_NONE;
- 	unsigned long start, end;
- 	struct memblock_region *r;
- 
-diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
-index f230a97..14f3f04 100644
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -140,6 +140,7 @@ bool vma_policy_mof(struct task_struct *task, struct vm_area_struct *vma);
- 
- extern void numa_default_policy(void);
- extern void numa_policy_init(void);
-+extern long numa_bind_non_movable(unsigned long start, unsigned long len);
- extern void mpol_rebind_task(struct task_struct *tsk, const nodemask_t *new,
- 				enum mpol_rebind_step step);
- extern void mpol_rebind_mm(struct mm_struct *mm, nodemask_t *new);
-@@ -243,6 +244,11 @@ static inline void numa_default_policy(void)
- {
- }
- 
-+static inline long numa_bind_non_movable(unsigned long start, unsigned long len)
-+{
-+	return -EINVAL;
-+}
-+
- static inline void mpol_rebind_task(struct task_struct *tsk,
- 				const nodemask_t *new,
- 				enum mpol_rebind_step step)
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 2849742..20065a9 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -97,6 +97,7 @@
- 
- #include <asm/tlbflush.h>
- #include <asm/uaccess.h>
-+#include <asm/numa.h>
- #include <linux/random.h>
- 
- #include "internal.h"
-@@ -2663,6 +2664,14 @@ void numa_default_policy(void)
- 	do_set_mempolicy(MPOL_DEFAULT, 0, NULL);
- }
- 
-+/* Bind a memory range to non-movable nodes. */
-+long numa_bind_non_movable(unsigned long start, unsigned long len)
-+{
-+	return do_mbind(start, len, MPOL_BIND, MPOL_MODE_FLAGS,
-+			&numa_kernel_nodes, MPOL_MF_STRICT);
-+}
-+EXPORT_SYMBOL(numa_bind_non_movable);
-+
- /*
-  * Parse and format mempolicy from/to strings
-  */
--- 
-1.8.3.1
+> 
+>> sparse called it 'dubious' before the change.
+>>
+>> (built but untested)
+>>
+>>  drivers/block/drbd/drbd_interval.h |    4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/block/drbd/drbd_interval.h b/drivers/block/drbd/drbd_interval.h
+>> index f38fcb0..8d670e6 100644
+>> --- a/drivers/block/drbd/drbd_interval.h
+>> +++ b/drivers/block/drbd/drbd_interval.h
+>> @@ -9,8 +9,8 @@ struct drbd_interval {
+>>  	sector_t sector;	/* start sector of the interval */
+>>  	unsigned int size;	/* size in bytes */
+>>  	sector_t end;		/* highest interval end in subtree */
+>> -	int local:1		/* local or remote request? */;
+>> -	int waiting:1;
+>> +	unsigned int local:1;	/* local or remote request? */
+>> +	unsigned int waiting:1;
+>>  };
+>>  
+>>  static inline void drbd_clear_interval(struct drbd_interval *i)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
