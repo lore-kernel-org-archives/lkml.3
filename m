@@ -1,94 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027AbaFRRot (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 13:44:49 -0400
-Received: from smtprelay0008.hostedemail.com ([216.40.44.8]:60169 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752731AbaFRRos (ORCPT
+	id S1754062AbaFRRoz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 13:44:55 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:59695 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754029AbaFRRow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 13:44:48 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3865:3866:3868:3870:3872:3874:4321:4605:5007:6119:7652:10004:10400:10848:11232:11658:11914:12295:12517:12519:12555:12679:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fan15_46bc107b4ae4e
-X-Filterd-Recvd-Size: 2487
-Message-ID: <1403113484.3839.13.camel@joe-AO725>
-Subject: [PATCH V2] checkpatch: Warn on unnecessary void function return
- statements
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Anish Bhatt <anish@chelsio.com>
-Date: Wed, 18 Jun 2014 10:44:44 -0700
-In-Reply-To: <1401728316.5770.9.camel@joe-AO725>
-References: <1401728316.5770.9.camel@joe-AO725>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Jun 2014 13:44:52 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ao0KAHPPoVNbtAr8/2dsb2JhbABagw2rOgUBAQEBAQEFAZkogQsXdYRgIytvN4hGAc0/hWKIL2QdhC0EmkOLMIgog0Q7gTE
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-wireless@vger.kernel.org
+Subject: [PATCH 1/1] SPECTRUM_CS: ioport_map/unmap relies on HAS_IOPORT_MAP
+Date: Wed, 18 Jun 2014 19:43:31 +0200
+Message-Id: <1403113411-7542-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With some exceptions, warn on void functions that end with a
-"return;", because it's unnecessary.
+Fixing following sh-allmodconfig errors reported on kisskb
 
-Check the closing brace at the start of a line.
-If the line before that has a single tab, then return;
-look at the line before that.  If it's not a label,
-emit a warning.
+"
+drivers/net/wireless/orinoco/spectrum_cs.c:216:2: error: implicit declaration of function 'ioport_map' [-Werror=implicit-function-declaration]
+drivers/net/wireless/orinoco/spectrum_cs.c:273:3: error: implicit declaration of function 'ioport_unmap' [-Werror=implicit-function-declaration]
+"
 
-So, emit a warning on:
-
-void function(...)
-{
-	[...]
-	return;
-}
-
-but do not emit a warning on the below because
-gcc requires any statement (including a bare
-semicolon) before the closing function brace:
-
-void function(...)
-{
-	[...]
-		goto label;
-	[...]
-
-label:
-	return;
-}
-
-Signed-off-by: Joe Perches <joe@perches.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-wireless@vger.kernel.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
+This is untested
 
-V2: The previous patch had a few too many false positives
-    on styles that should be acceptable.
+ drivers/net/wireless/orinoco/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- scripts/checkpatch.pl | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 862cc7a..b191c88 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3470,6 +3470,18 @@ sub process {
- 			}
- 		}
+diff --git a/drivers/net/wireless/orinoco/Kconfig b/drivers/net/wireless/orinoco/Kconfig
+index 60819bc..a8aab9f 100644
+--- a/drivers/net/wireless/orinoco/Kconfig
++++ b/drivers/net/wireless/orinoco/Kconfig
+@@ -122,7 +122,7 @@ config PCMCIA_HERMES
  
-+# unnecessary return in a void function
-+# at end-of-function, with the previous line a single leading tab, then return;
-+# and the line before that not a goto label target like "out:"
-+		if ($sline =~ /^[ \+]}\s*$/ &&
-+		    $prevline =~ /^\+\treturn\s*;\s*$/ &&
-+		    $linenr >= 3 &&
-+		    $lines[$linenr - 3] =~ /^[ +]/ &&
-+		    $lines[$linenr - 3] !~ /^[ +]\s*$Ident\s*:/) {
-+			WARN("RETURN_VOID",
-+			     "void function return statements are not generally useful\n" . $hereprev);
-+               }
-+
- # if statements using unnecessary parentheses - ie: if ((foo == bar))
- 		if ($^V && $^V ge 5.10.0 &&
- 		    $line =~ /\bif\s*((?:\(\s*){2,})/) {
-
+ config PCMCIA_SPECTRUM
+ 	tristate "Symbol Spectrum24 Trilogy PCMCIA card support"
+-	depends on PCMCIA && HERMES
++	depends on PCMCIA && HERMES && HAS_IOPORT_MAP
+ 	---help---
+ 
+ 	  This is a driver for 802.11b cards using RAM-loadable Symbol
+-- 
+1.8.4.5
 
