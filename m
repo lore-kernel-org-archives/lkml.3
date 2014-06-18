@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966771AbaFRNki (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 09:40:38 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49831 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966629AbaFRNkh (ORCPT
+	id S966708AbaFRNnD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 09:43:03 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:64604 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966364AbaFRNnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 09:40:37 -0400
-Date: Wed, 18 Jun 2014 14:39:58 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Varka Bhadram <varkabhadram@gmail.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "alex.bluesman.smirnov@gmail.com" <alex.bluesman.smirnov@gmail.com>,
-        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
-        "linux-zigbee-devel@lists.sourceforge.net" 
-	<linux-zigbee-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Varka Bhadram <varkab@cdac.in>
-Subject: Re: [PATCH net-next v2 1/3] ieee802154: cc2520: adds driver for TI
- CC2520 radio
-Message-ID: <20140618133958.GC11895@leverpostej>
-References: <1403068565-32224-1-git-send-email-varkab@cdac.in>
- <1403068565-32224-2-git-send-email-varkab@cdac.in>
- <20140618091010.GB26461@leverpostej>
- <53A15B38.6060404@gmail.com>
- <20140618095519.GE26461@leverpostej>
- <53A17442.8010009@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53A17442.8010009@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 18 Jun 2014 09:43:00 -0400
+Message-ID: <1403098977.1984.111.camel@x220>
+Subject: Re: [ath5k-devel] [PATCH 09/28] Remove ATHEROS_AR231X
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Holger Schurig <holgerschurig@gmail.com>
+Cc: Sergey Ryazanov <ryazanov.s.a@gmail.com>,
+        List <openwrt-devel@lists.openwrt.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jirislaby@gmail.com>, Richard@venema.h4ckr.net,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, open@hauke-m.de,
+        Weinberger <richard@nod.at>, ath5k-devel@venema.h4ckr.net,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Oleksij Rempel <linux@rempel-privat.de>, Hauke@venema.h4ckr.net,
+        Mehrtens <hauke@hauke-m.de>,
+        "list@hauke-m.de:NETWORKING DRIVERS" <list@hauke-m.de>,
+        Jonathan Bither <jonbither@gmail.com>,
+        "list@hauke-m.de:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
+        OpenWrt@venema.h4ckr.net,
+        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>
+Date: Wed, 18 Jun 2014 15:42:57 +0200
+In-Reply-To: <CAOpc7mE+829tBdy5atjtoJnGWDAnAHT_U0swXCuS3n_DMave1Q@mail.gmail.com>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+	 <1391971686-9517-10-git-send-email-richard@nod.at>
+	 <52F7D480.1050106@hauke-m.de> <52F7DF21.70207@nod.at>
+	 <CAHNKnsS7Mv4ZhBWZa53go9L9nZimJ7_FG5HFJ9C3kkGMAEz-mA@mail.gmail.com>
+	 <52F8C373.9060108@rempel-privat.de>
+	 <CAHNKnsQF5Hdf3JT91moPraRQzn4kMpdD2NSiJ7b30wQhS1W4MA@mail.gmail.com>
+	 <CAGVrzcYnECx5Q=i+m6qZn29y4JALDpw5SWoUNP-S6HgPR3_ygQ@mail.gmail.com>
+	 <CAHNKnsRACSo=DfOyiHxqV3acv_wfZmz4tMnYAW0wo4OCibwdfA@mail.gmail.com>
+	 <CAHNKnsRQp7WLSJNAXEYPTd=qs1DquOfNgKtHES-Utvcy1=FEgQ@mail.gmail.com>
+	 <20140213201421.GJ22203@tuxdriver.com> <1397581703.8212.5.camel@x220>
+	 <CAHNKnsQQ42-XnXrubHAy4PF3H2ynbGDdSMP7MvDS_1aRozYF=A@mail.gmail.com>
+	 <1403087119.1984.93.camel@x220>
+	 <CAHNKnsSfaT7xC5_wv=TrGLEQ2pjC91Q1XG891_n64OuR0fA9Jg@mail.gmail.com>
+	 <1403091974.1984.102.camel@x220>
+	 <CAOpc7mE+829tBdy5atjtoJnGWDAnAHT_U0swXCuS3n_DMave1Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Jun 2014 13:42:58.0300 (UTC) FILETIME=[371B63C0:01CF8AFB]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 12:13:06PM +0100, Varka Bhadram wrote:
-> On 06/18/2014 03:25 PM, Mark Rutland wrote:
-> > On Wed, Jun 18, 2014 at 10:26:16AM +0100, Varka Bhadram wrote:
-> >> +static int cc2520_probe(struct spi_device *spi)
-> >> +{
-> >> +       struct cc2520_private *priv;
-> >> +       struct pinctrl *pinctrl;
-> >> +       struct cc2520_platform_data *pdata;
-> >> +       struct device_node __maybe_unused *np = spi->dev.of_node;
-> >>
-> >> This looks to be definitely unused rather than __maybe_unused. There are
-> >> no other occuences of "np" in this function.
-> >>
-> >> This macro defined like this.
-> >> #define __maybe_unused  __attribute__((unused))
-> > Sure, but that's irrelevant. There's absolutely no point in this
-> > variable existing at all, and it can simply disappear.
-> >
-> > Mark.
-> 
-> If we don't use that macro the compiler triggers warnings saying that:  warning: unused variable ‘np’ [-Wunused-variable]
+On Wed, 2014-06-18 at 15:15 +0200, Holger Schurig wrote:
+> Hmm, wouldn't the obvious thing than to add the driver in it's current
+> form into staging?  Is it well-separated from the rest of  Atheros
+> WLAN drivers ?
 
-Then drop the _variable_, not just the annotation.
+A quick glance at the code shows an include of ar231x_platform.h (which
+doesn't exist) and uses of struct ar231x_board_config (ditto). So it
+won't build as is and therefor needs work to qualify for staging.
 
-Mark.
+
+Paul Bolle
+
