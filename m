@@ -1,163 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105AbaFRUni (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 16:43:38 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:37544 "EHLO zene.cmpxchg.org"
+	id S1756142AbaFRUno (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 16:43:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51779 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755473AbaFRUlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 16:41:05 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch 06/13] mm: memcontrol: remove explicit OOM parameter in charge path
-Date: Wed, 18 Jun 2014 16:40:38 -0400
-Message-Id: <1403124045-24361-7-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
-References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
+	id S1754778AbaFRUnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 16:43:37 -0400
+Date: Wed, 18 Jun 2014 22:43:35 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, hpa@linux.intel.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andrew Lunn <andrew@lunn.ch>, Stephen Warren <swarren@wwwdotorg.org>,
+        Michal Hocko <mhocko@suse.cz>, Joe Perches <joe@perches.com>,
+        Arun KS <arunks.linux@gmail.com>, Kees Cook <keescook@chromium.org>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [RFT 2/2] printk: allow increasing the ring buffer depending
+	on the number of CPUs
+Message-ID: <20140618204335.GQ4841@wotan.suse.de>
+References: <1403090065-13879-1-git-send-email-mcgrof@do-not-panic.com> <1403090065-13879-2-git-send-email-mcgrof@do-not-panic.com> <20140618154255.GJ634@pathway.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140618154255.GJ634@pathway.suse.cz>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Hocko <mhocko@suse.cz>
+On Wed, Jun 18, 2014 at 05:42:55PM +0200, Petr Mládek wrote:
+> On Wed 2014-06-18 04:14:25, Luis R. Rodriguez wrote:
+> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> > 
+> > The default size of the ring buffer is too small for machines
+> > with a large amount of CPUs under heavy load. What ends up
+> > happening when debugging is the ring buffer overlaps and chews
+> > up old messages making debugging impossible unless the size is
+> > passed as a kernel parameter. An idle system upon boot up will
+> > on average spew out only about one or two extra lines but where
+> > this really matters is on heavy load and that will vary widely
+> > depending on the system and environment.
+> > 
+> > There are mechanisms to help increase the kernel ring buffer
+> > for tracing through debugfs, and those interfaces even allow growing
+> > the kernel ring buffer per CPU. We also have a static value which
+> > can be passed upon boot. Relying on debugfs however is not ideal
+> > for production, and relying on the value passed upon bootup is
+> > can only used *after* an issue has creeped up. Instead of being
+> > reactive this adds a proactive measure which lets you scale the
+> > amount of contributions you'd expect to the kernel ring buffer
+> > under load by each CPU in the worst case scenario.
+> > 
+> > We use num_possible_cpus() to avoid complexities which could be
+> > introduced by dynamically changing the ring buffer size at run
+> > time, num_possible_cpus() lets us use the upper limit on possible
+> > number of CPUs therefore avoiding having to deal with hotplugging
+> > CPUs on and off. This introduces the kernel configuration option
+> > LOG_CPU_MIN_BUF_SHIFT which is used to specify the maximum amount
+> > of contributions to the kernel ring buffer in the worst case before
+> > the kernel ring buffer flips over, the size is specified as a power
+> > of 2. The total amount of contributions made by each CPU must be
+> > greater than half of the default kernel ring buffer size
+> > (1 << LOG_BUF_SHIFT bytes) in order to trigger an increase upon
+> > bootup. The kernel ring buffer is increased to the next power of
+> > two that would fit the required minimum kernel ring buffer size
+> > plus the additional CPU contribution. For example if LOG_BUF_SHIFT
+> > is 18 (256 KB) you'd require at least 128 KB contributions by
+> > other CPUs in order to trigger an increase of the kernel ring buffer.
+> > With a LOG_CPU_BUF_SHIFT of 12 (4 KB) you'd require at least
+> > anything over > 64 possible CPUs to trigger an increase. If you
+> > had 128 possible CPUs the amount of minimum required kernel ring
+> > buffer bumps to:
+> > 
+> >    ((1 << 18) + ((128 - 1) * (1 << 12))) / 1024 = 764 KB
+> > 
+> > Since we require the ring buffer to be a power of two the new
+> > required size would be 1024 KB.
+> > 
+> > This CPU contributions are ignored when the "log_buf_len" kernel parameter
+> > is used as it forces the exact size of the ring buffer to an expected power
+> > of two value.
+> > 
+> > Cc: Andrew Lunn <andrew@lunn.ch>
+> > Cc: Stephen Warren <swarren@wwwdotorg.org>
+> > Cc: Michal Hocko <mhocko@suse.cz>
+> > Cc: Petr Mladek <pmladek@suse.cz>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Joe Perches <joe@perches.com>
+> > Cc: Arun KS <arunks.linux@gmail.com>
+> > Cc: Kees Cook <keescook@chromium.org>
+> > Cc: Davidlohr Bueso <davidlohr@hp.com>
+> > Cc: Chris Metcalf <cmetcalf@tilera.com>
+> > Cc: linux-kernel@vger.kernel.org
+> > Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> 
+> It is where we ended after several versions. I am happy with this
+> state.
+> 
+> Signed-off-by: Petr Mladek <pmladek@suse.cz>
+> Tested-by: Petr Mladek <pmladek@suse.cz>
 
-For the page allocator, __GFP_NORETRY implies that no OOM should be
-triggered, whereas memcg has an explicit parameter to disable OOM.
+Thanks, I did some minor spell fixes, and also renamed min to max
+for the kconfig variable. Will send as final patches now.
 
-The only callsites that want OOM disabled are THP charges and charge
-moving.  THP already uses __GFP_NORETRY and charge moving can use it
-as well - one full reclaim cycle should be plenty.  Switch it over,
-then remove the OOM parameter.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memcontrol.c | 32 ++++++++++----------------------
- 1 file changed, 10 insertions(+), 22 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 9c646b9b56f4..c765125694e2 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2555,15 +2555,13 @@ static int memcg_cpu_hotplug_callback(struct notifier_block *nb,
-  * mem_cgroup_try_charge - try charging a memcg
-  * @memcg: memcg to charge
-  * @nr_pages: number of pages to charge
-- * @oom: trigger OOM if reclaim fails
-  *
-  * Returns 0 if @memcg was charged successfully, -EINTR if the charge
-  * was bypassed to root_mem_cgroup, and -ENOMEM if the charge failed.
-  */
- static int mem_cgroup_try_charge(struct mem_cgroup *memcg,
- 				 gfp_t gfp_mask,
--				 unsigned int nr_pages,
--				 bool oom)
-+				 unsigned int nr_pages)
- {
- 	unsigned int batch = max(CHARGE_BATCH, nr_pages);
- 	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
-@@ -2647,9 +2645,6 @@ retry:
- 	if (fatal_signal_pending(current))
- 		goto bypass;
- 
--	if (!oom)
--		goto nomem;
--
- 	mem_cgroup_oom(mem_over_limit, gfp_mask, get_order(batch));
- nomem:
- 	if (!(gfp_mask & __GFP_NOFAIL))
-@@ -2675,15 +2670,14 @@ done:
-  */
- static struct mem_cgroup *mem_cgroup_try_charge_mm(struct mm_struct *mm,
- 				 gfp_t gfp_mask,
--				 unsigned int nr_pages,
--				 bool oom)
-+				 unsigned int nr_pages)
- 
- {
- 	struct mem_cgroup *memcg;
- 	int ret;
- 
- 	memcg = get_mem_cgroup_from_mm(mm);
--	ret = mem_cgroup_try_charge(memcg, gfp_mask, nr_pages, oom);
-+	ret = mem_cgroup_try_charge(memcg, gfp_mask, nr_pages);
- 	css_put(&memcg->css);
- 	if (ret == -EINTR)
- 		memcg = root_mem_cgroup;
-@@ -2900,8 +2894,7 @@ static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
- 	if (ret)
- 		return ret;
- 
--	ret = mem_cgroup_try_charge(memcg, gfp, size >> PAGE_SHIFT,
--				    oom_gfp_allowed(gfp));
-+	ret = mem_cgroup_try_charge(memcg, gfp, size >> PAGE_SHIFT);
- 	if (ret == -EINTR)  {
- 		/*
- 		 * mem_cgroup_try_charge() chosed to bypass to root due to
-@@ -3650,7 +3643,6 @@ int mem_cgroup_charge_anon(struct page *page,
- {
- 	unsigned int nr_pages = 1;
- 	struct mem_cgroup *memcg;
--	bool oom = true;
- 
- 	if (mem_cgroup_disabled())
- 		return 0;
-@@ -3662,14 +3654,9 @@ int mem_cgroup_charge_anon(struct page *page,
- 	if (PageTransHuge(page)) {
- 		nr_pages <<= compound_order(page);
- 		VM_BUG_ON_PAGE(!PageTransHuge(page), page);
--		/*
--		 * Never OOM-kill a process for a huge page.  The
--		 * fault handler will fall back to regular pages.
--		 */
--		oom = false;
- 	}
- 
--	memcg = mem_cgroup_try_charge_mm(mm, gfp_mask, nr_pages, oom);
-+	memcg = mem_cgroup_try_charge_mm(mm, gfp_mask, nr_pages);
- 	if (!memcg)
- 		return -ENOMEM;
- 	__mem_cgroup_commit_charge(memcg, page, nr_pages,
-@@ -3706,7 +3693,7 @@ static int __mem_cgroup_try_charge_swapin(struct mm_struct *mm,
- 		memcg = try_get_mem_cgroup_from_page(page);
- 	if (!memcg)
- 		memcg = get_mem_cgroup_from_mm(mm);
--	ret = mem_cgroup_try_charge(memcg, mask, 1, true);
-+	ret = mem_cgroup_try_charge(memcg, mask, 1);
- 	css_put(&memcg->css);
- 	if (ret == -EINTR)
- 		memcg = root_mem_cgroup;
-@@ -3733,7 +3720,7 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm, struct page *page,
- 	if (!PageSwapCache(page)) {
- 		struct mem_cgroup *memcg;
- 
--		memcg = mem_cgroup_try_charge_mm(mm, gfp_mask, 1, true);
-+		memcg = mem_cgroup_try_charge_mm(mm, gfp_mask, 1);
- 		if (!memcg)
- 			return -ENOMEM;
- 		*memcgp = memcg;
-@@ -3802,7 +3789,7 @@ int mem_cgroup_charge_file(struct page *page, struct mm_struct *mm,
- 		return 0;
- 	}
- 
--	memcg = mem_cgroup_try_charge_mm(mm, gfp_mask, 1, true);
-+	memcg = mem_cgroup_try_charge_mm(mm, gfp_mask, 1);
- 	if (!memcg)
- 		return -ENOMEM;
- 	__mem_cgroup_commit_charge(memcg, page, 1, type, false);
-@@ -6414,7 +6401,8 @@ one_by_one:
- 			batch_count = PRECHARGE_COUNT_AT_ONCE;
- 			cond_resched();
- 		}
--		ret = mem_cgroup_try_charge(memcg, GFP_KERNEL, 1, false);
-+		ret = mem_cgroup_try_charge(memcg,
-+					    GFP_KERNEL & ~__GFP_NORETRY, 1);
- 		if (ret)
- 			/* mem_cgroup_clear_mc() will do uncharge later */
- 			return ret;
--- 
-2.0.0
-
+  Luis
