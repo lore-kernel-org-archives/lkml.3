@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966233AbaFRLKY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 07:10:24 -0400
-Received: from mail-yk0-f177.google.com ([209.85.160.177]:52772 "EHLO
-	mail-yk0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966109AbaFRLKW (ORCPT
+	id S966079AbaFRLOG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 07:14:06 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:61752 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965376AbaFRLOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 07:10:22 -0400
+	Wed, 18 Jun 2014 07:14:04 -0400
+Message-ID: <53A17442.8010009@gmail.com>
+Date: Wed, 18 Jun 2014 16:43:06 +0530
+From: Varka Bhadram <varkabhadram@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1403087119.1984.93.camel@x220>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
- <1391971686-9517-10-git-send-email-richard@nod.at> <52F7D480.1050106@hauke-m.de>
- <52F7DF21.70207@nod.at> <CAHNKnsS7Mv4ZhBWZa53go9L9nZimJ7_FG5HFJ9C3kkGMAEz-mA@mail.gmail.com>
- <52F8C373.9060108@rempel-privat.de> <CAHNKnsQF5Hdf3JT91moPraRQzn4kMpdD2NSiJ7b30wQhS1W4MA@mail.gmail.com>
- <CAGVrzcYnECx5Q=i+m6qZn29y4JALDpw5SWoUNP-S6HgPR3_ygQ@mail.gmail.com>
- <CAHNKnsRACSo=DfOyiHxqV3acv_wfZmz4tMnYAW0wo4OCibwdfA@mail.gmail.com>
- <CAHNKnsRQp7WLSJNAXEYPTd=qs1DquOfNgKtHES-Utvcy1=FEgQ@mail.gmail.com>
- <20140213201421.GJ22203@tuxdriver.com> <1397581703.8212.5.camel@x220>
- <CAHNKnsQQ42-XnXrubHAy4PF3H2ynbGDdSMP7MvDS_1aRozYF=A@mail.gmail.com> <1403087119.1984.93.camel@x220>
-From: Sergey Ryazanov <ryazanov.s.a@gmail.com>
-Date: Wed, 18 Jun 2014 15:10:02 +0400
-Message-ID: <CAHNKnsSfaT7xC5_wv=TrGLEQ2pjC91Q1XG891_n64OuR0fA9Jg@mail.gmail.com>
-Subject: Re: [PATCH 09/28] Remove ATHEROS_AR231X
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Jiri Slaby <jirislaby@gmail.com>, Nick Kossifidis <mickflemm@gmail.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Oleksij Rempel <linux@rempel-privat.de>,
-        Richard Weinberger <richard@nod.at>,
-        Jonathan Bither <jonbither@gmail.com>,
-        Hauke Mehrtens <hauke@hauke-m.de>, ath5k-devel@venema.h4ckr.net,
-        open@hauke-m.de,
-        "list@hauke-m.de:NETWORKING DRIVERS" <list@hauke-m.de>,
-        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
-        OpenWrt Development List <openwrt-devel@lists.openwrt.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "list@hauke-m.de:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mark Rutland <mark.rutland@arm.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "alex.bluesman.smirnov@gmail.com" <alex.bluesman.smirnov@gmail.com>,
+        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
+        "linux-zigbee-devel@lists.sourceforge.net" 
+	<linux-zigbee-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Varka Bhadram <varkab@cdac.in>
+Subject: Re: [PATCH net-next v2 1/3] ieee802154: cc2520: adds driver for TI
+ CC2520 radio
+References: <1403068565-32224-1-git-send-email-varkab@cdac.in> <1403068565-32224-2-git-send-email-varkab@cdac.in> <20140618091010.GB26461@leverpostej> <53A15B38.6060404@gmail.com> <20140618095519.GE26461@leverpostej>
+In-Reply-To: <20140618095519.GE26461@leverpostej>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
-
-2014-06-18 14:25 GMT+04:00 Paul Bolle <pebolle@tiscali.nl>:
-> Jiri, Nick, Luis, John,
->
-> On Wed, 2014-04-16 at 13:20 +0400, Sergey Ryazanov wrote:
->> 2014-04-15 21:08 GMT+04:00 Paul Bolle <pebolle@tiscali.nl>:
->> > On Thu, 2014-02-13 at 15:14 -0500, John W. Linville wrote:
->> >> On Wed, Feb 12, 2014 at 02:50:30PM +0400, Sergey Ryazanov wrote:
->> >> > John, can you delay the merging of this patch for a few months, I will
->> >> > try to prepare the necessary patches to add AR231x architecture to the
->> >> > kernel and send them to linux-mips.
->> >>
->> >> OK -- looking forward to your patches.
->> >
->> > So am I. Is there any news on this front?
->> >
+On 06/18/2014 03:25 PM, Mark Rutland wrote:
+> On Wed, Jun 18, 2014 at 10:26:16AM +0100, Varka Bhadram wrote:
+>> +static int cc2520_probe(struct spi_device *spi)
+>> +{
+>> +       struct cc2520_private *priv;
+>> +       struct pinctrl *pinctrl;
+>> +       struct cc2520_platform_data *pdata;
+>> +       struct device_node __maybe_unused *np = spi->dev.of_node;
 >>
->> Work still in progress :(
+>> This looks to be definitely unused rather than __maybe_unused. There are
+>> no other occuences of "np" in this function.
+>>
+>> This macro defined like this.
+>> #define __maybe_unused  __attribute__((unused))
+> Sure, but that's irrelevant. There's absolutely no point in this
+> variable existing at all, and it can simply disappear.
 >
-> ATHEROS_AR231X and the things depending on it, like AHB bus support,
-> have been discussed for three years now. When will you (re)consider a
-> patch to remove all currently dead code?
->
-> And to state the obvious: AHB bus support, and the other code depending
-> on ATHEROS_AR231X, can always be re-added once ATHEROS_AR231X gets added
-> to the tree.
->
+> Mark.
 
-Work in progress, I don't stop it. Just work is progressing slower
-than I had planned. I am already cleanup the code (mostly checkpatch
-errors and warnings) and send patches to OpenWRT tree. Further I plan
-to simplify initialization and I will be ready to send patches
-upstream.
+If we don't use that macro the compiler triggers warnings saying that:  warning: unused variable ‘np’ [-Wunused-variable]
 
-I need a couple of weeks for this. Is its reasonable time to not make
-a mess of remove/add commits?
 
--- 
-BR,
-Sergey
+Varka Bhadram
+
+
