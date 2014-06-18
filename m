@@ -1,173 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965736AbaFRKaG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 06:30:06 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:52385 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965463AbaFRKaE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 06:30:04 -0400
-Date: Wed, 18 Jun 2014 12:26:23 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Luc Verhaegen <libv@skynet.be>
-Subject: Re: [PATCH v2 12/20] clk: sunxi: Add A23 APB0 support to
- sun6i-a31-apb0-clk
-Message-ID: <20140618102623.GQ19730@lukather>
-References: <1403016777-15121-1-git-send-email-wens@csie.org>
- <1403016777-15121-13-git-send-email-wens@csie.org>
+	id S965847AbaFRKbq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 06:31:46 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40455 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965039AbaFRKbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 06:31:44 -0400
+Message-ID: <53A169FC.70907@ti.com>
+Date: Wed, 18 Jun 2014 15:59:16 +0530
+From: Rajendra Nayak <rnayak@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="R4+lwT0Y15rLnKR0"
-Content-Disposition: inline
-In-Reply-To: <1403016777-15121-13-git-send-email-wens@csie.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Roger Quadros <rogerq@ti.com>
+CC: <tony@atomide.com>, "Menon, Nishanth" <nm@ti.com>, <kishon@ti.com>,
+        <george.cherian@ti.com>, <balbi@ti.com>, <balajitk@ti.com>,
+        <hdegoede@redhat.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Nikhil Devshatwar <nikhil.nd@ti.com>,
+        Benoit Cousson <bcousson@baylibre.com>, Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH v4 3/4] ARM: DRA7: hwmod: Add ocp2scp3 and sata hwmods
+References: <1398274237-24510-1-git-send-email-rogerq@ti.com> <1398274559-24777-1-git-send-email-rogerq@ti.com> <53A14784.1030008@ti.com>
+In-Reply-To: <53A14784.1030008@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 18 June 2014 01:32 PM, Roger Quadros wrote:
+> On 04/23/2014 08:35 PM, Roger Quadros wrote:
+>> From: Nikhil Devshatwar <nikhil.nd@ti.com>
+>>
+>> Add hwmods for ocp2scp3 and sata modules.
 
---R4+lwT0Y15rLnKR0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>From what I see this is actually adding the ocp2scp3 data and fixing up some
+of the sata data which is already added and erroneous.
 
-On Tue, Jun 17, 2014 at 10:52:49PM +0800, Chen-Yu Tsai wrote:
-> The A23 has an almost identical PRCM clock tree. The difference in
-> the APB0 clock is the smallest divisor is 1, instead of 2.
->=20
-> This patch extends the sun6i-a31-apb0-clk driver to take divider
-> tables associated to compatibles, and adds a compatible for the A23
-> variant.
->=20
-> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
-> ---
->  Documentation/devicetree/bindings/clock/sunxi.txt |  1 +
->  drivers/clk/sunxi/clk-sun6i-apb0.c                | 28 +++++++++++++++++=
-+-----
->  2 files changed, 23 insertions(+), 6 deletions(-)
->=20
-> diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Document=
-ation/devicetree/bindings/clock/sunxi.txt
-> index af9e47d..e3a47ec 100644
-> --- a/Documentation/devicetree/bindings/clock/sunxi.txt
-> +++ b/Documentation/devicetree/bindings/clock/sunxi.txt
-> @@ -28,6 +28,7 @@ Required properties:
->  	"allwinner,sun8i-a23-ahb1-gates-clk" - for the AHB1 gates on A23
->  	"allwinner,sun4i-a10-apb0-clk" - for the APB0 clock
->  	"allwinner,sun6i-a31-apb0-clk" - for the APB0 clock on A31
-> +	"allwinner,sun8i-a23-apb0-clk" - for the APB0 clock on A23
->  	"allwinner,sun4i-a10-apb0-gates-clk" - for the APB0 gates on A10
->  	"allwinner,sun5i-a13-apb0-gates-clk" - for the APB0 gates on A13
->  	"allwinner,sun5i-a10s-apb0-gates-clk" - for the APB0 gates on A10s
-> diff --git a/drivers/clk/sunxi/clk-sun6i-apb0.c b/drivers/clk/sunxi/clk-s=
-un6i-apb0.c
-> index 11f17c3..2197ac7 100644
-> --- a/drivers/clk/sunxi/clk-sun6i-apb0.c
-> +++ b/drivers/clk/sunxi/clk-sun6i-apb0.c
-> @@ -11,6 +11,7 @@
->  #include <linux/clk-provider.h>
->  #include <linux/module.h>
->  #include <linux/of.h>
-> +#include <linux/of_device.h>
->  #include <linux/platform_device.h>
-> =20
->  /*
-> @@ -28,6 +29,21 @@ static const struct clk_div_table sun6i_a31_apb0_divs[=
-] =3D {
->  	{ /* sentinel */ },
->  };
-> =20
-> +/* The A23 APB0 clock has a standard power of 2 divisor */
+It would help if this is split up and the changelog explains whats fixed up for
+sata and why. Like for instance I see the opt clock data being removed but no
+mention of why.
+ 
+>>
+>> [Roger Q] Clean up.
+>>
+>> CC: Benoit Cousson <bcousson@baylibre.com>
+>> CC: Paul Walmsley <paul@pwsan.com>
+>> Signed-off-by: Balaji T K <balajitk@ti.com>
+>> Signed-off-by: Nikhil Devshatwar <nikhil.nd@ti.com>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> 
+> Tested-by: Roger Quadros <rogerq@ti.com>
+> against 3.16-rc1, no dependency patches needed.
+> 
+> Nishant/Rajendra,
+> 
+> Could you please review this? We need this for 3.16 SATA support and
+> Paul won't take this in without your reviewed-by tag. Thanks.
+> 
+> cheers,
+> -roger
+> 
+>> ---
+>>  arch/arm/mach-omap2/omap_hwmod_7xx_data.c | 31 ++++++++++++++++++++++++++-----
+>>  1 file changed, 26 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+>> index 810c205..b02a4ab 100644
+>> --- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+>> +++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+>> @@ -1215,6 +1215,30 @@ static struct omap_hwmod dra7xx_ocp2scp1_hwmod = {
+>>  	},
+>>  };
+>>  
+>> +/* ocp2scp3 */
+>> +static struct omap_hwmod dra7xx_ocp2scp3_hwmod;
+>> +
+>> +/* l4_cfg -> ocp2scp3 */
+>> +static struct omap_hwmod_ocp_if dra7xx_l4_cfg__ocp2scp3 = {
+>> +	.master		= &dra7xx_l4_cfg_hwmod,
+>> +	.slave		= &dra7xx_ocp2scp3_hwmod,
+>> +	.clk		= "l4_root_clk_div",
+>> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+>> +};
 
-Why not just pass CLK_DIVIDER_POWER_OF_TWO then, instead of a table?
+All hwmod data files are organized in a certain way with all the hwmod/IP block info on top
+and Interface structs at the bottom. Can we follow the same for ocp2scp3? It helps with better
+readability.
+ 
+>> +
+>> +static struct omap_hwmod dra7xx_ocp2scp3_hwmod = {
+>> +	.name		= "ocp2scp3",
+>> +	.class		= &dra7xx_ocp2scp_hwmod_class,
+>> +	.clkdm_name	= "l3init_clkdm",
 
-> +static const struct clk_div_table sun8i_a23_apb0_divs[] =3D {
-> +	{ .val =3D 0, .div =3D 1, },
-> +	{ .val =3D 1, .div =3D 2, },
-> +	{ .val =3D 2, .div =3D 4, },
-> +	{ .val =3D 3, .div =3D 8, },
-> +	{ /* sentinel */ },
-> +};
-> +
-> +const struct of_device_id sun6i_a31_apb0_clk_dt_ids[] =3D {
-> +	{ .compatible =3D "allwinner,sun6i-a31-apb0-clk", .data =3D &sun6i_a31_=
-apb0_divs },
-> +	{ .compatible =3D "allwinner,sun8i-a23-apb0-clk", .data =3D &sun8i_a23_=
-apb0_divs },
-> +	{ /* sentinel */ }
-> +};
-> +
->  static int sun6i_a31_apb0_clk_probe(struct platform_device *pdev)
->  {
->  	struct device_node *np =3D pdev->dev.of_node;
-> @@ -36,12 +52,17 @@ static int sun6i_a31_apb0_clk_probe(struct platform_d=
-evice *pdev)
->  	struct resource *r;
->  	void __iomem *reg;
->  	struct clk *clk;
-> +	const struct of_device_id *device;
-> =20
->  	r =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	reg =3D devm_ioremap_resource(&pdev->dev, r);
->  	if (IS_ERR(reg))
->  		return PTR_ERR(reg);
-> =20
-> +	device =3D of_match_device(sun6i_a31_apb0_clk_dt_ids, &pdev->dev);
-> +	if (!device)
-> +		return -EINVAL;
-> +
->  	clk_parent =3D of_clk_get_parent_name(np, 0);
->  	if (!clk_parent)
->  		return -EINVAL;
-> @@ -49,7 +70,7 @@ static int sun6i_a31_apb0_clk_probe(struct platform_dev=
-ice *pdev)
->  	of_property_read_string(np, "clock-output-names", &clk_name);
-> =20
->  	clk =3D clk_register_divider_table(&pdev->dev, clk_name, clk_parent,
-> -					 0, reg, 0, 2, 0, sun6i_a31_apb0_divs,
-> +					 0, reg, 0, 2, 0, device->data,
+No main_clk?
 
-I'm not sure that it will actually work for the A31, since it does
-define some dividers anyway, and the divider table is !NULL, even
-though there's actually no dividers defined.
+regards,
+Rajendra
 
-Maxime
+>> +	.prcm = {
+>> +		.omap4 = {
+>> +			.clkctrl_offs = DRA7XX_CM_L3INIT_OCP2SCP3_CLKCTRL_OFFSET,
+>> +			.context_offs = DRA7XX_RM_L3INIT_OCP2SCP3_CONTEXT_OFFSET,
+>> +			.modulemode   = MODULEMODE_HWCTRL,
+>> +		},
+>> +	},
+>> +};
+>> +
+>>  /*
+>>   * 'qspi' class
+>>   *
+>> @@ -1268,9 +1292,6 @@ static struct omap_hwmod_class dra7xx_sata_hwmod_class = {
+>>  };
+>>  
+>>  /* sata */
+>> -static struct omap_hwmod_opt_clk sata_opt_clks[] = {
+>> -	{ .role = "ref_clk", .clk = "sata_ref_clk" },
+>> -};
+>>  
+>>  static struct omap_hwmod dra7xx_sata_hwmod = {
+>>  	.name		= "sata",
+>> @@ -1278,6 +1299,7 @@ static struct omap_hwmod dra7xx_sata_hwmod = {
+>>  	.clkdm_name	= "l3init_clkdm",
+>>  	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
+>>  	.main_clk	= "func_48m_fclk",
+>> +	.mpu_rt_idx	= 1,
+>>  	.prcm = {
+>>  		.omap4 = {
+>>  			.clkctrl_offs = DRA7XX_CM_L3INIT_SATA_CLKCTRL_OFFSET,
+>> @@ -1285,8 +1307,6 @@ static struct omap_hwmod dra7xx_sata_hwmod = {
+>>  			.modulemode   = MODULEMODE_SWCTRL,
+>>  		},
+>>  	},
+>> -	.opt_clks	= sata_opt_clks,
+>> -	.opt_clks_cnt	= ARRAY_SIZE(sata_opt_clks),
+>>  };
+>>  
+>>  /*
+>> @@ -2682,6 +2702,7 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
+>>  	&dra7xx_l4_per1__mmc4,
+>>  	&dra7xx_l4_cfg__mpu,
+>>  	&dra7xx_l4_cfg__ocp2scp1,
+>> +	&dra7xx_l4_cfg__ocp2scp3,
+>>  	&dra7xx_l3_main_1__qspi,
+>>  	&dra7xx_l4_cfg__sata,
+>>  	&dra7xx_l4_cfg__smartreflex_core,
+>>
+> 
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---R4+lwT0Y15rLnKR0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJToWlPAAoJEBx+YmzsjxAgwVEP/3tdU3z7xESNhDgdVFZHoQJ6
-wGutWyCvHqGT7mM1crhr9aIskJV22hUM5sNjNMfq5+VMXpmaL0mKy74ASsLC1aAN
-Eh+OvQz7NSJMp8je+aCHWfBuqshRD5hzQFcrXDkli3xOJ7tqOtXbSZd4xCB6anBd
-N56OEYbtYUGjvu05BSauXJWx8x9hjuGChs9Zxmjyz1AkUOpsNROwH9y9B2KMQKlc
-IM/9z+Yn/rz6eF64/SKPbxyF+VG26KZZeg1m4lA2kZrDxBoC4iPGbRUXBZTfFFfX
-yA4UzweZQfYj3T+dSFE6ud6V3T7brKTCK/T9y8EP/YNADR6bdLTIjspwpnPQEhdh
-cE/khIh7+PnLmSDvN7njtLcYxREEK/V/+UYLyGtkvl4pxU7YyZFuG7XNEtBOad4O
-2KYsqh0/cpMv3UurbpmSObmui9JdL4JKmswYAVuUpxbjWWD/uAJiBqH3mhvQhKN/
-sF32AxCRhSyW5cL9v2E51UtWO9evGC4uOWRc1oBtia4a0TfOHxcYJE/sDlBaKSdO
-DIbDbE78BuwPuZ1Dp0pTD5DcfI0S58dXQ89lRbv/9vbX7BHJ+Ac4ZLCoqaKz3AZE
-gGGxf+QpqO3ihFBzMQhfnZJaYtETjtwiHBtadVeqtYGoEC2qqoUJvgmwmxi9hxWb
-1uzDMJ90rG8BWfIT39sM
-=15ZY
------END PGP SIGNATURE-----
-
---R4+lwT0Y15rLnKR0--
