@@ -1,57 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965587AbaFRJ5o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 05:57:44 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52563 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964994AbaFRJ5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 05:57:43 -0400
-Date: Wed, 18 Jun 2014 11:57:39 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Qiaowei Ren <qiaowei.ren@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Dave Hansen <dave.hansen@intel.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 03/10] x86, mpx: add macro cpu_has_mpx
-Message-ID: <20140618095739.GA24419@pd.tnic>
-References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
- <1403084656-27284-4-git-send-email-qiaowei.ren@intel.com>
+	id S965693AbaFRKAP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 06:00:15 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:52095 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S965200AbaFRKAO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 06:00:14 -0400
+Date: Wed, 18 Jun 2014 11:57:59 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Luc Verhaegen <libv@skynet.be>
+Subject: Re: [PATCH v2 08/20] ARM: sun6i: DT: Rename PLL6 to PLL6x2 and add
+ fixed-factor-clock for PLL6
+Message-ID: <20140618095759.GL19730@lukather>
+References: <1403016777-15121-1-git-send-email-wens@csie.org>
+ <1403016777-15121-9-git-send-email-wens@csie.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pFej7zHSL6C5fFIz"
 Content-Disposition: inline
-In-Reply-To: <1403084656-27284-4-git-send-email-qiaowei.ren@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1403016777-15121-9-git-send-email-wens@csie.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 05:44:09PM +0800, Qiaowei Ren wrote:
-> In order to do performance optimization, this patch adds macro
-> cpu_has_mpx which will directly return 0 when MPX is not supported
-> by kernel.
-> 
-> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+
+--pFej7zHSL6C5fFIz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, Jun 17, 2014 at 10:52:45PM +0800, Chen-Yu Tsai wrote:
+> The PLL6 clock driver actually manages the PLL6x2 output of PLL6, so
+> rename the node accordingly, and add a halved fixed-factor-clock for
+> normal PLL6 output used by most modules.
+>=20
+> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
 > ---
->  arch/x86/include/asm/cpufeature.h |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-> index e265ff9..f302d08 100644
-> --- a/arch/x86/include/asm/cpufeature.h
-> +++ b/arch/x86/include/asm/cpufeature.h
-> @@ -339,6 +339,12 @@ extern const char * const x86_power_flags[32];
->  #define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
->  #define cpu_has_topoext		boot_cpu_has(X86_FEATURE_TOPOEXT)
->  
-> +#ifdef CONFIG_X86_INTEL_MPX
-> +#define cpu_has_mpx boot_cpu_has(X86_FEATURE_MPX)
+>  arch/arm/boot/dts/sun6i-a31.dtsi | 11 ++++++++++-
+>  1 file changed, 10 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a=
+31.dtsi
+> index a9dfa12..12d558b 100644
+> --- a/arch/arm/boot/dts/sun6i-a31.dtsi
+> +++ b/arch/arm/boot/dts/sun6i-a31.dtsi
+> @@ -94,11 +94,20 @@
+>  			clock-output-names =3D "pll1";
+>  		};
+> =20
+> -		pll6: clk@01c20028 {
+> +		pll6x2: clk@01c20028 {
+>  			#clock-cells =3D <0>;
+>  			compatible =3D "allwinner,sun6i-a31-pll6-clk";
+>  			reg =3D <0x01c20028 0x4>;
+>  			clocks =3D <&osc24M>;
+> +			clock-output-names =3D "pll6x2";
+> +		};
+> +
+> +		pll6: pll6_clk {
+> +			#clock-cells =3D <0>;
+> +			compatible =3D "fixed-factor-clock";
+> +			clock-div =3D <2>;
+> +			clock-mult =3D <1>;
+> +			clocks =3D <&pll6x2>;
+>  			clock-output-names =3D "pll6";
+>  		};
 
-I think we don't want those macros anymore because they're obfuscating
-the code. You should use static_cpu_has instead.
+Hmm, nope. The output of PLL6 is 24M * N * K / 2, and this is what we
+support in the driver.
 
--- 
-Regards/Gruss,
-    Boris.
+This change is backward, and should be the other way around. Have PLL6
+running at it's usual speed, and then have PLL62X be a fixed-factor.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--pFej7zHSL6C5fFIz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJToWKmAAoJEBx+YmzsjxAgkckP+wer6Qink/KWyr0pU+No7aAg
+fLWZ4xU7VVMWcrUHgj7Iv2L2Yb8kPlhv24+YtlNsBG0RnTUijtYfRL6YT7T/EE/U
+jRoq2oCPM+zFl4h1JQ5PAITIqMkCpHP5Oa1Vo5drFRZZc57I19ugKZxgZQe8rif6
+Jrp1uhGZuZ4IpelSpgfCqnqdXiiuj73Unn1hl4x5Fxthq1LjOm6+rywai+9ex5Z1
+CBrCRpEAfffV94ewAQsj2/Wa/APChkW1RLhnKxG7jFG0GMu/dscKy/p9ppEld3gb
++j2Q/V1j6o6KAJkKidWckC1ok/NHmzlTO8cDSYQGAZ3D+ZSiZnutODQluP63zCwr
+ydYWJqnACiwZh6EkolAsf5zZlLhIf33nehdlSd24GDdYfeMLoTC0kY5VWIvIi3Uz
+WsIPdlA81c6Zc244JC7Tww24fVygx7oVT0uDUhLMqKzApiNimA6RSAoQYfsTSbcH
+9e66R+qlpndn4TJg5BSQS7ASSBEA4+VI4JJ/Mz6KZwgJ2MJF+CzXP1BfKhjWlZfJ
+EAc+7aps+yqPVd+XR/3DXjdlUrjsjyZ1+jTK/F5gCpI2H19WM+xBwOFTD/1yIEER
+frGvpvoHOR1ttzWeby/QTIao3H6SqOADDKZ8/lss784PMEfNFk+DKH50bST7DQmd
+WKEDWrdNMDye25i5BV3z
+=TEtl
+-----END PGP SIGNATURE-----
+
+--pFej7zHSL6C5fFIz--
