@@ -1,64 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933168AbaFRCxh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 22:53:37 -0400
-Received: from ozlabs.org ([103.22.144.67]:42690 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751057AbaFRCxf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 22:53:35 -0400
-Date: Wed, 18 Jun 2014 12:53:29 +1000
-From: Anton Blanchard <anton@samba.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Jack Miller <millerjo@us.ibm.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, miltonm@us.ibm.com
-Subject: Re: [RESEND] shm: shm exit scalability fixes
-Message-ID: <20140618125329.1f8cd8f9@kryten>
-In-Reply-To: <1403027312.2464.5.camel@buesod1.americas.hpqcorp.net>
-References: <1403026067-14272-1-git-send-email-millerjo@us.ibm.com>
-	<1403027312.2464.5.camel@buesod1.americas.hpqcorp.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S933467AbaFRCym (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 22:54:42 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:63087 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933242AbaFRCyl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 22:54:41 -0400
+Message-ID: <53A0FF6D.6050806@gmail.com>
+Date: Wed, 18 Jun 2014 08:24:37 +0530
+From: Anil Shashikumar Belur <askb23@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: "Dilger, Andreas" <andreas.dilger@intel.com>,
+        "Drokin, Oleg" <oleg.drokin@intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpdd-discuss@lists.01.org" <hpdd-discuss@ml01.01.org>
+Subject: Re: [PATCH v6 3/8] staging: lustre: lclient: lcommon_misc.c fixing
+ coding style issues
+References: <1402983839-3549-1-git-send-email-askb23@gmail.com> <1402983839-3549-4-git-send-email-askb23@gmail.com> <CFC5C5CA.ABDA9%andreas.dilger@intel.com>
+In-Reply-To: <CFC5C5CA.ABDA9%andreas.dilger@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+> If you are using min_t(__u32, ...) then there is no need for the
+(__u32) cast of LOV_MAX_STRIPE_COUNT, since that is the whole point of
+min_t() that the cast is done internally.
 
-> > Anton wrote a simple test to cause the issue:
-> > 
-> > http://ozlabs.org/~anton/junkcode/bust_shm_exit.c
-> 
-> I'm actually in the process of adding shm microbenchmarks to
-> perf-bench so I might steal this :-)
-
-Sounds good!
-
-> Are you seeing this issue in any real world setups? While the program
-> does stress the path you mention quite well, I fear it is very
-> unrealistic... how many shared mem segments do real applications
-> actually use/create for scaling issues to appear?
-
-As Jack mentioned, we were asked to debug a box that was crawling. Each
-process took over 10 minutes to execute which made it very hard to
-analyse. We eventually narrowed it down to this.
-
-> I normally wouldn't mind optimizing synthetic cases like this, but a
-> quick look at patch 1/3 shows that we're adding an extra overhead (16
-> bytes) in the task_struct.
-
-The testcase is synthetic but I wrote it based on the application that
-would, given enough time, take the box down.
-
-> We have the shmmni limit (and friends) for that.
-
-If we want to use this to guard against the problem, we may need to
-drop shmmni. Looking at my notes, I could take down a box with 4096
-segments and 16 threads. This is where I got to before it disappeared:
-
-# ./bust_shm_exit 4096 16
-# uptime
-03:00:50 up 8 days, 18:05  5 users,load average: 6076.98, 2494.09, 910.37
-
-Anton
+Agreed, it makes sense not to cast twice when using min_t().
