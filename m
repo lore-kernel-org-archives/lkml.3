@@ -1,108 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142AbaFRUno (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 16:43:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51779 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754778AbaFRUnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 16:43:37 -0400
-Date: Wed, 18 Jun 2014 22:43:35 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, hpa@linux.intel.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andrew Lunn <andrew@lunn.ch>, Stephen Warren <swarren@wwwdotorg.org>,
-        Michal Hocko <mhocko@suse.cz>, Joe Perches <joe@perches.com>,
-        Arun KS <arunks.linux@gmail.com>, Kees Cook <keescook@chromium.org>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [RFT 2/2] printk: allow increasing the ring buffer depending
-	on the number of CPUs
-Message-ID: <20140618204335.GQ4841@wotan.suse.de>
-References: <1403090065-13879-1-git-send-email-mcgrof@do-not-panic.com> <1403090065-13879-2-git-send-email-mcgrof@do-not-panic.com> <20140618154255.GJ634@pathway.suse.cz>
+	id S1756178AbaFRUnz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 16:43:55 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:49231 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754778AbaFRUnx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 16:43:53 -0400
+Date: Wed, 18 Jun 2014 23:43:44 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: devicetree@vger.kernel.org, Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Pavel Machek <pavel@ucw.cz>,
+        Pawel Moll <pawel.moll@arm.com>, Tony Lindgren <tony@atomide.com>,
+        Sebastian Reichel <sre@debian.org>, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] omap3-n900.dts: Rename model name to "Nokia RX-51 board"
+Message-ID: <20140618204344.GC558@drone.musicnaut.iki.fi>
+References: <1403110635-29696-1-git-send-email-pali.rohar@gmail.com>
+ <20140618201241.GB558@drone.musicnaut.iki.fi>
+ <201406182223.03420@pali>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140618154255.GJ634@pathway.suse.cz>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <201406182223.03420@pali>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 05:42:55PM +0200, Petr Mládek wrote:
-> On Wed 2014-06-18 04:14:25, Luis R. Rodriguez wrote:
-> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> > 
-> > The default size of the ring buffer is too small for machines
-> > with a large amount of CPUs under heavy load. What ends up
-> > happening when debugging is the ring buffer overlaps and chews
-> > up old messages making debugging impossible unless the size is
-> > passed as a kernel parameter. An idle system upon boot up will
-> > on average spew out only about one or two extra lines but where
-> > this really matters is on heavy load and that will vary widely
-> > depending on the system and environment.
-> > 
-> > There are mechanisms to help increase the kernel ring buffer
-> > for tracing through debugfs, and those interfaces even allow growing
-> > the kernel ring buffer per CPU. We also have a static value which
-> > can be passed upon boot. Relying on debugfs however is not ideal
-> > for production, and relying on the value passed upon bootup is
-> > can only used *after* an issue has creeped up. Instead of being
-> > reactive this adds a proactive measure which lets you scale the
-> > amount of contributions you'd expect to the kernel ring buffer
-> > under load by each CPU in the worst case scenario.
-> > 
-> > We use num_possible_cpus() to avoid complexities which could be
-> > introduced by dynamically changing the ring buffer size at run
-> > time, num_possible_cpus() lets us use the upper limit on possible
-> > number of CPUs therefore avoiding having to deal with hotplugging
-> > CPUs on and off. This introduces the kernel configuration option
-> > LOG_CPU_MIN_BUF_SHIFT which is used to specify the maximum amount
-> > of contributions to the kernel ring buffer in the worst case before
-> > the kernel ring buffer flips over, the size is specified as a power
-> > of 2. The total amount of contributions made by each CPU must be
-> > greater than half of the default kernel ring buffer size
-> > (1 << LOG_BUF_SHIFT bytes) in order to trigger an increase upon
-> > bootup. The kernel ring buffer is increased to the next power of
-> > two that would fit the required minimum kernel ring buffer size
-> > plus the additional CPU contribution. For example if LOG_BUF_SHIFT
-> > is 18 (256 KB) you'd require at least 128 KB contributions by
-> > other CPUs in order to trigger an increase of the kernel ring buffer.
-> > With a LOG_CPU_BUF_SHIFT of 12 (4 KB) you'd require at least
-> > anything over > 64 possible CPUs to trigger an increase. If you
-> > had 128 possible CPUs the amount of minimum required kernel ring
-> > buffer bumps to:
-> > 
-> >    ((1 << 18) + ((128 - 1) * (1 << 12))) / 1024 = 764 KB
-> > 
-> > Since we require the ring buffer to be a power of two the new
-> > required size would be 1024 KB.
-> > 
-> > This CPU contributions are ignored when the "log_buf_len" kernel parameter
-> > is used as it forces the exact size of the ring buffer to an expected power
-> > of two value.
-> > 
-> > Cc: Andrew Lunn <andrew@lunn.ch>
-> > Cc: Stephen Warren <swarren@wwwdotorg.org>
-> > Cc: Michal Hocko <mhocko@suse.cz>
-> > Cc: Petr Mladek <pmladek@suse.cz>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Joe Perches <joe@perches.com>
-> > Cc: Arun KS <arunks.linux@gmail.com>
-> > Cc: Kees Cook <keescook@chromium.org>
-> > Cc: Davidlohr Bueso <davidlohr@hp.com>
-> > Cc: Chris Metcalf <cmetcalf@tilera.com>
-> > Cc: linux-kernel@vger.kernel.org
-> > Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
-> 
-> It is where we ended after several versions. I am happy with this
-> state.
-> 
-> Signed-off-by: Petr Mladek <pmladek@suse.cz>
-> Tested-by: Petr Mladek <pmladek@suse.cz>
+Hi,
 
-Thanks, I did some minor spell fixes, and also renamed min to max
-for the kconfig variable. Will send as final patches now.
+On Wed, Jun 18, 2014 at 10:23:03PM +0200, Pali Rohár wrote:
+> On Wednesday 18 June 2014 22:12:41 Aaro Koskinen wrote:
+> > On Wed, Jun 18, 2014 at 06:57:15PM +0200, Pali Rohár wrote:
+> > > Use same name as in legacy board code. There are lot of
+> > > userspace applications which using machine/model name for
+> > > determinating device type.
+> > 
+> > Can you clarify this? Nokia kernel or userspace never had DT,
+> > so they cannot see e.g. /proc/device-tree/model. What other
+> > APIs expose model?
+> 
+> Basically that patch export model name in Hardware /proc/cpuinfo 
+> instead generic DT name. And this patch change name to what 
+> legacy board code reported.
 
-  Luis
+I don't like the idea of changing the model name from Nokia
+marketing names to those cryptic internal names in DT files.
+There also may be already some userspace relying to find current model
+name from /proc/device-tree/model (e.g. I think my own OS would break).
+
+A.
