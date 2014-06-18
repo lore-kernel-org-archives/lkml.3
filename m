@@ -1,102 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966640AbaFRNCs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 09:02:48 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:25375 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966600AbaFRNCp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 09:02:45 -0400
-Date: Wed, 18 Jun 2014 14:59:57 +0200
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, andrew.cooper3@citrix.com,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        eshelton@pobox.com, hpa@zytor.com, ian.campbell@citrix.com,
-        jbeulich@suse.com, jeremy@goop.org, konrad.wilk@oracle.com,
-        matt.fleming@intel.com, mingo@redhat.com, mjg59@srcf.ucam.org,
-        stefano.stabellini@eu.citrix.com, tglx@linutronix.de,
-        Mark Salter <msalter@redhat.com>
-Subject: Re: [PATCH v5 1/7] efi: Use early_mem*() instead of early_io*()
-Message-ID: <20140618125957.GA28489@olila.local.net-space.pl>
-References: <1402678823-24589-1-git-send-email-daniel.kiper@oracle.com>
- <1402678823-24589-2-git-send-email-daniel.kiper@oracle.com>
- <20140618121709.GF24049@console-pimps.org>
+	id S966656AbaFRNEQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 09:04:16 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:47169 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966401AbaFRNEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 09:04:15 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Rob Jones <rob.jones@codethink.co.uk>
+Cc: linus.walleij@linaro.org, gnurou@gmail.com, lgirdwood@gmail.com,
+        broonie@kernel.org, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ian.molton@codethink.co.uk,
+        ben.dooks@codethink.co.uk
+Subject: Re: [PATCH 3/3] drivers/regulator: gpio-regulator.c: use managed resources for probe.
+Date: Wed, 18 Jun 2014 15:05:31 +0200
+Message-ID: <87697987.GOalQlOk20@diego>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1402411308-14182-4-git-send-email-rob.jones@codethink.co.uk>
+References: <1402411308-14182-1-git-send-email-rob.jones@codethink.co.uk> <1402411308-14182-4-git-send-email-rob.jones@codethink.co.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140618121709.GF24049@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 01:17:09PM +0100, Matt Fleming wrote:
-> (Pulling in Mark Salter for early_ioremap() knowledge)
->
-> On Fri, 13 Jun, at 07:00:17PM, Daniel Kiper wrote:
-> > Use early_mem*() instead of early_io*() because all mapped EFI regions
-> > are true RAM not I/O regions. Additionally, I/O family calls do not work
-> > correctly under Xen in our case. AIUI, early_io*() maps/unmaps real machine
-> > addresses. However, all artificial EFI structures created under Xen live
-> > in dom0 memory and should be mapped/unmapped using early_mem*() family
-> > calls which map domain memory.
-> >
-> > Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
-> > ---
-> >  arch/x86/platform/efi/efi.c |   42 +++++++++++++++++++++---------------------
-> >  drivers/firmware/efi/efi.c  |    4 ++--
-> >  2 files changed, 23 insertions(+), 23 deletions(-)
-> >
-> > diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-> > index 87fc96b..dd1e351 100644
-> > --- a/arch/x86/platform/efi/efi.c
-> > +++ b/arch/x86/platform/efi/efi.c
-> > @@ -427,7 +427,7 @@ void __init efi_unmap_memmap(void)
-> >  {
-> >  	clear_bit(EFI_MEMMAP, &efi.flags);
-> >  	if (memmap.map) {
-> > -		early_iounmap(memmap.map, memmap.nr_map * memmap.desc_size);
-> > +		early_memunmap(memmap.map, memmap.nr_map * memmap.desc_size);
-> >  		memmap.map = NULL;
-> >  	}
-> >  }
-> > @@ -467,12 +467,12 @@ static int __init efi_systab_init(void *phys)
-> >  			if (!data)
-> >  				return -ENOMEM;
-> >  		}
-> > -		systab64 = early_ioremap((unsigned long)phys,
-> > -					 sizeof(*systab64));
-> > +		systab64 = early_memremap((unsigned long)phys,
-> > +						sizeof(*systab64));
->
-> Please don't misalign the arguments :-( This makes the diff harder to
-> read when all you're doing is changing the function call. You're
-> indentation isn't an improvement.
+Am Dienstag, 10. Juni 2014, 15:41:48 schrieb Rob Jones:
+> Use managed resource functions for all resource allocations in
+> gpio_regulator_probe().
+> 
+> Remove gpio_regulator_remove() as it is now redundant.
+> 
+> Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
+> Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
 
-I think that it improves readability a bit but if you wish I will not
-do that in the future.
+Reviewed-by: Heiko Stuebner <heiko@sntech.de>
 
-> As Matthew pointed out we may also need to access EFI mapped flash
-> devices.
 
-Right, but I think it does not change a lot in that case. Flash
-is simply slower type of memory used as permanent storage.
-Am I missing something?
+> ---
+>  drivers/regulator/gpio-regulator.c |   71
+> ++++++++++++------------------------ 1 file changed, 24 insertions(+), 47
+> deletions(-)
+> 
+> diff --git a/drivers/regulator/gpio-regulator.c
+> b/drivers/regulator/gpio-regulator.c index 989b23b..56341c3 100644
+> --- a/drivers/regulator/gpio-regulator.c
+> +++ b/drivers/regulator/gpio-regulator.c
+> @@ -254,30 +254,31 @@ static int gpio_regulator_probe(struct platform_device
+> *pdev) if (drvdata == NULL)
+>  		return -ENOMEM;
+> 
+> -	drvdata->desc.name = kstrdup(config->supply_name, GFP_KERNEL);
+> +	drvdata->desc.name = devm_kstrdup(&pdev->dev,
+> +					  config->supply_name,
+> +					  GFP_KERNEL);
+>  	if (drvdata->desc.name == NULL) {
+>  		dev_err(&pdev->dev, "Failed to allocate supply name\n");
+> -		ret = -ENOMEM;
+> -		goto err;
+> +		return -ENOMEM;
+>  	}
+> 
+> -	drvdata->gpios = kmemdup(config->gpios,
+> -				 config->nr_gpios * sizeof(struct gpio),
+> -				 GFP_KERNEL);
+> +	drvdata->gpios = devm_kmemdup(&pdev->dev,
+> +				      config->gpios,
+> +				      config->nr_gpios * sizeof(struct gpio),
+> +				      GFP_KERNEL);
+>  	if (drvdata->gpios == NULL) {
+>  		dev_err(&pdev->dev, "Failed to allocate gpio data\n");
+> -		ret = -ENOMEM;
+> -		goto err_name;
+> +		return -ENOMEM;
+>  	}
+> 
+> -	drvdata->states = kmemdup(config->states,
+> -				  config->nr_states *
+> +	drvdata->states = devm_kmemdup(&pdev->dev,
+> +				       config->states,
+> +				       config->nr_states *
+>  					 sizeof(struct gpio_regulator_state),
+> -				  GFP_KERNEL);
+> +				       GFP_KERNEL);
+>  	if (drvdata->states == NULL) {
+>  		dev_err(&pdev->dev, "Failed to allocate state data\n");
+> -		ret = -ENOMEM;
+> -		goto err_memgpio;
+> +		return -ENOMEM;
+>  	}
+>  	drvdata->nr_states = config->nr_states;
+> 
+> @@ -297,16 +298,17 @@ static int gpio_regulator_probe(struct platform_device
+> *pdev) break;
+>  	default:
+>  		dev_err(&pdev->dev, "No regulator type set\n");
+> -		ret = -EINVAL;
+> -		goto err_memgpio;
+> +		return -EINVAL;
+>  	}
+> 
+>  	drvdata->nr_gpios = config->nr_gpios;
+> -	ret = gpio_request_array(drvdata->gpios, drvdata->nr_gpios);
+> +	ret = devm_gpio_request_array(&pdev->dev,
+> +				      drvdata->gpios,
+> +				      drvdata->nr_gpios);
+>  	if (ret) {
+>  		dev_err(&pdev->dev,
+>  		   "Could not obtain regulator setting GPIOs: %d\n", ret);
+> -		goto err_memstate;
+> +		return ret;
+>  	}
+> 
+>  	/* build initial state from gpio init data. */
+> @@ -337,43 +339,18 @@ static int gpio_regulator_probe(struct platform_device
+> *pdev) cfg.ena_gpio_flags |= GPIOF_OUT_INIT_HIGH;
+>  	}
+> 
+> -	drvdata->dev = regulator_register(&drvdata->desc, &cfg);
+> +	drvdata->dev = devm_regulator_register(&pdev->dev,
+> +					       &drvdata->desc,
+> +					       &cfg);
+>  	if (IS_ERR(drvdata->dev)) {
+>  		ret = PTR_ERR(drvdata->dev);
+>  		dev_err(&pdev->dev, "Failed to register regulator: %d\n", ret);
+> -		goto err_stategpio;
+> +		return ret;
+>  	}
+> 
+>  	platform_set_drvdata(pdev, drvdata);
+> 
+>  	return 0;
+> -
+> -err_stategpio:
+> -	gpio_free_array(drvdata->gpios, drvdata->nr_gpios);
+> -err_memstate:
+> -	kfree(drvdata->states);
+> -err_memgpio:
+> -	kfree(drvdata->gpios);
+> -err_name:
+> -	kfree(drvdata->desc.name);
+> -err:
+> -	return ret;
+> -}
+> -
+> -static int gpio_regulator_remove(struct platform_device *pdev)
+> -{
+> -	struct gpio_regulator_data *drvdata = platform_get_drvdata(pdev);
+> -
+> -	regulator_unregister(drvdata->dev);
+> -
+> -	gpio_free_array(drvdata->gpios, drvdata->nr_gpios);
+> -
+> -	kfree(drvdata->states);
+> -	kfree(drvdata->gpios);
+> -
+> -	kfree(drvdata->desc.name);
+> -
+> -	return 0;
+>  }
+> 
+>  #if defined(CONFIG_OF)
+> @@ -385,7 +362,7 @@ static const struct of_device_id
+> regulator_gpio_of_match[] = {
+> 
+>  static struct platform_driver gpio_regulator_driver = {
+>  	.probe		= gpio_regulator_probe,
+> -	.remove		= gpio_regulator_remove,
+> +	.remove		= NULL,
+>  	.driver		= {
+>  		.name		= "gpio-regulator",
+>  		.owner		= THIS_MODULE,
 
-> Now, the only difference between early_memremap() and early_ioremap(),
-> at least on x86, is PAGE_KERNEL vs. PAGE_KERNEL_IO, where PAGE_KERNEL_IO
-> has the additional _PAGE_BIT_IOMAP bit set in the pte. But that's a
-> software bit for x86.
->
-> So, even though this change should be harmless, it's not clear to me why
-> this change is needed. You say "I/O family calls do not work correctly
-> under Xen in our case", but could you provide some more explanation as
-> to why they don't work correctly?
-
-As I saw David provided better explanation. If you wish I could include
-it in commit message.
-
-Daniel
