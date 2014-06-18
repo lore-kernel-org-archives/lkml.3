@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794AbaFRR1O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 13:27:14 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:55936 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751366AbaFRR1N (ORCPT
+	id S1753626AbaFRRaM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 13:30:12 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:52242 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751398AbaFRRaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 13:27:13 -0400
-Date: Wed, 18 Jun 2014 13:27:08 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jet Chen <jet.chen@intel.com>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: Re: [tracing] 939c7a4f04f: -46.4% cpuidle.C3-IVT.time
-Message-ID: <20140618132708.38f1a7fc@gandalf.local.home>
-In-Reply-To: <53A10460.1040705@intel.com>
-References: <53A10460.1040705@intel.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 18 Jun 2014 13:30:10 -0400
+Message-ID: <53A1CC9E.1060308@kernel.dk>
+Date: Wed, 18 Jun 2014 10:30:06 -0700
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Jiri Kosina <jkosina@suse.cz>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] floppy
+References: <alpine.LNX.2.00.1406181406401.2303@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1406181406401.2303@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jun 2014 11:15:44 +0800
-Jet Chen <jet.chen@intel.com> wrote:
+On 2014-06-18 05:07, Jiri Kosina wrote:
+> Jens,
+>
+> please pull from
+>
+>    git://git.kernel.org/pub/scm/linux/kernel/git/jikos/linux-block.git for-jens
+>
+> to receive formatting fix for floppy driver; preferably for 3.16 still.
+> The branch is based on your for-3.16/drivers.
 
-> Hi Yoshihiro,
-> 
-> FYI, we noticed the below changes on
-> 
-> commit 939c7a4f04fcd2162109744e8bf88194948a6e65 ("tracing: Introduce saved_cmdlines_size file")
-> 
-> test case: brickland3/aim7/3000-brk_test
+I'll queue it up for 3.16. Just sent out a pull request, but I'm sure 
+there will be a later one in this cycle as well.
 
-Um, do these tests run with tracing enabled and on? If not, the code in
-the above mentioned commit is never executed.
 
-Something may be whacky with your bisect.
-
--- Steve
-
-> 
-> beba4bb096201ce  939c7a4f04fcd2162109744e8
-> ---------------  -------------------------
+-- 
+Jens Axboe
 
