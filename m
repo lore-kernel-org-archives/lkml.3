@@ -1,48 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068AbaFRSDt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 14:03:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12686 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751125AbaFRSDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 14:03:48 -0400
-Date: Wed, 18 Jun 2014 20:02:37 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, David Howells <dhowells@redhat.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Vasiliy Kulikov <segooon@gmail.com>,
-        Gotou Yasunori <y-goto@jp.fujitsu.com>
-Subject: Re: [PATCH] ns: introduce getnspid syscall
-Message-ID: <20140618180237.GA22219@redhat.com>
-References: <1403000496-10094-1-git-send-email-chenhanxiao@cn.fujitsu.com> <53A030CE.6070101@parallels.com>
+	id S1753908AbaFRSIB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 14:08:01 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:9768 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752198AbaFRSIA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 14:08:00 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 18 Jun 2014 11:02:18 -0700
+From: Vidya Sagar <vidyas@nvidia.com>
+To: <linux@arm.linux.org.uk>, <bhelgaas@google.com>, <wangyijing@huawei.com>,
+        <thierry.reding@gmail.com>, <jason@lakedaemon.net>,
+        <will.deacon@arm.com>, <swarren@nvidia.com>, <kthota@nvidia.com>,
+        <vidyas@nvidia.com>
+CC: <sagar.tv@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3] ARM: fix debug prints relevant to PCI devices
+Date: Wed, 18 Jun 2014 23:37:48 +0530
+Message-ID: <1403114868-17533-1-git-send-email-vidyas@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53A030CE.6070101@parallels.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17, Pavel Emelyanov wrote:
->
-> On 06/17/2014 02:21 PM, Chen Hanxiao wrote:
-> > +	case PIDTYPE_PID:
-> > +		ret = task_pid_nr_ns(task, ns2);
->
-> But this is not correct. If task doesn't live in ns2, but ns2
-> just has the ns->level small enough, then the wrong pid value
-> would be reported.
+As per PCIe spec, fast back-to-back transactions feature
+is not applicable to PCIe devices. Hence, do not print
+that fast back-to-back trasactions are disabled when
+there is a PCIe device found on the bus
 
-Confused... pid_nr_ns() checks upid->ns == ns and returns zero
-otherwise?
+Signed-off-by: Vidya Sagar <vidyas@nvidia.com>
+---
+v3:
+* removed KERN_INFO from pr_info() which was not removed by mistake in previous patch
 
-Oleg.
+v2:
+* Modified has_pcie_dev type to bool and used pci_is_pcie() instead of pci_pcie_cap()
+* replaced printk with pr_info
+
+ arch/arm/kernel/bios32.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+index 17a26c1..fcf2581 100644
+--- a/arch/arm/kernel/bios32.c
++++ b/arch/arm/kernel/bios32.c
+@@ -290,6 +290,7 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ {
+ 	struct pci_dev *dev;
+ 	u16 features = PCI_COMMAND_SERR | PCI_COMMAND_PARITY | PCI_COMMAND_FAST_BACK;
++	bool has_pcie_dev = 0;
+ 
+ 	/*
+ 	 * Walk the devices on this bus, working out what we can
+@@ -298,6 +299,8 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ 	list_for_each_entry(dev, &bus->devices, bus_list) {
+ 		u16 status;
+ 
++		if (!has_pcie_dev)
++			has_pcie_dev = pci_is_pcie(dev);
+ 		pci_read_config_word(dev, PCI_STATUS, &status);
+ 
+ 		/*
+@@ -354,9 +357,11 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ 
+ 	/*
+ 	 * Report what we did for this bus
++	 * (only if the bus doesn't have even one PCIe device)
+ 	 */
+-	printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
+-		bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
++	if (!has_pcie_dev)
++		pr_info("PCI: bus%d: Fast back to back transfers %sabled\n",
++			bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
+ }
+ EXPORT_SYMBOL(pcibios_fixup_bus);
+ 
+-- 
+1.8.1.5
 
