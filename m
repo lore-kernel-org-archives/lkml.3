@@ -1,143 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040AbaFRAJI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 20:09:08 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:48233 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186AbaFRAJF (ORCPT
+	id S1756331AbaFRALz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 20:11:55 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:46366 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755023AbaFRALx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 20:09:05 -0400
+	Tue, 17 Jun 2014 20:11:53 -0400
+Date: Wed, 18 Jun 2014 01:11:27 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Markus Pargmann <mpa@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@pengutronix.de,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Message-ID: <20140618001127.GC5099@sirena.org.uk>
+References: <1403033795-9122-1-git-send-email-mpa@pengutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <1402426287-31157-1-git-send-email-m-karicheri2@ti.com>
-References: <1402426287-31157-1-git-send-email-m-karicheri2@ti.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 17 Jun 2014 18:08:43 -0600
-Message-ID: <CAErSpo6=vi0SR0A3u5BCLgiGxoH48N5R=e8VAnFDG=K61qLxnw@mail.gmail.com>
-Subject: Re: [PATCH v2 0/8] Add Keystone PCIe controller driver
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mohit Kumar <mohit.kumar@st.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Pratyush Anand <pratyush.anand@st.com>,
-        Richard Zhu <r65037@freescale.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QJsKrtZ3JQHaPDYU"
+Content-Disposition: inline
+In-Reply-To: <1403033795-9122-1-git-send-email-mpa@pengutronix.de>
+X-Cookie: Ditat Deus.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regmap: Add Kconfig option for debugfs register writes
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 02:51:19PM -0400, Murali Karicheri wrote:
-> This patch adds a PCIe controller driver for Keystone SoCs. This
-> is based on v1 of the series posted to the mailing list.
->
-> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> CC: Russell King <linux@arm.linux.org.uk>
-> CC: Grant Likely <grant.likely@linaro.org>
-> CC: Rob Herring <robh+dt@kernel.org>
-> CC: Mohit Kumar <mohit.kumar@st.com>
-> CC: Jingoo Han <jg1.han@samsung.com>
-> CC: Bjorn Helgaas <bhelgaas@google.com>
-> CC: Pratyush Anand <pratyush.anand@st.com>
-> CC: Richard Zhu <r65037@freescale.com>
-> CC: Kishon Vijay Abraham I <kishon@ti.com>
-> CC: Marek Vasut <marex@denx.de>
-> CC: Arnd Bergmann <arnd@arndb.de>
-> CC: Pawel Moll <pawel.moll@arm.com>
-> CC: Mark Rutland <mark.rutland@arm.com>
-> CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> CC: Kumar Gala <galak@codeaurora.org>
-> CC: Randy Dunlap <rdunlap@infradead.org>
-> CC: Grant Likely <grant.likely@linaro.org>
->
->
-> Changelog:
->
-> V2
->  - Split the designware pcie enhancement patch to multiple
->    patches based on functionality added
->  - Remove the quirk code and add a patch to fix mps/mrss
->    tuning for ARM. Use kernel command line parameter
->    pci=pcie_bus_perf to work with Keystone PCI Controller.
->    Following patch addressed this.
->      [PATCH v1] ARM: pci: add call to pcie_bus_configure_settings()
->  - Add documentation for device tree bindings
->  - Add separate interrupt controller nodes for MSI and Legacy
->    IRQs and use irq map for legacy IRQ
->  - Use compatibility to identify v3.65 version of the DW hardware
->    and use it to customize the designware common code.
->  - Use reg property for configuration space instead of range
->  - Other minor updates based on code inspection.
->
-> V1
->  - Add an interrupt controller node for Legacy irq chip and use
->    interrupt map/map-mask property to map legacy IRQs A/B/C/D
->  - Add a Phy driver to replace the original serdes driver
->  - Move common application register handling code to a separate
->    file to allow re-use across other platforms that use older
->    DW PCIe h/w
->  - PCI quirk for maximum read request size. Check and override only
->    if the maximum is higher than what controller can handle.
->  - Converted to a module platform driver.
->
->
-> Murali Karicheri (8):
->   PCI: designware: add rd[wr]_other_conf API
->   PCI: designware: refactor host init code to re-use on v3.65 DW pci hw
->   PCI: designware: update pcie core driver to work with dw hw version
->     3.65
->   PCI: designware: add msi controller functions for v3.65 hw
->   PCI: designware: add PCI controller functions for v3.65 DW hw
->   phy: Add serdes phy driver for keystone
->   PCI: keystone: add pcie driver based on designware core driver
->   ARM: keystone: add pcie related options
->
->  .../devicetree/bindings/pci/designware-pcie.txt    |   42 ++
->  .../devicetree/bindings/pci/pci-keystone.txt       |   56 +++
->  .../bindings/phy/phy-keystone-serdes.txt           |   25 ++
->  arch/arm/mach-keystone/Kconfig                     |    1 +
->  drivers/pci/host/Kconfig                           |   12 +
->  drivers/pci/host/Makefile                          |    2 +
->  drivers/pci/host/pci-dw-v3_65-msi.c                |  149 +++++++
->  drivers/pci/host/pci-dw-v3_65.c                    |  390 ++++++++++++++++++
->  drivers/pci/host/pci-dw-v3_65.h                    |   34 ++
->  drivers/pci/host/pci-keystone.c                    |  418 ++++++++++++++++++++
->  drivers/pci/host/pcie-designware.c                 |  175 +++++---
->  drivers/pci/host/pcie-designware.h                 |   42 +-
->  drivers/phy/Kconfig                                |    6 +
->  drivers/phy/Makefile                               |    1 +
->  drivers/phy/phy-keystone-serdes.c                  |  230 +++++++++++
->  15 files changed, 1531 insertions(+), 52 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/pci/pci-keystone.txt
->  create mode 100644 Documentation/devicetree/bindings/phy/phy-keystone-serdes.txt
->  create mode 100644 drivers/pci/host/pci-dw-v3_65-msi.c
->  create mode 100644 drivers/pci/host/pci-dw-v3_65.c
->  create mode 100644 drivers/pci/host/pci-dw-v3_65.h
->  create mode 100644 drivers/pci/host/pci-keystone.c
->  create mode 100644 drivers/phy/phy-keystone-serdes.c
 
-I'm not willing to merge phy-keystone-serdes.c because I don't
-maintain drivers/phy and because of the binary blob of register values
-it contains, but maybe somebody else will.  I assume it could be
-merged by itself before the rest of this.
+--QJsKrtZ3JQHaPDYU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I'm looking for acks from Mohit and/or Jingoo for the pci/host
-changes, and from Arnd for the devicetree/bindings changes.
+On Tue, Jun 17, 2014 at 09:36:35PM +0200, Markus Pargmann wrote:
 
-Adding these "-dw-3_64" files is sort of ugly.  If that code is only
-used by keystone, maybe it could just be moved to pci-keystone.c?  But
-I'll defer to Mohit and Jingoo on that and the way you modify
-pcie-designware.c.
+> To enable writing of registers through the regmap debugfs interface, it
+> was necessary to alter the regmap-debugfs.c source code. This is not
+> really practical.
 
-Bjorn
+> As this is a powerful tool for debugging, this patch creates an expert
+> kconfig option for this function. This makes it easier to enable
+> register writing in the kernel.
+
+This is deliberately hard to enable in order to make it clear that it
+should never, ever be used in production as a bodge around writing
+drivers and generally in order to reduce the risk to the rest of the
+system.  Enabling this will typically give userspace full access to
+components like PMICs which have the potential to cause physical damage
+to the system if misused.
+
+Anyone with a use for this is most likely building their own kernels
+anyway and if a user modifies the code to enable it is clear that it is
+their responsibility to deal with the fallout.
+
+> This patch also fixes the file mode when the regmap debugfs write code is
+> compiled.
+
+Seperate changes in separate patches, especially don't put bugfixes in
+the same patch as features.
+
+--QJsKrtZ3JQHaPDYU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJToNksAAoJELSic+t+oim9YyUP/0ydFZnJVDp3DETzGcfsNa8s
+FcNL9aQupunhQUwKSHwlnhLbDVVe3NnTMv8b1zTFhxV3KYXo5NOC1wNTVMZm5qW7
+uEK/YOjrO9+vw61VEBJkQC5hadk7KclraxZibw1lsDHhuDICgUaDZwq7CekX6E9n
+CoB2QuxlnFORfZZSJ0fF1+qo7qwn4AxpeYIKAK1t3ST6XvP7JBLLirTDgKL/UnuX
+DkM29/X5lCxk+d+aVirIVqUY0RKDJRrlQX3l+k69saT7Ap+ZrmhpLRatDq1SP3+a
+k9yGbl/tJ87PgaabKq5GVikKh7loAmyNiMxqxhhSVJDD4E5lJoG6INBe2Qe77bOI
+Skqw0VdReCSSUmP4Z0PqoGfCx7YOE5nzvawxWAfS/nmLbeqznMwP8PXJEYw1zdU8
+bNoL77vkbTQmX7Kg0la9M8cUREegBiPHOWjaA6/ApeLGvWTpa4Ir0Q1DNdFZPgsq
+Jg7Lpl+P4TdC3h8MwzoTQmZpUj1kvtv96GZv1A2NNvweSz2xE/oU85bln7EOVPve
+W9OCVoCpGTyev/Jb35zeECyDIjzw7pBysWApFcP2KDsEnu4QqDtdrW4OBuOGeRHo
+owS7vkjlw3P63Wy+/H+gZ+mfDKggc1D23hEAQJYlcZA+bPulEG5jjGRsOsxazDju
+5SzGn16c3bxykvZSTkj7
+=KShF
+-----END PGP SIGNATURE-----
+
+--QJsKrtZ3JQHaPDYU--
