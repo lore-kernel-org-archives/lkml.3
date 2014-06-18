@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934141AbaFRIkN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 04:40:13 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:50552 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756398AbaFRIkH (ORCPT
+	id S934063AbaFRIkK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 04:40:10 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:57723 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756381AbaFRIkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Jun 2014 04:40:07 -0400
-X-AuditID: cbfee690-b7fb56d000003439-8e-53a150638be9
+X-AuditID: cbfee690-b7fb56d000003439-9f-53a150647305
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: t.figa@samsung.com, kgene.kim@samsung.com, thomas.ab@samsung.com,
         viresh.kumar@linaro.org, mturquette@linaro.org, shawn.guo@linaro.org
 Cc: kyungmin.park@samsung.com, cw00.choi@samsung.com, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCHv2 0/3] cpufreq: Use cpufreq-cpu0 driver for Exynos3250
-Date: Wed, 18 Jun 2014 17:39:59 +0900
-Message-id: <1403080802-2794-1-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCHv2 1/3] clk: samsung: cpu: Add support for cpu clocks of
+ Exynos3250
+Date: Wed, 18 Jun 2014 17:40:00 +0900
+Message-id: <1403080802-2794-2-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsWyRsSkQDc5YGGwwe3zRhbXvzxntehdcJXN
-	4mzTG3aLTY+vsVpc3jWHzeJz7xFGixnn9zFZPJ1wkc3i6bolzBbrZ7xmsehYxmix8auHA4/H
-	nWt72Dw2L6n36NuyitHj8ya5AJYoLpuU1JzMstQifbsErow7J5ULLrBXzLpzl6mBcT1bFyMn
-	h4SAicT0adNZIWwxiQv3QOJcHEICSxklHl3/xA5TdGvdBhaIxHRGiTlHvjBCOE1MEn0H3jOD
-	VLEJaEnsf3EDbKyIQA+jxNIOe5AiZoGdjBLzr7aBFQkLuEnc7vkAZrMIqEqc+TQDrIFXwEXi
-	04KHUDfJSXzY84gdpFlCYDK7xMVXn1khGgQkvk0+BHQHB1BCVmLTAWaIekmJgytusExgFFzA
-	yLCKUTS1ILmgOCm9yESvODG3uDQvXS85P3cTIzC0T/97NmEH470D1ocYk4HGTWSWEk3OB8ZG
-	Xkm8obGZkYWpiamxkbmlGWnCSuK8ao+SgoQE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwKjzV
-	+PnnwQWbefcjOniPO76sVanIbLjBx6TeFrNn896zH36YflvSmc6R9Xgzs4AGB2PmnEKG24xq
-	qTe1rSS7X/QxKLTWpVjx5/IcN5h3JzCV6dByp22ezVMKv0T8bs47/L3gR17wTO2cieWM//Pm
-	+XQVTzf9d4RfJ7whJtdsWU7Ul86+nkolluKMREMt5qLiRAAtbVgmgwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsVy+t9jQd3kgIXBBnfbdCyuf3nOatG74Cqb
+In-reply-to: <1403080802-2794-1-git-send-email-cw00.choi@samsung.com>
+References: <1403080802-2794-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42JZI2JSoJsSsDDY4NFcfovrX56zWvQuuMpm
+	cbbpDbvFpsfXWC0u75rDZvG59wijxYzz+5gsnk64yGbxdN0SZov1M16zWHQsY7TY+NXDgcfj
+	zrU9bB6bl9R79G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8aThbtYC85IVqw+/JqtgbFHtIuR
+	k0NCwETi4fQdTBC2mMSFe+vZuhi5OIQEljJKTDtxk7WLkQOsaP93IZAaIYHpjBILDiZD1DQx
+	SfQdeM8MkmAT0JLY/+IGG4gtItDDKLG0wx6kiFlgJ6PE/KttYEXCAiESJ9qOgm1jEVCV2Ll1
+	JiuIzSvgIjFj6kNGiCvkJD7secQOsphTwFVi5YcQiMUuEnt6L7KCzJQQ2MUu8WriGkaIOQIS
+	3yYfYoE4VFZi0wFmiDGSEgdX3GCZwCi8gJFhFaNoakFyQXFSepGJXnFibnFpXrpecn7uJkZg
+	HJz+92zCDsZ7B6wPMSYDjZvILCWanA+Mo7ySeENjMyMLUxNTYyNzSzPShJXEedUeJQUJCaQn
+	lqRmp6YWpBbFF5XmpBYfYmTi4JRqYCz9y3BHZGWcU+/d3fwL1qZaRrWuan7ik26uve5z9apd
+	QtrytqF727qeLe8IaOHb1btKd6HDsawZD0y+ic78eSLHfnXAZKlyv927V7kbCshN4L7J9a+f
+	10gt7qFo3qtDO6c5fDELvKX5PK49VHlXaErCl91vDDlY037GbnOz3pS/IV9szXObRiWW4oxE
+	Qy3mouJEAF/QCyyZAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMIsWRmVeSWpSXmKPExsVy+t9jQd2UgIXBBmu6OCyuf3nOatG74Cqb
 	xdmmN+wWmx5fY7W4vGsOm8Xn3iOMFjPO72OyeDrhIpvF03VLmC3Wz3jNYtGxjNFi41cPBx6P
 	O9f2sHlsXlLv0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW
 	5koKeYm5qbZKLj4Bum6ZOUCHKSmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ
-	axgz7pxULrjAXjHrzl2mBsb1bF2MnBwSAiYSt9ZtYIGwxSQu3AOJc3EICUxnlJhz5AsjhNPE
-	JNF34D0zSBWbgJbE/hc3wLpFBHoYJZZ22IMUMQvsZJSYf7UNrEhYwE3ids8HMJtFQFXizKcZ
-	YA28Ai4SnxY8hFotJ/FhzyP2CYzcCxgZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIER84z
-	6R2MqxosDjEKcDAq8fBy5C4IFmJNLCuuzD3EKMHBrCTCO8VzYbAQb0piZVVqUX58UWlOavEh
-	xmSg7ROZpUST84FRnVcSb2hsYmZkaWRuaGFkbE6asJI478FW60AhgfTEktTs1NSC1CKYLUwc
-	nFINjGHPDyioPfm3OVROiVs7cX6+/JYzm/LdeK79C9NbzaMjqZup8GfTMb/c6IOSbxsj44L8
-	3s919LCy0WXMaQ4uSFRIcXtey/HgzI1Ytvzew9lBOpyyWzo5koW7N3konpBXPHhvZ4nhqiPv
-	2M/+vL8pLC7riqbYjd5ldalZvUX/jj3uzUuOFr6txFKckWioxVxUnAgAro4rCOACAAA=
+	axgznizcxVpwRrJi9eHXbA2MPaJdjBwcEgImEvu/C3UxcgKZYhIX7q1nA7GFBKYzSiw4mNzF
+	yAVkNzFJ9B14zwySYBPQktj/4gZYkYhAD6PE0g57kCJmgZ2MEvOvtoEVCQuESJxoO8oEYrMI
+	qErs3DqTFcTmFXCRmDH1ISPENjmJD3sesYMcwSngKrHyQwjEYheJPb0XWScw8i5gZFjFKJpa
+	kFxQnJSea6hXnJhbXJqXrpecn7uJERxlz6R2MK5ssDjEKMDBqMTDy5G7IFiINbGsuDL3EKME
+	B7OSCO8Uz4XBQrwpiZVVqUX58UWlOanFhxiTgY6ayCwlmpwPTAB5JfGGxiZmRpZG5oYWRsbm
+	pAkrifMeaLUOFBJITyxJzU5NLUgtgtnCxMEp1cBot3aNz6uDQq3Lr1df/54+L2Wm/b6u1J93
+	VoieW323MfZQzBnrA1xs804eywor51v+0nEy74/JHsserqk54mt7ehlbndeiDeV8dTnuz6ac
+	UPg7qeFJHfvd+S3FF34cZlr2bvrVxoemEamf/1TPrr/S8ERnDm+l/Q4llp0rjh1M2VP4fKrm
+	CpevJUosxRmJhlrMRcWJADEO0wz2AgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -48,27 +53,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset use cpufreq-cpu0 driver to support Exynos3250 cpufreq. So, this
-patchset is based on following patchset[1] by Thomas Abraham.
- [1] http://www.spinics.net/lists/arm-kernel/msg339392.html
+This patch add support for a new clock type for Exynos3250 CPU clock provider
+and modify little difference of DIV_CPU0 between Exynos4 and Exynos3250.
 
-Changes from v1:
-- Rebased on new patchset[1] by Thomas Abraham
-- Modify clk-cpu.c to support Exynos3250
-- Drop documentation patch on previous patchset[2]
- [2] http://www.spinics.net/lists/cpufreq/msg10265.html
-- Add only operating-points for Exynos3250 without armclk-divider-table
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/clk/samsung/clk-cpu.c | 31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
 
-Chanwoo Choi (3):
-  clk: samsung: cpu: Add support for cpu clocks of Exynos3250
-  clk: samsung: exynos3250: Use cpu-clock provider type to support cpufreq
-  ARM: dts: Exynos: Add cpu clock table for Exynos3250
-
- arch/arm/boot/dts/exynos3250.dtsi    | 15 +++++++++++++++
- drivers/clk/samsung/clk-cpu.c        | 31 +++++++++++++++++++++++++++++++
- drivers/clk/samsung/clk-exynos3250.c | 14 ++++++++++----
- 3 files changed, 56 insertions(+), 4 deletions(-)
-
+diff --git a/drivers/clk/samsung/clk-cpu.c b/drivers/clk/samsung/clk-cpu.c
+index c40f7b5..0d5a4d6 100644
+--- a/drivers/clk/samsung/clk-cpu.c
++++ b/drivers/clk/samsung/clk-cpu.c
+@@ -31,6 +31,10 @@
+ #define E4210_DIV0_ATB_SHIFT	16
+ #define E4210_DIV0_ATB_MASK	(DIV_MASK << E4210_DIV0_ATB_SHIFT)
+ 
++#define E3250_CPU_DIV0(apll, pclk_dbg, atb, corem)			\
++		(((apll) << 24) | ((pclk_dbg) << 20) | ((atb) << 16) |	\
++		((corem) <<  4))
++
+ #define E4210_CPU_DIV0(apll, pclk_dbg, atb, periph, corem1, corem0)	\
+ 		(((apll) << 24) | ((pclk_dbg) << 20) | ((atb) << 16) |	\
+ 		((periph) << 12) | ((corem1) << 8) | ((corem0) <<  4))
+@@ -50,6 +54,7 @@
+ 		(((kpll << 24) | (pclk << 20) | (aclk << 4)))
+ 
+ enum cpuclk_type {
++	EXYNOS3250,
+ 	EXYNOS4210,
+ 	EXYNOS5250,
+ 	EXYNOS5420,
+@@ -426,6 +431,20 @@ static int exynos4210_cpuclk_post_rate_change(struct clk_notifier_data *ndata,
+ 	return 0;
+ }
+ 
++static const struct exynos4210_cpuclk_data e3250_armclk_d[] __initconst = {
++	{ 1000000, E3250_CPU_DIV0(1, 7, 4, 1), E4210_CPU_DIV1(7, 7), },
++	{  900000, E3250_CPU_DIV0(1, 7, 3, 1), E4210_CPU_DIV1(7, 7), },
++	{  800000, E3250_CPU_DIV0(1, 7, 3, 1), E4210_CPU_DIV1(7, 7), },
++	{  700000, E3250_CPU_DIV0(1, 7, 3, 1), E4210_CPU_DIV1(7, 7), },
++	{  600000, E3250_CPU_DIV0(1, 7, 3, 1), E4210_CPU_DIV1(7, 7), },
++	{  500000, E3250_CPU_DIV0(1, 7, 3, 1), E4210_CPU_DIV1(7, 7), },
++	{  400000, E3250_CPU_DIV0(1, 7, 3, 1), E4210_CPU_DIV1(7, 7), },
++	{  300000, E3250_CPU_DIV0(1, 5, 3, 1), E4210_CPU_DIV1(7, 7), },
++	{  200000, E3250_CPU_DIV0(1, 3, 3, 1), E4210_CPU_DIV1(7, 7), },
++	{  100000, E3250_CPU_DIV0(1, 1, 1, 1), E4210_CPU_DIV1(7, 7), },
++	{  0 },
++};
++
+ static const struct exynos4210_cpuclk_data e4210_armclk_d[] __initconst = {
+ 	{ 1200000, E4210_CPU_DIV0(7, 1, 4, 3, 7, 3), E4210_CPU_DIV1(0, 5), },
+ 	{ 1000000, E4210_CPU_DIV0(7, 1, 4, 3, 7, 3), E4210_CPU_DIV1(0, 4), },
+@@ -493,6 +512,16 @@ static const struct exynos4210_cpuclk_data e5420_kfcclk_d[] __initconst = {
+ 	{  0 },
+ };
+ 
++static const struct exynos_cpuclk_soc_data e3250_clk_soc_data __initconst = {
++	.ops = &exynos_cpuclk_clk_ops,
++	.offset = 0x14200,
++	.data = e3250_armclk_d,
++	.data_size = sizeof(e3250_armclk_d),
++	.type = EXYNOS3250,
++	.pre_rate_cb = exynos4210_cpuclk_pre_rate_change,
++	.post_rate_cb = exynos4210_cpuclk_post_rate_change,
++};
++
+ static const struct exynos_cpuclk_soc_data e4210_clk_soc_data __initconst = {
+ 	.ops = &exynos_cpuclk_clk_ops,
+ 	.offset = 0x14200,
+@@ -536,6 +565,8 @@ static const struct exynos_cpuclk_soc_data e5420_clk_soc_data[] __initconst = {
+ };
+ 
+ static const struct of_device_id exynos_cpuclk_ids[] __initconst = {
++	{ .compatible = "samsung,exynos3250-cmu",
++			.data = &e3250_clk_soc_data, },
+ 	{ .compatible = "samsung,exynos4210-clock",
+ 			.data = &e4210_clk_soc_data, },
+ 	{ .compatible = "samsung,exynos5250-clock",
 -- 
 1.8.0
 
