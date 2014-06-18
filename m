@@ -1,97 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254AbaFRT7L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 15:59:11 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:63093 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755003AbaFRT7J (ORCPT
+	id S1755292AbaFRT7Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 15:59:16 -0400
+Received: from 99-65-72-227.uvs.sntcca.sbcglobal.net ([99.65.72.227]:33757
+	"EHLO stargate3.asicdesigners.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755257AbaFRT7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 15:59:09 -0400
+	Wed, 18 Jun 2014 15:59:14 -0400
+Message-ID: <53A1EF8D.20300@chelsio.com>
+Date: Wed, 18 Jun 2014 12:59:09 -0700
+From: Anish Bhatt <anish@chelsio.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <53A11E60.5030704@gmail.com>
-References: <53A11E60.5030704@gmail.com>
-Date: Thu, 19 Jun 2014 03:59:08 +0800
-Message-ID: <CAF0htA4jMe_ehEeh=B5euYZX0uP-Mnq+G_pA-6Sxexp_LyPEaA@mail.gmail.com>
-Subject: Re: [PATCH] arch/score/include/asm/io.h: Add generic io map functions
- when MMU enabled
-From: Lennox Wu <lennox.wu@gmail.com>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: Liqin Chen <liqin.linux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Joe Perches <joe@perches.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH V2] checkpatch: Warn on unnecessary void function return
+ statements
+References: <1401728316.5770.9.camel@joe-AO725> <1403113484.3839.13.camel@joe-AO725>
+In-Reply-To: <1403113484.3839.13.camel@joe-AO725>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chen,
-Although "SuperH Timer Support" are never used in our platforms, we
-can still consider if these functions are necessary.
-Could you send the config to us?
-
-Best,
-Lennox
-
-2014-06-18 13:06 GMT+08:00 Chen Gang <gang.chen.5i5j@gmail.com>:
-> score did not implement some io map functions when MMU enabled, so need
-> add generic io map functions, just like some other architectures have
-> done (e.g. sparc64, s390, and mn10300), or will cause compiling issue.
+On Wed 18 Jun 2014 10:44:44 AM PDT, Joe Perches wrote:
+> With some exceptions, warn on void functions that end with a
+> "return;", because it's unnecessary.
 >
-> The related error (allmodconfig under score):
+> Check the closing brace at the start of a line.
+> If the line before that has a single tab, then return;
+> look at the line before that.  If it's not a label,
+> emit a warning.
 >
->     CC      drivers/clocksource/sh_cmt.o
->   drivers/clocksource/sh_cmt.c: In function 'sh_cmt_map_memory':
->   drivers/clocksource/sh_cmt.c:932:2: error: implicit declaration of function 'ioremap_nocache' [-Werror=implicit-function-declaration]
->     cmt->mapbase = ioremap_nocache(mem->start, resource_size(mem));
->     ^
->   drivers/clocksource/sh_cmt.c:932:15: warning: assignment makes pointer from integer without a cast
->     cmt->mapbase = ioremap_nocache(mem->start, resource_size(mem));
->                  ^
->   drivers/clocksource/sh_cmt.c: In function 'sh_cmt_map_memory_legacy':
->   drivers/clocksource/sh_cmt.c:953:18: warning: assignment makes pointer from integer without a cast
->     cmt->mapbase_ch = ioremap_nocache(res->start, resource_size(res));
->                     ^
->   drivers/clocksource/sh_cmt.c:963:15: warning: assignment makes pointer from integer without a cast
->     cmt->mapbase = ioremap_nocache(res2 ? res2->start :
->                  ^
->   drivers/clocksource/sh_cmt.c:968:3: error: implicit declaration of function 'iounmap' [-Werror=implicit-function-declaration]
->      iounmap(cmt->mapbase_ch);
->      ^
->   cc1: some warnings being treated as errors
->   make[2]: *** [drivers/clocksource/sh_cmt.o] Error 1
->   make[1]: *** [drivers/clocksource] Error 2
->   make: *** [drivers] Error 2
+> So, emit a warning on:
 >
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> void function(...)
+> {
+> 	[...]
+> 	return;
+> }
+>
+> but do not emit a warning on the below because
+> gcc requires any statement (including a bare
+> semicolon) before the closing function brace:
+>
+> void function(...)
+> {
+> 	[...]
+> 		goto label;
+> 	[...]
+>
+> label:
+> 	return;
+> }
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
 > ---
->  arch/score/include/asm/io.h | 16 ++++++++++++++++
->  1 file changed, 16 insertions(+)
 >
-> diff --git a/arch/score/include/asm/io.h b/arch/score/include/asm/io.h
-> index 574c8827..d67aeea 100644
-> --- a/arch/score/include/asm/io.h
-> +++ b/arch/score/include/asm/io.h
-> @@ -3,6 +3,22 @@
+> V2: The previous patch had a few too many false positives
+>     on styles that should be acceptable.
 >
->  #include <asm-generic/io.h>
+>  scripts/checkpatch.pl | 12 ++++++++++++
+>  1 file changed, 12 insertions(+)
 >
-> +#ifdef CONFIG_MMU
-> +static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
-> +{
-> +       return (void __iomem *) (unsigned long)offset;
-> +}
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 862cc7a..b191c88 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -3470,6 +3470,18 @@ sub process {
+>  			}
+>  		}
+>
+> +# unnecessary return in a void function
+> +# at end-of-function, with the previous line a single leading tab, then return;
+> +# and the line before that not a goto label target like "out:"
+> +		if ($sline =~ /^[ \+]}\s*$/ &&
+> +		    $prevline =~ /^\+\treturn\s*;\s*$/ &&
+> +		    $linenr >= 3 &&
+> +		    $lines[$linenr - 3] =~ /^[ +]/ &&
+> +		    $lines[$linenr - 3] !~ /^[ +]\s*$Ident\s*:/) {
+> +			WARN("RETURN_VOID",
+> +			     "void function return statements are not generally useful\n" . $hereprev);
+> +               }
 > +
-> +#define __ioremap(offset, size, flags) ioremap(offset, size)
-> +
-> +#define ioremap_nocache ioremap
-> +#define ioremap_wc ioremap_nocache
-> +
-> +static inline void iounmap(void __iomem *addr)
-> +{
-> +}
-> +#endif
-> +
->  #define virt_to_bus    virt_to_phys
->  #define bus_to_virt    phys_to_virt
->  #endif /* _ASM_SCORE_IO_H */
-> --
-> 1.9.2.459.g68773ac
+>  # if statements using unnecessary parentheses - ie: if ((foo == bar))
+>  		if ($^V && $^V ge 5.10.0 &&
+>  		    $line =~ /\bif\s*((?:\(\s*){2,})/) {
+>
+>
+
+Confirming, no longer hitting previous false positives for me.
+-Anish
+
+--
+As long as the music's loud enough, we won't hear the world falling 
+apart.
+
