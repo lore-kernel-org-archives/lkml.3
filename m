@@ -1,153 +1,378 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965962AbaFRKFr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 06:05:47 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:52157 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965376AbaFRKFp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 06:05:45 -0400
-Date: Wed, 18 Jun 2014 12:04:04 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Luc Verhaegen <libv@skynet.be>
-Subject: Re: [PATCH v2 09/20] clk: sunxi: Add sun6i MBUS clock support
-Message-ID: <20140618100404.GM19730@lukather>
-References: <1403016777-15121-1-git-send-email-wens@csie.org>
- <1403016777-15121-10-git-send-email-wens@csie.org>
+	id S965835AbaFRKHw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 06:07:52 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52582 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965123AbaFRKHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 06:07:51 -0400
+Date: Wed, 18 Jun 2014 12:07:45 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Qiaowei Ren <qiaowei.ren@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Dave Hansen <dave.hansen@intel.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 07/10] x86, mpx: decode MPX instruction to get bound
+ violation information
+Message-ID: <20140618100745.GB24419@pd.tnic>
+References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
+ <1403084656-27284-8-git-send-email-qiaowei.ren@intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YS7t75H5cNTCpbja"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1403016777-15121-10-git-send-email-wens@csie.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1403084656-27284-8-git-send-email-qiaowei.ren@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---YS7t75H5cNTCpbja
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Tue, Jun 17, 2014 at 10:52:46PM +0800, Chen-Yu Tsai wrote:
-> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+On Wed, Jun 18, 2014 at 05:44:13PM +0800, Qiaowei Ren wrote:
+> This patch sets bound violation fields of siginfo struct in #BR
+> exception handler by decoding the user instruction and constructing
+> the faulting pointer.
+> 
+> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
 > ---
->  Documentation/devicetree/bindings/clock/sunxi.txt |  1 +
->  drivers/clk/sunxi/clk-sunxi.c                     | 44 +++++++++++++++++=
-++++++
->  2 files changed, 45 insertions(+)
->=20
-> diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Document=
-ation/devicetree/bindings/clock/sunxi.txt
-> index b9ec668..7b2ba41 100644
-> --- a/Documentation/devicetree/bindings/clock/sunxi.txt
-> +++ b/Documentation/devicetree/bindings/clock/sunxi.txt
-> @@ -40,6 +40,7 @@ Required properties:
->  	"allwinner,sun6i-a31-apb2-div-clk" - for the APB2 gates on A31
->  	"allwinner,sun6i-a31-apb2-gates-clk" - for the APB2 gates on A31
->  	"allwinner,sun4i-a10-mod0-clk" - for the module 0 family of clocks
-> +	"allwinner,sun6i-a31-mbus-clk" - for the MBUS clocks on A31 / A23
->  	"allwinner,sun7i-a20-out-clk" - for the external output clocks
->  	"allwinner,sun7i-a20-gmac-clk" - for the GMAC clock module on A20/A31
->  	"allwinner,sun4i-a10-usb-clk" - for usb gates + resets on A10 / A20
-> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-> index eca3c6e..a086b5b 100644
-> --- a/drivers/clk/sunxi/clk-sunxi.c
-> +++ b/drivers/clk/sunxi/clk-sunxi.c
-> @@ -307,6 +307,37 @@ static void sun4i_get_mod0_factors(u32 *freq, u32 pa=
-rent_rate,
-> =20
-> =20
->  /**
-> + * sun6i_a31_get_mbus_factors() - calculates m factor for MBUS clocks
-> + * MBUS rate is calculated as follows
-> + * rate =3D parent_rate / (m + 1);
-> + */
+>  arch/x86/include/asm/mpx.h |   23 ++++
+>  arch/x86/kernel/mpx.c      |  294 ++++++++++++++++++++++++++++++++++++++++++++
+>  arch/x86/kernel/traps.c    |    6 +
+>  3 files changed, 323 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/mpx.h b/arch/x86/include/asm/mpx.h
+> index b7598ac..780af63 100644
+> --- a/arch/x86/include/asm/mpx.h
+> +++ b/arch/x86/include/asm/mpx.h
+> @@ -3,6 +3,7 @@
+>  
+>  #include <linux/types.h>
+>  #include <asm/ptrace.h>
+> +#include <asm/insn.h>
+>  
+>  #ifdef CONFIG_X86_64
+>  
+> @@ -44,15 +45,37 @@
+>  #define MPX_BNDSTA_ERROR_CODE	0x3
+>  #define MPX_BD_ENTRY_VALID_FLAG	0x1
+>  
+> +struct mpx_insn {
+> +	struct insn_field rex_prefix;	/* REX prefix */
+> +	struct insn_field modrm;
+> +	struct insn_field sib;
+> +	struct insn_field displacement;
 > +
-> +static void sun6i_a31_get_mbus_factors(u32 *freq, u32 parent_rate,
-> +				       u8 *n, u8 *k, u8 *m, u8 *p)
+> +	unsigned char addr_bytes;	/* effective address size */
+> +	unsigned char limit;
+> +	unsigned char x86_64;
+> +
+> +	const unsigned char *kaddr;	/* kernel address of insn to analyze */
+> +	const unsigned char *next_byte;
+> +};
+> +
+> +#define MAX_MPX_INSN_SIZE	15
+> +
+>  unsigned long mpx_mmap(unsigned long len);
+>  
+>  #ifdef CONFIG_X86_INTEL_MPX
+>  int do_mpx_bt_fault(struct xsave_struct *xsave_buf);
+> +void do_mpx_bounds(struct pt_regs *regs, siginfo_t *info,
+> +		struct xsave_struct *xsave_buf);
+>  #else
+>  static inline int do_mpx_bt_fault(struct xsave_struct *xsave_buf)
+>  {
+>  	return -EINVAL;
+>  }
+> +static inline void do_mpx_bounds(struct pt_regs *regs, siginfo_t *info,
+> +		struct xsave_struct *xsave_buf)
 > +{
-> +	u8 div;
+> +}
+>  #endif /* CONFIG_X86_INTEL_MPX */
+>  
+>  #endif /* _ASM_X86_MPX_H */
+> diff --git a/arch/x86/kernel/mpx.c b/arch/x86/kernel/mpx.c
+> index 4230c7b..650b282 100644
+> --- a/arch/x86/kernel/mpx.c
+> +++ b/arch/x86/kernel/mpx.c
+> @@ -2,6 +2,270 @@
+>  #include <linux/syscalls.h>
+>  #include <asm/mpx.h>
+>  
+> +typedef enum {REG_TYPE_RM, REG_TYPE_INDEX, REG_TYPE_BASE} reg_type_t;
+> +static unsigned long get_reg(struct mpx_insn *insn, struct pt_regs *regs,
+> +			     reg_type_t type)
+> +{
+> +	int regno = 0;
+> +	unsigned char modrm = (unsigned char)insn->modrm.value;
+> +	unsigned char sib = (unsigned char)insn->sib.value;
 > +
-> +	/* These clocks can only divide, so we will never be able to achieve
-> +	 * frequencies higher than the parent frequency */
-> +	if (*freq > parent_rate)
-> +		*freq =3D parent_rate;
+> +	static const int regoff[] = {
+> +		offsetof(struct pt_regs, ax),
+> +		offsetof(struct pt_regs, cx),
+> +		offsetof(struct pt_regs, dx),
+> +		offsetof(struct pt_regs, bx),
+> +		offsetof(struct pt_regs, sp),
+> +		offsetof(struct pt_regs, bp),
+> +		offsetof(struct pt_regs, si),
+> +		offsetof(struct pt_regs, di),
+> +#ifdef CONFIG_X86_64
+> +		offsetof(struct pt_regs, r8),
+> +		offsetof(struct pt_regs, r9),
+> +		offsetof(struct pt_regs, r10),
+> +		offsetof(struct pt_regs, r11),
+> +		offsetof(struct pt_regs, r12),
+> +		offsetof(struct pt_regs, r13),
+> +		offsetof(struct pt_regs, r14),
+> +		offsetof(struct pt_regs, r15),
+> +#endif
+> +	};
 > +
-> +	div =3D DIV_ROUND_UP(parent_rate, *freq);
+> +	switch (type) {
+> +	case REG_TYPE_RM:
+> +		regno = X86_MODRM_RM(modrm);
+> +		if (X86_REX_B(insn->rex_prefix.value) == 1)
+> +			regno += 8;
+> +		break;
 > +
-> +	if (div > 8)
-> +		div =3D 8;
+> +	case REG_TYPE_INDEX:
+> +		regno = X86_SIB_INDEX(sib);
+> +		if (X86_REX_X(insn->rex_prefix.value) == 1)
+> +			regno += 8;
+> +		break;
 > +
-> +	*freq =3D parent_rate / div;
+> +	case REG_TYPE_BASE:
+> +		regno = X86_SIB_BASE(sib);
+> +		if (X86_REX_B(insn->rex_prefix.value) == 1)
+> +			regno += 8;
+> +		break;
 > +
-> +	/* we were called to round the frequency, we can now return */
-> +	if (n =3D=3D NULL)
-
-s/n/m/ ?
-
-> +		return;
+> +	default:
+> +		break;
+> +	}
 > +
-> +	*m =3D div - 1;
+> +	return regs_get_register(regs, regoff[regno]);
 > +}
 > +
+> +/*
+> + * return the address being referenced be instruction
+> + * for rm=3 returning the content of the rm reg
+> + * for rm!=3 calculates the address using SIB and Disp
+> + */
+> +static unsigned long get_addr_ref(struct mpx_insn *insn, struct pt_regs *regs)
+> +{
+> +	unsigned long addr;
+> +	unsigned long base;
+> +	unsigned long indx;
+> +	unsigned char modrm = (unsigned char)insn->modrm.value;
+> +	unsigned char sib = (unsigned char)insn->sib.value;
 > +
-> +/**
->   * sun7i_a20_get_out_factors() - calculates m, p factors for CLK_OUT_A/B
->   * CLK_OUT rate is calculated as follows
->   * rate =3D (parent_rate >> p) / (m + 1);
-> @@ -447,6 +478,11 @@ static struct clk_factors_config sun4i_mod0_config =
-=3D {
->  	.pwidth =3D 2,
->  };
-> =20
-> +static struct clk_factors_config sun6i_a31_mbus_config =3D {
-> +	.mshift =3D 0,
-> +	.mwidth =3D 3,
+> +	if (X86_MODRM_MOD(modrm) == 3) {
+> +		addr = get_reg(insn, regs, REG_TYPE_RM);
+> +	} else {
+> +		if (insn->sib.nbytes) {
+> +			base = get_reg(insn, regs, REG_TYPE_BASE);
+> +			indx = get_reg(insn, regs, REG_TYPE_INDEX);
+> +			addr = base + indx * (1 << X86_SIB_SCALE(sib));
+> +		} else {
+> +			addr = get_reg(insn, regs, REG_TYPE_RM);
+> +		}
+> +		addr += insn->displacement.value;
+> +	}
+> +
+> +	return addr;
+> +}
+> +
+> +/* Verify next sizeof(t) bytes can be on the same instruction */
+> +#define validate_next(t, insn, n)	\
+> +	((insn)->next_byte + sizeof(t) + n - (insn)->kaddr <= (insn)->limit)
+> +
+> +#define __get_next(t, insn)		\
+> +({					\
+> +	t r = *(t *)insn->next_byte;	\
+> +	insn->next_byte += sizeof(t);	\
+> +	r;				\
+> +})
+> +
+> +#define __peek_next(t, insn)		\
+> +({					\
+> +	t r = *(t *)insn->next_byte;	\
+> +	r;				\
+> +})
+> +
+> +#define get_next(t, insn)		\
+> +({					\
+> +	if (unlikely(!validate_next(t, insn, 0)))	\
+> +		goto err_out;		\
+> +	__get_next(t, insn);		\
+> +})
+> +
+> +#define peek_next(t, insn)		\
+> +({					\
+> +	if (unlikely(!validate_next(t, insn, 0)))	\
+> +		goto err_out;		\
+> +	__peek_next(t, insn);		\
+> +})
+> +
+> +static void mpx_insn_get_prefixes(struct mpx_insn *insn)
+> +{
+> +	unsigned char b;
+> +
+> +	/* Decode legacy prefix and REX prefix */
+> +	b = peek_next(unsigned char, insn);
+> +	while (b != 0x0f) {
+> +		/*
+> +		 * look for a rex prefix
+> +		 * a REX prefix cannot be followed by a legacy prefix.
+> +		 */
+> +		if (insn->x86_64 && ((b&0xf0) == 0x40)) {
+> +			insn->rex_prefix.value = b;
+> +			insn->rex_prefix.nbytes = 1;
+> +			insn->next_byte++;
+> +			break;
+> +		}
+> +
+> +		/* check the other legacy prefixes */
+> +		switch (b) {
+> +		case 0xf2:
+> +		case 0xf3:
+> +		case 0xf0:
+> +		case 0x64:
+> +		case 0x65:
+> +		case 0x2e:
+> +		case 0x3e:
+> +		case 0x26:
+> +		case 0x36:
+> +		case 0x66:
+> +		case 0x67:
+> +			insn->next_byte++;
+> +			break;
+> +		default: /* everything else is garbage */
+> +			goto err_out;
+> +		}
+> +		b = peek_next(unsigned char, insn);
+> +	}
+> +
+> +err_out:
+> +	return;
+> +}
+> +
+> +static void mpx_insn_get_modrm(struct mpx_insn *insn)
+> +{
+> +	insn->modrm.value = get_next(unsigned char, insn);
+> +	insn->modrm.nbytes = 1;
+> +
+> +err_out:
+> +	return;
+> +}
+> +
+> +static void mpx_insn_get_sib(struct mpx_insn *insn)
+> +{
+> +	unsigned char modrm = (unsigned char)insn->modrm.value;
+> +
+> +	if (X86_MODRM_MOD(modrm) != 3 && X86_MODRM_RM(modrm) == 4) {
+> +		insn->sib.value = get_next(unsigned char, insn);
+> +		insn->sib.nbytes = 1;
+> +	}
+> +
+> +err_out:
+> +	return;
+> +}
+> +
+> +static void mpx_insn_get_displacement(struct mpx_insn *insn)
+> +{
+> +	unsigned char mod, rm, base;
+> +
+> +	/*
+> +	 * Interpreting the modrm byte:
+> +	 * mod = 00 - no displacement fields (exceptions below)
+> +	 * mod = 01 - 1-byte displacement field
+> +	 * mod = 10 - displacement field is 4 bytes
+> +	 * mod = 11 - no memory operand
+> +	 *
+> +	 * mod != 11, r/m = 100 - SIB byte exists
+> +	 * mod = 00, SIB base = 101 - displacement field is 4 bytes
+> +	 * mod = 00, r/m = 101 - rip-relative addressing, displacement
+> +	 *	field is 4 bytes
+> +	 */
+> +	mod = X86_MODRM_MOD(insn->modrm.value);
+> +	rm = X86_MODRM_RM(insn->modrm.value);
+> +	base = X86_SIB_BASE(insn->sib.value);
+> +	if (mod == 3)
+> +		return;
+> +	if (mod == 1) {
+> +		insn->displacement.value = get_next(unsigned char, insn);
+> +		insn->displacement.nbytes = 1;
+> +	} else if ((mod == 0 && rm == 5) || mod == 2 ||
+> +			(mod == 0 && base == 5)) {
+> +		insn->displacement.value = get_next(int, insn);
+> +		insn->displacement.nbytes = 4;
+> +	}
+> +
+> +err_out:
+> +	return;
+> +}
+> +
+> +static void mpx_insn_init(struct mpx_insn *insn, struct pt_regs *regs)
+> +{
+> +	unsigned char buf[MAX_MPX_INSN_SIZE];
+> +	int bytes;
+> +
+> +	memset(insn, 0, sizeof(*insn));
+> +
+> +	bytes = copy_from_user(buf, (void __user *)regs->ip, MAX_MPX_INSN_SIZE);
+> +	insn->limit = MAX_MPX_INSN_SIZE - bytes;
+> +	insn->kaddr = buf;
+> +	insn->next_byte = buf;
+> +
+> +	/*
+> +	 * In 64-bit Mode, all Intel MPX instructions use 64-bit
+> +	 * operands for bounds and 64 bit addressing, i.e. REX.W &
+> +	 * 67H have no effect on data or address size.
+> +	 *
+> +	 * In compatibility and legacy modes (including 16-bit code
+> +	 * segments, real and virtual 8086 modes) all Intel MPX
+> +	 * instructions use 32-bit operands for bounds and 32 bit
+> +	 * addressing.
+> +	 */
+> +#ifdef CONFIG_X86_64
+> +	insn->x86_64 = 1;
+> +	insn->addr_bytes = 8;
+> +#else
+> +	insn->x86_64 = 0;
+> +	insn->addr_bytes = 4;
+> +#endif
+> +}
+> +
+> +static unsigned long mpx_insn_decode(struct mpx_insn *insn,
+> +				     struct pt_regs *regs)
+> +{
+> +	mpx_insn_init(insn, regs);
+> +
+> +	/*
+> +	 * In this case, we only need decode bndcl/bndcn/bndcu,
+> +	 * so we can use private diassembly interfaces to get
+> +	 * prefixes, modrm, sib, displacement, etc..
+> +	 */
+> +	mpx_insn_get_prefixes(insn);
+> +	insn->next_byte += 2; /* ignore opcode */
+> +	mpx_insn_get_modrm(insn);
+> +	mpx_insn_get_sib(insn);
+> +	mpx_insn_get_displacement(insn);
+> +
+> +	return get_addr_ref(insn, regs);
+> +}
+> +
 
-Actually, the A31 has an extra N factor.
+This whole insn decoding machinery above looks like adapted from
+arch/x86/lib/insn.c. You should merge it with the generic code in insn.c
+instead of homegrowing it here only for the purposes of MPX. And if it
+doesn't work for your needs, you should should extend the generic code
+to do so. I think we even talked about this last time.
 
-So this mbus clock looks like it's only about the A23, and not the A31
-at all.
+Also, make sure you run all your patches through checkpatch.pl before
+submitting.
 
-Maxime
+-- 
+Regards/Gruss,
+    Boris.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---YS7t75H5cNTCpbja
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJToWQUAAoJEBx+YmzsjxAgIdEP/1gAozfujWyTTDlj3feS84m0
-HgRkqz7DMEbZ6Nr0rN2QQCAEx03d1qsCCMkQLQHR9FD2Lq+Oc1DSlYtY1e/j1HiO
-Dzxm2OVoPaTCEHiPttzg/TSziF6OquHyPFDGGm/9ZOhTw4LneeY93P6Mo4Br6qfL
-fXnc06L7cqp+EYh+Nfn/ah7AbP3Yysc6/kQfFYi/MWs9PM2pIMcEWL4mD+6gG9Zh
-iuCwZ06t1o7a3gFBeX1lOgIl3M3qPtFc3C/R9+k/mgOEx/9h953S93JAU3ZxbWMB
-l4yZ8sp6uQVwjQDvLyowVTc8cLNZgUuVaAStioxV6JnYdcpEta0JoPBNvriNvaj0
-ayZhcyB5u/Chow0gSl36BBiaRpclPaIvRoHXelS0WSgaUVEl1mRnIRwK9QGRUlc7
-a6WZo7hKEXOeDEHeeokE++/3IqwbueCVfeQmBX893mSoLzlaiRliYzwbAzZLdUT3
-CSvgA/t7h2JsggpC4Q8hOFCcuyYSTGxpUGI8RtQq9U0qaaIyc+isxgML9xuDnnVi
-mTcXJfPa/UIrY3hEtge5E0zXHw/+xdz20Cd5/qsTWUJEOwfqpgmQaFVcfjbswM3V
-l4KJu2x5bp2T9HSWjNxRYeDK/4Mf8h7E6fTZz40tK9zT93rx0XAJjgV8FN6LH0Fq
-ykj3fIdB/tq0YoqOVUQr
-=LZTy
------END PGP SIGNATURE-----
-
---YS7t75H5cNTCpbja--
+Sent from a fat crate under my desk. Formatting is fine.
+--
