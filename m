@@ -1,129 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933852AbaFRDnp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 23:43:45 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:34693 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756370AbaFRDnn (ORCPT
+	id S933900AbaFRDpB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 23:45:01 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:63718 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932489AbaFRDpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 23:43:43 -0400
+	Tue, 17 Jun 2014 23:45:00 -0400
+Message-ID: <53A10B3A.6050705@kernel.dk>
+Date: Tue, 17 Jun 2014 20:44:58 -0700
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1402954800-28215-10-git-send-email-dianders@chromium.org>
-References: <1402954800-28215-1-git-send-email-dianders@chromium.org>
-	<1402954800-28215-10-git-send-email-dianders@chromium.org>
-Date: Tue, 17 Jun 2014 20:43:42 -0700
-X-Google-Sender-Auth: gRtDiJVGYMLb4OpOC_SxLRVFlKE
-Message-ID: <CAPnjgZ3qqRiLvgnkCSoUTTkL8XvRHNkrFhfqi_Fofx-5ixU5LQ@mail.gmail.com>
-Subject: Re: [PATCH 09/10] mfd: cros_ec: Check result code from EC messages
-From: Simon Glass <sjg@chromium.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Bill Richardson <wfrichar@chromium.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Mark Brown <broonie@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        lk <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Bart Van Assche <bvanassche@acm.org>, Christoph Hellwig <hch@lst.de>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Bart Van Assche <bvanassche@fusionio.com>, Robert Elliot <Elliott@hp.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: scsi-mq
+References: <1402580946-11470-1-git-send-email-hch@lst.de> <53A05068.4080702@acm.org>
+In-Reply-To: <53A05068.4080702@acm.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug,
+On 2014-06-17 07:27, Bart Van Assche wrote:
+> On 06/12/14 15:48, Christoph Hellwig wrote:
+>> Bart and Robert have helped with some very detailed measurements that they
+>> might be able to send in reply to this, although these usually involve
+>> significantly reworked low level drivers to avoid other bottle necks.
+>
+> In case someone would like to see the results of the measurements I ran,
+> these results can be found here:
+> https://docs.google.com/file/d/0B1YQOreL3_FxUXFMSjhmNDBNNTg.
+>
+> Two important conclusions from the data in that PDF document are as follows:
+> - A small but significant performance improvement for the traditional
+>    SCSI mid-layer (use_blk_mq=N).
+> - A very significant performance improvement for multithreaded
+>    workloads with use_blk_mq=Y. As an example, the number of I/O
+>    operations per second reported for the random write test increased
+>    with 170%. That means 2.7 times the performance
+>    of use_blk_mq=N.
 
-On 16 June 2014 14:39, Doug Anderson <dianders@chromium.org> wrote:
-> From: Bill Richardson <wfrichar@chromium.org>
->
-> Just because the host was able to talk to the EC doesn't mean that the EC
-> was happy with what it was told. Errors in communincation are not the same
-> as error messages from the EC itself.
->
-> This change lets the EC report its errors separately.
->
-> Signed-off-by: Bill Richardson <wfrichar@chromium.org>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
->  drivers/mfd/cros_ec_i2c.c | 15 +++++++++++----
->  drivers/mfd/cros_ec_spi.c | 26 ++++++++++++++------------
->  2 files changed, 25 insertions(+), 16 deletions(-)
->
-> diff --git a/drivers/mfd/cros_ec_i2c.c b/drivers/mfd/cros_ec_i2c.c
-> index 5bb32f5..2276096 100644
-> --- a/drivers/mfd/cros_ec_i2c.c
-> +++ b/drivers/mfd/cros_ec_i2c.c
-> @@ -92,11 +92,18 @@ static int cros_ec_cmd_xfer_i2c(struct cros_ec_device *ec_dev,
->         }
->
->         /* check response error code */
-> -       if (i2c_msg[1].buf[0]) {
-> -               dev_warn(ec_dev->dev, "command 0x%02x returned an error %d\n",
-> -                        msg->command, i2c_msg[1].buf[0]);
-> -               ret = -EINVAL;
-> +       msg->result = i2c_msg[1].buf[0];
-> +       switch (msg->result) {
-> +       case EC_RES_SUCCESS:
-> +               break;
-> +       case EC_RES_IN_PROGRESS:
-> +               ret = -EAGAIN;
-> +               dev_dbg(ec_dev->dev, "command 0x%02x in progress\n",
-> +                       msg->command);
->                 goto done;
-> +       default:
-> +               dev_warn(ec_dev->dev, "command 0x%02x returned %d\n",
-> +                        msg->command, msg->result);
->         }
->
->         /* copy response packet payload and compute checksum */
-> diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
-> index 09ca789..4d34f1c 100644
-> --- a/drivers/mfd/cros_ec_spi.c
-> +++ b/drivers/mfd/cros_ec_spi.c
-> @@ -289,21 +289,23 @@ static int cros_ec_cmd_xfer_spi(struct cros_ec_device *ec_dev,
->                 goto exit;
->         }
->
-> -       /* check response error code */
->         ptr = ec_dev->din;
-> -       if (ptr[0]) {
-> -               if (ptr[0] == EC_RES_IN_PROGRESS) {
-> -                       dev_dbg(ec_dev->dev, "command 0x%02x in progress\n",
-> -                               ec_msg->command);
-> -                       ret = -EAGAIN;
-> -                       goto exit;
-> -               }
-> -               dev_warn(ec_dev->dev, "command 0x%02x returned an error %d\n",
-> -                        ec_msg->command, ptr[0]);
-> -               debug_packet(ec_dev->dev, "in_err", ptr, len);
-> -               ret = -EINVAL;
-> +
-> +       /* check response error code */
-> +       ec_msg->result = ptr[0];
-> +       switch (ec_msg->result) {
-> +       case EC_RES_SUCCESS:
-> +               break;
-> +       case EC_RES_IN_PROGRESS:
-> +               ret = -EAGAIN;
-> +               dev_dbg(ec_dev->dev, "command 0x%02x in progress\n",
-> +                       ec_msg->command);
->                 goto exit;
-> +       default:
-> +               dev_warn(ec_dev->dev, "command 0x%02x returned %d\n",
-> +                        ec_msg->command, ec_msg->result);
->         }
+Thanks for posting these numbers, Bart. The CPU utilization and IOPS 
+speak a very clear message. The only mystery is why the singe threaded 
+performance is down. That we need to get sort, but it's not a show 
+stopper for inclusion.
 
-Since this code is the same as the above, should it go in a common
-function in cros_ec?
+If you run the single threaded tests and watch for queue depths, is 
+there a difference between blk-mq=y/scsi-mq and the stock kernel?
 
-> +
->         len = ptr[1];
->         sum = ptr[0] + ptr[1];
->         if (len > ec_msg->insize) {
-> --
-> 2.0.0.526.g5318336
->
+> I think this means the scsi-mq patches are ready for wider use.
 
-Regards,
-Simon
+I would agree. James, I haven't seen any comments from you on this yet. 
+I've run various bits of scsi-mq testing as well, and no ill effects 
+seen. On top of that, Christophs patches are nicely separated and have 
+general benefits even for the non-blk-mq cases. Time to shove them into 
+the queue for the next merge window?
+
+-- 
+Jens Axboe
+
