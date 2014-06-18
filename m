@@ -1,79 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506AbaFRQni (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 12:43:38 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:37926 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719AbaFRQne (ORCPT
+	id S1753567AbaFRQo0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 12:44:26 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:59811 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753494AbaFRQoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 12:43:34 -0400
-Date: Wed, 18 Jun 2014 09:43:27 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Anderson <anderson@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Petr Mladek <pmladek@suse.cz>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [RFC PATCH 00/11] printk: safe printing in NMI context
-Message-ID: <20140618164327.GO4669@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LNX.2.00.1405290000350.17241@pobox.suse.cz>
- <20140529000909.GC6507@localhost.localdomain>
- <alpine.LNX.2.00.1405290959270.17241@pobox.suse.cz>
- <20140610164641.GD1951@localhost.localdomain>
- <CA+55aFzseOqF-EpKMvwKpfhBJZQSLqKpJ3shzVee9s0+mvyCuA@mail.gmail.com>
- <alpine.LNX.2.00.1406181245230.2303@pobox.suse.cz>
- <20140618143612.GC4669@linux.vnet.ibm.com>
- <CA+55aFwPgDC6gSEPfu3i-pA4f0ZbsTSvykxzX4sXMeLbdXuKrw@mail.gmail.com>
- <20140618162117.GM4669@linux.vnet.ibm.com>
- <20140618123837.0073be7d@gandalf.local.home>
+	Wed, 18 Jun 2014 12:44:24 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: Bjorn Andersson <bjorn@kryo.se>, Lee Jones <lee.jones@linaro.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Paul Walmsley <paul@pwsan.com>, jaswinder.singh@linaro.org
+Subject: Re: [PATCH v3 0/3] Qualcomm Resource Power Manager driver
+References: <1402944372-31901-1-git-send-email-bjorn.andersson@sonymobile.com>
+	<7hvbrzbh1u.fsf@paris.lan>
+	<CAJAp7OhHr4Cgcp9pvQ3=MAie_zSnFJxG28Vf37qJ98BK7P1jaQ@mail.gmail.com>
+	<7hzjha8b97.fsf@paris.lan>
+	<842A7147-A2CC-42BD-9947-CBADF738DC92@codeaurora.org>
+Date: Wed, 18 Jun 2014 09:44:21 -0700
+In-Reply-To: <842A7147-A2CC-42BD-9947-CBADF738DC92@codeaurora.org> (Kumar
+	Gala's message of "Wed, 18 Jun 2014 11:03:44 -0500")
+Message-ID: <7hegym6uca.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140618123837.0073be7d@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061816-0928-0000-0000-000002BC83F1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 12:38:37PM -0400, Steven Rostedt wrote:
-> On Wed, 18 Jun 2014 09:21:17 -0700
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > On Wed, Jun 18, 2014 at 05:58:40AM -1000, Linus Torvalds wrote:
-> > > On Jun 18, 2014 4:36 AM, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > wrote:
-> > > >
-> > > > I could easily add an option to RCU to allow people to tell it not to
-> > > > use NMIs to dump the stack.
-> > > 
-> > > I don't think it should be an "option".
-> > > 
-> > > We should stop using nmi as if it was something "normal". It isn't. Code
-> > > running in nmi context should be special, and should be very very aware
-> > > that it is special. That goes way beyond "don't use printk". We seem to
-> > > have gone way way too far in using nmi context.
-> > > 
-> > > So we should get *rid* of code in nmi context rather than then complain
-> > > about printk being buggy.
-> > 
-> > OK, unconditional non-use of NMIs is even easier.  ;-)
-> > 
-> > Something like the following.
-> 
-> I have found the RCU stalls extremely useful in debugging lockups. In
-> case this doesn't work as well, I'm willing to write up something that
-> could send NMIs to all CPUs that would write into the ftrace ring
-> buffer and when finished, the calling CPU can dump it out. No printk
-> from NMI context at all.
+Kumar Gala <galak@codeaurora.org> writes:
 
-Sounds like a good plan to me!
+> On Jun 18, 2014, at 10:53 AM, Kevin Hilman <khilman@linaro.org> wrote:
+>
+>> Bjorn Andersson <bjorn@kryo.se> writes:
+>> 
+>>> On Tue, Jun 17, 2014 at 10:07 AM, Kevin Hilman <khilman@linaro.org> wrote:
+>>>> +Paul Walmsley
+>>>> 
+>>>> Bjorn Andersson <bjorn.andersson@sonymobile.com> writes:
+>>>> 
+>>>>> This series adds a regulator driver for the Resource Power Manager found in
+>>>>> Qualcomm 8660, 8960 and 8064 based devices.
+>>>>> 
+>>>>> The RPM driver exposes resources to its child devices, that can be accessed to
+>>>>> implement drivers for the regulators, clocks and bus frequency control that's
+>>>>> owned by the RPM in these devices.
+>>>>> 
+>>>>> Changes since v2:
+>>>>>  - Fix copy-paste error in dt binding
+>>>>>  - Correct incomplete move from mfd to soc
+>>>>>  - Correct const mistake in regulator driver
+>>>>> 
+>>>>> Changes since v1:
+>>>>>  - Moved rpm driver to drivers/soc
+>>>> 
+>>>> I'm not sure I follow the motivation for having this under drivers/soc?
+>>>> 
+>>> Hi Kevin,
+>>> 
+>>> I've made the argument that to me this is conceptually a black box
+>>> handling regulators, clocks and other stuff; hence similar to a PMIC,
+>>> which would fit nicely into drivers/mfd.
+>>> 
+>>> I still think this is the case and now that I look back I didn't get
+>>> any pushback from Lee Jones so maybe the move was premature?
+>> 
+>> Yes, IMO, the move was premature, but hopefully the drivers/soc folks
+>> can chime in an clarify the criteria for inclusion there.
+>> 
+>> Kevin
+>
+> I dont agree, I think having this in drivers/soc means that we can
+> clearly go through drivers/soc in the future and look for patterns
+> across SoCs that should be re-factored.  
 
-							Thanx, Paul
+I don't believe that was the goal in creating drivers/soc.
 
+> Where MFD seems like its become the new drivers misc.
+
+Well, I don't think that drivers/soc wants to be the new drivers/misc
+either. ;)
+
+Thinking more about what this RPM driver actually does, and since you
+mentioned patterns across SoCs, it seems to me the RPM driver bascially
+just doing the IPC.
+
+So, rather than MFD or drivers/soc, it seems to me that it should be
+implmented as a controller in the new common mailbox framwork[1] being
+worked on by Jassi Brar (added to Cc.)
+
+IIUC, RPM is actually only doing one-way IPC (it only exposes a write()
+interface to clients) so it seems like a rather simple implementation of
+a mailbox controller.
+
+I believe Bjorn is already on the list of folks Cc'd on the common
+mailbox framework, so it would be good to hear from him why RPM wouldn't
+fit under that framework.
+
+Thanks,
+
+Kevin
+
+[1] https://lkml.org/lkml/2014/6/12/470
