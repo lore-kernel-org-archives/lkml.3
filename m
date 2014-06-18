@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897AbaFRQfa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 12:35:30 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:37420 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaFRQf2 (ORCPT
+	id S1752966AbaFRQir (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 12:38:47 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:47118 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750862AbaFRQiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 12:35:28 -0400
+	Wed, 18 Jun 2014 12:38:46 -0400
+Date: Wed, 18 Jun 2014 12:38:37 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Anderson <anderson@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Petr Mladek <pmladek@suse.cz>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [RFC PATCH 00/11] printk: safe printing in NMI context
+Message-ID: <20140618123837.0073be7d@gandalf.local.home>
+In-Reply-To: <20140618162117.GM4669@linux.vnet.ibm.com>
+References: <1399626665-29817-1-git-send-email-pmladek@suse.cz>
+	<alpine.LNX.2.00.1405290000350.17241@pobox.suse.cz>
+	<20140529000909.GC6507@localhost.localdomain>
+	<alpine.LNX.2.00.1405290959270.17241@pobox.suse.cz>
+	<20140610164641.GD1951@localhost.localdomain>
+	<CA+55aFzseOqF-EpKMvwKpfhBJZQSLqKpJ3shzVee9s0+mvyCuA@mail.gmail.com>
+	<alpine.LNX.2.00.1406181245230.2303@pobox.suse.cz>
+	<20140618143612.GC4669@linux.vnet.ibm.com>
+	<CA+55aFwPgDC6gSEPfu3i-pA4f0ZbsTSvykxzX4sXMeLbdXuKrw@mail.gmail.com>
+	<20140618162117.GM4669@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140618075316.GI21030@lee--X1>
-References: <1402954800-28215-1-git-send-email-dianders@chromium.org>
-	<1402954800-28215-4-git-send-email-dianders@chromium.org>
-	<20140618075316.GI21030@lee--X1>
-Date: Wed, 18 Jun 2014 09:35:27 -0700
-X-Google-Sender-Auth: u6bJwb_PGAVp2s-gXUVHzGIFD7o
-Message-ID: <CAD=FV=XmV-pA_qPuhZNKO5m+B04sJpzDukhp3rnwUzyfEaQQNA@mail.gmail.com>
-Subject: Re: [PATCH 03/10] mfd: cros_ec: Allow static din/dout buffers with cros_ec_register()
-From: Doug Anderson <dianders@chromium.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Andrew Bresticker <abrestic@chromium.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Bill Richardson <wfrichar@chromium.org>,
-        Simon Glass <sjg@chromium.org>, Wolfram Sang <wsa@the-dreams.de>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lee,
+On Wed, 18 Jun 2014 09:21:17 -0700
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
-On Wed, Jun 18, 2014 at 12:53 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Mon, 16 Jun 2014, Doug Anderson wrote:
->
->> From: Bill Richardson <wfrichar@chromium.org>
->>
->> The lower-level driver may want to provide its own buffers. If so,
->> there's no need to allocate new ones.  This already happens to work
->> just fine (since we check for size of 0 and use devm allocation), but
->> it's good to document it.
->>
->> [dianders: Resolved conflicts; documented that no code changes needed
->> on mainline]
->>
->> Signed-off-by: Bill Richardson <wfrichar@chromium.org>
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
->> ---
->>  include/linux/mfd/cros_ec.h | 4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/include/linux/mfd/cros_ec.h b/include/linux/mfd/cros_ec.h
->> index 7e9fe6e..2ee3190 100644
->> --- a/include/linux/mfd/cros_ec.h
->> +++ b/include/linux/mfd/cros_ec.h
->> @@ -68,8 +68,8 @@ struct cros_ec_msg {
->>   * We use this alignment to keep ARM and x86 happy. Probably word
->>   * alignment would be OK, there might be a small performance advantage
->>   * to using dword.
->> - * @din_size: size of din buffer
->> - * @dout_size: size of dout buffer
->> + * @din_size: size of din buffer to allocate (zero to use static din)
->> + * @dout_size: size of dout buffer to allocate (zero to use static dout)
->
-> Why don't these use your new format i.e. doutsize, etc?
+> On Wed, Jun 18, 2014 at 05:58:40AM -1000, Linus Torvalds wrote:
+> > On Jun 18, 2014 4:36 AM, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > wrote:
+> > >
+> > > I could easily add an option to RCU to allow people to tell it not to
+> > > use NMIs to dump the stack.
+> > 
+> > I don't think it should be an "option".
+> > 
+> > We should stop using nmi as if it was something "normal". It isn't. Code
+> > running in nmi context should be special, and should be very very aware
+> > that it is special. That goes way beyond "don't use printk". We seem to
+> > have gone way way too far in using nmi context.
+> > 
+> > So we should get *rid* of code in nmi context rather than then complain
+> > about printk being buggy.
+> 
+> OK, unconditional non-use of NMIs is even easier.  ;-)
+> 
+> Something like the following.
+> 
 
-Ah, you mean like the new "struct cros_ec_command" that's switched to
-in (mfd: cros_ec: Use struct cros_ec_command to communicate with the
-EC)?  I don't know--it seems rather arbitrary.  Personally I like
-having the underscore (thus if we have to change I'd advocate changing
-"struct cros_ec_command").
+I have found the RCU stalls extremely useful in debugging lockups. In
+case this doesn't work as well, I'm willing to write up something that
+could send NMIs to all CPUs that would write into the ftrace ring
+buffer and when finished, the calling CPU can dump it out. No printk
+from NMI context at all.
 
-The inconsistency doesn't bother me terribly and it will be more work
-to cherry-pick future patches.  Since it didn't sound like you are
-insisting then I won't change this, but if you say that you want me to
-change it I'm more than happy to.
-
--Doug
+-- Steve
