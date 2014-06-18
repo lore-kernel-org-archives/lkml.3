@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965230AbaFRI7c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 04:59:32 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:40908 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933747AbaFRI73 (ORCPT
+	id S965363AbaFRI7l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 04:59:41 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:40649 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965238AbaFRI7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 04:59:29 -0400
-Date: Wed, 18 Jun 2014 01:59:28 -0700 (PDT)
-Message-ID: <87sin2y4ni.wl%kuninori.morimoto.gx@renesas.com>
+	Wed, 18 Jun 2014 04:59:36 -0400
+Date: Wed, 18 Jun 2014 01:59:35 -0700 (PDT)
+Message-ID: <87r42my4nb.wl%kuninori.morimoto.gx@renesas.com>
 From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Subject: [PATCH 1/3] dma: rcar-audmapp: enable .set_slave
+Subject: [PATCH 2/3] dma: rcar-audmapp: don't keep audmapp_slave_config for each channeles
 User-Agent: Wanderlust/2.14.0 Emacs/23.3 Mule/6.0
 To: Vinod Koul <vinod.koul@intel.com>
 Cc: Linux-SH <linux-sh@vger.kernel.org>, linux-kernel@vger.kernel.org,
@@ -25,126 +25,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 
-Current .set_slave callback did nothing,
-since it assumed src/dst address come from platform settings.
-But, it isn't good match to DT probing.
-This patch enables .set_slave callback to this issue.
+Current audmapp driver is keeping audmapp_slave_config
+for each channeles, but, nessasary information is only "chcr".
+Current style (= keeping audmapp_slave_config) is
+not good match for DT support.
+Keep "chcr" instead of audmapp_slave_config
 
 Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 ---
- drivers/dma/sh/rcar-audmapp.c |   34 +++++++++++++++++++++++++---------
- 1 file changed, 25 insertions(+), 9 deletions(-)
+ drivers/dma/sh/rcar-audmapp.c |   12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/dma/sh/rcar-audmapp.c b/drivers/dma/sh/rcar-audmapp.c
-index 2de7728..858483b 100644
+index 858483b..dd00775 100644
 --- a/drivers/dma/sh/rcar-audmapp.c
 +++ b/drivers/dma/sh/rcar-audmapp.c
-@@ -47,6 +47,7 @@ struct audmapp_chan {
+@@ -45,9 +45,9 @@
+ 
+ struct audmapp_chan {
  	struct shdma_chan shdma_chan;
- 	struct audmapp_slave_config *config;
+-	struct audmapp_slave_config *config;
  	void __iomem *base;
-+	dma_addr_t slave_addr;
+ 	dma_addr_t slave_addr;
++	u32 chcr;
  };
  
  struct audmapp_device {
-@@ -56,7 +57,14 @@ struct audmapp_device {
- 	void __iomem *chan_reg;
- };
- 
-+struct audmapp_desc {
-+	struct shdma_desc shdma_desc;
-+	dma_addr_t src;
-+	dma_addr_t dst;
-+};
-+
- #define to_chan(chan) container_of(chan, struct audmapp_chan, shdma_chan)
-+#define to_desc(sdesc) container_of(sdesc, struct audmapp_desc, shdma_desc)
- #define to_dev(chan) container_of(chan->shdma_chan.dma_chan.device,	\
- 				  struct audmapp_device, shdma_dev.dma_dev)
- 
-@@ -90,19 +98,20 @@ static void audmapp_halt(struct shdma_chan *schan)
- }
- 
- static void audmapp_start_xfer(struct shdma_chan *schan,
--			       struct shdma_desc *sdecs)
-+			       struct shdma_desc *sdesc)
- {
+@@ -103,9 +103,8 @@ static void audmapp_start_xfer(struct shdma_chan *schan,
  	struct audmapp_chan *auchan = to_chan(schan);
  	struct audmapp_device *audev = to_dev(auchan);
-+	struct audmapp_desc *desc = to_desc(sdesc);
- 	struct audmapp_slave_config *cfg = auchan->config;
+ 	struct audmapp_desc *desc = to_desc(sdesc);
+-	struct audmapp_slave_config *cfg = auchan->config;
  	struct device *dev = audev->dev;
- 	u32 chcr = cfg->chcr | PDMACHCR_DE;
+-	u32 chcr = cfg->chcr | PDMACHCR_DE;
++	u32 chcr = auchan->chcr | PDMACHCR_DE;
  
--	dev_dbg(dev, "src/dst/chcr = %pad/%pad/%x\n",
--		&cfg->src, &cfg->dst, cfg->chcr);
-+	dev_dbg(dev, "src/dst/chcr = %pad/%pad/%08x\n",
-+		&desc->src, &desc->dst, chcr);
- 
--	audmapp_write(auchan, cfg->src,	PDMASAR);
--	audmapp_write(auchan, cfg->dst,	PDMADAR);
-+	audmapp_write(auchan, desc->src,	PDMASAR);
-+	audmapp_write(auchan, desc->dst,	PDMADAR);
- 	audmapp_write(auchan, chcr,	PDMACHCR);
- }
- 
-@@ -137,14 +146,16 @@ static int audmapp_set_slave(struct shdma_chan *schan, int slave_id,
+ 	dev_dbg(dev, "src/dst/chcr = %pad/%pad/%08x\n",
+ 		&desc->src, &desc->dst, chcr);
+@@ -145,7 +144,7 @@ static int audmapp_set_slave(struct shdma_chan *schan, int slave_id,
+ 	if (try)
  		return 0;
  
- 	auchan->config	= cfg;
-+	auchan->slave_addr = slave_addr ? : cfg->dst;
+-	auchan->config	= cfg;
++	auchan->chcr	= cfg->chcr;
+ 	auchan->slave_addr = slave_addr ? : cfg->dst;
  
  	return 0;
- }
- 
- static int audmapp_desc_setup(struct shdma_chan *schan,
--			      struct shdma_desc *sdecs,
-+			      struct shdma_desc *sdesc,
+@@ -156,11 +155,6 @@ static int audmapp_desc_setup(struct shdma_chan *schan,
  			      dma_addr_t src, dma_addr_t dst, size_t *len)
  {
-+	struct audmapp_desc *desc = to_desc(sdesc);
- 	struct audmapp_chan *auchan = to_chan(schan);
- 	struct audmapp_slave_config *cfg = auchan->config;
+ 	struct audmapp_desc *desc = to_desc(sdesc);
+-	struct audmapp_chan *auchan = to_chan(schan);
+-	struct audmapp_slave_config *cfg = auchan->config;
+-
+-	if (!cfg)
+-		return -ENODEV;
  
-@@ -154,6 +165,9 @@ static int audmapp_desc_setup(struct shdma_chan *schan,
  	if (*len > (size_t)AUDMAPP_LEN_MAX)
  		*len = (size_t)AUDMAPP_LEN_MAX;
- 
-+	desc->src = src;
-+	desc->dst = dst;
-+
- 	return 0;
- }
- 
-@@ -164,7 +178,9 @@ static void audmapp_setup_xfer(struct shdma_chan *schan,
- 
- static dma_addr_t audmapp_slave_addr(struct shdma_chan *schan)
- {
--	return 0; /* always fixed address */
-+	struct audmapp_chan *auchan = to_chan(schan);
-+
-+	return auchan->slave_addr;
- }
- 
- static bool audmapp_channel_busy(struct shdma_chan *schan)
-@@ -183,7 +199,7 @@ static bool audmapp_desc_completed(struct shdma_chan *schan,
- 
- static struct shdma_desc *audmapp_embedded_desc(void *buf, int i)
- {
--	return &((struct shdma_desc *)buf)[i];
-+	return &((struct audmapp_desc *)buf)[i].shdma_desc;
- }
- 
- static const struct shdma_ops audmapp_shdma_ops = {
-@@ -260,7 +276,7 @@ static int audmapp_probe(struct platform_device *pdev)
- 
- 	sdev		= &audev->shdma_dev;
- 	sdev->ops	= &audmapp_shdma_ops;
--	sdev->desc_size	= sizeof(struct shdma_desc);
-+	sdev->desc_size	= sizeof(struct audmapp_desc);
- 
- 	dma_dev			= &sdev->dma_dev;
- 	dma_dev->copy_align	= LOG2_DEFAULT_XFER_SIZE;
 -- 
 1.7.9.5
 
