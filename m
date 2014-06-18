@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755848AbaFRE1x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 00:27:53 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:47299 "EHLO
+	id S1756522AbaFREaU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 00:30:20 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:63193 "EHLO
 	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019AbaFRE1v (ORCPT
+	with ESMTP id S1751086AbaFREaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 00:27:51 -0400
+	Wed, 18 Jun 2014 00:30:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAPnjgZ3GhvHog5Pb3_DxYSWF0t4mgR=7HBe2KrfKcsJ=zwmFhQ@mail.gmail.com>
+In-Reply-To: <CAPnjgZ0h4vKfwcw7w=wDt_6Vv6G+nQYKbris_0ucLUoAjpE+VQ@mail.gmail.com>
 References: <1402954800-28215-1-git-send-email-dianders@chromium.org>
-	<1402954800-28215-9-git-send-email-dianders@chromium.org>
-	<CAPnjgZ3GhvHog5Pb3_DxYSWF0t4mgR=7HBe2KrfKcsJ=zwmFhQ@mail.gmail.com>
-Date: Tue, 17 Jun 2014 21:27:49 -0700
-X-Google-Sender-Auth: PUM69j3eZPbSNZLH50qYmdEc5GI
-Message-ID: <CAD=FV=Ue9OBkXtii4aKrCbKPd--7ZRN_G0pw2ZtX89mcz_hfzQ@mail.gmail.com>
-Subject: Re: [PATCH 08/10] mfd: cros_ec: cleanup: Remove EC wrapper functions
+	<1402954800-28215-8-git-send-email-dianders@chromium.org>
+	<CAPnjgZ0Qj=5=5xtBoK7b+1Qn+VbBeeSPr+K5uiSMv3fU2ejXfQ@mail.gmail.com>
+	<CAD=FV=VCe+mf4fM79R2iunrvsS_A=G4Ha1z6M2z7J4Vq1e6=1A@mail.gmail.com>
+	<CAPnjgZ0h4vKfwcw7w=wDt_6Vv6G+nQYKbris_0ucLUoAjpE+VQ@mail.gmail.com>
+Date: Tue, 17 Jun 2014 21:30:17 -0700
+X-Google-Sender-Auth: fjR_lfkdxKFFc6fj6K3GPDT2iak
+Message-ID: <CAD=FV=Xa2pb6cFSbHoXAaS8LXdVO-uv+RCXMs2HmobgutSrNwQ@mail.gmail.com>
+Subject: Re: [PATCH 07/10] mfd: cros_ec: cleanup: remove unused fields from
+ struct cros_ec_device
 From: Doug Anderson <dianders@chromium.org>
 To: Simon Glass <sjg@chromium.org>
 Cc: Lee Jones <lee.jones@linaro.org>,
@@ -26,13 +29,8 @@ Cc: Lee Jones <lee.jones@linaro.org>,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Bill Richardson <wfrichar@chromium.org>,
         Wolfram Sang <wsa@the-dreams.de>, Mark Brown <broonie@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Samuel Ortiz <sameo@linux.intel.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        lk <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
+        lk <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -40,93 +38,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Simon,
 
-On Tue, Jun 17, 2014 at 8:42 PM, Simon Glass <sjg@chromium.org> wrote:
->> diff --git a/drivers/input/keyboard/cros_ec_keyb.c b/drivers/input/keyboard/cros_ec_keyb.c
->> index 4083796..dc37b6b 100644
->> --- a/drivers/input/keyboard/cros_ec_keyb.c
->> +++ b/drivers/input/keyboard/cros_ec_keyb.c
->> @@ -191,8 +191,18 @@ static void cros_ec_keyb_close(struct input_dev *dev)
->>
->>  static int cros_ec_keyb_get_state(struct cros_ec_keyb *ckdev, uint8_t *kb_state)
->>  {
->> -       return ckdev->ec->command_recv(ckdev->ec, EC_CMD_MKBP_STATE,
->> -                                         kb_state, ckdev->cols);
->> +       int ret;
->> +       struct cros_ec_command msg = {
->> +               .version = 0,
->> +               .command = EC_CMD_MKBP_STATE,
->> +               .outdata = NULL,
->> +               .outsize = 0,
->> +               .indata = kb_state,
->> +               .insize = ckdev->cols,
->> +       };
->> +
->> +       ret = ckdev->ec->cmd_xfer(ckdev->ec, &msg);
+On Tue, Jun 17, 2014 at 9:25 PM, Simon Glass <sjg@chromium.org> wrote:
+> Hi Doug,
 >
-> Do we need ret?
-
-No.  If you wish I will spin without it.  Let me know.
-
-Note that locally this code includes a comment between the above and the return:
-  /* FIXME: This assumes msg.result == EC_RES_SUCCESS */
-
-Given that this is not a new problem introduced in this code, that it
-still hasn't been fixed locally in the ChromeOS tree, and that
-generally FIXMEs don't seem to be left in the code upstream, I left it
-out.
-
->> diff --git a/include/linux/mfd/cros_ec.h b/include/linux/mfd/cros_ec.h
->> index 2b0c598..60c0880 100644
->> --- a/include/linux/mfd/cros_ec.h
->> +++ b/include/linux/mfd/cros_ec.h
->> @@ -63,9 +63,10 @@ struct cros_ec_command {
->>   * @was_wake_device: true if this device was set to wake the system from
->>   * sleep at the last suspend
->>   * @event_notifier: interrupt event notifier for transport devices
->> - * @command_send: send a command
->> - * @command_recv: receive a response
->> - * @command_sendrecv: send a command and receive a response
->> + * @cmd_xfer: send command to EC and get response
->> + *     Returns 0 if the communication succeeded, but that doesn't mean the EC
->> + *     was happy with the command it got. Caller should check msg.result for
->> + *     the EC's result code.
->>   *
->>   * @priv: Private data
->>   * @irq: Interrupt to use
->> @@ -83,7 +84,6 @@ struct cros_ec_command {
->>   * @parent: pointer to parent device (e.g. i2c or spi device)
->>   * @wake_enabled: true if this device can wake the system from sleep
->>   * @lock: one transaction at a time
->> - * @cmd_xfer: low-level channel to the EC
->>   */
->>  struct cros_ec_device {
+> On 17 June 2014 21:22, Doug Anderson <dianders@chromium.org> wrote:
 >>
->> @@ -94,13 +94,8 @@ struct cros_ec_device {
->>         bool was_wake_device;
->>         struct class *cros_class;
->>         struct blocking_notifier_head event_notifier;
->> -       int (*command_send)(struct cros_ec_device *ec,
->> -                           uint16_t cmd, void *out_buf, int out_len);
->> -       int (*command_recv)(struct cros_ec_device *ec,
->> -                           uint16_t cmd, void *in_buf, int in_len);
->> -       int (*command_sendrecv)(struct cros_ec_device *ec,
->> -                               uint16_t cmd, void *out_buf, int out_len,
->> -                               void *in_buf, int in_len);
->> +       int (*cmd_xfer)(struct cros_ec_device *ec,
->> +                       struct cros_ec_command *msg);
+>> Simon,
 >>
->>         /* These are used to implement the platform-specific interface */
->>         void *priv;
->> @@ -112,8 +107,6 @@ struct cros_ec_device {
->>         struct device *parent;
->>         bool wake_enabled;
->>         struct mutex lock;
->> -       int (*cmd_xfer)(struct cros_ec_device *ec,
->> -                       struct cros_ec_command *msg);
+>> On Tue, Jun 17, 2014 at 8:39 PM, Simon Glass <sjg@chromium.org> wrote:
+>> > Hi Doug,
+>> >
+>> > On 16 June 2014 14:39, Doug Anderson <dianders@chromium.org> wrote:
+>> >> From: Bill Richardson <wfrichar@chromium.org>
+>> >>
+>> >> struct cros_ec_device has a superfluous "name" field. We can get all the
+>> >> debugging info we need from the existing ec_name and phys_name fields, so
+>> >> let's take out the extra field.
+>> >
+>> > Except that it no longer prints I2C/SPI - i.e. the transport that is
+>> > used. Is that not considered important?
+>>
+>> Before this change:
+>>   [    1.895472] cros-ec-spi spi2.0: Chrome EC (SPI)
+>>
+>> After this change:
+>>   [    1.910671] cros-ec-spi spi2.0: Chrome EC device registered
+>>
+>>
+>> I think having SPI in the name twice is probably enough.  ;)
 >
-> Seems odd - maybe this line move of cmd_xfer() should be in an earlier patch?
+> Ah that helps! Could have been in the commit message.
+>
+> Reviewed-by: Simon Glass <sjg@chromium.org>
 
-It got moved from "private" to public.  Bill reorganized all the
-public stuff at the top and the private at the bottom.
+If I re-spin the series I'll add it.  I think the new message was in
+the original commit in the "TEST=" clause and I left it out.  I
+probably should have added it in with the proper wording...
 
 -Doug
