@@ -1,69 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964956AbaFRIBF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 04:01:05 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:50796 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933133AbaFRIBC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 04:01:02 -0400
-Date: Wed, 18 Jun 2014 09:00:56 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: micky <micky_ching@realsil.com.cn>, Samuel Ortiz <sameo@linux.intel.com>,
-        Chris Ball <chris@printf.net>, devel@linuxdriverproject.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Roger <rogerable@realtek.com>, Wei WANG <wei_wang@realsil.com.cn>
-Subject: Re: [PATCH 1/2] mfd: rtsx: add dma transfer function
-Message-ID: <20140618080056.GM21030@lee--X1>
-References: <cover.1402037562.git.micky_ching@realsil.com.cn>
- <9021eae37d96aa027d00ae4a7b6cd84dbbd1b6b5.1402037564.git.micky_ching@realsil.com.cn>
- <20140616122032.GS14323@lee--X1>
- <CAPDyKFpJ5tToJOk6try-jrRCCzcKtJkszNE5Nuc3Uarhpta1BQ@mail.gmail.com>
+	id S965040AbaFRICY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 04:02:24 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:37183 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756398AbaFRICV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 04:02:21 -0400
+Message-ID: <53A14784.1030008@ti.com>
+Date: Wed, 18 Jun 2014 11:02:12 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPDyKFpJ5tToJOk6try-jrRCCzcKtJkszNE5Nuc3Uarhpta1BQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <tony@atomide.com>, "Menon, Nishanth" <nm@ti.com>,
+        Rajendra Nayak <rnayak@ti.com>
+CC: <kishon@ti.com>, <george.cherian@ti.com>, <balbi@ti.com>,
+        <balajitk@ti.com>, <hdegoede@redhat.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Nikhil Devshatwar <nikhil.nd@ti.com>,
+        Benoit Cousson <bcousson@baylibre.com>, Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH v4 3/4] ARM: DRA7: hwmod: Add ocp2scp3 and sata hwmods
+References: <1398274237-24510-1-git-send-email-rogerq@ti.com> <1398274559-24777-1-git-send-email-rogerq@ti.com>
+In-Reply-To: <1398274559-24777-1-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jun 2014, Ulf Hansson wrote:
-
-> On 16 June 2014 14:20, Lee Jones <lee.jones@linaro.org> wrote:
-> >> From: Micky Ching <micky_ching@realsil.com.cn>
-> >>
-> >> rtsx driver using a single function for transfer data, dma map/unmap are
-> >> placed in one fix function. We need map/unmap dma in different place(for
-> >> mmc async driver), so add three function for dma map, dma transfer and
-> >> dma unmap.
-> >>
-> >> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
-> >> ---
-> >>  drivers/mfd/rtsx_pcr.c       |   76 ++++++++++++++++++++++++++----------------
-> >>  include/linux/mfd/rtsx_pci.h |    6 ++++
-> >>  2 files changed, 54 insertions(+), 28 deletions(-)
-> >
-> > I don't see any glaring issues with this patch.  Does it rely on the
-> > first patch, or vise versa, or can it just be applied?
+On 04/23/2014 08:35 PM, Roger Quadros wrote:
+> From: Nikhil Devshatwar <nikhil.nd@ti.com>
 > 
-> The mmc part in patch2 relies on this one, but please go ahead and
-> apply the mfd patch if you see it good.
+> Add hwmods for ocp2scp3 and sata modules.
 > 
-> I can later provide my ack for the mmc parts, in patch2, when it's a
-> reviewed properly and thus you can take it through your tree.
+> [Roger Q] Clean up.
+> 
+> CC: Benoit Cousson <bcousson@baylibre.com>
+> CC: Paul Walmsley <paul@pwsan.com>
+> Signed-off-by: Balaji T K <balajitk@ti.com>
+> Signed-off-by: Nikhil Devshatwar <nikhil.nd@ti.com>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
 
-There's no rush.  Once you're happy with the MMC patch, Micky can
-submit them both again with my Ack on the MFD part and I'll take them
-as a set.
+Tested-by: Roger Quadros <rogerq@ti.com>
+against 3.16-rc1, no dependency patches needed.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Nishant/Rajendra,
+
+Could you please review this? We need this for 3.16 SATA support and
+Paul won't take this in without your reviewed-by tag. Thanks.
+
+cheers,
+-roger
+
+> ---
+>  arch/arm/mach-omap2/omap_hwmod_7xx_data.c | 31 ++++++++++++++++++++++++++-----
+>  1 file changed, 26 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> index 810c205..b02a4ab 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> @@ -1215,6 +1215,30 @@ static struct omap_hwmod dra7xx_ocp2scp1_hwmod = {
+>  	},
+>  };
+>  
+> +/* ocp2scp3 */
+> +static struct omap_hwmod dra7xx_ocp2scp3_hwmod;
+> +
+> +/* l4_cfg -> ocp2scp3 */
+> +static struct omap_hwmod_ocp_if dra7xx_l4_cfg__ocp2scp3 = {
+> +	.master		= &dra7xx_l4_cfg_hwmod,
+> +	.slave		= &dra7xx_ocp2scp3_hwmod,
+> +	.clk		= "l4_root_clk_div",
+> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+> +};
+> +
+> +static struct omap_hwmod dra7xx_ocp2scp3_hwmod = {
+> +	.name		= "ocp2scp3",
+> +	.class		= &dra7xx_ocp2scp_hwmod_class,
+> +	.clkdm_name	= "l3init_clkdm",
+> +	.prcm = {
+> +		.omap4 = {
+> +			.clkctrl_offs = DRA7XX_CM_L3INIT_OCP2SCP3_CLKCTRL_OFFSET,
+> +			.context_offs = DRA7XX_RM_L3INIT_OCP2SCP3_CONTEXT_OFFSET,
+> +			.modulemode   = MODULEMODE_HWCTRL,
+> +		},
+> +	},
+> +};
+> +
+>  /*
+>   * 'qspi' class
+>   *
+> @@ -1268,9 +1292,6 @@ static struct omap_hwmod_class dra7xx_sata_hwmod_class = {
+>  };
+>  
+>  /* sata */
+> -static struct omap_hwmod_opt_clk sata_opt_clks[] = {
+> -	{ .role = "ref_clk", .clk = "sata_ref_clk" },
+> -};
+>  
+>  static struct omap_hwmod dra7xx_sata_hwmod = {
+>  	.name		= "sata",
+> @@ -1278,6 +1299,7 @@ static struct omap_hwmod dra7xx_sata_hwmod = {
+>  	.clkdm_name	= "l3init_clkdm",
+>  	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
+>  	.main_clk	= "func_48m_fclk",
+> +	.mpu_rt_idx	= 1,
+>  	.prcm = {
+>  		.omap4 = {
+>  			.clkctrl_offs = DRA7XX_CM_L3INIT_SATA_CLKCTRL_OFFSET,
+> @@ -1285,8 +1307,6 @@ static struct omap_hwmod dra7xx_sata_hwmod = {
+>  			.modulemode   = MODULEMODE_SWCTRL,
+>  		},
+>  	},
+> -	.opt_clks	= sata_opt_clks,
+> -	.opt_clks_cnt	= ARRAY_SIZE(sata_opt_clks),
+>  };
+>  
+>  /*
+> @@ -2682,6 +2702,7 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
+>  	&dra7xx_l4_per1__mmc4,
+>  	&dra7xx_l4_cfg__mpu,
+>  	&dra7xx_l4_cfg__ocp2scp1,
+> +	&dra7xx_l4_cfg__ocp2scp3,
+>  	&dra7xx_l3_main_1__qspi,
+>  	&dra7xx_l4_cfg__sata,
+>  	&dra7xx_l4_cfg__smartreflex_core,
+> 
+
