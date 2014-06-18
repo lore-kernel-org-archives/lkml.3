@@ -1,35 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933130AbaFRBOk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 21:14:40 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:35060 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756519AbaFRBOj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 21:14:39 -0400
-Date: Tue, 17 Jun 2014 18:14:37 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: werner <w.landgraf@ru.ru>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: 3.16-rc1 problems vdso_addr , _mb_cache_entry_ , rtl8723au
-In-Reply-To: <alpine.DEB.2.02.1406171530420.517@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1406171810210.22940@chino.kir.corp.google.com>
-References: <web-91666686@zbackend1.aha.ru> <alpine.DEB.2.02.1406171530420.517@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932794AbaFRB25 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 21:28:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4885 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755460AbaFRB24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 21:28:56 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: stable@vger.kernel.org, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, bigon@debian.org, sgrubb@redhat.com,
+        eparis@redhat.com
+Subject: [PATCH] [STABLE] audit: remove superfluous new- prefix in AUDIT_LOGIN messages
+Date: Tue, 17 Jun 2014 21:28:19 -0400
+Message-Id: <ff92d27b675b6952d3df0c2459de1aeea8607502.1403054469.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jun 2014, David Rientjes wrote:
+The new- prefix on ses and auid are un-necessary and break ausearch.
 
->  - I can't reproduce your align_vdso_addr() problem, please send your 
->    .config
-> 
+Upstream-commit: aa589a1
+Cc: stable@vger.kernel.org # v3.14-rc1 to v3.14
+Reported-by: Steve Grubb <sgrubb@redhat.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
+ kernel/auditsc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Werner sent me his .config privately and, although it is 32-bit as 
-expected, I cannot reproduce his align_vdso_addr() build issue with either 
-Linus's tree nor linux-next-20140617.  I see no reason to think that it is 
-a gcc versioning issue.
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index 37e6216..619b58d 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -1991,7 +1991,7 @@ static void audit_log_set_loginuid(kuid_t koldloginuid, kuid_t kloginuid,
+ 	if (!ab)
+ 		return;
+ 	audit_log_format(ab, "pid=%d uid=%u"
+-			 " old-auid=%u new-auid=%u old-ses=%u new-ses=%u"
++			 " old-auid=%u auid=%u old-ses=%u ses=%u"
+ 			 " res=%d",
+ 			 current->pid, uid,
+ 			 oldloginuid, loginuid, oldsessionid, sessionid,
+-- 
+1.7.1
+
