@@ -1,322 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965016AbaFRDSf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 23:18:35 -0400
-Received: from mga14.intel.com ([192.55.52.115]:13175 "EHLO mga14.intel.com"
+	id S933650AbaFRDRu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 23:17:50 -0400
+Received: from mga14.intel.com ([192.55.52.115]:13090 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964980AbaFRDSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 23:18:33 -0400
+	id S933459AbaFRDRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 23:17:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,498,1400050800"; 
-   d="scan'208";a="549554033"
-Message-ID: <53A10460.1040705@intel.com>
-Date: Wed, 18 Jun 2014 11:15:44 +0800
-From: Jet Chen <jet.chen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-CC: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        lkp@01.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: [tracing] 939c7a4f04f: -46.4% cpuidle.C3-IVT.time
-Content-Type: multipart/mixed;
- boundary="------------020806080203060506020707"
+   d="scan'208";a="549553900"
+From: Lv Zheng <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
+Subject: [PATCH 2/9] ACPICA: Events: Fix an issue that GPE APIs cannot be invoked in atomic context.
+Date: Wed, 18 Jun 2014 11:17:26 +0800
+Message-Id: <ed2651aade30c2e26dda82344c24d2e93492ce2f.1403060601.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <cover.1403060601.git.lv.zheng@intel.com>
+References: <cover.1403060601.git.lv.zheng@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020806080203060506020707
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+The GPE APIs should be invoked inside of an IRQ context GPE handler or in
+the task context with a driver provided lock held. This driver provided
+lock should be safe to be held in the GPE handler by the driver.
 
-Hi Yoshihiro,
+While currently we cannot do this, thus we can only use the GPE APIs for
+limitted cases.
 
-FYI, we noticed the below changes on
+This patch adds reference counting for struct acpi_gpe_handler_info. Then the GPE
+handler can be safely invoked without holding the GPE lock, thus
+facilitates GPE APIs to be invoked in any atomic environment. Lv Zheng.
 
-commit 939c7a4f04fcd2162109744e8bf88194948a6e65 ("tracing: Introduce saved_cmdlines_size file")
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+---
+ drivers/acpi/acpica/acevents.h |    1 +
+ drivers/acpi/acpica/aclocal.h  |    1 +
+ drivers/acpi/acpica/evgpe.c    |   71 ++++++++++++++++++++++++++++++++--------
+ drivers/acpi/acpica/evxface.c  |   14 +++++---
+ 4 files changed, 70 insertions(+), 17 deletions(-)
 
-test case: brickland3/aim7/3000-brk_test
+diff --git a/drivers/acpi/acpica/acevents.h b/drivers/acpi/acpica/acevents.h
+index 7a7811a..a3d5276 100644
+--- a/drivers/acpi/acpica/acevents.h
++++ b/drivers/acpi/acpica/acevents.h
+@@ -123,6 +123,7 @@ ACPI_HW_DEPENDENT_RETURN_OK(acpi_status
+ u32
+ acpi_ev_gpe_dispatch(struct acpi_namespace_node *gpe_device,
+ 		     struct acpi_gpe_event_info *gpe_event_info,
++		     struct acpi_gpe_handler_info *gpe_handler_info,
+ 		     u32 gpe_number);
+ 
+ /*
+diff --git a/drivers/acpi/acpica/aclocal.h b/drivers/acpi/acpica/aclocal.h
+index a9fa666..7363e2c 100644
+--- a/drivers/acpi/acpica/aclocal.h
++++ b/drivers/acpi/acpica/aclocal.h
+@@ -414,6 +414,7 @@ struct acpi_gpe_handler_info {
+ 	struct acpi_namespace_node *method_node;	/* Method node for this GPE level (saved) */
+ 	u8 original_flags;	/* Original (pre-handler) GPE info */
+ 	u8 originally_enabled;	/* True if GPE was originally enabled */
++	u16 reference_count;	/* For deletion management */
+ };
+ 
+ /* Notify info for implicit notify, multiple device objects */
+diff --git a/drivers/acpi/acpica/evgpe.c b/drivers/acpi/acpica/evgpe.c
+index f9e6891..3ab56d7 100644
+--- a/drivers/acpi/acpica/evgpe.c
++++ b/drivers/acpi/acpica/evgpe.c
+@@ -338,6 +338,8 @@ u32 acpi_ev_gpe_detect(struct acpi_gpe_xrupt_info *gpe_xrupt_list)
+ {
+ 	acpi_status status;
+ 	struct acpi_gpe_block_info *gpe_block;
++	struct acpi_gpe_event_info *gpe_event_info;
++	struct acpi_gpe_handler_info *gpe_handler_info;
+ 	struct acpi_gpe_register_info *gpe_register_info;
+ 	u32 int_status = ACPI_INTERRUPT_NOT_HANDLED;
+ 	u8 enabled_status_byte;
+@@ -442,15 +444,45 @@ u32 acpi_ev_gpe_detect(struct acpi_gpe_xrupt_info *gpe_xrupt_list)
+ 				/* Examine one GPE bit */
+ 
+ 				if (enabled_status_byte & (1 << j)) {
++					gpe_event_info =
++					    &gpe_block->
++					    event_info[((acpi_size) i *
++							ACPI_GPE_REGISTER_WIDTH)
++						       + j];
++					gpe_handler_info =
++					    gpe_event_info->dispatch.handler;
++
++					/* Acquire the reference to protect the invocations */
++
++					if (gpe_handler_info) {
++						gpe_handler_info->
++						    reference_count++;
++					}
++
+ 					/*
+ 					 * Found an active GPE. Dispatch the event to a handler
+-					 * or method.
++					 * or method. Invoke without GPE lock held.
+ 					 */
++					acpi_os_release_lock(acpi_gbl_gpe_lock,
++							     flags);
+ 					int_status |=
+ 					    acpi_ev_gpe_dispatch(gpe_block->
+ 								 node,
+-								 &gpe_block->
+-								 event_info[((acpi_size) i * ACPI_GPE_REGISTER_WIDTH) + j], j + gpe_register_info->base_gpe_number);
++								 gpe_event_info,
++								 gpe_handler_info,
++								 j +
++								 gpe_register_info->
++								 base_gpe_number);
++					flags =
++					    acpi_os_acquire_lock
++					    (acpi_gbl_gpe_lock);
++
++					/* Release the reference */
++
++					if (gpe_handler_info) {
++						gpe_handler_info->
++						    reference_count--;
++					}
+ 				}
+ 			}
+ 		}
+@@ -675,19 +707,27 @@ acpi_status acpi_ev_finish_gpe(struct acpi_gpe_event_info * gpe_event_info)
+  * DESCRIPTION: Dispatch a General Purpose Event to either a function (e.g. EC)
+  *              or method (e.g. _Lxx/_Exx) handler.
+  *
+- *              This function executes at interrupt level.
++ *              This function executes at interrupt level with handler's
++ *              reference count held.
+  *
+  ******************************************************************************/
+ 
+ u32
+ acpi_ev_gpe_dispatch(struct acpi_namespace_node *gpe_device,
+-		     struct acpi_gpe_event_info *gpe_event_info, u32 gpe_number)
++		     struct acpi_gpe_event_info *gpe_event_info,
++		     struct acpi_gpe_handler_info *gpe_handler_info,
++		     u32 gpe_number)
+ {
+ 	acpi_status status;
+ 	u32 return_value;
++	acpi_cpu_flags flags;
+ 
+ 	ACPI_FUNCTION_TRACE(ev_gpe_dispatch);
+ 
++	/* We need to obtain the GPE lock again */
++
++	flags = acpi_os_acquire_lock(acpi_gbl_gpe_lock);
++
+ 	/* Invoke global event handler if present */
+ 
+ 	acpi_gpe_count++;
+@@ -710,6 +750,7 @@ acpi_ev_gpe_dispatch(struct acpi_namespace_node *gpe_device,
+ 	if (ACPI_FAILURE(status)) {
+ 		ACPI_EXCEPTION((AE_INFO, status,
+ 				"Unable to disable GPE %02X", gpe_number));
++		acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
+ 		return_UINT32(ACPI_INTERRUPT_NOT_HANDLED);
+ 	}
+ 
+@@ -726,6 +767,7 @@ acpi_ev_gpe_dispatch(struct acpi_namespace_node *gpe_device,
+ 					gpe_number));
+ 			(void)acpi_hw_low_set_gpe(gpe_event_info,
+ 						  ACPI_GPE_CONDITIONAL_ENABLE);
++			acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
+ 			return_UINT32(ACPI_INTERRUPT_NOT_HANDLED);
+ 		}
+ 	}
+@@ -740,14 +782,16 @@ acpi_ev_gpe_dispatch(struct acpi_namespace_node *gpe_device,
+ 	switch (gpe_event_info->flags & ACPI_GPE_DISPATCH_MASK) {
+ 	case ACPI_GPE_DISPATCH_HANDLER:
+ 
+-		/* Invoke the installed handler (at interrupt level) */
+-
+-		return_value =
+-		    gpe_event_info->dispatch.handler->address(gpe_device,
+-							      gpe_number,
+-							      gpe_event_info->
+-							      dispatch.handler->
+-							      context);
++		/*
++		 * Invoke the installed handler (at interrupt level), release
++		 * the GPE lock so that the GPE APIs can be invoked in the
++		 * dispatcher.
++		 */
++		acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
++		return_value = gpe_handler_info->address(gpe_device, gpe_number,
++							 gpe_handler_info->
++							 context);
++		flags = acpi_os_acquire_lock(acpi_gbl_gpe_lock);
+ 
+ 		/* If requested, clear (if level-triggered) and reenable the GPE */
+ 
+@@ -785,6 +829,7 @@ acpi_ev_gpe_dispatch(struct acpi_namespace_node *gpe_device,
+ 		break;
+ 	}
+ 
++	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
+ 	return_UINT32(ACPI_INTERRUPT_HANDLED);
+ }
+ 
+diff --git a/drivers/acpi/acpica/evxface.c b/drivers/acpi/acpica/evxface.c
+index 1bcb55b..fc075a5 100644
+--- a/drivers/acpi/acpica/evxface.c
++++ b/drivers/acpi/acpica/evxface.c
+@@ -787,6 +787,7 @@ acpi_install_gpe_handler(acpi_handle gpe_device,
+ 	handler->original_flags = (u8)(gpe_event_info->flags &
+ 				       (ACPI_GPE_XRUPT_TYPE_MASK |
+ 					ACPI_GPE_DISPATCH_MASK));
++	handler->reference_count = 0;
+ 
+ 	/*
+ 	 * If the GPE is associated with a method, it may have been enabled
+@@ -888,6 +889,7 @@ acpi_remove_gpe_handler(acpi_handle gpe_device,
+ 	/* Remove the handler */
+ 
+ 	handler = gpe_event_info->dispatch.handler;
++	gpe_event_info->dispatch.handler = NULL;
+ 
+ 	/* Restore Method node (if any), set dispatch flags */
+ 
+@@ -906,12 +908,16 @@ acpi_remove_gpe_handler(acpi_handle gpe_device,
+ 		(void)acpi_ev_add_gpe_reference(gpe_event_info);
+ 	}
+ 
+-	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
+-	(void)acpi_ut_release_mutex(ACPI_MTX_EVENTS);
++	/* Make sure all GPE handlers are completed */
+ 
+-	/* Make sure all deferred GPE tasks are completed */
++	while (handler->reference_count != 0) {
++		acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
++		acpi_os_sleep((u64)10);
++		flags = acpi_os_acquire_lock(acpi_gbl_gpe_lock);
++	}
+ 
+-	acpi_os_wait_events_complete();
++	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
++	(void)acpi_ut_release_mutex(ACPI_MTX_EVENTS);
+ 
+ 	/* Now we can free the handler object */
+ 
+-- 
+1.7.10
 
-beba4bb096201ce  939c7a4f04fcd2162109744e8
----------------  -------------------------
-     352643 ~40%     -46.4%     189136 ~15%  TOTAL cpuidle.C3-IVT.time
-        750 ~ 2%     -13.3%        650 ~ 2%  TOTAL vmstat.procs.b
-     362016 ~ 3%      -6.0%     340296 ~ 3%  TOTAL proc-vmstat.pgmigrate_success
-     362016 ~ 3%      -6.0%     340296 ~ 3%  TOTAL proc-vmstat.numa_pages_migrated
-    1642328 ~ 3%     +13.3%    1860721 ~ 2%  TOTAL softirqs.RCU
-    2278829 ~ 2%     -14.0%    1959647 ~ 2%  TOTAL time.voluntary_context_switches
-        207 ~ 0%     -10.4%        185 ~ 0%  TOTAL time.user_time
-      	   ~ 0%      +8.5%            ~ 0%  TOTAL turbostat.RAM_W
-    4418246 ~ 3%      -6.4%    4136447 ~ 1%  TOTAL time.minor_page_faults
-            ~ 0%      +3.4%            ~ 0%  TOTAL turbostat.Cor_W
-            ~ 0%      +3.0%            ~ 0%  TOTAL turbostat.Pkg_W
-   11354889 ~ 0%      +2.0%   11579897 ~ 0%  TOTAL time.involuntary_context_switches
-
-Legend:
-	~XX%    - stddev percent
-	[+-]XX% - change percent
-
-
-                             time.voluntary_context_switches
-
-   2.4e+06 ++---------------------------------------------------*------------+
-           *..                         *..                    ..  ..         |
-   2.3e+06 ++      .*..          *.. ..                      *               |
-           |  *..*.    .  .*.. ..   *     *..               +       *..   *..*
-           |            *.    *              .     .*..*.. +            ..   |
-   2.2e+06 ++                                 *..*.       *            *     |
-           |                                                                 |
-   2.1e+06 ++                                                                |
-           |                                                                 |
-     2e+06 O+                                 O           O            O     |
-           |                     O     O                     O      O        |
-           |        O   O  O  O                  O                           |
-   1.9e+06 ++ O  O                                  O           O            |
-           |                        O     O            O                     |
-   1.8e+06 ++----------------------------------------------------------------+
-
-
-                                   turbostat.Pkg_W
-
-    ++--------------------------------------------------------------------+
-    O+ O   O     O      O                O                                |
-    |         O      O     O   O  O  O      O      O     O   O  O  O      |
-    ++                                         O      O                   |
-    ++                                                                    |
-    ++                                                                    |
-    ++                                                                    |
-    |                                                                     |
-    ++                                                                    |
-    ++                                                                    |
-    ++        *..      .*..                                               |
-    *+.*... ..   *...*.    *...*..*..*...*..*..  ..*..   *...*..*..*...*..*
-    |      *                                   *.      ..                 |
-    ++                                                *                   |
-    ++--------------------------------------------------------------------+
-
-
-                                   turbostat.Cor_W
-
-    ++--------------------------------------------------------------------+
-    O+ O   O  O  O   O  O                O  O                      O      |
-    |                      O   O  O  O         O   O  O  O   O  O         |
-    ++                                                                    |
-    ++                                                                    |
-    |                                                                     |
-    ++                                                                    |
-    ++                                                                    |
-    ++                                                                    |
-    |                                                                     |
-    ++        *..                                                         |
-    *+.*... ..   *...*..*..*...*..*..*...*..*..  ..*..   *...  .*..*...*..*
-    |      *                                   *.      ..    *.           |
-    ++                                                *                   |
-    ++--------------------------------------------------------------------+
-
-
-                                  turbostat.RAM_W
-
-   ++---------------------------------------------------------------------+
-   |  O      O         O                O   O         O         O  O      |
-   O+     O         O      O  O  O   O         O  O      O  O             |
-   |             O                                                        |
-   ++                                                                     |
-   |                                                                      |
-   ++                                                                     |
-   |                                                                      |
-   ++                                                                     |
-   |                   *                                                  |
-   ++                .. +                      *..                        |
-   |            .*..*    +    *..       *..   +     ..*..*..      .*...   |
-   ++         ..          + ..        ..   . +    *.        *...*.     *..*
-   *..*...*..*             *     *...*      *                             |
-   ++---------------------------------------------------------------------+
-
-
-	[*] bisect-good sample
-	[O] bisect-bad  sample
-
-
-Disclaimer:
-Results have been estimated based on internal Intel analysis and are provided
-for informational purposes only. Any difference in system hardware or software
-design or configuration may affect actual performance.
-
-Thanks,
-Jet
-
-
-
---------------020806080203060506020707
-Content-Type: text/plain; charset=UTF-8;
- name="reproduce"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="reproduce"
-
-ZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTAvY3B1ZnJl
-cS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lz
-dGVtL2NwdS9jcHUxL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNl
-ID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MTAvY3B1ZnJlcS9zY2FsaW5nX2dvdmVy
-bm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHUxMDAv
-Y3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2Rldmlj
-ZXMvc3lzdGVtL2NwdS9jcHUxMDEvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVy
-Zm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHUxMDIvY3B1ZnJlcS9zY2Fs
-aW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2Nw
-dS9jcHUxMDMvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAv
-c3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHUxMDQvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9y
-CmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHUxMDUvY3B1
-ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMv
-c3lzdGVtL2NwdS9jcHUxMDYvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9y
-bWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHUxMDcvY3B1ZnJlcS9zY2FsaW5n
-X2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9j
-cHUxMDgvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lz
-L2RldmljZXMvc3lzdGVtL2NwdS9jcHUxMDkvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVj
-aG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHUxMS9jcHVmcmVx
-L3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0
-ZW0vY3B1L2NwdTExMC9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5j
-ZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTExMS9jcHVmcmVxL3NjYWxpbmdfZ292
-ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTEx
-Mi9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2
-aWNlcy9zeXN0ZW0vY3B1L2NwdTExMy9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBw
-ZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTExNC9jcHVmcmVxL3Nj
-YWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0v
-Y3B1L2NwdTExNS9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+
-IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTExNi9jcHVmcmVxL3NjYWxpbmdfZ292ZXJu
-b3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTExNy9j
-cHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNl
-cy9zeXN0ZW0vY3B1L2NwdTExOC9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJm
-b3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTExOS9jcHVmcmVxL3NjYWxp
-bmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1
-L2NwdTEyL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5
-cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MTMvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVj
-aG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHUxNC9jcHVmcmVx
-L3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0
-ZW0vY3B1L2NwdTE1L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNl
-ID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MTYvY3B1ZnJlcS9zY2FsaW5nX2dvdmVy
-bm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHUxNy9j
-cHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNl
-cy9zeXN0ZW0vY3B1L2NwdTE4L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZv
-cm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MTkvY3B1ZnJlcS9zY2FsaW5n
-X2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9j
-cHUyL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9k
-ZXZpY2VzL3N5c3RlbS9jcHUvY3B1MjAvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8g
-cGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHUyMS9jcHVmcmVxL3Nj
-YWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0v
-Y3B1L2NwdTIyL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNlID4g
-L3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MjMvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9y
-CmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHUyNC9jcHVm
-cmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9z
-eXN0ZW0vY3B1L2NwdTI1L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1h
-bmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MjYvY3B1ZnJlcS9zY2FsaW5nX2dv
-dmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHUy
-Ny9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2
-aWNlcy9zeXN0ZW0vY3B1L2NwdTI4L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBl
-cmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MjkvY3B1ZnJlcS9zY2Fs
-aW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2Nw
-dS9jcHUzL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5
-cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MzAvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVj
-aG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHUzMS9jcHVmcmVx
-L3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0
-ZW0vY3B1L2NwdTMyL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNl
-ID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MzMvY3B1ZnJlcS9zY2FsaW5nX2dvdmVy
-bm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHUzNC9j
-cHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNl
-cy9zeXN0ZW0vY3B1L2NwdTM1L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZv
-cm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MzYvY3B1ZnJlcS9zY2FsaW5n
-X2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9j
-cHUzNy9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMv
-ZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTM4L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hv
-IHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1MzkvY3B1ZnJlcS9z
-Y2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVt
-L2NwdS9jcHU0L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNlID4g
-L3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NDAvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9y
-CmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHU0MS9jcHVm
-cmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9z
-eXN0ZW0vY3B1L2NwdTQyL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1h
-bmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NDMvY3B1ZnJlcS9zY2FsaW5nX2dv
-dmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHU0
-NC9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2
-aWNlcy9zeXN0ZW0vY3B1L2NwdTQ1L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBl
-cmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NDYvY3B1ZnJlcS9zY2Fs
-aW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2Nw
-dS9jcHU0Ny9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9z
-eXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTQ4L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgpl
-Y2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NDkvY3B1ZnJl
-cS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lz
-dGVtL2NwdS9jcHU1L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNl
-ID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NTAvY3B1ZnJlcS9zY2FsaW5nX2dvdmVy
-bm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHU1MS9j
-cHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNl
-cy9zeXN0ZW0vY3B1L2NwdTUyL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZv
-cm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NTMvY3B1ZnJlcS9zY2FsaW5n
-X2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9j
-cHU1NC9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMv
-ZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTU1L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hv
-IHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NTYvY3B1ZnJlcS9z
-Y2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVt
-L2NwdS9jcHU1Ny9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+
-IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTU4L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5v
-cgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NTkvY3B1
-ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMv
-c3lzdGVtL2NwdS9jcHU2L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1h
-bmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NjAvY3B1ZnJlcS9zY2FsaW5nX2dv
-dmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9jcHU2
-MS9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2
-aWNlcy9zeXN0ZW0vY3B1L2NwdTYyL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBl
-cmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NjMvY3B1ZnJlcS9zY2Fs
-aW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2Nw
-dS9jcHU2NC9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9z
-eXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTY1L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgpl
-Y2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NjYvY3B1ZnJl
-cS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lz
-dGVtL2NwdS9jcHU2Ny9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5j
-ZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTY4L2NwdWZyZXEvc2NhbGluZ19nb3Zl
-cm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1Njkv
-Y3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2Rldmlj
-ZXMvc3lzdGVtL2NwdS9jcHU3L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZv
-cm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NzAvY3B1ZnJlcS9zY2FsaW5n
-X2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2NwdS9j
-cHU3MS9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMv
-ZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTcyL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hv
-IHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NzMvY3B1ZnJlcS9z
-Y2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVt
-L2NwdS9jcHU3NC9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+
-IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTc1L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5v
-cgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1NzYvY3B1
-ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMv
-c3lzdGVtL2NwdS9jcHU3Ny9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3Jt
-YW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTc4L2NwdWZyZXEvc2NhbGluZ19n
-b3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1
-NzkvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2Rl
-dmljZXMvc3lzdGVtL2NwdS9jcHU4L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBl
-cmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1ODAvY3B1ZnJlcS9zY2Fs
-aW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVtL2Nw
-dS9jcHU4MS9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+IC9z
-eXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTgyL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgpl
-Y2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1ODMvY3B1ZnJl
-cS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lz
-dGVtL2NwdS9jcHU4NC9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5j
-ZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTg1L2NwdWZyZXEvc2NhbGluZ19nb3Zl
-cm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1ODYv
-Y3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2Rldmlj
-ZXMvc3lzdGVtL2NwdS9jcHU4Ny9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJm
-b3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTg4L2NwdWZyZXEvc2NhbGlu
-Z19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUv
-Y3B1ODkvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lz
-L2RldmljZXMvc3lzdGVtL2NwdS9jcHU5L2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hv
-IHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1OTAvY3B1ZnJlcS9z
-Y2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lzdGVt
-L2NwdS9jcHU5MS9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3JtYW5jZSA+
-IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTkyL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5v
-cgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1OTMvY3B1
-ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMv
-c3lzdGVtL2NwdS9jcHU5NC9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBwZXJmb3Jt
-YW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTk1L2NwdWZyZXEvc2NhbGluZ19n
-b3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1
-OTYvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2Rl
-dmljZXMvc3lzdGVtL2NwdS9jcHU5Ny9jcHVmcmVxL3NjYWxpbmdfZ292ZXJub3IKZWNobyBw
-ZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTk4L2NwdWZyZXEvc2Nh
-bGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNlID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9j
-cHUvY3B1OTkvY3B1ZnJlcS9zY2FsaW5nX2dvdmVybm9yCgoK
---------------020806080203060506020707--
