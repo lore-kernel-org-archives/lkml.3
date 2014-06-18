@@ -1,49 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756843AbaFROlN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 10:41:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45568 "EHLO mx2.suse.de"
+	id S1756935AbaFROlX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 10:41:23 -0400
+Received: from mga09.intel.com ([134.134.136.24]:62913 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752303AbaFROlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 10:41:12 -0400
-Date: Wed, 18 Jun 2014 16:41:09 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Petr Mladek <pmladek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Dave Anderson <anderson@redhat.com>, Kay Sievers <kay@vrfy.org>,
-        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 00/11] printk: safe printing in NMI context
-In-Reply-To: <20140618143612.GC4669@linux.vnet.ibm.com>
-Message-ID: <alpine.LNX.2.00.1406181638360.2303@pobox.suse.cz>
-References: <1399626665-29817-1-git-send-email-pmladek@suse.cz> <alpine.LNX.2.00.1405290000350.17241@pobox.suse.cz> <20140529000909.GC6507@localhost.localdomain> <alpine.LNX.2.00.1405290959270.17241@pobox.suse.cz> <20140610164641.GD1951@localhost.localdomain>
- <CA+55aFzseOqF-EpKMvwKpfhBJZQSLqKpJ3shzVee9s0+mvyCuA@mail.gmail.com> <alpine.LNX.2.00.1406181245230.2303@pobox.suse.cz> <20140618143612.GC4669@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752303AbaFROlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 10:41:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,501,1400050800"; 
+   d="scan'208";a="559592387"
+Message-ID: <53A1A509.4080802@intel.com>
+Date: Wed, 18 Jun 2014 07:41:13 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH v6 00/10] Intel MPX support
+References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
+In-Reply-To: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jun 2014, Paul E. McKenney wrote:
+On 06/18/2014 02:44 AM, Qiaowei Ren wrote:
+> This patchset adds support for the Memory Protection Extensions
+> (MPX) feature found in future Intel processors.
 
-> > - both RCU stall detector and 'echo l > sysrq-trigger' can (and we've 
-> >   seen it happening for real) cause a complete, undebuggable, silent hang 
-> >   of machine (deadlock in NMI context)
-> 
-> I could easily add an option to RCU to allow people to tell it not to
-> use NMIs to dump the stack.  Would that help?
+It's very important to note that this is a very different patch set than
+the last one.  The way we are freeing the unused bounds tables is
+_completely different (9/10), and needs some very heavy mm reviews.  I'm
+sure Qiaowei will cc linux-mm@ next time.
 
-Well, that would make unfortunately the information provided by RCU stall 
-detector rather useless ... workqueue-based stack dumping is very unlikely 
-to point its finger to the real offender, as it'd be coming way too late.
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+We're also not asking that this be merged in its current state.  The
+32-bit binary on 64-bit kernel issue is a show stopper for merging, but
+we're trying to post early and often.
