@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176AbaFRPFO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 11:05:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41566 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752331AbaFRO7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 10:59:37 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 09/18] perf tools: Make perf_session_deliver_event global
-Date: Wed, 18 Jun 2014 16:58:50 +0200
-Message-Id: <1403103539-16807-10-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
-References: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
+	id S1753202AbaFRPFv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 11:05:51 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:58049 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752656AbaFRPFt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 11:05:49 -0400
+Message-ID: <1403103947.1984.124.camel@x220>
+Subject: [PATCH] staging: Remove useless "default N" lines
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Martin Walch <walch.martin@web.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 18 Jun 2014 17:05:47 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Jun 2014 15:05:48.0068 (UTC) FILETIME=[C951CE40:01CF8B06]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Making perf_session_deliver_event global function, as it will
-be called from another object in following patch.
+Two Kconfig entries default to (uppercase) "N". It was clearly intended
+to use "default n". But since (lowercase) "n" is the default anyway,
+these lines might as well be removed.
 
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Reported-by: Martin Walch <walch.martin@web.de>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- tools/perf/util/session.c | 17 +++++------------
- tools/perf/util/session.h |  6 ++++++
- 2 files changed, 11 insertions(+), 12 deletions(-)
+Tested with "make menuconfig"and "make oldconfig". I think Martin's
+report predates one of these two lines, but that's a detail.
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index a76cfcf..cbbd2b4 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -573,13 +573,6 @@ ordered_event_put(struct ordered_events_queue *q, struct ordered_event *iter)
- 	q->nr_events--;
- }
- 
--
--static int perf_session_deliver_event(struct perf_session *session,
--				      union perf_event *event,
--				      struct perf_sample *sample,
--				      struct perf_tool *tool,
--				      u64 file_offset);
--
- static int __ordered_events_flush(struct perf_session *s,
- 				  struct perf_tool *tool)
- {
-@@ -1005,11 +998,11 @@ perf_session__deliver_sample(struct perf_session *session,
- 					    &sample->read.one, machine);
- }
- 
--static int perf_session_deliver_event(struct perf_session *session,
--				      union perf_event *event,
--				      struct perf_sample *sample,
--				      struct perf_tool *tool,
--				      u64 file_offset)
-+int perf_session_deliver_event(struct perf_session *session,
-+			       union perf_event *event,
-+			       struct perf_sample *sample,
-+			       struct perf_tool *tool,
-+			       u64 file_offset)
- {
- 	struct perf_evsel *evsel;
- 	struct machine *machine;
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index af38954..58acad4 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -69,6 +69,12 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
- 
- void perf_tool__fill_defaults(struct perf_tool *tool);
- 
-+int perf_session_deliver_event(struct perf_session *session,
-+			       union perf_event *event,
-+			       struct perf_sample *sample,
-+			       struct perf_tool *tool,
-+			       u64 file_offset);
-+
- int perf_session__resolve_callchain(struct perf_session *session,
- 				    struct perf_evsel *evsel,
- 				    struct thread *thread,
+ drivers/staging/rtl8192ee/Kconfig | 1 -
+ drivers/staging/rtl8821ae/Kconfig | 1 -
+ 2 files changed, 2 deletions(-)
+
+diff --git a/drivers/staging/rtl8192ee/Kconfig b/drivers/staging/rtl8192ee/Kconfig
+index beb07ac24e80..8d77f28399d3 100644
+--- a/drivers/staging/rtl8192ee/Kconfig
++++ b/drivers/staging/rtl8192ee/Kconfig
+@@ -7,7 +7,6 @@ config R8192EE
+ 	select EEPROM_93CX6
+ 	select CRYPTO
+ 	select FW_LOADER
+-	default N
+ 	---help---
+ 	This is the driver for Realtek RTL8192EE 802.11 PCIe
+ 	wireless network adapters.
+diff --git a/drivers/staging/rtl8821ae/Kconfig b/drivers/staging/rtl8821ae/Kconfig
+index abccc9dabd65..1a89b25647ed 100644
+--- a/drivers/staging/rtl8821ae/Kconfig
++++ b/drivers/staging/rtl8821ae/Kconfig
+@@ -6,6 +6,5 @@ config R8821AE
+ 	select WEXT_PRIV
+ 	select EEPROM_93CX6
+ 	select CRYPTO
+-	default N
+ 	---help---
+ 	  If built as a module, it will be called r8821ae.ko.
 -- 
-1.8.3.1
+1.9.3
 
