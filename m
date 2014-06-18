@@ -1,49 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155AbaFRXOt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 19:14:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43035 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756055AbaFRXOs (ORCPT
+	id S1755962AbaFRXRO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 19:17:14 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:50174 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209AbaFRXRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 19:14:48 -0400
-Date: Wed, 18 Jun 2014 16:18:46 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: ben@decadent.org.uk, lisa@xenapiadmin.com, valentina.manea.m@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4]staging:rtl8192e: check return value of dev_skb_alloc
-Message-ID: <20140618231846.GC7234@kroah.com>
-References: <1403133030-6682-1-git-send-email-xerofoify@gmail.com>
+	Wed, 18 Jun 2014 19:17:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403133030-6682-1-git-send-email-xerofoify@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1403091060-5054-1-git-send-email-amit.daniel@samsung.com>
+References: <1403091060-5054-1-git-send-email-amit.daniel@samsung.com>
+Date: Wed, 18 Jun 2014 16:17:01 -0700
+X-Google-Sender-Auth: ADNfUHFS994TqxAPSvbZXd8MliE
+Message-ID: <CAD=FV=WHK7TDdqcAd6aVs2g8rcHJx834im_4nTKHJAkUisWq4A@mail.gmail.com>
+Subject: Re: [PATCH] clocksource: exynos-mct: Register the timer for stable udelay
+From: Doug Anderson <dianders@chromium.org>
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Riley <davidriley@chromium.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 07:10:30PM -0400, Nicholas Krause wrote:
-> diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-> index 1a95d1f..1a90546 100644
-> --- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-> +++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-> @@ -61,6 +61,10 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
->  		}
->  
->  		skb  = dev_alloc_skb(frag_length + 4);
-> +		if (!skb)
-> +			!return rt_status;
->  		memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
->  		tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
->  		tcb_desc->queue_index = TXCMD_QUEUE;
-> --
+Amit,
 
-This is a joke now, right?
+Thanks for posting!
 
-I'm going to give you a bit of time to step back, relax, and think about
-what you are doing.  Feel free to come back next week with a fixed and
-correct patch when you go and read my previous review comments.
+On Wed, Jun 18, 2014 at 4:31 AM, Amit Daniel Kachhap
+<amit.daniel@samsung.com> wrote:
+> This patch register the exynos mct clocksource as the current timer
+> as it has constant clock rate. This will generate correct udelay for the
+> exynos platform and avoid using unnecessary calibrated jiffies. This change
+> have been tested on exynos5420 based board.
+>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> ---
+>
+> Patches from David Riley confirmed that udelay is broken in exynos5420.
+> Link to those patches are,
+> 1) https://patchwork.kernel.org/patch/4344911/
+> 2) https://patchwork.kernel.org/patch/4344881/
+>
+>  drivers/clocksource/exynos_mct.c | 11 +++++++++++
+>  1 file changed, 11 insertions(+)
+>
+> diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
+> index 8d64200..57cb3dc 100644
+> --- a/drivers/clocksource/exynos_mct.c
+> +++ b/drivers/clocksource/exynos_mct.c
+> @@ -198,10 +198,21 @@ static u64 notrace exynos4_read_sched_clock(void)
+>         return exynos4_frc_read(&mct_frc);
+>  }
+>
+> +static struct delay_timer exynos4_delay_timer;
+> +
+> +static unsigned long exynos4_read_current_timer(void)
+> +{
+> +       return exynos4_frc_read(&mct_frc);
 
-greg k-h
+This is terribly inefficient to read all 64-bits and then cast back to
+a 32-bit value.  Replace with:
+
+return __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
+
+
+> +}
+> +
+>  static void __init exynos4_clocksource_init(void)
+>  {
+>         exynos4_mct_frc_start(0, 0);
+
+Please rebase atop (1d80415 clocksource: exynos_mct: Don't reset the
+counter during boot and resume), which is in linuxnext among other
+places.
+
+>
+> +       exynos4_delay_timer.read_current_timer = &exynos4_read_current_timer;
+> +       exynos4_delay_timer.freq = clk_rate;
+> +       register_current_timer_delay(&exynos4_delay_timer);
+> +
+>         if (clocksource_register_hz(&mct_frc, clk_rate))
+>                 panic("%s: can't register clocksource\n", mct_frc.name);
+
+It does seem to work for me though.  :)
