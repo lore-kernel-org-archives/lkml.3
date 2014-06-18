@@ -1,104 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756018AbaFRU4Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 16:56:16 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:49466 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755968AbaFRU4O (ORCPT
+	id S1756031AbaFRU6b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 16:58:31 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:53901 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755380AbaFRU63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 16:56:14 -0400
-From: Hai Li <hali@codeaurora.org>
-To: dri-devel@lists.freedesktop.org
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        robdclark@gmail.com, Hai Li <hali@codeaurora.org>,
-        Stephane Viau <sviau@codeaurora.org>
-Subject: [PATCH] drm/msm: Implement msm drm fb_mmap callback function
-Date: Wed, 18 Jun 2014 16:55:27 -0400
-Message-Id: <1403124927-21514-1-git-send-email-hali@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Wed, 18 Jun 2014 16:58:29 -0400
+From: Paul Moore <paul@paul-moore.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Gideon Israel Dsouza <gidisrael@gmail.com>, sds@tycho.nsa.gov,
+        Eric Paris <eparis@parisplace.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] security: Used macros from compiler.h instead of __attribute__((...))
+Date: Wed, 18 Jun 2014 16:58:25 -0400
+Message-ID: <1772413.506pXYt1XL@sifl>
+User-Agent: KMail/4.13.2 (Linux/3.14.5-gentoo; KDE/4.13.2; x86_64; ; )
+In-Reply-To: <CAMuHMdVJ7zv0qqhZNMNXihm4Kqv9WA9yyMe3F9ptUZyDjvEnTg@mail.gmail.com>
+References: <1402502130-26400-1-git-send-email-gidisrael@gmail.com> <3604441.fZpjWNppGq@sifl> <CAMuHMdVJ7zv0qqhZNMNXihm4Kqv9WA9yyMe3F9ptUZyDjvEnTg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change implements msm drm specific fb_mmap function for fb device
-to properly map the fb address to userspace.
+On Wednesday, June 18, 2014 10:08:13 PM Geert Uytterhoeven wrote:
+> On Wed, Jun 18, 2014 at 8:50 PM, Paul Moore <paul@paul-moore.com> wrote:
+> > On Wednesday, June 11, 2014 09:25:30 PM Gideon Israel Dsouza wrote:
+> >> To increase compiler portability there is <linux/compiler.h> which
+> >> provides convenience macros for various gcc constructs.  Eg: __packed
+> >> for __attribute__((packed)).
+> >> 
+> >> This patch is part of a large task I've taken to clean the gcc
+> >> specific attributes and use the the macros instead.
+> >> 
+> >> Signed-off-by: Gideon Israel Dsouza <gidisrael@gmail.com>
+> >> ---
+> >> 
+> >>  security/selinux/include/security.h | 3 ++-
+> >>  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > From what I can tell this should still work with both the LLVM and Intel
+> > compilers, is that correct?
+> 
+> That's the idea of the compiler-agnostic attribute macros.
 
-Signed-off-by: Hai Li <hali@codeaurora.org>
-Signed-off-by: Stephane Viau <sviau@codeaurora.org>
----
- drivers/gpu/drm/msm/msm_fbdev.c | 37 ++++++++++++++++++++++++++++++++++++-
- 1 file changed, 36 insertions(+), 1 deletion(-)
+I just wanted to make sure as I personally only really use gcc and don't 
+pretend to be up on all the details regarding other compilers.
 
-diff --git a/drivers/gpu/drm/msm/msm_fbdev.c b/drivers/gpu/drm/msm/msm_fbdev.c
-index 4f4e7b4..2522f51 100644
---- a/drivers/gpu/drm/msm/msm_fbdev.c
-+++ b/drivers/gpu/drm/msm/msm_fbdev.c
-@@ -19,6 +19,11 @@
- 
- #include "drm_crtc.h"
- #include "drm_fb_helper.h"
-+#include "msm_gem.h"
-+
-+extern int msm_gem_mmap_obj(struct drm_gem_object *obj,
-+					struct vm_area_struct *vma);
-+static int msm_fbdev_mmap(struct fb_info *info, struct vm_area_struct *vma);
- 
- /*
-  * fbdev funcs, to implement legacy fbdev interface on top of drm driver
-@@ -43,6 +48,7 @@ static struct fb_ops msm_fb_ops = {
- 	.fb_fillrect = sys_fillrect,
- 	.fb_copyarea = sys_copyarea,
- 	.fb_imageblit = sys_imageblit,
-+	.fb_mmap = msm_fbdev_mmap,
- 
- 	.fb_check_var = drm_fb_helper_check_var,
- 	.fb_set_par = drm_fb_helper_set_par,
-@@ -51,6 +57,31 @@ static struct fb_ops msm_fb_ops = {
- 	.fb_setcmap = drm_fb_helper_setcmap,
- };
- 
-+static int msm_fbdev_mmap(struct fb_info *info, struct vm_area_struct *vma)
-+{
-+	struct drm_fb_helper *helper = (struct drm_fb_helper *)info->par;
-+	struct msm_fbdev *fbdev = to_msm_fbdev(helper);
-+	struct drm_gem_object *drm_obj = fbdev->bo;
-+	struct drm_device *dev = helper->dev;
-+	int ret = 0;
-+
-+	if (drm_device_is_unplugged(dev))
-+		return -ENODEV;
-+
-+	mutex_lock(&dev->struct_mutex);
-+
-+	ret = drm_gem_mmap_obj(drm_obj, drm_obj->size, vma);
-+
-+	mutex_unlock(&dev->struct_mutex);
-+
-+	if (ret) {
-+		pr_err("%s:drm_gem_mmap_obj fail\n", __func__);
-+		return ret;
-+	}
-+
-+	return msm_gem_mmap_obj(drm_obj, vma);
-+}
-+
- static int msm_fbdev_create(struct drm_fb_helper *helper,
- 		struct drm_fb_helper_surface_size *sizes)
- {
-@@ -108,7 +139,11 @@ static int msm_fbdev_create(struct drm_fb_helper *helper,
- 	mutex_lock(&dev->struct_mutex);
- 
- 	/* TODO implement our own fb_mmap so we don't need this: */
--	msm_gem_get_iova_locked(fbdev->bo, 0, &paddr);
-+	ret = msm_gem_get_iova_locked(fbdev->bo, 0, &paddr);
-+	if (ret) {
-+		dev_err(dev->dev, "failed to get buffer obj iova: %d\n", ret);
-+		goto fail;
-+	}
- 
- 	fbi = framebuffer_alloc(0, dev->dev);
- 	if (!fbi) {
+> Interestingly, only include/linux/compiler-gcc.h defines __packed.
+
+>From what I could tell by looking at the code, the other compilers all define 
+__GNUC__ so they get the __packed macro as part of the gcc configuration.  I 
+believe the LLVM and Intel compilers would only need to redefine __packed if 
+they wanted/needed a different definition.
+
+> As it's already in heavy use, I can only assume both LLVM and the Intel
+> compilers handle both "__packed" (without a special definition) and the
+> gcc-specific "__attribute__((packed))".
+
+Yep, seems reasonable.  I'll go ahead and apply the patch.
+
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+paul moore
+www.paul-moore.com
 
