@@ -1,105 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840AbaFROK6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 10:10:58 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:38052 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752535AbaFROK4 (ORCPT
+	id S1756615AbaFROPq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 10:15:46 -0400
+Received: from mail-wi0-f193.google.com ([209.85.212.193]:53066 "EHLO
+	mail-wi0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915AbaFROPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 10:10:56 -0400
-Date: Wed, 18 Jun 2014 15:10:48 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 07/10] regulator: Add driver for Maxim 77802 PMIC
- regulators
-Message-ID: <20140618141048.GA15956@lee--X1>
-References: <1402941758-11216-1-git-send-email-javier.martinez@collabora.co.uk>
- <1402941758-11216-8-git-send-email-javier.martinez@collabora.co.uk>
- <20140617211747.GY29841@lee--X1>
- <53A16047.7010409@collabora.co.uk>
+	Wed, 18 Jun 2014 10:15:44 -0400
+Date: Wed, 18 Jun 2014 15:15:41 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Daniel Kiper <daniel.kiper@oracle.com>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org, andrew.cooper3@citrix.com,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        eshelton@pobox.com, hpa@zytor.com, ian.campbell@citrix.com,
+        jbeulich@suse.com, jeremy@goop.org, konrad.wilk@oracle.com,
+        matt.fleming@intel.com, mingo@redhat.com, mjg59@srcf.ucam.org,
+        stefano.stabellini@eu.citrix.com, tglx@linutronix.de
+Subject: Re: [PATCH v5 0/7] xen: Add EFI support
+Message-ID: <20140618141541.GM24049@console-pimps.org>
+References: <1402678823-24589-1-git-send-email-daniel.kiper@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53A16047.7010409@collabora.co.uk>
+In-Reply-To: <1402678823-24589-1-git-send-email-daniel.kiper@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jun 2014, Javier Martinez Canillas wrote:
+On Fri, 13 Jun, at 07:00:16PM, Daniel Kiper wrote:
+> Hey,
+> 
+> This patch series adds EFI support for Xen dom0 guests.
+> It is based on Jan Beulich and Tang Liang work. I was
+> trying to take into account all previous comments,
+> however, if I missed something sorry for that.
+> 
+> Daniel
+> 
+>  arch/x86/kernel/setup.c          |    4 +-
+>  arch/x86/platform/efi/efi.c      |   77 ++++++++++-------
+>  arch/x86/xen/enlighten.c         |   24 ++++++
+>  drivers/firmware/efi/efi.c       |   26 +++---
+>  drivers/xen/Kconfig              |    4 +
+>  drivers/xen/Makefile             |    3 +
+>  drivers/xen/efi.c                |  374 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/efi.h              |    3 +-
+>  include/xen/interface/platform.h |  123 +++++++++++++++++++++++++++
+>  9 files changed, 595 insertions(+), 43 deletions(-)
 
-> Hello Lee,
-> 
-> Thanks a lot for your feedback.
-> 
-> On 06/17/2014 11:17 PM, Lee Jones wrote:
-> >> The MAX77802 PMIC has 10 high-efficiency Buck and 32 Low-dropout
-> >> (LDO) regulators. This patch adds support for all these regulators
-> >> found on the MAX77802 PMIC and is based on a driver added by Simon
-> >> Glass to the Chrome OS kernel 3.8 tree.
-> >> 
-> >> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> >> ---
-> >> 
-> >> Changes since v1:
-> >>  - Remove unneeded check if num_regulators != MAX77802_MAX_REGULATORS.
-> >>  - Fix .set_suspend_mode handler comment and split regulators ops for
-> >>    regulators that behave differently. Suggested by Mark Brown.
-> >>  - Use module_platform_driver() instead of having init/exit functions.
-> >>    Suggested by Mark Brown.
-> >>  - Use the new descriptor-based GPIO interface instead of the deprecated
-> >>    integer based GPIO one. Suggested by Mark Brown.
-> >>  - Look for "regulators" child node instead of "voltage-regulators" to be
-> >>    consistent with other PMIC drivers. Suggested by Mark Brown.
-> >> 
-> >>  drivers/mfd/max77802.c       |   1 +
-> > 
-> > Can you remove all of the MFD changes from patches 7, 8 and 9 and
-> > create new one.  That way there's no requirement for any cross
-> > subsystem messiness.
-> > 
-> 
-> Sure, Mark already suggested the same and I'll do it on the next version.
-> 
-> But there still be some cross-subsystem dependency/messiness since the
-> regulator, clk and rtc drivers include the mfd max77802 headers that are added
-> in Patch 6.
+FWIW I'm much happier with this version than v4. There's nothing that
+jumps out at me as being obviously wrong. Just a few minor cleanups
+needed.
 
-What I should have said was _avoidable_ or _unnecessary_ messiness.
+Which tree is this intended to go through? I'm more than happy to take
+it through the EFI tree, particularly since it touches
+include/linux/efi.h and drivers/firmware/efi/efi.c which is the core EFI
+interface for all platforms.
 
-> So I guess you should either a) take the whole patch-set through your mfd tree
-> or b) merge the mfd patches and create an immutable branch that can be pulled by
-> Mark, Mike and Alessandro.
-> 
-> I don't know what's the preferred workflow in these cases...
-
-That's fine.  I'm happy to create shared branches when required.
-
-> >>  drivers/regulator/Kconfig    |   9 +
-> >>  drivers/regulator/Makefile   |   1 +
-> >>  drivers/regulator/max77802.c | 701 +++++++++++++++++++++++++++++++++++++++++++
-> >>  4 files changed, 712 insertions(+)
-> >>  create mode 100644 drivers/regulator/max77802.c
-> > 
-> 
-> Best regards,
-> Javier
+But if it's going through the Xen tree or something, I can supply my
+Acked-by's (once the aforementioned minor cleanups are taken care of).
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Matt Fleming, Intel Open Source Technology Center
