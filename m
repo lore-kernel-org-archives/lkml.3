@@ -1,62 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836AbaFRTnW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 15:43:22 -0400
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:16274 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752892AbaFRTnV (ORCPT
+	id S1754859AbaFRTov (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 15:44:51 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:39238 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754256AbaFRTot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 15:43:21 -0400
-X-IronPort-AV: E=Sophos;i="5.01,501,1400050800"; 
-   d="scan'208";a="35095558"
-From: Graham Williams <graham.williams@linaro.org>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        "Matt Porter" <mporter@linaro.org>, Lee Jones <lee.jones@linaro.org>
-CC: Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] regulator: bcm590xx: fix vbus name
-Date: Wed, 18 Jun 2014 12:42:10 -0700
-Message-ID: <1403120530-27395-1-git-send-email-graham.williams@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 18 Jun 2014 15:44:49 -0400
+Message-ID: <53A1EC2E.1010706@gmail.com>
+Date: Wed, 18 Jun 2014 13:44:46 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org
+CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCHv2 00/18] perf tools: Factor ordered samples queue
+References: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The vbus regulator was not getting its name set. This results
-in the sysfs entry being empty. The lack of a bcm590xx_regs[]
-table entry also upsets Coverity runs. Add the table entry
-so the name gets set properly.
+On 6/18/14, 8:58 AM, Jiri Olsa wrote:
+> hi,
+> this patchset factors session's ordered samples queue,
+> and allows to limit the size of this queue.
+>
+> v2 changes:
+>    - several small changes for review comments (Namhyung)
+>
+>
+> The report command queues events till any of following
+> conditions is reached:
+>    - PERF_RECORD_FINISHED_ROUND event is processed
+>    - end of the file is reached
+>
+> Any of above conditions will force the queue to flush some
+> events while keeping all allocated memory for next events.
+>
+> If PERF_RECORD_FINISHED_ROUND is missing the queue will
+> allocate memory for every single event in the perf.data.
+> This could lead to enormous memory consuption and speed
+> degradation of report command for huge perf.data files.
+>
+> With the quue allocation limit of 100 MB, I've got around
+> 15% speedup on reporting of ~10GB perf.data file.
+>
+> current code:
+>   Performance counter stats for './perf.old report --stdio -i perf-test.data' (3 runs):
+>
+>     621,685,704,665      cycles                    ( +-  0.52% )
+>     873,397,467,969      instructions              ( +-  0.00% )
+>
+>       286.133268732 seconds time elapsed           ( +-  1.13% )
+>
+> with patches:
+>   Performance counter stats for './perf report --stdio -i perf-test.data' (3 runs):
+>
+>     603,933,987,185      cycles                    ( +-  0.45% )
+>     869,139,445,070      instructions              ( +-  0.00% )
+>
+>       245.337510637 seconds time elapsed           ( +-  0.49% )
+>
+>
+> The speed up seems to be mainly in less cycles spent in servicing
+> page faults:
+>
+> current code:
+>       4.44%     0.01%  perf.old  [kernel.kallsyms]   [k] page_fault
+>
+> with patches:
+>       1.45%     0.00%      perf  [kernel.kallsyms]   [k] page_fault
+>
+> current code (faults event):
+>           6,643,807      faults                    ( +-  0.36% )
+>
+> with patches (faults event):
+>           2,214,756      faults                    ( +-  3.03% )
+>
+>
+> Also now we have one of our big memory spender under control
+> and the ordered events queue code is put in separated object
+> with clear interface ready to be used by another command
+> like script.
+>
+> Also reachable in here:
+>    git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+>    perf/core_ordered_events
+>
 
-Signed-off-by: Graham Williams <graham.williams@linaro.org>
----
- drivers/regulator/bcm590xx-regulator.c |    5 +++++
- 1 file changed, 5 insertions(+)
+I've skimmed through the patches. What happens if you are in the middle 
+of a round and the max queue size is reached?
 
-diff --git a/drivers/regulator/bcm590xx-regulator.c b/drivers/regulator/bcm590xx-regulator.c
-index 57544e2..58ece59 100644
---- a/drivers/regulator/bcm590xx-regulator.c
-+++ b/drivers/regulator/bcm590xx-regulator.c
-@@ -119,6 +119,10 @@ static const unsigned int ldo_c_table[] = {
- 	2900000, 3000000, 3300000,
- };
- 
-+static const unsigned int ldo_vbus[] = {
-+	5000000,
-+};
-+
- /* DCDC group CSR: supported voltages in microvolts */
- static const struct regulator_linear_range dcdc_csr_ranges[] = {
- 	REGULATOR_LINEAR_RANGE(860000, 2, 50, 10000),
-@@ -192,6 +196,7 @@ static struct bcm590xx_info bcm590xx_regs[] = {
- 	BCM590XX_REG_TABLE(gpldo4, ldo_a_table),
- 	BCM590XX_REG_TABLE(gpldo5, ldo_a_table),
- 	BCM590XX_REG_TABLE(gpldo6, ldo_a_table),
-+	BCM590XX_REG_TABLE(vbus, ldo_vbus),
- };
- 
- struct bcm590xx_reg {
--- 
-1.7.9.5
+I need to find some time for a detailed review, and to run through some 
+stress case scenarios. e.g., a couple that come to mind
+perf sched record -- perf bench sched pipe
+perf kvm record while booting a nested VM which causes a lot of VMEXITs
+
+David
 
