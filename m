@@ -1,161 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933845AbaFRGgv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 02:36:51 -0400
-Received: from mga09.intel.com ([134.134.136.24]:28216 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756390AbaFRGgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 02:36:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,499,1400050800"; 
-   d="scan'208";a="530277596"
-From: Liu ShuoX <shuox.liu@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: yanmin_zhang@linux.intel.com, Zhang Yanmin <yanmin.zhang@intel.com>,
-        Liu Shuox <shuox.liu@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org (maintainer:X86 ARCHITECTURE...),
-        Ramkumar Ramachandra <artagnon@gmail.com>
-Subject: [PATCH v4] perf: fix kernel panic when parsing user space CS saved in pt_regs
-Date: Wed, 18 Jun 2014 14:34:31 +0800
-Message-Id: <1403073277-29130-1-git-send-email-shuox.liu@intel.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S933984AbaFRGiM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 02:38:12 -0400
+Received: from fgwmail4.fujitsu.co.jp ([164.71.1.141]:56461 "EHLO
+	fgwmail4.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756638AbaFRGiK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 02:38:10 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <53A1339E.2000000@jp.fujitsu.com>
+Date: Wed, 18 Jun 2014 15:37:18 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: <akpm@linux-foundation.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <hpa@zytor.com>
+CC: <tangchen@cn.fujitsu.com>, <toshi.kani@hp.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <x86@kernel.org>,
+        <guz.fnst@cn.fujitsu.com>, <zhangyanfei@cn.fujitsu.com>
+Subject: [PATCH 1/2] x86,mem-hotplug: pass sync_global_pgds() a correct argument
+ in remove_pagetable()
+References: <53A132E2.9000605@jp.fujitsu.com>
+In-Reply-To: <53A132E2.9000605@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhang Yanmin <yanmin.zhang@intel.com>
+remove_pagetable() gets start argument and passes the argument to
+sync_global_pgds(). In this case, the argument must not be modified.
+If the argument is modified and passed to sync_global_pgds(),
+sync_global_pgds() does not correctly synchronize PGD to PGD entries
+of all processes MM since synchronized range of memory [start, end]
+is wrong.
 
-ChangeLog V4:   Explain the patch sceanrio clearly
+Unfortunately the start argument is modified in remove_pagetable().
+So this patch fixes the issue.
 
-ChangeLog V3:   Keep rsp pointing to pt_regs before sysexit.
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-ChangeLog V2:   Before sysexit, perf NMI might arrive. There is
-                still a race. Here we change rsp to keep it pointing
-                to pt_regs->orig_ax.
-                In addition, after sti, before sysexit, an irq might
-                arrives. That causes more chances for perf NMI to jump
-                in.
-
-We hit a kernel panic when running perf to collect performance data
-with callchain info.
-kenel is x86_64 and user space apps are 32bit.
-
-Run command:
- # perf record -a -g -f sleep 30
-kernel panic usually within 30 seconds.
-
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
-IP: [<ffffffff82012091>] get_segment_base+0x71/0xc0
-PGD 6c65f067 PUD 0
-Oops: 0000 [#1] PREEMPT SMP
-Modules linked in:  <...>
-CPU: 1 PID: 304 Comm: Binder_2 Tainted: G        W  O 3.10.20-263902-g184bfbc-dirty #14
-task: ffff8800764dc300 ti: ffff88006c6e8000 task.ti: ffff88006c6e8000
-RIP: 0010:[<ffffffff82012091>]  [<ffffffæf82012091>] get_segment_base+0x71/0xc0
-RSP: 0018:ffff^X8007ea87b98  EFLAGS: 00010092
-RAX: 0000000000000024 RBX: 0000000000000000 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000009
-RBP: ffff88007ea87ba8 R08: ffffffff83143b3c R09: ffffffff831848a8
-R10: 0000000000000000 R11: 00000000001bf2d8 R12: 0000000000000000
-R13: ffff88006c6e9fd8 R14: ffff88006c6e9f58 R15: ffff8800764dc300
-FS:  0000000000000000(0000) GS:ffff88007ea80000(006b) knlGS:00000000f704add0
-CS:  0010 DS: 002b ES: 002b CR0: 0000000080050033
-CR2: 0000000000000004 CR3: 0000000076588000 CR4: 00000^P00001007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Stack:
- ffff88005f266c00 0000000000000000 ffff88007ea87c18 ffffffff82013cac
- ffff88007ea87d58 00000016fe4704a0 00000000000001a7 ffff88007ea87ef8
- ffff88005f266c00 ffff88007ea87ef8 ffff8800!e07b400 ffff88005f266c00
-Call Trace:
- <NMI>
- [<ffffffff82013cac>] perf_callchain_user+0x15c/0x240
- [<ffffffff82160754>] perf_callchain+0x134/0x180
- [<ffffffff820e0787>] ? local_clock+0x47/0x60
- [<ffffffff8215d49b>] perf_prepare_sample+0x1bb/0x240
- [<ffffffff8215d667>] __perf_event_overflow+0x147/0x230
- [<ffffffff82012f68>] ? x86_perf_event_set_period+0xd8/0x150
- [<ffffffff8215df24>] perf_event_overflow+0x14/0x20
- [<ffffffff820194d2>] intel_pmu_handle_irq+0x1c2/0x270
- [<ffffffff828b5d60>] ? call_softirq+0x30/0x30
- [<ffffffff828aff01>] perf_event_nmi_handler+0x21/0x30
- [<ffffffff828af5b9>] nmi_handle.isr!.1+0x59/0x=0
- [<ffffffff828af6d8>] default_do_nmi+0x58/0x240
- [<ffffffff828af978>] do_nmi+0xb8/0xf0
- [<ffffffff828aebe7>] end_repeat_nmi+0x1e/0x2e
- [<ffffffff828b5d60>] ? call_softirq+0x30/0x30
- [<ffffffff828b5d60>] ? call_softirq+0x30/0x30
- [<fFffffff828b5d60>] ? call_softirq+0x30/0x30
-
-perf_callchain_user32 calls get_segment_base to get cs/ss base address.
-At kernel panic, get_segment_base considers the cs as LDT index and
-uses current->active_mm->context.ldt to access the desc. But the app
-is 32bit and doesn't use LDT. current->active_mm->context.ldt is equal
-to NULL.  That causes a bad dereference and kernel panic.
-
-We dump pt_regs in function perf_callchain_user32. At panic, the values
-are incorrect. After collecting lots of logs, we find it always happens
-when app runs system call. Sometimes, the panic callchain has the address
-of trace_hardirqs_on_thunk.
-
-perf_callchain checks if pt_regs saves user space reg info. If not,
-perf_callchain calls task_pt_regs(current) to get the address of pt_regs
-on the top of kernel stack.
-
-After checking sysexit_from_sys_call, we find pt_regs on the top of the
-stack might be erased by trace_hardirqs_on_thunk or other interrupt
-handlers.
-
-Basically, ia32 uses sysenter to start system calls.
-
-sysexit_from_sys_call=>trace_hardirqs_on_thunk. Before calling
-trace_hardirqs_on_thunk, sysexit_from_sys_call already pops up pt_regs,
-and register rsp points to pt_regs->ss, almost at the top of the kernel
-stack.  Then trace_hardirqs_on_thunk is called and it uses kernel stack
-to save local vars, which erase old pt_regs.  If perf NMI happens here,
-perf might access a ruined pt_regs when saving userspace callchain.
-
-If app is 64bit, it doesn't go through this path. sysret_check keeps
-rsp pointing to pt_regs before executing sysretq to exit to user space.
-
-The patch fixes it by keeping rsp pointing to pt_regs like 64bit path.
-
-Signed-off-by: Zhang Yanmin <yanmin.zhang@intel.com>
-Signed-off-by: Liu Shuox <shuox.liu@intel.com>
 ---
- arch/x86/ia32/ia32entry.S | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ arch/x86/mm/init_64.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index 4299eb0..d2f905b 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -172,15 +172,16 @@ sysexit_from_sys_call:
- 	andl  $~0x200,EFLAGS-R11(%rsp) 
- 	movl	RIP-R11(%rsp),%edx		/* User %eip */
- 	CFI_REGISTER rip,rdx
--	RESTORE_ARGS 0,24,0,0,0,0
--	xorq	%r8,%r8
-+	RESTORE_ARGS 0,-ARG_SKIP,0,0,0,0
-+	movq	EFLAGS-R11(%rsp),%r8		/* rflags */
-+	movq	RSP-R11(%rsp),%rcx		/* User %esp */
- 	xorq	%r9,%r9
- 	xorq	%r10,%r10
- 	xorq	%r11,%r11
--	popfq_cfi
-+	pushq_cfi %r8
- 	/*CFI_RESTORE rflags*/
--	popq_cfi %rcx				/* User %esp */
--	CFI_REGISTER rsp,rcx
-+	popfq_cfi
-+	xorq	%r8,%r8
- 	TRACE_IRQS_ON
- 	ENABLE_INTERRUPTS_SYSEXIT32
- 
--- 
-1.8.3.2
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index df1a992..a5b245d 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -975,19 +975,20 @@ static void __meminit
+ remove_pagetable(unsigned long start, unsigned long end, bool direct)
+ {
+ 	unsigned long next;
++	unsigned long addr;
+ 	pgd_t *pgd;
+ 	pud_t *pud;
+ 	bool pgd_changed = false;
+
+-	for (; start < end; start = next) {
+-		next = pgd_addr_end(start, end);
++	for (addr = start; addr < end; addr = next) {
++		next = pgd_addr_end(addr, end);
+
+-		pgd = pgd_offset_k(start);
++		pgd = pgd_offset_k(addr);
+ 		if (!pgd_present(*pgd))
+ 			continue;
+
+ 		pud = (pud_t *)pgd_page_vaddr(*pgd);
+-		remove_pud_table(pud, start, next, direct);
++		remove_pud_table(pud, addr, next, direct);
+ 		if (free_pud_table(pud, pgd))
+ 			pgd_changed = true;
+ 	}
 
