@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185AbaFRP3P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 11:29:15 -0400
-Received: from fieldses.org ([174.143.236.118]:38541 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752928AbaFRP3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 11:29:13 -0400
-Date: Wed, 18 Jun 2014 11:29:12 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kbuild: Fix tar-pkg with relative $(objtree)
-Message-ID: <20140618152912.GD17790@fieldses.org>
-References: <20140617223854.GC6168@fieldses.org>
- <1403101583-15275-1-git-send-email-mmarek@suse.cz>
+	id S1753220AbaFRP3n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 11:29:43 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:52872 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752012AbaFRP3l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 11:29:41 -0400
+Date: Wed, 18 Jun 2014 16:29:32 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: kernel@stlinux.com, thierry.reding@gmail.com, linux-pwm@vger.kernel.org,
+        maxime.coquelin@st.com, patrice.chotard@st.com,
+        srinivas.kandagatla@gmail.com, devicetree@vger.kernel.org,
+        ajitpal.singh@st.com
+Subject: [PATCH v2 7/7] pwm: st: Supply Device Tree binding documentation for
+ ST's PWM IP
+Message-ID: <20140618152932.GG15956@lee--X1>
+References: <1403103172-19856-1-git-send-email-lee.jones@linaro.org>
+ <1403103172-19856-7-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403101583-15275-1-git-send-email-mmarek@suse.cz>
+In-Reply-To: <1403103172-19856-7-git-send-email-lee.jones@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 04:26:23PM +0200, Michal Marek wrote:
-> Commit 7e1c0477 (kbuild: Use relative path for $(objtree)) assumes that
-> the build process does not change its working directory. make tar-pkg
-> was a couterexample, fix this by changing directory only for the tar
-> command and not for the whole script, which at one point references the
-> now relative $(objtree).
+pwm: st: Supply Device Tree binding documentation for ST's PWM IP
+    
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Works for me, thanks.--b.
-
-> 
-> Reported-by: "J. Bruce Fields" <bfields@fieldses.org>
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
-> ---
->  scripts/package/buildtar | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/scripts/package/buildtar b/scripts/package/buildtar
-> index 995c1ea..e046bff 100644
-> --- a/scripts/package/buildtar
-> +++ b/scripts/package/buildtar
-> @@ -125,12 +125,11 @@ esac
->  # Create the tarball
->  #
->  (
-> -	cd "${tmpdir}"
->  	opts=
->  	if tar --owner=root --group=root --help >/dev/null 2>&1; then
->  		opts="--owner=root --group=root"
->  	fi
-> -	tar cf - boot/* lib/* $opts | ${compress} > "${tarball}${file_ext}"
-> +	tar cf - -C "$tmpdir" boot/ lib/ $opts | ${compress} > "${tarball}${file_ext}"
->  )
->  
->  echo "Tarball successfully created in ${tarball}${file_ext}"
-> -- 
-> 1.9.2
-> 
+diff --git a/Documentation/devicetree/bindings/pwm/pwm-st.txt b/Documentation/devicetree/bindings/pwm/pwm-st.txt
+new file mode 100644
+index 0000000..84d2fb8
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pwm/pwm-st.txt
+@@ -0,0 +1,41 @@
++STMicroelectronics PWM driver bindings
++--------------------------------------
++
++Required parameters:
++- compatible :		"st,pwm"
++- #pwm-cells : 		Number of cells used to specify a PWM. First cell
++			specifies the per-chip index of the PWM to use and the
++			second cell is the period in nanoseconds - fixed to 2
++			for STiH41x.
++- reg :			Physical base address and length of the controller's
++			registers.
++- pinctrl-names: 	Set to "default".
++- pinctrl-0: 		List of phandles pointing to pin configuration nodes
++			for PWM module.
++			For Pinctrl properties, please refer to [1].
++- clock-names: 		Set to "pwm".
++- clocks: 		phandle of the clock used by the PWM module.
++			For Clk properties, please refer to [2].
++
++Optional properties:
++- st,pwm-num-chan:	Number of available channels. If not passed, the driver
++			will consider single channel by default.
++
++[1] Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
++[2] Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++Example:
++
++pwm1: pwm@fe510000 {
++	compatible = "st,pwm";
++	reg = <0xfe510000 0x68>;
++	#pwm-cells = <2>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_pwm1_chan0_default
++		     &pinctrl_pwm1_chan1_default
++		     &pinctrl_pwm1_chan2_default
++		     &pinctrl_pwm1_chan3_default>;
++	clocks = <&clk_sysin>;
++	clock-names = "pwm";
++	st,pwm-num-chan = <4>;
++};
