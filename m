@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756935AbaFROlX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 10:41:23 -0400
-Received: from mga09.intel.com ([134.134.136.24]:62913 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752303AbaFROlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 10:41:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,501,1400050800"; 
-   d="scan'208";a="559592387"
-Message-ID: <53A1A509.4080802@intel.com>
-Date: Wed, 18 Jun 2014 07:41:13 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1756950AbaFROlu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 10:41:50 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:47007 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756901AbaFROlt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 10:41:49 -0400
 MIME-Version: 1.0
-To: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH v6 00/10] Intel MPX support
-References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
-In-Reply-To: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53A1A4A9.4060301@nvidia.com>
+References: <1403050362-20809-1-git-send-email-aplattner@nvidia.com>
+	<CAKohpo=2fpi7GivgNGE+DgD3xPdku3WzKKD8+Ziz4gQ4P6pMxQ@mail.gmail.com>
+	<53A1A4A9.4060301@nvidia.com>
+Date: Wed, 18 Jun 2014 20:11:48 +0530
+Message-ID: <CAKohpo=bGz97TJeY51M7k9VSHww=pk5TULEAROHRkp5x9-L-8w@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: unlock when failing cpufreq_update_policy()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Aaron Plattner <aplattner@nvidia.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2014 02:44 AM, Qiaowei Ren wrote:
-> This patchset adds support for the Memory Protection Extensions
-> (MPX) feature found in future Intel processors.
+On 18 June 2014 20:09, Aaron Plattner <aplattner@nvidia.com> wrote:
+> I assume you meant "return -ENODEV"?
 
-It's very important to note that this is a very different patch set than
-the last one.  The way we are freeing the unused bounds tables is
-_completely different (9/10), and needs some very heavy mm reviews.  I'm
-sure Qiaowei will cc linux-mm@ next time.
+Yeah, sorry :)
 
-We're also not asking that this be merged in its current state.  The
-32-bit binary on 64-bit kernel issue is a show stopper for merging, but
-we're trying to post early and often.
+>>          down_write(&policy->rwsem);
+>>
+>> @@ -2279,10 +2277,10 @@ int cpufreq_update_policy(unsigned int cpu)
+>>
+>>          ret = cpufreq_set_policy(policy, &new_policy);
+>>
+>> +no_policy:
+>
+>
+> 'no_policy' implied to me that policy was NULL, so this label should still
+> be renamed to 'unlock'.  I'll send out a v2 that does this.
+
+Yeah.
