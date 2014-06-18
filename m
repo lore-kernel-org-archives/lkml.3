@@ -1,58 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707AbaFRGeT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 02:34:19 -0400
-Received: from mga02.intel.com ([134.134.136.20]:45782 "EHLO mga02.intel.com"
+	id S933845AbaFRGgv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 02:36:51 -0400
+Received: from mga09.intel.com ([134.134.136.24]:28216 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756390AbaFRGeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 02:34:18 -0400
+	id S1756390AbaFRGgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 02:36:49 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,499,1400050800"; 
-   d="scan'208";a="559382460"
-Message-ID: <53A132D4.60408@intel.com>
-Date: Tue, 17 Jun 2014 23:33:56 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+   d="scan'208";a="530277596"
+From: Liu ShuoX <shuox.liu@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: yanmin_zhang@linux.intel.com, Zhang Yanmin <yanmin.zhang@intel.com>,
+        Liu Shuox <shuox.liu@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org (maintainer:X86 ARCHITECTURE...),
+        Ramkumar Ramachandra <artagnon@gmail.com>
+Subject: [PATCH v4] perf: fix kernel panic when parsing user space CS saved in pt_regs
+Date: Wed, 18 Jun 2014 14:34:31 +0800
+Message-Id: <1403073277-29130-1-git-send-email-shuox.liu@intel.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [bisected] pre-3.16 regression on open() scalability
-References: <539B594C.8070004@intel.com> <20140613224519.GV4581@linux.vnet.ibm.com> <53A0CAE5.9000702@intel.com> <20140618001836.GV4669@linux.vnet.ibm.com>
-In-Reply-To: <20140618001836.GV4669@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2014 05:18 PM, Paul E. McKenney wrote:
-> So if I understand correctly, a goodly part of the regression is due not
-> to the overhead added to cond_resched(), but rather because grace periods
-> are now happening faster, thus incurring more overhead.  Is that correct?
+From: Zhang Yanmin <yanmin.zhang@intel.com>
 
-Yes, that's the theory at least.
+ChangeLog V4:   Explain the patch sceanrio clearly
 
-> If this is the case, could you please let me know roughly how sensitive is
-> the performance to the time delay in RCU_COND_RESCHED_EVERY_THIS_JIFFIES?
+ChangeLog V3:   Keep rsp pointing to pt_regs before sysexit.
 
-This is the previous kernel, plus RCU tracing, so it's not 100%
-apples-to-apples (and it peaks a bit lower than the other kernel).  But
-here's the will-it-scale open1 throughput on the y axis vs
-RCU_COND_RESCHED_EVERY_THIS_JIFFIES on x:
+ChangeLog V2:   Before sysexit, perf NMI might arrive. There is
+                still a race. Here we change rsp to keep it pointing
+                to pt_regs->orig_ax.
+                In addition, after sti, before sysexit, an irq might
+                arrives. That causes more chances for perf NMI to jump
+                in.
 
-	http://sr71.net/~dave/intel/jiffies-vs-openops.png
+We hit a kernel panic when running perf to collect performance data
+with callchain info.
+kenel is x86_64 and user space apps are 32bit.
 
-This was a quick and dirty single run with very little averaging, so I
-expect there to be a good amount of noise.  I ran it from 1->100, but it
-seemed to peak at about 30.
+Run command:
+ # perf record -a -g -f sleep 30
+kernel panic usually within 30 seconds.
 
-> The patch looks promising.  I will probably drive the time-setup deeper
-> into the guts of RCU, which should allow moving the access to jiffies
-> and the comparison off of the fast path as well, but this appears to
-> me to be good and sufficient for others encountering this same problem
-> in the meantime.
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+IP: [<ffffffff82012091>] get_segment_base+0x71/0xc0
+PGD 6c65f067 PUD 0
+Oops: 0000 [#1] PREEMPT SMP
+Modules linked in:  <...>
+CPU: 1 PID: 304 Comm: Binder_2 Tainted: G        W  O 3.10.20-263902-g184bfbc-dirty #14
+task: ffff8800764dc300 ti: ffff88006c6e8000 task.ti: ffff88006c6e8000
+RIP: 0010:[<ffffffff82012091>]  [<ffffffæf82012091>] get_segment_base+0x71/0xc0
+RSP: 0018:ffff^X8007ea87b98  EFLAGS: 00010092
+RAX: 0000000000000024 RBX: 0000000000000000 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000009
+RBP: ffff88007ea87ba8 R08: ffffffff83143b3c R09: ffffffff831848a8
+R10: 0000000000000000 R11: 00000000001bf2d8 R12: 0000000000000000
+R13: ffff88006c6e9fd8 R14: ffff88006c6e9f58 R15: ffff8800764dc300
+FS:  0000000000000000(0000) GS:ffff88007ea80000(006b) knlGS:00000000f704add0
+CS:  0010 DS: 002b ES: 002b CR0: 0000000080050033
+CR2: 0000000000000004 CR3: 0000000076588000 CR4: 00000^P00001007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Stack:
+ ffff88005f266c00 0000000000000000 ffff88007ea87c18 ffffffff82013cac
+ ffff88007ea87d58 00000016fe4704a0 00000000000001a7 ffff88007ea87ef8
+ ffff88005f266c00 ffff88007ea87ef8 ffff8800!e07b400 ffff88005f266c00
+Call Trace:
+ <NMI>
+ [<ffffffff82013cac>] perf_callchain_user+0x15c/0x240
+ [<ffffffff82160754>] perf_callchain+0x134/0x180
+ [<ffffffff820e0787>] ? local_clock+0x47/0x60
+ [<ffffffff8215d49b>] perf_prepare_sample+0x1bb/0x240
+ [<ffffffff8215d667>] __perf_event_overflow+0x147/0x230
+ [<ffffffff82012f68>] ? x86_perf_event_set_period+0xd8/0x150
+ [<ffffffff8215df24>] perf_event_overflow+0x14/0x20
+ [<ffffffff820194d2>] intel_pmu_handle_irq+0x1c2/0x270
+ [<ffffffff828b5d60>] ? call_softirq+0x30/0x30
+ [<ffffffff828aff01>] perf_event_nmi_handler+0x21/0x30
+ [<ffffffff828af5b9>] nmi_handle.isr!.1+0x59/0x=0
+ [<ffffffff828af6d8>] default_do_nmi+0x58/0x240
+ [<ffffffff828af978>] do_nmi+0xb8/0xf0
+ [<ffffffff828aebe7>] end_repeat_nmi+0x1e/0x2e
+ [<ffffffff828b5d60>] ? call_softirq+0x30/0x30
+ [<ffffffff828b5d60>] ? call_softirq+0x30/0x30
+ [<fFffffff828b5d60>] ? call_softirq+0x30/0x30
 
-Yeah, the more overhead we can push out of cond_resched(), the better.
-I had no idea how much we call it!
+perf_callchain_user32 calls get_segment_base to get cs/ss base address.
+At kernel panic, get_segment_base considers the cs as LDT index and
+uses current->active_mm->context.ldt to access the desc. But the app
+is 32bit and doesn't use LDT. current->active_mm->context.ldt is equal
+to NULL.  That causes a bad dereference and kernel panic.
+
+We dump pt_regs in function perf_callchain_user32. At panic, the values
+are incorrect. After collecting lots of logs, we find it always happens
+when app runs system call. Sometimes, the panic callchain has the address
+of trace_hardirqs_on_thunk.
+
+perf_callchain checks if pt_regs saves user space reg info. If not,
+perf_callchain calls task_pt_regs(current) to get the address of pt_regs
+on the top of kernel stack.
+
+After checking sysexit_from_sys_call, we find pt_regs on the top of the
+stack might be erased by trace_hardirqs_on_thunk or other interrupt
+handlers.
+
+Basically, ia32 uses sysenter to start system calls.
+
+sysexit_from_sys_call=>trace_hardirqs_on_thunk. Before calling
+trace_hardirqs_on_thunk, sysexit_from_sys_call already pops up pt_regs,
+and register rsp points to pt_regs->ss, almost at the top of the kernel
+stack.  Then trace_hardirqs_on_thunk is called and it uses kernel stack
+to save local vars, which erase old pt_regs.  If perf NMI happens here,
+perf might access a ruined pt_regs when saving userspace callchain.
+
+If app is 64bit, it doesn't go through this path. sysret_check keeps
+rsp pointing to pt_regs before executing sysretq to exit to user space.
+
+The patch fixes it by keeping rsp pointing to pt_regs like 64bit path.
+
+Signed-off-by: Zhang Yanmin <yanmin.zhang@intel.com>
+Signed-off-by: Liu Shuox <shuox.liu@intel.com>
+---
+ arch/x86/ia32/ia32entry.S | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+index 4299eb0..d2f905b 100644
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -172,15 +172,16 @@ sysexit_from_sys_call:
+ 	andl  $~0x200,EFLAGS-R11(%rsp) 
+ 	movl	RIP-R11(%rsp),%edx		/* User %eip */
+ 	CFI_REGISTER rip,rdx
+-	RESTORE_ARGS 0,24,0,0,0,0
+-	xorq	%r8,%r8
++	RESTORE_ARGS 0,-ARG_SKIP,0,0,0,0
++	movq	EFLAGS-R11(%rsp),%r8		/* rflags */
++	movq	RSP-R11(%rsp),%rcx		/* User %esp */
+ 	xorq	%r9,%r9
+ 	xorq	%r10,%r10
+ 	xorq	%r11,%r11
+-	popfq_cfi
++	pushq_cfi %r8
+ 	/*CFI_RESTORE rflags*/
+-	popq_cfi %rcx				/* User %esp */
+-	CFI_REGISTER rsp,rcx
++	popfq_cfi
++	xorq	%r8,%r8
+ 	TRACE_IRQS_ON
+ 	ENABLE_INTERRUPTS_SYSEXIT32
+ 
+-- 
+1.8.3.2
+
