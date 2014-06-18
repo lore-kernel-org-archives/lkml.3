@@ -1,36 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354AbaFRXIh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 19:08:37 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:62844 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569AbaFRXIg (ORCPT
+	id S1753895AbaFRXJN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 19:09:13 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:47138 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753072AbaFRXJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 19:08:36 -0400
-From: Nicholas Krause <xerofoify@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: ben@decadent.org.uk, lisa@xenapiadmin.com, valentina.manea.m@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] Fixes no Null check of dev_skb_alloc in fw_download_code
-Date: Wed, 18 Jun 2014 19:08:31 -0400
-Message-Id: <1403132911-6597-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
-Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+	Wed, 18 Jun 2014 19:09:12 -0400
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, pv-drivers@vmware.com,
+        Dmitry Torokhov <dtor@vmware.com>
+Subject: [PATCH] MAINTAINERS: add entry for VMware Balloon driver
+Date: Wed, 18 Jun 2014 16:09:01 -0700
+Message-Id: <1403132941-1394-1-git-send-email-dtor@vmware.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-index 1a95d1f..1a90546 100644
---- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-+++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-@@ -61,6 +61,10 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
- 		}
+Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
+---
+ MAINTAINERS                |    6 ++++++
+ drivers/misc/vmw_balloon.c |    2 +-
+ 2 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 6c484ac..3a446e8 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -9645,6 +9645,12 @@ L:	virtualization@lists.linux-foundation.org
+ S:	Supported
+ F:	arch/x86/kernel/cpu/vmware.c
  
- 		skb  = dev_alloc_skb(frag_length + 4);
-+		if (!skb)
-+			!return rt_status;
- 		memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
- 		tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
- 		tcb_desc->queue_index = TXCMD_QUEUE;
---
++VMWARE BALLOON DRIVER
++M:	"VMware, Inc." <pv-drivers@vmware.com>
++L:	linux-kernel@vger.kernel.org
++S:	Maintained
++F:	drivers/misc/vmw_balloon.c
++
+ VMWARE VMXNET3 ETHERNET DRIVER
+ M:	Shreyas Bhatewara <sbhatewara@vmware.com>
+ M:	"VMware, Inc." <pv-drivers@vmware.com>
+diff --git a/drivers/misc/vmw_balloon.c b/drivers/misc/vmw_balloon.c
+index 2421835..1a4dc2a 100644
+--- a/drivers/misc/vmw_balloon.c
++++ b/drivers/misc/vmw_balloon.c
+@@ -17,7 +17,7 @@
+  * along with this program; if not, write to the Free Software
+  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  *
+- * Maintained by: Dmitry Torokhov <dtor@vmware.com>
++ * Maintained by: pv-drivers@vmware.com
+  */
+ 
+ /*
+-- 
+1.7.4.1
+
