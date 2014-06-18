@@ -1,103 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966420AbaFRMZI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 08:25:08 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:52880 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S966264AbaFRMZE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 08:25:04 -0400
-Date: Wed, 18 Jun 2014 14:24:38 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Chen-Yu Tsai <wens@csie.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Rob Herring <robh+dt@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Luc Verhaegen <libv@skynet.be>
-Subject: Re: [PATCH v2 16/20] mfd: sun6i-prcm: Add support for Allwinner A23
- PRCM
-Message-ID: <20140618122438.GR19730@lukather>
-References: <1403016777-15121-1-git-send-email-wens@csie.org>
- <1403016777-15121-17-git-send-email-wens@csie.org>
- <20140618082953.GO21030@lee--X1>
+	id S966503AbaFRMZW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 08:25:22 -0400
+Received: from mta-out1.inet.fi ([62.71.2.198]:44141 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966264AbaFRMZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 08:25:19 -0400
+Date: Wed, 18 Jun 2014 15:24:42 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v2 1/2] mm, thp: move invariant bug check out of loop in
+ __split_huge_page_map
+Message-ID: <20140618122442.GB5957@node.dhcp.inet.fi>
+References: <1403044679-9993-1-git-send-email-Waiman.Long@hp.com>
+ <1403044679-9993-2-git-send-email-Waiman.Long@hp.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wlFCko3yyTbBmKK8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140618082953.GO21030@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1403044679-9993-2-git-send-email-Waiman.Long@hp.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 17, 2014 at 06:37:58PM -0400, Waiman Long wrote:
+> In the __split_huge_page_map() function, the check for
+> page_mapcount(page) is invariant within the for loop. Because of the
+> fact that the macro is implemented using atomic_read(), the redundant
+> check cannot be optimized away by the compiler leading to unnecessary
+> read to the page structure.
+> 
+> This patch moves the invariant bug check out of the loop so that it
+> will be done only once. On a 3.16-rc1 based kernel, the execution
+> time of a microbenchmark that broke up 1000 transparent huge pages
+> using munmap() had an execution time of 38,245us and 38,548us with
+> and without the patch respectively. The performance gain is about 1%.
 
---wlFCko3yyTbBmKK8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+For this low difference it would be nice to average over few runs +
+stddev. It can easily can be a noise.
 
-On Wed, Jun 18, 2014 at 09:29:53AM +0100, Lee Jones wrote:
-> > The Allwinner A23 SoC has a PRCM unit like the previous A31 SoC.
-> > The differences are the AR100 clock can no longer be modified,
-> > the APB0 clock has different divisors, and some clock gates are
-> > gone.
-> >=20
-> > This patch adds a compatible with a modified subdevice list for
-> > the A23.
-> >=20
-> > Signed-off-by: Chen-Yu Tsai <wens@csie.org>
-> > ---
-> >  .../devicetree/bindings/mfd/sun6i-prcm.txt         |  2 +-
-> >  drivers/mfd/sun6i-prcm.c                           | 30 ++++++++++++++=
-++++++++
-> >  2 files changed, 31 insertions(+), 1 deletion(-)
->=20
-> The patch looks fine to me, but I'm concerned about the size of the
-> patch set and the amount of subsystems it touches.
->=20
-> I am guessing that this patch can just be taken independently though.
-> Please correct me if I'm wrong.
+> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 
-I have a bit of the same concern. We have several comments on the
-previous patches, so I'm not even sure this patch can go as is.
+But okay:
 
-It would be much easier if you (ChenYu) could introduce first a very
-basic with just the UART support, and then, as separate series,
-clocks, PRCM, MMC, and so on.
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---wlFCko3yyTbBmKK8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJToYUGAAoJEBx+YmzsjxAgFgQQAIFV39VFywpdemlvomlVoRUb
-fUY1PHfrAoAVH+mOtGjzI6XnU7z2P9JJkD4982XdvEHMPQXNBCnDB5jKWjv3syMG
-qPXPpi5iCIWNnzaJD0gJ5U4Hd2f8EoyY6yA1NyVk4xzAUjfhbmyeRxgGTgciHBrr
-ScmAqp+ZGnfW4EV+e+BrAJwf64q4AtqBIORTAWm+iYAv7Zpt6TH1tW9IZzwiXE7e
-IRb4Mx9VwLLnLxqCNeEfx4sCf9zpy5Z6j08lh+aKkNd+XywHzaZxrto+5CjsmCqv
-kSPxpfz9/H6lVBXa1PeaBkiFk/FewR+DutX5/CIgLMoHXgyZLmIEesiN+yca3FMe
-hrmHCZC18R9If5s6Aeq6p1cTiwD+atkqtYvOaZv14io7h5bXteSkO50hjHIbTM3F
-K19TYh5T6sG3YOhV2pCwsncCr3xjdUboUV20/J1oobuurEY+2BUusfWZTkRVxk2f
-rcL5IVyahKnoZJq8Mmgx6JHmuHN12U3fifCEQjVdWZ9KImVZnPO1b32TlQwLBnSo
-kelWqFLARA03boq9fNeg6z9Bqta/s6VV5HsCT96dvK3KmPsYnL52DKI9ah6zf+Ez
-Ag5IqMPGm5DlI9R7aAN9WLfEul1SAs9x8DDzD/djPFkrE9fFNdYpFA/eBwFUEB7t
-c6zjASzuBICp1Gl4NLTZ
-=tKvn
------END PGP SIGNATURE-----
-
---wlFCko3yyTbBmKK8--
+-- 
+ Kirill A. Shutemov
