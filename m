@@ -1,114 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756389AbaFRX2r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 19:28:47 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:58648 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753602AbaFRX2q convert rfc822-to-8bit (ORCPT
+	id S1756505AbaFRX2y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 19:28:54 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:56721 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755338AbaFRX2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 19:28:46 -0400
+	Wed, 18 Jun 2014 19:28:51 -0400
+Date: Wed, 18 Jun 2014 16:28:48 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Ian Kent <raven@themaw.net>,
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Thorsten Diehl <thorsten.diehl@de.ibm.com>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] proc/stat: convert to single_open_size()
+In-Reply-To: <1402909492-36486-2-git-send-email-heiko.carstens@de.ibm.com>
+Message-ID: <alpine.DEB.2.02.1406181623400.22789@chino.kir.corp.google.com>
+References: <1402909492-36486-1-git-send-email-heiko.carstens@de.ibm.com> <1402909492-36486-2-git-send-email-heiko.carstens@de.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAMEtUuwPug7Bbgi2ccOx4jxd2Q80AnVoiHeeBW2av=_sQMiSfg@mail.gmail.com>
-References: <20140618223457.GA31568@www.outflux.net>
-	<CAMEtUuzbPExM5dT+xDqbHtV5LZ3+E2Q0eq4xdmKWzLOZbTmuUQ@mail.gmail.com>
-	<CAGXu5jLYZ0jrFhd54aUhooLBWBUT28TQTLb41G107s=4U7ZxqA@mail.gmail.com>
-	<CAMEtUuwPug7Bbgi2ccOx4jxd2Q80AnVoiHeeBW2av=_sQMiSfg@mail.gmail.com>
-Date: Wed, 18 Jun 2014 16:28:45 -0700
-X-Google-Sender-Auth: ZnmRrdts1jaPYmUPio2N3tuHcYs
-Message-ID: <CAGXu5j+ZW9f8gW71_r5gRsEZoO_2fC3F4YXh_J1CwxRY6Vfx1Q@mail.gmail.com>
-Subject: Re: [PATCH] net: filter: fix upper BPF instruction limit
-From: Kees Cook <keescook@chromium.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Eric Dumazet <edumazet@google.com>, Chema Gonzalez <chema@google.com>,
-        Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 4:19 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Wed, Jun 18, 2014 at 3:55 PM, Kees Cook <keescook@chromium.org> wrote:
->> On Wed, Jun 18, 2014 at 3:48 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->>> On Wed, Jun 18, 2014 at 3:34 PM, Kees Cook <keescook@chromium.org> wrote:
->>>> The original checks (via sk_chk_filter) for instruction count uses ">",
->>>> not ">=", so changing this in sk_convert_filter has the potential to break
->>>> existing seccomp filters that used exactly BPF_MAXINSNS many instructions.
->>>>
->>>> Fixes: bd4cf0ed331a ("net: filter: rework/optimize internal BPF interpreter's instruction set")
->>>> Signed-off-by: Kees Cook <keescook@chromium.org>
->>>> Cc: stable@vger.kernel.org # v3.15+
->>>
->>> Acked-by: Alexei Starovoitov <ast@plumgrid.com>
->>>
->>> I wonder how did you catch this? :)
->>> Just code inspection or seccomp actually generating such programs?
->>
->> In the process of merging my seccomp thread-sync series back with
->> mainline, I got uncomfortable that I was moving filter size validation
->> around without actually testing it. When I added it, I was happy that
->> my series was correctly checking size limits, but then discovered my
->> newly added check actually failed on an earlier kernel (3.2). Tracking
->> it down found the corner case under 3.15.
->>
->> Here's the test I added to the seccomp regression tests, if you're interested:
->> https://github.com/kees/seccomp/commit/794d54a340cde70a3bdf7fe0ade1f95d160b2883
->
-> Nice. I'm assuming https://github.com/redpig/seccomp is still the main tree
-> for seccomp testsuite…
+On Mon, 16 Jun 2014, Heiko Carstens wrote:
 
-Yes. Will hasn't pulled this most recent set of changes.
+> Use seq_file's single_open_size() to preallocate a buffer that is large
+> enough to hold the whole output, instead of open coding it.
+> Also calculate the requested size using the number of online cpus instead
+> of possible cpus, since the size of the output only depends on the number
+> of online cpus.
+> 
+> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 
->
-> btw I've tried to add 'real' test to it (one generated by chrome)
->
-> +TEST(chrome_syscalls) {
-> +       static struct sock_filter filter[] = {
-> +               { 32, 240, 61, 4 },          /* 0:      ld [4] */
-> +               { 21, 1, 0, -1073741762 },   /* 1:      jeq #0xc000003e, 3, 2 */
-> +               { 5, 0, 0, 271 },            /* 2:      ja 274 */
-> +               { 32, 208, 198, 0 },         /* 3:      ld [0] */
-> +               { 69, 0, 1, 1073741824 },    /* 4:      jset
-> #0x40000000, 5, 6 */
-> +               { 6, 0, 0, 196615 },         /* 5:      ret #0x30007 */
-> +               { 53, 0, 7, 121 },           /* 6:      jge #0x79, 7, 14 */
-> +               { 53, 0, 12, 214 },          /* 7:      jge #0xd6, 8, 20 */
-> …
-> +               { 6, 0, 0, 2147418112 },     /* 272:    ret #0x7fff0000 */
-> +               { 6, 0, 0, 327681 },         /* 273:    ret #0x50001 */
-> +               { 6, 0, 0, 196610 },         /* 274:    ret #0x30002 */
-> +       };
-> ...
-> +       for (i = 0; i < MAX_SYSCALLS; i++) {
-> +               ch_pid = fork();
-> +               ASSERT_LE(0, ch_pid);
-> +
-> +               if (ch_pid == 0) {
-> +                       ret = prctl(PR_SET_SECCOMP,
-> +                              SECCOMP_MODE_FILTER, &prog);
-> +                       ASSERT_EQ(0, ret);
-> +#define MAGIC (-1ll << 2)
-> +                       err = syscall(i, MAGIC, MAGIC, MAGIC,
-> +                              MAGIC, MAGIC, MAGIC);
-> +                       syscall(__NR_exit, 0);
-> +               }
-> +               wait(&status);
-> +               if (status != expected_status[i])
-> …
->
-> but it's really x64 only and looks ugly. Do you have better ideas
-> on how to test all possible paths through auto-generated branch tree?
+Acked-by: David Rientjes <rientjes@google.com>
 
-For testing BPF application filter logic itself, I lean on the test
-suite in libseccomp, which does a ton of filter generation and
-testing. The seccomp regression tests in the github tree tend to focus
-on validating the basic behavioral elements (kill, trace, trap, etc).
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+I have no idea why the check for size > KMALLOC_MAX_SIZE was there, all 
+slab allocators will fallback to the page allocator and the slowpath will 
+return NULL.
