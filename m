@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966064AbaFRLUr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 07:20:47 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:51716 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933174AbaFRLUp (ORCPT
+	id S966169AbaFRLVk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 07:21:40 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:53495 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933954AbaFRLVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 07:20:45 -0400
+	Wed, 18 Jun 2014 07:21:38 -0400
+Date: Wed, 18 Jun 2014 12:21:32 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Maxime Coquelin <maxime.coquelin@st.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, patrice.chotard@st.com,
+        srinivas.kandagatla@gmail.com, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: stih41x: Rename stih416-b2020-revE.dts to
+ stih416-b2020e.dts
+Message-ID: <20140618112132.GE8300@lee--X1>
+References: <1403087508-6710-1-git-send-email-lee.jones@linaro.org>
+ <20140618105438.GC8300@lee--X1>
+ <53A1734D.7000606@st.com>
 MIME-Version: 1.0
-Date: Wed, 18 Jun 2014 16:50:43 +0530
-X-Google-Sender-Auth: 86Q9Z3lhridR9XBvc3VhOloyBmE
-Message-ID: <CAK5sBcEpXboRVD-KzzjBJMi+LF-jhdt_HUYEz7wkJtFAv+BLcg@mail.gmail.com>
-Subject: Build error - vmlinux.lds [Re: linux-next: Tree for Jun 18]
-From: Sachin Kamat <sachin.kamat@samsung.com>
-To: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Cc: rmk+kernel@arm.linux.org.uk, Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53A1734D.7000606@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 18 Jun 2014, Maxime Coquelin wrote:
 
-I observe the following build error while building uImage for ARM.
+> Hi Lee,
+> 
+> On 06/18/2014 12:54 PM, Lee Jones wrote:
+> >Two reasons for this rename.  Firstly, it removes the camel case
+> >convention which isn't used by any other platform and secondly it
+> >matches the naming convention for the internal kernel, which can
+> >become annoying when flipping between the two.
+> >
+> >Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
+> 
+> It will be part of the STi pull-request for 3.16 fixes.
 
-  Kernel: arch/arm/boot/Image is ready
-make[2]: *** No rule to make target
-`arch/arm/boot/compressed/vmlinux.lds', needed by
-`arch/arm/boot/compressed/vmlinux'.  Stop.
-make[1]: *** [arch/arm/boot/compressed/vmlinux] Error 2
-make: *** [uImage] Error 2
+Thanks for taking the patch. :)
 
-Regards,
-Sachin.
+Just a quick side note.  As a maintainer, if you're going to take the
+patch there's no requirement to publicly Ack it.  Just let the
+submitter know that you've applied it to your tree.
 
+I use Acks for 2 things; when a patch touches code that I maintain,
+but is going in via a different tree, or as a marker if there is some
+reason I can't apply it to my tree right away (waiting on dependencies
+etc), but equally do not wish to review the same patch twice.
 
-On Wed, Jun 18, 2014 at 9:33 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> The powerpc allyesconfig is again broken more than usual.
->
-> Changes since 20140617:
->
-> Non-merge commits (relative to Linus' tree): 868
->  1021 files changed, 24269 insertions(+), 14775 deletions(-)
->
-> ----------------------------------------------------------------------------
->
-> I have created today's linux-next tree at
-> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-> (patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
-> are tracking the linux-next tree using git, you should not use "git pull"
-> to do so as that will try to merge the new linux-next release with the
-> old one.  You should use "git fetch" and checkout or reset to the new
-> master.
->
-> You can see which trees have been included by looking in the Next/Trees
-> file in the source.  There are also quilt-import.log and merge.log files
-> in the Next directory.  Between each merge, the tree was built with
-> a ppc64_defconfig for powerpc and an allmodconfig for x86_64 and a
-> multi_v7_defconfig for arm. After the final fixups (if any), it is also
-> built with powerpc allnoconfig (32 and 64 bit), ppc44x_defconfig and
-> allyesconfig (this fails its final link) and i386, sparc, sparc64 and arm
-> defconfig.
->
-> Below is a summary of the state of the merge.
->
-> I am currently merging 219 trees (counting Linus' and 29 trees of patches
-> pending for Linus' tree).
->
-> Stats about the size of the tree over time can be seen at
-> http://neuling.org/linux-next-size.html .
->
-> Status of my local build tests will be at
-> http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-> advice about cross compilers/configs that work, we are always open to add
-> more builds.
->
-> Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
-> Gortmaker for triage and bug fixes.
->
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+> >---
+> >v1 -> v2: Appropriate change to the Makefile.
+> >---
+> >  arch/arm/boot/dts/Makefile                                       | 2 +-
+> >  arch/arm/boot/dts/{stih416-b2020-revE.dts => stih416-b2020e.dts} | 0
+> >  2 files changed, 1 insertion(+), 1 deletion(-)
+> >  rename arch/arm/boot/dts/{stih416-b2020-revE.dts => stih416-b2020e.dts} (100%)
+> >
+> >diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> >index 5986ff6..adb5ed9 100644
+> >--- a/arch/arm/boot/dts/Makefile
+> >+++ b/arch/arm/boot/dts/Makefile
+> >@@ -357,7 +357,7 @@ dtb-$(CONFIG_ARCH_STI)+= stih407-b2120.dtb \
+> >         stih415-b2020.dtb \
+> >         stih416-b2000.dtb \
+> >         stih416-b2020.dtb \
+> >-       stih416-b2020-revE.dtb
+> >+       stih416-b2020e.dtb
+> >  dtb-$(CONFIG_MACH_SUN4I) += \
+> >         sun4i-a10-a1000.dtb \
+> >         sun4i-a10-cubieboard.dtb \
+> >diff --git a/arch/arm/boot/dts/stih416-b2020-revE.dts b/arch/arm/boot/dts/stih416-b2020e.dts
+> >similarity index 100%
+> >rename from arch/arm/boot/dts/stih416-b2020-revE.dts
+> >rename to arch/arm/boot/dts/stih416-b2020e.dts
+> >
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
