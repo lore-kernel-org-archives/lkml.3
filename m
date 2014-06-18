@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965573AbaFRJKU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 05:10:20 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51657 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965516AbaFRJKQ (ORCPT
+	id S965635AbaFRJKi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 05:10:38 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45615 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965421AbaFRJKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 05:10:16 -0400
-Date: Wed, 18 Jun 2014 11:08:30 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Luc Verhaegen <libv@skynet.be>
-Subject: Re: [PATCH v2 01/20] serial: 8250_dw: Add optional reset control
- support
-Message-ID: <20140618090830.GH19730@lukather>
-References: <1403016777-15121-1-git-send-email-wens@csie.org>
- <1403016777-15121-2-git-send-email-wens@csie.org>
+	Wed, 18 Jun 2014 05:10:35 -0400
+Date: Wed, 18 Jun 2014 10:10:10 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Varka Bhadram <varkabhadram@gmail.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "alex.bluesman.smirnov@gmail.com" <alex.bluesman.smirnov@gmail.com>,
+        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
+        "linux-zigbee-devel@lists.sourceforge.net" 
+	<linux-zigbee-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Varka Bhadram <varkab@cdac.in>
+Subject: Re: [PATCH net-next v2 1/3] ieee802154: cc2520: adds driver for TI
+ CC2520 radio
+Message-ID: <20140618091010.GB26461@leverpostej>
+References: <1403068565-32224-1-git-send-email-varkab@cdac.in>
+ <1403068565-32224-2-git-send-email-varkab@cdac.in>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="o71xDhNo7p97+qVi"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403016777-15121-2-git-send-email-wens@csie.org>
+In-Reply-To: <1403068565-32224-2-git-send-email-varkab@cdac.in>
+Thread-Topic: [PATCH net-next v2 1/3] ieee802154: cc2520: adds driver for TI
+ CC2520 radio
+Accept-Language: en-GB, en-US
+Content-Language: en-US
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 18, 2014 at 06:16:03AM +0100, Varka Bhadram wrote:
+> Driver support:
+>         - Tx and Rx of IEEE-802.15.4 packets.
+>         - Energy Detection on channel.
+>         - Setting the Channel for the radio. [b/w 11 - 26 channels]
+>         - Start and Stop the radio.
+>
+> Signed-off-by: Varka Bhadram <varkab@cdac.in>
+> ---
+>  drivers/net/ieee802154/cc2520.c |  968 +++++++++++++++++++++++++++++++++++++++
+>  include/linux/spi/cc2520.h      |   26 ++
+>  2 files changed, 994 insertions(+)
+>  create mode 100644 drivers/net/ieee802154/cc2520.c
+>  create mode 100644 include/linux/spi/cc2520.h
 
---o71xDhNo7p97+qVi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[...]
 
-On Tue, Jun 17, 2014 at 10:52:38PM +0800, Chen-Yu Tsai wrote:
-> The Allwinner A31 and A23 SoCs have a reset controller
-> maintaining the UART in reset by default.
->=20
-> This patch adds optional reset support to the driver.
->=20
-> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+> +static struct cc2520_platform_data *
+> +cc2520_get_platform_data(struct spi_device *spi)
+> +{
+> +       struct cc2520_platform_data *pdata;
+> +       struct device_node __maybe_unused *np = spi->dev.of_node;
+> +       struct cc2520_private *priv = spi_get_drvdata(spi);
+> +
+> +       if (!IS_ENABLED(CONFIG_OF) || !np)
+> +               return spi->dev.platform_data;
 
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Surely "if (!np)" is good enough?
 
-Maxime
+[...]
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+> +static int cc2520_probe(struct spi_device *spi)
+> +{
+> +       struct cc2520_private *priv;
+> +       struct pinctrl *pinctrl;
+> +       struct cc2520_platform_data *pdata;
+> +       struct device_node __maybe_unused *np = spi->dev.of_node;
 
---o71xDhNo7p97+qVi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+This looks to be definitely unused rather than __maybe_unused. There are
+no other occuences of "np" in this function.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJToVcOAAoJEBx+YmzsjxAg814P/RwIShFZTzaxNxq0PkTDL4+2
-8ZwE8CBWnRrkMNKK7MUWEiwVDaBzZxHIAVWJylNvitLZmigKhK1xRqy2QVMJubo1
-19yQG4OIrItTG5VI/zzqNb8EftOOIjy197TGCoiK6t+mIQuH6QvyZOr6DUfQtN7W
-OvUbb0YceAG5B8uA5Xm8LUkM9EdD5Hug8/ctIDX+x8jQbLJ8vwlwj7po7NtC7iy1
-qnliimLEawnYw+rne6DSIvxUg4SL8T/N6pSGqQ2CEJj/ttgjK0nEszszsZzPRnMw
-WmjocIeBpofcHEjXawNua2OGI60RMu+NcDv2kLr0xSM5HS7iaadvCwQUOZybSp77
-zMo58/YpEtAlJljGTO9q+UBGbdwI3p/f4d+oyf6PoxjU1cikTL9Ct20mXCqrl/+7
-ZJ221j5IQW/sGpv8GdhimmRQQ5vjhhT50wXTbF9g83yIadb+Cb5S6R61+WswQukv
-TigDxpraoVzey5mVUm4IIyIl1J5elNKo7qf4SPBsFgeS3SVrgVK1DJKQuPB7B+9N
-x/CJfsLJZBgn4e13CBOrQK8d+Wnw0sZ5YtVyrLTsSoxxIeQVdMRRf7CWndD5asTQ
-JFhIxjAnso3f5vPdbJ7FjXp3WEIK5bb8OSWuwks4qVgj9uJof/OXyR+b1StMIwEW
-mDu01xx/+Z+aEtyoOjlZ
-=TjYS
------END PGP SIGNATURE-----
-
---o71xDhNo7p97+qVi--
+Mark.
