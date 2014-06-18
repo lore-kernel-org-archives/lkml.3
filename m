@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756628AbaFRFHI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 01:07:08 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:62001 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558AbaFRFHG (ORCPT
+	id S934014AbaFRFHW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 01:07:22 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:55630 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558AbaFRFHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 01:07:06 -0400
-Message-ID: <53A11E60.5030704@gmail.com>
-Date: Wed, 18 Jun 2014 13:06:40 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 18 Jun 2014 01:07:15 -0400
 MIME-Version: 1.0
-To: Liqin Chen <liqin.linux@gmail.com>, lennox.wu@gmail.com
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arch/score/include/asm/io.h: Add generic io map functions
- when MMU enabled
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAD=FV=W0L_D2GkeRb0+JLZAMk=2m2V3hOS4fFbXDtQHNoYxZvA@mail.gmail.com>
+References: <1402954800-28215-1-git-send-email-dianders@chromium.org>
+	<1402954800-28215-11-git-send-email-dianders@chromium.org>
+	<CAPnjgZ1+y6QYpdio9inzLTi9g4Ew7vkco_MU3GO1_gpndp3dxA@mail.gmail.com>
+	<CAD=FV=W0L_D2GkeRb0+JLZAMk=2m2V3hOS4fFbXDtQHNoYxZvA@mail.gmail.com>
+Date: Tue, 17 Jun 2014 22:07:13 -0700
+X-Google-Sender-Auth: FDIiH2qCDtdHkxBIeNTQgSbYU4M
+Message-ID: <CAPnjgZ1jEDH54Wi06Arc7J1yx6DCk5tG-OEqy1QKrCt7Au3t2A@mail.gmail.com>
+Subject: Re: [PATCH 10/10] mfd: cros_ec: ec_dev->cmd_xfer() returns number of
+ bytes received from EC
+From: Simon Glass <sjg@chromium.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Bill Richardson <wfrichar@chromium.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Mark Brown <broonie@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        lk <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-score did not implement some io map functions when MMU enabled, so need
-add generic io map functions, just like some other architectures have
-done (e.g. sparc64, s390, and mn10300), or will cause compiling issue.
+Hi Doug,
 
-The related error (allmodconfig under score):
+On 17 June 2014 21:54, Doug Anderson <dianders@chromium.org> wrote:
+> Simon,
+>
+> On Tue, Jun 17, 2014 at 8:46 PM, Simon Glass <sjg@chromium.org> wrote:
+>> Hi,
+>>
+>> On 16 June 2014 14:40, Doug Anderson <dianders@chromium.org> wrote:
+>>> From: Bill Richardson <wfrichar@chromium.org>
+>>>
+>>> When communicating with the EC, the cmd_xfer() function should return the
+>>> number of bytes it received from the EC, or negative on error.
+>>
+>> This is just for the I2C tunnel feature, right? If so, I think this
+>> should be mentioned here. It seems to be affecting ec_i2c_xfer(), not
+>> cmd_xfer().
+>
+> No, the tunnel feature is implemented just fine without this (and is
+> already landed and working).  It looks like the (not yet upstreamed)
+> ec_i2c_limited_xfer for spring returns this new value directly but I'm
+> not convinced that's technicall correct.
+>
+> Bill can correct me if I'm wrong, but I think this is primarily
+> interesting once we add in cros_ec_dev (the userspace API) which needs
+> this info.  Until that happens this patch doesn't hurt and just
+> returns some extra info.
 
-    CC      drivers/clocksource/sh_cmt.o
-  drivers/clocksource/sh_cmt.c: In function 'sh_cmt_map_memory':
-  drivers/clocksource/sh_cmt.c:932:2: error: implicit declaration of function 'ioremap_nocache' [-Werror=implicit-function-declaration]
-    cmt->mapbase = ioremap_nocache(mem->start, resource_size(mem));
-    ^
-  drivers/clocksource/sh_cmt.c:932:15: warning: assignment makes pointer from integer without a cast
-    cmt->mapbase = ioremap_nocache(mem->start, resource_size(mem));
-                 ^
-  drivers/clocksource/sh_cmt.c: In function 'sh_cmt_map_memory_legacy':
-  drivers/clocksource/sh_cmt.c:953:18: warning: assignment makes pointer from integer without a cast
-    cmt->mapbase_ch = ioremap_nocache(res->start, resource_size(res));
-                    ^
-  drivers/clocksource/sh_cmt.c:963:15: warning: assignment makes pointer from integer without a cast
-    cmt->mapbase = ioremap_nocache(res2 ? res2->start :
-                 ^
-  drivers/clocksource/sh_cmt.c:968:3: error: implicit declaration of function 'iounmap' [-Werror=implicit-function-declaration]
-     iounmap(cmt->mapbase_ch);
-     ^
-  cc1: some warnings being treated as errors
-  make[2]: *** [drivers/clocksource/sh_cmt.o] Error 1
-  make[1]: *** [drivers/clocksource] Error 2
-  make: *** [drivers] Error 2
+Agreed.
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- arch/score/include/asm/io.h | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+Reviewed-by: Simon Glass <sjg@chromium.org>
 
-diff --git a/arch/score/include/asm/io.h b/arch/score/include/asm/io.h
-index 574c8827..d67aeea 100644
---- a/arch/score/include/asm/io.h
-+++ b/arch/score/include/asm/io.h
-@@ -3,6 +3,22 @@
- 
- #include <asm-generic/io.h>
- 
-+#ifdef CONFIG_MMU
-+static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
-+{
-+	return (void __iomem *) (unsigned long)offset;
-+}
-+
-+#define __ioremap(offset, size, flags)	ioremap(offset, size)
-+
-+#define ioremap_nocache ioremap
-+#define ioremap_wc ioremap_nocache
-+
-+static inline void iounmap(void __iomem *addr)
-+{
-+}
-+#endif
-+
- #define virt_to_bus	virt_to_phys
- #define bus_to_virt	phys_to_virt
- #endif /* _ASM_SCORE_IO_H */
--- 
-1.9.2.459.g68773ac
+Regards,
+Simon
