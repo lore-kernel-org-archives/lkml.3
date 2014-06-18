@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907AbaFRTfB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 15:35:01 -0400
-Received: from mout.gmx.net ([212.227.15.19]:54658 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752892AbaFRTfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 15:35:00 -0400
-From: Heinrich Schuchardt <xypron.glpk@gmx.de>
-To: Mikael Starvik <starvik@axis.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org,
-        Heinrich Schuchardt <xypron.glpk@gmx.de>
-Subject: [PATCH 1/1] cris: sync_serial: incorrect port in error message
-Date: Wed, 18 Jun 2014 21:34:34 +0200
-Message-Id: <1403120074-27098-1-git-send-email-xypron.glpk@gmx.de>
-X-Mailer: git-send-email 2.0.0
-X-Provags-ID: V03:K0:NgQms5FIjVEdp39O/LapqVDHAx8aWu3+4cssoGQ4HDHGFL5MuD7
- N51WPOR/eCl6QJMzvjPe1IkS5tdKebEF1EkpyIrZVubIozVLeCyAQMD6Hgm/NAGYj25vIYc
- vf1ny3NiEufvRUJjgnDBMSAqZF8qlE6pe31H7mQ6BMprzCtyF9El1HRyjnlYgU34+m5bTyY
- S9/sfwyVru1fzaNc+v2mQ==
+	id S1754916AbaFRTg2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 15:36:28 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:46872 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754109AbaFRTg1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 15:36:27 -0400
+From: Paul Moore <paul@paul-moore.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Stephen Smalley <sds@tycho.nsa.gov>, Eric Paris <eparis@parisplace.org>,
+        selinux@tycho.nsa.gov, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] selinux: simple cleanup for cond_read_node()
+Date: Wed, 18 Jun 2014 15:36:22 -0400
+Message-ID: <1719649.5PAcuqR8Pm@sifl>
+User-Agent: KMail/4.13.2 (Linux/3.14.5-gentoo; KDE/4.13.2; x86_64; ; )
+In-Reply-To: <1402762742-2808-1-git-send-email-namhyung@kernel.org>
+References: <1402762742-2808-1-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The message for port 1 outputs "port 0".
+On Sunday, June 15, 2014 01:19:01 AM Namhyung Kim wrote:
+> The node->cur_state and len can be read in a single call of next_entry().
+> And setting len before reading is a dead write so can be eliminated.
+> 
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  security/selinux/ss/conditional.c | 9 ++-------
+>  1 file changed, 2 insertions(+), 7 deletions(-)
+> 
+> diff --git a/security/selinux/ss/conditional.c
+> b/security/selinux/ss/conditional.c index 377d148e7157..4766a38fae9a 100644
+> --- a/security/selinux/ss/conditional.c
+> +++ b/security/selinux/ss/conditional.c
+> @@ -402,19 +402,14 @@ static int cond_read_node(struct policydb *p, struct
+> cond_node *node, void *fp) int rc;
+>  	struct cond_expr *expr = NULL, *last = NULL;
+> 
+> -	rc = next_entry(buf, fp, sizeof(u32));
+> +	rc = next_entry(buf, fp, sizeof(buf));
 
-Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
----
- arch/cris/arch-v32/drivers/sync_serial.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This is a bit nit-picky, but how about using "sizeof(u32) * 2"?  It is more 
+consistent with the rest of the function and helps underscore that we are 
+reading two 32-bit values.
 
-diff --git a/arch/cris/arch-v32/drivers/sync_serial.c b/arch/cris/arch-v32/drivers/sync_serial.c
-index bbb806b..a289423 100644
---- a/arch/cris/arch-v32/drivers/sync_serial.c
-+++ b/arch/cris/arch-v32/drivers/sync_serial.c
-@@ -280,7 +280,7 @@ static int __init etrax_sync_serial_init(void)
- #if defined(CONFIG_ETRAX_SYNCHRONOUS_SERIAL_PORT1)
- 	if (crisv32_pinmux_alloc_fixed(pinmux_sser1)) {
- 		printk(KERN_WARNING
--			"Unable to alloc pins for synchronous serial port 0\n");
-+			"Unable to alloc pins for synchronous serial port 1\n");
- 		return -EIO;
- 	}
- 	ports[1].enabled = 1;
+Assuming you're okay with the change I can fix it up when I apply the patch.
+
+>  	if (rc)
+>  		return rc;
+> 
+>  	node->cur_state = le32_to_cpu(buf[0]);
+> 
+> -	len = 0;
+> -	rc = next_entry(buf, fp, sizeof(u32));
+> -	if (rc)
+> -		return rc;
+> -
+>  	/* expr */
+> -	len = le32_to_cpu(buf[0]);
+> +	len = le32_to_cpu(buf[1]);
+> 
+>  	for (i = 0; i < len; i++) {
+>  		rc = next_entry(buf, fp, sizeof(u32) * 2);
+
 -- 
-2.0.0
+paul moore
+www.paul-moore.com
 
