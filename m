@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159AbaFRP4M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 11:56:12 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56906 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752201AbaFRP4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752406AbaFRP4J (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 18 Jun 2014 11:56:09 -0400
-Message-ID: <53A1B677.9010909@ti.com>
-Date: Wed, 18 Jun 2014 10:55:35 -0500
-From: Nishanth Menon <nm@ti.com>
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58523 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977AbaFRP4H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 11:56:07 -0400
+Message-ID: <53A1B693.2000609@wwwdotorg.org>
+Date: Wed, 18 Jun 2014 09:56:03 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Felipe Balbi <balbi@ti.com>, Benoit Cousson <bcousson@baylibre.com>
-CC: <robh+dt@kernel.org>, <galak@codeaurora.org>,
-        Tony Lindgren <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        Rajendra Nayak <rnayak@ti.com>, <r.sricharan@ti.com>,
-        <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] arm: dts: am4372: let boards enable RTC and Watchdog
-References: <1403106200-777-1-git-send-email-balbi@ti.com> <1403106200-777-2-git-send-email-balbi@ti.com>
-In-Reply-To: <1403106200-777-2-git-send-email-balbi@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, hpa@linux.intel.com,
+        akpm@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Andrew Lunn <andrew@lunn.ch>, Michal Hocko <mhocko@suse.cz>,
+        Petr Mladek <pmladek@suse.cz>, Joe Perches <joe@perches.com>,
+        Arun KS <arunks.linux@gmail.com>, Kees Cook <keescook@chromium.org>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [RFT 1/2] printk: make dynamic kernel ring buffer alignemnt explicit
+References: <1403090065-13879-1-git-send-email-mcgrof@do-not-panic.com>
+In-Reply-To: <1403090065-13879-1-git-send-email-mcgrof@do-not-panic.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-$subject - ARM: dts:
-
-On 06/18/2014 10:43 AM, Felipe Balbi wrote:
-> by providing phandles to rtc and wdt nodes, we can
-> let boards enable rtc and wdt as necessary.
+On 06/18/2014 05:14 AM, Luis R. Rodriguez wrote:
+> From: "Luis R. Rodriguez" <mcgrof@suse.com>
 > 
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
-> ---
->  arch/arm/boot/dts/am4372.dtsi | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+> We have to consider alignment for the ring buffer both for the
+> default static size, and then also for when an dynamic allocation
+> is made when the log_buf_len=n kernel parameter is passed to set
+> the size specifically to a size larger than the default size set
+> by the architecture through CONFIG_LOG_BUF_SHIFT.
 > 
-> diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
-> index 49fa596..e3830d4 100644
-> --- a/arch/arm/boot/dts/am4372.dtsi
-> +++ b/arch/arm/boot/dts/am4372.dtsi
-> @@ -270,7 +270,7 @@
->  			ti,hwmods = "counter_32k";
->  		};
->  
-> -		rtc@44e3e000 {
-> +		rtc: rtc@44e3e000 {
->  			compatible = "ti,am4372-rtc","ti,da830-rtc";
->  			reg = <0x44e3e000 0x1000>;
->  			interrupts = <GIC_SPI 75 IRQ_TYPE_LEVEL_HIGH
-> @@ -279,7 +279,7 @@
->  			status = "disabled";
->  		};
->  
-> -		wdt@44e35000 {
-> +		wdt: wdt@44e35000 {
->  			compatible = "ti,am4372-wdt","ti,omap3-wdt";
->  			reg = <0x44e35000 0x1000>;
->  			interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_HIGH>;
-> 
-we might want to fix up any other similar nodes in dtsi as well, no?
+> The default static kernel ring buffer can be aligned properly if
+> architectures set CONFIG_LOG_BUF_SHIFT properly, we provide ranges
+> for the size though so even if CONFIG_LOG_BUF_SHIFT has a sensible
+> aligned value it can be reduced to a non aligned value. Commit
+> 6ebb017de9 by Andrew ensures the static buffer is always aligned
+> and the decision of alignment is done by the compiler by using
+> __alignof__(struct log) (curious what value caused the crash?).
 
-examples:
-cpu@0
-dispc@4832a400
+IIRC the issue was that __log_buf's type is char[] so without the
+__aligned it could have any alignment at all, e.g. 1 or 2. However,
+struct printk_log is stored in the buffer rather than just char*, and so
+if __log_buf isn't aligned to the required alignment for that structure,
+that can caused unaligned accesses to fields in the structure, which
+isn't supported on ARM in at least some cases.
 
-Might also be nice to have Fixes: to point out which commit was being
-fixed, no?
-
--- 
-Regards,
-Nishanth Menon
+As such, I think the change to setup_log_buf() in this patch makes sense
+(although I suppose in practice memblock_virt_alloc() probably has some
+minimum internal alignment that dwards LOG_ALIGN, but that's an
+implementation detail we shouldn't rely on).
