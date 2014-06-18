@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756073AbaFRUnW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 16:43:22 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:37551 "EHLO zene.cmpxchg.org"
+	id S1756105AbaFRUni (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 16:43:38 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:37544 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755564AbaFRUlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 16:41:06 -0400
+	id S1755473AbaFRUlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 16:41:05 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
         Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
         linux-mm@kvack.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [patch 07/13] mm: memcontrol: simplify move precharge function
-Date: Wed, 18 Jun 2014 16:40:39 -0400
-Message-Id: <1403124045-24361-8-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 06/13] mm: memcontrol: remove explicit OOM parameter in charge path
+Date: Wed, 18 Jun 2014 16:40:38 -0400
+Message-Id: <1403124045-24361-7-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
 References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
@@ -22,98 +22,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The move precharge function does some baroque things: it tries raw
-res_counter charging of the entire amount first, and then falls back
-to a loop of one-by-one charges, with checks for pending signals and
-cond_resched() batching.
+From: Michal Hocko <mhocko@suse.cz>
 
-Just use mem_cgroup_try_charge() without __GFP_WAIT for the first bulk
-charge attempt.  In the one-by-one loop, remove the signal check (this
-is already checked in try_charge), and simply call cond_resched()
-after every charge - it's not that expensive.
+For the page allocator, __GFP_NORETRY implies that no OOM should be
+triggered, whereas memcg has an explicit parameter to disable OOM.
+
+The only callsites that want OOM disabled are THP charges and charge
+moving.  THP already uses __GFP_NORETRY and charge moving can use it
+as well - one full reclaim cycle should be plenty.  Switch it over,
+then remove the OOM parameter.
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
 ---
- mm/memcontrol.c | 48 +++++++++++++++---------------------------------
- 1 file changed, 15 insertions(+), 33 deletions(-)
+ mm/memcontrol.c | 32 ++++++++++----------------------
+ 1 file changed, 10 insertions(+), 22 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index c765125694e2..382af03a040a 100644
+index 9c646b9b56f4..c765125694e2 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -6359,56 +6359,38 @@ static void mem_cgroup_css_free(struct cgroup_subsys_state *css)
- 
- #ifdef CONFIG_MMU
- /* Handlers for move charge at task migration. */
--#define PRECHARGE_COUNT_AT_ONCE	256
- static int mem_cgroup_do_precharge(unsigned long count)
+@@ -2555,15 +2555,13 @@ static int memcg_cpu_hotplug_callback(struct notifier_block *nb,
+  * mem_cgroup_try_charge - try charging a memcg
+  * @memcg: memcg to charge
+  * @nr_pages: number of pages to charge
+- * @oom: trigger OOM if reclaim fails
+  *
+  * Returns 0 if @memcg was charged successfully, -EINTR if the charge
+  * was bypassed to root_mem_cgroup, and -ENOMEM if the charge failed.
+  */
+ static int mem_cgroup_try_charge(struct mem_cgroup *memcg,
+ 				 gfp_t gfp_mask,
+-				 unsigned int nr_pages,
+-				 bool oom)
++				 unsigned int nr_pages)
  {
- 	int ret = 0;
--	int batch_count = PRECHARGE_COUNT_AT_ONCE;
--	struct mem_cgroup *memcg = mc.to;
+ 	unsigned int batch = max(CHARGE_BATCH, nr_pages);
+ 	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
+@@ -2647,9 +2645,6 @@ retry:
+ 	if (fatal_signal_pending(current))
+ 		goto bypass;
  
--	if (mem_cgroup_is_root(memcg)) {
-+	if (mem_cgroup_is_root(mc.to)) {
- 		mc.precharge += count;
- 		/* we don't need css_get for root */
+-	if (!oom)
+-		goto nomem;
+-
+ 	mem_cgroup_oom(mem_over_limit, gfp_mask, get_order(batch));
+ nomem:
+ 	if (!(gfp_mask & __GFP_NOFAIL))
+@@ -2675,15 +2670,14 @@ done:
+  */
+ static struct mem_cgroup *mem_cgroup_try_charge_mm(struct mm_struct *mm,
+ 				 gfp_t gfp_mask,
+-				 unsigned int nr_pages,
+-				 bool oom)
++				 unsigned int nr_pages)
+ 
+ {
+ 	struct mem_cgroup *memcg;
+ 	int ret;
+ 
+ 	memcg = get_mem_cgroup_from_mm(mm);
+-	ret = mem_cgroup_try_charge(memcg, gfp_mask, nr_pages, oom);
++	ret = mem_cgroup_try_charge(memcg, gfp_mask, nr_pages);
+ 	css_put(&memcg->css);
+ 	if (ret == -EINTR)
+ 		memcg = root_mem_cgroup;
+@@ -2900,8 +2894,7 @@ static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
+ 	if (ret)
  		return ret;
- 	}
--	/* try to charge at once */
--	if (count > 1) {
--		struct res_counter *dummy;
+ 
+-	ret = mem_cgroup_try_charge(memcg, gfp, size >> PAGE_SHIFT,
+-				    oom_gfp_allowed(gfp));
++	ret = mem_cgroup_try_charge(memcg, gfp, size >> PAGE_SHIFT);
+ 	if (ret == -EINTR)  {
+ 		/*
+ 		 * mem_cgroup_try_charge() chosed to bypass to root due to
+@@ -3650,7 +3643,6 @@ int mem_cgroup_charge_anon(struct page *page,
+ {
+ 	unsigned int nr_pages = 1;
+ 	struct mem_cgroup *memcg;
+-	bool oom = true;
+ 
+ 	if (mem_cgroup_disabled())
+ 		return 0;
+@@ -3662,14 +3654,9 @@ int mem_cgroup_charge_anon(struct page *page,
+ 	if (PageTransHuge(page)) {
+ 		nr_pages <<= compound_order(page);
+ 		VM_BUG_ON_PAGE(!PageTransHuge(page), page);
 -		/*
--		 * "memcg" cannot be under rmdir() because we've already checked
--		 * by cgroup_lock_live_cgroup() that it is not removed and we
--		 * are still under the same cgroup_mutex. So we can postpone
--		 * css_get().
+-		 * Never OOM-kill a process for a huge page.  The
+-		 * fault handler will fall back to regular pages.
 -		 */
--		if (res_counter_charge(&memcg->res, PAGE_SIZE * count, &dummy))
--			goto one_by_one;
--		if (do_swap_account && res_counter_charge(&memcg->memsw,
--						PAGE_SIZE * count, &dummy)) {
--			res_counter_uncharge(&memcg->res, PAGE_SIZE * count);
--			goto one_by_one;
--		}
-+
-+	/* Try a single bulk charge without reclaim first */
-+	ret = mem_cgroup_try_charge(mc.to, GFP_KERNEL & ~__GFP_WAIT, count);
-+	if (!ret) {
- 		mc.precharge += count;
- 		return ret;
+-		oom = false;
  	}
--one_by_one:
--	/* fall back to one by one charge */
-+
-+	/* Try charges one by one with reclaim */
- 	while (count--) {
--		if (signal_pending(current)) {
--			ret = -EINTR;
--			break;
--		}
--		if (!batch_count--) {
--			batch_count = PRECHARGE_COUNT_AT_ONCE;
--			cond_resched();
--		}
--		ret = mem_cgroup_try_charge(memcg,
-+		ret = mem_cgroup_try_charge(mc.to,
- 					    GFP_KERNEL & ~__GFP_NORETRY, 1);
-+		/*
-+		 * In case of failure, any residual charges against
-+		 * mc.to will be dropped by mem_cgroup_clear_mc()
-+		 * later on.
-+		 */
- 		if (ret)
--			/* mem_cgroup_clear_mc() will do uncharge later */
- 			return ret;
- 		mc.precharge++;
-+		cond_resched();
- 	}
--	return ret;
-+	return 0;
- }
  
- /**
+-	memcg = mem_cgroup_try_charge_mm(mm, gfp_mask, nr_pages, oom);
++	memcg = mem_cgroup_try_charge_mm(mm, gfp_mask, nr_pages);
+ 	if (!memcg)
+ 		return -ENOMEM;
+ 	__mem_cgroup_commit_charge(memcg, page, nr_pages,
+@@ -3706,7 +3693,7 @@ static int __mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+ 		memcg = try_get_mem_cgroup_from_page(page);
+ 	if (!memcg)
+ 		memcg = get_mem_cgroup_from_mm(mm);
+-	ret = mem_cgroup_try_charge(memcg, mask, 1, true);
++	ret = mem_cgroup_try_charge(memcg, mask, 1);
+ 	css_put(&memcg->css);
+ 	if (ret == -EINTR)
+ 		memcg = root_mem_cgroup;
+@@ -3733,7 +3720,7 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm, struct page *page,
+ 	if (!PageSwapCache(page)) {
+ 		struct mem_cgroup *memcg;
+ 
+-		memcg = mem_cgroup_try_charge_mm(mm, gfp_mask, 1, true);
++		memcg = mem_cgroup_try_charge_mm(mm, gfp_mask, 1);
+ 		if (!memcg)
+ 			return -ENOMEM;
+ 		*memcgp = memcg;
+@@ -3802,7 +3789,7 @@ int mem_cgroup_charge_file(struct page *page, struct mm_struct *mm,
+ 		return 0;
+ 	}
+ 
+-	memcg = mem_cgroup_try_charge_mm(mm, gfp_mask, 1, true);
++	memcg = mem_cgroup_try_charge_mm(mm, gfp_mask, 1);
+ 	if (!memcg)
+ 		return -ENOMEM;
+ 	__mem_cgroup_commit_charge(memcg, page, 1, type, false);
+@@ -6414,7 +6401,8 @@ one_by_one:
+ 			batch_count = PRECHARGE_COUNT_AT_ONCE;
+ 			cond_resched();
+ 		}
+-		ret = mem_cgroup_try_charge(memcg, GFP_KERNEL, 1, false);
++		ret = mem_cgroup_try_charge(memcg,
++					    GFP_KERNEL & ~__GFP_NORETRY, 1);
+ 		if (ret)
+ 			/* mem_cgroup_clear_mc() will do uncharge later */
+ 			return ret;
 -- 
 2.0.0
 
