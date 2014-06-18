@@ -1,81 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082AbaFRPCy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 11:02:54 -0400
-Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:44905 "EHLO
-	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751449AbaFRPAy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 11:00:54 -0400
-X-Yandex-Uniq: dac920b0-a581-4b4f-bab5-9c42c0393543
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
-To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@kernel.org, dsahern@gmail.com, stfomichev@yandex-team.ru,
-        jolsa@redhat.com, xiaoguangrong@linux.vnet.ibm.com,
-        yangds.fnst@cn.fujitsu.com, adrian.hunter@intel.com,
-        namhyung@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] perf trace: add pagefault statistics
-Date: Wed, 18 Jun 2014 18:59:22 +0400
-Message-Id: <1403103565-6388-3-git-send-email-stfomichev@yandex-team.ru>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1403103565-6388-1-git-send-email-stfomichev@yandex-team.ru>
-References: <1403103565-6388-1-git-send-email-stfomichev@yandex-team.ru>
+	id S1752648AbaFRO75 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 10:59:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32051 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752433AbaFRO7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 10:59:53 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 15/18] perf tools: Add report.queue-size config file option
+Date: Wed, 18 Jun 2014 16:58:56 +0200
+Message-Id: <1403103539-16807-16-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
+References: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
----
- tools/perf/builtin-trace.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+Adding report.queue-size config file option to setup
+the maximum allocation size for session's struct
+ordered_events_queue object.
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 6c7ae048db59..535f0b504950 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1132,6 +1132,7 @@ struct thread_trace {
- 	u64		  exit_time;
- 	bool		  entry_pending;
- 	unsigned long	  nr_events;
-+	unsigned long	  pfmaj, pfmin;
- 	char		  *entry_str;
- 	double		  runtime_ms;
- 	struct {
-@@ -1798,8 +1799,12 @@ static int trace__pgfault(struct trace *trace,
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 	struct addr_location al;
- 	char map_type = 'd';
-+	struct thread_trace *ttrace;
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/builtin-report.c      | 13 ++++++++++++-
+ tools/perf/util/ordered-events.h |  6 ++++++
+ 2 files changed, 18 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index c72cc5a..09b9d0c 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -58,17 +58,19 @@ struct report {
+ 	const char		*symbol_filter_str;
+ 	float			min_percent;
+ 	u64			nr_entries;
++	u64			queue_size;
+ 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+ };
  
- 	thread = machine__findnew_thread(trace->host, sample->pid, sample->tid);
-+	ttrace = thread__trace(thread, trace->output);
-+	if (ttrace == NULL)
-+		return -1;
- 
- 	thread__find_addr_location(thread, trace->host, cpumode, MAP__FUNCTION,
- 			      sample->ip, &al);
-@@ -1810,6 +1815,11 @@ static int trace__pgfault(struct trace *trace,
- 		evsel->attr.config == PERF_COUNT_SW_PAGE_FAULTS_MAJ ?
- 		"maj" : "min");
- 
-+	if (evsel->attr.config == PERF_COUNT_SW_PAGE_FAULTS_MAJ)
-+		ttrace->pfmaj++;
-+	else
-+		ttrace->pfmin++;
+ static int report__config(const char *var, const char *value, void *cb)
+ {
++	struct report *rep = cb;
 +
- 	if (al.sym)
- 		fprintf(trace->output, "[%s+0x%lx]",
- 			al.sym->name, al.addr - al.sym->start);
-@@ -2343,6 +2353,7 @@ static int trace__fprintf_one_thread(struct thread *thread, void *priv)
- 	printed += fprintf(fp, " %s (%d), ", thread__comm_str(thread), thread->tid);
- 	printed += fprintf(fp, "%lu events, ", ttrace->nr_events);
- 	printed += fprintf(fp, "%.1f%%", ratio);
-+	printed += fprintf(fp, ", %lu:%lu faults", ttrace->pfmaj, ttrace->pfmin);
- 	printed += fprintf(fp, ", %.3f msec\n", ttrace->runtime_ms);
- 	printed += thread__dump_stats(ttrace, trace, fp);
+ 	if (!strcmp(var, "report.group")) {
+ 		symbol_conf.event_group = perf_config_bool(var, value);
+ 		return 0;
+ 	}
+ 	if (!strcmp(var, "report.percent-limit")) {
+-		struct report *rep = cb;
+ 		rep->min_percent = strtof(value, NULL);
+ 		return 0;
+ 	}
+@@ -76,6 +78,10 @@ static int report__config(const char *var, const char *value, void *cb)
+ 		symbol_conf.cumulate_callchain = perf_config_bool(var, value);
+ 		return 0;
+ 	}
++	if (!strcmp(var, "report.queue-size")) {
++		rep->queue_size = perf_config_u64(var, value);
++		return 0;
++	}
  
+ 	return perf_default_config(var, value, cb);
+ }
+@@ -714,6 +720,11 @@ repeat:
+ 	if (session == NULL)
+ 		return -ENOMEM;
+ 
++	if (report.queue_size) {
++		ordered_events_queue_alloc_size(&session->ordered_events,
++						report.queue_size);
++	}
++
+ 	report.session = session;
+ 
+ 	has_br_stack = perf_header__has_feat(&session->header,
+diff --git a/tools/perf/util/ordered-events.h b/tools/perf/util/ordered-events.h
+index 25ec273..04cb295 100644
+--- a/tools/perf/util/ordered-events.h
++++ b/tools/perf/util/ordered-events.h
+@@ -42,4 +42,10 @@ int ordered_events_flush(struct perf_session *s, struct perf_tool *tool,
+ 			 enum oeq_flush how);
+ void ordered_events_queue_init(struct ordered_events_queue *q);
+ void ordered_events_queue_free(struct ordered_events_queue *q);
++
++static inline void
++ordered_events_queue_alloc_size(struct ordered_events_queue *q, u64 size)
++{
++	q->max_alloc_size = size;
++}
+ #endif /* __ORDERED_EVENTS_H */
 -- 
-1.8.3.2
+1.8.3.1
 
