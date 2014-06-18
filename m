@@ -1,90 +1,378 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710AbaFRF4h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 01:56:37 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:16874 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756605AbaFRF4e (ORCPT
+	id S1756669AbaFRGMZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 02:12:25 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:63344 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756390AbaFRGMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 01:56:34 -0400
-X-AuditID: cbfee691-b7f2f6d0000040c4-7f-53a12a10eb7c
-Message-id: <53A12A0F.7040808@samsung.com>
-Date: Wed, 18 Jun 2014 14:56:31 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Cc: jic23@kernel.org, My self <ch.naveen@samsung.com>, t.figa@samsung.com,
-        Kukjin Kim <kgene.kim@samsung.com>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, sachin.kamat@linaro.org,
-        linux-iio@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCHv4 1/4] iio: adc: exynos_adc: Add exynos_adc_ops structure
- to improve readability
-References: <1403058061-24271-1-git-send-email-cw00.choi@samsung.com>
- <1403058061-24271-2-git-send-email-cw00.choi@samsung.com>
- <CAHfPSqDjthqrV0X_XXBRvQk8C-yzBmcMB91OS8gpj9Q-tyKfRQ@mail.gmail.com>
-In-reply-to: <CAHfPSqDjthqrV0X_XXBRvQk8C-yzBmcMB91OS8gpj9Q-tyKfRQ@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpileLIzCtJLcpLzFFi42JZI2JSrCugtTDYYPIGDou7zw8zWsw/co7V
-	ov/NQlaLc69WMlo8aFrFZNG74CqbxcK2JSwW8468Y7G4vGsOm8WM8/uYLJZev8hksWjbf2aL
-	CdPXsli8vTOdxaJ17xF2i5N/ehkt1s94zeIg6LFm3hpGj8t9vUweO2fdZfdYufwLm8fmFVoe
-	m1Z1snncubaHzaNvyypGj8+b5AI4o7hsUlJzMstSi/TtErgytq7/xVhwnqVi0bZL7A2Mj5m7
-	GDk5JARMJFY+PM0CYYtJXLi3nq2LkYtDSGApo8TW/x/ZYYo+dnYzQiQWMUq83HmEFSQhJPCa
-	UeJWE38XIwcHr4CWxNEF/iBhFgFViTcLL4ANZQMK739xgw3EFhUIk1g5/QpYnFdAUOLH5Htg
-	toiAkcTMBwsZQWxmgavMEo8WgNULC6RJ/N93DWrvCUaJPb9fgzVwCgRLLG2/xALRoC4xad4i
-	ZghbXmLzmrdQn+3gkGiYGw1xkIDEt8mHWEDulBCQldh0AKpEUuLgihssExjFZiE5aRaSqbOQ
-	TF3AyLyKUTS1ILmgOCm9yFSvODG3uDQvXS85P3cTIzD+T/97NnEH4/0D1ocYk4FWTmSWEk3O
-	B6aPvJJ4Q2MzIwtTE1NjI3NLM9KElcR50x8lBQkJpCeWpGanphakFsUXleakFh9iZOLglGpg
-	ZA8Iy6uQ2Wrlc8crvOTV3Z1yk+ann0takPeNY2/6qiuFE67FRG9TiglRS/78edOmoyvLfjTM
-	qO67kOlhdCb0/k1RzU0mMowPPjg9Xyp4TqJ6H9PNaYn6GsJs1U+yZljzrZhwdsYbWaG0EP7b
-	n12eOex5FMocf0iP0fznFlO/AnEpF8VaXttTSizFGYmGWsxFxYkA4J5JyRUDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPKsWRmVeSWpSXmKPExsVy+t9jAV0BrYXBBrOYLO4+P8xoMf/IOVaL
-	/jcLWS3OvVrJaPGgaRWTRe+Cq2wWC9uWsFjMO/KOxeLyrjlsFjPO72OyWHr9IpPFom3/mS0m
-	TF/LYvH2znQWi9a9R9gtTv7pZbRYP+M1i4Ogx5p5axg9Lvf1MnnsnHWX3WPl8i9sHptXaHls
-	WtXJ5nHn2h42j74tqxg9Pm+SC+CMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0
-	MFdSyEvMTbVVcvEJ0HXLzAH6RUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpI
-	WMOYsXX9L8aC8ywVi7ZdYm9gfMzcxcjJISFgIvGxs5sRwhaTuHBvPVsXIxeHkMAiRomXO4+w
-	giSEBF4zStxq4u9i5ODgFdCSOLrAHyTMIqAq8WbhBRYQmw0ovP/FDTYQW1QgTGLl9CtgcV4B
-	QYkfk++B2SICRhIzHywE28UscJVZ4tECsHphgTSJ//uuMULsPcEosef3a7AGToFgiaXtl1gg
-	GtQlJs1bxAxhy0tsXvOWeQKjwCwkO2YhKZuFpGwBI/MqRtHUguSC4qT0XEO94sTc4tK8dL3k
-	/NxNjODk8kxqB+PKBotDjAIcjEo8vBy5C4KFWBPLiitzDzFKcDArifC+Z1oYLMSbklhZlVqU
-	H19UmpNafIgxGRgEE5mlRJPzgYkvryTe0NjEzMjSyNzQwsjYnDRhJXHeA63WgUIC6Yklqdmp
-	qQWpRTBbmDg4pRoYo2+Hack/za6NmFuyhMHSN+blsf8m9szMBtYmn+6xXds0m5f7j++evGWf
-	/7i29GWwxl8N6SyOfK65Q+iw/q/duns+fA8PLnvzmltkwVLdg4ozM0s6Hz2aYrT+7IZ9oT/M
-	tEOVv6qyzd63Lq3Ii2+LjYtL/N51h/fdUfh2a/2tu+IzrmWZFM5gVGIpzkg01GIuKk4EAI38
-	9mByAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 18 Jun 2014 02:12:23 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53A12DBB.50704@roeck-us.net>
+Date: Tue, 17 Jun 2014 23:12:11 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Varka Bhadram <varkabhadram@gmail.com>, Heiko Schocher <hs@denx.de>,
+        lm-sensors@lm-sensors.org
+CC: Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH v5] hwmon: Driver for TI TMP103 temperature sensor
+References: <1403069837-15651-1-git-send-email-hs@denx.de> <53A127BB.7090802@gmail.com>
+In-Reply-To: <53A127BB.7090802@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Naveen,
-
-On 06/18/2014 02:27 PM, Naveen Krishna Ch wrote:
-> Hello Chanwoo,
-> 
-> On 18 June 2014 07:50, Chanwoo Choi <cw00.choi@samsung.com> wrote:
->> This patchset add 'exynos_adc_ops' structure which includes some functions
->> to control ADC operation according to ADC version (v1 or v2).
+On 06/17/2014 10:46 PM, Varka Bhadram wrote:
+> Hi,
+>
+> On 06/18/2014 11:07 AM, Heiko Schocher wrote:
+>> Driver for the TI TMP103.
 >>
->> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> 
-> This is a good piece of change, Thanks.
-> 
-> Reviewed-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>> The TI TMP103 is similar to the TMP102.  It differs from the TMP102
+>> by having only 8 bit registers.
+>>
+>> Signed-off-by: Heiko Schocher <hs@denx.de>
+>>
+>> ---
+>>
+>> Cc: Jean Delvare <khali@linux-fr.org>
+>> Cc: Guenter Roeck <linux@roeck-us.net>
+>> Cc: linux-kernel@vger.kernel.org
+>> Cc: devicetree@vger.kernel.org
+>> Cc: linux-doc@vger.kernel.org
+>> Cc: Mark Rutland <mark.rutland@arm.com>
+>>
+>> - change for v2:
+>>    - add comments from GuenterRoeck:
+>>      - remove Cc from commit subject
+>>      - add devicetree maintainer
+>>      - move Documentation to Documentation/hwmon/tmp103
+>>      - remove devicetree bindings from Documentation
+>>      - add compatible string to
+>>        "Documentation/devicetree/bindings/i2c/trivial-devices.txt"
+>>      - remove CamelCase
+>>      - fix Codingstyle issues
+>>      - use ATTRIBUTE_GROUPS and devm_hwmon_device_register_with_groups()
+>>      - remove unsused define TMP103_CONFIG_RD_ONLY
+>>      - restore config register when exit()
+>>      - use regmap
+>> - changes for v3:
+>>    again a lot of fantastic tips how to use regmap efficiently
+>>    from Guenter Roeck:
+>>    - get rid of "struct tmp103"
+>>    - get rid of "static const u8 tmp103_reg[]"
+>>    - get rid of mutex lock
+>>    - drop config_orig entirely
+>>    - use regmap_update_bits()
+>> - changes for v4:
+>>    - add comment from Guenter Roeck:
+>>      define TMP103_CONFIG_MASK and TMP103_CONF_SD_MASK
+>>      separately to ensure you catch all the to-be-cleared bits.
+>> - changes for v5:
+>>    add comment from Guenter Roeck:
+>>    - use "#define TMP103_CONF_SD TMP103_CONF_M1"
+>>    add comment from Mark Rutland:
+>>    - use full string for DT compatible string matching, instead of
+>>      DRIVER_NAME. Get rid complete of DRIVER_NAME define.
+>>
+>>   .../devicetree/bindings/i2c/trivial-devices.txt    |   1 +
+>>   Documentation/hwmon/tmp103                         |  28 +++
+>>   drivers/hwmon/Kconfig                              |  10 +
+>>   drivers/hwmon/Makefile                             |   1 +
+>>   drivers/hwmon/tmp103.c                             | 205 +++++++++++++++++++++
+>>   5 files changed, 245 insertions(+)
+>>   create mode 100644 Documentation/hwmon/tmp103
+>>   create mode 100644 drivers/hwmon/tmp103.c
+>>
+>> diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+>> index bef86e5..fc944e0 100644
+>> --- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+>> +++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+>> @@ -83,5 +83,6 @@ stm,m41t80        M41T80 - SERIAL ACCESS RTC WITH ALARMS
+>>   taos,tsl2550        Ambient Light Sensor with SMBUS/Two Wire Serial Interface
+>>   ti,tsc2003        I2C Touch-Screen Controller
+>>   ti,tmp102        Low Power Digital Temperature Sensor with SMBUS/Two Wire Serial Interface
+>> +ti,tmp103        Low Power Digital Temperature Sensor with SMBUS/Two Wire Serial Interface
+>>   ti,tmp275        Digital Temperature Sensor
+>>   winbond,wpct301        i2c trusted platform module (TPM)
+>> diff --git a/Documentation/hwmon/tmp103 b/Documentation/hwmon/tmp103
+>> new file mode 100644
+>> index 0000000..ec00a15
+>> --- /dev/null
+>> +++ b/Documentation/hwmon/tmp103
+>> @@ -0,0 +1,28 @@
+>> +Kernel driver tmp103
+>> +====================
+>> +
+>> +Supported chips:
+>> +  * Texas Instruments TMP103
+>> +    Prefix: 'tmp103'
+>> +    Addresses scanned: none
+>> +    Product info and datasheet: http://www.ti.com/product/tmp103
+>> +
+>> +Author:
+>> +    Heiko Schocher <hs@denx.de>
+>> +
+>> +Description
+>> +-----------
+>> +
+>> +The TMP103 is a digital output temperature sensor in a four-ball
+>> +wafer chip-scale package (WCSP). The TMP103 is capable of reading
+>> +temperatures to a resolution of 1°C. The TMP103 is specified for
+>> +operation over a temperature range of –40°C to +125°C.
+>> +
+>> +Resolution: 8 Bits
+>> +Accuracy: ±1°C Typ (–10°C to +100°C)
+>> +
+>> +The driver provides the common sysfs-interface for temperatures (see
+>> +Documentation/hwmon/sysfs-interface under Temperatures).
+>> +
+>> +Please refer how to instantiate this driver:
+>> +Documentation/i2c/instantiating-devices
+>> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+>> index 08531a1..c882d4b 100644
+>> --- a/drivers/hwmon/Kconfig
+>> +++ b/drivers/hwmon/Kconfig
+>> @@ -1391,6 +1391,16 @@ config SENSORS_TMP102
+>>         This driver can also be built as a module.  If so, the module
+>>         will be called tmp102.
+>> +config SENSORS_TMP103
+>> +    tristate "Texas Instruments TMP103"
+>> +    depends on I2C
+>> +    help
+>> +      If you say yes here you get support for Texas Instruments TMP103
+>> +      sensor chips.
+>> +
+>> +      This driver can also be built as a module.  If so, the module
+>> +      will be called tmp103.
+>> +
+>>   config SENSORS_TMP401
+>>       tristate "Texas Instruments TMP401 and compatibles"
+>>       depends on I2C
+>> diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+>> index 3dc0f02..cc0df1ef 100644
+>> --- a/drivers/hwmon/Makefile
+>> +++ b/drivers/hwmon/Makefile
+>> @@ -135,6 +135,7 @@ obj-$(CONFIG_SENSORS_SMSC47M192)+= smsc47m192.o
+>>   obj-$(CONFIG_SENSORS_AMC6821)    += amc6821.o
+>>   obj-$(CONFIG_SENSORS_THMC50)    += thmc50.o
+>>   obj-$(CONFIG_SENSORS_TMP102)    += tmp102.o
+>> +obj-$(CONFIG_SENSORS_TMP103)    += tmp103.o
+>>   obj-$(CONFIG_SENSORS_TMP401)    += tmp401.o
+>>   obj-$(CONFIG_SENSORS_TMP421)    += tmp421.o
+>>   obj-$(CONFIG_SENSORS_TWL4030_MADC)+= twl4030-madc-hwmon.o
+>> diff --git a/drivers/hwmon/tmp103.c b/drivers/hwmon/tmp103.c
+>> new file mode 100644
+>> index 0000000..e69dbca
+>> --- /dev/null
+>> +++ b/drivers/hwmon/tmp103.c
+>> @@ -0,0 +1,205 @@
+>> +/*
+>> + * Texas Instruments TMP103 SMBus temperature sensor driver
+>> + * Copyright (C) 2014 Heiko Schocher <hs@denx.de>
+>> + *
+>> + * Based on:
+>> + * Texas Instruments TMP102 SMBus temperature sensor driver
+>> + *
+>> + * Copyright (C) 2010 Steven King <sfking@fdwdc.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License as published by
+>> + * the Free Software Foundation; either version 2 of the License, or
+>> + * (at your option) any later version.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + *
+>> + */
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/init.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/i2c.h>
+>> +#include <linux/hwmon.h>
+>> +#include <linux/hwmon-sysfs.h>
+>> +#include <linux/err.h>
+>> +#include <linux/mutex.h>
+>> +#include <linux/device.h>
+>> +#include <linux/jiffies.h>
+>> +#include <linux/regmap.h>
+>> +
+>> +#define TMP103_TEMP_REG        0x00
+>> +#define TMP103_CONF_REG        0x01
+>> +#define TMP103_TLOW_REG        0x02
+>> +#define TMP103_THIGH_REG    0x03
+>> +
+>> +#define TMP103_CONF_M0        0x01
+>> +#define TMP103_CONF_M1        0x02
+>> +#define TMP103_CONF_LC        0x04
+>> +#define TMP103_CONF_FL        0x08
+>> +#define TMP103_CONF_FH        0x10
+>> +#define TMP103_CONF_CR0        0x20
+>> +#define TMP103_CONF_CR1        0x40
+>> +#define TMP103_CONF_ID        0x80
+>> +#define TMP103_CONF_SD        (TMP103_CONF_M1)
+>> +#define TMP103_CONF_SD_MASK    (TMP103_CONF_M0 | TMP103_CONF_M1)
+>> +
+>> +#define TMP103_CONFIG        (TMP103_CONF_CR1 | TMP103_CONF_M1)
+>> +#define TMP103_CONFIG_MASK    (TMP103_CONF_CR0 | TMP103_CONF_CR1 | \
+>> +                 TMP103_CONF_M0 | TMP103_CONF_M1)
+>> +
+>> +static inline int tmp103_reg_to_mc(s8 val)
+>> +{
+>> +    return val * 1000;
+>> +}
+>> +
+>> +static inline u8 tmp103_mc_to_reg(int val)
+>> +{
+>> +    return DIV_ROUND_CLOSEST(val, 1000);
+>> +}
+>> +
+>> +static ssize_t tmp103_show_temp(struct device *dev,
+>> +                struct device_attribute *attr,
+>> +                char *buf)
+>> +{
+>> +    struct sensor_device_attribute *sda = to_sensor_dev_attr(attr);
+>> +    struct regmap *regmap = dev_get_drvdata(dev);
+>> +    unsigned int regval;
+>> +    int ret;
+>> +
+>> +    ret = regmap_read(regmap, sda->index, &regval);
+>> +    if (ret < 0)
+>> +        return ret;
+>> +
+>> +    return sprintf(buf, "%d\n", tmp103_reg_to_mc(regval));
+>> +}
+>> +
+>> +static ssize_t tmp103_set_temp(struct device *dev,
+>> +                   struct device_attribute *attr,
+>> +                   const char *buf, size_t count)
+>> +{
+>> +    struct sensor_device_attribute *sda = to_sensor_dev_attr(attr);
+>> +    struct regmap *regmap = dev_get_drvdata(dev);
+>> +    long val;
+>> +    int ret;
+>> +
+>> +    if (kstrtol(buf, 10, &val) < 0)
+>> +        return -EINVAL;
+>> +
+>> +    val = clamp_val(val, -55000, 127000);
+>> +    ret = regmap_write(regmap, sda->index, tmp103_mc_to_reg(val));
+>> +    return ret ? ret : count;
+>> +}
+>> +
+>> +static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, tmp103_show_temp, NULL ,
+>> +              TMP103_TEMP_REG);
+>> +
+>> +static SENSOR_DEVICE_ATTR(temp1_min, S_IWUSR | S_IRUGO, tmp103_show_temp,
+>> +              tmp103_set_temp, TMP103_TLOW_REG);
+>> +
+>> +static SENSOR_DEVICE_ATTR(temp1_max, S_IWUSR | S_IRUGO, tmp103_show_temp,
+>> +              tmp103_set_temp, TMP103_THIGH_REG);
+>> +
+>> +static struct attribute *tmp103_attrs[] = {
+>> +    &sensor_dev_attr_temp1_input.dev_attr.attr,
+>> +    &sensor_dev_attr_temp1_min.dev_attr.attr,
+>> +    &sensor_dev_attr_temp1_max.dev_attr.attr,
+>> +    NULL
+>> +};
+>> +ATTRIBUTE_GROUPS(tmp103);
+>> +
+>> +static bool tmp103_regmap_is_volatile(struct device *dev, unsigned int reg)
+>> +{
+>> +    return reg == TMP103_TEMP_REG;
+>> +}
+>> +
+>> +static struct regmap_config tmp103_regmap_config = {
+>> +    .reg_bits = 8,
+>> +    .val_bits = 8,
+>> +    .max_register = TMP103_THIGH_REG,
+>> +    .volatile_reg = tmp103_regmap_is_volatile,
+>> +};
+>> +
+>> +static int tmp103_probe(struct i2c_client *client,
+>> +            const struct i2c_device_id *id)
+>> +{
+>> +    struct device *dev = &client->dev;
+>> +    struct device *hwmon_dev;
+>> +    struct regmap *regmap;
+>> +    int ret;
+>> +
+>> +    if (!i2c_check_functionality(client->adapter,
+>> +                     I2C_FUNC_SMBUS_BYTE_DATA)) {
+>> +        dev_err(&client->dev,
+>> +            "adapter doesn't support SMBus byte transactions\n");
+>> +        return -ENODEV;
+>> +    }
+>> +
+>> +    regmap = devm_regmap_init_i2c(client, &tmp103_regmap_config);
+>> +    if (IS_ERR(regmap)) {
+>> +        dev_err(dev, "failed to allocate register map\n");
+>> +        return PTR_ERR(regmap);
+>> +    }
+>> +
+>> +    ret = regmap_update_bits(regmap, TMP103_CONF_REG, TMP103_CONFIG_MASK,
+>> +                 TMP103_CONFIG);
+>> +    if (ret < 0) {
+>> +        dev_err(&client->dev, "error writing config register\n");
+>> +        return ret;
+>> +    }
+>> +
+>> +    hwmon_dev = hwmon_device_register_with_groups(dev, client->name,
+>> +                              regmap, tmp103_groups);
+>> +    return PTR_ERR_OR_ZERO(hwmon_dev);
+>> +}
+>> +
+>> +#ifdef CONFIG_PM
+>> +static int tmp103_suspend(struct device *dev)
+>> +{
+>> +    struct regmap *regmap = dev_get_drvdata(dev);
+>> +
+>> +    return regmap_update_bits(regmap, TMP103_CONF_REG,
+>> +                  TMP103_CONF_SD_MASK, 0);
+>> +}
+>> +
+>> +static int tmp103_resume(struct device *dev)
+>> +{
+>> +    struct regmap *regmap = dev_get_drvdata(dev);
+>> +
+>> +    return regmap_update_bits(regmap, TMP103_CONF_REG,
+>> +                  TMP103_CONF_SD_MASK, TMP103_CONF_SD);
+>> +}
+>> +
+>> +static const struct dev_pm_ops tmp103_dev_pm_ops = {
+>> +    .suspend    = tmp103_suspend,
+>> +    .resume        = tmp103_resume,
+>> +};
+>> +
+>> +#define TMP103_DEV_PM_OPS (&tmp103_dev_pm_ops)
+>> +#else
+>> +#define    TMP103_DEV_PM_OPS NULL
+>> +#endif /* CONFIG_PM */
+>> +
+>> +static const struct i2c_device_id tmp103_id[] = {
+>> +    { "tmp103", 0 },
+>> +    { }
+>> +};
+>
+> In the bindings you are giving the compatible property as : ti,tmp103, but here only tmp103.
+>
+> Instead of using the i2c_device_id struct , use of_device_id struct for giving the
+> compatible property value.
+> compatble = "<manufacturer>,<model>"
+>
 
-Thanks for your review.
+No. We don't do that for other i2c drivers, and the i2c subsystem handles
+this case, so it does not sense to start that with this driver just
+for the sake of making the code more complicated than it has to be.
 
-Best Regards,
-Chanwoo Choi
+Thanks,
+Guenter
+
