@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967165AbaFRO1p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 10:27:45 -0400
-Received: from mailgw12.technion.ac.il ([132.68.225.12]:23258 "EHLO
-	mailgw12.technion.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756674AbaFROTj (ORCPT
+	id S967186AbaFRO15 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 10:27:57 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:5424 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966958AbaFRO1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 10:19:39 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtcBACOfoVOERCABjGdsb2JhbABarlABAQaZKAGBCRYPAQEBJzyEBAEFJ1IQUVcZG4gnxxuFXheFYokTBxaELQSKOaVigUU
-X-IPAS-Result: AtcBACOfoVOERCABjGdsb2JhbABarlABAQaZKAGBCRYPAQEBJzyEBAEFJ1IQUVcZG4gnxxuFXheFYokTBxaELQSKOaVigUU
-X-IronPort-AV: E=Sophos;i="5.01,501,1400014800"; 
-   d="scan'208";a="112034535"
-From: Nadav Amit <namit@cs.technion.ac.il>
-To: pbonzini@redhat.com
-Cc: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Nadav Amit <namit@cs.technion.ac.il>
-Subject: [PATCH v2 4/9] KVM: x86: emulation of dword cmov on long-mode should clear [63:32]
-Date: Wed, 18 Jun 2014 17:19:21 +0300
-Message-Id: <1403101166-23616-5-git-send-email-namit@cs.technion.ac.il>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403101166-23616-1-git-send-email-namit@cs.technion.ac.il>
-References: <539F059F.8050501@redhat.com>
- <1403101166-23616-1-git-send-email-namit@cs.technion.ac.il>
+	Wed, 18 Jun 2014 10:27:53 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 18 Jun 2014 07:18:32 -0700
+From: Mikko Perttunen <mperttunen@nvidia.com>
+To: <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>, <tj@kernel.org>,
+        <pdeschrijver@nvidia.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, <linux-ide@vger.kernel.org>,
+        Mikko Perttunen <mperttunen@nvidia.com>
+Subject: [PATCH v2 0/7] Serial ATA support for NVIDIA Tegra124
+Date: Wed, 18 Jun 2014 17:23:19 +0300
+Message-ID: <1403101406-15439-1-git-send-email-mperttunen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even if the condition of cmov is not satisfied, bits[63:32] should be cleared.
-This is clearly stated in Intel's CMOVcc documentation.  The solution is to
-reassign the destination onto itself if the condition is unsatisfied.  For that
-matter the original destination value needs to be read.
+Hi,
 
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
----
- arch/x86/kvm/emulate.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+This series adds support for the onboard AHCI-compliant Serial ATA
+controller found on Tegra124 systems-on-chip. The series depends on
+Thierry's XUSB pinctrl driver.
 
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 0183350..b354531 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -3905,7 +3905,7 @@ static const struct opcode twobyte_table[256] = {
- 	N, N,
- 	N, N, N, N, N, N, N, N,
- 	/* 0x40 - 0x4F */
--	X16(D(DstReg | SrcMem | ModRM | Mov)),
-+	X16(D(DstReg | SrcMem | ModRM)),
- 	/* 0x50 - 0x5F */
- 	N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N,
- 	/* 0x60 - 0x6F */
-@@ -4799,8 +4799,10 @@ twobyte_insn:
- 		ops->get_dr(ctxt, ctxt->modrm_reg, &ctxt->dst.val);
- 		break;
- 	case 0x40 ... 0x4f:	/* cmov */
--		ctxt->dst.val = ctxt->dst.orig_val = ctxt->src.val;
--		if (!test_cc(ctxt->b, ctxt->eflags))
-+		if (test_cc(ctxt->b, ctxt->eflags))
-+			ctxt->dst.val = ctxt->src.val;
-+		else if (ctxt->mode != X86EMUL_MODE_PROT64 ||
-+			 ctxt->op_bytes != 4)
- 			ctxt->dst.type = OP_NONE; /* no writeback */
- 		break;
- 	case 0x80 ... 0x8f: /* jnz rel, etc*/
+A branch containing the series is located at 
+	git://github.com/cyndis/linux.git
+branch ahci-rel-v2.
+
+Mikko Perttunen (7):
+  of: Add NVIDIA Tegra SATA controller binding
+  ARM: tegra: Add SATA controller to Tegra124 device tree
+  ARM: tegra: Add SATA and SATA power to Jetson TK1 device tree
+  clk: tegra: Enable hardware control of SATA PLL
+  clk: tegra: Add SATA clocks to Tegra124 initialization table
+  ata: Add support for the Tegra124 SATA controller
+  ARM: tegra: Add options for Tegra AHCI support to tegra_defconfig
+
+ .../devicetree/bindings/ata/tegra-sata.txt         |  30 ++
+ arch/arm/boot/dts/tegra124-jetson-tk1.dts          |  35 ++
+ arch/arm/boot/dts/tegra124.dtsi                    |  25 ++
+ arch/arm/configs/tegra_defconfig                   |   3 +
+ drivers/ata/Kconfig                                |   9 +
+ drivers/ata/Makefile                               |   1 +
+ drivers/ata/ahci_tegra.c                           | 448 +++++++++++++++++++++
+ drivers/clk/tegra/clk-pll.c                        |   8 +
+ drivers/clk/tegra/clk-tegra124.c                   |   2 +
+ 9 files changed, 561 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/ata/tegra-sata.txt
+ create mode 100644 drivers/ata/ahci_tegra.c
+
 -- 
-1.9.1
+1.8.1.5
 
