@@ -1,47 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605AbaFRO74 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 10:59:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46843 "EHLO mail.zytor.com"
+	id S1753165AbaFRPDs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 11:03:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64915 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752097AbaFRO7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 10:59:53 -0400
-Message-ID: <53A1A942.1090001@zytor.com>
-Date: Wed, 18 Jun 2014 07:59:14 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>, Borislav Petkov <bp@alien8.de>,
-        Qiaowei Ren <qiaowei.ren@intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 03/10] x86, mpx: add macro cpu_has_mpx
-References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com> <1403084656-27284-4-git-send-email-qiaowei.ren@intel.com> <20140618095739.GA24419@pd.tnic> <53A1A3A5.9010109@intel.com>
-In-Reply-To: <53A1A3A5.9010109@intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752588AbaFRO7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 10:59:55 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCH 14/18] perf tools: Add perf_config_u64 function
+Date: Wed, 18 Jun 2014 16:58:55 +0200
+Message-Id: <1403103539-16807-15-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
+References: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2014 07:35 AM, Dave Hansen wrote:
-> 
-> It looks like static_cpu_has() is the right thing to use instead of
-> boot_cpu_has().  But, this doesn't just obfuscate things.
-> 
-> We actually _want_ the compiler to cull code out when the config option
-> is off.  Things like do_bounds() will see code savings with _some_ kind
-> of #ifdef rather than using static_cpu_has().
-> 
-> So, we can either use the well worn, consistent with other features in
-> x86, cpu_has_$foo approach.  Or, we can roll our own macros.
-> 
+From: Jiri Olsa <jolsa@redhat.com>
 
-We could do something like:
+Adding perf_config_u64 function to be able to parse
+'llong' values out of config file.
 
-#define MPX_ENABLED (IS_ENABLED(CONFIG_X86_MPX) &&
-static_cpu_has(X86_FEATURE_MPX))
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/util/cache.h  |  1 +
+ tools/perf/util/config.c | 24 ++++++++++++++++++++++++
+ 2 files changed, 25 insertions(+)
 
-	-hpa
+diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
+index 7b176dd..5cf9e1b 100644
+--- a/tools/perf/util/cache.h
++++ b/tools/perf/util/cache.h
+@@ -22,6 +22,7 @@ typedef int (*config_fn_t)(const char *, const char *, void *);
+ extern int perf_default_config(const char *, const char *, void *);
+ extern int perf_config(config_fn_t fn, void *);
+ extern int perf_config_int(const char *, const char *);
++extern u64 perf_config_u64(const char *, const char *);
+ extern int perf_config_bool(const char *, const char *);
+ extern int config_error_nonbool(const char *);
+ extern const char *perf_config_dirname(const char *, const char *);
+diff --git a/tools/perf/util/config.c b/tools/perf/util/config.c
+index 24519e1..27ad81c 100644
+--- a/tools/perf/util/config.c
++++ b/tools/perf/util/config.c
+@@ -286,6 +286,21 @@ static int parse_unit_factor(const char *end, unsigned long *val)
+ 	return 0;
+ }
+ 
++static int perf_parse_llong(const char *value, long long *ret)
++{
++	if (value && *value) {
++		char *end;
++		long long val = strtoll(value, &end, 0);
++		unsigned long factor = 1;
++
++		if (!parse_unit_factor(end, &factor))
++			return 0;
++		*ret = val * factor;
++		return 1;
++	}
++	return 0;
++}
++
+ static int perf_parse_long(const char *value, long *ret)
+ {
+ 	if (value && *value) {
+@@ -307,6 +322,15 @@ static void die_bad_config(const char *name)
+ 	die("bad config value for '%s'", name);
+ }
+ 
++u64 perf_config_u64(const char *name, const char *value)
++{
++	long long ret = 0;
++
++	if (!perf_parse_llong(value, &ret))
++		die_bad_config(name);
++	return (u64) ret;
++}
++
+ int perf_config_int(const char *name, const char *value)
+ {
+ 	long ret = 0;
+-- 
+1.8.3.1
 
