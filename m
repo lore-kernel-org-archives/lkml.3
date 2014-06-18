@@ -1,117 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966539AbaFROJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 10:09:59 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:40071 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756815AbaFROJ4 (ORCPT
+	id S1756831AbaFROJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 10:09:58 -0400
+Received: from mail-wg0-f65.google.com ([74.125.82.65]:58874 "EHLO
+	mail-wg0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756584AbaFROJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Jun 2014 10:09:56 -0400
+Date: Wed, 18 Jun 2014 15:09:53 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Daniel Kiper <daniel.kiper@oracle.com>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org, andrew.cooper3@citrix.com,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        eshelton@pobox.com, hpa@zytor.com, ian.campbell@citrix.com,
+        jbeulich@suse.com, jeremy@goop.org, matt.fleming@intel.com,
+        mingo@redhat.com, mjg59@srcf.ucam.org,
+        stefano.stabellini@eu.citrix.com, tglx@linutronix.de
+Subject: Re: [PATCH v5 6/7] arch/x86: Remove redundant set_bit() call
+Message-ID: <20140618140953.GL24049@console-pimps.org>
+References: <1402678823-24589-1-git-send-email-daniel.kiper@oracle.com>
+ <1402678823-24589-7-git-send-email-daniel.kiper@oracle.com>
+ <20140618135637.GJ24049@console-pimps.org>
+ <20140618140101.GC4651@laptop.dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <1403023514-1352-1-git-send-email-msalter@redhat.com>
-References: <1403023514-1352-1-git-send-email-msalter@redhat.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Wed, 18 Jun 2014 09:09:35 -0500
-Message-ID: <CAL_JsqJUMMRwUn+PUiFweDOywgLCbKiWfDTLDSfJqE9oTV5gYw@mail.gmail.com>
-Subject: Re: [PATCH] arm64: support reboot and power off via EFI runtime
-To: Mark Salter <msalter@redhat.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140618140101.GC4651@laptop.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 11:45 AM, Mark Salter <msalter@redhat.com> wrote:
-> Add handlers for arm_pm_resestart and pm_power_off which use EFI
+On Wed, 18 Jun, at 10:01:01AM, Konrad Rzeszutek Wilk wrote:
+> On Wed, Jun 18, 2014 at 02:56:37PM +0100, Matt Fleming wrote:
+> > On Fri, 13 Jun, at 07:00:22PM, Daniel Kiper wrote:
+> > > Remove redundant set_bit(EFI_SYSTEM_TABLES, &efi.flags) call.
+> > > It is executed earlier in efi_systab_init().
+> > > 
+> > > Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+> > > ---
+> > >  arch/x86/platform/efi/efi.c |    2 --
+> > >  1 file changed, 2 deletions(-)
+> > 
+> > Looks good!
+> 
+> Is that an Acked-by or Reviewed-by ? :-)
 
-typo.
+Since I assumed this series would be going through my tree, I didn't
+think it mattered.
 
-> runtime services ResetSystem call to perform the functions. These
-> handlers are only installed if no handler currently exists. This
-> allows PSCI to take priority over EFI for these functions.
->
-> Signed-off-by: Mark Salter <msalter@redhat.com>
-> ---
->  arch/arm64/kernel/efi.c | 40 ++++++++++++++++++++++++++++++++++++++++
+Reviewed-by: Matt Fleming <matt.fleming@intel.com>
 
-Where's the arm32 version? Surely this could be shared with all
-arches. pm_power_off is at least architecturally independent. We
-should do the same for restart/reboot. I'm not saying do that now, but
-at least put it in the right place for that to happen.
-
-Rob
-
->  1 file changed, 40 insertions(+)
->
-> diff --git a/arch/arm64/kernel/efi.c b/arch/arm64/kernel/efi.c
-> index 14db1f6..e8c0476 100644
-> --- a/arch/arm64/kernel/efi.c
-> +++ b/arch/arm64/kernel/efi.c
-> @@ -19,11 +19,14 @@
->  #include <linux/of_fdt.h>
->  #include <linux/sched.h>
->  #include <linux/slab.h>
-> +#include <linux/reboot.h>
-> +#include <linux/pm.h>
->
->  #include <asm/cacheflush.h>
->  #include <asm/efi.h>
->  #include <asm/tlbflush.h>
->  #include <asm/mmu_context.h>
-> +#include <asm/system_misc.h>
->
->  struct efi_memory_map memmap;
->
-> @@ -467,3 +470,40 @@ static int __init arm64_enter_virtual_mode(void)
->         return 0;
->  }
->  early_initcall(arm64_enter_virtual_mode);
-> +
-> +static void efi_restart(enum reboot_mode reboot_mode, const char *cmd)
-> +{
-> +       int efi_mode;
-> +
-> +       switch (reboot_mode) {
-> +       case REBOOT_WARM:
-> +       case REBOOT_SOFT:
-> +               efi_mode = EFI_RESET_WARM;
-> +               break;
-> +       default:
-> +               efi_mode = EFI_RESET_COLD;
-> +               break;
-> +       }
-> +       efi.reset_system(efi_mode, 0, 0, NULL);
-> +}
-> +
-> +static void efi_power_off(void)
-> +{
-> +       efi.reset_system(EFI_RESET_SHUTDOWN, 0, 0, NULL);
-> +}
-> +
-> +static int __init setup_efi_reset(void)
-> +{
-> +       if (efi_enabled(EFI_RUNTIME_SERVICES)) {
-> +               /*
-> +                * If something (psci, etc) hasn't already registered
-> +                * a handler, use EFI.
-> +                */
-> +               if (arm_pm_restart == NULL)
-> +                       arm_pm_restart = efi_restart;
-> +               if (pm_power_off == NULL)
-> +                       pm_power_off = efi_power_off;
-> +       }
-> +       return 0;
-> +}
-> +pure_initcall(setup_efi_reset);
-> --
-> 1.9.0
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+-- 
+Matt Fleming, Intel Open Source Technology Center
