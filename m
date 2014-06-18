@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756206AbaFRUoe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 16:44:34 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:37529 "EHLO zene.cmpxchg.org"
+	id S1755521AbaFRUk7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 16:40:59 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:37509 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755305AbaFRUlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 16:41:01 -0400
+	id S1755305AbaFRUk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 16:40:56 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
         Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
         linux-mm@kvack.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [patch 04/13] mm: huge_memory: use GFP_TRANSHUGE when charging huge pages
-Date: Wed, 18 Jun 2014 16:40:36 -0400
-Message-Id: <1403124045-24361-5-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 01/13] mm: memcontrol: fold mem_cgroup_do_charge()
+Date: Wed, 18 Jun 2014 16:40:33 -0400
+Message-Id: <1403124045-24361-2-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
 References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org>
@@ -22,54 +22,218 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Transparent huge page charges prefer falling back to regular pages
-rather than spending a lot of time in direct reclaim.
-
-Desired reclaim behavior is usually declared in the gfp mask, but THP
-charges use GFP_KERNEL and then rely on the fact that OOM is disabled
-for THP charges, and that OOM-disabled charges don't retry reclaim.
-Needless to say, this is anything but obvious and quite error prone.
-
-Convert THP charges to use GFP_TRANSHUGE instead, which implies
-__GFP_NORETRY, to indicate the low-latency requirement.
+This function was split out because mem_cgroup_try_charge() got too
+big.  But having essentially one sequence of operations arbitrarily
+split in half is not good for reworking the code.  Fold it back in.
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 Acked-by: Michal Hocko <mhocko@suse.cz>
 ---
- mm/huge_memory.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ mm/memcontrol.c | 166 ++++++++++++++++++++++----------------------------------
+ 1 file changed, 64 insertions(+), 102 deletions(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index e60837dc785c..10cd7f2bf776 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -827,7 +827,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		count_vm_event(THP_FAULT_FALLBACK);
- 		return VM_FAULT_FALLBACK;
- 	}
--	if (unlikely(mem_cgroup_charge_anon(page, mm, GFP_KERNEL))) {
-+	if (unlikely(mem_cgroup_charge_anon(page, mm, GFP_TRANSHUGE))) {
- 		put_page(page);
- 		count_vm_event(THP_FAULT_FALLBACK);
- 		return VM_FAULT_FALLBACK;
-@@ -1101,7 +1101,7 @@ alloc:
- 		goto out;
- 	}
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index a2c7bcb0e6eb..94531df14d37 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2551,80 +2551,6 @@ static int memcg_cpu_hotplug_callback(struct notifier_block *nb,
+ 	return NOTIFY_OK;
+ }
  
--	if (unlikely(mem_cgroup_charge_anon(new_page, mm, GFP_KERNEL))) {
-+	if (unlikely(mem_cgroup_charge_anon(new_page, mm, GFP_TRANSHUGE))) {
- 		put_page(new_page);
- 		if (page) {
- 			split_huge_page(page);
-@@ -2368,7 +2368,7 @@ static void collapse_huge_page(struct mm_struct *mm,
- 	if (!new_page)
- 		return;
+-
+-/* See mem_cgroup_try_charge() for details */
+-enum {
+-	CHARGE_OK,		/* success */
+-	CHARGE_RETRY,		/* need to retry but retry is not bad */
+-	CHARGE_NOMEM,		/* we can't do more. return -ENOMEM */
+-	CHARGE_WOULDBLOCK,	/* GFP_WAIT wasn't set and no enough res. */
+-};
+-
+-static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+-				unsigned int nr_pages, unsigned int min_pages,
+-				bool invoke_oom)
+-{
+-	unsigned long csize = nr_pages * PAGE_SIZE;
+-	struct mem_cgroup *mem_over_limit;
+-	struct res_counter *fail_res;
+-	unsigned long flags = 0;
+-	int ret;
+-
+-	ret = res_counter_charge(&memcg->res, csize, &fail_res);
+-
+-	if (likely(!ret)) {
+-		if (!do_swap_account)
+-			return CHARGE_OK;
+-		ret = res_counter_charge(&memcg->memsw, csize, &fail_res);
+-		if (likely(!ret))
+-			return CHARGE_OK;
+-
+-		res_counter_uncharge(&memcg->res, csize);
+-		mem_over_limit = mem_cgroup_from_res_counter(fail_res, memsw);
+-		flags |= MEM_CGROUP_RECLAIM_NOSWAP;
+-	} else
+-		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+-	/*
+-	 * Never reclaim on behalf of optional batching, retry with a
+-	 * single page instead.
+-	 */
+-	if (nr_pages > min_pages)
+-		return CHARGE_RETRY;
+-
+-	if (!(gfp_mask & __GFP_WAIT))
+-		return CHARGE_WOULDBLOCK;
+-
+-	if (gfp_mask & __GFP_NORETRY)
+-		return CHARGE_NOMEM;
+-
+-	ret = mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
+-	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
+-		return CHARGE_RETRY;
+-	/*
+-	 * Even though the limit is exceeded at this point, reclaim
+-	 * may have been able to free some pages.  Retry the charge
+-	 * before killing the task.
+-	 *
+-	 * Only for regular pages, though: huge pages are rather
+-	 * unlikely to succeed so close to the limit, and we fall back
+-	 * to regular pages anyway in case of failure.
+-	 */
+-	if (nr_pages <= (1 << PAGE_ALLOC_COSTLY_ORDER) && ret)
+-		return CHARGE_RETRY;
+-
+-	/*
+-	 * At task move, charge accounts can be doubly counted. So, it's
+-	 * better to wait until the end of task_move if something is going on.
+-	 */
+-	if (mem_cgroup_wait_acct_move(mem_over_limit))
+-		return CHARGE_RETRY;
+-
+-	if (invoke_oom)
+-		mem_cgroup_oom(mem_over_limit, gfp_mask, get_order(csize));
+-
+-	return CHARGE_NOMEM;
+-}
+-
+ /**
+  * mem_cgroup_try_charge - try charging a memcg
+  * @memcg: memcg to charge
+@@ -2641,7 +2567,11 @@ static int mem_cgroup_try_charge(struct mem_cgroup *memcg,
+ {
+ 	unsigned int batch = max(CHARGE_BATCH, nr_pages);
+ 	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
+-	int ret;
++	struct mem_cgroup *mem_over_limit;
++	struct res_counter *fail_res;
++	unsigned long nr_reclaimed;
++	unsigned long flags = 0;
++	unsigned long long size;
  
--	if (unlikely(mem_cgroup_charge_anon(new_page, mm, GFP_KERNEL)))
-+	if (unlikely(mem_cgroup_charge_anon(new_page, mm, GFP_TRANSHUGE)))
- 		return;
+ 	if (mem_cgroup_is_root(memcg))
+ 		goto done;
+@@ -2661,44 +2591,76 @@ static int mem_cgroup_try_charge(struct mem_cgroup *memcg,
  
- 	/*
+ 	if (gfp_mask & __GFP_NOFAIL)
+ 		oom = false;
+-again:
++retry:
+ 	if (consume_stock(memcg, nr_pages))
+ 		goto done;
+ 
+-	do {
+-		bool invoke_oom = oom && !nr_oom_retries;
++	size = batch * PAGE_SIZE;
++	if (!res_counter_charge(&memcg->res, size, &fail_res)) {
++		if (!do_swap_account)
++			goto done_restock;
++		if (!res_counter_charge(&memcg->memsw, size, &fail_res))
++			goto done_restock;
++		res_counter_uncharge(&memcg->res, size);
++		mem_over_limit = mem_cgroup_from_res_counter(fail_res, memsw);
++		flags |= MEM_CGROUP_RECLAIM_NOSWAP;
++	} else
++		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+ 
+-		/* If killed, bypass charge */
+-		if (fatal_signal_pending(current))
+-			goto bypass;
++	if (batch > nr_pages) {
++		batch = nr_pages;
++		goto retry;
++	}
+ 
+-		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch,
+-					   nr_pages, invoke_oom);
+-		switch (ret) {
+-		case CHARGE_OK:
+-			break;
+-		case CHARGE_RETRY: /* not in OOM situation but retry */
+-			batch = nr_pages;
+-			goto again;
+-		case CHARGE_WOULDBLOCK: /* !__GFP_WAIT */
+-			goto nomem;
+-		case CHARGE_NOMEM: /* OOM routine works */
+-			if (!oom || invoke_oom)
+-				goto nomem;
+-			nr_oom_retries--;
+-			break;
+-		}
+-	} while (ret != CHARGE_OK);
++	if (!(gfp_mask & __GFP_WAIT))
++		goto nomem;
+ 
+-	if (batch > nr_pages)
+-		refill_stock(memcg, batch - nr_pages);
+-done:
+-	return 0;
++	if (gfp_mask & __GFP_NORETRY)
++		goto nomem;
++
++	nr_reclaimed = mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
++
++	if (mem_cgroup_margin(mem_over_limit) >= batch)
++		goto retry;
++	/*
++	 * Even though the limit is exceeded at this point, reclaim
++	 * may have been able to free some pages.  Retry the charge
++	 * before killing the task.
++	 *
++	 * Only for regular pages, though: huge pages are rather
++	 * unlikely to succeed so close to the limit, and we fall back
++	 * to regular pages anyway in case of failure.
++	 */
++	if (nr_reclaimed && batch <= (1 << PAGE_ALLOC_COSTLY_ORDER))
++		goto retry;
++	/*
++	 * At task move, charge accounts can be doubly counted. So, it's
++	 * better to wait until the end of task_move if something is going on.
++	 */
++	if (mem_cgroup_wait_acct_move(mem_over_limit))
++		goto retry;
++
++	if (fatal_signal_pending(current))
++		goto bypass;
++
++	if (!oom)
++		goto nomem;
++
++	if (nr_oom_retries--)
++		goto retry;
++
++	mem_cgroup_oom(mem_over_limit, gfp_mask, get_order(batch));
+ nomem:
+ 	if (!(gfp_mask & __GFP_NOFAIL))
+ 		return -ENOMEM;
+ bypass:
+ 	return -EINTR;
++
++done_restock:
++	if (batch > nr_pages)
++		refill_stock(memcg, batch - nr_pages);
++done:
++	return 0;
+ }
+ 
+ /**
 -- 
 2.0.0
 
