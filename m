@@ -1,115 +1,462 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354AbaFRPax (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 11:30:53 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:46579 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752169AbaFRPaw (ORCPT
+	id S1753367AbaFRPbE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 11:31:04 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:11347 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750962AbaFRPa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 11:30:52 -0400
-Date: Wed, 18 Jun 2014 11:30:51 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Allen Yu <alleny@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] PM / Runtime: let rpm_resume fail if rpm disabled
- and device suspended.
-In-Reply-To: <2420304.GaXVpqVQD5@vostro.rjw.lan>
-Message-ID: <Pine.LNX.4.44L0.1406181121220.1467-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 18 Jun 2014 11:30:59 -0400
+X-AuditID: cbfee61b-b7fbb6d000001be3-f3-53a1b0b061e1
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+To: mturquette@linaro.org, devicetree@vger.kernel.org
+Cc: wsa@the-dreams.de, broonie@kernel.org,
+        linux-arm-kernel@lists.infradead.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, galak@codeaurora.org, gregkh@linuxfoundation.org,
+        kyungmin.park@samsung.com, m.szyprowski@samsung.com,
+        t.figa@samsung.com, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: [PATCH/RFC V8 1/1] clk: Support for clock parents and rates assigned
+ from device tree
+Date: Wed, 18 Jun 2014 17:29:32 +0200
+Message-id: <1403105372-30403-2-git-send-email-s.nawrocki@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1403105372-30403-1-git-send-email-s.nawrocki@samsung.com>
+References: <1403105372-30403-1-git-send-email-s.nawrocki@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jAd2NGxYGG/z0tJj68Ambxfwj51gt
+	+t8sZLVoXryezeJs0xt2i02Pr7FadPz9wmhxedccNovGjzfZLdYeuctusfT6RSaLpxMusllM
+	mL6WxeLwm3ZWi/UzXrNYrDwxi9lBwGPNvDWMHpf7epk8Nq3qZPO4c20Pm8f+uWvYPTYvqffo
+	27KK0ePkqScsHp83yQVwRnHZpKTmZJalFunbJXBl3P54hKVgYV7FtTVn2RoYGyO6GDk5JARM
+	JJqWN7FB2GISF+6tB7OFBBYxSrT/c+1i5AKyO5gkzn3Zyw6SYBMwlOg92scIYosImEq8u/6N
+	CaSIWeA/k8S0HQfAioQFEiSefZ4BZrMIqEpsmfaMGcTmFXCTuHmhEaiZA2ibgsScSTYgYU4B
+	d4n3Z5exQCx2k1i7bhnTBEbeBYwMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCQ/qZ9A7G
+	VQ0WhxgFOBiVeHg5chcEC7EmlhVX5h5ilOBgVhLhXb18YbAQb0piZVVqUX58UWlOavEhRmkO
+	FiVx3oOt1oFCAumJJanZqakFqUUwWSYOTqkGxvXrRZLPfOD6K31qZ9rk9XFi7O991r5uWvTn
+	2JuyZbfeP3vP5ng99NEq6Sf88QsUYuW+Vh7eXHCv1+fR7YlOLldqlkdeXJaypSt/2byZqu8n
+	J+h6ie1rqZi26s7kppuvk21FYkJlurhlNKMfP71aWW59qv4J139ddZ2kqdMK/u0XYXf0qdMK
+	vqvEUpyRaKjFXFScCACeNTssZQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jun 2014, Rafael J. Wysocki wrote:
+This patch adds helper functions to configure clock parents and rates
+as specified through 'assigned-clock-parents', 'assigned-clock-rates'
+DT properties for a clock provider or clock consumer device.
+The helpers are now being called by the bus code for the platform, I2C
+and SPI busses, before the driver probing and also in the clock core
+after registration of a clock provider.
 
-> On Tuesday, June 17, 2014 10:37:03 PM Rafael J. Wysocki wrote:
-> > On Tuesday, June 17, 2014 10:26:14 PM Rafael J. Wysocki wrote:
-> > > On Tuesday, June 17, 2014 10:11:32 AM Alan Stern wrote:
-> > > > On Mon, 16 Jun 2014, Rafael J. Wysocki wrote:
-> > > > 
-> > > > > > For reasons having nothing to do with Allen's suggested change, I
-> > > > > > wonder if we shouldn't replace this line with something like:
-> > > > > > 
-> > > > > > -	else if (dev->power.disable_depth == 1 && dev->power.is_suspended
-> > > > > > +	else if (dev->power.disable > 0 && !dev->power.is_suspended
-> > > > > > 	    && dev->power.runtime_status == RPM_ACTIVE)
-> > > > > > 		retval = 1;
-> > > > > > 
-> > > > > > It seems that I've been bitten by this several times in the past.  
-> > > > > > When a device is disabled for runtime PM, and more or less permanently
-> > > > > > stuck in the RPM_ACTIVE state, calls to pm_runtime_resume() or
-> > > > > > pm_runtime_get_sync() shouldn't fail.
-> > > > > > 
-> > > > > > For example, suppose some devices of a certain type support runtime 
-> > > > > > power management but others don't.  We naturally want to call 
-> > > > > > pm_runtime_disable() for the ones that don't.  But we also want the 
-> > > > > > same driver to work for all the devices, which means that 
-> > > > > > pm_runtime_get_sync() should return success -- otherwise the driver 
-> > > > > > will think that something has gone wrong.
-> > > > > > 
-> > > > > > Rafael, what do you think?
-> > > > > 
-> > > > > That condition is there specifically to take care of the system suspend
-> > > > > code path.  It means that if runtime PM is disabled, but it only has been
-> > > > > disabled by the system suspend code path, we should treat the device as
-> > > > > "active" (ie. return 1).  That won't work after the proposed change.
-> > > > 
-> > > > Ah, yes, quite true.  Okay, suppose we replace that line with just:
-> > > > 
-> > > > +	else if (dev->power.disable > 0
-> > > > 
-> > > > > I guess drivers that want to work with devices where runtime PM may be
-> > > > > disabled can just check the return value of rpm_resume() for -EACCES?
-> > > > 
-> > > > They could, but it's extra work and it's extremely easy to forget 
-> > > > about.  I'd prefer not to do things that way.
-> > > 
-> > > In that case we need to audit all code that checks the return value of
-> > > __pm_runtime_resume() to verify that it doesn't depend on the current
-> > > behavior in any way.  It shouldn't, but still.
-> > > 
-> > > Also we probably should drop the -EACCES return value from rpm_resume() in the
-> > > same patch, because it specifically only covers the dev->power.disable > 0 case
-> > > (which BTW is consistent with the suspend side of things, so I'm totally unsure
-> > > about that being the right thing to do to be honest).
+Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+Changes since v6:
+ - use a set of separate DT properties to specify the default parent
+   clocks and rates;
+ - the clock defaults setting extended to the I2C and SPI busses.
 
-It's still the correct action with runtime PM is disabled and the 
-device's runtime_status isn't RPM_ACTIVE.
+Changes since v5:
+ - updated the DT binding description (dropped 'assigned-clocks' node);
+ - fixed detecting of null phandles (ENOENT error handling);
+ - modified of_clk_init() to account for that the clocks property may now
+   contain a clock specifier with a phandle that points to our node;
 
-> > Perhaps it'd be better to rework __pm_runtime_resume() to convert the -EACCES
-> > return value from rpm_resume() into 0 if RPM_GET_PUT is set?
-> 
-> Or do something like this?
-> 
-> ---
->  drivers/base/power/runtime.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> Index: linux-pm/drivers/base/power/runtime.c
-> ===================================================================
-> --- linux-pm.orig/drivers/base/power/runtime.c
-> +++ linux-pm/drivers/base/power/runtime.c
-> @@ -608,7 +608,8 @@ static int rpm_resume(struct device *dev
->   repeat:
->  	if (dev->power.runtime_error)
->  		retval = -EINVAL;
-> -	else if (dev->power.disable_depth == 1 && dev->power.is_suspended
-> +	else if (((dev->power.disable_depth > 0 && (rpmflags & RPM_GET_PUT))
-> +	    || (dev->power.disable_depth == 1 && dev->power.is_suspended))
->  	    && dev->power.runtime_status == RPM_ACTIVE)
->  		retval = 1;
->  	else if (dev->power.disable_depth > 0)
+Changes since v4:
+ - added note explaining how to skip setting parent and rate
+   of a clock,
+ - moved of_clk_dev_init() calls to the platform bus,
+ - added missing call to of_node_put(),
+ - dropped debug traces.
 
-So pm_runtime_resume() and pm_request_resume() would still fail, but 
-pm_runtime_get() and pm_runtime_get_sync() would work?  I'm not sure 
-about the reason for this distinction.
+Changes since v3:
+ - added detailed description of the assigned-clocks subnode,
+ - added missing 'static inline' to the function stub definition,
+ - clk-conf.c is now excluded when CONFIG_OF is not set,
+ - s/of_clk_device_setup/of_clk_device_init.
 
-Allen, what do you think?
+Changes since v2:
+ - edited in clock-bindings.txt, added note about 'assigned-clocks'
+   subnode which may be used to specify "global" clocks configuration
+   at a clock provider node,
+ - moved of_clk_device_setup() function declaration from clk-provider.h
+   to clk-conf.h so required function stubs are available when
+   CONFIG_COMMON_CLK is not enabled,
 
-Alan Stern
+Changes since v1:
+ - the helper function to parse and set assigned clock parents and
+   rates made public so it is available to clock providers to call
+   directly;
+ - dropped the platform bus notification and call of_clk_device_setup()
+   is is now called from the driver core, rather than from the
+   notification callback;
+ - s/of_clk_get_list_entry/of_clk_get_by_property.
+---
+ .../devicetree/bindings/clock/clock-bindings.txt   |   36 +++++
+ drivers/base/platform.c                            |    5 +
+ drivers/clk/Makefile                               |    3 +
+ drivers/clk/clk-conf.c                             |  143 ++++++++++++++++++++
+ drivers/clk/clk.c                                  |   12 +-
+ drivers/i2c/i2c-core.c                             |    5 +
+ drivers/spi/spi.c                                  |    5 +
+ include/linux/clk/clk-conf.h                       |   20 +++
+ 8 files changed, 227 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/clk/clk-conf.c
+ create mode 100644 include/linux/clk/clk-conf.h
+
+diff --git a/Documentation/devicetree/bindings/clock/clock-bindings.txt b/Documentation/devicetree/bindings/clock/clock-bindings.txt
+index f1578781..06fc6d5 100644
+--- a/Documentation/devicetree/bindings/clock/clock-bindings.txt
++++ b/Documentation/devicetree/bindings/clock/clock-bindings.txt
+@@ -131,3 +131,39 @@ clock signal, and a UART.
+   ("pll" and "pll-switched").
+ * The UART has its baud clock connected the external oscillator and its
+   register clock connected to the PLL clock (the "pll-switched" signal)
++
++==Assigned clock parents and rates==
++
++Some platforms may require initial configuration of default parent clocks
++and clock frequencies. Such a configuration can be specified in a device tree
++node through assigned-clocks, assigned-clock-parents and assigned-clock-rates
++properties. The assigned-clock-parents property should contain a list of parent
++clocks in form of phandle and clock specifier pairs, the assigned-clock-parents
++property the list of assigned clock frequency values - corresponding to clocks
++listed in the assigned-clocks property.
++
++To skip setting parent or rate of a clock its corresponding entry should be
++set to 0, or can be omitted if it is not followed by any non-zero entry.
++
++    uart@a000 {
++        compatible = "fsl,imx-uart";
++        reg = <0xa000 0x1000>;
++        ...
++        clocks = <&osc 0>, <&pll 1>;
++        clock-names = "baud", "register";
++
++        assigned-clocks = <&clkcon 0>, <&pll 2>;
++        assigned-clock-parents = <&pll 2>;
++        assigned-clock-rates = <0>, <460800>;
++    };
++
++In this example the <&pll 2> clock is set as parent of clock <&clkcon 0> and
++the <&pll 2> clock is assigned a frequency value of 460800 Hz.
++
++Configuring a clock's parent and rate through the device node that consumes
++the clock can be done only for clocks that have a single user. Specifying
++conflicting parent or rate configuration in multiple consumer nodes for
++a shared clock is forbidden.
++
++Configuration of common clocks, which affect multiple consumer devices can
++be similarly specified in the clock provider node.
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index 5b47210..f622733 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -23,6 +23,7 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/idr.h>
+ #include <linux/acpi.h>
++#include <linux/clk/clk-conf.h>
+
+ #include "base.h"
+ #include "power/power.h"
+@@ -486,6 +487,10 @@ static int platform_drv_probe(struct device *_dev)
+ 	struct platform_device *dev = to_platform_device(_dev);
+ 	int ret;
+
++	ret = of_clk_set_defaults(_dev->of_node, false);
++	if (ret < 0)
++		return ret;
++
+ 	acpi_dev_pm_attach(_dev, true);
+
+ 	ret = drv->probe(dev);
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index b25a1fe..7fe358c 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -8,6 +8,9 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-fixed-rate.o
+ obj-$(CONFIG_COMMON_CLK)	+= clk-gate.o
+ obj-$(CONFIG_COMMON_CLK)	+= clk-mux.o
+ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
++ifeq ($(CONFIG_OF), y)
++obj-$(CONFIG_COMMON_CLK)	+= clk-conf.o
++endif
+
+ # hardware specific clock types
+ # please keep this section sorted lexicographically by file/directory path name
+diff --git a/drivers/clk/clk-conf.c b/drivers/clk/clk-conf.c
+new file mode 100644
+index 0000000..1f73019
+--- /dev/null
++++ b/drivers/clk/clk-conf.c
+@@ -0,0 +1,143 @@
++/*
++ * Copyright (C) 2014 Samsung Electronics Co., Ltd.
++ * Sylwester Nawrocki <s.nawrocki@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/clk.h>
++#include <linux/clk-provider.h>
++#include <linux/clk/clk-conf.h>
++#include <linux/device.h>
++#include <linux/of.h>
++#include <linux/printk.h>
++#include "clk.h"
++
++static int __set_clk_parents(struct device_node *node, bool clk_supplier)
++{
++	struct of_phandle_args clkspec;
++	int index, rc, num_parents;
++	struct clk *clk, *pclk;
++
++	num_parents = of_count_phandle_with_args(node, "assigned-clock-parents",
++						 "#clock-cells");
++	if (num_parents == -EINVAL)
++		pr_err("clk: invalid value of clock-parents property at %s\n",
++		       node->full_name);
++
++	for (index = 0; index < num_parents; index++) {
++		rc = of_parse_phandle_with_args(node, "assigned-clock-parents",
++					"#clock-cells",	index, &clkspec);
++		if (rc < 0) {
++			/* skip empty (null) phandles */
++			if (rc == -ENOENT)
++				continue;
++			else
++				return rc;
++		}
++		if (clkspec.np == node && !clk_supplier)
++			return 0;
++		pclk = of_clk_get_by_clkspec(&clkspec);
++		if (IS_ERR(pclk)) {
++			pr_warn("clk: couldn't get parent clock %d for %s\n",
++				index, node->full_name);
++			return PTR_ERR(pclk);
++		}
++
++		rc = of_parse_phandle_with_args(node, "assigned-clocks",
++					"#clock-cells", index, &clkspec);
++		if (rc < 0)
++			goto err;
++		if (clkspec.np == node && !clk_supplier) {
++			rc = 0;
++			goto err;
++		}
++		clk = of_clk_get_by_clkspec(&clkspec);
++		if (IS_ERR(pclk)) {
++			pr_warn("clk: couldn't get parent clock %d for %s\n",
++				index, node->full_name);
++			rc = PTR_ERR(pclk);
++			goto err;
++		}
++
++		rc = clk_set_parent(clk, pclk);
++		if (rc < 0)
++			pr_err("clk: failed to reparent %s to %s: %d\n",
++			       __clk_get_name(clk), __clk_get_name(pclk), rc);
++		clk_put(clk);
++		clk_put(pclk);
++	}
++	return 0;
++err:
++	clk_put(pclk);
++	return rc;
++}
++
++static int __set_clk_rates(struct device_node *node, bool clk_supplier)
++{
++	struct of_phandle_args clkspec;
++	struct property	*prop;
++	const __be32 *cur;
++	int rc, index = 0;
++	struct clk *clk;
++	u32 rate;
++
++	of_property_for_each_u32(node, "assigned-clock-rates", prop, cur, rate) {
++		if (rate) {
++			rc = of_parse_phandle_with_args(node, "assigned-clocks",
++					"#clock-cells",	index, &clkspec);
++			if (rc < 0) {
++				/* skip empty (null) phandles */
++				if (rc == -ENOENT)
++					continue;
++				else
++					return rc;
++			}
++			if (clkspec.np == node && !clk_supplier)
++				return 0;
++
++			clk = of_clk_get_by_clkspec(&clkspec);
++			if (IS_ERR(clk)) {
++				pr_warn("clk: couldn't get clock %d for %s\n",
++					index, node->full_name);
++				return PTR_ERR(clk);
++			}
++
++			rc = clk_set_rate(clk, rate);
++			if (rc < 0)
++				pr_err("clk: couldn't set %s clock rate: %d\n",
++				       __clk_get_name(clk), rc);
++			clk_put(clk);
++		}
++		index++;
++	}
++	return 0;
++}
++
++/**
++ * of_clk_set_defaults() - parse and set assigned clocks configuration
++ * @node: device node to apply clock settings for
++ * @clk_supplier: true if clocks supplied by @node should also be considered
++ *
++ * This function parses 'assigned-{clocks/clock-parents/clock-rates}' properties
++ * and sets any specified clock parents and rates. The @clk_supplier argument
++ * should be set to true if @node may be also a clock supplier of any clock
++ * listed in its 'assigned-clocks' or 'assigned-clock-parents' properties.
++ * If @clk_supplier is false the function exits returnning 0 as soon as it
++ * determines the @node is also a supplier of any of the clocks.
++ */
++int of_clk_set_defaults(struct device_node *node, bool clk_supplier)
++{
++	int rc;
++
++	if (!node)
++		return 0;
++
++	rc = __set_clk_parents(node, clk_supplier);
++	if (rc < 0)
++		return rc;
++
++	return __set_clk_rates(node, clk_supplier);
++}
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 8b73ede..a77af45 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -10,6 +10,7 @@
+  */
+
+ #include <linux/clk-private.h>
++#include <linux/clk/clk-conf.h>
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+ #include <linux/spinlock.h>
+@@ -2414,6 +2415,7 @@ int of_clk_add_provider(struct device_node *np,
+ 			void *data)
+ {
+ 	struct of_clk_provider *cp;
++	int ret;
+
+ 	cp = kzalloc(sizeof(struct of_clk_provider), GFP_KERNEL);
+ 	if (!cp)
+@@ -2428,7 +2430,11 @@ int of_clk_add_provider(struct device_node *np,
+ 	mutex_unlock(&of_clk_mutex);
+ 	pr_debug("Added clock from %s\n", np->full_name);
+
+-	return 0;
++	ret = of_clk_set_defaults(np, true);
++	if (ret < 0)
++		of_clk_del_provider(np);
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(of_clk_add_provider);
+
+@@ -2605,7 +2611,10 @@ void __init of_clk_init(const struct of_device_id *matches)
+ 		list_for_each_entry_safe(clk_provider, next,
+ 					&clk_provider_list, node) {
+ 			if (force || parent_ready(clk_provider->np)) {
++
+ 				clk_provider->clk_init_cb(clk_provider->np);
++				of_clk_set_defaults(clk_provider->np, true);
++
+ 				list_del(&clk_provider->node);
+ 				kfree(clk_provider);
+ 				is_init_done = true;
+@@ -2620,7 +2629,6 @@ void __init of_clk_init(const struct of_device_id *matches)
+ 		 */
+ 		if (!is_init_done)
+ 			force = true;
+-
+ 	}
+ }
+ #endif
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index 7c7f4b8..66aa83b 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -42,6 +42,7 @@
+ #include <linux/of.h>
+ #include <linux/of_device.h>
+ #include <linux/of_irq.h>
++#include <linux/clk/clk-conf.h>
+ #include <linux/completion.h>
+ #include <linux/hardirq.h>
+ #include <linux/irqflags.h>
+@@ -274,6 +275,10 @@ static int i2c_device_probe(struct device *dev)
+ 					client->flags & I2C_CLIENT_WAKE);
+ 	dev_dbg(dev, "probe\n");
+
++	status = of_clk_set_defaults(dev->of_node, false);
++	if (status < 0)
++		return status;
++
+ 	acpi_dev_pm_attach(&client->dev, true);
+ 	status = driver->probe(client, i2c_match_id(driver->id_table, client));
+ 	if (status)
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 939edf4..8374620 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -29,6 +29,7 @@
+ #include <linux/mutex.h>
+ #include <linux/of_device.h>
+ #include <linux/of_irq.h>
++#include <linux/clk/clk-conf.h>
+ #include <linux/slab.h>
+ #include <linux/mod_devicetable.h>
+ #include <linux/spi/spi.h>
+@@ -259,6 +260,10 @@ static int spi_drv_probe(struct device *dev)
+ 	const struct spi_driver		*sdrv = to_spi_driver(dev->driver);
+ 	int ret;
+
++	ret = of_clk_set_defaults(dev->of_node, false);
++	if (ret)
++		return ret;
++
+ 	acpi_dev_pm_attach(dev, true);
+ 	ret = sdrv->probe(to_spi_device(dev));
+ 	if (ret)
+diff --git a/include/linux/clk/clk-conf.h b/include/linux/clk/clk-conf.h
+new file mode 100644
+index 0000000..f3050e1
+--- /dev/null
++++ b/include/linux/clk/clk-conf.h
+@@ -0,0 +1,20 @@
++/*
++ * Copyright (C) 2014 Samsung Electronics Co., Ltd.
++ * Sylwester Nawrocki <s.nawrocki@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++struct device_node;
++
++#if defined(CONFIG_OF) && defined(CONFIG_COMMON_CLK)
++int of_clk_set_defaults(struct device_node *node, bool clk_supplier);
++#else
++static inline int of_clk_set_defaults(struct device_node *node,
++				      bool clk_supplier)
++{
++	return 0;
++}
++#endif
+--
+1.7.9.5
 
