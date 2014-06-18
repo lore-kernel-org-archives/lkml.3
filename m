@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965552AbaFRIx4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 04:53:56 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:60177 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965132AbaFRIwF (ORCPT
+	id S965528AbaFRIxy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 04:53:54 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:50252 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964774AbaFRIwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 04:52:05 -0400
+	Wed, 18 Jun 2014 04:52:14 -0400
 From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 To: dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
         linux-kernel@vger.kernel.org, airlied@linux.ie
 Cc: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Subject: [PATCH v5 06/11] drm: sti: add TVOut driver
-Date: Wed, 18 Jun 2014 10:51:23 +0200
-Message-Id: <1403081488-13114-7-git-send-email-benjamin.gaignard@linaro.org>
+Subject: [PATCH v5 11/11] drm: sti: Add DRM driver itself
+Date: Wed, 18 Jun 2014 10:51:28 +0200
+Message-Id: <1403081488-13114-12-git-send-email-benjamin.gaignard@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403081488-13114-1-git-send-email-benjamin.gaignard@linaro.org>
 References: <1403081488-13114-1-git-send-email-benjamin.gaignard@linaro.org>
@@ -21,586 +21,710 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TVout hardware block is responsible to dispatch the data flow coming
-from compositor block to any of the output (HDMI or Analog TV).
-It control when output are start/stop and configure according the
-require flow path.
-
-TVout is the parent of HDMI and HDA drivers and bind them at runtime.
-
-Tvout is mapped on drm_encoder structure.
-One encoder is created for each of the sub-devices and link to their
-connector/bridge
+Make the link between all the hardware drivers and DRM/KMS interface.
+Create the driver itself and make it register all the sub-components.
+Use GEM CMA helpers for buffer allocation.
 
 Signed-off-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 ---
- drivers/gpu/drm/sti/Makefile    |   3 +-
- drivers/gpu/drm/sti/sti_tvout.c | 657 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 659 insertions(+), 1 deletion(-)
- create mode 100644 drivers/gpu/drm/sti/sti_tvout.c
+ drivers/gpu/drm/sti/Kconfig          |   8 +
+ drivers/gpu/drm/sti/Makefile         |   6 +-
+ drivers/gpu/drm/sti/sti_compositor.c |  16 +-
+ drivers/gpu/drm/sti/sti_drm_crtc.c   | 419 +++++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/sti/sti_drm_crtc.h   |  21 ++
+ drivers/gpu/drm/sti/sti_drm_drv.c    | 244 ++++++++++++++++++++
+ drivers/gpu/drm/sti/sti_drm_drv.h    |  29 +++
+ drivers/gpu/drm/sti/sti_drm_plane.c  | 192 ++++++++++++++++
+ drivers/gpu/drm/sti/sti_drm_plane.h  |  17 ++
+ 9 files changed, 949 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/gpu/drm/sti/sti_drm_crtc.c
+ create mode 100644 drivers/gpu/drm/sti/sti_drm_crtc.h
+ create mode 100644 drivers/gpu/drm/sti/sti_drm_drv.c
+ create mode 100644 drivers/gpu/drm/sti/sti_drm_drv.h
+ create mode 100644 drivers/gpu/drm/sti/sti_drm_plane.c
+ create mode 100644 drivers/gpu/drm/sti/sti_drm_plane.h
 
+diff --git a/drivers/gpu/drm/sti/Kconfig b/drivers/gpu/drm/sti/Kconfig
+index 1013570..bb48696 100644
+--- a/drivers/gpu/drm/sti/Kconfig
++++ b/drivers/gpu/drm/sti/Kconfig
+@@ -1,6 +1,14 @@
+ config DRM_STI
+ 	bool "DRM Support for STMicroelectronics SoC stiH41x Series"
+ 	depends on DRM && (SOC_STIH415 || SOC_STIH416 || ARCH_MULTIPLATFORM)
++	select DRM_KMS_HELPER
++	select DRM_GEM_CMA_HELPER
+ 	select DRM_KMS_CMA_HELPER
+ 	help
+ 	  Choose this option to enable DRM on STM stiH41x chipset
++
++config DRM_STI_FBDEV
++	bool "DRM frame buffer device for STMicroelectronics SoC stiH41x Serie"
++	depends on DRM_STI
++	help
++	  Choose this option to enable FBDEV on top of DRM for STM stiH41x chipset
 diff --git a/drivers/gpu/drm/sti/Makefile b/drivers/gpu/drm/sti/Makefile
-index df47171..dcc9568 100644
+index a0612cc..d104551 100644
 --- a/drivers/gpu/drm/sti/Makefile
 +++ b/drivers/gpu/drm/sti/Makefile
-@@ -4,4 +4,5 @@ obj-$(CONFIG_DRM_STI) += \
- 	sti_hdmi.o \
- 	sti_hdmi_tx3g0c55phy.o \
+@@ -7,7 +7,11 @@ obj-$(CONFIG_DRM_STI) += \
  	sti_hdmi_tx3g4c28phy.o \
--	sti_hda.o
+ 	sti_hda.o \
+ 	sti_tvout.o \
++	sti_drm_crtc.o \
++	sti_drm_plane.o \
 +	sti_hda.o \
-+	sti_tvout.o
+ 	sti_layer.o \
+ 	sti_mixer.o \
+ 	sti_gdp.o \
+-	sti_vid.o
 \ No newline at end of file
-diff --git a/drivers/gpu/drm/sti/sti_tvout.c b/drivers/gpu/drm/sti/sti_tvout.c
++	sti_vid.o \
++	sti_drm_drv.o
+diff --git a/drivers/gpu/drm/sti/sti_compositor.c b/drivers/gpu/drm/sti/sti_compositor.c
+index 46c224d..dade64f 100644
+--- a/drivers/gpu/drm/sti/sti_compositor.c
++++ b/drivers/gpu/drm/sti/sti_compositor.c
+@@ -14,6 +14,9 @@
+ #include <drm/drmP.h>
+ 
+ #include "sti_compositor.h"
++#include "sti_drm_crtc.h"
++#include "sti_drm_drv.h"
++#include "sti_drm_plane.h"
+ #include "sti_gdp.h"
+ #include "sti_vtg.h"
+ 
+@@ -87,10 +90,15 @@ static int sti_compositor_bind(struct device *dev, struct device *master,
+ 	struct sti_compositor *compo = dev_get_drvdata(dev);
+ 	struct drm_device *drm_dev = data;
+ 	unsigned int i, crtc = 0, plane = 0;
++	struct sti_drm_private *dev_priv = drm_dev->dev_private;
++
++	dev_priv->compo = compo;
+ 
+ 	for (i = 0; i < compo->nb_mixers; i++) {
+-		if (compo->mixer[i])
++		if (compo->mixer[i]) {
++			sti_drm_crtc_init(drm_dev, compo->mixer[i]);
+ 			crtc++;
++		}
+ 	}
+ 	if (crtc == 0) {
+ 		DRM_ERROR("No CRTC available\n");
+@@ -108,8 +116,11 @@ static int sti_compositor_bind(struct device *dev, struct device *master,
+ 			enum sti_layer_desc desc = compo->layer[i]->desc;
+ 			enum sti_layer_type type = desc & STI_LAYER_TYPE_MASK;
+ 
+-			if ((type == STI_GDP) && (desc != STI_GDP_0))
++			if ((type == STI_GDP) && (desc != STI_GDP_0)) {
++				sti_drm_plane_init(drm_dev, compo->layer[i],
++						(1 << crtc) - 1);
+ 				plane++;
++			}
+ 		}
+ 	}
+ 
+@@ -159,6 +170,7 @@ static int sti_compositor_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 	compo->dev = dev;
++	compo->vtg_vblank_nb.notifier_call = sti_drm_crtc_vblank_cb;
+ 
+ 	/* populate data structure depending on compatibility */
+ 	BUG_ON(!of_match_node(compositor_of_match, np)->data);
+diff --git a/drivers/gpu/drm/sti/sti_drm_crtc.c b/drivers/gpu/drm/sti/sti_drm_crtc.c
 new file mode 100644
-index 0000000..11008d9
+index 0000000..a1c617b
 --- /dev/null
-+++ b/drivers/gpu/drm/sti/sti_tvout.c
-@@ -0,0 +1,657 @@
++++ b/drivers/gpu/drm/sti/sti_drm_crtc.c
+@@ -0,0 +1,419 @@
 +/*
 + * Copyright (C) STMicroelectronics SA 2014
 + * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
-+ *          Vincent Abriou <vincent.abriou@st.com>
++ *          Fabien Dessenne <fabien.dessenne@st.com>
 + *          for STMicroelectronics.
 + * License terms:  GNU General Public License (GPL), version 2
 + */
 +
 +#include <linux/clk.h>
-+#include <linux/component.h>
-+#include <linux/module.h>
-+#include <linux/of_platform.h>
-+#include <linux/platform_device.h>
-+#include <linux/reset.h>
 +
 +#include <drm/drmP.h>
 +#include <drm/drm_crtc_helper.h>
 +
-+/* glue registers */
-+#define TVO_CSC_MAIN_M0                  0x000
-+#define TVO_CSC_MAIN_M1                  0x004
-+#define TVO_CSC_MAIN_M2                  0x008
-+#define TVO_CSC_MAIN_M3                  0x00c
-+#define TVO_CSC_MAIN_M4                  0x010
-+#define TVO_CSC_MAIN_M5                  0x014
-+#define TVO_CSC_MAIN_M6                  0x018
-+#define TVO_CSC_MAIN_M7                  0x01c
-+#define TVO_MAIN_IN_VID_FORMAT           0x030
-+#define TVO_CSC_AUX_M0                   0x100
-+#define TVO_CSC_AUX_M1                   0x104
-+#define TVO_CSC_AUX_M2                   0x108
-+#define TVO_CSC_AUX_M3                   0x10c
-+#define TVO_CSC_AUX_M4                   0x110
-+#define TVO_CSC_AUX_M5                   0x114
-+#define TVO_CSC_AUX_M6                   0x118
-+#define TVO_CSC_AUX_M7                   0x11c
-+#define TVO_AUX_IN_VID_FORMAT            0x130
-+#define TVO_VIP_HDF                      0x400
-+#define TVO_HD_SYNC_SEL                  0x418
-+#define TVO_HD_DAC_CFG_OFF               0x420
-+#define TVO_VIP_HDMI                     0x500
-+#define TVO_HDMI_FORCE_COLOR_0           0x504
-+#define TVO_HDMI_FORCE_COLOR_1           0x508
-+#define TVO_HDMI_CLIP_VALUE_B_CB         0x50c
-+#define TVO_HDMI_CLIP_VALUE_Y_G          0x510
-+#define TVO_HDMI_CLIP_VALUE_R_CR         0x514
-+#define TVO_HDMI_SYNC_SEL                0x518
-+#define TVO_HDMI_DFV_OBS                 0x540
++#include "sti_compositor.h"
++#include "sti_drm_drv.h"
++#include "sti_drm_crtc.h"
++#include "sti_vtg.h"
 +
-+#define TVO_IN_FMT_SIGNED                BIT(0)
-+#define TVO_SYNC_EXT                     BIT(4)
-+
-+#define TVO_VIP_REORDER_R_SHIFT          24
-+#define TVO_VIP_REORDER_G_SHIFT          20
-+#define TVO_VIP_REORDER_B_SHIFT          16
-+#define TVO_VIP_REORDER_MASK             0x3
-+#define TVO_VIP_REORDER_Y_G_SEL          0
-+#define TVO_VIP_REORDER_CB_B_SEL         1
-+#define TVO_VIP_REORDER_CR_R_SEL         2
-+
-+#define TVO_VIP_CLIP_SHIFT               8
-+#define TVO_VIP_CLIP_MASK                0x7
-+#define TVO_VIP_CLIP_DISABLED            0
-+#define TVO_VIP_CLIP_EAV_SAV             1
-+#define TVO_VIP_CLIP_LIMITED_RANGE_RGB_Y 2
-+#define TVO_VIP_CLIP_LIMITED_RANGE_CB_CR 3
-+#define TVO_VIP_CLIP_PROG_RANGE          4
-+
-+#define TVO_VIP_RND_SHIFT                4
-+#define TVO_VIP_RND_MASK                 0x3
-+#define TVO_VIP_RND_8BIT_ROUNDED         0
-+#define TVO_VIP_RND_10BIT_ROUNDED        1
-+#define TVO_VIP_RND_12BIT_ROUNDED        2
-+
-+#define TVO_VIP_SEL_INPUT_MASK           0xf
-+#define TVO_VIP_SEL_INPUT_MAIN           0x0
-+#define TVO_VIP_SEL_INPUT_AUX            0x8
-+#define TVO_VIP_SEL_INPUT_FORCE_COLOR    0xf
-+#define TVO_VIP_SEL_INPUT_BYPASS_MASK    0x1
-+#define TVO_VIP_SEL_INPUT_BYPASSED       1
-+
-+#define TVO_SYNC_MAIN_VTG_SET_REF        0x00
-+#define TVO_SYNC_MAIN_VTG_SET_1          0x01
-+#define TVO_SYNC_MAIN_VTG_SET_2          0x02
-+#define TVO_SYNC_MAIN_VTG_SET_3          0x03
-+#define TVO_SYNC_MAIN_VTG_SET_4          0x04
-+#define TVO_SYNC_MAIN_VTG_SET_5          0x05
-+#define TVO_SYNC_MAIN_VTG_SET_6          0x06
-+#define TVO_SYNC_AUX_VTG_SET_REF         0x10
-+#define TVO_SYNC_AUX_VTG_SET_1           0x11
-+#define TVO_SYNC_AUX_VTG_SET_2           0x12
-+#define TVO_SYNC_AUX_VTG_SET_3           0x13
-+#define TVO_SYNC_AUX_VTG_SET_4           0x14
-+#define TVO_SYNC_AUX_VTG_SET_5           0x15
-+#define TVO_SYNC_AUX_VTG_SET_6           0x16
-+
-+#define TVO_SYNC_HD_DCS_SHIFT            8
-+
-+#define ENCODER_MAIN_CRTC_MASK           BIT(0)
-+
-+/* enum listing the supported output data format */
-+enum sti_tvout_video_out_type {
-+	STI_TVOUT_VIDEO_OUT_RGB,
-+	STI_TVOUT_VIDEO_OUT_YUV,
-+};
-+
-+struct sti_tvout {
-+	struct device *dev;
-+	struct drm_device *drm_dev;
-+	void __iomem *regs;
-+	struct reset_control *reset;
-+	struct drm_encoder *hdmi;
-+	struct drm_encoder *hda;
-+};
-+
-+struct sti_tvout_encoder {
-+	struct drm_encoder encoder;
-+	struct sti_tvout *tvout;
-+};
-+
-+#define to_sti_tvout_encoder(x) \
-+	container_of(x, struct sti_tvout_encoder, encoder)
-+
-+#define to_sti_tvout(x) to_sti_tvout_encoder(x)->tvout
-+
-+/* preformatter conversion matrix */
-+static const u32 rgb_to_ycbcr_601[8] = {
-+	0xF927082E, 0x04C9FEAB, 0x01D30964, 0xFA95FD3D,
-+	0x0000082E, 0x00002000, 0x00002000, 0x00000000
-+};
-+
-+/* 709 RGB to YCbCr */
-+static const u32 rgb_to_ycbcr_709[8] = {
-+	0xF891082F, 0x0367FF40, 0x01280B71, 0xF9B1FE20,
-+	0x0000082F, 0x00002000, 0x00002000, 0x00000000
-+};
-+
-+static u32 tvout_read(struct sti_tvout *tvout, int offset)
++static void sti_drm_crtc_dpms(struct drm_crtc *crtc, int mode)
 +{
-+	return readl(tvout->regs + offset);
++	DRM_DEBUG_KMS("\n");
 +}
 +
-+static void tvout_write(struct sti_tvout *tvout, u32 val, int offset)
++static void sti_drm_crtc_prepare(struct drm_crtc *crtc)
 +{
-+	writel(val, tvout->regs + offset);
-+}
++	struct sti_mixer *mixer = to_sti_mixer(crtc);
++	struct device *dev = mixer->dev;
++	struct sti_compositor *compo = dev_get_drvdata(dev);
 +
-+/**
-+ * Set the clipping mode of a VIP
-+ *
-+ * @tvout: tvout structure
-+ * @cr_r:
-+ * @y_g:
-+ * @cb_b:
-+ */
-+static void tvout_vip_set_color_order(struct sti_tvout *tvout,
-+				      u32 cr_r, u32 y_g, u32 cb_b)
-+{
-+	u32 val = tvout_read(tvout, TVO_VIP_HDMI);
++	compo->enable = true;
 +
-+	val &= ~(TVO_VIP_REORDER_MASK << TVO_VIP_REORDER_R_SHIFT);
-+	val &= ~(TVO_VIP_REORDER_MASK << TVO_VIP_REORDER_G_SHIFT);
-+	val &= ~(TVO_VIP_REORDER_MASK << TVO_VIP_REORDER_B_SHIFT);
-+	val |= cr_r << TVO_VIP_REORDER_R_SHIFT;
-+	val |= y_g << TVO_VIP_REORDER_G_SHIFT;
-+	val |= cb_b << TVO_VIP_REORDER_B_SHIFT;
-+
-+	tvout_write(tvout, val, TVO_VIP_HDMI);
-+}
-+
-+/**
-+ * Set the clipping mode of a VIP
-+ *
-+ * @tvout: tvout structure
-+ * @range: clipping range
-+ */
-+static void tvout_vip_set_clip_mode(struct sti_tvout *tvout, u32 range)
-+{
-+	u32 val = tvout_read(tvout, TVO_VIP_HDMI);
-+
-+	val &= ~(TVO_VIP_CLIP_MASK << TVO_VIP_CLIP_SHIFT);
-+	val |= range << TVO_VIP_CLIP_SHIFT;
-+	tvout_write(tvout, val, TVO_VIP_HDMI);
-+}
-+
-+/**
-+ * Set the rounded value of a VIP
-+ *
-+ * @tvout: tvout structure
-+ * @rnd: rounded val per component
-+ */
-+static void tvout_vip_set_rnd(struct sti_tvout *tvout, u32 rnd)
-+{
-+	u32 val = tvout_read(tvout, TVO_VIP_HDMI);
-+
-+	val &= ~(TVO_VIP_RND_MASK << TVO_VIP_RND_SHIFT);
-+	val |= rnd << TVO_VIP_RND_SHIFT;
-+	tvout_write(tvout, val, TVO_VIP_HDMI);
-+}
-+
-+/**
-+ * Select the VIP input
-+ *
-+ * @tvout: tvout structure
-+ * @sel_input: selected_input (main/aux + conv)
-+ */
-+static void tvout_vip_set_sel_input(struct sti_tvout *tvout,
-+				    bool main_path,
-+				    bool sel_input_logic_inverted,
-+				    enum sti_tvout_video_out_type video_out)
-+{
-+	u32 sel_input;
-+	u32 val = tvout_read(tvout, TVO_VIP_HDMI);
-+
-+	if (main_path)
-+		sel_input = TVO_VIP_SEL_INPUT_MAIN;
-+	else
-+		sel_input = TVO_VIP_SEL_INPUT_AUX;
-+
-+	switch (video_out) {
-+	case STI_TVOUT_VIDEO_OUT_RGB:
-+		sel_input |= TVO_VIP_SEL_INPUT_BYPASSED;
-+		break;
-+	case STI_TVOUT_VIDEO_OUT_YUV:
-+		sel_input &= ~TVO_VIP_SEL_INPUT_BYPASSED;
-+		break;
-+	}
-+
-+	/* on stih407 chip the sel_input bypass mode logic is inverted */
-+	if (sel_input_logic_inverted)
-+		sel_input = sel_input ^ TVO_VIP_SEL_INPUT_BYPASS_MASK;
-+
-+	val &= ~TVO_VIP_SEL_INPUT_MASK;
-+	val |= sel_input;
-+	tvout_write(tvout, val, TVO_VIP_HDMI);
-+}
-+
-+/**
-+ * Select the input video signed or unsigned
-+ *
-+ * @tvout: tvout structure
-+ * @in_vid_signed: used video input format
-+ */
-+static void tvout_vip_set_in_vid_fmt(struct sti_tvout *tvout, u32 in_vid_fmt)
-+{
-+	u32 val = tvout_read(tvout, TVO_VIP_HDMI);
-+
-+	val &= ~TVO_IN_FMT_SIGNED;
-+	val |= in_vid_fmt;
-+	tvout_write(tvout, val, TVO_MAIN_IN_VID_FORMAT);
-+}
-+
-+/**
-+ * Start VIP block for HDMI output
-+ *
-+ * @tvout: pointer on tvout structure
-+ * @main_path: true if main path has to be used in the vip configuration
-+ *	  else aux path is used.
-+ */
-+static void tvout_hdmi_start(struct sti_tvout *tvout, bool main_path)
-+{
-+	struct device_node *node = tvout->dev->of_node;
-+	bool sel_input_logic_inverted = false;
-+
-+	dev_dbg(tvout->dev, "%s\n", __func__);
-+
-+	if (main_path) {
-+		DRM_DEBUG_DRIVER("main vip for hdmi\n");
-+		/* select the input sync for hdmi = VTG set 1 */
-+		tvout_write(tvout, TVO_SYNC_MAIN_VTG_SET_1, TVO_HDMI_SYNC_SEL);
++	/* Prepare and enable the compo IP clock */
++	if (mixer->id == STI_MIXER_MAIN) {
++		if (clk_prepare_enable(compo->clk_compo_main))
++			DRM_INFO("Failed to prepare/enable compo_main clk\n");
 +	} else {
-+		DRM_DEBUG_DRIVER("aux vip for hdmi\n");
-+		/* select the input sync for hdmi = VTG set 1 */
-+		tvout_write(tvout, TVO_SYNC_AUX_VTG_SET_1, TVO_HDMI_SYNC_SEL);
++		if (clk_prepare_enable(compo->clk_compo_aux))
++			DRM_INFO("Failed to prepare/enable compo_aux clk\n");
 +	}
-+
-+	/* set color channel order */
-+	tvout_vip_set_color_order(tvout,
-+				  TVO_VIP_REORDER_CR_R_SEL,
-+				  TVO_VIP_REORDER_Y_G_SEL,
-+				  TVO_VIP_REORDER_CB_B_SEL);
-+
-+	/* set clipping mode (Limited range RGB/Y) */
-+	tvout_vip_set_clip_mode(tvout, TVO_VIP_CLIP_LIMITED_RANGE_RGB_Y);
-+
-+	/* set round mode (rounded to 8-bit per component) */
-+	tvout_vip_set_rnd(tvout, TVO_VIP_RND_8BIT_ROUNDED);
-+
-+	if (of_device_is_compatible(node, "st,stih407-tvout")) {
-+		/* set input video format */
-+		tvout_vip_set_in_vid_fmt(tvout->regs + TVO_MAIN_IN_VID_FORMAT,
-+					 TVO_IN_FMT_SIGNED);
-+		sel_input_logic_inverted = true;
-+	}
-+
-+	/* input selection */
-+	tvout_vip_set_sel_input(tvout, main_path,
-+			sel_input_logic_inverted, STI_TVOUT_VIDEO_OUT_RGB);
 +}
 +
-+/**
-+ * Start HDF VIP and HD DAC
-+ *
-+ * @tvout: pointer on tvout structure
-+ * @main_path: true if main path has to be used in the vip configuration
-+ *	  else aux path is used.
-+ */
-+static void tvout_hda_start(struct sti_tvout *tvout, bool main_path)
++static void sti_drm_crtc_commit(struct drm_crtc *crtc)
 +{
-+	struct device_node *node = tvout->dev->of_node;
-+	bool sel_input_logic_inverted = false;
++	struct sti_mixer *mixer = to_sti_mixer(crtc);
++	struct device *dev = mixer->dev;
++	struct sti_compositor *compo = dev_get_drvdata(dev);
++	struct sti_layer *layer;
 +
-+	dev_dbg(tvout->dev, "%s\n", __func__);
-+
-+	if (!main_path) {
-+		DRM_ERROR("HD Analog on aux not implemented\n");
++	if ((!mixer || !compo)) {
++		DRM_ERROR("Can not find mixer or compositor)\n");
 +		return;
 +	}
 +
-+	DRM_DEBUG_DRIVER("main vip for HDF\n");
++	/* Find GDP0 which is reserved to the CRTC FB */
++	layer = sti_layer_find_layer(compo->layer, STI_GDP_0);
++	if (layer)
++		sti_layer_commit(layer);
++	else
++		DRM_ERROR("Can not find CRTC dedicated plane (GDP0)\n");
 +
-+	/* set color channel order */
-+	tvout_vip_set_color_order(tvout->regs + TVO_VIP_HDF,
-+				  TVO_VIP_REORDER_CR_R_SEL,
-+				  TVO_VIP_REORDER_Y_G_SEL,
-+				  TVO_VIP_REORDER_CB_B_SEL);
-+
-+	/* set clipping mode (Limited range RGB/Y) */
-+	tvout_vip_set_clip_mode(tvout->regs + TVO_VIP_HDF,
-+				TVO_VIP_CLIP_LIMITED_RANGE_CB_CR);
-+
-+	/* set round mode (rounded to 10-bit per component) */
-+	tvout_vip_set_rnd(tvout->regs + TVO_VIP_HDF, TVO_VIP_RND_10BIT_ROUNDED);
-+
-+	if (of_device_is_compatible(node, "st,stih407-tvout")) {
-+		/* set input video format */
-+		tvout_vip_set_in_vid_fmt(tvout, TVO_IN_FMT_SIGNED);
-+		sel_input_logic_inverted = true;
-+	}
-+
-+	/* Input selection */
-+	tvout_vip_set_sel_input(tvout->regs + TVO_VIP_HDF,
-+				main_path,
-+				sel_input_logic_inverted,
-+				STI_TVOUT_VIDEO_OUT_YUV);
-+
-+	/* select the input sync for HD analog = VTG set 3
-+	 * and HD DCS = VTG set 2 */
-+	tvout_write(tvout,
-+		(TVO_SYNC_MAIN_VTG_SET_2 << TVO_SYNC_HD_DCS_SHIFT)
-+		| TVO_SYNC_MAIN_VTG_SET_3,
-+		TVO_HD_SYNC_SEL);
-+
-+	/* power up HD DAC */
-+	tvout_write(tvout, 0, TVO_HD_DAC_CFG_OFF);
++	/* Enable layer on mixer */
++	if (sti_mixer_set_layer_status(mixer, layer, true))
++		DRM_ERROR("Can not enable layer at mixer\n");
 +}
 +
-+static void sti_tvout_encoder_dpms(struct drm_encoder *encoder, int mode)
++static bool sti_drm_crtc_mode_fixup(struct drm_crtc *crtc,
++				    const struct drm_display_mode *mode,
++				    struct drm_display_mode *adjusted_mode)
 +{
-+}
-+
-+static bool sti_tvout_encoder_mode_fixup(struct drm_encoder *encoder,
-+				       const struct drm_display_mode *mode,
-+				       struct drm_display_mode *adjusted_mode)
-+{
++	/* accept the provided drm_display_mode, do not fix it up */
 +	return true;
 +}
 +
-+static void sti_tvout_encoder_mode_set(struct drm_encoder *encoder,
-+				       struct drm_display_mode *mode,
-+				       struct drm_display_mode *adjusted_mode)
++static int
++sti_drm_crtc_mode_set(struct drm_crtc *crtc, struct drm_display_mode *mode,
++		      struct drm_display_mode *adjusted_mode, int x, int y,
++		      struct drm_framebuffer *old_fb)
 +{
-+}
++	struct sti_mixer *mixer = to_sti_mixer(crtc);
++	struct device *dev = mixer->dev;
++	struct sti_compositor *compo = dev_get_drvdata(dev);
++	struct sti_layer *layer;
++	struct clk *clk;
++	int rate = mode->clock * 1000;
++	int res;
++	unsigned int w, h;
 +
-+static void sti_tvout_encoder_prepare(struct drm_encoder *encoder)
-+{
-+}
++	DRM_DEBUG_KMS("CRTC:%d (%s) fb:%d mode:%d (%s)\n",
++		      crtc->base.id, sti_mixer_to_str(mixer),
++		      crtc->fb->base.id, mode->base.id, mode->name);
 +
-+static void sti_tvout_encoder_destroy(struct drm_encoder *encoder)
-+{
-+	struct sti_tvout_encoder *sti_encoder = to_sti_tvout_encoder(encoder);
++	DRM_DEBUG_KMS("%d %d %d %d %d %d %d %d %d %d 0x%x 0x%x\n",
++		      mode->vrefresh, mode->clock,
++		      mode->hdisplay,
++		      mode->hsync_start, mode->hsync_end,
++		      mode->htotal,
++		      mode->vdisplay,
++		      mode->vsync_start, mode->vsync_end,
++		      mode->vtotal, mode->type, mode->flags);
 +
-+	drm_encoder_cleanup(encoder);
-+	kfree(sti_encoder);
-+}
++	/* Set rate and prepare/enable pixel clock */
++	if (mixer->id == STI_MIXER_MAIN)
++		clk = compo->clk_pix_main;
++	else
++		clk = compo->clk_pix_aux;
 +
-+static const struct drm_encoder_funcs sti_tvout_encoder_funcs = {
-+	.destroy = sti_tvout_encoder_destroy,
-+};
-+
-+static void sti_hda_encoder_commit(struct drm_encoder *encoder)
-+{
-+	struct sti_tvout *tvout = to_sti_tvout(encoder);
-+
-+	tvout_hda_start(tvout, true);
-+}
-+
-+static void sti_hda_encoder_disable(struct drm_encoder *encoder)
-+{
-+	struct sti_tvout *tvout = to_sti_tvout(encoder);
-+
-+	/* reset VIP register */
-+	tvout_write(tvout, 0x0, TVO_VIP_HDF);
-+
-+	/* power down HD DAC */
-+	tvout_write(tvout, 1, TVO_HD_DAC_CFG_OFF);
-+}
-+
-+static const struct drm_encoder_helper_funcs sti_hda_encoder_helper_funcs = {
-+	.dpms = sti_tvout_encoder_dpms,
-+	.mode_fixup = sti_tvout_encoder_mode_fixup,
-+	.mode_set = sti_tvout_encoder_mode_set,
-+	.prepare = sti_tvout_encoder_prepare,
-+	.commit = sti_hda_encoder_commit,
-+	.disable = sti_hda_encoder_disable,
-+};
-+
-+static struct drm_encoder *sti_tvout_create_hda_encoder(struct drm_device *dev,
-+		struct sti_tvout *tvout)
-+{
-+	struct sti_tvout_encoder *encoder;
-+	struct drm_encoder *drm_encoder;
-+
-+	encoder = devm_kzalloc(tvout->dev, sizeof(*encoder), GFP_KERNEL);
-+	if (!encoder)
-+		return NULL;
-+
-+	encoder->tvout = tvout;
-+
-+	drm_encoder = (struct drm_encoder *) encoder;
-+
-+	drm_encoder->possible_crtcs = ENCODER_MAIN_CRTC_MASK;
-+	drm_encoder->possible_clones = 1 << 0;
-+
-+	drm_encoder_init(dev, drm_encoder,
-+			&sti_tvout_encoder_funcs, DRM_MODE_ENCODER_DAC);
-+
-+	drm_encoder_helper_add(drm_encoder, &sti_hda_encoder_helper_funcs);
-+
-+	return drm_encoder;
-+}
-+
-+static void sti_hdmi_encoder_commit(struct drm_encoder *encoder)
-+{
-+	struct sti_tvout *tvout = to_sti_tvout(encoder);
-+
-+	tvout_hdmi_start(tvout, true);
-+}
-+
-+static void sti_hdmi_encoder_disable(struct drm_encoder *encoder)
-+{
-+	struct sti_tvout *tvout = to_sti_tvout(encoder);
-+
-+	/* reset VIP register */
-+	tvout_write(tvout, 0x0, TVO_VIP_HDMI);
-+}
-+
-+static const struct drm_encoder_helper_funcs sti_hdmi_encoder_helper_funcs = {
-+	.dpms = sti_tvout_encoder_dpms,
-+	.mode_fixup = sti_tvout_encoder_mode_fixup,
-+	.mode_set = sti_tvout_encoder_mode_set,
-+	.prepare = sti_tvout_encoder_prepare,
-+	.commit = sti_hdmi_encoder_commit,
-+	.disable = sti_hdmi_encoder_disable,
-+};
-+
-+static struct drm_encoder *sti_tvout_create_hdmi_encoder(struct drm_device *dev,
-+		struct sti_tvout *tvout)
-+{
-+	struct sti_tvout_encoder *encoder;
-+	struct drm_encoder *drm_encoder;
-+
-+	encoder = devm_kzalloc(tvout->dev, sizeof(*encoder), GFP_KERNEL);
-+	if (!encoder)
-+		return NULL;
-+
-+	encoder->tvout = tvout;
-+
-+	drm_encoder = (struct drm_encoder *) encoder;
-+
-+	drm_encoder->possible_crtcs = ENCODER_MAIN_CRTC_MASK;
-+	drm_encoder->possible_clones = 1 << 1;
-+
-+	drm_encoder_init(dev, drm_encoder,
-+			&sti_tvout_encoder_funcs, DRM_MODE_ENCODER_TMDS);
-+
-+	drm_encoder_helper_add(drm_encoder, &sti_hdmi_encoder_helper_funcs);
-+
-+	return drm_encoder;
-+}
-+
-+static void sti_tvout_create_encoders(struct drm_device *dev,
-+		struct sti_tvout *tvout)
-+{
-+	tvout->hdmi = sti_tvout_create_hdmi_encoder(dev, tvout);
-+	tvout->hda = sti_tvout_create_hda_encoder(dev, tvout);
-+}
-+
-+static void sti_tvout_destroy_encoders(struct sti_tvout *tvout)
-+{
-+	if (tvout->hdmi)
-+		drm_encoder_cleanup(tvout->hdmi);
-+	tvout->hdmi = NULL;
-+
-+	if (tvout->hda)
-+		drm_encoder_cleanup(tvout->hda);
-+	tvout->hda = NULL;
-+}
-+
-+static int sti_tvout_bind(struct device *dev, struct device *master, void *data)
-+{
-+	struct sti_tvout *tvout = dev_get_drvdata(dev);
-+	struct drm_device *drm_dev = data;
-+	unsigned int i;
-+	int ret;
-+
-+	tvout->drm_dev = drm_dev;
-+
-+	/* set preformatter matrix */
-+	for (i = 0; i < 8; i++) {
-+		tvout_write(tvout, rgb_to_ycbcr_601[i],
-+			TVO_CSC_MAIN_M0 + (i * 4));
-+		tvout_write(tvout, rgb_to_ycbcr_601[i],
-+			TVO_CSC_AUX_M0 + (i * 4));
++	res = clk_set_rate(clk, rate);
++	if (res < 0) {
++		DRM_ERROR("Cannot set rate (%dHz) for pix clk\n", rate);
++		return -EINVAL;
++	}
++	if (clk_prepare_enable(clk)) {
++		DRM_ERROR("Failed to prepare/enable pix clk\n");
++		return -EINVAL;
 +	}
 +
-+	sti_tvout_create_encoders(drm_dev, tvout);
++	sti_vtg_set_config(mixer->id == STI_MIXER_MAIN ?
++			compo->vtg_main : compo->vtg_aux, &crtc->mode);
 +
-+	ret = component_bind_all(dev, drm_dev);
-+	if (ret)
-+		sti_tvout_destroy_encoders(tvout);
++	/* GDP0 is reserved to the CRTC FB */
++	layer = sti_layer_find_layer(compo->layer, STI_GDP_0);
++	if (!layer) {
++		DRM_ERROR("Can not find GDP0)\n");
++		return -EINVAL;
++	}
 +
++	/* copy the mode data adjusted by mode_fixup() into crtc->mode
++	 * so that hardware can be set to proper mode
++	 */
++	memcpy(&crtc->mode, adjusted_mode, sizeof(*adjusted_mode));
++
++	res = sti_mixer_set_layer_depth(mixer, layer);
++	if (res) {
++		DRM_ERROR("Can not set layer depth\n");
++		return -EINVAL;
++	}
++	res = sti_mixer_active_video_area(mixer, &crtc->mode);
++	if (res) {
++		DRM_ERROR("Can not set active video area\n");
++		return -EINVAL;
++	}
++
++	w = crtc->fb->width - x;
++	h = crtc->fb->height - y;
++
++	return sti_layer_prepare(layer, crtc->fb, &crtc->mode, mixer->id,
++			0, 0, w, h, x, y, w, h);
++}
++
++static int sti_drm_crtc_mode_set_base(struct drm_crtc *crtc, int x, int y,
++				      struct drm_framebuffer *old_fb)
++{
++	struct sti_mixer *mixer = to_sti_mixer(crtc);
++	struct device *dev = mixer->dev;
++	struct sti_compositor *compo = dev_get_drvdata(dev);
++	struct sti_layer *layer;
++	unsigned int w, h;
++	int ret;
++
++	DRM_DEBUG_KMS("CRTC:%d (%s) fb:%d (%d,%d)\n",
++		      crtc->base.id, sti_mixer_to_str(mixer),
++		      crtc->fb->base.id, x, y);
++
++	/* GDP0 is reserved to the CRTC FB */
++	layer = sti_layer_find_layer(compo->layer, STI_GDP_0);
++	if (!layer) {
++		DRM_ERROR("Can not find GDP0)\n");
++		ret = -EINVAL;
++		goto out;
++	}
++
++	w = crtc->fb->width - crtc->x;
++	h = crtc->fb->height - crtc->y;
++
++	ret = sti_layer_prepare(layer, crtc->fb, &crtc->mode, mixer->id,
++				0, 0, w, h,
++				crtc->x, crtc->y, w, h);
++	if (ret) {
++		DRM_ERROR("Can not prepare layer\n");
++		goto out;
++	}
++
++	sti_drm_crtc_commit(crtc);
++out:
 +	return ret;
 +}
 +
-+static void sti_tvout_unbind(struct device *dev, struct device *master,
-+	void *data)
++static void sti_drm_crtc_load_lut(struct drm_crtc *crtc)
 +{
 +	/* do nothing */
 +}
 +
-+static const struct component_ops sti_tvout_ops = {
-+	.bind	= sti_tvout_bind,
-+	.unbind	= sti_tvout_unbind,
++static void sti_drm_crtc_disable(struct drm_crtc *crtc)
++{
++	struct sti_mixer *mixer = to_sti_mixer(crtc);
++	struct device *dev = mixer->dev;
++	struct sti_compositor *compo = dev_get_drvdata(dev);
++	struct sti_layer *layer;
++
++	if (!compo->enable)
++		return;
++
++	DRM_DEBUG_KMS("CRTC:%d (%s)\n", crtc->base.id, sti_mixer_to_str(mixer));
++
++	/* Disable Background */
++	sti_mixer_set_background_status(mixer, false);
++
++	/* Disable GDP0 */
++	layer = sti_layer_find_layer(compo->layer, STI_GDP_0);
++	if (!layer) {
++		DRM_ERROR("Cannot find GDP0\n");
++		return;
++	}
++
++	/* Disable layer at mixer level */
++	if (sti_mixer_set_layer_status(mixer, layer, false))
++		DRM_ERROR("Can not disable %s layer at mixer\n",
++				sti_layer_to_str(layer));
++
++	/* Wait a while to be sure that a Vsync event is received */
++	msleep(WAIT_NEXT_VSYNC_MS);
++
++	/* Then disable layer itself */
++	sti_layer_disable(layer);
++
++	drm_vblank_off(crtc->dev, mixer->id);
++
++	/* Disable pixel clock and compo IP clocks */
++	if (mixer->id == STI_MIXER_MAIN) {
++		clk_disable_unprepare(compo->clk_pix_main);
++		clk_disable_unprepare(compo->clk_compo_main);
++	} else {
++		clk_disable_unprepare(compo->clk_pix_aux);
++		clk_disable_unprepare(compo->clk_compo_aux);
++	}
++
++	compo->enable = false;
++}
++
++static struct drm_crtc_helper_funcs sti_crtc_helper_funcs = {
++	.dpms = sti_drm_crtc_dpms,
++	.prepare = sti_drm_crtc_prepare,
++	.commit = sti_drm_crtc_commit,
++	.mode_fixup = sti_drm_crtc_mode_fixup,
++	.mode_set = sti_drm_crtc_mode_set,
++	.mode_set_base = sti_drm_crtc_mode_set_base,
++	.load_lut = sti_drm_crtc_load_lut,
++	.disable = sti_drm_crtc_disable,
++};
++
++static int sti_drm_crtc_page_flip(struct drm_crtc *crtc,
++				  struct drm_framebuffer *fb,
++				  struct drm_pending_vblank_event *event,
++				  uint32_t page_flip_flags)
++{
++	struct drm_device *drm_dev = crtc->dev;
++	struct drm_framebuffer *old_fb;
++	struct sti_mixer *mixer = to_sti_mixer(crtc);
++	unsigned long flags;
++	int ret;
++
++	DRM_DEBUG_KMS("fb %d --> fb %d\n", crtc->fb->base.id, fb->base.id);
++
++	mutex_lock(&drm_dev->struct_mutex);
++
++	old_fb = crtc->fb;
++	crtc->fb = fb;
++	ret = sti_drm_crtc_mode_set_base(crtc, crtc->x, crtc->y, old_fb);
++	if (ret) {
++		DRM_ERROR("failed\n");
++		crtc->fb = old_fb;
++		goto out;
++	}
++
++	if (event) {
++		event->pipe = mixer->id;
++
++		ret = drm_vblank_get(drm_dev, event->pipe);
++		if (ret) {
++			DRM_ERROR("Cannot get vblank\n");
++			goto out;
++		}
++
++		spin_lock_irqsave(&drm_dev->event_lock, flags);
++		if (mixer->pending_event) {
++			drm_vblank_put(drm_dev, event->pipe);
++			ret = -EBUSY;
++		} else {
++			mixer->pending_event = event;
++		}
++		spin_unlock_irqrestore(&drm_dev->event_lock, flags);
++	}
++out:
++	mutex_unlock(&drm_dev->struct_mutex);
++	return ret;
++}
++
++static void sti_drm_crtc_destroy(struct drm_crtc *crtc)
++{
++	DRM_DEBUG_KMS("\n");
++	drm_crtc_cleanup(crtc);
++}
++
++static int sti_drm_crtc_set_property(struct drm_crtc *crtc,
++				     struct drm_property *property,
++				     uint64_t val)
++{
++	DRM_DEBUG_KMS("\n");
++	return 0;
++}
++
++int sti_drm_crtc_vblank_cb(struct notifier_block *nb,
++			   unsigned long event, void *data)
++{
++	struct drm_device *drm_dev;
++	struct sti_compositor *compo =
++		container_of(nb, struct sti_compositor, vtg_vblank_nb);
++	int *crtc = data;
++	unsigned long flags;
++	struct sti_drm_private *priv;
++
++	drm_dev = compo->mixer[*crtc]->drm_crtc.dev;
++	priv = drm_dev->dev_private;
++
++	if ((event != VTG_TOP_FIELD_EVENT) &&
++	    (event != VTG_BOTTOM_FIELD_EVENT)) {
++		DRM_ERROR("unknown event: %lu\n", event);
++		return -EINVAL;
++	}
++
++	drm_handle_vblank(drm_dev, *crtc);
++
++	spin_lock_irqsave(&drm_dev->event_lock, flags);
++	if (compo->mixer[*crtc]->pending_event) {
++		drm_send_vblank_event(drm_dev, -1,
++				compo->mixer[*crtc]->pending_event);
++		drm_vblank_put(drm_dev, *crtc);
++		compo->mixer[*crtc]->pending_event = NULL;
++	}
++	spin_unlock_irqrestore(&drm_dev->event_lock, flags);
++
++	return 0;
++}
++
++int sti_drm_crtc_enable_vblank(struct drm_device *dev, int crtc)
++{
++	struct sti_drm_private *dev_priv = dev->dev_private;
++	struct sti_compositor *compo = dev_priv->compo;
++	struct notifier_block *vtg_vblank_nb = &compo->vtg_vblank_nb;
++	DRM_DEBUG_DRIVER("\n");
++
++	if (sti_vtg_register_client(crtc == STI_MIXER_MAIN ?
++			compo->vtg_main : compo->vtg_aux,
++			vtg_vblank_nb, crtc)) {
++		DRM_ERROR("Cannot register VTG notifier\n");
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++void sti_drm_crtc_disable_vblank(struct drm_device *dev, int crtc)
++{
++	struct sti_drm_private *priv = dev->dev_private;
++	struct sti_compositor *compo = priv->compo;
++	struct notifier_block *vtg_vblank_nb = &compo->vtg_vblank_nb;
++	unsigned long flags;
++
++	DRM_DEBUG_DRIVER("\n");
++
++	if (sti_vtg_unregister_client(crtc == STI_MIXER_MAIN ?
++			compo->vtg_main : compo->vtg_aux, vtg_vblank_nb))
++		DRM_DEBUG_DRIVER("Warning: cannot unregister VTG notifier\n");
++
++	/* free the resources of the pending requests */
++	spin_lock_irqsave(&dev->event_lock, flags);
++	if (compo->mixer[crtc]->pending_event) {
++		drm_vblank_put(dev, crtc);
++		compo->mixer[crtc]->pending_event = NULL;
++	}
++	spin_unlock_irqrestore(&dev->event_lock, flags);
++
++}
++
++static struct drm_crtc_funcs sti_crtc_funcs = {
++	.set_config = drm_crtc_helper_set_config,
++	.page_flip = sti_drm_crtc_page_flip,
++	.destroy = sti_drm_crtc_destroy,
++	.set_property = sti_drm_crtc_set_property,
++};
++
++bool sti_drm_crtc_is_main(struct drm_crtc *crtc)
++{
++	struct sti_mixer *mixer = to_sti_mixer(crtc);
++
++	if (mixer->id == STI_MIXER_MAIN)
++		return true;
++
++	return false;
++}
++
++int sti_drm_crtc_init(struct drm_device *drm_dev, struct sti_mixer *mixer)
++{
++	struct drm_crtc *crtc = &mixer->drm_crtc;
++	int res;
++
++	res = drm_crtc_init(drm_dev, crtc, &sti_crtc_funcs);
++	if (res) {
++		DRM_ERROR("Can not initialze CRTC\n");
++		return -EINVAL;
++	}
++
++	drm_crtc_helper_add(crtc, &sti_crtc_helper_funcs);
++
++	DRM_DEBUG_DRIVER("drm CRTC:%d mapped to %s\n",
++			 crtc->base.id, sti_mixer_to_str(mixer));
++
++	return 0;
++}
+diff --git a/drivers/gpu/drm/sti/sti_drm_crtc.h b/drivers/gpu/drm/sti/sti_drm_crtc.h
+new file mode 100644
+index 0000000..e46babe
+--- /dev/null
++++ b/drivers/gpu/drm/sti/sti_drm_crtc.h
+@@ -0,0 +1,21 @@
++/*
++ * Copyright (C) STMicroelectronics SA 2014
++ * Author: Benjamin Gaignard <benjamin.gaignard@st.com> for STMicroelectronics.
++ * License terms:  GNU General Public License (GPL), version 2
++ */
++
++#ifndef _STI_DRM_CRTC_H_
++#define _STI_DRM_CRTC_H_
++
++#include <drm/drmP.h>
++
++struct sti_mixer;
++
++int sti_drm_crtc_init(struct drm_device *drm_dev, struct sti_mixer *mixer);
++int sti_drm_crtc_enable_vblank(struct drm_device *dev, int crtc);
++void sti_drm_crtc_disable_vblank(struct drm_device *dev, int crtc);
++int sti_drm_crtc_vblank_cb(struct notifier_block *nb,
++		unsigned long event, void *data);
++bool sti_drm_crtc_is_main(struct drm_crtc *drm_crtc);
++
++#endif
+diff --git a/drivers/gpu/drm/sti/sti_drm_drv.c b/drivers/gpu/drm/sti/sti_drm_drv.c
+new file mode 100644
+index 0000000..6e0da1b
+--- /dev/null
++++ b/drivers/gpu/drm/sti/sti_drm_drv.c
+@@ -0,0 +1,244 @@
++/*
++ * Copyright (C) STMicroelectronics SA 2014
++ * Author: Benjamin Gaignard <benjamin.gaignard@st.com> for STMicroelectronics.
++ * License terms:  GNU General Public License (GPL), version 2
++ */
++
++#include <drm/drmP.h>
++
++#include <linux/component.h>
++#include <linux/debugfs.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/of_platform.h>
++
++#include <drm/drm_crtc_helper.h>
++#include <drm/drm_gem_cma_helper.h>
++#include <drm/drm_fb_cma_helper.h>
++
++#include "sti_drm_drv.h"
++#include "sti_drm_crtc.h"
++
++#define DRIVER_NAME	"sti"
++#define DRIVER_DESC	"STMicroelectronics SoC DRM"
++#define DRIVER_DATE	"20140601"
++#define DRIVER_MAJOR	1
++#define DRIVER_MINOR	0
++
++#define STI_MAX_FB_HEIGHT	4096
++#define STI_MAX_FB_WIDTH	4096
++
++static struct drm_mode_config_funcs sti_drm_mode_config_funcs = {
++	.fb_create = drm_fb_cma_create,
++};
++
++static void sti_drm_mode_config_init(struct drm_device *dev)
++{
++	dev->mode_config.min_width = 0;
++	dev->mode_config.min_height = 0;
++
++	/*
++	 * set max width and height as default value.
++	 * this value would be used to check framebuffer size limitation
++	 * at drm_mode_addfb().
++	 */
++	dev->mode_config.max_width = STI_MAX_FB_HEIGHT;
++	dev->mode_config.max_height = STI_MAX_FB_WIDTH;
++
++	dev->mode_config.funcs = &sti_drm_mode_config_funcs;
++}
++
++static int sti_drm_load(struct drm_device *dev, unsigned long flags)
++{
++	struct sti_drm_private *private;
++	int ret;
++
++	private = kzalloc(sizeof(struct sti_drm_private), GFP_KERNEL);
++	if (!private) {
++		DRM_ERROR("Failed to allocate private\n");
++		return -ENOMEM;
++	}
++	dev->dev_private = (void *)private;
++	private->drm_dev = dev;
++
++	drm_mode_config_init(dev);
++	drm_kms_helper_poll_init(dev);
++
++	sti_drm_mode_config_init(dev);
++
++	ret = component_bind_all(dev->dev, dev);
++	if (ret)
++		return ret;
++
++	drm_helper_disable_unused_functions(dev);
++
++#ifdef CONFIG_DRM_STI_FBDEV
++	drm_fbdev_cma_init(dev, 32,
++		   dev->mode_config.num_crtc,
++		   dev->mode_config.num_connector);
++#endif
++	return 0;
++}
++
++static const struct file_operations sti_drm_driver_fops = {
++	.owner = THIS_MODULE,
++	.open = drm_open,
++	.mmap = drm_gem_cma_mmap,
++	.poll = drm_poll,
++	.read = drm_read,
++	.unlocked_ioctl = drm_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl = drm_compat_ioctl,
++#endif
++	.release = drm_release,
++};
++
++static struct dma_buf *sti_drm_gem_prime_export(struct drm_device *dev,
++						struct drm_gem_object *obj,
++						int flags)
++{
++	/* we want to be able to write in mmapped buffer */
++	flags |= O_RDWR;
++	return drm_gem_prime_export(dev, obj, flags);
++}
++
++static struct drm_driver sti_drm_driver = {
++	.driver_features = DRIVER_HAVE_IRQ | DRIVER_MODESET |
++	    DRIVER_GEM | DRIVER_PRIME,
++	.load = sti_drm_load,
++	.gem_free_object = drm_gem_cma_free_object,
++	.gem_vm_ops = &drm_gem_cma_vm_ops,
++	.dumb_create = drm_gem_cma_dumb_create,
++	.dumb_map_offset = drm_gem_cma_dumb_map_offset,
++	.dumb_destroy = drm_gem_dumb_destroy,
++	.fops = &sti_drm_driver_fops,
++
++	.get_vblank_counter = drm_vblank_count,
++	.enable_vblank = sti_drm_crtc_enable_vblank,
++	.disable_vblank = sti_drm_crtc_disable_vblank,
++
++	.prime_handle_to_fd = drm_gem_prime_handle_to_fd,
++	.prime_fd_to_handle = drm_gem_prime_fd_to_handle,
++	.gem_prime_export = sti_drm_gem_prime_export,
++	.gem_prime_import = drm_gem_prime_import,
++	.gem_prime_get_sg_table = drm_gem_cma_prime_get_sg_table,
++	.gem_prime_import_sg_table = drm_gem_cma_prime_import_sg_table,
++	.gem_prime_vmap = drm_gem_cma_prime_vmap,
++	.gem_prime_vunmap = drm_gem_cma_prime_vunmap,
++	.gem_prime_mmap = drm_gem_cma_prime_mmap,
++
++	.name = DRIVER_NAME,
++	.desc = DRIVER_DESC,
++	.date = DRIVER_DATE,
++	.major = DRIVER_MAJOR,
++	.minor = DRIVER_MINOR,
 +};
 +
 +static int compare_of(struct device *dev, void *data)
@@ -610,15 +734,14 @@ index 0000000..11008d9
 +	return dev->of_node == np;
 +}
 +
-+static int sti_tvout_add_components(struct device *master, struct master *m)
++static int sti_drm_add_components(struct device *master, struct master *m)
 +{
-+	struct device_node *np	= master->of_node;
++	struct device_node *np	= master->parent->of_node;
 +	struct device_node *child_np;
 +
 +	child_np = of_get_next_available_child(np, NULL);
 +
 +	while (child_np) {
-+		DRM_INFO("TVout add child %s\n", child_np->name);
 +		component_master_add_child(m, compare_of, child_np);
 +		of_node_put(child_np);
 +		child_np = of_get_next_available_child(np, child_np);
@@ -627,93 +750,347 @@ index 0000000..11008d9
 +	return 0;
 +}
 +
-+static int sti_tvout_master_bind(struct device *dev)
++static int sti_drm_bind(struct device *dev)
 +{
++	return drm_platform_init(&sti_drm_driver, to_platform_device(dev));
++}
++
++static void sti_drm_unbind(struct device *dev)
++{
++	drm_put_dev(dev_get_drvdata(dev));
++}
++
++static const struct component_master_ops sti_drm_ops = {
++	.add_components = sti_drm_add_components,
++	.bind = sti_drm_bind,
++	.unbind = sti_drm_unbind,
++};
++
++static int sti_drm_master_probe(struct platform_device *pdev)
++{
++	dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
++
++	return component_master_add(&pdev->dev, &sti_drm_ops);
++}
++
++static int sti_drm_master_remove(struct platform_device *pdev)
++{
++	component_master_del(&pdev->dev, &sti_drm_ops);
 +	return 0;
 +}
 +
-+static void sti_tvout_master_unbind(struct device *dev)
-+{
-+	/* do nothing */
-+}
-+
-+static const struct component_master_ops sti_tvout_master_ops = {
-+	.add_components = sti_tvout_add_components,
-+	.bind = sti_tvout_master_bind,
-+	.unbind = sti_tvout_master_unbind,
++static struct platform_driver sti_drm_master_driver = {
++	.probe = sti_drm_master_probe,
++	.remove = sti_drm_master_remove,
++	.driver = {
++		.owner = THIS_MODULE,
++		.name = DRIVER_NAME "__master",
++	},
 +};
 +
-+static int sti_tvout_probe(struct platform_device *pdev)
++static int sti_drm_platform_probe(struct platform_device *pdev)
 +{
 +	struct device *dev = &pdev->dev;
 +	struct device_node *node = dev->of_node;
-+	struct sti_tvout *tvout;
-+	struct resource *res;
-+
-+	DRM_INFO("%s\n", __func__);
-+
-+	if (!node)
-+		return -ENODEV;
-+
-+	tvout = devm_kzalloc(dev, sizeof(*tvout), GFP_KERNEL);
-+	if (!tvout)
-+		return -ENOMEM;
-+
-+	DRM_INFO("%s tvout %p\n", __func__, tvout);
-+
-+	tvout->dev = dev;
-+	DRM_INFO("%s tvout->dev %p\n", __func__, tvout->dev);
-+
-+	/* get Memory ressources */
-+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "tvout-reg");
-+	if (!res) {
-+		DRM_ERROR("Invalid glue resource\n");
-+		return -ENOMEM;
-+	}
-+	tvout->regs = devm_ioremap_nocache(dev, res->start, resource_size(res));
-+	if (IS_ERR(tvout->regs))
-+		return PTR_ERR(tvout->regs);
-+
-+	/* get reset resources */
-+	tvout->reset = devm_reset_control_get(dev, "tvout");
-+	/* take tvout out of reset */
-+	if (!IS_ERR(tvout->reset))
-+		reset_control_deassert(tvout->reset);
-+
-+	platform_set_drvdata(pdev, tvout);
++	struct platform_device *master;
 +
 +	of_platform_populate(node, NULL, NULL, dev);
 +
-+	component_master_add(&pdev->dev, &sti_tvout_master_ops);
++	master = platform_device_register_resndata(dev,
++			DRIVER_NAME "__master", -1,
++			NULL, 0, NULL, 0);
++	if (!master)
++		return -EINVAL;
 +
-+	return component_add(&pdev->dev, &sti_tvout_ops);
-+}
-+
-+static int sti_tvout_remove(struct platform_device *pdev)
-+{
-+	component_master_del(&pdev->dev, &sti_tvout_master_ops);
-+	component_del(&pdev->dev, &sti_tvout_ops);
++	platform_set_drvdata(pdev, master);
 +	return 0;
 +}
 +
-+static struct of_device_id tvout_of_match[] = {
-+	{ .compatible = "st,stih416-tvout", },
-+	{ .compatible = "st,stih407-tvout", },
-+	{ /* end node */ }
-+};
-+MODULE_DEVICE_TABLE(of, tvout_of_match);
++static int sti_drm_platform_remove(struct platform_device *pdev)
++{
++	struct platform_device *master = platform_get_drvdata(pdev);
++	platform_device_unregister(master);
++	return 0;
++}
 +
-+struct platform_driver sti_tvout_driver = {
++static const struct of_device_id sti_drm_dt_ids[] = {
++	{ .compatible = "st,sti-display-subsystem", },
++	{ /* end node */ },
++};
++MODULE_DEVICE_TABLE(of, sti_drm_dt_ids);
++
++static struct platform_driver sti_drm_platform_driver = {
++	.probe = sti_drm_platform_probe,
++	.remove = sti_drm_platform_remove,
 +	.driver = {
-+		.name = "sti-tvout",
 +		.owner = THIS_MODULE,
-+		.of_match_table = tvout_of_match,
++		.name = DRIVER_NAME,
++		.of_match_table = sti_drm_dt_ids,
 +	},
-+	.probe = sti_tvout_probe,
-+	.remove = sti_tvout_remove,
 +};
 +
-+module_platform_driver(sti_tvout_driver);
++module_platform_driver(sti_drm_platform_driver);
++module_platform_driver(sti_drm_master_driver);
++
++MODULE_AUTHOR("Benjamin Gaignard <benjamin.gaignard@st.com>");
++MODULE_DESCRIPTION("STMicroelectronics SoC DRM driver");
++MODULE_LICENSE("GPL V2");
+diff --git a/drivers/gpu/drm/sti/sti_drm_drv.h b/drivers/gpu/drm/sti/sti_drm_drv.h
+new file mode 100644
+index 0000000..ec5e2eb
+--- /dev/null
++++ b/drivers/gpu/drm/sti/sti_drm_drv.h
+@@ -0,0 +1,29 @@
++/*
++ * Copyright (C) STMicroelectronics SA 2014
++ * Author: Benjamin Gaignard <benjamin.gaignard@st.com> for STMicroelectronics.
++ * License terms:  GNU General Public License (GPL), version 2
++ */
++
++#ifndef _STI_DRM_DRV_H_
++#define _STI_DRM_DRV_H_
++
++#include <drm/drmP.h>
++
++struct sti_compositor;
++struct sti_tvout;
++
++/**
++ * STI drm private structure
++ * This structure is stored as private in the drm_device
++ *
++ * @compo:                 compositor
++ * @plane_zorder_property: z-order property for CRTC planes
++ * @drm_dev:               drm device
++ */
++struct sti_drm_private {
++	struct sti_compositor *compo;
++	struct drm_property *plane_zorder_property;
++	struct drm_device *drm_dev;
++};
++
++#endif
+diff --git a/drivers/gpu/drm/sti/sti_drm_plane.c b/drivers/gpu/drm/sti/sti_drm_plane.c
+new file mode 100644
+index 0000000..d950279
+--- /dev/null
++++ b/drivers/gpu/drm/sti/sti_drm_plane.c
+@@ -0,0 +1,192 @@
++/*
++ * Copyright (C) STMicroelectronics SA 2014
++ * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
++ *          Fabien Dessenne <fabien.dessenne@st.com>
++ *          for STMicroelectronics.
++ * License terms:  GNU General Public License (GPL), version 2
++ */
++
++#include "sti_compositor.h"
++#include "sti_drm_drv.h"
++#include "sti_drm_plane.h"
++#include "sti_vtg.h"
++
++enum sti_layer_desc sti_layer_default_zorder[] = {
++	STI_GDP_0,
++	STI_VID_0,
++	STI_GDP_1,
++	STI_VID_1,
++	STI_GDP_2,
++	STI_GDP_3,
++};
++
++/* (Background) < GDP0 < VID0 < GDP1 < VID1 < GDP2 < GDP3 < (ForeGround) */
++
++static int
++sti_drm_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
++		     struct drm_framebuffer *fb, int crtc_x, int crtc_y,
++		     unsigned int crtc_w, unsigned int crtc_h,
++		     uint32_t src_x, uint32_t src_y,
++		     uint32_t src_w, uint32_t src_h)
++{
++	struct sti_layer *layer = to_sti_layer(plane);
++	struct sti_mixer *mixer = to_sti_mixer(crtc);
++	int res;
++
++	DRM_DEBUG_KMS("CRTC:%d (%s) drm plane:%d (%s) drm fb:%d\n",
++		      crtc->base.id, sti_mixer_to_str(mixer),
++		      plane->base.id, sti_layer_to_str(layer), fb->base.id);
++	DRM_DEBUG_KMS("(%dx%d)@(%d,%d)\n", crtc_w, crtc_h, crtc_x, crtc_y);
++
++	res = sti_mixer_set_layer_depth(mixer, layer);
++	if (res) {
++		DRM_ERROR("Can not set layer depth\n");
++		return res;
++	}
++
++	/* src_x are in 16.16 format. */
++	res = sti_layer_prepare(layer, fb, &crtc->mode, mixer->id,
++			crtc_x, crtc_y, crtc_w, crtc_h,
++			src_x >> 16, src_y >> 16,
++			src_w >> 16, src_h >> 16);
++	if (res) {
++		DRM_ERROR("Layer prepare failed\n");
++		return res;
++	}
++
++	res = sti_layer_commit(layer);
++	if (res) {
++		DRM_ERROR("Layer commit failed\n");
++		return res;
++	}
++
++	res = sti_mixer_set_layer_status(mixer, layer, true);
++	if (res) {
++		DRM_ERROR("Can not enable layer at mixer\n");
++		return res;
++	}
++
++	return 0;
++}
++
++static int sti_drm_disable_plane(struct drm_plane *plane)
++{
++	struct sti_layer *layer;
++	struct sti_mixer *mixer;
++	int lay_res, mix_res;
++
++	if (!plane->crtc) {
++		DRM_DEBUG_DRIVER("drm plane:%d not enabled\n", plane->base.id);
++		return 0;
++	}
++	layer = to_sti_layer(plane);
++	mixer = to_sti_mixer(plane->crtc);
++
++	DRM_DEBUG_DRIVER("CRTC:%d (%s) drm plane:%d (%s)\n",
++			plane->crtc->base.id, sti_mixer_to_str(mixer),
++			plane->base.id, sti_layer_to_str(layer));
++
++	/* Disable layer at mixer level */
++	mix_res = sti_mixer_set_layer_status(mixer, layer, false);
++	if (mix_res)
++		DRM_ERROR("Can not disable layer at mixer\n");
++
++	/* Wait a while to be sure that a Vsync event is received */
++	msleep(WAIT_NEXT_VSYNC_MS);
++
++	/* Then disable layer itself */
++	lay_res = sti_layer_disable(layer);
++	if (lay_res)
++		DRM_ERROR("Layer disable failed\n");
++
++	if (lay_res || mix_res)
++		return -EINVAL;
++
++	return 0;
++}
++
++static void sti_drm_plane_destroy(struct drm_plane *plane)
++{
++	DRM_DEBUG_DRIVER("\n");
++
++	sti_drm_disable_plane(plane);
++	drm_plane_cleanup(plane);
++}
++
++static int sti_drm_plane_set_property(struct drm_plane *plane,
++				      struct drm_property *property,
++				      uint64_t val)
++{
++	struct drm_device *dev = plane->dev;
++	struct sti_drm_private *private = dev->dev_private;
++	struct sti_layer *layer = to_sti_layer(plane);
++
++	DRM_DEBUG_DRIVER("\n");
++
++	if (property == private->plane_zorder_property) {
++		layer->zorder = val;
++		return 0;
++	}
++
++	return -EINVAL;
++}
++
++static struct drm_plane_funcs sti_drm_plane_funcs = {
++	.update_plane = sti_drm_update_plane,
++	.disable_plane = sti_drm_disable_plane,
++	.destroy = sti_drm_plane_destroy,
++	.set_property = sti_drm_plane_set_property,
++};
++
++static void sti_drm_plane_attach_zorder_property(struct drm_plane *plane,
++						 uint64_t default_val)
++{
++	struct drm_device *dev = plane->dev;
++	struct sti_drm_private *private = dev->dev_private;
++	struct drm_property *prop;
++	struct sti_layer *layer = to_sti_layer(plane);
++
++	prop = private->plane_zorder_property;
++	if (!prop) {
++		prop = drm_property_create_range(dev, 0, "zpos", 0,
++						 GAM_MIXER_NB_DEPTH_LEVEL - 1);
++		if (!prop)
++			return;
++
++		private->plane_zorder_property = prop;
++	}
++
++	drm_object_attach_property(&plane->base, prop, default_val);
++	layer->zorder = default_val;
++}
++
++struct drm_plane *sti_drm_plane_init(struct drm_device *dev,
++				     struct sti_layer *layer,
++				     unsigned int possible_crtcs)
++{
++	int err, i;
++	uint64_t default_zorder = 0;
++
++	err = drm_plane_init(dev, &layer->plane, possible_crtcs,
++			     &sti_drm_plane_funcs,
++			     sti_layer_get_formats(layer),
++			     sti_layer_get_nb_formats(layer), false);
++	if (err) {
++		DRM_ERROR("Failed to initialize plane\n");
++		return NULL;
++	}
++
++	for (i = 0; i < ARRAY_SIZE(sti_layer_default_zorder); i++)
++		if (sti_layer_default_zorder[i] == layer->desc)
++			break;
++
++	default_zorder = i;
++
++	sti_drm_plane_attach_zorder_property(&layer->plane, default_zorder);
++
++	DRM_DEBUG_DRIVER("drm plane:%d mapped to %s with zorder:%llu\n",
++			 layer->plane.base.id,
++			 sti_layer_to_str(layer), default_zorder);
++
++	return &layer->plane;
++}
+diff --git a/drivers/gpu/drm/sti/sti_drm_plane.h b/drivers/gpu/drm/sti/sti_drm_plane.h
+new file mode 100644
+index 0000000..1d8bc61
+--- /dev/null
++++ b/drivers/gpu/drm/sti/sti_drm_plane.h
+@@ -0,0 +1,17 @@
++/*
++ * Copyright (C) STMicroelectronics SA 2014
++ * Author: Benjamin Gaignard <benjamin.gaignard@st.com> for STMicroelectronics.
++ * License terms:  GNU General Public License (GPL), version 2
++ */
++
++#ifndef _STI_DRM_PLANE_H_
++#define _STI_DRM_PLANE_H_
++
++#include <drm/drmP.h>
++
++struct sti_layer;
++
++struct drm_plane *sti_drm_plane_init(struct drm_device *dev,
++		struct sti_layer *layer, unsigned int possible_crtcs);
++
++#endif
 -- 
 1.9.1
 
