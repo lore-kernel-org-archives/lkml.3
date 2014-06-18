@@ -1,115 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756767AbaFROjk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 10:39:40 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:1451 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025AbaFROji (ORCPT
+	id S1756926AbaFROkG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 10:40:06 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:49494 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756721AbaFROkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 10:39:38 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 18 Jun 2014 07:33:57 -0700
-Message-ID: <53A1A4A9.4060301@nvidia.com>
-Date: Wed, 18 Jun 2014 07:39:37 -0700
-From: Aaron Plattner <aplattner@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 18 Jun 2014 10:40:04 -0400
+Date: Wed, 18 Jun 2014 10:40:02 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+cc: Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: get rid of hardcoded assumptions about kernel stack
+ size
+In-Reply-To: <1403099422-850-1-git-send-email-a.ryabinin@samsung.com>
+Message-ID: <alpine.LFD.2.11.1406181039310.16842@knanqh.ubzr>
+References: <1403099422-850-1-git-send-email-a.ryabinin@samsung.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH] cpufreq: unlock when failing cpufreq_update_policy()
-References: <1403050362-20809-1-git-send-email-aplattner@nvidia.com> <CAKohpo=2fpi7GivgNGE+DgD3xPdku3WzKKD8+Ziz4gQ4P6pMxQ@mail.gmail.com>
-In-Reply-To: <CAKohpo=2fpi7GivgNGE+DgD3xPdku3WzKKD8+Ziz4gQ4P6pMxQ@mail.gmail.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2014 12:40 AM, Viresh Kumar wrote:
-> On 18 June 2014 05:42, Aaron Plattner <aplattner@nvidia.com> wrote:
->> Commit bd0fa9bb455d introduced a failure path to cpufreq_update_policy() if
->> cpufreq_driver->get(cpu) returns NULL.  However, it jumps to the 'no_policy'
->> label, which exits without unlocking any of the locks the function acquired
->> earlier.  This causes later calls into cpufreq to hang.
->>
->> Fix this by creating a new 'unlock' label and jumping to that instead.
->>
->> Fixes: bd0fa9bb455d ("cpufreq: Return error if ->get() failed in cpufreq_update_policy()")
->> Link: https://devtalk.nvidia.com/default/topic/751903/kernel-3-15-and-nv-drivers-337-340-failed-to-initialize-the-nvidia-kernel-module-gtx-550-ti-/
->> Cc: Viresh Kumar <viresh.kumar@linaro.org>
->> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> Signed-off-by: Aaron Plattner <aplattner@nvidia.com>
->> ---
->> I haven't reproduced this problem so I couldn't test it, but the bug and its
->> solution seem obvious enough.
->>
->>   drivers/cpufreq/cpufreq.c | 3 ++-
->>   1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
->> index aed2b0cb83dc..5b6d04f3b9ea 100644
->> --- a/drivers/cpufreq/cpufreq.c
->> +++ b/drivers/cpufreq/cpufreq.c
->> @@ -2264,7 +2264,7 @@ int cpufreq_update_policy(unsigned int cpu)
->>                  new_policy.cur = cpufreq_driver->get(cpu);
->>                  if (WARN_ON(!new_policy.cur)) {
->>                          ret = -EIO;
->> -                       goto no_policy;
->> +                       goto unlock;
->>                  }
->>
->>                  if (!policy->cur) {
->> @@ -2279,6 +2279,7 @@ int cpufreq_update_policy(unsigned int cpu)
->>
->>          ret = cpufreq_set_policy(policy, &new_policy);
->>
->> +unlock:
->>          up_write(&policy->rwsem);
->>
->>          cpufreq_cpu_put(policy);
->
-> Hmm, yes we do have a problem here but the code became a bit ugly
-> now.. Can you please consider this diff instead?
->
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index aed2b0c..6caced5 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -2242,10 +2242,8 @@ int cpufreq_update_policy(unsigned int cpu)
->          struct cpufreq_policy new_policy;
->          int ret;
->
-> -       if (!policy) {
-> -               ret = -ENODEV;
-> -               goto no_policy;
-> -       }
-> +       if (!policy)
-> +               return = -ENODEV;
+On Wed, 18 Jun 2014, Andrey Ryabinin wrote:
 
-I assume you meant "return -ENODEV"?
+> Changing kernel stack size on arm is not as simple as it should be:
+> 1) THRED_SIZE macro doen't respect PAGE_SIZE and THREAD_SIZE_ORDER
+> 2) stack size is hardcoded in get_thread_info macro
+> 
+> This patch fixes it by caculating THREAD_SIZE and thread_info address
+> taking into account PAGE_SIZE and THREAD_SIZE_ORDER.
+> 
+> Now changing stack size becomes simply changing THREAD_SIZE_ORDER.
+> 
+> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
 
->          down_write(&policy->rwsem);
->
-> @@ -2279,10 +2277,10 @@ int cpufreq_update_policy(unsigned int cpu)
->
->          ret = cpufreq_set_policy(policy, &new_policy);
->
-> +no_policy:
+Acked-by: Nicolas Pitre <nico@linaro.org>
 
-'no_policy' implied to me that policy was NULL, so this label should 
-still be renamed to 'unlock'.  I'll send out a v2 that does this.
 
->          up_write(&policy->rwsem);
->
->          cpufreq_cpu_put(policy);
-> -no_policy:
->          return ret;
->   }
->   EXPORT_SYMBOL(cpufreq_update_policy);
->
-
--- 
-Aaron
+> ---
+>  arch/arm/include/asm/assembler.h   | 8 +++++---
+>  arch/arm/include/asm/thread_info.h | 3 ++-
+>  2 files changed, 7 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/arm/include/asm/assembler.h b/arch/arm/include/asm/assembler.h
+> index 57f0584..906703a 100644
+> --- a/arch/arm/include/asm/assembler.h
+> +++ b/arch/arm/include/asm/assembler.h
+> @@ -24,6 +24,8 @@
+>  #include <asm/domain.h>
+>  #include <asm/opcodes-virt.h>
+>  #include <asm/asm-offsets.h>
+> +#include <asm/page.h>
+> +#include <asm/thread_info.h>
+>  
+>  #define IOMEM(x)	(x)
+>  
+> @@ -179,10 +181,10 @@
+>   * Get current thread_info.
+>   */
+>  	.macro	get_thread_info, rd
+> - ARM(	mov	\rd, sp, lsr #13	)
+> + ARM(	mov	\rd, sp, lsr #THREAD_SIZE_ORDER + PAGE_SHIFT	)
+>   THUMB(	mov	\rd, sp			)
+> - THUMB(	lsr	\rd, \rd, #13		)
+> -	mov	\rd, \rd, lsl #13
+> + THUMB(	lsr	\rd, \rd, #THREAD_SIZE_ORDER + PAGE_SHIFT	)
+> +	mov	\rd, \rd, lsl #THREAD_SIZE_ORDER + PAGE_SHIFT
+>  	.endm
+>  
+>  /*
+> diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
+> index f989d7c..f85d2b0 100644
+> --- a/arch/arm/include/asm/thread_info.h
+> +++ b/arch/arm/include/asm/thread_info.h
+> @@ -14,9 +14,10 @@
+>  
+>  #include <linux/compiler.h>
+>  #include <asm/fpstate.h>
+> +#include <asm/page.h>
+>  
+>  #define THREAD_SIZE_ORDER	1
+> -#define THREAD_SIZE		8192
+> +#define THREAD_SIZE		(PAGE_SIZE << THREAD_SIZE_ORDER)
+>  #define THREAD_START_SP		(THREAD_SIZE - 8)
+>  
+>  #ifndef __ASSEMBLY__
+> -- 
+> 1.8.5.5
+> 
