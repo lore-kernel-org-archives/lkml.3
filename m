@@ -1,68 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331AbaFRUcl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 16:32:41 -0400
-Received: from mail-yk0-f170.google.com ([209.85.160.170]:45499 "EHLO
-	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564AbaFRUcj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 16:32:39 -0400
-Date: Wed, 18 Jun 2014 16:32:34 -0400
-From: Matt Porter <mporter@linaro.org>
-To: Graham Williams <graham.williams@linaro.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Lee Jones <lee.jones@linaro.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: bcm590xx: fix vbus name
-Message-ID: <20140618203234.GQ4173@beef>
-References: <1403120530-27395-1-git-send-email-graham.williams@linaro.org>
+	id S1755394AbaFRUgQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 16:36:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51666 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754993AbaFRUgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 16:36:14 -0400
+Date: Wed, 18 Jun 2014 22:36:10 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Dave Anderson <anderson@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Petr Mladek <pmladek@suse.cz>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [RFC PATCH 00/11] printk: safe printing in NMI context
+In-Reply-To: <20140618162117.GM4669@linux.vnet.ibm.com>
+Message-ID: <alpine.LNX.2.00.1406182232390.2303@pobox.suse.cz>
+References: <1399626665-29817-1-git-send-email-pmladek@suse.cz> <alpine.LNX.2.00.1405290000350.17241@pobox.suse.cz> <20140529000909.GC6507@localhost.localdomain> <alpine.LNX.2.00.1405290959270.17241@pobox.suse.cz> <20140610164641.GD1951@localhost.localdomain>
+ <CA+55aFzseOqF-EpKMvwKpfhBJZQSLqKpJ3shzVee9s0+mvyCuA@mail.gmail.com> <alpine.LNX.2.00.1406181245230.2303@pobox.suse.cz> <20140618143612.GC4669@linux.vnet.ibm.com> <CA+55aFwPgDC6gSEPfu3i-pA4f0ZbsTSvykxzX4sXMeLbdXuKrw@mail.gmail.com>
+ <20140618162117.GM4669@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403120530-27395-1-git-send-email-graham.williams@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 12:42:10PM -0700, Graham Williams wrote:
-> The vbus regulator was not getting its name set. This results
-> in the sysfs entry being empty. The lack of a bcm590xx_regs[]
-> table entry also upsets Coverity runs. Add the table entry
-> so the name gets set properly.
+On Wed, 18 Jun 2014, Paul E. McKenney wrote:
+
+> OK, unconditional non-use of NMIs is even easier.  ;-)
 > 
-> Signed-off-by: Graham Williams <graham.williams@linaro.org>
-> ---
->  drivers/regulator/bcm590xx-regulator.c |    5 +++++
->  1 file changed, 5 insertions(+)
+> Something like the following.
 > 
-> diff --git a/drivers/regulator/bcm590xx-regulator.c b/drivers/regulator/bcm590xx-regulator.c
-> index 57544e2..58ece59 100644
-> --- a/drivers/regulator/bcm590xx-regulator.c
-> +++ b/drivers/regulator/bcm590xx-regulator.c
-> @@ -119,6 +119,10 @@ static const unsigned int ldo_c_table[] = {
->  	2900000, 3000000, 3300000,
->  };
+> 							Thanx, Paul
+> 
+> ------------------------------------------------------------------------
+> 
+> rcu: Don't use NMIs to dump other CPUs' stacks
+> 
+> Although NMI-based stack dumps are in principle more accurate, they are
+> also more likely to trigger deadlocks.  This commit therefore replaces
+> all uses of trigger_all_cpu_backtrace() with rcu_dump_cpu_stacks(), so
+> that the CPU detecting an RCU CPU stall does the stack dumping.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> index c590e1201c74..777624e1329b 100644
+> --- a/kernel/rcu/tree.c
+> +++ b/kernel/rcu/tree.c
+> @@ -932,10 +932,7 @@ static void record_gp_stall_check_time(struct rcu_state *rsp)
+>  }
 >  
-> +static const unsigned int ldo_vbus[] = {
-> +	5000000,
-> +};
-> +
->  /* DCDC group CSR: supported voltages in microvolts */
->  static const struct regulator_linear_range dcdc_csr_ranges[] = {
->  	REGULATOR_LINEAR_RANGE(860000, 2, 50, 10000),
-> @@ -192,6 +196,7 @@ static struct bcm590xx_info bcm590xx_regs[] = {
->  	BCM590XX_REG_TABLE(gpldo4, ldo_a_table),
->  	BCM590XX_REG_TABLE(gpldo5, ldo_a_table),
->  	BCM590XX_REG_TABLE(gpldo6, ldo_a_table),
-> +	BCM590XX_REG_TABLE(vbus, ldo_vbus),
->  };
+>  /*
+> - * Dump stacks of all tasks running on stalled CPUs.  This is a fallback
+> - * for architectures that do not implement trigger_all_cpu_backtrace().
+> - * The NMI-triggered stack traces are more accurate because they are
+> - * printed by the target CPU.
+> + * Dump stacks of all tasks running on stalled CPUs.
+>   */
+>  static void rcu_dump_cpu_stacks(struct rcu_state *rsp)
+>  {
+> @@ -1013,7 +1010,7 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
+>  	       (long)rsp->gpnum, (long)rsp->completed, totqlen);
+>  	if (ndetected == 0)
+>  		pr_err("INFO: Stall ended before state dump start\n");
+> -	else if (!trigger_all_cpu_backtrace())
+> +	else
+>  		rcu_dump_cpu_stacks(rsp);
+>  
+>  	/* Complain about tasks blocking the grace period. */
+> @@ -1044,8 +1041,7 @@ static void print_cpu_stall(struct rcu_state *rsp)
+>  	pr_cont(" (t=%lu jiffies g=%ld c=%ld q=%lu)\n",
+>  		jiffies - rsp->gp_start,
+>  		(long)rsp->gpnum, (long)rsp->completed, totqlen);
+> -	if (!trigger_all_cpu_backtrace())
+> -		dump_stack();
+> +	rcu_dump_cpu_stacks(rsp);
 
-Also fixes the functional problem for me on the Capri board, thanks.
-Coverity should also be much happier now.
+This is prone to producing not really consistent stacktraces though, 
+right? As the target task is still running at the time the stack is being 
+walked, it might produce stacktraces that are potentially nonsensial.
 
-Acked-by: Matt Porter <mporter@linaro.org>
+How about sending NMI to the target CPU, so that the task is actually 
+stopped, but printing its stacktrace from the CPU that detected the stall 
+while it's stopped?
 
-Mark: can you pick this up for 3.16 fixes?
+That way, there is no printk()-from-NMI, but also the stacktrace is 
+guaranteed to be self-consistent.
 
--Matt
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
