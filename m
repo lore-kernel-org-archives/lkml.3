@@ -1,102 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624AbaFRTIt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 15:08:49 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:60454 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754253AbaFRTIr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 15:08:47 -0400
-Message-ID: <1403118525.23136.2.camel@x220>
-Subject: Re: [PATCH] Remove CPU_SUBTYPE_SH7764
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Richard Weinberger <richard@nod.at>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 18 Jun 2014 21:08:45 +0200
-In-Reply-To: <1403083935.1984.74.camel@x220>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
-	 <1391971686-9517-22-git-send-email-richard@nod.at>
-	 <1391981761.25855.58.camel@x220> <1397554747.1985.35.camel@x220>
-	 <CAMuHMdXawwgr7x=TFumDUh+c+-KZteHdp+NrnXTFcFcwT6gjRQ@mail.gmail.com>
-	 <1403083935.1984.74.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Jun 2014 19:08:45.0888 (UTC) FILETIME=[BA609C00:01CF8B28]
-X-RcptDomain: vger.kernel.org
+	id S1754672AbaFRTJW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 15:09:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44771 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754253AbaFRTJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 15:09:20 -0400
+From: Bandan Das <bsd@redhat.com>
+To: "Gabriel L. Somlo" <gsomlo@gmail.com>
+Cc: Eric Northup <digitaleric@google.com>,
+        Nadav Amit <namit@cs.technion.ac.il>,
+        Paolo Bonzini <pbonzini@redhat.com>, gleb@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>, joro@8bytes.org, mst@redhat.com,
+        agraf@suse.de
+Subject: Re: [PATCH 3/3] KVM: x86: correct mwait and monitor emulation
+References: <20140618184601.GE1695@ERROL.INI.CMU.EDU>
+Date: Wed, 18 Jun 2014 15:09:00 -0400
+Message-ID: <jpg38f29gs3.fsf@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-18 at 11:32 +0200, Paul Bolle wrote:
-> The symbol is an orphan, get rid of it.
-> 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> [pebolle@tiscali.nl: re-added dropped ||]
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+"Gabriel L. Somlo" <gsomlo@gmail.com> writes:
+
+> On Wed, Jun 18, 2014 at 10:59:14AM -0700, Eric Northup wrote:
+>> On Wed, Jun 18, 2014 at 7:19 AM, Nadav Amit <namit@cs.technion.ac.il> wrote:
+>> > mwait and monitor are currently handled as nop. Considering this behavior, they
+>> > should still be handled correctly, i.e., check execution conditions and generate
+>> > exceptions when required. mwait and monitor may also be executed in real-mode
+>> > and are not handled in that case.  This patch performs the emulation of
+>> > monitor-mwait according to Intel SDM (other than checking whether interrupt can
+>> > be used as a break event).
+>> >
+>> > Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+>
+> How about this instead (details in the commit log below) ? Please let
+> me know what you think, and if you'd prefer me to send it out as a
+> separate patch rather than a reply to this thread.
+
+I am not saying we should "punish" guests that don't do the right thing.
+But if we can't emulate it the right way, we emulate it  ? 
+And the fact that a workaround exists for the guest is all the more better :)
+
+> Thanks,
+> --Gabriel
+>
+>
+> From 0375a0aceb54cdbc26a6c0e5b43c46324f830ec3 Mon Sep 17 00:00:00 2001
+> From: "Gabriel L. Somlo" <somlo@cmu.edu>
+> Date: Wed, 18 Jun 2014 14:39:15 -0400
+> Subject: [PATCH] kvm: x86: revert "emulate monitor and mwait instructions as nop"
+>
+> This reverts commit 87c00572ba05aa8c9db118da75c608f47eb10b9e.
+>
+> OS X <= 10.7.* are the only known guests which realistically required
+> this functionality. As it turns out, OS X can be told to forego using
+> monitor/mwait by passing it "idlehalt=0" as a kernel argument, so we're
+> better off removing this hack from KVM altogether.
+>
+> Signed-off-by: Gabriel L. Somlo <somlo@cmu.edu>
 > ---
-> Submitted by Richard a few months ago as "[PATCH 21/28] Remove
-> CPU_SUBTYPE_SH7764".
-
-So I should have sent this with a
-    From: Richard Weinberger <richard@nod.at>
- 
-first line. Let's hope Andrew notices it. 
-
-
-Paul Bolle
-
-> Untested.
-> 
->  arch/sh/drivers/dma/Kconfig                | 5 ++---
->  arch/sh/include/cpu-sh4/cpu/dma-register.h | 1 -
->  arch/sh/include/cpu-sh4a/cpu/dma.h         | 3 +--
->  3 files changed, 3 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/sh/drivers/dma/Kconfig b/arch/sh/drivers/dma/Kconfig
-> index cfd5b90a8628..78bc97b1d027 100644
-> --- a/arch/sh/drivers/dma/Kconfig
-> +++ b/arch/sh/drivers/dma/Kconfig
-> @@ -12,9 +12,8 @@ config SH_DMA_IRQ_MULTI
->  	default y if CPU_SUBTYPE_SH7750  || CPU_SUBTYPE_SH7751  || \
->  		     CPU_SUBTYPE_SH7750S || CPU_SUBTYPE_SH7750R || \
->  		     CPU_SUBTYPE_SH7751R || CPU_SUBTYPE_SH7091  || \
-> -		     CPU_SUBTYPE_SH7763  || CPU_SUBTYPE_SH7764  || \
-> -		     CPU_SUBTYPE_SH7780  || CPU_SUBTYPE_SH7785  || \
-> -		     CPU_SUBTYPE_SH7760
-> +		     CPU_SUBTYPE_SH7763  || CPU_SUBTYPE_SH7780  || \
-> +		     CPU_SUBTYPE_SH7785  || CPU_SUBTYPE_SH7760
+>  arch/x86/kvm/cpuid.c |  2 --
+>  arch/x86/kvm/svm.c   |  8 +++-----
+>  arch/x86/kvm/vmx.c   | 10 ++++------
+>  3 files changed, 7 insertions(+), 13 deletions(-)
+>
+> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+> index 38a0afe..17b42fa 100644
+> --- a/arch/x86/kvm/cpuid.c
+> +++ b/arch/x86/kvm/cpuid.c
+> @@ -283,8 +283,6 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+>  		0 /* Reserved */ | f_lm | F(3DNOWEXT) | F(3DNOW);
+>  	/* cpuid 1.ecx */
+>  	const u32 kvm_supported_word4_x86_features =
+> -		/* NOTE: MONITOR (and MWAIT) are emulated as NOP,
+> -		 * but *not* advertised to guests via CPUID ! */
+>  		F(XMM3) | F(PCLMULQDQ) | 0 /* DTES64, MONITOR */ |
+>  		0 /* DS-CPL, VMX, SMX, EST */ |
+>  		0 /* TM2 */ | F(SSSE3) | 0 /* CNXT-ID */ | 0 /* Reserved */ |
+> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+> index ec8366c..0e8ef20 100644
+> --- a/arch/x86/kvm/svm.c
+> +++ b/arch/x86/kvm/svm.c
+> @@ -3274,7 +3274,7 @@ static int pause_interception(struct vcpu_svm *svm)
+>  	return 1;
+>  }
 >  
->  config SH_DMA_API
->  	depends on SH_DMA
-> diff --git a/arch/sh/include/cpu-sh4/cpu/dma-register.h b/arch/sh/include/cpu-sh4/cpu/dma-register.h
-> index 02788b6a03b7..9cd81e54056a 100644
-> --- a/arch/sh/include/cpu-sh4/cpu/dma-register.h
-> +++ b/arch/sh/include/cpu-sh4/cpu/dma-register.h
-> @@ -32,7 +32,6 @@
->  #define CHCR_TS_HIGH_SHIFT	(20 - 2)	/* 2 bits for shifted low TS */
->  #elif defined(CONFIG_CPU_SUBTYPE_SH7757) || \
->  	defined(CONFIG_CPU_SUBTYPE_SH7763) || \
-> -	defined(CONFIG_CPU_SUBTYPE_SH7764) || \
->  	defined(CONFIG_CPU_SUBTYPE_SH7780) || \
->  	defined(CONFIG_CPU_SUBTYPE_SH7785)
->  #define CHCR_TS_LOW_MASK	0x00000018
-> diff --git a/arch/sh/include/cpu-sh4a/cpu/dma.h b/arch/sh/include/cpu-sh4a/cpu/dma.h
-> index 89afb650ce25..8ceccceae844 100644
-> --- a/arch/sh/include/cpu-sh4a/cpu/dma.h
-> +++ b/arch/sh/include/cpu-sh4a/cpu/dma.h
-> @@ -14,8 +14,7 @@
->  #define DMTE4_IRQ	evt2irq(0xb80)
->  #define DMAE0_IRQ	evt2irq(0xbc0)	/* DMA Error IRQ*/
->  #define SH_DMAC_BASE0	0xFE008020
-> -#elif defined(CONFIG_CPU_SUBTYPE_SH7763) || \
-> -	defined(CONFIG_CPU_SUBTYPE_SH7764)
-> +#elif defined(CONFIG_CPU_SUBTYPE_SH7763)
->  #define DMTE0_IRQ	evt2irq(0x640)
->  #define DMTE4_IRQ	evt2irq(0x780)
->  #define DMAE0_IRQ	evt2irq(0x6c0)
-
-
+> -static int nop_interception(struct vcpu_svm *svm)
+> +static int invalid_op_interception(struct vcpu_svm *svm)
+>  {
+>  	skip_emulated_instruction(&(svm->vcpu));
+>  	return 1;
+> @@ -3282,14 +3282,12 @@ static int nop_interception(struct vcpu_svm *svm)
+>  
+>  static int monitor_interception(struct vcpu_svm *svm)
+>  {
+> -	printk_once(KERN_WARNING "kvm: MONITOR instruction emulated as NOP!\n");
+> -	return nop_interception(svm);
+> +	return invalid_op_interception(svm);
+>  }
+>  
+>  static int mwait_interception(struct vcpu_svm *svm)
+>  {
+> -	printk_once(KERN_WARNING "kvm: MWAIT instruction emulated as NOP!\n");
+> -	return nop_interception(svm);
+> +	return invalid_op_interception(svm);
+>  }
+>  
+>  static int (*const svm_exit_handlers[])(struct vcpu_svm *svm) = {
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index 801332e..577c7df 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -5672,22 +5672,20 @@ static int handle_pause(struct kvm_vcpu *vcpu)
+>  	return 1;
+>  }
+>  
+> -static int handle_nop(struct kvm_vcpu *vcpu)
+> +static int handle_invalid_op(struct kvm_vcpu *vcpu)
+>  {
+> -	skip_emulated_instruction(vcpu);
+> +	kvm_queue_exception(vcpu, UD_VECTOR);
+>  	return 1;
+>  }
+>  
+>  static int handle_mwait(struct kvm_vcpu *vcpu)
+>  {
+> -	printk_once(KERN_WARNING "kvm: MWAIT instruction emulated as NOP!\n");
+> -	return handle_nop(vcpu);
+> +	return handle_invalid_op(vcpu);
+>  }
+>  
+>  static int handle_monitor(struct kvm_vcpu *vcpu)
+>  {
+> -	printk_once(KERN_WARNING "kvm: MONITOR instruction emulated as NOP!\n");
+> -	return handle_nop(vcpu);
+> +	return handle_invalid_op(vcpu);
+>  }
+>  
+>  /*
