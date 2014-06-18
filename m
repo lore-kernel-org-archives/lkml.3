@@ -1,58 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342AbaFRA1O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 20:27:14 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:33790 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753514AbaFRA1M (ORCPT
+	id S1756521AbaFRA1h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 20:27:37 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43484 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756452AbaFRA1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 20:27:12 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        mporter@linaro.org, patches@linaro.org, bjorn@kryo.se,
-        ashwin.chaugule@linaro.org, gregkh@linuxfoundation.org, s-anna@ti.com,
-        loic.pallardy@st.com, lftan.linux@gmail.com, slapdau@yahoo.com.au,
-        courtney.cavin@sonymobile.com, pawel.moll@arm.com, robh+dt@kernel.org,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk, arnd@arndb.de,
-        joshc@codeaurora.org, linus.walleij@linaro.org, galak@codeaurora.org,
-        ks.giri@samsung.com
-Subject: Re: [PATCHv7 2/5] mailbox: Introduce framework for mailbox
-References: <1402592317-7043-1-git-send-email-jaswinder.singh@linaro.org>
-	<1402592479-7244-1-git-send-email-jaswinder.singh@linaro.org>
-Date: Tue, 17 Jun 2014 17:27:09 -0700
-In-Reply-To: <1402592479-7244-1-git-send-email-jaswinder.singh@linaro.org>
-	(Jassi Brar's message of "Thu, 12 Jun 2014 22:31:19 +0530")
-Message-ID: <7hionz9i5e.fsf@paris.lan>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
+	Tue, 17 Jun 2014 20:27:35 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Wed, 18 Jun 2014 09:31:52 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, stable@vger.kernel.org
+Subject: Re: [PATCH] slab: fix oops when reading /proc/slab_allocators
+Message-ID: <20140618003152.GA13917@js1304-P5Q-DELUXE>
+References: <1402967392-7003-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <20140617072933.GA26418@esperanza>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140617072933.GA26418@esperanza>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jassi Brar <jaswinder.singh@linaro.org> writes:
+On Tue, Jun 17, 2014 at 11:29:33AM +0400, Vladimir Davydov wrote:
+> Hi,
+> 
+> On Tue, Jun 17, 2014 at 10:09:52AM +0900, Joonsoo Kim wrote:
+> [...]
+> > To fix the problem, I introduces object status buffer on each slab.
+> > With this, we can track object status precisely, so slab leak detector
+> > would not access active object and no kernel oops would occur.
+> > Memory overhead caused by this fix is only imposed to
+> > CONFIG_DEBUG_SLAB_LEAK which is mainly used for debugging, so memory
+> > overhead isn't big problem.
+> [...]
+> >  
+> > +static size_t calculate_freelist_size(int nr_objs, size_t align)
+> > +{
+> > +	size_t freelist_size;
+> > +
+> > +	freelist_size = nr_objs * sizeof(freelist_idx_t);
+> > +	if (IS_ENABLED(CONFIG_DEBUG_SLAB_LEAK))
+> > +		freelist_size += nr_objs * sizeof(char);
+> > +
+> > +	if (align)
+> > +		freelist_size = ALIGN(freelist_size, align);
+> > +
+> > +	return freelist_size;
+> > +}
+> > +
+> >  static int calculate_nr_objs(size_t slab_size, size_t buffer_size,
+> >  				size_t idx_size, size_t align)
+> >  {
+> >  	int nr_objs;
+> > +	size_t remained_size;
+> >  	size_t freelist_size;
+> > +	int extra_space = 0;
+> >  
+> > +	if (IS_ENABLED(CONFIG_DEBUG_SLAB_LEAK))
+> > +		extra_space = sizeof(char);
+> >  	/*
+> >  	 * Ignore padding for the initial guess. The padding
+> >  	 * is at most @align-1 bytes, and @buffer_size is at
+> > @@ -590,14 +641,15 @@ static int calculate_nr_objs(size_t slab_size, size_t buffer_size,
+> >  	 * into the memory allocation when taking the padding
+> >  	 * into account.
+> >  	 */
+> > -	nr_objs = slab_size / (buffer_size + idx_size);
+> > +	nr_objs = slab_size / (buffer_size + idx_size + extra_space);
+> 
+> There is one more function that wants to know how much space per object
+> is spent for management. It's calculate_slab_order():
+> 
+> 	if (flags & CFLGS_OFF_SLAB) {
+> 		/*
+> 		 * Max number of objs-per-slab for caches which
+> 		 * use off-slab slabs. Needed to avoid a possible
+> 		 * looping condition in cache_grow().
+> 		 */
+> 		offslab_limit = size;
+> 		offslab_limit /= sizeof(freelist_idx_t);
+> 
+> 		if (num > offslab_limit)
+> 			break;
+> 	}
+> 
+> May be, we should update it too?
 
-> Introduce common framework for client/protocol drivers and
-> controller drivers of Inter-Processor-Communication (IPC).
->
-> Client driver developers should have a look at
->  include/linux/mailbox_client.h to understand the part of
-> the API exposed to client drivers.
-> Similarly controller driver developers should have a look
-> at include/linux/mailbox_controller.h
->
-> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
+Hello, Vladimir.
 
-This series is shaping up nicely.  The one thing I think it would
-benefit from, being a new common framework is something under
-Documentation giving a brief overview, but more importantly some 
-example code snippets of a mailbox client using the API, and maybe an
-example usage of the controller API as well.
+Yes, you are right! I sent v2 with this update. :)
 
-Not only will that guide developers who want to use/implement this API
-on their platforms, it will also aid reviewers.
-
-Thanks,
-
-Kevin
+Thanks.
