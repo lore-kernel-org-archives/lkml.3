@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966194AbaFRLJi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 07:09:38 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:56347 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966138AbaFRLJe (ORCPT
+	id S966233AbaFRLKY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 07:10:24 -0400
+Received: from mail-yk0-f177.google.com ([209.85.160.177]:52772 "EHLO
+	mail-yk0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966109AbaFRLKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 07:09:34 -0400
-Message-ID: <53A1734D.7000606@st.com>
-Date: Wed, 18 Jun 2014 13:09:01 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 18 Jun 2014 07:10:22 -0400
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: <kernel@stlinux.com>, <patrice.chotard@st.com>,
-        <srinivas.kandagatla@gmail.com>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2] ARM: stih41x: Rename stih416-b2020-revE.dts to stih416-b2020e.dts
-References: <1403087508-6710-1-git-send-email-lee.jones@linaro.org> <20140618105438.GC8300@lee--X1>
-In-Reply-To: <20140618105438.GC8300@lee--X1>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-18_04:2014-06-17,2014-06-18,1970-01-01 signatures=0
+In-Reply-To: <1403087119.1984.93.camel@x220>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+ <1391971686-9517-10-git-send-email-richard@nod.at> <52F7D480.1050106@hauke-m.de>
+ <52F7DF21.70207@nod.at> <CAHNKnsS7Mv4ZhBWZa53go9L9nZimJ7_FG5HFJ9C3kkGMAEz-mA@mail.gmail.com>
+ <52F8C373.9060108@rempel-privat.de> <CAHNKnsQF5Hdf3JT91moPraRQzn4kMpdD2NSiJ7b30wQhS1W4MA@mail.gmail.com>
+ <CAGVrzcYnECx5Q=i+m6qZn29y4JALDpw5SWoUNP-S6HgPR3_ygQ@mail.gmail.com>
+ <CAHNKnsRACSo=DfOyiHxqV3acv_wfZmz4tMnYAW0wo4OCibwdfA@mail.gmail.com>
+ <CAHNKnsRQp7WLSJNAXEYPTd=qs1DquOfNgKtHES-Utvcy1=FEgQ@mail.gmail.com>
+ <20140213201421.GJ22203@tuxdriver.com> <1397581703.8212.5.camel@x220>
+ <CAHNKnsQQ42-XnXrubHAy4PF3H2ynbGDdSMP7MvDS_1aRozYF=A@mail.gmail.com> <1403087119.1984.93.camel@x220>
+From: Sergey Ryazanov <ryazanov.s.a@gmail.com>
+Date: Wed, 18 Jun 2014 15:10:02 +0400
+Message-ID: <CAHNKnsSfaT7xC5_wv=TrGLEQ2pjC91Q1XG891_n64OuR0fA9Jg@mail.gmail.com>
+Subject: Re: [PATCH 09/28] Remove ATHEROS_AR231X
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Jiri Slaby <jirislaby@gmail.com>, Nick Kossifidis <mickflemm@gmail.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Oleksij Rempel <linux@rempel-privat.de>,
+        Richard Weinberger <richard@nod.at>,
+        Jonathan Bither <jonbither@gmail.com>,
+        Hauke Mehrtens <hauke@hauke-m.de>, ath5k-devel@venema.h4ckr.net,
+        open@hauke-m.de,
+        "list@hauke-m.de:NETWORKING DRIVERS" <list@hauke-m.de>,
+        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
+        OpenWrt Development List <openwrt-devel@lists.openwrt.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "list@hauke-m.de:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+Hi Paul,
 
-On 06/18/2014 12:54 PM, Lee Jones wrote:
-> Two reasons for this rename.  Firstly, it removes the camel case
-> convention which isn't used by any other platform and secondly it
-> matches the naming convention for the internal kernel, which can
-> become annoying when flipping between the two.
+2014-06-18 14:25 GMT+04:00 Paul Bolle <pebolle@tiscali.nl>:
+> Jiri, Nick, Luis, John,
 >
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-
-Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
-
-It will be part of the STi pull-request for 3.16 fixes.
-
-Thanks,
-Maxime
-
-> ---
-> v1 -> v2: Appropriate change to the Makefile.
-> ---
->   arch/arm/boot/dts/Makefile                                       | 2 +-
->   arch/arm/boot/dts/{stih416-b2020-revE.dts => stih416-b2020e.dts} | 0
->   2 files changed, 1 insertion(+), 1 deletion(-)
->   rename arch/arm/boot/dts/{stih416-b2020-revE.dts => stih416-b2020e.dts} (100%)
+> On Wed, 2014-04-16 at 13:20 +0400, Sergey Ryazanov wrote:
+>> 2014-04-15 21:08 GMT+04:00 Paul Bolle <pebolle@tiscali.nl>:
+>> > On Thu, 2014-02-13 at 15:14 -0500, John W. Linville wrote:
+>> >> On Wed, Feb 12, 2014 at 02:50:30PM +0400, Sergey Ryazanov wrote:
+>> >> > John, can you delay the merging of this patch for a few months, I will
+>> >> > try to prepare the necessary patches to add AR231x architecture to the
+>> >> > kernel and send them to linux-mips.
+>> >>
+>> >> OK -- looking forward to your patches.
+>> >
+>> > So am I. Is there any news on this front?
+>> >
+>>
+>> Work still in progress :(
 >
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index 5986ff6..adb5ed9 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -357,7 +357,7 @@ dtb-$(CONFIG_ARCH_STI)+= stih407-b2120.dtb \
->          stih415-b2020.dtb \
->          stih416-b2000.dtb \
->          stih416-b2020.dtb \
-> -       stih416-b2020-revE.dtb
-> +       stih416-b2020e.dtb
->   dtb-$(CONFIG_MACH_SUN4I) += \
->          sun4i-a10-a1000.dtb \
->          sun4i-a10-cubieboard.dtb \
-> diff --git a/arch/arm/boot/dts/stih416-b2020-revE.dts b/arch/arm/boot/dts/stih416-b2020e.dts
-> similarity index 100%
-> rename from arch/arm/boot/dts/stih416-b2020-revE.dts
-> rename to arch/arm/boot/dts/stih416-b2020e.dts
+> ATHEROS_AR231X and the things depending on it, like AHB bus support,
+> have been discussed for three years now. When will you (re)consider a
+> patch to remove all currently dead code?
 >
+> And to state the obvious: AHB bus support, and the other code depending
+> on ATHEROS_AR231X, can always be re-added once ATHEROS_AR231X gets added
+> to the tree.
+>
+
+Work in progress, I don't stop it. Just work is progressing slower
+than I had planned. I am already cleanup the code (mostly checkpatch
+errors and warnings) and send patches to OpenWRT tree. Further I plan
+to simplify initialization and I will be ready to send patches
+upstream.
+
+I need a couple of weeks for this. Is its reasonable time to not make
+a mess of remove/add commits?
+
+-- 
+BR,
+Sergey
