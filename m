@@ -1,95 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218AbaFRTFc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 15:05:32 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34310 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751413AbaFRTF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 15:05:29 -0400
-Message-ID: <53A1E2F3.8070205@ti.com>
-Date: Wed, 18 Jun 2014 14:05:23 -0500
-From: Dan Murphy <dmurphy@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754366AbaFRTH5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 15:07:57 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:42113 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812AbaFRTH4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 15:07:56 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: <linux-sound@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>
-Subject: Re: [RFC PATCH] ASoC: tas2552: Support TI TAS2552 Amplifier
-References: <1403113547-15120-1-git-send-email-dmurphy@ti.com> <20140618184440.GK5099@sirena.org.uk>
-In-Reply-To: <20140618184440.GK5099@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
+References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Wed, 18 Jun 2014 14:07:35 -0500
+Message-ID: <CAL_JsqKw-C6uZBU3hccGmdofXcCcUKTV6z7Af6KwYwnZiy3HoQ@mail.gmail.com>
+Subject: Re: [PATCH] ARM: /proc/cpuinfo: Use DT machine name when possible
+To: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Sebastian Reichel <sre@debian.org>, Pavel Machek <pavel@ucw.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark
-Thanks for the comments
-
-On 06/18/2014 01:44 PM, Mark Brown wrote:
-> On Wed, Jun 18, 2014 at 12:45:46PM -0500, Dan Murphy wrote:
+On Wed, Jun 18, 2014 at 11:54 AM, Pali Rohár <pali.rohar@gmail.com> wrote:
+> Machine name from board description is some generic name on DT kernel.
+> DT provides machine name property which is specific for board, so use
+> it instead generic one when possible.
 >
->> +static int tas2552_i2c_read(struct tas2552_data *tas_data, int reg)
->> +{
->> +	int val;
->> +
->> +	if (WARN_ON(!tas_data->tas2552_client))
->> +		return -EINVAL;
->> +
->> +	/* If powered off, return the cached value */
->> +	mutex_lock(&tas_data->mutex);
->> +	if (tas_data->power_state) {
->> +		val = i2c_smbus_read_byte_data(tas_data->tas2552_client, reg);
-> Don't open code your I/O, use regmap like any other CODEC driver.  This
-> will remove a very large proportion of the code in the driver which
-> replicates features of the regmap framework.
-
-My initial implementation was with regmap but it gave me heart ache.
-Which could have been wonky HW.
-
-I will attempt regmap again and see if it was just a HW issue.
-
+> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+> ---
+>  arch/arm/kernel/setup.c |    7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
 >
->> +static int tas2552_startup(struct snd_pcm_substream *substream,
->> +			   struct snd_soc_dai *dai)
->> +{
->> +	struct snd_soc_codec *codec = dai->codec;
->> +	struct tas2552_data *tas2552 = snd_soc_codec_get_drvdata(codec);
->> +
->> +	tas2552_sw_shutdown(tas2552, 1);
->> +	tas2552_power(tas2552, 1);
->> +	/* Turn on Class D amplifier */
->> +	tas2552_i2c_write(tas2552, TAS2552_CFG_2, 0x80);
->> +	tas2552_sw_shutdown(tas2552, 0);
-> I'd expect this to be done using DAPM.
-
-Will take a look at it for V2.
-
+> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+> index 8a16ee5..fbc7b4f 100644
+> --- a/arch/arm/kernel/setup.c
+> +++ b/arch/arm/kernel/setup.c
+> @@ -875,10 +875,13 @@ void __init setup_arch(char **cmdline_p)
 >
->> +static const struct regmap_config tas2552_regmap_config = {
->> +	.reg_bits = 8,
->> +	.val_bits = 8,
->> +
->> +	.max_register = TAS2552_MAX_REG,
->> +	.reg_defaults = NULL,
->> +	.num_reg_defaults = 0,
-> No need to set things to zero or NULL in static variables, that's the
-> default.
+>         setup_processor();
+>         mdesc = setup_machine_fdt(__atags_pointer);
+> -       if (!mdesc)
+> +       if (mdesc)
+> +               machine_name = of_flat_dt_get_machine_name();
+> +       else
+>                 mdesc = setup_machine_tags(__atags_pointer, __machine_arch_type);
+>         machine_desc = mdesc;
+> -       machine_name = mdesc->name;
+> +       if (!machine_name)
+> +               machine_name = mdesc->name;
+>
+>         if (mdesc->reboot_mode != REBOOT_HARD)
+>                 reboot_mode = mdesc->reboot_mode;
 
-This was an artifact from my regmap implementation.  This will be
-populated when I re-implement the regmap code.
+I did a similar patch previously[1]. Like my original patch, your
+patch unconditionally changes the name which could be considered part
+of the userspace ABI. It's arguably not good practice for userspace to
+depend on the name, but there are likely cases that do. So I think
+this needs to be optional and only use the DT name if the machine desc
+name is NULL.
 
->> +	dev = &client->dev;
->> +	data = devm_kzalloc(&client->dev, sizeof(*data), GFP_KERNEL);
->> +	if (data == NULL) {
->> +		dev_err(dev, "Can not allocate memory\n");
-> No need to print an error, OOM messages are already quite noisy.
+So something like the below and then change the machine descriptors
+you care about. The default generic DT machine desc should definitely
+be changed.
 
-Will remove.
+I had a follow-up discussion with Grant about his concerns in the
+thread about knowing which machine desc used to boot. He said he was
+okay if just the machine desc address is printed out.
 
-Dan
 
--- 
-------------------
-Dan Murphy
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 50e198c..1479250 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -887,7 +887,7 @@ void __init setup_arch(char **cmdline_p)
+        if (!mdesc)
+                mdesc = setup_machine_tags(__atags_pointer,
+__machine_arch_type);
+        machine_desc = mdesc;
+-       machine_name = mdesc->name;
++       machine_name = mdesc->name ? mdesc->name :
+of_flat_dt_get_machine_name();
 
+        if (mdesc->reboot_mode != REBOOT_HARD)
+                reboot_mode = mdesc->reboot_mode;
+
+
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-November/208878.html
