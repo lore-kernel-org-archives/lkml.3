@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966656AbaFRNEQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 09:04:16 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:47169 "EHLO gloria.sntech.de"
+	id S966672AbaFRNEm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 09:04:42 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:47177 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966401AbaFRNEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 09:04:15 -0400
+	id S966401AbaFRNEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 09:04:40 -0400
 From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
 To: Rob Jones <rob.jones@codethink.co.uk>
 Cc: linus.walleij@linaro.org, gnurou@gmail.com, lgirdwood@gmail.com,
         broonie@kernel.org, linux-gpio@vger.kernel.org,
         linux-kernel@vger.kernel.org, ian.molton@codethink.co.uk,
         ben.dooks@codethink.co.uk
-Subject: Re: [PATCH 3/3] drivers/regulator: gpio-regulator.c: use managed resources for probe.
-Date: Wed, 18 Jun 2014 15:05:31 +0200
-Message-ID: <87697987.GOalQlOk20@diego>
+Subject: Re: [PATCH 2/3] drivers/base: devres.c: Add block copy func. for managed devices
+Date: Wed, 18 Jun 2014 15:05:58 +0200
+Message-ID: <1713451.AmufNoybT7@diego>
 User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1402411308-14182-4-git-send-email-rob.jones@codethink.co.uk>
-References: <1402411308-14182-1-git-send-email-rob.jones@codethink.co.uk> <1402411308-14182-4-git-send-email-rob.jones@codethink.co.uk>
+In-Reply-To: <1402411308-14182-3-git-send-email-rob.jones@codethink.co.uk>
+References: <1402411308-14182-1-git-send-email-rob.jones@codethink.co.uk> <1402411308-14182-3-git-send-email-rob.jones@codethink.co.uk>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -25,150 +25,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 10. Juni 2014, 15:41:48 schrieb Rob Jones:
-> Use managed resource functions for all resource allocations in
-> gpio_regulator_probe().
-> 
-> Remove gpio_regulator_remove() as it is now redundant.
+Am Dienstag, 10. Juni 2014, 15:41:47 schrieb Rob Jones:
+> Add function devm_kmemdup().
+> Rationalise with devm_kstrdup() to avoid code duplication.
 > 
 > Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
 > Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
-
-Reviewed-by: Heiko Stuebner <heiko@sntech.de>
-
-
 > ---
->  drivers/regulator/gpio-regulator.c |   71
-> ++++++++++++------------------------ 1 file changed, 24 insertions(+), 47
-> deletions(-)
+>  drivers/base/devres.c  |   42 ++++++++++++++++++++++++++++++++++--------
+>  include/linux/device.h |    2 ++
+>  2 files changed, 36 insertions(+), 8 deletions(-)
 > 
-> diff --git a/drivers/regulator/gpio-regulator.c
-> b/drivers/regulator/gpio-regulator.c index 989b23b..56341c3 100644
-> --- a/drivers/regulator/gpio-regulator.c
-> +++ b/drivers/regulator/gpio-regulator.c
-> @@ -254,30 +254,31 @@ static int gpio_regulator_probe(struct platform_device
-> *pdev) if (drvdata == NULL)
->  		return -ENOMEM;
+> diff --git a/drivers/base/devres.c b/drivers/base/devres.c
+> index db4e264..978bbe2 100644
+> --- a/drivers/base/devres.c
+> +++ b/drivers/base/devres.c
+> @@ -791,6 +791,20 @@ void * devm_kmalloc(struct device *dev, size_t size,
+> gfp_t gfp) EXPORT_SYMBOL_GPL(devm_kmalloc);
 > 
-> -	drvdata->desc.name = kstrdup(config->supply_name, GFP_KERNEL);
-> +	drvdata->desc.name = devm_kstrdup(&pdev->dev,
-> +					  config->supply_name,
-> +					  GFP_KERNEL);
->  	if (drvdata->desc.name == NULL) {
->  		dev_err(&pdev->dev, "Failed to allocate supply name\n");
-> -		ret = -ENOMEM;
-> -		goto err;
-> +		return -ENOMEM;
->  	}
-> 
-> -	drvdata->gpios = kmemdup(config->gpios,
-> -				 config->nr_gpios * sizeof(struct gpio),
-> -				 GFP_KERNEL);
-> +	drvdata->gpios = devm_kmemdup(&pdev->dev,
-> +				      config->gpios,
-> +				      config->nr_gpios * sizeof(struct gpio),
-> +				      GFP_KERNEL);
->  	if (drvdata->gpios == NULL) {
->  		dev_err(&pdev->dev, "Failed to allocate gpio data\n");
-> -		ret = -ENOMEM;
-> -		goto err_name;
-> +		return -ENOMEM;
->  	}
-> 
-> -	drvdata->states = kmemdup(config->states,
-> -				  config->nr_states *
-> +	drvdata->states = devm_kmemdup(&pdev->dev,
-> +				       config->states,
-> +				       config->nr_states *
->  					 sizeof(struct gpio_regulator_state),
-> -				  GFP_KERNEL);
-> +				       GFP_KERNEL);
->  	if (drvdata->states == NULL) {
->  		dev_err(&pdev->dev, "Failed to allocate state data\n");
-> -		ret = -ENOMEM;
-> -		goto err_memgpio;
-> +		return -ENOMEM;
->  	}
->  	drvdata->nr_states = config->nr_states;
-> 
-> @@ -297,16 +298,17 @@ static int gpio_regulator_probe(struct platform_device
-> *pdev) break;
->  	default:
->  		dev_err(&pdev->dev, "No regulator type set\n");
-> -		ret = -EINVAL;
-> -		goto err_memgpio;
-> +		return -EINVAL;
->  	}
-> 
->  	drvdata->nr_gpios = config->nr_gpios;
-> -	ret = gpio_request_array(drvdata->gpios, drvdata->nr_gpios);
-> +	ret = devm_gpio_request_array(&pdev->dev,
-> +				      drvdata->gpios,
-> +				      drvdata->nr_gpios);
->  	if (ret) {
->  		dev_err(&pdev->dev,
->  		   "Could not obtain regulator setting GPIOs: %d\n", ret);
-> -		goto err_memstate;
-> +		return ret;
->  	}
-> 
->  	/* build initial state from gpio init data. */
-> @@ -337,43 +339,18 @@ static int gpio_regulator_probe(struct platform_device
-> *pdev) cfg.ena_gpio_flags |= GPIOF_OUT_INIT_HIGH;
->  	}
-> 
-> -	drvdata->dev = regulator_register(&drvdata->desc, &cfg);
-> +	drvdata->dev = devm_regulator_register(&pdev->dev,
-> +					       &drvdata->desc,
-> +					       &cfg);
->  	if (IS_ERR(drvdata->dev)) {
->  		ret = PTR_ERR(drvdata->dev);
->  		dev_err(&pdev->dev, "Failed to register regulator: %d\n", ret);
-> -		goto err_stategpio;
-> +		return ret;
->  	}
-> 
->  	platform_set_drvdata(pdev, drvdata);
-> 
->  	return 0;
+>  /**
+> + * static function to avoid code duplication when duplicating buffers
+> + */
+> +static void *devm_kmemdup_nochecks(struct device *dev, const void *s,
+> +				    size_t size, gfp_t gfp)
+> +{
+> +	void *buf;
+> +
+> +	buf = devm_kmalloc(dev, size, gfp);
+> +	if (buf)
+> +		memcpy(buf, s, size);
+> +	return buf;
+> +}
+> +
+> +/**
+>   * devm_kstrdup - Allocate resource managed space and
+>   *                copy an existing string into that.
+>   * @dev: Device to allocate memory for
+> @@ -802,21 +816,33 @@ EXPORT_SYMBOL_GPL(devm_kmalloc);
+>   */
+>  char *devm_kstrdup(struct device *dev, const char *s, gfp_t gfp)
+>  {
+> -	size_t size;
+> -	char *buf;
 > -
-> -err_stategpio:
-> -	gpio_free_array(drvdata->gpios, drvdata->nr_gpios);
-> -err_memstate:
-> -	kfree(drvdata->states);
-> -err_memgpio:
-> -	kfree(drvdata->gpios);
-> -err_name:
-> -	kfree(drvdata->desc.name);
-> -err:
-> -	return ret;
-> -}
-> -
-> -static int gpio_regulator_remove(struct platform_device *pdev)
-> -{
-> -	struct gpio_regulator_data *drvdata = platform_get_drvdata(pdev);
-> -
-> -	regulator_unregister(drvdata->dev);
-> -
-> -	gpio_free_array(drvdata->gpios, drvdata->nr_gpios);
-> -
-> -	kfree(drvdata->states);
-> -	kfree(drvdata->gpios);
-> -
-> -	kfree(drvdata->desc.name);
-> -
-> -	return 0;
+>  	if (!s)
+>  		return NULL;
+> 
+> -	size = strlen(s) + 1;
+> -	buf = devm_kmalloc(dev, size, gfp);
+> -	if (buf)
+> -		memcpy(buf, s, size);
+> -	return buf;
+> +	return devm_kmemdup_nochecks(dev, s, (strlen(s)+1), gfp);
 >  }
+>  EXPORT_SYMBOL_GPL(devm_kstrdup);
+
+hmm, this looks like an unrelated change to me and may warrant a separate 
+patch for the devm_kstrdup change.
+
+
 > 
->  #if defined(CONFIG_OF)
-> @@ -385,7 +362,7 @@ static const struct of_device_id
-> regulator_gpio_of_match[] = {
+>  /**
+> + * devm_kmemdup - Allocate resource managed space and
+> + *                copy existing data into that.
+> + * @dev: Device to allocate memory for
+> + * @s: the memory block to duplicate
+> + * @gfp: the GFP mask used in the devm_kmalloc() call when
+> + *       allocating memory
+> + * RETURNS:
+> + * Pointer to allocated string on success, NULL on failure.
+> + */
+> +void *devm_kmemdup(struct device *dev, const void *s, size_t size, gfp_t
+> gfp) +{
+> +	if (!s || (size == 0))
+> +		return NULL;
+> +
+> +	return devm_kmemdup_nochecks(dev, s, size, gfp);
+> +}
+> +EXPORT_SYMBOL_GPL(devm_kmemdup);
+> +
+> +/**
+>   * devm_kfree - Resource-managed kfree
+>   * @dev: Device this memory belongs to
+>   * @p: Memory to free
+> diff --git a/include/linux/device.h b/include/linux/device.h
+> index d1d1c05..7ace116 100644
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -623,6 +623,8 @@ static inline void *devm_kcalloc(struct device *dev,
+>  }
+>  extern void devm_kfree(struct device *dev, void *p);
+>  extern char *devm_kstrdup(struct device *dev, const char *s, gfp_t gfp);
+> +extern void *devm_kmemdup(struct device *dev,
+> +			  const void *s, size_t size, gfp_t gfp);
 > 
->  static struct platform_driver gpio_regulator_driver = {
->  	.probe		= gpio_regulator_probe,
-> -	.remove		= gpio_regulator_remove,
-> +	.remove		= NULL,
->  	.driver		= {
->  		.name		= "gpio-regulator",
->  		.owner		= THIS_MODULE,
+>  void __iomem *devm_ioremap_resource(struct device *dev, struct resource
+> *res); void __iomem *devm_request_and_ioremap(struct device *dev,
 
