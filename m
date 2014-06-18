@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225AbaFRXpg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 19:45:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43206 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753506AbaFRXpf (ORCPT
+	id S1756599AbaFRXqS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 19:46:18 -0400
+Received: from exprod5og116.obsmtp.com ([64.18.0.147]:33519 "HELO
+	exprod5og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756515AbaFRXqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 19:45:35 -0400
-Date: Wed, 18 Jun 2014 16:49:34 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Dmitry Torokhov <dtor@vmware.com>, linux-kernel@vger.kernel.org,
-        pv-drivers@vmware.com
-Subject: Re: [PATCH] MAINTAINERS: add entry for VMware Balloon driver
-Message-ID: <20140618234934.GA9378@kroah.com>
-References: <1403132941-1394-1-git-send-email-dtor@vmware.com>
- <20140618231742.GB7234@kroah.com>
- <4389061.FeVMqoJiMc@dtor-d630.eng.vmware.com>
- <1403134100.14018.8.camel@joe-AO725>
+	Wed, 18 Jun 2014 19:46:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403134100.14018.8.camel@joe-AO725>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140617.132024.1213369771856463527.davem@davemloft.net>
+References: <1402964326-11147-5-git-send-email-isubramanian@apm.com>
+	<20140616.214247.1154200670003936158.davem@davemloft.net>
+	<CAKh23F=2undAW=nWibOreAM8DJiQKpLx=OboCX=fNZE+OU=AbA@mail.gmail.com>
+	<20140617.132024.1213369771856463527.davem@davemloft.net>
+Date: Wed, 18 Jun 2014 16:46:11 -0700
+Message-ID: <CAKh23FmnZqZkDaGYPfnKRrvCYQ4_6W_RRKbqEbc4nbD6jqQaLA@mail.gmail.com>
+Subject: Re: [PATCH v6 4/4] drivers: net: Add APM X-Gene SoC ethernet driver support.
+From: Iyappan Subramanian <isubramanian@apm.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "jcm@redhat.com" <jcm@redhat.com>, patches <patches@apm.com>,
+        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 04:28:20PM -0700, Joe Perches wrote:
-> On Wed, 2014-06-18 at 16:19 -0700, Dmitry Torokhov wrote:
-> > On Wednesday, June 18, 2014 04:17:42 PM Greg Kroah-Hartman wrote:
-> > > On Wed, Jun 18, 2014 at 04:09:01PM -0700, Dmitry Torokhov wrote:
-> > > > Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
-> > > > ---
-> > > > 
-> > > >  MAINTAINERS                |    6 ++++++
-> > > >  drivers/misc/vmw_balloon.c |    2 +-
-> > > >  2 files changed, 7 insertions(+), 1 deletions(-)
-> > > > 
-> > > > diff --git a/MAINTAINERS b/MAINTAINERS
-> > > > index 6c484ac..3a446e8 100644
-> > > > --- a/MAINTAINERS
-> > > > +++ b/MAINTAINERS
-> > > > @@ -9645,6 +9645,12 @@ L:	virtualization@lists.linux-foundation.org
-> > > > 
-> > > >  S:	Supported
-> > > >  F:	arch/x86/kernel/cpu/vmware.c
-> > > > 
-> > > > +VMWARE BALLOON DRIVER
-> > > > +M:	"VMware, Inc." <pv-drivers@vmware.com>
-> > > > +L:	linux-kernel@vger.kernel.org
-> > > > +S:	Maintained
-> > > > +F:	drivers/misc/vmw_balloon.c
-> > > 
-> > > I really hate having a "alias" as a maintainer, and not a "real" name.
-> > > Kernel development is done by individuals, we don't have companies as
-> > > authors or signed-off-by lines, we have developers.
-> > > 
-> > > So I will not accept this, sorry.  Please find a real person who is
-> > > willing to maintain this code, or just mark it unsupported.
-> > > 
-> > 
-> > OK, fair enough, we'll find a real name to attach here.
-> 
-> It's definitely better to have a person's name there but
-> there are many company exploders/aliases in MAINTAINERS.
-> 
-> There already is a pv-drivers@vmware.com too.
-> 
-> MAINTAINERS:M:  Adaptec OEM Raid Solutions <aacraid@adaptec.com>
-> MAINTAINERS:M:  dm-devel@redhat.com
-> MAINTAINERS:M:  Intel Linux Wireless <ilw@linux.intel.com>
-> MAINTAINERS:M:  Intel SCU Linux support <intel-linux-scu@intel.com>
-> MAINTAINERS:M:  iscsi-driver@qlogic.com
-> MAINTAINERS:M:  linux-driver@qlogic.com
-> MAINTAINERS:M:  Linux NICS <linux.nics@intel.com>
-> MAINTAINERS:M:  linux-wimax@intel.com
-> MAINTAINERS:M:  qla2xxx-upstream@qlogic.com
-> MAINTAINERS:M:  Solarflare linux maintainers <linux-net-drivers@solarflare.com>
-> MAINTAINERS:M:  support@lsi.com
-> MAINTAINERS:M:  Support Opensource <support.opensource@diasemi.com>
-> MAINTAINERS:M:  "VMware, Inc." <pv-drivers@vmware.com>
+On Tue, Jun 17, 2014 at 1:20 PM, David Miller <davem@davemloft.net> wrote:
+> From: Iyappan Subramanian <isubramanian@apm.com>
+> Date: Tue, 17 Jun 2014 12:21:08 -0700
+>
+>> On Mon, Jun 16, 2014 at 9:42 PM, David Miller <davem@davemloft.net> wrote:
+>>> From: Iyappan Subramanian <isubramanian@apm.com>
+>>> Date: Mon, 16 Jun 2014 17:18:46 -0700
+>>>
+>>>> +static netdev_tx_t xgene_enet_start_xmit(struct sk_buff *skb,
+>>>> +                                      struct net_device *ndev)
+>>>> +{
+>>>> +     struct xgene_enet_pdata *pdata = netdev_priv(ndev);
+>>>> +     struct xgene_enet_desc_ring *tx_ring = pdata->tx_ring;
+>>>> +     struct xgene_enet_desc_ring *cp_ring = tx_ring->cp_ring;
+>>>> +     u32 tx_level, cq_level;
+>>>> +
+>>>> +     tx_level = xgene_enet_ring_len(tx_ring);
+>>>> +     cq_level = xgene_enet_ring_len(cp_ring);
+>>>> +     if (unlikely(tx_level > pdata->tx_qcnt_hi ||
+>>>> +                  cq_level > pdata->cp_qcnt_hi)) {
+>>>> +             netif_stop_queue(ndev);
+>>>> +             return NETDEV_TX_BUSY;
+>>>> +     }
+>>>> +
+>>>> +     if (xgene_enet_setup_tx_desc(tx_ring, skb))
+>>>> +             return NETDEV_TX_OK;
+>>>
+>>> If you return NETDEV_TX_OK, it is your responsibility to deal with the
+>>> SKB, because you own it.
+>>>
+>>> In particular, you have to free the packet.
+>>
+>> skb freeing happens in xgene_enet_tx_completion().
+>
+> You're not queueing up the packet when DMA mapping the packet fails,
+> which is the only condition that causes xgene_enet_setup_tx_desc() to
+> return an error, so xgene_enet_tx_completion() will not be called.
+>
+> Can you really not see this?
 
-Yeah, and in every case I've ever had to deal with one, it's never
-worked.  People are maintainers, not email aliases.
-
-greg k-h
+I am sorry I missed that.  I will fix this.
