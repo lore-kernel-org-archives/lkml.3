@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756499AbaFRAeA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 20:34:00 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:40686 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753357AbaFRAd7 (ORCPT
+	id S932801AbaFRAgQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 20:36:16 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48821 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755289AbaFRAgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 20:33:59 -0400
+	Tue, 17 Jun 2014 20:36:15 -0400
 X-Original-SENDERIP: 10.177.220.181
 X-Original-MAILFROM: namhyung@gmail.com
 From: Namhyung Kim <namhyung@gmail.com>
-To: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: acme@kernel.org, artagnon@gmail.com, jolsa@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] perf timechart: add more options to IO mode
-References: <1402412694-5996-1-git-send-email-stfomichev@yandex-team.ru>
-	<1402412694-5996-4-git-send-email-stfomichev@yandex-team.ru>
-	<87lht39bx0.fsf@sejong.aot.lge.com>
-	<20140616061522.GB9394@stfomichev-desktop.yandex.net>
-Date: Wed, 18 Jun 2014 09:33:57 +0900
-In-Reply-To: <20140616061522.GB9394@stfomichev-desktop.yandex.net> (Stanislav
-	Fomichev's message of "Mon, 16 Jun 2014 10:15:22 +0400")
-Message-ID: <87oaxr839m.fsf@sejong.aot.lge.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, acme@infradead.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 9/9] perf, tools: Add a --quiet flag to perf list
+References: <1402700580-26939-1-git-send-email-andi@firstfloor.org>
+	<1402700580-26939-10-git-send-email-andi@firstfloor.org>
+	<1402838261.1684.39.camel@leonhard>
+	<20140615161138.GH5714@two.firstfloor.org>
+Date: Wed, 18 Jun 2014 09:36:12 +0900
+In-Reply-To: <20140615161138.GH5714@two.firstfloor.org> (Andi Kleen's message
+	of "Sun, 15 Jun 2014 18:11:38 +0200")
+Message-ID: <87k38f835v.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -29,15 +29,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jun 2014 10:15:22 +0400, Stanislav Fomichev wrote:
->> It's in nano-second unit, right?  If so, it's very unconvenient for user
->> to specify.  Maybe we could support to parse unit (s, ms, us, ...) also.
-> Yes, it's nano-second. I didn't want to limit it to ms, because I
-> still want to be able to specify ns. I think it's a good idea to support
-> parsing units. Can I use OPT_CALLBACK or there is a better way to do that
-> (I couldn't find any similar conversions in perf)?
+Hi Andi,
 
-Please use OPT_CALLBACK.
+On Sun, 15 Jun 2014 18:11:38 +0200, Andi Kleen wrote:
+> On Sun, Jun 15, 2014 at 10:17:41PM +0900, Namhyung Kim wrote:
+>> > It's still default to print descriptions as that is the more useful
+>> > default for most users.  Requested by Namhyung Kim.
+>> 
+>> Did I request the --quiet thing?  It seems like there's a
+>> miscommunication.. :-/
+>
+> Well it was done based on your feedback, and gets the closest
+> to your original request as possible.
+>
+>> Btw, it'd better if it can support event glob on the pmu events (or
+>> simply all events) too as this will increase the number of events
+>> significantly.  But this can be a further work.
+>
+> That already works.
+
+Oh, didn't notice that.  Nice work! :)
 
 Thanks,
 Namhyung
+
+
+>
+> % perf list icache*
+> List of pre-defined events (to be used in -e):
+>   icache.ifetch_stall                                [Cycles where a code-fetch
+>                                                       stalled due to L1
+>                                                       instruction-cache miss
+>                                                       or an iTLB miss]
+>   icache.misses                                      [Number of Instruction
+>                                                       Cache, Streaming Buffer
+>                                                       and Victim Cache
+>                                                       Misses. Includes
+>                                                       Uncacheable accesses]
+> %
+>
+> -Andi
