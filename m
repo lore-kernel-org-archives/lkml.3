@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752365AbaFRP06 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 11:26:58 -0400
-Received: from g5t1625.atlanta.hp.com ([15.192.137.8]:23821 "EHLO
-	g5t1625.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285AbaFRP05 (ORCPT
+	id S1752786AbaFRP1G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 11:27:06 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:48592 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752614AbaFRP1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 11:26:57 -0400
-Message-ID: <53A1AFBB.7090800@hp.com>
-Date: Wed, 18 Jun 2014 11:26:51 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Wed, 18 Jun 2014 11:27:03 -0400
+Date: Wed, 18 Jun 2014 16:26:56 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: kernel@stlinux.com, thierry.reding@gmail.com, linux-pwm@vger.kernel.org,
+        maxime.coquelin@st.com, patrice.chotard@st.com,
+        srinivas.kandagatla@gmail.com, devicetree@vger.kernel.org,
+        ajitpal.singh@st.com
+Subject: [PATCH v2 1/7] ARM: stih407: Add DT nodes for for PWM
+Message-ID: <20140618152656.GE15956@lee--X1>
+References: <1403103172-19856-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, tglx@linutronix.de,
-        mingo@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        paolo.bonzini@gmail.com, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, paulmck@linux.vnet.ibm.com,
-        riel@redhat.com, torvalds@linux-foundation.org,
-        raghavendra.kt@linux.vnet.ibm.com, david.vrabel@citrix.com,
-        oleg@redhat.com, gleb@redhat.com, scott.norton@hp.com,
-        chegu_vinod@hp.com, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 10/11] qspinlock: Paravirt support
-References: <20140615124657.264658593@chello.nl> <20140615130154.213923590@chello.nl> <539F6AD5.4070301@hp.com> <53A18000.8080909@redhat.com>
-In-Reply-To: <53A18000.8080909@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403103172-19856-1-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2014 08:03 AM, Paolo Bonzini wrote:
-> Il 17/06/2014 00:08, Waiman Long ha scritto:
->>> +void __pv_queue_unlock(struct qspinlock *lock)
->>> +{
->>> +    int val = atomic_read(&lock->val);
->>> +
->>> +    native_queue_unlock(lock);
->>> +
->>> +    if (val & _Q_LOCKED_SLOW)
->>> +        ___pv_kick_head(lock);
->>> +}
->>> +
->>
->> Again a race can happen here between the reading and writing of the lock
->> value. I can't think of a good way to do that without using cmpxchg.
->
-> Could you just use xchg on the locked byte?
->
-> Paolo
+ARM: stih407: Add DT nodes for for PWM
 
-The slowpath flag is just an indication that the queue head cpu might 
-have been suspended. It may not be due to spurious wakeup. Releasing the 
-lock unconditionally may cause the queue to be changed while it is being 
-inspected. It really depending on how the cpu kicking is being handled. 
-My patch delays the unlocking until all the inspections had been done to 
-make sure that we don't waste time doing a cpu kick that is not needed.
+Supply top level nodes for the STiH407 based development boards.
+The Pinctrl configuration has already been applied, so the only
+missing piece of the DT puzzle is for a board's DTB to enable
+the nodes.
 
--Longman
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+
+diff --git a/arch/arm/boot/dts/stih407.dtsi b/arch/arm/boot/dts/stih407.dtsi
+index 4f9024f..e9766a4 100644
+--- a/arch/arm/boot/dts/stih407.dtsi
++++ b/arch/arm/boot/dts/stih407.dtsi
+@@ -259,5 +259,32 @@
+ 
+ 			status = "disabled";
+ 		};
++
++		/* COMMS PWM Module */
++		pwm0: pwm@9810000 {
++			compatible	= "st,sti-pwm";
++			status		= "disabled";
++			#pwm-cells	= <2>;
++			reg		= <0x9810000 0x68>;
++			pinctrl-names	= "default";
++			pinctrl-0	= <&pinctrl_pwm0_chan0_default>;
++			clock-names	= "pwm";
++			clocks		= <&clk_sysin>;
++		};
++
++		/* SBC PWM Module */
++		pwm1: pwm@9510000 {
++			compatible	= "st,sti-pwm";
++			status		= "disabled";
++			#pwm-cells	= <2>;
++			reg		= <0x9510000 0x68>;
++			pinctrl-names	= "default";
++			pinctrl-0	= <&pinctrl_pwm1_chan0_default
++					&pinctrl_pwm1_chan1_default
++					&pinctrl_pwm1_chan2_default
++					&pinctrl_pwm1_chan3_default>;
++			clock-names	= "pwm";
++			clocks		= <&clk_sysin>;
++		};
+ 	};
+ };
