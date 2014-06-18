@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754975AbaFRUMv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 16:12:51 -0400
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:51040 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754666AbaFRUMu (ORCPT
+	id S1755055AbaFRUPa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 16:15:30 -0400
+Received: from mail-yh0-f73.google.com ([209.85.213.73]:46354 "EHLO
+	mail-yh0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754614AbaFRUP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 16:12:50 -0400
-Date: Wed, 18 Jun 2014 23:12:41 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Russell King <linux@arm.linux.org.uk>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Sebastian Reichel <sre@debian.org>, Pavel Machek <pavel@ucw.cz>,
-        devicetree@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] omap3-n900.dts: Rename model name to "Nokia RX-51 board"
-Message-ID: <20140618201241.GB558@drone.musicnaut.iki.fi>
-References: <1403110635-29696-1-git-send-email-pali.rohar@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1403110635-29696-1-git-send-email-pali.rohar@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 18 Jun 2014 16:15:29 -0400
+From: Colin Cross <ccross@android.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Colin Cross <ccross@android.com>, stable@vger.kernel.org
+Subject: [PATCH] ARM64: implement TASK_SIZE_OF
+Date: Wed, 18 Jun 2014 13:10:09 -0700
+Message-Id: <1403122209-26352-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 2.0.0.526.g5318336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 06:57:15PM +0200, Pali Rohár wrote:
-> Use same name as in legacy board code. There are lot of userspace
-> applications which using machine/model name for determinating device type.
+include/linux/sched.h implements TASK_SIZE_OF as TASK_SIZE if it
+is not set by the architecture headers.  TASK_SIZE uses the
+current task to determine the size of the virtual address space.
+On a 64-bit kernel this will cause reading /proc/pid/pagemap of a
+64-bit process from a 32-bit process to return EOF when it reads
+past 0xffffffff.
 
-Can you clarify this? Nokia kernel or userspace never had DT, so they
-cannot see e.g. /proc/device-tree/model. What other APIs expose model?
+Implement TASK_SIZE_OF exactly the same as TASK_SIZE with
+test_tsk_thread_flag instead of test_thread_flag.
 
-A.
+Cc: stable@vger.kernel.org
+Signed-off-by: Colin Cross <ccross@android.com>
+---
+ arch/arm64/include/asm/memory.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/include/asm/memory.h b/arch/arm64/include/asm/memory.h
+index 993bce527b85..902eb708804a 100644
+--- a/arch/arm64/include/asm/memory.h
++++ b/arch/arm64/include/asm/memory.h
+@@ -56,6 +56,8 @@
+ #define TASK_SIZE_32		UL(0x100000000)
+ #define TASK_SIZE		(test_thread_flag(TIF_32BIT) ? \
+ 				TASK_SIZE_32 : TASK_SIZE_64)
++#define TASK_SIZE_OF(tsk)	(test_tsk_thread_flag(tsk, TIF_32BIT) ? \
++				TASK_SIZE_32 : TASK_SIZE_64)
+ #else
+ #define TASK_SIZE		TASK_SIZE_64
+ #endif /* CONFIG_COMPAT */
+-- 
+2.0.0.526.g5318336
+
