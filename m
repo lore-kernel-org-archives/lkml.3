@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965363AbaFRI7l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 04:59:41 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:40649 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965238AbaFRI7g (ORCPT
+	id S965480AbaFRI7w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 04:59:52 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:41883 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965384AbaFRI7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 04:59:36 -0400
-Date: Wed, 18 Jun 2014 01:59:35 -0700 (PDT)
-Message-ID: <87r42my4nb.wl%kuninori.morimoto.gx@renesas.com>
+	Wed, 18 Jun 2014 04:59:45 -0400
+Date: Wed, 18 Jun 2014 01:59:44 -0700 (PDT)
+Message-ID: <87ppi6y4n2.wl%kuninori.morimoto.gx@renesas.com>
 From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Subject: [PATCH 2/3] dma: rcar-audmapp: don't keep audmapp_slave_config for each channeles
+Subject: [PATCH 3/3] dma: rcar-audmapp: add DT support
 User-Agent: Wanderlust/2.14.0 Emacs/23.3 Mule/6.0
 To: Vinod Koul <vinod.koul@intel.com>
 Cc: Linux-SH <linux-sh@vger.kernel.org>, linux-kernel@vger.kernel.org,
@@ -25,64 +25,195 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 
-Current audmapp driver is keeping audmapp_slave_config
-for each channeles, but, nessasary information is only "chcr".
-Current style (= keeping audmapp_slave_config) is
-not good match for DT support.
-Keep "chcr" instead of audmapp_slave_config
+This patch adds DT support to Audio DMAC peri peri driver.
 
 Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 ---
- drivers/dma/sh/rcar-audmapp.c |   12 +++---------
- 1 file changed, 3 insertions(+), 9 deletions(-)
+ .../devicetree/bindings/dma/rcar-audmapp.txt       |   30 +++++++++
+ drivers/dma/sh/rcar-audmapp.c                      |   71 ++++++++++++++++----
+ 2 files changed, 87 insertions(+), 14 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/dma/rcar-audmapp.txt
 
+diff --git a/Documentation/devicetree/bindings/dma/rcar-audmapp.txt b/Documentation/devicetree/bindings/dma/rcar-audmapp.txt
+new file mode 100644
+index 0000000..b4950c4
+--- /dev/null
++++ b/Documentation/devicetree/bindings/dma/rcar-audmapp.txt
+@@ -0,0 +1,30 @@
++* R-Car Audio DMAC peri peri Device Tree bindings
++
++Required properties:
++- compatible:	should be "renesas,rcar-audmapp"
++- #dma-cells:	should be <1>, see "dmas" property below
++
++Example:
++	audmapp: audio-dma-pp@0xec740000 {
++		compatible = "renesas,rcar-audmapp";
++		#dma-cells = <1>;
++
++		reg = <0 0xec740000 0 0x200>;
++	};
++
++
++* DMA client
++
++Required properties:
++- dmas:		a list of <[DMA multiplexer phandle] [SRS/DRS value]> pairs,
++		where SRS/DRS values are fixed handles, specified in the SoC
++		manual as the value that would be written into the PDMACHCR.
++- dma-names:	a list of DMA channel names, one per "dmas" entry
++
++Example:
++
++	dmas = <&audmapp 0x2d00
++		&audmapp 0x3700>;
++	dma-names =  "src0_ssiu0",
++		     "dvc0_ssiu0";
++
 diff --git a/drivers/dma/sh/rcar-audmapp.c b/drivers/dma/sh/rcar-audmapp.c
-index 858483b..dd00775 100644
+index dd00775..0774c36 100644
 --- a/drivers/dma/sh/rcar-audmapp.c
 +++ b/drivers/dma/sh/rcar-audmapp.c
-@@ -45,9 +45,9 @@
- 
- struct audmapp_chan {
- 	struct shdma_chan shdma_chan;
--	struct audmapp_slave_config *config;
- 	void __iomem *base;
- 	dma_addr_t slave_addr;
-+	u32 chcr;
+@@ -22,6 +22,7 @@
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/dmaengine.h>
++#include <linux/of_dma.h>
+ #include <linux/platform_data/dma-rcar-audmapp.h>
+ #include <linux/platform_device.h>
+ #include <linux/shdma-base.h>
+@@ -63,6 +64,8 @@ struct audmapp_desc {
+ 	dma_addr_t dst;
  };
  
- struct audmapp_device {
-@@ -103,9 +103,8 @@ static void audmapp_start_xfer(struct shdma_chan *schan,
- 	struct audmapp_chan *auchan = to_chan(schan);
- 	struct audmapp_device *audev = to_dev(auchan);
- 	struct audmapp_desc *desc = to_desc(sdesc);
--	struct audmapp_slave_config *cfg = auchan->config;
- 	struct device *dev = audev->dev;
--	u32 chcr = cfg->chcr | PDMACHCR_DE;
-+	u32 chcr = auchan->chcr | PDMACHCR_DE;
++#define to_shdma_chan(c) container_of(c, struct shdma_chan, dma_chan)
++
+ #define to_chan(chan) container_of(chan, struct audmapp_chan, shdma_chan)
+ #define to_desc(sdesc) container_of(sdesc, struct audmapp_desc, shdma_desc)
+ #define to_dev(chan) container_of(chan->shdma_chan.dma_chan.device,	\
+@@ -114,38 +117,50 @@ static void audmapp_start_xfer(struct shdma_chan *schan,
+ 	audmapp_write(auchan, chcr,	PDMACHCR);
+ }
  
- 	dev_dbg(dev, "src/dst/chcr = %pad/%pad/%08x\n",
- 		&desc->src, &desc->dst, chcr);
-@@ -145,7 +144,7 @@ static int audmapp_set_slave(struct shdma_chan *schan, int slave_id,
+-static struct audmapp_slave_config *
+-audmapp_find_slave(struct audmapp_chan *auchan, int slave_id)
++static void audmapp_get_config(struct audmapp_chan *auchan, int slave_id,
++			      u32 *chcr, dma_addr_t *dst)
+ {
+ 	struct audmapp_device *audev = to_dev(auchan);
+ 	struct audmapp_pdata *pdata = audev->pdata;
+ 	struct audmapp_slave_config *cfg;
+ 	int i;
+ 
++	*chcr	= 0;
++	*dst	= 0;
++
++	if (!pdata) { /* DT */
++		*chcr = ((u32)slave_id) << 16;
++		auchan->shdma_chan.slave_id = (slave_id) >> 8;
++		return;
++	}
++
++	/* non-DT */
++
+ 	if (slave_id >= AUDMAPP_SLAVE_NUMBER)
+-		return NULL;
++		return;
+ 
+ 	for (i = 0, cfg = pdata->slave; i < pdata->slave_num; i++, cfg++)
+-		if (cfg->slave_id == slave_id)
+-			return cfg;
+-
+-	return NULL;
++		if (cfg->slave_id == slave_id) {
++			*chcr	= cfg->chcr;
++			*dst	= cfg->dst;
++			break;
++		}
+ }
+ 
+ static int audmapp_set_slave(struct shdma_chan *schan, int slave_id,
+ 			     dma_addr_t slave_addr, bool try)
+ {
+ 	struct audmapp_chan *auchan = to_chan(schan);
+-	struct audmapp_slave_config *cfg =
+-		audmapp_find_slave(auchan, slave_id);
++	u32 chcr;
++	dma_addr_t dst;
++
++	audmapp_get_config(auchan, slave_id, &chcr, &dst);
+ 
+-	if (!cfg)
+-		return -ENODEV;
  	if (try)
  		return 0;
  
--	auchan->config	= cfg;
-+	auchan->chcr	= cfg->chcr;
- 	auchan->slave_addr = slave_addr ? : cfg->dst;
+-	auchan->chcr	= cfg->chcr;
+-	auchan->slave_addr = slave_addr ? : cfg->dst;
++	auchan->chcr		= chcr;
++	auchan->slave_addr	= slave_addr ? : dst;
  
  	return 0;
-@@ -156,11 +155,6 @@ static int audmapp_desc_setup(struct shdma_chan *schan,
- 			      dma_addr_t src, dma_addr_t dst, size_t *len)
- {
- 	struct audmapp_desc *desc = to_desc(sdesc);
--	struct audmapp_chan *auchan = to_chan(schan);
--	struct audmapp_slave_config *cfg = auchan->config;
--
--	if (!cfg)
--		return -ENODEV;
+ }
+@@ -244,16 +259,39 @@ static void audmapp_chan_remove(struct audmapp_device *audev)
+ 	dma_dev->chancnt = 0;
+ }
  
- 	if (*len > (size_t)AUDMAPP_LEN_MAX)
- 		*len = (size_t)AUDMAPP_LEN_MAX;
++static struct dma_chan *audmapp_of_xlate(struct of_phandle_args *dma_spec,
++					 struct of_dma *ofdma)
++{
++	dma_cap_mask_t mask;
++	struct dma_chan *chan;
++	u32 chcr = dma_spec->args[0];
++
++	if (dma_spec->args_count != 1)
++		return NULL;
++
++	dma_cap_zero(mask);
++	dma_cap_set(DMA_SLAVE, mask);
++
++	chan = dma_request_channel(mask, shdma_chan_filter, NULL);
++	if (chan)
++		to_shdma_chan(chan)->hw_req = chcr;
++
++	return chan;
++}
++
+ static int audmapp_probe(struct platform_device *pdev)
+ {
+ 	struct audmapp_pdata *pdata = pdev->dev.platform_data;
++	struct device_node *np = pdev->dev.of_node;
+ 	struct audmapp_device *audev;
+ 	struct shdma_dev *sdev;
+ 	struct dma_device *dma_dev;
+ 	struct resource *res;
+ 	int err, i;
+ 
+-	if (!pdata)
++	if (np)
++		of_dma_controller_register(np, audmapp_of_xlate, pdev);
++	else if (!pdata)
+ 		return -ENODEV;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+@@ -315,12 +353,17 @@ static int audmapp_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct of_device_id audmapp_of_match[] = {
++	{ .compatible = "renesas,rcar-audmapp", },
++};
++
+ static struct platform_driver audmapp_driver = {
+ 	.probe		= audmapp_probe,
+ 	.remove		= audmapp_remove,
+ 	.driver		= {
+ 		.owner	= THIS_MODULE,
+ 		.name	= "rcar-audmapp-engine",
++		.of_match_table = audmapp_of_match,
+ 	},
+ };
+ module_platform_driver(audmapp_driver);
 -- 
 1.7.9.5
 
