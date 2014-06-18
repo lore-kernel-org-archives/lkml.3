@@ -1,43 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730AbaFROQT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 10:16:19 -0400
-Received: from mail-by2lp0238.outbound.protection.outlook.com ([207.46.163.238]:56536
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752831AbaFROQS convert rfc822-to-8bit (ORCPT
+	id S1756778AbaFRORq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 10:17:46 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:42748 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752535AbaFRORo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 10:16:18 -0400
-From: "Boyer, Aliya R" <aboyer1@tulane.edu>
-Subject: Your Email Account Warning!!
-Thread-Topic: Your Email Account Warning!!
-Thread-Index: AQHPiv/dzYYqfPXf50SCmwSJ/DXWVw==
-Date: Wed, 18 Jun 2014 14:16:16 +0000
-Message-ID: <1caf9bc5e8b8417c81087317d09c0ce3@BN1PR03MB085.namprd03.prod.outlook.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [208.81.246.116]
-x-microsoft-antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-x-forefront-prvs: 02462830BE
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(199002)(189002)(558084003)(77982001)(76576001)(87936001)(2656002)(33646001)(85852003)(83072002)(75432001)(99396002)(50986999)(74316001)(226693001)(1671002)(566704002)(101416001)(31966008)(74502001)(46102001)(88552001)(76482001)(83322001)(81542001)(92566001)(551544002)(85306003)(66066001)(74662001)(80022001)(105586002)(4396001)(77096002)(54356999)(81342001)(79102001)(86362001)(881003)(95666004)(99286002)(20776003)(575854001)(64706001)(21056001)(225543004)(224973001)(24736002)(575514002);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR03MB085;H:BN1PR03MB085.namprd03.prod.outlook.com;FPR:;MLV:nov;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=aboyer1@tulane.edu; 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: tulane.edu
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 18 Jun 2014 10:17:44 -0400
+From: Christian Bay <christian.bay@studium.fau.de>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        lisa@xenapiadmin.com, linux-kernel@i4.cs.fau.de,
+        Christian Bay <christian.bay@studium.fau.de>,
+        Martin Gumbrecht <martin.gumbrecht@googlemail.com>
+Subject: [PATCH 2/2] Staging: bcm: Queue.h: fix checkpatch errors
+Date: Wed, 18 Jun 2014 16:10:06 +0200
+Message-Id: <1403100606-14881-3-git-send-email-christian.bay@studium.fau.de>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403100606-14881-1-git-send-email-christian.bay@studium.fau.de>
+References: <1403100606-14881-1-git-send-email-christian.bay@studium.fau.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch fixes all checkpatch errors and warnings in Queue.h:
+Whitespaces, brackets and comments according to the coding guideline
 
+Signed-off-by: Christian Bay <christian.bay@studium.fau.de>
+Signed-off-by: Martin Gumbrecht <martin.gumbrecht@googlemail.com>
+---
+ drivers/staging/bcm/Queue.h | 44 +++++++++++++++++++++-----------------------
+ 1 file changed, 21 insertions(+), 23 deletions(-)
 
+diff --git a/drivers/staging/bcm/Queue.h b/drivers/staging/bcm/Queue.h
+index e1f1da2..7b4a8a8 100644
+--- a/drivers/staging/bcm/Queue.h
++++ b/drivers/staging/bcm/Queue.h
+@@ -1,31 +1,29 @@
+ /*************************************
+-* 	Queue.h
++*	Queue.h
+ **************************************/
+ #ifndef	__QUEUE_H__
+ #define	__QUEUE_H__
+ 
+ 
+ 
+-#define ENQUEUEPACKET(_Head, _Tail,_Packet)	\
+-do						\
+-{                                               \
+-    if (!_Head) {                           \
+-        	_Head = _Packet;                \
+-        } 					\
++#define ENQUEUEPACKET(_Head, _Tail, _Packet)	\
++do {						\
++	if (!_Head) {                           \
++		_Head = _Packet;                \
++	}					\
+ 	else {                                  \
+-        	(_Tail)->next = _Packet; 	\
+-        }                                       \
+-   	(_Packet)->next = NULL;  		\
+-    _Tail = _Packet;                        \
+-}while(0)
+-#define DEQUEUEPACKET(Head, Tail )            	\
+-do						\
+-{   if(Head)			\
+-	{                                            \
+-        if (!Head->next) {                      \
+-        	Tail = NULL;                    \
+-        }                                       \
+-        Head = Head->next;                      \
+-	}		\
+-}while(0)
+-#endif	//__QUEUE_H__
++		(_Tail)->next = _Packet;	\
++	}                                       \
++	(_Packet)->next = NULL;			\
++	_Tail = _Packet;                        \
++} while (0)
++#define DEQUEUEPACKET(Head, Tail)		\
++do {						\
++	if (Head) {				\
++		if (!Head->next) {              \
++			Tail = NULL;            \
++		}                               \
++		Head = Head->next;              \
++	}                \
++} while (0)
++#endif /* __QUEUE_H__ */
+-- 
+1.9.1
 
-Due to the congestion in all Email Account and removal of all unused Webmail Accounts, Fill the details below to upgrade your account.
-
-User Name( )
-Email Id: (  )
-Password(  )
