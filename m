@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932801AbaFRAgQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 20:36:16 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48821 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755289AbaFRAgP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 20:36:15 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, acme@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 9/9] perf, tools: Add a --quiet flag to perf list
-References: <1402700580-26939-1-git-send-email-andi@firstfloor.org>
-	<1402700580-26939-10-git-send-email-andi@firstfloor.org>
-	<1402838261.1684.39.camel@leonhard>
-	<20140615161138.GH5714@two.firstfloor.org>
-Date: Wed, 18 Jun 2014 09:36:12 +0900
-In-Reply-To: <20140615161138.GH5714@two.firstfloor.org> (Andi Kleen's message
-	of "Sun, 15 Jun 2014 18:11:38 +0200")
-Message-ID: <87k38f835v.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1756289AbaFRAoW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 20:44:22 -0400
+Received: from ozlabs.org ([103.22.144.67]:36590 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753268AbaFRAoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 20:44:21 -0400
+Date: Wed, 18 Jun 2014 10:44:14 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Prasad Joshi <prasadjoshi.linux@gmail.com>,
+        =?UTF-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: the logfs tree needs some work or merging
+Message-ID: <20140618104414.068119a7@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_//x5IX6sougfU7EYf99oKUT="; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andi,
+--Sig_//x5IX6sougfU7EYf99oKUT=
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Sun, 15 Jun 2014 18:11:38 +0200, Andi Kleen wrote:
-> On Sun, Jun 15, 2014 at 10:17:41PM +0900, Namhyung Kim wrote:
->> > It's still default to print descriptions as that is the more useful
->> > default for most users.  Requested by Namhyung Kim.
->> 
->> Did I request the --quiet thing?  It seems like there's a
->> miscommunication.. :-/
->
-> Well it was done based on your feedback, and gets the closest
-> to your original request as possible.
->
->> Btw, it'd better if it can support event glob on the pmu events (or
->> simply all events) too as this will increase the number of events
->> significantly.  But this can be a further work.
->
-> That already works.
+Hi all,
 
-Oh, didn't notice that.  Nice work! :)
+The top commit in the logfs tree
+(git://github.com/prasad-joshi/logfs_upstream.git#master) was committed
+in November, 2012!  Is there any work going on with logfs?  Are the 2
+commits in this tree still relevant?
 
-Thanks,
-Namhyung
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Sig_//x5IX6sougfU7EYf99oKUT=
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
->
-> % perf list icache*
-> List of pre-defined events (to be used in -e):
->   icache.ifetch_stall                                [Cycles where a code-fetch
->                                                       stalled due to L1
->                                                       instruction-cache miss
->                                                       or an iTLB miss]
->   icache.misses                                      [Number of Instruction
->                                                       Cache, Streaming Buffer
->                                                       and Victim Cache
->                                                       Misses. Includes
->                                                       Uncacheable accesses]
-> %
->
-> -Andi
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJToODjAAoJEMDTa8Ir7ZwVonkP/1QIJU6+oxPG1nMniST5FEQ1
+2XdaiarUp3wsII0RGzUXVM1oPuT0kUdOf07WCWJynrvFU0TQrN8mCjDg7NLtsM8i
+uVAaxPTUv+OIeJahMH3OWXNCB7XthqN354uSUoAIDYWUPwaCTILVjd3pEIHY0gF4
+GOVF6V1bP/L2rtYYjeBngJT3HkYXf7XShTb9LJ1Uw8MdS8vCGNzrabzAdch8YCM0
+4nUr0yUxUSf5oKjN3yRHIo48bY+L7ogbG5syguwtUZfTPPt09UlgsR7RGMwxOP9C
+yd0h/VhgQDWc7Nlz6Avf6z3/DgldmvNYlcOIxDvaKD1w6vwTjDHojIJAsMVtBILA
+YK/DM9KvmLQ3v7/bDL6DUTyXa+ldtItCgcAnHy2dE65eKj2CCsqGFjBNbxxPXvO+
+KiSg5bV8Rc/LuTsdcasPFiIp3xEqhKy8e0hB/+Z3B5XUBapW8BC+IfWxwq6GmDcV
+JjpztiOZZ01T+hsbck5P09gqx0MN6ML/ovwfyu1IMBTTe7WeXm/xBiUnWRsM/ikt
+TiVys4JlyT3511gua9zRAeL9WMk5AQQt4o0g9h+b2cY1t0cVGCG5kLQISmOmUf4C
+GLGzLWC4lB33jwcaL0obH2+OboiKjeT7yeuINFBb1yTczX9QpSpKT6KSUxAg6IC8
+4pzhQYRJNSpO2Jqfgrza
+=i3a4
+-----END PGP SIGNATURE-----
+
+--Sig_//x5IX6sougfU7EYf99oKUT=--
