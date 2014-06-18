@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697AbaFROHi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 10:07:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41114 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751840AbaFROHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 10:07:37 -0400
-Message-ID: <1403099946.32688.33.camel@deneb.redhat.com>
-Subject: Re: [PATCH v5 1/7] efi: Use early_mem*() instead of early_io*()
-From: Mark Salter <msalter@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Daniel Kiper <daniel.kiper@oracle.com>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, andrew.cooper3@citrix.com,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        eshelton@pobox.com, hpa@zytor.com, ian.campbell@citrix.com,
-        jbeulich@suse.com, jeremy@goop.org, konrad.wilk@oracle.com,
-        matt.fleming@intel.com, mingo@redhat.com, mjg59@srcf.ucam.org,
-        stefano.stabellini@eu.citrix.com, tglx@linutronix.de
-Date: Wed, 18 Jun 2014 09:59:06 -0400
-In-Reply-To: <20140618121709.GF24049@console-pimps.org>
-References: <1402678823-24589-1-git-send-email-daniel.kiper@oracle.com>
-	 <1402678823-24589-2-git-send-email-daniel.kiper@oracle.com>
-	 <20140618121709.GF24049@console-pimps.org>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756739AbaFROHs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 10:07:48 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:35707 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751840AbaFROHo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 10:07:44 -0400
+From: Varka Bhadram <varkabhadram@gmail.com>
+X-Google-Original-From: Varka Bhadram <varkab@cdac.in>
+To: netdev@vger.kernel.org
+Cc: alex.bluesman.smirnov@gmail.com, dbaryshkov@gmail.com,
+        linux-zigbee-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, devicetree@vger.kernel.org,
+        Varka Bhadram <varkab@cdac.in>
+Subject: [PATCH net-next v4 0/3] Driver for TI CC2520 Radio
+Date: Wed, 18 Jun 2014 19:36:40 +0530
+Message-Id: <1403100403-6429-1-git-send-email-varkab@cdac.in>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-18 at 13:17 +0100, Matt Fleming wrote:
-> Now, the only difference between early_memremap() and early_ioremap(),
-> at least on x86, is PAGE_KERNEL vs. PAGE_KERNEL_IO, where PAGE_KERNEL_IO
-> has the additional _PAGE_BIT_IOMAP bit set in the pte. But that's a
-> software bit for x86.
+This series adds the driver support for TI cc2520 radio.
+also devicetree bindings for the driver.
 
-I can't comment on the x86 MMU details, but using early_memremap() will
-get rid of some sparse warnings in the current code.
+changes since v3:
+	-drop the unused varible.
 
+changes since v2:
+	- drop spi mode dt binding
+
+changes since v1:
+	- improverment in gpio setup
+	- changed len pointer to len variable
+
+changes for v1:
+	- improvements in the locking mechanism in Tx and SFD ISR.
+	- proper checkings for GPIO pins.
+	- avoids the memory leak for priv.
+	- used devm_* APIs.
+	- moved the code from header file to .c file
+	- removed cc2520_unregister()
+
+Varka Bhadram (3):
+  ieee802154: cc2520: adds driver for TI CC2520 radio
+  ieee802154: cc2520: add driver to kernel build system
+  devicetree: add device tree bindings for cc2520 driver
+
+ .../devicetree/bindings/net/ieee802154/cc2520.txt  |   29 +
+ drivers/net/ieee802154/Kconfig                     |   11 +
+ drivers/net/ieee802154/Makefile                    |    1 +
+ drivers/net/ieee802154/cc2520.c                    |  967 ++++++++++++++++++++
+ include/linux/spi/cc2520.h                         |   26 +
+ 5 files changed, 1034 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/net/ieee802154/cc2520.txt
+ create mode 100644 drivers/net/ieee802154/cc2520.c
+ create mode 100644 include/linux/spi/cc2520.h
+
+-- 
+1.7.9.5
 
