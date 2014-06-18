@@ -1,59 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751651AbaFRPMh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 11:12:37 -0400
-Received: from mail-we0-f196.google.com ([74.125.82.196]:42973 "EHLO
-	mail-we0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984AbaFRPMf (ORCPT
+	id S1752243AbaFRPNR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 11:13:17 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:61674 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314AbaFRPNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 11:12:35 -0400
-Date: Wed, 18 Jun 2014 16:12:32 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Jan Beulich <JBeulich@suse.com>, Daniel Kiper <daniel.kiper@oracle.com>,
-        andrew.cooper3@citrix.com, david.vrabel@citrix.com,
-        ian.campbell@citrix.com, jeremy@goop.org, matt.fleming@intel.com,
-        x86@kernel.org, tglx@linutronix.de, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com, konrad.wilk@oracle.com, eshelton@pobox.com,
-        mingo@redhat.com, mjg59@srcf.ucam.org, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [PATCH v5 2/7] efi: Introduce EFI_NO_DIRECT flag
-Message-ID: <20140618151232.GQ24049@console-pimps.org>
-References: <1402678823-24589-1-git-send-email-daniel.kiper@oracle.com>
- <1402678823-24589-3-git-send-email-daniel.kiper@oracle.com>
- <20140618135229.GH24049@console-pimps.org>
- <53A1B726020000780001B6CF@mail.emea.novell.com>
- <alpine.DEB.2.02.1406181523340.13771@kaball.uk.xensource.com>
+	Wed, 18 Jun 2014 11:13:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1406181523340.13771@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+5PVA4MJdCwbcWAxnbnp3uDWoDvuqJ+GtyH0rix5Jsig3+vJA@mail.gmail.com>
+References: <CA+5PVA4srNrj2xqMYH40N13rV+jC-PbLdyNpoURomTq48cJNBA@mail.gmail.com>
+ <CA+5PVA7gL6T2eXAy6G4hGJzhKZ_8KHd0qauKqzuHAP4oTJ97QA@mail.gmail.com>
+ <CALCETrXG=752GrPhP8zKJUciiagCVRO0kenDOqL78eP73Y3ryA@mail.gmail.com>
+ <5398749B.4090209@zytor.com> <CALCETrXMxn1-qqTkf271+=7F1Aiy7c=rNsnq9cRoB=e1k-Q3UQ@mail.gmail.com>
+ <CALCETrUVudD++7i679xVW_NvvVUmHpUqdufjbguQciT5k5sguQ@mail.gmail.com>
+ <53A10C21.8070101@zytor.com> <CALCETrU2JMsanD__Re+18htJX07paaNBmryej_MigvXqnYbNjA@mail.gmail.com>
+ <CA+5PVA4MJdCwbcWAxnbnp3uDWoDvuqJ+GtyH0rix5Jsig3+vJA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 18 Jun 2014 08:12:55 -0700
+Message-ID: <CALCETrVU2qksHZUDA+QGba1JM81B6g=OM3WAAnXhLr+t1w8gwQ@mail.gmail.com>
+Subject: Re: vdso_install target broken post-3.15
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jun, at 03:30:25PM, Stefano Stabellini wrote:
-> 
-> I was thinking the same thing.
-> 
-> However this patch series doesn't add much code outside
-> drivers/xen/efi.c and include/xen/interface/platform.h.
-> I think it wouldn't be fair to ask Daniel to refactor the efi code
-> currently under arch/x86 to an arch-independent location.
-> Whoever comes in later and adds EFI Xen support for ARM can do that.
+On Wed, Jun 18, 2014 at 6:09 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+> On Wed, Jun 18, 2014 at 12:22 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Tue, Jun 17, 2014 at 8:48 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> On 06/17/2014 08:45 PM, Andy Lutomirski wrote:
+>>>> On Tue, Jun 17, 2014 at 3:54 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>>> Just a heads up: gdb can't debug the vdso on 3.16-rc1.  I filed a bug:
+>>>>>
+>>>>> https://sourceware.org/bugzilla/show_bug.cgi?id=17064
+>>>>>
+>>>>> We may need to extend the fake section header hack to all vdso
+>>>>> versions and stick the ELF notes in there.
+>>>>
+>>>> I have a semi-working implementation of a workaround, bit it adds a
+>>>> fair amount of extra crud to the image, and it's pushing my
+>>>> configuration past a page boundary.  I suspect that, if we're willing
+>>>> to abuse the ELF format a bit more, I can get the overhead down,
+>>>> though.
+>>>>
+>>>> Are we okay with regressing here until binutils gets fixed?
+>>>>
+>>>
+>>> Probably not... although I guess it depends just how bad it really is.
+>>
+>> AFAICT the only issue is that gdb will fail to find installed debug
+>> info on systems that install it into .build-id, which AFAIK means
+>> Fedora and similar users who install kernel RPMs.  This won't effect
+>> anyone who installs their own kernel, since it never worked correctly
+>> for those users anyway.
+>
+> For some reason I thought SLES/OpenSUSE did build-id as well.
+>
 
-I agree that we shouldn't necessarily build tons of arch-independent
-infrastructure when there's only one user, but it is wise to be careful
-about the design decisions being made if you know there's another user
-coming around the corner.
+Could be.  I'm pretty sure that Debian and such don't reliably use it,
+which is major reason why I dislike them.
 
-What we don't want to happen, is for the designs that we have now to
-become set in stone such that they can never be changed, to the
-deteriment of code duplication and maintenance.
+>> Fortunately, Fedora ought to be able to update its gdb and/or binutils
+>> rpm by the time that 3.16 kernel RPMs show up.  Josh, is this
+>> workable?  In my experience, I've never had a sourceware.org bug
+>
+> Getting binutils fixed in rawhide typically isn't a problem if the
+> reporter and upstream are persistent.  Getting it fixed in a more
+> stable Fedora release is a bit more work and really depends on how
+> invasive the fix is.
+>
+>> fixed, but I have had bugzilla.redhat.org bugs fixed.  I'm looking at
+>> the binutils code, and I'm kind of scared of it.  Also, I don't have
+>> an FSF copyright assignment on file.
+>>
+>> I filed this Fedora bug:
+>>
+>> https://bugzilla.redhat.com/show_bug.cgi?id=1110598
+>>
+>> Let's see what happens.  Can we give this a little while?
+>
+> I think that really depends on who all is using build-id for their
+> debuginfo stuff and how much upstream cares about breaking them.  Even
+> if it's contained to Fedora derived distros, getting binutils fixed in
+> RHEL for this is much harder.  I have no idea how SLES/OpenSUSE would
+> contain this if they are using build-id.
 
-I don't think that's happening in this patch series, but it's definitely
-smart discussing this stuff upfront.
+Would this be needed in RHEL-like things?
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+The actual breakage isn't that bad: gdb will be unable to reliably
+breakpoint in the __vdso and it may also be unable to reliably
+backtrace from the vdso.  In limited testing, it could unwind the
+backtrace just fine, presumably using frame pointers, but it didn't
+show the vdso function in the backtrace.  (glibc ought to be able to
+unwind the vdso just fine -- I haven't tested it, but I can't imagine
+glibc parsing section headers just for unwind unfo.)  Since there's no
+support right now for build-id links in home-built kernels, 3.16 and
+newer distro kernels will behave just like home-built kernels.  (If
+there are non-kernel-RPM build-id users, it would be a very different
+story, but I don't think that such users exist.)
+
+But RHEL doesn't update to new major kernel releases, right?  So it
+won't be affected until RHEL 8, at which point there ought to be a new
+gdb.  Oracle will be affected, but unless they actually complain or
+depend on this kind of gdb support, I don't know whether this matters
+much.
+
+>
+>> I wrote this:
+>>
+>> https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/log/?h=x86/vdso_sections
+>>
+>> but it's bad: I'm not allocating space properly, so it doesn't
+>> reliably build.  Also, it wastes space, and I'd rather just get rid of
+>> this crap.
+>
+> The "if/when binutils gets fixed" is really the crux of the issue.
+> Unless the upstream kernel puts a hard requirement on a fixed binutils
+> version, we can't really depend on people having a fixed binutils.  If
+> that code were to get added, it would like stay for a very long time.
+
+The RHBZ bug is already getting some attention.
+
+My inclination is to give this at least a week or two and then, if it
+looks like binutils won't get fixed, to clean up and submit my
+workaround.
+
+Note that my workaround also causes 'file' and 'readelf -n' to work
+correctly on the stripped images, but that shouldn't matter for anyone
+except people who manually generate on-disk stripped images
+specifically for testing file and readelf, so this seems unimportant.
+
+--Andy
