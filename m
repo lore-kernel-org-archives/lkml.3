@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756564AbaFRBm3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 21:42:29 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:45395 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756500AbaFRBm2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 21:42:28 -0400
-Message-ID: <53A0EE13.9070208@oracle.com>
-Date: Wed, 18 Jun 2014 09:40:35 +0800
-From: Jeff Liu <jeff.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1756577AbaFRBoV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 21:44:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42496 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755401AbaFRBoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 21:44:20 -0400
+Date: Wed, 18 Jun 2014 09:45:10 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, bp@alien8.de, jkosina@suse.cz, chaowang@redhat.com,
+        bhe@redhat.com, akpm@linux-foundation.org
+Subject: Re: [RFC PATCH 00/13][V3] kexec: A new system call to allow in
+ kernel loading
+Message-ID: <20140618014510.GA2851@darkstar.nay.redhat.com>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <20140612054203.GA3696@darkstar.nay.redhat.com>
+ <20140617142419.GC28340@redhat.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Christoph Lameter <cl@gentwo.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, herbert@gondor.apana.org.au,
-        davem@davemloft.net, stefanr@s5r6.in-berlin.de, joro@8bytes.org,
-        jejb@parisc-linux.org, deller@gmx.de, bhelgaas@google.com, clm@fb.com,
-        Josef Bacik <jbacik@fb.com>, swhiteho@redhat.com, bharrosh@panasas.com,
-        bhalevy@primarydata.com, ccaulfie@redhat.com, teigland@redhat.com,
-        "Theodore Ts'o" <tytso@mit.edu>, adilger.kernel@dilger.ca,
-        jaegeuk@kernel.org, cm224.lee@samsung.com,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        casey@schaufler-ca.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/24] kobject: return actual error on kset_create_and_add
-References: <53A04FF7.5050900@oracle.com> <1403016160.27991.1.camel@dabdike.int.hansenpartnership.com> <53A05704.4070203@oracle.com> <20140617155030.GA14259@kroah.com>
-In-Reply-To: <20140617155030.GA14259@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140617142419.GC28340@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 06/17/2014 23:50 PM, Greg KH wrote:
-> On Tue, Jun 17, 2014 at 10:56:04PM +0800, Jeff Liu wrote:
->>
->> On 06/17/2014 22:42 PM, James Bottomley wrote:
->>> On Tue, 2014-06-17 at 22:25 +0800, Jeff Liu wrote:
->>>> From: Jie Liu <jeff.liu@oracle.com>
->>>>
->>>> It's better to return the actual error rather than NULL because
->>>> kset_register() can failed due to other reasons.
->>>>
-
-<snip>
-
->>>> 
->>>
->>> This patch series isn't bisectable.  When changing an error signal from
->>> NULL to non-NULL, you have to do it as one patch, otherwise if a
->>> bisection lands in here we'll get error returns from all our kobject
->>> kset code and the kernel won't boot.
->>
->> Thanks for pointing this out.
->>
->>> It's fine if you're sending it out as 24 patches for review, but it has
->>> to be applied as a single one.
->>
->> Ok, I'll post the v2 patch as a single one once this series has been reviewed.
+On 06/17/14 at 10:24am, Vivek Goyal wrote:
+> On Thu, Jun 12, 2014 at 01:42:03PM +0800, Dave Young wrote:
+> > On 06/03/14 at 09:06am, Vivek Goyal wrote:
+> > > Hi,
+> > > 
+> > > This is V3 of the patchset. Previous versions were posted here.
+> > > 
+> > > V1: https://lkml.org/lkml/2013/11/20/540
+> > > V2: https://lkml.org/lkml/2014/1/27/331
+> > > 
+> > > Changes since v2:
+> > > 
+> > > - Took care of most of the review comments from V2.
+> > > - Added support for kexec/kdump on EFI systems.
+> > > - Dropped support for loading ELF vmlinux.
+> > > 
+> > > This patch series is generated on top of 3.15.0-rc8. It also requires a
+> > > two patch cleanup series which is sitting in -tip tree here.
+> > > 
+> > > https://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/log/?h=x86/boot
+> > > 
+> > > This patch series does not do kernel signature verification yet. I plan
+> > > to post another patch series for that. Now bzImage is already signed
+> > > with PKCS7 signature I plan to parse and verify those signatures.
+> > > 
+> > > Primary goal of this patchset is to prepare groundwork so that kernel
+> > > image can be signed and signatures be verified during kexec load. This
+> > > should help with two things.
+> > > 
+> > > - It should allow kexec/kdump on secureboot enabled machines.
+> > > 
+> > > - In general it can help even without secureboot. By being able to verify
+> > >   kernel image signature in kexec, it should help with avoiding module
+> > >   signing restrictions. Matthew Garret showed how to boot into a custom
+> > >   kernel, modify first kernel's memory and then jump back to old kernel and
+> > >   bypass any policy one wants to.
+> > > 
+> > > Any feedback is welcome.
+> > 
+> > Hi, Vivek
+> > 
+> > For efi ioremapping case, in 3.15 kernel efi runtime maps will not be saved
+> > if efi=old_map is used. So you need detect this and fail the kexec file load.
 > 
-> Also, now that you sent a bunch of different patches out, some
-> maintainers will not realize that this first one has to be applied (i.e.
-> you gave them no sense that there was a dependancy.)
+> Dave,
 > 
-> You will have to watch very carefully to ensure that those patches do
-> not now get accepted, as they will break the existing code.
+> Instead of failing kexec load in case of efi=old_map, I think it will be
+> better to just not pass runtime map in bootparams. That way user can
+> pass "noefi" on commandline and kdump should still work.  (Like it works
+> with user space implementation).
+> 
+> What do you think?
 
-Ok, and I'll inform every other maintainers do not apply their patch individually.
+Yes, agree that is better and align with kexec-tools logic.
 
-
-Cheers,
--Jeff
+Thanks
+Dave
