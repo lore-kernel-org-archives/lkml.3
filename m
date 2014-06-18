@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331AbaFRALz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 20:11:55 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:46366 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755023AbaFRALx (ORCPT
+	id S1756432AbaFRAMv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 20:12:51 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:5024 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753268AbaFRAMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 20:11:53 -0400
-Date: Wed, 18 Jun 2014 01:11:27 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Markus Pargmann <mpa@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kernel@pengutronix.de,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Message-ID: <20140618001127.GC5099@sirena.org.uk>
-References: <1403033795-9122-1-git-send-email-mpa@pengutronix.de>
+	Tue, 17 Jun 2014 20:12:50 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 17 Jun 2014 17:07:11 -0700
+From: Aaron Plattner <aplattner@nvidia.com>
+To: <linux-pm@vger.kernel.org>
+CC: Aaron Plattner <aplattner@nvidia.com>, <linux-kernel@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH] cpufreq: unlock when failing cpufreq_update_policy()
+Date: Tue, 17 Jun 2014 17:12:42 -0700
+Message-ID: <1403050362-20809-1-git-send-email-aplattner@nvidia.com>
+X-Mailer: git-send-email 2.0.0
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QJsKrtZ3JQHaPDYU"
-Content-Disposition: inline
-In-Reply-To: <1403033795-9122-1-git-send-email-mpa@pengutronix.de>
-X-Cookie: Ditat Deus.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regmap: Add Kconfig option for debugfs register writes
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit bd0fa9bb455d introduced a failure path to cpufreq_update_policy() if
+cpufreq_driver->get(cpu) returns NULL.  However, it jumps to the 'no_policy'
+label, which exits without unlocking any of the locks the function acquired
+earlier.  This causes later calls into cpufreq to hang.
 
---QJsKrtZ3JQHaPDYU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Fix this by creating a new 'unlock' label and jumping to that instead.
 
-On Tue, Jun 17, 2014 at 09:36:35PM +0200, Markus Pargmann wrote:
+Fixes: bd0fa9bb455d ("cpufreq: Return error if ->get() failed in cpufreq_update_policy()")
+Link: https://devtalk.nvidia.com/default/topic/751903/kernel-3-15-and-nv-drivers-337-340-failed-to-initialize-the-nvidia-kernel-module-gtx-550-ti-/
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Aaron Plattner <aplattner@nvidia.com>
+---
+I haven't reproduced this problem so I couldn't test it, but the bug and its
+solution seem obvious enough.
 
-> To enable writing of registers through the regmap debugfs interface, it
-> was necessary to alter the regmap-debugfs.c source code. This is not
-> really practical.
+ drivers/cpufreq/cpufreq.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> As this is a powerful tool for debugging, this patch creates an expert
-> kconfig option for this function. This makes it easier to enable
-> register writing in the kernel.
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index aed2b0cb83dc..5b6d04f3b9ea 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -2264,7 +2264,7 @@ int cpufreq_update_policy(unsigned int cpu)
+ 		new_policy.cur = cpufreq_driver->get(cpu);
+ 		if (WARN_ON(!new_policy.cur)) {
+ 			ret = -EIO;
+-			goto no_policy;
++			goto unlock;
+ 		}
+ 
+ 		if (!policy->cur) {
+@@ -2279,6 +2279,7 @@ int cpufreq_update_policy(unsigned int cpu)
+ 
+ 	ret = cpufreq_set_policy(policy, &new_policy);
+ 
++unlock:
+ 	up_write(&policy->rwsem);
+ 
+ 	cpufreq_cpu_put(policy);
+-- 
+2.0.0
 
-This is deliberately hard to enable in order to make it clear that it
-should never, ever be used in production as a bodge around writing
-drivers and generally in order to reduce the risk to the rest of the
-system.  Enabling this will typically give userspace full access to
-components like PMICs which have the potential to cause physical damage
-to the system if misused.
-
-Anyone with a use for this is most likely building their own kernels
-anyway and if a user modifies the code to enable it is clear that it is
-their responsibility to deal with the fallout.
-
-> This patch also fixes the file mode when the regmap debugfs write code is
-> compiled.
-
-Seperate changes in separate patches, especially don't put bugfixes in
-the same patch as features.
-
---QJsKrtZ3JQHaPDYU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJToNksAAoJELSic+t+oim9YyUP/0ydFZnJVDp3DETzGcfsNa8s
-FcNL9aQupunhQUwKSHwlnhLbDVVe3NnTMv8b1zTFhxV3KYXo5NOC1wNTVMZm5qW7
-uEK/YOjrO9+vw61VEBJkQC5hadk7KclraxZibw1lsDHhuDICgUaDZwq7CekX6E9n
-CoB2QuxlnFORfZZSJ0fF1+qo7qwn4AxpeYIKAK1t3ST6XvP7JBLLirTDgKL/UnuX
-DkM29/X5lCxk+d+aVirIVqUY0RKDJRrlQX3l+k69saT7Ap+ZrmhpLRatDq1SP3+a
-k9yGbl/tJ87PgaabKq5GVikKh7loAmyNiMxqxhhSVJDD4E5lJoG6INBe2Qe77bOI
-Skqw0VdReCSSUmP4Z0PqoGfCx7YOE5nzvawxWAfS/nmLbeqznMwP8PXJEYw1zdU8
-bNoL77vkbTQmX7Kg0la9M8cUREegBiPHOWjaA6/ApeLGvWTpa4Ir0Q1DNdFZPgsq
-Jg7Lpl+P4TdC3h8MwzoTQmZpUj1kvtv96GZv1A2NNvweSz2xE/oU85bln7EOVPve
-W9OCVoCpGTyev/Jb35zeECyDIjzw7pBysWApFcP2KDsEnu4QqDtdrW4OBuOGeRHo
-owS7vkjlw3P63Wy+/H+gZ+mfDKggc1D23hEAQJYlcZA+bPulEG5jjGRsOsxazDju
-5SzGn16c3bxykvZSTkj7
-=KShF
------END PGP SIGNATURE-----
-
---QJsKrtZ3JQHaPDYU--
