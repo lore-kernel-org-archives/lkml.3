@@ -1,61 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966525AbaFRMlZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 08:41:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5180 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966138AbaFRMlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 08:41:24 -0400
-Date: Wed, 18 Jun 2014 08:40:37 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Dave Young <dyoung@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
-        greg@kroah.com, bp@alien8.de, jkosina@suse.cz, chaowang@redhat.com,
-        bhe@redhat.com, akpm@linux-foundation.org
-Subject: Re: [RFC PATCH 00/13][V3] kexec: A new system call to allow in
- kernel loading
-Message-ID: <20140618124037.GB15327@redhat.com>
-References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
- <20140612054203.GA3696@darkstar.nay.redhat.com>
- <20140617142419.GC28340@redhat.com>
- <20140618014510.GA2851@darkstar.nay.redhat.com>
- <20140618015246.GB2851@darkstar.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140618015246.GB2851@darkstar.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S966548AbaFRMlv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 08:41:51 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:44798 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966138AbaFRMlt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 08:41:49 -0400
+X-AuditID: cbfee690-b7fb56d000003439-d7-53a1890bd9f7
+From: Chanho Park <chanho61.park@samsung.com>
+To: casey@schaufler-ca.com
+Cc: james.l.morris@oracle.com, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chanho Park <chanho61.park@samsung.com>
+Subject: [PATCH] Smack: separate smackfstransmute and smackfsroot
+Date: Wed, 18 Jun 2014 21:41:44 +0900
+Message-id: <1403095304-15368-1-git-send-email-chanho61.park@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsWyRsSkUJe7c2Gwwb82MYt7236xWVzer23R
+	9zjI4vKuOWwWH3oesTmwenx8eovFo2/LKkaPo/sXsXl83iQXwBLFZZOSmpNZllqkb5fAlfHi
+	dS9TwSbhigULPRoYv/N3MXJySAiYSPQducsKYYtJXLi3nq2LkYtDSGApo8SMPY+Yuhg5wIqW
+	LxGDiE9nlHj+EaQBxGljkvg28QNYN5uArsSW568YQRpEBKQk1n0TBwkzC/QySqz/VgNiCws4
+	Slx+8QusnEVAVWLxtu3sIDavgKfE7f+7WCCOkJM4eWwy2HwJgfdsEgeXbodqEJD4NvkQC8RB
+	shKbDjBD1EtKHFxxg2UCo+ACRoZVjKKpBckFxUnpRSZ6xYm5xaV56XrJ+bmbGIEBefrfswk7
+	GO8dsD7EmAw0biKzlGhyPjCg80riDY3NjCxMTUyNjcwtzUgTVhLnVXuUFCQkkJ5YkpqdmlqQ
+	WhRfVJqTWnyIkYmDU6qBcenMF217zGtD5yh6rbvckC78WN1BVs3wWmuGfcr+nS5O0RwlHle7
+	HuXNdVZy5bbZHOFS3PHigrTTunWNcWVVL1jiFsakuu3XzlMLSVp2o+nLgxAOg/av1RnSio6T
+	us7Exn7p7vBf17viMHO9TNafU1Oz1Mpeaiw/deWv8eGzRX82rFzk3yGlxFKckWioxVxUnAgA
+	hzhFRV4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBIsWRmVeSWpSXmKPExsVy+t9jQV3uzoXBBiu+8Vrc2/aLzeLyfm2L
+	vsdBFpd3zWGz+NDziM2B1ePj01ssHn1bVjF6HN2/iM3j8ya5AJaoBkabjNTElNQihdS85PyU
+	zLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKC1SgpliTmlQKGAxOJiJX07TBNC
+	Q9x0LWAaI3R9Q4LgeowM0EDCGsaMF697mQo2CVcsWOjRwPidv4uRg0NCwERi+RKxLkZOIFNM
+	4sK99WxdjFwcQgLTGSWef7zLCuG0MUl8m/iBFaSKTUBXYsvzV4wgzSICUhLrvomDhJkFehkl
+	1n+rAbGFBRwlLr/4BVbOIqAqsXjbdnYQm1fAU+L2/10sEMvkJE4em8w6gZF7ASPDKkbR1ILk
+	guKk9FwjveLE3OLSvHS95PzcTYzgcH8mvYNxVYPFIUYBDkYlHl6O3AXBQqyJZcWVuYcYJTiY
+	lUR4jxUvDBbiTUmsrEotyo8vKs1JLT7EmAy0fSKzlGhyPjAW80riDY1NzIwsjcwNLYyMzUkT
+	VhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBccvkF4bvRbt+5QUJbY1LbVx+tW1R/qPL5Wse
+	VL2Z+mn+k3Oib6XOz1a9Hj+n/E2u146LWxLbr6QFftpymctVhp3hcGLf+Xf73h3uEW9e1Gxy
+	poYlY9F5swjWuw8KP7tbBv3+y2SZ+zJuwUGlvR5si47wZwWwG++cGWCZ++q2kSvD7m9+n04s
+	2KfEUpyRaKjFXFScCADIldCpuwIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 09:52:46AM +0800, Dave Young wrote:
-[..]
-> > > > Hi, Vivek
-> > > > 
-> > > > For efi ioremapping case, in 3.15 kernel efi runtime maps will not be saved
-> > > > if efi=old_map is used. So you need detect this and fail the kexec file load.
-> > > 
-> > > Dave,
-> > > 
-> > > Instead of failing kexec load in case of efi=old_map, I think it will be
-> > > better to just not pass runtime map in bootparams. That way user can
-> > > pass "noefi" on commandline and kdump should still work.  (Like it works
-> > > with user space implementation).
-> 
-> BTW, in kexec-tools in case old_map it just does not fill efi_info so 2nd kernel
-> will automaticlly switch to noefi boot. So do same in kernel make sense as well.
+According to previous commit(e830b39: Smack: Add smkfstransmute mount option),
+the smackfstransmute option is the smackfsroot option + transmute option.
+I think it can be confused because the transmute option can only have "TRUE".
+Before the patch, you cannot use the smackfsroot and the smackfstransmute at
+the same time. If you use the options simultaenously, the previous option will
+be omitted. In the below example, the smackfsroot option will be omitted.
+mount -t tmpfs -o size=128M,smackfsroot=*,smackfstransmute=_ tmpfs /tmp
 
-Yep. If old_map is being used, I will not fill efi_info and I will also
-not pass efi setup data structure. I think user space does the same.
+After the patch, now you can use the smackfstransmute option like below:
+mount -t tmpfs -o size=128M,smackfsroot=*,smackfstransmute=TRUE tmpfs /tmp
 
-> 
-> In userspace tools we pass acpi_rsdp for kdump noefi case, do you want to add that
-> in the kernel loader?
+Signed-off-by: Chanho Park <chanho61.park@samsung.com>
+---
+ Documentation/security/Smack.txt | 3 +++
+ security/smack/smack.h           | 2 ++
+ security/smack/smack_lsm.c       | 5 ++---
+ 3 files changed, 7 insertions(+), 3 deletions(-)
 
-I will not do that in kernel. I will expect user space to pass in
-acpi_rsdp=0x on command line.
+diff --git a/Documentation/security/Smack.txt b/Documentation/security/Smack.txt
+index b6ef7e9..27290d8 100644
+--- a/Documentation/security/Smack.txt
++++ b/Documentation/security/Smack.txt
+@@ -669,6 +669,9 @@ Smack supports some mount options:
+ 	smackfsfloor=label: specifies a label to which all labels set on the
+ 	filesystem must have read access. Not yet enforced.
+ 
++	smackfstransmute=TRUE: assign a transmute option for the root of the
++	file system if it lacks the Smack extended attribute.
++
+ These mount options apply to all file system types.
+ 
+ Smack auditing
+diff --git a/security/smack/smack.h b/security/smack/smack.h
+index 020307e..d4f75e6 100644
+--- a/security/smack/smack.h
++++ b/security/smack/smack.h
+@@ -146,6 +146,8 @@ struct smk_port_label {
+ #define SMK_FSROOT	"smackfsroot="
+ #define SMK_FSTRANS	"smackfstransmute="
+ 
++#define SMK_FSTRANS_ON	"TRUE"
++
+ #define SMACK_CIPSO_OPTION 	"-CIPSO"
+ 
+ /*
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index f2c3080..7d3f40d 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -450,9 +450,8 @@ static int smack_sb_kern_mount(struct super_block *sb, int flags, void *data)
+ 			}
+ 		} else if (strncmp(op, SMK_FSTRANS, strlen(SMK_FSTRANS)) == 0) {
+ 			op += strlen(SMK_FSTRANS);
+-			nsp = smk_import(op, 0);
+-			if (nsp != NULL) {
+-				sp->smk_root = nsp;
++			if (strncmp(op, SMK_FSTRANS_ON,
++				    strlen(SMK_FSTRANS_ON)) == 0) {
+ 				transmute = 1;
+ 				specified = 1;
+ 			}
+-- 
+1.9.1
 
-Thanks
-Vivek
