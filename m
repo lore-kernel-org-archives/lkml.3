@@ -1,48 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146AbaFRUBG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 16:01:06 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:34724 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754569AbaFRUBE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 16:01:04 -0400
-Date: Wed, 18 Jun 2014 21:00:54 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Sebastian Reichel <sre@debian.org>, Pavel Machek <pavel@ucw.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: /proc/cpuinfo: Use DT machine name when possible
-Message-ID: <20140618200053.GK32514@n2100.arm.linux.org.uk>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com> <CAL_JsqKw-C6uZBU3hccGmdofXcCcUKTV6z7Af6KwYwnZiy3HoQ@mail.gmail.com> <201406182122.29623@pali>
+	id S1755356AbaFRUBh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 16:01:37 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:37463 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754839AbaFRUBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 16:01:35 -0400
+Date: Wed, 18 Jun 2014 16:01:29 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 3/4] mm: page_alloc: Reset fair zone allocation policy
+ when batch counts are expired
+Message-ID: <20140618200129.GD7331@cmpxchg.org>
+References: <1403079807-24690-1-git-send-email-mgorman@suse.de>
+ <1403079807-24690-4-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201406182122.29623@pali>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1403079807-24690-4-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 09:22:29PM +0200, Pali Rohár wrote:
-> So without this patch DT migration for Nokia N900 cannot be done 
-> without breaking userspace - which is not acceptable...
+Hi Mel,
+
+On Wed, Jun 18, 2014 at 09:23:26AM +0100, Mel Gorman wrote:
+> The fair zone allocation policy round-robins allocations between zones
+> within a node to avoid age inversion problems during reclaim. If the
+> first allocation fails, the batch counts is reset and a second attempt
+> made before entering the slow path.
 > 
-> Also I still did not know why DT kernel does not report Revision 
-> number which is passed by bootloader via atags. Any idea?
+> One assumption made with this scheme is that batches expire at roughly the
+> same time and the resets each time are justified. This assumption does not
+> hold when zones reach their low watermark as the batches will be consumed
+> at uneven rates.
+>
+> Allocation failure due to watermark depletion result in
+> additional zonelist scans for the reset and another watermark check before
+> hitting the slowpath.
 
-It was a concious decision by the DT people to exclude most of the ATAGs
-which provide that information.  Only memory information and command line
-ATAGs are merged into DT.  Every other tag is ignored (as there's no
-place for it in DT.)
+Yes, one consequence of the changes in 3a025760fc15 ("mm: page_alloc:
+spill to remote nodes before waking kswapd") is that on single-node
+systems we have one useless spill cycle to non-existent remote nodes.
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+Your patch adds a nr_online_nodes check, but it also does another
+zonelist scan if any watermark breaches were detected in the first
+cycle, so I don't see how you actually fix this issue?
+
+> On large NUMA machines, the scanning overhead is higher as zones are
+> scanned that are ineligible for zone allocation policy.
+
+I'm not sure we can use your fix for that because of zone-order
+zonelists, see inline comments below.
+
+> This patch makes a number of changes which are all related to each
+> other. First and foremost, the patch resets the fair zone policy counts when
+> all the counters are depleted,
+
+You also still reset them if any of the low watermarks are breached,
+so the only time we *would* save a reset cycle now is when all
+considered watermarks are fine and there are still some non-depleted
+batches - but in this case the allocation would have succeeded...?
+
+> avoids scanning remote nodes unnecessarily
+
+I don't see how we are scanning them unnecessarily now.
+
+> and reduces the frequency that resets are required.
+
+How?
+
+It would be good to start with an analysis of the problem(s) and then
+propose a solution based on that, otherwise it makes it very hard to
+follow your thought process, and especially match these rather broad
+statements to the code when you change multiple things at once.
+
+> Second, when the fair zone batch counter is expired, the zone is
+> flagged which has a lighter cache footprint than accessing the
+> counters. Lastly, if the local node has only one zone then the fair
+> zone allocation policy is not applied to reduce overall overhead.
+
+These two are plausible, but they also make the code harder to
+understand and their performance impact is not represented in your
+test results, so we can't compare cost and value.
+
+> Comparison is tiobench with data size 2*RAM on a small single-node machine
+> and on an ext3 filesystem although it is known that ext4 sees similar gains.
+> I'm reporting sequental reads only as the other operations are essentially
+> flat.
+> 
+>                                       3.16.0-rc1            3.16.0-rc1            3.16.0-rc1                 3.0.0
+>                                          vanilla          cfq600              fairzone                     vanilla
+> Mean   SeqRead-MB/sec-1         121.88 (  0.00%)      121.60 ( -0.23%)      131.68 (  8.04%)      134.59 ( 10.42%)
+> Mean   SeqRead-MB/sec-2         101.99 (  0.00%)      102.35 (  0.36%)      113.24 ( 11.04%)      122.59 ( 20.20%)
+> Mean   SeqRead-MB/sec-4          97.42 (  0.00%)       99.71 (  2.35%)      107.43 ( 10.28%)      114.78 ( 17.82%)
+> Mean   SeqRead-MB/sec-8          83.39 (  0.00%)       90.39 (  8.39%)       96.81 ( 16.09%)      100.14 ( 20.09%)
+> Mean   SeqRead-MB/sec-16         68.90 (  0.00%)       77.29 ( 12.18%)       81.88 ( 18.85%)       81.64 ( 18.50%)
+> 
+> Where as the CFQ patch helped throughput for higher number of threads, this
+> patch (fairzone) whos performance increases for all thread counts and brings
+> performance much closer to 3.0-vanilla. Note that performance can be further
+> increased by tuning CFQ but the latencies of read operations are then higher
+> but from the IO stats they are still acceptable.
+> 
+>                   3.16.0-rc1  3.16.0-rc1  3.16.0-rc1       3.0.0
+>                      vanilla      cfq600    fairzone     vanilla
+> Mean sda-avgqz        912.29      939.89      947.90     1000.70
+> Mean sda-await       4268.03     4403.99     4450.89     4887.67
+> Mean sda-r_await       79.42       80.33       81.34      108.53
+> Mean sda-w_await    13073.49    11038.81    13217.25    11599.83
+> Max  sda-avgqz       2194.84     2215.01     2307.48     2626.78
+> Max  sda-await      18157.88    17586.08    14189.21    24971.00
+> Max  sda-r_await      888.40      874.22      800.80     5308.00
+> Max  sda-w_await   212563.59   190265.33   173295.33   177698.47
+> 
+> The primary concern with this patch is that it'll break the fair zone
+> allocation policy but it should be still fine as long as the working set
+> fits in memory. When the low watermark is constantly hit and the spread
+> is still even as before. However, the policy is still in force most of the
+> time. This is the allocation spread when running tiobench at 80% of memory
+> 
+>                             3.16.0-rc1  3.16.0-rc1  3.16.0-rc1       3.0.0
+>                                vanilla      cfq600    fairzone     vanilla
+> DMA32 allocs                  11099122    11020083     9459921     7698716
+> Normal allocs                 18823134    18801874    20429838    18787406
+> Movable allocs                       0           0           0           0
+> 
+> Note that the number of pages allocated from the Normal zone is still
+> comparable.
+
+When you translate them to percentages, it rather looks like fairness
+is closer to pre-fairpolicy levels for this workload:
+
+                             3.16.0-rc1  3.16.0-rc1  3.16.0-rc1       3.0.0
+                                vanilla      cfq600    fairzone     vanilla
+ DMA32 allocs                     37.1%       37.0%       31.6%       29.1%
+ Normal allocs                    62.9%       63.0%       68.4%       70.9%
+ Movable allocs                      0%          0%          0%          0%
+
+> @@ -1909,6 +1914,18 @@ static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
+>  
+>  #endif	/* CONFIG_NUMA */
+>  
+> +static void reset_alloc_batches(struct zone *preferred_zone)
+> +{
+> +	struct zone *zone = preferred_zone->zone_pgdat->node_zones;
+> +
+> +	do {
+> +		mod_zone_page_state(zone, NR_ALLOC_BATCH,
+> +			(zone->managed_pages >> 2) -
+> +			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
+> +		zone_clear_flag(zone, ZONE_FAIR_DEPLETED);
+> +	} while (zone++ != preferred_zone);
+
+What is zone->managed_pages >> 2 based on?
+
+The batch size was picked so that after all zones were used according
+to their size, they would also get reclaimed according to their size,
+and the cycle would start over.  This ensures that available memory is
+fully utilized and page lifetime stays independent of zone placement.
+
+The page allocator depletes the zones to their low watermark, then
+kswapd restores them to their high watermark before the reclaim cycle
+starts over.  This means that a reclaim cycle is high - low watermark
+pages, which is reflected in the current round-robin batch sizes.
+
+Now, we agree that the batches might drift from the actual reclaim
+cycle due to per-cpu counter inaccuracies, but it's still a better
+match for the reclaim cycle than "quarter zone size"...?
+
+> @@ -1926,8 +1943,11 @@ get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
+>  	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
+>  	bool consider_zone_dirty = (alloc_flags & ALLOC_WMARK_LOW) &&
+>  				(gfp_mask & __GFP_WRITE);
+> +	int nr_fair_skipped = 0, nr_fair_eligible = 0, nr_fail_watermark = 0;
+> +	bool zonelist_rescan;
+>  
+>  zonelist_scan:
+> +	zonelist_rescan = false;
+>  	/*
+>  	 * Scan zonelist, looking for a zone with enough free.
+>  	 * See also __cpuset_node_allowed_softwall() comment in kernel/cpuset.c.
+> @@ -1950,11 +1970,15 @@ zonelist_scan:
+>  		 * time the page has in memory before being reclaimed.
+>  		 */
+>  		if (alloc_flags & ALLOC_FAIR) {
+> -			if (!zone_local(preferred_zone, zone))
+> -				continue;
+> -			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
+> +			if (!zone_local(preferred_zone, zone) || !z->fair_enabled)
+> +				break;
+
+The reason this was a "continue" rather than a "break" was because
+zonelists can be ordered by zone type, where a local zone can show up
+after a remote zone.  It might be worth rethinking the usefulness of
+zone-order in general, but it probably shouldn't be a silent side
+effect of a performance patch.
+
+All in all, I still don't really understand exactly how your changes
+work and the changelog doesn't clarify much :( I'm just having a hard
+time seeing how you get 10%-20% performance increase for an IO-bound
+workload by making the allocator paths a little leaner.  Your results
+certainly show that you *are* improving this particular workload, but
+I think we should be clear on the mental model and then go from there.
+
+I haven't managed to reproduce it locally yet, will continue to play
+around with the parameters.
