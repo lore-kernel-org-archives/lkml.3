@@ -1,251 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755832AbaFRUqG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 16:46:06 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:33940 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756341AbaFRUqD (ORCPT
+	id S1756433AbaFRUqm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 16:46:42 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:33816 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755910AbaFRUqk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 16:46:03 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: gregkh@linuxfoundation.org, akpm@linux-foundation.org, hpa@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Andrew Lunn <andrew@lunn.ch>, Stephen Warren <swarren@wwwdotorg.org>,
-        Michal Hocko <mhocko@suse.cz>, Petr Mladek <pmladek@suse.cz>,
-        Joe Perches <joe@perches.com>, Arun KS <arunks.linux@gmail.com>,
-        Kees Cook <keescook@chromium.org>, Davidlohr Bueso <davidlohr@hp.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [PATCH v8 4/4] printk: allow increasing the ring buffer depending on the number of CPUs
-Date: Wed, 18 Jun 2014 13:45:37 -0700
-Message-Id: <1403124337-14886-4-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403124337-14886-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1403124337-14886-1-git-send-email-mcgrof@do-not-panic.com>
+	Wed, 18 Jun 2014 16:46:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <201406182122.29623@pali>
+References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
+ <CAL_JsqKw-C6uZBU3hccGmdofXcCcUKTV6z7Af6KwYwnZiy3HoQ@mail.gmail.com> <201406182122.29623@pali>
+From: Rob Herring <robherring2@gmail.com>
+Date: Wed, 18 Jun 2014 15:46:19 -0500
+Message-ID: <CAL_JsqK5j8PvYfq+tct4RMr63TWDYGfi_TA28k5m4KyG=UuNbg@mail.gmail.com>
+Subject: Re: [PATCH] ARM: /proc/cpuinfo: Use DT machine name when possible
+To: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Sebastian Reichel <sre@debian.org>, Pavel Machek <pavel@ucw.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+On Wed, Jun 18, 2014 at 2:22 PM, Pali Rohár <pali.rohar@gmail.com> wrote:
+> On Wednesday 18 June 2014 21:07:35 Rob Herring wrote:
+>> On Wed, Jun 18, 2014 at 11:54 AM, Pali Rohár
+> <pali.rohar@gmail.com> wrote:
+>> > Machine name from board description is some generic name on
+>> > DT kernel. DT provides machine name property which is
+>> > specific for board, so use it instead generic one when
+>> > possible.
+>> >
+>> > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+>> > ---
+>> >
+>> >  arch/arm/kernel/setup.c |    7 +++++--
+>> >  1 file changed, 5 insertions(+), 2 deletions(-)
+>> >
+>> > diff --git a/arch/arm/kernel/setup.c
+>> > b/arch/arm/kernel/setup.c index 8a16ee5..fbc7b4f 100644
+>> > --- a/arch/arm/kernel/setup.c
+>> > +++ b/arch/arm/kernel/setup.c
+>> > @@ -875,10 +875,13 @@ void __init setup_arch(char
+>> > **cmdline_p)
+>> >
+>> >         setup_processor();
+>> >         mdesc = setup_machine_fdt(__atags_pointer);
+>> >
+>> > -       if (!mdesc)
+>> > +       if (mdesc)
+>> > +               machine_name =
+>> > of_flat_dt_get_machine_name(); +       else
+>> >
+>> >                 mdesc = setup_machine_tags(__atags_pointer,
+>> >                 __machine_arch_type);
+>> >
+>> >         machine_desc = mdesc;
+>> >
+>> > -       machine_name = mdesc->name;
+>> > +       if (!machine_name)
+>> > +               machine_name = mdesc->name;
+>> >
+>> >         if (mdesc->reboot_mode != REBOOT_HARD)
+>> >
+>> >                 reboot_mode = mdesc->reboot_mode;
+>>
+>> I did a similar patch previously[1]. Like my original patch,
+>> your patch unconditionally changes the name which could be
+>> considered part of the userspace ABI. It's arguably not good
+>> practice for userspace to depend on the name, but there are
+>> likely cases that do. So I think this needs to be optional
+>> and only use the DT name if the machine desc name is NULL.
+>>
+>> So something like the below and then change the machine
+>> descriptors you care about. The default generic DT machine
+>> desc should definitely be changed.
+>>
+>> I had a follow-up discussion with Grant about his concerns in
+>> the thread about knowing which machine desc used to boot. He
+>> said he was okay if just the machine desc address is printed
+>> out.
+>>
+>>
+>> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+>> index 50e198c..1479250 100644
+>> --- a/arch/arm/kernel/setup.c
+>> +++ b/arch/arm/kernel/setup.c
+>> @@ -887,7 +887,7 @@ void __init setup_arch(char **cmdline_p)
+>>         if (!mdesc)
+>>                 mdesc = setup_machine_tags(__atags_pointer,
+>> __machine_arch_type);
+>>         machine_desc = mdesc;
+>> -       machine_name = mdesc->name;
+>> +       machine_name = mdesc->name ? mdesc->name :
+>> of_flat_dt_get_machine_name();
+>>
+>>         if (mdesc->reboot_mode != REBOOT_HARD)
+>>                 reboot_mode = mdesc->reboot_mode;
+>>
+>>
+>> [1]
+>> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-No
+>> vember/208878.html
+>
+> Hi,
+>
+> now legacy board code for Nokia N900 (RX-51) is migrating to DT
+> kernel and there is problem with info which /proc/cpuinfo reports
 
-The default size of the ring buffer is too small for machines
-with a large amount of CPUs under heavy load. What ends up
-happening when debugging is the ring buffer overlaps and chews
-up old messages making debugging impossible unless the size is
-passed as a kernel parameter. An idle system upon boot up will
-on average spew out only about one or two extra lines but where
-this really matters is on heavy load and that will vary widely
-depending on the system and environment.
+Thanks for providing your motivation which was missing from the commit message.
 
-There are mechanisms to help increase the kernel ring buffer
-for tracing through debugfs, and those interfaces even allow growing
-the kernel ring buffer per CPU. We also have a static value which
-can be passed upon boot. Relying on debugfs however is not ideal
-for production, and relying on the value passed upon bootup is
-can only used *after* an issue has creeped up. Instead of being
-reactive this adds a proactive measure which lets you scale the
-amount of contributions you'd expect to the kernel ring buffer
-under load by each CPU in the worst case scenario.
+>
+> New DT kernel (3.16-rc1) reports:
+>
+> # busybox cat /proc/cpuinfo
+> processor       : 0
+> model name      : ARMv7 Processor rev 3 (v7l)
+> Features        : swp half thumb fastmult vfp edsp thumbee neon
+> vfpv3 tls vfpd32
+> CPU implementer : 0x41
+> CPU architecture: 7
+> CPU variant     : 0x2
+> CPU part        : 0xc08
+> CPU revision    : 3
+>
+> Hardware        : Generic OMAP3 (Flattened Device Tree)
+> Revision        : 0000
+> Serial          : 0000000000000000
+>
+> But legacy board code kernel reports:
+>
+> # busybox cat /proc/cpuinfo
+> processor       : 0
+> model name      : ARMv7 Processor rev 3 (v7l)
+> Features        : swp half thumb fastmult vfp edsp thumbee neon
+> vfpv3 tls vfpd32
+> CPU implementer : 0x41
+> CPU architecture: 7
+> CPU variant     : 0x2
+> CPU part        : 0xc08
+> CPU revision    : 3
+>
+> Hardware        : Nokia RX-51 board
+> Revision        : 0012
+> Serial          : 0000000000000000
+>
+> Basically in DT kernel is missing Hardware, Revision and probably
+> also Serial key. (Now I used only qemu for testing which set
+> serial key to 0). All these informations is used by userspace
+> applications which determinate how to behave.
 
-We use num_possible_cpus() to avoid complexities which could be
-introduced by dynamically changing the ring buffer size at run
-time, num_possible_cpus() lets us use the upper limit on possible
-number of CPUs therefore avoiding having to deal with hotplugging
-CPUs on and off. This introduces the kernel configuration option
-LOG_CPU_MAX_BUF_SHIFT which is used to specify the maximum amount
-of contributions to the kernel ring buffer in the worst case before
-the kernel ring buffer flips over, the size is specified as a power
-of 2. The total amount of contributions made by each CPU must be
-greater than half of the default kernel ring buffer size
-(1 << LOG_BUF_SHIFT bytes) in order to trigger an increase upon
-bootup. The kernel ring buffer is increased to the next power of
-two that would fit the required minimum kernel ring buffer size
-plus the additional CPU contribution. For example if LOG_BUF_SHIFT
-is 18 (256 KB) you'd require at least 128 KB contributions by
-other CPUs in order to trigger an increase of the kernel ring buffer.
-With a LOG_CPU_BUF_SHIFT of 12 (4 KB) you'd require at least
-anything over > 64 possible CPUs to trigger an increase. If you
-had 128 possible CPUs the amount of minimum required kernel ring
-buffer bumps to:
+It is somewhat fragile to expect the name in the DT to match the old
+name from the kernel. As your patch to n900 dts shows, we'd probably
+have to update every dts file to make them match. While I think we
+should work to remove this string from the kernel, userspace depending
+on the DT model string is a bad idea. For example, if you had some
+platform with multiple OEMs just rebranding the same base design, they
+may all want to put their own model string into each product. The true
+h/w id is the compatible string.
 
-   ((1 << 18) + ((128 - 1) * (1 << 12))) / 1024 = 764 KB
+Serial number is easy. There is already a standard although not widely
+used property for it with "/serial-number". You just need to wire it
+up to cpuinfo.
 
-Since we require the ring buffer to be a power of two the new
-required size would be 1024 KB.
+> So without this patch DT migration for Nokia N900 cannot be done
+> without breaking userspace - which is not acceptable...
 
-This CPU contributions are ignored when the "log_buf_len" kernel parameter
-is used as it forces the exact size of the ring buffer to an expected power
-of two value.
+I agree, but I would like to come up with something that prevents
+future dependence on this string.
 
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Petr Mladek <pmladek@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>
-Cc: Arun KS <arunks.linux@gmail.com>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-kernel@vger.kernel.org
-Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
-Tested-by: Davidlohr Bueso <davidlohr@hp.com>
-Tested-by: Petr Mladek <pmladek@suse.cz>
-Signed-off-by: Petr Mladek <pmladek@suse.cz>
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- Documentation/kernel-parameters.txt |  8 ++++--
- init/Kconfig                        | 53 ++++++++++++++++++++++++++++++++++++-
- kernel/printk/printk.c              | 34 ++++++++++++++++++++++++
- 3 files changed, 92 insertions(+), 3 deletions(-)
+> Also I still did not know why DT kernel does not report Revision
+> number which is passed by bootloader via atags. Any idea?
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 6eaa9cd..4cf08f5 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1685,8 +1685,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			7 (KERN_DEBUG)		debug-level messages
- 
- 	log_buf_len=n[KMG]	Sets the size of the printk ring buffer,
--			in bytes.  n must be a power of two.  The default
--			size is set in the kernel config file.
-+			in bytes.  n must be a power of two and greater
-+			than the minimal size. The minimal size is defined
-+			by LOG_BUF_SHIFT kernel config parameter. There is
-+			also CONFIG_LOG_CPU_MAX_BUF_SHIFT config parameter
-+			that allows to increase the default size depending on
-+			the number of CPUs. See init/Kconfig for more details.
- 
- 	logo.nologo	[FB] Disables display of the built-in Linux logo.
- 			This may be used to provide more screen space for
-diff --git a/init/Kconfig b/init/Kconfig
-index 9d76b99..573d3f6 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -807,7 +807,11 @@ config LOG_BUF_SHIFT
- 	range 12 21
- 	default 17
- 	help
--	  Select kernel log buffer size as a power of 2.
-+	  Select the minimal kernel log buffer size as a power of 2.
-+	  The final size is affected by LOG_CPU_MAX_BUF_SHIFT config
-+	  parameter, see below. Any higher size also might be forced
-+	  by "log_buf_len" boot parameter.
-+
- 	  Examples:
- 	  	     17 => 128 KB
- 		     16 => 64 KB
-@@ -816,6 +820,53 @@ config LOG_BUF_SHIFT
- 		     13 =>  8 KB
- 		     12 =>  4 KB
- 
-+config LOG_CPU_MAX_BUF_SHIFT
-+	int "CPU kernel log buffer size contribution (13 => 8 KB, 17 => 128KB)"
-+	range 0 21
-+	default 12
-+	depends on SMP
-+	depends on !BASE_SMALL
-+	help
-+	  The kernel ring buffer will get additional data logged onto it
-+	  when multiple CPUs are supported. Typically the contributions are
-+	  only a few lines when idle however under under load this can vary
-+	  and in the worst case it can mean losing logging information. You
-+	  can use this to set the maximum expected amount of logging
-+	  contribution under load by each CPU in the worst case scenario, as
-+	  a power of 2. The total sum amount of contributions made by all CPUs
-+	  must be greater than half of the default kernel ring buffer size
-+	  ((1 << LOG_BUF_SHIFT / 2 bytes)) in order to trigger an increase upon
-+	  bootup. If an increase is required the ring buffer is increased to
-+	  the next power of 2 that can fit both the minimum kernel ring buffer
-+	  (LOG_BUF_SHIFT) plus the additional worst case CPU contributions.
-+	  For example if LOG_BUF_SHIFT is 18 (256 KB) you'd require at laest
-+	  128 KB contributions by other CPUs in order to trigger an increase.
-+	  With a LOG_CPU_BUF_SHIFT of 12 (4 KB) you'd require at least anything
-+	  over > 64 possible CPUs to trigger an increase. If you had 128
-+	  possible CPUs the new minimum required kernel ring buffer size
-+	  would be:
-+
-+	     ((1 << 18) + ((128 - 1) * (1 << 12))) / 1024 = 764 KB
-+
-+	  Since we only allow powers of two for the kernel ring buffer size the
-+	  new kernel ring buffer size would be 1024 KB.
-+
-+	  CPU contributions are ignored when "log_buf_len" kernel parameter is
-+	  used as it forces an exact (power of two) size of the ring buffer to
-+	  an expected value.
-+
-+	  The number of possible CPUs is used for this computation ignoring
-+	  hotplugging making the compuation optimal for the the worst case
-+	  scenerio while allowing a simple algorithm to be used from bootup.
-+
-+	  Examples shift values and their meaning:
-+		     17 => 128 KB for each CPU
-+		     16 =>  64 KB for each CPU
-+		     15 =>  32 KB for each CPU
-+		     14 =>  16 KB for each CPU
-+		     13 =>   8 KB for each CPU
-+		     12 =>   4 KB for each CPU
-+
- #
- # Architectures with an unreliable sched_clock() should select this:
- #
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 7bf1365..83f7a95 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -266,6 +266,7 @@ static u32 clear_idx;
- #define LOG_ALIGN __alignof__(struct printk_log)
- #endif
- #define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
-+#define __LOG_CPU_MAX_BUF_LEN (1 << CONFIG_LOG_CPU_MAX_BUF_SHIFT)
- static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
- static char *log_buf = __log_buf;
- static u32 log_buf_len = __LOG_BUF_LEN;
-@@ -848,12 +849,45 @@ static int __init log_buf_len_setup(char *str)
- }
- early_param("log_buf_len", log_buf_len_setup);
- 
-+static void __init log_buf_add_cpu(void)
-+{
-+	unsigned int cpu_extra;
-+
-+	/*
-+	 * archs should set up cpu_possible_bits properly with
-+	 * set_cpu_possible() after setup_arch() but just in
-+	 * case lets ensure this is valid.
-+	 */
-+	if (num_possible_cpus() == 1)
-+		return;
-+
-+	cpu_extra = (num_possible_cpus() - 1) * __LOG_CPU_MAX_BUF_LEN;
-+
-+	/* by default this will only continue through for large > 64 CPUs */
-+	if (cpu_extra <= __LOG_BUF_LEN / 2)
-+		return;
-+
-+	pr_info("log_buf_len individual max cpu contribution: %d bytes\n",
-+		__LOG_CPU_MAX_BUF_LEN);
-+	pr_info("log_buf_len total cpu_extra contributions: %d bytes\n",
-+		cpu_extra);
-+	pr_info("log_buf_len min size: %d bytes\n", __LOG_BUF_LEN);
-+
-+	log_buf_len_update(cpu_extra + __LOG_BUF_LEN);
-+}
-+
- void __init setup_log_buf(int early)
- {
- 	unsigned long flags;
- 	char *new_log_buf;
- 	int free;
- 
-+	if (log_buf != __log_buf)
-+		return;
-+
-+	if (!early && !new_log_buf_len)
-+		log_buf_add_cpu();
-+
- 	if (!new_log_buf_len)
- 		return;
- 
--- 
-1.9.3
+Probably because no one cared until now and revision info for every
+SOC is different. I would like to see revision info set in the DT in a
+standard way and remove the various SOC specific kernel
+implementations.
 
+Rob
