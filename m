@@ -1,381 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756352AbaFRASU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 20:18:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34029 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751798AbaFRAST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 20:18:19 -0400
-Date: Wed, 18 Jun 2014 02:18:16 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, hpa@linux.intel.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, Joe Perches <joe@perches.com>,
-        Arun KS <arunks.linux@gmail.com>, Kees Cook <keescook@chromium.org>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [RFT v5h printk: allow increasing the ring buffer depending on
-	the number of CPUs
-Message-ID: <20140618001816.GK4841@wotan.suse.de>
-References: <1402965464-11202-1-git-send-email-mcgrof@do-not-panic.com> <20140617145200.GA634@pathway.suse.cz>
+	id S1756535AbaFRASn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 20:18:43 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:53544 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756316AbaFRASm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 20:18:42 -0400
+Date: Tue, 17 Jun 2014 17:18:36 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [bisected] pre-3.16 regression on open() scalability
+Message-ID: <20140618001836.GV4669@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <539B594C.8070004@intel.com>
+ <20140613224519.GV4581@linux.vnet.ibm.com>
+ <53A0CAE5.9000702@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140617145200.GA634@pathway.suse.cz>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <53A0CAE5.9000702@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061800-0928-0000-0000-000002C4F4E8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 04:52:01PM +0200, Petr Mládek wrote:
-> On Mon 2014-06-16 17:37:44, Luis R. Rodriguez wrote:
-> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> > diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> > index ea2d5f6..54632a0c 100644
-> > --- a/kernel/printk/printk.c
-> > +++ b/kernel/printk/printk.c
-> > @@ -842,20 +905,56 @@ static int __init log_buf_len_setup(char *str)
-> >  }
-> >  early_param("log_buf_len", log_buf_len_setup);
-> >  
-> > +static unsigned __init compute_cpu_contrib(void)
+On Tue, Jun 17, 2014 at 04:10:29PM -0700, Dave Hansen wrote:
+> On 06/13/2014 03:45 PM, Paul E. McKenney wrote:
+> >> > Could the additional RCU quiescent states be causing us to be doing more
+> >> > RCU frees that we were before, and getting less benefit from the lock
+> >> > batching that RCU normally provides?
+> > Quite possibly.  One way to check would be to use the debugfs files
+> > rcu/*/rcugp, which give a count of grace periods since boot for each
+> > RCU flavor.  Here "*" is rcu_preempt for CONFIG_PREEMPT and rcu_sched
+> > for !CONFIG_PREEMPT.
 > 
-> The function name is slightly misleading. It does not compute the
-> extra space but the whole length of the ring buffer. What about using
-> default_len_by_cpu_num() or so?
-
-Sure.
-
-> > +{
-> > +	int cpu_extra;
-> > +	unsigned extra_cpu_log_size;
-> > +
-> > +	/*
-> > +	 * archs should set up cpu_possible_bits properly with
-> > +	 * set_cpu_possible() after setup_arch() but just in
-> > +	 * case lets ensure this is valid.
-> > +	 */
-> > +	if (num_possible_cpus() <= 1)
-> > +		return 0;
-> > +
-> > +	cpu_extra = (num_possible_cpus() - 1) * __LOG_CPU_MIN_BUF_LEN;
-> > +	extra_cpu_log_size = roundup_pow_of_two(cpu_extra +
-> > __LOG_BUF_LEN);
+> With the previously-mentioned workload, rcugp's "age" averages 9 with
+> the old kernel (or RCU_COND_RESCHED_LIM at a high value) and 2 with the
+> current kernel which contains this regression.
 > 
-> Great catch. Well, I am not sure if this is really
-> needed. memblock_virt_alloc() is called on another locations with "any" size.
-
-Ok, on the other hand using roundup_pow_of_two() would guarantee both general
-alignment and upkeeping the tradition of having a ring buffer as a power of
-two. I think the implicit trick here was that alignment is ensured by
-becauase __LOG_BUF_LEN would be aligned to the architecture already as its
-an architecture specific value, furthermore no value smaller than this would
-be allowed and since we're doing power of two's any further extra multiplication
-by two should be aligned to the architecture. That should also mean that we
-wouldn't have to care for the size of log_buf_add_cpu in consideration for
-the archicture alignment as its already done for us.
-
-cpu_extra &= ~(LOG_ALIGN - 1); seems fair to me as well if we want to save
-some bytes, it probably does no harm if we bumped to the next power of two
-and and we could shared aligning code to make this explicit.
-
-I'll let you make the call as you'd know more than me of the requirements
-here I'm sure.
-
-> It might be enough to make sure that the size is aligned to
-> LOG_ALIGN. This is how the messages are aligned. I would do:
+> I also checked the rate and sources for how I'm calling cond_resched.
+> I'm calling it 5x for every open/close() pair in my test case, which
+> take about 7us.  So, _cond_resched() is, on average, only being called
+> every microsecond.  That doesn't seem _too_ horribly extreme.
 > 
-> 	cpu_extra %= LOG_ALIGN;
-
-cpu_extra &= ~(LOG_ALIGN - 1) also works as I noticed in your follow up.
-
-> Another possibility would be to set the minimal size of
-> LOG_CPU_MIN_BUF_SHIFT to "6" or so. I hope that the alignment of the
-> "struct printk_log" newer would be bigger than 64 bytes. Well, we
-> could add a compile check if we want to be sure.
-
-commit 6ebb017de seems to to have added __alignof__(struct log) but more
-than anything to ensure it lets the compiler figure it out. I think
-using roundup_pow_of_two() and ensuring its > __LOG_BUF_LEN would
-suffice the concern too. In fact we could / should probably repurpose
-the implicit alignement check with log_buf_len_setup() to share
-code.
-
-> Anyway, I do not have any strong opinion here. I might be too careful
-> and the roundup_pow_of_two() is perfectly fine.
-
-I think sharing the alignment strategy can help document how this is done.
-
-> > +
-> > +	if (cpu_extra <= __LOG_BUF_LEN / 2)
-> > +		return 0;
-> > +
-> > +	pr_info("log_buf_len cpu_extra contribution: %d\n", cpu_extra);
-> > +	pr_info("log_buf_len min size: %d\n", __LOG_BUF_LEN);
-> > +
-> > +	return extra_cpu_log_size;
-> > +}
-> > +
-> >
-> >  void __init setup_log_buf(int early)
-> >  {
-> >  	unsigned long flags;
-> >  	char *new_log_buf;
-> >  	int free;
-> > -
-> > -	if (!new_log_buf_len)
-> > -		return;
-> > +	enum klog_setup_state new_klog_state;
-> >  
-> >  	if (early) {
-> > +		if (!new_log_buf_len)
-> > +			return;
-> >  		new_log_buf =
-> >  			memblock_virt_alloc(new_log_buf_len, PAGE_SIZE);
-> > +		new_klog_state = KLOG_PARAM;
-> >  	} else {
-> > -		new_log_buf = memblock_virt_alloc_nopanic(new_log_buf_len, 0);
-> > +		if (klog_state == KLOG_PARAM)
-> > +			return;
-> > +		if (new_log_buf_len)
-> > +			new_klog_state = KLOG_PARAM;
-> > +		else {
-> > +			new_log_buf_len = compute_cpu_contrib();
-> > +			new_klog_state = KLOG_CPU_EXTRA;
-> > +		}
-> > +		if (!new_log_buf_len)
-> > +			return;
-> > +		new_log_buf = memblock_virt_alloc(new_log_buf_len,
-> > PAGE_SIZE);
+> >  3895.165846 |     8)               |  SyS_open() {
+> >  3895.165846 |     8)   0.065 us    |    _cond_resched();
+> >  3895.165847 |     8)   0.064 us    |    _cond_resched();
+> >  3895.165849 |     8)   2.406 us    |  }
+> >  3895.165849 |     8)   0.199 us    |  SyS_close();
+> >  3895.165850 |     8)               |  do_notify_resume() {
+> >  3895.165850 |     8)   0.063 us    |    _cond_resched();
+> >  3895.165851 |     8)   0.069 us    |    _cond_resched();
+> >  3895.165852 |     8)   0.060 us    |    _cond_resched();
+> >  3895.165852 |     8)   2.194 us    |  }
+> >  3895.165853 |     8)               |  SyS_open() {
 > 
-> We should call memblock_virt_allocc_nopanic() in this else part.
-
-Oops, sorry yes.
-
-> Well, I am not sure if the new klog states make the code really better
-> readable. I wonder where we lost the simplicity from v3 of this patch ;-)
-
-The issue came up after I realized that an architecture that uses the early
-call will end up on this path twice, the trick that the last developer did for
-this situation was to use the kernel parameter as an indicator of whether or
-not the parameter was treated already or not. Towards the end of the call it
-uses:
-
-	new_log_buf_len = 0;
-
-Upon entry on the second call when the kernel parameter was set we bail
-as its now 0. The issue I had not addressed was three fold:
-
- *  if an architecture had used the early call new_log_buf_len would
-    be 0 now, and so the so check in place on v3 would not have
-    worked well, instead you'd have to check for log_buf_len as
-    Davidlohr had suspected but only for the non-early case, but only
-    if new_log_buf_len was 0 as an early call could have been issued.
-
- *  we want to ensure that for archs that don't use the early call
-    but did pass the kernel parameter that its respected and the extra
-    cpu stuff is ignored
-
- *  num_possible_cpus() setup_arch() requirement
-
-After realizing the double entry issue, as well as the num_possible_cpus()
-requirement to be done later, the above was the cleanest solution I could come
-up with without having to repurpose new_log_buf_len and setting it to some
-magic value, or adding just a bool. I decided a simpler hacky solution would
-would work but considered the lack of documentation on all this nasty enough to
-merit an enum and some clarification.
-
-> What about replacing the above changes in kernel/printk/printk.c with
-> the following ones:
+> The more I think about it, the more I think we can improve on a purely
+> call-based counter.
 > 
-> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> index ea2d5f6962ed..e00a9600f5fa 100644
-> --- a/kernel/printk/printk.c
-> +++ b/kernel/printk/printk.c
-> @@ -266,6 +266,7 @@ static u32 clear_idx;
->  #define LOG_ALIGN __alignof__(struct printk_log)
->  #endif
->  #define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
-> +#define __LOG_CPU_MIN_BUF_LEN (1 << CONFIG_LOG_CPU_MIN_BUF_SHIFT)
->  static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
->  static char *log_buf = __log_buf;
->  static u32 log_buf_len = __LOG_BUF_LEN;
-> @@ -842,12 +843,52 @@ static int __init log_buf_len_setup(char *str)
->  }
->  early_param("log_buf_len", log_buf_len_setup);
->  
-> +static unsigned __init default_len_by_cpu_num(void)
-> +{
-> +	int cpu_extra;
-> +	unsigned extra_cpu_log_size;
-> +
-> +	/*
-> +	 * archs should set up cpu_possible_bits properly with
-> +	 * set_cpu_possible() after setup_arch() but just in
-> +	 * case lets ensure this is valid.
-> +	 */
-> +	if (num_possible_cpus() <= 1)
-> +		return 0;
-> +
-> +	cpu_extra = (num_possible_cpus() - 1) * __LOG_CPU_MIN_BUF_LEN;
-> +	/* make sure that the buffer is aligned */
-> +	cpu_extra %= LOG_ALIGN;
-> +	extra_cpu_log_size = roundup_pow_of_two(cpu_extra + __LOG_BUF_LEN);
+> First, it couples the number of cond_resched() directly calls with the
+> benefits we see out of RCU.  We really don't *need* to see more grace
+> periods if we have more cond_resched() calls.
+> 
+> It also ends up eating a new cacheline in a bunch of pretty hot paths.
+> It would be nice to be able to keep the fast path part of this as at
+> least read-only.
+> 
+> Could we do something (functionally) like the attached patch?  Instead
+> of counting cond_resched() calls, we could just specify some future time
+> by which we want have a quiescent state.  We could even push the time to
+> be something _just_ before we would have declared a stall.
 
->From your other e-mail:
+Nice analysis!
 
-	cpu_extra &= ~(LOG_ALIGN - 1);
-	extra_cpu_log_size = cpu_extra + __LOG_BUF_LEN;
+So if I understand correctly, a goodly part of the regression is due not
+to the overhead added to cond_resched(), but rather because grace periods
+are now happening faster, thus incurring more overhead.  Is that correct?
 
-I think ensuring the extra_cpu_log_size is > __LOG_BUF_LEN and using
-roundup_pow_of_two() with the assumption archs have made __LOG_BUF_LEN
-properly arch aligned should suffice to not have to do the alignment
-check above, both should work, its a judgement call thing. I'm fine either
-way. Let me know.
+If this is the case, could you please let me know roughly how sensitive is
+the performance to the time delay in RCU_COND_RESCHED_EVERY_THIS_JIFFIES?
 
-> +
-> +	if (cpu_extra <= __LOG_BUF_LEN / 2)
-> +		return 0;
+The patch looks promising.  I will probably drive the time-setup deeper
+into the guts of RCU, which should allow moving the access to jiffies
+and the comparison off of the fast path as well, but this appears to
+me to be good and sufficient for others encountering this same problem
+in the meantime.
 
-We could do this earlier to save ourself the not needed roundup_pow_of_two()
-computation on the false case or the addition for extra_cpu_log_size.
+And of course, if my attempt to drive things deeper into the guts of
+RCU doesn't work out, something close to the below might also be the
+eventual solution.
 
-> +
-> +	pr_info("log_buf_len cpu_extra contribution: %d\n", cpu_extra);
-> +	pr_info("log_buf_len min size: %d\n", __LOG_BUF_LEN);
-> +
-> +	return extra_cpu_log_size;
-> +}
-> +
->  void __init setup_log_buf(int early)
+							Thanx, Paul
+
+> ---
+> 
+>  b/arch/x86/kernel/nmi.c    |    6 +++---
+>  b/include/linux/rcupdate.h |    7 +++----
+>  b/kernel/rcu/update.c      |    4 ++--
+>  3 files changed, 8 insertions(+), 9 deletions(-)
+> 
+> diff -puN include/linux/rcupdate.h~rcu-halfstall include/linux/rcupdate.h
+> --- a/include/linux/rcupdate.h~rcu-halfstall	2014-06-17 14:08:19.596464173 -0700
+> +++ b/include/linux/rcupdate.h	2014-06-17 14:15:40.335598696 -0700
+> @@ -303,8 +303,8 @@ bool __rcu_is_watching(void);
+>   * Hooks for cond_resched() and friends to avoid RCU CPU stall warnings.
+>   */
+> 
+> -extern u64 RCU_COND_RESCHED_LIM;	/* ms vs. 100s of ms. */
+> -DECLARE_PER_CPU(int, rcu_cond_resched_count);
+> +extern u64 RCU_COND_RESCHED_EVERY_THIS_JIFFIES;
+> +DECLARE_PER_CPU(unsigned long, rcu_cond_resched_at_jiffies);
+>  void rcu_resched(void);
+> 
+>  /*
+> @@ -321,8 +321,7 @@ void rcu_resched(void);
+>   */
+>  static inline bool rcu_should_resched(void)
 >  {
->  	unsigned long flags;
->  	char *new_log_buf;
->  	int free;
->  
-> +	/* nope when already allocated earlier */
-> +	if (log_buf != __log_buf)
-> +		return;
-
-That would do it too, all this just makes all the requirements and use
-cases only legible to the reader of the callers / use cases. I do think
-its cleaner.
-
-> +
-> +	/*
-> +	 * The default size need to be increased on systems with many CPUs.
-> +	 * It is done only when an exact size is not forced by log_buf_len=n
-> +	 * kernel parameter.
-> +	 */
-> +	if (!new_log_buf_len)
-> +		new_log_buf_len = default_len_by_cpu_num();
-
-Lets let my documentation exist on archive :), I'll take this and
-modify it slightly with some basic comments and sharing aligment
-and documenting a bit more.
-
-> +
-> +	/* nope when nobody wants to increase the size after all */
->  	if (!new_log_buf_len)
->  		return;
->  
-> -- 
-> 1.8.4
+> -	return raw_cpu_inc_return(rcu_cond_resched_count) >=
+> -	       RCU_COND_RESCHED_LIM;
+> +	return raw_cpu_read(rcu_cond_resched_at_jiffies) >= jiffies;
+>  }
 > 
+>  /*
+> diff -puN arch/x86/kernel/nmi.c~rcu-halfstall arch/x86/kernel/nmi.c
+> --- a/arch/x86/kernel/nmi.c~rcu-halfstall	2014-06-17 14:11:28.442072042 -0700
+> +++ b/arch/x86/kernel/nmi.c	2014-06-17 14:12:04.664723690 -0700
+> @@ -88,13 +88,13 @@ __setup("unknown_nmi_panic", setup_unkno
 > 
-> I think that it is better readable than the two level if-magic with
-> the three new flags. The long description of the three flags looked
-> scary in itself ;-)
+>  static u64 nmi_longest_ns = 1 * NSEC_PER_MSEC;
+> 
+> -u64 RCU_COND_RESCHED_LIM = 256;
+> +u64 RCU_COND_RESCHED_EVERY_THIS_JIFFIES = 100;
+>  static int __init nmi_warning_debugfs(void)
+>  {
+>  	debugfs_create_u64("nmi_longest_ns", 0644,
+>  			arch_debugfs_dir, &nmi_longest_ns);
+> -	debugfs_create_u64("RCU_COND_RESCHED_LIM", 0644,
+> -			arch_debugfs_dir, &RCU_COND_RESCHED_LIM);
+> +	debugfs_create_u64("RCU_COND_RESCHED_EVERY_THIS_JIFFIES", 0644,
+> +			arch_debugfs_dir, &RCU_COND_RESCHED_EVERY_THIS_JIFFIES);
+>  	return 0;
+>  }
+>  fs_initcall(nmi_warning_debugfs);
+> diff -puN kernel/rcu/update.c~rcu-halfstall kernel/rcu/update.c
+> --- a/kernel/rcu/update.c~rcu-halfstall	2014-06-17 14:12:50.768834979 -0700
+> +++ b/kernel/rcu/update.c	2014-06-17 14:17:14.166894075 -0700
+> @@ -355,7 +355,7 @@ early_initcall(check_cpu_stall_init);
+>   * Hooks for cond_resched() and friends to avoid RCU CPU stall warnings.
+>   */
+> 
+> -DEFINE_PER_CPU(int, rcu_cond_resched_count);
+> +DEFINE_PER_CPU(unsigned long, rcu_cond_resched_at_jiffies);
+> 
+>  /*
+>   * Report a set of RCU quiescent states, for use by cond_resched()
+> @@ -364,7 +364,7 @@ DEFINE_PER_CPU(int, rcu_cond_resched_cou
+>  void rcu_resched(void)
+>  {
+>  	preempt_disable();
+> -	__this_cpu_write(rcu_cond_resched_count, 0);
+> +	__this_cpu_write(rcu_cond_resched_at_jiffies, jiffies + RCU_COND_RESCHED_EVERY_THIS_JIFFIES);
+>  	rcu_note_context_switch(smp_processor_id());
+>  	preempt_enable();
+>  }
+> _
 
-Yeah, true, do we want to share the alignment code with log_buf_len_setup() ?
-
-How about this then?
-
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index ea2d5f6..da57f6f 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -266,6 +266,7 @@ static u32 clear_idx;
- #define LOG_ALIGN __alignof__(struct printk_log)
- #endif
- #define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
-+#define __LOG_CPU_MIN_BUF_LEN (1 << CONFIG_LOG_CPU_MIN_BUF_SHIFT)
- static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
- static char *log_buf = __log_buf;
- static u32 log_buf_len = __LOG_BUF_LEN;
-@@ -828,29 +829,68 @@ void log_buf_kexec_setup(void)
- /* requested log_buf_len from kernel cmdline */
- static unsigned long __initdata new_log_buf_len;
- 
--/* save requested log_buf_len since it's too early to process it */
--static int __init log_buf_len_setup(char *str)
-+/*
-+ * CONFIG_LOG_BUF_SHIFT would be architecture aligned, anything > than it and
-+ * a multiple of two of it upkeeps the alignment.
-+ */
-+static void __init log_buf_len_align(unsigned size)
- {
--	unsigned size = memparse(str, &str);
--
- 	if (size)
- 		size = roundup_pow_of_two(size);
- 	if (size > log_buf_len)
- 		new_log_buf_len = size;
-+}
-+
-+/* save requested log_buf_len since it's too early to process it */
-+static int __init log_buf_len_setup(char *str)
-+{
-+	unsigned size = memparse(str, &str);
-+
-+	log_buf_len_align(size);
- 
- 	return 0;
- }
- early_param("log_buf_len", log_buf_len_setup);
- 
-+static void __init log_buf_add_cpu(void)
-+{
-+	int cpu_extra;
-+
-+	/*
-+	 * archs should set up cpu_possible_bits properly with
-+	 * set_cpu_possible() after setup_arch() but just in
-+	 * case lets ensure this is valid. During an early
-+	 * call before setup_arch()() this will be 1.
-+	 */
-+	if (num_possible_cpus() <= 1)
-+		return;
-+
-+	cpu_extra = (num_possible_cpus() - 1) * __LOG_CPU_MIN_BUF_LEN;
-+
-+	/* by default this will only continue through for large > 64 CPUs */
-+	if (cpu_extra <= __LOG_BUF_LEN / 2)
-+		return;
-+
-+	pr_info("log_buf_len cpu_extra contribution: %d\n", cpu_extra);
-+	pr_info("log_buf_len min size: %d\n", __LOG_BUF_LEN);
-+
-+	log_buf_len_align(cpu_extra + __LOG_BUF_LEN);
-+}
-+
- void __init setup_log_buf(int early)
- {
- 	unsigned long flags;
- 	char *new_log_buf;
- 	int free;
- 
--	if (!new_log_buf_len)
-+	if (log_buf != __log_buf)
- 		return;
- 
-+	if (!early && !new_log_buf_len)
-+		log_buf_add_cpu();
-+
-+	if (!new_log_buf_len)
-+		return;
- 	if (early) {
- 		new_log_buf =
- 			memblock_virt_alloc(new_log_buf_len, PAGE_SIZE);
