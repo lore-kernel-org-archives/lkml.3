@@ -1,47 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465AbaFRQWK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 12:22:10 -0400
-Received: from smtp2.macqel.be ([109.135.2.61]:57503 "EHLO smtp2.macqel.be"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751779AbaFRQWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 12:22:08 -0400
-X-Greylist: delayed 533 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Jun 2014 12:22:08 EDT
-From: Philippe De Muyter <phdm@macqel.be>
-To: linux-kernel@vger.kernel.org
-Cc: Philippe De Muyter <phdm@macqel.be>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] init/do_mounts.c: treat EROFS like EACCES
-Date: Wed, 18 Jun 2014 18:12:44 +0200
-Message-Id: <1403107964-1082-1-git-send-email-phdm@macqel.be>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753479AbaFRQXd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 12:23:33 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:49839 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753270AbaFRQXb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 12:23:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140618075551.GJ21030@lee--X1>
+References: <1402954800-28215-1-git-send-email-dianders@chromium.org>
+	<1402954800-28215-3-git-send-email-dianders@chromium.org>
+	<20140618075551.GJ21030@lee--X1>
+Date: Wed, 18 Jun 2014 09:23:29 -0700
+X-Google-Sender-Auth: gfLsVtqdq4UHe6ZdzlnaJgfcweQ
+Message-ID: <CAD=FV=Wn3u+DNerFBNpbbLhBPa+3A5bvrRiBXNq=vyRA00+-uQ@mail.gmail.com>
+Subject: Re: [PATCH 02/10] mfd: cros_ec: IRQs for cros_ec should be optional
+From: Doug Anderson <dianders@chromium.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Andrew Bresticker <abrestic@chromium.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Bill Richardson <wfrichar@chromium.org>,
+        Simon Glass <sjg@chromium.org>, Wolfram Sang <wsa@the-dreams.de>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-some combinations of filesystem and block device (at least vfat on mmc)
-yield -EROFS instead of -EACCES when the device is read-only.  Retry
-mounting with MS_RDONLY set, just like for the EACCES case, instead of
-failing directly.
+Lee,
 
-Signed-off-by: Philippe De Muyter <phdm@macqel.be>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- init/do_mounts.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+On Wed, Jun 18, 2014 at 12:55 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Mon, 16 Jun 2014, Doug Anderson wrote:
+>
+>> From: Bill Richardson <wfrichar@chromium.org>
+>>
+>> Preparing the way for the LPC device, which is just a plaform_device without
+>> interrupts.
+>>
+>> Signed-off-by: Bill Richardson <wfrichar@chromium.org>
+>> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>> ---
+>>  drivers/mfd/cros_ec.c | 26 +++++++++++++-------------
+>>  1 file changed, 13 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/drivers/mfd/cros_ec.c b/drivers/mfd/cros_ec.c
+>> index 38fe9bf..bd6f936 100644
+>> --- a/drivers/mfd/cros_ec.c
+>> +++ b/drivers/mfd/cros_ec.c
+>> @@ -119,17 +119,15 @@ int cros_ec_register(struct cros_ec_device *ec_dev)
+>>                       return -ENOMEM;
+>>       }
+>>
+>> -     if (!ec_dev->irq) {
+>> -             dev_dbg(dev, "no valid IRQ: %d\n", ec_dev->irq);
+>> -             return err;
+>> -     }
+>> -
+>> -     err = request_threaded_irq(ec_dev->irq, NULL, ec_irq_thread,
+>> -                                IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+>> -                                "chromeos-ec", ec_dev);
+>> -     if (err) {
+>> -             dev_err(dev, "request irq %d: error %d\n", ec_dev->irq, err);
+>> -             return err;
+>> +     if (ec_dev->irq) {
+>> +             err = request_threaded_irq(ec_dev->irq, NULL, ec_irq_thread,
+>> +                                     IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+>> +                                     "chromeos-ec", ec_dev);
+>
+> Is there anything stopping you using the devm_* version?
 
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index 82f2288..af7b9b8 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -394,6 +394,7 @@ retry:
- 			case 0:
- 				goto out;
- 			case -EACCES:
-+			case -EROFS:
- 				flags |= MS_RDONLY;
- 				goto retry;
- 			case -EINVAL:
--- 
-1.7.5.3
+I'm generally quite hesitant about using the devm_ IRQ functions.
+Requesting an IRQ enables the IRQ at the time of request and freeing
+it disables it, right?  Leaving it up to the the devm subsystem to
+disable your IRQ tends to be a race waiting to happen if an IRQ
+happens after you've freed all your memory / cleaned up all your
+state.
 
+Looking at cros_ec in particular though:
+
+* Right now the last thing done in cros_ec_remove() (which is the last
+thing in both cros_ec_i2c_remove and cros_ec_spi_remove) is to free
+the IRQ.  That means that you're right: we could switch to devm_ in
+this case and it wouldn't introduce any new bugs.
+
+* ...but I'm not convinced that the location of the free_irq() today
+is quite right.  I couldn't actually get it to crash or hang, but
+there is a time period where we've called mfd_remove_devices() and the
+IRQ is still active.  That doesn't seem like a super great situation
+to be in.  I'll add a move of the irq_free to the patch series.
+
+-Doug
