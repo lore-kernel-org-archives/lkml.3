@@ -1,139 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209AbaFRPk2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 11:40:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46832 "EHLO mx2.suse.de"
+	id S1752062AbaFRPmM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 11:42:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11938 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751352AbaFRPk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 11:40:26 -0400
-Date: Wed, 18 Jun 2014 17:40:23 +0200
-From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: hpa@linux.intel.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Andrew Lunn <andrew@lunn.ch>, Stephen Warren <swarren@wwwdotorg.org>,
-        Michal Hocko <mhocko@suse.cz>, Joe Perches <joe@perches.com>,
-        Arun KS <arunks.linux@gmail.com>, Kees Cook <keescook@chromium.org>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [RFT 1/2] printk: make dynamic kernel ring buffer alignemnt
- explicit
-Message-ID: <20140618154022.GI634@pathway.suse.cz>
-References: <1403090065-13879-1-git-send-email-mcgrof@do-not-panic.com>
+	id S1751210AbaFRPmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 11:42:10 -0400
+Message-ID: <53A1B33A.3080509@redhat.com>
+Date: Wed, 18 Jun 2014 17:41:46 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403090065-13879-1-git-send-email-mcgrof@do-not-panic.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nadav Amit <namit@cs.technion.ac.il>
+CC: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 9/9] KVM: vmx: vmx instructions handling does not consider
+ cs.l
+References: <539F059F.8050501@redhat.com> <1403101166-23616-1-git-send-email-namit@cs.technion.ac.il> <1403101166-23616-10-git-send-email-namit@cs.technion.ac.il>
+In-Reply-To: <1403101166-23616-10-git-send-email-namit@cs.technion.ac.il>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-06-18 04:14:24, Luis R. Rodriguez wrote:
-> From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> 
-> We have to consider alignment for the ring buffer both for the
-> default static size, and then also for when an dynamic allocation
-> is made when the log_buf_len=n kernel parameter is passed to set
-> the size specifically to a size larger than the default size set
-> by the architecture through CONFIG_LOG_BUF_SHIFT.
-> 
-> The default static kernel ring buffer can be aligned properly if
-> architectures set CONFIG_LOG_BUF_SHIFT properly, we provide ranges
-> for the size though so even if CONFIG_LOG_BUF_SHIFT has a sensible
-> aligned value it can be reduced to a non aligned value. Commit
-> 6ebb017de9 by Andrew ensures the static buffer is always aligned
-> and the decision of alignment is done by the compiler by using
-> __alignof__(struct log) (curious what value caused the crash?).
-> 
-> When log_buf_len=n is used we allocate the ring buffer dynamically.
-> Dynamic allocation varies, for the early allocation called
-> before setup_arch() memblock_virt_alloc() requests a page aligment
-> and for the default kernel allocation memblock_virt_alloc_nopanic()
-> requests no special alignment, which in turn ends up aligning the
-> allocation to SMP_CACHE_BYTES, which is L1 cache aligned.
-> 
-> Since we already have the required alignment for the kernel ring
-> buffer though we can do better and request explicit alignment for
-> LOG_ALIGN. Do that and also put the power of 2 practice of
-> the ring buffer size into a helper which we'll use later.
-> 
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: Stephen Warren <swarren@wwwdotorg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Petr Mladek <pmladek@suse.cz>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Joe Perches <joe@perches.com>
-> Cc: Arun KS <arunks.linux@gmail.com>
-> Cc: Kees Cook <keescook@chromium.org>
-> Cc: Davidlohr Bueso <davidlohr@hp.com>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+Il 18/06/2014 16:19, Nadav Amit ha scritto:
+> VMX instructions use 32-bit operands in 32-bit mode, and 64-bit operands in
+> 64-bit mode.  The current implementation is broken since it does not use the
+> register operands correctly, and always uses 64-bit for reads and writes.
+> Moreover, write to memory in vmwrite only considers long-mode, so it ignores
+> cs.l. This patch fixes this behavior.  The field of vmread/vmwrite is kept
+> intentionally as 64-bit read since if bits [63:32] are not cleared the
+> instruction should fail, according to Intel SDM.
 
-The change makes sense to me.
+This is not how I read the SDM:
 
-Acked-by: Petr Mladek <pmladek@suse.cz>
-Tested-by: Petr Mladek <pmladek@suse.cz>
+"These instructions fail if given, in 64-bit mode, an operand that sets 
+an encoding bit beyond bit 32." (Section 24.11.1.2)
 
-> This is perhaps not required given that we stick to powers of 2
-> and the min LOG_BUF_SHIFT is 12, if the min LOG_BUF_SHIFT is
-> aligned then I think any passed log_buf_len=n would be aligned
-> as well as we don't make log_buf_len=n take effect unless
-> its > than the default size, and we round to the produced size
-> to the next power of 2. If the min length produced by
-> LOG_BUF_SHIFT is aligned, multiples of 2 of this should be as
-> well I think.
-> 
-> This might be perhaps safest thing to do though given we'll
-> add other alloc entries next.
-> 
->  kernel/printk/printk.c | 19 +++++++++++++------
->  1 file changed, 13 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> index ea2d5f6..af164a7 100644
-> --- a/kernel/printk/printk.c
-> +++ b/kernel/printk/printk.c
-> @@ -828,15 +828,21 @@ void log_buf_kexec_setup(void)
->  /* requested log_buf_len from kernel cmdline */
->  static unsigned long __initdata new_log_buf_len;
->  
-> -/* save requested log_buf_len since it's too early to process it */
-> -static int __init log_buf_len_setup(char *str)
-> +/* we practice scaling the ring buffer by powers of 2 */
-> +static void __init log_buf_len_update(unsigned size)
->  {
-> -	unsigned size = memparse(str, &str);
-> -
->  	if (size)
->  		size = roundup_pow_of_two(size);
->  	if (size > log_buf_len)
->  		new_log_buf_len = size;
-> +}
-> +
-> +/* save requested log_buf_len since it's too early to process it */
-> +static int __init log_buf_len_setup(char *str)
-> +{
-> +	unsigned size = memparse(str, &str);
-> +
-> +	log_buf_len_update(size);
->  
->  	return 0;
->  }
-> @@ -853,9 +859,10 @@ void __init setup_log_buf(int early)
->  
->  	if (early) {
->  		new_log_buf =
-> -			memblock_virt_alloc(new_log_buf_len, PAGE_SIZE);
-> +			memblock_virt_alloc(new_log_buf_len, LOG_ALIGN);
->  	} else {
-> -		new_log_buf = memblock_virt_alloc_nopanic(new_log_buf_len, 0);
-> +		new_log_buf = memblock_virt_alloc_nopanic(new_log_buf_len,
-> +							  LOG_ALIGN);
->  	}
->  
->  	if (unlikely(!new_log_buf)) {
-> -- 
-> 1.9.3
-> 
+"Outside IA-32e mode, the source operand has 32 bits, regardless of the 
+value of CS.D. In 64-bit mode, the source operand has 64 bits; however, 
+if bits 63:32 of the source operand are not zero, VMREAD will fail due 
+to an attempt to access an unsupported VMCS component (see operation 
+section)." (Description of VMREAD in Chapter 30).
+
+I'll fix up the patch myself.
+
+Paolo
