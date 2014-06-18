@@ -1,151 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966089AbaFRJv7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 05:51:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:24679 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965348AbaFRJsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 05:48:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,499,1400050800"; 
-   d="scan'208";a="530353711"
-From: Qiaowei Ren <qiaowei.ren@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Dave Hansen <dave.hansen@intel.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Qiaowei Ren <qiaowei.ren@intel.com>
-Subject: [PATCH v6 00/10] Intel MPX support
-Date: Wed, 18 Jun 2014 17:44:06 +0800
-Message-Id: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
-X-Mailer: git-send-email 1.7.1
+	id S1756554AbaFRJxp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 05:53:45 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:35486 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756481AbaFRJxo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 05:53:44 -0400
+Date: Wed, 18 Jun 2014 10:53:29 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>
+Cc: Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "thomas.lendacky@amd.com" <thomas.lendacky@amd.com>
+Subject: Re: [PATCH] arm64/dma: Removing ARCH_HAS_DMA_GET_REQUIRED_MASK macro
+Message-ID: <20140618095329.GE11973@arm.com>
+References: <1402092436-2144-1-git-send-email-suravee.suthikulpanit@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402092436-2144-1-git-send-email-suravee.suthikulpanit@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds support for the Memory Protection Extensions
-(MPX) feature found in future Intel processors.
+On Fri, Jun 06, 2014 at 11:07:16PM +0100, suravee.suthikulpanit@amd.com wrote:
+> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> 
+> Arm64 does not define dma_get_required_mask() function.
+> Therefore, it should not define the ARCH_HAS_DMA_GET_REQUIRED_MASK.
+> This causes build errors in some device drivers (e.g. mpt2sas)
+> 
+> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 
-MPX can be used in conjunction with compiler changes to check memory
-references, for those references whose compile-time normal intentions
-are usurped at runtime due to buffer overflow or underflow.
+Applied. Thanks.
 
-MPX provides this capability at very low performance overhead for
-newly compiled code, and provides compatibility mechanisms with legacy
-software components. MPX architecture is designed allow a machine to
-run both MPX enabled software and legacy software that is MPX unaware.
-In such a case, the legacy software does not benefit from MPX, but it
-also does not experience any change in functionality or reduction in
-performance.
-
-More information about Intel MPX can be found in "Intel(R) Architecture
-Instruction Set Extensions Programming Reference".
-
-To get the advantage of MPX, changes are required in the OS kernel,
-binutils, compiler, system libraries support.
-
-New GCC option -fmpx is introduced to utilize MPX instructions.
-Currently GCC compiler sources with MPX support is available in a
-separate branch in common GCC SVN repository. See GCC SVN page
-(http://gcc.gnu.org/svn.html) for details.
-
-To have the full protection, we had to add MPX instrumentation to all
-the necessary Glibc routines (e.g. memcpy) written on assembler, and
-compile Glibc with the MPX enabled GCC compiler. Currently MPX enabled
-Glibc source can be found in Glibc git repository.
-
-Enabling an application to use MPX will generally not require source
-code updates but there is some runtime code, which is responsible for
-configuring and enabling MPX, needed in order to make use of MPX.
-For most applications this runtime support will be available by linking
-to a library supplied by the compiler or possibly it will come directly
-from the OS once OS versions that support MPX are available.
-
-MPX kernel code, namely this patchset, has mainly the 2 responsibilities:
-provide handlers for bounds faults (#BR), and manage bounds memory.
-
-The high-level areas modified in the patchset are as follow:
-1) struct siginfo is extended to include bound violation information.
-2) two prctl() commands are added to do performance optimization.
-
-Currently no hardware with MPX ISA is available but it is always
-possible to use SDE (Intel(R) software Development Emulator) instead,
-which can be downloaded from
-http://software.intel.com/en-us/articles/intel-software-development-emulator
-
-Future TODO items:
-1) support 32-bit binaries on 64-bit kernels.
-
-Changes since v1:
-  * check to see if #BR occurred in userspace or kernel space.
-  * use generic structure and macro as much as possible when
-    decode mpx instructions.
-
-Changes since v2:
-  * fix some compile warnings.
-  * update documentation.
-
-Changes since v3:
-  * correct some syntax errors at documentation, and document
-    extended struct siginfo.
-  * for kill the process when the error code of BNDSTATUS is 3.
-  * add some comments.
-  * remove new prctl() commands.
-  * fix some compile warnings for 32-bit.
-
-Changes since v4:
-  * raise SIGBUS if the allocations of the bound tables fail.
-
-Changes since v5:
-  * hook unmap() path to cleanup unused bounds tables, and use
-    new prctl() command to register bounds directory address to
-    struct mm_struct to check whether one process is MPX enabled
-    during unmap().
-  * in order track precisely MPX memory usage, add MPX specific
-    mmap interface and one VM_MPX flag to check whether a VMA
-    is MPX bounds table.
-  * add macro cpu_has_mpx to do performance optimization.
-  * sync struct figinfo for mips with general version to avoid
-    build issue.
-
-
-Qiaowei Ren (10):
-  x86, mpx: introduce VM_MPX to indicate that a VMA is MPX specific
-  x86, mpx: add MPX specific mmap interface
-  x86, mpx: add macro cpu_has_mpx
-  x86, mpx: hook #BR exception handler to allocate bound tables
-  x86, mpx: extend siginfo structure to include bound violation
-    information
-  mips: sync struct siginfo with general version
-  x86, mpx: decode MPX instruction to get bound violation information
-  x86, mpx: add prctl commands PR_MPX_REGISTER, PR_MPX_UNREGISTER
-  x86, mpx: cleanup unused bound tables
-  x86, mpx: add documentation on Intel MPX
-
- Documentation/x86/intel_mpx.txt      |  127 +++++++++++
- arch/mips/include/uapi/asm/siginfo.h |    4 +
- arch/x86/Kconfig                     |    4 +
- arch/x86/include/asm/cpufeature.h    |    6 +
- arch/x86/include/asm/mmu_context.h   |   16 ++
- arch/x86/include/asm/mpx.h           |   91 ++++++++
- arch/x86/include/asm/processor.h     |   18 ++
- arch/x86/kernel/Makefile             |    1 +
- arch/x86/kernel/mpx.c                |  413 ++++++++++++++++++++++++++++++++++
- arch/x86/kernel/traps.c              |   62 +++++-
- arch/x86/mm/Makefile                 |    2 +
- arch/x86/mm/init_64.c                |    2 +
- arch/x86/mm/mpx.c                    |  247 ++++++++++++++++++++
- fs/proc/task_mmu.c                   |    1 +
- include/asm-generic/mmu_context.h    |    6 +
- include/linux/mm.h                   |    2 +
- include/linux/mm_types.h             |    3 +
- include/uapi/asm-generic/siginfo.h   |    9 +-
- include/uapi/linux/prctl.h           |    6 +
- kernel/signal.c                      |    4 +
- kernel/sys.c                         |   12 +
- mm/mmap.c                            |    2 +
- 22 files changed, 1036 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/x86/intel_mpx.txt
- create mode 100644 arch/x86/include/asm/mpx.h
- create mode 100644 arch/x86/kernel/mpx.c
- create mode 100644 arch/x86/mm/mpx.c
-
+-- 
+Catalin
