@@ -1,95 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354AbaFRTQW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 15:16:22 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:41913 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752892AbaFRTQU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 15:16:20 -0400
-Message-ID: <53A1E581.7010004@codeaurora.org>
-Date: Wed, 18 Jun 2014 12:16:17 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1754422AbaFRTVi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 15:21:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50539 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752014AbaFRTVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 15:21:37 -0400
+Date: Wed, 18 Jun 2014 21:21:34 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, hpa@linux.intel.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andrew Lunn <andrew@lunn.ch>, Stephen Warren <swarren@wwwdotorg.org>,
+        Michal Hocko <mhocko@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        Joe Perches <joe@perches.com>, Arun KS <arunks.linux@gmail.com>,
+        Kees Cook <keescook@chromium.org>, Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [RFT 2/2] printk: allow increasing the ring buffer depending
+	on the number of CPUs
+Message-ID: <20140618192134.GN4841@wotan.suse.de>
+References: <1403090065-13879-1-git-send-email-mcgrof@do-not-panic.com> <1403090065-13879-2-git-send-email-mcgrof@do-not-panic.com> <1403115072.3787.3.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-CC: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Lee Jones <lee.jones@linaro.org>,
-        Josh Cartwright <joshc@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] soc: devicetree: bindings: Add Qualcomm RPM DT
- binding
-References: <1402944372-31901-1-git-send-email-bjorn.andersson@sonymobile.com> <1402944372-31901-2-git-send-email-bjorn.andersson@sonymobile.com> <53A0D651.20605@codeaurora.org> <53A14F00.9010904@linaro.org>
-In-Reply-To: <53A14F00.9010904@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403115072.3787.3.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/14 01:34, Srinivas Kandagatla wrote:
->
->
-> On 18/06/14 00:59, Stephen Boyd wrote:
->> On 06/16/14 11:46, Bjorn Andersson wrote:
->>> diff --git a/Documentation/devicetree/bindings/soc/qcom/qcom,rpm.txt
->>> b/Documentation/devicetree/bindings/soc/qcom/qcom,rpm.txt
->>> new file mode 100644
->>> index 0000000..0366533
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/soc/qcom/qcom,rpm.txt
->>> @@ -0,0 +1,260 @@
->>> +Qualcomm Resource Power Manager (RPM)
->>> +
->> [...]
->>> +
->>> +- reg:
->>> +    Usage: required
->>> +    Value type: <prop-encoded-array>
->>> +    Definition: two entries specifying the RPM's message ram and
->>> ipc register
->>> +
->>> +- reg-names:
->>> +    Usage: required
->>> +    Value type: <string-array>
->>> +    Definition: must contain the following, in order:
->>> +            "msg_ram"
->>> +            "ipc"
->>
->> ipc is concerning....
->>
->>> +    rpm@108000 {
->>> +        compatible = "qcom,rpm-msm8960";
->>> +        reg = <0x108000 0x1000 0x2011008 0x4>;
->>> +
->>
->> (reg-names is missing from the example)
->>
->> because ipc is actually a register inside the Krait complex's global
->> clock control/distribution hardware block (it's located at 0x2011000).
->>  From what I can tell, this is the only non-clock/power register inside
->> there. I plan to send out a driver for this hardware block so that I can
->> switch the L2 aux source mux over to PLL8 instead of PXO (done with a
->> single register write to 0x2011028) and this mapping/use here is going
->> to conflict with that unless I only map the single register like is done
->> here.
->>
->> I wonder if we'd be better off making this region a separate node and
->> having some phandle to it here in the RPM node? That way we have a
->
-> Can't we use syscon based on regmap here?  syscon is a better way to
-> share a common register space across multiple drivers.
+On Wed, Jun 18, 2014 at 11:11:12AM -0700, Davidlohr Bueso wrote:
+> On Wed, 2014-06-18 at 04:14 -0700, Luis R. Rodriguez wrote:
+> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> > Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> 
+> Looks good Luis, thanks a lot for doing this -- it will definitely help
+> my everyday debugging issues on huge machines.
+> 
+> I ran this on my 160-core Westmere. Some nits below, otherwise:
+> 
+> Reviewed-and-tested-by: Davidlohr Bueso <davidlohr@hp.com>
 
-How would the mux clock be registered? I'd like it to be registered by
-the driver associated with this device with something like
-devm_clk_register(). From what I can tell syscon wouldn't allow that
-unless we extend the syscon driver to handle more specific compatible
-strings.
+Great thanks for testing and your review!
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+> > diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+> > index af164a7..7c7b599 100644
+> > --- a/kernel/printk/printk.c
+> > +++ b/kernel/printk/printk.c
+> > @@ -848,12 +849,43 @@ static int __init log_buf_len_setup(char *str)
+> >  }
+> >  early_param("log_buf_len", log_buf_len_setup);
+> >  
+> > +static void __init log_buf_add_cpu(void)
+> > +{
+> > +	int cpu_extra;
+> 
+> unsigned int
 
+Amended.
+
+> > +
+> > +	/*
+> > +	 * archs should set up cpu_possible_bits properly with
+> > +	 * set_cpu_possible() after setup_arch() but just in
+> > +	 * case lets ensure this is valid. During an early
+> > +	 * call before setup_arch()() this will be 1.
+> > +	 */
+> > +	if (num_possible_cpus() <= 1)
+> 
+> This can never return 0, so how about making it == 1?
+
+I was originally concerned over the early boot code which had
+not yet called setup_arch() but since we now have a check for
+early on setup_log_buf() before calling log_buf_add_cpu() I
+think its safe to check for 1 then, will change! I'll also
+remove the note about this always returning 1 on early init
+before setup_arch() as I only confirmed that for x86 -- unless
+of course there is code that ensures this for early boot for
+all archs, I just can't find it.
+
+> > +		return;
+> > +
+> > +	cpu_extra = (num_possible_cpus() - 1) * __LOG_CPU_MIN_BUF_LEN;
+> > +
+> > +	/* by default this will only continue through for large > 64 CPUs */
+> > +	if (cpu_extra <= __LOG_BUF_LEN / 2)
+> > +		return;
+> > +
+> > +	pr_info("log_buf_len cpu_extra contribution: %d\n", cpu_extra);
+> 
+> We should add 'bytes' for units. 
+
+That should mean also amending the orignal setup_log_buf() for the final size,
+will do that too.
+
+> Also, while at it, how about making it easier for users and also print
+> the individual contribution of each CPU
+
+Sure, done. While at it I renamed LOG_CPU_MIN_BUF_SHIFT to MAX to annotate folks
+want to to consider the worst case scenario to help with debugging on production.
+
+  Luis
