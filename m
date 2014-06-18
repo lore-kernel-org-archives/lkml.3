@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965978AbaFRKWS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 06:22:18 -0400
-Received: from mga03.intel.com ([143.182.124.21]:17804 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965039AbaFRKWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 06:22:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,499,1400050800"; 
-   d="scan'208";a="446958673"
-Date: Wed, 18 Jun 2014 13:22:12 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Benson Leung <bleung@chromium.org>
-Cc: gene.chen@intel.com, moch@chromium.org, lkml14@scotdoyle.com,
-        kirill.shutemov@linux.intel.com, olof@lixom.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 4/4] platform/chrome: chromeos_laptop - Add Toshiba
- CB35 Touch
-Message-ID: <20140618102212.GT1655@lahna.fi.intel.com>
-References: <1401835464-15267-1-git-send-email-bleung@chromium.org>
- <1403038923-19444-1-git-send-email-bleung@chromium.org>
- <1403038923-19444-5-git-send-email-bleung@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403038923-19444-5-git-send-email-bleung@chromium.org>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S965814AbaFRKZY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 06:25:24 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:59188 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965039AbaFRKZW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 06:25:22 -0400
+Message-ID: <1403087119.1984.93.camel@x220>
+Subject: Re: [PATCH 09/28] Remove ATHEROS_AR231X
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Slaby <jirislaby@gmail.com>, Nick Kossifidis <mickflemm@gmail.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: Sergey Ryazanov <ryazanov.s.a@gmail.com>,
+        Oleksij Rempel <linux@rempel-privat.de>,
+        Richard Weinberger <richard@nod.at>,
+        Jonathan Bither <jonbither@gmail.com>,
+        Hauke Mehrtens <hauke@hauke-m.de>, ath5k-devel@venema.h4ckr.net,
+        open@hauke-m.de, list@hauke-m.de, antonynpavlov@gmail.com,
+        openwrt-devel@lists.openwrt.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 18 Jun 2014 12:25:19 +0200
+In-Reply-To: <CAHNKnsQQ42-XnXrubHAy4PF3H2ynbGDdSMP7MvDS_1aRozYF=A@mail.gmail.com>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+	 <1391971686-9517-10-git-send-email-richard@nod.at>
+	 <52F7D480.1050106@hauke-m.de> <52F7DF21.70207@nod.at>
+	 <CAHNKnsS7Mv4ZhBWZa53go9L9nZimJ7_FG5HFJ9C3kkGMAEz-mA@mail.gmail.com>
+	 <52F8C373.9060108@rempel-privat.de>
+	 <CAHNKnsQF5Hdf3JT91moPraRQzn4kMpdD2NSiJ7b30wQhS1W4MA@mail.gmail.com>
+	 <CAGVrzcYnECx5Q=i+m6qZn29y4JALDpw5SWoUNP-S6HgPR3_ygQ@mail.gmail.com>
+	 <CAHNKnsRACSo=DfOyiHxqV3acv_wfZmz4tMnYAW0wo4OCibwdfA@mail.gmail.com>
+	 <CAHNKnsRQp7WLSJNAXEYPTd=qs1DquOfNgKtHES-Utvcy1=FEgQ@mail.gmail.com>
+	 <20140213201421.GJ22203@tuxdriver.com> <1397581703.8212.5.camel@x220>
+	 <CAHNKnsQQ42-XnXrubHAy4PF3H2ynbGDdSMP7MvDS_1aRozYF=A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Jun 2014 10:25:20.0192 (UTC) FILETIME=[9B1FB400:01CF8ADF]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 02:02:03PM -0700, Benson Leung wrote:
-> From: Gene Chen <gene.chen@intel.com>
-> 
-> Add support for Leon touch devices, which is the same as
-> falco/peppy/wolf on the same buses using the LynxPoint-LP I2C
-> via the i2c-designware-pci driver.
-> 
-> Based on these patches from the chromeos-3.8 kernel:
-> https://chromium-review.googlesource.com/168351
-> https://chromium-review.googlesource.com/173445
-> 
-> Signed-off-by: Gene Chen <gene.chen@intel.com>
-> Signed-off-by: Benson Leung <bleung@chromium.org>
-> Tested-by: Scot Doyle <lkml14@scotdoyle.com>
+Jiri, Nick, Luis, John,
 
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+On Wed, 2014-04-16 at 13:20 +0400, Sergey Ryazanov wrote:
+> 2014-04-15 21:08 GMT+04:00 Paul Bolle <pebolle@tiscali.nl>:
+> > On Thu, 2014-02-13 at 15:14 -0500, John W. Linville wrote:
+> >> On Wed, Feb 12, 2014 at 02:50:30PM +0400, Sergey Ryazanov wrote:
+> >> > John, can you delay the merging of this patch for a few months, I will
+> >> > try to prepare the necessary patches to add AR231x architecture to the
+> >> > kernel and send them to linux-mips.
+> >>
+> >> OK -- looking forward to your patches.
+> >
+> > So am I. Is there any news on this front?
+> >
+> 
+> Work still in progress :(
+
+ATHEROS_AR231X and the things depending on it, like AHB bus support,
+have been discussed for three years now. When will you (re)consider a
+patch to remove all currently dead code?
+
+And to state the obvious: AHB bus support, and the other code depending
+on ATHEROS_AR231X, can always be re-added once ATHEROS_AR231X gets added
+to the tree.
+
+
+Paul Bolle
+
