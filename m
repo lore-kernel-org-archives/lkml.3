@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966529AbaFROTi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 10:19:38 -0400
-Received: from mailgw12.technion.ac.il ([132.68.225.12]:38610 "EHLO
-	mailgw12.technion.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256AbaFROTh (ORCPT
+	id S1756804AbaFROcY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 10:32:24 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50408 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756769AbaFROcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 10:19:37 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtcBACOfoVOERCABjGdsb2JhbABarlABAQaZKAGBCRYPAQEBJzyEBAEFeRBRV4hbxxuFXheFYokTBxaELQSKOacn
-X-IPAS-Result: AtcBACOfoVOERCABjGdsb2JhbABarlABAQaZKAGBCRYPAQEBJzyEBAEFeRBRV4hbxxuFXheFYokTBxaELQSKOacn
-X-IronPort-AV: E=Sophos;i="5.01,501,1400014800"; 
-   d="scan'208";a="112034531"
-From: Nadav Amit <namit@cs.technion.ac.il>
-To: pbonzini@redhat.com
-Cc: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Nadav Amit <namit@cs.technion.ac.il>
-Subject: [PATCH v2 0/9] KVM: x86: More emulator bugs
-Date: Wed, 18 Jun 2014 17:19:17 +0300
-Message-Id: <1403101166-23616-1-git-send-email-namit@cs.technion.ac.il>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <539F059F.8050501@redhat.com>
-References: <539F059F.8050501@redhat.com>
+	Wed, 18 Jun 2014 10:32:23 -0400
+Date: Wed, 18 Jun 2014 15:31:45 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm: get rid of hardcoded assumptions about kernel stack
+ size
+Message-ID: <20140618143145.GH2186@arm.com>
+References: <1403099422-850-1-git-send-email-a.ryabinin@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403099422-850-1-git-send-email-a.ryabinin@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set resolves several emulator bugs. Each fix is independent of the
-others.  The DR6 bug can occur during DR-access exit (regardless to 
-unrestricted mode, MMIO and SPT).
+On Wed, Jun 18, 2014 at 02:50:22PM +0100, Andrey Ryabinin wrote:
+> Changing kernel stack size on arm is not as simple as it should be:
+> 1) THRED_SIZE macro doen't respect PAGE_SIZE and THREAD_SIZE_ORDER
 
+THREAD_SIZE
 
-Changes in v2:
+> 2) stack size is hardcoded in get_thread_info macro
+> 
+> This patch fixes it by caculating THREAD_SIZE and thread_info address
+> taking into account PAGE_SIZE and THREAD_SIZE_ORDER.
+> 
+> Now changing stack size becomes simply changing THREAD_SIZE_ORDER.
 
-Introduced kvm_register_readl and kvm_register_writel which consider long-mode
-and cs.l when reading the registers.
+Curious: is this just a cleanup, or are you actually running out of kernel
+stack on an ARM platform?
 
-Fixing the register read to respect 32/64 bit in hypercall handling, CR exit
-handling and VMX instructions handling.
-
-Thanks for re-reviewing the patch
-
-Nadav Amit (9):
-  KVM: x86: bit-ops emulation ignores offset on 64-bit
-  KVM: x86: Wrong emulation on 'xadd X, X'
-  KVM: x86: Inter privilage level ret emulation is not implemeneted
-  KVM: x86: emulation of dword cmov on long-mode should clear [63:32]
-  KVM: x86: NOP emulation clears (incorrectly) the high 32-bits of RAX
-  KVM: x86: check DR6/7 high-bits are clear only on long-mode
-  KVM: x86: Hypercall handling does not considers opsize correctly
-  KVM: vmx: handle_cr ignores 32/64-bit mode
-  KVM: vmx: vmx instructions handling does not consider cs.l
-
- arch/x86/kvm/emulate.c | 31 ++++++++++++++++++++-----------
- arch/x86/kvm/vmx.c     | 16 ++++++++--------
- arch/x86/kvm/x86.c     | 11 ++++++-----
- arch/x86/kvm/x86.h     | 27 +++++++++++++++++++++++++++
- 4 files changed, 61 insertions(+), 24 deletions(-)
-
--- 
-1.9.1
-
+Will
