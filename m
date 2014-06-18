@@ -1,46 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186AbaFRVeE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 17:34:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42316 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755408AbaFRVeC (ORCPT
+	id S1756256AbaFRVfO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 17:35:14 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:56425 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756004AbaFRVfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 17:34:02 -0400
-Date: Wed, 18 Jun 2014 14:38:01 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: driverdev-devel@linuxdriverproject.org,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        Fred Brooks <frederick.brooks@microchip.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2 v2] staging: comedi: ni_daq_700: add AI range and
- input mode switching
-Message-ID: <20140618213801.GA11436@kroah.com>
-References: <1401362147-5965-3-git-send-email-abbotti@mev.co.uk>
- <1401366566-6209-1-git-send-email-abbotti@mev.co.uk>
+	Wed, 18 Jun 2014 17:35:11 -0400
+Date: Wed, 18 Jun 2014 17:35:08 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Kevin Hilman <khilman@linaro.org>
+cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Olof Johansson <olof@lixom.net>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: zImage: ensure header in LE format for BE8
+ kernels
+In-Reply-To: <CAGa+x87rnQntQpTkR6dZr29NvEQ4x8SOAyo+z9xuYHEdxdG1xg@mail.gmail.com>
+Message-ID: <alpine.LFD.2.11.1406181720130.16842@knanqh.ubzr>
+References: <1397147232-28516-1-git-send-email-taras.kondratiuk@linaro.org> <CAGa+x85P-M3qUD6L=kezkiQ1NJymEZ9P=u2ANUZJu2b3F+o5LA@mail.gmail.com> <53A1D701.8060404@codeaurora.org> <CAGa+x86DfDjQG8gN2-x7Kapt2ipsYt879R4OK6JWGoaT93VVig@mail.gmail.com>
+ <53A1D8FE.6030404@codeaurora.org> <CAGa+x87rnQntQpTkR6dZr29NvEQ4x8SOAyo+z9xuYHEdxdG1xg@mail.gmail.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401366566-6209-1-git-send-email-abbotti@mev.co.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 01:29:26PM +0100, Ian Abbott wrote:
-> From: Fred Brooks <frederick.brooks@microchip.com>
+On Wed, 18 Jun 2014, Kevin Hilman wrote:
+
+> On Wed, Jun 18, 2014 at 11:22 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> > On 06/18/14 11:21, Kevin Hilman wrote:
+> >> On Wed, Jun 18, 2014 at 11:14 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> >>> On 06/18/14 10:55, Kevin Hilman wrote:
+> >>>> All of that to say, with this patch applied, I need a new (and
+> >>>> reliable) way to determine the endianness of a kernel just by looking
+> >>>> at the zImage.  Recommendations welcome.
+> >>> Assuming that you have the .config configured to be built into the
+> >>> kernel you could use extract-ikconfig
+> >>>
+> >>> $ ./scripts/extract-ikconfig zImage | grep CONFIG_CPU_ENDIAN_BE8
+> >> Unfortunately, I can't rely on having that built in since I want the
+> >> boot tools to be as generic as possible.
+> >>
+> >>
+> >
+> > Yeah ok. Perhaps you can look for the 'setend be' instruction right
+> > after the magic values instead.
 > 
-> Add support for switching the input range and the single-ended/
-> differential input mode for the AI subdevice.  We needed to clear the
-> FIFO of data before the conversion to handle card mode switching
-> glitches.
+> Yeah, that works, as long as I can always assume that instruction will
+> be at the same offset (currently at 0x30).
+
+Well... then you also have to test for the Thumb2 variant. And that 
+forces this instruction to always be there.
+
+If we're to "officialize" this, I'd much prefer we add another magic 
+value like this:
+
+diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
+index c95feab6ce..413fd94b53 100644
+--- a/arch/arm/boot/compressed/head.S
++++ b/arch/arm/boot/compressed/head.S
+@@ -128,6 +128,7 @@ start:
+ 		.word	_magic_sig	@ Magic numbers to help the loader
+ 		.word	_magic_start	@ absolute load/run zImage address
+ 		.word	_magic_end	@ zImage end address
++		.word	0x04030201	@ endianness flag
+ 
+  THUMB(		.thumb			)
+ 1:
+
+
+
+
 > 
-> [ Minor whitespace fixes and driver comment reformatting.  - Ian ]
-
-This patch doesn't apply to the tree for some odd reason.  Care to
-refresh it and resend?
-
-thanks,
-
-greg k-h
+> Kevin
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
