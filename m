@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933441AbaFRHMP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 03:12:15 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51013 "EHLO
+	id S964830AbaFRHNK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 03:13:10 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51023 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751498AbaFRHMN (ORCPT
+	with ESMTP id S1751798AbaFRHNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 03:12:13 -0400
-Message-ID: <53A13BBF.7090202@free-electrons.com>
-Date: Wed, 18 Jun 2014 09:11:59 +0200
+	Wed, 18 Jun 2014 03:13:07 -0400
+Message-ID: <53A13BF6.5010305@free-electrons.com>
+Date: Wed, 18 Jun 2014 09:12:54 +0200
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
@@ -19,10 +19,9 @@ CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         kevin@allwinnertech.com, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-doc@vger.kernel.org, dev@linux-sunxi.org
-Subject: Re: [PATCH v4 4/7] regulator: axp20x: reset probe data before each
- probe
-References: <1402990723-28138-1-git-send-email-boris.brezillon@free-electrons.com> <1402990723-28138-5-git-send-email-boris.brezillon@free-electrons.com> <20140617204449.GD19730@lukather>
-In-Reply-To: <20140617204449.GD19730@lukather>
+Subject: Re: [PATCH v4 6/7] regulator: axp20x: make use of devm_regulator_set_register
+References: <1402990723-28138-1-git-send-email-boris.brezillon@free-electrons.com> <1402990723-28138-7-git-send-email-boris.brezillon@free-electrons.com> <20140617204657.GE19730@lukather>
+In-Reply-To: <20140617204657.GE19730@lukather>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,57 +29,122 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 17/06/2014 22:44, Maxime Ripard wrote:
-> On Tue, Jun 17, 2014 at 09:38:40AM +0200, Boris BREZILLON wrote:
->> The init_data and of_node fields of the axp2xx_matches tables are filled
->> at each device probe by the axp20x_regulator_parse_dt function (which then
->> calls the of_regulator_match function).
->> This means we can probe a new device and consider data initialized during
->> the probe of another device as valid.
+On 17/06/2014 22:46, Maxime Ripard wrote:
+> On Tue, Jun 17, 2014 at 09:38:42AM +0200, Boris BREZILLON wrote:
+>> Make use of the devm_regulator_set_register instead of registering each
+>> regulator provided by the PMIC.
 >>
->> Reset init_data and of_node field to NULL before each probe in order to
->> avoid this kind of issue.
+>> This also solves a self dependency issue where one regulator of the PMIC
+>> is used as a supply for anoher regulator provided by the same PMIC.
 >>
 >> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 >> ---
->>  drivers/regulator/axp20x-regulator.c | 9 +++++++++
->>  1 file changed, 9 insertions(+)
+>>  drivers/regulator/axp20x-regulator.c | 59 ++++++++++++++----------------------
+>>  1 file changed, 23 insertions(+), 36 deletions(-)
 >>
 >> diff --git a/drivers/regulator/axp20x-regulator.c b/drivers/regulator/axp20x-regulator.c
->> index 7a30f49..d42bf6d 100644
+>> index d42bf6d..e8f0df7 100644
 >> --- a/drivers/regulator/axp20x-regulator.c
 >> +++ b/drivers/regulator/axp20x-regulator.c
->> @@ -324,6 +324,15 @@ static int axp20x_regulator_probe(struct platform_device *pdev)
->>  		nregulators = AXP20X_REG_ID_MAX;
+>> @@ -301,66 +301,53 @@ static int axp20x_set_dcdc_workmode(struct regulator_dev *rdev, int id, u32 work
+>>  
+>>  static int axp20x_regulator_probe(struct platform_device *pdev)
+>>  {
+>> -	struct regulator_dev *rdev;
+>> +	struct regulator_set *rset;
+>>  	struct axp20x_dev *axp20x = dev_get_drvdata(pdev->dev.parent);
+>> -	struct regulator_config config = { };
+>> -	struct regulator_init_data *init_data;
+>> +	struct regulator_set_config config;
+>>  	struct of_regulator_match *matches;
+>> -	int nmatches;
+>> -	const struct regulator_desc *regulators;
+>> -	int nregulators;
+>>  	int ret, i;
+>>  	u32 workmode;
+>>  
+>> +	memset(&config, 0, sizeof(config));
+>> +	config.dev = &pdev->dev;
+>> +	config.regmap = axp20x->regmap;
+>>  	if (axp20x->variant == AXP221_ID) {
+>>  		matches = axp22x_matches;
+>> -		nmatches = ARRAY_SIZE(axp22x_matches);
+>> -		regulators = axp22x_regulators;
+>> -		nregulators = AXP22X_REG_ID_MAX;
+>> +		config.descs = axp22x_regulators;
+>> +		config.nregulators = AXP22X_REG_ID_MAX;
+>>  	} else {
+>>  		matches = axp20x_matches;
+>> -		nmatches = ARRAY_SIZE(axp20x_matches);
+>> -		regulators = axp20x_regulators;
+>> -		nregulators = AXP20X_REG_ID_MAX;
+>> +		config.descs = axp20x_regulators;
+>> +		config.nregulators = AXP20X_REG_ID_MAX;
+>>  	}
+>> +	config.matches = matches;
+>>  
+>>  	/*
+>>  	 * Reset matches table (this table might have been modified by a
+>>  	 * previous AXP2xx device probe).
+>>  	 */
+>> -	for (i = 0; i < nmatches; i++) {
+>> +	for (i = 0; i < config.nregulators; i++) {
+>>  		matches[i].init_data = NULL;
+>>  		matches[i].of_node = NULL;
 >>  	}
 >>  
->> +	/*
->> +	 * Reset matches table (this table might have been modified by a
->> +	 * previous AXP2xx device probe).
->> +	 */
->> +	for (i = 0; i < nmatches; i++) {
->> +		matches[i].init_data = NULL;
->> +		matches[i].of_node = NULL;
->> +	}
->> +
-> That looks rather hackish, especially since we've never been in such a
-> case yet, since we have a single PMIC in our system.
+>> -	ret = axp20x_regulator_parse_dt(pdev, matches, nmatches);
+>> +	ret = axp20x_regulator_parse_dt(pdev, matches,
+>> +					config.nregulators);
+>>  	if (ret)
+>>  		return ret;
+>>  
+>> -	for (i = 0; i < AXP20X_REG_ID_MAX; i++) {
+>> -		init_data = matches[i].init_data;
+>> +	rset = devm_regulator_set_register(&pdev->dev, &config);
+>> +	if (IS_ERR(rset))
+>> +		return PTR_ERR(rset);
+>>  
+>> -		config.dev = &pdev->dev;
+>> -		config.init_data = init_data;
+>> -		config.regmap = axp20x->regmap;
+>> -		config.of_node = matches[i].of_node;
+>> -
+>> -		rdev = devm_regulator_register(&pdev->dev, &regulators[i],
+>> -					       &config);
+>> -		if (IS_ERR(rdev)) {
+>> -			dev_err(&pdev->dev, "Failed to register %s\n",
+>> -				regulators[i].name);
+>> -
+>> -			return PTR_ERR(rdev);
+>> -		}
+>> -
+>> -		ret = of_property_read_u32(matches[i].of_node, "x-powers,dcdc-workmode",
+>> +	for (i = 0; i < rset->nregulators; i++) {
+>> +		ret = of_property_read_u32(config.matches[i].of_node,
+>> +					   "x-powers,dcdc-workmode",
+>>  					   &workmode);
+>> -		if (!ret) {
+>> -			if (axp20x_set_dcdc_workmode(rdev, i, workmode))
+>> -				dev_err(&pdev->dev, "Failed to set workmode on %s\n",
+>> -					regulators[i].name);
+>> -		}
+>> +		if (!ret &&
+>> +		    axp20x_set_dcdc_workmode(rset->regulators[i], i, workmode))
+>> +			dev_err(&pdev->dev, "Failed to set workmode on %s\n",
+>> +				config.descs[i].name);
+>>  	}
+>>  
+>>  	return 0;
+>> -- 
+>> 1.8.3.2
+>>
+> It looks like you're modifying code you just introduced. You should
+> probably move this patch earlier on, so that you don't have to patch
+> your patch.
 
-Even if something is unlikely to happen, it doesn't mean it's impossible.
-I'm pretty sure there are (or will be) some systems containing several
-identical PMICs in the wild, and fixing this possible bug now prevents
-us (or other developers) from having a big headache debugging this in
-the future.
+Okay, I'll switch patch 5 and 6.
 
-BTW, what is hackish in this code ?
-
->
-> Can't you just use memzero here?
-
-We can't just memset the whole matches table to zero, because some
-fields (name and driver_data) are statically assigned.
-
->
 > Maxime
 >
 
