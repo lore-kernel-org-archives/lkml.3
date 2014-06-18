@@ -1,213 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965346AbaFRJJw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 05:09:52 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:41214 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964840AbaFRJJt (ORCPT
+	id S965537AbaFRJKP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 05:10:15 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:62609 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964840AbaFRJKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 05:09:49 -0400
-Message-ID: <53A1571B.7080806@ti.com>
-Date: Wed, 18 Jun 2014 14:38:43 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <arnd@arndb.de>
-CC: <tony@atomide.com>, <jg1.han@samsung.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Mohit Kumar <mohit.kumar@st.com>,
-        Marek Vasut <marex@denx.de>
-Subject: Re: [PATCH v2 04/18] PCI: designware: use untranslated address while
- programming ATU
-References: <1401345500-20188-1-git-send-email-kishon@ti.com> <1401345500-20188-5-git-send-email-kishon@ti.com>
-In-Reply-To: <1401345500-20188-5-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Wed, 18 Jun 2014 05:10:12 -0400
+Message-ID: <1403082609.1984.66.camel@x220>
+Subject: Re: [PATCH 16/28] Remove GENERIC_HAS_IOMAP
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Lennox Wu <lennox.wu@gmail.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, Richard Weinberger <richard@nod.at>,
+        Chen Liqin <liqin.linux@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Wed, 18 Jun 2014 11:10:09 +0200
+In-Reply-To: <1397673008.6361.0.camel@x220>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+	 <1391971686-9517-17-git-send-email-richard@nod.at>
+	 <CAF0htA5xWQwkMqdp0_zz05DLJvyCOJZf-v1Rso20de5VWFmPTA@mail.gmail.com>
+	 <1397553547.1985.25.camel@x220>
+	 <CAF0htA403PKyAgQjrMpYgawNZWKZm06UYrgV-7N_9tbas=SniA@mail.gmail.com>
+	 <1397673008.6361.0.camel@x220>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Jun 2014 09:10:10.0097 (UTC) FILETIME=[1AE5D210:01CF8AD5]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Lennox,
 
-On Thursday 29 May 2014 12:08 PM, Kishon Vijay Abraham I wrote:
-> In DRA7, the cpu sees 32bit address, but the pcie controller can see only 28bit
-> address. So whenever the cpu issues a read/write request, the 4 most
-> significant bits are used by L3 to determine the target controller.
-> For example, the cpu reserves 0x2000_0000 - 0x2FFF_FFFF for PCIe controller but
-> the PCIe controller will see only (0x000_0000 - 0xFFF_FFF). So for programming
-> the outbound translation window the *base* should be programmed as 0x000_0000.
-> Whenever we try to write to say 0x2000_0000, it will be translated to whatever
-> we have programmed in the translation window with base as 0x000_0000.
-> 
-> This is needed when the dt node is modelled something like below
-> axi {
-> 	compatible = "simple-bus";
-> 	#size-cells = <1>;
-> 	#address-cells = <1>;
-> 	ranges = <0x0        0x20000000 0x10000000 // 28-bit bus
-> 		  0x51000000 0x51000000 0x3000>;
-> 	pcie@51000000 {
-> 		reg = <0x1000 0x2000>, <0x51002000 0x14c>, <0x51000000 0x2000>;
-> 		reg-names = "config", "ti_conf", "rc_dbics";
-> 		#address-cells = <3>;
-> 		#size-cells = <2>;
-> 		ranges = <0x81000000 0 0          0x03000 0 0x00010000
-> 			  0x82000000 0 0x20013000 0x13000 0 0xffed000>;
-> 	};
-> };
-> 
-> Here the CPU address for configuration space is 0x20013000 and the controller
-> address for configuration space is 0x13000. The controller address should be
-> used while programming the ATU (in order for translation to happen properly in
-> DRA7xx).
+On Wed, 2014-04-16 at 20:30 +0200, Paul Bolle wrote:
+> On Thu, 2014-04-17 at 01:29 +0800, Lennox Wu wrote:
+> > OK, we will merge it into our tree.
 
-I've fixed this up with what you suggested in the v1 of the series. Do you
-think this is fine?
+The last few messages in this thread were sent shortly after v3.15-rc1.
+We're now at v3.16-rc1 and those three references to GENERIC_HAS_IOMAP
+are still there.
 
-Thanks
-Kishon
-> 
-> Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Mohit Kumar <mohit.kumar@st.com>
-> Cc: Jingoo Han <jg1.han@samsung.com>
-> Cc: Marek Vasut <marex@denx.de>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
->  drivers/pci/host/pcie-designware.c |   49 ++++++++++++++++++++++++++++--------
->  drivers/pci/host/pcie-designware.h |    4 +++
->  2 files changed, 42 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
-> index 603b386..9dfd2d4 100644
-> --- a/drivers/pci/host/pcie-designware.c
-> +++ b/drivers/pci/host/pcie-designware.c
-> @@ -397,8 +397,15 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
->  	struct of_pci_range range;
->  	struct of_pci_range_parser parser;
->  	struct resource *cfg_res;
-> -	u32 val;
-> -	int i;
-> +	u32 val, na, ns;
-> +	const __be32 *addrp;
-> +	int i, index;
-> +
-> +	/* Find the address cell size and the number of cells in order to get
-> +	 * the untranslated address.
-> +	 */
-> +	of_property_read_u32(np, "#address-cells", &na);
-> +	ns = of_n_size_cells(np);
->  
->  	cfg_res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "config");
->  	if (cfg_res) {
-> @@ -406,6 +413,12 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
->  		pp->config.cfg1_size = resource_size(cfg_res)/2;
->  		pp->cfg0_base = cfg_res->start;
->  		pp->cfg1_base = cfg_res->start + pp->config.cfg0_size;
-> +
-> +		/* Find the untranslated configuration space address */
-> +		index = of_property_match_string(np, "reg-names", "config");
-> +		addrp = of_get_address(np, index, false, false);
-> +		pp->cfg0_mod_addr = of_read_number(addrp, ns);
-> +		pp->cfg1_mod_addr = pp->cfg0_mod_addr + pp->config.cfg0_size;
->  	} else {
->  		dev_err(pp->dev, "missing *config* reg space\n");
->  	}
-> @@ -431,12 +444,20 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
->  			pp->config.io_size = resource_size(&pp->io);
->  			pp->config.io_bus_addr = range.pci_addr;
->  			pp->io_base = range.cpu_addr;
-> +
-> +			/* Find the untranslated IO space address */
-> +			pp->io_mod_addr = of_read_number(parser.range -
-> +							 parser.np + na, ns);
->  		}
->  		if (restype == IORESOURCE_MEM) {
->  			of_pci_range_to_resource(&range, np, &pp->mem);
->  			pp->mem.name = "MEM";
->  			pp->config.mem_size = resource_size(&pp->mem);
->  			pp->config.mem_bus_addr = range.pci_addr;
-> +
-> +			/* Find the untranslated MEM space address */
-> +			pp->mem_mod_addr = of_read_number(parser.range -
-> +							  parser.np + na, ns);
->  		}
->  		if (restype == 0) {
->  			of_pci_range_to_resource(&range, np, &pp->cfg);
-> @@ -444,6 +465,12 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
->  			pp->config.cfg1_size = resource_size(&pp->cfg)/2;
->  			pp->cfg0_base = pp->cfg.start;
->  			pp->cfg1_base = pp->cfg.start + pp->config.cfg0_size;
-> +
-> +			/* Find the untranslated configuration space address */
-> +			pp->cfg0_mod_addr = of_read_number(parser.range -
-> +							   parser.np + na, ns);
-> +			pp->cfg1_mod_addr = pp->cfg0_mod_addr +
-> +					    pp->config.cfg0_size;
->  		}
->  	}
->  
-> @@ -518,9 +545,9 @@ static void dw_pcie_prog_viewport_cfg0(struct pcie_port *pp, u32 busdev)
->  	/* Program viewport 0 : OUTBOUND : CFG0 */
->  	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX0,
->  			  PCIE_ATU_VIEWPORT);
-> -	dw_pcie_writel_rc(pp, pp->cfg0_base, PCIE_ATU_LOWER_BASE);
-> -	dw_pcie_writel_rc(pp, (pp->cfg0_base >> 32), PCIE_ATU_UPPER_BASE);
-> -	dw_pcie_writel_rc(pp, pp->cfg0_base + pp->config.cfg0_size - 1,
-> +	dw_pcie_writel_rc(pp, pp->cfg0_mod_addr, PCIE_ATU_LOWER_BASE);
-> +	dw_pcie_writel_rc(pp, (pp->cfg0_mod_addr >> 32), PCIE_ATU_UPPER_BASE);
-> +	dw_pcie_writel_rc(pp, pp->cfg0_mod_addr + pp->config.cfg0_size - 1,
->  			  PCIE_ATU_LIMIT);
->  	dw_pcie_writel_rc(pp, busdev, PCIE_ATU_LOWER_TARGET);
->  	dw_pcie_writel_rc(pp, 0, PCIE_ATU_UPPER_TARGET);
-> @@ -534,9 +561,9 @@ static void dw_pcie_prog_viewport_cfg1(struct pcie_port *pp, u32 busdev)
->  	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX1,
->  			  PCIE_ATU_VIEWPORT);
->  	dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_CFG1, PCIE_ATU_CR1);
-> -	dw_pcie_writel_rc(pp, pp->cfg1_base, PCIE_ATU_LOWER_BASE);
-> -	dw_pcie_writel_rc(pp, (pp->cfg1_base >> 32), PCIE_ATU_UPPER_BASE);
-> -	dw_pcie_writel_rc(pp, pp->cfg1_base + pp->config.cfg1_size - 1,
-> +	dw_pcie_writel_rc(pp, pp->cfg1_mod_addr, PCIE_ATU_LOWER_BASE);
-> +	dw_pcie_writel_rc(pp, (pp->cfg1_mod_addr >> 32), PCIE_ATU_UPPER_BASE);
-> +	dw_pcie_writel_rc(pp, pp->cfg1_mod_addr + pp->config.cfg1_size - 1,
->  			  PCIE_ATU_LIMIT);
->  	dw_pcie_writel_rc(pp, busdev, PCIE_ATU_LOWER_TARGET);
->  	dw_pcie_writel_rc(pp, 0, PCIE_ATU_UPPER_TARGET);
-> @@ -549,9 +576,9 @@ static void dw_pcie_prog_viewport_mem_outbound(struct pcie_port *pp)
->  	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX0,
->  			  PCIE_ATU_VIEWPORT);
->  	dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_MEM, PCIE_ATU_CR1);
-> -	dw_pcie_writel_rc(pp, pp->mem_base, PCIE_ATU_LOWER_BASE);
-> -	dw_pcie_writel_rc(pp, (pp->mem_base >> 32), PCIE_ATU_UPPER_BASE);
-> -	dw_pcie_writel_rc(pp, pp->mem_base + pp->config.mem_size - 1,
-> +	dw_pcie_writel_rc(pp, pp->mem_mod_addr, PCIE_ATU_LOWER_BASE);
-> +	dw_pcie_writel_rc(pp, (pp->mem_mod_addr >> 32), PCIE_ATU_UPPER_BASE);
-> +	dw_pcie_writel_rc(pp, pp->mem_mod_addr + pp->config.mem_size - 1,
->  			  PCIE_ATU_LIMIT);
->  	dw_pcie_writel_rc(pp, pp->config.mem_bus_addr, PCIE_ATU_LOWER_TARGET);
->  	dw_pcie_writel_rc(pp, upper_32_bits(pp->config.mem_bus_addr),
-> diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
-> index 3063b35..d1f7d5e 100644
-> --- a/drivers/pci/host/pcie-designware.h
-> +++ b/drivers/pci/host/pcie-designware.h
-> @@ -36,11 +36,15 @@ struct pcie_port {
->  	u8			root_bus_nr;
->  	void __iomem		*dbi_base;
->  	u64			cfg0_base;
-> +	u64			cfg0_mod_addr;
->  	void __iomem		*va_cfg0_base;
->  	u64			cfg1_base;
-> +	u64			cfg1_mod_addr;
->  	void __iomem		*va_cfg1_base;
->  	u64			io_base;
-> +	u64			io_mod_addr;
->  	u64			mem_base;
-> +	u64			mem_mod_addr;
->  	spinlock_t		conf_lock;
->  	struct resource		cfg;
->  	struct resource		io;
-> 
+Are there any issues with this patch?
+
+
+Paul Bolle
+
