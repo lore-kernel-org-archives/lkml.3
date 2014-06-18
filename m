@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934139AbaFRH7j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 03:59:39 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:45366 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933133AbaFRH7i (ORCPT
+	id S964956AbaFRIBF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 04:01:05 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:50796 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933133AbaFRIBC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 03:59:38 -0400
+	Wed, 18 Jun 2014 04:01:02 -0400
+Date: Wed, 18 Jun 2014 09:00:56 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: micky <micky_ching@realsil.com.cn>, Samuel Ortiz <sameo@linux.intel.com>,
+        Chris Ball <chris@printf.net>, devel@linuxdriverproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Roger <rogerable@realtek.com>, Wei WANG <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH 1/2] mfd: rtsx: add dma transfer function
+Message-ID: <20140618080056.GM21030@lee--X1>
+References: <cover.1402037562.git.micky_ching@realsil.com.cn>
+ <9021eae37d96aa027d00ae4a7b6cd84dbbd1b6b5.1402037564.git.micky_ching@realsil.com.cn>
+ <20140616122032.GS14323@lee--X1>
+ <CAPDyKFpJ5tToJOk6try-jrRCCzcKtJkszNE5Nuc3Uarhpta1BQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1403033788-8315-1-git-send-email-fabf@skynet.be>
-References: <1403033788-8315-1-git-send-email-fabf@skynet.be>
-Date: Wed, 18 Jun 2014 09:59:37 +0200
-Message-ID: <CAGXE3d9aNXtOF3QTh99MU8FRPd0sdMP-d1Do6qYDJbTpdwcGUg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] drivers/net/wireless/rt2x00/rt2x00dev.c: remove null
- test before kfree
-From: Helmut Schaa <helmut.schaa@googlemail.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ivo van Doorn <IvDoorn@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPDyKFpJ5tToJOk6try-jrRCCzcKtJkszNE5Nuc3Uarhpta1BQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 16 Jun 2014, Ulf Hansson wrote:
 
-On Tue, Jun 17, 2014 at 9:36 PM, Fabian Frederick <fabf@skynet.be> wrote:
-> Fix checkpatch warning:
-> WARNING: kfree(NULL) is safe this check is probably not required
+> On 16 June 2014 14:20, Lee Jones <lee.jones@linaro.org> wrote:
+> >> From: Micky Ching <micky_ching@realsil.com.cn>
+> >>
+> >> rtsx driver using a single function for transfer data, dma map/unmap are
+> >> placed in one fix function. We need map/unmap dma in different place(for
+> >> mmc async driver), so add three function for dma map, dma transfer and
+> >> dma unmap.
+> >>
+> >> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+> >> ---
+> >>  drivers/mfd/rtsx_pcr.c       |   76 ++++++++++++++++++++++++++----------------
+> >>  include/linux/mfd/rtsx_pci.h |    6 ++++
+> >>  2 files changed, 54 insertions(+), 28 deletions(-)
+> >
+> > I don't see any glaring issues with this patch.  Does it rely on the
+> > first patch, or vise versa, or can it just be applied?
+> 
+> The mmc part in patch2 relies on this one, but please go ahead and
+> apply the mfd patch if you see it good.
+> 
+> I can later provide my ack for the mmc parts, in patch2, when it's a
+> reviewed properly and thus you can take it through your tree.
 
-Thanks Fabian.
-This should go through the wireless tree I guess, mind to send to
-linux-wireless@vger.kernel.org?
-Helmut
+There's no rush.  Once you're happy with the MMC patch, Micky can
+submit them both again with my Ack on the MFD part and I'll take them
+as a set.
 
-> Cc: Ivo van Doorn <IvDoorn@gmail.com>
-> Cc: Helmut Schaa <helmut.schaa@googlemail.com>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  drivers/net/wireless/rt2x00/rt2x00dev.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless/rt2x00/rt2x00dev.c
-> index 2bde672..c2c2300 100644
-> --- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-> +++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-> @@ -1452,8 +1452,7 @@ void rt2x00lib_remove_dev(struct rt2x00_dev *rt2x00dev)
->         /*
->          * Free the driver data.
->          */
-> -       if (rt2x00dev->drv_data)
-> -               kfree(rt2x00dev->drv_data);
-> +       kfree(rt2x00dev->drv_data);
->  }
->  EXPORT_SYMBOL_GPL(rt2x00lib_remove_dev);
->
-> --
-> 1.8.4.5
->
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
