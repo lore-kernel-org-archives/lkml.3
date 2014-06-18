@@ -1,50 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756699AbaFRXcN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 19:32:13 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34040 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754153AbaFRXcL (ORCPT
+	id S1755647AbaFRXjn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 19:39:43 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:65382 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753354AbaFRXjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 19:32:11 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Eduardo Valentin <edubezval@gmail.com>, Zhang Rui <rui.zhang@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [PATCH] thermal: Add braces around suspect code
-Date: Wed, 18 Jun 2014 16:32:08 -0700
-Message-Id: <1403134328-4668-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+	Wed, 18 Jun 2014 19:39:41 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Allen Yu <alleny@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] PM / Runtime: let rpm_resume fail if rpm disabled and device suspended.
+Date: Thu, 19 Jun 2014 01:57:16 +0200
+Message-ID: <3528855.Z370J7O75B@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1406181121220.1467-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1406181121220.1467-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It looks like this code is missing braces, otherwise the if
-statement shouldn't have been indented. Fix it.
+On Wednesday, June 18, 2014 11:30:51 AM Alan Stern wrote:
+> On Tue, 17 Jun 2014, Rafael J. Wysocki wrote:
+> 
+> > On Tuesday, June 17, 2014 10:37:03 PM Rafael J. Wysocki wrote:
+> > > On Tuesday, June 17, 2014 10:26:14 PM Rafael J. Wysocki wrote:
+> > > > On Tuesday, June 17, 2014 10:11:32 AM Alan Stern wrote:
+> > > > > On Mon, 16 Jun 2014, Rafael J. Wysocki wrote:
+> > > > > 
+> > > > > > > For reasons having nothing to do with Allen's suggested change, I
+> > > > > > > wonder if we shouldn't replace this line with something like:
+> > > > > > > 
+> > > > > > > -	else if (dev->power.disable_depth == 1 && dev->power.is_suspended
+> > > > > > > +	else if (dev->power.disable > 0 && !dev->power.is_suspended
+> > > > > > > 	    && dev->power.runtime_status == RPM_ACTIVE)
+> > > > > > > 		retval = 1;
+> > > > > > > 
+> > > > > > > It seems that I've been bitten by this several times in the past.  
+> > > > > > > When a device is disabled for runtime PM, and more or less permanently
+> > > > > > > stuck in the RPM_ACTIVE state, calls to pm_runtime_resume() or
+> > > > > > > pm_runtime_get_sync() shouldn't fail.
+> > > > > > > 
+> > > > > > > For example, suppose some devices of a certain type support runtime 
+> > > > > > > power management but others don't.  We naturally want to call 
+> > > > > > > pm_runtime_disable() for the ones that don't.  But we also want the 
+> > > > > > > same driver to work for all the devices, which means that 
+> > > > > > > pm_runtime_get_sync() should return success -- otherwise the driver 
+> > > > > > > will think that something has gone wrong.
+> > > > > > > 
+> > > > > > > Rafael, what do you think?
+> > > > > > 
+> > > > > > That condition is there specifically to take care of the system suspend
+> > > > > > code path.  It means that if runtime PM is disabled, but it only has been
+> > > > > > disabled by the system suspend code path, we should treat the device as
+> > > > > > "active" (ie. return 1).  That won't work after the proposed change.
+> > > > > 
+> > > > > Ah, yes, quite true.  Okay, suppose we replace that line with just:
+> > > > > 
+> > > > > +	else if (dev->power.disable > 0
+> > > > > 
+> > > > > > I guess drivers that want to work with devices where runtime PM may be
+> > > > > > disabled can just check the return value of rpm_resume() for -EACCES?
+> > > > > 
+> > > > > They could, but it's extra work and it's extremely easy to forget 
+> > > > > about.  I'd prefer not to do things that way.
+> > > > 
+> > > > In that case we need to audit all code that checks the return value of
+> > > > __pm_runtime_resume() to verify that it doesn't depend on the current
+> > > > behavior in any way.  It shouldn't, but still.
+> > > > 
+> > > > Also we probably should drop the -EACCES return value from rpm_resume() in the
+> > > > same patch, because it specifically only covers the dev->power.disable > 0 case
+> > > > (which BTW is consistent with the suspend side of things, so I'm totally unsure
+> > > > about that being the right thing to do to be honest).
+> 
+> It's still the correct action with runtime PM is disabled and the 
+> device's runtime_status isn't RPM_ACTIVE.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/thermal/of-thermal.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Well, we used to have the notion that runtime_status is not meaningful for
+devices with dev->power.disable_depth greater than 0 (except for the special
+case in the suspend code path where we know why it is greater than 0).  I think
+it was useful. :-)
 
-diff --git a/drivers/thermal/of-thermal.c b/drivers/thermal/of-thermal.c
-index 04b1be7fa018..a95ee2889b19 100644
---- a/drivers/thermal/of-thermal.c
-+++ b/drivers/thermal/of-thermal.c
-@@ -712,11 +712,12 @@ thermal_of_build_thermal_zone(struct device_node *np)
- 	}
- 
- 	i = 0;
--	for_each_child_of_node(child, gchild)
-+	for_each_child_of_node(child, gchild) {
- 		ret = thermal_of_populate_bind_params(gchild, &tz->tbps[i++],
- 						      tz->trips, tz->ntrips);
- 		if (ret)
- 			goto free_tbps;
-+	}
- 
- finish:
- 	of_node_put(child);
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+> > > Perhaps it'd be better to rework __pm_runtime_resume() to convert the -EACCES
+> > > return value from rpm_resume() into 0 if RPM_GET_PUT is set?
+> > 
+> > Or do something like this?
+> > 
+> > ---
+> >  drivers/base/power/runtime.c |    3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > Index: linux-pm/drivers/base/power/runtime.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/base/power/runtime.c
+> > +++ linux-pm/drivers/base/power/runtime.c
+> > @@ -608,7 +608,8 @@ static int rpm_resume(struct device *dev
+> >   repeat:
+> >  	if (dev->power.runtime_error)
+> >  		retval = -EINVAL;
+> > -	else if (dev->power.disable_depth == 1 && dev->power.is_suspended
+> > +	else if (((dev->power.disable_depth > 0 && (rpmflags & RPM_GET_PUT))
+> > +	    || (dev->power.disable_depth == 1 && dev->power.is_suspended))
+> >  	    && dev->power.runtime_status == RPM_ACTIVE)
+> >  		retval = 1;
+> >  	else if (dev->power.disable_depth > 0)
+> 
+> So pm_runtime_resume() and pm_request_resume() would still fail, but 
+> pm_runtime_get() and pm_runtime_get_sync() would work?  I'm not sure 
+> about the reason for this distinction.
+
+The meaning of pm_runtime_get()/pm_runtime_get_sync() is "prevent the
+device from being suspended from now on and resume it if necessary" while
+"runtime PM disabled and runtime_status == RPM_ACTIVE" may be interpreted
+as "not necessary to resume", so it is reasonable to special case this
+particular situation for these particular routines IMHO.
+
+Rafael
 
