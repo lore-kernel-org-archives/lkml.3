@@ -1,53 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965598AbaFRJb0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 05:31:26 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51855 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S964997AbaFRJbY (ORCPT
+	id S965642AbaFRJcT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 05:32:19 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:54656 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964997AbaFRJcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 05:31:24 -0400
-Date: Wed, 18 Jun 2014 11:31:09 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] misc: atmel_pwm: only build for supported platforms
-Message-ID: <20140618093109.GQ19375@piout.net>
-References: <1399560990-1402858-1-git-send-email-arnd@arndb.de>
- <1399560990-1402858-17-git-send-email-arnd@arndb.de>
- <536CA80A.60201@atmel.com>
- <1401279867.22486.6.camel@x220>
- <20140528155916.GA9793@piout.net>
- <1401293383.22486.18.camel@x220>
- <20140528175439.GA18470@piout.net>
- <1401299948.22486.51.camel@x220>
- <20140528184217.GB30031@kroah.com>
- <1403083170.1984.70.camel@x220>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403083170.1984.70.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 18 Jun 2014 05:32:17 -0400
+Message-ID: <1403083935.1984.74.camel@x220>
+Subject: [PATCH] Remove CPU_SUBTYPE_SH7764
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Richard Weinberger <richard@nod.at>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 18 Jun 2014 11:32:15 +0200
+In-Reply-To: <CAMuHMdXawwgr7x=TFumDUh+c+-KZteHdp+NrnXTFcFcwT6gjRQ@mail.gmail.com>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+	 <1391971686-9517-22-git-send-email-richard@nod.at>
+	 <1391981761.25855.58.camel@x220> <1397554747.1985.35.camel@x220>
+	 <CAMuHMdXawwgr7x=TFumDUh+c+-KZteHdp+NrnXTFcFcwT6gjRQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Jun 2014 09:32:15.0406 (UTC) FILETIME=[30D7ECE0:01CF8AD8]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The symbol is an orphan, get rid of it.
 
-On 18/06/2014 at 11:19:30 +0200, Paul Bolle wrote :
-> This has landed unchanged in v3.16-rc1. Should I submit the trivial
-> patch to remove these pointless references to the unknown symbols
-> AT91SAM9263, AT91SAM9RL, and AT91SAM9G45?
-> 
+Signed-off-by: Richard Weinberger <richard@nod.at>
+[pebolle@tiscali.nl: re-added dropped ||]
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Submitted by Richard a few months ago as "[PATCH 21/28] Remove
+CPU_SUBTYPE_SH7764".
 
-Because of dependencies, the pull request was delayed until after
-3.16-rc1. It has been resent and this should be solved for 3.16-rc2:
+Untested.
 
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/264181.html
+ arch/sh/drivers/dma/Kconfig                | 5 ++---
+ arch/sh/include/cpu-sh4/cpu/dma-register.h | 1 -
+ arch/sh/include/cpu-sh4a/cpu/dma.h         | 3 +--
+ 3 files changed, 3 insertions(+), 6 deletions(-)
 
+diff --git a/arch/sh/drivers/dma/Kconfig b/arch/sh/drivers/dma/Kconfig
+index cfd5b90a8628..78bc97b1d027 100644
+--- a/arch/sh/drivers/dma/Kconfig
++++ b/arch/sh/drivers/dma/Kconfig
+@@ -12,9 +12,8 @@ config SH_DMA_IRQ_MULTI
+ 	default y if CPU_SUBTYPE_SH7750  || CPU_SUBTYPE_SH7751  || \
+ 		     CPU_SUBTYPE_SH7750S || CPU_SUBTYPE_SH7750R || \
+ 		     CPU_SUBTYPE_SH7751R || CPU_SUBTYPE_SH7091  || \
+-		     CPU_SUBTYPE_SH7763  || CPU_SUBTYPE_SH7764  || \
+-		     CPU_SUBTYPE_SH7780  || CPU_SUBTYPE_SH7785  || \
+-		     CPU_SUBTYPE_SH7760
++		     CPU_SUBTYPE_SH7763  || CPU_SUBTYPE_SH7780  || \
++		     CPU_SUBTYPE_SH7785  || CPU_SUBTYPE_SH7760
+ 
+ config SH_DMA_API
+ 	depends on SH_DMA
+diff --git a/arch/sh/include/cpu-sh4/cpu/dma-register.h b/arch/sh/include/cpu-sh4/cpu/dma-register.h
+index 02788b6a03b7..9cd81e54056a 100644
+--- a/arch/sh/include/cpu-sh4/cpu/dma-register.h
++++ b/arch/sh/include/cpu-sh4/cpu/dma-register.h
+@@ -32,7 +32,6 @@
+ #define CHCR_TS_HIGH_SHIFT	(20 - 2)	/* 2 bits for shifted low TS */
+ #elif defined(CONFIG_CPU_SUBTYPE_SH7757) || \
+ 	defined(CONFIG_CPU_SUBTYPE_SH7763) || \
+-	defined(CONFIG_CPU_SUBTYPE_SH7764) || \
+ 	defined(CONFIG_CPU_SUBTYPE_SH7780) || \
+ 	defined(CONFIG_CPU_SUBTYPE_SH7785)
+ #define CHCR_TS_LOW_MASK	0x00000018
+diff --git a/arch/sh/include/cpu-sh4a/cpu/dma.h b/arch/sh/include/cpu-sh4a/cpu/dma.h
+index 89afb650ce25..8ceccceae844 100644
+--- a/arch/sh/include/cpu-sh4a/cpu/dma.h
++++ b/arch/sh/include/cpu-sh4a/cpu/dma.h
+@@ -14,8 +14,7 @@
+ #define DMTE4_IRQ	evt2irq(0xb80)
+ #define DMAE0_IRQ	evt2irq(0xbc0)	/* DMA Error IRQ*/
+ #define SH_DMAC_BASE0	0xFE008020
+-#elif defined(CONFIG_CPU_SUBTYPE_SH7763) || \
+-	defined(CONFIG_CPU_SUBTYPE_SH7764)
++#elif defined(CONFIG_CPU_SUBTYPE_SH7763)
+ #define DMTE0_IRQ	evt2irq(0x640)
+ #define DMTE4_IRQ	evt2irq(0x780)
+ #define DMAE0_IRQ	evt2irq(0x6c0)
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.9.3
+
