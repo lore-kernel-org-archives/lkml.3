@@ -1,90 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966169AbaFRLVk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 07:21:40 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:53495 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933954AbaFRLVi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 07:21:38 -0400
-Date: Wed, 18 Jun 2014 12:21:32 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Maxime Coquelin <maxime.coquelin@st.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, patrice.chotard@st.com,
-        srinivas.kandagatla@gmail.com, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2] ARM: stih41x: Rename stih416-b2020-revE.dts to
- stih416-b2020e.dts
-Message-ID: <20140618112132.GE8300@lee--X1>
-References: <1403087508-6710-1-git-send-email-lee.jones@linaro.org>
- <20140618105438.GC8300@lee--X1>
- <53A1734D.7000606@st.com>
+	id S966240AbaFRLWg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 07:22:36 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35491 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965421AbaFRLWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 07:22:34 -0400
+Message-ID: <53A17667.5050903@ti.com>
+Date: Wed, 18 Jun 2014 14:22:15 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53A1734D.7000606@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rajendra Nayak <rnayak@ti.com>
+CC: <tony@atomide.com>, "Menon, Nishanth" <nm@ti.com>, <kishon@ti.com>,
+        <george.cherian@ti.com>, <balbi@ti.com>, <balajitk@ti.com>,
+        <hdegoede@redhat.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Nikhil Devshatwar <nikhil.nd@ti.com>,
+        Benoit Cousson <bcousson@baylibre.com>, Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH v4 3/4] ARM: DRA7: hwmod: Add ocp2scp3 and sata hwmods
+References: <1398274237-24510-1-git-send-email-rogerq@ti.com> <1398274559-24777-1-git-send-email-rogerq@ti.com> <53A14784.1030008@ti.com> <53A169FC.70907@ti.com>
+In-Reply-To: <53A169FC.70907@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jun 2014, Maxime Coquelin wrote:
-
-> Hi Lee,
+On 06/18/2014 01:29 PM, Rajendra Nayak wrote:
+> On Wednesday 18 June 2014 01:32 PM, Roger Quadros wrote:
+>> On 04/23/2014 08:35 PM, Roger Quadros wrote:
+>>> From: Nikhil Devshatwar <nikhil.nd@ti.com>
+>>>
+>>> Add hwmods for ocp2scp3 and sata modules.
 > 
-> On 06/18/2014 12:54 PM, Lee Jones wrote:
-> >Two reasons for this rename.  Firstly, it removes the camel case
-> >convention which isn't used by any other platform and secondly it
-> >matches the naming convention for the internal kernel, which can
-> >become annoying when flipping between the two.
-> >
-> >Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> From what I see this is actually adding the ocp2scp3 data and fixing up some
+> of the sata data which is already added and erroneous.
 > 
-> Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
+> It would help if this is split up and the changelog explains whats fixed up for
+> sata and why. Like for instance I see the opt clock data being removed but no
+> mention of why.
+
+OK. I will split this up into 2 patches, one to add ocp2scp3 data and the other to fix sata hwmod.
+
+cheers,
+-roger
+
+>  
+>>>
+>>> [Roger Q] Clean up.
+>>>
+>>> CC: Benoit Cousson <bcousson@baylibre.com>
+>>> CC: Paul Walmsley <paul@pwsan.com>
+>>> Signed-off-by: Balaji T K <balajitk@ti.com>
+>>> Signed-off-by: Nikhil Devshatwar <nikhil.nd@ti.com>
+>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>
+>> Tested-by: Roger Quadros <rogerq@ti.com>
+>> against 3.16-rc1, no dependency patches needed.
+>>
+>> Nishant/Rajendra,
+>>
+>> Could you please review this? We need this for 3.16 SATA support and
+>> Paul won't take this in without your reviewed-by tag. Thanks.
+>>
+>> cheers,
+>> -roger
+>>
+>>> ---
+>>>  arch/arm/mach-omap2/omap_hwmod_7xx_data.c | 31 ++++++++++++++++++++++++++-----
+>>>  1 file changed, 26 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+>>> index 810c205..b02a4ab 100644
+>>> --- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+>>> +++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+>>> @@ -1215,6 +1215,30 @@ static struct omap_hwmod dra7xx_ocp2scp1_hwmod = {
+>>>  	},
+>>>  };
+>>>  
+>>> +/* ocp2scp3 */
+>>> +static struct omap_hwmod dra7xx_ocp2scp3_hwmod;
+>>> +
+>>> +/* l4_cfg -> ocp2scp3 */
+>>> +static struct omap_hwmod_ocp_if dra7xx_l4_cfg__ocp2scp3 = {
+>>> +	.master		= &dra7xx_l4_cfg_hwmod,
+>>> +	.slave		= &dra7xx_ocp2scp3_hwmod,
+>>> +	.clk		= "l4_root_clk_div",
+>>> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+>>> +};
 > 
-> It will be part of the STi pull-request for 3.16 fixes.
+> All hwmod data files are organized in a certain way with all the hwmod/IP block info on top
+> and Interface structs at the bottom. Can we follow the same for ocp2scp3? It helps with better
+> readability.
+>  
+>>> +
+>>> +static struct omap_hwmod dra7xx_ocp2scp3_hwmod = {
+>>> +	.name		= "ocp2scp3",
+>>> +	.class		= &dra7xx_ocp2scp_hwmod_class,
+>>> +	.clkdm_name	= "l3init_clkdm",
+> 
+> No main_clk?
+> 
+> regards,
+> Rajendra
+> 
+>>> +	.prcm = {
+>>> +		.omap4 = {
+>>> +			.clkctrl_offs = DRA7XX_CM_L3INIT_OCP2SCP3_CLKCTRL_OFFSET,
+>>> +			.context_offs = DRA7XX_RM_L3INIT_OCP2SCP3_CONTEXT_OFFSET,
+>>> +			.modulemode   = MODULEMODE_HWCTRL,
+>>> +		},
+>>> +	},
+>>> +};
+>>> +
+>>>  /*
+>>>   * 'qspi' class
+>>>   *
+>>> @@ -1268,9 +1292,6 @@ static struct omap_hwmod_class dra7xx_sata_hwmod_class = {
+>>>  };
+>>>  
+>>>  /* sata */
+>>> -static struct omap_hwmod_opt_clk sata_opt_clks[] = {
+>>> -	{ .role = "ref_clk", .clk = "sata_ref_clk" },
+>>> -};
+>>>  
+>>>  static struct omap_hwmod dra7xx_sata_hwmod = {
+>>>  	.name		= "sata",
+>>> @@ -1278,6 +1299,7 @@ static struct omap_hwmod dra7xx_sata_hwmod = {
+>>>  	.clkdm_name	= "l3init_clkdm",
+>>>  	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
+>>>  	.main_clk	= "func_48m_fclk",
+>>> +	.mpu_rt_idx	= 1,
+>>>  	.prcm = {
+>>>  		.omap4 = {
+>>>  			.clkctrl_offs = DRA7XX_CM_L3INIT_SATA_CLKCTRL_OFFSET,
+>>> @@ -1285,8 +1307,6 @@ static struct omap_hwmod dra7xx_sata_hwmod = {
+>>>  			.modulemode   = MODULEMODE_SWCTRL,
+>>>  		},
+>>>  	},
+>>> -	.opt_clks	= sata_opt_clks,
+>>> -	.opt_clks_cnt	= ARRAY_SIZE(sata_opt_clks),
+>>>  };
+>>>  
+>>>  /*
+>>> @@ -2682,6 +2702,7 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
+>>>  	&dra7xx_l4_per1__mmc4,
+>>>  	&dra7xx_l4_cfg__mpu,
+>>>  	&dra7xx_l4_cfg__ocp2scp1,
+>>> +	&dra7xx_l4_cfg__ocp2scp3,
+>>>  	&dra7xx_l3_main_1__qspi,
+>>>  	&dra7xx_l4_cfg__sata,
+>>>  	&dra7xx_l4_cfg__smartreflex_core,
+>>>
+>>
+> 
 
-Thanks for taking the patch. :)
-
-Just a quick side note.  As a maintainer, if you're going to take the
-patch there's no requirement to publicly Ack it.  Just let the
-submitter know that you've applied it to your tree.
-
-I use Acks for 2 things; when a patch touches code that I maintain,
-but is going in via a different tree, or as a marker if there is some
-reason I can't apply it to my tree right away (waiting on dependencies
-etc), but equally do not wish to review the same patch twice.
-
-> >---
-> >v1 -> v2: Appropriate change to the Makefile.
-> >---
-> >  arch/arm/boot/dts/Makefile                                       | 2 +-
-> >  arch/arm/boot/dts/{stih416-b2020-revE.dts => stih416-b2020e.dts} | 0
-> >  2 files changed, 1 insertion(+), 1 deletion(-)
-> >  rename arch/arm/boot/dts/{stih416-b2020-revE.dts => stih416-b2020e.dts} (100%)
-> >
-> >diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> >index 5986ff6..adb5ed9 100644
-> >--- a/arch/arm/boot/dts/Makefile
-> >+++ b/arch/arm/boot/dts/Makefile
-> >@@ -357,7 +357,7 @@ dtb-$(CONFIG_ARCH_STI)+= stih407-b2120.dtb \
-> >         stih415-b2020.dtb \
-> >         stih416-b2000.dtb \
-> >         stih416-b2020.dtb \
-> >-       stih416-b2020-revE.dtb
-> >+       stih416-b2020e.dtb
-> >  dtb-$(CONFIG_MACH_SUN4I) += \
-> >         sun4i-a10-a1000.dtb \
-> >         sun4i-a10-cubieboard.dtb \
-> >diff --git a/arch/arm/boot/dts/stih416-b2020-revE.dts b/arch/arm/boot/dts/stih416-b2020e.dts
-> >similarity index 100%
-> >rename from arch/arm/boot/dts/stih416-b2020-revE.dts
-> >rename to arch/arm/boot/dts/stih416-b2020e.dts
-> >
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
