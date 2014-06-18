@@ -1,71 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758AbaFRORp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 10:17:45 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:15784 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792AbaFRORn (ORCPT
+	id S1756835AbaFROSb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 10:18:31 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:42746 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752305AbaFRORo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 10:17:43 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-8e-53a19f85c81b
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Vladimir Davydov <vdavydov@parallels.com>,
-        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: [PATCH] mm: slab.h: wrap the whole file with guarding macro
-Date: Wed, 18 Jun 2014 18:11:35 +0400
-Message-id: <1403100695-1350-1-git-send-email-a.ryabinin@samsung.com>
-X-Mailer: git-send-email 1.8.5.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBJMWRmVeSWpSXmKPExsVy+t/xq7qt8xcGG/w5w26x7dcjNos569ew
-	WVz/9obR4vKuOWwW99b8Z7Vo+/yP1eLy1pnMDuwem1Z1snls+jSJ3ePEjN8sHk+uTGfyODnv
-	J5tH35ZVjB6fN8kFsEdx2aSk5mSWpRbp2yVwZcy9d5Ol4AFbxa0Pf5gaGNexdjFyckgImEjs
-	+XiJCcIWk7hwbz1bFyMXh5DAUkaJGTMWMkI4fUwSjevOMoJUsQnoSfybtZ0NxBYR0JVY9XwX
-	M0gRs8AVRol5sxYAFXFwCAu4SGw+EQFSwyKgKnHr2BcWEJtXwFXi4K/5zBDbFCSWLZ/JOoGR
-	ewEjwypG0dTS5ILipPRcQ73ixNzi0rx0veT83E2MkND5soNx8TGrQ4wCHIxKPLwf3i4IFmJN
-	LCuuzD3EKMHBrCTCO3nmwmAh3pTEyqrUovz4otKc1OJDjEwcnFINjIXSqYfKvb9uXXQweOum
-	i4Jnik9/kyj2iXqZI/pJR5ZLsONm09oY7o0Hg+fqtOwKlNlg8kfsE89Hj/pd9Zvbg/b++WLQ
-	9K2hVPjRujO2kZ/WlDZ9P2byL0z5p//LuTzMfjm3G/Onlb9r0k1Psp/q1x8S1326LeXKvV0y
-	x04EPjjUv/vmUk+lNCWW4oxEQy3mouJEANqxyvT7AQAA
+	Wed, 18 Jun 2014 10:17:44 -0400
+X-Greylist: delayed 422 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Jun 2014 10:17:43 EDT
+From: Christian Bay <christian.bay@studium.fau.de>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        lisa@xenapiadmin.com, linux-kernel@i4.cs.fau.de,
+        Christian Bay <christian.bay@studium.fau.de>,
+        Martin Gumbrecht <martin.gumbrecht@googlemail.com>
+Subject: [PATCH 1/2] Staging: bcm: Prototypes.h: fix checkpatch errors
+Date: Wed, 18 Jun 2014 16:10:05 +0200
+Message-Id: <1403100606-14881-2-git-send-email-christian.bay@studium.fau.de>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403100606-14881-1-git-send-email-christian.bay@studium.fau.de>
+References: <1403100606-14881-1-git-send-email-christian.bay@studium.fau.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guarding section:
-	#ifndef MM_SLAB_H
-	#define MM_SLAB_H
-	...
-	#endif
-currently doesn't cover the whole mm/slab.h. It seems like it was
-done unintentionally.
+This patch fixes all errors, excluding > 80 character warnings, shown by the checkpatch
+script. In detail whitespace changes according to the coding guideline are meant.
+Additionally there is exactly one newline after every declaration of methods now.
 
-Wrap the whole file by moving closing #endif to the end of it.
-
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+Signed-off-by: Christian Bay <christian.bay@studium.fau.de>
+Signed-off-by: Martin Gumbrecht <martin.gumbrecht@googlemail.com>
 ---
- mm/slab.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/bcm/Prototypes.h | 89 +++++++++++++++++++---------------------
+ 1 file changed, 42 insertions(+), 47 deletions(-)
 
-diff --git a/mm/slab.h b/mm/slab.h
-index 961a3fb..90954f5e 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -260,8 +260,6 @@ static inline struct kmem_cache *cache_from_obj(struct kmem_cache *s, void *x)
- 	WARN_ON_ONCE(1);
- 	return s;
- }
--#endif
--
+diff --git a/drivers/staging/bcm/Prototypes.h b/drivers/staging/bcm/Prototypes.h
+index fb53a00..1ddc8b25 100644
+--- a/drivers/staging/bcm/Prototypes.h
++++ b/drivers/staging/bcm/Prototypes.h
+@@ -3,13 +3,13 @@
  
- /*
-  * The slab lists for all objects.
-@@ -296,3 +294,5 @@ struct kmem_cache_node {
+ VOID LinkControlResponseMessage(struct bcm_mini_adapter *Adapter, PUCHAR pucBuffer);
  
- void *slab_next(struct seq_file *m, void *p, loff_t *pos);
- void slab_stop(struct seq_file *m, void *p);
+-VOID StatisticsResponse(struct bcm_mini_adapter *Adapter,PVOID pvBuffer);
++VOID StatisticsResponse(struct bcm_mini_adapter *Adapter, PVOID pvBuffer);
+ 
+-VOID IdleModeResponse(struct bcm_mini_adapter *Adapter,PUINT puiBuffer);
++VOID IdleModeResponse(struct bcm_mini_adapter *Adapter, PUINT puiBuffer);
+ 
+-int control_packet_handler	(struct bcm_mini_adapter *Adapter);
++int control_packet_handler(struct bcm_mini_adapter *Adapter);
+ 
+-VOID DeleteAllClassifiersForSF(struct bcm_mini_adapter *Adapter,UINT uiSearchRuleIndex);
++VOID DeleteAllClassifiersForSF(struct bcm_mini_adapter *Adapter, UINT uiSearchRuleIndex);
+ 
+ VOID flush_all_queues(struct bcm_mini_adapter *Adapter);
+ 
+@@ -29,18 +29,19 @@ VOID flush_all_queues(struct bcm_mini_adapter *Adapter);
+ 
+ VOID PruneQueueAllSF(struct bcm_mini_adapter *Adapter);
+ 
+-INT SearchSfid(struct bcm_mini_adapter *Adapter,UINT uiSfid);
++INT SearchSfid(struct bcm_mini_adapter *Adapter, UINT uiSfid);
+ 
+-USHORT ClassifyPacket(struct bcm_mini_adapter *Adapter,struct sk_buff* skb);
++USHORT ClassifyPacket(struct bcm_mini_adapter *Adapter, struct sk_buff *skb);
+ 
+-bool MatchSrcPort(struct bcm_classifier_rule *pstClassifierRule,USHORT ushSrcPort);
+-bool MatchDestPort(struct bcm_classifier_rule *pstClassifierRule,USHORT ushSrcPort);
+-bool MatchProtocol(struct bcm_classifier_rule *pstClassifierRule,UCHAR ucProtocol);
++bool MatchSrcPort(struct bcm_classifier_rule *pstClassifierRule, USHORT ushSrcPort);
+ 
++bool MatchDestPort(struct bcm_classifier_rule *pstClassifierRule, USHORT ushSrcPort);
 +
-+#endif /* MM_SLAB_H */
++bool MatchProtocol(struct bcm_classifier_rule *pstClassifierRule, UCHAR ucProtocol);
+ 
+ INT SetupNextSend(struct bcm_mini_adapter *Adapter, /**<Logical Adapter*/
+ 					struct sk_buff *Packet, /**<data buffer*/
+-					USHORT Vcid)	;
++					USHORT Vcid);
+ 
+ VOID LinkMessage(struct bcm_mini_adapter *Adapter);
+ 
+@@ -50,8 +51,8 @@ INT SendControlPacket(struct bcm_mini_adapter *Adapter, /**<Logical Adapter*/
+ 							char *pControlPacket/**<Control Packet*/
+ 							);
+ 
+-
+ int register_networkdev(struct bcm_mini_adapter *Adapter);
++
+ void unregister_networkdev(struct bcm_mini_adapter *Adapter);
+ 
+ INT AllocAdapterDsxBuffer(struct bcm_mini_adapter *Adapter);
+@@ -62,13 +63,12 @@ INT FreeAdapterDsxBuffer(struct bcm_mini_adapter *Adapter);
+ 
+ int tx_pkt_handler(struct bcm_mini_adapter *Adapter);
+ 
+-int  reset_card_proc(struct bcm_mini_adapter *Adapter );
++int reset_card_proc(struct bcm_mini_adapter *Adapter);
+ 
+-int run_card_proc(struct bcm_mini_adapter *Adapter );
++int run_card_proc(struct bcm_mini_adapter *Adapter);
+ 
+ int InitCardAndDownloadFirmware(struct bcm_mini_adapter *ps_adapter);
+ 
+-
+ INT ReadMacAddressFromNVM(struct bcm_mini_adapter *Adapter);
+ 
+ int register_control_device_interface(struct bcm_mini_adapter *ps_adapter);
+@@ -79,17 +79,18 @@ int rdm(struct bcm_mini_adapter *Adapter, UINT uiAddress, PCHAR pucBuff, size_t
+ 
+ int wrm(struct bcm_mini_adapter *Adapter, UINT uiAddress, PCHAR pucBuff, size_t size);
+ 
+-int wrmalt (struct bcm_mini_adapter *Adapter, UINT uiAddress, unsigned int *pucBuff, size_t sSize);
++int wrmalt(struct bcm_mini_adapter *Adapter, UINT uiAddress, unsigned int *pucBuff, size_t sSize);
+ 
+-int rdmalt (struct bcm_mini_adapter *Adapter, UINT uiAddress, unsigned int *pucBuff, size_t sSize);
++int rdmalt(struct bcm_mini_adapter *Adapter, UINT uiAddress, unsigned int *pucBuff, size_t sSize);
+ 
+-int get_dsx_sf_data_to_application(struct bcm_mini_adapter *Adapter, UINT uiSFId, void __user * user_buffer);
++int get_dsx_sf_data_to_application(struct bcm_mini_adapter *Adapter, UINT uiSFId, void __user *user_buffer);
+ 
+ void SendIdleModeResponse(struct bcm_mini_adapter *Adapter);
+ 
++int ProcessGetHostMibs(struct bcm_mini_adapter *Adapter, struct bcm_host_stats_mibs *buf);
+ 
+-int  ProcessGetHostMibs(struct bcm_mini_adapter *Adapter, struct bcm_host_stats_mibs *buf);
+ void GetDroppedAppCntrlPktMibs(struct bcm_host_stats_mibs *ioBuffer, struct bcm_tarang_data *pTarang);
++
+ void beceem_parse_target_struct(struct bcm_mini_adapter *Adapter);
+ 
+ int bcm_ioctl_fw_download(struct bcm_mini_adapter *Adapter, struct bcm_firmware_info *psFwInfo);
+@@ -101,38 +102,32 @@ VOID ResetCounters(struct bcm_mini_adapter *Adapter);
+ 
+ int InitLedSettings(struct bcm_mini_adapter *Adapter);
+ 
+-struct bcm_classifier_rule *GetFragIPClsEntry(struct bcm_mini_adapter *Adapter,USHORT usIpIdentification,ULONG SrcIP);
++struct bcm_classifier_rule *GetFragIPClsEntry(struct bcm_mini_adapter *Adapter, USHORT usIpIdentification, ULONG SrcIP);
+ 
+ void AddFragIPClsEntry(struct bcm_mini_adapter *Adapter, struct bcm_fragmented_packet_info *psFragPktInfo);
+ 
+-void DelFragIPClsEntry(struct bcm_mini_adapter *Adapter,USHORT usIpIdentification,ULONG SrcIp);
+-
+-void update_per_cid_rx (struct bcm_mini_adapter *Adapter);
++void DelFragIPClsEntry(struct bcm_mini_adapter *Adapter, USHORT usIpIdentification, ULONG SrcIp);
+ 
+-void update_per_sf_desc_cnts( struct bcm_mini_adapter *Adapter);
++void update_per_cid_rx(struct bcm_mini_adapter *Adapter);
+ 
+-void ClearTargetDSXBuffer(struct bcm_mini_adapter *Adapter,B_UINT16 TID,bool bFreeAll);
++void update_per_sf_desc_cnts(struct bcm_mini_adapter *Adapter);
+ 
++void ClearTargetDSXBuffer(struct bcm_mini_adapter *Adapter, B_UINT16 TID, bool bFreeAll);
+ 
+ void flush_queue(struct bcm_mini_adapter *Adapter, UINT iQIndex);
+ 
+-
+ INT flushAllAppQ(VOID);
+ 
+-
+ INT BeceemEEPROMBulkRead(
+ 	struct bcm_mini_adapter *Adapter,
+ 	PUINT pBuffer,
+ 	UINT uiOffset,
+ 	UINT uiNumBytes);
+ 
+-
+-
+-INT WriteBeceemEEPROM(struct bcm_mini_adapter *Adapter,UINT uiEEPROMOffset, UINT uiData);
++INT WriteBeceemEEPROM(struct bcm_mini_adapter *Adapter, UINT uiEEPROMOffset, UINT uiData);
+ 
+ INT PropagateCalParamsFromFlashToMemory(struct bcm_mini_adapter *Adapter);
+ 
+-
+ INT BeceemEEPROMBulkWrite(
+ 	struct bcm_mini_adapter *Adapter,
+ 	PUCHAR pBuffer,
+@@ -140,9 +135,7 @@ INT BeceemEEPROMBulkWrite(
+ 	UINT uiNumBytes,
+ 	bool bVerify);
+ 
+-
+-INT ReadBeceemEEPROM(struct bcm_mini_adapter *Adapter,UINT dwAddress, UINT *pdwData);
+-
++INT ReadBeceemEEPROM(struct bcm_mini_adapter *Adapter, UINT dwAddress, UINT *pdwData);
+ 
+ INT BeceemNVMRead(
+ 	struct bcm_mini_adapter *Adapter,
+@@ -157,10 +150,10 @@ INT BeceemNVMWrite(
+ 	UINT uiNumBytes,
+ 	bool bVerify);
+ 
+-
+ INT BcmInitNVM(struct bcm_mini_adapter *Adapter);
+ 
+-INT BcmUpdateSectorSize(struct bcm_mini_adapter *Adapter,UINT uiSectorSize);
++INT BcmUpdateSectorSize(struct bcm_mini_adapter *Adapter, UINT uiSectorSize);
++
+ bool IsSectionExistInFlash(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_section_val section);
+ 
+ INT BcmGetFlash2xSectionalBitMap(struct bcm_mini_adapter *Adapter, struct bcm_flash2x_bitmap *psFlash2xBitMap);
+@@ -183,40 +176,42 @@ INT BcmFlash2xBulkRead(
+ INT BcmGetSectionValStartOffset(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_section_val eFlashSectionVal);
+ 
+ INT BcmSetActiveSection(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_section_val eFlash2xSectVal);
++
+ INT BcmAllocFlashCSStructure(struct bcm_mini_adapter *psAdapter);
++
+ INT BcmDeAllocFlashCSStructure(struct bcm_mini_adapter *psAdapter);
+ 
+ INT BcmCopyISO(struct bcm_mini_adapter *Adapter, struct bcm_flash2x_copy_section sCopySectStrut);
++
+ INT BcmFlash2xCorruptSig(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_section_val eFlash2xSectionVal);
++
+ INT BcmFlash2xWriteSig(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_section_val eFlashSectionVal);
+-INT	validateFlash2xReadWrite(struct bcm_mini_adapter *Adapter, struct bcm_flash2x_readwrite *psFlash2xReadWrite);
++
++INT validateFlash2xReadWrite(struct bcm_mini_adapter *Adapter, struct bcm_flash2x_readwrite *psFlash2xReadWrite);
++
+ INT IsFlash2x(struct bcm_mini_adapter *Adapter);
+-INT	BcmCopySection(struct bcm_mini_adapter *Adapter,
++
++INT BcmCopySection(struct bcm_mini_adapter *Adapter,
+ 						enum bcm_flash2x_section_val SrcSection,
+ 						enum bcm_flash2x_section_val DstSection,
+ 						UINT offset,
+ 						UINT numOfBytes);
+ 
+-
+ bool IsNonCDLessDevice(struct bcm_mini_adapter *Adapter);
+ 
++VOID OverrideServiceFlowParams(struct bcm_mini_adapter *Adapter, PUINT puiBuffer);
+ 
+-VOID OverrideServiceFlowParams(struct bcm_mini_adapter *Adapter,PUINT puiBuffer);
++int wrmaltWithLock(struct bcm_mini_adapter *Adapter, UINT uiAddress, unsigned int *pucBuff, size_t sSize);
+ 
+-int wrmaltWithLock (struct bcm_mini_adapter *Adapter, UINT uiAddress, unsigned int *pucBuff, size_t sSize);
+-int rdmaltWithLock (struct bcm_mini_adapter *Adapter, UINT uiAddress, unsigned int *pucBuff, size_t sSize);
++int rdmaltWithLock(struct bcm_mini_adapter *Adapter, UINT uiAddress, unsigned int *pucBuff, size_t sSize);
+ 
+ int wrmWithLock(struct bcm_mini_adapter *Adapter, UINT uiAddress, PCHAR pucBuff, size_t size);
++
+ INT buffDnldVerify(struct bcm_mini_adapter *Adapter, unsigned char *mappedbuffer, unsigned int u32FirmwareLength,
+ 		unsigned long u32StartingAddress);
+ 
+-
+ VOID putUsbSuspend(struct work_struct *work);
+-bool IsReqGpioIsLedInNVM(struct bcm_mini_adapter *Adapter, UINT gpios);
+ 
++bool IsReqGpioIsLedInNVM(struct bcm_mini_adapter *Adapter, UINT gpios);
+ 
+ #endif
+-
+-
+-
+-
 -- 
-1.8.5.5
+1.9.1
 
