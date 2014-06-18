@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932580AbaFRA6V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 20:58:21 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:23808 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754273AbaFRA6U (ORCPT
+	id S1756448AbaFRA7J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 20:59:09 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:35793 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756318AbaFRA7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 20:58:20 -0400
-Message-ID: <53A0E3DB.4010401@huawei.com>
-Date: Wed, 18 Jun 2014 08:56:59 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Tue, 17 Jun 2014 20:59:08 -0400
+Date: Tue, 17 Jun 2014 17:59:05 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Don Zickus <dzickus@redhat.com>
+cc: LKML <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org,
+        peter@lekensteyn.nl, mhocko@suse.cz
+Subject: Re: [PATCH] watchdog: Remove preemption restrictions when restarting
+ lockup detector
+In-Reply-To: <1403010653-243385-1-git-send-email-dzickus@redhat.com>
+Message-ID: <alpine.DEB.2.02.1406171757020.22940@chino.kir.corp.google.com>
+References: <1403010653-243385-1-git-send-email-dzickus@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Yijing Wang <wangyijing@huawei.com>, Joerg Roedel <joro@8bytes.org>,
-        David Woodhouse <dwmw2@infradead.org>
-CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] trivial cleanup for iommu/vt-d
-References: <1400589472-8544-1-git-send-email-wangyijing@huawei.com>
-In-Reply-To: <1400589472-8544-1-git-send-email-wangyijing@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020206.53A0E3EA.0014,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: 41e0b80c86a6f62065358914db3d07cd
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping...
+On Tue, 17 Jun 2014, Don Zickus wrote:
 
-On 2014/5/20 20:37, Yijing Wang wrote:
-> Some cleanup patches for iommu/vt-d.
+> Peter Wu noticed the following splat on his machine when updating
+> /proc/sys/kernel/watchdog_thresh:
 > 
-> Yijing Wang (6):
->   iommu/vt-d: Use list_for_each_safe() to simplify code
->   iommu/vt-d: move up no_iommu and dmar_disabled check
->   iommu/vt-d: clear the redundant assignment in dmar_enable_qi
->   iommu/vt-d: clear the redundant assignment for domain->nid
->   iommu/vt-d: use inline function dma_pte_superpage instead of macros
->   iommu/vt-d: fix reference count in iommu_prepare_isa
+> [    0.676701] BUG: sleeping function called from invalid context at /tmp/linux/mm/slub.c:965
+> [    0.679396] in_atomic(): 1, irqs_disabled(): 0, pid: 1, name: init
+> [    0.681204] 3 locks held by init/1:
+> [    0.682371]  #0:  (sb_writers#3){.+.+.+}, at: [<ffffffff8117b663>] vfs_write+0x143/0x180
+> [    0.685887]  #1:  (watchdog_proc_mutex){+.+.+.}, at: [<ffffffff810e02d3>] proc_dowatchdog+0x33/0x110
+> [    0.689631]  #2:  (cpu_hotplug.lock){.+.+.+}, at: [<ffffffff810589c2>] get_online_cpus+0x32/0x80
+> [    0.693117] Preemption disabled at:[<ffffffff810e0384>] proc_dowatchdog+0xe4/0x110
+> [    0.695753]
+> [    0.696588] CPU: 0 PID: 1 Comm: init Not tainted 3.16.0-rc1-testing #34
+> [    0.698404] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
+> [    0.704622]  ffff88003f250000 ffff88003f1ffd10 ffffffff81624c59 0000000000000000
+> [    0.707749]  ffff88003f1ffd30 ffffffff8108df1d 0000000000000010 ffffffff81c56360
+> [    0.711010]  ffff88003f1ffd78 ffffffff8116a5de ffffffff811159a5 ffffffff810a5f4a
+> [    0.714053] Call Trace:
+> [    0.715015]  [<ffffffff81624c59>] dump_stack+0x4e/0x7a
+> [    0.716619]  [<ffffffff8108df1d>] __might_sleep+0x11d/0x190
+> [    0.718232]  [<ffffffff8116a5de>] kmem_cache_alloc_trace+0x4e/0x1e0
+> [    0.720214]  [<ffffffff811159a5>] ? perf_event_alloc+0x55/0x440
+> [    0.721910]  [<ffffffff810a5f4a>] ? mark_held_locks+0x6a/0x90
+> [    0.723558]  [<ffffffff811159a5>] perf_event_alloc+0x55/0x440
+> [    0.725304]  [<ffffffff810e0050>] ? restart_watchdog_hrtimer+0x50/0x50
+> [    0.727279]  [<ffffffff81116d16>] perf_event_create_kernel_counter+0x26/0xe0
+> [    0.729269]  [<ffffffff810dfe05>] watchdog_nmi_enable+0x75/0x140
+> [    0.730965]  [<ffffffff810dffb3>] update_timers_all_cpus+0x53/0xa0
+> [    0.732953]  [<ffffffff810e0384>] proc_dowatchdog+0xe4/0x110
+> [    0.738408]  [<ffffffff811d8c93>] proc_sys_call_handler+0xb3/0xc0
+> [    0.740266]  [<ffffffff811d8cb4>] proc_sys_write+0x14/0x20
+> [    0.742086]  [<ffffffff8117b5cd>] vfs_write+0xad/0x180
+> [    0.743669]  [<ffffffff810a606d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
+> [    0.745593]  [<ffffffff8117b799>] SyS_write+0x49/0xb0
+> [    0.747101]  [<ffffffff8162fe92>] system_call_fastpath+0x16/0x1b
+> [    0.749069] NMI watchdog: disabled (cpu0): hardware events not enabled
 > 
->  drivers/iommu/dmar.c        |    3 ---
->  drivers/iommu/intel-iommu.c |   18 ++++++++----------
->  2 files changed, 8 insertions(+), 13 deletions(-)
+> What happened is after updating the watchdog_thresh, the lockup detector is
+> restarted to utilize the new value.  Part of this process involved disabling
+> preemption.  Once preemption was disabled, perf tried to allocate a new event
+> (as part of the restart).  This caused the above BUG_ON as you can't sleep with
+> preemption disabled.
 > 
+> The preemption restriction seemed agressive as we are not doing anything
+> on that particular cpu, but with all the online cpus (which are protected by
+> the get_online_cpus lock).  Remove the restriction and the BUG_ON goes away.
 > 
-> 
-> .
-> 
+> Reported-and-Tested-by: Peter Wu <peter@lekensteyn.nl>
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
 
+Acked-by: David Rientjes <rientjes@google.com>
 
--- 
-Thanks!
-Yijing
-
+I think this deserves a Cc: stable@vger.kernel.org # 3.13+
