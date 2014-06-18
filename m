@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934050AbaFRJPx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 05:15:53 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51733 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933182AbaFRJPu (ORCPT
+	id S965171AbaFRJTe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 05:19:34 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:52046 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964840AbaFRJTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 05:15:50 -0400
-Date: Wed, 18 Jun 2014 11:10:06 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Luc Verhaegen <libv@skynet.be>
-Subject: Re: [PATCH v2 03/20] clk: sunxi: move "ahb_sdram" to protected clock
- list
-Message-ID: <20140618091006.GI19730@lukather>
-References: <1403016777-15121-1-git-send-email-wens@csie.org>
- <1403016777-15121-4-git-send-email-wens@csie.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yzvKDKJiLNESc64M"
-Content-Disposition: inline
-In-Reply-To: <1403016777-15121-4-git-send-email-wens@csie.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 18 Jun 2014 05:19:32 -0400
+Message-ID: <1403083170.1984.70.camel@x220>
+Subject: Re: [PATCH] misc: atmel_pwm: only build for supported platforms
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Wed, 18 Jun 2014 11:19:30 +0200
+In-Reply-To: <20140528184217.GB30031@kroah.com>
+References: <1399560433-1402630-1-git-send-email-arnd@arndb.de>
+	 <1399560990-1402858-1-git-send-email-arnd@arndb.de>
+	 <1399560990-1402858-17-git-send-email-arnd@arndb.de>
+	 <536CA80A.60201@atmel.com> <1401279867.22486.6.camel@x220>
+	 <20140528155916.GA9793@piout.net> <1401293383.22486.18.camel@x220>
+	 <20140528175439.GA18470@piout.net> <1401299948.22486.51.camel@x220>
+	 <20140528184217.GB30031@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Jun 2014 09:19:30.0556 (UTC) FILETIME=[68F513C0:01CF8AD6]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Greg,
 
---yzvKDKJiLNESc64M
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2014-05-28 at 11:42 -0700, Greg Kroah-Hartman wrote:
+> On Wed, May 28, 2014 at 07:59:08PM +0200, Paul Bolle wrote:
+> > On Wed, 2014-05-28 at 19:55 +0200, Alexandre Belloni wrote:
+> > > On 28/05/2014 at 18:09:43 +0200, Paul Bolle wrote :
+> > > > On Wed, 2014-05-28 at 17:59 +0200, Alexandre Belloni wrote:
+> > > > > On 28/05/2014 at 14:24:27 +0200, Paul Bolle wrote :
+> > > > > > > >  config ATMEL_PWM
+> > > > > > > >  	tristate "Atmel AT32/AT91 PWM support"
+> > > > > > > > -	depends on HAVE_CLK && (AVR32 || ARCH_AT91 || COMPILE_TEST)
+> > > > > > > > +	depends on HAVE_CLK
+> > > > > > > > +	depends on AVR32 || AT91SAM9263 || AT91SAM9RL || AT91SAM9G45
+> > > > > > 
+> > > > > > Symbols AT91SAM9263, AT91SAM9RL, and AT91SAM9G45 do not seem to exist in
+> > > > > > next-20140528. Should these perhaps be SOC_AT91SAM9263, SOC_AT91SAM9RL,
+> > > > > > and SOC_AT91SAM9G45 and/or ARCH_AT91SAM9263, ARCH_AT91SAM9RL, and
+> > > > > > ARCH_AT91SAM9G45?
+> > > > > 
+> > > > > I wouldn't bother too much fixing that, this will definitely be remove
+> > > > > in 3.17. 
+> > > > 
+> > > > Are you talking about: 1) the problem this patch tried to fix; or 2) the
+> > > > problem it created?
+> > > > 
+> > > 
+> > > I'm removing the whole atmel_pwm driver so the CONFIG_ATMEL_PWM symbol
+> > > will be gone.
+> > 
+> > So the patch we're discussing here will never be included in a release?
+> 
+> So, should I just remove it right now?  I like deleting files :)
 
-On Tue, Jun 17, 2014 at 10:52:40PM +0800, Chen-Yu Tsai wrote:
-> With sunxi_gates clocks registered with clkdev, we can use the
-> protected clocks list to enable the "ahb_sdram" clock, instead
-> of looking for it and adding CLK_IGNORE_UNUSED inline in the
-> clock setup code.
->=20
-> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+This has landed unchanged in v3.16-rc1. Should I submit the trivial
+patch to remove these pointless references to the unknown symbols
+AT91SAM9263, AT91SAM9RL, and AT91SAM9G45?
 
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Thanks,
 
-Maxime
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Paul Bolle
 
---yzvKDKJiLNESc64M
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJToVduAAoJEBx+YmzsjxAgtaMP/jYzR7hHj+anXBPwRlYhm2iZ
-ld/VmhxkOZnOKfeElrXRyZeV9Ks3PiplhHxhOyAFZG7Ep95jlgfvXoT7P4cUgp6F
-vwtxDsFdjLUtuwRw9uutphn51IzKOc9tiqBUC8wwcLnvkLw7y5aJkRkPB++LEf0h
-5PSwCybbCjFcCKJ6W0u0P5d/ECMRbioOMxRqbwz4tmL01EGq5Gw8xtAjY5cQzN7T
-twJGtsPIsxh9okTAw6VRq3OhNRp8C0t53lWBRlgPoiXJMIy4OEdWuVZBD405g3Vh
-hHky5SW2wKDBFstDB/XWueb24rDH30LYWGseeOL+CImPktfBEyHSfqLrKYzreEfT
-/MDOkke5uJ4aSAb1HdQNe/F2V4VfqKamhkqoEF4E8+c7WQxXvwA7fRgjQwgCUyO3
-B/9sa6NNVZlMq3Ceom8G5nokb5vWOAaPnmWkmcLIgTIhRVE9taxeLtBuazIqegZ+
-/Xi1sDh6STgBn8KE5Cm/W97WS3tvqVyDDFTlYmozTFBsjR7xFO1Z8Ny/XZYxcX/K
-LJFyJVFzvL4J6x4vnSIh59Glp8IDZLaR9+D1sOgvWVs/FYMUXeT3EC0o4SlST7FA
-alOOaGq1W2UlwYv9fok28vVCN+t4mwHMmoNG4PtinM+Ph0Z3Y1hpjtxHvRdZCXYG
-VNcKO+52NA/6J7a1231i
-=2KR7
------END PGP SIGNATURE-----
-
---yzvKDKJiLNESc64M--
