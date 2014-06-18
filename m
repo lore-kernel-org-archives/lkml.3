@@ -1,79 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396AbaFRW1i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 18:27:38 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:40380 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401AbaFRW1h convert rfc822-to-8bit (ORCPT
+	id S1753854AbaFRW1z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 18:27:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42729 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752463AbaFRW1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 18:27:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140618214752.GL32514@n2100.arm.linux.org.uk>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
- <CAL_JsqKw-C6uZBU3hccGmdofXcCcUKTV6z7Af6KwYwnZiy3HoQ@mail.gmail.com>
- <201406182122.29623@pali> <CAL_JsqK5j8PvYfq+tct4RMr63TWDYGfi_TA28k5m4KyG=UuNbg@mail.gmail.com>
- <20140618214752.GL32514@n2100.arm.linux.org.uk>
-From: Rob Herring <robherring2@gmail.com>
-Date: Wed, 18 Jun 2014 17:27:16 -0500
-Message-ID: <CAL_JsqK-9L6vLJSUuQDsNuHQOxahDM0uuQPtyq6XyuoBh5xDcg@mail.gmail.com>
-Subject: Re: [PATCH] ARM: /proc/cpuinfo: Use DT machine name when possible
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Sebastian Reichel <sre@debian.org>, Pavel Machek <pavel@ucw.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 18 Jun 2014 18:27:53 -0400
+Date: Wed, 18 Jun 2014 15:27:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Chen Yucong <slaoub@gmail.com>
+Cc: minchan@kernel.org, mgorman@suse.de, hannes@cmpxchg.org, mhocko@suse.cz,
+        riel@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/vmscan.c: fix an implementation flaw in proportional
+ scanning
+Message-Id: <20140618152751.283deda95257cc32ccea8f20@linux-foundation.org>
+In-Reply-To: <1402980902-6345-1-git-send-email-slaoub@gmail.com>
+References: <1402980902-6345-1-git-send-email-slaoub@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 4:47 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Jun 18, 2014 at 03:46:19PM -0500, Rob Herring wrote:
->> On Wed, Jun 18, 2014 at 2:22 PM, Pali Rohár <pali.rohar@gmail.com> wrote:
->> > Also I still did not know why DT kernel does not report Revision
->> > number which is passed by bootloader via atags. Any idea?
->>
->> Probably because no one cared until now and revision info for every
->> SOC is different. I would like to see revision info set in the DT in a
->> standard way and remove the various SOC specific kernel
->> implementations.
->
-> Except... that's not what it is.  What that revision field was originally
-> invented for was the Netwinder to indicate the _platform_ revision.
+On Tue, 17 Jun 2014 12:55:02 +0800 Chen Yucong <slaoub@gmail.com> wrote:
 
-Okay. DT describes the platform, so having a top-level revision in the
-DT could be similar, but...
+> Via https://lkml.org/lkml/2013/4/10/897, we can know that the relative design
+> idea is to keep
+> 
+>     scan_target[anon] : scan_target[file]
+>         == really_scanned_num[anon] : really_scanned_num[file]
+> 
+> But we can find the following snippet in shrink_lruvec():
+> 
+>     if (nr_file > nr_anon) {
+>         ...
+>     } else {
+>         ...
+>     }
+> 
+> However, the above code fragment broke the design idea. We can assume:
+> 
+>       nr[LRU_ACTIVE_FILE] = 30
+>       nr[LRU_INACTIVE_FILE] = 30
+>       nr[LRU_ACTIVE_ANON] = 0
+>       nr[LRU_INACTIVE_ANON] = 40
+> 
+> When the value of (nr_reclaimed < nr_to_reclaim) become false, there are
+> the following results:
+> 
+>       nr[LRU_ACTIVE_FILE] = 15
+>       nr[LRU_INACTIVE_FILE] = 15
+>       nr[LRU_ACTIVE_ANON] = 0
+>       nr[LRU_INACTIVE_ANON] = 25
+>       nr_file = 30
+>       nr_anon = 25
+>       file_percent = 30 / 60 = 0.5
+>       anon_percent = 25 / 40 = 0.65
+> 
+> According to the above design idea, we should scan some pages from ANON,
+> but in fact we execute the an error code path due to "if (nr_file > nr_anon)".
+> In this way, nr[lru] is likely to be a negative number. Luckily,
+> "nr[lru] -= min(nr[lru], nr_scanned)" can help us to filter this situation,
+> but it has rebelled against our design idea.
 
->
-> From what I've seen, almost everyone else sets this to zero in their
-> boot loaders - it is /very/ rarely used.  However, I think OMAP (ab)uses
-> it by putting the SoC revision into it at kernel boot time.  That's
-> not what it is supposed to be used for.
+Mel, could you please pencil in some time to look at this one?
 
-it could suffer the same abuse as the ATAG.
+Perhaps before doing that you could suggest what sort of testing might
+help us understand any runtime effects from this fix.
 
-Perhaps if Revision in cpuinfo is never going to be set for DT based
-platforms, then we should remove it from cpuinfo in that case.
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index a8ffe4e..2c35e34 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2087,8 +2086,8 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+>  	blk_start_plug(&plug);
+>  	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
+>  					nr[LRU_INACTIVE_FILE]) {
+> -		unsigned long nr_anon, nr_file, percentage;
+> -		unsigned long nr_scanned;
+> +		unsigned long nr_anon, nr_file, file_percent, anon_percent;
+> +		unsigned long nr_to_scan, nr_scanned, percentage;
+>  
+>  		for_each_evictable_lru(lru) {
+>  			if (nr[lru]) {
 
-> Others have already solved the problem of exporting SoC specific
-> information, such as SoC name, SoC revision, etc, if only people would
-> use it - drivers/base/soc.c.  This gives machine, family, soc_id and
-> SoC revision information in a standard place - it /might/ have been
-> a good idea if the creation of that also contained documentation for
-> what was expected in each of the fields, rather than leaving it
-> open...
+The increased stack use is a slight concern - we can be very deep here.
+I suspect the "percent" locals are more for convenience/clarity, and
+they could be eliminated (in a separate patch) at some cost of clarity?
 
-The problem with soc-device is it is optional and at the whim of the
-platform to add. Adding it also causes the the platform devices to
-change paths because people make the soc device the bus parent. Sysfs
-paths to devices are not considered part of the ABI, but still this is
-a silly reason to change the path. If we want soc-device to be used,
-then it should always exist and have a default version.
-
-Rob
