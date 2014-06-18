@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264AbaFRVsG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 17:48:06 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:34799 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751119AbaFRVsD (ORCPT
+	id S1752517AbaFRVsR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 17:48:17 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:43515 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310AbaFRVsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 17:48:03 -0400
-Date: Wed, 18 Jun 2014 22:47:52 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Sebastian Reichel <sre@debian.org>, Pavel Machek <pavel@ucw.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: /proc/cpuinfo: Use DT machine name when possible
-Message-ID: <20140618214752.GL32514@n2100.arm.linux.org.uk>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com> <CAL_JsqKw-C6uZBU3hccGmdofXcCcUKTV6z7Af6KwYwnZiy3HoQ@mail.gmail.com> <201406182122.29623@pali> <CAL_JsqK5j8PvYfq+tct4RMr63TWDYGfi_TA28k5m4KyG=UuNbg@mail.gmail.com>
+	Wed, 18 Jun 2014 17:48:05 -0400
+Date: Wed, 18 Jun 2014 14:48:00 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [bisected] pre-3.16 regression on open() scalability
+Message-ID: <20140618214800.GA7445@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <539B594C.8070004@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAL_JsqK5j8PvYfq+tct4RMr63TWDYGfi_TA28k5m4KyG=UuNbg@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <539B594C.8070004@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061821-0928-0000-0000-000002BEFABF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 03:46:19PM -0500, Rob Herring wrote:
-> On Wed, Jun 18, 2014 at 2:22 PM, Pali Rohár <pali.rohar@gmail.com> wrote:
-> > Also I still did not know why DT kernel does not report Revision
-> > number which is passed by bootloader via atags. Any idea?
+On Fri, Jun 13, 2014 at 01:04:28PM -0700, Dave Hansen wrote:
+> Hi Paul,
 > 
-> Probably because no one cared until now and revision info for every
-> SOC is different. I would like to see revision info set in the DT in a
-> standard way and remove the various SOC specific kernel
-> implementations.
+> I'm seeing a regression when comparing 3.15 to Linus's current tree.
+> I'm using Anton Blanchard's will-it-scale "open1" test which creates a
+> bunch of processes and does open()/close() in a tight loop:
+> 
+> > https://github.com/antonblanchard/will-it-scale/blob/master/tests/open1.c
+> 
+> At about 50 cores worth of processes, 3.15 and the pre-3.16 code start
+> to diverge, with 3.15 scaling better:
+> 
+> 	http://sr71.net/~dave/intel/3.16-open1regression-0.png
+> 
+> Some profiles point to a big increase in contention inside slub.c's
+> get_partial_node() (the allocation side of the slub code) causing the
+> regression.  That particular open() test is known to do a lot of slab
+> operations.  But, the odd part is that the slub code hasn't been touched
+> much.
 
-Except... that's not what it is.  What that revision field was originally
-invented for was the Netwinder to indicate the _platform_ revision.
+Coming back to this...  If the original was stalling RCU grace periods
+for the duration of the test, then it would also be deferring any
+freeing until after the end of the test.  This is of course similar
+to the usual Java benchmarking trick of making sure that the garbage
+collector never runs.  It would also mean that if a change caused RCU
+grace periods to complete during the test, that change might appear to
+reduce throughput when in fact it was simply causing the throughput to
+be more accurately represented.
 
->From what I've seen, almost everyone else sets this to zero in their
-boot loaders - it is /very/ rarely used.  However, I think OMAP (ab)uses
-it by putting the SoC revision into it at kernel boot time.  That's
-not what it is supposed to be used for.
+The reason I bring this possibility up is that it would account for the
+increase in contention in slub -- by causing free operations to occur
+concurrently.
 
-Others have already solved the problem of exporting SoC specific
-information, such as SoC name, SoC revision, etc, if only people would
-use it - drivers/base/soc.c.  This gives machine, family, soc_id and
-SoC revision information in a standard place - it /might/ have been
-a good idea if the creation of that also contained documentation for
-what was expected in each of the fields, rather than leaving it
-open...
+							Thanx, Paul
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
