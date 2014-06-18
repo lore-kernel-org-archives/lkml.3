@@ -1,489 +1,388 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375AbaFRQFS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 12:05:18 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:43247 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277AbaFRQFO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 12:05:14 -0400
-From: Janne Kanniainen <janne.kanniainen@gmail.com>
-To: jkosina@suse.cz
-Cc: johan@kernel.org, cooloney@gmail.com, linux-kernel@vger.kernel.org,
-        linux-leds@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org,
-        Janne Kanniainen <janne.kanniainen@gmail.com>
-Subject: [PATCH v9] leds: USB: HID: Add support for MSI GT683R led panels
-Date: Wed, 18 Jun 2014 19:05:02 +0300
-Message-Id: <1403107502-14106-1-git-send-email-janne.kanniainen@gmail.com>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <20140618073950.GC31163@localhost>
-References: <20140618073950.GC31163@localhost>
+	id S1753448AbaFRQGQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 12:06:16 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35478 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752028AbaFRQGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 12:06:14 -0400
+Date: Wed, 18 Jun 2014 18:06:07 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, jkosina@suse.cz, dyoung@redhat.com,
+        chaowang@redhat.com, bhe@redhat.com, akpm@linux-foundation.org,
+        linux-efi <linux-efi@vger.kernel.org>
+Subject: Re: [PATCH 13/13] kexec: Support kexec/kdump on EFI systems
+Message-ID: <20140618160607.GI24024@pd.tnic>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <1401800822-27425-14-git-send-email-vgoyal@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1401800822-27425-14-git-send-email-vgoyal@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver adds support for USB controlled led panels that exists in
-MSI GT683R laptop
+Addomg linux-efi to CC for the efi bits. Please CC it on your next
+submission.
 
-Signed-off-by: Janne Kanniainen <janne.kanniainen@gmail.com>
----
-Changes in v2:
-	- sorted headers to alphabetic order
-	- using devm_kzalloc
-	- using BIT(n)
-	- using usb_control_msg instead of usb_submit_urb
-	- removing unneeded code
-Changes in v3:
-	- implemented as HID device
-	- some cleanups and bug fixes
+Thanks.
 
-Changes in v4:
-	- more cleanups
-	- support for selecting leds
-	- suppport for selecting status
+On Tue, Jun 03, 2014 at 09:07:02AM -0400, Vivek Goyal wrote:
+> This patch does two thigns. It passes EFI run time mappings to second
+> kernel in bootparams efi_info. Second kernel parse this info and create
+> new mappings in second kernel. That means mappings in first and second
+> kernel will be same. This paves the way to enable EFI in kexec kernel.
+> 
+> This patch also prepares and passes EFI setup data through bootparams.
+> This contains bunch of information about various tables and their
+> addresses.
+> 
+> These information gathering and passing has been written along the lines
+> of what current kexec-tools is doing to make kexec work with UEFI.
+> 
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> ---
+>  arch/x86/include/asm/kexec.h       |  4 +-
+>  arch/x86/kernel/kexec-bzimage.c    | 40 ++++++++++++----
+>  arch/x86/kernel/machine_kexec.c    | 93 ++++++++++++++++++++++++++++++++++++--
+>  drivers/firmware/efi/runtime-map.c | 21 +++++++++
+>  include/linux/efi.h                | 19 ++++++++
+>  5 files changed, 163 insertions(+), 14 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kexec.h b/arch/x86/include/asm/kexec.h
+> index 4cbe5f7..d8461cf 100644
+> --- a/arch/x86/include/asm/kexec.h
+> +++ b/arch/x86/include/asm/kexec.h
+> @@ -214,7 +214,9 @@ extern int kexec_setup_cmdline(struct kimage *image,
+>  		unsigned long cmdline_offset, char *cmdline,
+>  		unsigned long cmdline_len);
+>  extern int kexec_setup_boot_parameters(struct kimage *image,
+> -					struct boot_params *params);
+> +		struct boot_params *params, unsigned long params_load_addr,
+> +		unsigned int efi_map_offset, unsigned int efi_map_sz,
+> +		unsigned int efi_setup_data_offset);
+>  
+>  
+>  #endif /* __ASSEMBLY__ */
+> diff --git a/arch/x86/kernel/kexec-bzimage.c b/arch/x86/kernel/kexec-bzimage.c
+> index 8e762d3..55716e1 100644
+> --- a/arch/x86/kernel/kexec-bzimage.c
+> +++ b/arch/x86/kernel/kexec-bzimage.c
+> @@ -15,10 +15,12 @@
+>  #include <linux/kexec.h>
+>  #include <linux/kernel.h>
+>  #include <linux/mm.h>
+> +#include <linux/efi.h>
+>  
+>  #include <asm/bootparam.h>
+>  #include <asm/setup.h>
+>  #include <asm/crash.h>
+> +#include <asm/efi.h>
+>  
+>  #define MAX_ELFCOREHDR_STR_LEN	30	/* elfcorehdr=0x<64bit-value> */
+>  
+> @@ -106,7 +108,7 @@ void *bzImage64_load(struct kimage *image, char *kernel,
+>  
+>  	struct setup_header *header;
+>  	int setup_sects, kern16_size, ret = 0;
+> -	unsigned long setup_header_size, params_cmdline_sz;
+> +	unsigned long setup_header_size, params_cmdline_sz, params_misc_sz;
+>  	struct boot_params *params;
+>  	unsigned long bootparam_load_addr, kernel_load_addr, initrd_load_addr;
+>  	unsigned long purgatory_load_addr;
+> @@ -116,6 +118,7 @@ void *bzImage64_load(struct kimage *image, char *kernel,
+>  	struct kexec_entry64_regs regs64;
+>  	void *stack;
+>  	unsigned int setup_hdr_offset = offsetof(struct boot_params, hdr);
+> +	unsigned int efi_map_offset, efi_map_sz, efi_setup_data_offset;
+>  
+>  	header = (struct setup_header *)(kernel + setup_hdr_offset);
+>  	setup_sects = header->setup_sects;
+> @@ -168,28 +171,47 @@ void *bzImage64_load(struct kimage *image, char *kernel,
+>  
+>  	pr_debug("Loaded purgatory at 0x%lx\n", purgatory_load_addr);
+>  
+> -	/* Load Bootparams and cmdline */
+> +
+> +	/*
+> +	 * Load Bootparams and cmdline and space for efi stuff.
+> +	 *
+> +	 * Allocate memory together for multiple data structures so
+> +	 * that they all can go in single area/segment and we don't
+> +	 * have to create separate segment for each. Keeps things
+> +	 * little bit simple
+> +	 */
+> +	efi_map_sz = get_efi_runtime_map_size();
+> +	efi_map_sz = ALIGN(efi_map_sz, 16);
+> +
+>  	params_cmdline_sz = sizeof(struct boot_params) + cmdline_len +
+>  				MAX_ELFCOREHDR_STR_LEN;
+> -	params = kzalloc(params_cmdline_sz, GFP_KERNEL);
+> +	params_cmdline_sz = ALIGN(params_cmdline_sz, 16);
+> +	params_misc_sz = params_cmdline_sz + efi_map_sz +
+> +				sizeof(struct setup_data) +
+> +				sizeof(struct efi_setup_data);
+> +
+> +	params = kzalloc(params_misc_sz, GFP_KERNEL);
+>  	if (!params) {
+>  		ret = -ENOMEM;
+>  		goto out_free_loader_data;
+>  	}
+>  
+> +	efi_map_offset = params_cmdline_sz;
+> +	efi_setup_data_offset = efi_map_offset + efi_map_sz;
+> +
+>  	/* Copy setup header onto bootparams. Documentation/x86/boot.txt */
+>  	setup_header_size = 0x0202 + kernel[0x0201] - setup_hdr_offset;
+>  
+>  	/* Is there a limit on setup header size? */
+>  	memcpy(&params->hdr, (kernel + setup_hdr_offset), setup_header_size);
+>  
+> -	ret = kexec_add_buffer(image, (char *)params, params_cmdline_sz,
+> -			       params_cmdline_sz, 16, MIN_BOOTPARAM_ADDR,
+> +	ret = kexec_add_buffer(image, (char *)params, params_misc_sz,
+> +			       params_misc_sz, 16, MIN_BOOTPARAM_ADDR,
+>  			       ULONG_MAX, 1, &bootparam_load_addr);
+>  	if (ret)
+>  		goto out_free_params;
+> -	pr_debug("Loaded boot_param and command line at 0x%lx bufsz=0x%lx memsz=0x%lx\n",
+> -		 bootparam_load_addr, params_cmdline_sz, params_cmdline_sz);
+> +	pr_debug("Loaded boot_param, command line and misc at 0x%lx bufsz=0x%lx memsz=0x%lx\n",
+> +		 bootparam_load_addr, params_misc_sz, params_misc_sz);
+>  
+>  	/* Load kernel */
+>  	kernel_buf = kernel + kern16_size;
+> @@ -254,7 +276,9 @@ void *bzImage64_load(struct kimage *image, char *kernel,
+>  	if (ret)
+>  		goto out_free_params;
+>  
+> -	ret = kexec_setup_boot_parameters(image, params);
+> +	ret = kexec_setup_boot_parameters(image, params, bootparam_load_addr,
+> +					  efi_map_offset, efi_map_sz,
+> +					  efi_setup_data_offset);
+>  	if (ret)
+>  		goto out_free_params;
+>  
+> diff --git a/arch/x86/kernel/machine_kexec.c b/arch/x86/kernel/machine_kexec.c
+> index 6a3821b..f31a4b5 100644
+> --- a/arch/x86/kernel/machine_kexec.c
+> +++ b/arch/x86/kernel/machine_kexec.c
+> @@ -12,9 +12,11 @@
+>  #include <linux/kernel.h>
+>  #include <linux/kexec.h>
+>  #include <linux/string.h>
+> +#include <linux/efi.h>
+>  #include <asm/bootparam.h>
+>  #include <asm/setup.h>
+>  #include <asm/crash.h>
+> +#include <asm/efi.h>
+>  
+>  /*
+>   * Common code for x86 and x86_64 used for kexec.
+> @@ -67,11 +69,10 @@ int kexec_setup_cmdline(struct kimage *image, struct boot_params *params,
+>  	return 0;
+>  }
+>  
+> -static int setup_memory_map_entries(struct boot_params *params)
+> +static int setup_e820_entries(struct boot_params *params)
+>  {
+>  	unsigned int nr_e820_entries;
+>  
+> -	/* TODO: What about EFI */
+>  	nr_e820_entries = e820_saved.nr_map;
+>  	if (nr_e820_entries > E820MAX)
+>  		nr_e820_entries = E820MAX;
+> @@ -83,8 +84,85 @@ static int setup_memory_map_entries(struct boot_params *params)
+>  	return 0;
+>  }
+>  
+> -int kexec_setup_boot_parameters(struct kimage *image,
+> -				struct boot_params *params)
+> +#ifdef CONFIG_EFI
+> +static int setup_efi_info_memmap(struct boot_params *params,
+> +				  unsigned long params_load_addr,
+> +				  unsigned int efi_map_offset,
+> +				  unsigned int efi_map_sz)
+> +{
+> +	void *efi_map = (void *)params + efi_map_offset;
+> +	unsigned long efi_map_phys_addr = params_load_addr + efi_map_offset;
+> +	struct efi_info *ei = &params->efi_info;
+> +
+> +	if (!efi_map_sz)
+> +		return 0;
+> +
+> +	efi_runtime_map_copy(efi_map, efi_map_sz);
+> +
+> +	ei->efi_memmap = efi_map_phys_addr & 0xffffffff;
+> +	ei->efi_memmap_hi = efi_map_phys_addr >> 32;
+> +	ei->efi_memmap_size = efi_map_sz;
+> +
+> +	return 0;
+> +}
+> +
+> +static int
+> +prepare_add_efi_setup_data(struct boot_params *params,
+> +		       unsigned long params_load_addr,
+> +		       unsigned int efi_setup_data_offset)
+> +{
+> +	unsigned long setup_data_phys;
+> +	struct setup_data *sd = (void *)params + efi_setup_data_offset;
+> +	struct efi_setup_data *esd = (void *)sd + sizeof(struct setup_data);
+> +
+> +	esd->fw_vendor = efi.fw_vendor;
+> +	esd->runtime = efi.runtime;
+> +	esd->tables = efi.config_table;
+> +	esd->smbios = efi.smbios;
+> +
+> +	sd->type = SETUP_EFI;
+> +	sd->len = sizeof(struct efi_setup_data);
+> +
+> +	/* Add setup data */
+> +	setup_data_phys = params_load_addr + efi_setup_data_offset;
+> +	sd->next = params->hdr.setup_data;
+> +	params->hdr.setup_data = setup_data_phys;
+> +
+> +	return 0;
+> +}
+> +
+> +static int setup_efi_state(struct boot_params *params,
+> +			unsigned long params_load_addr,
+> +			unsigned int efi_map_offset, unsigned int efi_map_sz,
+> +			unsigned int efi_setup_data_offset)
+> +{
+> +	struct efi_info *current_ei = &boot_params.efi_info;
+> +	struct efi_info *ei = &params->efi_info;
+> +
+> +	if (!current_ei->efi_memmap_size)
+> +		return 0;
+> +
+> +	ei->efi_loader_signature = current_ei->efi_loader_signature;
+> +	ei->efi_systab = current_ei->efi_systab;
+> +	ei->efi_systab_hi = current_ei->efi_systab_hi;
+> +
+> +	ei->efi_memdesc_version = current_ei->efi_memdesc_version;
+> +	ei->efi_memdesc_size = get_efi_runtime_map_desc_size();
+> +
+> +	setup_efi_info_memmap(params, params_load_addr, efi_map_offset,
+> +			      efi_map_sz);
+> +	prepare_add_efi_setup_data(params, params_load_addr,
+> +				   efi_setup_data_offset);
+> +	return 0;
+> +}
+> +#endif /* CONFIG_EFI */
+> +
+> +int
+> +kexec_setup_boot_parameters(struct kimage *image, struct boot_params *params,
+> +			    unsigned long params_load_addr,
+> +			    unsigned int efi_map_offset,
+> +			    unsigned int efi_map_sz,
+> +			    unsigned int efi_setup_data_offset)
+>  {
+>  	unsigned int nr_e820_entries;
+>  	unsigned long long mem_k, start, end;
+> @@ -114,7 +192,7 @@ int kexec_setup_boot_parameters(struct kimage *image,
+>  	if (image->type == KEXEC_TYPE_CRASH)
+>  		crash_setup_memmap_entries(image, params);
+>  	else
+> -		setup_memory_map_entries(params);
+> +		setup_e820_entries(params);
+>  
+>  	nr_e820_entries = params->e820_entries;
+>  
+> @@ -135,6 +213,11 @@ int kexec_setup_boot_parameters(struct kimage *image,
+>  		}
+>  	}
+>  
+> +#ifdef CONFIG_EFI
+> +	/* Setup EFI state */
+> +	setup_efi_state(params, params_load_addr, efi_map_offset, efi_map_sz,
+> +			efi_setup_data_offset);
+> +#endif
+>  	/* Setup EDD info */
+>  	memcpy(params->eddbuf, boot_params.eddbuf,
+>  				EDDMAXNR * sizeof(struct edd_info));
+> diff --git a/drivers/firmware/efi/runtime-map.c b/drivers/firmware/efi/runtime-map.c
+> index 97cdd16..40f2213 100644
+> --- a/drivers/firmware/efi/runtime-map.c
+> +++ b/drivers/firmware/efi/runtime-map.c
+> @@ -138,6 +138,27 @@ add_sysfs_runtime_map_entry(struct kobject *kobj, int nr)
+>  	return entry;
+>  }
+>  
+> +int get_efi_runtime_map_size(void)
+> +{
+> +	return nr_efi_runtime_map * efi_memdesc_size;
+> +}
+> +
+> +int get_efi_runtime_map_desc_size(void)
+> +{
+> +	return efi_memdesc_size;
+> +}
+> +
+> +int efi_runtime_map_copy(void *buf, size_t bufsz)
+> +{
+> +	size_t sz = get_efi_runtime_map_size();
+> +
+> +	if (sz > bufsz)
+> +		sz = bufsz;
+> +
+> +	memcpy(buf, efi_runtime_map, sz);
+> +	return 0;
+> +}
+> +
+>  void efi_runtime_map_setup(void *map, int nr_entries, u32 desc_size)
+>  {
+>  	efi_runtime_map = map;
+> diff --git a/include/linux/efi.h b/include/linux/efi.h
+> index 6c100ff..c2e5c4a 100644
+> --- a/include/linux/efi.h
+> +++ b/include/linux/efi.h
+> @@ -1131,6 +1131,9 @@ int efivars_sysfs_init(void);
+>  #ifdef CONFIG_EFI_RUNTIME_MAP
+>  int efi_runtime_map_init(struct kobject *);
+>  void efi_runtime_map_setup(void *, int, u32);
+> +int get_efi_runtime_map_size(void);
+> +int get_efi_runtime_map_desc_size(void);
+> +int efi_runtime_map_copy(void *buf, size_t bufsz);
+>  #else
+>  static inline int efi_runtime_map_init(struct kobject *kobj)
+>  {
+> @@ -1139,6 +1142,22 @@ static inline int efi_runtime_map_init(struct kobject *kobj)
+>  
+>  static inline void
+>  efi_runtime_map_setup(void *map, int nr_entries, u32 desc_size) {}
+> +
+> +static inline int get_efi_runtime_map_size(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline int get_efi_runtime_map_desc_size(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline int efi_runtime_map_copy(void *buf, size_t bufsz)
+> +{
+> +	return 0;
+> +}
+> +
+>  #endif
+>  
+>  #endif /* _LINUX_EFI_H */
+> -- 
+> 1.9.0
+> 
+> 
 
-Changes in v5:
-	- mode attribute documented under Documentation/ABI
-	- made array for led_classdev
-	- led devices uses now recommended naming scheme
-
-Changes in v6:
-	- flush_work added
-	- using hid device name instead of hard coded gt683r
-	- allocating name buffers with devm_kzalloc
-
-Changes in v7:
-	- buf with for fixed
-
-Changes in v8:
-	- some cleanups and bugs fixed
-
-Changes in v9:
-	- few style issues fixed
-
- .../ABI/testing/sysfs-class-hid-driver-gt683r      |  14 +
- drivers/hid/Kconfig                                |  14 +
- drivers/hid/Makefile                               |   1 +
- drivers/hid/hid-core.c                             |   1 +
- drivers/hid/hid-gt683r.c                           | 309 +++++++++++++++++++++
- drivers/hid/hid-ids.h                              |   2 +-
- drivers/hid/usbhid/hid-quirks.c                    |   2 +-
- 7 files changed, 341 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
- create mode 100644 drivers/hid/hid-gt683r.c
-
-diff --git a/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r b/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
-new file mode 100644
-index 0000000..317e9d5
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
-@@ -0,0 +1,14 @@
-+What:		/sys/class/hidraw/<hidraw>/device/leds_mode
-+Date:		Jun 2014
-+KernelVersion:	3.17
-+Contact:	Janne Kanniainen <janne.kanniainen@gmail.com>
-+Description:
-+		Set the mode of LEDs
-+
-+		0 - normal
-+		1 - audio
-+		2 - breathing
-+
-+		Normal: LEDs are fully on when enabled
-+		Audio:  LEDs brightness depends on sound level
-+		Breathing: LEDs brightness varies at human breathing rate
-\ No newline at end of file
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 7af9d0b..e2f4590 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -261,6 +261,20 @@ config HOLTEK_FF
- 	  Say Y here if you have a Holtek On Line Grip based game controller
- 	  and want to have force feedback support for it.
- 
-+config HID_GT683R
-+	tristate "MSI GT68xR LED support"
-+	depends on LEDS_CLASS && USB_HID
-+	---help---
-+	Say Y here if you want to enable support for the three MSI GT68xR LEDs
-+
-+	This driver support following modes:
-+	  - Normal: LEDs are fully on when enabled
-+	  - Audio:  LEDs brightness depends on sound level
-+	  - Breathing: LEDs brightness varies at human breathing rate
-+
-+	Currently the following devices are know to be supported:
-+	  - MSI GT683R
-+
- config HID_HUION
- 	tristate "Huion tablets"
- 	depends on USB_HID
-diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-index fc712dd..7129311 100644
---- a/drivers/hid/Makefile
-+++ b/drivers/hid/Makefile
-@@ -48,6 +48,7 @@ obj-$(CONFIG_HID_EMS_FF)	+= hid-emsff.o
- obj-$(CONFIG_HID_ELECOM)	+= hid-elecom.o
- obj-$(CONFIG_HID_ELO)		+= hid-elo.o
- obj-$(CONFIG_HID_EZKEY)		+= hid-ezkey.o
-+obj-$(CONFIG_HID_GT683R)	+= hid-gt683r.o
- obj-$(CONFIG_HID_GYRATION)	+= hid-gyration.o
- obj-$(CONFIG_HID_HOLTEK)	+= hid-holtek-kbd.o
- obj-$(CONFIG_HID_HOLTEK)	+= hid-holtek-mouse.o
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index da52279..ec88fdb 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1827,6 +1827,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_WIRELESS_OPTICAL_DESKTOP_3_0) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_OFFICE_KB) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MONTEREY, USB_DEVICE_ID_GENIUS_KB29E) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GT683R_LED_PANEL) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_1) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_2) },
-diff --git a/drivers/hid/hid-gt683r.c b/drivers/hid/hid-gt683r.c
-new file mode 100644
-index 0000000..077f7a1
---- /dev/null
-+++ b/drivers/hid/hid-gt683r.c
-@@ -0,0 +1,309 @@
-+/*
-+ * MSI GT683R led driver
-+ *
-+ * Copyright (c) 2014 Janne Kanniainen <janne.kanniainen@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of
-+ * the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/hid.h>
-+#include <linux/kernel.h>
-+#include <linux/leds.h>
-+#include <linux/module.h>
-+
-+#include "hid-ids.h"
-+
-+#define GT683R_BUFFER_SIZE			8
-+
-+/*
-+ * GT683R_LED_OFF: all LEDs are off
-+ * GT683R_LED_AUDIO: LEDs brightness depends on sound level
-+ * GT683R_LED_BREATHING: LEDs brightness varies at human breathing rate
-+ * GT683R_LED_NORMAL: LEDs are fully on when enabled
-+ */
-+enum gt683r_led_mode {
-+	GT683R_LED_OFF = 0,
-+	GT683R_LED_AUDIO = 2,
-+	GT683R_LED_BREATHING = 3,
-+	GT683R_LED_NORMAL = 5
-+};
-+
-+enum gt683r_panels {
-+	GT683R_LED_BACK = 0,
-+	GT683R_LED_SIDE = 1,
-+	GT683R_LED_FRONT = 2,
-+	GT683R_LED_COUNT,
-+};
-+
-+static const char * const gt683r_panel_names[] = {
-+	"back",
-+	"side",
-+	"front",
-+};
-+
-+struct gt683r_led {
-+	struct hid_device *hdev;
-+	struct led_classdev led_devs[GT683R_LED_COUNT];
-+	struct mutex lock;
-+	struct work_struct work;
-+	enum led_brightness brightnesses[GT683R_LED_COUNT];
-+	enum gt683r_led_mode mode;
-+};
-+
-+static const struct hid_device_id gt683r_led_id[] = {
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GT683R_LED_PANEL) },
-+	{ }
-+};
-+
-+static void gt683r_brightness_set(struct led_classdev *led_cdev,
-+				enum led_brightness brightness)
-+{
-+	int i;
-+	struct device *dev = led_cdev->dev->parent;
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct gt683r_led *led = hid_get_drvdata(hdev);
-+
-+	for (i = 0; i < GT683R_LED_COUNT; i++) {
-+		if (led_cdev == &led->led_devs[i])
-+			break;
-+	}
-+
-+	if (i < GT683R_LED_COUNT) {
-+		led->brightnesses[i] = brightness;
-+		schedule_work(&led->work);
-+	}
-+}
-+
-+static ssize_t leds_mode_show(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	u8 sysfs_mode;
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct gt683r_led *led = hid_get_drvdata(hdev);
-+
-+	if (led->mode == GT683R_LED_NORMAL)
-+		sysfs_mode = 0;
-+	else if (led->mode == GT683R_LED_AUDIO)
-+		sysfs_mode = 1;
-+	else
-+		sysfs_mode = 2;
-+
-+	return scnprintf(buf, PAGE_SIZE, "%u\n", sysfs_mode);
-+}
-+
-+static ssize_t leds_mode_store(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t count)
-+{
-+	u8 sysfs_mode;
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+	struct gt683r_led *led = hid_get_drvdata(hdev);
-+
-+
-+	if (kstrtou8(buf, 10, &sysfs_mode) || sysfs_mode > 2)
-+		return -EINVAL;
-+
-+	mutex_lock(&led->lock);
-+
-+	if (sysfs_mode == 0)
-+		led->mode = GT683R_LED_NORMAL;
-+	else if (sysfs_mode == 1)
-+		led->mode = GT683R_LED_AUDIO;
-+	else
-+		led->mode = GT683R_LED_BREATHING;
-+
-+	mutex_unlock(&led->lock);
-+	schedule_work(&led->work);
-+
-+	return count;
-+}
-+
-+static int gt683r_led_snd_msg(struct gt683r_led *led, u8 *msg)
-+{
-+	int ret;
-+
-+	ret = hid_hw_raw_request(led->hdev, msg[0], msg, GT683R_BUFFER_SIZE,
-+				HID_FEATURE_REPORT, HID_REQ_SET_REPORT);
-+	if (ret != GT683R_BUFFER_SIZE) {
-+		hid_err(led->hdev,
-+			"failed to send set report request: %i\n", ret);
-+		if (ret < 0)
-+			return ret;
-+		return -EIO;
-+	}
-+
-+	return 0;
-+}
-+
-+static int gt683r_leds_set(struct gt683r_led *led, u8 leds)
-+{
-+	int ret;
-+	u8 *buffer;
-+
-+	buffer = kzalloc(GT683R_BUFFER_SIZE, GFP_KERNEL);
-+	if (!buffer)
-+		return -ENOMEM;
-+
-+	buffer[0] = 0x01;
-+	buffer[1] = 0x02;
-+	buffer[2] = 0x30;
-+	buffer[3] = leds;
-+	ret = gt683r_led_snd_msg(led, buffer);
-+
-+	kfree(buffer);
-+	return ret;
-+}
-+
-+static int gt683r_mode_set(struct gt683r_led *led, u8 mode)
-+{
-+	int ret;
-+	u8 *buffer;
-+
-+	buffer = kzalloc(GT683R_BUFFER_SIZE, GFP_KERNEL);
-+	if (!buffer)
-+		return -ENOMEM;
-+
-+	buffer[0] = 0x01;
-+	buffer[1] = 0x02;
-+	buffer[2] = 0x20;
-+	buffer[3] = mode;
-+	buffer[4] = 0x01;
-+	ret = gt683r_led_snd_msg(led, buffer);
-+
-+	kfree(buffer);
-+	return ret;
-+}
-+
-+static void gt683r_led_work(struct work_struct *work)
-+{
-+	int i;
-+	u8 leds = 0;
-+	u8 mode;
-+	struct gt683r_led *led = container_of(work, struct gt683r_led, work);
-+
-+	mutex_lock(&led->lock);
-+
-+	for (i = 0; i < GT683R_LED_COUNT; i++) {
-+		if (led->brightnesses[i])
-+			leds |= BIT(i);
-+	}
-+
-+	if (gt683r_leds_set(led, leds))
-+		goto fail;
-+
-+	if (leds)
-+		mode = led->mode;
-+	else
-+		mode = GT683R_LED_OFF;
-+
-+	gt683r_mode_set(led, mode);
-+fail:
-+	mutex_unlock(&led->lock);
-+}
-+
-+static DEVICE_ATTR_RW(leds_mode);
-+
-+static int gt683r_led_probe(struct hid_device *hdev,
-+			const struct hid_device_id *id)
-+{
-+	int i;
-+	int ret;
-+	int name_sz;
-+	char *name;
-+	struct gt683r_led *led;
-+
-+	led = devm_kzalloc(&hdev->dev, sizeof(*led), GFP_KERNEL);
-+	if (!led)
-+		return -ENOMEM;
-+
-+	led->mode = GT683R_LED_NORMAL;
-+	led->hdev = hdev;
-+	hid_set_drvdata(hdev, led);
-+
-+	ret = hid_parse(hdev);
-+	if (ret) {
-+		hid_err(hdev, "hid parsing failed\n");
-+		return ret;
-+	}
-+
-+	ret = hid_hw_start(hdev, HID_CONNECT_HIDRAW);
-+	if (ret) {
-+		hid_err(hdev, "hw start failed\n");
-+		return ret;
-+	}
-+
-+	for (i = 0; i < GT683R_LED_COUNT; i++) {
-+		name_sz = strlen(dev_name(&hdev->dev)) +
-+				strlen(gt683r_panel_names[i]) + 3;
-+
-+		name = devm_kzalloc(&hdev->dev, name_sz, GFP_KERNEL);
-+		if (!name) {
-+			ret = -ENOMEM;
-+			goto fail;
-+		}
-+
-+		snprintf(name, name_sz, "%s::%s",
-+				dev_name(&hdev->dev), gt683r_panel_names[i]);
-+		led->led_devs[i].name = name;
-+		led->led_devs[i].max_brightness = 1;
-+		led->led_devs[i].brightness_set = gt683r_brightness_set;
-+		ret = led_classdev_register(&hdev->dev, &led->led_devs[i]);
-+		if (ret) {
-+			hid_err(hdev, "could not register led device\n");
-+			goto fail;
-+		}
-+	}
-+
-+	ret = device_create_file(&led->hdev->dev, &dev_attr_leds_mode);
-+	if (ret) {
-+		hid_err(hdev, "could not make mode attribute file\n");
-+		goto fail;
-+	}
-+
-+	mutex_init(&led->lock);
-+	INIT_WORK(&led->work, gt683r_led_work);
-+
-+	return 0;
-+
-+fail:
-+	for (i = i - 1; i >= 0; i--)
-+		led_classdev_unregister(&led->led_devs[i]);
-+	hid_hw_stop(hdev);
-+	return ret;
-+}
-+
-+static void gt683r_led_remove(struct hid_device *hdev)
-+{
-+	int i;
-+	struct gt683r_led *led = hid_get_drvdata(hdev);
-+
-+	device_remove_file(&hdev->dev, &dev_attr_leds_mode);
-+	for (i = 0; i < GT683R_LED_COUNT; i++)
-+		led_classdev_unregister(&led->led_devs[i]);
-+	flush_work(&led->work);
-+	hid_hw_stop(hdev);
-+}
-+
-+static struct hid_driver gt683r_led_driver = {
-+	.probe = gt683r_led_probe,
-+	.remove = gt683r_led_remove,
-+	.name = "gt683r_led",
-+	.id_table = gt683r_led_id,
-+};
-+
-+module_hid_driver(gt683r_led_driver);
-+
-+MODULE_AUTHOR("Janne Kanniainen");
-+MODULE_DESCRIPTION("MSI GT683R led driver");
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 34bb220..3692d37 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -641,7 +641,7 @@
- #define USB_DEVICE_ID_GENIUS_KB29E	0x3004
- 
- #define USB_VENDOR_ID_MSI		0x1770
--#define USB_DEVICE_ID_MSI_GX680R_LED_PANEL	0xff00
-+#define USB_DEVICE_ID_MSI_GT683R_LED_PANEL 0xff00
- 
- #define USB_VENDOR_ID_NATIONAL_SEMICONDUCTOR 0x0400
- #define USB_DEVICE_ID_N_S_HARMONY	0xc359
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index 8e4ddb3..c640e1d 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -73,7 +73,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
--	{ USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GX680R_LED_PANEL, HID_QUIRK_NO_INIT_REPORTS },
-+	{ USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GT683R_LED_PANEL, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_NEXIO, USB_DEVICE_ID_NEXIO_MULTITOUCH_PTI0750, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_MOUSE, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
 -- 
-1.9.2
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
