@@ -1,47 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966472AbaFRMU2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 08:20:28 -0400
-Received: from mta-out1.inet.fi ([62.71.2.198]:55995 "EHLO jenni1.inet.fi"
+	id S966511AbaFRMUf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 08:20:35 -0400
+Received: from fieldses.org ([174.143.236.118]:44121 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966122AbaFRMU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 08:20:26 -0400
-Date: Wed, 18 Jun 2014 15:17:31 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v2 2/2] mm, thp: replace smp_mb after atomic_add by
- smp_mb__after_atomic
-Message-ID: <20140618121731.GA5957@node.dhcp.inet.fi>
-References: <1403044679-9993-1-git-send-email-Waiman.Long@hp.com>
- <1403044679-9993-3-git-send-email-Waiman.Long@hp.com>
+	id S966474AbaFRMUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 08:20:31 -0400
+Date: Wed, 18 Jun 2014 08:20:30 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: relative objtree change broke tar builds?
+Message-ID: <20140618122029.GA17790@fieldses.org>
+References: <20140617223854.GC6168@fieldses.org>
+ <53A15684.9000002@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403044679-9993-3-git-send-email-Waiman.Long@hp.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <53A15684.9000002@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 06:37:59PM -0400, Waiman Long wrote:
-> In some architectures like x86, atomic_add() is a full memory
-> barrier. In that case, an additional smp_mb() is just a waste of time.
-> This patch replaces that smp_mb() by smp_mb__after_atomic() which
-> will avoid the redundant memory barrier in some architectures.
+On Wed, Jun 18, 2014 at 11:06:12AM +0200, Michal Marek wrote:
+> Dne 18.6.2014 00:38, J. Bruce Fields napsal(a):
+> > The scripts I use for my kernel testing rely on the targz-pkg make
+> > target.  After updating to 3.16-rc1 my scripts started failing.  In
+> > scripts/package/buildtar:
+> > 
+> >   tmpdir="${objtree}/tar-install"
+> >   tarball="${objtree}/linux-${KERNELRELEASE}-${ARCH}.tar"
+> > ..
+> >   #
+> >   # Create the tarball
+> >   #
+> >   (
+> >         cd "${tmpdir}"
+> >         opts=
+> >         if tar --owner=root --group=root --help >/dev/null 2>&1; then
+> >                 opts="--owner=root --group=root"
+> >         fi
+> >         tar cf - boot/* lib/* $opts | ${compress} > "${tarball}${file_ext}"
+> >   )
 > 
-> With a 3.16-rc1 based kernel, this patch reduced the execution time
-> of breaking 1000 transparent huge pages from 38,245us to 30,964us. A
-> reduction of 19% which is quite sizeable. It also reduces the %cpu
-> time of the __split_huge_page_refcount function in the perf profile
-> from 2.18% to 1.15%.
+> Thanks for the report, I'll fix it.
+
+Thanks!
+
+> > The changelog there says
+> > 
+> > 	The main Makefile sets its working directory to the object tree
+> > 	and never changes it again. Therefore, we can use '.' instead of
+> > 	the absolute path.
+> > 
+> > But the main Makefile also exports objtree, and a quick grep suggests
+> > lots of other uses outside the main Makefile.
 > 
-> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> Do you have examples? Besides your report, I'm only aware of make
+> deb-pkg and make *docs. What else?
 
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+I haven't looked.
 
--- 
- Kirill A. Shutemov
+I only note that grep finds 47 files referencing that variable, and
+absent some argument that the remaining ones are correct, I'd be
+inclined to revert.  But I don't know if there's other work that now
+depends on the change.
+
+In any case, your call.
+
+--b.
