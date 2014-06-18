@@ -1,398 +1,579 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717AbaFRXvh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 19:51:37 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:46374 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756496AbaFRXvf (ORCPT
+	id S1756765AbaFRXwd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 19:52:33 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:18757 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755209AbaFRXwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 19:51:35 -0400
-Date: Wed, 18 Jun 2014 16:51:31 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [bisected] pre-3.16 regression on open() scalability
-Message-ID: <20140618235131.GA25946@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <539B594C.8070004@intel.com>
- <20140613224519.GV4581@linux.vnet.ibm.com>
- <53A0CAE5.9000702@intel.com>
- <20140618001836.GV4669@linux.vnet.ibm.com>
- <53A132D4.60408@intel.com>
- <20140618125831.GB4669@linux.vnet.ibm.com>
- <53A1CE19.7040103@intel.com>
- <20140618203052.GT4669@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140618203052.GT4669@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061823-0928-0000-0000-000002BF8079
+	Wed, 18 Jun 2014 19:52:31 -0400
+X-AuditID: cbfee691-b7f2f6d0000040c4-23-53a2263c7213
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: lee.jones@linaro.org, sbkim73@samsung.com, sameo@linux.intel.com,
+        broonie@kernel.org
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCHv7 1/4] mfd: sec-core: Add support for S2MPU02 device
+Date: Thu, 19 Jun 2014 08:52:22 +0900
+Message-id: <1403135545-7451-2-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+In-reply-to: <1403135545-7451-1-git-send-email-cw00.choi@samsung.com>
+References: <1403135545-7451-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJLMWRmVeSWpSXmKPExsWyRsSkQNdGbVGwQetJXYupD5+wWVz/8pzV
+	4mzTG3aL+1+PMlpc3jWHzeJ24wo2i9PdrBYXV3xhcuDw2LSqk83jzrU9bB7zTgZ69G1Zxejx
+	eZNcAGsUl01Kak5mWWqRvl0CV8b9HWuZCtYXVyxatIyxgfFTXBcjJ4eEgInEmUUv2CFsMYkL
+	99azdTFycQgJLGWUWDnjDwtM0efLu5lAbCGBRYwSj98qQxQ1MUkcn3iHFSTBJqAlsf/FDTYQ
+	W0QgSmLuwu9gNrNArcS+a01gNcICLhKXfv0Ei7MIqEqsOTiBGcTmBYq/ftvGCLFMTuLDnkdg
+	F3EKuEq8+vOYBWKxi8SvRw2sIIslBOaxS/S/XMUEMUhA4tvkQ0BFHEAJWYlNB5gh5khKHFxx
+	g2UCo/ACRoZVjKKpBckFxUnpRaZ6xYm5xaV56XrJ+bmbGIHBfvrfs4k7GO8fsD7EmAw0biKz
+	lGhyPjBa8kriDY3NjCxMTUyNjcwtzUgTVhLnTX+UFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmD
+	U6qB0b6Kf9LyPVY1k6oVQ5+06jP+vPi0ZM8Xk6LJBW8tJy3reCD46Vu5Y3m4gSH7OUaT3NSz
+	x5jevS5iyQs/NaHsl6K4q4mjjqORgqxi7YOQAPVOiyDlhPbzjBV2AqEFNZovYx3kntlyMxYx
+	Tqree6PpVb3tWyPjN+s6Fbcn3vkYz/rET7fjv7gSS3FGoqEWc1FxIgAr3to/jAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t9jAV0btUXBBhMOqlpMffiEzeL6l+es
+	Fmeb3rBb3P96lNHi8q45bBa3G1ewWZzuZrW4uOILkwOHx6ZVnWwed67tYfOYdzLQo2/LKkaP
+	z5vkAlijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0y
+	c4BOUVIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBm3N+xlqlgfXHFokXL
+	GBsYP8V1MXJySAiYSHy+vJsJwhaTuHBvPRuILSSwiFHi8VvlLkYuILuJSeL4xDusIAk2AS2J
+	/S9ugBWJCERJzF34HcxmFqiV2HetCaxGWMBF4tKvn2BxFgFViTUHJzCD2LxA8ddv2xghlslJ
+	fNjziB3E5hRwlXj15zELxGIXiV+PGlgnMPIuYGRYxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7
+	iREcS8+kdjCubLA4xCjAwajEw+txcWGwEGtiWXFl7iFGCQ5mJRFe+V9AId6UxMqq1KL8+KLS
+	nNTiQ4zJQFdNZJYSTc4HxnleSbyhsYmZkaWRuaGFkbE5acJK4rwHWq0DhQTSE0tSs1NTC1KL
+	YLYwcXBKNTA2ZQaX7OUJDF1f9er3oz8LdxTV3/yyV6X+1s95qpwP24XUjrB2TvjKu9NDJ+pW
+	2KFfps3BtkpedWH+L0rq7y/tb66YlTKl4ea+o5Ifyo89TtE6sd/2ymO5Rz9VWRhWGq1qDSyr
+	vuZX4DX7dMrvReE/Xic0HGCKCLIsM10644j9678rzFb+/dOlxFKckWioxVxUnAgAEnCd1OkC	AAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 01:30:52PM -0700, Paul E. McKenney wrote:
-> On Wed, Jun 18, 2014 at 10:36:25AM -0700, Dave Hansen wrote:
-> > On 06/18/2014 05:58 AM, Paul E. McKenney wrote:
-> > >> > This is the previous kernel, plus RCU tracing, so it's not 100%
-> > >> > apples-to-apples (and it peaks a bit lower than the other kernel).  But
-> > >> > here's the will-it-scale open1 throughput on the y axis vs
-> > >> > RCU_COND_RESCHED_EVERY_THIS_JIFFIES on x:
-> > >> > 
-> > >> > 	http://sr71.net/~dave/intel/jiffies-vs-openops.png
-> > >> > 
-> > >> > This was a quick and dirty single run with very little averaging, so I
-> > >> > expect there to be a good amount of noise.  I ran it from 1->100, but it
-> > >> > seemed to peak at about 30.
-> > > OK, so a default setting on the order of 20-30 jiffies looks promising.
-> > 
-> > For the biggest machine I have today, yeah.  But, we need to be a bit
-> > careful here.  The CPUs I'm running it on were released 3 years ago and
-> > I think we need to be planning at _least_ for today's large systems.  I
-> > would guess that by raising ...EVERY_THIS_JIFFIES, we're shifting this
-> > curve out to the right:
-> > 
-> > 	http://sr71.net/~dave/intel/3.16-open1regression-0.png
-> > 
-> > so that we're _just_ before the regression hits us.  But that just
-> > guarantees I'll hit this again when I get new CPUs. :)
-> 
-> Understood.  One approach would be to scale this in a manner similar
-> to the scaling of the delay from the beginning of the grace period
-> to the start of quiescent-state forcing, which is about three jiffies
-> on small systems scaling up to about 20 jiffies on large systems.
-> 
-> > If we go this route, I think we should probably take it up in to the
-> > 100-200 range, or even scale it to something on the order of what the
-> > rcu stall timeout is.  Other than the stall detector, is there some
-> > other reason to be forcing frequent quiescent states?
-> 
-> Yep.  CONFIG_NO_HZ_FULL+nohz_full kernels running in kernel mode don't
-> progress RCU grace periods.  But they should not need to be all that
-> frequent.
+Add support for Samsung S2MPU02 PMIC device to the MFD sec-core driver.
+The S2MPU02 device includes PMIC/RTC/Clock devices.
 
-Here is an early version of a patch, which looks promising on short
-rcutorture tests.  It does not yet have control of the holdoff time
-(I intend to add a module parameter for this), but it also avoids ever
-having cond_resched() do a quiescent state if there is no grace period in
-progress or if the current grace period is less than seven jiffies old.
-(The constant "7" is the thing that will be made into a module parameter.)
-These restrictions lead me to believe that "7" will perform well in your
-tests, because normal workloads would almost never have cond_resched()
-do anything other than a test of a per-CPU variable.  But of course your
-tests are the final judges of that.
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/mfd/sec-core.c              |  46 ++++++---
+ drivers/mfd/sec-irq.c               | 110 +++++++++++++++++---
+ include/linux/mfd/samsung/core.h    |   1 +
+ include/linux/mfd/samsung/irq.h     |  24 +++++
+ include/linux/mfd/samsung/s2mpu02.h | 201 ++++++++++++++++++++++++++++++++++++
+ 5 files changed, 352 insertions(+), 30 deletions(-)
+ create mode 100644 include/linux/mfd/samsung/s2mpu02.h
 
-Thoughts?
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-rcu: Reduce overhead of cond_resched() checks for RCU
-
-Commit ac1bea85781e (Make cond_resched() report RCU quiescent states)
-fixed a problem where a CPU looping in the kernel with but one runnable
-task would give RCU CPU stall warnings, even if the in-kernel loop
-contained cond_resched() calls.  Unfortunately, in so doing, it introduced
-performance regressions in Anton Blanchard's will-it-scale "open1" test.
-The problem appears to be not so much the increased cond_resched() path
-length as an increase in the rate at which grace periods complete, which
-increased per-update grace-period overhead.
-
-This commit takes a different approach to fixing this bug, mainly by
-avoiding having cond_resched() do an RCU-visible quiescent state unless
-there is a grace period that has been in flight for a significant period
-of time.  This commit also reduces the common-case cond_resched() overhead
-to a check of a single per-CPU variable.
-
-Reported-by: Dave Hansen <dave.hansen@intel.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 063a6bf1a2b6..d5e40a42cc43 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -300,41 +300,6 @@ bool __rcu_is_watching(void);
- #endif /* #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP) */
- 
- /*
-- * Hooks for cond_resched() and friends to avoid RCU CPU stall warnings.
-- */
--
--#define RCU_COND_RESCHED_LIM 256	/* ms vs. 100s of ms. */
--DECLARE_PER_CPU(int, rcu_cond_resched_count);
--void rcu_resched(void);
--
--/*
-- * Is it time to report RCU quiescent states?
-- *
-- * Note unsynchronized access to rcu_cond_resched_count.  Yes, we might
-- * increment some random CPU's count, and possibly also load the result from
-- * yet another CPU's count.  We might even clobber some other CPU's attempt
-- * to zero its counter.  This is all OK because the goal is not precision,
-- * but rather reasonable amortization of rcu_note_context_switch() overhead
-- * and extremely high probability of avoiding RCU CPU stall warnings.
-- * Note that this function has to be preempted in just the wrong place,
-- * many thousands of times in a row, for anything bad to happen.
-- */
--static inline bool rcu_should_resched(void)
--{
--	return raw_cpu_inc_return(rcu_cond_resched_count) >=
--	       RCU_COND_RESCHED_LIM;
--}
--
--/*
-- * Report quiscent states to RCU if it is time to do so.
-- */
--static inline void rcu_cond_resched(void)
--{
--	if (unlikely(rcu_should_resched()))
--		rcu_resched();
--}
--
--/*
-  * Infrastructure to implement the synchronize_() primitives in
-  * TREE_RCU and rcu_barrier_() primitives in TINY_RCU.
-  */
-diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
-index d40a6a451330..ff2ede319890 100644
---- a/include/linux/rcutiny.h
-+++ b/include/linux/rcutiny.h
-@@ -83,6 +83,19 @@ static inline void rcu_note_context_switch(int cpu)
- 	rcu_sched_qs(cpu);
- }
- 
-+static inline bool rcu_should_resched(void)
-+{
-+	return false;
-+}
-+
-+static inline void rcu_cond_resched(void)
-+{
-+}
-+
-+static inline void rcu_resched(void)
-+{
-+}
-+
- /*
-  * Take advantage of the fact that there is only one CPU, which
-  * allows us to ignore virtualization-based context switches.
-diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
-index 3e2f5d432743..16780fed7155 100644
---- a/include/linux/rcutree.h
-+++ b/include/linux/rcutree.h
-@@ -46,6 +46,22 @@ static inline void rcu_virt_note_context_switch(int cpu)
- 	rcu_note_context_switch(cpu);
- }
- 
-+DECLARE_PER_CPU(int, rcu_cond_resched_mask);
-+void rcu_resched(void);
-+
-+/* Is it time to report RCU quiescent states? */
-+static inline bool rcu_should_resched(void)
-+{
-+	return raw_cpu_read(rcu_cond_resched_mask);
-+}
-+
-+/* Report quiescent states to RCU if it is time to do so. */
-+static inline void rcu_cond_resched(void)
-+{
-+	if (unlikely(rcu_should_resched()))
-+		rcu_resched();
-+}
-+
- void synchronize_rcu_bh(void);
- void synchronize_sched_expedited(void);
- void synchronize_rcu_expedited(void);
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index 777624e1329b..8c47d04ecdea 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -229,6 +229,58 @@ static DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
- #endif /* #ifdef CONFIG_NO_HZ_FULL_SYSIDLE */
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index be06d0a..15ba847 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -89,6 +89,15 @@ static const struct mfd_cell s2mpa01_devs[] = {
+ 	},
  };
  
-+/*
-+ * Hooks for cond_resched() and friends to avoid RCU CPU stall warnings.
-+ */
-+
-+DEFINE_PER_CPU(int, rcu_cond_resched_mask);
-+
-+/*
-+ * Let the RCU core know that this CPU has gone through a cond_resched(),
-+ * which is a quiescent state.
-+ */
-+void rcu_resched(void)
-+{
-+	unsigned long flags;
-+	struct rcu_data *rdp;
-+	struct rcu_dynticks *rdtp;
-+	int resched_mask;
-+	struct rcu_state *rsp;
-+
-+	local_irq_save(flags);
-+
-+	/*
-+	 * Yes, we can lose flag-setting operations.  This is OK, because
-+	 * the flag will be set again after some delay.
-+	 */
-+	resched_mask = raw_cpu_read(rcu_cond_resched_mask);
-+	raw_cpu_write(rcu_cond_resched_mask, 0);
-+
-+	/* Find the flavor that needs a quiescent state. */
-+	for_each_rcu_flavor(rsp) {
-+		rdp = raw_cpu_ptr(rsp->rda);
-+		if (!(resched_mask & rsp->flavor_mask))
-+			continue;
-+		smp_mb(); /* ->flavor_mask before ->cond_resched_completed. */
-+		if (ACCESS_ONCE(rdp->mynode->completed) !=
-+		    ACCESS_ONCE(rdp->cond_resched_completed))
-+			continue;
-+
-+		/*
-+		 * Pretend to be momentarily idle for the quiescent state.
-+		 * This allows the grace-period kthread to record the
-+		 * quiescent state, with no need for this CPU to do anything
-+		 * further.
-+		 */
-+		rdtp = this_cpu_ptr(&rcu_dynticks);
-+		smp_mb__before_atomic(); /* Earlier stuff before QS. */
-+		atomic_add(2, &rdtp->dynticks);  /* QS. */
-+		smp_mb__after_atomic(); /* Later stuff after QS. */
-+		break;
++static const struct mfd_cell s2mpu02_devs[] = {
++	{ .name = "s2mpu02-pmic", },
++	{ .name = "s2mpu02-rtc", },
++	{
++		.name = "s2mpu02-clk",
++		.of_compatible = "samsung,s2mpu02-clk",
 +	}
-+	local_irq_restore(flags);
-+}
++};
 +
- static long blimit = 10;	/* Maximum callbacks per rcu_do_batch. */
- static long qhimark = 10000;	/* If this many pending, ignore blimit. */
- static long qlowmark = 100;	/* Once only this many pending, use blimit. */
-@@ -853,6 +905,7 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp,
- 				    bool *isidle, unsigned long *maxj)
+ #ifdef CONFIG_OF
+ static const struct of_device_id sec_dt_match[] = {
+ 	{	.compatible = "samsung,s5m8767-pmic",
+@@ -103,6 +112,9 @@ static const struct of_device_id sec_dt_match[] = {
+ 		.compatible = "samsung,s2mpa01-pmic",
+ 		.data = (void *)S2MPA01,
+ 	}, {
++		.compatible = "samsung,s2mpu02-pmic",
++		.data = (void *)S2MPU02,
++	}, {
+ 		/* Sentinel */
+ 	},
+ };
+@@ -250,9 +262,10 @@ static int sec_pmic_probe(struct i2c_client *i2c,
  {
- 	unsigned int curr;
-+	int *rcrmp;
- 	unsigned int snap;
+ 	struct sec_platform_data *pdata = dev_get_platdata(&i2c->dev);
+ 	const struct regmap_config *regmap;
++	const struct mfd_cell *sec_devs;
+ 	struct sec_pmic_dev *sec_pmic;
+ 	unsigned long device_type;
+-	int ret;
++	int ret, num_sec_devs;
  
- 	curr = (unsigned int)atomic_add_return(0, &rdp->dynticks->dynticks);
-@@ -893,13 +946,20 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp,
+ 	sec_pmic = devm_kzalloc(&i2c->dev, sizeof(struct sec_pmic_dev),
+ 				GFP_KERNEL);
+@@ -319,34 +332,39 @@ static int sec_pmic_probe(struct i2c_client *i2c,
+ 
+ 	switch (sec_pmic->device_type) {
+ 	case S5M8751X:
+-		ret = mfd_add_devices(sec_pmic->dev, -1, s5m8751_devs,
+-				      ARRAY_SIZE(s5m8751_devs), NULL, 0, NULL);
++		sec_devs = s5m8751_devs;
++		num_sec_devs = ARRAY_SIZE(s5m8751_devs);
+ 		break;
+ 	case S5M8763X:
+-		ret = mfd_add_devices(sec_pmic->dev, -1, s5m8763_devs,
+-				      ARRAY_SIZE(s5m8763_devs), NULL, 0, NULL);
++		sec_devs = s5m8763_devs;
++		num_sec_devs = ARRAY_SIZE(s5m8763_devs);
+ 		break;
+ 	case S5M8767X:
+-		ret = mfd_add_devices(sec_pmic->dev, -1, s5m8767_devs,
+-				      ARRAY_SIZE(s5m8767_devs), NULL, 0, NULL);
++		sec_devs = s5m8767_devs;
++		num_sec_devs = ARRAY_SIZE(s5m8767_devs);
+ 		break;
+ 	case S2MPA01:
+-		ret = mfd_add_devices(sec_pmic->dev, -1, s2mpa01_devs,
+-				      ARRAY_SIZE(s2mpa01_devs), NULL, 0, NULL);
++		sec_devs = s2mpa01_devs;
++		num_sec_devs = ARRAY_SIZE(s2mpa01_devs);
+ 		break;
+ 	case S2MPS11X:
+-		ret = mfd_add_devices(sec_pmic->dev, -1, s2mps11_devs,
+-				      ARRAY_SIZE(s2mps11_devs), NULL, 0, NULL);
++		sec_devs = s2mps11_devs;
++		num_sec_devs = ARRAY_SIZE(s2mps11_devs);
+ 		break;
+ 	case S2MPS14X:
+-		ret = mfd_add_devices(sec_pmic->dev, -1, s2mps14_devs,
+-				      ARRAY_SIZE(s2mps14_devs), NULL, 0, NULL);
++		sec_devs = s2mps14_devs;
++		num_sec_devs = ARRAY_SIZE(s2mps14_devs);
++		break;
++	case S2MPU02:
++		sec_devs = s2mpu02_devs;
++		num_sec_devs = ARRAY_SIZE(s2mpu02_devs);
+ 		break;
+ 	default:
+ 		/* If this happens the probe function is problem */
+ 		BUG();
+ 	}
+-
++	ret = mfd_add_devices(sec_pmic->dev, -1, sec_devs, num_sec_devs, NULL,
++			      0, NULL);
+ 	if (ret)
+ 		goto err_mfd;
+ 
+diff --git a/drivers/mfd/sec-irq.c b/drivers/mfd/sec-irq.c
+index 654e2c1..f9a5786 100644
+--- a/drivers/mfd/sec-irq.c
++++ b/drivers/mfd/sec-irq.c
+@@ -20,6 +20,7 @@
+ #include <linux/mfd/samsung/irq.h>
+ #include <linux/mfd/samsung/s2mps11.h>
+ #include <linux/mfd/samsung/s2mps14.h>
++#include <linux/mfd/samsung/s2mpu02.h>
+ #include <linux/mfd/samsung/s5m8763.h>
+ #include <linux/mfd/samsung/s5m8767.h>
+ 
+@@ -161,6 +162,77 @@ static const struct regmap_irq s2mps14_irqs[] = {
+ 	},
+ };
+ 
++static const struct regmap_irq s2mpu02_irqs[] = {
++	[S2MPU02_IRQ_PWRONF] = {
++		.reg_offset = 0,
++		.mask = S2MPS11_IRQ_PWRONF_MASK,
++	},
++	[S2MPU02_IRQ_PWRONR] = {
++		.reg_offset = 0,
++		.mask = S2MPS11_IRQ_PWRONR_MASK,
++	},
++	[S2MPU02_IRQ_JIGONBF] = {
++		.reg_offset = 0,
++		.mask = S2MPS11_IRQ_JIGONBF_MASK,
++	},
++	[S2MPU02_IRQ_JIGONBR] = {
++		.reg_offset = 0,
++		.mask = S2MPS11_IRQ_JIGONBR_MASK,
++	},
++	[S2MPU02_IRQ_ACOKBF] = {
++		.reg_offset = 0,
++		.mask = S2MPS11_IRQ_ACOKBF_MASK,
++	},
++	[S2MPU02_IRQ_ACOKBR] = {
++		.reg_offset = 0,
++		.mask = S2MPS11_IRQ_ACOKBR_MASK,
++	},
++	[S2MPU02_IRQ_PWRON1S] = {
++		.reg_offset = 0,
++		.mask = S2MPS11_IRQ_PWRON1S_MASK,
++	},
++	[S2MPU02_IRQ_MRB] = {
++		.reg_offset = 0,
++		.mask = S2MPS11_IRQ_MRB_MASK,
++	},
++	[S2MPU02_IRQ_RTC60S] = {
++		.reg_offset = 1,
++		.mask = S2MPS11_IRQ_RTC60S_MASK,
++	},
++	[S2MPU02_IRQ_RTCA1] = {
++		.reg_offset = 1,
++		.mask = S2MPS11_IRQ_RTCA1_MASK,
++	},
++	[S2MPU02_IRQ_RTCA0] = {
++		.reg_offset = 1,
++		.mask = S2MPS11_IRQ_RTCA0_MASK,
++	},
++	[S2MPU02_IRQ_SMPL] = {
++		.reg_offset = 1,
++		.mask = S2MPS11_IRQ_SMPL_MASK,
++	},
++	[S2MPU02_IRQ_RTC1S] = {
++		.reg_offset = 1,
++		.mask = S2MPS11_IRQ_RTC1S_MASK,
++	},
++	[S2MPU02_IRQ_WTSR] = {
++		.reg_offset = 1,
++		.mask = S2MPS11_IRQ_WTSR_MASK,
++	},
++	[S2MPU02_IRQ_INT120C] = {
++		.reg_offset = 2,
++		.mask = S2MPS11_IRQ_INT120C_MASK,
++	},
++	[S2MPU02_IRQ_INT140C] = {
++		.reg_offset = 2,
++		.mask = S2MPS11_IRQ_INT140C_MASK,
++	},
++	[S2MPU02_IRQ_TSD] = {
++		.reg_offset = 2,
++		.mask = S2MPS14_IRQ_TSD_MASK,
++	},
++};
++
+ static const struct regmap_irq s5m8767_irqs[] = {
+ 	[S5M8767_IRQ_PWRR] = {
+ 		.reg_offset = 0,
+@@ -327,6 +399,16 @@ static const struct regmap_irq_chip s2mps14_irq_chip = {
+ 	.ack_base = S2MPS14_REG_INT1,
+ };
+ 
++static const struct regmap_irq_chip s2mpu02_irq_chip = {
++	.name = "s2mpu02",
++	.irqs = s2mpu02_irqs,
++	.num_irqs = ARRAY_SIZE(s2mpu02_irqs),
++	.num_regs = 3,
++	.status_base = S2MPU02_REG_INT1,
++	.mask_base = S2MPU02_REG_INT1M,
++	.ack_base = S2MPU02_REG_INT1,
++};
++
+ static const struct regmap_irq_chip s5m8767_irq_chip = {
+ 	.name = "s5m8767",
+ 	.irqs = s5m8767_irqs,
+@@ -351,6 +433,7 @@ int sec_irq_init(struct sec_pmic_dev *sec_pmic)
+ {
+ 	int ret = 0;
+ 	int type = sec_pmic->device_type;
++	const struct regmap_irq_chip *sec_irq_chip;
+ 
+ 	if (!sec_pmic->irq) {
+ 		dev_warn(sec_pmic->dev,
+@@ -361,28 +444,19 @@ int sec_irq_init(struct sec_pmic_dev *sec_pmic)
+ 
+ 	switch (type) {
+ 	case S5M8763X:
+-		ret = regmap_add_irq_chip(sec_pmic->regmap_pmic, sec_pmic->irq,
+-				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+-				  sec_pmic->irq_base, &s5m8763_irq_chip,
+-				  &sec_pmic->irq_data);
++		sec_irq_chip = &s5m8763_irq_chip;
+ 		break;
+ 	case S5M8767X:
+-		ret = regmap_add_irq_chip(sec_pmic->regmap_pmic, sec_pmic->irq,
+-				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+-				  sec_pmic->irq_base, &s5m8767_irq_chip,
+-				  &sec_pmic->irq_data);
++		sec_irq_chip = &s5m8767_irq_chip;
+ 		break;
+ 	case S2MPS11X:
+-		ret = regmap_add_irq_chip(sec_pmic->regmap_pmic, sec_pmic->irq,
+-				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+-				  sec_pmic->irq_base, &s2mps11_irq_chip,
+-				  &sec_pmic->irq_data);
++		sec_irq_chip = &s2mps11_irq_chip;
+ 		break;
+ 	case S2MPS14X:
+-		ret = regmap_add_irq_chip(sec_pmic->regmap_pmic, sec_pmic->irq,
+-				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+-				  sec_pmic->irq_base, &s2mps14_irq_chip,
+-				  &sec_pmic->irq_data);
++		sec_irq_chip = &s2mps14_irq_chip;
++		break;
++	case S2MPU02:
++		sec_irq_chip = &s2mpu02_irq_chip;
+ 		break;
+ 	default:
+ 		dev_err(sec_pmic->dev, "Unknown device type %lu\n",
+@@ -390,6 +464,10 @@ int sec_irq_init(struct sec_pmic_dev *sec_pmic)
+ 		return -EINVAL;
  	}
  
- 	/*
--	 * There is a possibility that a CPU in adaptive-ticks state
--	 * might run in the kernel with the scheduling-clock tick disabled
--	 * for an extended time period.  Invoke rcu_kick_nohz_cpu() to
--	 * force the CPU to restart the scheduling-clock tick in this
--	 * CPU is in this state.
-+	 * A CPU running for an extended time within the kernel can
-+	 * delay RCU grace periods.  When the CPU is in NO_HZ_FULL mode,
-+	 * even context-switching back and forth between a pair of
-+	 * in-kernel CPU-bound tasks cannot advance grace periods.
-+	 * So if the grace period is old enough, make the CPU pay attention.
- 	 */
--	rcu_kick_nohz_cpu(rdp->cpu);
-+	if (ULONG_CMP_GE(jiffies, rdp->rsp->gp_start + 7)) {
-+		rcrmp = &per_cpu(rcu_cond_resched_mask, rdp->cpu);
-+		ACCESS_ONCE(rdp->cond_resched_completed) =
-+			ACCESS_ONCE(rdp->mynode->completed);
-+		smp_mb(); /* ->cond_resched_completed before *rcrmp. */
-+		ACCESS_ONCE(*rcrmp) =
-+			ACCESS_ONCE(*rcrmp) + rdp->rsp->flavor_mask;
-+	}
++	ret = regmap_add_irq_chip(sec_pmic->regmap_pmic, sec_pmic->irq,
++			  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
++			  sec_pmic->irq_base, sec_irq_chip,
++			  &sec_pmic->irq_data);
+ 	if (ret != 0) {
+ 		dev_err(sec_pmic->dev, "Failed to register IRQ chip: %d\n", ret);
+ 		return ret;
+diff --git a/include/linux/mfd/samsung/core.h b/include/linux/mfd/samsung/core.h
+index 47d8424..b5f73de 100644
+--- a/include/linux/mfd/samsung/core.h
++++ b/include/linux/mfd/samsung/core.h
+@@ -21,6 +21,7 @@ enum sec_device_type {
+ 	S2MPA01,
+ 	S2MPS11X,
+ 	S2MPS14X,
++	S2MPU02,
+ };
  
- 	/*
- 	 * Alternatively, the CPU might be running in the kernel
-@@ -3504,6 +3564,7 @@ static void __init rcu_init_one(struct rcu_state *rsp,
- 		"rcu_node_fqs_1",
- 		"rcu_node_fqs_2",
- 		"rcu_node_fqs_3" };  /* Match MAX_RCU_LVLS */
-+	static u8 fl_mask = 0x1;
- 	int cpustride = 1;
- 	int i;
- 	int j;
-@@ -3522,6 +3583,8 @@ static void __init rcu_init_one(struct rcu_state *rsp,
- 	for (i = 1; i < rcu_num_lvls; i++)
- 		rsp->level[i] = rsp->level[i - 1] + rsp->levelcnt[i - 1];
- 	rcu_init_levelspread(rsp);
-+	rsp->flavor_mask = fl_mask;
-+	fl_mask <<= 1;
+ /**
+diff --git a/include/linux/mfd/samsung/irq.h b/include/linux/mfd/samsung/irq.h
+index 1224f44..f35af73 100644
+--- a/include/linux/mfd/samsung/irq.h
++++ b/include/linux/mfd/samsung/irq.h
+@@ -129,6 +129,30 @@ enum s2mps14_irq {
+ 	S2MPS14_IRQ_NR,
+ };
  
- 	/* Initialize the elements themselves, starting from the leaves. */
++enum s2mpu02_irq {
++	S2MPU02_IRQ_PWRONF,
++	S2MPU02_IRQ_PWRONR,
++	S2MPU02_IRQ_JIGONBF,
++	S2MPU02_IRQ_JIGONBR,
++	S2MPU02_IRQ_ACOKBF,
++	S2MPU02_IRQ_ACOKBR,
++	S2MPU02_IRQ_PWRON1S,
++	S2MPU02_IRQ_MRB,
++
++	S2MPU02_IRQ_RTC60S,
++	S2MPU02_IRQ_RTCA1,
++	S2MPU02_IRQ_RTCA0,
++	S2MPU02_IRQ_SMPL,
++	S2MPU02_IRQ_RTC1S,
++	S2MPU02_IRQ_WTSR,
++
++	S2MPU02_IRQ_INT120C,
++	S2MPU02_IRQ_INT140C,
++	S2MPU02_IRQ_TSD,
++
++	S2MPU02_IRQ_NR,
++};
++
+ /* Masks for interrupts are the same as in s2mps11 */
+ #define S2MPS14_IRQ_TSD_MASK		(1 << 2)
  
-diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
-index db3f096ed80b..60fb0eaa2d16 100644
---- a/kernel/rcu/tree.h
-+++ b/kernel/rcu/tree.h
-@@ -315,6 +315,9 @@ struct rcu_data {
- 	/* 4) reasons this CPU needed to be kicked by force_quiescent_state */
- 	unsigned long dynticks_fqs;	/* Kicked due to dynticks idle. */
- 	unsigned long offline_fqs;	/* Kicked due to being offline. */
-+	unsigned long cond_resched_completed;
-+					/* Grace period that needs help */
-+					/*  from cond_resched(). */
- 
- 	/* 5) __rcu_pending() statistics. */
- 	unsigned long n_rcu_pending;	/* rcu_pending() calls since boot. */
-@@ -400,6 +403,7 @@ struct rcu_state {
- 	struct rcu_node *level[RCU_NUM_LVLS];	/* Hierarchy levels. */
- 	u32 levelcnt[MAX_RCU_LVLS + 1];		/* # nodes in each level. */
- 	u8 levelspread[RCU_NUM_LVLS];		/* kids/node in each level. */
-+	u8 flavor_mask;				/* bit in flavor mask. */
- 	struct rcu_data __percpu *rda;		/* pointer of percu rcu_data. */
- 	void (*call)(struct rcu_head *head,	/* call_rcu() flavor. */
- 		     void (*func)(struct rcu_head *head));
-@@ -571,7 +575,7 @@ static bool rcu_nocb_need_deferred_wakeup(struct rcu_data *rdp);
- static void do_nocb_deferred_wakeup(struct rcu_data *rdp);
- static void rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp);
- static void rcu_spawn_nocb_kthreads(struct rcu_state *rsp);
--static void rcu_kick_nohz_cpu(int cpu);
-+static void __maybe_unused rcu_kick_nohz_cpu(int cpu);
- static bool init_nocb_callback_list(struct rcu_data *rdp);
- static void rcu_sysidle_enter(struct rcu_dynticks *rdtp, int irq);
- static void rcu_sysidle_exit(struct rcu_dynticks *rdtp, int irq);
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 695ecf19dfc6..569b390daa15 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -2422,7 +2422,7 @@ static bool init_nocb_callback_list(struct rcu_data *rdp)
-  * if an adaptive-ticks CPU is failing to respond to the current grace
-  * period and has not be idle from an RCU perspective, kick it.
-  */
--static void rcu_kick_nohz_cpu(int cpu)
-+static void __maybe_unused rcu_kick_nohz_cpu(int cpu)
- {
- #ifdef CONFIG_NO_HZ_FULL
- 	if (tick_nohz_full_cpu(cpu))
-diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-index a2aeb4df0f60..d22309cae9f5 100644
---- a/kernel/rcu/update.c
-+++ b/kernel/rcu/update.c
-@@ -350,21 +350,3 @@ static int __init check_cpu_stall_init(void)
- early_initcall(check_cpu_stall_init);
- 
- #endif /* #ifdef CONFIG_RCU_STALL_COMMON */
--
--/*
-- * Hooks for cond_resched() and friends to avoid RCU CPU stall warnings.
-- */
--
--DEFINE_PER_CPU(int, rcu_cond_resched_count);
--
--/*
-- * Report a set of RCU quiescent states, for use by cond_resched()
-- * and friends.  Out of line due to being called infrequently.
-- */
--void rcu_resched(void)
--{
--	preempt_disable();
--	__this_cpu_write(rcu_cond_resched_count, 0);
--	rcu_note_context_switch(smp_processor_id());
--	preempt_enable();
--}
+diff --git a/include/linux/mfd/samsung/s2mpu02.h b/include/linux/mfd/samsung/s2mpu02.h
+new file mode 100644
+index 0000000..47ae9bc
+--- /dev/null
++++ b/include/linux/mfd/samsung/s2mpu02.h
+@@ -0,0 +1,201 @@
++/*
++ * s2mpu02.h
++ *
++ * Copyright (c) 2014 Samsung Electronics Co., Ltd
++ *              http://www.samsung.com
++ *
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef __LINUX_MFD_S2MPU02_H
++#define __LINUX_MFD_S2MPU02_H
++
++/* S2MPU02 registers */
++enum S2MPU02_reg {
++	S2MPU02_REG_ID,
++	S2MPU02_REG_INT1,
++	S2MPU02_REG_INT2,
++	S2MPU02_REG_INT3,
++	S2MPU02_REG_INT1M,
++	S2MPU02_REG_INT2M,
++	S2MPU02_REG_INT3M,
++	S2MPU02_REG_ST1,
++	S2MPU02_REG_ST2,
++	S2MPU02_REG_PWRONSRC,
++	S2MPU02_REG_OFFSRC,
++	S2MPU02_REG_BU_CHG,
++	S2MPU02_REG_RTCCTRL,
++	S2MPU02_REG_PMCTRL1,
++	S2MPU02_REG_RSVD1,
++	S2MPU02_REG_RSVD2,
++	S2MPU02_REG_RSVD3,
++	S2MPU02_REG_RSVD4,
++	S2MPU02_REG_RSVD5,
++	S2MPU02_REG_RSVD6,
++	S2MPU02_REG_RSVD7,
++	S2MPU02_REG_WRSTEN,
++	S2MPU02_REG_RSVD8,
++	S2MPU02_REG_RSVD9,
++	S2MPU02_REG_RSVD10,
++	S2MPU02_REG_B1CTRL1,
++	S2MPU02_REG_B1CTRL2,
++	S2MPU02_REG_B2CTRL1,
++	S2MPU02_REG_B2CTRL2,
++	S2MPU02_REG_B3CTRL1,
++	S2MPU02_REG_B3CTRL2,
++	S2MPU02_REG_B4CTRL1,
++	S2MPU02_REG_B4CTRL2,
++	S2MPU02_REG_B5CTRL1,
++	S2MPU02_REG_B5CTRL2,
++	S2MPU02_REG_B5CTRL3,
++	S2MPU02_REG_B5CTRL4,
++	S2MPU02_REG_B5CTRL5,
++	S2MPU02_REG_B6CTRL1,
++	S2MPU02_REG_B6CTRL2,
++	S2MPU02_REG_B7CTRL1,
++	S2MPU02_REG_B7CTRL2,
++	S2MPU02_REG_RAMP1,
++	S2MPU02_REG_RAMP2,
++	S2MPU02_REG_L1CTRL,
++	S2MPU02_REG_L2CTRL1,
++	S2MPU02_REG_L2CTRL2,
++	S2MPU02_REG_L2CTRL3,
++	S2MPU02_REG_L2CTRL4,
++	S2MPU02_REG_L3CTRL,
++	S2MPU02_REG_L4CTRL,
++	S2MPU02_REG_L5CTRL,
++	S2MPU02_REG_L6CTRL,
++	S2MPU02_REG_L7CTRL,
++	S2MPU02_REG_L8CTRL,
++	S2MPU02_REG_L9CTRL,
++	S2MPU02_REG_L10CTRL,
++	S2MPU02_REG_L11CTRL,
++	S2MPU02_REG_L12CTRL,
++	S2MPU02_REG_L13CTRL,
++	S2MPU02_REG_L14CTRL,
++	S2MPU02_REG_L15CTRL,
++	S2MPU02_REG_L16CTRL,
++	S2MPU02_REG_L17CTRL,
++	S2MPU02_REG_L18CTRL,
++	S2MPU02_REG_L19CTRL,
++	S2MPU02_REG_L20CTRL,
++	S2MPU02_REG_L21CTRL,
++	S2MPU02_REG_L22CTRL,
++	S2MPU02_REG_L23CTRL,
++	S2MPU02_REG_L24CTRL,
++	S2MPU02_REG_L25CTRL,
++	S2MPU02_REG_L26CTRL,
++	S2MPU02_REG_L27CTRL,
++	S2MPU02_REG_L28CTRL,
++	S2MPU02_REG_LDODSCH1,
++	S2MPU02_REG_LDODSCH2,
++	S2MPU02_REG_LDODSCH3,
++	S2MPU02_REG_LDODSCH4,
++	S2MPU02_REG_SELMIF,
++	S2MPU02_REG_RSVD11,
++	S2MPU02_REG_RSVD12,
++	S2MPU02_REG_RSVD13,
++	S2MPU02_REG_DVSSEL,
++	S2MPU02_REG_DVSPTR,
++	S2MPU02_REG_DVSDATA,
++};
++
++/* S2MPU02 regulator ids */
++enum S2MPU02_regulators {
++	S2MPU02_LDO1,
++	S2MPU02_LDO2,
++	S2MPU02_LDO3,
++	S2MPU02_LDO4,
++	S2MPU02_LDO5,
++	S2MPU02_LDO6,
++	S2MPU02_LDO7,
++	S2MPU02_LDO8,
++	S2MPU02_LDO9,
++	S2MPU02_LDO10,
++	S2MPU02_LDO11,
++	S2MPU02_LDO12,
++	S2MPU02_LDO13,
++	S2MPU02_LDO14,
++	S2MPU02_LDO15,
++	S2MPU02_LDO16,
++	S2MPU02_LDO17,
++	S2MPU02_LDO18,
++	S2MPU02_LDO19,
++	S2MPU02_LDO20,
++	S2MPU02_LDO21,
++	S2MPU02_LDO22,
++	S2MPU02_LDO23,
++	S2MPU02_LDO24,
++	S2MPU02_LDO25,
++	S2MPU02_LDO26,
++	S2MPU02_LDO27,
++	S2MPU02_LDO28,
++	S2MPU02_BUCK1,
++	S2MPU02_BUCK2,
++	S2MPU02_BUCK3,
++	S2MPU02_BUCK4,
++	S2MPU02_BUCK5,
++	S2MPU02_BUCK6,
++	S2MPU02_BUCK7,
++
++	S2MPU02_REGULATOR_MAX,
++};
++
++/* Regulator constraints for BUCKx */
++#define S2MPU02_BUCK1234_MIN_600MV	600000
++#define S2MPU02_BUCK5_MIN_1081_25MV	1081250
++#define S2MPU02_BUCK6_MIN_1700MV	1700000
++#define S2MPU02_BUCK7_MIN_900MV		900000
++
++#define S2MPU02_BUCK1234_STEP_6_25MV	6250
++#define S2MPU02_BUCK5_STEP_6_25MV	6250
++#define S2MPU02_BUCK6_STEP_2_50MV	2500
++#define S2MPU02_BUCK7_STEP_6_25MV	6250
++
++#define S2MPU02_BUCK1234_START_SEL	0x00
++#define S2MPU02_BUCK5_START_SEL		0x4D
++#define S2MPU02_BUCK6_START_SEL		0x28
++#define S2MPU02_BUCK7_START_SEL		0x30
++
++#define S2MPU02_BUCK_RAMP_DELAY		12500
++
++/* Regulator constraints for different types of LDOx */
++#define S2MPU02_LDO_MIN_900MV		900000
++#define S2MPU02_LDO_MIN_1050MV		1050000
++#define S2MPU02_LDO_MIN_1600MV		1600000
++#define S2MPU02_LDO_STEP_12_5MV		12500
++#define S2MPU02_LDO_STEP_25MV		25000
++#define S2MPU02_LDO_STEP_50MV		50000
++
++#define S2MPU02_LDO_GROUP1_START_SEL	0x8
++#define S2MPU02_LDO_GROUP2_START_SEL	0xA
++#define S2MPU02_LDO_GROUP3_START_SEL	0x10
++
++#define S2MPU02_LDO_VSEL_MASK		0x3F
++#define S2MPU02_BUCK_VSEL_MASK		0xFF
++#define S2MPU02_ENABLE_MASK		(0x03 << S2MPU02_ENABLE_SHIFT)
++#define S2MPU02_ENABLE_SHIFT		6
++
++/* On/Off controlled by PWREN */
++#define S2MPU02_ENABLE_SUSPEND		(0x01 << S2MPU02_ENABLE_SHIFT)
++#define S2MPU02_DISABLE_SUSPEND		(0x11 << S2MPU02_ENABLE_SHIFT)
++#define S2MPU02_LDO_N_VOLTAGES		(S2MPU02_LDO_VSEL_MASK + 1)
++#define S2MPU02_BUCK_N_VOLTAGES		(S2MPU02_BUCK_VSEL_MASK + 1)
++
++/* RAMP delay for BUCK1234*/
++#define S2MPU02_BUCK1_RAMP_SHIFT	6
++#define S2MPU02_BUCK2_RAMP_SHIFT	4
++#define S2MPU02_BUCK3_RAMP_SHIFT	2
++#define S2MPU02_BUCK4_RAMP_SHIFT	0
++#define S2MPU02_BUCK1234_RAMP_MASK	0x3
++
++#endif /*  __LINUX_MFD_S2MPU02_H */
+-- 
+1.8.0
 
