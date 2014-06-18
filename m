@@ -1,161 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756288AbaFRXBn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 19:01:43 -0400
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:64145 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755408AbaFRXAJ (ORCPT
+	id S1755970AbaFRXHg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 19:07:36 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:34865 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753567AbaFRXHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 19:00:09 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: Josh Boyer <jwboyer@fedoraproject.org>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 2/5] x86,vdso2c: Use better macros for ELF bitness
-Date: Wed, 18 Jun 2014 15:59:47 -0700
-Message-Id: <d953cd2e70ceee1400985d091188cdd65fba2f05.1403129369.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1403129369.git.luto@amacapital.net>
-References: <cover.1403129369.git.luto@amacapital.net>
-In-Reply-To: <cover.1403129369.git.luto@amacapital.net>
-References: <cover.1403129369.git.luto@amacapital.net>
+	Wed, 18 Jun 2014 19:07:34 -0400
+Date: Thu, 19 Jun 2014 00:07:19 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Sebastian Reichel <sre@debian.org>, Pavel Machek <pavel@ucw.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: /proc/cpuinfo: Use DT machine name when possible
+Message-ID: <20140618230719.GM32514@n2100.arm.linux.org.uk>
+References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com> <CAL_JsqKw-C6uZBU3hccGmdofXcCcUKTV6z7Af6KwYwnZiy3HoQ@mail.gmail.com> <201406182122.29623@pali> <CAL_JsqK5j8PvYfq+tct4RMr63TWDYGfi_TA28k5m4KyG=UuNbg@mail.gmail.com> <20140618214752.GL32514@n2100.arm.linux.org.uk> <CAL_JsqK-9L6vLJSUuQDsNuHQOxahDM0uuQPtyq6XyuoBh5xDcg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAL_JsqK-9L6vLJSUuQDsNuHQOxahDM0uuQPtyq6XyuoBh5xDcg@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rather than using a separate macro for each replacement, use generic
-macros.
+On Wed, Jun 18, 2014 at 05:27:16PM -0500, Rob Herring wrote:
+> On Wed, Jun 18, 2014 at 4:47 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > On Wed, Jun 18, 2014 at 03:46:19PM -0500, Rob Herring wrote:
+> >> On Wed, Jun 18, 2014 at 2:22 PM, Pali Rohár <pali.rohar@gmail.com> wrote:
+> >> > Also I still did not know why DT kernel does not report Revision
+> >> > number which is passed by bootloader via atags. Any idea?
+> >>
+> >> Probably because no one cared until now and revision info for every
+> >> SOC is different. I would like to see revision info set in the DT in a
+> >> standard way and remove the various SOC specific kernel
+> >> implementations.
+> >
+> > Except... that's not what it is.  What that revision field was originally
+> > invented for was the Netwinder to indicate the _platform_ revision.
+> 
+> Okay. DT describes the platform, so having a top-level revision in the
+> DT could be similar, but...
+> 
+> >
+> > From what I've seen, almost everyone else sets this to zero in their
+> > boot loaders - it is /very/ rarely used.  However, I think OMAP (ab)uses
+> > it by putting the SoC revision into it at kernel boot time.  That's
+> > not what it is supposed to be used for.
+> 
+> it could suffer the same abuse as the ATAG.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/x86/vdso/vdso2c.c | 42 +++++++++++++-----------------------------
- arch/x86/vdso/vdso2c.h | 23 ++++++++++++-----------
- 2 files changed, 25 insertions(+), 40 deletions(-)
+I think the (ab)use I mentioned above has been eliminated (it was
+being used for the SoC revision).  It's worth grepping for system_rev
+to find where it's used now, and it's looks like it's all platform
+level.
 
-diff --git a/arch/x86/vdso/vdso2c.c b/arch/x86/vdso/vdso2c.c
-index 7a6bf50..7343899 100644
---- a/arch/x86/vdso/vdso2c.c
-+++ b/arch/x86/vdso/vdso2c.c
-@@ -83,37 +83,21 @@ extern void bad_put_le(void);
- 
- #define NSYMS (sizeof(required_syms) / sizeof(required_syms[0]))
- 
--#define BITS 64
--#define GOFUNC go64
--#define Elf_Ehdr Elf64_Ehdr
--#define Elf_Shdr Elf64_Shdr
--#define Elf_Phdr Elf64_Phdr
--#define Elf_Sym Elf64_Sym
--#define Elf_Dyn Elf64_Dyn
-+#define BITSFUNC3(name, bits) name##bits
-+#define BITSFUNC2(name, bits) BITSFUNC3(name, bits)
-+#define BITSFUNC(name) BITSFUNC2(name, ELF_BITS)
-+
-+#define ELF_BITS_XFORM2(bits, x) Elf##bits##_##x
-+#define ELF_BITS_XFORM(bits, x) ELF_BITS_XFORM2(bits, x)
-+#define ELF(x) ELF_BITS_XFORM(ELF_BITS, x)
-+
-+#define ELF_BITS 64
- #include "vdso2c.h"
--#undef BITS
--#undef GOFUNC
--#undef Elf_Ehdr
--#undef Elf_Shdr
--#undef Elf_Phdr
--#undef Elf_Sym
--#undef Elf_Dyn
--
--#define BITS 32
--#define GOFUNC go32
--#define Elf_Ehdr Elf32_Ehdr
--#define Elf_Shdr Elf32_Shdr
--#define Elf_Phdr Elf32_Phdr
--#define Elf_Sym Elf32_Sym
--#define Elf_Dyn Elf32_Dyn
-+#undef ELF_BITS
-+
-+#define ELF_BITS 32
- #include "vdso2c.h"
--#undef BITS
--#undef GOFUNC
--#undef Elf_Ehdr
--#undef Elf_Shdr
--#undef Elf_Phdr
--#undef Elf_Sym
--#undef Elf_Dyn
-+#undef ELF_BITS
- 
- static void go(void *addr, size_t len, FILE *outfile, const char *name)
- {
-diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
-index c6eefaf..8e185ce 100644
---- a/arch/x86/vdso/vdso2c.h
-+++ b/arch/x86/vdso/vdso2c.h
-@@ -4,23 +4,24 @@
-  * are built for 32-bit userspace.
-  */
- 
--static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
-+static void BITSFUNC(go)(void *addr, size_t len,
-+			 FILE *outfile, const char *name)
- {
- 	int found_load = 0;
- 	unsigned long load_size = -1;  /* Work around bogus warning */
- 	unsigned long data_size;
--	Elf_Ehdr *hdr = (Elf_Ehdr *)addr;
-+	ELF(Ehdr) *hdr = (ELF(Ehdr) *)addr;
- 	int i;
- 	unsigned long j;
--	Elf_Shdr *symtab_hdr = NULL, *strtab_hdr, *secstrings_hdr,
-+	ELF(Shdr) *symtab_hdr = NULL, *strtab_hdr, *secstrings_hdr,
- 		*alt_sec = NULL;
--	Elf_Dyn *dyn = 0, *dyn_end = 0;
-+	ELF(Dyn) *dyn = 0, *dyn_end = 0;
- 	const char *secstrings;
- 	uint64_t syms[NSYMS] = {};
- 
- 	uint64_t fake_sections_value = 0, fake_sections_size = 0;
- 
--	Elf_Phdr *pt = (Elf_Phdr *)(addr + GET_LE(&hdr->e_phoff));
-+	ELF(Phdr) *pt = (ELF(Phdr) *)(addr + GET_LE(&hdr->e_phoff));
- 
- 	/* Walk the segment table. */
- 	for (i = 0; i < GET_LE(&hdr->e_phnum); i++) {
-@@ -61,7 +62,7 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 		GET_LE(&hdr->e_shentsize)*GET_LE(&hdr->e_shstrndx);
- 	secstrings = addr + GET_LE(&secstrings_hdr->sh_offset);
- 	for (i = 0; i < GET_LE(&hdr->e_shnum); i++) {
--		Elf_Shdr *sh = addr + GET_LE(&hdr->e_shoff) +
-+		ELF(Shdr) *sh = addr + GET_LE(&hdr->e_shoff) +
- 			GET_LE(&hdr->e_shentsize) * i;
- 		if (GET_LE(&sh->sh_type) == SHT_SYMTAB)
- 			symtab_hdr = sh;
-@@ -82,7 +83,7 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 	     i < GET_LE(&symtab_hdr->sh_size) / GET_LE(&symtab_hdr->sh_entsize);
- 	     i++) {
- 		int k;
--		Elf_Sym *sym = addr + GET_LE(&symtab_hdr->sh_offset) +
-+		ELF(Sym) *sym = addr + GET_LE(&symtab_hdr->sh_offset) +
- 			GET_LE(&symtab_hdr->sh_entsize) * i;
- 		const char *name = addr + GET_LE(&strtab_hdr->sh_offset) +
- 			GET_LE(&sym->st_name);
-@@ -123,12 +124,12 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 		fail("end_mapping must be a multiple of 4096\n");
- 
- 	/* Remove sections or use fakes */
--	if (fake_sections_size % sizeof(Elf_Shdr))
-+	if (fake_sections_size % sizeof(ELF(Shdr)))
- 		fail("vdso_fake_sections size is not a multiple of %ld\n",
--		     (long)sizeof(Elf_Shdr));
-+		     (long)sizeof(ELF(Shdr)));
- 	PUT_LE(&hdr->e_shoff, fake_sections_value);
--	PUT_LE(&hdr->e_shentsize, fake_sections_value ? sizeof(Elf_Shdr) : 0);
--	PUT_LE(&hdr->e_shnum, fake_sections_size / sizeof(Elf_Shdr));
-+	PUT_LE(&hdr->e_shentsize, fake_sections_value ? sizeof(ELF(Shdr)) : 0);
-+	PUT_LE(&hdr->e_shnum, fake_sections_size / sizeof(ELF(Shdr)));
- 	PUT_LE(&hdr->e_shstrndx, SHN_UNDEF);
- 
- 	if (!name) {
+> The problem with soc-device is it is optional and at the whim of the
+> platform to add. Adding it also causes the the platform devices to
+> change paths because people make the soc device the bus parent.
+
+It's got to be optional, but anyone with a SoC should be strongly
+encouraged to use it, especially when converting to DT - again, this
+is probably one of those numerous "missed opportunities" since the
+DT conversion fundamentally changes the names of all platform
+devices in that heirarchy.
+
+I'm tempted to say that we went through that device name change,
+and as far as I saw, there was not one complaint about those devices
+changing names.  So, I suspect it isn't that big a deal to encourage
+SoCs to make use of this.
+
+> Sysfs
+> paths to devices are not considered part of the ABI, but still this is
+> a silly reason to change the path. If we want soc-device to be used,
+> then it should always exist and have a default version.
+
+So what do we do on systems which aren't a SoC?  Make up some random
+information for the SoC stuff?  That's just wrong.
+
 -- 
-1.9.3
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
