@@ -1,92 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683AbaFRFvA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 01:51:00 -0400
-Received: from mx02.posteo.de ([89.146.194.165]:58523 "EHLO posteo.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753026AbaFRFu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 01:50:59 -0400
-Message-ID: <53A128A8.5080206@posteo.de>
-Date: Wed, 18 Jun 2014 07:50:32 +0200
-From: Martin Kepplinger <martink@posteo.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: drbd-dev@lists.linbit.com, drbd-user@lists.linbit.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] drbd: change one-bit bitfield to be an unsigned int
-References: <alpine.DEB.2.02.1406160225510.30205@chino.kir.corp.google.com> <1402988047-16364-1-git-send-email-martink@posteo.de> <alpine.DEB.2.02.1406171243260.18156@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1406171243260.18156@chino.kir.corp.google.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756700AbaFRFyA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 01:54:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:15734 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756579AbaFRFx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 01:53:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,499,1400050800"; 
+   d="scan'208";a="559351523"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Ryan Desfosses <ryan@desfo.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: [Patch] PCI/portdrv: Remove warning about invalid IRQ
+Date: Wed, 18 Jun 2014 13:56:21 +0800
+Message-Id: <1403070985-31373-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <CAErSpo7pAv=v7JQp2UoNxYN8Pdj788NPP8OsLkM3p8NuwL_6Wg@mail.gmail.com>
+References: <CAErSpo7pAv=v7JQp2UoNxYN8Pdj788NPP8OsLkM3p8NuwL_6Wg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-06-17 21:46, schrieb David Rientjes:
-> On Tue, 17 Jun 2014, Martin Kepplinger wrote:
-> 
->> The one-bit bitfields are assigned true (1) or false (0) and checked
->> for them respectively. While it should work either way and -1 is true
->> as well it is more clear to see what's going on when using an unsigned int
->> because 1 doesn't silently become -1 behind the label true.
->>
-> 
-> Nothing is silently becoming anything, I have no idea what you're trying 
-> to address.  Is there something in drivers/block/drbd that needs this 
-> change?
+For hot-added PCIe ports, it always generates a warning message on x86
+platforms when binding to portdrv as:
+	"device [8086:0e0b] has invalid IRQ; check vendor BIOS".
 
-nope.
+It's due to that we check pci_dev->irq before actually allocating IRQ
+for the PCI device:
+	if (!dev->irq && dev->pin) {
+		dev_warn(&dev->dev, "device [%04x:%04x] has invalid IRQ; "
+			 "check vendor BIOS\n", dev->vendor, dev->device);
+	}
+ 	status = pcie_port_device_register(dev);
+		-->pci_enable_device(dev);
+			-->pci_enable_device_flags()
+				-->do_pci_enable_device()
+					-->pcibios_enable_device()
+						-->pcibios_enable_irq()
 
-> 
->> Signed-off-by: Martin Kepplinger <martink@posteo.de>
->> ---
->> Thanks for looking at it. This is more of a question: Does this make sense
->> to you now? I can be mistaken. It just wasn't totally clear to me at first
->> sight and even though it should be, why not try to improve it.
->>
-> 
-> There's no improvement here, you realize that the sign of one-bit 
-> bitfields are implementation defined, correct?  On what implementation 
-> does this patch make a difference?
-> 
-> If you are trying to convert these to unsigned for consistency, then just 
-> say so in the changelog and don't talk about silent changes or comparisons 
-> to true and false that obfuscate the fact that this is just a trivial 
-> cleanup that is based on the author's own preference rather than anything 
-> else.
+This warning message isn't generated for PCIe ports present at boot time
+because x86 arch code has called acpi_pci_irq_enable() in pci_acpi_init()
+for each PCI device for safety.
 
-learning learning learning. in this case, why sparse calls this dubious.
-This would be more appropriate on kernelnewbies or the like, sorry.
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+Hi Bjorn,
+	I have rebased it onto v3.16-rc1 and changed the patch title
+according to your suggestion.
+Thanks!
+Gerry
+___
+ drivers/pci/pcie/portdrv_pci.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
-> 
->> sparse called it 'dubious' before the change.
->>
->> (built but untested)
->>
->>  drivers/block/drbd/drbd_interval.h |    4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/block/drbd/drbd_interval.h b/drivers/block/drbd/drbd_interval.h
->> index f38fcb0..8d670e6 100644
->> --- a/drivers/block/drbd/drbd_interval.h
->> +++ b/drivers/block/drbd/drbd_interval.h
->> @@ -9,8 +9,8 @@ struct drbd_interval {
->>  	sector_t sector;	/* start sector of the interval */
->>  	unsigned int size;	/* size in bytes */
->>  	sector_t end;		/* highest interval end in subtree */
->> -	int local:1		/* local or remote request? */;
->> -	int waiting:1;
->> +	unsigned int local:1;	/* local or remote request? */
->> +	unsigned int waiting:1;
->>  };
->>  
->>  static inline void drbd_clear_interval(struct drbd_interval *i)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
+index 80887eaa0668..2ccc9b926ea7 100644
+--- a/drivers/pci/pcie/portdrv_pci.c
++++ b/drivers/pci/pcie/portdrv_pci.c
+@@ -203,10 +203,6 @@ static int pcie_portdrv_probe(struct pci_dev *dev,
+ 	     (pci_pcie_type(dev) != PCI_EXP_TYPE_DOWNSTREAM)))
+ 		return -ENODEV;
+ 
+-	if (!dev->irq && dev->pin) {
+-		dev_warn(&dev->dev, "device [%04x:%04x] has invalid IRQ; check vendor BIOS\n",
+-			 dev->vendor, dev->device);
+-	}
+ 	status = pcie_port_device_register(dev);
+ 	if (status)
+ 		return status;
+-- 
+1.7.10.4
 
