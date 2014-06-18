@@ -1,62 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985AbaFRXT1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 19:19:27 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:46459 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752839AbaFRXT0 (ORCPT
+	id S1756294AbaFRXTt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 19:19:49 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:52505 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756142AbaFRXTr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 19:19:26 -0400
-From: Dmitry Torokhov <dtor@vmware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, pv-drivers@vmware.com
-Subject: Re: [PATCH] MAINTAINERS: add entry for VMware Balloon driver
-Date: Wed, 18 Jun 2014 16:19:15 -0700
-Message-ID: <4389061.FeVMqoJiMc@dtor-d630.eng.vmware.com>
-Organization: VMware, Inc.
-User-Agent: KMail/4.12.5 (Linux/3.14.4-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <20140618231742.GB7234@kroah.com>
-References: <1403132941-1394-1-git-send-email-dtor@vmware.com> <20140618231742.GB7234@kroah.com>
+	Wed, 18 Jun 2014 19:19:47 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <CAGXu5jLYZ0jrFhd54aUhooLBWBUT28TQTLb41G107s=4U7ZxqA@mail.gmail.com>
+References: <20140618223457.GA31568@www.outflux.net>
+	<CAMEtUuzbPExM5dT+xDqbHtV5LZ3+E2Q0eq4xdmKWzLOZbTmuUQ@mail.gmail.com>
+	<CAGXu5jLYZ0jrFhd54aUhooLBWBUT28TQTLb41G107s=4U7ZxqA@mail.gmail.com>
+Date: Wed, 18 Jun 2014 16:19:45 -0700
+Message-ID: <CAMEtUuwPug7Bbgi2ccOx4jxd2Q80AnVoiHeeBW2av=_sQMiSfg@mail.gmail.com>
+Subject: Re: [PATCH] net: filter: fix upper BPF instruction limit
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, Chema Gonzalez <chema@google.com>,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 18, 2014 04:17:42 PM Greg Kroah-Hartman wrote:
-> On Wed, Jun 18, 2014 at 04:09:01PM -0700, Dmitry Torokhov wrote:
-> > Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
-> > ---
-> > 
-> >  MAINTAINERS                |    6 ++++++
-> >  drivers/misc/vmw_balloon.c |    2 +-
-> >  2 files changed, 7 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/MAINTAINERS b/MAINTAINERS
-> > index 6c484ac..3a446e8 100644
-> > --- a/MAINTAINERS
-> > +++ b/MAINTAINERS
-> > @@ -9645,6 +9645,12 @@ L:	virtualization@lists.linux-foundation.org
-> > 
-> >  S:	Supported
-> >  F:	arch/x86/kernel/cpu/vmware.c
-> > 
-> > +VMWARE BALLOON DRIVER
-> > +M:	"VMware, Inc." <pv-drivers@vmware.com>
-> > +L:	linux-kernel@vger.kernel.org
-> > +S:	Maintained
-> > +F:	drivers/misc/vmw_balloon.c
-> 
-> I really hate having a "alias" as a maintainer, and not a "real" name.
-> Kernel development is done by individuals, we don't have companies as
-> authors or signed-off-by lines, we have developers.
-> 
-> So I will not accept this, sorry.  Please find a real person who is
-> willing to maintain this code, or just mark it unsupported.
-> 
+On Wed, Jun 18, 2014 at 3:55 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Wed, Jun 18, 2014 at 3:48 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>> On Wed, Jun 18, 2014 at 3:34 PM, Kees Cook <keescook@chromium.org> wrote:
+>>> The original checks (via sk_chk_filter) for instruction count uses ">",
+>>> not ">=", so changing this in sk_convert_filter has the potential to break
+>>> existing seccomp filters that used exactly BPF_MAXINSNS many instructions.
+>>>
+>>> Fixes: bd4cf0ed331a ("net: filter: rework/optimize internal BPF interpreter's instruction set")
+>>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>>> Cc: stable@vger.kernel.org # v3.15+
+>>
+>> Acked-by: Alexei Starovoitov <ast@plumgrid.com>
+>>
+>> I wonder how did you catch this? :)
+>> Just code inspection or seccomp actually generating such programs?
+>
+> In the process of merging my seccomp thread-sync series back with
+> mainline, I got uncomfortable that I was moving filter size validation
+> around without actually testing it. When I added it, I was happy that
+> my series was correctly checking size limits, but then discovered my
+> newly added check actually failed on an earlier kernel (3.2). Tracking
+> it down found the corner case under 3.15.
+>
+> Here's the test I added to the seccomp regression tests, if you're interested:
+> https://github.com/kees/seccomp/commit/794d54a340cde70a3bdf7fe0ade1f95d160b2883
 
-OK, fair enough, we'll find a real name to attach here.
+Nice. I'm assuming https://github.com/redpig/seccomp is still the main tree
+for seccomp testsuite…
 
-Thanks,
-Dmitry
+btw I've tried to add 'real' test to it (one generated by chrome)
+
++TEST(chrome_syscalls) {
++       static struct sock_filter filter[] = {
++               { 32, 240, 61, 4 },          /* 0:      ld [4] */
++               { 21, 1, 0, -1073741762 },   /* 1:      jeq #0xc000003e, 3, 2 */
++               { 5, 0, 0, 271 },            /* 2:      ja 274 */
++               { 32, 208, 198, 0 },         /* 3:      ld [0] */
++               { 69, 0, 1, 1073741824 },    /* 4:      jset
+#0x40000000, 5, 6 */
++               { 6, 0, 0, 196615 },         /* 5:      ret #0x30007 */
++               { 53, 0, 7, 121 },           /* 6:      jge #0x79, 7, 14 */
++               { 53, 0, 12, 214 },          /* 7:      jge #0xd6, 8, 20 */
+…
++               { 6, 0, 0, 2147418112 },     /* 272:    ret #0x7fff0000 */
++               { 6, 0, 0, 327681 },         /* 273:    ret #0x50001 */
++               { 6, 0, 0, 196610 },         /* 274:    ret #0x30002 */
++       };
+...
++       for (i = 0; i < MAX_SYSCALLS; i++) {
++               ch_pid = fork();
++               ASSERT_LE(0, ch_pid);
++
++               if (ch_pid == 0) {
++                       ret = prctl(PR_SET_SECCOMP,
++                              SECCOMP_MODE_FILTER, &prog);
++                       ASSERT_EQ(0, ret);
++#define MAGIC (-1ll << 2)
++                       err = syscall(i, MAGIC, MAGIC, MAGIC,
++                              MAGIC, MAGIC, MAGIC);
++                       syscall(__NR_exit, 0);
++               }
++               wait(&status);
++               if (status != expected_status[i])
+…
+
+but it's really x64 only and looks ugly. Do you have better ideas
+on how to test all possible paths through auto-generated branch tree?
