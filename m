@@ -1,95 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933387AbaFRFDT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 01:03:19 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58583 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751037AbaFRFDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 01:03:18 -0400
-Message-ID: <53A11D40.7020201@ti.com>
-Date: Wed, 18 Jun 2014 10:31:52 +0530
-From: Keerthy <a0393675@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Keerthy <j-keerthy@ti.com>, <linux-omap@vger.kernel.org>,
-        <lgirdwood@gmail.com>, <broonie@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>
-Subject: Re: [PATCH 7/9] regulator: palmas: Add palmas_pmic_driver_data structure
-References: <1401272423-25761-1-git-send-email-j-keerthy@ti.com> <1401272423-25761-8-git-send-email-j-keerthy@ti.com> <20140617163721.GR29841@lee--X1>
-In-Reply-To: <20140617163721.GR29841@lee--X1>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933801AbaFRFDn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 01:03:43 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:54807 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933551AbaFRFDk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 01:03:40 -0400
+X-AuditID: cbfee68f-b7fef6d000003970-59-53a11daa51a6
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [RESEND PATCH] dt-bindings: extcon: Add support for SM5502 MUIC device
+Date: Wed, 18 Jun 2014 14:03:36 +0900
+Message-id: <1403067816-32535-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGLMWRmVeSWpSXmKPExsWyRsSkWHeV7MJgg8tbZCyuf3nOajH/yDlW
+	i/43C1ktzr1ayWixsG0Ji8XlXXPYLJZev8hkMWH6WhaLt3ems1i07j3C7sDlsWbeGkaPy329
+	TB4rl39h89i8Qstj06pONo++LasYPT5vkgtgj+KySUnNySxLLdK3S+DKWLn2OXPBV56Kqav2
+	MjUwfuXqYuTgkBAwkbg6hb+LkRPIFJO4cG89WxcjF4eQwFJGib3fzzNCJEwkFm+fxwRiCwks
+	YpR4t0QFoqiJSeLb+n/MIAk2AS2J/S9usIHYIgIKEpt7n7GCFDELvGeUuLNqDtgkYQF/iecf
+	v7KC2CwCqhJPNk0Ha+YVcJWYvOI8K8Q2OYkPex6xgzRLCKxil/jV+Y4dokFA4tvkQywQZ8tK
+	bDrADFEvKXFwxQ2WCYyCCxgZVjGKphYkFxQnpRcZ6xUn5haX5qXrJefnbmIEhvnpf8/6dzDe
+	PWB9iDEZaNxEZinR5HxgnOSVxBsamxlZmJqYGhuZW5qRJqwkznv/YVKQkEB6YklqdmpqQWpR
+	fFFpTmrxIUYmDk6pBkbTBP0AvbeRMRXH2L5E/Z7N+3TxxN+23Q/bq1e9trttd2ap0oSowOjP
+	DxUiGZR9FLU0GWTefxWuV6roC3kR+3+S1dWN138e21sqfUbUuzZvitCzLZ6hB+Iarzx/eiLn
+	5LWZ753a3U0nBaWJuHAsei5kMbdWbI9i19MbU7Tv66rIW7u06AnOXabEUpyRaKjFXFScCAB5
+	NN1ciQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCIsWRmVeSWpSXmKPExsVy+t9jAd1VsguDDU70ilhc//Kc1WL+kXOs
+	Fv1vFrJanHu1ktFiYdsSFovLu+awWSy9fpHJYsL0tSwWb+9MZ7Fo3XuE3YHLY828NYwel/t6
+	mTxWLv/C5rF5hZbHplWdbB59W1YxenzeJBfAHtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxv
+	amZgqGtoaWGupJCXmJtqq+TiE6DrlpkDdJ+SQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+Q
+	ILgeIwM0kLCGMWPl2ufMBV95Kqau2svUwPiVq4uRk0NCwERi8fZ5TBC2mMSFe+vZQGwhgUWM
+	Eu+WqHQxcgHZTUwS39b/YwZJsAloSex/cQOsSERAQWJz7zNWkCJmgfeMEndWzWEESQgL+Es8
+	//iVFcRmEVCVeLJpOlgzr4CrxOQV51khtslJfNjziH0CI/cCRoZVjKKpBckFxUnpuUZ6xYm5
+	xaV56XrJ+bmbGMFx9Ex6B+OqBotDjAIcjEo8vBy5C4KFWBPLiitzDzFKcDArifC+Z1oYLMSb
+	klhZlVqUH19UmpNafIgxGWj7RGYp0eR8YIznlcQbGpuYGVkamRtaGBmbkyasJM57sNU6UEgg
+	PbEkNTs1tSC1CGYLEwenVANj+2p9r99di1uY92674Xfgc8ex1PSUlwu69zpZiK5c8fKS8of4
+	tX9Xh+8WN6pZ7r3bYU3txouvInblOswSDjb1WDZPKdCsZav/37uC67vdLplPS957xGTPjpLc
+	JXYxq1dbFX+dfLCYs+/vp+rGM7fyMp74OkiVlPCs/JrVoWTB1fzI+uODLvtWJZbijERDLeai
+	4kQAPZpc3OcCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 June 2014 10:07 PM, Lee Jones wrote:
-> On Wed, 28 May 2014, Keerthy wrote:
->
->> Add palmas_pmic_driver_data structure.
->>
->> Signed-off-by: Keerthy <j-keerthy@ti.com>
->> ---
->>   include/linux/mfd/palmas.h |   25 +++++++++++++++++++++++++
->>   1 file changed, 25 insertions(+)
->>
->> diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
->> index 8d68452..70f0695 100644
->> --- a/include/linux/mfd/palmas.h
->> +++ b/include/linux/mfd/palmas.h
->> @@ -53,6 +53,8 @@ struct palmas_pmic;
->>   struct palmas_gpadc;
->>   struct palmas_resource;
->>   struct palmas_usb;
->> +struct palmas_pmic_driver_data;
->> +struct palmas_pmic_platform_data;
->>   
->>   enum palmas_usb_state {
->>   	PALMAS_USB_STATE_DISCONNECT,
->> @@ -76,6 +78,8 @@ struct palmas {
->>   	struct mutex irq_lock;
->>   	struct regmap_irq_chip_data *irq_data;
->>   
->> +	struct palmas_pmic_driver_data *pmic_ddata;
->> +
->>   	/* Child Devices */
->>   	struct palmas_pmic *pmic;
->>   	struct palmas_gpadc *gpadc;
->> @@ -107,6 +111,27 @@ struct regs_info {
->>   	int	sleep_id;
->>   };
->>   
->> +struct palmas_pmic_driver_data {
->> +	int smps_start;
->> +	int smps_end;
->> +	int ldo_begin;
->> +	int ldo_end;
->> +	int max_reg;
->> +	struct regs_info *palmas_regs_info;
->> +	struct of_regulator_match *palmas_matches;
->> +	struct palmas_sleep_requestor_info *sleep_req_info;
->> +	int (*smps_register)(struct palmas_pmic *pmic,
->> +			     struct palmas_pmic_driver_data *ddata,
->> +			     struct palmas_pmic_platform_data *pdata,
->> +			     const char *pdev_name,
->> +			     struct regulator_config config);
->> +	int (*ldo_register)(struct palmas_pmic *pmic,
->> +			    struct palmas_pmic_driver_data *ddata,
->> +			    struct palmas_pmic_platform_data *pdata,
->> +			    const char *pdev_name,
->> +			    struct regulator_config config);
-> Are you sure you need to store all of this stuff?
->
-> Particularly the match pointer.  Do you really re-use it?
+This patch add documentation for binding of SM5502 MUIC (Micro-USB Interface
+Controller) device which is using EXTCON subsystem. The SM5502 MUIC device
+can detect various external accessories when external accessories is attached
+or detached.
 
-Match pointer is used extensively in the palmas_regulator.c.
-This structure is very much used by regulator driver.
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+---
+ .../devicetree/bindings/extcon/extcon-sm5502.txt   | 23 ++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/extcon/extcon-sm5502.txt
 
->
->> +};
->> +
->>   struct palmas_gpadc_platform_data {
->>   	/* Channel 3 current source is only enabled during conversion */
->>   	int ch3_current;
+diff --git a/Documentation/devicetree/bindings/extcon/extcon-sm5502.txt b/Documentation/devicetree/bindings/extcon/extcon-sm5502.txt
+new file mode 100644
+index 0000000..4ecda22
+--- /dev/null
++++ b/Documentation/devicetree/bindings/extcon/extcon-sm5502.txt
+@@ -0,0 +1,23 @@
++
++* SM5502 MUIC (Micro-USB Interface Controller) device
++
++The Silicon Mitus SM5502 is a MUIC (Micro-USB Interface Controller) device
++which can detect the state of external accessory when external accessory is
++attached or detached and button is pressed or released. It is interfaced to
++the host controller using an I2C interface.
++
++Required properties:
++- compatible: Should be "siliconmitus,sm5502-muic"
++- reg: Specifies the I2C slave address of the MUIC block. It should be 0x25
++- interrupt-parent: Specifies the phandle of the interrupt controller to which
++  the interrupts from sm5502 are delivered to.
++- interrupts: Interrupt specifiers for detection interrupt sources.
++
++Example:
++
++	sm5502@25 {
++		compatible = "siliconmitus,sm5502-muic";
++		interrupt-parent = <&gpx1>;
++		interrupts = <5 0>;
++		reg = <0x25>;
++	};
+-- 
+1.8.0
 
