@@ -1,86 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933994AbaFRFGy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 01:06:54 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58729 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751558AbaFRFGx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 01:06:53 -0400
-Message-ID: <53A11E17.3010508@ti.com>
-Date: Wed, 18 Jun 2014 10:35:27 +0530
-From: Keerthy <a0393675@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1756628AbaFRFHI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 01:07:08 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:62001 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558AbaFRFHG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 01:07:06 -0400
+Message-ID: <53A11E60.5030704@gmail.com>
+Date: Wed, 18 Jun 2014 13:06:40 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Keerthy <j-keerthy@ti.com>, <linux-omap@vger.kernel.org>,
-        <lgirdwood@gmail.com>, <broonie@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>
-Subject: Re: [PATCH 5/9] regulator: palmas: Shift the reg_info structure definition
- to the header file
-References: <1401272423-25761-1-git-send-email-j-keerthy@ti.com> <1401272423-25761-6-git-send-email-j-keerthy@ti.com> <20140617163259.GP29841@lee--X1>
-In-Reply-To: <20140617163259.GP29841@lee--X1>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Liqin Chen <liqin.linux@gmail.com>, lennox.wu@gmail.com
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arch/score/include/asm/io.h: Add generic io map functions
+ when MMU enabled
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 June 2014 10:02 PM, Lee Jones wrote:
-> On Wed, 28 May 2014, Keerthy wrote:
->
->> Shift the reg_info structure definition to the header file.
->>
->> Signed-off-by: Keerthy <j-keerthy@ti.com>
->> ---
->>   drivers/regulator/palmas-regulator.c |    9 ---------
->>   include/linux/mfd/palmas.h           |    9 +++++++++
->>   2 files changed, 9 insertions(+), 9 deletions(-)
-> Patch looks fine.  I guess we'll wait and pull the entire set in once
-> it's ready.
->
-> Acked-by: Lee Jones <lee.jones@linaro.org>
+score did not implement some io map functions when MMU enabled, so need
+add generic io map functions, just like some other architectures have
+done (e.g. sparc64, s390, and mn10300), or will cause compiling issue.
 
-Thanks.
+The related error (allmodconfig under score):
 
->
->> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
->> index 9602eba..d41f3de 100644
->> --- a/drivers/regulator/palmas-regulator.c
->> +++ b/drivers/regulator/palmas-regulator.c
->> @@ -27,15 +27,6 @@
->>   #include <linux/of_platform.h>
->>   #include <linux/regulator/of_regulator.h>
->>   
->> -struct regs_info {
->> -	char	*name;
->> -	char	*sname;
->> -	u8	vsel_addr;
->> -	u8	ctrl_addr;
->> -	u8	tstep_addr;
->> -	int	sleep_id;
->> -};
->> -
->>   static const struct regulator_linear_range smps_low_ranges[] = {
->>   	REGULATOR_LINEAR_RANGE(500000, 0x1, 0x6, 0),
->>   	REGULATOR_LINEAR_RANGE(510000, 0x7, 0x79, 10000),
->> diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
->> index 52a24a9..150a6314 100644
->> --- a/include/linux/mfd/palmas.h
->> +++ b/include/linux/mfd/palmas.h
->> @@ -88,6 +88,15 @@ struct palmas {
->>   	u8 pwm_muxed;
->>   };
->>   
->> +struct regs_info {
->> +	char	*name;
->> +	char	*sname;
->> +	u8	vsel_addr;
->> +	u8	ctrl_addr;
->> +	u8	tstep_addr;
->> +	int	sleep_id;
->> +};
->> +
->>   struct palmas_gpadc_platform_data {
->>   	/* Channel 3 current source is only enabled during conversion */
->>   	int ch3_current;
+    CC      drivers/clocksource/sh_cmt.o
+  drivers/clocksource/sh_cmt.c: In function 'sh_cmt_map_memory':
+  drivers/clocksource/sh_cmt.c:932:2: error: implicit declaration of function 'ioremap_nocache' [-Werror=implicit-function-declaration]
+    cmt->mapbase = ioremap_nocache(mem->start, resource_size(mem));
+    ^
+  drivers/clocksource/sh_cmt.c:932:15: warning: assignment makes pointer from integer without a cast
+    cmt->mapbase = ioremap_nocache(mem->start, resource_size(mem));
+                 ^
+  drivers/clocksource/sh_cmt.c: In function 'sh_cmt_map_memory_legacy':
+  drivers/clocksource/sh_cmt.c:953:18: warning: assignment makes pointer from integer without a cast
+    cmt->mapbase_ch = ioremap_nocache(res->start, resource_size(res));
+                    ^
+  drivers/clocksource/sh_cmt.c:963:15: warning: assignment makes pointer from integer without a cast
+    cmt->mapbase = ioremap_nocache(res2 ? res2->start :
+                 ^
+  drivers/clocksource/sh_cmt.c:968:3: error: implicit declaration of function 'iounmap' [-Werror=implicit-function-declaration]
+     iounmap(cmt->mapbase_ch);
+     ^
+  cc1: some warnings being treated as errors
+  make[2]: *** [drivers/clocksource/sh_cmt.o] Error 1
+  make[1]: *** [drivers/clocksource] Error 2
+  make: *** [drivers] Error 2
 
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ arch/score/include/asm/io.h | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/arch/score/include/asm/io.h b/arch/score/include/asm/io.h
+index 574c8827..d67aeea 100644
+--- a/arch/score/include/asm/io.h
++++ b/arch/score/include/asm/io.h
+@@ -3,6 +3,22 @@
+ 
+ #include <asm-generic/io.h>
+ 
++#ifdef CONFIG_MMU
++static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
++{
++	return (void __iomem *) (unsigned long)offset;
++}
++
++#define __ioremap(offset, size, flags)	ioremap(offset, size)
++
++#define ioremap_nocache ioremap
++#define ioremap_wc ioremap_nocache
++
++static inline void iounmap(void __iomem *addr)
++{
++}
++#endif
++
+ #define virt_to_bus	virt_to_phys
+ #define bus_to_virt	phys_to_virt
+ #endif /* _ASM_SCORE_IO_H */
+-- 
+1.9.2.459.g68773ac
