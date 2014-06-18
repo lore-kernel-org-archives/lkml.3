@@ -1,98 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479AbaFRQXd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 12:23:33 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:49839 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753270AbaFRQXb (ORCPT
+	id S1753493AbaFRQZJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 12:25:09 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:50563 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722AbaFRQZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 12:23:31 -0400
+	Wed, 18 Jun 2014 12:25:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140618075551.GJ21030@lee--X1>
-References: <1402954800-28215-1-git-send-email-dianders@chromium.org>
-	<1402954800-28215-3-git-send-email-dianders@chromium.org>
-	<20140618075551.GJ21030@lee--X1>
-Date: Wed, 18 Jun 2014 09:23:29 -0700
-X-Google-Sender-Auth: gfLsVtqdq4UHe6ZdzlnaJgfcweQ
-Message-ID: <CAD=FV=Wn3u+DNerFBNpbbLhBPa+3A5bvrRiBXNq=vyRA00+-uQ@mail.gmail.com>
-Subject: Re: [PATCH 02/10] mfd: cros_ec: IRQs for cros_ec should be optional
-From: Doug Anderson <dianders@chromium.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Andrew Bresticker <abrestic@chromium.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Bill Richardson <wfrichar@chromium.org>,
-        Simon Glass <sjg@chromium.org>, Wolfram Sang <wsa@the-dreams.de>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <53A1A354.7030107@suse.cz>
+References: <CAF1_xX2oeG0YCLaLZR9ZUY2qiD0-sVB6L10dZppnae7iZV_U3g@mail.gmail.com>
+	<53A1A354.7030107@suse.cz>
+Date: Wed, 18 Jun 2014 18:25:05 +0200
+Message-ID: <CAF1_xX38AWEK5sW8v_RrL=HzAg7JRNyCzgKNuZFzCGV4y2O7Og@mail.gmail.com>
+Subject: Re: Regression: firmware: Simplify directory creation + b43 = fails
+ to build
+From: Ronald <ronald645@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lee,
+>From my .config
 
-On Wed, Jun 18, 2014 at 12:55 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Mon, 16 Jun 2014, Doug Anderson wrote:
+ ==> cat /usr/src/config | grep -i b43
+CONFIG_EXTRA_FIRMWARE="b43/ucode5.fw b43/b0g0initvals5.fw
+b43/b0g0bsinitvals5.fw b43/pcm5.fw"
+... snip ...
+
+2014-06-18 16:33 GMT+02:00 Michal Marek <mmarek@suse.cz>:
+> Dne 18.6.2014 10:46, Ronald napsal(a):
+>> Dear kernel developers,
+>>
+>> Latest git HEAD (from Torvalds):
+>>
+>>   CC      drivers/base/firmware_class.o
+>>   LD      drivers/base/built-in.o
+>>   MK_FW   firmware/b43/ucode5.fw.gen.S
+>> /bin/sh: firmware/b43/ucode5.fw.gen.S: Bestand of map bestaat niet
+>> (file or directory does not exist, it should not have the .gen.S
+>> suffix)
+>> /bin/sh: firmware/b43/ucode5.fw.gen.S: Bestand of map bestaat niet
+>> ... snip ...
+>> /bin/sh: firmware/b43/ucode5.fw.gen.S: Bestand of map bestaat niet
+>> firmware/Makefile:185: recept voor doel 'firmware/b43/ucode5.fw.gen.S'
+>> is mislukt
+>> make[1]: *** [firmware/b43/ucode5.fw.gen.S] Fout 1
+>> Makefile:893: recept voor doel 'firmware' is mislukt
+>> make: *** [firmware] Fout 2
+>> make: *** Wachten op onvoltooide taken...
 >
->> From: Bill Richardson <wfrichar@chromium.org>
->>
->> Preparing the way for the LPC device, which is just a plaform_device without
->> interrupts.
->>
->> Signed-off-by: Bill Richardson <wfrichar@chromium.org>
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
->> ---
->>  drivers/mfd/cros_ec.c | 26 +++++++++++++-------------
->>  1 file changed, 13 insertions(+), 13 deletions(-)
->>
->> diff --git a/drivers/mfd/cros_ec.c b/drivers/mfd/cros_ec.c
->> index 38fe9bf..bd6f936 100644
->> --- a/drivers/mfd/cros_ec.c
->> +++ b/drivers/mfd/cros_ec.c
->> @@ -119,17 +119,15 @@ int cros_ec_register(struct cros_ec_device *ec_dev)
->>                       return -ENOMEM;
->>       }
->>
->> -     if (!ec_dev->irq) {
->> -             dev_dbg(dev, "no valid IRQ: %d\n", ec_dev->irq);
->> -             return err;
->> -     }
->> -
->> -     err = request_threaded_irq(ec_dev->irq, NULL, ec_irq_thread,
->> -                                IRQF_TRIGGER_LOW | IRQF_ONESHOT,
->> -                                "chromeos-ec", ec_dev);
->> -     if (err) {
->> -             dev_err(dev, "request irq %d: error %d\n", ec_dev->irq, err);
->> -             return err;
->> +     if (ec_dev->irq) {
->> +             err = request_threaded_irq(ec_dev->irq, NULL, ec_irq_thread,
->> +                                     IRQF_TRIGGER_LOW | IRQF_ONESHOT,
->> +                                     "chromeos-ec", ec_dev);
+> Where does firmware/b43 come from?
 >
-> Is there anything stopping you using the devm_* version?
-
-I'm generally quite hesitant about using the devm_ IRQ functions.
-Requesting an IRQ enables the IRQ at the time of request and freeing
-it disables it, right?  Leaving it up to the the devm subsystem to
-disable your IRQ tends to be a race waiting to happen if an IRQ
-happens after you've freed all your memory / cleaned up all your
-state.
-
-Looking at cros_ec in particular though:
-
-* Right now the last thing done in cros_ec_remove() (which is the last
-thing in both cros_ec_i2c_remove and cros_ec_spi_remove) is to free
-the IRQ.  That means that you're right: we could switch to devm_ in
-this case and it wouldn't introduce any new bugs.
-
-* ...but I'm not convinced that the location of the free_irq() today
-is quite right.  I couldn't actually get it to crash or hang, but
-there is a time period where we've called mfd_remove_devices() and the
-IRQ is still active.  That doesn't seem like a super great situation
-to be in.  I'll add a move of the irq_free to the patch series.
-
--Doug
+> Thanks,
+> Michal
+>
