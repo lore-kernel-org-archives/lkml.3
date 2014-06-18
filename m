@@ -1,109 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706AbaFRQqb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 12:46:31 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:40629 "EHLO
+	id S1753089AbaFRQsc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 12:48:32 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:38013 "EHLO
 	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853AbaFRQq3 (ORCPT
+	with ESMTP id S1751696AbaFRQsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 12:46:29 -0400
-Date: Wed, 18 Jun 2014 17:46:21 +0100
+	Wed, 18 Jun 2014 12:48:30 -0400
+Date: Wed, 18 Jun 2014 17:48:22 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Andrew Bresticker <abrestic@chromium.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Bill Richardson <wfrichar@chromium.org>,
-        Simon Glass <sjg@chromium.org>, Wolfram Sang <wsa@the-dreams.de>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/10] mfd: cros_ec: IRQs for cros_ec should be optional
-Message-ID: <20140618164621.GB25353@lee--X1>
-References: <1402954800-28215-1-git-send-email-dianders@chromium.org>
- <1402954800-28215-3-git-send-email-dianders@chromium.org>
- <20140618075551.GJ21030@lee--X1>
- <CAD=FV=Wn3u+DNerFBNpbbLhBPa+3A5bvrRiBXNq=vyRA00+-uQ@mail.gmail.com>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: Kevin Hilman <khilman@linaro.org>, Bjorn Andersson <bjorn@kryo.se>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH v3 0/3] Qualcomm Resource Power Manager driver
+Message-ID: <20140618164822.GC25353@lee--X1>
+References: <1402944372-31901-1-git-send-email-bjorn.andersson@sonymobile.com>
+ <7hvbrzbh1u.fsf@paris.lan>
+ <CAJAp7OhHr4Cgcp9pvQ3=MAie_zSnFJxG28Vf37qJ98BK7P1jaQ@mail.gmail.com>
+ <7hzjha8b97.fsf@paris.lan>
+ <842A7147-A2CC-42BD-9947-CBADF738DC92@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAD=FV=Wn3u+DNerFBNpbbLhBPa+3A5bvrRiBXNq=vyRA00+-uQ@mail.gmail.com>
+In-Reply-To: <842A7147-A2CC-42BD-9947-CBADF738DC92@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jun 2014, Doug Anderson wrote:
+On Wed, 18 Jun 2014, Kumar Gala wrote:
 
-> Lee,
 > 
-> On Wed, Jun 18, 2014 at 12:55 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> > On Mon, 16 Jun 2014, Doug Anderson wrote:
-> >
-> >> From: Bill Richardson <wfrichar@chromium.org>
-> >>
-> >> Preparing the way for the LPC device, which is just a plaform_device without
-> >> interrupts.
-> >>
-> >> Signed-off-by: Bill Richardson <wfrichar@chromium.org>
-> >> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> >> ---
-> >>  drivers/mfd/cros_ec.c | 26 +++++++++++++-------------
-> >>  1 file changed, 13 insertions(+), 13 deletions(-)
-> >>
-> >> diff --git a/drivers/mfd/cros_ec.c b/drivers/mfd/cros_ec.c
-> >> index 38fe9bf..bd6f936 100644
-> >> --- a/drivers/mfd/cros_ec.c
-> >> +++ b/drivers/mfd/cros_ec.c
-> >> @@ -119,17 +119,15 @@ int cros_ec_register(struct cros_ec_device *ec_dev)
-> >>                       return -ENOMEM;
-> >>       }
-> >>
-> >> -     if (!ec_dev->irq) {
-> >> -             dev_dbg(dev, "no valid IRQ: %d\n", ec_dev->irq);
-> >> -             return err;
-> >> -     }
-> >> -
-> >> -     err = request_threaded_irq(ec_dev->irq, NULL, ec_irq_thread,
-> >> -                                IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-> >> -                                "chromeos-ec", ec_dev);
-> >> -     if (err) {
-> >> -             dev_err(dev, "request irq %d: error %d\n", ec_dev->irq, err);
-> >> -             return err;
-> >> +     if (ec_dev->irq) {
-> >> +             err = request_threaded_irq(ec_dev->irq, NULL, ec_irq_thread,
-> >> +                                     IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-> >> +                                     "chromeos-ec", ec_dev);
-> >
-> > Is there anything stopping you using the devm_* version?
+> On Jun 18, 2014, at 10:53 AM, Kevin Hilman <khilman@linaro.org> wrote:
 > 
-> I'm generally quite hesitant about using the devm_ IRQ functions.
-> Requesting an IRQ enables the IRQ at the time of request and freeing
-> it disables it, right?  Leaving it up to the the devm subsystem to
-> disable your IRQ tends to be a race waiting to happen if an IRQ
-> happens after you've freed all your memory / cleaned up all your
-> state.
+> > Bjorn Andersson <bjorn@kryo.se> writes:
+> > 
+> >> On Tue, Jun 17, 2014 at 10:07 AM, Kevin Hilman <khilman@linaro.org> wrote:
+> >>> +Paul Walmsley
+> >>> 
+> >>> Bjorn Andersson <bjorn.andersson@sonymobile.com> writes:
+> >>> 
+> >>>> This series adds a regulator driver for the Resource Power Manager found in
+> >>>> Qualcomm 8660, 8960 and 8064 based devices.
+> >>>> 
+> >>>> The RPM driver exposes resources to its child devices, that can be accessed to
+> >>>> implement drivers for the regulators, clocks and bus frequency control that's
+> >>>> owned by the RPM in these devices.
+> >>>> 
+> >>>> Changes since v2:
+> >>>>  - Fix copy-paste error in dt binding
+> >>>>  - Correct incomplete move from mfd to soc
+> >>>>  - Correct const mistake in regulator driver
+> >>>> 
+> >>>> Changes since v1:
+> >>>>  - Moved rpm driver to drivers/soc
+> >>> 
+> >>> I'm not sure I follow the motivation for having this under drivers/soc?
+> >>> 
+> >> Hi Kevin,
+> >> 
+> >> I've made the argument that to me this is conceptually a black box
+> >> handling regulators, clocks and other stuff; hence similar to a PMIC,
+> >> which would fit nicely into drivers/mfd.
+> >> 
+> >> I still think this is the case and now that I look back I didn't get
+> >> any pushback from Lee Jones so maybe the move was premature?
+> > 
+> > Yes, IMO, the move was premature, but hopefully the drivers/soc folks
+> > can chime in an clarify the criteria for inclusion there.
+> > 
+> > Kevin
 > 
-> Looking at cros_ec in particular though:
-> 
-> * Right now the last thing done in cros_ec_remove() (which is the last
-> thing in both cros_ec_i2c_remove and cros_ec_spi_remove) is to free
-> the IRQ.  That means that you're right: we could switch to devm_ in
-> this case and it wouldn't introduce any new bugs.
-> 
-> * ...but I'm not convinced that the location of the free_irq() today
-> is quite right.  I couldn't actually get it to crash or hang, but
-> there is a time period where we've called mfd_remove_devices() and the
-> IRQ is still active.  That doesn't seem like a super great situation
-> to be in.  I'll add a move of the irq_free to the patch series.
+> I dont agree, I think having this in drivers/soc means that we can
+> clearly go through drivers/soc in the future and look for patterns
+> across SoCs that should be re-factored.
 
-I guess if you're concerned about ordering you could always use
-devm_free_irq() in the places where you think it should be freed
-earlier than release.  I'm pretty sure that discludes the failure
-patch in probe() though, so we'd still be able to rid a few lines.
+> Where MFD seems like its become the new drivers misc.
+
+Do you have any grounds for that statement?  I only know of one driver
+which doesn't fit the bounds of a true MFD.  If you know of more, I'd
+like to hear about it.
 
 -- 
 Lee Jones
