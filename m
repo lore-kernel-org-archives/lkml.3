@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895AbaFRPBg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 11:01:36 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:61576 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977AbaFRPBe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 11:01:34 -0400
-Message-ID: <53A1A9CA.7000108@gmail.com>
-Date: Wed, 18 Jun 2014 10:01:30 -0500
-From: Bruce Dubbs <bruce.dubbs@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120628 Firefox/13.0.1 SeaMonkey/2.10.1
+	id S1752939AbaFRPB5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 11:01:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46896 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751251AbaFRPBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 11:01:07 -0400
+Message-ID: <53A1A98D.8050408@zytor.com>
+Date: Wed, 18 Jun 2014 08:00:29 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Karel Zak <kzak@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        util-linux@vger.kernel.org
-Subject: Re: [ANNOUNCE] util-linux v2.25-rc1
-References: <20140618134616.GA25885@x2.net.home>
-In-Reply-To: <20140618134616.GA25885@x2.net.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Borislav Petkov <bp@alien8.de>, Dave Hansen <dave.hansen@intel.com>
+CC: Qiaowei Ren <qiaowei.ren@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 03/10] x86, mpx: add macro cpu_has_mpx
+References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com> <1403084656-27284-4-git-send-email-qiaowei.ren@intel.com> <20140618095739.GA24419@pd.tnic> <53A1A3A5.9010109@intel.com> <20140618144429.GD24024@pd.tnic>
+In-Reply-To: <20140618144429.GD24024@pd.tnic>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Karel Zak wrote:
->
-> The util-linux release v2.25 is available at
->
->    ftp://ftp.kernel.org/pub/linux/utils/util-linux/v2.25
->
-> Feedback and bug reports, as always, are welcomed.
+On 06/18/2014 07:44 AM, Borislav Petkov wrote:
+> 
+> Why?
+> 
+> Practically, distros will have it enabled anyway (you have X86_INTEL_MPX
+> depend on CPU_SUP_INTEL).
+> 
+> Are you talking about the miniscule percentage of people building their
+> own kernels?
+> 
 
-In an LFS build environment, the configure, make, and make check are all 
-clean.  It is especially nice the way you tell us why some tests are not 
-run (mostly not root permissions).
+We have people working hard to shave kilobytes off the smallest
+configurations, because they want to fit into a megabyte of memory with
+the kernel and application.
 
-In prior releases, the last/ipv6 and last/last tests did not pass in the 
-LFS environment, but they now do pass.
+Let's try to not make their life harder than it needs to be.
 
-It would be nice if we could set the adjtime path in configure.  Right 
-now we do:
-
-sed -i -e 's@etc/adjtime@var/lib/hwclock/adjtime@g' \
-           $(grep -rl '/etc/adjtime' .)
-
-   -- Bruce
+	-hpa
 
