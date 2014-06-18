@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751699AbaFRO6h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 10:58:37 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58856 "EHLO mga02.intel.com"
+	id S1752027AbaFRO7U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 10:59:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44655 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751142AbaFRO6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 10:58:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,501,1400050800"; 
-   d="scan'208";a="559599404"
-Message-ID: <53A1A90D.5010604@intel.com>
-Date: Wed, 18 Jun 2014 07:58:21 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 03/10] x86, mpx: add macro cpu_has_mpx
-References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com> <1403084656-27284-4-git-send-email-qiaowei.ren@intel.com> <20140618095739.GA24419@pd.tnic> <53A1A3A5.9010109@intel.com> <20140618144429.GD24024@pd.tnic>
-In-Reply-To: <20140618144429.GD24024@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751451AbaFRO7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 10:59:18 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 01/18] perf tools: Always force PERF_RECORD_FINISHED_ROUND event
+Date: Wed, 18 Jun 2014 16:58:42 +0200
+Message-Id: <1403103539-16807-2-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
+References: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2014 07:44 AM, Borislav Petkov wrote:
-> On Wed, Jun 18, 2014 at 07:35:17AM -0700, Dave Hansen wrote:
->> On 06/18/2014 02:57 AM, Borislav Petkov wrote:
->>>>> @@ -339,6 +339,12 @@ extern const char * const x86_power_flags[32];
->>>>>  #define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
->>>>>  #define cpu_has_topoext		boot_cpu_has(X86_FEATURE_TOPOEXT)
->>>>>  
->>>>> +#ifdef CONFIG_X86_INTEL_MPX
->>>>> +#define cpu_has_mpx boot_cpu_has(X86_FEATURE_MPX)
->>> I think we don't want those macros anymore because they're obfuscating
->>> the code. You should use static_cpu_has instead.
->>
->> It looks like static_cpu_has() is the right thing to use instead of
->> boot_cpu_has().  But, this doesn't just obfuscate things.
->>
->> We actually _want_ the compiler to cull code out when the config option
->> is off.  Things like do_bounds() will see code savings with _some_ kind
->> of #ifdef rather than using static_cpu_has().
-> 
-> Why?
+The PERF_RECORD_FINISHED_ROUND governs queue flushing in
+reporting, so it needs to be stored for any kind of event.
 
-Are you seriously asking why we would want to cull out code guaranteed
-to be unused?
+Forcing the PERF_RECORD_FINISHED_ROUND event to be stored any
+time we finish the round and wrote at least one event.
 
-People are going to want to turn this off at compile time.  When they
-do, I want as much of the code to go away as is reasonably possible.
-Adding a single-line #ifdef in a header qualifies as a pretty decent
-tradeoff in my book.
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/builtin-record.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-I'm sure Qiaowei will do an experiment and show us what the code savings
-are.
-
-> Practically, distros will have it enabled anyway (you have X86_INTEL_MPX
-> depend on CPU_SUP_INTEL).
-> 
-> Are you talking about the miniscule percentage of people building their
-> own kernels?
-
-The minuscule number of people not using a distro kernel?  Like, every
-Android and Chrome device in the world?  How about the cloud providers
-with millions of servers?
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 378b85b..4869050 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -238,6 +238,7 @@ static struct perf_event_header finished_round_event = {
+ 
+ static int record__mmap_read_all(struct record *rec)
+ {
++	u64 bytes_written = rec->bytes_written;
+ 	int i;
+ 	int rc = 0;
+ 
+@@ -250,7 +251,11 @@ static int record__mmap_read_all(struct record *rec)
+ 		}
+ 	}
+ 
+-	if (perf_header__has_feat(&rec->session->header, HEADER_TRACING_DATA))
++	/*
++	 * Mark the round finished in case we wrote
++	 * at least one event.
++	 */
++	if (bytes_written != rec->bytes_written)
+ 		rc = record__write(rec, &finished_round_event, sizeof(finished_round_event));
+ 
+ out:
+-- 
+1.8.3.1
 
