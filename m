@@ -1,118 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933740AbaFRHfO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 03:35:14 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:61311 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751576AbaFRHfM (ORCPT
+	id S964935AbaFRHjs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 03:39:48 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:40776 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964781AbaFRHjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 03:35:12 -0400
-Date: Wed, 18 Jun 2014 08:35:05 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Simon Glass <sjg@chromium.org>, Andrew Bresticker <abrestic@chromium.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Bill Richardson <wfrichar@chromium.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Mark Brown <broonie@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        lk <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 09/10] mfd: cros_ec: Check result code from EC messages
-Message-ID: <20140618073505.GC21030@lee--X1>
-References: <1402954800-28215-1-git-send-email-dianders@chromium.org>
- <1402954800-28215-10-git-send-email-dianders@chromium.org>
- <CAPnjgZ3qqRiLvgnkCSoUTTkL8XvRHNkrFhfqi_Fofx-5ixU5LQ@mail.gmail.com>
- <CAD=FV=WNWt111t3wYnOA2npPnAUdnFUC5WbLe+t6n0nJPeiqCQ@mail.gmail.com>
+	Wed, 18 Jun 2014 03:39:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAD=FV=WNWt111t3wYnOA2npPnAUdnFUC5WbLe+t6n0nJPeiqCQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53A0E89F.9010006@realsil.com.cn>
+References: <cover.1402037562.git.micky_ching@realsil.com.cn>
+	<7b58fb0b0915ea0b0838404c74ec22a3b6e5f5a8.1402037565.git.micky_ching@realsil.com.cn>
+	<CAPDyKFq1wYZRbuwhLjTMbwN1KYgKuNuZDb7t8FV78Pa=W85oqg@mail.gmail.com>
+	<539EB43B.8070707@realsil.com.cn>
+	<CAPDyKFqKDAqvacwCVKM8KLjxfykpBq38MS_RgWCcA7+He4_S5w@mail.gmail.com>
+	<539F9412.3010209@realsil.com.cn>
+	<CAPDyKFqK8mLGc82FfEoxdHG7mioX7JmtFDO=18XZRkwQ4ykU2g@mail.gmail.com>
+	<53A0E89F.9010006@realsil.com.cn>
+Date: Wed, 18 Jun 2014 09:39:46 +0200
+Message-ID: <CAPDyKFqBy2jamW3EwMk64Cj85RvUmvAtE-ZFef-8R-Jt1Wu40Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] mmc: rtsx: add support for async request
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: micky <micky_ching@realsil.com.cn>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Chris Ball <chris@printf.net>, devel@linuxdriverproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Roger <rogerable@realtek.com>, Wei WANG <wei_wang@realsil.com.cn>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jun 2014, Doug Anderson wrote:
+On 18 June 2014 03:17, micky <micky_ching@realsil.com.cn> wrote:
+> On 06/17/2014 03:45 PM, Ulf Hansson wrote:
+>>
+>> On 17 June 2014 03:04, micky <micky_ching@realsil.com.cn> wrote:
+>>>
+>>> On 06/16/2014 08:40 PM, Ulf Hansson wrote:
+>>>>
+>>>> On 16 June 2014 11:09, micky <micky_ching@realsil.com.cn> wrote:
+>>>>>
+>>>>> On 06/16/2014 04:42 PM, Ulf Hansson wrote:
+>>>>>>>
+>>>>>>> @@ -36,7 +37,10 @@ struct realtek_pci_sdmmc {
+>>>>>>>>
+>>>>>>>>           struct rtsx_pcr         *pcr;
+>>>>>>>>           struct mmc_host         *mmc;
+>>>>>>>>           struct mmc_request      *mrq;
+>>>>>>>> +       struct workqueue_struct *workq;
+>>>>>>>> +#define SDMMC_WORKQ_NAME       "rtsx_pci_sdmmc_workq"
+>>>>>>>>
+>>>>>>>> +       struct work_struct      work;
+>>>>>>
+>>>>>> I am trying to understand why you need a work/workqueue to implement
+>>>>>> this feature. Is that really the case?
+>>>>>>
+>>>>>> Could you elaborate on the reasons?
+>>>>>
+>>>>> Hi Uffe,
+>>>>>
+>>>>> we need return as fast as possible in mmc_host_ops
+>>>>> request(ops->request)
+>>>>> callback,
+>>>>> so the mmc core can continue handle next request.
+>>>>> when next request everything is ready, it will wait previous done(if
+>>>>> not
+>>>>> done),
+>>>>> then call ops->request().
+>>>>>
+>>>>> we can't use atomic context, because we use mutex_lock() to protect
+>>>>
+>>>> ops->request should never executed in atomic context. Is that your
+>>>> concern?
+>>>
+>>> Yes.
+>>
+>> Okay. Unless I missed your point, I don't think you need the
+>> work/workqueue.
+>
+> any other method?
+>
+>>
+>> Because, ops->request isn't ever executed in atomic context. That's
+>> due to the mmc core, which handles the async mechanism, are waiting
+>> for a completion variable in process context, before it invokes the
+>> ops->request() callback.
+>>
+>> That completion variable will be kicked, from your host driver, when
+>> you invoke mmc_request_done(), .
+>
+> Sorry, I don't understand here, how kicked?
 
-> Simon,
-> 
-> On Tue, Jun 17, 2014 at 8:43 PM, Simon Glass <sjg@chromium.org> wrote:
-> >> diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
-> >> index 09ca789..4d34f1c 100644
-> >> --- a/drivers/mfd/cros_ec_spi.c
-> >> +++ b/drivers/mfd/cros_ec_spi.c
-> >> @@ -289,21 +289,23 @@ static int cros_ec_cmd_xfer_spi(struct cros_ec_device *ec_dev,
-> >>                 goto exit;
-> >>         }
-> >>
-> >> -       /* check response error code */
-> >>         ptr = ec_dev->din;
-> >> -       if (ptr[0]) {
-> >> -               if (ptr[0] == EC_RES_IN_PROGRESS) {
-> >> -                       dev_dbg(ec_dev->dev, "command 0x%02x in progress\n",
-> >> -                               ec_msg->command);
-> >> -                       ret = -EAGAIN;
-> >> -                       goto exit;
-> >> -               }
-> >> -               dev_warn(ec_dev->dev, "command 0x%02x returned an error %d\n",
-> >> -                        ec_msg->command, ptr[0]);
-> >> -               debug_packet(ec_dev->dev, "in_err", ptr, len);
-> >> -               ret = -EINVAL;
-> >> +
-> >> +       /* check response error code */
-> >> +       ec_msg->result = ptr[0];
-> >> +       switch (ec_msg->result) {
-> >> +       case EC_RES_SUCCESS:
-> >> +               break;
-> >> +       case EC_RES_IN_PROGRESS:
-> >> +               ret = -EAGAIN;
-> >> +               dev_dbg(ec_dev->dev, "command 0x%02x in progress\n",
-> >> +                       ec_msg->command);
-> >>                 goto exit;
-> >> +       default:
-> >> +               dev_warn(ec_dev->dev, "command 0x%02x returned %d\n",
-> >> +                        ec_msg->command, ec_msg->result);
-> >>         }
-> >
-> > Since this code is the same as the above, should it go in a common
-> > function in cros_ec?
-> 
-> So you are thinking it should be written like:
-> 
-> ec_msg->result = ptr[0];
-> ret = cros_ec_check_result(ec_dev, ec_msg);
-> if (ret)
->   goto exit;
-> 
-> ---
-> 
-> int cros_ec_check_result(struct cros_ec_device *ec_dev, struct
-> cros_ec_command *ec_msg)
-> {
->        switch (ec_msg->result) {
->        case EC_RES_SUCCESS:
->                return 0;
->        case EC_RES_IN_PROGRESS:
->                dev_dbg(ec_dev->dev, "command 0x%02x in progress\n",
->                        ec_msg->command);
->                return -EAGAIN;
->        default:
->                dev_warn(ec_dev->dev, "command 0x%02x returned %d\n",
->                         ec_msg->command, ec_msg->result);
->                return 0;
-> }
-> 
-> OK, that seems reasonable.  I'll plan to spin tomorrow with that.
+mmc_request_done()
+    ->mrq->done()
+        ->mmc_wait_done()
+            ->complete(&mrq->completion);
 
-+1
+>
+> I think the flow is:
+> - not wait for first req
+> - init mrq->done
+> - ops->request()                         ---         A.rtsx: start queue
+> work.
+> - continue fetch next req
+> - prepare next req ok,
+> - wait previous done.                --- B.(mmc_request_done() may be called
+> at any time from A to B)
+> - init mrq->done
+> - ops->request()                         ---         C.rtsx: start queue
+> next work.
+> ...
+> and seems no problem.
 
-I'll do a proper review when you re-spin the patch.
+Right, I don't think there are any _problem_ by using the workqueue as
+you have implemented, but I am questioning if it's correct. Simply
+because I don't think there are any reasons to why you need a
+workqueue, it doesn't solve any problem for you - it just adds
+overhead.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Kind regards
+Ulf Hansson
