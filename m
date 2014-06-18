@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587AbaFRQxF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 12:53:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11045 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751719AbaFRQxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 12:53:03 -0400
-Message-ID: <53A1B921.1050108@redhat.com>
-Date: Wed, 18 Jun 2014 18:06:57 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753655AbaFRQxO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 12:53:14 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:42370 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753598AbaFRQxL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 12:53:11 -0400
+Date: Wed, 18 Jun 2014 12:53:07 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
+Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand
+ unprotected when accessed by /proc)
+Message-ID: <20140618125307.3994b701@gandalf.local.home>
+In-Reply-To: <20140618164359.GA18598@redhat.com>
+References: <20140611175934.GA28912@redhat.com>
+	<20140611195613.GM4581@linux.vnet.ibm.com>
+	<20140612172844.GA15795@redhat.com>
+	<20140612203518.GZ4581@linux.vnet.ibm.com>
+	<alpine.DEB.2.10.1406122337060.5170@nanos>
+	<20140612222748.GF4581@linux.vnet.ibm.com>
+	<20140612231944.GA30683@linux.vnet.ibm.com>
+	<20140613150830.GB31794@redhat.com>
+	<20140615054058.GJ4581@linux.vnet.ibm.com>
+	<20140617185755.GA8600@linux.vnet.ibm.com>
+	<20140618164359.GA18598@redhat.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Nadav Amit <nadav.amit@gmail.com>, Nadav Amit <namit@cs.technion.ac.il>
-CC: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 9/9] KVM: vmx: vmx instructions handling does not consider
- cs.l
-References: <539F059F.8050501@redhat.com> <1403101166-23616-1-git-send-email-namit@cs.technion.ac.il> <1403101166-23616-10-git-send-email-namit@cs.technion.ac.il> <53A1B33A.3080509@redhat.com> <53A1B7EE.7070800@gmail.com>
-In-Reply-To: <53A1B7EE.7070800@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 18/06/2014 18:01, Nadav Amit ha scritto:
->>
->
-> Perhaps I am missing something, but I don't see where my mistake is.
-> The VMREAD source operand is always read as 64-bits and I made no
-> changes there. Therefore, if bits 63:32 are not zero, the instruction
-> should fail when attempting to access the field.
+On Wed, 18 Jun 2014 18:43:59 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-In 32-bit mode, it should be read as 32 bits: "Outside IA-32e mode, the 
-source operand has 32 bits, regardless of the value of CS.D" (so it's 
-never 16 bits, but it's also never 64 bits).
+ 
+> And (contrary to what I said initially) we can rely on this because -rt
+> converts spinlock_t into rt_mutex ?
 
-Paolo
+Correct. Because if spinlock_t has this behavior, rt_mutex must have it
+too, otherwise -rt will suffer greatly from that. Who knows, maybe this
+will fix some strange bug reports that we have had in the past.
+
+-- Steve
