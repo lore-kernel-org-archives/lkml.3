@@ -1,38 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967153AbaFRO0w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 10:26:52 -0400
-Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:43435 "EHLO
-	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966809AbaFRO0t (ORCPT
+	id S966632AbaFROTk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 10:19:40 -0400
+Received: from mailgw12.technion.ac.il ([132.68.225.12]:38610 "EHLO
+	mailgw12.technion.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412AbaFROTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 10:26:49 -0400
-Date: Wed, 18 Jun 2014 09:26:46 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: slab.h: wrap the whole file with guarding macro
-In-Reply-To: <1403100695-1350-1-git-send-email-a.ryabinin@samsung.com>
-Message-ID: <alpine.DEB.2.11.1406180926310.28208@gentwo.org>
-References: <1403100695-1350-1-git-send-email-a.ryabinin@samsung.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 18 Jun 2014 10:19:38 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtcBACOfoVOERCABjGdsb2JhbABarlABAQaZKAGBCRYPAQEBJzyEBAEFJ1IQUVcZiELHG4VeF4ViiRMHFoQtBIo5pyc
+X-IPAS-Result: AtcBACOfoVOERCABjGdsb2JhbABarlABAQaZKAGBCRYPAQEBJzyEBAEFJ1IQUVcZiELHG4VeF4ViiRMHFoQtBIo5pyc
+X-IronPort-AV: E=Sophos;i="5.01,501,1400014800"; 
+   d="scan'208";a="112034534"
+From: Nadav Amit <namit@cs.technion.ac.il>
+To: pbonzini@redhat.com
+Cc: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Nadav Amit <namit@cs.technion.ac.il>
+Subject: [PATCH v2 3/9] KVM: x86: Inter privilage level ret emulation is not implemeneted
+Date: Wed, 18 Jun 2014 17:19:20 +0300
+Message-Id: <1403101166-23616-4-git-send-email-namit@cs.technion.ac.il>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403101166-23616-1-git-send-email-namit@cs.technion.ac.il>
+References: <539F059F.8050501@redhat.com>
+ <1403101166-23616-1-git-send-email-namit@cs.technion.ac.il>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jun 2014, Andrey Ryabinin wrote:
+Return unhandlable error on inter-privilage level ret instruction.  This is
+since the current emulation does not check the privilage level correctly when
+loading the CS, and does not pop RSP/SS as needed.
 
-> Guarding section:
-> 	#ifndef MM_SLAB_H
-> 	#define MM_SLAB_H
-> 	...
-> 	#endif
-> currently doesn't cover the whole mm/slab.h. It seems like it was
-> done unintentionally.
->
-> Wrap the whole file by moving closing #endif to the end of it.
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+---
+ arch/x86/kvm/emulate.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-Acked-by: Christoph Lameter <cl@linux.com>
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index 3c8d867..0183350 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -2019,6 +2019,7 @@ static int em_ret_far(struct x86_emulate_ctxt *ctxt)
+ {
+ 	int rc;
+ 	unsigned long cs;
++	int cpl = ctxt->ops->cpl(ctxt);
+ 
+ 	rc = emulate_pop(ctxt, &ctxt->_eip, ctxt->op_bytes);
+ 	if (rc != X86EMUL_CONTINUE)
+@@ -2028,6 +2029,9 @@ static int em_ret_far(struct x86_emulate_ctxt *ctxt)
+ 	rc = emulate_pop(ctxt, &cs, ctxt->op_bytes);
+ 	if (rc != X86EMUL_CONTINUE)
+ 		return rc;
++	/* Outer-privilage level return is not implemented */
++	if (ctxt->mode >= X86EMUL_MODE_PROT16 && (cs & 3) > cpl)
++		return X86EMUL_UNHANDLEABLE;
+ 	rc = load_segment_descriptor(ctxt, (u16)cs, VCPU_SREG_CS);
+ 	return rc;
+ }
+-- 
+1.9.1
+
