@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965489AbaFRIw3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 04:52:29 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:39844 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965308AbaFRIwH (ORCPT
+	id S965437AbaFRIw1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 04:52:27 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:51848 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964920AbaFRIwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 04:52:07 -0400
+	Wed, 18 Jun 2014 04:52:09 -0400
 From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 To: dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
         linux-kernel@vger.kernel.org, airlied@linux.ie
 Cc: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Subject: [PATCH v5 08/11] drm: sti: add VID layer
-Date: Wed, 18 Jun 2014 10:51:25 +0200
-Message-Id: <1403081488-13114-9-git-send-email-benjamin.gaignard@linaro.org>
+Subject: [PATCH v5 09/11] drm: sti: add Mixer
+Date: Wed, 18 Jun 2014 10:51:26 +0200
+Message-Id: <1403081488-13114-10-git-send-email-benjamin.gaignard@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403081488-13114-1-git-send-email-benjamin.gaignard@linaro.org>
 References: <1403081488-13114-1-git-send-email-benjamin.gaignard@linaro.org>
@@ -21,195 +21,340 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VIDeo plug are one of the compositor input sub-devices.
-VID are dedicated to video inputs like YUV plans.
+Mixer hardware IP is responsible of mixing the different inputs layers.
+Z-order is managed by the mixer.
+We could 2 mixers: one for main path and one for auxillary path
 
-Like GDP, VID are part of Compositor hardware block
-and use sti_layer structure to provide an abstraction for
-Compositor calls.
+Mixers are part of Compositor hardware block
 
 Signed-off-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 ---
- drivers/gpu/drm/sti/Makefile  |   3 +-
- drivers/gpu/drm/sti/sti_vid.c | 138 ++++++++++++++++++++++++++++++++++++++++++
- drivers/gpu/drm/sti/sti_vid.h |  12 ++++
- 3 files changed, 152 insertions(+), 1 deletion(-)
- create mode 100644 drivers/gpu/drm/sti/sti_vid.c
- create mode 100644 drivers/gpu/drm/sti/sti_vid.h
+ drivers/gpu/drm/sti/Makefile    |   1 +
+ drivers/gpu/drm/sti/sti_mixer.c | 243 ++++++++++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/sti/sti_mixer.h |  54 +++++++++
+ 3 files changed, 298 insertions(+)
+ create mode 100644 drivers/gpu/drm/sti/sti_mixer.c
+ create mode 100644 drivers/gpu/drm/sti/sti_mixer.h
 
 diff --git a/drivers/gpu/drm/sti/Makefile b/drivers/gpu/drm/sti/Makefile
-index 1745697..bb0f6b3 100644
+index bb0f6b3..ce03e15 100644
 --- a/drivers/gpu/drm/sti/Makefile
 +++ b/drivers/gpu/drm/sti/Makefile
-@@ -6,4 +6,5 @@ obj-$(CONFIG_DRM_STI) += \
+@@ -6,5 +6,6 @@ obj-$(CONFIG_DRM_STI) += \
  	sti_hdmi_tx3g4c28phy.o \
  	sti_hda.o \
  	sti_tvout.o \
--	sti_gdp.o
++	sti_mixer.o \
+ 	sti_gdp.o \
+ 	sti_vid.o
 \ No newline at end of file
-+	sti_gdp.o \
-+	sti_vid.o
-\ No newline at end of file
-diff --git a/drivers/gpu/drm/sti/sti_vid.c b/drivers/gpu/drm/sti/sti_vid.c
+diff --git a/drivers/gpu/drm/sti/sti_mixer.c b/drivers/gpu/drm/sti/sti_mixer.c
 new file mode 100644
-index 0000000..10ced6a
+index 0000000..5fa6dc5
 --- /dev/null
-+++ b/drivers/gpu/drm/sti/sti_vid.c
-@@ -0,0 +1,138 @@
++++ b/drivers/gpu/drm/sti/sti_mixer.c
+@@ -0,0 +1,243 @@
 +/*
 + * Copyright (C) STMicroelectronics SA 2014
-+ * Author: Fabien Dessenne <fabien.dessenne@st.com> for STMicroelectronics.
++ * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
++ *          Fabien Dessenne <fabien.dessenne@st.com>
++ *          for STMicroelectronics.
 + * License terms:  GNU General Public License (GPL), version 2
 + */
++
++#include "sti_mixer.h"
++#include "sti_vtg.h"
++
++/* Identity: G=Y , B=Cb , R=Cr */
++static const u32 mixerColorSpaceMatIdentity[] = {
++	0x10000000, 0x00000000, 0x10000000, 0x00001000,
++	0x00000000, 0x00000000, 0x00000000, 0x00000000
++};
++
++/* regs offset */
++#define GAM_MIXER_CTL      0x00
++#define GAM_MIXER_BKC      0x04
++#define GAM_MIXER_BCO      0x0C
++#define GAM_MIXER_BCS      0x10
++#define GAM_MIXER_AVO      0x28
++#define GAM_MIXER_AVS      0x2C
++#define GAM_MIXER_CRB      0x34
++#define GAM_MIXER_ACT      0x38
++#define GAM_MIXER_MBP      0x3C
++#define GAM_MIXER_MX0      0x80
++
++/* id for depth of CRB reg */
++#define GAM_DEPTH_VID0_ID  1
++#define GAM_DEPTH_VID1_ID  2
++#define GAM_DEPTH_GDP0_ID  3
++#define GAM_DEPTH_GDP1_ID  4
++#define GAM_DEPTH_GDP2_ID  5
++#define GAM_DEPTH_GDP3_ID  6
++#define GAM_DEPTH_MASK_ID  7
++
++/* mask in CTL reg */
++#define GAM_CTL_BACK_MASK  BIT(0)
++#define GAM_CTL_VID0_MASK  BIT(1)
++#define GAM_CTL_VID1_MASK  BIT(2)
++#define GAM_CTL_GDP0_MASK  BIT(3)
++#define GAM_CTL_GDP1_MASK  BIT(4)
++#define GAM_CTL_GDP2_MASK  BIT(5)
++#define GAM_CTL_GDP3_MASK  BIT(6)
++
++const char *sti_mixer_to_str(struct sti_mixer *mixer)
++{
++	switch (mixer->id) {
++	case STI_MIXER_MAIN:
++		return "MAIN_MIXER";
++	case STI_MIXER_AUX:
++		return "AUX_MIXER";
++	default:
++		return "<UNKNOWN MIXER>";
++	}
++}
++
++static inline u32 sti_mixer_reg_read(struct sti_mixer *mixer, u32 reg_id)
++{
++	return readl(mixer->regs + reg_id);
++}
++
++static inline void sti_mixer_reg_write(struct sti_mixer *mixer,
++				       u32 reg_id, u32 val)
++{
++	writel(val, mixer->regs + reg_id);
++}
++
++void sti_mixer_set_background_status(struct sti_mixer *mixer, bool enable)
++{
++	u32 val = sti_mixer_reg_read(mixer, GAM_MIXER_CTL);
++
++	val &= ~GAM_CTL_BACK_MASK;
++	val |= enable;
++	sti_mixer_reg_write(mixer, GAM_MIXER_CTL, val);
++}
++
++static void sti_mixer_set_background_color(struct sti_mixer *mixer,
++					   u8 red, u8 green, u8 blue)
++{
++	u32 val = (red << 16) | (green << 8) | blue;
++
++	sti_mixer_reg_write(mixer, GAM_MIXER_BKC, val);
++}
++
++static void sti_mixer_set_background_area(struct sti_mixer *mixer,
++					  struct drm_display_mode *mode)
++{
++	u32 ydo, xdo, yds, xds;
++
++	ydo = sti_vtg_get_line_number(*mode, 0);
++	yds = sti_vtg_get_line_number(*mode, mode->vdisplay - 1);
++	xdo = sti_vtg_get_pixel_number(*mode, 0);
++	xds = sti_vtg_get_pixel_number(*mode, mode->hdisplay - 1);
++
++	sti_mixer_reg_write(mixer, GAM_MIXER_BCO, ydo << 16 | xdo);
++	sti_mixer_reg_write(mixer, GAM_MIXER_BCS, yds << 16 | xds);
++}
++
++int sti_mixer_set_layer_depth(struct sti_mixer *mixer, struct sti_layer *layer)
++{
++	int layer_id = 0, depth = layer->zorder;
++	u32 mask, val;
++
++	if (depth >= GAM_MIXER_NB_DEPTH_LEVEL)
++		return 1;
++
++	switch (layer->desc) {
++	case STI_GDP_0:
++		layer_id = GAM_DEPTH_GDP0_ID;
++		break;
++	case STI_GDP_1:
++		layer_id = GAM_DEPTH_GDP1_ID;
++		break;
++	case STI_GDP_2:
++		layer_id = GAM_DEPTH_GDP2_ID;
++		break;
++	case STI_GDP_3:
++		layer_id = GAM_DEPTH_GDP3_ID;
++		break;
++	case STI_VID_0:
++		layer_id = GAM_DEPTH_VID0_ID;
++		break;
++	case STI_VID_1:
++		layer_id = GAM_DEPTH_VID1_ID;
++		break;
++	default:
++		DRM_ERROR("Unknown layer %d\n", layer->desc);
++		return 1;
++	}
++	mask = GAM_DEPTH_MASK_ID << (3 * depth);
++	layer_id = layer_id << (3 * depth);
++
++	dev_dbg(mixer->dev, "GAM_MIXER_CRB val 0x%x mask 0x%x\n",
++		layer_id, mask);
++
++	val = sti_mixer_reg_read(mixer, GAM_MIXER_CRB);
++	val &= ~mask;
++	val |= layer_id;
++	sti_mixer_reg_write(mixer, GAM_MIXER_CRB, val);
++
++	dev_dbg(mixer->dev, "Read GAM_MIXER_CRB 0x%x\n",
++		sti_mixer_reg_read(mixer, GAM_MIXER_CRB));
++	return 0;
++}
++
++int sti_mixer_active_video_area(struct sti_mixer *mixer,
++				struct drm_display_mode *mode)
++{
++	u32 ydo, xdo, yds, xds;
++
++	ydo = sti_vtg_get_line_number(*mode, 0);
++	yds = sti_vtg_get_line_number(*mode, mode->vdisplay - 1);
++	xdo = sti_vtg_get_pixel_number(*mode, 0);
++	xds = sti_vtg_get_pixel_number(*mode, mode->hdisplay - 1);
++
++	DRM_DEBUG_DRIVER("%s active video area xdo:%d ydo:%d xds:%d yds:%d\n",
++			 sti_mixer_to_str(mixer), xdo, ydo, xds, yds);
++	sti_mixer_reg_write(mixer, GAM_MIXER_AVO, ydo << 16 | xdo);
++	sti_mixer_reg_write(mixer, GAM_MIXER_AVS, yds << 16 | xds);
++
++	sti_mixer_set_background_color(mixer, 0xFF, 0, 0);
++
++	sti_mixer_set_background_area(mixer, mode);
++	sti_mixer_set_background_status(mixer, true);
++	return 0;
++}
++
++static u32 sti_mixer_get_layer_mask(struct sti_layer *layer)
++{
++	switch (layer->desc) {
++	case STI_BACK:
++		return GAM_CTL_BACK_MASK;
++	case STI_GDP_0:
++		return GAM_CTL_GDP0_MASK;
++	case STI_GDP_1:
++		return GAM_CTL_GDP1_MASK;
++	case STI_GDP_2:
++		return GAM_CTL_GDP2_MASK;
++	case STI_GDP_3:
++		return GAM_CTL_GDP3_MASK;
++	case STI_VID_0:
++		return GAM_CTL_VID0_MASK;
++	case STI_VID_1:
++		return GAM_CTL_VID1_MASK;
++	default:
++		return 0;
++	}
++}
++
++int sti_mixer_set_layer_status(struct sti_mixer *mixer,
++			       struct sti_layer *layer, bool status)
++{
++	u32 mask, val;
++
++	mask = sti_mixer_get_layer_mask(layer);
++	if (!mask) {
++		DRM_ERROR("Can not find layer mask\n");
++		return -EINVAL;
++	}
++
++	val = sti_mixer_reg_read(mixer, GAM_MIXER_CTL);
++	val &= ~mask;
++	val |= status ? mask : 0;
++	sti_mixer_reg_write(mixer, GAM_MIXER_CTL, val);
++
++	return 0;
++}
++
++void sti_mixer_set_matrix(struct sti_mixer *mixer)
++{
++	unsigned int i;
++
++	for (i = 0; i < ARRAY_SIZE(mixerColorSpaceMatIdentity); i++)
++		sti_mixer_reg_write(mixer, GAM_MIXER_MX0 + (i * 4),
++				    mixerColorSpaceMatIdentity[i]);
++}
++
++struct sti_mixer *sti_mixer_create(struct device *dev, int id,
++				   void __iomem *baseaddr)
++{
++	struct sti_mixer *mixer = devm_kzalloc(dev, sizeof(*mixer), GFP_KERNEL);
++	struct device_node *np = dev->of_node;
++
++	dev_dbg(dev, "%s\n", __func__);
++	if (!mixer) {
++		DRM_ERROR("Failed to allocated memory for mixer\n");
++		return NULL;
++	}
++	mixer->regs = baseaddr;
++	mixer->dev = dev;
++	mixer->id = id;
++
++	if (of_device_is_compatible(np, "st,stih416-compositor"))
++		sti_mixer_set_matrix(mixer);
++
++	DRM_DEBUG_DRIVER("%s created. Regs=%p\n",
++			 sti_mixer_to_str(mixer), mixer->regs);
++
++	return mixer;
++}
+diff --git a/drivers/gpu/drm/sti/sti_mixer.h b/drivers/gpu/drm/sti/sti_mixer.h
+new file mode 100644
+index 0000000..8743721
+--- /dev/null
++++ b/drivers/gpu/drm/sti/sti_mixer.h
+@@ -0,0 +1,54 @@
++/*
++ * Copyright (C) STMicroelectronics SA 2014
++ * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
++ *          Fabien Dessenne <fabien.dessenne@st.com>
++ *          for STMicroelectronics.
++ * License terms:  GNU General Public License (GPL), version 2
++ */
++
++#ifndef _STI_MIXER_H_
++#define _STI_MIXER_H_
 +
 +#include <drm/drmP.h>
 +
 +#include "sti_layer.h"
-+#include "sti_vid.h"
-+#include "sti_vtg.h"
 +
-+/* Registers */
-+#define VID_CTL                 0x00
-+#define VID_ALP                 0x04
-+#define VID_CLF                 0x08
-+#define VID_VPO                 0x0C
-+#define VID_VPS                 0x10
-+#define VID_KEY1                0x28
-+#define VID_KEY2                0x2C
-+#define VID_MPR0                0x30
-+#define VID_MPR1                0x34
-+#define VID_MPR2                0x38
-+#define VID_MPR3                0x3C
-+#define VID_MST                 0x68
-+#define VID_BC                  0x70
-+#define VID_TINT                0x74
-+#define VID_CSAT                0x78
++#define to_sti_mixer(x) container_of(x, struct sti_mixer, drm_crtc)
 +
-+/* Registers values */
-+#define VID_CTL_IGNORE          (BIT(31) | BIT(30))
-+#define VID_CTL_PSI_ENABLE      (BIT(2) | BIT(1) | BIT(0))
-+#define VID_ALP_OPAQUE          0x00000080
-+#define VID_BC_DFLT             0x00008000
-+#define VID_TINT_DFLT           0x00000000
-+#define VID_CSAT_DFLT           0x00000080
-+/* YCbCr to RGB BT709:
-+ * R = Y+1.5391Cr
-+ * G = Y-0.4590Cr-0.1826Cb
-+ * B = Y+1.8125Cb */
-+#define VID_MPR0_BT709          0x0A800000
-+#define VID_MPR1_BT709          0x0AC50000
-+#define VID_MPR2_BT709          0x07150545
-+#define VID_MPR3_BT709          0x00000AE8
-+
-+static int sti_vid_prepare_layer(struct sti_layer *vid, bool first_prepare)
-+{
-+	u32 val;
-+
-+	/* Unmask */
-+	val = readl(vid->regs + VID_CTL);
-+	val &= ~VID_CTL_IGNORE;
-+	writel(val, vid->regs + VID_CTL);
-+
-+	return 0;
-+}
-+
-+static int sti_vid_commit_layer(struct sti_layer *vid)
-+{
-+	struct drm_display_mode *mode = vid->mode;
-+	u32 ydo, xdo, yds, xds;
-+
-+	ydo = sti_vtg_get_line_number(*mode, vid->dst_y);
-+	yds = sti_vtg_get_line_number(*mode, vid->dst_y + vid->dst_h - 1);
-+	xdo = sti_vtg_get_pixel_number(*mode, vid->dst_x);
-+	xds = sti_vtg_get_pixel_number(*mode, vid->dst_x + vid->dst_w - 1);
-+
-+	writel((ydo << 16) | xdo, vid->regs + VID_VPO);
-+	writel((yds << 16) | xds, vid->regs + VID_VPS);
-+
-+	return 0;
-+}
-+
-+static int sti_vid_disable_layer(struct sti_layer *vid)
-+{
-+	u32 val;
-+
-+	/* Mask */
-+	val = readl(vid->regs + VID_CTL);
-+	val |= VID_CTL_IGNORE;
-+	writel(val, vid->regs + VID_CTL);
-+
-+	return 0;
-+}
-+
-+static const uint32_t *sti_vid_get_formats(struct sti_layer *layer)
-+{
-+	return NULL;
-+}
-+
-+static unsigned int sti_vid_get_nb_formats(struct sti_layer *layer)
-+{
-+	return 0;
-+}
-+
-+static void sti_vid_init(struct sti_layer *vid)
-+{
-+	/* Enable PSI, Mask layer */
-+	writel(VID_CTL_PSI_ENABLE | VID_CTL_IGNORE, vid->regs + VID_CTL);
-+
-+	/* Opaque */
-+	writel(VID_ALP_OPAQUE, vid->regs + VID_ALP);
-+
-+	/* Color conversion parameters */
-+	writel(VID_MPR0_BT709, vid->regs + VID_MPR0);
-+	writel(VID_MPR1_BT709, vid->regs + VID_MPR1);
-+	writel(VID_MPR2_BT709, vid->regs + VID_MPR2);
-+	writel(VID_MPR3_BT709, vid->regs + VID_MPR3);
-+
-+	/* Brightness, contrast, tint, saturation */
-+	writel(VID_BC_DFLT, vid->regs + VID_BC);
-+	writel(VID_TINT_DFLT, vid->regs + VID_TINT);
-+	writel(VID_CSAT_DFLT, vid->regs + VID_CSAT);
-+}
-+
-+static const struct sti_layer_funcs vid_ops = {
-+	.get_formats = sti_vid_get_formats,
-+	.get_nb_formats = sti_vid_get_nb_formats,
-+	.init = sti_vid_init,
-+	.prepare = sti_vid_prepare_layer,
-+	.commit = sti_vid_commit_layer,
-+	.disable = sti_vid_disable_layer,
++/**
++ * STI Mixer subdevice structure
++ *
++ * @dev: driver device
++ * @regs: mixer registers
++ * @id: id of the mixer
++ * @drm_crtc: crtc object link to the mixer
++ * @pending_event: set if a flip event is pending on crtc
++ */
++struct sti_mixer {
++	struct device *dev;
++	void __iomem *regs;
++	int id;
++	struct drm_crtc	drm_crtc;
++	struct drm_pending_vblank_event *pending_event;
 +};
 +
-+struct sti_layer *sti_vid_create(struct device *dev)
-+{
-+	struct sti_layer *vid;
++const char *sti_mixer_to_str(struct sti_mixer *mixer);
 +
-+	vid = devm_kzalloc(dev, sizeof(*vid), GFP_KERNEL);
-+	if (!vid) {
-+		DRM_ERROR("Failed to allocate memory for VID\n");
-+		return NULL;
-+	}
++struct sti_mixer *sti_mixer_create(struct device *dev, int id,
++		void __iomem *baseaddr);
 +
-+	vid->ops = &vid_ops;
++int sti_mixer_set_layer_status(struct sti_mixer *mixer,
++		struct sti_layer *layer, bool status);
++int sti_mixer_set_layer_depth(struct sti_mixer *mixer, struct sti_layer *layer);
++int sti_mixer_active_video_area(struct sti_mixer *mixer,
++		struct drm_display_mode *mode);
 +
-+	return vid;
-+}
-diff --git a/drivers/gpu/drm/sti/sti_vid.h b/drivers/gpu/drm/sti/sti_vid.h
-new file mode 100644
-index 0000000..2c0aecd
---- /dev/null
-+++ b/drivers/gpu/drm/sti/sti_vid.h
-@@ -0,0 +1,12 @@
-+/*
-+ * Copyright (C) STMicroelectronics SA 2014
-+ * Author: Fabien Dessenne <fabien.dessenne@st.com> for STMicroelectronics.
-+ * License terms:  GNU General Public License (GPL), version 2
-+ */
++void sti_mixer_set_background_status(struct sti_mixer *mixer, bool enable);
 +
-+#ifndef _STI_VID_H_
-+#define _STI_VID_H_
++/* depth in Cross-bar control = z order */
++#define GAM_MIXER_NB_DEPTH_LEVEL 7
 +
-+struct sti_layer *sti_vid_create(struct device *dev);
++#define STI_MIXER_MAIN 0
++#define STI_MIXER_AUX  1
 +
 +#endif
 -- 
