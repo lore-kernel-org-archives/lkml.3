@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163AbaFRSOQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 14:14:16 -0400
-Received: from mail-pa0-f74.google.com ([209.85.220.74]:34594 "EHLO
-	mail-pa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401AbaFRSOO (ORCPT
+	id S1754227AbaFRSOV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 14:14:21 -0400
+Received: from mail-qa0-f73.google.com ([209.85.216.73]:41246 "EHLO
+	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753858AbaFRSOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Jun 2014 14:14:14 -0400
 From: Doug Anderson <dianders@chromium.org>
@@ -16,73 +16,51 @@ Cc: Andrew Bresticker <abrestic@chromium.org>, swarren@wwwdotorg.org,
         Bill Richardson <wfrichar@chromium.org>, sjg@chromium.org,
         Wolfram Sang <wsa@the-dreams.de>, broonie@kernel.org,
         Doug Anderson <dianders@chromium.org>, sameo@linux.intel.com,
-        dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org,
-        geert@linux-m68k.org, linux-i2c@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: [PATCH v2 0/10] Batch of cleanup patches for cros_ec
-Date: Wed, 18 Jun 2014 11:13:57 -0700
-Message-Id: <1403115247-8853-1-git-send-email-dianders@chromium.org>
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 02/10] mfd: cros_ec: Allow static din/dout buffers with cros_ec_register()
+Date: Wed, 18 Jun 2014 11:13:59 -0700
+Message-Id: <1403115247-8853-3-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <1403115247-8853-1-git-send-email-dianders@chromium.org>
+References: <1403115247-8853-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a batch of cleanup patches picked from the ChromeOS 3.8 kernel
-tree and applied to ToT.  Most of these patches were authored by Bill
-Richardson (CCed).  Where appropriate I've squashed patches together,
-though I have erred on the side of keeping patches logically distinct
-rather than squashing into one big cleanup patch.
+From: Bill Richardson <wfrichar@chromium.org>
 
-There is very little functionality added by this series, but this gets
-us closer to how things look in the ChromeOS tree so we can add more
-patches atop it.  In general I took the oldest patches from our tree
-and stopped picking when I got to a reasonable patch size (10
-patches).  There are about 5 more cleanup patches still in the
-ChromeOS tree, then some more major functionality patches.
+The lower-level driver may want to provide its own buffers. If so,
+there's no need to allocate new ones.  This already happens to work
+just fine (since we check for size of 0 and use devm allocation), but
+it's good to document it.
 
-Note that I didn't take the "cros_ec_dev" userspace inteface, the
-"LPC" implementation, the "vboot context" implementation, and patches
-relating to exynos5250-spring when picking patches.  These bits are
-very separate (and big!) and can be added and debated separately after
-we've got cleanup in.  Whenever patches touched those pieces of the
-code I ignored that part of the patch.  In general I did take cleanup
-code that was intended to make it easier to later add these bits.
+[dianders: Resolved conflicts; documented that no code changes needed
+on mainline]
 
-I have tested basic functionality of these patches on exynos5250-snow
-and exynos5420-peach-pit.
+Signed-off-by: Bill Richardson <wfrichar@chromium.org>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Reviewed-by: Simon Glass <sjg@chromium.org>
+---
+Changes in v2: None
 
-Changes in v2:
-- Include example printouts before/after in commit message.
-- Removed unneeded "ret" variable.
-- Added common function to cros_ec.c
-- Changed to dev_dbg() as per http://crosreview.com/66726
-- IRQs should be optional => move EC interrupt to keyboard.
+ include/linux/mfd/cros_ec.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Andrew Bresticker (1):
-  mfd: cros_ec: move EC interrupt to cros_ec_keyb
-
-Bill Richardson (8):
-  mfd: cros_ec: Fix the comment on cros_ec_remove()
-  mfd: cros_ec: Allow static din/dout buffers with cros_ec_register()
-  mfd: cros_ec: Tweak struct cros_ec_device for clarity
-  mfd: cros_ec: Use struct cros_ec_command to communicate with the EC
-  mfd: cros_ec: cleanup: remove unused fields from struct cros_ec_device
-  mfd: cros_ec: cleanup: Remove EC wrapper functions
-  mfd: cros_ec: Check result code from EC messages
-  mfd: cros_ec: ec_dev->cmd_xfer() returns number of bytes received from
-    EC
-
-Simon Glass (1):
-  mdf: cros_ec: Detect in-progress commands
-
- drivers/i2c/busses/i2c-cros-ec-tunnel.c |  17 +++--
- drivers/input/keyboard/cros_ec_keyb.c   |  70 ++++++++++++--------
- drivers/mfd/cros_ec.c                   |  97 ++++++++--------------------
- drivers/mfd/cros_ec_i2c.c               |  37 +++++------
- drivers/mfd/cros_ec_spi.c               |  36 +++++------
- include/linux/mfd/cros_ec.h             | 110 +++++++++++++++++---------------
- 6 files changed, 172 insertions(+), 195 deletions(-)
-
+diff --git a/include/linux/mfd/cros_ec.h b/include/linux/mfd/cros_ec.h
+index 7e9fe6e..2ee3190 100644
+--- a/include/linux/mfd/cros_ec.h
++++ b/include/linux/mfd/cros_ec.h
+@@ -68,8 +68,8 @@ struct cros_ec_msg {
+  * We use this alignment to keep ARM and x86 happy. Probably word
+  * alignment would be OK, there might be a small performance advantage
+  * to using dword.
+- * @din_size: size of din buffer
+- * @dout_size: size of dout buffer
++ * @din_size: size of din buffer to allocate (zero to use static din)
++ * @dout_size: size of dout buffer to allocate (zero to use static dout)
+  * @command_send: send a command
+  * @command_recv: receive a command
+  * @ec_name: name of EC device (e.g. 'chromeos-ec')
 -- 
 2.0.0.526.g5318336
 
