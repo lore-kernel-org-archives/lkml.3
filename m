@@ -1,91 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966584AbaFRNCX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 09:02:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12127 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966310AbaFRNCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 09:02:21 -0400
-Date: Wed, 18 Jun 2014 09:02:11 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org,
-        peter@lekensteyn.nl, mhocko@suse.cz
-Subject: Re: [PATCH] watchdog: Remove preemption restrictions when restarting
- lockup detector
-Message-ID: <20140618130211.GN7959@redhat.com>
-References: <1403010653-243385-1-git-send-email-dzickus@redhat.com>
- <alpine.DEB.2.02.1406171757020.22940@chino.kir.corp.google.com>
+	id S966612AbaFRNCk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 09:02:40 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:63508 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966587AbaFRNCi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 09:02:38 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53A18DE4.8030107@roeck-us.net>
+Date: Wed, 18 Jun 2014 06:02:28 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1406171757020.22940@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Varka Bhadram <varkabhadram@gmail.com>, hs@denx.de
+CC: lm-sensors@lm-sensors.org, Jean Delvare <khali@linux-fr.org>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH v5] hwmon: Driver for TI TMP103 temperature sensor
+References: <1403069837-15651-1-git-send-email-hs@denx.de> <53A127BB.7090802@gmail.com> <53A12ED2.4080004@denx.de> <53A138A0.4010704@gmail.com>
+In-Reply-To: <53A138A0.4010704@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 05:59:05PM -0700, David Rientjes wrote:
-> On Tue, 17 Jun 2014, Don Zickus wrote:
-> 
-> > Peter Wu noticed the following splat on his machine when updating
-> > /proc/sys/kernel/watchdog_thresh:
-> > 
-> > [    0.676701] BUG: sleeping function called from invalid context at /tmp/linux/mm/slub.c:965
-> > [    0.679396] in_atomic(): 1, irqs_disabled(): 0, pid: 1, name: init
-> > [    0.681204] 3 locks held by init/1:
-> > [    0.682371]  #0:  (sb_writers#3){.+.+.+}, at: [<ffffffff8117b663>] vfs_write+0x143/0x180
-> > [    0.685887]  #1:  (watchdog_proc_mutex){+.+.+.}, at: [<ffffffff810e02d3>] proc_dowatchdog+0x33/0x110
-> > [    0.689631]  #2:  (cpu_hotplug.lock){.+.+.+}, at: [<ffffffff810589c2>] get_online_cpus+0x32/0x80
-> > [    0.693117] Preemption disabled at:[<ffffffff810e0384>] proc_dowatchdog+0xe4/0x110
-> > [    0.695753]
-> > [    0.696588] CPU: 0 PID: 1 Comm: init Not tainted 3.16.0-rc1-testing #34
-> > [    0.698404] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
-> > [    0.704622]  ffff88003f250000 ffff88003f1ffd10 ffffffff81624c59 0000000000000000
-> > [    0.707749]  ffff88003f1ffd30 ffffffff8108df1d 0000000000000010 ffffffff81c56360
-> > [    0.711010]  ffff88003f1ffd78 ffffffff8116a5de ffffffff811159a5 ffffffff810a5f4a
-> > [    0.714053] Call Trace:
-> > [    0.715015]  [<ffffffff81624c59>] dump_stack+0x4e/0x7a
-> > [    0.716619]  [<ffffffff8108df1d>] __might_sleep+0x11d/0x190
-> > [    0.718232]  [<ffffffff8116a5de>] kmem_cache_alloc_trace+0x4e/0x1e0
-> > [    0.720214]  [<ffffffff811159a5>] ? perf_event_alloc+0x55/0x440
-> > [    0.721910]  [<ffffffff810a5f4a>] ? mark_held_locks+0x6a/0x90
-> > [    0.723558]  [<ffffffff811159a5>] perf_event_alloc+0x55/0x440
-> > [    0.725304]  [<ffffffff810e0050>] ? restart_watchdog_hrtimer+0x50/0x50
-> > [    0.727279]  [<ffffffff81116d16>] perf_event_create_kernel_counter+0x26/0xe0
-> > [    0.729269]  [<ffffffff810dfe05>] watchdog_nmi_enable+0x75/0x140
-> > [    0.730965]  [<ffffffff810dffb3>] update_timers_all_cpus+0x53/0xa0
-> > [    0.732953]  [<ffffffff810e0384>] proc_dowatchdog+0xe4/0x110
-> > [    0.738408]  [<ffffffff811d8c93>] proc_sys_call_handler+0xb3/0xc0
-> > [    0.740266]  [<ffffffff811d8cb4>] proc_sys_write+0x14/0x20
-> > [    0.742086]  [<ffffffff8117b5cd>] vfs_write+0xad/0x180
-> > [    0.743669]  [<ffffffff810a606d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
-> > [    0.745593]  [<ffffffff8117b799>] SyS_write+0x49/0xb0
-> > [    0.747101]  [<ffffffff8162fe92>] system_call_fastpath+0x16/0x1b
-> > [    0.749069] NMI watchdog: disabled (cpu0): hardware events not enabled
-> > 
-> > What happened is after updating the watchdog_thresh, the lockup detector is
-> > restarted to utilize the new value.  Part of this process involved disabling
-> > preemption.  Once preemption was disabled, perf tried to allocate a new event
-> > (as part of the restart).  This caused the above BUG_ON as you can't sleep with
-> > preemption disabled.
-> > 
-> > The preemption restriction seemed agressive as we are not doing anything
-> > on that particular cpu, but with all the online cpus (which are protected by
-> > the get_online_cpus lock).  Remove the restriction and the BUG_ON goes away.
-> > 
-> > Reported-and-Tested-by: Peter Wu <peter@lekensteyn.nl>
-> > Acked-by: Michal Hocko <mhocko@suse.cz>
-> > Signed-off-by: Don Zickus <dzickus@redhat.com>
-> 
-> Acked-by: David Rientjes <rientjes@google.com>
-> 
-> I think this deserves a Cc: stable@vger.kernel.org # 3.13+
+On 06/17/2014 11:58 PM, Varka Bhadram wrote:
+> On 06/18/2014 11:46 AM, Heiko Schocher wrote:
+...
+>>>
+>>> In the bindings you are giving the compatible property as : ti,tmp103, but here only tmp103.
+>>>
+>>> Instead of using the i2c_device_id struct , use of_device_id struct for giving the
+>>> compatible property value.
+>>> compatble = "<manufacturer>,<model>"
+>>
+>> There are a lot of drivers in drivers/hwmon which use "i2c_device_id struct",
+>> and for them only "model" is necessary ...
+>>
+>> As this is not a platform driver, I do not know, if "of_device_id struct"
+>> is possible to use. For that, it must be converted to a platform
+>> device driver ...
+>>
+> I thought your are using the devicetree source to load the driver. In that case it need not to be platform driver.
+> we can use "of_device_id struct" which matches the bindings in your trivial-devices.txt
+>
 
-Agreed. :-)
+This would be unnecessary. The bindings will work just fine as-is.
 
-Thanks!
+I am starting to repeat myself, as do you. May I kindly suggest that you
+spend some time educating yourself ?
 
-Cheers,
-Don
+Thanks,
+Guenter
 
