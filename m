@@ -1,107 +1,302 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754611AbaFRHDY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 03:03:24 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:22903 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045AbaFRHDX (ORCPT
+	id S932959AbaFRHGp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 03:06:45 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:58484 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751498AbaFRHGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 03:03:23 -0400
-Message-ID: <53A1394A.7040607@huawei.com>
-Date: Wed, 18 Jun 2014 15:01:30 +0800
-From: "xiaofeng.yan" <xiaofeng.yan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 18 Jun 2014 03:06:43 -0400
+Date: Wed, 18 Jun 2014 12:35:01 +0530
+From: Pratyush Anand <pratyush.anand@st.com>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mohit KUMAR DCG <Mohit.KUMAR@st.com>,
+        Jingoo Han <jg1.han@samsung.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Richard Zhu <r65037@freescale.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH v2 2/8] PCI: designware: refactor host init code to
+ re-use on v3.65 DW pci hw
+Message-ID: <20140618070500.GB6098@pratyush-vbox>
+References: <1402426287-31157-1-git-send-email-m-karicheri2@ti.com>
+ <1402426287-31157-3-git-send-email-m-karicheri2@ti.com>
 MIME-Version: 1.0
-To: Luca Abeni <luca.abeni@unitn.it>
-CC: Henrik Austad <henrik@austad.us>, Juri Lelli <juri.lelli@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        <duzhiping.du@huawei.com>, <xiaofeng.yan2012@gmail.com>,
-        <raistlin@linux.it>, <tkhai@yandex.ru>,
-        <harald.gustafsson@ericsson.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFD] sched/deadline: EDF dynamic quota design
-References: <537348DA.7080001@huawei.com> <20140514113245.GZ11096@twins.programming.kicks-ass.net> <53736CD9.90805@unitn.it> <5374A335.90705@huawei.com> <20140515143132.c3199bec4476065cc843277d@gmail.com> <20140516071141.GA28755@austad.us> <537C9FE1.8060603@unitn.it> <539FAB4D.6000702@huawei.com> <539FF5D2.9080703@unitn.it>
-In-Reply-To: <539FF5D2.9080703@unitn.it>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.68.133]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1402426287-31157-3-git-send-email-m-karicheri2@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-18_03:2014-06-17,2014-06-18,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/6/17 16:01, Luca Abeni wrote:
-> Hi,
->
-> On 06/17/2014 04:43 AM, xiaofeng.yan wrote:
-> [...]
->>> The basic ideas are (warning! This is an over-simplification of the 
->>> algorithm! :)
->>> - You assign runtime and period to each SCHED_DEADLINE task as usual
->>> - Each task is guaranteed to receive its runtime every period
->>> - You can also define a maximum fraction Umax of the CPU time that the
->>>   SCHED_DEADLINE tasks can use. Note that Umax _must_ be larger or 
->>> equal
->>>   than sum_i runtime_i / period_i
->>>   (note: in the original GRUB paper, only one CPU is considered, and 
->>> Umax is
->>>   set equal to 1)
->>> - If the tasks are consuming less than Umax, then the scheduling 
->>> algorithm
->>>   allows them to use more runtime (but not less than the guaranteed 
->>> runtime_i)
->>>   in order to use up to Umax.
->>>   This is achieved by modifying the rule used to decrease the 
->>> runtime: in
->>>   SCHED_DEADLINE, if a task executes for a time delta, its runtime 
->>> is decreased
->>>   by delta; using GRUB, it would be decreased by a smaller amount of 
->>> time
->>>   (computed based on Umax, on the active SCHED_DEADLINE tasks, etc...).
->>>   This requires to implement some kind of state machine (the details 
->>> are in
->>>   the GRUB paper)
->>>
->>> I also had an implementation of the GRUB algorithm (based on a 
->>> modification
->>> of my old CBS scheduler for Linux), but the computational complexity 
->>> of the
->>> algorithm was too high. That's why I never proposed to merge it in 
->>> SCHED_DEADLINE.
->>> But maybe there can be some trade-off between the "exact compliance 
->>> with the
->>> GRUB algorithm" and implementation efficiency that can make it 
->>> acceptable...
->>>
->>>
->> Has these  codes been opened about the implementation in some 
->> community or not ?
-> The old GRUB scheduler for Linux was used for some experiments 
-> published in a paper
-> at RTLWS 2007, and of course the code was open-source (released under 
-> GPL).
-> It required a patch for the Linux kernel (I used a 2.6.something 
-> kernel) which allowed
-> to load the scheduler as a kernel module (yes, I know this is the 
-> wrong way to go...
-> But implementing it like this was simpler :).
-> That is very old code... I probably still have it somewhere, but I 
-> have to search
-> for it. If someone is interested, I can try to search (the story of 
-> the user-space
-> daemon for adaptive reservations is similar: I released it as 
-> open-source years ago...
-> If anyone is interested I can search for this code too)
->
->
->                 Luca
->
-I'm glad that you reply this email.  yes, I'm so interesting about your 
-solution.  In fact , there are scenarios
-in our product.  Could you send me a link if you have?  I can test your 
-solution in our scene if you like.
+Hi Murali,
 
-Thanks
-Yan
->
+On Wed, Jun 11, 2014 at 02:51:21AM +0800, Murali Karicheri wrote:
+> Current DW PCI host init code has code specific to newer hw such as
+> ATU port specific resource parsing and map. v3.65 DW PCI host has
+
+OK, Older version did not had standard viewport implementation, so patch 1
+of this series will help you to take care for that.
+
+> MSI controller in application space and requires different controller
+
+Since MSI controller is implemented in application space, so this may
+not be same for different older version dw controller users.
+
+Therefore, I would suggest to implement all application specific code
+in your keystone driver only.
+
+> initialization code. So refactor the msi host controller code into a
+> separate function. Other common functions across both hw versions
+> are moved to dw_pcie_common_host_init() and called from the newer and
+> v3.65 hw host initialization code.
+> 
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> 
+> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> CC: Russell King <linux@arm.linux.org.uk>
+> CC: Grant Likely <grant.likely@linaro.org>
+> CC: Rob Herring <robh+dt@kernel.org>
+> CC: Mohit Kumar <mohit.kumar@st.com>
+> CC: Jingoo Han <jg1.han@samsung.com>
+> CC: Bjorn Helgaas <bhelgaas@google.com>
+> CC: Pratyush Anand <pratyush.anand@st.com>
+> CC: Richard Zhu <r65037@freescale.com>
+> CC: Kishon Vijay Abraham I <kishon@ti.com>
+> CC: Marek Vasut <marex@denx.de>
+> CC: Arnd Bergmann <arnd@arndb.de>
+> CC: Pawel Moll <pawel.moll@arm.com>
+> CC: Mark Rutland <mark.rutland@arm.com>
+> CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> CC: Kumar Gala <galak@codeaurora.org>
+> CC: Randy Dunlap <rdunlap@infradead.org>
+> CC: Grant Likely <grant.likely@linaro.org> 
+> 
+> ---
+>  drivers/pci/host/pcie-designware.c |  136 ++++++++++++++++++++++++++----------
+>  1 file changed, 101 insertions(+), 35 deletions(-)
+> 
+> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+> index e8f5d8d..e4bd19a 100644
+> --- a/drivers/pci/host/pcie-designware.c
+> +++ b/drivers/pci/host/pcie-designware.c
+> @@ -389,13 +389,19 @@ static const struct irq_domain_ops msi_domain_ops = {
+>  	.map = dw_pcie_msi_map,
+>  };
+>  
+> -int __init dw_pcie_host_init(struct pcie_port *pp)
+> +/*
+> + * dw_pcie_parse_resource() - Function to parse common resources
+> + *
+> + * @pp: ptr to pcie port
+> + *
+> + * Parse the range property for MEM, IO and cfg resources, and map
+> + * the cfg register space.
+> + */
+
+Why do you need this function? If you have some extra resource, you
+can ioremap that before you call dw_pcie_host_init.
 
 
+> +int __init dw_pcie_parse_resource(struct pcie_port *pp)
+>  {
+>  	struct device_node *np = pp->dev->of_node;
+>  	struct of_pci_range range;
+>  	struct of_pci_range_parser parser;
+> -	u32 val;
+> -	int i;
+>  
+>  	if (of_pci_range_parser_init(&parser, np)) {
+>  		dev_err(pp->dev, "missing ranges property\n");
+> @@ -431,41 +437,29 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+>  			pp->config.cfg1_size = resource_size(&pp->cfg)/2;
+>  		}
+>  	}
+> -
+> -	if (!pp->dbi_base) {
+> -		pp->dbi_base = devm_ioremap(pp->dev, pp->cfg.start,
+> -					resource_size(&pp->cfg));
+> -		if (!pp->dbi_base) {
+> -			dev_err(pp->dev, "error with ioremap\n");
+> -			return -ENOMEM;
+> -		}
+> -	}
+> -
+> -	pp->cfg0_base = pp->cfg.start;
+> -	pp->cfg1_base = pp->cfg.start + pp->config.cfg0_size;
+>  	pp->mem_base = pp->mem.start;
+>  
+> -	pp->va_cfg0_base = devm_ioremap(pp->dev, pp->cfg0_base,
+> -					pp->config.cfg0_size);
+> -	if (!pp->va_cfg0_base) {
+> -		dev_err(pp->dev, "error with ioremap in function\n");
+> -		return -ENOMEM;
+> -	}
+> -	pp->va_cfg1_base = devm_ioremap(pp->dev, pp->cfg1_base,
+> -					pp->config.cfg1_size);
+> -	if (!pp->va_cfg1_base) {
+> -		dev_err(pp->dev, "error with ioremap\n");
+> -		return -ENOMEM;
+> -	}
+> +	return 0;
+> +}
+>  
+> -	if (of_property_read_u32(np, "num-lanes", &pp->lanes)) {
+> -		dev_err(pp->dev, "Failed to parse the number of lanes\n");
+> -		return -EINVAL;
+> -	}
+> +/*
+> + * dw_pcie_msi_host_init() - Function to initialize msi host controller
+> + *
+> + * @pp: ptr to pcie port
+> + * @np: device node ptr to msi irq controller
+> + * @irq_msi_ops: ptr to MSI irq_domain_ops struct
+> + *
+> + * Function register irq domain for msi irq controller and create mappings
+> + * for MSI irqs.
+> + */
+
+
+May be you can only do following to support your MSI chip:
+
+Initialize pp->irq_domain into your add_pcie_port function before you
+call dw_pcie_host_init.
+
+In dw_pcie_host_init, 
+
+if (IS_ENABLED(CONFIG_PCI_MSI) && !pp->irq_domain)
+
+
+> +int dw_pcie_msi_host_init(struct pcie_port *pp, struct device_node *np,
+> +				const struct irq_domain_ops *irq_msi_ops)
+> +{
+> +	int i;
+>  
+>  	if (IS_ENABLED(CONFIG_PCI_MSI)) {
+>  		pp->irq_domain = irq_domain_add_linear(pp->dev->of_node,
+> -					MAX_MSI_IRQS, &msi_domain_ops,
+> +					MAX_MSI_IRQS, irq_msi_ops,
+>  					&dw_pcie_msi_chip);
+>  		if (!pp->irq_domain) {
+>  			dev_err(pp->dev, "irq domain init failed\n");
+> @@ -476,6 +470,29 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+>  			irq_create_mapping(pp->irq_domain, i);
+>  	}
+>  
+> +	return 0;
+> +}
+> +
+> +/*
+> + * dw_pcie_common_host_init() - common host init function across different
+> + *				versions of the designware PCI controller.
+> + * @pp: ptr to pcie port
+> + * @hw: ptr to hw_pci structure
+> + *
+> + * This functions parses common DT properties, call host_init() callback
+> + * of the PCI controller driver. Also initialize the common RC configurations
+> + * and call common pci core function to intialize the controller driver.
+> + */
+> +int __init dw_pcie_common_host_init(struct pcie_port *pp, struct hw_pci *hw)
+> +{
+> +	struct device_node *np = pp->dev->of_node;
+> +	u32 val;
+> +
+> +	if (of_property_read_u32(np, "num-lanes", &pp->lanes)) {
+> +		dev_err(pp->dev, "Failed to parse the number of lanes\n");
+> +		return -EINVAL;
+> +	}
+> +
+>  	if (pp->ops->host_init)
+>  		pp->ops->host_init(pp);
+>  
+> @@ -488,10 +505,10 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+>  	val |= PORT_LOGIC_SPEED_CHANGE;
+>  	dw_pcie_wr_own_conf(pp, PCIE_LINK_WIDTH_SPEED_CONTROL, 4, val);
+>  
+> -	dw_pci.nr_controllers = 1;
+> -	dw_pci.private_data = (void **)&pp;
+> +	hw->nr_controllers = 1;
+> +	hw->private_data = (void **)&pp;
+>  
+> -	pci_common_init_dev(pp->dev, &dw_pci);
+> +	pci_common_init_dev(pp->dev, hw);
+>  	pci_assign_unassigned_resources();
+>  #ifdef CONFIG_PCI_DOMAINS
+>  	dw_pci.domain++;
+> @@ -500,6 +517,55 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+>  	return 0;
+>  }
+>  
+> +/*
+> + * dw_pcie_host_init() - Host init function for new designware h/w
+> + *
+> + * @pp: ptr to pcie port
+> + *
+> + * The function parse the PCI resurces for IO, Memory and map the config
+> + * space addresses. Also initliaze the MSI irq controller and call
+> + * dw_pcie_common_host_init() to initialize the PCI controller.
+> + */
+> +int __init dw_pcie_host_init(struct pcie_port *pp)
+> +{
+> +	int ret;
+> +
+> +	ret = dw_pcie_parse_resource(pp);
+> +	if (ret)
+> +		return ret;
+> +
+> +	if (!pp->dbi_base) {
+> +		pp->dbi_base = devm_ioremap(pp->dev, pp->cfg.start,
+> +					resource_size(&pp->cfg));
+> +		if (!pp->dbi_base) {
+> +			dev_err(pp->dev, "error with ioremap\n");
+> +			return -ENOMEM;
+> +		}
+> +	}
+> +
+> +	pp->cfg0_base = pp->cfg.start;
+> +	pp->cfg1_base = pp->cfg.start + pp->config.cfg0_size;
+> +
+> +	pp->va_cfg0_base = devm_ioremap(pp->dev, pp->cfg0_base,
+> +					pp->config.cfg0_size);
+> +	if (!pp->va_cfg0_base) {
+> +		dev_err(pp->dev, "error with ioremap in function\n");
+> +		return -ENOMEM;
+> +	}
+> +	pp->va_cfg1_base = devm_ioremap(pp->dev, pp->cfg1_base,
+> +					pp->config.cfg1_size);
+> +	if (!pp->va_cfg1_base) {
+> +		dev_err(pp->dev, "error with ioremap\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	ret = dw_pcie_msi_host_init(pp, pp->dev->of_node, &msi_domain_ops);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	return dw_pcie_common_host_init(pp, &dw_pci);
+> +}
+> +
+>  static void dw_pcie_prog_viewport_cfg0(struct pcie_port *pp, u32 busdev)
+>  {
+>  	/* Program viewport 0 : OUTBOUND : CFG0 */
+
+Regards
+Pratyush
+
+> -- 
+> 1.7.9.5
