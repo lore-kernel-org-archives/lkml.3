@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966475AbaFRM6i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 08:58:38 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:53532 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966138AbaFRM6g (ORCPT
+	id S966518AbaFRM6v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 08:58:51 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:51019 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966162AbaFRM6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 08:58:36 -0400
-Date: Wed, 18 Jun 2014 05:58:31 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [bisected] pre-3.16 regression on open() scalability
-Message-ID: <20140618125831.GB4669@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <539B594C.8070004@intel.com>
- <20140613224519.GV4581@linux.vnet.ibm.com>
- <53A0CAE5.9000702@intel.com>
- <20140618001836.GV4669@linux.vnet.ibm.com>
- <53A132D4.60408@intel.com>
+	Wed, 18 Jun 2014 08:58:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, mark.brown@linaro.org,
+        Tomasz Figa <t.figa@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>, linux-kernel@vger.kernel.org,
+        joshi@samsung.com, vikas.sajjan@samsung.com, chow.kim@samsung.com,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH RFC] mfd: syscon: Decouple syscon interface from syscon devices
+Date: Wed, 18 Jun 2014 14:57:47 +0200
+Message-ID: <5537724.LlmJ2hxcKn@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53A0B27E.5010708@gmail.com>
+References: <53A05E2D.6020702@samsung.com> <5027740.B7iVUcUX2T@wuerfel> <53A0B27E.5010708@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53A132D4.60408@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061812-8236-0000-0000-00000330CB4E
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:apMeJ233hgExA9//3C1AO83OZiWse4Brwhf8khZHF7Y
+ BKGT7ttNKHu7MCBElUHkNMllwIB2ZkxWY0nmltSCjJTlLhh0KG
+ 0ZWpfixvPb5JatIlC5nOK4qnKm7PYjgjPlOGbc+e7dyH0u8Qb2
+ CmcvLWe8yo3sl0whqEL6tCRSatK51a40a61OBHMwMT+hBWeE5n
+ XpnSPlKllmB+sagjQLRjIuxVQUQcRqseTJhKq482TkspLsSQx1
+ 0DjM6yz/jCWhn57rREyNC+rT8LUKqiFGHjs+X+2NcSz68RXZEy
+ S5nmMGTumrPUsxZr4x2jrO4AZ5snGT+Z885QMJ8JQXhKtfZooy
+ KEvGdgnF2DQsbXHIWti4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 11:33:56PM -0700, Dave Hansen wrote:
-> On 06/17/2014 05:18 PM, Paul E. McKenney wrote:
-> > So if I understand correctly, a goodly part of the regression is due not
-> > to the overhead added to cond_resched(), but rather because grace periods
-> > are now happening faster, thus incurring more overhead.  Is that correct?
+On Tuesday 17 June 2014 23:26:22 Tomasz Figa wrote:
+> On 17.06.2014 17:42, Arnd Bergmann wrote:
+> > This seems like a reasonable way of solving the problem, but I think
+> > there is an even better one that we have about in the past: if we
+> > promote syscon from a platform driver into a a drivers/base/ helper
+> > that is independent of the platform device matching, we can use
+> > call syscon_regmap_lookup_* for any device node, whether it's already
+> > bound to a driver or not, which do what you need. It would also make
+> > it easier to call the syscon code before the platform_device
+> > infrastructure gets initialized, which is something a number of
+> > people have asked for, e.g. for using regmap to do SMP bringup
+> > or for clock registration.
 > 
-> Yes, that's the theory at least.
-> 
-> > If this is the case, could you please let me know roughly how sensitive is
-> > the performance to the time delay in RCU_COND_RESCHED_EVERY_THIS_JIFFIES?
-> 
-> This is the previous kernel, plus RCU tracing, so it's not 100%
-> apples-to-apples (and it peaks a bit lower than the other kernel).  But
-> here's the will-it-scale open1 throughput on the y axis vs
-> RCU_COND_RESCHED_EVERY_THIS_JIFFIES on x:
-> 
-> 	http://sr71.net/~dave/intel/jiffies-vs-openops.png
-> 
-> This was a quick and dirty single run with very little averaging, so I
-> expect there to be a good amount of noise.  I ran it from 1->100, but it
-> seemed to peak at about 30.
+> Basically, unless I'm missing your point, this is what my patch does,
+> except that I don't move it to drivers/base/ and the registration
+> function I added require a pointer to struct device. Indeed, decoupling
+> it further from the driver model, by adding of_syscon_register() should
+> be useful for early users.
 
-OK, so a default setting on the order of 20-30 jiffies looks promising.
+I believe the part you are missing is that with the approach I suggested,
+there would be no registration function at all. You can easily do the
+lookup from the client drivers using the DT data structures, with no
+need for the device at all. The only exception today is the clps711x
+platform using syscon_regmap_lookup_by_pdevname(), but that should be
+solved in 3.17 when clps711x becomes DT-only.
 
-> > The patch looks promising.  I will probably drive the time-setup deeper
-> > into the guts of RCU, which should allow moving the access to jiffies
-> > and the comparison off of the fast path as well, but this appears to
-> > me to be good and sufficient for others encountering this same problem
-> > in the meantime.
-> 
-> Yeah, the more overhead we can push out of cond_resched(), the better.
-> I had no idea how much we call it!
+> Should I move this to drivers/base/, even though from current location
+> it can be used outside the platform driver anyway?
 
-Me neither!
+Thinking about it some more, drivers/of might be better than drivers/base.
+It depends a bit where we are heading with this, in particular if we
+expect to see non-DT users in the future.
 
-							Thanx, Paul
-
+	Arnd
