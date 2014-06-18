@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965324AbaFRIcO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 04:32:14 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:49469 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933182AbaFRIcM (ORCPT
+	id S934102AbaFRIdM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 04:33:12 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:45433 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932108AbaFRIdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 04:32:12 -0400
-Date: Wed, 18 Jun 2014 09:32:04 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 06/10] mfd: Add driver for Maxim 77802 Power
- Management IC
-Message-ID: <20140618083204.GP21030@lee--X1>
-References: <1402941758-11216-1-git-send-email-javier.martinez@collabora.co.uk>
- <1402941758-11216-7-git-send-email-javier.martinez@collabora.co.uk>
- <20140616192720.GK5099@sirena.org.uk>
- <53A01F09.5070106@collabora.co.uk>
+	Wed, 18 Jun 2014 04:33:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53A01F09.5070106@collabora.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <7hionz9i5e.fsf@paris.lan>
+References: <1402592317-7043-1-git-send-email-jaswinder.singh@linaro.org>
+	<1402592479-7244-1-git-send-email-jaswinder.singh@linaro.org>
+	<7hionz9i5e.fsf@paris.lan>
+Date: Wed, 18 Jun 2014 14:03:08 +0530
+Message-ID: <CAJe_ZhcuOa39Db_tE4JupY74aze02=v1FWzduFD0sO15nMrKvw@mail.gmail.com>
+Subject: Re: [PATCHv7 2/5] mailbox: Introduce framework for mailbox
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Matt Porter <mporter@linaro.org>, Patch Tracking <patches@linaro.org>,
+        Bjorn Andersson <bjorn@kryo.se>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Anna, Suman" <s-anna@ti.com>, Loic Pallardy <loic.pallardy@st.com>,
+        LeyFoon Tan <lftan.linux@gmail.com>,
+        Craig McGeachie <slapdau@yahoo.com.au>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, ijc+devicetree@hellion.org.uk,
+        Arnd Bergmann <arnd@arndb.de>, Josh Cartwright <joshc@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        "ks.giri@samsung.com" <ks.giri@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> +config MFD_MAX77802
-> >> +	tristate "Maxim Integrated MAX77802 PMIC Support"
-> >> +	depends on I2C=y
-> >> +	select MFD_CORE
-> >> +	select REGMAP_I2C
-> >> +	select REGMAP_IRQ
-> >> +	select IRQ_DOMAIN
-> >> +	help
-> >> +	  Say yes here to support for Maxim Integrated MAX77802.
-> >> +	  This is a Power Management IC with RTC on chip.
-> >> +	  This driver provides common support for accessing the device;
-> >> +	  additional drivers must be enabled in order to use the functionality
-> >> +	  of the device.
-> >> +
-> > 
-> > It is a bit unorthodox to put the build infrastructure in the same patch
-> > as the DT binding...
-> > 
-> 
-> I thought it was the opposite. That a DT binding document has to be added along
-> with the first user of the binding but I'll separate the DT doc in another patch
-> then if that is the right thing to do.
+On 18 June 2014 05:57, Kevin Hilman <khilman@linaro.org> wrote:
+> Jassi Brar <jaswinder.singh@linaro.org> writes:
+>
+>> Introduce common framework for client/protocol drivers and
+>> controller drivers of Inter-Processor-Communication (IPC).
+>>
+>> Client driver developers should have a look at
+>>  include/linux/mailbox_client.h to understand the part of
+>> the API exposed to client drivers.
+>> Similarly controller driver developers should have a look
+>> at include/linux/mailbox_controller.h
+>>
+>> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
+>
+> This series is shaping up nicely.  The one thing I think it would
+> benefit from, being a new common framework is something under
+> Documentation giving a brief overview, but more importantly some
+> example code snippets of a mailbox client using the API, and maybe an
+> example usage of the controller API as well.
+>
+> Not only will that guide developers who want to use/implement this API
+> on their platforms, it will also aid reviewers.
+>
+I have been trying to get it upstream for quite some time now because
+my platform depends upon it. I am planning to submit my platform
+support which should have a client and controller side of the mailbox
+API. Though I am told the API (until v4 at least) supported usecases
+for 5 different platforms.
 
-This was the 'old' method, but changed a little over a year ago.
-
-> Thanks a lot for all your suggestions, I'll wait a little to see if there is
-> more feedback and repost a v3 addressing all the issues you pointed out.
-
-Just re-post it.  I'll review the next version.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks,
+Jassi
