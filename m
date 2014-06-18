@@ -1,71 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754546AbaFRS3G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 14:29:06 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:17430 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755AbaFRS3D (ORCPT
+	id S1754585AbaFRSaM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 14:30:12 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:40625 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754072AbaFRSaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 14:29:03 -0400
-Date: Wed, 18 Jun 2014 12:02:32 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, tglx@linutronix.de,
-        mingo@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        paolo.bonzini@gmail.com, boris.ostrovsky@oracle.com,
-        paulmck@linux.vnet.ibm.com, riel@redhat.com,
-        torvalds@linux-foundation.org, raghavendra.kt@linux.vnet.ibm.com,
-        david.vrabel@citrix.com, oleg@redhat.com, gleb@redhat.com,
-        scott.norton@hp.com, chegu_vinod@hp.com,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 04/11] qspinlock: Extract out the exchange of tail code
- word
-Message-ID: <20140618160232.GB5107@laptop.dumpdata.com>
-References: <20140615124657.264658593@chello.nl>
- <20140615130153.376621956@chello.nl>
- <20140617205525.GB29634@laptop.dumpdata.com>
- <53A17A09.6010007@redhat.com>
- <20140618135057.GB4729@laptop.dumpdata.com>
- <53A1B43C.8000009@hp.com>
+	Wed, 18 Jun 2014 14:30:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53A1B43C.8000009@hp.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <53A1D921.2090305@gmail.com>
+References: <1403101176-23664-1-git-send-email-namit@cs.technion.ac.il>
+	<1403101176-23664-4-git-send-email-namit@cs.technion.ac.il>
+	<CAG7+5M1T=OSqMLOJjb-txRCL_J_q=KSNV9yOfeP=98YuyD27Fw@mail.gmail.com>
+	<53A1D921.2090305@gmail.com>
+Date: Wed, 18 Jun 2014 11:30:07 -0700
+Message-ID: <CAG7+5M0cxB3-Wiv-mo6qYN=c08ejGCvJ7MKPc=XteSkTYYCdUg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] KVM: x86: correct mwait and monitor emulation
+From: Eric Northup <digitaleric@google.com>
+To: Nadav Amit <nadav.amit@gmail.com>
+Cc: Nadav Amit <namit@cs.technion.ac.il>, Paolo Bonzini <pbonzini@redhat.com>,
+        gleb@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>, joro@8bytes.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>However, I *do* agree with you that it's simpler to just squash this patch
-> >>into 01/11.
-> >Uh, did I say that? Oh I said why don't make it right the first time!
-> >
-> >I meant in terms of seperating the slowpath (aka the bytelock on the pending
-> >bit) from the queue (MCS code). Or renaming the function to be called
-> >'complex' instead of 'slowpath' as it is getting quite hairy.
-> >
-> >The #1 patch is nice by itself - as it lays out the foundation of the
-> >MCS-similar code - and if Ingo decides he does not want this pending
-> >byte-lock bit business - it can be easily reverted or dropped.
-> 
-> The pending bit code is needed for performance parity with ticket spinlock
-> for light load. My own measurement indicates that the queuing overhead will
-> cause the queue spinlock to be slower than ticket spinlock with 2-4
-> contending tasks. The pending bit solves the performance problem with 2
+Quoting Gabriel's post http://www.spinics.net/lists/kvm/msg103792.html :
 
-Aha!
+[...]
 
-> contending tasks, leave only the 3-4 tasks cases being a bit slower than the
-> ticket spinlock which should be more than compensated by its superior
-> performance with heavy contention and slightly better performance with no
-> contention.
+> E.g., OS X 10.5 *does* check CPUID, and panics if it doesn't find it.
+> It needs the MONITOR cpuid flag to be on, *and* the actual
+> instructions to work.
 
-That should be mentioned in the commit description as the rationale for
-the patch "qspinlock: Add pending bit" and also in the code.
 
-Thank you!
+
+
+On Wed, Jun 18, 2014 at 11:23 AM, Nadav Amit <nadav.amit@gmail.com> wrote:
+> On 6/18/14, 8:59 PM, Eric Northup wrote:
+>>
+>> On Wed, Jun 18, 2014 at 7:19 AM, Nadav Amit <namit@cs.technion.ac.il>
+>> wrote:
+>>>
+>>> mwait and monitor are currently handled as nop. Considering this
+>>> behavior, they
+>>> should still be handled correctly, i.e., check execution conditions and
+>>> generate
+>>> exceptions when required. mwait and monitor may also be executed in
+>>> real-mode
+>>> and are not handled in that case.  This patch performs the emulation of
+>>> monitor-mwait according to Intel SDM (other than checking whether
+>>> interrupt can
+>>> be used as a break event).
+>>>
+>>> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+>>> ---
+>>>   arch/x86/kvm/emulate.c | 41 +++++++++++++++++++++++++++++++++++++++--
+>>>   arch/x86/kvm/svm.c     | 22 ++--------------------
+>>>   arch/x86/kvm/vmx.c     | 27 +++++++++++----------------
+>>>   3 files changed, 52 insertions(+), 38 deletions(-)
+>>>
+>>> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+>>> index ef7a5a0..424b58d 100644
+>>> --- a/arch/x86/kvm/emulate.c
+>>> +++ b/arch/x86/kvm/emulate.c
+>>> @@ -3344,6 +3344,43 @@ static int em_bswap(struct x86_emulate_ctxt *ctxt)
+>>>          return X86EMUL_CONTINUE;
+>>>   }
+>>>
+>>> +static int em_monitor(struct x86_emulate_ctxt *ctxt)
+>>> +{
+>>> +       int rc;
+>>> +       struct segmented_address addr;
+>>> +       u64 rcx = reg_read(ctxt, VCPU_REGS_RCX);
+>>> +       u64 rax = reg_read(ctxt, VCPU_REGS_RAX);
+>>> +       u8 byte;
+>>
+>>
+>> I'd request:
+>>
+>> u32 ebx, ecx, edx, eax = 1;
+>> ctxt->opt->get_cpuid(ctxt, &eax, &ebx, &ecx, &edx);
+>> if (!(ecx & FFL(MWAIT)))
+>>          return emulate_ud(ctxt);
+>>
+>> and also in em_mwait.
+>>
+>
+> I had similar implementation on previous version, which also checked on
+> mwait whether "interrupt as break event" matches ECX value. However, I was
+> under the impression that it was decided that MWAIT will always be emulated
+> as NOP to avoid misbehaving VMs that ignore CPUID (see the discussion at
+> http://www.spinics.net/lists/kvm/msg102766.html ).
+>
+> Nadav
