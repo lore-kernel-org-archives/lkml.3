@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115AbaFRSVa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 14:21:30 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:39731 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752871AbaFRSV2 (ORCPT
+	id S1754185AbaFRSVy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 14:21:54 -0400
+Received: from mail-qc0-f202.google.com ([209.85.216.202]:33837 "EHLO
+	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753535AbaFRSVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 14:21:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <53A1D701.8060404@codeaurora.org>
-References: <1397147232-28516-1-git-send-email-taras.kondratiuk@linaro.org>
-	<CAGa+x85P-M3qUD6L=kezkiQ1NJymEZ9P=u2ANUZJu2b3F+o5LA@mail.gmail.com>
-	<53A1D701.8060404@codeaurora.org>
-Date: Wed, 18 Jun 2014 11:21:28 -0700
-Message-ID: <CAGa+x86DfDjQG8gN2-x7Kapt2ipsYt879R4OK6JWGoaT93VVig@mail.gmail.com>
-Subject: Re: [PATCH] ARM: zImage: ensure header in LE format for BE8 kernels
-From: Kevin Hilman <khilman@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Nico Pitre <nico@fluxnic.net>, LKML <linux-kernel@vger.kernel.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>, Olof Johansson <olof@lixom.net>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 18 Jun 2014 14:21:53 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Andrew Bresticker <abrestic@chromium.org>, swarren@wwwdotorg.org,
+        olof@lixom.net, Sonny Rao <sonnyrao@chromium.org>,
+        linux-samsung-soc@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Bill Richardson <wfrichar@chromium.org>, sjg@chromium.org,
+        Wolfram Sang <wsa@the-dreams.de>, broonie@kernel.org,
+        Doug Anderson <dianders@chromium.org>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 01/10] mfd: cros_ec: Fix the comment on cros_ec_remove()
+Date: Wed, 18 Jun 2014 11:13:58 -0700
+Message-Id: <1403115247-8853-2-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <1403115247-8853-1-git-send-email-dianders@chromium.org>
+References: <1403115247-8853-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 11:14 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 06/18/14 10:55, Kevin Hilman wrote:
->>
->> All of that to say, with this patch applied, I need a new (and
->> reliable) way to determine the endianness of a kernel just by looking
->> at the zImage.  Recommendations welcome.
->
-> Assuming that you have the .config configured to be built into the
-> kernel you could use extract-ikconfig
->
-> $ ./scripts/extract-ikconfig zImage | grep CONFIG_CPU_ENDIAN_BE8
+From: Bill Richardson <wfrichar@chromium.org>
 
-Unfortunately, I can't rely on having that built in since I want the
-boot tools to be as generic as possible.
+This comment was incorrect, so update it.
 
-Kevin
+Signed-off-by: Bill Richardson <wfrichar@chromium.org>
+Signed-off-by: Simon Glass <sjg@chromium.org>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+---
+Changes in v2: None
+
+ include/linux/mfd/cros_ec.h | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/include/linux/mfd/cros_ec.h b/include/linux/mfd/cros_ec.h
+index 887ef4f..7e9fe6e 100644
+--- a/include/linux/mfd/cros_ec.h
++++ b/include/linux/mfd/cros_ec.h
+@@ -148,8 +148,7 @@ int cros_ec_prepare_tx(struct cros_ec_device *ec_dev,
+ /**
+  * cros_ec_remove - Remove a ChromeOS EC
+  *
+- * Call this to deregister a ChromeOS EC. After this you should call
+- * cros_ec_free().
++ * Call this to deregister a ChromeOS EC, then clean up any private data.
+  *
+  * @ec_dev: Device to register
+  * @return 0 if ok, -ve on error
+-- 
+2.0.0.526.g5318336
+
