@@ -1,106 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964992AbaFRH4T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 03:56:19 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:33337 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756181AbaFRHz6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 03:55:58 -0400
-Date: Wed, 18 Jun 2014 08:55:51 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Andrew Bresticker <abrestic@chromium.org>, swarren@wwwdotorg.org,
-        olof@lixom.net, Sonny Rao <sonnyrao@chromium.org>,
-        linux-samsung-soc@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Bill Richardson <wfrichar@chromium.org>, sjg@chromium.org,
-        Wolfram Sang <wsa@the-dreams.de>, broonie@kernel.org,
-        sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/10] mfd: cros_ec: IRQs for cros_ec should be optional
-Message-ID: <20140618075551.GJ21030@lee--X1>
-References: <1402954800-28215-1-git-send-email-dianders@chromium.org>
- <1402954800-28215-3-git-send-email-dianders@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1402954800-28215-3-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934007AbaFRH41 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 03:56:27 -0400
+Received: from ozlabs.org ([103.22.144.67]:53888 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756388AbaFRH4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 03:56:22 -0400
+Message-ID: <1403078179.32307.7.camel@concordia>
+Subject: Re: [RFT PATCH -next v3] [BUGFIX] kprobes: Fix "Failed to find
+ blacklist" error on ia64 and ppc64
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
+        Tony Luck <tony.luck@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-tip-commits@vger.kernel.org, anil.s.keshavamurthy@intel.com,
+        Ingo Molnar <mingo@kernel.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        akataria@vmware.com, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>
+Date: Wed, 18 Jun 2014 17:56:19 +1000
+In-Reply-To: <539161D6.7020508@hitachi.com>
+References: <5387F150.5000307@hitachi.com>
+	 <20140530031838.17427.75896.stgit@ltc230.yrl.intra.hitachi.co.jp>
+	 <539161D6.7020508@hitachi.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jun 2014, Doug Anderson wrote:
-
-> From: Bill Richardson <wfrichar@chromium.org>
+On Fri, 2014-06-06 at 15:38 +0900, Masami Hiramatsu wrote:
+> Ping?
 > 
-> Preparing the way for the LPC device, which is just a plaform_device without
-> interrupts.
-> 
-> Signed-off-by: Bill Richardson <wfrichar@chromium.org>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
->  drivers/mfd/cros_ec.c | 26 +++++++++++++-------------
->  1 file changed, 13 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/mfd/cros_ec.c b/drivers/mfd/cros_ec.c
-> index 38fe9bf..bd6f936 100644
-> --- a/drivers/mfd/cros_ec.c
-> +++ b/drivers/mfd/cros_ec.c
-> @@ -119,17 +119,15 @@ int cros_ec_register(struct cros_ec_device *ec_dev)
->  			return -ENOMEM;
->  	}
->  
-> -	if (!ec_dev->irq) {
-> -		dev_dbg(dev, "no valid IRQ: %d\n", ec_dev->irq);
-> -		return err;
-> -	}
-> -
-> -	err = request_threaded_irq(ec_dev->irq, NULL, ec_irq_thread,
-> -				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-> -				   "chromeos-ec", ec_dev);
-> -	if (err) {
-> -		dev_err(dev, "request irq %d: error %d\n", ec_dev->irq, err);
-> -		return err;
-> +	if (ec_dev->irq) {
-> +		err = request_threaded_irq(ec_dev->irq, NULL, ec_irq_thread,
-> +					IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-> +					"chromeos-ec", ec_dev);
+> I guess this should go to 3.16 branch, shouldn't it?
 
-Is there anything stopping you using the devm_* version?
+> > diff --git a/arch/powerpc/include/asm/types.h b/arch/powerpc/include/asm/types.h
+> > index bfb6ded..8b89d65 100644
+> > --- a/arch/powerpc/include/asm/types.h
+> > +++ b/arch/powerpc/include/asm/types.h
+> > @@ -25,6 +25,17 @@ typedef struct {
+> >  	unsigned long env;
+> >  } func_descr_t;
+> >  
+> > +#if defined(CONFIG_PPC64) && (!defined(_CALL_ELF) || _CALL_ELF == 1)
+> > +/*
+> > + * On PPC64 ABIv1 the function pointer actually points to the
+> > + * function's descriptor. The first entry in the descriptor is the
+> > + * address of the function text.
+> > + */
+> > +#define function_entry(fn)	(((func_descr_t *)(fn))->entry)
+> > +#else
+> > +#define function_entry(fn)	((unsigned long)(fn))
+> > +#endif
 
-> +		if (err) {
-> +			dev_err(dev, "request irq %d: error %d\n",
-> +				ec_dev->irq, err);
-> +			return err;
-> +		}
->  	}
->  
->  	err = mfd_add_devices(dev, 0, cros_devs,
-> @@ -145,7 +143,8 @@ int cros_ec_register(struct cros_ec_device *ec_dev)
->  	return 0;
->  
->  fail_mfd:
-> -	free_irq(ec_dev->irq, ec_dev);
-> +	if (ec_dev->irq)
-> +		free_irq(ec_dev->irq, ec_dev);
->  
->  	return err;
->  }
-> @@ -154,7 +153,8 @@ EXPORT_SYMBOL(cros_ec_register);
->  int cros_ec_remove(struct cros_ec_device *ec_dev)
->  {
->  	mfd_remove_devices(ec_dev->dev);
-> -	free_irq(ec_dev->irq, ec_dev);
-> +	if (ec_dev->irq)
-> +		free_irq(ec_dev->irq, ec_dev);
->  
->  	return 0;
->  }
+We already have ppc_function_entry(), can't you use that?
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+cheers
+
+
