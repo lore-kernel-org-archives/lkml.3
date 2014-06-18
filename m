@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745AbaFRVMw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 17:12:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52277 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755140AbaFRVMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 17:12:51 -0400
-Date: Wed, 18 Jun 2014 23:12:48 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Dave Anderson <anderson@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Petr Mladek <pmladek@suse.cz>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [RFC PATCH 00/11] printk: safe printing in NMI context
-In-Reply-To: <20140618210757.GU4669@linux.vnet.ibm.com>
-Message-ID: <alpine.LNX.2.00.1406182310070.2303@pobox.suse.cz>
-References: <alpine.LNX.2.00.1405290000350.17241@pobox.suse.cz> <20140529000909.GC6507@localhost.localdomain> <alpine.LNX.2.00.1405290959270.17241@pobox.suse.cz> <20140610164641.GD1951@localhost.localdomain> <CA+55aFzseOqF-EpKMvwKpfhBJZQSLqKpJ3shzVee9s0+mvyCuA@mail.gmail.com>
- <alpine.LNX.2.00.1406181245230.2303@pobox.suse.cz> <20140618143612.GC4669@linux.vnet.ibm.com> <CA+55aFwPgDC6gSEPfu3i-pA4f0ZbsTSvykxzX4sXMeLbdXuKrw@mail.gmail.com> <20140618162117.GM4669@linux.vnet.ibm.com> <alpine.LNX.2.00.1406182232390.2303@pobox.suse.cz>
- <20140618210757.GU4669@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932069AbaFRVNL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 17:13:11 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:46535 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755815AbaFRVNJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 17:13:09 -0400
+Message-ID: <53A200DD.3060004@infradead.org>
+Date: Wed, 18 Jun 2014 14:13:01 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>
+CC: "J. Bruce Fields" <bfields@fieldses.org>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: relative objtree change broke tar builds?
+References: <20140617223854.GC6168@fieldses.org> <53A15684.9000002@suse.cz> <20140618122029.GA17790@fieldses.org> <53A18712.6030907@suse.cz> <20140618131452.GB17790@fieldses.org> <53A1B72E.7030907@infradead.org> <53A1ECD0.2030001@suse.cz> <20140618195259.GA21939@ravnborg.org>
+In-Reply-To: <20140618195259.GA21939@ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jun 2014, Paul E. McKenney wrote:
-
-> > >  	/* Complain about tasks blocking the grace period. */
-> > > @@ -1044,8 +1041,7 @@ static void print_cpu_stall(struct rcu_state *rsp)
-> > >  	pr_cont(" (t=%lu jiffies g=%ld c=%ld q=%lu)\n",
-> > >  		jiffies - rsp->gp_start,
-> > >  		(long)rsp->gpnum, (long)rsp->completed, totqlen);
-> > > -	if (!trigger_all_cpu_backtrace())
-> > > -		dump_stack();
-> > > +	rcu_dump_cpu_stacks(rsp);
-> > 
-> > This is prone to producing not really consistent stacktraces though, 
-> > right? As the target task is still running at the time the stack is being 
-> > walked, it might produce stacktraces that are potentially nonsensial.
+On 06/18/14 12:52, Sam Ravnborg wrote:
+> On Wed, Jun 18, 2014 at 09:47:28PM +0200, Michal Marek wrote:
+>> Dne 18.6.2014 17:58, Randy Dunlap napsal(a):
+>>> On 06/18/14 06:14, J. Bruce Fields wrote:
+>>>> On Wed, Jun 18, 2014 at 02:33:22PM +0200, Michal Marek wrote:
+>>>>> Dne 18.6.2014 14:20, J. Bruce Fields napsal(a):
+>>>>>> On Wed, Jun 18, 2014 at 11:06:12AM +0200, Michal Marek wrote:
+>>>>>>> Dne 18.6.2014 00:38, J. Bruce Fields napsal(a):
+>>>>>>>> The changelog there says
+>>>>>>>>
+>>>>>>>> 	The main Makefile sets its working directory to the object tree
+>>>>>>>> 	and never changes it again. Therefore, we can use '.' instead of
+>>>>>>>> 	the absolute path.
+>>>>>>>>
+>>>>>>>> But the main Makefile also exports objtree, and a quick grep suggests
+>>>>>>>> lots of other uses outside the main Makefile.
+>>>>>>>
+>>>>>>> Do you have examples? Besides your report, I'm only aware of make
+>>>>>>> deb-pkg and make *docs. What else?
+>>>>>>
+>>>>>> I haven't looked.
+>>>>>>
+>>>>>> I only note that grep finds 47 files referencing that variable, and
+>>>>>> absent some argument that the remaining ones are correct, I'd be
+>>>>>> inclined to revert.
+>>>>>
+>>>>> Do these 47 files change the working directory before referencing the
+>>>>> variable?
+>>>>
+>>>> Sorry, I'm not volunteering to check.
+>>>>
+>>>> Note also that other variables are defined in terms of objtree, and they
+>>>> may be exported or passed to other scripts.
+>>>
+>>>
+>>> I'll note one side effect that I really dislike:
+>>> If not in silent mode, scripts/mkmakefile tells me that the it is
+>>> generating ./Makefile.  I want to see the real path there instead of '.'.
+>>
+>> The idea is that one should be able to compare as much as possible
+>> between the build of /usr/src/linux-<version_a> built in
+>> /usr/src/linux-<version_a>/build and /usr/src/linux-<version_b> built in
+>> /usr/src/linux-<version_b>/build. One can now even compare the build log
+>> with -j1, although that was not the primary goal. So if the changed
+>> message is considered problematic, I can change it to show the full path
+>> again, like
+>>
+>> diff --git a/scripts/mkmakefile b/scripts/mkmakefile
+>> index 84af27b..9d291f5 100644
+>> --- a/scripts/mkmakefile
+>> +++ b/scripts/mkmakefile
+>> @@ -18,7 +18,7 @@ then
+>>         exit 0
+>>  fi
+>>  if [ "${quiet}" != "silent_" ]; then
+>> -       echo "  GEN     $2/Makefile"
+>> +       echo "  GEN     $(cd $2 && /bin/pwd)/Makefile"
+>>  fi
+>>
+>>  cat << EOF > $2/Makefile
+>>
+>> Opinions?
+> I agree with Randy - the full path is more informative.
 > 
-> If a CPU is stuck, the stack trace down to where it is stuck is
-> likely to be static.  But yes, there is some potential for confusion.
-> My (admittedly limited) rcutorture testing produced sensible stack traces,
-> but things might be a bit uglier in other situations.
+> 	Sam
 
-I agree that it might work nicely for RCU stall detector indeed. I was 
-looking for solution that'd work nicely both for RCU and for sysrq-l 
-(where we can't rely on processess being stuck in any way).
-
-> > How about sending NMI to the target CPU, so that the task is actually 
-> > stopped, but printing its stacktrace from the CPU that detected the stall 
-> > while it's stopped?
-> > 
-> > That way, there is no printk()-from-NMI, but also the stacktrace is 
-> > guaranteed to be self-consistent.
-> 
-> I believe that this was what Steven was suggesting, though by using
-> tracing.  
-
-My understanding was that Steven is suggesting using trace_printk() from 
-NMI.
-
-> Of course, if my current approach isn't up to the job, then something 
-> like this general approach would look quite good.
-
-Thanks,
+Yes, just '.' discards some very useful information.
 
 -- 
-Jiri Kosina
-SUSE Labs
+~Randy
