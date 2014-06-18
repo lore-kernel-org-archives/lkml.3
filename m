@@ -1,133 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966502AbaFRMiJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 08:38:09 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:41255 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966138AbaFRMiI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 08:38:08 -0400
-X-IronPort-AV: E=Sophos;i="5.01,499,1400025600"; 
-   d="scan'208";a="144571699"
-Message-ID: <53A1882D.5030201@citrix.com>
-Date: Wed, 18 Jun 2014 13:38:05 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S966458AbaFRMka (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 08:40:30 -0400
+Received: from mga02.intel.com ([134.134.136.20]:15788 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966138AbaFRMk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 08:40:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,499,1400050800"; 
+   d="scan'208";a="559536616"
+Date: Wed, 18 Jun 2014 05:40:28 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Dave Hansen <dave.hansen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>, Christoph Lameter <cl@linux.com>,
+        peterz@infradead.org
+Subject: Re: [bisected] pre-3.16 regression on open() scalability
+Message-ID: <20140618124028.GN8178@tassilo.jf.intel.com>
+References: <539B594C.8070004@intel.com>
+ <20140613224519.GV4581@linux.vnet.ibm.com>
+ <53A0CAE5.9000702@intel.com>
+ <20140618001517.GL8178@tassilo.jf.intel.com>
+ <20140618010423.GW4669@linux.vnet.ibm.com>
+ <20140618022731.GM8178@tassilo.jf.intel.com>
+ <20140618044745.GZ4669@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        Dave Hansen <dave.hansen@intel.com>
-Subject: Re: [PATCHv2] x86: skip check for spurious faults for non-present
- faults
-References: <1400251458-14891-1-git-send-email-david.vrabel@citrix.com>
-In-Reply-To: <1400251458-14891-1-git-send-email-david.vrabel@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140618044745.GZ4669@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+On Tue, Jun 17, 2014 at 09:47:45PM -0700, Paul E. McKenney wrote:
+> On Tue, Jun 17, 2014 at 07:27:31PM -0700, Andi Kleen wrote:
+> > > OK.  What would you suggest instead?  If all we do is to revert the
+> > 
+> > Hang checker should have two timer phases:
+> > 
+> > Timer fires first time:
+> > - Save context switch counter on that. Force a reschedule to some
+> > work queue. Rearm timer
+> > 
+> > Timer fires again:
+> > - Check reschedule count. If the reschedule count changed
+> > it was a real hang, otherwise ignore.
+> 
+> I could take that approach, but the RT guys aren't going to thank me for
+> the wakeup associated with the work queue.  I suppose that I could use
 
-Someone else asking about what _PAGE_IOMAP was for reminded me that this
-was still outstanding.  Could you review and ack if appropriate?
+They can disable the hang timer if it's really problem.
 
-Thanks.
+If they cannot tolerate a single context switch they likely 
+cannot tolerate a timer firing either.
 
-David
-
-On 16/05/14 15:44, David Vrabel wrote:
-> If a fault on a kernel address is due to a non-present page, then it
-> cannot be the result of stale TLB entry from a protection change (RO
-> to RW or NX to X).  Thus the pagetable walk in spurious_fault() can be
-> skipped.
-> 
-> See the initial if in spurious_fault() and the tests in
-> spurious_fault_check()) for the set of possible error codes checked
-> for spurious faults.  These are:
-> 
->          IRUWP
-> Before   x00xx && ( 1xxxx || xxx1x )
-> After  ( 10001 || 00011 ) && ( 1xxxx || xxx1x )
-> 
-> Thus the new condition is a subset of the previous one, excluding only
-> non-present faults (I == 1 and W == 1 are mutually exclusive).
-> 
-> This avoids spurious_fault() oopsing in some cases if the pagetables
-> it attempts to walk are not accessible.  This obscures the location of
-> the original fault.
-> 
-> This also fixes a crash with Xen PV guests when they access entries in
-> the M2P corresponding to device MMIO regions.  The M2P is mapped
-> (read-only) by Xen into the kernel address space of the guest and this
-> mapping may contains holes for non-RAM regions.  Read faults will
-> result in calls to spurious_fault(), but because the page tables for
-> the M2P mappings are not accessible by the guest the pagetable walk
-> would fault.
-> 
-> This was not normally a problem as MMIO mappings would not normally
-> result in a M2P lookup because of the use of the _PAGE_IOMAP bit the
-> PTE.  However, removing the _PAGE_IOMAP bit requires M2P lookups for
-> MMIO mappings as well.
-> 
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-> Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Cc: Dave Hansen <dave.hansen@intel.com>
-> ---
-> x86 maintainers, this is a prerequisite for removing Xen's usage of
-> _PAGE_IOMAP so I think this is best merged via the Xen tree.
-> 
-> v2:
-> - improve comments
-> ---
->  arch/x86/mm/fault.c |   22 ++++++++++++++++++++--
->  1 file changed, 20 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-> index 8e57229..7f790e4 100644
-> --- a/arch/x86/mm/fault.c
-> +++ b/arch/x86/mm/fault.c
-> @@ -924,8 +924,17 @@ static int spurious_fault_check(unsigned long error_code, pte_t *pte)
->   * cross-processor TLB flush, even if no stale TLB entries exist
->   * on other processors.
->   *
-> + * Spurious faults may only occur if the TLB contains an entry with
-> + * fewer permission than the page table entry.  Non-present (P = 0)
-> + * and reserved bit (R = 1) faults are never spurious.
-> + *
->   * There are no security implications to leaving a stale TLB when
->   * increasing the permissions on a page.
-> + *
-> + * Returns non-zero if a spurious fault was handled, zero otherwise.
-> + *
-> + * See Intel Developer's Manual Vol 3 Section 4.10.4.3, bullet 3
-> + * (Optional Invalidation).
->   */
->  static noinline __kprobes int
->  spurious_fault(unsigned long error_code, unsigned long address)
-> @@ -936,8 +945,17 @@ spurious_fault(unsigned long error_code, unsigned long address)
->  	pte_t *pte;
->  	int ret;
->  
-> -	/* Reserved-bit violation or user access to kernel space? */
-> -	if (error_code & (PF_USER | PF_RSVD))
-> +	/*
-> +	 * Only writes to RO or instruction fetches from NX may cause
-> +	 * spurious faults.
-> +	 *
-> +	 * These could be from user or supervisor accesses but the TLB
-> +	 * is only lazily flushed after a kernel mapping protection
-> +	 * change, so user accesses are not expected to cause spurious
-> +	 * faults.
-> +	 */
-> +	if (error_code != (PF_WRITE | PF_PROT)
-> +	    && error_code != (PF_INSTR | PF_PROT))
->  		return 0;
->  
->  	pgd = init_mm.pgd + pgd_index(address);
-> 
-
+-Andi
