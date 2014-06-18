@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884AbaFRXAD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 19:00:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42925 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752390AbaFRXAA (ORCPT
+	id S1756110AbaFRXAL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 19:00:11 -0400
+Received: from mail-yh0-f41.google.com ([209.85.213.41]:44403 "EHLO
+	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753340AbaFRXAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 19:00:00 -0400
-Date: Wed, 18 Jun 2014 15:59:58 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jack Miller <millerjo@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org, davidlohr@hp.com, miltonm@us.ibm.com,
-        anton@au1.ibm.com
-Subject: Re: [PATCH 1/3] shm: Make exit_shm work proportional to task
- activity
-Message-Id: <20140618155958.84191bb678bea2d37bb97f5b@linux-foundation.org>
-In-Reply-To: <1403026067-14272-2-git-send-email-millerjo@us.ibm.com>
-References: <1403026067-14272-1-git-send-email-millerjo@us.ibm.com>
-	<1403026067-14272-2-git-send-email-millerjo@us.ibm.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Jun 2014 19:00:06 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: Josh Boyer <jwboyer@fedoraproject.org>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 1/5] x86,vdso: Discard the __bug_table section
+Date: Wed, 18 Jun 2014 15:59:46 -0700
+Message-Id: <2a5bebff42defd8a5e81d96f7dc00f21143c80e8.1403129369.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <cover.1403129369.git.luto@amacapital.net>
+References: <cover.1403129369.git.luto@amacapital.net>
+In-Reply-To: <cover.1403129369.git.luto@amacapital.net>
+References: <cover.1403129369.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jun 2014 12:27:45 -0500 Jack Miller <millerjo@us.ibm.com> wrote:
+It serves no purpose in user code.
 
-> --- a/include/linux/shm.h
-> +++ b/include/linux/shm.h
-> @@ -1,6 +1,7 @@
->  #ifndef _LINUX_SHM_H_
->  #define _LINUX_SHM_H_
->  
-> +#include <linux/list.h>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ arch/x86/vdso/vdso-layout.lds.S | 1 +
+ 1 file changed, 1 insertion(+)
 
-yup.  shm.h only compiles by sheer luck - it uses file, task_struct,
-user_struct, time_t, pid_t, __user, and probably other things without
-including the required header files.
+diff --git a/arch/x86/vdso/vdso-layout.lds.S b/arch/x86/vdso/vdso-layout.lds.S
+index 2ec72f6..c84166c 100644
+--- a/arch/x86/vdso/vdso-layout.lds.S
++++ b/arch/x86/vdso/vdso-layout.lds.S
+@@ -75,6 +75,7 @@ SECTIONS
+ 	/DISCARD/ : {
+ 		*(.discard)
+ 		*(.discard.*)
++		*(__bug_table)
+ 	}
+ }
+ 
+-- 
+1.9.3
 
