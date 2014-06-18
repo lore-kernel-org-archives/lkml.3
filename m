@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602AbaFRPZM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 11:25:12 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33314 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751101AbaFRPZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 11:25:10 -0400
-Date: Wed, 18 Jun 2014 17:25:05 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 03/10] x86, mpx: add macro cpu_has_mpx
-Message-ID: <20140618152505.GE24024@pd.tnic>
-References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
- <1403084656-27284-4-git-send-email-qiaowei.ren@intel.com>
- <20140618095739.GA24419@pd.tnic>
- <53A1A3A5.9010109@intel.com>
- <20140618144429.GD24024@pd.tnic>
- <53A1A90D.5010604@intel.com>
+	id S1752365AbaFRP06 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 11:26:58 -0400
+Received: from g5t1625.atlanta.hp.com ([15.192.137.8]:23821 "EHLO
+	g5t1625.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285AbaFRP05 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 11:26:57 -0400
+Message-ID: <53A1AFBB.7090800@hp.com>
+Date: Wed, 18 Jun 2014 11:26:51 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <53A1A90D.5010604@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, tglx@linutronix.de,
+        mingo@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        paolo.bonzini@gmail.com, konrad.wilk@oracle.com,
+        boris.ostrovsky@oracle.com, paulmck@linux.vnet.ibm.com,
+        riel@redhat.com, torvalds@linux-foundation.org,
+        raghavendra.kt@linux.vnet.ibm.com, david.vrabel@citrix.com,
+        oleg@redhat.com, gleb@redhat.com, scott.norton@hp.com,
+        chegu_vinod@hp.com, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 10/11] qspinlock: Paravirt support
+References: <20140615124657.264658593@chello.nl> <20140615130154.213923590@chello.nl> <539F6AD5.4070301@hp.com> <53A18000.8080909@redhat.com>
+In-Reply-To: <53A18000.8080909@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 07:58:21AM -0700, Dave Hansen wrote:
-> Are you seriously asking why we would want to cull out code guaranteed
-> to be unused?
+On 06/18/2014 08:03 AM, Paolo Bonzini wrote:
+> Il 17/06/2014 00:08, Waiman Long ha scritto:
+>>> +void __pv_queue_unlock(struct qspinlock *lock)
+>>> +{
+>>> +    int val = atomic_read(&lock->val);
+>>> +
+>>> +    native_queue_unlock(lock);
+>>> +
+>>> +    if (val & _Q_LOCKED_SLOW)
+>>> +        ___pv_kick_head(lock);
+>>> +}
+>>> +
+>>
+>> Again a race can happen here between the reading and writing of the lock
+>> value. I can't think of a good way to do that without using cmpxchg.
+>
+> Could you just use xchg on the locked byte?
+>
+> Paolo
 
-Yes, I am. Don't get me wrong - I'm all for not enabling code which is
-unused - I'm just questioning the actual usage case here.
+The slowpath flag is just an indication that the queue head cpu might 
+have been suspended. It may not be due to spurious wakeup. Releasing the 
+lock unconditionally may cause the queue to be changed while it is being 
+inspected. It really depending on how the cpu kicking is being handled. 
+My patch delays the unlocking until all the inspections had been done to 
+make sure that we don't waste time doing a cpu kick that is not needed.
 
-Because you have this:
-
-+config X86_INTEL_MPX
-+       def_bool y
-+       depends on CPU_SUP_INTEL
-
-which means, even on !MPX Intels, you need to explicitly say "no" here.
-Is this how the configuration is supposed to be done?
-
-Or do you need to add help text to explain to people not to enable this
-on !MPX machines after looking at /proc/cpuinfo first?
-
-Am I close?
-
-> The minuscule number of people not using a distro kernel?  Like, every
-> Android and Chrome device in the world?  How about the cloud providers
-> with millions of servers?
-
-Cloud people won't be benefiting from MPX?
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+-Longman
