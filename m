@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934075AbaFRIuI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 04:50:08 -0400
-Received: from tundra.namei.org ([65.99.196.166]:41547 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933839AbaFRIuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 04:50:03 -0400
-Date: Wed, 18 Jun 2014 18:51:39 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Serge Hallyn <serge.hallyn@canonical.com>, Greg KH <greg@kroah.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT] Add Serge Hallyn as security subsystem co-maintainer
-Message-ID: <alpine.LRH.2.02.1406181850200.16097@tundra.namei.org>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S934200AbaFRIvm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 04:51:42 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:20636 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934104AbaFRIvi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 04:51:38 -0400
+Date: Wed, 18 Jun 2014 09:51:24 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Andrew Pinski <apinski@cavium.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/24] ARM64:ILP32: Use the same syscall names as LP64.
+Message-ID: <20140618085124.GA11977@arm.com>
+References: <1400914939-9708-1-git-send-email-apinski@cavium.com>
+ <1400914939-9708-10-git-send-email-apinski@cavium.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400914939-9708-10-git-send-email-apinski@cavium.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull.
+On Sat, May 24, 2014 at 12:02:04AM -0700, Andrew Pinski wrote:
+> diff --git a/arch/arm64/include/uapi/asm/unistd.h b/arch/arm64/include/uapi/asm/unistd.h
+> index 1caadc2..067eab0 100644
+> --- a/arch/arm64/include/uapi/asm/unistd.h
+> +++ b/arch/arm64/include/uapi/asm/unistd.h
+> @@ -1,5 +1,6 @@
+>  /*
+>   * Copyright (C) 2012 ARM Ltd.
+> + * Copyright (C) 2014 Cavium Inc.
+>   *
+>   * This program is free software; you can redistribute it and/or modify
+>   * it under the terms of the GNU General Public License version 2 as
+> @@ -13,4 +14,10 @@
+>   * You should have received a copy of the GNU General Public License
+>   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+>   */
+> +
+> +/* For ILP32 AARCH64, we want to use the non compat names. */
+> +#if defined(__aarch64__) && defined(__ILP32__)
 
+Another inconsistency for !__LP64__ vs __ILP32__. BTW, do we still need
+__aarch64__ check? Do we expect these headers to be used with AArch32?
 
-The following changes since commit e99cfa2d0634881b8a41d56c48b5956b9a3ba162:
+> +#define __SYSCALL_NONCOMPAT
 
-  Merge tag 'dt-fixes-for-3.16' of git://git.kernel.org/pub/scm/linux/kernel/git/robh/linux (2014-06-17 14:25:09 -1000)
+As I mentioned in a previous patch, I prefer something like
+__ARCH_WANT...
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
-
-James Morris (1):
-      security: add Serge Hallyn as a maintainer
-
- MAINTAINERS |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
----
-commit 70b4a2598c4d88842c083eff7e28e8cc287bab5b
-Author: James Morris <james.l.morris@oracle.com>
-Date:   Wed Jun 18 18:57:50 2014 +1000
-
-    security: add Serge Hallyn as a maintainer
-    
-    Add Serge E. Hallyn <serge@hallyn.com> as a co-maintainer of the
-    security subsystem, to avoid having a single point of failure
-    in the development process.
-    
-    Signed-off-by: James Morris <james.l.morris@oracle.com>
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 134483f..e36d18d 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -7948,6 +7948,7 @@ F:	drivers/mmc/host/sdhci-spear.c
- 
- SECURITY SUBSYSTEM
- M:	James Morris <james.l.morris@oracle.com>
-+M:	Serge E. Hallyn <serge@hallyn.com>
- L:	linux-security-module@vger.kernel.org (suggested Cc:)
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git
- W:	http://kernsec.org/
-
+-- 
+Catalin
