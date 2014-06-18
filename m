@@ -1,110 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199AbaFRSoy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 14:44:54 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47710 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754092AbaFRSov (ORCPT
+	id S1754306AbaFRSqH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 14:46:07 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:34124 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349AbaFRSqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 14:44:51 -0400
-Date: Wed, 18 Jun 2014 19:44:40 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Dan Murphy <dmurphy@ti.com>
-Cc: linux-sound@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Message-ID: <20140618184440.GK5099@sirena.org.uk>
-References: <1403113547-15120-1-git-send-email-dmurphy@ti.com>
+	Wed, 18 Jun 2014 14:46:04 -0400
+Date: Wed, 18 Jun 2014 14:46:01 -0400
+From: "Gabriel L. Somlo" <gsomlo@gmail.com>
+To: Eric Northup <digitaleric@google.com>
+Cc: Nadav Amit <namit@cs.technion.ac.il>, Paolo Bonzini <pbonzini@redhat.com>,
+        gleb@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>, joro@8bytes.org, mst@redhat.com,
+        agraf@suse.de
+Subject: Re: [PATCH 3/3] KVM: x86: correct mwait and monitor emulation
+Message-ID: <20140618184601.GE1695@ERROL.INI.CMU.EDU>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qWVgpdk27f0K4V9B"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403113547-15120-1-git-send-email-dmurphy@ti.com>
-X-Cookie: Ditat Deus.
+In-Reply-To: <CAG7+5M1T=OSqMLOJjb-txRCL_J_q=KSNV9yOfeP=98YuyD27Fw@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC PATCH] ASoC: tas2552: Support TI TAS2552 Amplifier
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 18, 2014 at 10:59:14AM -0700, Eric Northup wrote:
+> On Wed, Jun 18, 2014 at 7:19 AM, Nadav Amit <namit@cs.technion.ac.il> wrote:
+> > mwait and monitor are currently handled as nop. Considering this behavior, they
+> > should still be handled correctly, i.e., check execution conditions and generate
+> > exceptions when required. mwait and monitor may also be executed in real-mode
+> > and are not handled in that case.  This patch performs the emulation of
+> > monitor-mwait according to Intel SDM (other than checking whether interrupt can
+> > be used as a break event).
+> >
+> > Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
 
---qWVgpdk27f0K4V9B
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+How about this instead (details in the commit log below) ? Please let
+me know what you think, and if you'd prefer me to send it out as a
+separate patch rather than a reply to this thread.
 
-On Wed, Jun 18, 2014 at 12:45:46PM -0500, Dan Murphy wrote:
+Thanks,
+--Gabriel
 
-> +static int tas2552_i2c_read(struct tas2552_data *tas_data, int reg)
-> +{
-> +	int val;
-> +
-> +	if (WARN_ON(!tas_data->tas2552_client))
-> +		return -EINVAL;
-> +
-> +	/* If powered off, return the cached value */
-> +	mutex_lock(&tas_data->mutex);
-> +	if (tas_data->power_state) {
-> +		val = i2c_smbus_read_byte_data(tas_data->tas2552_client, reg);
 
-Don't open code your I/O, use regmap like any other CODEC driver.  This
-will remove a very large proportion of the code in the driver which
-replicates features of the regmap framework.
+>From 0375a0aceb54cdbc26a6c0e5b43c46324f830ec3 Mon Sep 17 00:00:00 2001
+From: "Gabriel L. Somlo" <somlo@cmu.edu>
+Date: Wed, 18 Jun 2014 14:39:15 -0400
+Subject: [PATCH] kvm: x86: revert "emulate monitor and mwait instructions as nop"
 
-> +static int tas2552_startup(struct snd_pcm_substream *substream,
-> +			   struct snd_soc_dai *dai)
-> +{
-> +	struct snd_soc_codec *codec = dai->codec;
-> +	struct tas2552_data *tas2552 = snd_soc_codec_get_drvdata(codec);
-> +
-> +	tas2552_sw_shutdown(tas2552, 1);
-> +	tas2552_power(tas2552, 1);
-> +	/* Turn on Class D amplifier */
-> +	tas2552_i2c_write(tas2552, TAS2552_CFG_2, 0x80);
-> +	tas2552_sw_shutdown(tas2552, 0);
+This reverts commit 87c00572ba05aa8c9db118da75c608f47eb10b9e.
 
-I'd expect this to be done using DAPM.
+OS X <= 10.7.* are the only known guests which realistically required
+this functionality. As it turns out, OS X can be told to forego using
+monitor/mwait by passing it "idlehalt=0" as a kernel argument, so we're
+better off removing this hack from KVM altogether.
 
-> +static const struct regmap_config tas2552_regmap_config = {
-> +	.reg_bits = 8,
-> +	.val_bits = 8,
-> +
-> +	.max_register = TAS2552_MAX_REG,
-> +	.reg_defaults = NULL,
-> +	.num_reg_defaults = 0,
+Signed-off-by: Gabriel L. Somlo <somlo@cmu.edu>
+---
+ arch/x86/kvm/cpuid.c |  2 --
+ arch/x86/kvm/svm.c   |  8 +++-----
+ arch/x86/kvm/vmx.c   | 10 ++++------
+ 3 files changed, 7 insertions(+), 13 deletions(-)
 
-No need to set things to zero or NULL in static variables, that's the
-default.
+diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+index 38a0afe..17b42fa 100644
+--- a/arch/x86/kvm/cpuid.c
++++ b/arch/x86/kvm/cpuid.c
+@@ -283,8 +283,6 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+ 		0 /* Reserved */ | f_lm | F(3DNOWEXT) | F(3DNOW);
+ 	/* cpuid 1.ecx */
+ 	const u32 kvm_supported_word4_x86_features =
+-		/* NOTE: MONITOR (and MWAIT) are emulated as NOP,
+-		 * but *not* advertised to guests via CPUID ! */
+ 		F(XMM3) | F(PCLMULQDQ) | 0 /* DTES64, MONITOR */ |
+ 		0 /* DS-CPL, VMX, SMX, EST */ |
+ 		0 /* TM2 */ | F(SSSE3) | 0 /* CNXT-ID */ | 0 /* Reserved */ |
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index ec8366c..0e8ef20 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -3274,7 +3274,7 @@ static int pause_interception(struct vcpu_svm *svm)
+ 	return 1;
+ }
+ 
+-static int nop_interception(struct vcpu_svm *svm)
++static int invalid_op_interception(struct vcpu_svm *svm)
+ {
+ 	skip_emulated_instruction(&(svm->vcpu));
+ 	return 1;
+@@ -3282,14 +3282,12 @@ static int nop_interception(struct vcpu_svm *svm)
+ 
+ static int monitor_interception(struct vcpu_svm *svm)
+ {
+-	printk_once(KERN_WARNING "kvm: MONITOR instruction emulated as NOP!\n");
+-	return nop_interception(svm);
++	return invalid_op_interception(svm);
+ }
+ 
+ static int mwait_interception(struct vcpu_svm *svm)
+ {
+-	printk_once(KERN_WARNING "kvm: MWAIT instruction emulated as NOP!\n");
+-	return nop_interception(svm);
++	return invalid_op_interception(svm);
+ }
+ 
+ static int (*const svm_exit_handlers[])(struct vcpu_svm *svm) = {
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 801332e..577c7df 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -5672,22 +5672,20 @@ static int handle_pause(struct kvm_vcpu *vcpu)
+ 	return 1;
+ }
+ 
+-static int handle_nop(struct kvm_vcpu *vcpu)
++static int handle_invalid_op(struct kvm_vcpu *vcpu)
+ {
+-	skip_emulated_instruction(vcpu);
++	kvm_queue_exception(vcpu, UD_VECTOR);
+ 	return 1;
+ }
+ 
+ static int handle_mwait(struct kvm_vcpu *vcpu)
+ {
+-	printk_once(KERN_WARNING "kvm: MWAIT instruction emulated as NOP!\n");
+-	return handle_nop(vcpu);
++	return handle_invalid_op(vcpu);
+ }
+ 
+ static int handle_monitor(struct kvm_vcpu *vcpu)
+ {
+-	printk_once(KERN_WARNING "kvm: MONITOR instruction emulated as NOP!\n");
+-	return handle_nop(vcpu);
++	return handle_invalid_op(vcpu);
+ }
+ 
+ /*
+-- 
+1.9.3
 
-> +	dev = &client->dev;
-> +	data = devm_kzalloc(&client->dev, sizeof(*data), GFP_KERNEL);
-> +	if (data == NULL) {
-> +		dev_err(dev, "Can not allocate memory\n");
-
-No need to print an error, OOM messages are already quite noisy.
-
---qWVgpdk27f0K4V9B
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTod4VAAoJELSic+t+oim9cSMP/2PTa8SqAQLUTJ7p6oHwmeCq
-8dkPuPEp+nFY20Bu0xb2kR88PvAFMNsq+878r9cFNu5EtZeVh+tKlEW1Y0PP7KWu
-rRCYWMdZ1fYM2kYtryY9ccC9LI2yMuLxY1yrIfdzN81noqmaAs7LG6k4DzY6sBJU
-3DHllmmnDwGYvh35V4xwn+Ti0s+TTPZRlePTGP21sVtAs1BeNa80kzu2tCgzbCNe
-OXOg5R4NGSdyspmD0CxV1HB1+IcFaJa5U3o64ZYVUy0MBGbwK5cm+F8ekqqyNgte
-uo9o+PmSWhnx0qF2z2ktN3wEDunYaAJx8WuL6fgIJvXrVGTwgVeLYlPFBzZqDRKB
-jTfwqVrsE8tpDed+2iIPIPFAiDH8yD9RnkTdTDeTYSGJ+ZwUopT4y5oXnHesJw61
-L8rplvzYQ7+hll6LxWFkmwaIwbjouNxRWFedZh6iFd3Xh5TyRB3+U/7RSg7Fke9c
-FFavxw8u3YPUnteX+AjCYaP7x4AxqC/LyH2LofKVJ7oMEz9gEPbHcm0tLDoa+uje
-2Itbynylju7V7Ot5cSk9byAEUYvgurG4Z9lgh72xlfO9/y1JF6WL1v4O5a0hHQ3B
-SwsBrvX/uBODQ0uNMt1Jf/PvzTVo8nPHWQ2Mg2y6Eb0xL9OVIIXnB6T3H9oyNvWB
-BJjed8n/oBoFtWhzzi40
-=b66X
------END PGP SIGNATURE-----
-
---qWVgpdk27f0K4V9B--
