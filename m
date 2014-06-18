@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965943AbaFRKyq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 06:54:46 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:44912 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965512AbaFRKyo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 06:54:44 -0400
-Date: Wed, 18 Jun 2014 11:54:38 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: kernel@stlinux.com, maxime.coquelin@st.com, patrice.chotard@st.com,
-        srinivas.kandagatla@gmail.com, devicetree@vger.kernel.org
-Subject: [PATCH v2] ARM: stih41x: Rename stih416-b2020-revE.dts to
- stih416-b2020e.dts
-Message-ID: <20140618105438.GC8300@lee--X1>
-References: <1403087508-6710-1-git-send-email-lee.jones@linaro.org>
+	id S965980AbaFRK7b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 06:59:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41731 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965376AbaFRK7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 06:59:30 -0400
+Date: Wed, 18 Jun 2014 12:59:26 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, hpa@linux.intel.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>, Joe Perches <joe@perches.com>,
+        Arun KS <arunks.linux@gmail.com>, Kees Cook <keescook@chromium.org>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [RFT v5h printk: allow increasing the ring buffer depending on
+	the number of CPUs
+Message-ID: <20140618105926.GL4841@wotan.suse.de>
+References: <1402965464-11202-1-git-send-email-mcgrof@do-not-panic.com> <20140617145200.GA634@pathway.suse.cz> <20140618001816.GK4841@wotan.suse.de> <20140618083102.GF634@pathway.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1403087508-6710-1-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140618083102.GF634@pathway.suse.cz>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Two reasons for this rename.  Firstly, it removes the camel case
-convention which isn't used by any other platform and secondly it
-matches the naming convention for the internal kernel, which can
-become annoying when flipping between the two.
+On Wed, Jun 18, 2014 at 10:31:02AM +0200, Petr Mládek wrote:
+> On Wed 2014-06-18 02:18:16, Luis R. Rodriguez wrote:
+> I am happy with this solution. And I agree that it is better to split
+> log_buf_len_align() in a separate patch as you suggested in the other
+> mail.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
-v1 -> v2: Appropriate change to the Makefile.
----
- arch/arm/boot/dts/Makefile                                       | 2 +-
- arch/arm/boot/dts/{stih416-b2020-revE.dts => stih416-b2020e.dts} | 0
- 2 files changed, 1 insertion(+), 1 deletion(-)
- rename arch/arm/boot/dts/{stih416-b2020-revE.dts => stih416-b2020e.dts} (100%)
+OK just to be on safe side I noticed memblock_virt_alloc() and
+memblock_virt_alloc_nopanic() allow passing an explicit alignment
+requirement, traced back the orignal code with no good reason to
+not use the LOG_ALIGN, so I think using that would be the safest
+thing to do. Will roll that into the first patch, curious if the
+folks that ran into the alignment issues on ARM could reproduce
+an align barf without this on some situations, perhaps not because
+of the power of 2 thing and since the min value for LOG_BUF_SHIFT
+is 12.
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 5986ff6..adb5ed9 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -357,7 +357,7 @@ dtb-$(CONFIG_ARCH_STI)+= stih407-b2120.dtb \
-        stih415-b2020.dtb \
-        stih416-b2000.dtb \
-        stih416-b2020.dtb \
--       stih416-b2020-revE.dtb
-+       stih416-b2020e.dtb
- dtb-$(CONFIG_MACH_SUN4I) += \
-        sun4i-a10-a1000.dtb \
-        sun4i-a10-cubieboard.dtb \
-diff --git a/arch/arm/boot/dts/stih416-b2020-revE.dts b/arch/arm/boot/dts/stih416-b2020e.dts
-similarity index 100%
-rename from arch/arm/boot/dts/stih416-b2020-revE.dts
-rename to arch/arm/boot/dts/stih416-b2020e.dts
--- 
-1.8.3.2
+  Luis
