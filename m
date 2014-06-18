@@ -1,90 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966407AbaFRMRX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 08:17:23 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43795 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966326AbaFRMRM (ORCPT
+	id S966426AbaFRMSM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 08:18:12 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:1063 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966162AbaFRMSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 08:17:12 -0400
-Date: Wed, 18 Jun 2014 13:17:09 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Daniel Kiper <daniel.kiper@oracle.com>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, andrew.cooper3@citrix.com,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        eshelton@pobox.com, hpa@zytor.com, ian.campbell@citrix.com,
-        jbeulich@suse.com, jeremy@goop.org, konrad.wilk@oracle.com,
-        matt.fleming@intel.com, mingo@redhat.com, mjg59@srcf.ucam.org,
-        stefano.stabellini@eu.citrix.com, tglx@linutronix.de,
-        Mark Salter <msalter@redhat.com>
-Subject: Re: [PATCH v5 1/7] efi: Use early_mem*() instead of early_io*()
-Message-ID: <20140618121709.GF24049@console-pimps.org>
-References: <1402678823-24589-1-git-send-email-daniel.kiper@oracle.com>
- <1402678823-24589-2-git-send-email-daniel.kiper@oracle.com>
+	Wed, 18 Jun 2014 08:18:10 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 18 Jun 2014 05:12:29 -0700
+Date: Wed, 18 Jun 2014 15:18:06 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: [PATCH 6/9] ARM: tegra: Export tegra_powergate_power_on
+Message-ID: <20140618121806.GJ3407@tbergstrom-lnx.Nvidia.com>
+References: <1401881559-18469-1-git-send-email-mperttunen@nvidia.com>
+ <1401881559-18469-7-git-send-email-mperttunen@nvidia.com>
+ <539F691E.5030204@wwwdotorg.org>
+ <20140617121313.GE18816@ulmo>
+ <20140617140146.GH3407@tbergstrom-lnx.Nvidia.com>
+ <20140617215119.GC24743@mithrandir>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1402678823-24589-2-git-send-email-daniel.kiper@oracle.com>
+In-Reply-To: <20140617215119.GC24743@mithrandir>
+X-NVConfidentiality: public
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Pulling in Mark Salter for early_ioremap() knowledge)
-
-On Fri, 13 Jun, at 07:00:17PM, Daniel Kiper wrote:
-> Use early_mem*() instead of early_io*() because all mapped EFI regions
-> are true RAM not I/O regions. Additionally, I/O family calls do not work
-> correctly under Xen in our case. AIUI, early_io*() maps/unmaps real machine
-> addresses. However, all artificial EFI structures created under Xen live
-> in dom0 memory and should be mapped/unmapped using early_mem*() family
-> calls which map domain memory.
+On Tue, Jun 17, 2014 at 11:51:20PM +0200, Thierry Reding wrote:
+> * PGP Signed by an unknown key
 > 
-> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
-> ---
->  arch/x86/platform/efi/efi.c |   42 +++++++++++++++++++++---------------------
->  drivers/firmware/efi/efi.c  |    4 ++--
->  2 files changed, 23 insertions(+), 23 deletions(-)
+> On Tue, Jun 17, 2014 at 05:01:46PM +0300, Peter De Schrijver wrote:
+> > On Tue, Jun 17, 2014 at 02:13:15PM +0200, Thierry Reding wrote:
+> > > > Old Signed by an unknown key
+> > > 
+> > > On Mon, Jun 16, 2014 at 04:01:02PM -0600, Stephen Warren wrote:
+> > > > On 06/04/2014 05:32 AM, Mikko Perttunen wrote:
+> > > > > This symbol needs to be exported to power on rails without using
+> > > > > tegra_powergate_sequence_power_up. tegra_powergate_sequence_power_up
+> > > > > cannot be used in situations where the driver wants to handle clocking
+> > > > > by itself.
+> > > > 
+> > > > Thierry, are you OK with this change?
+> > > 
+> > > I would've preferred tegra_powergate_sequence_power_up() to be used
+> > 
+> > I don't think the current tegra_powergate_sequence_power_up() API is very well
+> > defined though. I don't think the clocks and resets required by the sequence
+> > should be provided by the driver. For one, there can be several clocks and
+> > resets that need to be controlled for a single domain.
 > 
-> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-> index 87fc96b..dd1e351 100644
-> --- a/arch/x86/platform/efi/efi.c
-> +++ b/arch/x86/platform/efi/efi.c
-> @@ -427,7 +427,7 @@ void __init efi_unmap_memmap(void)
->  {
->  	clear_bit(EFI_MEMMAP, &efi.flags);
->  	if (memmap.map) {
-> -		early_iounmap(memmap.map, memmap.nr_map * memmap.desc_size);
-> +		early_memunmap(memmap.map, memmap.nr_map * memmap.desc_size);
->  		memmap.map = NULL;
->  	}
->  }
-> @@ -467,12 +467,12 @@ static int __init efi_systab_init(void *phys)
->  			if (!data)
->  				return -ENOMEM;
->  		}
-> -		systab64 = early_ioremap((unsigned long)phys,
-> -					 sizeof(*systab64));
-> +		systab64 = early_memremap((unsigned long)phys,
-> +						sizeof(*systab64));
+> Do you have any suggestions for what the API should look like? Even if
+> we plan to move to some different API, I think there's some advantage in
+> using it consistently if for no other reason than to make it easier to
+> replace occurrences later on.
+> 
 
-Please don't misalign the arguments :-( This makes the diff harder to
-read when all you're doing is changing the function call. You're
-indentation isn't an improvement.
- 
-As Matthew pointed out we may also need to access EFI mapped flash
-devices.
+I think the API should only have the domain ID as input so:
 
-Now, the only difference between early_memremap() and early_ioremap(),
-at least on x86, is PAGE_KERNEL vs. PAGE_KERNEL_IO, where PAGE_KERNEL_IO
-has the additional _PAGE_BIT_IOMAP bit set in the pte. But that's a
-software bit for x86.
+int tegra_powerdomain_on(int id) 
 
-So, even though this change should be harmless, it's not clear to me why
-this change is needed. You say "I/O family calls do not work correctly
-under Xen in our case", but could you provide some more explanation as
-to why they don't work correctly?
+/*
+ * Prerequisites: domain is off
+ * Result: domain is on, clocks of the modules in the domain are off, modules are in reset
+ */
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+int tegra_powerdomain_off(int id)
+
+/*
+ * Prerequisites: all clocks of the modules in the domain are off
+ * result: domain is off
+ */
+
+Cheers,
+
+Peter/
