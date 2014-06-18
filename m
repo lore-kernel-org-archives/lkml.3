@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754445AbaFRSPw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 14:15:52 -0400
-Received: from mail-pa0-f73.google.com ([209.85.220.73]:58623 "EHLO
-	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754123AbaFRSOP (ORCPT
+	id S1754510AbaFRSP5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 14:15:57 -0400
+Received: from mail-ve0-f201.google.com ([209.85.128.201]:63841 "EHLO
+	mail-ve0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754091AbaFRSOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Jun 2014 14:14:15 -0400
 From: Doug Anderson <dianders@chromium.org>
@@ -16,11 +16,11 @@ Cc: Andrew Bresticker <abrestic@chromium.org>, swarren@wwwdotorg.org,
         Bill Richardson <wfrichar@chromium.org>, sjg@chromium.org,
         Wolfram Sang <wsa@the-dreams.de>, broonie@kernel.org,
         Doug Anderson <dianders@chromium.org>, dmitry.torokhov@gmail.com,
-        sameo@linux.intel.com, geert@linux-m68k.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 10/10] mfd: cros_ec: move EC interrupt to cros_ec_keyb
-Date: Wed, 18 Jun 2014 11:14:07 -0700
-Message-Id: <1403115247-8853-11-git-send-email-dianders@chromium.org>
+        sameo@linux.intel.com, geert@linux-m68k.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: [PATCH v2 07/10] mfd: cros_ec: cleanup: Remove EC wrapper functions
+Date: Wed, 18 Jun 2014 11:14:04 -0700
+Message-Id: <1403115247-8853-8-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 2.0.0.526.g5318336
 In-Reply-To: <1403115247-8853-1-git-send-email-dianders@chromium.org>
 References: <1403115247-8853-1-git-send-email-dianders@chromium.org>
@@ -28,238 +28,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Bresticker <abrestic@chromium.org>
+From: Bill Richardson <wfrichar@chromium.org>
 
-If we receive EC interrupts after the cros_ec driver has probed, but
-before the cros_ec_keyb driver has probed, the cros_ec IRQ handler
-will not run the cros_ec_keyb notifier and the EC will leave the IRQ
-line asserted.  The cros_ec IRQ handler then returns IRQ_HANDLED and
-the resulting flood of interrupts causes the machine to hang.
+Remove the three wrapper functions that talk to the EC without passing all
+the desired arguments and just use the underlying communication function
+that passes everything in a struct intead.
 
-Since the EC interrupt is currently only used for the keyboard, move
-the setup and handling of the EC interrupt to the cros_ec_keyb driver.
+This is internal code refactoring only. Nothing should change.
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Signed-off-by: Bill Richardson <wfrichar@chromium.org>
 Signed-off-by: Doug Anderson <dianders@chromium.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Reviewed-by: Simon Glass <sjg@chromium.org>
 ---
 Changes in v2:
-- IRQs should be optional => move EC interrupt to keyboard.
+- Removed unneeded "ret" variable.
 
- drivers/input/keyboard/cros_ec_keyb.c | 58 ++++++++++++++++++++---------------
- drivers/mfd/cros_ec.c                 | 35 +--------------------
- include/linux/mfd/cros_ec.h           |  2 --
- 3 files changed, 34 insertions(+), 61 deletions(-)
+ drivers/i2c/busses/i2c-cros-ec-tunnel.c | 15 +++++++++++----
+ drivers/input/keyboard/cros_ec_keyb.c   | 12 ++++++++++--
+ drivers/mfd/cros_ec.c                   | 32 --------------------------------
+ include/linux/mfd/cros_ec.h             | 19 ++++++-------------
+ 4 files changed, 27 insertions(+), 51 deletions(-)
 
+diff --git a/drivers/i2c/busses/i2c-cros-ec-tunnel.c b/drivers/i2c/busses/i2c-cros-ec-tunnel.c
+index 8e7a714..dd07818 100644
+--- a/drivers/i2c/busses/i2c-cros-ec-tunnel.c
++++ b/drivers/i2c/busses/i2c-cros-ec-tunnel.c
+@@ -183,6 +183,7 @@ static int ec_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg i2c_msgs[],
+ 	u8 *request = NULL;
+ 	u8 *response = NULL;
+ 	int result;
++	struct cros_ec_command msg;
+ 
+ 	request_len = ec_i2c_count_message(i2c_msgs, num);
+ 	if (request_len < 0) {
+@@ -218,9 +219,15 @@ static int ec_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg i2c_msgs[],
+ 	}
+ 
+ 	ec_i2c_construct_message(request, i2c_msgs, num, bus_num);
+-	result = bus->ec->command_sendrecv(bus->ec, EC_CMD_I2C_PASSTHRU,
+-					   request, request_len,
+-					   response, response_len);
++
++	msg.version = 0;
++	msg.command = EC_CMD_I2C_PASSTHRU;
++	msg.outdata = request;
++	msg.outsize = request_len;
++	msg.indata = response;
++	msg.insize = response_len;
++
++	result = bus->ec->cmd_xfer(bus->ec, &msg);
+ 	if (result)
+ 		goto exit;
+ 
+@@ -258,7 +265,7 @@ static int ec_i2c_probe(struct platform_device *pdev)
+ 	u32 remote_bus;
+ 	int err;
+ 
+-	if (!ec->command_sendrecv) {
++	if (!ec->cmd_xfer) {
+ 		dev_err(dev, "Missing sendrecv\n");
+ 		return -EINVAL;
+ 	}
 diff --git a/drivers/input/keyboard/cros_ec_keyb.c b/drivers/input/keyboard/cros_ec_keyb.c
-index b8341ab..791781a 100644
+index 4083796..b8341ab 100644
 --- a/drivers/input/keyboard/cros_ec_keyb.c
 +++ b/drivers/input/keyboard/cros_ec_keyb.c
-@@ -24,8 +24,8 @@
- #include <linux/module.h>
- #include <linux/i2c.h>
- #include <linux/input.h>
-+#include <linux/interrupt.h>
- #include <linux/kernel.h>
--#include <linux/notifier.h>
- #include <linux/platform_device.h>
- #include <linux/slab.h>
- #include <linux/input/matrix_keypad.h>
-@@ -42,7 +42,6 @@
-  * @dev: Device pointer
-  * @idev: Input device
-  * @ec: Top level ChromeOS device to use to talk to EC
-- * @event_notifier: interrupt event notifier for transport devices
-  */
- struct cros_ec_keyb {
- 	unsigned int rows;
-@@ -55,7 +54,6 @@ struct cros_ec_keyb {
- 	struct device *dev;
- 	struct input_dev *idev;
- 	struct cros_ec_device *ec;
--	struct notifier_block notifier;
- };
+@@ -191,8 +191,16 @@ static void cros_ec_keyb_close(struct input_dev *dev)
  
- 
-@@ -173,22 +171,6 @@ static void cros_ec_keyb_process(struct cros_ec_keyb *ckdev,
- 	input_sync(ckdev->idev);
- }
- 
--static int cros_ec_keyb_open(struct input_dev *dev)
--{
--	struct cros_ec_keyb *ckdev = input_get_drvdata(dev);
--
--	return blocking_notifier_chain_register(&ckdev->ec->event_notifier,
--						&ckdev->notifier);
--}
--
--static void cros_ec_keyb_close(struct input_dev *dev)
--{
--	struct cros_ec_keyb *ckdev = input_get_drvdata(dev);
--
--	blocking_notifier_chain_unregister(&ckdev->ec->event_notifier,
--					   &ckdev->notifier);
--}
--
  static int cros_ec_keyb_get_state(struct cros_ec_keyb *ckdev, uint8_t *kb_state)
  {
- 	struct cros_ec_command msg = {
-@@ -203,19 +185,41 @@ static int cros_ec_keyb_get_state(struct cros_ec_keyb *ckdev, uint8_t *kb_state)
- 	return ckdev->ec->cmd_xfer(ckdev->ec, &msg);
+-	return ckdev->ec->command_recv(ckdev->ec, EC_CMD_MKBP_STATE,
+-					  kb_state, ckdev->cols);
++	struct cros_ec_command msg = {
++		.version = 0,
++		.command = EC_CMD_MKBP_STATE,
++		.outdata = NULL,
++		.outsize = 0,
++		.indata = kb_state,
++		.insize = ckdev->cols,
++	};
++
++	return ckdev->ec->cmd_xfer(ckdev->ec, &msg);
  }
  
--static int cros_ec_keyb_work(struct notifier_block *nb,
--		     unsigned long state, void *_notify)
-+static irqreturn_t cros_ec_keyb_irq(int irq, void *data)
- {
-+	struct cros_ec_keyb *ckdev = data;
-+	struct cros_ec_device *ec = ckdev->ec;
- 	int ret;
--	struct cros_ec_keyb *ckdev = container_of(nb, struct cros_ec_keyb,
--						    notifier);
- 	uint8_t kb_state[ckdev->cols];
- 
-+	if (device_may_wakeup(ec->dev))
-+		pm_wakeup_event(ec->dev, 0);
-+
- 	ret = cros_ec_keyb_get_state(ckdev, kb_state);
- 	if (ret >= 0)
- 		cros_ec_keyb_process(ckdev, kb_state, ret);
-+	else
-+		dev_err(ec->dev, "failed to get keyboard state: %d\n", ret);
- 
--	return NOTIFY_DONE;
-+	return IRQ_HANDLED;
-+}
-+
-+static int cros_ec_keyb_open(struct input_dev *dev)
-+{
-+	struct cros_ec_keyb *ckdev = input_get_drvdata(dev);
-+	struct cros_ec_device *ec = ckdev->ec;
-+
-+	return request_threaded_irq(ec->irq, NULL, cros_ec_keyb_irq,
-+					IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-+					"cros_ec_keyb", ckdev);
-+}
-+
-+static void cros_ec_keyb_close(struct input_dev *dev)
-+{
-+	struct cros_ec_keyb *ckdev = input_get_drvdata(dev);
-+	struct cros_ec_device *ec = ckdev->ec;
-+
-+	free_irq(ec->irq, ckdev);
- }
- 
- static int cros_ec_keyb_probe(struct platform_device *pdev)
-@@ -246,8 +250,12 @@ static int cros_ec_keyb_probe(struct platform_device *pdev)
- 	if (!idev)
- 		return -ENOMEM;
- 
-+	if (!ec->irq) {
-+		dev_err(dev, "no EC IRQ specified\n");
-+		return -EINVAL;
-+	}
-+
- 	ckdev->ec = ec;
--	ckdev->notifier.notifier_call = cros_ec_keyb_work;
- 	ckdev->dev = dev;
- 	dev_set_drvdata(&pdev->dev, ckdev);
- 
+ static int cros_ec_keyb_work(struct notifier_block *nb,
 diff --git a/drivers/mfd/cros_ec.c b/drivers/mfd/cros_ec.c
-index 83e30c6..4873f9c 100644
+index 49ed8c3..4851ed2 100644
 --- a/drivers/mfd/cros_ec.c
 +++ b/drivers/mfd/cros_ec.c
-@@ -62,18 +62,6 @@ int cros_ec_check_result(struct cros_ec_device *ec_dev,
+@@ -44,34 +44,6 @@ int cros_ec_prepare_tx(struct cros_ec_device *ec_dev,
  }
- EXPORT_SYMBOL(cros_ec_check_result);
+ EXPORT_SYMBOL(cros_ec_prepare_tx);
  
--static irqreturn_t ec_irq_thread(int irq, void *data)
+-static int cros_ec_command_sendrecv(struct cros_ec_device *ec_dev,
+-		uint16_t cmd, void *out_buf, int out_len,
+-		void *in_buf, int in_len)
 -{
--	struct cros_ec_device *ec_dev = data;
+-	struct cros_ec_command msg;
 -
--	if (device_may_wakeup(ec_dev->dev))
--		pm_wakeup_event(ec_dev->dev, 0);
+-	msg.version = cmd >> 8;
+-	msg.command = cmd & 0xff;
+-	msg.outdata = out_buf;
+-	msg.outsize = out_len;
+-	msg.indata = in_buf;
+-	msg.insize = in_len;
 -
--	blocking_notifier_call_chain(&ec_dev->event_notifier, 1, ec_dev);
--
--	return IRQ_HANDLED;
+-	return ec_dev->cmd_xfer(ec_dev, &msg);
 -}
 -
- static const struct mfd_cell cros_devs[] = {
- 	{
- 		.name = "cros-ec-keyb",
-@@ -92,8 +80,6 @@ int cros_ec_register(struct cros_ec_device *ec_dev)
- 	struct device *dev = ec_dev->dev;
- 	int err = 0;
+-static int cros_ec_command_recv(struct cros_ec_device *ec_dev,
+-		uint16_t cmd, void *buf, int buf_len)
+-{
+-	return cros_ec_command_sendrecv(ec_dev, cmd, NULL, 0, buf, buf_len);
+-}
+-
+-static int cros_ec_command_send(struct cros_ec_device *ec_dev,
+-		uint16_t cmd, void *buf, int buf_len)
+-{
+-	return cros_ec_command_sendrecv(ec_dev, cmd, buf, buf_len, NULL, 0);
+-}
+-
+ static irqreturn_t ec_irq_thread(int irq, void *data)
+ {
+ 	struct cros_ec_device *ec_dev = data;
+@@ -104,10 +76,6 @@ int cros_ec_register(struct cros_ec_device *ec_dev)
  
--	BLOCKING_INIT_NOTIFIER_HEAD(&ec_dev->event_notifier);
+ 	BLOCKING_INIT_NOTIFIER_HEAD(&ec_dev->event_notifier);
+ 
+-	ec_dev->command_send = cros_ec_command_send;
+-	ec_dev->command_recv = cros_ec_command_recv;
+-	ec_dev->command_sendrecv = cros_ec_command_sendrecv;
 -
  	if (ec_dev->din_size) {
  		ec_dev->din = devm_kzalloc(dev, ec_dev->din_size, GFP_KERNEL);
  		if (!ec_dev->din)
-@@ -105,42 +91,23 @@ int cros_ec_register(struct cros_ec_device *ec_dev)
- 			return -ENOMEM;
- 	}
- 
--	if (!ec_dev->irq) {
--		dev_dbg(dev, "no valid IRQ: %d\n", ec_dev->irq);
--		return err;
--	}
--
--	err = request_threaded_irq(ec_dev->irq, NULL, ec_irq_thread,
--				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
--				   "chromeos-ec", ec_dev);
--	if (err) {
--		dev_err(dev, "request irq %d: error %d\n", ec_dev->irq, err);
--		return err;
--	}
--
- 	err = mfd_add_devices(dev, 0, cros_devs,
- 			      ARRAY_SIZE(cros_devs),
- 			      NULL, ec_dev->irq, NULL);
- 	if (err) {
- 		dev_err(dev, "failed to add mfd devices\n");
--		goto fail_mfd;
-+		return err;
- 	}
- 
- 	dev_info(dev, "Chrome EC device registered\n");
- 
- 	return 0;
--
--fail_mfd:
--	free_irq(ec_dev->irq, ec_dev);
--
--	return err;
- }
- EXPORT_SYMBOL(cros_ec_register);
- 
- int cros_ec_remove(struct cros_ec_device *ec_dev)
- {
- 	mfd_remove_devices(ec_dev->dev);
--	free_irq(ec_dev->irq, ec_dev);
- 
- 	return 0;
- }
 diff --git a/include/linux/mfd/cros_ec.h b/include/linux/mfd/cros_ec.h
-index 0ebf26f..fcbe9d1 100644
+index 2b0c598..60c0880 100644
 --- a/include/linux/mfd/cros_ec.h
 +++ b/include/linux/mfd/cros_ec.h
-@@ -62,7 +62,6 @@ struct cros_ec_command {
-  * @dev: Device pointer
+@@ -63,9 +63,10 @@ struct cros_ec_command {
   * @was_wake_device: true if this device was set to wake the system from
   * sleep at the last suspend
-- * @event_notifier: interrupt event notifier for transport devices
-  * @cmd_xfer: send command to EC and get response
-  *     Returns the number of bytes received if the communication succeeded, but
-  *     that doesn't mean the EC was happy with the command. The caller
-@@ -93,7 +92,6 @@ struct cros_ec_device {
- 	struct device *dev;
+  * @event_notifier: interrupt event notifier for transport devices
+- * @command_send: send a command
+- * @command_recv: receive a response
+- * @command_sendrecv: send a command and receive a response
++ * @cmd_xfer: send command to EC and get response
++ *     Returns 0 if the communication succeeded, but that doesn't mean the EC
++ *     was happy with the command it got. Caller should check msg.result for
++ *     the EC's result code.
+  *
+  * @priv: Private data
+  * @irq: Interrupt to use
+@@ -83,7 +84,6 @@ struct cros_ec_command {
+  * @parent: pointer to parent device (e.g. i2c or spi device)
+  * @wake_enabled: true if this device can wake the system from sleep
+  * @lock: one transaction at a time
+- * @cmd_xfer: low-level channel to the EC
+  */
+ struct cros_ec_device {
+ 
+@@ -94,13 +94,8 @@ struct cros_ec_device {
  	bool was_wake_device;
  	struct class *cros_class;
--	struct blocking_notifier_head event_notifier;
- 	int (*cmd_xfer)(struct cros_ec_device *ec,
- 			struct cros_ec_command *msg);
+ 	struct blocking_notifier_head event_notifier;
+-	int (*command_send)(struct cros_ec_device *ec,
+-			    uint16_t cmd, void *out_buf, int out_len);
+-	int (*command_recv)(struct cros_ec_device *ec,
+-			    uint16_t cmd, void *in_buf, int in_len);
+-	int (*command_sendrecv)(struct cros_ec_device *ec,
+-				uint16_t cmd, void *out_buf, int out_len,
+-				void *in_buf, int in_len);
++	int (*cmd_xfer)(struct cros_ec_device *ec,
++			struct cros_ec_command *msg);
  
+ 	/* These are used to implement the platform-specific interface */
+ 	void *priv;
+@@ -112,8 +107,6 @@ struct cros_ec_device {
+ 	struct device *parent;
+ 	bool wake_enabled;
+ 	struct mutex lock;
+-	int (*cmd_xfer)(struct cros_ec_device *ec,
+-			struct cros_ec_command *msg);
+ };
+ 
+ /**
 -- 
 2.0.0.526.g5318336
 
