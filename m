@@ -1,42 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965851AbaFRKNc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 06:13:32 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:41511 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965039AbaFRKNb (ORCPT
+	id S965878AbaFRKOq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 06:14:46 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46684 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965516AbaFRKOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 06:13:31 -0400
-Date: Wed, 18 Jun 2014 11:13:26 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Mark Salter <msalter@redhat.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
+	Wed, 18 Jun 2014 06:14:43 -0400
+Date: Wed, 18 Jun 2014 11:14:39 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Dave P Martin <Dave.Martin@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Joerg Roedel <joro@8bytes.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: remove define of ARCH_HAS_DMA_GET_REQUIRED_MASK
-Message-ID: <20140618101326.GB14680@arm.com>
-References: <1403024823-2180-1-git-send-email-msalter@redhat.com>
+Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140618101439.GF32699@arm.com>
+References: <1400877395-4235-1-git-send-email-thierry.reding@gmail.com>
+ <538757B6.4010109@wwwdotorg.org>
+ <20140530073006.GA24748@ulmo>
+ <20140530112728.GB3949@e103592.cambridge.arm.com>
+ <20140604211237.GC18710@mithrandir>
+ <20140616125704.GE16758@arm.com>
+ <20140617115829.GB18816@ulmo>
+ <20140617121811.GG13808@arm.com>
+ <20140617233714.GD25525@mithrandir>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403024823-2180-1-git-send-email-msalter@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140617233714.GD25525@mithrandir>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 06:07:03PM +0100, Mark Salter wrote:
-> Arm64 defines ARCH_HAS_DMA_GET_REQUIRED_MASK but provides
-> no dma_get_required_mask() function. This leads to a link
-> error in drivers using dma_get_required_mask(). Remove the
-> define so the default dma_get_required_mask() is available.
+On Wed, Jun 18, 2014 at 12:37:16AM +0100, Thierry Reding wrote:
+> On Tue, Jun 17, 2014 at 01:18:11PM +0100, Will Deacon wrote:
+> > On Tue, Jun 17, 2014 at 12:58:30PM +0100, Thierry Reding wrote:
+> > > On Mon, Jun 16, 2014 at 01:57:04PM +0100, Will Deacon wrote:
+> > > > On Wed, Jun 04, 2014 at 10:12:38PM +0100, Thierry Reding wrote:
+> > > > > It can easily be argued that if the algorithm used to remap the ID
+> > > > > varies, the compatibility of the device changes. Therefore I would
+> > > > > expect any variant of the GICv3 that deviates from the "standard"
+> > > > > mapping (if there is such a thing) to have its own compatible string.
+> > > > 
+> > > > There is no standard mapping; it's a property defined at system integration
+> > > > time. I fully expect different SoCs to do different things here.
+> > > 
+> > > My point was that the mapping itself seems to be fundamental enough to
+> > > make devices with different mappings "incompatible". Therefore I think
+> > > this could probably be handled by using different compatible values,
+> > > something along the lines of this:
+> > > 
+> > > 	compatible = "vendor,soc-gicv3", "arm,gicv3";
+> > > 
+> > > Then the mapping can be described in code, which should be a whole lot
+> > > easier and more flexible than a more or less generic notation in device
+> > > tree.
+> > 
+> > I don't think that scales well beyond a handful of unique mappings, and I
+> > really anticipate everybody doing something different based on their
+> > integration constraints.
+> > 
+> > You'd very quickly end up with sets of tables for each SoC, describing the
+> > topology and associated IDs in the kernel source, which feels like a giant
+> > step backwards from where we are today with device tree.
 > 
-> Signed-off-by: Mark Salter <msalter@redhat.com>
+> Well, today we don't have a generic binding at all, so anything will
+> really be a giant step forward in my opinion.
 
-I already got a similar patch to push in -rc2.
+Oh, I'm not disputing that at all. I just think it's worth considering how
+we can extend the binding in future to describe some of the ID routing and
+remapping that we've discussed.
 
-Thanks.
+> But seriously, from what you said earlier I got the impression that some
+> of the mappings may not be easy or possible to represent in DT, which is
+> why I proposed to encode it into the compatible property so that it can
+> be handled in code instead.
 
--- 
-Catalin
+For any old arbitrary mappings, we're going to have a rough time, but that
+doesn't mean we need to support that until we're forced to (and then we can
+consider our options). What I *do* think we need to describe is:
+
+  - Each master has a set of fixed StreamIDs
+  - StreamIDs can be remastered by adding a constant offset (this could also
+    be used to describe RequesterID -> StreamID mapping)
+
+I'd hope this would be sufficient for most people. Dynamic ID assignment can
+be worked out later (I'm not even sure it belongs in this binding) and any
+mappings other than `add a constant offset' can be treated on a case-by-case
+basis. We don't want to throw the kitchen sink at a language for describing
+arbitrary transformations!
+
+> We've had similar discussions before (power sequences anyone?) where we
+> tried to come up with a generic way to describe something in device tree
+> that just didn't work out too well. Some things are better done in code,
+> so I think we should at least consider that possibility rather than
+> blindly try and force everything into device tree.
+
+If we can support 90% of SoCs with a simple DT-based description, we can
+address the corner cases as they arise. I'm not ruling our hardcoding
+topology if we have no choice, but I don't think that's a healthy place to
+start from.
+
+Will
