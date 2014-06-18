@@ -1,49 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854AbaFRRdo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 13:33:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29924 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750862AbaFRRdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 13:33:43 -0400
-From: Bandan Das <bsd@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Nadav Amit <namit@cs.technion.ac.il>, gleb@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, joro@8bytes.org
-Subject: Re: [PATCH 3/3] KVM: x86: correct mwait and monitor emulation
-References: <1403101176-23664-1-git-send-email-namit@cs.technion.ac.il>
-	<1403101176-23664-4-git-send-email-namit@cs.technion.ac.il>
-	<jpg7g4ew4m6.fsf@redhat.com> <53A1C1F2.4010909@redhat.com>
-Date: Wed, 18 Jun 2014 13:33:27 -0400
-In-Reply-To: <53A1C1F2.4010909@redhat.com> (Paolo Bonzini's message of "Wed,
-	18 Jun 2014 18:44:34 +0200")
-Message-ID: <jpgtx7iazrs.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753872AbaFRRfn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 13:35:43 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:44162 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750862AbaFRRfm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 13:35:42 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ao0KACHNoVNbtAr8/2dsb2JhbABagw2rOgUBAQEBAQEFAZkogQsXdYQxLyOBGjeIRgHNPoViiROESgSPbIpXk1iDRDs
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] fs/sysv/namei.c: code clean-up
+Date: Wed, 18 Jun 2014 19:34:22 +0200
+Message-Id: <1403112862-7158-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paolo Bonzini <pbonzini@redhat.com> writes:
+Fixing checkpatch errors:
 
-> Il 18/06/2014 18:43, Bandan Das ha scritto:
->>> > mwait and monitor are currently handled as nop. Considering this behavior, they
->>> > should still be handled correctly, i.e., check execution conditions and generate
->>> > exceptions when required. mwait and monitor may also be executed in real-mode
->> Is this necessary ? They are NOPs and kvm prints that out (correctly so) to dmesg.
->> Implementing them correctly is a different thing, but adding extra checks for NOPs
->> just seems like adding extra cycles.
->
-> Raising the correct exception is a good thing, though.  The guest is
-> going to busy wait anyway, it doesn't matter how fast it does that. :)
+"foo * bar" should be "foo *bar"
+code indent should use tabs where possible
+trailing whitespace
 
-Thanks, makes sense. I was also thinking why to advertise it at all, but it's 
-probably more common than I think it is.
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/sysv/namei.c | 56 ++++++++++++++++++++++++++++----------------------------
+ 1 file changed, 28 insertions(+), 28 deletions(-)
 
-> Paolo
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/fs/sysv/namei.c b/fs/sysv/namei.c
+index 731b2bb..be0e2f6 100644
+--- a/fs/sysv/namei.c
++++ b/fs/sysv/namei.c
+@@ -42,9 +42,9 @@ const struct dentry_operations sysv_dentry_operations = {
+ 	.d_hash		= sysv_hash,
+ };
+ 
+-static struct dentry *sysv_lookup(struct inode * dir, struct dentry * dentry, unsigned int flags)
++static struct dentry *sysv_lookup(struct inode *dir, struct dentry *dentry, unsigned int flags)
+ {
+-	struct inode * inode = NULL;
++	struct inode *inode = NULL;
+ 	ino_t ino;
+ 
+ 	if (dentry->d_name.len > SYSV_NAMELEN)
+@@ -60,9 +60,9 @@ static struct dentry *sysv_lookup(struct inode * dir, struct dentry * dentry, un
+ 	return NULL;
+ }
+ 
+-static int sysv_mknod(struct inode * dir, struct dentry * dentry, umode_t mode, dev_t rdev)
++static int sysv_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t rdev)
+ {
+-	struct inode * inode;
++	struct inode *inode;
+ 	int err;
+ 
+ 	if (!old_valid_dev(rdev))
+@@ -79,17 +79,17 @@ static int sysv_mknod(struct inode * dir, struct dentry * dentry, umode_t mode,
+ 	return err;
+ }
+ 
+-static int sysv_create(struct inode * dir, struct dentry * dentry, umode_t mode, bool excl)
++static int sysv_create(struct inode *dir, struct dentry *dentry, umode_t mode, bool excl)
+ {
+ 	return sysv_mknod(dir, dentry, mode, 0);
+ }
+ 
+-static int sysv_symlink(struct inode * dir, struct dentry * dentry, 
+-	const char * symname)
++static int sysv_symlink(struct inode *dir, struct dentry *dentry,
++	const char *symname)
+ {
+ 	int err = -ENAMETOOLONG;
+ 	int l = strlen(symname)+1;
+-	struct inode * inode;
++	struct inode *inode;
+ 
+ 	if (l > dir->i_sb->s_blocksize)
+ 		goto out;
+@@ -115,8 +115,8 @@ out_fail:
+ 	goto out;
+ }
+ 
+-static int sysv_link(struct dentry * old_dentry, struct inode * dir, 
+-	struct dentry * dentry)
++static int sysv_link(struct dentry *old_dentry, struct inode *dir,
++	struct dentry *dentry)
+ {
+ 	struct inode *inode = old_dentry->d_inode;
+ 
+@@ -127,9 +127,9 @@ static int sysv_link(struct dentry * old_dentry, struct inode * dir,
+ 	return add_nondir(dentry, inode);
+ }
+ 
+-static int sysv_mkdir(struct inode * dir, struct dentry *dentry, umode_t mode)
++static int sysv_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
+ {
+-	struct inode * inode;
++	struct inode *inode;
+ 	int err;
+ 
+ 	inode_inc_link_count(dir);
+@@ -151,7 +151,7 @@ static int sysv_mkdir(struct inode * dir, struct dentry *dentry, umode_t mode)
+ 	if (err)
+ 		goto out_fail;
+ 
+-        d_instantiate(dentry, inode);
++	d_instantiate(dentry, inode);
+ out:
+ 	return err;
+ 
+@@ -164,11 +164,11 @@ out_dir:
+ 	goto out;
+ }
+ 
+-static int sysv_unlink(struct inode * dir, struct dentry * dentry)
++static int sysv_unlink(struct inode *dir, struct dentry *dentry)
+ {
+-	struct inode * inode = dentry->d_inode;
+-	struct page * page;
+-	struct sysv_dir_entry * de;
++	struct inode *inode = dentry->d_inode;
++	struct page *page;
++	struct sysv_dir_entry *de;
+ 	int err = -ENOENT;
+ 
+ 	de = sysv_find_entry(dentry, &page);
+@@ -185,7 +185,7 @@ out:
+ 	return err;
+ }
+ 
+-static int sysv_rmdir(struct inode * dir, struct dentry * dentry)
++static int sysv_rmdir(struct inode *dir, struct dentry *dentry)
+ {
+ 	struct inode *inode = dentry->d_inode;
+ 	int err = -ENOTEMPTY;
+@@ -205,15 +205,15 @@ static int sysv_rmdir(struct inode * dir, struct dentry * dentry)
+  * Anybody can rename anything with this: the permission checks are left to the
+  * higher-level routines.
+  */
+-static int sysv_rename(struct inode * old_dir, struct dentry * old_dentry,
+-		  struct inode * new_dir, struct dentry * new_dentry)
++static int sysv_rename(struct inode *old_dir, struct dentry *old_dentry,
++		  struct inode *new_dir, struct dentry *new_dentry)
+ {
+-	struct inode * old_inode = old_dentry->d_inode;
+-	struct inode * new_inode = new_dentry->d_inode;
+-	struct page * dir_page = NULL;
+-	struct sysv_dir_entry * dir_de = NULL;
+-	struct page * old_page;
+-	struct sysv_dir_entry * old_de;
++	struct inode *old_inode = old_dentry->d_inode;
++	struct inode *new_inode = new_dentry->d_inode;
++	struct page *dir_page = NULL;
++	struct sysv_dir_entry *dir_de = NULL;
++	struct page *old_page;
++	struct sysv_dir_entry *old_de;
+ 	int err = -ENOENT;
+ 
+ 	old_de = sysv_find_entry(old_dentry, &old_page);
+@@ -228,8 +228,8 @@ static int sysv_rename(struct inode * old_dir, struct dentry * old_dentry,
+ 	}
+ 
+ 	if (new_inode) {
+-		struct page * new_page;
+-		struct sysv_dir_entry * new_de;
++		struct page *new_page;
++		struct sysv_dir_entry *new_de;
+ 
+ 		err = -ENOTEMPTY;
+ 		if (dir_de && !sysv_empty_dir(new_inode))
+-- 
+1.8.4.5
+
