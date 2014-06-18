@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965103AbaFRIv7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 04:51:59 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:42865 "EHLO
+	id S965334AbaFRIwH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 04:52:07 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:52105 "EHLO
 	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934104AbaFRIvz (ORCPT
+	with ESMTP id S964920AbaFRIv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 04:51:55 -0400
+	Wed, 18 Jun 2014 04:51:59 -0400
 From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 To: dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
         linux-kernel@vger.kernel.org, airlied@linux.ie
 Cc: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Subject: [PATCH v5 01/11] drm: sti: add bindings for DRM driver
-Date: Wed, 18 Jun 2014 10:51:18 +0200
-Message-Id: <1403081488-13114-2-git-send-email-benjamin.gaignard@linaro.org>
+Subject: [PATCH v5 03/11] drm: sti: add VTAC drivers
+Date: Wed, 18 Jun 2014 10:51:20 +0200
+Message-Id: <1403081488-13114-4-git-send-email-benjamin.gaignard@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403081488-13114-1-git-send-email-benjamin.gaignard@linaro.org>
 References: <1403081488-13114-1-git-send-email-benjamin.gaignard@linaro.org>
@@ -21,276 +21,242 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add DRM/KMS driver bindings documentation.
-Describe the required properties for each of the hardware IPs drivers.
+Video Traffic Advance Communication Rx and Tx drivers are designed
+for inter-die communication.
 
 Signed-off-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 ---
- .../devicetree/bindings/gpu/st,stih4xx.txt         | 189 +++++++++++++++++++++
- drivers/gpu/drm/sti/NOTES                          |  58 +++++++
- 2 files changed, 247 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/gpu/st,stih4xx.txt
- create mode 100644 drivers/gpu/drm/sti/NOTES
+ drivers/gpu/drm/sti/Makefile   |   3 +-
+ drivers/gpu/drm/sti/sti_vtac.c | 211 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 213 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/gpu/drm/sti/sti_vtac.c
 
-diff --git a/Documentation/devicetree/bindings/gpu/st,stih4xx.txt b/Documentation/devicetree/bindings/gpu/st,stih4xx.txt
+diff --git a/drivers/gpu/drm/sti/Makefile b/drivers/gpu/drm/sti/Makefile
+index 3658a13e..52e2e80 100644
+--- a/drivers/gpu/drm/sti/Makefile
++++ b/drivers/gpu/drm/sti/Makefile
+@@ -1,2 +1,3 @@
+ obj-$(CONFIG_DRM_STI) += \
+-	sti_vtg.o
++	sti_vtg.o \
++	sti_vtac.o
+diff --git a/drivers/gpu/drm/sti/sti_vtac.c b/drivers/gpu/drm/sti/sti_vtac.c
 new file mode 100644
-index 0000000..59a59a7
+index 0000000..5226a04
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/gpu/st,stih4xx.txt
-@@ -0,0 +1,189 @@
-+STMicroelectronics stih4xx platforms
++++ b/drivers/gpu/drm/sti/sti_vtac.c
+@@ -0,0 +1,211 @@
++/*
++ * Copyright (C) STMicroelectronics SA 2014
++ * Author: Benjamin Gaignard <benjamin.gaignard@st.com> for STMicroelectronics.
++ * License terms:  GNU General Public License (GPL), version 2
++ */
 +
-+- sti-vtg: video timing generator
-+  Required properties:
-+  - compatible: "st,vtg"
-+  - reg: Physical base address of the IP registers and length of memory mapped region.
-+  Optional properties:
-+  - interrupts : VTG interrupt number to the CPU.
-+  - st,slave: phandle on a slave vtg
++#include <linux/clk.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
 +
-+- sti-vtac: video timing advanced inter dye communication Rx and TX
-+  Required properties:
-+  - compatible: "st,vtac-main" or "st,vtac-aux"
-+  - reg: Physical base address of the IP registers and length of memory mapped region.
-+  - clocks: from common clock binding: handle hardware IP needed clocks, the
-+    number of clocks may depend of the SoC type.
-+    See ../clocks/clock-bindings.txt for details.
-+  - clock-names: names of the clocks listed in clocks property in the same
-+    order.
++#include <drm/drmP.h>
 +
-+- sti-display-subsystem: Master device for DRM sub-components
-+  This device must be the parent of all the sub-components and is responsible
-+  of bind them.
-+  Required properties:
-+  - compatible: "st,sti-display-subsystem"
-+  - ranges: to allow probing of subdevices
++/* registers offset */
++#define VTAC_CONFIG                     0x00
++#define VTAC_RX_FIFO_CONFIG             0x04
++#define VTAC_FIFO_CONFIG_VAL            0x04
 +
-+- sti-compositor: frame compositor engine
-+  must be a child of sti-display-subsystem
-+  Required properties:
-+  - compatible: "st,stih<chip>-compositor"
-+  - reg: Physical base address of the IP registers and length of memory mapped region.
-+  - clocks: from common clock binding: handle hardware IP needed clocks, the
-+    number of clocks may depend of the SoC type.
-+    See ../clocks/clock-bindings.txt for details.
-+  - clock-names: names of the clocks listed in clocks property in the same
-+    order.
-+  - resets: resets to be used by the device
-+    See ../reset/reset.txt for details.
-+  - reset-names: names of the resets listed in resets property in the same
-+    order.
-+  - st,vtg: phandle(s) on vtg device (main and aux) nodes.
++#define VTAC_SYS_CFG8521                0x824
++#define VTAC_SYS_CFG8522                0x828
 +
-+- sti-tvout: video out hardware block
-+  must be a child of sti-display-subsystem
-+  Required properties:
-+  - compatible: "st,stih<chip>-tvout"
-+  - reg: Physical base address of the IP registers and length of memory mapped region.
-+  - reg-names: names of the mapped memory regions listed in regs property in
-+    the same order.
-+  - resets: resets to be used by the device
-+    See ../reset/reset.txt for details.
-+  - reset-names: names of the resets listed in resets property in the same
-+    order.
-+  - ranges: to allow probing of subdevices
++/* Number of phyts per pixel */
++#define VTAC_2_5_PPP                    0x0005
++#define VTAC_3_PPP                      0x0006
++#define VTAC_4_PPP                      0x0008
++#define VTAC_5_PPP                      0x000A
++#define VTAC_6_PPP                      0x000C
++#define VTAC_13_PPP                     0x001A
++#define VTAC_14_PPP                     0x001C
++#define VTAC_15_PPP                     0x001E
++#define VTAC_16_PPP                     0x0020
++#define VTAC_17_PPP                     0x0022
++#define VTAC_18_PPP                     0x0024
 +
-+- sti-hdmi: hdmi output block
-+  must be a child of sti-tvout
-+  Required properties:
-+  - compatible: "st,stih<chip>-hdmi";
-+  - reg: Physical base address of the IP registers and length of memory mapped region.
-+  - reg-names: names of the mapped memory regions listed in regs property in
-+    the same order.
-+  - interrupts : HDMI interrupt number to the CPU.
-+  - interrupt-names: name of the interrupts listed in interrupts property in
-+    the same order
-+  - clocks: from common clock binding: handle hardware IP needed clocks, the
-+    number of clocks may depend of the SoC type.
-+  - clock-names: names of the clocks listed in clocks property in the same
-+    order.
-+  - hdmi,hpd-gpio: gpio id to detect if an hdmi cable is plugged or not.
++/* enable bits */
++#define VTAC_ENABLE                     0x3003
 +
-+sti-hda:
-+  Required properties:
-+  must be a child of sti-tvout
-+  - compatible: "st,stih<chip>-hda"
-+  - reg: Physical base address of the IP registers and length of memory mapped region.
-+  - reg-names: names of the mapped memory regions listed in regs property in
-+    the same order.
-+  - clocks: from common clock binding: handle hardware IP needed clocks, the
-+    number of clocks may depend of the SoC type.
-+    See ../clocks/clock-bindings.txt for details.
-+  - clock-names: names of the clocks listed in clocks property in the same
-+    order.
-+
-+Example:
-+
-+/ {
-+	...
-+
-+	vtg_main_slave: sti-vtg-main-slave@fe85A800 {
-+		compatible	= "st,vtg";
-+		reg		= <0xfe85A800 0x300>;
-+		interrupts	= <GIC_SPI 175 IRQ_TYPE_NONE>;
-+	};
-+
-+	vtg_main: sti-vtg-main-master@fd348000 {
-+		compatible	= "st,vtg";
-+		reg		= <0xfd348000 0x400>;
-+		st,slave	= <&vtg_main_slave>;
-+	};
-+
-+	vtg_aux_slave: sti-vtg-aux-slave@fd348400 {
-+		compatible	= "st,vtg";
-+		reg		= <0xfe858200 0x300>;
-+		interrupts	= <GIC_SPI 176 IRQ_TYPE_NONE>;
-+	};
-+
-+	vtg_aux: sti-vtg-aux-master@fd348400 {
-+		compatible	= "st,vtg";
-+		reg		= <0xfd348400 0x400>;
-+		st,slave	= <&vtg_aux_slave>;
-+	};
++#define VTAC_TX_PHY_ENABLE_CLK_PHY      BIT(0)
++#define VTAC_TX_PHY_ENABLE_CLK_DLL      BIT(1)
++#define VTAC_TX_PHY_PLL_NOT_OSC_MODE    BIT(3)
++#define VTAC_TX_PHY_RST_N_DLL_SWITCH    BIT(4)
++#define VTAC_TX_PHY_PROG_N3             BIT(9)
 +
 +
-+	sti-vtac-rx-main@fee82800 {
-+		compatible	= "st,vtac-main";
-+		reg		= <0xfee82800 0x200>;
-+		clock-names     = "vtac";
-+		clocks          = <&CLK_M_A2_DIV0 CLK_M_VTAC_MAIN_PHY>;
-+	};
-+
-+	sti-vtac-rx-aux@fee82a00 {
-+		compatible	= "st,vtac-aux";
-+		reg		= <0xfee82a00 0x200>;
-+		clock-names     = "vtac";
-+		clocks          = <&CLK_M_A2_DIV0 CLK_M_VTAC_AUX_PHY>;
-+	};
-+
-+	sti-vtac-tx-main@fd349000 {
-+		compatible	= "st,vtac-main";
-+		reg		= <0xfd349000 0x200>, <0xfd320000 0x10000>;
-+		clock-names     = "vtac";
-+		clocks           = <&CLK_S_A1_HS CLK_S_VTAC_TX_PHY>;
-+	};
-+
-+	sti-vtac-tx-aux@fd349200 {
-+		compatible	= "st,vtac-aux";
-+		reg		= <0xfd349200 0x200>, <0xfd320000 0x10000>;
-+		clock-names     = "vtac";
-+		clocks          = <&CLK_S_A1_HS CLK_S_VTAC_TX_PHY>;
-+	};
-+
-+	sti-display-subsystem {
-+		compatible = "st,sti-display-subsystem";
-+		ranges;
-+
-+		sti-compositor@fd340000 {
-+			compatible	= "st,stih416-compositor";
-+			reg		= <0xfd340000 0x1000>;
-+			clock-names	= "compo_main", "compo_aux",
-+			                  "pix_main", "pix_aux";
-+			clocks          = <&CLK_M_A2_DIV1 CLK_M_COMPO_MAIN>, <&CLK_M_A2_DIV1 CLK_M_COMPO_AUX>,
-+					  <&CLOCKGEN_C_VCC CLK_S_PIX_MAIN>, <&CLOCKGEN_C_VCC CLK_S_PIX_AUX>;
-+			reset-names     = "compo-main", "compo-aux";
-+			resets          = <&softreset STIH416_COMPO_M_SOFTRESET>, <&softreset STIH416_COMPO_A_SOFTRESET>;
-+			st,vtg		= <&vtg_main>, <&vtg_aux>;
-+		};
-+
-+		sti-tvout@fe000000 {
-+			compatible	= "st,stih416-tvout";
-+			reg		= <0xfe000000 0x1000>, <0xfe85a000 0x400>, <0xfe830000 0x10000>;
-+			reg-names	= "tvout-reg", "hda-reg", "syscfg";
-+			reset-names     = "tvout";
-+			resets          = <&softreset STIH416_HDTVOUT_SOFTRESET>;
-+			ranges;
-+
-+			sti-hdmi@fe85c000 {
-+				compatible	= "st,stih416-hdmi";
-+				reg		= <0xfe85c000 0x1000>, <0xfe830000 0x10000>;
-+				reg-names	= "hdmi-reg", "syscfg";
-+				interrupts	= <GIC_SPI 173 IRQ_TYPE_NONE>;
-+				interrupt-names	= "irq";
-+				clock-names	= "pix", "tmds", "phy", "audio";
-+				clocks          = <&CLOCKGEN_C_VCC CLK_S_PIX_HDMI>, <&CLOCKGEN_C_VCC CLK_S_TMDS_HDMI>, <&CLOCKGEN_C_VCC CLK_S_HDMI_REJECT_PLL>, <&CLOCKGEN_B1 CLK_S_PCM_0>;
-+				hdmi,hpd-gpio	= <&PIO2 5>;
-+			};
-+
-+			sti-hda@fe85a000 {
-+				compatible	= "st,stih416-hda";
-+				reg		= <0xfe85a000 0x400>, <0xfe83085c 0x4>;
-+				reg-names	= "hda-reg", "video-dacs-ctrl";
-+				clock-names	= "pix", "hddac";
-+				clocks          = <&CLOCKGEN_C_VCC CLK_S_PIX_HD>, <&CLOCKGEN_C_VCC CLK_S_HDDAC>;
-+			};
-+		};
-+	};
-+	...
++/**
++ * VTAC mode structure
++ *
++ * @vid_in_width: Video Data Resolution
++ * @phyts_width: Width of phyt buses(phyt low and phyt high).
++ * @phyts_per_pixel: Number of phyts sent per pixel
++ */
++struct sti_vtac_mode {
++	u32 vid_in_width;
++	u32 phyts_width;
++	u32 phyts_per_pixel;
 +};
-diff --git a/drivers/gpu/drm/sti/NOTES b/drivers/gpu/drm/sti/NOTES
-new file mode 100644
-index 0000000..57e2579
---- /dev/null
-+++ b/drivers/gpu/drm/sti/NOTES
-@@ -0,0 +1,58 @@
-+1. stiH display hardware IP
-+---------------------------
-+The STMicroelectronics stiH SoCs use a common chain of HW display IP blocks:
-+- The High Quality Video Display Processor (HQVDP) gets video frames from a
-+  video decoder and does high quality video processing, including scaling.
 +
-+- The Compositor is a multiplane, dual-mixer (Main & Aux) digital processor. It
-+  has several inputs:
-+  - The graphics planes are internally processed by the Generic Display
-+    Pipeline (GDP).
-+  - The video plug (VID) connects to the HQVDP output.
-+  - The cursor handles ... a cursor.
-+- The TV OUT pre-formats (convert, clip, round) the compositor output data
-+- The HDMI / DVO / HD Analog / SD analog IP builds the video signals
-+  - DVO (Digital Video Output) handles a 24bits parallel signal
-+  - The HD analog signal is typically driven by a YCbCr cable, supporting up to
-+    1080i mode.
-+  - The SD analog signal is typically used for legacy TV
-+- The VTG (Video Timing Generators) build Vsync signals used by the other HW IP
-+Note that some stiH drivers support only a subset of thee HW IP.
++static const struct sti_vtac_mode vtac_mode_main = {0x2, 0x2, VTAC_5_PPP};
++static const struct sti_vtac_mode vtac_mode_aux = {0x1, 0x0, VTAC_17_PPP};
 +
-+                  .-------------.   .-----------.   .-----------.
-+GPU >-------------+GDP     Main |   |           +---+    HDMI   +--> HDMI
-+GPU >-------------+GDP     mixer+---+           |   :===========:
-+GPU >-------------+Cursor       |   |           +---+    DVO    +--> 24b//
-+        -------   |  COMPOSITOR |   |  TV OUT   |   :===========:
-+       |       |  |             |   |           +---+ HD analog +--> YCbCr
-+Vid >--+ HQVDP +--+VID     Aux  +---+           |   :===========:
-+dec    |       |  |        mixer|   |           +---+ SD analog +--> CVBS
-+       '-------'  '-------------'   '-----------'   '-----------'
-+                   .-----------.
-+                   |       main+--> Vsync
-+                   | VTG       |
-+                   |        aux+--> Vsync
-+                   '-----------'
++/**
++ * VTAC structure
++ *
++ * @dev: pointer to device structure
++ * @regs: ioremapped registers for RX and TX devices
++ * @phy_regs: phy registers for TX device
++ * @clk: clock
++ * @mode: main or auxillary configuration mode
++ */
++struct sti_vtac {
++	struct device *dev;
++	void __iomem *regs;
++	void __iomem *phy_regs;
++	struct clk *clk;
++	const struct sti_vtac_mode *mode;
++};
 +
-+2. DRM / HW mapping
-+-------------------
-+These IP are mapped to the DRM objects as following:
-+- The CRTCs are mapped to the Compositor Main and Aux Mixers
-+- The Framebuffers and planes are mapped to the Compositor GDP (non video
-+  buffers) and to HQVDP+VID (video buffers)
-+- The Cursor is mapped to the Compositor Cursor
-+- The Encoders are mapped to the TVOut
-+- The Bridges/Connectors are mapped to the HDMI / DVO / HD Analog / SD analog
++static void sti_vtac_rx_set_config(struct sti_vtac *vtac)
++{
++	u32 config;
 +
-+FB & planes         Cursor      CRTC     Encoders    Bridges/Connectors
-+   |                   |          |         |                       |
-+   |                   |          |         |                       |
-+   |              .-------------. | .-----------.   .-----------.   |
-+   +------------> |GDP |   Main | | |       +-> |   |    HDMI   | <-+
-+   +------------> |GDP v   mixer|<+ |       |   |   :===========:   |
-+   |              |Cursor       | | |       +-> |   |    DVO    | <-+
-+   |    -------   |  COMPOSITOR | | |TV OUT |   |   :===========:   |
-+   |   |       |  |             | | |       +-> |   | HD analog | <-+
-+   +-> | HQVDP |  |VID     Aux  |<+ |       |   |   :===========:   |
-+       |       |  |        mixer|   |       +-> |   | SD analog | <-+
-+       '-------'  '-------------'   '-----------'   '-----------'
++	/* Enable VTAC clock */
++	if (clk_prepare_enable(vtac->clk))
++		DRM_ERROR("Failed to prepare/enable vtac_rx clock.\n");
++
++	writel(VTAC_FIFO_CONFIG_VAL, vtac->regs + VTAC_RX_FIFO_CONFIG);
++
++	config = VTAC_ENABLE;
++	config |= vtac->mode->vid_in_width << 4;
++	config |= vtac->mode->phyts_width << 16;
++	config |= vtac->mode->phyts_per_pixel << 23;
++	writel(config, vtac->regs + VTAC_CONFIG);
++}
++
++static void sti_vtac_tx_set_config(struct sti_vtac *vtac)
++{
++	u32 phy_config;
++	u32 config;
++
++	/* Enable VTAC clock */
++	if (clk_prepare_enable(vtac->clk))
++		DRM_ERROR("Failed to prepare/enable vtac_tx clock.\n");
++
++	/* Configure vtac phy */
++	phy_config = 0x00000000;
++	writel(phy_config, vtac->phy_regs + VTAC_SYS_CFG8522);
++	phy_config = VTAC_TX_PHY_ENABLE_CLK_PHY;
++	writel(phy_config, vtac->phy_regs + VTAC_SYS_CFG8521);
++	phy_config = readl(vtac->phy_regs + VTAC_SYS_CFG8521);
++	phy_config |= VTAC_TX_PHY_PROG_N3;
++	writel(phy_config, vtac->phy_regs + VTAC_SYS_CFG8521);
++	phy_config = readl(vtac->phy_regs + VTAC_SYS_CFG8521);
++	phy_config |= VTAC_TX_PHY_ENABLE_CLK_DLL;
++	writel(phy_config, vtac->phy_regs + VTAC_SYS_CFG8521);
++	phy_config = readl(vtac->phy_regs + VTAC_SYS_CFG8521);
++	phy_config |= VTAC_TX_PHY_RST_N_DLL_SWITCH;
++	writel(phy_config, vtac->phy_regs + VTAC_SYS_CFG8521);
++	phy_config = readl(vtac->phy_regs + VTAC_SYS_CFG8521);
++	phy_config |= VTAC_TX_PHY_PLL_NOT_OSC_MODE;
++	writel(phy_config, vtac->phy_regs + VTAC_SYS_CFG8521);
++
++	/* Configure vtac tx */
++	config = VTAC_ENABLE;
++	config |= vtac->mode->vid_in_width << 4;
++	config |= vtac->mode->phyts_width << 16;
++	config |= vtac->mode->phyts_per_pixel << 23;
++	writel(config, vtac->regs + VTAC_CONFIG);
++}
++
++static const struct of_device_id vtac_of_match[] = {
++	{
++		.compatible = "st,vtac-main",
++		.data = &vtac_mode_main,
++	}, {
++		.compatible = "st,vtac-aux",
++		.data = &vtac_mode_aux,
++	}, {
++		/* end node */
++	}
++};
++MODULE_DEVICE_TABLE(of, vtac_of_match);
++
++static int sti_vtac_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device_node *np = dev->of_node;
++	const struct of_device_id *id;
++	struct sti_vtac *vtac;
++	struct resource *res;
++
++	vtac = devm_kzalloc(dev, sizeof(*vtac), GFP_KERNEL);
++	if (!vtac)
++		return -ENOMEM;
++
++	vtac->dev = dev;
++
++	id = of_match_node(vtac_of_match, np);
++	if (!id)
++		return -ENOMEM;
++
++	vtac->mode = id->data;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		DRM_ERROR("Invalid resource\n");
++		return -ENOMEM;
++	}
++	vtac->regs = devm_ioremap_resource(dev, res);
++	if (IS_ERR(vtac->regs))
++		return PTR_ERR(vtac->regs);
++
++
++	vtac->clk = devm_clk_get(dev, "vtac");
++	if (IS_ERR(vtac->clk)) {
++		DRM_ERROR("Cannot get vtac clock\n");
++		return PTR_ERR(vtac->clk);
++	}
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++	if (res) {
++		vtac->phy_regs = devm_ioremap_nocache(dev, res->start,
++						 resource_size(res));
++		sti_vtac_tx_set_config(vtac);
++	} else {
++
++		sti_vtac_rx_set_config(vtac);
++	}
++
++	platform_set_drvdata(pdev, vtac);
++	DRM_INFO("%s %s\n", __func__, dev_name(vtac->dev));
++
++	return 0;
++}
++
++static int sti_vtac_remove(struct platform_device *pdev)
++{
++	return 0;
++}
++
++struct platform_driver sti_vtac_driver = {
++	.driver = {
++		.name = "sti-vtac",
++		.owner = THIS_MODULE,
++		.of_match_table = vtac_of_match,
++	},
++	.probe = sti_vtac_probe,
++	.remove = sti_vtac_remove,
++};
++
++module_platform_driver(sti_vtac_driver);
 -- 
 1.9.1
 
