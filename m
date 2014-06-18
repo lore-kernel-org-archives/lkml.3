@@ -1,41 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626AbaFRXrT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 19:47:19 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54381 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752276AbaFRXrS (ORCPT
+	id S1756672AbaFRXuN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 19:50:13 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:38447 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754153AbaFRXuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 19:47:18 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: David Rientjes <rientjes@google.com>
-Cc: Christoph Jaeger <christophjaeger@linux.com>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI: use kstrto*() instead of simple_strto*()
-Date: Thu, 19 Jun 2014 02:04:53 +0200
-Message-ID: <2154416.4nBnIoV6r0@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.02.1406161724020.21018@chino.kir.corp.google.com>
-References: <1402688998-20142-1-git-send-email-christophjaeger@linux.com> <alpine.DEB.2.02.1406161724020.21018@chino.kir.corp.google.com>
+	Wed, 18 Jun 2014 19:50:10 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1403128945-28298-1-git-send-email-xypron.glpk@gmx.de>
+References: <1403128945-28298-1-git-send-email-xypron.glpk@gmx.de>
+Date: Wed, 18 Jun 2014 16:50:09 -0700
+X-Google-Sender-Auth: yZNfKyIQRE9LTBk6kIzEGxfrVBk
+Message-ID: <CAGXu5jKLoRkKuu8T=im6oEhn3WmXjZPwFXEbaPT6SeL29XrS0g@mail.gmail.com>
+Subject: Re: [PATCH 1/1] media: dib9000: avoid out of bound access
+From: Kees Cook <keescook@chromium.org>
+To: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Michael Krufky <mkrufky@linuxtv.org>, linux-media@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 16, 2014 05:24:12 PM David Rientjes wrote:
-> On Fri, 13 Jun 2014, Christoph Jaeger wrote:
-> 
-> > simple_strto*() are obsolete; use kstrto*() instead. Add proper error
-> > checking.
-> > 
-> > Signed-off-by: Christoph Jaeger <christophjaeger@linux.com>
-> 
-> Acked-by: David Rientjes <rientjes@google.com>
+On Wed, Jun 18, 2014 at 3:02 PM, Heinrich Schuchardt <xypron.glpk@gmx.de> wrote:
+> The current test to avoid out of bound access to mb[] is insufficient.
+> For len = 19 non-existent mb[10] will be accessed.
+>
+> A check in the for loop is insufficient to avoid out of bound access in
+> dib9000_mbx_send_attr.
+>
+> Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+> ---
+>  drivers/media/dvb-frontends/dib9000.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/media/dvb-frontends/dib9000.c b/drivers/media/dvb-frontends/dib9000.c
+> index e540cfb..6a71917 100644
+> --- a/drivers/media/dvb-frontends/dib9000.c
+> +++ b/drivers/media/dvb-frontends/dib9000.c
+> @@ -1040,10 +1040,13 @@ static int dib9000_risc_apb_access_write(struct dib9000_state *state, u32 addres
+>         if (address >= 1024 || !state->platform.risc.fw_is_running)
+>                 return -EINVAL;
+>
+> +       if (len > 18)
+> +               return -EINVAL;
+> +
+>         /* dprintk( "APB access thru wr fw %d %x", address, attribute); */
+>
+>         mb[0] = (unsigned short)address;
+> -       for (i = 0; i < len && i < 20; i += 2)
+> +       for (i = 0; i < len; i += 2)
+>                 mb[1 + (i / 2)] = (b[i] << 8 | b[i + 1]);
 
-Applied, thanks!
+Good catch on the mb[] access! However, I think there is still more to
+fix since b[i + 1] can read past the end of b: Say b is defined as "u8
+b[3]". Passing len 3 means the second loop, with i==2 will access b[2]
+and b[3], the latter is out of range.
+
+-Kees
+
+>
+>         dib9000_mbx_send_attr(state, OUT_MSG_BRIDGE_APB_W, mb, 1 + len / 2, attribute);
+> --
+> 2.0.0
+>
+
+
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Kees Cook
+Chrome OS Security
