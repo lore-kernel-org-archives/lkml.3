@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966465AbaFRMd0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 08:33:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43172 "EHLO mx2.suse.de"
+	id S966484AbaFRMhM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 08:37:12 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:47469 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966138AbaFRMdZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 08:33:25 -0400
-Message-ID: <53A18712.6030907@suse.cz>
-Date: Wed, 18 Jun 2014 14:33:22 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S966138AbaFRMhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 08:37:10 -0400
+Message-ID: <53A1876B.2040701@ti.com>
+Date: Wed, 18 Jun 2014 18:04:51 +0530
+From: Rajendra Nayak <rnayak@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: relative objtree change broke tar builds?
-References: <20140617223854.GC6168@fieldses.org> <53A15684.9000002@suse.cz> <20140618122029.GA17790@fieldses.org>
-In-Reply-To: <20140618122029.GA17790@fieldses.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Roger Quadros <rogerq@ti.com>
+CC: <tony@atomide.com>, <paul@pwsan.com>, <nm@ti.com>, <kishon@ti.com>,
+        <george.cherian@ti.com>, <balbi@ti.com>, <balajitk@ti.com>,
+        <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ARM: DRA7: hwmod: Add OCP2SCP3 module
+References: <1403093816-10960-1-git-send-email-rogerq@ti.com> <1403093816-10960-2-git-send-email-rogerq@ti.com>
+In-Reply-To: <1403093816-10960-2-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 18.6.2014 14:20, J. Bruce Fields napsal(a):
-> On Wed, Jun 18, 2014 at 11:06:12AM +0200, Michal Marek wrote:
->> Dne 18.6.2014 00:38, J. Bruce Fields napsal(a):
->>> The changelog there says
->>>
->>> 	The main Makefile sets its working directory to the object tree
->>> 	and never changes it again. Therefore, we can use '.' instead of
->>> 	the absolute path.
->>>
->>> But the main Makefile also exports objtree, and a quick grep suggests
->>> lots of other uses outside the main Makefile.
->>
->> Do you have examples? Besides your report, I'm only aware of make
->> deb-pkg and make *docs. What else?
+On Wednesday 18 June 2014 05:46 PM, Roger Quadros wrote:
+> This module is needed for the SATA and PCIe PHYs.
 > 
-> I haven't looked.
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> Tested-by: Roger Quadros <rogerq@ti.com>
+> ---
+>  arch/arm/mach-omap2/omap_hwmod_7xx_data.c | 25 +++++++++++++++++++++++++
+>  1 file changed, 25 insertions(+)
 > 
-> I only note that grep finds 47 files referencing that variable, and
-> absent some argument that the remaining ones are correct, I'd be
-> inclined to revert.
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> index 20b4398..cedef6b 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> @@ -1215,6 +1215,30 @@ static struct omap_hwmod dra7xx_ocp2scp1_hwmod = {
+>  	},
+>  };
+>  
+> +/* ocp2scp3 */
+> +static struct omap_hwmod dra7xx_ocp2scp3_hwmod;
+> +
+> +/* l4_cfg -> ocp2scp3 */
+> +static struct omap_hwmod_ocp_if dra7xx_l4_cfg__ocp2scp3 = {
+> +	.master		= &dra7xx_l4_cfg_hwmod,
+> +	.slave		= &dra7xx_ocp2scp3_hwmod,
+> +	.clk		= "l4_root_clk_div",
+> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+> +};
 
-Do these 47 files change the working directory before referencing the
-variable?
+is it not possible to move this down in the file where all interface
+structs are defined?
 
-Thanks,
-Michal
+> +
+> +static struct omap_hwmod dra7xx_ocp2scp3_hwmod = {
+> +	.name		= "ocp2scp3",
+> +	.class		= &dra7xx_ocp2scp_hwmod_class,
+> +	.clkdm_name	= "l3init_clkdm",
+> +	.prcm = {
+> +		.omap4 = {
+> +			.clkctrl_offs = DRA7XX_CM_L3INIT_OCP2SCP3_CLKCTRL_OFFSET,
+> +			.context_offs = DRA7XX_RM_L3INIT_OCP2SCP3_CONTEXT_OFFSET,
+> +			.modulemode   = MODULEMODE_HWCTRL,
+> +		},
+> +	},
+> +};
+> +
+>  /*
+>   * 'qspi' class
+>   *
+> @@ -2672,6 +2696,7 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
+>  	&dra7xx_l4_per1__mmc4,
+>  	&dra7xx_l4_cfg__mpu,
+>  	&dra7xx_l4_cfg__ocp2scp1,
+> +	&dra7xx_l4_cfg__ocp2scp3,
+>  	&dra7xx_l3_main_1__qspi,
+>  	&dra7xx_l4_cfg__sata,
+>  	&dra7xx_l4_cfg__smartreflex_core,
+> 
 
