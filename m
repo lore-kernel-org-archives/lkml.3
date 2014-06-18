@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277AbaFRP7Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 11:59:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55516 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251AbaFRP7X (ORCPT
+	id S1753189AbaFRQB5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 12:01:57 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:46163 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752588AbaFRQB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 11:59:23 -0400
-Date: Wed, 18 Jun 2014 17:59:16 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Liang, Kan" <kan.liang@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "Kleen, Andi" <andi.kleen@intel.com>
-Subject: Re: [PATCH 1/2] perf: ignore LBR and offcore_rsp.
-Message-ID: <20140618155916.GZ6758@twins.programming.kicks-ass.net>
-References: <37D7C6CF3E00A74B8858931C1DB2F0770148F513@SHSMSX103.ccr.corp.intel.com>
+	Wed, 18 Jun 2014 12:01:56 -0400
+Message-ID: <53A1B7EE.7070800@gmail.com>
+Date: Wed, 18 Jun 2014 19:01:50 +0300
+From: Nadav Amit <nadav.amit@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Y4JO1JP6mbYWtFW3"
-Content-Disposition: inline
-In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F0770148F513@SHSMSX103.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Paolo Bonzini <pbonzini@redhat.com>, Nadav Amit <namit@cs.technion.ac.il>
+CC: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 9/9] KVM: vmx: vmx instructions handling does not consider
+ cs.l
+References: <539F059F.8050501@redhat.com> <1403101166-23616-1-git-send-email-namit@cs.technion.ac.il> <1403101166-23616-10-git-send-email-namit@cs.technion.ac.il> <53A1B33A.3080509@redhat.com>
+In-Reply-To: <53A1B33A.3080509@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 6/18/14, 6:41 PM, Paolo Bonzini wrote:
+> Il 18/06/2014 16:19, Nadav Amit ha scritto:
+>> VMX instructions use 32-bit operands in 32-bit mode, and 64-bit
+>> operands in
+>> 64-bit mode.  The current implementation is broken since it does not
+>> use the
+>> register operands correctly, and always uses 64-bit for reads and writes.
+>> Moreover, write to memory in vmwrite only considers long-mode, so it
+>> ignores
+>> cs.l. This patch fixes this behavior.  The field of vmread/vmwrite is
+>> kept
+>> intentionally as 64-bit read since if bits [63:32] are not cleared the
+>> instruction should fail, according to Intel SDM.
+>
+> This is not how I read the SDM:
+>
+> "These instructions fail if given, in 64-bit mode, an operand that sets
+> an encoding bit beyond bit 32." (Section 24.11.1.2)
+>
+> "Outside IA-32e mode, the source operand has 32 bits, regardless of the
+> value of CS.D. In 64-bit mode, the source operand has 64 bits; however,
+> if bits 63:32 of the source operand are not zero, VMREAD will fail due
+> to an attempt to access an unsupported VMCS component (see operation
+> section)." (Description of VMREAD in Chapter 30).
+>
+> I'll fix up the patch myself.
+>
 
---Y4JO1JP6mbYWtFW3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Perhaps I am missing something, but I don't see where my mistake is.
+The VMREAD source operand is always read as 64-bits and I made no 
+changes there. Therefore, if bits 63:32 are not zero, the instruction 
+should fail when attempting to access the field.
 
-On Wed, Jun 18, 2014 at 03:52:55PM +0000, Liang, Kan wrote:
->     perf ignore LBR and offcore_rsp.
->=20
->     x86, perf: Protect LBR and offcore rsp against KVM lying
->=20
->     With -cpu host, KVM reports LBR and offcore support, if the host has =
-support.
->     When the guest perf driver tries to access LBR or offcore_rsp MSR,
->     it #GPs all MSR accesses,since KVM doesn't handle LBR and offcore sup=
-port.
->     So LBR and offcore rsp MSRs are needed to be protected by _safe().
->=20
->     For reproducing the issue, please build the kernel with CONFIG_KVM_IN=
-TEL =3D y.
->     And CONFIG_PARAVIRT =3D n and CONFIG_KVM_GUEST =3D n.
->     Start the guest with -cpu host.
->     Run perf record with --branch-any or --branch-filter in guest to trig=
-ger LBR #GP.
->     Run perf stat offcore events (E.g. LLC-loads/LLC-load-misses ...) in =
-guest to trigger offcore_rsp #GP
->=20
->     Signed-off-by: Andi Kleen <ak@linux.intel.com>
+The value in the source operand of VMWRITE which represents the value 
+which should be written is zero-extended outside 64-bit mode.
+Quoting: "The effective size of the primary source operand, which may be 
+a register or in memory, is always 32 bits outside IA-32e mode (the 
+setting of CS.D is ignored with respect to operand size) and 64 bits in 
+64-bit mode." (Description of VMWRITE in chapter 30).
 
-This order indicates Andi is the author; but there's no corresponding
-=46rom.
-
->     Signed-off-by: Kan Liang <kan.liang@intel.com>
-
-And here I thought that Andi was of the opinion that if you set CPUID to
-indicate a particular CPU you had better also handle all its MSRs.
+Regards,
+Nadav
 
 
-
---Y4JO1JP6mbYWtFW3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTobdPAAoJEHZH4aRLwOS6phAP/3AEV7zJrda70yAW9QU8F832
-iKbhNbUncITXlwgYi9vONp3kIBB+NeBu443IhtYL6fRbww23Nr7Byavzpb8y8xSs
-TLXf+//gLFJarBKo9vdIQUHpIPIaZyu2AU/3Cq9UNW7CjG73ZTX8kyx7zuumJioq
-tUEJwjp0IbvOg3wiEJKJksL4xTTK3lP5n07ppk2eaiSU32yo7ShFiweZkMHHkY4h
-F9n5qppPurUIfvjmg+HY0HrosRx+IPo7rVKwRGZbsEXmYo+3oLFAyp76H7tcK30S
-bj+YaatBe2JJXgCveqGoKpzfv7SMSCVZNMOlV9ttwed6LXFNKG77cPOz1epdVkKI
-B6N0vjD23YF8wDMkQQLpH2cFPK+cD/89vuSUL3GUAJv3sCaR6wWM1VFz/FmsT92B
-XDWMN4fs5yEUx6Mdy0P7ShvMZI8Lm2eIM0levATnA/J2FnyA3HT5DIzo+VIppGyZ
-pnaFebjCXt4UsyFAILlhphLRWzgdcRhIHrr1xKAIGqb9uZ3KIZ9lE9Y8dXmpTcCP
-5sSOC/b0Wnk1TqiUq0mMvD8q98G84Z2yQEi3izHTqzD5rMaoiDRZCic8v3wlUKjL
-muEBUkcIjgN6Z8+6OFOoC5i35ksgJxln6flM7OHldstZEX4RX0EdvafRsiZUx4bd
-eeyWq4Za2uZa2VHOrjHO
-=xWux
------END PGP SIGNATURE-----
-
---Y4JO1JP6mbYWtFW3--
