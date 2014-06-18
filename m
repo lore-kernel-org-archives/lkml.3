@@ -1,113 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756450AbaFRNwK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 09:52:10 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:24229 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270AbaFRNwF (ORCPT
+	id S1752889AbaFRNwe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 09:52:34 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:63728 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534AbaFRNwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 09:52:05 -0400
-Date: Wed, 18 Jun 2014 09:50:57 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Waiman.Long@hp.com,
-        tglx@linutronix.de, mingo@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        paolo.bonzini@gmail.com, boris.ostrovsky@oracle.com,
-        paulmck@linux.vnet.ibm.com, riel@redhat.com,
-        torvalds@linux-foundation.org, raghavendra.kt@linux.vnet.ibm.com,
-        david.vrabel@citrix.com, oleg@redhat.com, gleb@redhat.com,
-        scott.norton@hp.com, chegu_vinod@hp.com,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 04/11] qspinlock: Extract out the exchange of tail code
- word
-Message-ID: <20140618135057.GB4729@laptop.dumpdata.com>
-References: <20140615124657.264658593@chello.nl>
- <20140615130153.376621956@chello.nl>
- <20140617205525.GB29634@laptop.dumpdata.com>
- <53A17A09.6010007@redhat.com>
+	Wed, 18 Jun 2014 09:52:32 -0400
+Date: Wed, 18 Jun 2014 14:52:29 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Daniel Kiper <daniel.kiper@oracle.com>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org, andrew.cooper3@citrix.com,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        eshelton@pobox.com, hpa@zytor.com, ian.campbell@citrix.com,
+        jbeulich@suse.com, jeremy@goop.org, konrad.wilk@oracle.com,
+        matt.fleming@intel.com, mingo@redhat.com, mjg59@srcf.ucam.org,
+        stefano.stabellini@eu.citrix.com, tglx@linutronix.de
+Subject: Re: [PATCH v5 2/7] efi: Introduce EFI_NO_DIRECT flag
+Message-ID: <20140618135229.GH24049@console-pimps.org>
+References: <1402678823-24589-1-git-send-email-daniel.kiper@oracle.com>
+ <1402678823-24589-3-git-send-email-daniel.kiper@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53A17A09.6010007@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1402678823-24589-3-git-send-email-daniel.kiper@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 01:37:45PM +0200, Paolo Bonzini wrote:
-> Il 17/06/2014 22:55, Konrad Rzeszutek Wilk ha scritto:
-> >On Sun, Jun 15, 2014 at 02:47:01PM +0200, Peter Zijlstra wrote:
-> >>From: Waiman Long <Waiman.Long@hp.com>
-> >>
-> >>This patch extracts the logic for the exchange of new and previous tail
-> >>code words into a new xchg_tail() function which can be optimized in a
-> >>later patch.
-> >
-> >And also adds a third try on acquiring the lock. That I think should
-> >be a seperate patch.
+On Fri, 13 Jun, at 07:00:18PM, Daniel Kiper wrote:
+> Introduce EFI_NO_DIRECT flag. If it is set then kernel runs
+> on EFI platform but it has not direct control on EFI stuff
+> like EFI runtime, tables, structures, etc. If not this means
+> that Linux Kernel has direct access to EFI infrastructure
+> and everything runs as usual.
 > 
-> It doesn't really add a new try, the old code is:
+> This functionality is used in Xen dom0 because hypervisor
+> has full control on EFI stuff and all calls from dom0 to
+> EFI must be requested via special hypercall which in turn
+> executes relevant EFI code in behalf of dom0.
 > 
+> v5 - suggestions/fixes:
+>    - rename EFI_DIRECT to EFI_NO_DIRECT
+>      (suggested by David Vrabel),
+>    - limit EFI_NO_DIRECT usage
+>      (suggested by Jan Beulich and Matt Fleming),
+>    - improve commit message
+>      (suggested by David Vrabel).
 > 
-> -	for (;;) {
-> -		new = _Q_LOCKED_VAL;
-> -		if (val)
-> -			new = tail | (val & _Q_LOCKED_PENDING_MASK);
-> -
-> -		old = atomic_cmpxchg(&lock->val, val, new);
-> -		if (old == val)
-> -			break;
-> -
-> -		val = old;
-> -	}
-> 
->  	/*
-> -	 * we won the trylock; forget about queueing.
+> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+> ---
+>  arch/x86/platform/efi/efi.c |   27 +++++++++++++++++++++------
+>  drivers/firmware/efi/efi.c  |   22 +++++++++++++---------
+>  include/linux/efi.h         |    3 ++-
+>  3 files changed, 36 insertions(+), 16 deletions(-)
+
+[...]
+
+> @@ -617,13 +620,16 @@ static int __init efi_runtime_init(void)
+>  	 * address of several of the EFI runtime functions, needed to
+>  	 * set the firmware into virtual mode.
 >  	 */
-> -	if (new == _Q_LOCKED_VAL)
-> -		goto release;
-> 
-> The trylock happens if the "if (val)" hits the else branch.
-> 
-> What the patch does is change it from attempting two transition with a
-> single cmpxchg:
-> 
-> -	 * 0,0,0 -> 0,0,1 ; trylock
-> -	 * p,y,x -> n,y,x ; prev = xchg(lock, node)
-> 
-> to first doing the trylock, then the xchg.  If the trylock passes and the
-> xchg returns prev=0,0,0, the next step of the algorithm goes to the
-> locked/uncontended state
-> 
-> +	/*
-> +	 * claim the lock:
-> +	 *
-> +	 * n,0 -> 0,1 : lock, uncontended
-> 
-> Similar to your suggestion of patch 3, it's expected that the xchg will
-> *not* return prev=0,0,0 after a failed trylock.
+> -	if (efi_enabled(EFI_64BIT))
+> -		rv = efi_runtime_init64();
+> -	else
+> -		rv = efi_runtime_init32();
+>  
+> -	if (rv)
+> -		return rv;
+> +	if (!efi_enabled(EFI_NO_DIRECT)) {
+> +		if (efi_enabled(EFI_64BIT))
+> +			rv = efi_runtime_init64();
+> +		else
+> +			rv = efi_runtime_init32();
+> +
+> +		if (rv)
+> +			return rv;
+> +	}
+>  
+>  	set_bit(EFI_RUNTIME_SERVICES, &efi.flags);
+>  
 
-I do like your explanation. I hope that Peter will put it in the
-description as it explains the change quite well.
+This could do with some comments to explain why you want to set
+EFI_RUNTIME_SERVICES even though you're skipping efi_runtime_init*(),
+e.g. that for Xen things are already mapped.
 
-> 
-> However, I *do* agree with you that it's simpler to just squash this patch
-> into 01/11.
+I'm not likely to remember the rationale for this in 6 months time, and
+anyone else hacking on this code that isn't part of this thread also may
+not realise at first glance. Comments would go a long way to fixing
+that.
 
-Uh, did I say that? Oh I said why don't make it right the first time!
+> @@ -1220,6 +1232,9 @@ u64 efi_mem_attributes(unsigned long phys_addr)
+>  	efi_memory_desc_t *md;
+>  	void *p;
+>  
+> +	if (!efi_enabled(EFI_MEMMAP))
+> +		return 0;
+> +
+>  	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+>  		md = p;
+>  		if ((md->phys_addr <= phys_addr) &&
 
-I meant in terms of seperating the slowpath (aka the bytelock on the pending
-bit) from the queue (MCS code). Or renaming the function to be called
-'complex' instead of 'slowpath' as it is getting quite hairy.
+This should be a separate patch, please.
 
-The #1 patch is nice by itself - as it lays out the foundation of the
-MCS-similar code - and if Ingo decides he does not want this pending
-byte-lock bit business - it can be easily reverted or dropped.
+> diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
+> index 023937a..8bb1075 100644
+> --- a/drivers/firmware/efi/efi.c
+> +++ b/drivers/firmware/efi/efi.c
+> @@ -104,16 +104,20 @@ static struct attribute *efi_subsys_attrs[] = {
+>  static umode_t efi_attr_is_visible(struct kobject *kobj,
+>  				   struct attribute *attr, int n)
+>  {
+> -	umode_t mode = attr->mode;
+> -
+> -	if (attr == &efi_attr_fw_vendor.attr)
+> -		return (efi.fw_vendor == EFI_INVALID_TABLE_ADDR) ? 0 : mode;
+> -	else if (attr == &efi_attr_runtime.attr)
+> -		return (efi.runtime == EFI_INVALID_TABLE_ADDR) ? 0 : mode;
+> -	else if (attr == &efi_attr_config_table.attr)
+> -		return (efi.config_table == EFI_INVALID_TABLE_ADDR) ? 0 : mode;
+> +	if (attr == &efi_attr_fw_vendor.attr) {
+> +		if (efi_enabled(EFI_NO_DIRECT) ||
+> +				efi.fw_vendor == EFI_INVALID_TABLE_ADDR)
+> +			return 0;
+> +	} else if (attr == &efi_attr_runtime.attr) {
+> +		if (efi_enabled(EFI_NO_DIRECT) ||
+> +				efi.runtime == EFI_INVALID_TABLE_ADDR)
+> +			return 0;
+> +	} else if (attr == &efi_attr_config_table.attr) {
+> +		if (efi.config_table == EFI_INVALID_TABLE_ADDR)
+> +			return 0;
+> +	}
+>  
+> -	return mode;
+> +	return attr->mode;
+>  }
+  
+Why don't you want to export efi.fw_vendor, etc? Rationale please.
 
-In terms of squashing this in #1 - I would advocate against that.
+>  static struct attribute_group efi_subsys_attr_group = {
+> diff --git a/include/linux/efi.h b/include/linux/efi.h
+> index 41bbf8b..e917c4a 100644
+> --- a/include/linux/efi.h
+> +++ b/include/linux/efi.h
+> @@ -916,7 +916,8 @@ extern int __init efi_setup_pcdp_console(char *);
+>  #define EFI_RUNTIME_SERVICES	3	/* Can we use runtime services? */
+>  #define EFI_MEMMAP		4	/* Can we use EFI memory map? */
+>  #define EFI_64BIT		5	/* Is the firmware 64-bit? */
+> -#define EFI_ARCH_1		6	/* First arch-specific bit */
+> +#define EFI_NO_DIRECT		6	/* Can we access EFI directly? */
+> +#define EFI_ARCH_1		7	/* First arch-specific bit */
 
-Thanks!
+I like David's suggestion of using EFI_PARAVIRT.
+
+Why the bit shuffling? Are you trying to keep the non-arch bits
+together? That does make sense, and I can't help but feel that
+EFI_ARCH_1 should probably be bit 31 so we can subtract 1 for each new
+arch bit so we don't have to do this constant shuffling in future.
+
+I'll need to think a bit harder about that.
+
+EFI_PARAVIRT will be usable by architectures other than x86, correct? If
+your intention is for it only ever to be used by x86, then it should
+probably be EFI_ARCH_2.
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
