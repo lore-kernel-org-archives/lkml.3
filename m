@@ -1,93 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854AbaFRW1z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 18:27:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42729 "EHLO
+	id S1754259AbaFRW2E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 18:28:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42735 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463AbaFRW1x (ORCPT
+	with ESMTP id S1752927AbaFRW17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 18:27:53 -0400
-Date: Wed, 18 Jun 2014 15:27:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Chen Yucong <slaoub@gmail.com>
-Cc: minchan@kernel.org, mgorman@suse.de, hannes@cmpxchg.org, mhocko@suse.cz,
-        riel@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/vmscan.c: fix an implementation flaw in proportional
- scanning
-Message-Id: <20140618152751.283deda95257cc32ccea8f20@linux-foundation.org>
-In-Reply-To: <1402980902-6345-1-git-send-email-slaoub@gmail.com>
-References: <1402980902-6345-1-git-send-email-slaoub@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Jun 2014 18:27:59 -0400
+Date: Wed, 18 Jun 2014 15:31:58 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: driverdevel <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: lustre: Use %ld to format long
+Message-ID: <20140618223158.GA15126@kroah.com>
+References: <1402506054-7696-1-git-send-email-geert@linux-m68k.org>
+ <CAMuHMdWX9gY=6npcVk6kLRGPq+wjg545AZEvphw0hW79bsympQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMuHMdWX9gY=6npcVk6kLRGPq+wjg545AZEvphw0hW79bsympQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jun 2014 12:55:02 +0800 Chen Yucong <slaoub@gmail.com> wrote:
+On Mon, Jun 16, 2014 at 08:59:45AM +0200, Geert Uytterhoeven wrote:
+> Hi Greg,
+> 
+> On Wed, Jun 11, 2014 at 7:00 PM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+> > drivers/staging/lustre/lustre/llite/rw26.c: In function ‘ll_direct_IO_26’:
+> > drivers/staging/lustre/lustre/llite/rw26.c:388: warning: format ‘%zd’ expects type ‘signed size_t’, but argument 6 has type ‘long int’
+> > drivers/staging/lustre/lustre/llite/rw26.c:388: warning: format ‘%zd’ expects type ‘signed size_t’, but argument 10 has type ‘long int’
+> >
+> > Introduced by commit b41a1fe067c34b40736860458b9d62b2139471d5 ("staging:
+> > lustre: Use %zd to format ssize_t"), which was part of a series to fix
+> > issues in -next. However, the commits introducing the issues never made it
+> > to mainline.
+> 
+> They have now, so please drop this patch.
 
-> Via https://lkml.org/lkml/2013/4/10/897, we can know that the relative design
-> idea is to keep
-> 
->     scan_target[anon] : scan_target[file]
->         == really_scanned_num[anon] : really_scanned_num[file]
-> 
-> But we can find the following snippet in shrink_lruvec():
-> 
->     if (nr_file > nr_anon) {
->         ...
->     } else {
->         ...
->     }
-> 
-> However, the above code fragment broke the design idea. We can assume:
-> 
->       nr[LRU_ACTIVE_FILE] = 30
->       nr[LRU_INACTIVE_FILE] = 30
->       nr[LRU_ACTIVE_ANON] = 0
->       nr[LRU_INACTIVE_ANON] = 40
-> 
-> When the value of (nr_reclaimed < nr_to_reclaim) become false, there are
-> the following results:
-> 
->       nr[LRU_ACTIVE_FILE] = 15
->       nr[LRU_INACTIVE_FILE] = 15
->       nr[LRU_ACTIVE_ANON] = 0
->       nr[LRU_INACTIVE_ANON] = 25
->       nr_file = 30
->       nr_anon = 25
->       file_percent = 30 / 60 = 0.5
->       anon_percent = 25 / 40 = 0.65
-> 
-> According to the above design idea, we should scan some pages from ANON,
-> but in fact we execute the an error code path due to "if (nr_file > nr_anon)".
-> In this way, nr[lru] is likely to be a negative number. Luckily,
-> "nr[lru] -= min(nr[lru], nr_scanned)" can help us to filter this situation,
-> but it has rebelled against our design idea.
-
-Mel, could you please pencil in some time to look at this one?
-
-Perhaps before doing that you could suggest what sort of testing might
-help us understand any runtime effects from this fix.
-
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index a8ffe4e..2c35e34 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2087,8 +2086,8 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
->  	blk_start_plug(&plug);
->  	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
->  					nr[LRU_INACTIVE_FILE]) {
-> -		unsigned long nr_anon, nr_file, percentage;
-> -		unsigned long nr_scanned;
-> +		unsigned long nr_anon, nr_file, file_percent, anon_percent;
-> +		unsigned long nr_to_scan, nr_scanned, percentage;
->  
->  		for_each_evictable_lru(lru) {
->  			if (nr[lru]) {
-
-The increased stack use is a slight concern - we can be very deep here.
-I suspect the "percent" locals are more for convenience/clarity, and
-they could be eliminated (in a separate patch) at some cost of clarity?
-
+Now dropped :)
