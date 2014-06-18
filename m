@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756432AbaFRAMv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 20:12:51 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:5024 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268AbaFRAMu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 20:12:50 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 17 Jun 2014 17:07:11 -0700
-From: Aaron Plattner <aplattner@nvidia.com>
-To: <linux-pm@vger.kernel.org>
-CC: Aaron Plattner <aplattner@nvidia.com>, <linux-kernel@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH] cpufreq: unlock when failing cpufreq_update_policy()
-Date: Tue, 17 Jun 2014 17:12:42 -0700
-Message-ID: <1403050362-20809-1-git-send-email-aplattner@nvidia.com>
-X-Mailer: git-send-email 2.0.0
-X-NVConfidentiality: public
+	id S932254AbaFRAPV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 20:15:21 -0400
+Received: from mga03.intel.com ([143.182.124.21]:16690 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753574AbaFRAPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jun 2014 20:15:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,498,1400050800"; 
+   d="scan'208";a="446770884"
+Date: Tue, 17 Jun 2014 17:15:17 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: paulmck@linux.vnet.ibm.com, LKML <linux-kernel@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>, Christoph Lameter <cl@linux.com>
+Subject: Re: [bisected] pre-3.16 regression on open() scalability
+Message-ID: <20140618001517.GL8178@tassilo.jf.intel.com>
+References: <539B594C.8070004@intel.com>
+ <20140613224519.GV4581@linux.vnet.ibm.com>
+ <53A0CAE5.9000702@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53A0CAE5.9000702@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit bd0fa9bb455d introduced a failure path to cpufreq_update_policy() if
-cpufreq_driver->get(cpu) returns NULL.  However, it jumps to the 'no_policy'
-label, which exits without unlocking any of the locks the function acquired
-earlier.  This causes later calls into cpufreq to hang.
+> It also ends up eating a new cacheline in a bunch of pretty hot paths.
+> It would be nice to be able to keep the fast path part of this as at
+> least read-only.
+> 
+> Could we do something (functionally) like the attached patch?  Instead
+> of counting cond_resched() calls, we could just specify some future time
+> by which we want have a quiescent state.  We could even push the time to
+> be something _just_ before we would have declared a stall.
 
-Fix this by creating a new 'unlock' label and jumping to that instead.
+I still think it's totally the wrong place. cond_resched() is in so
+many fast paths (every lock, every allocation). It just doesn't
+make sense to add non essential things like this to it.
 
-Fixes: bd0fa9bb455d ("cpufreq: Return error if ->get() failed in cpufreq_update_policy()")
-Link: https://devtalk.nvidia.com/default/topic/751903/kernel-3-15-and-nv-drivers-337-340-failed-to-initialize-the-nvidia-kernel-module-gtx-550-ti-/
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Aaron Plattner <aplattner@nvidia.com>
----
-I haven't reproduced this problem so I couldn't test it, but the bug and its
-solution seem obvious enough.
+I would be rather to just revert the original patch.
 
- drivers/cpufreq/cpufreq.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index aed2b0cb83dc..5b6d04f3b9ea 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -2264,7 +2264,7 @@ int cpufreq_update_policy(unsigned int cpu)
- 		new_policy.cur = cpufreq_driver->get(cpu);
- 		if (WARN_ON(!new_policy.cur)) {
- 			ret = -EIO;
--			goto no_policy;
-+			goto unlock;
- 		}
- 
- 		if (!policy->cur) {
-@@ -2279,6 +2279,7 @@ int cpufreq_update_policy(unsigned int cpu)
- 
- 	ret = cpufreq_set_policy(policy, &new_policy);
- 
-+unlock:
- 	up_write(&policy->rwsem);
- 
- 	cpufreq_cpu_put(policy);
--- 
-2.0.0
-
+-Andi
