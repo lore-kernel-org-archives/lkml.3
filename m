@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306AbaFRWU7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 18:20:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42696 "EHLO
+	id S1754652AbaFRWVk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 18:21:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42702 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310AbaFRWU6 (ORCPT
+	with ESMTP id S1752927AbaFRWVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 18:20:58 -0400
-Date: Wed, 18 Jun 2014 15:24:57 -0700
+	Wed, 18 Jun 2014 18:21:39 -0400
+Date: Wed, 18 Jun 2014 15:25:37 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Adithya Krishnamurthy <linux.challenge1@gmail.com>
-Cc: omar.ramirez@copitl.com, rashika.kheria@gmail.com, freemangordon@abv.bg,
-        dan.carpenter@oracle.com, ody.guru@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] Staging:tidspbridge Fix minor checkpatch.pl warning.
-Message-ID: <20140618222457.GA2317@kroah.com>
-References: <y>
- <1401893916-23366-1-git-send-email-linux.challenge1@gmail.com>
- <53942534.9010701@gmail.com>
+To: Benedict Boerger <benedict.boerger@cs.tu-dortmund.de>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCH] staging: keucr: fix Missing blank line after declarations
+Message-ID: <20140618222537.GA2419@kroah.com>
+References: <1402774793-17224-1-git-send-email-benedict.boerger@cs.tu-dortmund.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53942534.9010701@gmail.com>
+In-Reply-To: <1402774793-17224-1-git-send-email-benedict.boerger@cs.tu-dortmund.de>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 08, 2014 at 02:26:20PM +0530, Adithya Krishnamurthy wrote:
-> From: Adithya Krishnamurthy <linux.challenge1@gmail.com>
+On Sat, Jun 14, 2014 at 09:39:53PM +0200, Benedict Boerger wrote:
+> fix two Missing blank line after declarations issue reported by checkpatch.pl
 > 
-> Fixed checkpatch "WARNING: Missing a blank line after declarations"
+> Done to complete an eudyptula task.
 > 
-> Signed-off-by: Adithya Krishnamurthy <linux.challenge1@gmail.com>
+> Signed-off-by: Benedict Boerger <benedict.boerger@cs.tu-dortmund.de>
 > ---
->  drivers/staging/tidspbridge/core/chnl_sm.c       |    1 +
->  drivers/staging/tidspbridge/core/io_sm.c         |    1 +
->  drivers/staging/tidspbridge/core/tiomap3430.c    |    2 ++
->  drivers/staging/tidspbridge/core/tiomap_io.c     |    2 ++
->  drivers/staging/tidspbridge/core/wdt.c           |    1 +
->  drivers/staging/tidspbridge/dynload/cload.c      |    7 +++++++
->  drivers/staging/tidspbridge/dynload/reloc.c      |    2 ++
->  drivers/staging/tidspbridge/pmgr/chnl.c          |    1 +
->  drivers/staging/tidspbridge/rmgr/dbdcd.c         |    1 +
->  drivers/staging/tidspbridge/rmgr/drv_interface.c |    2 ++
->  drivers/staging/tidspbridge/rmgr/nldr.c          |    1 +
->  drivers/staging/tidspbridge/rmgr/node.c          |    2 ++
->  drivers/staging/tidspbridge/rmgr/proc.c          |    3 +++
->  13 files changed, 26 insertions(+)
+>  drivers/staging/keucr/usb.c | 2 ++
+>  1 file changed, 2 insertions(+)
 > 
-> diff --git a/drivers/staging/tidspbridge/core/chnl_sm.c b/drivers/staging/tidspbridge/core/chnl_sm.c
-> index 16fa346..c855992 100644
-> --- a/drivers/staging/tidspbridge/core/chnl_sm.c
-> +++ b/drivers/staging/tidspbridge/core/chnl_sm.c
-> @@ -486,6 +486,7 @@ int bridge_chnl_get_info(struct chnl_object *chnl_obj,
+> diff --git a/drivers/staging/keucr/usb.c b/drivers/staging/keucr/usb.c
+> index 12ebde7..dbbd63f 100644
+> --- a/drivers/staging/keucr/usb.c
+> +++ b/drivers/staging/keucr/usb.c
+> @@ -37,6 +37,7 @@ MODULE_DEVICE_TABLE(usb, eucr_usb_ids);
+>  static int eucr_suspend(struct usb_interface *iface, pm_message_t message)
 >  {
->  	int status = 0;
->  	struct chnl_object *pchnl = (struct chnl_object *)chnl_obj;
+>  	struct us_data *us = usb_get_intfdata(iface);
 > +
->  	if (channel_info != NULL) {
->  		if (pchnl) {
->  			/* Return the requested information: */
+>  	pr_info("--- eucr_suspend ---\n");
+>  	/* Wait until no command is running */
+>  	mutex_lock(&us->dev_mutex);
+> @@ -53,6 +54,7 @@ static int eucr_resume(struct usb_interface *iface)
+>  	u8    tmp = 0;
+>  
+>  	struct us_data *us = usb_get_intfdata(iface);
+> +
+>  	pr_info("--- eucr_resume---\n");
+>  	mutex_lock(&us->dev_mutex);
+>  
 
-
-Your email client put an extra space in front of every line, making this
-patch not able to be applied :(
-
-Care to fix that up and resend?
-
-thanks,
+Sorry, someone beat you to this file by 2 days, and the fix is now in my
+tree :(
 
 greg k-h
