@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965816AbaFRJzy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 05:55:54 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46383 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965587AbaFRJzw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 05:55:52 -0400
-Date: Wed, 18 Jun 2014 10:55:19 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Varka Bhadram <varkabhadram@gmail.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "alex.bluesman.smirnov@gmail.com" <alex.bluesman.smirnov@gmail.com>,
-        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
-        "linux-zigbee-devel@lists.sourceforge.net" 
-	<linux-zigbee-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Varka Bhadram <varkab@cdac.in>
-Subject: Re: [PATCH net-next v2 1/3] ieee802154: cc2520: adds driver for TI
- CC2520 radio
-Message-ID: <20140618095519.GE26461@leverpostej>
-References: <1403068565-32224-1-git-send-email-varkab@cdac.in>
- <1403068565-32224-2-git-send-email-varkab@cdac.in>
- <20140618091010.GB26461@leverpostej>
- <53A15B38.6060404@gmail.com>
+	id S965587AbaFRJ5o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 05:57:44 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52563 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964994AbaFRJ5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 05:57:43 -0400
+Date: Wed, 18 Jun 2014 11:57:39 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Qiaowei Ren <qiaowei.ren@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Dave Hansen <dave.hansen@intel.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 03/10] x86, mpx: add macro cpu_has_mpx
+Message-ID: <20140618095739.GA24419@pd.tnic>
+References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
+ <1403084656-27284-4-git-send-email-qiaowei.ren@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <53A15B38.6060404@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1403084656-27284-4-git-send-email-qiaowei.ren@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 10:26:16AM +0100, Varka Bhadram wrote:
-> +static int cc2520_probe(struct spi_device *spi)
-> +{
-> +       struct cc2520_private *priv;
-> +       struct pinctrl *pinctrl;
-> +       struct cc2520_platform_data *pdata;
-> +       struct device_node __maybe_unused *np = spi->dev.of_node;
+On Wed, Jun 18, 2014 at 05:44:09PM +0800, Qiaowei Ren wrote:
+> In order to do performance optimization, this patch adds macro
+> cpu_has_mpx which will directly return 0 when MPX is not supported
+> by kernel.
 > 
-> This looks to be definitely unused rather than __maybe_unused. There are
-> no other occuences of "np" in this function.
+> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+> ---
+>  arch/x86/include/asm/cpufeature.h |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
 > 
-> This macro defined like this.
-> #define __maybe_unused  __attribute__((unused))
+> diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+> index e265ff9..f302d08 100644
+> --- a/arch/x86/include/asm/cpufeature.h
+> +++ b/arch/x86/include/asm/cpufeature.h
+> @@ -339,6 +339,12 @@ extern const char * const x86_power_flags[32];
+>  #define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
+>  #define cpu_has_topoext		boot_cpu_has(X86_FEATURE_TOPOEXT)
+>  
+> +#ifdef CONFIG_X86_INTEL_MPX
+> +#define cpu_has_mpx boot_cpu_has(X86_FEATURE_MPX)
 
-Sure, but that's irrelevant. There's absolutely no point in this
-variable existing at all, and it can simply disappear.
+I think we don't want those macros anymore because they're obfuscating
+the code. You should use static_cpu_has instead.
 
-Mark.
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
