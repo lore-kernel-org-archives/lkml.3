@@ -1,94 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756320AbaFRHJU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 03:09:20 -0400
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:41858 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751576AbaFRHJS (ORCPT
+	id S933441AbaFRHMP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 03:12:15 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51013 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751498AbaFRHMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 03:09:18 -0400
-Message-ID: <53A13B19.2010305@acm.org>
-Date: Wed, 18 Jun 2014 09:09:13 +0200
-From: Bart Van Assche <bvanassche@acm.org>
+	Wed, 18 Jun 2014 03:12:13 -0400
+Message-ID: <53A13BBF.7090202@free-electrons.com>
+Date: Wed, 18 Jun 2014 09:11:59 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Robert Elliot <Elliott@hp.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: scsi-mq
-References: <1402580946-11470-1-git-send-email-hch@lst.de> <53A05068.4080702@acm.org> <53A10B3A.6050705@kernel.dk>
-In-Reply-To: <53A10B3A.6050705@kernel.dk>
-X-Enigmail-Version: 1.6
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Carlo Caione <carlo@caione.org>, Shuge <shuge@allwinnertech.com>,
+        kevin@allwinnertech.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, dev@linux-sunxi.org
+Subject: Re: [PATCH v4 4/7] regulator: axp20x: reset probe data before each
+ probe
+References: <1402990723-28138-1-git-send-email-boris.brezillon@free-electrons.com> <1402990723-28138-5-git-send-email-boris.brezillon@free-electrons.com> <20140617204449.GD19730@lukather>
+In-Reply-To: <20140617204449.GD19730@lukather>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/14 05:44, Jens Axboe wrote:
-> Thanks for posting these numbers, Bart. The CPU utilization and IOPS
-> speak a very clear message. The only mystery is why the singe threaded
-> performance is down. That we need to get sort, but it's not a show
-> stopper for inclusion.
-> 
-> If you run the single threaded tests and watch for queue depths, is
-> there a difference between blk-mq=y/scsi-mq and the stock kernel?
 
-Hello Jens,
+On 17/06/2014 22:44, Maxime Ripard wrote:
+> On Tue, Jun 17, 2014 at 09:38:40AM +0200, Boris BREZILLON wrote:
+>> The init_data and of_node fields of the axp2xx_matches tables are filled
+>> at each device probe by the axp20x_regulator_parse_dt function (which then
+>> calls the of_regulator_match function).
+>> This means we can probe a new device and consider data initialized during
+>> the probe of another device as valid.
+>>
+>> Reset init_data and of_node field to NULL before each probe in order to
+>> avoid this kind of issue.
+>>
+>> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+>> ---
+>>  drivers/regulator/axp20x-regulator.c | 9 +++++++++
+>>  1 file changed, 9 insertions(+)
+>>
+>> diff --git a/drivers/regulator/axp20x-regulator.c b/drivers/regulator/axp20x-regulator.c
+>> index 7a30f49..d42bf6d 100644
+>> --- a/drivers/regulator/axp20x-regulator.c
+>> +++ b/drivers/regulator/axp20x-regulator.c
+>> @@ -324,6 +324,15 @@ static int axp20x_regulator_probe(struct platform_device *pdev)
+>>  		nregulators = AXP20X_REG_ID_MAX;
+>>  	}
+>>  
+>> +	/*
+>> +	 * Reset matches table (this table might have been modified by a
+>> +	 * previous AXP2xx device probe).
+>> +	 */
+>> +	for (i = 0; i < nmatches; i++) {
+>> +		matches[i].init_data = NULL;
+>> +		matches[i].of_node = NULL;
+>> +	}
+>> +
+> That looks rather hackish, especially since we've never been in such a
+> case yet, since we have a single PMIC in our system.
 
-Fio reports the same queue depth for use_blk_mq=Y (mq below) and 
-use_blk_mq=N (sq below), namely ">=64". However, the number of context
-switches differs significantly for the random read-write tests. From
-the fio output for these tests:
+Even if something is unlikely to happen, it doesn't mean it's impossible.
+I'm pretty sure there are (or will be) some systems containing several
+identical PMICs in the wild, and fixing this possible bug now prevents
+us (or other developers) from having a big headache debugging this in
+the future.
 
-$ grep ctx= {sq,mq}/randrw*
-sq/randrw-1.txt:  cpu          : usr=10.25%, sys=89.42%, ctx=2210, majf=0, minf=1
-sq/randrw-2.txt:  cpu          : usr=10.23%, sys=89.34%, ctx=5003, majf=0, minf=2
-sq/randrw-3.txt:  cpu          : usr=9.36%, sys=90.21%, ctx=7947, majf=0, minf=3
-sq/randrw-4.txt:  cpu          : usr=8.96%, sys=90.10%, ctx=19308, majf=0, minf=4
-sq/randrw-5.txt:  cpu          : usr=8.97%, sys=89.70%, ctx=31494, majf=0, minf=5
-sq/randrw-6.txt:  cpu          : usr=8.39%, sys=90.08%, ctx=47826, majf=0, minf=6
-sq/randrw-7.txt:  cpu          : usr=7.65%, sys=89.65%, ctx=130563, majf=0, minf=7
-sq/randrw-8.txt:  cpu          : usr=6.47%, sys=84.08%, ctx=753140, majf=0, minf=8
-mq/randrw-1.txt:  cpu          : usr=1.43%, sys=14.43%, ctx=500998, majf=0, minf=1
-mq/randrw-2.txt:  cpu          : usr=1.37%, sys=14.13%, ctx=979842, majf=0, minf=2
-mq/randrw-3.txt:  cpu          : usr=1.47%, sys=14.81%, ctx=1547996, majf=0, minf=3
-mq/randrw-4.txt:  cpu          : usr=1.79%, sys=16.51%, ctx=2321154, majf=0, minf=4
-mq/randrw-5.txt:  cpu          : usr=2.49%, sys=22.09%, ctx=4145747, majf=0, minf=5
-mq/randrw-6.txt:  cpu          : usr=2.98%, sys=27.07%, ctx=6356183, majf=0, minf=6
-mq/randrw-7.txt:  cpu          : usr=3.39%, sys=30.48%, ctx=8675960, majf=0, minf=7
-mq/randrw-8.txt:  cpu          : usr=3.37%, sys=31.46%, ctx=10462001, majf=0, minf=8
+BTW, what is hackish in this code ?
 
-It seems like with the traditional SCSI mid-layer and block core (sq)
-that the number of context switches does not depend too much on the
-number of I/O operations but that for the multi-queue SCSI core there
-are a little bit more than two context switches per I/O in the
-particular test I ran. The "randrw" script I used for this test takes
-SCSI LUNs as arguments (/dev/sdX) and starts the fio tool as follows:
+>
+> Can't you just use memzero here?
 
-for d in "$@"; do
-    if [ ! -e "$d" ]; then
-	echo "Error: device $d not found."
-	exit 1
-    fi
-    bdev="/sys/class/block/$(basename $d)"
-    if [ -e $bdev/queue ]; then
-	echo 0    >$bdev/queue/add_random
-	echo 0    >$bdev/queue/rotational
-	echo 2    >$bdev/queue/rq_affinity
-	echo noop >$bdev/queue/scheduler
-    fi
-done
+We can't just memset the whole matches table to zero, because some
+fields (name and driver_data) are statically assigned.
 
-"$(dirname $0)"/disable-frequency-scaling
+>
+> Maxime
+>
 
-fio --bs=512 --ioengine=libaio --rw=randrw --iodepth=128          \
-    --iodepth_batch=64 --iodepth_batch_complete=64                \
-    --buffered=0 --norandommap --thread --loops=$((2**31))        \
-    --runtime=60 --group_reporting --gtod_reduce=1 --invalidate=1 \
-    $(for d in "$@"; do echo --name=$d --filename=$d; done)
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
 
-"$(dirname $0)"/restore-frequency-scaling
-
-Bart.
