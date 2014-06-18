@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965974AbaFRJtF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 05:49:05 -0400
-Received: from mga02.intel.com ([134.134.136.20]:24734 "EHLO mga02.intel.com"
+	id S965822AbaFRJtf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 05:49:35 -0400
+Received: from mga02.intel.com ([134.134.136.20]:24728 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965351AbaFRJsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 05:48:20 -0400
+	id S965855AbaFRJsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 05:48:17 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,499,1400050800"; 
-   d="scan'208";a="530353907"
+   d="scan'208";a="530353889"
 From: Qiaowei Ren <qiaowei.ren@intel.com>
 To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>, Dave Hansen <dave.hansen@intel.com>
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
         Qiaowei Ren <qiaowei.ren@intel.com>
-Subject: [PATCH v6 09/10] x86, mpx: cleanup unused bound tables
-Date: Wed, 18 Jun 2014 17:44:15 +0800
-Message-Id: <1403084656-27284-10-git-send-email-qiaowei.ren@intel.com>
+Subject: [PATCH v6 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER, PR_MPX_UNREGISTER
+Date: Wed, 18 Jun 2014 17:44:14 +0800
+Message-Id: <1403084656-27284-9-git-send-email-qiaowei.ren@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
 References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
@@ -24,310 +24,191 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When user memory region is unmapped, related bound tables
-become unused and need to be released also. This patch cleanups
-these unused bound tables through hooking unmap path.
+This patch adds the PR_MPX_REGISTER and PR_MPX_UNREGISTER prctl()
+commands. These commands can be used to register and unregister MPX
+related resource on the x86 platform.
+
+The base of the bounds directory is set into mm_struct during
+PR_MPX_REGISTER command execution. This member can be used to
+check whether one application is mpx enabled.
 
 Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
 ---
- arch/x86/include/asm/mmu_context.h |   16 +++
- arch/x86/include/asm/mpx.h         |    9 ++
- arch/x86/mm/mpx.c                  |  189 ++++++++++++++++++++++++++++++++++++
- include/asm-generic/mmu_context.h  |    6 +
- mm/mmap.c                          |    2 +
- 5 files changed, 222 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/mpx.h       |    1 +
+ arch/x86/include/asm/processor.h |   18 ++++++++++++
+ arch/x86/kernel/mpx.c            |   56 ++++++++++++++++++++++++++++++++++++++
+ include/linux/mm_types.h         |    3 ++
+ include/uapi/linux/prctl.h       |    6 ++++
+ kernel/sys.c                     |   12 ++++++++
+ 6 files changed, 96 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/mmu_context.h b/arch/x86/include/asm/mmu_context.h
-index be12c53..af70d4f 100644
---- a/arch/x86/include/asm/mmu_context.h
-+++ b/arch/x86/include/asm/mmu_context.h
-@@ -6,6 +6,7 @@
- #include <asm/pgalloc.h>
- #include <asm/tlbflush.h>
- #include <asm/paravirt.h>
-+#include <asm/mpx.h>
- #ifndef CONFIG_PARAVIRT
- #include <asm-generic/mm_hooks.h>
- 
-@@ -96,4 +97,19 @@ do {						\
- } while (0)
- #endif
- 
-+static inline void arch_unmap(struct mm_struct *mm,
-+		struct vm_area_struct *vma,
-+		unsigned long start, unsigned long end)
-+{
-+#ifdef CONFIG_X86_INTEL_MPX
-+	/*
-+	 * Check whether this vma comes from MPX-enabled application.
-+	 * If so, release this vma related bound tables.
-+	 */
-+	if (mm->bd_addr && !(vma->vm_flags & VM_MPX))
-+		mpx_unmap(mm, start, end);
-+
-+#endif
-+}
-+
- #endif /* _ASM_X86_MMU_CONTEXT_H */
 diff --git a/arch/x86/include/asm/mpx.h b/arch/x86/include/asm/mpx.h
-index 6cb0853..e848a74 100644
+index 780af63..6cb0853 100644
 --- a/arch/x86/include/asm/mpx.h
 +++ b/arch/x86/include/asm/mpx.h
-@@ -42,6 +42,13 @@
- #define MPX_BD_SIZE_BYTES (1UL<<(MPX_BD_ENTRY_OFFSET+MPX_BD_ENTRY_SHIFT))
+@@ -43,6 +43,7 @@
  #define MPX_BT_SIZE_BYTES (1UL<<(MPX_BT_ENTRY_OFFSET+MPX_BT_ENTRY_SHIFT))
  
-+#define MPX_BD_ENTRY_MASK	((1<<MPX_BD_ENTRY_OFFSET)-1)
-+#define MPX_BT_ENTRY_MASK	((1<<MPX_BT_ENTRY_OFFSET)-1)
-+#define MPX_GET_BD_ENTRY_OFFSET(addr)	((((addr)>>(MPX_BT_ENTRY_OFFSET+ \
-+		MPX_IGN_BITS)) & MPX_BD_ENTRY_MASK) << MPX_BD_ENTRY_SHIFT)
-+#define MPX_GET_BT_ENTRY_OFFSET(addr)	((((addr)>>MPX_IGN_BITS) & \
-+		MPX_BT_ENTRY_MASK) << MPX_BT_ENTRY_SHIFT)
-+
  #define MPX_BNDSTA_ERROR_CODE	0x3
- #define MPX_BNDCFG_ENABLE_FLAG	0x1
++#define MPX_BNDCFG_ENABLE_FLAG	0x1
  #define MPX_BD_ENTRY_VALID_FLAG	0x1
-@@ -63,6 +70,8 @@ struct mpx_insn {
- #define MAX_MPX_INSN_SIZE	15
  
- unsigned long mpx_mmap(unsigned long len);
-+void mpx_unmap(struct mm_struct *mm,
-+		unsigned long start, unsigned long end);
+ struct mpx_insn {
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index a4ea023..6e0966e 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -952,6 +952,24 @@ extern void start_thread(struct pt_regs *regs, unsigned long new_ip,
+ extern int get_tsc_mode(unsigned long adr);
+ extern int set_tsc_mode(unsigned int val);
  
- #ifdef CONFIG_X86_INTEL_MPX
- int do_mpx_bt_fault(struct xsave_struct *xsave_buf);
-diff --git a/arch/x86/mm/mpx.c b/arch/x86/mm/mpx.c
-index 546c5d1..fd05cd4 100644
---- a/arch/x86/mm/mpx.c
-+++ b/arch/x86/mm/mpx.c
-@@ -2,6 +2,7 @@
++/* Register/unregister a process' MPX related resource */
++#define MPX_REGISTER(tsk)	mpx_register((tsk))
++#define MPX_UNREGISTER(tsk)	mpx_unregister((tsk))
++
++#ifdef CONFIG_X86_INTEL_MPX
++extern int mpx_register(struct task_struct *tsk);
++extern int mpx_unregister(struct task_struct *tsk);
++#else
++static inline int mpx_register(struct task_struct *tsk)
++{
++	return -EINVAL;
++}
++static inline int mpx_unregister(struct task_struct *tsk)
++{
++	return -EINVAL;
++}
++#endif /* CONFIG_X86_INTEL_MPX */
++
+ extern u16 amd_get_nb_id(int cpu);
+ 
+ static inline uint32_t hypervisor_cpuid_base(const char *sig, uint32_t leaves)
+diff --git a/arch/x86/kernel/mpx.c b/arch/x86/kernel/mpx.c
+index 650b282..d8a2a09 100644
+--- a/arch/x86/kernel/mpx.c
++++ b/arch/x86/kernel/mpx.c
+@@ -1,6 +1,62 @@
+ #include <linux/kernel.h>
  #include <linux/syscalls.h>
++#include <linux/prctl.h>
  #include <asm/mpx.h>
- #include <asm/mman.h>
-+#include <asm/mmu_context.h>
- #include <linux/sched/sysctl.h>
- 
- /*
-@@ -56,3 +57,191 @@ out:
- 	up_write(&mm->mmap_sem);
- 	return ret;
- }
++#include <asm/i387.h>
++#include <asm/fpu-internal.h>
 +
 +/*
-+ * Get the base of bounds tables pointed by specific bounds
-+ * directory entry.
++ * This should only be called when cpuid has been checked
++ * and we are sure that MPX is available.
 + */
-+static int get_bt_addr(long __user *bd_entry, unsigned long *bt_addr,
-+		unsigned int *valid)
++static __user void *task_get_bounds_dir(struct task_struct *tsk)
 +{
-+	if (get_user(*bt_addr, bd_entry))
-+		return -EFAULT;
++	struct xsave_struct *xsave_buf;
 +
-+	*valid = *bt_addr & MPX_BD_ENTRY_VALID_FLAG;
-+	*bt_addr &= MPX_BT_ADDR_MASK;
++	fpu_xsave(&tsk->thread.fpu);
++	xsave_buf = &(tsk->thread.fpu.state->xsave);
++	if (!(xsave_buf->bndcsr.cfg_reg_u & MPX_BNDCFG_ENABLE_FLAG))
++		return NULL;
++
++	return (void __user *)(xsave_buf->bndcsr.cfg_reg_u &
++			MPX_BNDCFG_ADDR_MASK);
++}
++
++int mpx_register(struct task_struct *tsk)
++{
++	struct mm_struct *mm = tsk->mm;
++
++	if (!cpu_has_mpx)
++		return -EINVAL;
 +
 +	/*
-+	 * If this bounds directory entry is nonzero, and meanwhile
-+	 * the valid bit is zero, one SIGSEGV will be produced due to
-+	 * this unexpected situation.
++	 * runtime in the userspace will be responsible for allocation of
++	 * the bounds directory. Then, it will save the base of the bounds
++	 * directory into XSAVE/XRSTOR Save Area and enable MPX through
++	 * XRSTOR instruction.
++	 *
++	 * fpu_xsave() is expected to be very expensive. In order to do
++	 * performance optimization, here we get the base of the bounds
++	 * directory and then save it into mm_struct to be used in future.
 +	 */
-+	if (!(*valid) && *bt_addr)
-+		force_sig(SIGSEGV, current);
++	mm->bd_addr = task_get_bounds_dir(tsk);
++	if (!mm->bd_addr)
++		return -EINVAL;
 +
-+	pr_debug("get_bt: BD Entry (%p) - Table (%lx,%d)\n",
-+			bd_entry, *bt_addr, *valid);
++	pr_debug("MPX BD base address %p\n", mm->bd_addr);
 +	return 0;
 +}
 +
-+/*
-+ * Free the backing physical pages of bounds table 'bt_addr'.
-+ * Assume start...end is within that bounds table.
-+ */
-+static void zap_bt_entries(struct mm_struct *mm, unsigned long bt_addr,
-+		unsigned long start, unsigned long end)
++int mpx_unregister(struct task_struct *tsk)
 +{
-+	struct vm_area_struct *vma;
++	struct mm_struct *mm = current->mm;
 +
-+	/* Find the vma which overlaps this bounds table */
-+	vma = find_vma(mm, bt_addr);
-+	if (!vma || vma->vm_start > bt_addr ||
-+			vma->vm_end < bt_addr+MPX_BT_SIZE_BYTES)
-+		return;
++	if (!cpu_has_mpx)
++		return -EINVAL;
 +
-+	zap_page_range(vma, start, end, NULL);
-+	pr_debug("Bound table de-allocation %lx (%lx, %lx)\n",
-+			bt_addr, start, end);
++	mm->bd_addr = NULL;
++	return 0;
 +}
-+
-+static void unmap_single_bt(struct mm_struct *mm, long __user *bd_entry,
-+		unsigned long bt_addr)
-+{
-+	if (user_atomic_cmpxchg_inatomic(&bt_addr, bd_entry,
-+			bt_addr | MPX_BD_ENTRY_VALID_FLAG, 0))
-+		return;
-+
-+	pr_debug("Bound table de-allocation %lx at entry addr %p\n",
-+			bt_addr, bd_entry);
-+	/*
-+	 * to avoid recursion, do_munmap() will check whether it comes
-+	 * from one bounds table through VM_MPX flag.
-+	 */
-+	do_munmap(mm, bt_addr & MPX_BT_ADDR_MASK, MPX_BT_SIZE_BYTES);
-+}
-+
-+/*
-+ * If the bounds table pointed by bounds directory 'bd_entry' is
-+ * not shared, unmap this whole bounds table. Otherwise, only free
-+ * those backing physical pages of bounds table entries covered
-+ * in this virtual address region start...end.
-+ */
-+static void unmap_shared_bt(struct mm_struct *mm, long __user *bd_entry,
-+		unsigned long start, unsigned long end,
-+		bool prev_shared, bool next_shared)
-+{
-+	unsigned long bt_addr;
-+	unsigned int bde_valid = 0;
-+
-+	if (get_bt_addr(bd_entry, &bt_addr, &bde_valid) || !bde_valid)
-+		return;
-+
-+	if (prev_shared && next_shared)
-+		zap_bt_entries(mm, bt_addr,
-+			bt_addr+MPX_GET_BT_ENTRY_OFFSET(start),
-+			bt_addr+MPX_GET_BT_ENTRY_OFFSET(end-1));
-+	else if (prev_shared)
-+		zap_bt_entries(mm, bt_addr,
-+			bt_addr+MPX_GET_BT_ENTRY_OFFSET(start),
-+			bt_addr+MPX_BT_SIZE_BYTES);
-+	else if (next_shared)
-+		zap_bt_entries(mm, bt_addr, bt_addr,
-+			bt_addr+MPX_GET_BT_ENTRY_OFFSET(end-1));
-+	else
-+		unmap_single_bt(mm, bd_entry, bt_addr);
-+}
-+
-+/*
-+ * A virtual address region being munmap()ed might share bounds table
-+ * with adjacent VMAs. We only need to free the backing physical
-+ * memory of these shared bounds tables entries covered in this virtual
-+ * address region.
-+ *
-+ * the VMAs covering the virtual address region start...end have already
-+ * been split if necessary and removed from the VMA list.
-+ */
-+static void unmap_side_bts(struct mm_struct *mm, unsigned long start,
-+		unsigned long end)
-+{
-+	long __user *bde_start, *bde_end;
-+	struct vm_area_struct *prev, *next;
-+	bool prev_shared = false, next_shared = false;
-+
-+	bde_start = mm->bd_addr + MPX_GET_BD_ENTRY_OFFSET(start);
-+	bde_end = mm->bd_addr + MPX_GET_BD_ENTRY_OFFSET(end-1);
-+
-+	/*
-+	 * Check whether bde_start and bde_end are shared with adjacent
-+	 * VMAs. Because the VMAs covering the virtual address region
-+	 * start...end have already been removed from the VMA list, if
-+	 * next is not NULL it will satisfy start < end <= next->vm_start.
-+	 * And if prev is not NULL, prev->vm_end <= start < end.
-+	 */
-+	next = find_vma_prev(mm, start, &prev);
-+	if (prev && MPX_GET_BD_ENTRY_OFFSET(prev->vm_end-1) == (long)bde_start)
-+		prev_shared = true;
-+	if (next && MPX_GET_BD_ENTRY_OFFSET(next->vm_start) == (long)bde_end)
-+		next_shared = true;
-+
-+	/*
-+	 * This virtual address region being munmap()ed is only
-+	 * covered by one bounds table.
-+	 *
-+	 * In this case, if this table is also shared with adjacent
-+	 * VMAs, only part of the backing physical memory of the bounds
-+	 * table need be freeed. Otherwise the whole bounds table need
-+	 * be unmapped.
-+	 */
-+	if (bde_start == bde_end) {
-+		unmap_shared_bt(mm, bde_start, start, end,
-+				prev_shared, next_shared);
-+		return;
-+	}
-+
-+	/*
-+	 * If more than one bounds tables are covered in this virtual
-+	 * address region being munmap()ed, we need to separately check
-+	 * whether bde_start and bde_end are shared with adjacent VMAs.
-+	 */
-+	unmap_shared_bt(mm, bde_start, start, end, prev_shared, false);
-+	unmap_shared_bt(mm, bde_end, start, end, false, next_shared);
-+}
-+
-+/*
-+ * Free unused bounds tables covered in a virtual address region being
-+ * munmap()ed. Assume end > start.
-+ *
-+ * This function will be called by do_munmap(), and the VMAs covering
-+ * the virtual address region start...end have already been split if
-+ * necessary and remvoed from the VMA list.
-+ */
-+void mpx_unmap(struct mm_struct *mm,
-+		unsigned long start, unsigned long end)
-+{
-+	long __user *bd_entry, *bde_start, *bde_end;
-+	unsigned long bt_addr;
-+	unsigned int bde_valid;
-+
-+	pr_debug("addr(%lx, %lx) related Bounds Table will be released\n",
-+			start, end);
-+	/*
-+	 * unmap bounds tables pointed out by start/end bounds directory
-+	 * entries, or only free part of their backing physical memroy
-+	 * if they are shared with adjacent VMAs.
-+	 */
-+	unmap_side_bts(mm, start, end);
-+
-+	/*
-+	 * unmap those bounds table which are entirely covered in this
-+	 * virtual address region.
-+	 */
-+	bde_start = mm->bd_addr + MPX_GET_BD_ENTRY_OFFSET(start);
-+	bde_end = mm->bd_addr + MPX_GET_BD_ENTRY_OFFSET(end-1);
-+	for (bd_entry = bde_start + 1; bd_entry < bde_end; bd_entry++) {
-+		if (get_bt_addr(bd_entry, &bt_addr, &bde_valid))
-+			return;
-+		if (!bde_valid)
-+			continue;
-+		unmap_single_bt(mm, bd_entry, bt_addr);
-+	}
-+}
-diff --git a/include/asm-generic/mmu_context.h b/include/asm-generic/mmu_context.h
-index a7eec91..ac558ca 100644
---- a/include/asm-generic/mmu_context.h
-+++ b/include/asm-generic/mmu_context.h
-@@ -42,4 +42,10 @@ static inline void activate_mm(struct mm_struct *prev_mm,
- {
- }
  
-+static inline void arch_unmap(struct mm_struct *mm,
-+			struct vm_area_struct *vma,
-+			unsigned long start, unsigned long end)
-+{
-+}
-+
- #endif /* __ASM_GENERIC_MMU_CONTEXT_H */
-diff --git a/mm/mmap.c b/mm/mmap.c
-index b1202cf..8d8ac65 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2558,6 +2558,8 @@ int do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
- 	/* Fix up all other VM information */
- 	remove_vma_list(mm, vma);
+ typedef enum {REG_TYPE_RM, REG_TYPE_INDEX, REG_TYPE_BASE} reg_type_t;
+ static unsigned long get_reg(struct mpx_insn *insn, struct pt_regs *regs,
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 8967e20..54b8011 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -454,6 +454,9 @@ struct mm_struct {
+ 	bool tlb_flush_pending;
+ #endif
+ 	struct uprobes_state uprobes_state;
++#ifdef CONFIG_X86_INTEL_MPX
++	void __user *bd_addr;		/* address of the bounds directory */
++#endif
+ };
  
-+	arch_unmap(mm, vma, start, end);
-+
- 	return 0;
- }
+ static inline void mm_init_cpumask(struct mm_struct *mm)
+diff --git a/include/uapi/linux/prctl.h b/include/uapi/linux/prctl.h
+index 58afc04..ce86fa9 100644
+--- a/include/uapi/linux/prctl.h
++++ b/include/uapi/linux/prctl.h
+@@ -152,4 +152,10 @@
+ #define PR_SET_THP_DISABLE	41
+ #define PR_GET_THP_DISABLE	42
  
++/*
++ * Register/unregister MPX related resource.
++ */
++#define PR_MPX_REGISTER		43
++#define PR_MPX_UNREGISTER	44
++
+ #endif /* _LINUX_PRCTL_H */
+diff --git a/kernel/sys.c b/kernel/sys.c
+index fba0f29..ed1a03c 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -91,6 +91,12 @@
+ #ifndef SET_TSC_CTL
+ # define SET_TSC_CTL(a)		(-EINVAL)
+ #endif
++#ifndef MPX_REGISTER
++# define MPX_REGISTER(a)	(-EINVAL)
++#endif
++#ifndef MPX_UNREGISTER
++# define MPX_UNREGISTER(a)	(-EINVAL)
++#endif
+ 
+ /*
+  * this is where the system-wide overflow UID and GID are defined, for
+@@ -2011,6 +2017,12 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 			me->mm->def_flags &= ~VM_NOHUGEPAGE;
+ 		up_write(&me->mm->mmap_sem);
+ 		break;
++	case PR_MPX_REGISTER:
++		error = MPX_REGISTER(me);
++		break;
++	case PR_MPX_UNREGISTER:
++		error = MPX_UNREGISTER(me);
++		break;
+ 	default:
+ 		error = -EINVAL;
+ 		break;
 -- 
 1.7.1
 
