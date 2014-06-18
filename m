@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227AbaFRPGc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 11:06:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40501 "EHLO mx1.redhat.com"
+	id S1753231AbaFRPGv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 11:06:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22522 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752062AbaFRO70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 10:59:26 -0400
+	id S1751936AbaFRO7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 10:59:20 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,18 +15,17 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 05/18] perf tools: Add ordered_events_(get|put) interface
-Date: Wed, 18 Jun 2014 16:58:46 +0200
-Message-Id: <1403103539-16807-6-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 02/18] perf tools: Fix accounting of ordered samples queue
+Date: Wed, 18 Jun 2014 16:58:43 +0200
+Message-Id: <1403103539-16807-3-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
 References: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding new ordered events interface to get|put event buffer:
-  ordered_events_get - allocate event buffer from the cache
-  ordered_events_put - return event buffer to the cache
+Properly account flushed samples within the ordered
+samples queue.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -39,215 +38,26 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/session.c | 170 +++++++++++++++++++++++++++-------------------
- 1 file changed, 99 insertions(+), 71 deletions(-)
+ tools/perf/util/session.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index fc4da58..7ce26c4 100644
+index 64a186e..aec3dcd 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -466,6 +466,101 @@ static void perf_session_free_sample_buffers(struct perf_session *session)
- 	}
- }
- 
-+/* The queue is ordered by time */
-+static void queue_event(struct ordered_events_queue *q, struct ordered_event *new)
-+{
-+	struct ordered_event *last = q->last;
-+	u64 timestamp = new->timestamp;
-+	struct list_head *p;
-+
-+	++q->nr_events;
-+	q->last = new;
-+
-+	if (!last) {
-+		list_add(&new->list, &q->events);
-+		q->max_timestamp = timestamp;
-+		return;
-+	}
-+
-+	/*
-+	 * last event might point to some random place in the list as it's
-+	 * the last queued event. We expect that the new event is clqe to
-+	 * this.
-+	 */
-+	if (last->timestamp <= timestamp) {
-+		while (last->timestamp <= timestamp) {
-+			p = last->list.next;
-+			if (p == &q->events) {
-+				list_add_tail(&new->list, &q->events);
-+				q->max_timestamp = timestamp;
-+				return;
-+			}
-+			last = list_entry(p, struct ordered_event, list);
-+		}
-+		list_add_tail(&new->list, &last->list);
-+	} else {
-+		while (last->timestamp > timestamp) {
-+			p = last->list.prev;
-+			if (p == &q->events) {
-+				list_add(&new->list, &q->events);
-+				return;
-+			}
-+			last = list_entry(p, struct ordered_event, list);
-+		}
-+		list_add(&new->list, &last->list);
-+	}
-+}
-+
-+#define MAX_SAMPLE_BUFFER	(64 * 1024 / sizeof(struct ordered_event))
-+static struct ordered_event *alloc_event(struct ordered_events_queue *q)
-+{
-+	struct list_head *cache = &q->cache;
-+	struct ordered_event *new;
-+
-+	if (!list_empty(cache)) {
-+		new = list_entry(cache->next, struct ordered_event, list);
-+		list_del(&new->list);
-+	} else if (q->buffer) {
-+		new = q->buffer + q->buffer_idx;
-+		if (++q->buffer_idx == MAX_SAMPLE_BUFFER)
-+			q->buffer = NULL;
-+	} else {
-+		q->buffer = malloc(MAX_SAMPLE_BUFFER * sizeof(*new));
-+		if (!q->buffer)
-+			return NULL;
-+		list_add(&q->buffer->list, &q->to_free);
-+
-+		/* First entry is abused to maintain the to_free list. */
-+		q->buffer_idx = 2;
-+		new = q->buffer + 1;
-+	}
-+
-+	return new;
-+}
-+
-+static struct ordered_event*
-+ordered_events_get(struct ordered_events_queue *q, u64 timestamp)
-+{
-+	struct ordered_event *new;
-+
-+	new = alloc_event(q);
-+	if (new) {
-+		new->timestamp = timestamp;
-+		queue_event(q, new);
-+	}
-+
-+	return new;
-+}
-+
-+static void
-+ordered_event_put(struct ordered_events_queue *q, struct ordered_event *iter)
-+{
-+	list_del(&iter->list);
-+	list_add(&iter->list, &q->cache);
-+	q->nr_events--;
-+}
-+
-+
- static int perf_session_deliver_event(struct perf_session *session,
- 				      union perf_event *event,
- 				      struct perf_sample *sample,
-@@ -508,10 +603,8 @@ static int ordered_events_flush(struct perf_session *s,
- 				return ret;
- 		}
- 
-+		ordered_event_put(q, iter);
- 		q->last_flush = iter->timestamp;
--		list_del(&iter->list);
--		list_add(&iter->list, &q->cache);
--		q->nr_events--;
+@@ -511,6 +511,7 @@ static int flush_sample_queue(struct perf_session *s,
+ 		os->last_flush = iter->timestamp;
+ 		list_del(&iter->list);
+ 		list_add(&iter->list, &os->sample_cache);
++		os->nr_samples--;
  
  		if (show_progress)
  			ui_progress__update(&prog, 1);
-@@ -575,59 +668,10 @@ static int process_finished_round(struct perf_tool *tool,
- 	return ret;
- }
- 
--/* The queue is ordered by time */
--static void __queue_event(struct ordered_event *new, struct perf_session *s)
--{
--	struct ordered_events_queue *q = &s->ordered_events;
--	struct ordered_event *last = q->last;
--	u64 timestamp = new->timestamp;
--	struct list_head *p;
--
--	++q->nr_events;
--	q->last = new;
--
--	if (!last) {
--		list_add(&new->list, &q->events);
--		q->max_timestamp = timestamp;
--		return;
--	}
--
--	/*
--	 * last event might point to some random place in the list as it's
--	 * the last queued event. We expect that the new event is clqe to
--	 * this.
--	 */
--	if (last->timestamp <= timestamp) {
--		while (last->timestamp <= timestamp) {
--			p = last->list.next;
--			if (p == &q->events) {
--				list_add_tail(&new->list, &q->events);
--				q->max_timestamp = timestamp;
--				return;
--			}
--			last = list_entry(p, struct ordered_event, list);
--		}
--		list_add_tail(&new->list, &last->list);
--	} else {
--		while (last->timestamp > timestamp) {
--			p = last->list.prev;
--			if (p == &q->events) {
--				list_add(&new->list, &q->events);
--				return;
--			}
--			last = list_entry(p, struct ordered_event, list);
--		}
--		list_add(&new->list, &last->list);
--	}
--}
--
--#define MAX_SAMPLE_BUFFER	(64 * 1024 / sizeof(struct ordered_event))
--
- int perf_session_queue_event(struct perf_session *s, union perf_event *event,
- 				    struct perf_sample *sample, u64 file_offset)
- {
- 	struct ordered_events_queue *q = &s->ordered_events;
--	struct list_head *cache = &q->cache;
- 	u64 timestamp = sample->time;
- 	struct ordered_event *new;
- 
-@@ -639,28 +683,12 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
- 		return -EINVAL;
+@@ -523,8 +524,6 @@ static int flush_sample_queue(struct perf_session *s,
+ 			list_entry(head->prev, struct sample_queue, list);
  	}
  
--	if (!list_empty(cache)) {
--		new = list_entry(cache->next, struct ordered_event, list);
--		list_del(&new->list);
--	} else if (q->buffer) {
--		new = q->buffer + q->buffer_idx;
--		if (++q->buffer_idx == MAX_SAMPLE_BUFFER)
--			q->buffer = NULL;
--	} else {
--		q->buffer = malloc(MAX_SAMPLE_BUFFER * sizeof(*new));
--		if (!q->buffer)
--			return -ENOMEM;
--		list_add(&q->buffer->list, &q->to_free);
--		q->buffer_idx = 2;
--		new = q->buffer + 1;
--	}
-+	new = ordered_events_get(q, timestamp);
-+	if (!new)
-+		return -ENOMEM;
- 
--	new->timestamp = timestamp;
- 	new->file_offset = file_offset;
- 	new->event = event;
--
--	__queue_event(new, s);
+-	os->nr_samples = 0;
 -
  	return 0;
  }
