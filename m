@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756448AbaFRA7J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jun 2014 20:59:09 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:35793 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756318AbaFRA7I (ORCPT
+	id S1756379AbaFRBE3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jun 2014 21:04:29 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:51448 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753885AbaFRBE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jun 2014 20:59:08 -0400
-Date: Tue, 17 Jun 2014 17:59:05 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Don Zickus <dzickus@redhat.com>
-cc: LKML <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org,
-        peter@lekensteyn.nl, mhocko@suse.cz
-Subject: Re: [PATCH] watchdog: Remove preemption restrictions when restarting
- lockup detector
-In-Reply-To: <1403010653-243385-1-git-send-email-dzickus@redhat.com>
-Message-ID: <alpine.DEB.2.02.1406171757020.22940@chino.kir.corp.google.com>
-References: <1403010653-243385-1-git-send-email-dzickus@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 17 Jun 2014 21:04:28 -0400
+Date: Tue, 17 Jun 2014 18:04:23 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Dave Hansen <dave.hansen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>, Christoph Lameter <cl@linux.com>,
+        peterz@infradead.org
+Subject: Re: [bisected] pre-3.16 regression on open() scalability
+Message-ID: <20140618010423.GW4669@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <539B594C.8070004@intel.com>
+ <20140613224519.GV4581@linux.vnet.ibm.com>
+ <53A0CAE5.9000702@intel.com>
+ <20140618001517.GL8178@tassilo.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140618001517.GL8178@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061801-1542-0000-0000-000002A5354E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jun 2014, Don Zickus wrote:
+On Tue, Jun 17, 2014 at 05:15:17PM -0700, Andi Kleen wrote:
+> > It also ends up eating a new cacheline in a bunch of pretty hot paths.
+> > It would be nice to be able to keep the fast path part of this as at
+> > least read-only.
+> > 
+> > Could we do something (functionally) like the attached patch?  Instead
+> > of counting cond_resched() calls, we could just specify some future time
+> > by which we want have a quiescent state.  We could even push the time to
+> > be something _just_ before we would have declared a stall.
+> 
+> I still think it's totally the wrong place. cond_resched() is in so
+> many fast paths (every lock, every allocation). It just doesn't
+> make sense to add non essential things like this to it.
+> 
+> I would be rather to just revert the original patch.
 
-> Peter Wu noticed the following splat on his machine when updating
-> /proc/sys/kernel/watchdog_thresh:
-> 
-> [    0.676701] BUG: sleeping function called from invalid context at /tmp/linux/mm/slub.c:965
-> [    0.679396] in_atomic(): 1, irqs_disabled(): 0, pid: 1, name: init
-> [    0.681204] 3 locks held by init/1:
-> [    0.682371]  #0:  (sb_writers#3){.+.+.+}, at: [<ffffffff8117b663>] vfs_write+0x143/0x180
-> [    0.685887]  #1:  (watchdog_proc_mutex){+.+.+.}, at: [<ffffffff810e02d3>] proc_dowatchdog+0x33/0x110
-> [    0.689631]  #2:  (cpu_hotplug.lock){.+.+.+}, at: [<ffffffff810589c2>] get_online_cpus+0x32/0x80
-> [    0.693117] Preemption disabled at:[<ffffffff810e0384>] proc_dowatchdog+0xe4/0x110
-> [    0.695753]
-> [    0.696588] CPU: 0 PID: 1 Comm: init Not tainted 3.16.0-rc1-testing #34
-> [    0.698404] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
-> [    0.704622]  ffff88003f250000 ffff88003f1ffd10 ffffffff81624c59 0000000000000000
-> [    0.707749]  ffff88003f1ffd30 ffffffff8108df1d 0000000000000010 ffffffff81c56360
-> [    0.711010]  ffff88003f1ffd78 ffffffff8116a5de ffffffff811159a5 ffffffff810a5f4a
-> [    0.714053] Call Trace:
-> [    0.715015]  [<ffffffff81624c59>] dump_stack+0x4e/0x7a
-> [    0.716619]  [<ffffffff8108df1d>] __might_sleep+0x11d/0x190
-> [    0.718232]  [<ffffffff8116a5de>] kmem_cache_alloc_trace+0x4e/0x1e0
-> [    0.720214]  [<ffffffff811159a5>] ? perf_event_alloc+0x55/0x440
-> [    0.721910]  [<ffffffff810a5f4a>] ? mark_held_locks+0x6a/0x90
-> [    0.723558]  [<ffffffff811159a5>] perf_event_alloc+0x55/0x440
-> [    0.725304]  [<ffffffff810e0050>] ? restart_watchdog_hrtimer+0x50/0x50
-> [    0.727279]  [<ffffffff81116d16>] perf_event_create_kernel_counter+0x26/0xe0
-> [    0.729269]  [<ffffffff810dfe05>] watchdog_nmi_enable+0x75/0x140
-> [    0.730965]  [<ffffffff810dffb3>] update_timers_all_cpus+0x53/0xa0
-> [    0.732953]  [<ffffffff810e0384>] proc_dowatchdog+0xe4/0x110
-> [    0.738408]  [<ffffffff811d8c93>] proc_sys_call_handler+0xb3/0xc0
-> [    0.740266]  [<ffffffff811d8cb4>] proc_sys_write+0x14/0x20
-> [    0.742086]  [<ffffffff8117b5cd>] vfs_write+0xad/0x180
-> [    0.743669]  [<ffffffff810a606d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
-> [    0.745593]  [<ffffffff8117b799>] SyS_write+0x49/0xb0
-> [    0.747101]  [<ffffffff8162fe92>] system_call_fastpath+0x16/0x1b
-> [    0.749069] NMI watchdog: disabled (cpu0): hardware events not enabled
-> 
-> What happened is after updating the watchdog_thresh, the lockup detector is
-> restarted to utilize the new value.  Part of this process involved disabling
-> preemption.  Once preemption was disabled, perf tried to allocate a new event
-> (as part of the restart).  This caused the above BUG_ON as you can't sleep with
-> preemption disabled.
-> 
-> The preemption restriction seemed agressive as we are not doing anything
-> on that particular cpu, but with all the online cpus (which are protected by
-> the get_online_cpus lock).  Remove the restriction and the BUG_ON goes away.
-> 
-> Reported-and-Tested-by: Peter Wu <peter@lekensteyn.nl>
-> Acked-by: Michal Hocko <mhocko@suse.cz>
-> Signed-off-by: Don Zickus <dzickus@redhat.com>
+OK.  What would you suggest instead?  If all we do is to revert the
+original patch, we once again end up with long-running in-kernel code
+paths stalling the RCU grace period.  The cond_resched() calls sprinkled
+through them once again won't help with this.
 
-Acked-by: David Rientjes <rientjes@google.com>
+Or are you suggesting leveraging the now-deprecated set_need_resched()
+so that the checks happen deeper in the scheduler?  Looks like grabbing
+the offending CPU's task and doing set_tsk_need_resched() on that task
+is the replacement.
 
-I think this deserves a Cc: stable@vger.kernel.org # 3.13+
+CCing Peter Zijlstra for his thoughts on this.
+
+							Thanx, Paul
+
