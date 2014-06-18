@@ -1,126 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934035AbaFRGiy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 02:38:54 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:59537 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933990AbaFRGiw (ORCPT
+	id S934051AbaFRGlW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 02:41:22 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:18391 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756390AbaFRGlU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 02:38:52 -0400
-Date: Wed, 18 Jun 2014 12:07:07 +0530
-From: Pratyush Anand <pratyush.anand@st.com>
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mohit KUMAR DCG <Mohit.KUMAR@st.com>,
-        Jingoo Han <jg1.han@samsung.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Richard Zhu <r65037@freescale.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: [PATCH v2 1/8] PCI: designware: add rd[wr]_other_conf API
-Message-ID: <20140618063706.GA6098@pratyush-vbox>
-References: <1402426287-31157-1-git-send-email-m-karicheri2@ti.com>
- <1402426287-31157-2-git-send-email-m-karicheri2@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1402426287-31157-2-git-send-email-m-karicheri2@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-18_03:2014-06-17,2014-06-18,1970-01-01 signatures=0
+	Wed, 18 Jun 2014 02:41:20 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Matt Fleming <matt.fleming@intel.com>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 1/2] efilinux: Allocate boot_params before parsing initrd
+Date: Tue, 17 Jun 2014 23:41:08 -0700
+Message-Id: <1403073669-6602-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.4.5
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 11, 2014 at 02:51:20AM +0800, Murali Karicheri wrote:
-> v3.65 version of the designware h/w, requires application space
-> registers to be configured to access the remote EP config space.
-> To support this, add rd[wr]_other_conf API in the pcie_host_opts
-> 
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> 
-> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> CC: Russell King <linux@arm.linux.org.uk>
-> CC: Grant Likely <grant.likely@linaro.org>
-> CC: Rob Herring <robh+dt@kernel.org>
-> CC: Mohit Kumar <mohit.kumar@st.com>
-> CC: Jingoo Han <jg1.han@samsung.com>
-> CC: Bjorn Helgaas <bhelgaas@google.com>
-> CC: Pratyush Anand <pratyush.anand@st.com>
-> CC: Richard Zhu <r65037@freescale.com>
-> CC: Kishon Vijay Abraham I <kishon@ti.com>
-> CC: Marek Vasut <marex@denx.de>
-> CC: Arnd Bergmann <arnd@arndb.de>
-> CC: Pawel Moll <pawel.moll@arm.com>
-> CC: Mark Rutland <mark.rutland@arm.com>
-> CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> CC: Kumar Gala <galak@codeaurora.org>
-> CC: Randy Dunlap <rdunlap@infradead.org>
-> CC: Grant Likely <grant.likely@linaro.org> 
-> 
-> ---
->  drivers/pci/host/pcie-designware.c |   12 ++++++++++--
->  drivers/pci/host/pcie-designware.h |    4 ++++
->  2 files changed, 14 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
-> index c4e3732..e8f5d8d 100644
-> --- a/drivers/pci/host/pcie-designware.c
-> +++ b/drivers/pci/host/pcie-designware.c
-> @@ -654,7 +654,11 @@ static int dw_pcie_rd_conf(struct pci_bus *bus, u32 devfn, int where,
->  
->  	spin_lock_irqsave(&pp->conf_lock, flags);
->  	if (bus->number != pp->root_bus_nr)
-> -		ret = dw_pcie_rd_other_conf(pp, bus, devfn,
-> +		if (pp->ops->rd_other_conf)
-> +			ret = pp->ops->rd_other_conf(pp, bus, devfn,
-> +						where, size, val);
-> +		else
-> +			ret = dw_pcie_rd_other_conf(pp, bus, devfn,
->  						where, size, val);
->  	else
->  		ret = dw_pcie_rd_own_conf(pp, where, size, val);
-> @@ -680,7 +684,11 @@ static int dw_pcie_wr_conf(struct pci_bus *bus, u32 devfn,
->  
->  	spin_lock_irqsave(&pp->conf_lock, flags);
->  	if (bus->number != pp->root_bus_nr)
-> -		ret = dw_pcie_wr_other_conf(pp, bus, devfn,
-> +		if (pp->ops->wr_other_conf)
-> +			ret = pp->ops->wr_other_conf(pp, bus, devfn,
-> +						where, size, val);
-> +		else
-> +			ret = dw_pcie_wr_other_conf(pp, bus, devfn,
->  						where, size, val);
->  	else
->  		ret = dw_pcie_wr_own_conf(pp, where, size, val);
-> diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
-> index 3063b35..2d6dd66 100644
-> --- a/drivers/pci/host/pcie-designware.h
-> +++ b/drivers/pci/host/pcie-designware.h
-> @@ -62,6 +62,10 @@ struct pcie_host_ops {
->  			u32 val, void __iomem *dbi_base);
->  	int (*rd_own_conf)(struct pcie_port *pp, int where, int size, u32 *val);
->  	int (*wr_own_conf)(struct pcie_port *pp, int where, int size, u32 val);
-> +	int (*rd_other_conf)(struct pcie_port *pp, struct pci_bus *bus,
-> +			unsigned int devfn, int where, int size, u32 *val);
-> +	int (*wr_other_conf)(struct pcie_port *pp, struct pci_bus *bus,
-> +			unsigned int devfn, int where, int size, u32 val);
->  	int (*link_up)(struct pcie_port *pp);
->  	void (*host_init)(struct pcie_port *pp);
->  };
+We need to allocate boot_params early and clear it before copy
+setup_header to it.
 
-Reviewed-by: Pratyush Anand <pratyush.anand@st.com> 
+So kernel will not call sanitize_boot_params() to overwrite new
+added parameter like ext_ramdisk_image, ext_ramdisk_size...
 
-> -- 
-> 1.7.9.5
+We should modify boot_params later instead of touch temp buf too early.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ loaders/bzimage/bzimage.c |   65 ++++++++++++++++++++++++----------------------
+ 1 file changed, 34 insertions(+), 31 deletions(-)
+
+Index: efilinux/loaders/bzimage/bzimage.c
+===================================================================
+--- efilinux.orig/loaders/bzimage/bzimage.c
++++ efilinux/loaders/bzimage/bzimage.c
+@@ -50,21 +50,22 @@ struct initrd {
+ 	struct file *file;
+ };
+ 
+-static void parse_initrd(EFI_LOADED_IMAGE *image, struct boot_params *buf, char *cmdline)
++static void parse_initrd(EFI_LOADED_IMAGE *image,
++		 struct boot_params *boot_params, char *cmdline)
+ {
+ 	EFI_PHYSICAL_ADDRESS addr;
+ 	struct initrd *initrds;
+ 	int nr_initrds;
+ 	EFI_STATUS err;
+-	UINT64 size;
++	UINT64 size = 0;
+ 	char *initrd;
+ 	int i, j;
+ 
+ 	/*
+ 	 * Has there been an initrd specified on the cmdline?
+ 	 */
+-	buf->hdr.ramdisk_start = 0;
+-	buf->hdr.ramdisk_len = 0;
++	boot_params->hdr.ramdisk_start = 0;
++	boot_params->hdr.ramdisk_len = 0;
+ 
+ 	initrd = cmdline;
+ 	for (nr_initrds = 0; *initrd; nr_initrds++) {
+@@ -96,6 +97,7 @@ static void parse_initrd(EFI_LOADED_IMAG
+ 		struct initrd *rd = &initrds[i];
+ 		struct file *rdfile;
+ 		char *o, *p;
++		UINT64 sz;
+ 
+ 		initrd = strstr(initrd, "initrd=");
+ 		if (!initrd)
+@@ -116,26 +118,26 @@ static void parse_initrd(EFI_LOADED_IMAG
+ 		if (err != EFI_SUCCESS)
+ 			goto close_handles;
+ 
+-		file_size(rdfile, &size);
++		file_size(rdfile, &sz);
+ 
+-		rd->size = size;
++		rd->size = sz;
+ 		rd->file = rdfile;
+ 
+-		buf->hdr.ramdisk_len += size;
++		size += sz;
+ 	}
+ 
+-	size = buf->hdr.ramdisk_len;
+ 	err = emalloc(size, 0x1000, &addr);
+ 	if (err != EFI_SUCCESS)
+ 		goto close_handles;
+ 
+-	if ((UINTN)addr > buf->hdr.ramdisk_max) {
++	if ((UINTN)addr > boot_params->hdr.ramdisk_max) {
+ 		Print(L"ramdisk address is too high!\n");
+ 		efree(addr, size);
+ 		goto close_handles;
+ 	}
+ 
+-	buf->hdr.ramdisk_start = (UINT32)(UINTN)addr;
++	boot_params->hdr.ramdisk_start = (UINT32)(UINTN)addr;
++	boot_params->hdr.ramdisk_len = (UINT32)size;
+ 
+ 	for (j = 0; j < nr_initrds; j++) {
+ 		struct initrd *rd = &initrds[j];
+@@ -268,9 +270,6 @@ load_kernel(EFI_HANDLE image, CHAR16 *na
+ 		init_size = size * 3;
+ 	}
+ 
+-	/* Don't need an allocated ID, we're a prototype */
+-	buf->hdr.loader_id = 0x1;
+-
+ 	/*
+ 	 * The kernel expects cmdline to be allocated pretty low,
+ 	 * Documentation/x86/boot.txt says,
+@@ -287,11 +286,26 @@ load_kernel(EFI_HANDLE image, CHAR16 *na
+ 	cmdline = (char *)(UINTN)addr;
+ 	memcpy(cmdline, _cmdline, strlen(_cmdline) + 1);
+ 
+-	parse_initrd(info, buf, cmdline);
++	addr = 0x3fffffff;
++	err = allocate_pages(AllocateMaxAddress, EfiLoaderData,
++			     EFI_SIZE_TO_PAGES(16384), &addr);
++	if (err != EFI_SUCCESS)
++		goto out;
++
++	boot_params = (struct boot_params *)(UINTN)addr;
+ 
+-	buf->hdr.cmd_line_ptr = (UINT32)(UINTN)cmdline;
++	memset((void *)boot_params, 0x0, 16384);
++
++	/* Copy setup_header to boot_params */
++	memcpy((char *)&boot_params->hdr, (char *)&buf->hdr,
++		 sizeof(struct setup_header));
+ 
+-	memset((char *)&buf->screen_info, 0x0, sizeof(buf->screen_info));
++	/* Don't need an allocated ID, we're a prototype */
++	boot_params->hdr.loader_id = 0x1;
++
++	boot_params->hdr.cmd_line_ptr = (UINT32)(UINTN)cmdline;
++
++	parse_initrd(info, boot_params, cmdline);
+ 
+ 	addr = pref_address;
+ 	err = allocate_pages(AllocateAddress, EfiLoaderData,
+@@ -301,7 +315,8 @@ load_kernel(EFI_HANDLE image, CHAR16 *na
+ 		 * We failed to allocate the preferred address, so
+ 		 * just allocate some memory and hope for the best.
+ 		 */
+-		err = emalloc(init_size, buf->hdr.kernel_alignment, &addr);
++		err = emalloc(init_size, boot_params->hdr.kernel_alignment,
++				 &addr);
+ 		if (err != EFI_SUCCESS)
+ 			goto out;
+ 	}
+@@ -315,26 +330,14 @@ load_kernel(EFI_HANDLE image, CHAR16 *na
+ 	if (err != EFI_SUCCESS)
+ 		goto out;
+ 
+-	addr = 0x3fffffff;
+-	err = allocate_pages(AllocateMaxAddress, EfiLoaderData,
+-			     EFI_SIZE_TO_PAGES(16384), &addr);
+-	if (err != EFI_SUCCESS)
+-		goto out;
+-
+-	boot_params = (struct boot_params *)(UINTN)addr;
+-
+-	memset((void *)boot_params, 0x0, 16384);
+-
+-	/* Copy first two sectors to boot_params */
+-	memcpy((char *)boot_params, (char *)buf, 2 * 512);
+ 	boot_params->hdr.code32_start = (UINT32)((UINT64)kernel_start);
+ 
+ 	/*
+ 	 * Use the kernel's EFI boot stub by invoking the handover
+ 	 * protocol.
+ 	 */
+-	if (buf->hdr.version >= 0x20b) {
+-		handover_jump(buf->hdr.version, image,
++	if (boot_params->hdr.version >= 0x20b) {
++		handover_jump(boot_params->hdr.version, image,
+ 			      boot_params, kernel_start);
+ 		goto out;
+ 	}
