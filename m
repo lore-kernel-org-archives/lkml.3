@@ -1,95 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614AbaFRN4K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 09:56:10 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:25781 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886AbaFRN4I (ORCPT
+	id S1756665AbaFRN4X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 09:56:23 -0400
+Received: from mail-we0-f195.google.com ([74.125.82.195]:51999 "EHLO
+	mail-we0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752680AbaFRN4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 09:56:08 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-6e-53a19a75012d
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Nicolas Pitre <nico@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: [PATCH] arm: get rid of hardcoded assumptions about kernel stack size
-Date: Wed, 18 Jun 2014 17:50:22 +0400
-Message-id: <1403099422-850-1-git-send-email-a.ryabinin@samsung.com>
-X-Mailer: git-send-email 1.8.5.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIJMWRmVeSWpSXmKPExsVy+t/xa7qlsxYGGyyZb2ix7dcjNov3y3oY
-	LTY9vsZqcXnXHDaL25d5LaYf+8tm8fLjCRYHdo8189YwerQ097B53Lm2h81j85J6j74tqxg9
-	Pm+SC2CL4rJJSc3JLEst0rdL4Mo4cDKo4BZfxb6fc1kaGGfxdDFyckgImEhsOf6UCcIWk7hw
-	bz1bFyMXh5DAUkaJxT8XQDl9TBKv9vSBVbEJ6En8m7WdDcQWEdCUOLX4IjNIEbPAU0aJr4sv
-	MYIkhAX8JLZuOgBWxCKgKjGhZTsLiM0r4CLx6dtjqHUKEsuWz2SdwMi9gJFhFaNoamlyQXFS
-	eq6hXnFibnFpXrpecn7uJkZIsHzZwbj4mNUhRgEORiUe3g9vFwQLsSaWFVfmHmKU4GBWEuE9
-	VrwwWIg3JbGyKrUoP76oNCe1+BAjEwenVANj4NTyhHk2TY+Mdlzctv+J7MxqBq+w16x7JTqj
-	A3mS8ljmng3hmveXI/7R753fOZ4aPXcQXXDY+k2swuOv0wU1Tdvfz9bxu5mxVuDAsqb/FpYV
-	ue+KJ0RuUAlo2hGq47+w+MQr649GHI1PZ2wQfeJop9rp6hOdky7WP7l3cfW9sh+OrO+75jIr
-	sRRnJBpqMRcVJwIACqyWrvQBAAA=
+	Wed, 18 Jun 2014 09:56:21 -0400
+Date: Wed, 18 Jun 2014 14:56:18 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Daniel Kiper <daniel.kiper@oracle.com>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org, andrew.cooper3@citrix.com,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        eshelton@pobox.com, hpa@zytor.com, ian.campbell@citrix.com,
+        jbeulich@suse.com, jeremy@goop.org, konrad.wilk@oracle.com,
+        matt.fleming@intel.com, mingo@redhat.com, mjg59@srcf.ucam.org,
+        stefano.stabellini@eu.citrix.com, tglx@linutronix.de
+Subject: Re: [PATCH v5 5/7] arch/x86: Replace plain strings with constants
+Message-ID: <20140618135618.GI24049@console-pimps.org>
+References: <1402678823-24589-1-git-send-email-daniel.kiper@oracle.com>
+ <1402678823-24589-6-git-send-email-daniel.kiper@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402678823-24589-6-git-send-email-daniel.kiper@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changing kernel stack size on arm is not as simple as it should be:
-1) THRED_SIZE macro doen't respect PAGE_SIZE and THREAD_SIZE_ORDER
-2) stack size is hardcoded in get_thread_info macro
+On Fri, 13 Jun, at 07:00:21PM, Daniel Kiper wrote:
+> v5 - suggestions/fixes:
+>    - do not change indentation
+>      (suggested by Matt Fleming).
+> 
+> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+> ---
+>  arch/x86/kernel/setup.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 
-This patch fixes it by caculating THREAD_SIZE and thread_info address
-taking into account PAGE_SIZE and THREAD_SIZE_ORDER.
+Looks good, but it's customary to have at least one line after the patch
+title. Even something as trivial as,
 
-Now changing stack size becomes simply changing THREAD_SIZE_ORDER.
+  "We've got constants, so let's use them instead of hard-coded values."
 
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
----
- arch/arm/include/asm/assembler.h   | 8 +++++---
- arch/arm/include/asm/thread_info.h | 3 ++-
- 2 files changed, 7 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/include/asm/assembler.h b/arch/arm/include/asm/assembler.h
-index 57f0584..906703a 100644
---- a/arch/arm/include/asm/assembler.h
-+++ b/arch/arm/include/asm/assembler.h
-@@ -24,6 +24,8 @@
- #include <asm/domain.h>
- #include <asm/opcodes-virt.h>
- #include <asm/asm-offsets.h>
-+#include <asm/page.h>
-+#include <asm/thread_info.h>
- 
- #define IOMEM(x)	(x)
- 
-@@ -179,10 +181,10 @@
-  * Get current thread_info.
-  */
- 	.macro	get_thread_info, rd
-- ARM(	mov	\rd, sp, lsr #13	)
-+ ARM(	mov	\rd, sp, lsr #THREAD_SIZE_ORDER + PAGE_SHIFT	)
-  THUMB(	mov	\rd, sp			)
-- THUMB(	lsr	\rd, \rd, #13		)
--	mov	\rd, \rd, lsl #13
-+ THUMB(	lsr	\rd, \rd, #THREAD_SIZE_ORDER + PAGE_SHIFT	)
-+	mov	\rd, \rd, lsl #THREAD_SIZE_ORDER + PAGE_SHIFT
- 	.endm
- 
- /*
-diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
-index f989d7c..f85d2b0 100644
---- a/arch/arm/include/asm/thread_info.h
-+++ b/arch/arm/include/asm/thread_info.h
-@@ -14,9 +14,10 @@
- 
- #include <linux/compiler.h>
- #include <asm/fpstate.h>
-+#include <asm/page.h>
- 
- #define THREAD_SIZE_ORDER	1
--#define THREAD_SIZE		8192
-+#define THREAD_SIZE		(PAGE_SIZE << THREAD_SIZE_ORDER)
- #define THREAD_START_SP		(THREAD_SIZE - 8)
- 
- #ifndef __ASSEMBLY__
 -- 
-1.8.5.5
-
+Matt Fleming, Intel Open Source Technology Center
