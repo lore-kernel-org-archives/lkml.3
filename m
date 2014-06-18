@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962AbaFRXRO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 19:17:14 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:50174 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753209AbaFRXRD (ORCPT
+	id S1755985AbaFRXT1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 19:19:27 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:46459 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752839AbaFRXT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 19:17:03 -0400
+	Wed, 18 Jun 2014 19:19:26 -0400
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, pv-drivers@vmware.com
+Subject: Re: [PATCH] MAINTAINERS: add entry for VMware Balloon driver
+Date: Wed, 18 Jun 2014 16:19:15 -0700
+Message-ID: <4389061.FeVMqoJiMc@dtor-d630.eng.vmware.com>
+Organization: VMware, Inc.
+User-Agent: KMail/4.12.5 (Linux/3.14.4-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <20140618231742.GB7234@kroah.com>
+References: <1403132941-1394-1-git-send-email-dtor@vmware.com> <20140618231742.GB7234@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <1403091060-5054-1-git-send-email-amit.daniel@samsung.com>
-References: <1403091060-5054-1-git-send-email-amit.daniel@samsung.com>
-Date: Wed, 18 Jun 2014 16:17:01 -0700
-X-Google-Sender-Auth: ADNfUHFS994TqxAPSvbZXd8MliE
-Message-ID: <CAD=FV=WHK7TDdqcAd6aVs2g8rcHJx834im_4nTKHJAkUisWq4A@mail.gmail.com>
-Subject: Re: [PATCH] clocksource: exynos-mct: Register the timer for stable udelay
-From: Doug Anderson <dianders@chromium.org>
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Riley <davidriley@chromium.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Amit,
+On Wednesday, June 18, 2014 04:17:42 PM Greg Kroah-Hartman wrote:
+> On Wed, Jun 18, 2014 at 04:09:01PM -0700, Dmitry Torokhov wrote:
+> > Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
+> > ---
+> > 
+> >  MAINTAINERS                |    6 ++++++
+> >  drivers/misc/vmw_balloon.c |    2 +-
+> >  2 files changed, 7 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> > index 6c484ac..3a446e8 100644
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -9645,6 +9645,12 @@ L:	virtualization@lists.linux-foundation.org
+> > 
+> >  S:	Supported
+> >  F:	arch/x86/kernel/cpu/vmware.c
+> > 
+> > +VMWARE BALLOON DRIVER
+> > +M:	"VMware, Inc." <pv-drivers@vmware.com>
+> > +L:	linux-kernel@vger.kernel.org
+> > +S:	Maintained
+> > +F:	drivers/misc/vmw_balloon.c
+> 
+> I really hate having a "alias" as a maintainer, and not a "real" name.
+> Kernel development is done by individuals, we don't have companies as
+> authors or signed-off-by lines, we have developers.
+> 
+> So I will not accept this, sorry.  Please find a real person who is
+> willing to maintain this code, or just mark it unsupported.
+> 
 
-Thanks for posting!
+OK, fair enough, we'll find a real name to attach here.
 
-On Wed, Jun 18, 2014 at 4:31 AM, Amit Daniel Kachhap
-<amit.daniel@samsung.com> wrote:
-> This patch register the exynos mct clocksource as the current timer
-> as it has constant clock rate. This will generate correct udelay for the
-> exynos platform and avoid using unnecessary calibrated jiffies. This change
-> have been tested on exynos5420 based board.
->
-> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> ---
->
-> Patches from David Riley confirmed that udelay is broken in exynos5420.
-> Link to those patches are,
-> 1) https://patchwork.kernel.org/patch/4344911/
-> 2) https://patchwork.kernel.org/patch/4344881/
->
->  drivers/clocksource/exynos_mct.c | 11 +++++++++++
->  1 file changed, 11 insertions(+)
->
-> diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
-> index 8d64200..57cb3dc 100644
-> --- a/drivers/clocksource/exynos_mct.c
-> +++ b/drivers/clocksource/exynos_mct.c
-> @@ -198,10 +198,21 @@ static u64 notrace exynos4_read_sched_clock(void)
->         return exynos4_frc_read(&mct_frc);
->  }
->
-> +static struct delay_timer exynos4_delay_timer;
-> +
-> +static unsigned long exynos4_read_current_timer(void)
-> +{
-> +       return exynos4_frc_read(&mct_frc);
-
-This is terribly inefficient to read all 64-bits and then cast back to
-a 32-bit value.  Replace with:
-
-return __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
-
-
-> +}
-> +
->  static void __init exynos4_clocksource_init(void)
->  {
->         exynos4_mct_frc_start(0, 0);
-
-Please rebase atop (1d80415 clocksource: exynos_mct: Don't reset the
-counter during boot and resume), which is in linuxnext among other
-places.
-
->
-> +       exynos4_delay_timer.read_current_timer = &exynos4_read_current_timer;
-> +       exynos4_delay_timer.freq = clk_rate;
-> +       register_current_timer_delay(&exynos4_delay_timer);
-> +
->         if (clocksource_register_hz(&mct_frc, clk_rate))
->                 panic("%s: can't register clocksource\n", mct_frc.name);
-
-It does seem to work for me though.  :)
+Thanks,
+Dmitry
