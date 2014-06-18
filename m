@@ -1,139 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744AbaFRPwa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 11:52:30 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:51403 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752557AbaFRPw2 (ORCPT
+	id S1752870AbaFRPxp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 11:53:45 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:62954 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674AbaFRPxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 11:52:28 -0400
-Message-ID: <53A1B5B4.2020704@codethink.co.uk>
-Date: Wed, 18 Jun 2014 16:52:20 +0100
-From: Rob Jones <rob.jones@codethink.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Wed, 18 Jun 2014 11:53:42 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Bjorn Andersson <bjorn@kryo.se>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH v3 0/3] Qualcomm Resource Power Manager driver
+References: <1402944372-31901-1-git-send-email-bjorn.andersson@sonymobile.com>
+	<7hvbrzbh1u.fsf@paris.lan>
+	<CAJAp7OhHr4Cgcp9pvQ3=MAie_zSnFJxG28Vf37qJ98BK7P1jaQ@mail.gmail.com>
+Date: Wed, 18 Jun 2014 08:53:40 -0700
+In-Reply-To: <CAJAp7OhHr4Cgcp9pvQ3=MAie_zSnFJxG28Vf37qJ98BK7P1jaQ@mail.gmail.com>
+	(Bjorn Andersson's message of "Tue, 17 Jun 2014 10:15:10 -0700")
+Message-ID: <7hzjha8b97.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-CC: linus.walleij@linaro.org, gnurou@gmail.com, lgirdwood@gmail.com,
-        broonie@kernel.org, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ian.molton@codethink.co.uk,
-        ben.dooks@codethink.co.uk
-Subject: Re: [PATCH 2/3] drivers/base: devres.c: Add block copy func. for
- managed devices
-References: <1402411308-14182-1-git-send-email-rob.jones@codethink.co.uk> <1402411308-14182-3-git-send-email-rob.jones@codethink.co.uk> <1713451.AmufNoybT7@diego>
-In-Reply-To: <1713451.AmufNoybT7@diego>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Bjorn Andersson <bjorn@kryo.se> writes:
 
-On 18/06/14 14:05, Heiko Stübner wrote:
-> Am Dienstag, 10. Juni 2014, 15:41:47 schrieb Rob Jones:
->> Add function devm_kmemdup().
->> Rationalise with devm_kstrdup() to avoid code duplication.
+> On Tue, Jun 17, 2014 at 10:07 AM, Kevin Hilman <khilman@linaro.org> wrote:
+>> +Paul Walmsley
 >>
->> Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
->> Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
->> ---
->>   drivers/base/devres.c  |   42 ++++++++++++++++++++++++++++++++++--------
->>   include/linux/device.h |    2 ++
->>   2 files changed, 36 insertions(+), 8 deletions(-)
+>> Bjorn Andersson <bjorn.andersson@sonymobile.com> writes:
 >>
->> diff --git a/drivers/base/devres.c b/drivers/base/devres.c
->> index db4e264..978bbe2 100644
->> --- a/drivers/base/devres.c
->> +++ b/drivers/base/devres.c
->> @@ -791,6 +791,20 @@ void * devm_kmalloc(struct device *dev, size_t size,
->> gfp_t gfp) EXPORT_SYMBOL_GPL(devm_kmalloc);
+>>> This series adds a regulator driver for the Resource Power Manager found in
+>>> Qualcomm 8660, 8960 and 8064 based devices.
+>>>
+>>> The RPM driver exposes resources to its child devices, that can be accessed to
+>>> implement drivers for the regulators, clocks and bus frequency control that's
+>>> owned by the RPM in these devices.
+>>>
+>>> Changes since v2:
+>>>   - Fix copy-paste error in dt binding
+>>>   - Correct incomplete move from mfd to soc
+>>>   - Correct const mistake in regulator driver
+>>>
+>>> Changes since v1:
+>>>   - Moved rpm driver to drivers/soc
 >>
->>   /**
->> + * static function to avoid code duplication when duplicating buffers
->> + */
->> +static void *devm_kmemdup_nochecks(struct device *dev, const void *s,
->> +				    size_t size, gfp_t gfp)
->> +{
->> +	void *buf;
->> +
->> +	buf = devm_kmalloc(dev, size, gfp);
->> +	if (buf)
->> +		memcpy(buf, s, size);
->> +	return buf;
->> +}
->> +
->> +/**
->>    * devm_kstrdup - Allocate resource managed space and
->>    *                copy an existing string into that.
->>    * @dev: Device to allocate memory for
->> @@ -802,21 +816,33 @@ EXPORT_SYMBOL_GPL(devm_kmalloc);
->>    */
->>   char *devm_kstrdup(struct device *dev, const char *s, gfp_t gfp)
->>   {
->> -	size_t size;
->> -	char *buf;
->> -
->>   	if (!s)
->>   		return NULL;
+>> I'm not sure I follow the motivation for having this under drivers/soc?
 >>
->> -	size = strlen(s) + 1;
->> -	buf = devm_kmalloc(dev, size, gfp);
->> -	if (buf)
->> -		memcpy(buf, s, size);
->> -	return buf;
->> +	return devm_kmemdup_nochecks(dev, s, (strlen(s)+1), gfp);
->>   }
->>   EXPORT_SYMBOL_GPL(devm_kstrdup);
-> hmm, this looks like an unrelated change to me and may warrant a separate
-> patch for the devm_kstrdup change.
+> Hi Kevin,
+>
+> I've made the argument that to me this is conceptually a black box
+> handling regulators, clocks and other stuff; hence similar to a PMIC,
+> which would fit nicely into drivers/mfd.
+>
+> I still think this is the case and now that I look back I didn't get
+> any pushback from Lee Jones so maybe the move was premature?
 
-On reflection, I agree, I'll separate out the change to devm_kstrdup() 
-and resubmit.
+Yes, IMO, the move was premature, but hopefully the drivers/soc folks
+can chime in an clarify the criteria for inclusion there.
 
->
->
->>   /**
->> + * devm_kmemdup - Allocate resource managed space and
->> + *                copy existing data into that.
->> + * @dev: Device to allocate memory for
->> + * @s: the memory block to duplicate
->> + * @gfp: the GFP mask used in the devm_kmalloc() call when
->> + *       allocating memory
->> + * RETURNS:
->> + * Pointer to allocated string on success, NULL on failure.
->> + */
->> +void *devm_kmemdup(struct device *dev, const void *s, size_t size, gfp_t
->> gfp) +{
->> +	if (!s || (size == 0))
->> +		return NULL;
->> +
->> +	return devm_kmemdup_nochecks(dev, s, size, gfp);
->> +}
->> +EXPORT_SYMBOL_GPL(devm_kmemdup);
->> +
->> +/**
->>    * devm_kfree - Resource-managed kfree
->>    * @dev: Device this memory belongs to
->>    * @p: Memory to free
->> diff --git a/include/linux/device.h b/include/linux/device.h
->> index d1d1c05..7ace116 100644
->> --- a/include/linux/device.h
->> +++ b/include/linux/device.h
->> @@ -623,6 +623,8 @@ static inline void *devm_kcalloc(struct device *dev,
->>   }
->>   extern void devm_kfree(struct device *dev, void *p);
->>   extern char *devm_kstrdup(struct device *dev, const char *s, gfp_t gfp);
->> +extern void *devm_kmemdup(struct device *dev,
->> +			  const void *s, size_t size, gfp_t gfp);
->>
->>   void __iomem *devm_ioremap_resource(struct device *dev, struct resource
->> *res); void __iomem *devm_request_and_ioremap(struct device *dev,
->
->
-
--- 
-Rob Jones
-Project Manager
-Codethink Ltd
-mailto:rob.jones@codethink.co.uk
-tel:+44 161 236 5575
+Kevin
 
