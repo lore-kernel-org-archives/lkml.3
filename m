@@ -1,57 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966592AbaFRNPu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 09:15:50 -0400
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:57071 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966306AbaFRNPs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 09:15:48 -0400
+	id S966643AbaFRNXJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 09:23:09 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:47281 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966241AbaFRNXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 09:23:07 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Rob Jones <rob.jones@codethink.co.uk>
+Cc: linus.walleij@linaro.org, gnurou@gmail.com, lgirdwood@gmail.com,
+        broonie@kernel.org, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ian.molton@codethink.co.uk,
+        ben.dooks@codethink.co.uk
+Subject: Re: [PATCH 1/3] drivers/gpio: devres.c: allow gpio array requests for managed devices
+Date: Wed, 18 Jun 2014 15:24:23 +0200
+Message-ID: <4501550.PbI0gbPlXS@diego>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1402411308-14182-2-git-send-email-rob.jones@codethink.co.uk>
+References: <1402411308-14182-1-git-send-email-rob.jones@codethink.co.uk> <1402411308-14182-2-git-send-email-rob.jones@codethink.co.uk>
 MIME-Version: 1.0
-In-Reply-To: <1403091974.1984.102.camel@x220>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
-	<1391971686-9517-10-git-send-email-richard@nod.at>
-	<52F7D480.1050106@hauke-m.de>
-	<52F7DF21.70207@nod.at>
-	<CAHNKnsS7Mv4ZhBWZa53go9L9nZimJ7_FG5HFJ9C3kkGMAEz-mA@mail.gmail.com>
-	<52F8C373.9060108@rempel-privat.de>
-	<CAHNKnsQF5Hdf3JT91moPraRQzn4kMpdD2NSiJ7b30wQhS1W4MA@mail.gmail.com>
-	<CAGVrzcYnECx5Q=i+m6qZn29y4JALDpw5SWoUNP-S6HgPR3_ygQ@mail.gmail.com>
-	<CAHNKnsRACSo=DfOyiHxqV3acv_wfZmz4tMnYAW0wo4OCibwdfA@mail.gmail.com>
-	<CAHNKnsRQp7WLSJNAXEYPTd=qs1DquOfNgKtHES-Utvcy1=FEgQ@mail.gmail.com>
-	<20140213201421.GJ22203@tuxdriver.com>
-	<1397581703.8212.5.camel@x220>
-	<CAHNKnsQQ42-XnXrubHAy4PF3H2ynbGDdSMP7MvDS_1aRozYF=A@mail.gmail.com>
-	<1403087119.1984.93.camel@x220>
-	<CAHNKnsSfaT7xC5_wv=TrGLEQ2pjC91Q1XG891_n64OuR0fA9Jg@mail.gmail.com>
-	<1403091974.1984.102.camel@x220>
-Date: Wed, 18 Jun 2014 15:15:44 +0200
-Message-ID: <CAOpc7mE+829tBdy5atjtoJnGWDAnAHT_U0swXCuS3n_DMave1Q@mail.gmail.com>
-Subject: Re: [ath5k-devel] [PATCH 09/28] Remove ATHEROS_AR231X
-From: Holger Schurig <holgerschurig@gmail.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Sergey Ryazanov <ryazanov.s.a@gmail.com>,
-        List <openwrt-devel@lists.openwrt.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jirislaby@gmail.com>, Richard@venema.h4ckr.net,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, open@hauke-m.de,
-        Weinberger <richard@nod.at>, ath5k-devel@venema.h4ckr.net,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Oleksij Rempel <linux@rempel-privat.de>, Hauke@venema.h4ckr.net,
-        Mehrtens <hauke@hauke-m.de>,
-        "list@hauke-m.de:NETWORKING DRIVERS" <list@hauke-m.de>,
-        Jonathan Bither <jonbither@gmail.com>,
-        "list@hauke-m.de:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
-        OpenWrt@venema.h4ckr.net,
-        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Having this conversation every rc1 is getting a bit silly.
+Am Dienstag, 10. Juni 2014, 15:41:46 schrieb Rob Jones:
+> Add functions devm_gpio_request_array() and devm_gpio_free_array()
+> which are exactly analogous to the equivalent non-managed device
+> functions gpio_request_array() and gpio_free_array(), which can be
+> found in module gpiolib.c.
+> 
+> Note that if devm_gpio_request_array() fails, no gpios are obtained.
+> No indication is provided as to which particular request failed.
+> 
+> Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
+> Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
 
-Hmm, wouldn't the obvious thing than to add the driver in it's current
-form into staging?  Is it well-separated from the rest of  Atheros
-WLAN drivers ?
+apart from the doc issue below this looks ok to me
+
+
+> ---
+>  drivers/gpio/devres.c |   57
+> +++++++++++++++++++++++++++++++++++++++++++++++++ include/linux/gpio.h  |  
+>  4 ++++
+>  2 files changed, 61 insertions(+)
+> 
+> diff --git a/drivers/gpio/devres.c b/drivers/gpio/devres.c
+> index 307464f..fd95240d 100644
+> --- a/drivers/gpio/devres.c
+> +++ b/drivers/gpio/devres.c
+> @@ -186,6 +186,63 @@ int devm_gpio_request_one(struct device *dev, unsigned
+> gpio, EXPORT_SYMBOL(devm_gpio_request_one);
+> 
+>  /**
+> + * devm_gpio_request_array - request multiple GPIOs in a single call
+> + *			     for a managed device
+> + * @dev:	device requesting the gpio
+> + * @array:      array of the 'struct gpio'
+> + * @num:        how many GPIOs in the array
+
+@dev uses a tab as spacing, while @array and @num use spaces, might be nice to 
+have this consistent.
+
+
+> + *
+> + * Except for the extra @dev argument, this function takes the
+> + * same arguments and performs the same function as
+> + * gpio_request().  GPIOs requested with this function will be
+> + * automatically freed on driver detach.
+> + *
+> + * If GPIOs allocated with this function need to be freed separately,
+> + * devm_gpio_free_array() or devm_gpio_free() must be used.
+> + */
+> +int devm_gpio_request_array(struct device *dev,
+> +			    const struct gpio *array,
+> +			    size_t num)
+> +{
+> +	int i, err = 0;
+> +
+> +	for (i = 0; i < num; i++, array++) {
+> +		err = devm_gpio_request_one(dev,
+> +					    array->gpio,
+> +					    array->flags,
+> +					    array->label);
+> +		if (err) {
+> +			while (i--)
+> +				devm_gpio_free(dev, (--array)->gpio);
+> +		}
+> +	}
+> +
+> +	return err;
+> +}
+> +EXPORT_SYMBOL(devm_gpio_request_array);
+> +
+> +/**
+> + * devm_gpio_free_array - release multiple GPIOs in a single call
+> + *			  for a managed device
+> + * @dev:	device requesting the gpio
+> + * @array:      array of the 'struct gpio'
+> + * @num:        how many GPIOs in the array
+
+same here
+
+> + *
+> + * Except for the extra @dev argument, this function takes the
+> + * same arguments and performs the same function as gpio_free_array().
+> + * This function instead of gpio_free_array() should be used to
+> + * manually free GPIOs allocated with devm_gpio_request().
+> + */
+> +void devm_gpio_free_array(struct device *dev,
+> +			  const struct gpio *array,
+> +			  size_t num)
+> +{
+> +	while (num--)
+> +		devm_gpio_free(dev, (array++)->gpio);
+> +}
+> +EXPORT_SYMBOL(devm_gpio_free_array);
+> +
+> +/**
+>   *      devm_gpio_free - free a GPIO
+>   *      @dev: device to free GPIO for
+>   *      @gpio: GPIO to free
+> diff --git a/include/linux/gpio.h b/include/linux/gpio.h
+> index 85aa5d0..12d5648 100644
+> --- a/include/linux/gpio.h
+> +++ b/include/linux/gpio.h
+> @@ -84,6 +84,10 @@ struct device;
+>  int devm_gpio_request(struct device *dev, unsigned gpio, const char
+> *label); int devm_gpio_request_one(struct device *dev, unsigned gpio,
+>  			  unsigned long flags, const char *label);
+> +int devm_gpio_request_array(struct device *dev, const struct gpio *array,
+> +			    size_t num);
+> +void devm_gpio_free_array(struct device *dev, const struct gpio *array,
+> +			 size_t num);
+>  void devm_gpio_free(struct device *dev, unsigned int gpio);
+> 
+>  #else /* ! CONFIG_GPIOLIB */
+
