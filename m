@@ -1,90 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876AbaFSB1O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 21:27:14 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:49670 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754686AbaFSB1J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 21:27:09 -0400
-Date: Wed, 18 Jun 2014 21:27:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
+	id S1755194AbaFSBaj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 21:30:39 -0400
+Received: from ozlabs.org ([103.22.144.67]:34293 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752240AbaFSBah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 21:30:37 -0400
+Message-ID: <1403141433.4768.1.camel@concordia>
+Subject: Re: Re: [RFT PATCH -next v3] [BUGFIX] kprobes: Fix "Failed to find
+ blacklist" error on ia64 and ppc64
+From: Michael Ellerman <mpe@ellerman.id.au>
 To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Tom Zanussi <tom.zanussi@intel.com>
-Subject: Re: [PATCH v2 0/5] Add glob pattern matching support on trigger and
- kprobe-event
-Message-ID: <20140618212707.3b6e3172@gandalf.local.home>
-In-Reply-To: <20130522021903.4299.85911.stgit@mhiramat-M0-7522>
-References: <20130522021903.4299.85911.stgit@mhiramat-M0-7522>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
+        Tony Luck <tony.luck@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-tip-commits@vger.kernel.org, anil.s.keshavamurthy@intel.com,
+        Ingo Molnar <mingo@kernel.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        akataria@vmware.com, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>
+Date: Thu, 19 Jun 2014 11:30:33 +1000
+In-Reply-To: <53A15201.7060404@hitachi.com>
+References: <5387F150.5000307@hitachi.com>
+	  <20140530031838.17427.75896.stgit@ltc230.yrl.intra.hitachi.co.jp>
+	  <539161D6.7020508@hitachi.com> <1403078179.32307.7.camel@concordia>
+	 <53A15201.7060404@hitachi.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-A blast from the past! (I'm cleaning out my inbox).
-
-On Wed, 22 May 2013 11:19:03 +0900
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-
-> Hi,
+On Wed, 2014-06-18 at 17:46 +0900, Masami Hiramatsu wrote:
+> (2014/06/18 16:56), Michael Ellerman wrote:
+> > On Fri, 2014-06-06 at 15:38 +0900, Masami Hiramatsu wrote:
+> >> Ping?
+> >>
+> >> I guess this should go to 3.16 branch, shouldn't it?
+> > 
+> >>> diff --git a/arch/powerpc/include/asm/types.h b/arch/powerpc/include/asm/types.h
+> >>> index bfb6ded..8b89d65 100644
+> >>> --- a/arch/powerpc/include/asm/types.h
+> >>> +++ b/arch/powerpc/include/asm/types.h
+> >>> @@ -25,6 +25,17 @@ typedef struct {
+> >>>  	unsigned long env;
+> >>>  } func_descr_t;
+> >>>  
+> >>> +#if defined(CONFIG_PPC64) && (!defined(_CALL_ELF) || _CALL_ELF == 1)
+> >>> +/*
+> >>> + * On PPC64 ABIv1 the function pointer actually points to the
+> >>> + * function's descriptor. The first entry in the descriptor is the
+> >>> + * address of the function text.
+> >>> + */
+> >>> +#define function_entry(fn)	(((func_descr_t *)(fn))->entry)
+> >>> +#else
+> >>> +#define function_entry(fn)	((unsigned long)(fn))
+> >>> +#endif
+> > 
+> > We already have ppc_function_entry(), can't you use that?
 > 
-> Here is a series of ftrace/perf updates to support multiple
-> event select operation by glob-based wild cards.
-> 
-> I've ported strglobmatch from perf-tools (with recursive call
-> limitation) for this use. It is easier to use (just replacing
-> strcmp) but slower than current parser-based matching.
-> I don't care about the speed of matching because the all of
-> the matching which I've introduced in this series are done
-> on slow-path.
-> 
-> Changes in v2:
->  - Update the comment of patch [2/5] for explaining more
->    detail of the backgroud.
-> 
-> ---
-> 
-> Masami Hiramatsu (5):
->       [BUGFIX] tracing: Returns -EBUSY when event_enable_func fails to get module
+> I'd like to ask you whether the address which ppc_function_entry() returns on
+> PPC ABIv2 is really same address in kallsyms or not.
+> As you can see, kprobes uses function_entry() to get the actual entry address
+> where kallsyms knows. I have not much information about that, but it seems that
+> the "global entry point" is the address which kallsyms knows, isn't it?
 
-This is applied.
+OK. I'm not sure off the top of my head which address kallsyms knows about, but
+yes it's likely that it is the global entry point.
 
+I recently sent a patch to add ppc_global_function_entry(), because we need it
+in the ftrace code. Once that is merged you could use that.
 
->       perf: Swap the parameters of strglobmatch
->       lib/string: Add a generic wildcard string matching function
->       tracing/kprobes: Allow user to delete kprobe events by wild cards
->       tracing: Support enable/disable multiple events trigger by wild cards
+How do you hit the original problem, you don't actually specify in your commit
+message? Something with kprobes obviously, but what exactly? I'll try and
+reproduce it here.
 
-These don't look to be applied. Looks like this patch series was lost.
+cheers
 
-Masami, are these still relevant?
-
--- Steve
-
-
-> 
-> 
->  Documentation/trace/ftrace.txt      |   12 ++-
->  Documentation/trace/kprobetrace.txt |   19 +++--
->  include/linux/string.h              |    8 ++
->  kernel/trace/trace_events.c         |  121 +++++++++++++++++++++++++----------
->  kernel/trace/trace_kprobe.c         |   97 ++++++++++++++++++++--------
->  lib/string.c                        |   91 ++++++++++++++++++++++++++
->  tools/perf/util/parse-events.c      |   14 ++--
->  tools/perf/util/probe-event.c       |    2 -
->  tools/perf/util/strfilter.c         |    2 -
->  tools/perf/util/string.c            |   16 ++---
->  tools/perf/util/util.h              |    4 +
->  11 files changed, 295 insertions(+), 91 deletions(-)
-> 
 
