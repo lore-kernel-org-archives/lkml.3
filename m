@@ -1,90 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074AbaFSNYq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 09:24:46 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51471 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755943AbaFSNYn (ORCPT
+	id S1755946AbaFSNZm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 09:25:42 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:50495 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754809AbaFSNZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 09:24:43 -0400
-Message-ID: <53A2E491.5040406@ti.com>
-Date: Thu, 19 Jun 2014 16:24:33 +0300
-From: Tero Kristo <t-kristo@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 19 Jun 2014 09:25:40 -0400
+Date: Thu, 19 Jun 2014 09:25:36 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: Christoph Lameter <cl@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: percpu: micro-optimize round-to-even
+Message-ID: <20140619132536.GF11042@htj.dyndns.org>
+References: <1403172149-25353-1-git-send-email-linux@rasmusvillemoes.dk>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <arnd@arndb.de>, <tony@atomide.com>, <jg1.han@samsung.com>,
-        Keerthy <j-keerthy@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCH v2 07/18] ARM: dts: DRA7: Change the parent of apll_pcie_in_clk_mux
- to dpll_pcie_ref_m2ldo_ck
-References: <1401345500-20188-1-git-send-email-kishon@ti.com> <1401345500-20188-8-git-send-email-kishon@ti.com> <53A2C5B4.9080300@ti.com> <53A2DEDA.5050104@ti.com>
-In-Reply-To: <53A2DEDA.5050104@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403172149-25353-1-git-send-email-linux@rasmusvillemoes.dk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2014 04:00 PM, Kishon Vijay Abraham I wrote:
-> Hi Tero,
->
-> On Thursday 19 June 2014 04:42 PM, Tero Kristo wrote:
->> On 05/29/2014 09:38 AM, Kishon Vijay Abraham I wrote:
->>> From: Keerthy <j-keerthy@ti.com>
->>>
->>> Change the parent of apll_pcie_in_clk_mux to dpll_pcie_ref_m2ldo_ck
->>> from dpll_pcie_ref_ck.
->>
->> Why? Needs a better changelog also.
->
-> Figure 26-22. DPLL_PCIE_REF Functional Block Diagram in vE of DRA7xx ES1.0 TRM
-> shows the signal name for the output of post divider (M2) is CLKOUTLDO.
->
-> Figure 26-21. PCIe PHY Clock Generator Overview shows CLKOUTLDO is used as
-> input to apll mux.
->
-> So the actual output of dpll should be dpll_pcie_ref_m2ldo_ck instead of
-> dpll_pcie_ref_ck (which is the input of apll mux).
+On Thu, Jun 19, 2014 at 12:02:29PM +0200, Rasmus Villemoes wrote:
+> This change shaves a few bytes off the generated code.
+> 
+> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+> ---
+>  mm/percpu.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/mm/percpu.c b/mm/percpu.c
+> index 2ddf9a9..978097f 100644
+> --- a/mm/percpu.c
+> +++ b/mm/percpu.c
+> @@ -720,8 +720,7 @@ static void __percpu *pcpu_alloc(size_t size, size_t align, bool reserved)
+>  	if (unlikely(align < 2))
+>  		align = 2;
+>  
+> -	if (unlikely(size & 1))
+> -		size++;
+> +	size += size & 1;
 
-Yep, this is what I want to see in the changelog, so please repost. The 
-original changelog had no info on it whatsoever.
+I'm not gonna apply this.  This isn't that hot a path.  It's not
+worthwhile to micro optimize code like this.
 
--Tero
+Thanks.
 
->
-> Thanks
-> Kishon
->>
->> -Tero
->>
->>>
->>> Cc: Rajendra Nayak <rnayak@ti.com>
->>> Cc: Tero Kristo <t-kristo@ti.com>
->>> Cc: Paul Walmsley <paul@pwsan.com>
->>> Signed-off-by: Keerthy <j-keerthy@ti.com>
->>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>> ---
->>>    arch/arm/boot/dts/dra7xx-clocks.dtsi |    2 +-
->>>    1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi
->>> b/arch/arm/boot/dts/dra7xx-clocks.dtsi
->>> index 55e95c5..44993ec 100644
->>> --- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
->>> +++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
->>> @@ -1152,7 +1152,7 @@
->>>
->>>        apll_pcie_in_clk_mux: apll_pcie_in_clk_mux@4ae06118 {
->>>            compatible = "ti,mux-clock";
->>> -        clocks = <&dpll_pcie_ref_ck>, <&pciesref_acs_clk_ck>;
->>> +        clocks = <&dpll_pcie_ref_m2ldo_ck>, <&pciesref_acs_clk_ck>;
->>>            #clock-cells = <0>;
->>>            reg = <0x021c 0x4>;
->>>            ti,bit-shift = <7>;
->>>
->>
-
+-- 
+tejun
