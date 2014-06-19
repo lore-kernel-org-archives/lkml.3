@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965198AbaFSUnw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 16:43:52 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:12750 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964975AbaFSUnv (ORCPT
+	id S965273AbaFSUoy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 16:44:54 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:51801 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964975AbaFSUow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 16:43:51 -0400
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mfd: syscon: Make it possible to mark syscon as read only
-Date: Thu, 19 Jun 2014 13:43:46 -0700
-Message-ID: <1403210626-4845-1-git-send-email-bjorn.andersson@sonymobile.com>
-X-Mailer: git-send-email 1.8.2.2
+	Thu, 19 Jun 2014 16:44:52 -0400
+Date: Thu, 19 Jun 2014 13:42:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave.hansen@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>
+Subject: Re: [bisected] pre-3.16 regression on open() scalability
+Message-ID: <20140619204220.GJ4904@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140618001836.GV4669@linux.vnet.ibm.com>
+ <53A132D4.60408@intel.com>
+ <20140618125831.GB4669@linux.vnet.ibm.com>
+ <53A1CE19.7040103@intel.com>
+ <20140618203052.GT4669@linux.vnet.ibm.com>
+ <20140618235131.GA25946@linux.vnet.ibm.com>
+ <20140619014200.GO8178@tassilo.jf.intel.com>
+ <alpine.DEB.2.11.1406190941180.2785@gentwo.org>
+ <20140619180916.GE4904@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1406191531020.4002@gentwo.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1406191531020.4002@gentwo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061920-1344-0000-0000-0000024F25F1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make it possible to mark syscon as read only, so that it can be used to
-expose pieces of hardware that is read only.
+On Thu, Jun 19, 2014 at 03:31:56PM -0500, Christoph Lameter wrote:
+> On Thu, 19 Jun 2014, Paul E. McKenney wrote:
+> 
+> > That is a separate issue, but unnecessary calls to cond_resched()
+> > should of course be removed -- no argument there.
+> 
+> It looks like we are fighting higher latencies by adding calls in most of
+> the critical sections which will in turn increase the latencies that we
+> are trying to reduce.
 
-Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
----
- Documentation/devicetree/bindings/mfd/syscon.txt |  3 +++
- drivers/mfd/syscon.c                             | 10 ++++++++++
- 2 files changed, 13 insertions(+)
+That is on battle in a larger war.  Another battle is to keep big systems
+from choking and dying.  We need to win both battles, though I understand
+that you are focused primarily on latency reduction.  I don't get that
+luxury because RCU is used across the board.
 
-diff --git a/Documentation/devicetree/bindings/mfd/syscon.txt b/Documentation/devicetree/bindings/mfd/syscon.txt
-index fe8150b..163325af0 100644
---- a/Documentation/devicetree/bindings/mfd/syscon.txt
-+++ b/Documentation/devicetree/bindings/mfd/syscon.txt
-@@ -13,6 +13,9 @@ Required properties:
- - compatible: Should contain "syscon".
- - reg: the register region can be accessed from syscon
- 
-+Optional properties:
-+- read-only: the register region is read only
-+
- Examples:
- gpr: iomuxc-gpr@020e0000 {
- 	compatible = "fsl,imx6q-iomuxc-gpr", "syscon";
-diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
-index ca15878..902579d 100644
---- a/drivers/mfd/syscon.c
-+++ b/drivers/mfd/syscon.c
-@@ -110,6 +110,11 @@ struct regmap *syscon_regmap_lookup_by_phandle(struct device_node *np,
- }
- EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_phandle);
- 
-+static bool syscon_readonly_writable(struct device *dev, unsigned int reg)
-+{
-+	return false;
-+}
-+
- static const struct of_device_id of_syscon_match[] = {
- 	{ .compatible = "syscon", },
- 	{ },
-@@ -141,6 +146,11 @@ static int syscon_probe(struct platform_device *pdev)
- 	if (!base)
- 		return -ENOMEM;
- 
-+	if (of_property_read_bool(dev->of_node, "read-only"))
-+		syscon_regmap_config.writeable_reg = syscon_readonly_writable;
-+	else
-+		syscon_regmap_config.writeable_reg = NULL;
-+
- 	syscon_regmap_config.max_register = res->end - res->start - 3;
- 	if (pdata)
- 		syscon_regmap_config.name = pdata->label;
--- 
-1.8.2.2
+							Thanx, Paul
 
