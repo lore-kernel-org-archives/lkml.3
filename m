@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758256AbaFSQCJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:02:09 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:62129 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758082AbaFSQCG (ORCPT
+	id S1758271AbaFSQCW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:02:22 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:45127 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758082AbaFSQCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:02:06 -0400
+	Thu, 19 Jun 2014 12:02:18 -0400
 From: Anil Belur <askb23@gmail.com>
 X-Google-Original-From: Anil Belur
 To: andreas.dilger@intel.com, oleg.drokin@intel.com,
         gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, hpdd-discuss@ml01.01.org,
         Anil Belur <askb23@gmail.com>
-Subject: [PATCH 2/3] staging: lustre: lustre: ldlm: ldlm_lib.c - removed unnecessary braces
-Date: Fri, 20 Jun 2014 02:01:47 +1000
-Message-Id: <1403193708-22407-2-git-send-email-askb23@gmail.com>
+Subject: [PATCH 3/3] staging: lustre: ldlm: ldlm_lib.c removed unecessary space after function name
+Date: Fri, 20 Jun 2014 02:01:48 +1000
+Message-Id: <1403193708-22407-3-git-send-email-askb23@gmail.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1403193708-22407-1-git-send-email-askb23@gmail.com>
 References: <1403193708-22407-1-git-send-email-askb23@gmail.com>
@@ -25,40 +25,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Anil Belur <askb23@gmail.com>
 
-- this change fixes "WARNING: braces {} are not necessary for single
-  statement blocks"
+- this fixes "WARNING: space prohibited between function name and open
+  parenthesis '("
 
 Signed-off-by: Anil Belur <askb23@gmail.com>
 ---
- drivers/staging/lustre/lustre/ldlm/ldlm_lib.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/staging/lustre/lustre/ldlm/ldlm_lib.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_lib.c b/drivers/staging/lustre/lustre/ldlm/ldlm_lib.c
-index 8bb5915..5d69af5 100644
+index 5d69af5..d8ad808 100644
 --- a/drivers/staging/lustre/lustre/ldlm/ldlm_lib.c
 +++ b/drivers/staging/lustre/lustre/ldlm/ldlm_lib.c
-@@ -74,9 +74,8 @@ static int import_set_conn(struct obd_import *imp, struct obd_uuid *uuid,
+@@ -510,7 +510,7 @@ int client_connect_import(const struct lu_env *env,
  
- 	if (create) {
- 		OBD_ALLOC(imp_conn, sizeof(*imp_conn));
--		if (!imp_conn) {
-+		if (!imp_conn)
- 			GOTO(out_put, rc = -ENOMEM);
--		}
+ 	rc = ptlrpc_connect_import(imp);
+ 	if (rc != 0) {
+-		LASSERT (imp->imp_state == LUSTRE_IMP_DISCON);
++		LASSERT(imp->imp_state == LUSTRE_IMP_DISCON);
+ 		GOTO(out_ldlm, rc);
+ 	}
+ 	LASSERT(*exp != NULL && (*exp)->exp_connection);
+@@ -668,25 +668,25 @@ void target_send_reply(struct ptlrpc_request *req, int rc, int fail_id)
+ 	rs = req->rq_reply_state;
+ 	if (rs == NULL || !rs->rs_difficult) {
+ 		/* no notifiers */
+-		target_send_reply_msg (req, rc, fail_id);
++		target_send_reply_msg(req, rc, fail_id);
+ 		return;
  	}
  
- 	spin_lock(&imp->imp_lock);
-@@ -662,9 +661,8 @@ void target_send_reply(struct ptlrpc_request *req, int rc, int fail_id)
- 	struct ptlrpc_reply_state *rs;
- 	struct obd_export	 *exp;
+ 	/* must be an export if locks saved */
+-	LASSERT (req->rq_export != NULL);
++	LASSERT(req->rq_export != NULL);
+ 	/* req/reply consistent */
+ 	LASSERT(rs->rs_svcpt == svcpt);
  
--	if (req->rq_no_reply) {
-+	if (req->rq_no_reply)
- 		return;
--	}
+ 	/* "fresh" reply */
+-	LASSERT (!rs->rs_scheduled);
+-	LASSERT (!rs->rs_scheduled_ever);
+-	LASSERT (!rs->rs_handled);
+-	LASSERT (!rs->rs_on_net);
+-	LASSERT (rs->rs_export == NULL);
+-	LASSERT (list_empty(&rs->rs_obd_list));
+-	LASSERT (list_empty(&rs->rs_exp_list));
+-
+-	exp = class_export_get (req->rq_export);
++	LASSERT(!rs->rs_scheduled);
++	LASSERT(!rs->rs_scheduled_ever);
++	LASSERT(!rs->rs_handled);
++	LASSERT(!rs->rs_on_net);
++	LASSERT(rs->rs_export == NULL);
++	LASSERT(list_empty(&rs->rs_obd_list));
++	LASSERT(list_empty(&rs->rs_exp_list));
++
++	exp = class_export_get(req->rq_export);
  
- 	svcpt = req->rq_rqbd->rqbd_svcpt;
- 	rs = req->rq_reply_state;
+ 	/* disable reply scheduling while I'm setting up */
+ 	rs->rs_scheduled = 1;
 -- 
 1.9.0
 
