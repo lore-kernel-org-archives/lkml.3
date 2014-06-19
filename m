@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965768AbaFSVcr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 17:32:47 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34139 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964833AbaFSVcq (ORCPT
+	id S965813AbaFSVc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 17:32:58 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55645 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964833AbaFSVc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 17:32:46 -0400
-X-Sasl-enc: RG51fGoApXyx61UIqhvgGVlCiYmbRWjWjqXwn7/Rk3FS 1403213565
-Date: Thu, 19 Jun 2014 14:36:45 -0700
-From: GregKH <greg@kroah.com>
-To: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Scott Alfter <scott@alfter.us>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: revised driver: w1_ds2406
-Message-ID: <20140619213645.GA1139@kroah.com>
-References: <31a597fc9f165ccc4998451b0ae91fc6.squirrel@webmail.alfter.us>
- <6295551403198966@web5h.yandex.ru>
+	Thu, 19 Jun 2014 17:32:56 -0400
+Date: Thu, 19 Jun 2014 23:32:41 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Christoph Lameter <cl@gentwo.org>, Sasha Levin <sasha.levin@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: slub/debugobjects: lockup when freeing memory
+In-Reply-To: <20140619205307.GL4904@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.10.1406192331250.5170@nanos>
+References: <53A2F406.4010109@oracle.com> <alpine.DEB.2.11.1406191001090.2785@gentwo.org> <20140619165247.GA4904@linux.vnet.ibm.com> <alpine.DEB.2.10.1406192127100.5170@nanos> <20140619202928.GG4904@linux.vnet.ibm.com> <alpine.DEB.2.10.1406192230390.5170@nanos>
+ <20140619205307.GL4904@linux.vnet.ibm.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <6295551403198966@web5h.yandex.ru>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 09:29:26PM +0400, Evgeniy Polyakov wrote:
-> Hi Scott
-> 
-> I've added Greg to copy.
-> 
-> 18.06.2014, 00:42, "Scott Alfter" <scott@alfter.us>:
-> > Some preliminary work at making use of this driver led me to implement
-> > CRC-16 checks on read and write to deal with the occasional glitchiness of
-> > the 1-Wire bus.  The revised driver (attached) returns an I/O error if the
-> > CRC check fails.  When reading the chip's state, either you get a valid
-> > indication or you get an I/O error.  When changing its state, either the
-> > change is successful or an I/O error is returned.
-> >
-> > This patch supersedes the patch I had previously submitted.
-> >
-> > Signed-off-by: Scott Alfter <scott@alfter.us>
-> 
-> Greg, this patch looks good, please pull it into your tree.
-> If you already applied previous ds2406, let us know.
 
-I didn't, I'll take this one instead, thanks.
 
-greg k-h
+On Thu, 19 Jun 2014, Paul E. McKenney wrote:
+
+> On Thu, Jun 19, 2014 at 10:37:17PM +0200, Thomas Gleixner wrote:
+> > On Thu, 19 Jun 2014, Paul E. McKenney wrote:
+> > > On Thu, Jun 19, 2014 at 09:29:08PM +0200, Thomas Gleixner wrote:
+> > > > On Thu, 19 Jun 2014, Paul E. McKenney wrote:
+> > > > Well, no. Look at the callchain:
+> > > > 
+> > > > __call_rcu
+> > > >     debug_object_activate
+> > > >        rcuhead_fixup_activate
+> > > >           debug_object_init
+> > > >               kmem_cache_alloc
+> > > > 
+> > > > So call rcu activates the object, but the object has no reference in
+> > > > the debug objects code so the fixup code is called which inits the
+> > > > object and allocates a reference ....
+> > > 
+> > > OK, got it.  And you are right, call_rcu() has done this for a very
+> > > long time, so not sure what changed.  But it seems like the right
+> > > approach is to provide a debug-object-free call_rcu_alloc() for use
+> > > by the memory allocators.
+> > > 
+> > > Seem reasonable?  If so, please see the following patch.
+> > 
+> > Not really, you're torpedoing the whole purpose of debugobjects :)
+> > 
+> > So, why can't we just init the rcu head when the stuff is created?
+> 
+> That would allow me to keep my code unchanged, so I am in favor.  ;-)
+
+Almost unchanged. You need to provide a function to do so, i.e. make
+use of
+
+    debug_init_rcu_head()
+
+Thanks,
+
+	tglx
