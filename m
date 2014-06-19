@@ -1,92 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758010AbaFSQBl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:01:41 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:59084 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757568AbaFSQBj (ORCPT
+	id S1758207AbaFSQBw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:01:52 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42886 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758066AbaFSQBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:01:39 -0400
+	Thu, 19 Jun 2014 12:01:50 -0400
+Message-ID: <53A3096B.1040409@wwwdotorg.org>
+Date: Thu, 19 Jun 2014 10:01:47 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <53A2B9C3.1050906@gmail.com>
-References: <1403167145-5267-1-git-send-email-amit.daniel@samsung.com>
-	<53A2B9C3.1050906@gmail.com>
-Date: Thu, 19 Jun 2014 09:01:38 -0700
-X-Google-Sender-Auth: ORBCApb51NNA8tGWkIbFp0nA84c
-Message-ID: <CAD=FV=VmC-p4_R1GV3U3bg1JojTzNYKyFTa8o8QMJ=3m=WuRYA@mail.gmail.com>
-Subject: Re: [PATCH v2] clocksource: exynos-mct: Register the timer for stable udelay
-From: Doug Anderson <dianders@chromium.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Thierry Reding <thierry.reding@gmail.com>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        "tj@kernel.org" <tj@kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Riley <davidriley@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: [PATCH 6/9] ARM: tegra: Export tegra_powergate_power_on
+References: <1401881559-18469-1-git-send-email-mperttunen@nvidia.com> <1401881559-18469-7-git-send-email-mperttunen@nvidia.com> <539F691E.5030204@wwwdotorg.org> <20140617121313.GE18816@ulmo> <20140617140146.GH3407@tbergstrom-lnx.Nvidia.com> <20140617215119.GC24743@mithrandir> <20140618121806.GJ3407@tbergstrom-lnx.Nvidia.com> <53A1B252.1030204@wwwdotorg.org> <20140619080234.GK3407@tbergstrom-lnx.Nvidia.com>
+In-Reply-To: <20140619080234.GK3407@tbergstrom-lnx.Nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 06/19/2014 02:02 AM, Peter De Schrijver wrote:
+> On Wed, Jun 18, 2014 at 05:37:54PM +0200, Stephen Warren wrote:
+>> On 06/18/2014 06:18 AM, Peter De Schrijver wrote:
+>>> On Tue, Jun 17, 2014 at 11:51:20PM +0200, Thierry Reding wrote:
+>>>> * PGP Signed by an unknown key
+>>>>
+>>>> On Tue, Jun 17, 2014 at 05:01:46PM +0300, Peter De Schrijver wrote:
+>>>>> On Tue, Jun 17, 2014 at 02:13:15PM +0200, Thierry Reding wrote:
+>>>>>>> Old Signed by an unknown key
+>>>>>>
+>>>>>> On Mon, Jun 16, 2014 at 04:01:02PM -0600, Stephen Warren wrote:
+>>>>>>> On 06/04/2014 05:32 AM, Mikko Perttunen wrote:
+>>>>>>>> This symbol needs to be exported to power on rails without using
+>>>>>>>> tegra_powergate_sequence_power_up. tegra_powergate_sequence_power_up
+>>>>>>>> cannot be used in situations where the driver wants to handle clocking
+>>>>>>>> by itself.
+>>>>>>>
+>>>>>>> Thierry, are you OK with this change?
+>>>>>>
+>>>>>> I would've preferred tegra_powergate_sequence_power_up() to be used
+>>>>>
+>>>>> I don't think the current tegra_powergate_sequence_power_up() API is very well
+>>>>> defined though. I don't think the clocks and resets required by the sequence
+>>>>> should be provided by the driver. For one, there can be several clocks and
+>>>>> resets that need to be controlled for a single domain.
+>>>>
+>>>> Do you have any suggestions for what the API should look like? Even if
+>>>> we plan to move to some different API, I think there's some advantage in
+>>>> using it consistently if for no other reason than to make it easier to
+>>>> replace occurrences later on.
+>>>>
+>>>
+>>> I think the API should only have the domain ID as input so:
+>>>
+>>> int tegra_powerdomain_on(int id) 
+>>>
+>>> /*
+>>>  * Prerequisites: domain is off
+>>>  * Result: domain is on, clocks of the modules in the domain are off, modules are in reset
+>>>  */
+>>>
+>>> int tegra_powerdomain_off(int id)
+>>>
+>>> /*
+>>>  * Prerequisites: all clocks of the modules in the domain are off
+>>>  * result: domain is off
+>>>  */
+>>
+>> That doesn't make sense; the PMC doesn't have access to the clock and
+>> reset IDs - that's why the API requires them to be passed in.
+>>
+> 
+> We should make driver look them up by name then. It doesn't make sense to
+> move this knowledge to the drivers as there can be several modules in 1
+> powerdomain. So every driver would then need to have access to all clock
+> and reset IDs of the modules of the domain?
 
-On Thu, Jun 19, 2014 at 3:21 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
->> +static struct delay_timer exynos4_delay_timer;
->> +
->> +static unsigned long exynos4_read_current_timer(void)
+Having the drivers know the clocks, resets, and power domains that
+affect their HW module seems perfectly reasonable.
 
-Note: I think this should return a cycles_t, not an unsigned long.
-They're the same (right now), but probably shouldn't be (see below).
+Do we actually have any case where unrelated modules are in the same
+power domain /and/ there's some need for those drivers to manipulate the
+power domain?
 
-
->> +{
->> +#ifdef ARM
->> +     return __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
->> +#else /* ARM64, etc */
->> +     return exynos4_frc_read(&mct_frc);
->> +#endif
->> +}
->> +
->
-> No need for anything like this. Even if running on ARM64, the delay
-> timer code should be able to cope with different timer widths. For
-> delays, 32 bits are enough, so just always read the lower part.
-
-I agree that the timer code should cope but it doesn't appear to.  I see:
-
-  cycles_t start = get_cycles();
-  while ((get_cycles() - start) < cycles)
-    cpu_relax();
-
-Right now cycles_t is defined as "unsigned long".  If that's 64-bits
-on ARM64 then this function will have problems with wraparound.
-
-My personal vote would be to submit a patch to change "cycles_t" to
-always be 32-bits.  Given that 32-bits was fine for udelay() for ARM
-that seems sane and simple.  If someone later comes up with a super
-compelling reason why we need 64-bit timers for udelay (really??) then
-they can later add all the complexity needed.
-
-Amit: can you code up such a patch and add it to the series?  I know
-it changes code that touches all ARM devices but I still think it's
-the right thing to do and actually only really changes behavior on
-ARM64.
-
-
-> Also use of raw accessors in drivers is discouraged - please use
-> readl_relaxed().
-
-It doesn't seem like that should happen in the same patch.  Perhaps
-Amit can do a cleanup patch first that changes all instances of
-__raw_readl / __raw_writel in this file, then submit his patch atop
-that.
-
-
-> Btw. I don't even see support for this on ARM64 in mainline, where arch
-> timer is always used for delays and AFAIK this is a platform requirement.
-
-Yeah, I'd vote for not using MCT on ARM64, but it I suppose it doesn't
-hurt to keep it working.
+BTW, any objections here should have been raised when the initial API
+design for powergating was created. Now that we have the current API,
+which in turn has driven the DT bindings for at least some HW modules,
+we're stuck with it due to DT ABIness. Well, perhaps we can introduce
+something new, but we'll always have to support the old way, so there's
+little point.
