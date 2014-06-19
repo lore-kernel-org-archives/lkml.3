@@ -1,111 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757412AbaFSGhE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 02:37:04 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:52678 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754272AbaFSGhB (ORCPT
+	id S1757444AbaFSGhj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 02:37:39 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:50707 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755417AbaFSGhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 02:37:01 -0400
-Message-ID: <53A28505.90406@hitachi.com>
-Date: Thu, 19 Jun 2014 15:36:53 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 19 Jun 2014 02:37:36 -0400
+Date: Thu, 19 Jun 2014 08:37:27 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        linux-arch@vger.kernel.org, thellstrom@vmware.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linaro-mm-sig@lists.linaro.org, robdclark@gmail.com,
+        thierry.reding@gmail.com, ccross@google.com, daniel@ffwll.ch,
+        sumit.semwal@linaro.org, linux-media@vger.kernel.org
+Subject: Re: [REPOST PATCH 4/8] android: convert sync to fence api, v5
+Message-ID: <20140619063727.GL5821@phenom.ffwll.local>
+Mail-Followup-To: Greg KH <gregkh@linuxfoundation.org>,
+	Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+	linux-arch@vger.kernel.org, thellstrom@vmware.com,
+	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+	linaro-mm-sig@lists.linaro.org, robdclark@gmail.com,
+	thierry.reding@gmail.com, ccross@google.com,
+	sumit.semwal@linaro.org, linux-media@vger.kernel.org
+References: <20140618102957.15728.43525.stgit@patser>
+ <20140618103711.15728.97842.stgit@patser>
+ <20140619011556.GE10921@kroah.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Tom Zanussi <tom.zanussi@intel.com>
-Subject: Re: Re: [PATCH v2 0/5] Add glob pattern matching support on trigger
- and kprobe-event
-References: <20130522021903.4299.85911.stgit@mhiramat-M0-7522> <20140618212707.3b6e3172@gandalf.local.home>
-In-Reply-To: <20140618212707.3b6e3172@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140619011556.GE10921@kroah.com>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/06/19 10:27), Steven Rostedt wrote:
+On Wed, Jun 18, 2014 at 06:15:56PM -0700, Greg KH wrote:
+> On Wed, Jun 18, 2014 at 12:37:11PM +0200, Maarten Lankhorst wrote:
+> > Just to show it's easy.
+> > 
+> > Android syncpoints can be mapped to a timeline. This removes the need
+> > to maintain a separate api for synchronization. I've left the android
+> > trace events in place, but the core fence events should already be
+> > sufficient for debugging.
+> > 
+> > v2:
+> > - Call fence_remove_callback in sync_fence_free if not all fences have fired.
+> > v3:
+> > - Merge Colin Cross' bugfixes, and the android fence merge optimization.
+> > v4:
+> > - Merge with the upstream fixes.
+> > v5:
+> > - Fix small style issues pointed out by Thomas Hellstrom.
+> > 
+> > Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+> > Acked-by: John Stultz <john.stultz@linaro.org>
+> > ---
+> >  drivers/staging/android/Kconfig      |    1 
+> >  drivers/staging/android/Makefile     |    2 
+> >  drivers/staging/android/sw_sync.c    |    6 
+> >  drivers/staging/android/sync.c       |  913 +++++++++++-----------------------
+> >  drivers/staging/android/sync.h       |   79 ++-
+> >  drivers/staging/android/sync_debug.c |  247 +++++++++
+> >  drivers/staging/android/trace/sync.h |   12 
+> >  7 files changed, 609 insertions(+), 651 deletions(-)
+> >  create mode 100644 drivers/staging/android/sync_debug.c
 > 
-> A blast from the past! (I'm cleaning out my inbox).
-> 
-> On Wed, 22 May 2013 11:19:03 +0900
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> 
->> Hi,
->>
->> Here is a series of ftrace/perf updates to support multiple
->> event select operation by glob-based wild cards.
->>
->> I've ported strglobmatch from perf-tools (with recursive call
->> limitation) for this use. It is easier to use (just replacing
->> strcmp) but slower than current parser-based matching.
->> I don't care about the speed of matching because the all of
->> the matching which I've introduced in this series are done
->> on slow-path.
->>
->> Changes in v2:
->>  - Update the comment of patch [2/5] for explaining more
->>    detail of the backgroud.
->>
->> ---
->>
->> Masami Hiramatsu (5):
->>       [BUGFIX] tracing: Returns -EBUSY when event_enable_func fails to get module
-> 
-> This is applied.
-> 
-> 
->>       perf: Swap the parameters of strglobmatch
->>       lib/string: Add a generic wildcard string matching function
->>       tracing/kprobes: Allow user to delete kprobe events by wild cards
->>       tracing: Support enable/disable multiple events trigger by wild cards
-> 
-> These don't look to be applied. Looks like this patch series was lost.
-> 
-> Masami, are these still relevant?
+> With these changes, can we pull the android sync logic out of
+> drivers/staging/ now?
 
-These are separated enhancement. Feel free to apply the 1st bugfix patch.
-I'll update the series :)
+Afaik the google guys never really looked at this and acked it. So I'm not
+sure whether they'll follow along. The other issue I have as the
+maintainer of gfx driver is that I don't want to implement support for two
+different sync object primitives (once for dma-buf and once for android
+syncpts), and my impression thus far has been that even with this we're
+not there.
 
-Thank you,
+I'm trying to get our own android guys to upstream their i915 syncpts
+support, but thus far I haven't managed to convince them to throw people's
+time at this.
 
-> 
-> -- Steve
-> 
-> 
->>
->>
->>  Documentation/trace/ftrace.txt      |   12 ++-
->>  Documentation/trace/kprobetrace.txt |   19 +++--
->>  include/linux/string.h              |    8 ++
->>  kernel/trace/trace_events.c         |  121 +++++++++++++++++++++++++----------
->>  kernel/trace/trace_kprobe.c         |   97 ++++++++++++++++++++--------
->>  lib/string.c                        |   91 ++++++++++++++++++++++++++
->>  tools/perf/util/parse-events.c      |   14 ++--
->>  tools/perf/util/probe-event.c       |    2 -
->>  tools/perf/util/strfilter.c         |    2 -
->>  tools/perf/util/string.c            |   16 ++---
->>  tools/perf/util/util.h              |    4 +
->>  11 files changed, 295 insertions(+), 91 deletions(-)
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
+It looks like a step into the right direction, but until I have the proof
+in the form of i915 patches that I won't have to support 2 gfx fencing
+frameworks I'm opposed to de-staging android syncpts. Ofc someone else
+could do that too, but besides i915 I don't see a full-fledged (modeset
+side only kinda doesn't count) upstream gfx driver shipping on android.
+-Daniel
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
