@@ -1,74 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756599AbaFRXqS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 19:46:18 -0400
-Received: from exprod5og116.obsmtp.com ([64.18.0.147]:33519 "HELO
-	exprod5og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756515AbaFRXqP (ORCPT
+	id S1756626AbaFRXrT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 19:47:19 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:54381 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752276AbaFRXrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 19:46:15 -0400
+	Wed, 18 Jun 2014 19:47:18 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: David Rientjes <rientjes@google.com>
+Cc: Christoph Jaeger <christophjaeger@linux.com>, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI: use kstrto*() instead of simple_strto*()
+Date: Thu, 19 Jun 2014 02:04:53 +0200
+Message-ID: <2154416.4nBnIoV6r0@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <alpine.DEB.2.02.1406161724020.21018@chino.kir.corp.google.com>
+References: <1402688998-20142-1-git-send-email-christophjaeger@linux.com> <alpine.DEB.2.02.1406161724020.21018@chino.kir.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <20140617.132024.1213369771856463527.davem@davemloft.net>
-References: <1402964326-11147-5-git-send-email-isubramanian@apm.com>
-	<20140616.214247.1154200670003936158.davem@davemloft.net>
-	<CAKh23F=2undAW=nWibOreAM8DJiQKpLx=OboCX=fNZE+OU=AbA@mail.gmail.com>
-	<20140617.132024.1213369771856463527.davem@davemloft.net>
-Date: Wed, 18 Jun 2014 16:46:11 -0700
-Message-ID: <CAKh23FmnZqZkDaGYPfnKRrvCYQ4_6W_RRKbqEbc4nbD6jqQaLA@mail.gmail.com>
-Subject: Re: [PATCH v6 4/4] drivers: net: Add APM X-Gene SoC ethernet driver support.
-From: Iyappan Subramanian <isubramanian@apm.com>
-To: David Miller <davem@davemloft.net>
-Cc: netdev <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "jcm@redhat.com" <jcm@redhat.com>, patches <patches@apm.com>,
-        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 1:20 PM, David Miller <davem@davemloft.net> wrote:
-> From: Iyappan Subramanian <isubramanian@apm.com>
-> Date: Tue, 17 Jun 2014 12:21:08 -0700
->
->> On Mon, Jun 16, 2014 at 9:42 PM, David Miller <davem@davemloft.net> wrote:
->>> From: Iyappan Subramanian <isubramanian@apm.com>
->>> Date: Mon, 16 Jun 2014 17:18:46 -0700
->>>
->>>> +static netdev_tx_t xgene_enet_start_xmit(struct sk_buff *skb,
->>>> +                                      struct net_device *ndev)
->>>> +{
->>>> +     struct xgene_enet_pdata *pdata = netdev_priv(ndev);
->>>> +     struct xgene_enet_desc_ring *tx_ring = pdata->tx_ring;
->>>> +     struct xgene_enet_desc_ring *cp_ring = tx_ring->cp_ring;
->>>> +     u32 tx_level, cq_level;
->>>> +
->>>> +     tx_level = xgene_enet_ring_len(tx_ring);
->>>> +     cq_level = xgene_enet_ring_len(cp_ring);
->>>> +     if (unlikely(tx_level > pdata->tx_qcnt_hi ||
->>>> +                  cq_level > pdata->cp_qcnt_hi)) {
->>>> +             netif_stop_queue(ndev);
->>>> +             return NETDEV_TX_BUSY;
->>>> +     }
->>>> +
->>>> +     if (xgene_enet_setup_tx_desc(tx_ring, skb))
->>>> +             return NETDEV_TX_OK;
->>>
->>> If you return NETDEV_TX_OK, it is your responsibility to deal with the
->>> SKB, because you own it.
->>>
->>> In particular, you have to free the packet.
->>
->> skb freeing happens in xgene_enet_tx_completion().
->
-> You're not queueing up the packet when DMA mapping the packet fails,
-> which is the only condition that causes xgene_enet_setup_tx_desc() to
-> return an error, so xgene_enet_tx_completion() will not be called.
->
-> Can you really not see this?
+On Monday, June 16, 2014 05:24:12 PM David Rientjes wrote:
+> On Fri, 13 Jun 2014, Christoph Jaeger wrote:
+> 
+> > simple_strto*() are obsolete; use kstrto*() instead. Add proper error
+> > checking.
+> > 
+> > Signed-off-by: Christoph Jaeger <christophjaeger@linux.com>
+> 
+> Acked-by: David Rientjes <rientjes@google.com>
 
-I am sorry I missed that.  I will fix this.
+Applied, thanks!
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
