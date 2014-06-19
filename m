@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966228AbaFSXJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 19:09:28 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:59038 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965473AbaFSXJ1 (ORCPT
+	id S965985AbaFSXT3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 19:19:29 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:36268 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S965467AbaFSXT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 19:09:27 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqVmAOFso1N5LC2vPGdsb2JhbABZgw2DSIUIonYBAQEBAQEGmSkBgQwXBAEBAQE4NYQDAQEFOhwjEAgDDgoJJQ8FJQMHGhOIQc0vFxaFTIkUB4RDBJpCizGLfCs
-Date: Fri, 20 Jun 2014 09:09:24 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Philippe De Muyter <phdm@macqel.be>, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] init/do_mounts.c: treat EROFS like EACCES
-Message-ID: <20140619230924.GO4453@dastard>
-References: <1403107964-1082-1-git-send-email-phdm@macqel.be>
- <20140619141950.18b9026d7d06694291eea311@linux-foundation.org>
+	Thu, 19 Jun 2014 19:19:28 -0400
+Date: Thu, 19 Jun 2014 19:19:23 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>
+Subject: Re: [RFC][PATCH 0/3] x86/nmi: Print all cpu stacks from NMI safely
+Message-ID: <20140619191923.1365850a@gandalf.local.home>
+In-Reply-To: <alpine.LNX.2.00.1406200100520.15014@pobox.suse.cz>
+References: <20140619213329.478113470@goodmis.org>
+	<alpine.LNX.2.00.1406192349400.15014@pobox.suse.cz>
+	<20140619185810.4137e14b@gandalf.local.home>
+	<alpine.LNX.2.00.1406200100520.15014@pobox.suse.cz>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140619141950.18b9026d7d06694291eea311@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 02:19:50PM -0700, Andrew Morton wrote:
-> On Wed, 18 Jun 2014 18:12:44 +0200 Philippe De Muyter <phdm@macqel.be> wrote:
+On Fri, 20 Jun 2014 01:03:28 +0200 (CEST)
+Jiri Kosina <jkosina@suse.cz> wrote:
+
+> On Thu, 19 Jun 2014, Steven Rostedt wrote:
 > 
-> > some combinations of filesystem and block device (at least vfat on mmc)
-> > yield -EROFS instead of -EACCES when the device is read-only.  Retry
-> > mounting with MS_RDONLY set, just like for the EACCES case, instead of
-> > failing directly.
+> > > The idea basically is to *switch* what arch_trigger_all_cpu_backtrace() 
+> > > and arch_trigger_all_cpu_backtrace_handler() are doing; i.e. use the NMI 
+> > > as a way to stop all the CPUs (one by one), and let the CPU that is 
+> > > sending the NMIs around to actually walk and dump the stacks of the CPUs 
+> > > receiving the NMI IPI.
 > > 
-> > ...
-> >
-> > --- a/init/do_mounts.c
-> > +++ b/init/do_mounts.c
-> > @@ -394,6 +394,7 @@ retry:
-> >  			case 0:
-> >  				goto out;
-> >  			case -EACCES:
-> > +			case -EROFS:
-> >  				flags |= MS_RDONLY;
-> >  				goto retry;
-> >  			case -EINVAL:
+> > And this is cleaner? Stopping a CPU via NMI and then what happens if
+> > something else goes wrong and that CPU never starts back up? This
+> > sounds like something that can cause more problems than it was
+> > reporting on.
 > 
-> hm, what's going on here.  I'd have thought it to be very logical that
-> file_system_type.mount() would return EROFS if the device is read-only!
-> But I'm suspecting that there is some convention that the fs is
-> supposed to return EACCES in this case.  So *perhaps* it is vfat-on-mmc
-> which needs fixing.  Dunno.
+> It's going to get NMI in exactly the same situations it does with the 
+> current arch_trigger_all_cpu_backtrace(), the only difference being that 
+> it doesn't try to invoke printk() from inside NMI. The IPI-NMI is used 
+> solely as a point of synchronization for the stack dumping.
+
+Well, all CPUs are going to be spinning until the main CPU prints
+everything out. That's not quite the same thing as what it use to do.
+
 > 
-> Al, are you able to shed light?
+> > Then you also need to print out the data while the NMIs still spin.
+> 
+> Exactly, that's actually the whole point.
 
-from the mount(2) man page:
+But this stops everything with a big hammer, until everything gets
+printed out, not just the one CPU that happens to be stuck.
 
-EACCES	A  component  of  a  path  was not searchable.  (See also
-	path_resolution(7).)  Or, mounting a read-only filesystem
-	was attempted without giving the MS_RDONLY flag.  Or, the
-	block device source is located on a filesystem mounted with
-	the MS_NODEV option.
+-- Steve
 
-So, when the device is read-only, the error should EACCES, not
-EROFS. Would seem to me that vfat-on-mmc needs fixing...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
