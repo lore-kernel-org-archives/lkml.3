@@ -1,104 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934258AbaFSSPV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 14:15:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50416 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933173AbaFSSPS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 14:15:18 -0400
-Date: Thu, 19 Jun 2014 11:19:18 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Rob Clark <robdclark@gmail.com>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-arch@vger.kernel.org, Thomas Hellstrom <thellstrom@vmware.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Colin Cross <ccross@google.com>, Daniel Vetter <daniel@ffwll.ch>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Subject: Re: [REPOST PATCH 1/8] fence: dma-buf cross-device synchronization
- (v17)
-Message-ID: <20140619181918.GA24155@kroah.com>
-References: <20140618102957.15728.43525.stgit@patser>
- <20140618103653.15728.4942.stgit@patser>
- <20140619011327.GC10921@kroah.com>
- <CAF6AEGv4Ms+zsrEtpA10bGq04LnRjzVb925co49eVxh4ugkd=A@mail.gmail.com>
- <20140619170059.GA1224@kroah.com>
- <CAF6AEGuXKw1w=outX+QgFE2XZxV8c6pyhORL+mRp4uZR8Jnq7g@mail.gmail.com>
+	id S934263AbaFSSRF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 14:17:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33799 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933173AbaFSSRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 14:17:03 -0400
+Date: Thu, 19 Jun 2014 20:15:43 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Vladimir Davydov <vdavydov@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>
+Cc: akpm@linux-foundation.org, rientjes@google.com, cl@linux.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] fork/exec: cleanup mm initialization
+Message-ID: <20140619181543.GA32548@redhat.com>
+References: <fa98629155872c1b97ba4dcd00d509a1e467c1c3.1403168346.git.vdavydov@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAF6AEGuXKw1w=outX+QgFE2XZxV8c6pyhORL+mRp4uZR8Jnq7g@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <fa98629155872c1b97ba4dcd00d509a1e467c1c3.1403168346.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 01:45:30PM -0400, Rob Clark wrote:
-> On Thu, Jun 19, 2014 at 1:00 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Thu, Jun 19, 2014 at 10:00:18AM -0400, Rob Clark wrote:
-> >> On Wed, Jun 18, 2014 at 9:13 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> > On Wed, Jun 18, 2014 at 12:36:54PM +0200, Maarten Lankhorst wrote:
-> >> >> +#define CREATE_TRACE_POINTS
-> >> >> +#include <trace/events/fence.h>
-> >> >> +
-> >> >> +EXPORT_TRACEPOINT_SYMBOL(fence_annotate_wait_on);
-> >> >> +EXPORT_TRACEPOINT_SYMBOL(fence_emit);
-> >> >
-> >> > Are you really willing to live with these as tracepoints for forever?
-> >> > What is the use of them in debugging?  Was it just for debugging the
-> >> > fence code, or for something else?
-> >> >
-> >> >> +/**
-> >> >> + * fence_context_alloc - allocate an array of fence contexts
-> >> >> + * @num:     [in]    amount of contexts to allocate
-> >> >> + *
-> >> >> + * This function will return the first index of the number of fences allocated.
-> >> >> + * The fence context is used for setting fence->context to a unique number.
-> >> >> + */
-> >> >> +unsigned fence_context_alloc(unsigned num)
-> >> >> +{
-> >> >> +     BUG_ON(!num);
-> >> >> +     return atomic_add_return(num, &fence_context_counter) - num;
-> >> >> +}
-> >> >> +EXPORT_SYMBOL(fence_context_alloc);
-> >> >
-> >> > EXPORT_SYMBOL_GPL()?  Same goes for all of the exports in here.
-> >> > Traditionally all of the driver core exports have been with this
-> >> > marking, any objection to making that change here as well?
-> >>
-> >> tbh, I prefer EXPORT_SYMBOL()..  well, I'd prefer even more if there
-> >> wasn't even a need for EXPORT_SYMBOL_GPL(), but sadly it is a fact of
-> >> life.  We already went through this debate once with dma-buf.  We
-> >> aren't going to change $evil_vendor's mind about non-gpl modules.  The
-> >> only result will be a more flugly convoluted solution (ie. use syncpt
-> >> EXPORT_SYMBOL() on top of fence EXPORT_SYMBOL_GPL()) just as a
-> >> workaround, with the result that no-one benefits.
-> >
-> > It has been proven that using _GPL() exports have caused companies to
-> > release their code "properly" over the years, so as these really are
-> > Linux-only apis, please change them to be marked this way, it helps
-> > everyone out in the end.
+On 06/19, Vladimir Davydov wrote:
+>
+> mm initialization on fork/exec is spread all over the place, which makes
+> the code look inconsistent.
+>
+> We have mm_init(), which is supposed to init/nullify mm's internals, but
+> it doesn't init all the fields it should:
+>
+>  - on fork ->mmap,mm_rb,vmacache_seqnum,map_count,mm_cpumask,locked_vm
+>    are zeroed in dup_mmap();
+>
+>  - on fork ->pmd_huge_pte is zeroed in dup_mm(), immediately before
+>    calling mm_init();
+>
+>  - ->cpu_vm_mask_var ptr is initialized by mm_init_cpumask(), which is
+>    called before mm_init() on both fork and exec;
+>
+>  - ->context is initialized by init_new_context(), which is called after
+>    mm_init() on both fork and exec;
+>
+> Let's consolidate all the initializations in mm_init() to make the code
+> look cleaner.
+
+Yes, agreed. Afaics, the patch is fine (2 and 3 too).
+
+
+This is off-topic, but why init_new_context() copies ldt even on exec?
+
+
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> ---
+>  fs/exec.c                |    4 ----
+>  include/linux/mm_types.h |    1 +
+>  kernel/fork.c            |   47 ++++++++++++++++++++--------------------------
+>  3 files changed, 21 insertions(+), 31 deletions(-)
 > 
-> Well, maybe that is the true in some cases.  But it certainly didn't
-> work out that way for dma-buf.  And I think the end result is worse.
+> diff --git a/fs/exec.c b/fs/exec.c
+> index a3d33fe592d6..2ef2751f5a8d 100644
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -368,10 +368,6 @@ static int bprm_mm_init(struct linux_binprm *bprm)
+>  	if (!mm)
+>  		goto err;
+>  
+> -	err = init_new_context(current, mm);
+> -	if (err)
+> -		goto err;
+> -
+>  	err = __bprm_mm_init(bprm);
+>  	if (err)
+>  		goto err;
+> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> index 96c5750e3110..21bff4be4379 100644
+> --- a/include/linux/mm_types.h
+> +++ b/include/linux/mm_types.h
+> @@ -461,6 +461,7 @@ static inline void mm_init_cpumask(struct mm_struct *mm)
+>  #ifdef CONFIG_CPUMASK_OFFSTACK
+>  	mm->cpu_vm_mask_var = &mm->cpumask_allocation;
+>  #endif
+> +	cpumask_clear(mm->cpu_vm_mask_var);
+>  }
+>  
+>  /* Future-safe accessor for struct mm_struct's cpu_vm_mask. */
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index d2799d1fc952..01f0d0c56cb9 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -365,12 +365,6 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
+>  	 */
+>  	down_write_nested(&mm->mmap_sem, SINGLE_DEPTH_NESTING);
+>  
+> -	mm->locked_vm = 0;
+> -	mm->mmap = NULL;
+> -	mm->vmacache_seqnum = 0;
+> -	mm->map_count = 0;
+> -	cpumask_clear(mm_cpumask(mm));
+> -	mm->mm_rb = RB_ROOT;
+>  	rb_link = &mm->mm_rb.rb_node;
+>  	rb_parent = NULL;
+>  	pprev = &mm->mmap;
+> @@ -529,17 +523,27 @@ static void mm_init_aio(struct mm_struct *mm)
+>  
+>  static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
+>  {
+> +	mm->mmap = NULL;
+> +	mm->mm_rb = RB_ROOT;
+> +	mm->vmacache_seqnum = 0;
+>  	atomic_set(&mm->mm_users, 1);
+>  	atomic_set(&mm->mm_count, 1);
+>  	init_rwsem(&mm->mmap_sem);
+>  	INIT_LIST_HEAD(&mm->mmlist);
+>  	mm->core_state = NULL;
+>  	atomic_long_set(&mm->nr_ptes, 0);
+> +	mm->map_count = 0;
+> +	mm->locked_vm = 0;
+>  	memset(&mm->rss_stat, 0, sizeof(mm->rss_stat));
+>  	spin_lock_init(&mm->page_table_lock);
+> +	mm_init_cpumask(mm);
+>  	mm_init_aio(mm);
+>  	mm_init_owner(mm, p);
+> +	mmu_notifier_mm_init(mm);
+>  	clear_tlb_flush_pending(mm);
+> +#if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
+> +	mm->pmd_huge_pte = NULL;
+> +#endif
+>  
+>  	if (current->mm) {
+>  		mm->flags = current->mm->flags & MMF_INIT_MASK;
+> @@ -549,11 +553,17 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
+>  		mm->def_flags = 0;
+>  	}
+>  
+> -	if (likely(!mm_alloc_pgd(mm))) {
+> -		mmu_notifier_mm_init(mm);
+> -		return mm;
+> -	}
+> +	if (mm_alloc_pgd(mm))
+> +		goto fail_nopgd;
+> +
+> +	if (init_new_context(p, mm))
+> +		goto fail_nocontext;
+>  
+> +	return mm;
+> +
+> +fail_nocontext:
+> +	mm_free_pgd(mm);
+> +fail_nopgd:
+>  	free_mm(mm);
+>  	return NULL;
+>  }
+> @@ -587,7 +597,6 @@ struct mm_struct *mm_alloc(void)
+>  		return NULL;
+>  
+>  	memset(mm, 0, sizeof(*mm));
+> -	mm_init_cpumask(mm);
+>  	return mm_init(mm, current);
+>  }
+>  
+> @@ -819,17 +828,10 @@ static struct mm_struct *dup_mm(struct task_struct *tsk)
+>  		goto fail_nomem;
+>  
+>  	memcpy(mm, oldmm, sizeof(*mm));
+> -	mm_init_cpumask(mm);
+>  
+> -#if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
+> -	mm->pmd_huge_pte = NULL;
+> -#endif
+>  	if (!mm_init(mm, tsk))
+>  		goto fail_nomem;
+>  
+> -	if (init_new_context(tsk, mm))
+> -		goto fail_nocontext;
+> -
+>  	dup_mm_exe_file(oldmm, mm);
+>  
+>  	err = dup_mmap(mm, oldmm);
+> @@ -851,15 +853,6 @@ free_pt:
+>  
+>  fail_nomem:
+>  	return NULL;
+> -
+> -fail_nocontext:
+> -	/*
+> -	 * If init_new_context() failed, we cannot use mmput() to free the mm
+> -	 * because it calls destroy_context()
+> -	 */
+> -	mm_free_pgd(mm);
+> -	free_mm(mm);
+> -	return NULL;
+>  }
+>  
+>  static int copy_mm(unsigned long clone_flags, struct task_struct *tsk)
+> -- 
+> 1.7.10.4
 > 
-> I don't really like coming down on the side of EXPORT_SYMBOL() instead
-> of EXPORT_SYMBOL_GPL(), but if we do use EXPORT_SYMBOL_GPL() then the
-> result will only be creative workarounds using the _GPL symbols
-> indirectly by whatever is available via EXPORT_SYMBOL().  I don't
-> really see how that will be better.
 
-You are saying that you _know_ companies will violate our license, so
-you should just "give up"?  And how do you know people aren't working on
-preventing those "indirect" usages as well?  :)
-
-Sorry, I'm not going to give up here, again, it has proven to work in
-the past in changing the ways of _very_ large companies, why stop now?
-
-thanks,
-
-greg k-h
