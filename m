@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757384AbaFSOHE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 10:07:04 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:34561 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027AbaFSOHC (ORCPT
+	id S1757406AbaFSOID (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 10:08:03 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60141 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756868AbaFSOIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 10:07:02 -0400
-Date: Thu, 19 Jun 2014 15:06:59 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Kefeng Wang <wangkefeng.wang@huawei.com>
-Cc: Matt Fleming <matt.fleming@intel.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Subject: Re: [PATCH] efi: fix build warning about of_get_flat_dt_prop
-Message-ID: <20140619140659.GS24049@console-pimps.org>
-References: <1403180552-9272-1-git-send-email-wangkefeng.wang@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403180552-9272-1-git-send-email-wangkefeng.wang@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Jun 2014 10:08:01 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: mvebu: Fix missing binding documentation for Armada 38x
+Date: Thu, 19 Jun 2014 16:07:51 +0200
+Message-Id: <1403186871-28204-1-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Jun, at 08:22:32PM, Kefeng Wang wrote:
-> commit 9d0c4dfed(of/fdt: update of_get_flat_dt_prop in prep for libfdt)
-> change the of_get_flat_dt_prop, so update related variable to fix build
-> warning. Btw, remove unused variable 'name'.
-> 
-> Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
-> ---
->  drivers/firmware/efi/efi.c |    5 ++---
->  drivers/firmware/efi/fdt.c |    2 +-
->  2 files changed, 3 insertions(+), 4 deletions(-)
+For the Armada 380 and Armada 385 SoCs, the common bindings for those
+2 SoCs, was forgotten. This patch add the documentation for the
+marvell,aramda38x property.
 
-Thanks for this, but I've already queued up a fix from Catalin that
-addresses these issues,
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+---
+Hi,
 
-  http://git.kernel.org/cgit/linux/kernel/git/mfleming/efi.git/commit/?h=urgent
+This fix should be merged in 3.16. For 3.15 I am not sure as it is not
+a regression.
 
-I've been pretty slack in getting this fix sent upstream, but I'll do
-that asap.
+Thanks,
+Gregory
 
+ Documentation/devicetree/bindings/arm/armada-38x.txt | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/arm/armada-38x.txt b/Documentation/devicetree/bindings/arm/armada-38x.txt
+index 11f2330a6554..b68bcb80d2de 100644
+--- a/Documentation/devicetree/bindings/arm/armada-38x.txt
++++ b/Documentation/devicetree/bindings/arm/armada-38x.txt
+@@ -6,5 +6,9 @@ following property:
+ 
+ Required root node property:
+ 
++compatible: must contain "marvell,armada38x"
++
++Required root node property:
++
+  - compatible: must contain either "marvell,armada380" or
+    "marvell,armada385" depending on the variant of the SoC being used.
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.8.1.2
+
