@@ -1,62 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528AbaFSEwa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 00:52:30 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:63016 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745AbaFSEw3 (ORCPT
+	id S1757247AbaFSEwx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 00:52:53 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:42572 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756959AbaFSEwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 00:52:29 -0400
-Message-ID: <1403153545.1225.8.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [bisected] pre-3.16 regression on open() scalability
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>, Christoph Lameter <cl@linux.com>
-Date: Wed, 18 Jun 2014 21:52:25 -0700
-In-Reply-To: <20140619033816.GQ8178@tassilo.jf.intel.com>
-References: <20140613224519.GV4581@linux.vnet.ibm.com>
-	 <53A0CAE5.9000702@intel.com> <20140618001836.GV4669@linux.vnet.ibm.com>
-	 <53A132D4.60408@intel.com> <20140618125831.GB4669@linux.vnet.ibm.com>
-	 <53A1CE19.7040103@intel.com> <20140618203052.GT4669@linux.vnet.ibm.com>
-	 <20140618235131.GA25946@linux.vnet.ibm.com>
-	 <20140619014200.GO8178@tassilo.jf.intel.com>
-	 <20140619021337.GA4669@linux.vnet.ibm.com>
-	 <20140619033816.GQ8178@tassilo.jf.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Thu, 19 Jun 2014 00:52:50 -0400
+Message-ID: <53A26C99.6060000@hitachi.com>
+Date: Thu, 19 Jun 2014 13:52:41 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Michael Ellerman <mpe@ellerman.id.au>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
+        Tony Luck <tony.luck@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-tip-commits@vger.kernel.org, anil.s.keshavamurthy@intel.com,
+        Ingo Molnar <mingo@kernel.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        akataria@vmware.com, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [RFT PATCH -next v3] [BUGFIX] kprobes: Fix "Failed to find blacklist"
+ error on ia64 and ppc64
+References: <5387F150.5000307@hitachi.com>   <20140530031838.17427.75896.stgit@ltc230.yrl.intra.hitachi.co.jp>   <539161D6.7020508@hitachi.com> <1403078179.32307.7.camel@concordia>  <53A15201.7060404@hitachi.com> <1403141433.4768.1.camel@concordia>
+In-Reply-To: <1403141433.4768.1.camel@concordia>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-18 at 20:38 -0700, Andi Kleen wrote:
-> On Wed, Jun 18, 2014 at 07:13:37PM -0700, Paul E. McKenney wrote:
-> > On Wed, Jun 18, 2014 at 06:42:00PM -0700, Andi Kleen wrote:
-> > > 
-> > > I still think it's totally the wrong direction to pollute so 
-> > > many fast paths with this obscure debugging check workaround
-> > > unconditionally.
-> > 
-> > OOM prevention should count for something, I would hope.
+(2014/06/19 10:30), Michael Ellerman wrote:
+> On Wed, 2014-06-18 at 17:46 +0900, Masami Hiramatsu wrote:
+>> (2014/06/18 16:56), Michael Ellerman wrote:
+>>> On Fri, 2014-06-06 at 15:38 +0900, Masami Hiramatsu wrote:
+>>>> Ping?
+>>>>
+>>>> I guess this should go to 3.16 branch, shouldn't it?
+>>>
+>>>>> diff --git a/arch/powerpc/include/asm/types.h b/arch/powerpc/include/asm/types.h
+>>>>> index bfb6ded..8b89d65 100644
+>>>>> --- a/arch/powerpc/include/asm/types.h
+>>>>> +++ b/arch/powerpc/include/asm/types.h
+>>>>> @@ -25,6 +25,17 @@ typedef struct {
+>>>>>  	unsigned long env;
+>>>>>  } func_descr_t;
+>>>>>  
+>>>>> +#if defined(CONFIG_PPC64) && (!defined(_CALL_ELF) || _CALL_ELF == 1)
+>>>>> +/*
+>>>>> + * On PPC64 ABIv1 the function pointer actually points to the
+>>>>> + * function's descriptor. The first entry in the descriptor is the
+>>>>> + * address of the function text.
+>>>>> + */
+>>>>> +#define function_entry(fn)	(((func_descr_t *)(fn))->entry)
+>>>>> +#else
+>>>>> +#define function_entry(fn)	((unsigned long)(fn))
+>>>>> +#endif
+>>>
+>>> We already have ppc_function_entry(), can't you use that?
+>>
+>> I'd like to ask you whether the address which ppc_function_entry() returns on
+>> PPC ABIv2 is really same address in kallsyms or not.
+>> As you can see, kprobes uses function_entry() to get the actual entry address
+>> where kallsyms knows. I have not much information about that, but it seems that
+>> the "global entry point" is the address which kallsyms knows, isn't it?
 > 
-> OOM in what scenario? This is getting bizarre.
+> OK. I'm not sure off the top of my head which address kallsyms knows about, but
+> yes it's likely that it is the global entry point.
 > 
-> If something keeps looping forever in the kernel creating 
-> RCU callbacks without any real quiescent states it's simply broken.
+> I recently sent a patch to add ppc_global_function_entry(), because we need it
+> in the ftrace code. Once that is merged you could use that.
 
-Typical problem we faced in the past is in exit() path when multi
-thousands of files/sockets are rcu-freed, and qhimark is hit.
+Yeah, I could use that. But since this is used in arch-independent code (e.g. IA64
+needs similar macro), I think we'd better define function_entry() in asm/types.h for
+general use (for kallsyms), and rename ppc_function_entry to local_function_entry()
+in asm/code-patching.h.
 
-Huge latency alerts, as freeing 10000+ items takes a while (about 70 ns
-per item...)
 
-Maybe close_files() should use a
-cond_resched_and_keep_rcu_queues_small_please() ;)
+> How do you hit the original problem, you don't actually specify in your commit
+> message? Something with kprobes obviously, but what exactly? I'll try and
+> reproduce it here.
 
+Ah, those messages should be shown in dmesg when booting if it doesn't work,
+because the messages are printed by initialization process of kprobe blacklist.
+So, reproducing it is just enabling CONFIG_KPROBES and boot it.
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
