@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934230AbaFSSnQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 14:43:16 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:51770 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756018AbaFSSnO (ORCPT
+	id S934243AbaFSSn1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 14:43:27 -0400
+Received: from complete.lackof.org ([198.49.126.79]:50064 "EHLO
+	complete.lackof.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934237AbaFSSn0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 14:43:14 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Kukjin Kim <kgene.kim@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, javier.martinez@collabora.co.uk,
-        ch.naveen@samsung.com, jg1.han@samsung.com, jdelvare@suse.de,
-        sjg@google.com, paul.gortmaker@windriver.com, standby24x7@gmail.com,
-        sachin.kamat@linaro.org, linux-i2c@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: exynos5: Properly use the "noirq" variants of suspend/resume
-References: <1403155273-1057-1-git-send-email-dianders@chromium.org>
-Date: Thu, 19 Jun 2014 11:43:11 -0700
-In-Reply-To: <1403155273-1057-1-git-send-email-dianders@chromium.org> (Doug
-	Anderson's message of "Wed, 18 Jun 2014 22:21:13 -0700")
-Message-ID: <7h8uosyc3k.fsf@paris.lan>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
+	Thu, 19 Jun 2014 14:43:26 -0400
+X-Greylist: delayed 598 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Jun 2014 14:43:26 EDT
+Date: Thu, 19 Jun 2014 12:33:21 -0600
+From: dann frazier <dann.frazier@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: devel@driverdev.osuosl.org, linux-arm-kernel@lists.infradead.org,
+        Peng Tao <bergwolf@gmail.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: lustre virtual block device doesn't build w/ CONFIG_ARM64_64K_PAGES=y
+Message-ID: <20140619183321.GA23200@fluid.dannf>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doug Anderson <dianders@chromium.org> writes:
+With current git, lustre fails to build with CONFIG_ARM64_64K_PAGES=y
+and CONFIG_LUSTRE_LLITE_LLOOP=m:
 
-> The original code for the exynos i2c controller registered for the
-> "noirq" variants.  However during review feedback it was moved to
-> SIMPLE_DEV_PM_OPS without anyone noticing that it meant we were no
-> longer actually "noirq" (despite functions named
-> exynos5_i2c_suspend_noirq and exynos5_i2c_resume_noirq).
->
-> i2c controllers that might have wakeup sources on them seem to need to
-> resume at noirq time so that the individual drivers can actually read
-> the i2c bus to handle their wakeup.
-
-I suspect usage of the noirq variants pre-dates the existence of the
-late/early callbacks in the PM core, but based on the description above,
-I suspect what you actually want is the late/early callbacks.
-
-Kevin
+make -f scripts/Makefile.build obj=drivers/staging/lustre/lustre/llite
+  gcc -Wp,-MD,drivers/staging/lustre/lustre/llite/.lloop.o.d  -nostdinc -isystem /usr/lib/gcc/aarch64-linux-gnu/4.8/include -I./arch/arm64/include -Iarch/arm64/include/generated  -Iinclude -I./arch/arm64/include/uapi -Iarch/arm64/include/generated/uapi -I./include/uapi -Iinclude/generated/uapi -include ./include/linux/kconfig.h -D__KERNEL__ -mlittle-endian -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -mgeneral-regs-only -fno-delete-null-pointer-checks -O2 -Wframe-larger-than=1024 -fno-stack-protector -Wno-unused-but-set-variable -fno-omit-frame-pointer -fno-optimize-sibling-calls -g -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -Werror=implicit-int -Werror=strict-prototypes -Idrivers/staging/lustre/include/ -Idrivers/staging/lustre/lustre/llite/../include  -DMODULE  -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(lloop)"  -D"KBUILD_MODNAME=KBUILD_STR(llite_lloop)" -c -o drivers/staging/lustre/lustre/llite/.tmp_lloop.o drivers/staging/lustre/lustre/llite/lloop.c
+drivers/staging/lustre/lustre/llite/lloop.c: In function ‘loop_set_fd’:
+drivers/staging/lustre/lustre/llite/lloop.c:523:78: error: duplicate case value
+  CLASSERT(PAGE_CACHE_SIZE < (1 << (sizeof(unsigned short) * 8)));
+                                                                              ^
+drivers/staging/lustre/lustre/llite/lloop.c:523:18: error: previously used here
+  CLASSERT(PAGE_CACHE_SIZE < (1 << (sizeof(unsigned short) * 8)));
+                  ^
+scripts/Makefile.build:257: recipe for target 'drivers/staging/lustre/lustre/llite/lloop.o' failed
+make[5]: *** [drivers/staging/lustre/lustre/llite/lloop.o] Error 1
+scripts/Makefile.build:404: recipe for target 'drivers/staging/lustre/lustre/llite' failed
+make[4]: *** [drivers/staging/lustre/lustre/llite] Error 2
+scripts/Makefile.build:404: recipe for target 'drivers/staging/lustre/lustre' failed
+make[3]: *** [drivers/staging/lustre/lustre] Error 2
+scripts/Makefile.build:404: recipe for target 'drivers/staging/lustre' failed
+make[2]: *** [drivers/staging/lustre] Error 2
+scripts/Makefile.build:404: recipe for target 'drivers/staging' failed
+make[1]: *** [drivers/staging] Error 2
+Makefile:893: recipe for target 'drivers' failed
+make: *** [drivers] Error 2
