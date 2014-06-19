@@ -1,84 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932514AbaFSPTU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 11:19:20 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:45436 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756534AbaFSPTT (ORCPT
+	id S1757520AbaFSPUP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 11:20:15 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:60743 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757423AbaFSPUN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 11:19:19 -0400
-Date: Thu, 19 Jun 2014 16:19:13 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Subject: Re: [PATCH] gpio: crystalcove: Fix implicit declaration of function
- 'seq_printf' error
-Message-ID: <20140619151913.GD26560@lee--X1>
-References: <1403190228-14344-1-git-send-email-lee.jones@linaro.org>
- <CAAVeFuKppwDusknaJg88m6r8KwWPJ=BJRuLsZavQL_JZTHTd+A@mail.gmail.com>
+	Thu, 19 Jun 2014 11:20:13 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: tdjames <tdjames@umd.edu>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: How to disable Lazy Preempt in the kernel
+Date: Thu, 19 Jun 2014 17:20:08 +0200
+Message-ID: <5874558.fsfNbcCYz9@merkaba>
+User-Agent: KMail/4.14 pre (Linux/3.15.0-tp520; KDE/4.13.1; x86_64; git-354479a; 2014-06-15)
+In-Reply-To: <1403190681610-885003.post@n7.nabble.com>
+References: <1403190681610-885003.post@n7.nabble.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAAVeFuKppwDusknaJg88m6r8KwWPJ=BJRuLsZavQL_JZTHTd+A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jun 2014, Alexandre Courbot wrote:
+Am Donnerstag, 19. Juni 2014, 08:11:21 schrieb tdjames:
+> I'm relatively new to Linux and working on getting a real-time kernel up and
+> running for robot applications. I'm on Ubuntu 14.04, using kernel 3.14.3
+> and the 3.14.3-rt5 real-time patch. Also using x86-64.
 
-> On Fri, Jun 20, 2014 at 12:03 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> > drivers/gpio/gpio-crystalcove.c: In function 'crystalcove_gpio_dbg_show':
-> > drivers/gpio/gpio-crystalcove.c:286:3: error: implicit declaration of function 'seq_printf'
-> >    seq_printf(s, " gpio-%-2d %s %s %s %s ctlo=%2x,%s %s %s\n",
-> >
-> > Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> > I'm looking for a quick Ack on this patch.  It's a fix to an immutable
-> > branch that I'm carrying which is shared between GPIO and MFD.  Stephen
-> > reported it when the MFD tree was sucked into -next.
-> >
-> > Alexandre,
-> >   I believe Linus is out on vacation this week, so if you could take a
-> > quick look at this, I'd be much obliged.
-> 
-> Acked-by: Alexandre Courbot <acourbot@nvidia.com>
+I don´t know about lazy preempt, but maybe a search in make nconfig reveals 
+more?
 
-Thanks Alexandre.
+In any case: Debian offers ready made rt kernels as packages. So maybe thats an 
+option for you? Beware: Debian and Ubuntu kernel packaging is different. Maybe 
+Ubuntu also has a rt kernel package?
 
-> Hope that's fast enough. ;)
-
-~4 mins.  Not too bad! ;)
-
-> > Linus,
-> >   Once I've acquired the aforementioned Ack I'll fix this patch up into
-> > our immutable branch and send another pull-request.
-> > ---
-> >  drivers/gpio/gpio-crystalcove.c | 1 +
-> >  1 file changed, 1 insertion(+)
-> >
-> > diff --git a/drivers/gpio/gpio-crystalcove.c b/drivers/gpio/gpio-crystalcove.c
-> > index 5a98499..934462f 100644
-> > --- a/drivers/gpio/gpio-crystalcove.c
-> > +++ b/drivers/gpio/gpio-crystalcove.c
-> > @@ -18,6 +18,7 @@
-> >  #include <linux/interrupt.h>
-> >  #include <linux/platform_device.h>
-> >  #include <linux/gpio.h>
-> > +#include <linux/seq_file.h>
-> >  #include <linux/bitops.h>
-> >  #include <linux/regmap.h>
-> >  #include <linux/mfd/intel_soc_pmic.h>
-> >
-
+Ciao,
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
