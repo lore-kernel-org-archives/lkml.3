@@ -1,297 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932AbaFSEIO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 00:08:14 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:49331 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718AbaFSEIJ (ORCPT
+	id S1752085AbaFSEOf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 00:14:35 -0400
+Received: from smtprelay0236.hostedemail.com ([216.40.44.236]:53199 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750708AbaFSEOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 00:08:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140618101634.GO19730@lukather>
-References: <1403016777-15121-1-git-send-email-wens@csie.org>
- <1403016777-15121-12-git-send-email-wens@csie.org> <20140618101634.GO19730@lukather>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Thu, 19 Jun 2014 12:07:48 +0800
-X-Google-Sender-Auth: h-BIbMTfOnivFb8vWT3va_OLZmY
-Message-ID: <CAGb2v64sJf2D36++JNmGHqVe_e4sEyk6VwmJBU5ec_5cGNFB_g@mail.gmail.com>
-Subject: Re: [PATCH v2 11/20] clk: sunxi: Add A23 clocks support
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-sunxi <linux-sunxi@googlegroups.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Luc Verhaegen <libv@skynet.be>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 19 Jun 2014 00:14:34 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3873:4250:4321:5007:6119:7652:7903:8829:8957:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12296:12438:12517:12519:12679:12740:13069:13071:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: boat95_278ef0122b631
+X-Filterd-Recvd-Size: 2081
+Message-ID: <1403151270.14018.17.camel@joe-AO725>
+Subject: Re: [PATCH] staging: rtl8192e: check return value of dev_skb_alloc
+From: Joe Perches <joe@perches.com>
+To: Nicholas Krause <xerofoify@gmail.com>
+Cc: gregkh@linuxfoundation.org, lisa@xenapiadmin.com,
+        valentina.manea.m@gmail.com, ben@decadent.org.uk,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Wed, 18 Jun 2014 21:14:30 -0700
+In-Reply-To: <1403144681-6902-1-git-send-email-xerofoify@gmail.com>
+References: <1403144681-6902-1-git-send-email-xerofoify@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 6:16 PM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> On Tue, Jun 17, 2014 at 10:52:48PM +0800, Chen-Yu Tsai wrote:
->> The clock control unit on the A23 is similar to the one found on the A31.
->>
->> The AHB1, APB1, APB2 gates on the A23 are almost identical to the ones
->> on the A31, but some outputs are missing.
->>
->> The main CPU PLL (PLL1) however is like that on older Allwinner SoCs, such
->> as the A10 or A20, but the N factor starts from 1 instead of 0.
->>
->> This patch adds support for PLL1 and all the basic clock gates.
->>
->> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
->
-> Except for the minor comment below, you have my
->
-> Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
->
->> ---
->>  Documentation/devicetree/bindings/clock/sunxi.txt |   5 +
->>  drivers/clk/sunxi/clk-sunxi.c                     | 115 ++++++++++++++++++++++
->>  2 files changed, 120 insertions(+)
->>
->> diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Documentation/devicetree/bindings/clock/sunxi.txt
->> index 7b2ba41..af9e47d 100644
->> --- a/Documentation/devicetree/bindings/clock/sunxi.txt
->> +++ b/Documentation/devicetree/bindings/clock/sunxi.txt
->> @@ -9,11 +9,13 @@ Required properties:
->>       "allwinner,sun4i-a10-osc-clk" - for a gatable oscillator
->>       "allwinner,sun4i-a10-pll1-clk" - for the main PLL clock and PLL4
->>       "allwinner,sun6i-a31-pll1-clk" - for the main PLL clock on A31
->> +     "allwinner,sun8i-a23-pll1-clk" - for the main PLL clock on A23
->>       "allwinner,sun4i-a10-pll5-clk" - for the PLL5 clock
->>       "allwinner,sun4i-a10-pll6-clk" - for the PLL6 clock
->>       "allwinner,sun6i-a31-pll6-clk" - for the PLL6 clock on A31
->>       "allwinner,sun4i-a10-cpu-clk" - for the CPU multiplexer clock
->>       "allwinner,sun4i-a10-axi-clk" - for the AXI clock
->> +     "allwinner,sun8i-a23-axi-clk" - for the AXI clock on A23
->>       "allwinner,sun4i-a10-axi-gates-clk" - for the AXI gates
->>       "allwinner,sun4i-a10-ahb-clk" - for the AHB clock
->>       "allwinner,sun4i-a10-ahb-gates-clk" - for the AHB gates on A10
->> @@ -23,6 +25,7 @@ Required properties:
->>       "allwinner,sun6i-a31-ar100-clk" - for the AR100 on A31
->>       "allwinner,sun6i-a31-ahb1-mux-clk" - for the AHB1 multiplexer on A31
->>       "allwinner,sun6i-a31-ahb1-gates-clk" - for the AHB1 gates on A31
->> +     "allwinner,sun8i-a23-ahb1-gates-clk" - for the AHB1 gates on A23
->>       "allwinner,sun4i-a10-apb0-clk" - for the APB0 clock
->>       "allwinner,sun6i-a31-apb0-clk" - for the APB0 clock on A31
->>       "allwinner,sun4i-a10-apb0-gates-clk" - for the APB0 gates on A10
->> @@ -37,8 +40,10 @@ Required properties:
->>       "allwinner,sun5i-a10s-apb1-gates-clk" - for the APB1 gates on A10s
->>       "allwinner,sun6i-a31-apb1-gates-clk" - for the APB1 gates on A31
->>       "allwinner,sun7i-a20-apb1-gates-clk" - for the APB1 gates on A20
->> +     "allwinner,sun8i-a23-apb1-gates-clk" - for the APB1 gates on A23
->>       "allwinner,sun6i-a31-apb2-div-clk" - for the APB2 gates on A31
->>       "allwinner,sun6i-a31-apb2-gates-clk" - for the APB2 gates on A31
->> +     "allwinner,sun8i-a23-apb2-gates-clk" - for the APB2 gates on A23
->>       "allwinner,sun4i-a10-mod0-clk" - for the module 0 family of clocks
->>       "allwinner,sun6i-a31-mbus-clk" - for the MBUS clocks on A31 / A23
->>       "allwinner,sun7i-a20-out-clk" - for the external output clocks
->> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
->> index 7e2f015..f418392 100644
->> --- a/drivers/clk/sunxi/clk-sunxi.c
->> +++ b/drivers/clk/sunxi/clk-sunxi.c
->> @@ -164,6 +164,54 @@ static void sun6i_a31_get_pll1_factors(u32 *freq, u32 parent_rate,
->>  }
->>
->>  /**
->> + * sun8i_a23_get_pll1_factors() - calculates n, k, m, p factors for PLL1
->> + * PLL1 rate is calculated as follows
->> + * rate = (parent_rate * (n + 1) * (k + 1) >> p) / (m + 1);
->> + * parent_rate is always 24Mhz
->> + */
->> +
->> +static void sun8i_a23_get_pll1_factors(u32 *freq, u32 parent_rate,
->> +                                u8 *n, u8 *k, u8 *m, u8 *p)
->> +{
->> +     u8 div;
->> +
->> +     /* Normalize value to a 6M multiple */
->> +     div = *freq / 6000000;
->> +     *freq = 6000000 * div;
->> +
->> +     /* we were called to round the frequency, we can now return */
->> +     if (n == NULL)
->> +             return;
->> +
->> +     /* m is always zero for pll1 */
->> +     *m = 0;
->> +
->> +     /* k is 1 only on these cases */
->> +     if (*freq >= 768000000 || *freq == 42000000 || *freq == 54000000)
->> +             *k = 1;
->> +     else
->> +             *k = 0;
->> +
->> +     /* p will be 2 for divs under 20 and odd divs under 32 */
->> +     if (div < 20 || (div < 32 && (div & 1)))
->> +             *p = 2;
->> +
->> +     /* p will be 1 for even divs under 32, divs under 40 and odd pairs
->> +      * of divs between 40-62 */
->> +     else if (div < 40 || (div < 64 && (div & 2)))
->> +             *p = 1;
->> +
->> +     /* any other entries have p = 0 */
->> +     else
->> +             *p = 0;
->> +
->> +     /* calculate a suitable n based on k and p */
->> +     div <<= *p;
->> +     div /= (*k + 1);
->> +     *n = div / 4 - 1;
->> +}
->> +
->> +/**
->>   * sun4i_get_pll5_factors() - calculates n, k factors for PLL5
->>   * PLL5 rate is calculated as follows
->>   * rate = parent_rate * n * (k + 1)
->> @@ -448,6 +496,18 @@ static struct clk_factors_config sun6i_a31_pll1_config = {
->>       .n_from_one = 1,
->>  };
->>
->> +static struct clk_factors_config sun8i_a23_pll1_config = {
->> +     .nshift = 8,
->> +     .nwidth = 5,
->> +     .kshift = 4,
->> +     .kwidth = 2,
->> +     .mshift = 0,
->> +     .mwidth = 2,
->> +     .pshift = 16,
->> +     .pwidth = 2,
->> +     .n_from_one = 1,
->> +};
->> +
->>  static struct clk_factors_config sun4i_pll5_config = {
->>       .nshift = 8,
->>       .nwidth = 5,
->> @@ -503,6 +563,12 @@ static const struct factors_data sun6i_a31_pll1_data __initconst = {
->>       .getter = sun6i_a31_get_pll1_factors,
->>  };
->>
->> +static const struct factors_data sun8i_a23_pll1_data __initconst = {
->> +     .enable = 31,
->> +     .table = &sun8i_a23_pll1_config,
->> +     .getter = sun8i_a23_get_pll1_factors,
->> +};
->> +
->>  static const struct factors_data sun7i_a20_pll4_data __initconst = {
->>       .enable = 31,
->>       .table = &sun4i_pll5_config,
->> @@ -712,6 +778,25 @@ static const struct div_data sun4i_axi_data __initconst = {
->>       .width  = 2,
->>  };
->>
->> +static const struct clk_div_table sun8i_a23_axi_table[] __initconst = {
->> +     { .val = 0, .div = 1 },
->> +     { .val = 1, .div = 2 },
->> +     { .val = 2, .div = 3 },
->> +     { .val = 3, .div = 4 },
->> +     { .val = 4, .div = 4 },
->> +     { .val = 5, .div = 4 },
->> +     { .val = 6, .div = 4 },
->> +     { .val = 7, .div = 4 },
->> +     { } /* sentinel */
->> +};
->> +
->> +static const struct div_data sun8i_a23_axi_data __initconst = {
->> +     .shift  = 0,
->> +     .pow    = 0,
->> +     .width  = 8,
->> +     .table  = sun8i_a23_axi_table,
->> +};
->> +
->>  static const struct div_data sun4i_ahb_data __initconst = {
->>       .shift  = 4,
->>       .pow    = 1,
->> @@ -844,6 +929,10 @@ static const struct gates_data sun7i_a20_ahb_gates_data __initconst = {
->>       .mask = { 0x12f77fff, 0x16ff3f },
->>  };
->>
->> +static const struct gates_data sun8i_a23_ahb1_gates_data __initconst = {
->> +     .mask = {0x25386742, 0x2505111},
->> +};
->> +
->>  static const struct gates_data sun4i_apb0_gates_data __initconst = {
->>       .mask = {0x4EF},
->>  };
->> @@ -876,6 +965,10 @@ static const struct gates_data sun6i_a31_apb1_gates_data __initconst = {
->>       .mask = {0x3031},
->>  };
->>
->> +static const struct gates_data sun8i_a23_apb1_gates_data __initconst = {
->> +     .mask = {0x3021},
->> +};
->> +
->>  static const struct gates_data sun6i_a31_apb2_gates_data __initconst = {
->>       .mask = {0x3F000F},
->>  };
->> @@ -884,6 +977,10 @@ static const struct gates_data sun7i_a20_apb1_gates_data __initconst = {
->>       .mask = { 0xff80ff },
->>  };
->>
->> +static const struct gates_data sun8i_a23_apb2_gates_data __initconst = {
->> +     .mask = {0x1F0007},
->> +};
->> +
->>  static const struct gates_data sun4i_a10_usb_gates_data __initconst = {
->>       .mask = {0x1C0},
->>       .reset_mask = 0x07,
->> @@ -1139,6 +1236,7 @@ free_clkdata:
->>  static const struct of_device_id clk_factors_match[] __initconst = {
->>       {.compatible = "allwinner,sun4i-a10-pll1-clk", .data = &sun4i_pll1_data,},
->>       {.compatible = "allwinner,sun6i-a31-pll1-clk", .data = &sun6i_a31_pll1_data,},
->> +     {.compatible = "allwinner,sun8i-a23-pll1-clk", .data = &sun8i_a23_pll1_data,},
->>       {.compatible = "allwinner,sun7i-a20-pll4-clk", .data = &sun7i_a20_pll4_data,},
->>       {.compatible = "allwinner,sun6i-a31-pll6-clk", .data = &sun6i_a31_pll6_data,},
->>       {.compatible = "allwinner,sun4i-a10-apb1-clk", .data = &sun4i_apb1_data,},
->> @@ -1151,6 +1249,7 @@ static const struct of_device_id clk_factors_match[] __initconst = {
->>  /* Matches for divider clocks */
->>  static const struct of_device_id clk_div_match[] __initconst = {
->>       {.compatible = "allwinner,sun4i-a10-axi-clk", .data = &sun4i_axi_data,},
->> +     {.compatible = "allwinner,sun8i-a23-axi-clk", .data = &sun8i_a23_axi_data,},
->>       {.compatible = "allwinner,sun4i-a10-ahb-clk", .data = &sun4i_ahb_data,},
->>       {.compatible = "allwinner,sun4i-a10-apb0-clk", .data = &sun4i_apb0_data,},
->>       {.compatible = "allwinner,sun6i-a31-apb2-div-clk", .data = &sun6i_a31_apb2_div_data,},
->> @@ -1180,6 +1279,7 @@ static const struct of_device_id clk_gates_match[] __initconst = {
->>       {.compatible = "allwinner,sun5i-a13-ahb-gates-clk", .data = &sun5i_a13_ahb_gates_data,},
->>       {.compatible = "allwinner,sun6i-a31-ahb1-gates-clk", .data = &sun6i_a31_ahb1_gates_data,},
->>       {.compatible = "allwinner,sun7i-a20-ahb-gates-clk", .data = &sun7i_a20_ahb_gates_data,},
->> +     {.compatible = "allwinner,sun8i-a23-ahb1-gates-clk", .data = &sun8i_a23_ahb1_gates_data,},
->>       {.compatible = "allwinner,sun4i-a10-apb0-gates-clk", .data = &sun4i_apb0_gates_data,},
->>       {.compatible = "allwinner,sun5i-a10s-apb0-gates-clk", .data = &sun5i_a10s_apb0_gates_data,},
->>       {.compatible = "allwinner,sun5i-a13-apb0-gates-clk", .data = &sun5i_a13_apb0_gates_data,},
->> @@ -1189,7 +1289,9 @@ static const struct of_device_id clk_gates_match[] __initconst = {
->>       {.compatible = "allwinner,sun5i-a13-apb1-gates-clk", .data = &sun5i_a13_apb1_gates_data,},
->>       {.compatible = "allwinner,sun6i-a31-apb1-gates-clk", .data = &sun6i_a31_apb1_gates_data,},
->>       {.compatible = "allwinner,sun7i-a20-apb1-gates-clk", .data = &sun7i_a20_apb1_gates_data,},
->> +     {.compatible = "allwinner,sun8i-a23-apb1-gates-clk", .data = &sun8i_a23_apb1_gates_data,},
->>       {.compatible = "allwinner,sun6i-a31-apb2-gates-clk", .data = &sun6i_a31_apb2_gates_data,},
->> +     {.compatible = "allwinner,sun8i-a23-apb2-gates-clk", .data = &sun8i_a23_apb2_gates_data,},
->>       {.compatible = "allwinner,sun4i-a10-usb-clk", .data = &sun4i_a10_usb_gates_data,},
->>       {.compatible = "allwinner,sun5i-a13-usb-clk", .data = &sun5i_a13_usb_gates_data,},
->>       {.compatible = "allwinner,sun6i-a31-usb-clk", .data = &sun6i_a31_usb_gates_data,},
->> @@ -1276,3 +1378,16 @@ static void __init sun6i_init_clocks(struct device_node *node)
->>                         ARRAY_SIZE(sun6i_critical_clocks));
->>  }
->>  CLK_OF_DECLARE(sun6i_a31_clk_init, "allwinner,sun6i-a31", sun6i_init_clocks);
->> +
->> +static const char *sun8i_critical_clocks[] __initdata = {
->> +     "cpu",
->> +     "ahb1_sdram",
->> +     "mbus",
->> +};
->> +
->> +static void __init sun8i_init_clocks(void)
->
-> This has the wrong prototype and will trigger a warning.
+On Wed, 2014-06-18 at 22:24 -0400, Nicholas Krause wrote:
+> Checks if dev_skb_alloc returns Null in function, fw_download_code.
+> If the return value of dev_skb_alloc is NULL return false and exit
+> this function.
 
-Ah, this was fixed during the latest cycle. Thanks.
+Hello Nicholas.
+
+If you're going to try add these checks, please look at
+the code a bit more before submitting defective patches.
+
+> diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+[]
+> @@ -62,6 +62,8 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+>  
+>  		skb  = dev_alloc_skb(frag_length + 4);
+>  		memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
+> +		if (!skb)
+> +			return !rt_status;
+
+Umm, if you're going to check whether or not skb is NULL,
+do it before it's dereferenced  as skb->cb.
+
+Oh, and get rid of rt_status and use
+
+			return false;
+
+directly.
+
+>  		tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
+>  		tcb_desc->queue_index = TXCMD_QUEUE;
+>  		tcb_desc->bCmdOrInit = DESC_PACKET_TYPE_INIT;
+
+and change the end of function
+
+from:
+	return rt_status;
+to:
+	return true;
+
