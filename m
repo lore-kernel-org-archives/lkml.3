@@ -1,143 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757203AbaFSC0H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 22:26:07 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:35860 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753493AbaFSC0F (ORCPT
+	id S1757236AbaFSC0o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 22:26:44 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:36867 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757220AbaFSC0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 22:26:05 -0400
-Message-ID: <53A24A39.4080100@ti.com>
-Date: Wed, 18 Jun 2014 21:26:01 -0500
-From: Nishanth Menon <nm@ti.com>
-Reply-To: nm@ti.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 18 Jun 2014 22:26:42 -0400
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: devicetree@vger.kernel.org, linux@arm.linux.org.uk,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>, Rajendra Nayak <rnayak@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Darren Etheridge <detheridge@ti.com>, r.sricharan@ti.com,
-        robh+dt@kernel.org, Josh Elliot <jelliott@ti.com>,
-        galak@codeaurora.org,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 2/2] arm: dts: add support for AM437x StarterKit
-References: <1403106200-777-1-git-send-email-balbi@ti.com> <1403106200-777-3-git-send-email-balbi@ti.com> <53A1BADD.7050309@ti.com> <20140618193113.GC4570@saruman.home> <53A20A7D.3060508@ti.com> <20140618231923.GA9855@saruman.home>
-In-Reply-To: <20140618231923.GA9855@saruman.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53A23FC4.5010302@gmx.de>
+References: <1403128945-28298-1-git-send-email-xypron.glpk@gmx.de>
+	<CAGXu5jKLoRkKuu8T=im6oEhn3WmXjZPwFXEbaPT6SeL29XrS0g@mail.gmail.com>
+	<53A23FC4.5010302@gmx.de>
+Date: Wed, 18 Jun 2014 19:26:41 -0700
+X-Google-Sender-Auth: Mw8KtWZnS1xoRdbZ24FxQPNZB2o
+Message-ID: <CAGXu5jLJGpPhycff9OSMGu6wduLGQWhsu2mkGeM7R0O9CQZ7pg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] media: dib9000: avoid out of bound access
+From: Kees Cook <keescook@chromium.org>
+To: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Michael Krufky <mkrufky@linuxtv.org>, linux-media@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2014 06:19 PM, Felipe Balbi wrote:
-[...]
->>>>> Add support for TI's AM437x StarterKit Evaluation
->>>>> Module.
->>>>
->>>> is there a link for this platform?
+On Wed, Jun 18, 2014 at 6:41 PM, Heinrich Schuchardt <xypron.glpk@gmx.de> wrote:
+> On 19.06.2014 01:50, Kees Cook wrote:
+>>
+>> On Wed, Jun 18, 2014 at 3:02 PM, Heinrich Schuchardt <xypron.glpk@gmx.de>
+>> wrote:
 >>>
->>> internal only
->>
->> but will eventually be sold externally? I assume this is not an TI
->
-> probably, but there's nothing public yet.
->
->> internal only board.
->
-> correct assumption for all I know.
-
-Yikes.. ok.. I'd let Tony et.al make the call on this, I guess.
-
-[...]
->>>>> +	edt-ft5306@38 {
->>>>> +		status = "okay";
->>>>> +		compatible = "edt,edt-ft5306", "edt,edt-ft5x06";
->>>>> +		pinctrl-names = "default";
->>>>> +		pinctrl-0 = <&edt_ft5306_ts_pins>;
->>>>> +		reg = <0x38>;
->>>>> +		interrupt-parent = <&gpio0>;
->>>>> +		interrupts = <31 0>;
->>>>> +
->>>>> +		wake-gpios = <&gpio1 28 GPIO_ACTIVE_HIGH>;
->>>>
->>>> why wake-gpios? we should be using pinctrl with interrupt-extended to
->>>> do wakeup sequence, no?
+>>> The current test to avoid out of bound access to mb[] is insufficient.
+>>> For len = 19 non-existent mb[10] will be accessed.
 >>>
->>> sure, can you patch the edt driver ? I'll fix the DTS after that gets
->>> merged
->>
->> If you really want to go down that road, so you could probably help
->> review the pinctrl patches I posted to enable pinctrl wakeup[1]?
->>
->> Come on, as of today, there is no ability to suspend AM437x without
->> doing [1], let alone talk about wakeup gpio vs interrupt-extended. and
->> do we really want to wakeup from suspend when touch screen is touched?
->>
->> Do you expect wake-gpio to work even after doing interrupt based
->> solution? I am no edt driver expert... maybe you can help me here.
->
-> you missed the point entirely. This pin is not used for the touchscreen
-> to wake SoC up, it's the other way around, see how the pin is an
-> *output*. Pull it low and the touchscreen won't generate IRQs, won't
-> respond to i2c accesses, etc. Pull it high, and the thing wakes up.
-
-Aaah.. My apologies.. I was confused. Thanks for clarifying.
-
-[...]
->>>>> +	cd-gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>;
->>>>> +};
->>>>> +
->>>>> +&usb2_phy1 {
->>>>> +	status = "okay";
->>>>> +};
->>>>> +
->>>>> +&usb1 {
->>>>> +	dr_mode = "peripheral";
->>>>> +	status = "okay";
->>>>> +};
->>>>> +
->>>>> +&usb2_phy2 {
->>>>> +	status = "okay";
->>>>> +};
->>>>> +
->>>>> +&usb2 {
->>>>> +	dr_mode = "host";
->>>>> +	status = "okay";
->>>>> +};
->>>> none of the above need pinctrl? no regulator supplies?
+>>> A check in the for loop is insufficient to avoid out of bound access in
+>>> dib9000_mbx_send_attr.
 >>>
->>> pins in default states, drivers don't use regulators.
+>>> Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+>>> ---
+>>>   drivers/media/dvb-frontends/dib9000.c | 5 ++++-
+>>>   1 file changed, 4 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/media/dvb-frontends/dib9000.c
+>>> b/drivers/media/dvb-frontends/dib9000.c
+>>> index e540cfb..6a71917 100644
+>>> --- a/drivers/media/dvb-frontends/dib9000.c
+>>> +++ b/drivers/media/dvb-frontends/dib9000.c
+>>> @@ -1040,10 +1040,13 @@ static int dib9000_risc_apb_access_write(struct
+>>> dib9000_state *state, u32 addres
+>>>          if (address >= 1024 || !state->platform.risc.fw_is_running)
+>>>                  return -EINVAL;
+>>>
+>>> +       if (len > 18)
+>>> +               return -EINVAL;
+>>> +
+>>>          /* dprintk( "APB access thru wr fw %d %x", address, attribute);
+>>> */
+>>>
+>>>          mb[0] = (unsigned short)address;
+>>> -       for (i = 0; i < len && i < 20; i += 2)
+>>> +       for (i = 0; i < len; i += 2)
+>>>                  mb[1 + (i / 2)] = (b[i] << 8 | b[i + 1]);
 >>
->> USB works without a supply? even a fixed voltage supply? that is
->> weird.
+>>
+>> Good catch on the mb[] access! However, I think there is still more to
+>> fix since b[i + 1] can read past the end of b: Say b is defined as "u8
+>> b[3]". Passing len 3 means the second loop, with i==2 will access b[2]
+>> and b[3], the latter is out of range.
 >
-> take a look at the minicom output I posted if you don't believe. Well,
-> to be exact, tps63010 [1] is the one which generates the regulated V5_0D
-> which is used as VBUS_USB. The enable pin in that device is tied to the
-> 3v3 rail (dcdc4 regulator in the PMIC as most everything else) but
-> there's no way (otherwise) to control that thing. There's no control
-> bus, no way to write a driver.
 >
-> Since the board will anyways turn off if you disable the 3v3 rail, it's
-> pretty much pointless to figure out a hack just to add this to DTS.
+> b[] and len are provided by the caller of dib9000_risc_apb_access_write.
+> dib9000_risc_apb_access_write cannot verify if the length of b[] matches len
+> at all.
 >
-> [1] http://www.ti.com/product/TPS63010
+> Currently dib9000_risc_apb_access_write cannot handle odd values of len.
+> This holds even true if b[] has been padded with zero to an even length: For
+> odd values of len the last byte is not passed to dib9000_mbx_send_attr.
+>
+> What is left unclear is how odd values of len should be handled correctly:
+>
+> Should the caller provide a b[] padded with 0 to the next even number of
+> bytes,
+> or should dib9000_risc_apb_access_write take care not to read more then len
+> bytes,
+> or should odd values of len cause an error EINVAL.
+>
+> From what I read in the coding one source of the value of len is
+> tuner_attach(), which is called from outside the dib9000 driver.
 
-I am sure to trust you on the test log :) ->  but then from dts 
-description perspective, it is good if we describe the supplies, even as 
-a always on fixed-regulator. We had instances like 2430SDP ethernet 
-where... umm... we originally missed describing ethernet supply and 
-boom, one fine morning, no more nfs filesystem - I mean, it is a one off 
-scenario there, but describing regulators helps us atleast understand 
-the power tree of the board a little better.
+How about:
 
-Again, no strong opinions on my side, it is a good thing to do is all I 
-feel about it.
+for (i = 0; i < len; i += 2) {
+    u16 val = b[i] << 8;
+    if (i + 1 < len)
+         val |= b[i + 1];
+    mb[1 + (i / 2)] = val;
 
---
-Regards,
-Nishanth Menon
+That's defensive, and would have the same effect of callers doing the padding.
+
+-Kees
+
+>
+> Heinrich
+>
+>
+>>
+>> -Kees
+>>
+>>>
+>>>          dib9000_mbx_send_attr(state, OUT_MSG_BRIDGE_APB_W, mb, 1 + len /
+>>> 2, attribute);
+>>> --
+>>> 2.0.0
+>>>
+>>
+>>
+>>
+>
+
+
+
+-- 
+Kees Cook
+Chrome OS Security
