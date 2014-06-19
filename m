@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934101AbaFSSi6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 14:38:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40343 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757570AbaFSSi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 14:38:57 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 1/4] cfq: Increase default value of target_latency
-References: <1403079807-24690-1-git-send-email-mgorman@suse.de>
-	<1403079807-24690-2-git-send-email-mgorman@suse.de>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 19 Jun 2014 14:38:44 -0400
-In-Reply-To: <1403079807-24690-2-git-send-email-mgorman@suse.de> (Mel Gorman's
-	message of "Wed, 18 Jun 2014 09:23:24 +0100")
-Message-ID: <x49y4wslp6z.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1757889AbaFSSlO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 14:41:14 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:56360 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756850AbaFSSlM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 14:41:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20140619052910.GP5500@mwanda>
+References: <1403144681-6902-1-git-send-email-xerofoify@gmail.com>
+	<20140619052910.GP5500@mwanda>
+Date: Thu, 19 Jun 2014 14:41:11 -0400
+Message-ID: <CAPDOMViz=cte8_YkxFMLSZmsgC5LysDMoNCokB8f4A3YKmDhSg@mail.gmail.com>
+Subject: Re: [PATCH] staging: rtl8192e: check return value of dev_skb_alloc
+From: Nick Krause <xerofoify@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
+        ben@decadent.org.uk, lisa@xenapiadmin.com,
+        Valentina Manea <valentina.manea.m@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mel Gorman <mgorman@suse.de> writes:
+Hey  guys,
+Sorry about no reply,
+my power supply died last night,
+have to get a new one. I will be RMAing
+the old old in order to get a packup in
+case this PSU dies.
+Cheers Nick
 
-> The existing CFQ default target_latency results in very poor performance
-> for larger numbers of threads doing sequential reads.  While this can be
-> easily described as a tuning problem for users, it is one that is tricky
-> to detect. This patch the default on the assumption that people with access
-> to expensive fast storage also know how to tune their IO scheduler.
+
+On Thu, Jun 19, 2014 at 1:29 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> On Wed, Jun 18, 2014 at 10:24:41PM -0400, Nicholas Krause wrote:
+>> Checks if dev_skb_alloc returns Null in function, fw_download_code.
+>> If the return value of dev_skb_alloc is NULL return false and exit
+>> this function.
+>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>> ---
+>>  drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+>> index 1a95d1f..38ae236 100644
+>> --- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+>> +++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+>> @@ -62,6 +62,8 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+>>
+>>               skb  = dev_alloc_skb(frag_length + 4);
+>>               memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
+>> +             if (!skb)
+>> +                     return !rt_status;
 >
-> The following is from tiobench run on a mid-range desktop with a single
-> spinning disk.
+> What's this !rt_status?  Just return false.
 >
->                                       3.16.0-rc1            3.16.0-rc1                 3.0.0
->                                          vanilla          cfq600                     vanilla
-> Mean   SeqRead-MB/sec-1         121.88 (  0.00%)      121.60 ( -0.23%)      134.59 ( 10.42%)
-> Mean   SeqRead-MB/sec-2         101.99 (  0.00%)      102.35 (  0.36%)      122.59 ( 20.20%)
-> Mean   SeqRead-MB/sec-4          97.42 (  0.00%)       99.71 (  2.35%)      114.78 ( 17.82%)
-> Mean   SeqRead-MB/sec-8          83.39 (  0.00%)       90.39 (  8.39%)      100.14 ( 20.09%)
-> Mean   SeqRead-MB/sec-16         68.90 (  0.00%)       77.29 ( 12.18%)       81.64 ( 18.50%)
-
-Did you test any workloads other than this?  Also, what normal workload
-has 8 or more threads doing sequential reads?  (That's an honest
-question.)
-
-Cheers,
-Jeff
+> regards,
+> dan carpenter
+>
