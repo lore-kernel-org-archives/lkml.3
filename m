@@ -1,109 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932290AbaFSKcY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 06:32:24 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:32920 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753528AbaFSKcW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 06:32:22 -0400
-Message-ID: <53A2BC1A.4050702@gmail.com>
-Date: Thu, 19 Jun 2014 18:31:54 +0800
-From: =?gb18030?Q?=22newtongao=28=B8=DF=D0=A1=C3=F7=29=22?= 
-	<gxm.linux.kernel@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1757060AbaFSKfI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 06:35:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14865 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752098AbaFSKfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 06:35:06 -0400
+Date: Thu, 19 Jun 2014 12:34:48 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCHv2 00/18] perf tools: Factor ordered samples queue
+Message-ID: <20140619103448.GA7619@krava.brq.redhat.com>
+References: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
+ <53A1EC2E.1010706@gmail.com>
 MIME-Version: 1.0
-To: gleb@kernel.org, pbonzini@redhat.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com
-CC: x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] kvm: fix hyperv tsc page clear wrong address
-References: <53A2BB7B.8070507@gmail.com>
-In-Reply-To: <53A2BB7B.8070507@gmail.com>
-X-Forwarded-Message-Id: <53A2BB7B.8070507@gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------030104070906060807000906"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53A1EC2E.1010706@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030104070906060807000906
-Content-Type: text/plain; charset=gb18030
-Content-Transfer-Encoding: 7bit
+On Wed, Jun 18, 2014 at 01:44:46PM -0600, David Ahern wrote:
 
->From 6010e24da995d4161cb879e98fda989e3cdb41c4 Mon Sep 17 00:00:00 2001
-From: Xiaoming Gao <newtongao@tencent.com>
-Date: Thu, 19 Jun 2014 17:46:05 +0800
-Subject: [PATCH] kvm: fix hyperv tsc page clear wrong address
+SNIP
 
-tsc page addr need clear the low HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT bits
-before kvm_write_guest write the zero tsc_ref structure to guest, or it will lead
-guest to get wrong clocksource.
+> >
+> >Also now we have one of our big memory spender under control
+> >and the ordered events queue code is put in separated object
+> >with clear interface ready to be used by another command
+> >like script.
+> >
+> >Also reachable in here:
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+> >   perf/core_ordered_events
+> >
+> 
+> I've skimmed through the patches. What happens if you are in the middle of a
+> round and the max queue size is reached?
 
-windows guest will get strong impact, QueryPerformanceCounter will always return 0
-,all things in windows rely on clock source will in serious chaos.
+half of the queue (time half) is flushed to make some free space
 
-Signed-off-by: Xiaoming Gao <newtongao@tencnet.com>
----
- arch/x86/kvm/x86.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> I need to find some time for a detailed review, and to run through some
+> stress case scenarios. e.g., a couple that come to mind
+> perf sched record -- perf bench sched pipe
+> perf kvm record while booting a nested VM which causes a lot of VMEXITs
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index f32a025..ed716cf 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1898,6 +1898,7 @@ static int set_msr_hyperv_pw(struct kvm_vcpu *vcpu, u32 msr, u64 data)
- 		if (!(data & HV_X64_MSR_TSC_REFERENCE_ENABLE))
- 			break;
- 		gfn = data >> HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT;
-+		data &= ~((1 << HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT) - 1);
- 		if (kvm_write_guest(kvm, data,
- 			&tsc_ref, sizeof(tsc_ref)))
- 			return 1;
--- 
-1.7.1
+will try.. at least the first one ;-)
 
-
-
-
---------------030104070906060807000906
-Content-Type: text/plain; charset=gb18030;
- name="0001-kvm-fix-hyperv-tsc-page-clear-wrong-address.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="0001-kvm-fix-hyperv-tsc-page-clear-wrong-address.patch"
-
->From 6010e24da995d4161cb879e98fda989e3cdb41c4 Mon Sep 17 00:00:00 2001
-From: Xiaoming Gao <newtongao@tencent.com>
-Date: Thu, 19 Jun 2014 17:46:05 +0800
-Subject: [PATCH] kvm: fix hyperv tsc page clear wrong address
-
-tsc page addr need clear the low HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT bits
-before kvm_write_guest write the zero tsc_ref structure to guest, or it will lead
-guest to get wrong clocksource.
-
-windows guest will get strong impact, QueryPerformanceCounter will always return 0
-,all things in windows rely on clock source, will in serious chaos.
-
-Signed-off-by: Xiaoming Gao <newtongao@tencnet.com>
----
- arch/x86/kvm/x86.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index f32a025..ed716cf 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1898,6 +1898,7 @@ static int set_msr_hyperv_pw(struct kvm_vcpu *vcpu, u32 msr, u64 data)
- 		if (!(data & HV_X64_MSR_TSC_REFERENCE_ENABLE))
- 			break;
- 		gfn = data >> HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT;
-+		data &= ~((1 << HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT) - 1);
- 		if (kvm_write_guest(kvm, data,
- 			&tsc_ref, sizeof(tsc_ref)))
- 			return 1;
--- 
-1.7.1
-
-
---------------030104070906060807000906--
+thanks for looking on this,
+jirka
