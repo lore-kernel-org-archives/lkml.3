@@ -1,62 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934569AbaFSUbb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 16:31:31 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:57664 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071AbaFSUba (ORCPT
+	id S934578AbaFSUcA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 16:32:00 -0400
+Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:43036
+	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932071AbaFSUb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 16:31:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140619201801.GV8178@tassilo.jf.intel.com>
-References: <1403193509-22393-1-git-send-email-eranian@google.com>
-	<1403193509-22393-2-git-send-email-eranian@google.com>
-	<20140619180028.GU8178@tassilo.jf.intel.com>
-	<CABPqkBTw9wi1LSoqWUYcN2W1fvBYDfsdqkdxDTPQ0rWUEUFLmA@mail.gmail.com>
-	<20140619201801.GV8178@tassilo.jf.intel.com>
-Date: Thu, 19 Jun 2014 22:31:29 +0200
-Message-ID: <CABPqkBRy=u6oyyFV9yC9uOykHbNUdDqDgeQ3XSTpcAfQAyS-+g@mail.gmail.com>
-Subject: Re: [PATCH 1/2] perf/x86: update Haswell PEBS event constraints
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, Joe Mario <jmario@redhat.com>,
-        Don Zickus <dzickus@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 19 Jun 2014 16:31:59 -0400
+Date: Thu, 19 Jun 2014 15:31:56 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave.hansen@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>
+Subject: Re: [bisected] pre-3.16 regression on open() scalability
+In-Reply-To: <20140619180916.GE4904@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.11.1406191531020.4002@gentwo.org>
+References: <20140613224519.GV4581@linux.vnet.ibm.com> <53A0CAE5.9000702@intel.com> <20140618001836.GV4669@linux.vnet.ibm.com> <53A132D4.60408@intel.com> <20140618125831.GB4669@linux.vnet.ibm.com> <53A1CE19.7040103@intel.com> <20140618203052.GT4669@linux.vnet.ibm.com>
+ <20140618235131.GA25946@linux.vnet.ibm.com> <20140619014200.GO8178@tassilo.jf.intel.com> <alpine.DEB.2.11.1406190941180.2785@gentwo.org> <20140619180916.GE4904@linux.vnet.ibm.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 10:18 PM, Andi Kleen <ak@linux.intel.com> wrote:
->> I don't quite understand that.
->> You need to know which events support PEBS. You need a table
->
-> We're talking about the kernel allowing things here.
-> Yes the user still needs to know what supports PEBS, but
-> that doesn't concern the kernel.
->
-Just need to make sure you don't return bogus information.
+On Thu, 19 Jun 2014, Paul E. McKenney wrote:
 
-> You can just allow it for all, it's a nop if the event doesn't
-> support it. And also the fields like DataLA are simply 0 when
-> not supported.
->
+> That is a separate issue, but unnecessary calls to cond_resched()
+> should of course be removed -- no argument there.
 
-Let's take a example. If I do resource_stalls:pp, the kernel
-will let it go through and clear the PMI bit on the config as
-is required for PEBS mode. The counter will count normally
-and never fire an interrupt, even when it overflows. It would
-never execute the PMI handler and thus never look at the
-PEBS content. You'd never get any samples.
+It looks like we are fighting higher latencies by adding calls in most of
+the critical sections which will in turn increase the latencies that we
+are trying to reduce.
 
-> The only thing you need is a rule to limit to 4 counters.
->
-> Then only cases that are special (PREC_DIST, extra registers)
-> would need to be handled explicitely.
->
-extra registers do no impose counter constraints. That's the approach
-used by Intel tools to simplify scheduling. As I said in my patch, in
-Linux we do this differently.
-
-So yes, you'd need this for PREC_DIST and precise store on SNB, IVB.
