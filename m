@@ -1,116 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964970AbaFSTxk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 15:53:40 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:37751 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964908AbaFSTxh convert rfc822-to-8bit (ORCPT
+	id S934105AbaFSTzk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 15:55:40 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:44703 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753823AbaFSTzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 15:53:37 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Mark Salter <msalter@redhat.com>
-Cc: David Rientjes <rientjes@google.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2] mm: page_alloc: fix CMA area initialisation when pageblock >
- MAX_ORDER
-In-Reply-To: <1403201524.32688.62.camel@deneb.redhat.com>
-Organization: http://mina86.com/
-References: <1402522435-13884-1-git-send-email-msalter@redhat.com> <alpine.DEB.2.02.1406111557030.27885@chino.kir.corp.google.com> <xa1t61jzwfo6.fsf@mina86.com> <1403201524.32688.62.camel@deneb.redhat.com>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:140619:m.szyprowski@samsung.com::9x3cCUuKFDY4+PP5:00000000000000000000000000000000000000kPT
-X-Hashcash: 1:20:140619:linux-kernel@vger.kernel.org::mEGSAGXVs+aawoCW:0000000000000000000000000000000000i81
-X-Hashcash: 1:20:140619:rientjes@google.com::2MrabMs7O0RrnwiG:0000000000000000000000000000000000000000001a5g
-X-Hashcash: 1:20:140619:msalter@redhat.com::ZgEXdVvcIa/wSua3:00000000000000000000000000000000000000000002KZ7
-X-Hashcash: 1:20:140619:catalin.marinas@arm.com::Fhj7HryT/UQBvFHr:000000000000000000000000000000000000005rF5
-X-Hashcash: 1:20:140619:linux-arm-kernel@lists.infradead.org::wzwYyEHlQ/pvsZq3:00000000000000000000000005VVh
-Date: Thu, 19 Jun 2014 21:53:33 +0200
-Message-ID: <xa1td2e41xs2.fsf@mina86.com>
+	Thu, 19 Jun 2014 15:55:39 -0400
+Message-ID: <53A34031.4030004@gmail.com>
+Date: Thu, 19 Jun 2014 21:55:29 +0200
+From: Sorin Manolache <sorinm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Icedove/30.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Lan Tianyu <tianyu.lan@intel.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Zhang Rui <rui.zhang@intel.com>, linux-kernel@vger.kernel.org,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: drivers/acpi/ac.c, re-enabling CONFIG_ACPI_PROCFS_POWER?
+References: <53A1F65C.9090907@gmail.com> <1891948.UFv8RnVsZc@vostro.rjw.lan> <53A28408.8040001@intel.com> <53A295AA.3080904@intel.com>
+In-Reply-To: <53A295AA.3080904@intel.com>
+Content-Type: multipart/mixed;
+ boundary="------------070705090807060000020700"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With a kernel configured with ARM64_64K_PAGES && !TRANSPARENT_HUGEPAGE,
-the following is triggered at early boot:
+This is a multi-part message in MIME format.
+--------------070705090807060000020700
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 
-  SMP: Total of 8 processors activated.
-  devtmpfs: initialized
-  Unable to handle kernel NULL pointer dereference at virtual address 00000008
-  pgd = fffffe0000050000
-  [00000008] *pgd=00000043fba00003, *pmd=00000043fba00003, *pte=00e0000078010407
-  Internal error: Oops: 96000006 [#1] SMP
-  Modules linked in:
-  CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc864k+ #44
-  task: fffffe03bc040000 ti: fffffe03bc080000 task.ti: fffffe03bc080000
-  PC is at __list_add+0x10/0xd4
-  LR is at free_one_page+0x270/0x638
-  ...
-  Call trace:
-  [<fffffe00003ee970>] __list_add+0x10/0xd4
-  [<fffffe000019c478>] free_one_page+0x26c/0x638
-  [<fffffe000019c8c8>] __free_pages_ok.part.52+0x84/0xbc
-  [<fffffe000019d5e8>] __free_pages+0x74/0xbc
-  [<fffffe0000c01350>] init_cma_reserved_pageblock+0xe8/0x104
-  [<fffffe0000c24de0>] cma_init_reserved_areas+0x190/0x1e4
-  [<fffffe0000090418>] do_one_initcall+0xc4/0x154
-  [<fffffe0000bf0a50>] kernel_init_freeable+0x204/0x2a8
-  [<fffffe00007520a0>] kernel_init+0xc/0xd4
+On 2014-06-19 09:47, Lan Tianyu wrote:
+> On 2014年06月19日 14:32, Lan Tianyu wrote:
+>> On 2014年06月19日 07:17, Rafael J. Wysocki wrote:
+>>> On Wednesday, June 18, 2014 10:28:12 PM Sorin Manolache wrote:
+>>>> Hello,
+>>>>
+>>>> Would it be worth considering re-enabling the old procfs interface for
+>>>> ac.c? There are old tools still around (kpowersave from kde 3.5.10) that
+>>>> expect /proc/acpi/ac_adapter.
+>>>
+>>> Can you please CC ACPI-related messages to linux-acpi@vger.kernel.org?
+>>>
+>>> I'm not sure how much effort that would require at this point.  Rui, Tianyu?
+>>
+>> I think we need to revert commit ab0fd67.
+>>
+>> commit ab0fd674d6cef0904baa511f22613ef6474f8169
+>> Author: Lan Tianyu <tianyu.lan@intel.com>
+>> Date:   Sat Oct 12 21:04:48 2013 +0800
+>>
+>>      ACPI / AC: Remove AC's proc directory.
+>>
+>>      AC's proc directory is not used and so remove it. Prepare for removing
+>>      /proc/acpi directory.
+>>
+>>      Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+>>      Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>
+>
+> Hi Sorin:
+> 	Please try the patch in the attachment.
+>
 
-This happens because init_cma_reserved_pageblock() calls
-__free_one_page() with pageblock_order as page order but it is bigger
-han MAX_ORDER.  This in turn causes accesses past zone->free_list[].
+Hello Tianyu,
 
-Fix the problem by changing init_cma_reserved_pageblock() such that it
-splits pageblock into individual MAX_ORDER pages if pageblock is
-bigger than a MAX_ORDER page.
+I've applied the patch to 3.15.1. The code did not compile because of 
+ac->adev in acpi_ac_add_fs and acpi_ac_remove_fs. The acpi_ac structure 
+contains a field "device" and not "adev". So I've modified the patch and 
+I've attached it.
 
-In cases where !CONFIG_HUGETLB_PAGE_SIZE_VARIABLE, which is all
-architectures expect for ia64, powerpc and tile at the moment, the
-“pageblock_order > MAX_ORDER” condition will be optimised out since
-both sides of the operator are constants.  In cases where pageblock
-size is variable, the performance degradation should not be
-significant anyway since init_cma_reserved_pageblock() is called
-only at boot time at most MAX_CMA_AREAS times which by default is
-eight.
+Now it works.
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Reported-by: Mark Salter <msalter@redhat.com>
+Thank you,
+Sorin
+
+
+
+
+
+
+
+>>
+>>>
+>>> Rafael
+>>>
+>>
+>>
+>
+>
+
+
+
+--------------070705090807060000020700
+Content-Type: text/x-diff;
+ name="0001-Revert-ACPI-AC-Remove-AC-s-proc-directory.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0001-Revert-ACPI-AC-Remove-AC-s-proc-directory.patch"
+
+>From fd72993b850325603e6e6a424d0f3f117a8fa957 Mon Sep 17 00:00:00 2001
+From: Lan Tianyu <tianyu.lan@intel.com>
+Date: Thu, 19 Jun 2014 14:54:22 +0800
+Subject: [PATCH] Revert "ACPI / AC: Remove AC's proc directory."
+
+This patch is to reverts commit ab0fd674d6cef0904baa511f22613ef6474f8169.
+Some old tools (E,G kpowersave from kde 3.5.10) are still using
+/proc/acpi/ac_adapter.
 ---
- mm/page_alloc.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/acpi/ac.c | 130 +++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 128 insertions(+), 2 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 7f97767..fe114db 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -817,7 +817,18 @@ void __init init_cma_reserved_pageblock(struct page *page)
+diff --git a/drivers/acpi/ac.c b/drivers/acpi/ac.c
+index c67f6f5..c1a32e3 100644
+--- a/drivers/acpi/ac.c
++++ b/drivers/acpi/ac.c
+@@ -30,6 +30,10 @@
+ #include <linux/types.h>
+ #include <linux/dmi.h>
+ #include <linux/delay.h>
++#ifdef CONFIG_ACPI_PROCFS_POWER
++#include <linux/proc_fs.h>
++#include <linux/seq_file.h>
++#endif
+ #include <linux/platform_device.h>
+ #include <linux/power_supply.h>
+ #include <linux/acpi.h>
+@@ -52,6 +56,7 @@ MODULE_AUTHOR("Paul Diefenbaugh");
+ MODULE_DESCRIPTION("ACPI AC Adapter Driver");
+ MODULE_LICENSE("GPL");
  
- 	set_page_refcounted(page);
- 	set_pageblock_migratetype(page, MIGRATE_CMA);
--	__free_pages(page, pageblock_order);
 +
-+	if (pageblock_order > MAX_ORDER) {
-+		i = pageblock_order - MAX_ORDER;
-+		i = 1 << i;
-+		p = page;
-+		do {
-+			__free_pages(p, MAX_ORDER);
-+		} while (p += MAX_ORDER_NR_PAGES, --i);
-+	} else {
-+		__free_pages(page, pageblock_order);
+ static int acpi_ac_add(struct acpi_device *device);
+ static int acpi_ac_remove(struct acpi_device *device);
+ static void acpi_ac_notify(struct acpi_device *device, u32 event);
+@@ -67,6 +72,13 @@ static int acpi_ac_resume(struct device *dev);
+ #endif
+ static SIMPLE_DEV_PM_OPS(acpi_ac_pm, NULL, acpi_ac_resume);
+ 
++#ifdef CONFIG_ACPI_PROCFS_POWER
++extern struct proc_dir_entry *acpi_lock_ac_dir(void);
++extern void *acpi_unlock_ac_dir(struct proc_dir_entry *acpi_ac_dir);
++static int acpi_ac_open_fs(struct inode *inode, struct file *file);
++#endif
++
++
+ static int ac_sleep_before_get_state_ms;
+ 
+ static struct acpi_driver acpi_ac_driver = {
+@@ -91,6 +103,16 @@ struct acpi_ac {
+ 
+ #define to_acpi_ac(x) container_of(x, struct acpi_ac, charger)
+ 
++#ifdef CONFIG_ACPI_PROCFS_POWER
++static const struct file_operations acpi_ac_fops = {
++	.owner = THIS_MODULE,
++	.open = acpi_ac_open_fs,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++#endif
++
+ /* --------------------------------------------------------------------------
+                                AC Adapter Management
+    -------------------------------------------------------------------------- */
+@@ -143,6 +165,83 @@ static enum power_supply_property ac_props[] = {
+ 	POWER_SUPPLY_PROP_ONLINE,
+ };
+ 
++#ifdef CONFIG_ACPI_PROCFS_POWER
++/* --------------------------------------------------------------------------
++                              FS Interface (/proc)
++   -------------------------------------------------------------------------- */
++
++static struct proc_dir_entry *acpi_ac_dir;
++
++static int acpi_ac_seq_show(struct seq_file *seq, void *offset)
++{
++	struct acpi_ac *ac = seq->private;
++
++
++	if (!ac)
++		return 0;
++
++	if (acpi_ac_get_state(ac)) {
++		seq_puts(seq, "ERROR: Unable to read AC Adapter state\n");
++		return 0;
 +	}
 +
- 	adjust_managed_page_count(page, pageblock_nr_pages);
++	seq_puts(seq, "state:                   ");
++	switch (ac->state) {
++	case ACPI_AC_STATUS_OFFLINE:
++		seq_puts(seq, "off-line\n");
++		break;
++	case ACPI_AC_STATUS_ONLINE:
++		seq_puts(seq, "on-line\n");
++		break;
++	default:
++		seq_puts(seq, "unknown\n");
++		break;
++	}
++
++	return 0;
++}
++
++static int acpi_ac_open_fs(struct inode *inode, struct file *file)
++{
++	return single_open(file, acpi_ac_seq_show, PDE_DATA(inode));
++}
++
++static int acpi_ac_add_fs(struct acpi_ac *ac)
++{
++	struct proc_dir_entry *entry = NULL;
++
++	printk(KERN_WARNING PREFIX "Deprecated procfs I/F for AC is loaded,"
++			" please retry with CONFIG_ACPI_PROCFS_POWER cleared\n");
++	if (!acpi_device_dir(ac->device)) {
++		acpi_device_dir(ac->device) =
++			proc_mkdir(acpi_device_bid(ac->device), acpi_ac_dir);
++		if (!acpi_device_dir(ac->device))
++			return -ENODEV;
++	}
++
++	/* 'state' [R] */
++	entry = proc_create_data(ACPI_AC_FILE_STATE,
++				 S_IRUGO, acpi_device_dir(ac->device),
++				 &acpi_ac_fops, ac);
++	if (!entry)
++		return -ENODEV;
++	return 0;
++}
++
++static int acpi_ac_remove_fs(struct acpi_ac *ac)
++{
++
++	if (acpi_device_dir(ac->device)) {
++		remove_proc_entry(ACPI_AC_FILE_STATE,
++				  acpi_device_dir(ac->device));
++		remove_proc_entry(acpi_device_bid(ac->device), acpi_ac_dir);
++		acpi_device_dir(ac->device) = NULL;
++	}
++
++	return 0;
++}
++#endif
++
+ /* --------------------------------------------------------------------------
+                                    Driver Model
+    -------------------------------------------------------------------------- */
+@@ -243,6 +342,11 @@ static int acpi_ac_add(struct acpi_device *device)
+ 		goto end;
+ 
+ 	ac->charger.name = acpi_device_bid(device);
++#ifdef CONFIG_ACPI_PROCFS_POWER
++	result = acpi_ac_add_fs(ac);
++	if (result)
++		goto end;
++#endif
+ 	ac->charger.type = POWER_SUPPLY_TYPE_MAINS;
+ 	ac->charger.properties = ac_props;
+ 	ac->charger.num_properties = ARRAY_SIZE(ac_props);
+@@ -258,8 +362,12 @@ static int acpi_ac_add(struct acpi_device *device)
+ 	ac->battery_nb.notifier_call = acpi_ac_battery_notify;
+ 	register_acpi_notifier(&ac->battery_nb);
+ end:
+-	if (result)
++	if (result) {
++#ifdef CONFIG_ACPI_PROCFS_POWER
++		acpi_ac_remove_fs(ac);
++#endif
+ 		kfree(ac);
++	}
+ 
+ 	dmi_check_system(ac_dmi_table);
+ 	return result;
+@@ -303,6 +411,10 @@ static int acpi_ac_remove(struct acpi_device *device)
+ 		power_supply_unregister(&ac->charger);
+ 	unregister_acpi_notifier(&ac->battery_nb);
+ 
++#ifdef CONFIG_ACPI_PROCFS_POWER
++	acpi_ac_remove_fs(ac);
++#endif
++
+ 	kfree(ac);
+ 
+ 	return 0;
+@@ -315,9 +427,20 @@ static int __init acpi_ac_init(void)
+ 	if (acpi_disabled)
+ 		return -ENODEV;
+ 
++#ifdef CONFIG_ACPI_PROCFS_POWER
++	acpi_ac_dir = acpi_lock_ac_dir();
++	if (!acpi_ac_dir)
++		return -ENODEV;
++#endif
++
++
+ 	result = acpi_bus_register_driver(&acpi_ac_driver);
+-	if (result < 0)
++	if (result < 0) {
++#ifdef CONFIG_ACPI_PROCFS_POWER
++		acpi_unlock_ac_dir(acpi_ac_dir);
++#endif
+ 		return -ENODEV;
++	}
+ 
+ 	return 0;
  }
- #endif
+@@ -325,6 +448,9 @@ static int __init acpi_ac_init(void)
+ static void __exit acpi_ac_exit(void)
+ {
+ 	acpi_bus_unregister_driver(&acpi_ac_driver);
++#ifdef CONFIG_ACPI_PROCFS_POWER
++	acpi_unlock_ac_dir(acpi_ac_dir);
++#endif
+ }
+ module_init(acpi_ac_init);
+ module_exit(acpi_ac_exit);
 -- 
-2.0.0.526.g5318336
+1.8.4.rc0.1.g8f6a3e5.dirty
 
+
+
+--------------070705090807060000020700--
