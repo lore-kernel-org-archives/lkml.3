@@ -1,28 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235AbaFSMh5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 08:37:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57550 "EHLO
+	id S1754359AbaFSMiE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 08:38:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57552 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871AbaFSMhz (ORCPT
+	with ESMTP id S1751413AbaFSMiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 08:37:55 -0400
-Date: Thu, 19 Jun 2014 05:36:38 -0700
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-4f3aaf2c2ba35bc2cd823a240f9969ebfb3c7549@git.kernel.org>
+	Thu, 19 Jun 2014 08:38:00 -0400
+Date: Thu, 19 Jun 2014 05:36:52 -0700
+From: tip-bot for Trond Myklebust <tipbot@zytor.com>
+Message-ID: <tip-22fdcf02f6e80d64a927f702dd9d631a927d87d4@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        will.deacon@arm.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, davej@redhat.com, pebolle@tiscali.nl,
-        paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com, tglx@linutronix.de
+        torvalds@linux-foundation.org, trond.myklebust@primarydata.com,
+        peterz@infradead.org, sboyd@codeaurora.org, viro@zeniv.linux.org.uk,
+        davem@davemloft.net, john.stultz@linaro.org, Waiman.Long@hp.com,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, will.deacon@arm.com,
-        peterz@infradead.org, davej@redhat.com, paulmck@linux.vnet.ibm.com,
-        pebolle@tiscali.nl, Waiman.Long@hp.com, tglx@linutronix.de
-In-Reply-To: <20140611090509.GC3588@twins.programming.kicks-ass.net>
-References: <20140611090509.GC3588@twins.programming.kicks-ass.net>
+        trond.myklebust@primarydata.com, torvalds@linux-foundation.org,
+        peterz@infradead.org, viro@zeniv.linux.org.uk, sboyd@codeaurora.org,
+        davem@davemloft.net, john.stultz@linaro.org, Waiman.Long@hp.com,
+        tglx@linutronix.de
+In-Reply-To: <CAHQdGtRR6SvEhXiqWo24hoUh9AU9cL82Z8Z-d8-7u951F_d+5g@mail.gmail.com>
+References: <CAHQdGtRR6SvEhXiqWo24hoUh9AU9cL82Z8Z-d8-7u951F_d+5g@mail.gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/core] x86, locking: Use no more OOSTORE nonsense
-Git-Commit-ID: 4f3aaf2c2ba35bc2cd823a240f9969ebfb3c7549
+Subject: [tip:locking/core] lockdep:
+  Revert lockdep check in raw_seqcount_begin()
+Git-Commit-ID: 22fdcf02f6e80d64a927f702dd9d631a927d87d4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,55 +38,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4f3aaf2c2ba35bc2cd823a240f9969ebfb3c7549
-Gitweb:     http://git.kernel.org/tip/4f3aaf2c2ba35bc2cd823a240f9969ebfb3c7549
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 11 Jun 2014 11:01:45 +0200
+Commit-ID:  22fdcf02f6e80d64a927f702dd9d631a927d87d4
+Gitweb:     http://git.kernel.org/tip/22fdcf02f6e80d64a927f702dd9d631a927d87d4
+Author:     Trond Myklebust <trond.myklebust@primarydata.com>
+AuthorDate: Thu, 5 Jun 2014 11:31:01 -0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 18 Jun 2014 18:41:22 +0200
+CommitDate: Wed, 18 Jun 2014 18:41:23 +0200
 
-x86, locking: Use no more OOSTORE nonsense
+lockdep: Revert lockdep check in raw_seqcount_begin()
 
-Paul reported that X86_OOSTORE is dead, yay! Update a comment and
-remove a newly added reference.
+This commit reverts the addition of lockdep checking to raw_seqcount_begin
+for the following reasons:
 
-Reported-by: Paul Bolle <pebolle@tiscali.nl>
+ 1) It violates the naming convention that raw_* functions should not
+    do lockdep checks (a convention that is also followed by the other
+    raw_*_seqcount_begin functions).
+
+ 2) raw_seqcount_begin does not spin, so it can only be part of an ABBA
+    deadlock in very special circumstances (for instance if a lock
+    is held across the entire raw_seqcount_begin()+read_seqcount_retry()
+    loop while also being taken inside the write_seqcount protected area).
+
+ 3) It is causing false positives with some existing callers, and there
+    is no non-lockdep alternative for those callers to use.
+
+None of the three existing callers (__d_lookup_rcu, netdev_get_name, and
+the NFS state code) appear to use the function in a manner that is ABBA
+deadlock prone.
+
+Fixes: 1ca7d67cf5d5: seqcount: Add lockdep functionality to seqcount/seqlock
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 Cc: Waiman Long <Waiman.Long@hp.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Link: http://lkml.kernel.org/r/20140611090509.GC3588@twins.programming.kicks-ass.net
+Cc: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/CAHQdGtRR6SvEhXiqWo24hoUh9AU9cL82Z8Z-d8-7u951F_d+5g@mail.gmail.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/barrier.h | 2 +-
- arch/x86/include/asm/qrwlock.h | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ include/linux/seqlock.h | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/barrier.h b/arch/x86/include/asm/barrier.h
-index 5c7198c..0f4460b 100644
---- a/arch/x86/include/asm/barrier.h
-+++ b/arch/x86/include/asm/barrier.h
-@@ -99,7 +99,7 @@
- #if defined(CONFIG_X86_PPRO_FENCE)
- 
- /*
-- * For either of these options x86 doesn't have a strong TSO memory
-+ * For this option x86 doesn't have a strong TSO memory
-  * model and we should fall back to full barriers.
-  */
- 
-diff --git a/arch/x86/include/asm/qrwlock.h b/arch/x86/include/asm/qrwlock.h
-index 70f46f0..ae0e241 100644
---- a/arch/x86/include/asm/qrwlock.h
-+++ b/arch/x86/include/asm/qrwlock.h
-@@ -3,7 +3,7 @@
- 
- #include <asm-generic/qrwlock_types.h>
- 
--#if !defined(CONFIG_X86_OOSTORE) && !defined(CONFIG_X86_PPRO_FENCE)
-+#ifndef CONFIG_X86_PPRO_FENCE
- #define queue_write_unlock queue_write_unlock
- static inline void queue_write_unlock(struct qrwlock *lock)
+diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
+index 535f158..8cf3503 100644
+--- a/include/linux/seqlock.h
++++ b/include/linux/seqlock.h
+@@ -164,8 +164,6 @@ static inline unsigned read_seqcount_begin(const seqcount_t *s)
+ static inline unsigned raw_seqcount_begin(const seqcount_t *s)
  {
+ 	unsigned ret = ACCESS_ONCE(s->sequence);
+-
+-	seqcount_lockdep_reader_access(s);
+ 	smp_rmb();
+ 	return ret & ~1;
+ }
