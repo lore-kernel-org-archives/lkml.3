@@ -1,246 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933006AbaFSM3n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 08:29:43 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:48596 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932300AbaFSM3l (ORCPT
+	id S1753647AbaFSMeO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 08:34:14 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:47477 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977AbaFSMeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 08:29:41 -0400
-Date: Thu, 19 Jun 2014 14:29:34 +0200
-From: Alexander Aring <alex.aring@gmail.com>
-To: Varka Bhadram <varkabhadram@gmail.com>
-Cc: netdev@vger.kernel.org, alex.bluesman.smirnov@gmail.com,
-        dbaryshkov@gmail.com, linux-zigbee-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, davem@davemloft.net, sowjanyap@cdac.in,
-        santoshk@cdac.in, venkatas@cdac.in
-Subject: Re: [PATCH net-next v5 1/3] ieee802154: cc2520: adds driver for TI
- CC2520 radio
-Message-ID: <20140619122931.GA19068@omega>
-References: <1403167131-22092-1-git-send-email-varkab@cdac.in>
- <1403167131-22092-2-git-send-email-varkab@cdac.in>
- <20140619104440.GA17994@omega>
- <53A2D1CE.6040402@gmail.com>
+	Thu, 19 Jun 2014 08:34:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <53A2D1CE.6040402@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Date: Thu, 19 Jun 2014 20:34:12 +0800
+Message-ID: <CAK=oMXftjqjoM2gCrgyc+YkznCOz-V=McEx74xPbxZ2O-UFmFQ@mail.gmail.com>
+Subject: [Question] is it a race condition in acking PMIC sub-interrupt?
+From: Yi Zhang <yizhang.mrvl@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Yi Zhang <yizhang@marvell.com>,
+        zhangwm@marvell.com, shayp@marvell.com, zhouqiao@marvell.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 05:34:30PM +0530, Varka Bhadram wrote:
-> Hi Alex,
-> 
-> Thanks for the comments
-> 
-> On 06/19/2014 04:14 PM, Alexander Aring wrote:
-> >Hi Varka,
-> >
-> >why do you add new features while you trying to get the first version
-> >mainline?
-> 
+Hi, Mark:
 
-Yes, address filtering is needed for AACK support. I did not notice that
-your chip supports AACK, please change your hw flags then to:
+Sorry to trouble you, I met a question related the interrupt ack
+sequence in regmap framework; could you please share your advice on
+this? thank you very much;
 
-flags = IEEE802154_HW_OMIT_CKSUM | IEEE802154_HW_AACK;
+1) the following is the connection related to PMIC on my development board:
 
-> This h/w address filtering feature is required for me to get CC2520 Hardware ACK, which
-> enable TinyOS nodes to communicate with the linux node.
-> 
-> I want to get this feature also in mainline for the first version. So that it will be full fledged driver.
-> 
-> >On Thu, Jun 19, 2014 at 02:08:48PM +0530, Varka Bhadram wrote:
-> >>This patch adds the driver support for the cc2520 radio.
-> >>
-> >>Driver support:
-> >>	- Tx and Rx of IEEE-802.15.4 packets.
-> >>	- Energy Detection on channel.
-> >>	- Setting the Channel for the radio. [b/w 11 - 26 channels]
-> >>	- Start and Stop the radio
-> >>	- h/w address filtering.
-> >>
-> [...]
-> 
-> >>+static int
-> >>+cc2520_read_rxfifo(struct cc2520_private *priv, u8 *data, u8 len, u8 *lqi)
-> >>+{
-> >>+	int status;
-> >>+	struct spi_message msg;
-> >>+
-> >>+	struct spi_transfer xfer_head = {
-> >>+		.len = 0,
-> >>+		.tx_buf = priv->buf,
-> >>+		.rx_buf = priv->buf,
-> >>+	};
-> >>+	struct spi_transfer xfer_buf = {
-> >>+		.len = len,
-> >>+		.rx_buf = data,
-> >>+	};
-> >>+
-> >>+	spi_message_init(&msg);
-> >>+	spi_message_add_tail(&xfer_head, &msg);
-> >>+	spi_message_add_tail(&xfer_buf, &msg);
-> >>+
-> >>+	mutex_lock(&priv->buffer_mutex);
-> >>+	priv->buf[xfer_head.len++] = CC2520_CMD_RXBUF;
-> >>+
-> >>+	dev_vdbg(&priv->spi->dev, "read rxfifo buf[0] = %02x\n", priv->buf[0]);
-> >>+	dev_vdbg(&priv->spi->dev, "buf[1] = %02x\n", priv->buf[1]);
-> >>+
-> >>+	status = spi_sync(priv->spi, &msg);
-> >>+	dev_vdbg(&priv->spi->dev, "status = %d\n", status);
-> >>+	if (msg.status)
-> >>+		status = msg.status;
-> >>+	dev_vdbg(&priv->spi->dev, "status = %d\n", status);
-> >>+	dev_vdbg(&priv->spi->dev,
-> >>+		 "return status buf[0] = %02x\n", priv->buf[0]);
-> >>+	dev_vdbg(&priv->spi->dev, "length buf[1] = %02x\n", priv->buf[1]);
-> >>+
-> >>+	*lqi = data[priv->buf[1] - 1] & 0x7f;
-> >This is a little bit critical... but I know others driver doesn't check
-> >also on this.
-> 
-> I will check how other drivers using lqi field , which is actually passing to higher layers.
-> 
+     PMIC ---> GPIO --> GIC
 
-The lqi value going to trash in the higher layers. But I need this value
-for my future work with RPL.
+     the GPIO is edge triggered interrupt controller, while GIC is
+level triggered;
+2)  there are several interrupt ack registers in PMIC; in
+regmap_irq_thread(), we acked them one by one; but if before we finish
+acking all the registers, another interrupt on the "has-been-acked
+register" is triggered, the interrupt line will be pulled up or down,
+in the 1) case, because GPIO is edge triggered, it cannot "see" this
+interrupt, then GIC cannot know either; while in regmap_irq_thread(),
+the software thinks it has acked all the interrupt, then goes on; but
+actually the interrupt is missed and cannot be resumed in the 1)
+scenario;
 
-> >After the cc2520_read_rxfifo you check if (len < 2 ...) but here you
-> >already use the len. Maybe but the length constraints check in this function.
-> >
-> >>+
-> >>+	mutex_unlock(&priv->buffer_mutex);
-> >>+
-> >>+	return status;
-> 
-> [...]
-> 
-> >>+static int cc2520_rx(struct cc2520_private *priv)
-> >>+{
-> >>+	u8 len = 0, lqi = 0, bytes = 1;
-> >>+	struct sk_buff *skb;
-> >>+
-> >>+	cc2520_read_rxfifo(priv, &len, bytes, &lqi);
-> >Okay, you get here the length for your pdu. But then you can check
-> >afterwards on:
-> >
-> >if (len < 2) instead of doing this in the second rxfifo call. And please
-> >do a:
-> >
-> >if (len < 2 || len > IEEE802154_MTU)
-> 
-> I will make this change in v6
-> 
-> >The reason is, I don't know if your chip does filter something like
-> >that. The at86rf230 don't filter pdu above the MTU size and we have no
-> >generic mac802154 layer function right now to check on this. I like to
-> >improve that in the near future...
-> >
-> >When you do this check you can save the kfree_skb in this branch.
-> >
-> >>+
-> >>+	skb = alloc_skb(len, GFP_KERNEL);
-> >>+	if (!skb)
-> >>+		return -ENOMEM;
-> >>+
-> >>+	cc2520_read_rxfifo(priv, skb_put(skb, len), len, &lqi);
-> >>+	if (len < 2) {
-> >>+		kfree_skb(skb);
-> >>+		return -EINVAL;
-> >>+	}
-> >>+
-> >>+	skb_trim(skb, skb->len - 2);
-> >>+
-> >>+	ieee802154_rx_irqsafe(priv->dev, skb, lqi);
-> >>+
-> >>+	dev_vdbg(&priv->spi->dev, "RXFIFO: %x %x\n", len, lqi);
-> >>+
-> >>+	return 0;
-> >>+}
-> >>+
-> >>+static int
-> >>+cc2520_ed(struct ieee802154_dev *dev, u8 *level)
-> >>+{
-> >>+	struct cc2520_private *priv = dev->priv;
-> >>+	u8 status = 0xff;
-> >>+	u8 rssi;
-> >>+	int ret;
-> >>+
-> >>+	ret = cc2520_read_register(priv , CC2520_RSSISTAT, &status);
-> >>+	if (ret)
-> >>+		return ret;
-> >>+
-> >>+	if (status != RSSI_VALID) {
-> >>+		ret = -EINVAL;
-> >>+		return ret;
-> >return -EINVAL;
-> 
-> Ok. I will do it in v6
-> 
-> >>+	}
-> >>+
-> >>+	ret = cc2520_read_register(priv , CC2520_RSSI, &rssi);
-> >>+	if (ret)
-> >>+		return ret;
-> >>+
-> >>+	/* level = RSSI(rssi) - OFFSET [dBm] : offset is 76dBm*/
-> >>+	*level = rssi - RSSI_OFFSET;
-> >>+
-> >>+	return ret;
-> >>+}
-> >>+
-> [...]
-> >>+static int
-> >>+cc2520_filter(struct ieee802154_dev *dev,
-> >>+	      struct ieee802154_hw_addr_filt *filt, unsigned long changed)
-> >>+{
-> >>+	struct cc2520_private *priv = dev->priv;
-> >>+
-> >>+	if (changed & IEEE802515_AFILT_PANID_CHANGED) {
-> >>+		u8 panid[2];
-> >>+		panid[0] = filt->pan_id & 0xff;
-> >>+		panid[1] = filt->pan_id >> 8;
-> >const u16 panid = le16_to_cpu(filt->pan_id);
-> 
-> Ok.
-> 
-> >>+		cc2520_write_ram(priv, CC2520RAM_PANID, sizeof(panid), panid);
-> >>+	}
-> >>+
-> >>+	if (changed & IEEE802515_AFILT_IEEEADDR_CHANGED)
-> >>+		cc2520_write_ram(priv, CC2520RAM_IEEEADDR,
-> >>+				sizeof(filt->ieee_addr), (u8 *)&filt->ieee_addr);
-> >>+
-> >>+	return 0;
-> >>+
-> >>+}
-> >What's about to handle IEEE802515_AFILT_PANC_CHANGED and
-> >IEEE802515_AFILT_SADDR_CHANGED? These are fully ignored, your chip
-> >should have such functions.
-> 
-> CC2520 supports IEEE802515_AFILT_SADDR_CHANGED functionality , but i didn't find any info about
-> Pan co-coordinator changed register details. If that is possible i will do it in v6
-> 
+Please point out what I'm wrong; thanks;
 
-mhh, there exist FFD and RFD 802.15.4 chips. FFD means full
-function devices, which have coordinator support. The RFD are
-reduced function devices, which have not coordinator support. But I
-think your chip should support to run as coordinator. If your chip is a
-RFD... then it's a little bit more complex. Because this callback is
-only for FFD device and you can not simple return -EOPNOTSUPP in this
-case. Maybe you changed coordinator behaviour and set short address/long
-address/pan id. Then it would return -EOPNOTSUPP but setting of short
-address/long address is supported.
+So if this is true, what about using the following methods to fix it?
+a) disable all the interrupts just before ack, then enable them after
+ack finished; the cons are a) the interrupt is ignored in the process;
+b) we need to manipulate the registers more frequently, after all, I2C
+is a slow bus;
+b) polling until the interrupts are acked; but I think it's hard to
+guarantee that because the interrupt is asynchronous;
 
-> >If you don't support them you need to return -EOPNOTSUPP; but this would
-> >be weird because you have a IEEE 802.15.4 complaint chip. :-)
-> >
-> Ok.
+and one more question:
+Seems we shouldn't connect an interrupt controller as PMIC with an
+edge triggered interrupt controller? Could you please share your
+opinion? we can modify the hardware connection accordingly;
 
-Better forget this..., see above. :-)
-
-- Alex
+thank you very much; :)
