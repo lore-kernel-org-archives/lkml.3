@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934032AbaFSRdl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 13:33:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60358 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932295AbaFSRdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 13:33:39 -0400
-Message-ID: <53A31EBD.8060708@zytor.com>
-Date: Thu, 19 Jun 2014 10:32:45 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S934141AbaFSRfC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 13:35:02 -0400
+Received: from forward4h.mail.yandex.net ([84.201.186.22]:50060 "EHLO
+	forward4h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934040AbaFSRfA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 13:35:00 -0400
+X-Greylist: delayed 330 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Jun 2014 13:35:00 EDT
+From: Evgeniy Polyakov <zbr@ioremap.net>
+Envelope-From: drustafa@yandex.ru
+To: Scott Alfter <scott@alfter.us>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        GregKH <greg@kroah.com>
+In-Reply-To: <31a597fc9f165ccc4998451b0ae91fc6.squirrel@webmail.alfter.us>
+References: <31a597fc9f165ccc4998451b0ae91fc6.squirrel@webmail.alfter.us>
+Subject: Re: revised driver: w1_ds2406
 MIME-Version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>,
-        "Ren, Qiaowei" <qiaowei.ren@intel.com>, Borislav Petkov <bp@alien8.de>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 07/10] x86, mpx: decode MPX instruction to get bound
- violation information
-References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com> <1403084656-27284-8-git-send-email-qiaowei.ren@intel.com> <20140618100745.GB24419@pd.tnic> <9E0BE1322F2F2246BD820DA9FC397ADE016A3BAA@shsmsx102.ccr.corp.intel.com> <20140619062824.GB22025@pd.tnic> <9E0BE1322F2F2246BD820DA9FC397ADE016A3F75@shsmsx102.ccr.corp.intel.com> <53A3181F.9070005@intel.com>
-In-Reply-To: <53A3181F.9070005@intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Message-Id: <6295551403198966@web5h.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Thu, 19 Jun 2014 21:29:26 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2014 10:04 AM, Dave Hansen wrote:
-> 
-> Could you please support this position with some data?  I'm a bit
-> skeptical that instruction decoding is going to be a
-> performance-critical path.
-> 
-> I also don't see the extra field that you talked about in the previous
-> thread?  What's the extra field?  I see a 'limit' vs. 'length', but you
-> don't use 'length' at all, so I think you can use it instead, or at
-> least union it.
-> 
-> I've taken a quick stab at trying to consolidate things.  I think I may
-> have screwed up this:
-> 
-> 	insn->limit = MAX_MPX_INSN_SIZE - bytes;
-> 
-> Qiaowei, is there anything fundamentally broken with what I've got here?
-> 
+Hi Scott
 
-So I encouraged Qiaowei to do a limited special-purpose decoder, simply
-because the glue to use the generic decoder was almost as large.  I am
-overall not a huge fan of using the generic decoder in constrained
-situation, because the generic decoder is very heavyweight not just in
-terms of performance but in terms of interface -- because it has to.
+I've added Greg to copy.
 
-	-hpa
+18.06.2014, 00:42, "Scott Alfter" <scott@alfter.us>:
+> Some preliminary work at making use of this driver led me to implement
+> CRC-16 checks on read and write to deal with the occasional glitchiness of
+> the 1-Wire bus. šThe revised driver (attached) returns an I/O error if the
+> CRC check fails. šWhen reading the chip's state, either you get a valid
+> indication or you get an I/O error. šWhen changing its state, either the
+> change is successful or an I/O error is returned.
+>
+> This patch supersedes the patch I had previously submitted.
+>
+> Signed-off-by: Scott Alfter <scott@alfter.us>
 
+Greg, this patch looks good, please pull it into your tree.
+If you already applied previous ds2406, let us know.
+
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
