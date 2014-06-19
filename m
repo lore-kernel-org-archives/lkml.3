@@ -1,103 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131AbaFSE0l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 00:26:41 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:37373 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708AbaFSE0j (ORCPT
+	id S1756845AbaFSE2A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 00:28:00 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:64408 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419AbaFSE14 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 00:26:39 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-b8-53a2667da27c
-Message-id: <53A2667C.9060604@samsung.com>
-Date: Thu, 19 Jun 2014 13:26:36 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Thomas Abraham <ta.omasab@gmail.com>
-Cc: Tomasz Figa <t.figa@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv2 0/3] cpufreq: Use cpufreq-cpu0 driver for Exynos3250
-References: <1403080802-2794-1-git-send-email-cw00.choi@samsung.com>
- <CAJuA9aiYGXYYORkbB66ZJs3rTjAu4a7HcPhMSOZs_qUJyy_o7g@mail.gmail.com>
-In-reply-to: <CAJuA9aiYGXYYORkbB66ZJs3rTjAu4a7HcPhMSOZs_qUJyy_o7g@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAIsWRmVeSWpSXmKPExsWyRsSkQLc2bVGwweZrKha9C66yWZxtesNu
-	senxNVaLy7vmsFl87j3CaDHj/D4mi6cTLrJZPF23hNli/YzXLBabJ2xks9j41cOB22PnrLvs
-	Hneu7WHz2Lyk3qNvyypGj8+b5AJYo7hsUlJzMstSi/TtErgypvTvYyno5a6Ys6eJrYGxj7OL
-	kZNDQsBE4tbVC4wQtpjEhXvr2boYuTiEBJYySszadZ69i5EDrKhhixdEfBGjxNF7fSwgDUIC
-	rxklntyKBLF5BbQkfs6czAxSzyKgKvH8QC5ImA0ovP/FDTYQW1QgTGLl9CssEOWCEj8m3wOz
-	RQQ0JFbe+cMKMp9Z4AGzxO6pu5hAEsICXhIzzl1ngVjczSix58ZJVpAEp0CwxPtjU8GuZhZQ
-	l5g0bxEzhC0vsXnNW2aQBgmBj+wSN/5cBkuwCAhIfJt8iAXiG1mJTQeYIT6WlDi44gbLBEax
-	WUiOmoVk7CwkYxcwMq9iFE0tSC4oTkovMtIrTswtLs1L10vOz93ECIzN0/+e9e1gvHnA+hBj
-	MtDKicxSosn5wNjOK4k3NDYzsjA1MTU2Mrc0I01YSZx30cOkICGB9MSS1OzU1ILUovii0pzU
-	4kOMTBycUg2MExVb5gto62v43/BqnpW4fJv9msXOCdxRfRO1dqmekp7QzeeW+bS9bEJwfMlb
-	zVV192uvvfymNle69oHddBuTME6pOwcqXCNKbptIvDy14wKvhqZU1Nzg/yFe264tdVnqWLzS
-	fd8195SXUU+vBSkdd7aUtnQVLv4o8mq1rbyGXtlm9ZDpU1OVWIozEg21mIuKEwH3/OoN4wIA	AA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLKsWRmVeSWpSXmKPExsVy+t9jAd3atEXBBk8vylj0LrjKZnG26Q27
-	xabH11gtLu+aw2bxufcIo8WM8/uYLJ5OuMhm8XTdEmaL9TNes1hsnrCRzWLjVw8Hbo+ds+6y
-	e9y5tofNY/OSeo++LasYPT5vkgtgjWpgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0
-	tDBXUshLzE21VXLxCdB1y8wBukxJoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEa
-	SFjDmDGlfx9LQS93xZw9TWwNjH2cXYwcHBICJhINW7y6GDmBTDGJC/fWs3UxcnEICSxilDh6
-	r48FJCEk8JpR4smtSBCbV0BL4ufMycwgvSwCqhLPD+SChNmAwvtf3GADsUUFwiRWTr/CAlEu
-	KPFj8j0wW0RAQ2LlnT+sIPOZBR4wS+yeuosJJCEs4CUx49x1FojF3YwSe26cZAVJcAoES7w/
-	NpURxGYWUJeYNG8RM4QtL7F5zVvmCYwCs5AsmYWkbBaSsgWMzKsYRVMLkguKk9JzDfWKE3OL
-	S/PS9ZLzczcxgiP/mdQOxpUNFocYBTgYlXh4PS4uDBZiTSwrrsw9xCjBwawkwiv/CyjEm5JY
-	WZValB9fVJqTWnyIMRkYBBOZpUST84FJKa8k3tDYxMzI0sjc0MLI2Jw0YSVx3gOt1oFCAumJ
-	JanZqakFqUUwW5g4OKUaGMsL9KeL5C/NUJzKNLF9tSWfwifHW4uPK/3flJup3dquYLDhdNP+
-	w92fSqb7Re/Yv+rx8+Z01vbJU/PNbRbLt82ZqP7CW1P610yDZ5ycZSVGOZZOjldvNP78UhVw
-	/v6r7h8eOX/rjgo3pWuIXzO8MK32SMeiGS9+mlpdaprXvOp99uedyiWnjJVYijMSDbWYi4oT
-	AbYrybRAAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 19 Jun 2014 00:27:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAF6AEGtzv0+PoMwSfK=NTYAO=bxsnS2BcwLxLNmLqnGTEUV8ng@mail.gmail.com>
+References: <20140618102957.15728.43525.stgit@patser> <20140618103653.15728.4942.stgit@patser>
+ <20140619011653.GF10921@kroah.com> <CAF6AEGtzv0+PoMwSfK=NTYAO=bxsnS2BcwLxLNmLqnGTEUV8ng@mail.gmail.com>
+From: Sumit Semwal <sumit.semwal@linaro.org>
+Date: Thu, 19 Jun 2014 09:57:35 +0530
+Message-ID: <CAO_48GF_hb5PZFwEmx8vsy+gW=Mq=cnEq8H4W74hCdz9qg0+SQ@mail.gmail.com>
+Subject: Re: [REPOST PATCH 1/8] fence: dma-buf cross-device synchronization (v17)
+To: Rob Clark <robdclark@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        linux-arch@vger.kernel.org, Thomas Hellstrom <thellstrom@vmware.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Colin Cross <ccross@google.com>, Daniel Vetter <daniel@ffwll.ch>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+Hi Greg,
 
-On 06/19/2014 01:21 PM, Thomas Abraham wrote:
-> On Wed, Jun 18, 2014 at 2:09 PM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
->> This patchset use cpufreq-cpu0 driver to support Exynos3250 cpufreq. So, this
->> patchset is based on following patchset[1] by Thomas Abraham.
->>  [1] http://www.spinics.net/lists/arm-kernel/msg339392.html
+On 19 June 2014 06:55, Rob Clark <robdclark@gmail.com> wrote:
+> On Wed, Jun 18, 2014 at 9:16 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> On Wed, Jun 18, 2014 at 12:36:54PM +0200, Maarten Lankhorst wrote:
+>>> A fence can be attached to a buffer which is being filled or consumed
+>>> by hw, to allow userspace to pass the buffer without waiting to another
+>>> device.  For example, userspace can call page_flip ioctl to display the
+>>> next frame of graphics after kicking the GPU but while the GPU is still
+>>> rendering.  The display device sharing the buffer with the GPU would
+>>> attach a callback to get notified when the GPU's rendering-complete IRQ
+>>> fires, to update the scan-out address of the display, without having to
+>>> wake up userspace.
+>>>
+>>> A driver must allocate a fence context for each execution ring that can
+>>> run in parallel. The function for this takes an argument with how many
+>>> contexts to allocate:
+>>>   + fence_context_alloc()
+>>>
+>>> A fence is transient, one-shot deal.  It is allocated and attached
+>>> to one or more dma-buf's.  When the one that attached it is done, with
+>>> the pending operation, it can signal the fence:
+>>>   + fence_signal()
+>>>
+>>> To have a rough approximation whether a fence is fired, call:
+>>>   + fence_is_signaled()
+>>>
+>>> The dma-buf-mgr handles tracking, and waiting on, the fences associated
+>>> with a dma-buf.
+>>>
+>>> The one pending on the fence can add an async callback:
+>>>   + fence_add_callback()
+>>>
+>>> The callback can optionally be cancelled with:
+>>>   + fence_remove_callback()
+>>>
+>>> To wait synchronously, optionally with a timeout:
+>>>   + fence_wait()
+>>>   + fence_wait_timeout()
+>>>
+>>> When emitting a fence, call:
+>>>   + trace_fence_emit()
+>>>
+>>> To annotate that a fence is blocking on another fence, call:
+>>>   + trace_fence_annotate_wait_on(fence, on_fence)
+>>>
+>>> A default software-only implementation is provided, which can be used
+>>> by drivers attaching a fence to a buffer when they have no other means
+>>> for hw sync.  But a memory backed fence is also envisioned, because it
+>>> is common that GPU's can write to, or poll on some memory location for
+>>> synchronization.  For example:
+>>>
+>>>   fence = custom_get_fence(...);
+>>>   if ((seqno_fence = to_seqno_fence(fence)) != NULL) {
+>>>     dma_buf *fence_buf = seqno_fence->sync_buf;
+>>>     get_dma_buf(fence_buf);
+>>>
+>>>     ... tell the hw the memory location to wait ...
+>>>     custom_wait_on(fence_buf, seqno_fence->seqno_ofs, fence->seqno);
+>>>   } else {
+>>>     /* fall-back to sw sync * /
+>>>     fence_add_callback(fence, my_cb);
+>>>   }
+>>>
+>>> On SoC platforms, if some other hw mechanism is provided for synchronizing
+>>> between IP blocks, it could be supported as an alternate implementation
+>>> with it's own fence ops in a similar way.
+>>>
+>>> enable_signaling callback is used to provide sw signaling in case a cpu
+>>> waiter is requested or no compatible hardware signaling could be used.
+>>>
+>>> The intention is to provide a userspace interface (presumably via eventfd)
+>>> later, to be used in conjunction with dma-buf's mmap support for sw access
+>>> to buffers (or for userspace apps that would prefer to do their own
+>>> synchronization).
+>>>
+>>> v1: Original
+>>> v2: After discussion w/ danvet and mlankhorst on #dri-devel, we decided
+>>>     that dma-fence didn't need to care about the sw->hw signaling path
+>>>     (it can be handled same as sw->sw case), and therefore the fence->ops
+>>>     can be simplified and more handled in the core.  So remove the signal,
+>>>     add_callback, cancel_callback, and wait ops, and replace with a simple
+>>>     enable_signaling() op which can be used to inform a fence supporting
+>>>     hw->hw signaling that one or more devices which do not support hw
+>>>     signaling are waiting (and therefore it should enable an irq or do
+>>>     whatever is necessary in order that the CPU is notified when the
+>>>     fence is passed).
+>>> v3: Fix locking fail in attach_fence() and get_fence()
+>>> v4: Remove tie-in w/ dma-buf..  after discussion w/ danvet and mlankorst
+>>>     we decided that we need to be able to attach one fence to N dma-buf's,
+>>>     so using the list_head in dma-fence struct would be problematic.
+>>> v5: [ Maarten Lankhorst ] Updated for dma-bikeshed-fence and dma-buf-manager.
+>>> v6: [ Maarten Lankhorst ] I removed dma_fence_cancel_callback and some comments
+>>>     about checking if fence fired or not. This is broken by design.
+>>>     waitqueue_active during destruction is now fatal, since the signaller
+>>>     should be holding a reference in enable_signalling until it signalled
+>>>     the fence. Pass the original dma_fence_cb along, and call __remove_wait
+>>>     in the dma_fence_callback handler, so that no cleanup needs to be
+>>>     performed.
+>>> v7: [ Maarten Lankhorst ] Set cb->func and only enable sw signaling if
+>>>     fence wasn't signaled yet, for example for hardware fences that may
+>>>     choose to signal blindly.
+>>> v8: [ Maarten Lankhorst ] Tons of tiny fixes, moved __dma_fence_init to
+>>>     header and fixed include mess. dma-fence.h now includes dma-buf.h
+>>>     All members are now initialized, so kmalloc can be used for
+>>>     allocating a dma-fence. More documentation added.
+>>> v9: Change compiler bitfields to flags, change return type of
+>>>     enable_signaling to bool. Rework dma_fence_wait. Added
+>>>     dma_fence_is_signaled and dma_fence_wait_timeout.
+>>>     s/dma// and change exports to non GPL. Added fence_is_signaled and
+>>>     fence_enable_sw_signaling calls, add ability to override default
+>>>     wait operation.
+>>> v10: remove event_queue, use a custom list, export try_to_wake_up from
+>>>     scheduler. Remove fence lock and use a global spinlock instead,
+>>>     this should hopefully remove all the locking headaches I was having
+>>>     on trying to implement this. enable_signaling is called with this
+>>>     lock held.
+>>> v11:
+>>>     Use atomic ops for flags, lifting the need for some spin_lock_irqsaves.
+>>>     However I kept the guarantee that after fence_signal returns, it is
+>>>     guaranteed that enable_signaling has either been called to completion,
+>>>     or will not be called any more.
+>>>
+>>>     Add contexts and seqno to base fence implementation. This allows you
+>>>     to wait for less fences, by testing for seqno + signaled, and then only
+>>>     wait on the later fence.
+>>>
+>>>     Add FENCE_TRACE, FENCE_WARN, and FENCE_ERR. This makes debugging easier.
+>>>     An CONFIG_DEBUG_FENCE will be added to turn off the FENCE_TRACE
+>>>     spam, and another runtime option can turn it off at runtime.
+>>> v12:
+>>>     Add CONFIG_FENCE_TRACE. Add missing documentation for the fence->context
+>>>     and fence->seqno members.
+>>> v13:
+>>>     Fixup CONFIG_FENCE_TRACE kconfig description.
+>>>     Move fence_context_alloc to fence.
+>>>     Simplify fence_later.
+>>>     Kill priv member to fence_cb.
+>>> v14:
+>>>     Remove priv argument from fence_add_callback, oops!
+>>> v15:
+>>>     Remove priv from documentation.
+>>>     Explicitly include linux/atomic.h.
+>>> v16:
+>>>     Add trace events.
+>>>     Import changes required by android syncpoints.
+>>> v17:
+>>>     Use wake_up_state instead of try_to_wake_up. (Colin Cross)
+>>>     Fix up commit description for seqno_fence. (Rob Clark)
+>>>
+>>> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+>>> Signed-off-by: Thierry Reding <thierry.reding@gmail.com> #use smp_mb__before_atomic()
+>>> Reviewed-by: Rob Clark <robdclark@gmail.com>
+>>> ---
+>>>  Documentation/DocBook/device-drivers.tmpl |    2
+>>>  drivers/base/Kconfig                      |    9 +
+>>>  drivers/base/Makefile                     |    2
+>>>  drivers/base/fence.c                      |  416 +++++++++++++++++++++++++++++
+>>>  include/linux/fence.h                     |  333 +++++++++++++++++++++++
+>>>  include/trace/events/fence.h              |  128 +++++++++
+>>>  6 files changed, 889 insertions(+), 1 deletion(-)
+>>>  create mode 100644 drivers/base/fence.c
+>>>  create mode 100644 include/linux/fence.h
+>>>  create mode 100644 include/trace/events/fence.h
 >>
->> Changes from v1:
->> - Rebased on new patchset[1] by Thomas Abraham
->> - Modify clk-cpu.c to support Exynos3250
->> - Drop documentation patch on previous patchset[2]
->>  [2] http://www.spinics.net/lists/cpufreq/msg10265.html
->> - Add only operating-points for Exynos3250 without armclk-divider-table
+>> Who is going to sign up to maintain this code?  (hint, it's not me...)
+>
+> that would be Sumit (dma-buf tree)..
+>
+> probably we should move fence/reservation/dma-buf into drivers/dma-buf
+> (or something approximately like that)
+Yes, that would be me - it might be better to create a new directory
+as suggested above (drivers/dma-buf).
+>
+> BR,
+> -R
+>
+>
+>> thanks,
 >>
->> Chanwoo Choi (3):
->>   clk: samsung: cpu: Add support for cpu clocks of Exynos3250
->>   clk: samsung: exynos3250: Use cpu-clock provider type to support cpufreq
->>   ARM: dts: Exynos: Add cpu clock table for Exynos3250
->>
->>  arch/arm/boot/dts/exynos3250.dtsi    | 15 +++++++++++++++
->>  drivers/clk/samsung/clk-cpu.c        | 31 +++++++++++++++++++++++++++++++
->>  drivers/clk/samsung/clk-exynos3250.c | 14 ++++++++++----
->>  3 files changed, 56 insertions(+), 4 deletions(-)
-> 
-> Hi Chanwoo,
-> 
-> I have reviewed this series and it looks fine. If the cpu clock type
-> is merged without any further changes, please add
-> Reviewed-by: Thomas Abraham <thomas.ab@samsung.com>
+>> greg k-h
+Best regards,
+~Sumit.
 
-Thanks for your review.
 
-Best Regards,
-Chanwoo Choi
+-- 
+Thanks and regards,
 
+Sumit Semwal
+Graphics Engineer - Graphics working group
+Linaro.org │ Open source software for ARM SoCs
