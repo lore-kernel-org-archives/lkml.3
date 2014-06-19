@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933764AbaFSQw4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:52:56 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:60997 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932775AbaFSQwz (ORCPT
+	id S933778AbaFSQzk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:55:40 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:39101 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932232AbaFSQzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:52:55 -0400
-Date: Thu, 19 Jun 2014 09:52:47 -0700
+	Thu, 19 Jun 2014 12:55:39 -0400
+Date: Thu, 19 Jun 2014 09:55:02 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Pekka Enberg <penberg@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: slub/debugobjects: lockup when freeing memory
-Message-ID: <20140619165247.GA4904@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, cl@linux-foundation.org,
+        kmo@daterainc.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 6/6] percpu-refcount: implement percpu_ref_reinit()
+ and percpu_ref_is_zero()
+Message-ID: <20140619165501.GB4904@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <53A2F406.4010109@oracle.com>
- <alpine.DEB.2.11.1406191001090.2785@gentwo.org>
+References: <1403053685-28240-1-git-send-email-tj@kernel.org>
+ <1403053685-28240-7-git-send-email-tj@kernel.org>
+ <20140619022055.GD20100@mtj.dyndns.org>
+ <53A25286.1030003@cn.fujitsu.com>
+ <20140619133104.GH11042@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1406191001090.2785@gentwo.org>
+In-Reply-To: <20140619133104.GH11042@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061916-8236-0000-0000-000003393AC1
+x-cbid: 14061916-9332-0000-0000-000001249D07
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 10:03:04AM -0500, Christoph Lameter wrote:
-> On Thu, 19 Jun 2014, Sasha Levin wrote:
+On Thu, Jun 19, 2014 at 09:31:04AM -0400, Tejun Heo wrote:
+> On Thu, Jun 19, 2014 at 11:01:26AM +0800, Lai Jiangshan wrote:
+> > > +	/*
+> > > +	 * Restore per-cpu operation.  smp_store_release() is paired with
+> > > +	 * smp_load_acquire() in __pcpu_ref_alive() and guarantees that the
+> > 
+> > s/smp_load_acquire()/smp_read_barrier_depends()/
 > 
-> > [  690.770137] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-> > [  690.770137] __slab_alloc (mm/slub.c:1732 mm/slub.c:2205 mm/slub.c:2369)
-> > [  690.770137] ? __lock_acquire (kernel/locking/lockdep.c:3189)
-> > [  690.770137] ? __debug_object_init (lib/debugobjects.c:100 lib/debugobjects.c:312)
-> > [  690.770137] kmem_cache_alloc (mm/slub.c:2442 mm/slub.c:2484 mm/slub.c:2489)
-> > [  690.770137] ? __debug_object_init (lib/debugobjects.c:100 lib/debugobjects.c:312)
-> > [  690.770137] ? debug_object_activate (lib/debugobjects.c:439)
-> > [  690.770137] __debug_object_init (lib/debugobjects.c:100 lib/debugobjects.c:312)
-> > [  690.770137] debug_object_init (lib/debugobjects.c:365)
-> > [  690.770137] rcuhead_fixup_activate (kernel/rcu/update.c:231)
-> > [  690.770137] debug_object_activate (lib/debugobjects.c:280 lib/debugobjects.c:439)
-> > [  690.770137] ? discard_slab (mm/slub.c:1486)
-> > [  690.770137] __call_rcu (kernel/rcu/rcu.h:76 (discriminator 2) kernel/rcu/tree.c:2585 (discriminator 2))
+> Will update.
 > 
-> __call_rcu does a slab allocation? This means __call_rcu can no longer be
-> used in slab allocators? What happened?
+> > s/smp_store_release()/smp_mb()/  if you accept my next comment.
+> >
+> > > +	 * zeroing is visible to all percpu accesses which can see the
+> > > +	 * following PCPU_REF_DEAD clearing.
+> > > +	 */
+> > > +	for_each_possible_cpu(cpu)
+> > > +		*per_cpu_ptr(pcpu_count, cpu) = 0;
+> > > +
+> > > +	smp_store_release(&ref->pcpu_count_ptr,
+> > > +			  ref->pcpu_count_ptr & ~PCPU_REF_DEAD);
+> > 
+> > I think it would be better if smp_mb() is used.
+> 
+> smp_wmb() would be better here.  We don't need the reader side.
+> 
+> > it is documented that smp_read_barrier_depends() and smp_mb() are paired.
+> > Not smp_read_barrier_depends() and smp_store_release().
 
-My guess is that the root cause is a double call_rcu(), call_rcu_sched(),
-call_rcu_bh(), or call_srcu().
+Well, sounds like the documentation needs an update, then.  ;-)
 
-Perhaps the DEBUG_OBJECTS code now allocates memory to report errors?
-That would be unfortunate...
+For example, current rcu_assign_pointer() is a wrapper around
+smp_store_release().
+
+> I don't know.  I thought about doing that but the RCU accessors are
+> pairing store_release with read_barrier_depends, so I don't think the
+> particular paring is problematic and store_release is better at
+> documenting what's being barriered.
+
+Which Tejun noted as well.
 
 							Thanx, Paul
 
