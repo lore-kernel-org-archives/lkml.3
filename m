@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965225AbaFSUUv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 16:20:51 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:50533 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757451AbaFSUUt (ORCPT
+	id S1757495AbaFSUWS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 16:22:18 -0400
+Received: from smtprelay0208.hostedemail.com ([216.40.44.208]:37695 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754264AbaFSUWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 16:20:49 -0400
-Date: Thu, 19 Jun 2014 13:20:44 -0700
-From: josh@joshtriplett.org
+	Thu, 19 Jun 2014 16:22:17 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3865:3866:3867:3872:4321:5007:7652:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12740:13019:13069:13311:13357,
+X-HE-Tag: ear60_30a39de5b8e24
+X-Filterd-Recvd-Size: 2101
+Message-ID: <1403209332.2753.2.camel@joe-AO725>
+Subject: Re: [PATCH 6/8] wlan-ng/prism2sta:checkpatch: Fix long lines
+From: Joe Perches <joe@perches.com>
 To: Johannes Stadlinger <Johannes.Stadlinger@fau.de>
 Cc: devel@linuxdriverproject.org,
         Maximilian Eschenbacher <maximilian@eschenbacher.email>,
         linux-kernel@i4.cs.fau.de,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Tugce Sirin <ztugcesirin@gmail.com>,
-        Himangi Saraogi <himangi774@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Neil Armstrong <superna9999@gmail.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Vitaly Osipov <vitaly.osipov@gmail.com>,
-        Neil Armstrong <superna9999@gmail.com>, devel@driverdev.osuosl.org,
+        Vitaly Osipov <vitaly.osipov@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/8] wlan-ng/prism2sta:checkpatch: Insert blank lines
-Message-ID: <20140619202044.GH16404@cloud>
+Date: Thu, 19 Jun 2014 13:22:12 -0700
+In-Reply-To: <1403205620-10219-6-git-send-email-Johannes.Stadlinger@fau.de>
 References: <1403205620-10219-1-git-send-email-Johannes.Stadlinger@fau.de>
- <1403205620-10219-8-git-send-email-Johannes.Stadlinger@fau.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403205620-10219-8-git-send-email-Johannes.Stadlinger@fau.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	 <1403205620-10219-6-git-send-email-Johannes.Stadlinger@fau.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 09:20:20PM +0200, Johannes Stadlinger wrote:
-> This patch inserts blank lines after declarations to avoid checkpatch
-> warnings.
-> 
-> After our fixes in 'wlan-ng/prism2sta' there is still a checkpatch
-> warning about prefering 'ether_addr_copy' instead of 'memcpy'
-> remaining.
-> 
-> Signed-off-by: Johannes Stadlinger <Johannes.Stadlinger@fau.de>
-> Signed-off-by: Maximilian Eschenbacher <maximilian@eschenbacher.email>
-> CC: linux-kernel@i4.cs.fau.de
-> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> CC: Tugce Sirin <ztugcesirin@gmail.com>
-> CC: Josh Triplett <josh@joshtriplett.org>
-> CC: Himangi Saraogi <himangi774@gmail.com>
-> CC: Paul Gortmaker <paul.gortmaker@windriver.com>
-> CC: Vitaly Osipov <vitaly.osipov@gmail.com>
-> CC: Neil Armstrong <superna9999@gmail.com>
-> CC: devel@driverdev.osuosl.org
-> CC: linux-kernel@vger.kernel.org
+On Thu, 2014-06-19 at 21:20 +0200, Johannes Stadlinger wrote:
+> This patch fixes all warning of checkpatch about lines over 80
+> characters.
 
-This one does look like an improvement.
+trivia:
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-
->  drivers/staging/wlan-ng/prism2sta.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
 > diff --git a/drivers/staging/wlan-ng/prism2sta.c b/drivers/staging/wlan-ng/prism2sta.c
-> index 9444006..8d4d7ba 100644
-> --- a/drivers/staging/wlan-ng/prism2sta.c
-> +++ b/drivers/staging/wlan-ng/prism2sta.c
-> @@ -360,6 +360,7 @@ static int prism2sta_mlmerequest(wlandevice_t *wlandev, struct p80211msg *msg)
->  	case DIDmsg_lnxreq_ifstate:
->  		{
->  			struct p80211msg_lnxreq_ifstate *ifstatemsg;
-> +
->  			pr_debug("Received mlme ifstate request\n");
->  			ifstatemsg = (struct p80211msg_lnxreq_ifstate *) msg;
->  			result =
-> @@ -1411,6 +1412,7 @@ void prism2sta_processing_defer(struct work_struct *data)
->  		 */
->  		if (hw->join_ap && --hw->join_retries > 0) {
->  			hfa384x_JoinRequest_data_t joinreq;
-> +
->  			joinreq = hw->joinreq;
->  			/* Send the join request */
->  			hfa384x_drvr_setconfig(hw,
-> -- 
-> 1.9.1
-> 
+[]
+> @@ -1271,7 +1275,8 @@ void prism2sta_processing_defer(struct work_struct *data)
+>  				     HFA384x_RID_CURRENTSSID, result);
+>  				return;
+>  			}
+> -			prism2mgmt_bytestr2pstr((struct hfa384x_bytestr *) &ssid,
+> +			prism2mgmt_bytestr2pstr((struct hfa384x_bytestr *)
+> +									&ssid,
+>  						(p80211pstrd_t *) &
+>  						wlandev->ssid);
+
+I don't find this better or easier to read.
+
+Sometimes it's easier to read to cast to a
+void * instead of the specific type
+
+			prism2mgmt_bytestr2pstr((void *)&ssid,
+						(void *)&wlandev->ssid);
+
+ 
+
+
+
