@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755154AbaFSNVL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 09:21:11 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:50409 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754850AbaFSNUU (ORCPT
+	id S1755446AbaFSNVe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 09:21:34 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:47320 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754653AbaFSNUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 09:20:20 -0400
+	Thu, 19 Jun 2014 09:20:16 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: kgdb-bugreport@lists.sourceforge.net,
         Jason Wessel <jason.wessel@windriver.com>
@@ -17,10 +17,11 @@ Cc: Anton Vorontsov <anton.vorontsov@linaro.org>, patches@linaro.org,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>, John Stultz <john.stultz@linaro.org>,
         Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Daniel Thompson <daniel.thompson@linaro.org>
-Subject: [PATCH v5 7/8] kdb: Add enable mask for groups of commands
-Date: Thu, 19 Jun 2014 14:19:36 +0100
-Message-Id: <1403183977-3454-8-git-send-email-daniel.thompson@linaro.org>
+        Daniel Thompson <daniel.thompson@linaro.org>,
+        Mike Travis <travis@sgi.com>
+Subject: [PATCH v5 4/8] kdb: Use KDB_REPEAT_* values as flags
+Date: Thu, 19 Jun 2014 14:19:33 +0100
+Message-Id: <1403183977-3454-5-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1403183977-3454-1-git-send-email-daniel.thompson@linaro.org>
 References: <1399381429-16194-1-git-send-email-daniel.thompson@linaro.org>
@@ -31,187 +32,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 
-Currently all kdb commands are enabled whenever kdb is deployed. This
-makes it difficult to deploy kdb to help debug certain types of
-systems.
+The actual values of KDB_REPEAT_* enum values and overall logic stayed
+the same, but we now treat the values as flags.
 
-Android phones provide one example; the FIQ debugger found on some
-Android devices has a deliberately weak set of commands to allow the
-debugger to enabled very late in the production cycle.
-
-Certain kiosk environments offer another interesting case where an
-engineer might wish to probe the system state using passive inspection
-commands without providing sufficient power for a passer by to root it.
-
-Without any restrictions, obtaining the root rights via KDB is a matter of
-a few commands, and works everywhere. For example, log in as a normal
-user:
-
-cbou:~$ id
-uid=1001(cbou) gid=1001(cbou) groups=1001(cbou)
-
-Now enter KDB (for example via sysrq):
-
-Entering kdb (current=0xffff8800065bc740, pid 920) due to Keyboard Entry
-kdb> ps
-23 sleeping system daemon (state M) processes suppressed,
-use 'ps A' to see all.
-Task Addr               Pid   Parent [*] cpu State Thread             Command
-0xffff8800065bc740      920      919  1    0   R  0xffff8800065bca20 *bash
-
-0xffff880007078000        1        0  0    0   S  0xffff8800070782e0  init
-[...snip...]
-0xffff8800065be3c0      918        1  0    0   S  0xffff8800065be6a0  getty
-0xffff8800065b9c80      919        1  0    0   S  0xffff8800065b9f60  login
-0xffff8800065bc740      920      919  1    0   R  0xffff8800065bca20 *bash
-
-All we need is the offset of cred pointers. We can look up the offset in
-the distro's kernel source, but it is unnecessary. We can just start
-dumping init's task_struct, until we see the process name:
-
-kdb> md 0xffff880007078000
-0xffff880007078000 0000000000000001 ffff88000703c000   ................
-0xffff880007078010 0040210000000002 0000000000000000   .....!@.........
-[...snip...]
-0xffff8800070782b0 ffff8800073e0580 ffff8800073e0580   ..>.......>.....
-0xffff8800070782c0 0000000074696e69 0000000000000000   init............
-
-^ Here, 'init'. Creds are just above it, so the offset is 0x02b0.
-
-Now we set up init's creds for our non-privileged shell:
-
-kdb> mm 0xffff8800065bc740+0x02b0 0xffff8800073e0580
-0xffff8800065bc9f0 = 0xffff8800073e0580
-kdb> mm 0xffff8800065bc740+0x02b8 0xffff8800073e0580
-0xffff8800065bc9f8 = 0xffff8800073e0580
-
-And thus gaining the root:
-
-kdb> go
-cbou:~$ id
-uid=0(root) gid=0(root) groups=0(root)
-cbou:~$ bash
-root:~#
-
-p.s. No distro enables kdb by default (although, with a nice KDB-over-KMS
-feature availability, I would expect at least some would enable it), so
-it's not actually some kind of a major issue.
+This makes it possible to add other flags and combine them, plus makes
+the code a lot simpler and shorter. But functionality-wise, there should
+be no changes.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 Cc: Jason Wessel <jason.wessel@windriver.com>
+Cc: Mike Travis <travis@sgi.com>
 Cc: kgdb-bugreport@lists.sourceforge.net
 ---
- include/linux/kdb.h         |  1 +
- kernel/debug/kdb/kdb_main.c | 30 +++++++++++++++++++++++++++++-
- 2 files changed, 30 insertions(+), 1 deletion(-)
+ include/linux/kdb.h         |  4 ++--
+ kernel/debug/kdb/kdb_main.c | 21 +++++++--------------
+ 2 files changed, 9 insertions(+), 16 deletions(-)
 
 diff --git a/include/linux/kdb.h b/include/linux/kdb.h
-index f1fe361..75ae2e2 100644
+index 32d2f40..90aed7c 100644
 --- a/include/linux/kdb.h
 +++ b/include/linux/kdb.h
-@@ -105,6 +105,7 @@ extern atomic_t kdb_event;
- #define KDB_BADLENGTH	(-19)
- #define KDB_NOBP	(-20)
- #define KDB_BADADDR	(-21)
-+#define KDB_NOPERM	(-22)
+@@ -15,8 +15,8 @@
  
- /*
-  * kdb_diemsg
+ typedef enum {
+ 	KDB_REPEAT_NONE = 0,	/* Do not repeat this command */
+-	KDB_REPEAT_NO_ARGS,	/* Repeat the command without arguments */
+-	KDB_REPEAT_WITH_ARGS,	/* Repeat the command including its arguments */
++	KDB_REPEAT_NO_ARGS	= 0x1, /* Repeat the command w/o arguments */
++	KDB_REPEAT_WITH_ARGS	= 0x2, /* Repeat the command w/ its arguments */
+ } kdb_cmdflags_t;
+ 
+ typedef int (*kdb_func_t)(int, const char **);
 diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 941ff97..c670fe4 100644
+index 6b33f9c..7a0a65c 100644
 --- a/kernel/debug/kdb/kdb_main.c
 +++ b/kernel/debug/kdb/kdb_main.c
-@@ -12,6 +12,7 @@
-  */
- 
- #include <linux/ctype.h>
-+#include <linux/types.h>
- #include <linux/string.h>
- #include <linux/kernel.h>
- #include <linux/kmsg_dump.h>
-@@ -23,6 +24,7 @@
- #include <linux/vmalloc.h>
- #include <linux/atomic.h>
- #include <linux/module.h>
-+#include <linux/moduleparam.h>
- #include <linux/mm.h>
- #include <linux/init.h>
- #include <linux/kallsyms.h>
-@@ -42,6 +44,12 @@
- #include <linux/slab.h>
- #include "kdb_private.h"
- 
-+#undef	MODULE_PARAM_PREFIX
-+#define	MODULE_PARAM_PREFIX "kdb."
-+
-+static int kdb_cmd_enabled;
-+module_param_named(cmd_enable, kdb_cmd_enabled, int, 0600);
-+
- #define GREP_LEN 256
- char kdb_grep_string[GREP_LEN];
- int kdb_grepping_flag;
-@@ -121,6 +129,7 @@ static kdbmsg_t kdbmsgs[] = {
- 	KDBMSG(BADLENGTH, "Invalid length field"),
- 	KDBMSG(NOBP, "No Breakpoint exists"),
- 	KDBMSG(BADADDR, "Invalid address"),
-+	KDBMSG(NOPERM, "Permission denied"),
- };
- #undef KDBMSG
- 
-@@ -496,6 +505,15 @@ int kdbgetaddrarg(int argc, const char **argv, int *nextarg,
- 	kdb_symtab_t symtab;
- 
- 	/*
-+	 * If the enable flags prohibit both arbitrary memory access
-+	 * and flow control then there are no reasonable grounds to
-+	 * provide symbol lookup.
-+	 */
-+	if (!kdb_check_flags(KDB_ENABLE_MEM_READ | KDB_ENABLE_FLOW_CTRL,
-+			     kdb_cmd_enabled, false))
-+		return KDB_NOPERM;
-+
-+	/*
- 	 * Process arguments which follow the following syntax:
- 	 *
- 	 *  symbol | numeric-address [+/- numeric-offset]
-@@ -1028,6 +1046,10 @@ int kdb_parse(const char *cmdstr)
- 
- 	if (i < kdb_max_commands) {
- 		int result;
-+
-+		if (!kdb_check_flags(tp->cmd_flags, kdb_cmd_enabled, argc <= 1))
-+			return KDB_NOPERM;
-+
- 		KDB_STATE_SET(CMD);
- 		result = (*tp->cmd_func)(argc-1, (const char **)argv);
+@@ -1008,20 +1008,13 @@ int kdb_parse(const char *cmdstr)
  		if (result && ignore_errors && result > KDB_CMD_GO)
-@@ -1939,10 +1961,14 @@ static int kdb_rm(int argc, const char **argv)
-  */
- static int kdb_sr(int argc, const char **argv)
- {
-+	bool check_mask =
-+	    !kdb_check_flags(KDB_ENABLE_ALL, kdb_cmd_enabled, false);
+ 			result = 0;
+ 		KDB_STATE_CLEAR(CMD);
+-		switch (tp->cmd_flags) {
+-		case KDB_REPEAT_NONE:
+-			argc = 0;
+-			if (argv[0])
+-				*(argv[0]) = '\0';
+-			break;
+-		case KDB_REPEAT_NO_ARGS:
+-			argc = 1;
+-			if (argv[1])
+-				*(argv[1]) = '\0';
+-			break;
+-		case KDB_REPEAT_WITH_ARGS:
+-			break;
+-		}
 +
- 	if (argc != 1)
- 		return KDB_ARGCOUNT;
++		if (tp->cmd_flags & KDB_REPEAT_WITH_ARGS)
++			return result;
 +
- 	kdb_trap_printk++;
--	__handle_sysrq(*argv[1], false);
-+	__handle_sysrq(*argv[1], check_mask);
- 	kdb_trap_printk--;
++		argc = tp->cmd_flags & KDB_REPEAT_NO_ARGS ? 1 : 0;
++		if (argv[argc])
++			*(argv[argc]) = '\0';
+ 		return result;
+ 	}
  
- 	return 0;
-@@ -2393,6 +2419,8 @@ static int kdb_help(int argc, const char **argv)
- 			return 0;
- 		if (!kt->cmd_name)
- 			continue;
-+		if (!kdb_check_flags(kt->cmd_flags, kdb_cmd_enabled, true))
-+			continue;
- 		if (strlen(kt->cmd_usage) > 20)
- 			space = "\n                                    ";
- 		kdb_printf("%-15.15s %-20s%s%s\n", kt->cmd_name,
 -- 
 1.9.3
 
