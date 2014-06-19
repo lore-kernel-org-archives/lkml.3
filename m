@@ -1,114 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757463AbaFSHSq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 03:18:46 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:34560 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754272AbaFSHSo (ORCPT
+	id S1757494AbaFSHYR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 03:24:17 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:64211 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755782AbaFSHYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 03:18:44 -0400
-Message-ID: <53A28ECD.7000503@hitachi.com>
-Date: Thu, 19 Jun 2014 16:18:37 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: Re: [RFC][PATCH] ftrace: Use schedule_on_each_cpu() as a heavy
- synchronize_sched()
-References: <1369785676.15552.55.camel@gandalf.local.home> <20130529075249.GC12193@twins.programming.kicks-ass.net> <20140618215626.3b109d31@gandalf.local.home> <20140619022801.GC4669@linux.vnet.ibm.com>
-In-Reply-To: <20140619022801.GC4669@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Jun 2014 03:24:14 -0400
+From: Andrey Skvortsov <andrej.skvortzov@gmail.com>
+X-Google-Original-From: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, andreas.dilger@intel.com,
+        sachin.kamat@linaro.org, bergwolf@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
+Subject: [PATCHv2 1/3] staging: lustre: obdclass: linux-sysctl.c: fix pointer coding style issue
+Date: Thu, 19 Jun 2014 11:24:11 +0400
+Message-Id: <1403162653-17845-3-git-send-email-Andrej.Skvortzov@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1403162653-17845-2-git-send-email-Andrej.Skvortzov@gmail.com>
+References: <20140618223533.GA5096@kroah.com>
+ <1403162653-17845-1-git-send-email-Andrej.Skvortzov@gmail.com>
+ <1403162653-17845-2-git-send-email-Andrej.Skvortzov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/06/19 11:28), Paul E. McKenney wrote:
-> On Wed, Jun 18, 2014 at 09:56:26PM -0400, Steven Rostedt wrote:
->>
->> Another blast from the past (from the book of cleaning out inbox)
->>
->> On Wed, 29 May 2013 09:52:49 +0200
->> Peter Zijlstra <peterz@infradead.org> wrote:
->>
->>> On Tue, May 28, 2013 at 08:01:16PM -0400, Steven Rostedt wrote:
->>>> The function tracer uses preempt_disable/enable_notrace() for
->>>> synchronization between reading registered ftrace_ops and unregistering
->>>> them.
->>>>
->>>> Most of the ftrace_ops are global permanent structures that do not
->>>> require this synchronization. That is, ops may be added and removed from
->>>> the hlist but are never freed, and wont hurt if a synchronization is
->>>> missed.
->>>>
->>>> But this is not true for dynamically created ftrace_ops or control_ops,
->>>> which are used by the perf function tracing.
->>>>
->>>> The problem here is that the function tracer can be used to trace
->>>> kernel/user context switches as well as going to and from idle.
->>>> Basically, it can be used to trace blind spots of the RCU subsystem.
->>>> This means that even though preempt_disable() is done, a
->>>> synchronize_sched() will ignore CPUs that haven't made it out of user
->>>> space or idle. These can include functions that are being traced just
->>>> before entering or exiting the kernel sections.
->>>
->>> Just to be clear, its the idle part that's a problem, right? Being stuck
->>> in userspace isn't a problem since if that CPU is in userspace its
->>> certainly not got a reference to whatever list entry we're removing.
->>>
->>> Now when the CPU really is idle, its obviously not using tracing either;
->>> so only the gray area where RCU thinks we're idle but we're not actually
->>> idle is a problem?
->>>
->>> Is there something a little smarter we can do? Could we use
->>> on_each_cpu_cond() with a function that checks if the CPU really is
->>> fully idle?
->>>
->>>> To implement the RCU synchronization, instead of using
->>>> synchronize_sched() the use of schedule_on_each_cpu() is performed. This
->>>> means that when a dynamically allocated ftrace_ops, or a control ops is
->>>> being unregistered, all CPUs must be touched and execute a ftrace_sync()
->>>> stub function via the work queues. This will rip CPUs out from idle or
->>>> in dynamic tick mode. This only happens when a user disables perf
->>>> function tracing or other dynamically allocated function tracers, but it
->>>> allows us to continue to debug RCU and context tracking with function
->>>> tracing.
->>>
->>> I don't suppose there's anything perf can do to about this right? Since
->>> its all on user demand we're kinda stuck with dynamic memory.
->>
->> If Paul finished his "synchronize_all_tasks_scheduled()" then we could
->> use that instead. Where "synchornize_all_tasks_scheduled()" would
->> return after all tasks have either scheduled, in userspace, or idle
->> (that is, not on the run queue). And scheduled means a non preempted
->> schedule, where the task itself actually called schedule.
+From: Andrey Skvortsov <skvortsov.av@summatechnology.ru>
 
-This is also good for jump-optimized kprobes on preemptive kernel.
-Since there is no way to ensure that no one is running on an dynamically
-allocated code buffer, the jump optimization is currently disabled
-with CONFIG_PREEMPT. However, this new API can allow us to enable it.
 
->>
->> Paul, how you doing on that? You said you could have something by 3.17.
->> That's coming up quick :-)
-> 
-> I am still expecting to, depite my misadventures with performance
-> regressions.
+Signed-off-by: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
+---
+ drivers/staging/lustre/lustre/obdclass/linux/linux-sysctl.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Nice. I look forward to that :-)
-
-Thank you,
-
+diff --git a/drivers/staging/lustre/lustre/obdclass/linux/linux-sysctl.c b/drivers/staging/lustre/lustre/obdclass/linux/linux-sysctl.c
+index c1ef0c9..b87ca10 100644
+--- a/drivers/staging/lustre/lustre/obdclass/linux/linux-sysctl.c
++++ b/drivers/staging/lustre/lustre/obdclass/linux/linux-sysctl.c
+@@ -196,7 +196,7 @@ int LL_PROC_PROTO(proc_max_dirty_pages_in_mb)
+ 	}
+ 	if (write) {
+ 		rc = lprocfs_write_frac_helper(buffer, *lenp,
+-					       (unsigned int*)table->data,
++					       (unsigned int *)table->data,
+ 					       1 << (20 - PAGE_CACHE_SHIFT));
+ 		/* Don't allow them to let dirty pages exceed 90% of system
+ 		 * memory and set a hard minimum of 4MB. */
+@@ -214,7 +214,7 @@ int LL_PROC_PROTO(proc_max_dirty_pages_in_mb)
+ 		int len;
+ 
+ 		len = lprocfs_read_frac_helper(buf, sizeof(buf),
+-					       *(unsigned int*)table->data,
++					       *(unsigned int *)table->data,
+ 					       1 << (20 - PAGE_CACHE_SHIFT));
+ 		if (len > *lenp)
+ 			len = *lenp;
+@@ -238,14 +238,14 @@ int LL_PROC_PROTO(proc_alloc_fail_rate)
+ 	}
+ 	if (write) {
+ 		rc = lprocfs_write_frac_helper(buffer, *lenp,
+-					       (unsigned int*)table->data,
++					       (unsigned int *)table->data,
+ 					       OBD_ALLOC_FAIL_MULT);
+ 	} else {
+ 		char buf[21];
+ 		int  len;
+ 
+ 		len = lprocfs_read_frac_helper(buf, 21,
+-					       *(unsigned int*)table->data,
++					       *(unsigned int *)table->data,
+ 					       OBD_ALLOC_FAIL_MULT);
+ 		if (len > *lenp)
+ 			len = *lenp;
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.7.10.4
 
