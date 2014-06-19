@@ -1,221 +1,297 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399AbaFSEDJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 00:03:09 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58857 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708AbaFSEDG (ORCPT
+	id S1751932AbaFSEIO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 00:08:14 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:49331 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718AbaFSEIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 00:03:06 -0400
-Date: Wed, 18 Jun 2014 23:02:30 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Nishanth Menon <nm@ti.com>
-CC: <balbi@ti.com>, <devicetree@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>, Rajendra Nayak <rnayak@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Darren Etheridge <detheridge@ti.com>, <r.sricharan@ti.com>,
-        <robh+dt@kernel.org>, Josh Elliot <jelliott@ti.com>,
-        <galak@codeaurora.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 2/2] arm: dts: add support for AM437x StarterKit
-Message-ID: <20140619040230.GA15073@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1403106200-777-1-git-send-email-balbi@ti.com>
- <1403106200-777-3-git-send-email-balbi@ti.com>
- <53A1BADD.7050309@ti.com>
- <20140618193113.GC4570@saruman.home>
- <53A20A7D.3060508@ti.com>
- <20140618231923.GA9855@saruman.home>
- <53A24A39.4080100@ti.com>
- <20140619030520.GA13805@saruman.home>
- <53A2564E.2080600@ti.com>
+	Thu, 19 Jun 2014 00:08:09 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="huq684BweRXVnRxX"
-Content-Disposition: inline
-In-Reply-To: <53A2564E.2080600@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140618101634.GO19730@lukather>
+References: <1403016777-15121-1-git-send-email-wens@csie.org>
+ <1403016777-15121-12-git-send-email-wens@csie.org> <20140618101634.GO19730@lukather>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Thu, 19 Jun 2014 12:07:48 +0800
+X-Google-Sender-Auth: h-BIbMTfOnivFb8vWT3va_OLZmY
+Message-ID: <CAGb2v64sJf2D36++JNmGHqVe_e4sEyk6VwmJBU5ec_5cGNFB_g@mail.gmail.com>
+Subject: Re: [PATCH v2 11/20] clk: sunxi: Add A23 clocks support
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Luc Verhaegen <libv@skynet.be>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---huq684BweRXVnRxX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jun 18, 2014 at 6:16 PM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> On Tue, Jun 17, 2014 at 10:52:48PM +0800, Chen-Yu Tsai wrote:
+>> The clock control unit on the A23 is similar to the one found on the A31.
+>>
+>> The AHB1, APB1, APB2 gates on the A23 are almost identical to the ones
+>> on the A31, but some outputs are missing.
+>>
+>> The main CPU PLL (PLL1) however is like that on older Allwinner SoCs, such
+>> as the A10 or A20, but the N factor starts from 1 instead of 0.
+>>
+>> This patch adds support for PLL1 and all the basic clock gates.
+>>
+>> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+>
+> Except for the minor comment below, you have my
+>
+> Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+>
+>> ---
+>>  Documentation/devicetree/bindings/clock/sunxi.txt |   5 +
+>>  drivers/clk/sunxi/clk-sunxi.c                     | 115 ++++++++++++++++++++++
+>>  2 files changed, 120 insertions(+)
+>>
+>> diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Documentation/devicetree/bindings/clock/sunxi.txt
+>> index 7b2ba41..af9e47d 100644
+>> --- a/Documentation/devicetree/bindings/clock/sunxi.txt
+>> +++ b/Documentation/devicetree/bindings/clock/sunxi.txt
+>> @@ -9,11 +9,13 @@ Required properties:
+>>       "allwinner,sun4i-a10-osc-clk" - for a gatable oscillator
+>>       "allwinner,sun4i-a10-pll1-clk" - for the main PLL clock and PLL4
+>>       "allwinner,sun6i-a31-pll1-clk" - for the main PLL clock on A31
+>> +     "allwinner,sun8i-a23-pll1-clk" - for the main PLL clock on A23
+>>       "allwinner,sun4i-a10-pll5-clk" - for the PLL5 clock
+>>       "allwinner,sun4i-a10-pll6-clk" - for the PLL6 clock
+>>       "allwinner,sun6i-a31-pll6-clk" - for the PLL6 clock on A31
+>>       "allwinner,sun4i-a10-cpu-clk" - for the CPU multiplexer clock
+>>       "allwinner,sun4i-a10-axi-clk" - for the AXI clock
+>> +     "allwinner,sun8i-a23-axi-clk" - for the AXI clock on A23
+>>       "allwinner,sun4i-a10-axi-gates-clk" - for the AXI gates
+>>       "allwinner,sun4i-a10-ahb-clk" - for the AHB clock
+>>       "allwinner,sun4i-a10-ahb-gates-clk" - for the AHB gates on A10
+>> @@ -23,6 +25,7 @@ Required properties:
+>>       "allwinner,sun6i-a31-ar100-clk" - for the AR100 on A31
+>>       "allwinner,sun6i-a31-ahb1-mux-clk" - for the AHB1 multiplexer on A31
+>>       "allwinner,sun6i-a31-ahb1-gates-clk" - for the AHB1 gates on A31
+>> +     "allwinner,sun8i-a23-ahb1-gates-clk" - for the AHB1 gates on A23
+>>       "allwinner,sun4i-a10-apb0-clk" - for the APB0 clock
+>>       "allwinner,sun6i-a31-apb0-clk" - for the APB0 clock on A31
+>>       "allwinner,sun4i-a10-apb0-gates-clk" - for the APB0 gates on A10
+>> @@ -37,8 +40,10 @@ Required properties:
+>>       "allwinner,sun5i-a10s-apb1-gates-clk" - for the APB1 gates on A10s
+>>       "allwinner,sun6i-a31-apb1-gates-clk" - for the APB1 gates on A31
+>>       "allwinner,sun7i-a20-apb1-gates-clk" - for the APB1 gates on A20
+>> +     "allwinner,sun8i-a23-apb1-gates-clk" - for the APB1 gates on A23
+>>       "allwinner,sun6i-a31-apb2-div-clk" - for the APB2 gates on A31
+>>       "allwinner,sun6i-a31-apb2-gates-clk" - for the APB2 gates on A31
+>> +     "allwinner,sun8i-a23-apb2-gates-clk" - for the APB2 gates on A23
+>>       "allwinner,sun4i-a10-mod0-clk" - for the module 0 family of clocks
+>>       "allwinner,sun6i-a31-mbus-clk" - for the MBUS clocks on A31 / A23
+>>       "allwinner,sun7i-a20-out-clk" - for the external output clocks
+>> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
+>> index 7e2f015..f418392 100644
+>> --- a/drivers/clk/sunxi/clk-sunxi.c
+>> +++ b/drivers/clk/sunxi/clk-sunxi.c
+>> @@ -164,6 +164,54 @@ static void sun6i_a31_get_pll1_factors(u32 *freq, u32 parent_rate,
+>>  }
+>>
+>>  /**
+>> + * sun8i_a23_get_pll1_factors() - calculates n, k, m, p factors for PLL1
+>> + * PLL1 rate is calculated as follows
+>> + * rate = (parent_rate * (n + 1) * (k + 1) >> p) / (m + 1);
+>> + * parent_rate is always 24Mhz
+>> + */
+>> +
+>> +static void sun8i_a23_get_pll1_factors(u32 *freq, u32 parent_rate,
+>> +                                u8 *n, u8 *k, u8 *m, u8 *p)
+>> +{
+>> +     u8 div;
+>> +
+>> +     /* Normalize value to a 6M multiple */
+>> +     div = *freq / 6000000;
+>> +     *freq = 6000000 * div;
+>> +
+>> +     /* we were called to round the frequency, we can now return */
+>> +     if (n == NULL)
+>> +             return;
+>> +
+>> +     /* m is always zero for pll1 */
+>> +     *m = 0;
+>> +
+>> +     /* k is 1 only on these cases */
+>> +     if (*freq >= 768000000 || *freq == 42000000 || *freq == 54000000)
+>> +             *k = 1;
+>> +     else
+>> +             *k = 0;
+>> +
+>> +     /* p will be 2 for divs under 20 and odd divs under 32 */
+>> +     if (div < 20 || (div < 32 && (div & 1)))
+>> +             *p = 2;
+>> +
+>> +     /* p will be 1 for even divs under 32, divs under 40 and odd pairs
+>> +      * of divs between 40-62 */
+>> +     else if (div < 40 || (div < 64 && (div & 2)))
+>> +             *p = 1;
+>> +
+>> +     /* any other entries have p = 0 */
+>> +     else
+>> +             *p = 0;
+>> +
+>> +     /* calculate a suitable n based on k and p */
+>> +     div <<= *p;
+>> +     div /= (*k + 1);
+>> +     *n = div / 4 - 1;
+>> +}
+>> +
+>> +/**
+>>   * sun4i_get_pll5_factors() - calculates n, k factors for PLL5
+>>   * PLL5 rate is calculated as follows
+>>   * rate = parent_rate * n * (k + 1)
+>> @@ -448,6 +496,18 @@ static struct clk_factors_config sun6i_a31_pll1_config = {
+>>       .n_from_one = 1,
+>>  };
+>>
+>> +static struct clk_factors_config sun8i_a23_pll1_config = {
+>> +     .nshift = 8,
+>> +     .nwidth = 5,
+>> +     .kshift = 4,
+>> +     .kwidth = 2,
+>> +     .mshift = 0,
+>> +     .mwidth = 2,
+>> +     .pshift = 16,
+>> +     .pwidth = 2,
+>> +     .n_from_one = 1,
+>> +};
+>> +
+>>  static struct clk_factors_config sun4i_pll5_config = {
+>>       .nshift = 8,
+>>       .nwidth = 5,
+>> @@ -503,6 +563,12 @@ static const struct factors_data sun6i_a31_pll1_data __initconst = {
+>>       .getter = sun6i_a31_get_pll1_factors,
+>>  };
+>>
+>> +static const struct factors_data sun8i_a23_pll1_data __initconst = {
+>> +     .enable = 31,
+>> +     .table = &sun8i_a23_pll1_config,
+>> +     .getter = sun8i_a23_get_pll1_factors,
+>> +};
+>> +
+>>  static const struct factors_data sun7i_a20_pll4_data __initconst = {
+>>       .enable = 31,
+>>       .table = &sun4i_pll5_config,
+>> @@ -712,6 +778,25 @@ static const struct div_data sun4i_axi_data __initconst = {
+>>       .width  = 2,
+>>  };
+>>
+>> +static const struct clk_div_table sun8i_a23_axi_table[] __initconst = {
+>> +     { .val = 0, .div = 1 },
+>> +     { .val = 1, .div = 2 },
+>> +     { .val = 2, .div = 3 },
+>> +     { .val = 3, .div = 4 },
+>> +     { .val = 4, .div = 4 },
+>> +     { .val = 5, .div = 4 },
+>> +     { .val = 6, .div = 4 },
+>> +     { .val = 7, .div = 4 },
+>> +     { } /* sentinel */
+>> +};
+>> +
+>> +static const struct div_data sun8i_a23_axi_data __initconst = {
+>> +     .shift  = 0,
+>> +     .pow    = 0,
+>> +     .width  = 8,
+>> +     .table  = sun8i_a23_axi_table,
+>> +};
+>> +
+>>  static const struct div_data sun4i_ahb_data __initconst = {
+>>       .shift  = 4,
+>>       .pow    = 1,
+>> @@ -844,6 +929,10 @@ static const struct gates_data sun7i_a20_ahb_gates_data __initconst = {
+>>       .mask = { 0x12f77fff, 0x16ff3f },
+>>  };
+>>
+>> +static const struct gates_data sun8i_a23_ahb1_gates_data __initconst = {
+>> +     .mask = {0x25386742, 0x2505111},
+>> +};
+>> +
+>>  static const struct gates_data sun4i_apb0_gates_data __initconst = {
+>>       .mask = {0x4EF},
+>>  };
+>> @@ -876,6 +965,10 @@ static const struct gates_data sun6i_a31_apb1_gates_data __initconst = {
+>>       .mask = {0x3031},
+>>  };
+>>
+>> +static const struct gates_data sun8i_a23_apb1_gates_data __initconst = {
+>> +     .mask = {0x3021},
+>> +};
+>> +
+>>  static const struct gates_data sun6i_a31_apb2_gates_data __initconst = {
+>>       .mask = {0x3F000F},
+>>  };
+>> @@ -884,6 +977,10 @@ static const struct gates_data sun7i_a20_apb1_gates_data __initconst = {
+>>       .mask = { 0xff80ff },
+>>  };
+>>
+>> +static const struct gates_data sun8i_a23_apb2_gates_data __initconst = {
+>> +     .mask = {0x1F0007},
+>> +};
+>> +
+>>  static const struct gates_data sun4i_a10_usb_gates_data __initconst = {
+>>       .mask = {0x1C0},
+>>       .reset_mask = 0x07,
+>> @@ -1139,6 +1236,7 @@ free_clkdata:
+>>  static const struct of_device_id clk_factors_match[] __initconst = {
+>>       {.compatible = "allwinner,sun4i-a10-pll1-clk", .data = &sun4i_pll1_data,},
+>>       {.compatible = "allwinner,sun6i-a31-pll1-clk", .data = &sun6i_a31_pll1_data,},
+>> +     {.compatible = "allwinner,sun8i-a23-pll1-clk", .data = &sun8i_a23_pll1_data,},
+>>       {.compatible = "allwinner,sun7i-a20-pll4-clk", .data = &sun7i_a20_pll4_data,},
+>>       {.compatible = "allwinner,sun6i-a31-pll6-clk", .data = &sun6i_a31_pll6_data,},
+>>       {.compatible = "allwinner,sun4i-a10-apb1-clk", .data = &sun4i_apb1_data,},
+>> @@ -1151,6 +1249,7 @@ static const struct of_device_id clk_factors_match[] __initconst = {
+>>  /* Matches for divider clocks */
+>>  static const struct of_device_id clk_div_match[] __initconst = {
+>>       {.compatible = "allwinner,sun4i-a10-axi-clk", .data = &sun4i_axi_data,},
+>> +     {.compatible = "allwinner,sun8i-a23-axi-clk", .data = &sun8i_a23_axi_data,},
+>>       {.compatible = "allwinner,sun4i-a10-ahb-clk", .data = &sun4i_ahb_data,},
+>>       {.compatible = "allwinner,sun4i-a10-apb0-clk", .data = &sun4i_apb0_data,},
+>>       {.compatible = "allwinner,sun6i-a31-apb2-div-clk", .data = &sun6i_a31_apb2_div_data,},
+>> @@ -1180,6 +1279,7 @@ static const struct of_device_id clk_gates_match[] __initconst = {
+>>       {.compatible = "allwinner,sun5i-a13-ahb-gates-clk", .data = &sun5i_a13_ahb_gates_data,},
+>>       {.compatible = "allwinner,sun6i-a31-ahb1-gates-clk", .data = &sun6i_a31_ahb1_gates_data,},
+>>       {.compatible = "allwinner,sun7i-a20-ahb-gates-clk", .data = &sun7i_a20_ahb_gates_data,},
+>> +     {.compatible = "allwinner,sun8i-a23-ahb1-gates-clk", .data = &sun8i_a23_ahb1_gates_data,},
+>>       {.compatible = "allwinner,sun4i-a10-apb0-gates-clk", .data = &sun4i_apb0_gates_data,},
+>>       {.compatible = "allwinner,sun5i-a10s-apb0-gates-clk", .data = &sun5i_a10s_apb0_gates_data,},
+>>       {.compatible = "allwinner,sun5i-a13-apb0-gates-clk", .data = &sun5i_a13_apb0_gates_data,},
+>> @@ -1189,7 +1289,9 @@ static const struct of_device_id clk_gates_match[] __initconst = {
+>>       {.compatible = "allwinner,sun5i-a13-apb1-gates-clk", .data = &sun5i_a13_apb1_gates_data,},
+>>       {.compatible = "allwinner,sun6i-a31-apb1-gates-clk", .data = &sun6i_a31_apb1_gates_data,},
+>>       {.compatible = "allwinner,sun7i-a20-apb1-gates-clk", .data = &sun7i_a20_apb1_gates_data,},
+>> +     {.compatible = "allwinner,sun8i-a23-apb1-gates-clk", .data = &sun8i_a23_apb1_gates_data,},
+>>       {.compatible = "allwinner,sun6i-a31-apb2-gates-clk", .data = &sun6i_a31_apb2_gates_data,},
+>> +     {.compatible = "allwinner,sun8i-a23-apb2-gates-clk", .data = &sun8i_a23_apb2_gates_data,},
+>>       {.compatible = "allwinner,sun4i-a10-usb-clk", .data = &sun4i_a10_usb_gates_data,},
+>>       {.compatible = "allwinner,sun5i-a13-usb-clk", .data = &sun5i_a13_usb_gates_data,},
+>>       {.compatible = "allwinner,sun6i-a31-usb-clk", .data = &sun6i_a31_usb_gates_data,},
+>> @@ -1276,3 +1378,16 @@ static void __init sun6i_init_clocks(struct device_node *node)
+>>                         ARRAY_SIZE(sun6i_critical_clocks));
+>>  }
+>>  CLK_OF_DECLARE(sun6i_a31_clk_init, "allwinner,sun6i-a31", sun6i_init_clocks);
+>> +
+>> +static const char *sun8i_critical_clocks[] __initdata = {
+>> +     "cpu",
+>> +     "ahb1_sdram",
+>> +     "mbus",
+>> +};
+>> +
+>> +static void __init sun8i_init_clocks(void)
+>
+> This has the wrong prototype and will trigger a warning.
 
-Hi,
-
-On Wed, Jun 18, 2014 at 10:17:34PM -0500, Nishanth Menon wrote:
-> On 06/18/2014 10:05 PM, Felipe Balbi wrote:
-> > Hi,
-> >=20
-> > On Wed, Jun 18, 2014 at 09:26:01PM -0500, Nishanth Menon wrote:
-> >> On 06/18/2014 06:19 PM, Felipe Balbi wrote:
-> >> [...]
-> >>>>>>> Add support for TI's AM437x StarterKit Evaluation
-> >>>>>>> Module.
-> >>>>>>
-> >>>>>> is there a link for this platform?
-> >>>>>
-> >>>>> internal only
-> >>>>
-> >>>> but will eventually be sold externally? I assume this is not an TI
-> >>>
-> >>> probably, but there's nothing public yet.
-> >>>
-> >>>> internal only board.
-> >>>
-> >>> correct assumption for all I know.
-> >>
-> >> Yikes.. ok.. I'd let Tony et.al make the call on this, I guess.
-> >=20
-> > would we really block a DTS just because there's no public wiki page
-> > available (yet) ?
-> >=20
-> > Sounds a bit extreme to me.
->=20
-> If this is an TI internal board without anyone outside that a few
-> select developers being able to get and work on it... I am a bit
-> skeptical on upstream kernel support and burden for forseeable future
-> in ensuring it is tested and continually maintained. if it an
-> one-off.. maybe fork might be good enough.. upstream not too attractive.
-
-dude, this is a Starter Kit after all. The probability of being sold
-eventually is really, really high. I just can't confirm it certainly
-will right now.
-
-> I mean, if it is targeted to be sold eventually, I have no objections
-> or blocks - just make it clear in commit message. I can imagine folks
-> wondering what the heck this is and googling without results(just like
-> I did).
-
-I'll point you to schematics and internal wiki tomorrow if you want. I'm
-sure there will be a public ti.com address for it though.
-
-> [...]
->=20
-> >>>>>>> +	cd-gpios =3D <&gpio0 6 GPIO_ACTIVE_HIGH>;
-> >>>>>>> +};
-> >>>>>>> +
-> >>>>>>> +&usb2_phy1 {
-> >>>>>>> +	status =3D "okay";
-> >>>>>>> +};
-> >>>>>>> +
-> >>>>>>> +&usb1 {
-> >>>>>>> +	dr_mode =3D "peripheral";
-> >>>>>>> +	status =3D "okay";
-> >>>>>>> +};
-> >>>>>>> +
-> >>>>>>> +&usb2_phy2 {
-> >>>>>>> +	status =3D "okay";
-> >>>>>>> +};
-> >>>>>>> +
-> >>>>>>> +&usb2 {
-> >>>>>>> +	dr_mode =3D "host";
-> >>>>>>> +	status =3D "okay";
-> >>>>>>> +};
-> >>>>>> none of the above need pinctrl? no regulator supplies?
-> >>>>>
-> >>>>> pins in default states, drivers don't use regulators.
-> >>>>
-> >>>> USB works without a supply? even a fixed voltage supply? that is
-> >>>> weird.
-> >>>
-> >>> take a look at the minicom output I posted if you don't believe. Well,
-> >>> to be exact, tps63010 [1] is the one which generates the regulated V5=
-_0D
-> >>> which is used as VBUS_USB. The enable pin in that device is tied to t=
-he
-> >>> 3v3 rail (dcdc4 regulator in the PMIC as most everything else) but
-> >>> there's no way (otherwise) to control that thing. There's no control
-> >>> bus, no way to write a driver.
-> >>>
-> >>> Since the board will anyways turn off if you disable the 3v3 rail, it=
-'s
-> >>> pretty much pointless to figure out a hack just to add this to DTS.
-> >>>
-> >>> [1] http://www.ti.com/product/TPS63010
-> >>
-> >> I am sure to trust you on the test log :) ->  but then from dts descri=
-ption
-> >> perspective, it is good if we describe the supplies, even as a always =
-on
-> >> fixed-regulator. We had instances like 2430SDP ethernet where... umm..=
-=2E we
-> >> originally missed describing ethernet supply and boom, one fine mornin=
-g, no
-> >> more nfs filesystem - I mean, it is a one off scenario there, but desc=
-ribing
-> >> regulators helps us atleast understand the power tree of the board a l=
-ittle
-> >> better.
-> >>
-> >> Again, no strong opinions on my side, it is a good thing to do is all
-> >> I feel about it.
-> >=20
-> > you mean something like:
-> >=20
-> > 	V5_0D: fixedregulator@0 {
-> > 		compatible =3D "regulator-fixed";
-> > 		regulator-name =3D "V5_0D";
-> > 		regulator-min-microvolt =3D <5000000>;
-> > 		regulator-max-microvolt =3D <5000000>;
-> > 		regulator-boot-on;
-> > 		regulator-always-on;
-> > 		vin-supply =3D <&dcdc4>;
-> > 	};
-> >=20
-> > 	VBUS_USB: fixedregulator@1 {
-> > 		compatible =3D "regulator-fixed";
-> > 		regulator-name =3D "VBUS_USB";
-> > 		regulator-min-microvolt =3D <5000000>;
-> > 		regulator-max-microvolt =3D <5000000>;
-> > 		regulator-boot-on;
-> > 		regulator-always-on;
-> > 		vin-supply =3D <&V5_0D>;
-> > 	};
-> >=20
-> > I can add that, but note that it's *solely* to make sysfs look nice. And
-> > if that's the case, most likely *every* DTS file in tree today as
-> > incomplete. OTOH, I really consider this to be hugely unnecessary
-> > because of the fact that board will turn off if 3v3 (dcdc4) is disabled.
-> >=20
->=20
->=20
-> Yes - something along those lines - Again, no strong opinions on my
-> side for these - just that it is a good thing to model in and may help
-> drivers where can use the awareness.
-
-if you ask me, it's just two extra instances of the fixed regulator
-driver for a really marginal added benefit.
-
---=20
-balbi
-
---huq684BweRXVnRxX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTomDWAAoJEIaOsuA1yqREKTQP/jJOrzVZws/wKmelIZPjLwT0
-NPfngr+cp68SyuYmdtXrZ0SVbgk3XJq3iVHsXEyXeHXCTqJVbBQk1ceAsX0nxURV
-msc4AnOZyuVhvIVmTA++DDPf7PUVkffrYPaww8eoxD4IOVjc6kMsW1WEtW3K7q9U
-S5a016+BnIWZ75U1O01P9Oz09YVsNJj89rI0En+ZtJgjnkLeXi3eJTqdiJH2liij
-cAxc2wlxBm8QWtP2DnTW6fR0g3FVR1pQOdBbzcj6avDrSonzuR6CCLAKEtMEgOrp
-xqLs+Lq60OaRzuI5f7Y58IdtNDOcNQQUglJGdaoeMkDbIC+qRmFyebAFyFfilIB/
-utvgyMqYNdwnqx+WFlwR6YMlLeCncRMmdwO4E/dmkQnZAwv6wOi+5gZMLkS6xuPO
-HueNnZQfjkowb4U0XBfyTDplLtZzFQnAZeNL3ahyuXwb3Q74dHSMNY0tWheYLsui
-KlQY4efhc70mAkeA5MaOpmRAexh761G158QlH5jn0yAwGr3EEsP5XyIBsIuHo/XZ
-s+E96aevpHLVBIFkFcX5UTdpeshbZANlDgNxQXu+GBBC6fRGRg4EsKvwkhRYivyV
-vu6egYj7gz8DcfYqNMP4pEbIKhcMZiDLe2VHLzciEuljucxsh3mXWmZjISDos+bq
-HFKds2WZVkMpz93Ie/IF
-=L2TR
------END PGP SIGNATURE-----
-
---huq684BweRXVnRxX--
+Ah, this was fixed during the latest cycle. Thanks.
