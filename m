@@ -1,124 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932909AbaFSM2l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 08:28:41 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:56425 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932300AbaFSM2j (ORCPT
+	id S933006AbaFSM3n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 08:29:43 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:48596 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932300AbaFSM3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 08:28:39 -0400
-Message-ID: <53A2D771.3000700@gmail.com>
-Date: Thu, 19 Jun 2014 15:28:33 +0300
-From: Nadav Amit <nadav.amit@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 19 Jun 2014 08:29:41 -0400
+Date: Thu, 19 Jun 2014 14:29:34 +0200
+From: Alexander Aring <alex.aring@gmail.com>
+To: Varka Bhadram <varkabhadram@gmail.com>
+Cc: netdev@vger.kernel.org, alex.bluesman.smirnov@gmail.com,
+        dbaryshkov@gmail.com, linux-zigbee-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, davem@davemloft.net, sowjanyap@cdac.in,
+        santoshk@cdac.in, venkatas@cdac.in
+Subject: Re: [PATCH net-next v5 1/3] ieee802154: cc2520: adds driver for TI
+ CC2520 radio
+Message-ID: <20140619122931.GA19068@omega>
+References: <1403167131-22092-1-git-send-email-varkab@cdac.in>
+ <1403167131-22092-2-git-send-email-varkab@cdac.in>
+ <20140619104440.GA17994@omega>
+ <53A2D1CE.6040402@gmail.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Gleb Natapov <gleb@kernel.org>, "Gabriel L. Somlo" <gsomlo@gmail.com>,
-        Eric Northup <digitaleric@google.com>,
-        Nadav Amit <namit@cs.technion.ac.il>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>, joro@8bytes.org, agraf@suse.de
-Subject: Re: [PATCH 3/3] KVM: x86: correct mwait and monitor emulation
-References: <CAG7+5M1T=OSqMLOJjb-txRCL_J_q=KSNV9yOfeP=98YuyD27Fw@mail.gmail.com> <20140618184601.GE1695@ERROL.INI.CMU.EDU> <20140619101811.GA5777@redhat.com> <1B06E887-9D07-4E85-AE06-75B01787C488@gmail.com> <20140619112356.GB429@minantech.com> <53A2CEF4.3050902@gmail.com> <20140619120739.GA7289@minantech.com> <53A2D32D.8020305@gmail.com> <20140619121756.GA28523@redhat.com>
-In-Reply-To: <20140619121756.GA28523@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <53A2D1CE.6040402@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/19/14, 3:17 PM, Michael S. Tsirkin wrote:
-> On Thu, Jun 19, 2014 at 03:10:21PM +0300, Nadav Amit wrote:
->> On 6/19/14, 3:07 PM, Gleb Natapov wrote:
->>> On Thu, Jun 19, 2014 at 02:52:20PM +0300, Nadav Amit wrote:
->>>> On 6/19/14, 2:23 PM, Gleb Natapov wrote:
->>>>> On Thu, Jun 19, 2014 at 01:53:36PM +0300, Nadav Amit wrote:
->>>>>>
->>>>>> On Jun 19, 2014, at 1:18 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
->>>>>>
->>>>>>> On Wed, Jun 18, 2014 at 02:46:01PM -0400, Gabriel L. Somlo wrote:
->>>>>>>> On Wed, Jun 18, 2014 at 10:59:14AM -0700, Eric Northup wrote:
->>>>>>>>> On Wed, Jun 18, 2014 at 7:19 AM, Nadav Amit <namit@cs.technion.ac.il> wrote:
->>>>>>>>>> mwait and monitor are currently handled as nop. Considering this behavior, they
->>>>>>>>>> should still be handled correctly, i.e., check execution conditions and generate
->>>>>>>>>> exceptions when required. mwait and monitor may also be executed in real-mode
->>>>>>>>>> and are not handled in that case.  This patch performs the emulation of
->>>>>>>>>> monitor-mwait according to Intel SDM (other than checking whether interrupt can
->>>>>>>>>> be used as a break event).
->>>>>>>>>>
->>>>>>>>>> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
->>>>>>>>
->>>>>>>> How about this instead (details in the commit log below) ? Please let
->>>>>>>> me know what you think, and if you'd prefer me to send it out as a
->>>>>>>> separate patch rather than a reply to this thread.
->>>>>>>>
->>>>>>>> Thanks,
->>>>>>>> --Gabriel
->>>>>>>
->>>>>>> If there's an easy workaround, I'm inclined to agree.
->>>>>>> We can always go back to Gabriel's patch (and then we'll need
->>>>>>> Nadav's one too) but if we release a kernel with this
->>>>>>> support it becomes an ABI and we can't go back.
->>>>>>>
->>>>>>> So let's be careful here, and revert the hack for 3.16.
->>>>>>>
->>>>>>>
->>>>>>> Acked-by: Michael S. Tsirkin <mst@redhat.com>
->>>>>>>
->>>>>> Personally, I got a custom guest which requires mwait for executing correctly.
->>>>> Can you elaborate on this guest a little bit. With nop implementation
->>>>> for mwait the guest will hog a host cpu. Do you consider this to be
->>>>> "executing correctly?"
->>>>>
->>>>> --
->>>>
->>>> mwait is not as "clean" as it may appear. It encounters false wake-ups due
->>>> to a variety of reasons, and any code need to recheck the wake-up condition
->>>> afterwards. Actually, some CPUs had bugs that caused excessive wake-ups that
->>>> degraded performance considerably (Nehalem, if I am not mistaken).
->>>> Therefore, handling mwait as nop is logically correct (although it may
->>>> degrade performance).
->>>>
->>>> For the reference, if you look at the SDM 8.10.4, you'll see:
->>>> "Multiple events other than a write to the triggering address range can
->>>> cause a processor that executed MWAIT to wake up. These include events that
->>>> would lead to voluntary or involuntary context switches, such as..."
->>>>
->>>> Note the words "include" in the sentence "These include events". Software
->>>> has no way of controlling whether it gets false wake-ups and cannot rely on
->>>> the wake-up as indication to anything.
->>>>
->>> That's all well and good and I didn't say that nop is not a valid
->>> mwait implementation, it is, though there is a big difference between
->>> "encounters false wake-ups" and never sleeps.  What I asked is do you
->>> consider your guest hogging host cpu to be "executing correctly?". What
->>> this guest is doing that such behaviour is tolerated and shouldn't it
->>> be better to just poll for a condition you are waiting for instead of
->>> executing expensive vmexits. This will also hog 100% host cpu, but will
->>> be actually faster.
->>>
->> You are correct, but unfortunately I have no control over the guest
->> workload. In this specific workload I do not care about performance but only
->> about correctness.
->>
->> Nadav
->
-> No one prevents you from patching your kernel to run this workload.  But
-> is this of use to anyone else? If yes why?
->
-I do not say it should be the default behavior, and I can try to push to 
-qemu some setting to turn it on by demand.
+On Thu, Jun 19, 2014 at 05:34:30PM +0530, Varka Bhadram wrote:
+> Hi Alex,
+> 
+> Thanks for the comments
+> 
+> On 06/19/2014 04:14 PM, Alexander Aring wrote:
+> >Hi Varka,
+> >
+> >why do you add new features while you trying to get the first version
+> >mainline?
+> 
 
-Anyhow, I believe there are cases you may want mwait support - either an 
-OS X guest which was not modified to run without mwait, or for debugging 
-the monitor-mwait flow of a guest OS.
+Yes, address filtering is needed for AACK support. I did not notice that
+your chip supports AACK, please change your hw flags then to:
 
-I am not going to argue too much. Since I was under the impression there 
-are needs for mwait, other than mine, I thought it would make all of our 
-lives easier to have a better implementation.
+flags = IEEE802154_HW_OMIT_CKSUM | IEEE802154_HW_AACK;
 
-Nadav
+> This h/w address filtering feature is required for me to get CC2520 Hardware ACK, which
+> enable TinyOS nodes to communicate with the linux node.
+> 
+> I want to get this feature also in mainline for the first version. So that it will be full fledged driver.
+> 
+> >On Thu, Jun 19, 2014 at 02:08:48PM +0530, Varka Bhadram wrote:
+> >>This patch adds the driver support for the cc2520 radio.
+> >>
+> >>Driver support:
+> >>	- Tx and Rx of IEEE-802.15.4 packets.
+> >>	- Energy Detection on channel.
+> >>	- Setting the Channel for the radio. [b/w 11 - 26 channels]
+> >>	- Start and Stop the radio
+> >>	- h/w address filtering.
+> >>
+> [...]
+> 
+> >>+static int
+> >>+cc2520_read_rxfifo(struct cc2520_private *priv, u8 *data, u8 len, u8 *lqi)
+> >>+{
+> >>+	int status;
+> >>+	struct spi_message msg;
+> >>+
+> >>+	struct spi_transfer xfer_head = {
+> >>+		.len = 0,
+> >>+		.tx_buf = priv->buf,
+> >>+		.rx_buf = priv->buf,
+> >>+	};
+> >>+	struct spi_transfer xfer_buf = {
+> >>+		.len = len,
+> >>+		.rx_buf = data,
+> >>+	};
+> >>+
+> >>+	spi_message_init(&msg);
+> >>+	spi_message_add_tail(&xfer_head, &msg);
+> >>+	spi_message_add_tail(&xfer_buf, &msg);
+> >>+
+> >>+	mutex_lock(&priv->buffer_mutex);
+> >>+	priv->buf[xfer_head.len++] = CC2520_CMD_RXBUF;
+> >>+
+> >>+	dev_vdbg(&priv->spi->dev, "read rxfifo buf[0] = %02x\n", priv->buf[0]);
+> >>+	dev_vdbg(&priv->spi->dev, "buf[1] = %02x\n", priv->buf[1]);
+> >>+
+> >>+	status = spi_sync(priv->spi, &msg);
+> >>+	dev_vdbg(&priv->spi->dev, "status = %d\n", status);
+> >>+	if (msg.status)
+> >>+		status = msg.status;
+> >>+	dev_vdbg(&priv->spi->dev, "status = %d\n", status);
+> >>+	dev_vdbg(&priv->spi->dev,
+> >>+		 "return status buf[0] = %02x\n", priv->buf[0]);
+> >>+	dev_vdbg(&priv->spi->dev, "length buf[1] = %02x\n", priv->buf[1]);
+> >>+
+> >>+	*lqi = data[priv->buf[1] - 1] & 0x7f;
+> >This is a little bit critical... but I know others driver doesn't check
+> >also on this.
+> 
+> I will check how other drivers using lqi field , which is actually passing to higher layers.
+> 
+
+The lqi value going to trash in the higher layers. But I need this value
+for my future work with RPL.
+
+> >After the cc2520_read_rxfifo you check if (len < 2 ...) but here you
+> >already use the len. Maybe but the length constraints check in this function.
+> >
+> >>+
+> >>+	mutex_unlock(&priv->buffer_mutex);
+> >>+
+> >>+	return status;
+> 
+> [...]
+> 
+> >>+static int cc2520_rx(struct cc2520_private *priv)
+> >>+{
+> >>+	u8 len = 0, lqi = 0, bytes = 1;
+> >>+	struct sk_buff *skb;
+> >>+
+> >>+	cc2520_read_rxfifo(priv, &len, bytes, &lqi);
+> >Okay, you get here the length for your pdu. But then you can check
+> >afterwards on:
+> >
+> >if (len < 2) instead of doing this in the second rxfifo call. And please
+> >do a:
+> >
+> >if (len < 2 || len > IEEE802154_MTU)
+> 
+> I will make this change in v6
+> 
+> >The reason is, I don't know if your chip does filter something like
+> >that. The at86rf230 don't filter pdu above the MTU size and we have no
+> >generic mac802154 layer function right now to check on this. I like to
+> >improve that in the near future...
+> >
+> >When you do this check you can save the kfree_skb in this branch.
+> >
+> >>+
+> >>+	skb = alloc_skb(len, GFP_KERNEL);
+> >>+	if (!skb)
+> >>+		return -ENOMEM;
+> >>+
+> >>+	cc2520_read_rxfifo(priv, skb_put(skb, len), len, &lqi);
+> >>+	if (len < 2) {
+> >>+		kfree_skb(skb);
+> >>+		return -EINVAL;
+> >>+	}
+> >>+
+> >>+	skb_trim(skb, skb->len - 2);
+> >>+
+> >>+	ieee802154_rx_irqsafe(priv->dev, skb, lqi);
+> >>+
+> >>+	dev_vdbg(&priv->spi->dev, "RXFIFO: %x %x\n", len, lqi);
+> >>+
+> >>+	return 0;
+> >>+}
+> >>+
+> >>+static int
+> >>+cc2520_ed(struct ieee802154_dev *dev, u8 *level)
+> >>+{
+> >>+	struct cc2520_private *priv = dev->priv;
+> >>+	u8 status = 0xff;
+> >>+	u8 rssi;
+> >>+	int ret;
+> >>+
+> >>+	ret = cc2520_read_register(priv , CC2520_RSSISTAT, &status);
+> >>+	if (ret)
+> >>+		return ret;
+> >>+
+> >>+	if (status != RSSI_VALID) {
+> >>+		ret = -EINVAL;
+> >>+		return ret;
+> >return -EINVAL;
+> 
+> Ok. I will do it in v6
+> 
+> >>+	}
+> >>+
+> >>+	ret = cc2520_read_register(priv , CC2520_RSSI, &rssi);
+> >>+	if (ret)
+> >>+		return ret;
+> >>+
+> >>+	/* level = RSSI(rssi) - OFFSET [dBm] : offset is 76dBm*/
+> >>+	*level = rssi - RSSI_OFFSET;
+> >>+
+> >>+	return ret;
+> >>+}
+> >>+
+> [...]
+> >>+static int
+> >>+cc2520_filter(struct ieee802154_dev *dev,
+> >>+	      struct ieee802154_hw_addr_filt *filt, unsigned long changed)
+> >>+{
+> >>+	struct cc2520_private *priv = dev->priv;
+> >>+
+> >>+	if (changed & IEEE802515_AFILT_PANID_CHANGED) {
+> >>+		u8 panid[2];
+> >>+		panid[0] = filt->pan_id & 0xff;
+> >>+		panid[1] = filt->pan_id >> 8;
+> >const u16 panid = le16_to_cpu(filt->pan_id);
+> 
+> Ok.
+> 
+> >>+		cc2520_write_ram(priv, CC2520RAM_PANID, sizeof(panid), panid);
+> >>+	}
+> >>+
+> >>+	if (changed & IEEE802515_AFILT_IEEEADDR_CHANGED)
+> >>+		cc2520_write_ram(priv, CC2520RAM_IEEEADDR,
+> >>+				sizeof(filt->ieee_addr), (u8 *)&filt->ieee_addr);
+> >>+
+> >>+	return 0;
+> >>+
+> >>+}
+> >What's about to handle IEEE802515_AFILT_PANC_CHANGED and
+> >IEEE802515_AFILT_SADDR_CHANGED? These are fully ignored, your chip
+> >should have such functions.
+> 
+> CC2520 supports IEEE802515_AFILT_SADDR_CHANGED functionality , but i didn't find any info about
+> Pan co-coordinator changed register details. If that is possible i will do it in v6
+> 
+
+mhh, there exist FFD and RFD 802.15.4 chips. FFD means full
+function devices, which have coordinator support. The RFD are
+reduced function devices, which have not coordinator support. But I
+think your chip should support to run as coordinator. If your chip is a
+RFD... then it's a little bit more complex. Because this callback is
+only for FFD device and you can not simple return -EOPNOTSUPP in this
+case. Maybe you changed coordinator behaviour and set short address/long
+address/pan id. Then it would return -EOPNOTSUPP but setting of short
+address/long address is supported.
+
+> >If you don't support them you need to return -EOPNOTSUPP; but this would
+> >be weird because you have a IEEE 802.15.4 complaint chip. :-)
+> >
+> Ok.
+
+Better forget this..., see above. :-)
+
+- Alex
