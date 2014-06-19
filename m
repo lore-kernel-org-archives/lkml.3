@@ -1,123 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934362AbaFSTKq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 15:10:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37205 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934039AbaFSTKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 15:10:44 -0400
-Date: Thu, 19 Jun 2014 16:00:24 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@kernel.org>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, pbonzini@redhat.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, mgorman@suse.de,
-        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, laijs@cn.fujitsu.com, kvm@vger.kernel.org,
-        linux-mm@kvack.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        Avi Kivity <avi.kivity@gmail.com>
-Subject: Re: [RFC PATCH 1/1] Move two pinned pages to non-movable node in kvm.
-Message-ID: <20140619190024.GA3887@amt.cnet>
-References: <1403070600-6083-1-git-send-email-tangchen@cn.fujitsu.com>
- <20140618061230.GA10948@minantech.com>
- <53A136C4.5070206@cn.fujitsu.com>
- <20140619092031.GA429@minantech.com>
+	id S934392AbaFSTMT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 15:12:19 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:54956 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934039AbaFSTMS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 15:12:18 -0400
+Message-ID: <53A3360F.8010908@infradead.org>
+Date: Thu, 19 Jun 2014 12:12:15 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140619092031.GA429@minantech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        stephen hemminger <stephen@networkplumber.org>,
+        Sean Hefty <sean.hefty@intel.com>, FX Le Bail <fx.lebail@yahoo.com>,
+        Jason Wang <jasowang@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>, netdev@vger.kernel.org
+Subject: Re: [PATCH] iovec: move memcpy_from/toiovecend to lib/iovec.c
+References: <1403201568-22828-1-git-send-email-mst@redhat.com>
+In-Reply-To: <1403201568-22828-1-git-send-email-mst@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 12:20:32PM +0300, Gleb Natapov wrote:
-> CCing Marcelo,
+On 06/19/14 11:22, Michael S. Tsirkin wrote:
+> ERROR: "memcpy_fromiovecend" [drivers/vhost/vhost_scsi.ko] undefined!
 > 
-> On Wed, Jun 18, 2014 at 02:50:44PM +0800, Tang Chen wrote:
-> > Hi Gleb,
-> > 
-> > Thanks for the quick reply. Please see below.
-> > 
-> > On 06/18/2014 02:12 PM, Gleb Natapov wrote:
-> > >On Wed, Jun 18, 2014 at 01:50:00PM +0800, Tang Chen wrote:
-> > >>[Questions]
-> > >>And by the way, would you guys please answer the following questions for me ?
-> > >>
-> > >>1. What's the ept identity pagetable for ?  Only one page is enough ?
-> > >>
-> > >>2. Is the ept identity pagetable only used in realmode ?
-> > >>    Can we free it once the guest is up (vcpu in protect mode)?
-> > >>
-> > >>3. Now, ept identity pagetable is allocated in qemu userspace.
-> > >>    Can we allocate it in kernel space ?
-> > >What would be the benefit?
-> > 
-> > I think the benefit is we can hot-remove the host memory a kvm guest
-> > is using.
-> > 
-> > For now, only memory in ZONE_MOVABLE can be migrated/hot-removed. And the
-> > kernel
-> > will never use ZONE_MOVABLE memory. So if we can allocate these two pages in
-> > kernel space, we can pin them without any trouble. When doing memory
-> > hot-remove,
-> > the kernel will not try to migrate these two pages.
-> But we can do that by other means, no? The patch you've sent for instance.
+> commit 9f977ef7b671f6169eca78bf40f230fe84b7c7e5
+>     vhost-scsi: Include prot_bytes into expected data transfer length
+> in target-pending makes drivers/vhost/scsi.c call memcpy_fromiovecend().
+> This function is not available when CONFIG_NET is not enabled.
 > 
-> > 
-> > >
-> > >>
-> > >>4. If I want to migrate these two pages, what do you think is the best way ?
-> > >>
-> > >I answered most of those here: http://www.mail-archive.com/kvm@vger.kernel.org/msg103718.html
-> > 
-> > I'm sorry I must missed this email.
-> > 
-> > Seeing your advice, we can unpin these two pages and repin them in the next
-> > EPT violation.
-> > So about this problem, which solution would you prefer, allocate these two
-> > pages in kernel
-> > space, or migrate them before memory hot-remove ?
-> > 
-> > I think the first solution is simpler. But I'm not quite sure if there is
-> > any other pages
-> > pinned in memory. If we have the same problem with other kvm pages, I think
-> > it is better to
-> > solve it in the second way.
-> > 
-> > What do you think ?
-> Remove pinning is preferable. In fact looks like for identity pagetable
-> it should be trivial, just don't pin. APIC access page is a little bit
-> more complicated since its physical address needs to be tracked to be
-> updated in VMCS.
+> socket.h already includes uio.h, so no callers need updating.
+> 
+> Reported-by: Randy Dunlap <rdunlap@infradead.org>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-Yes, and there are new users of page pinning as well soon (see PEBS
-threads on kvm-devel).
+Acked-by: Randy Dunlap <rdunlap@infradead.org> [build-tested]
 
-Was thinking of notifiers scheme. Perhaps:
+Thanks.
 
-->begin_page_unpin(struct page *page)
-	- Remove any possible access to page.
+> ---
+> 
+> David, could you please ack merging this through
+> target-pending to avoid dependency issues?
+> 
+> Thanks!
+> 
+>  include/linux/socket.h |  4 ----
+>  include/linux/uio.h    |  4 ++++
+>  lib/iovec.c            | 55 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  net/core/iovec.c       | 55 --------------------------------------------------
+>  4 files changed, 59 insertions(+), 59 deletions(-)
+> 
+> diff --git a/include/linux/socket.h b/include/linux/socket.h
+> index 8e98297..ec538fc 100644
+> --- a/include/linux/socket.h
+> +++ b/include/linux/socket.h
+> @@ -305,8 +305,6 @@ struct ucred {
+>  /* IPX options */
+>  #define IPX_TYPE	1
+>  
+> -extern int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
+> -			       int offset, int len);
+>  extern int csum_partial_copy_fromiovecend(unsigned char *kdata, 
+>  					  struct iovec *iov, 
+>  					  int offset, 
+> @@ -315,8 +313,6 @@ extern unsigned long iov_pages(const struct iovec *iov, int offset,
+>  			       unsigned long nr_segs);
+>  
+>  extern int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr_storage *address, int mode);
+> -extern int memcpy_toiovecend(const struct iovec *v, unsigned char *kdata,
+> -			     int offset, int len);
+>  extern int move_addr_to_kernel(void __user *uaddr, int ulen, struct sockaddr_storage *kaddr);
+>  extern int put_cmsg(struct msghdr*, int level, int type, int len, void *data);
+>  
+> diff --git a/include/linux/uio.h b/include/linux/uio.h
+> index 199bcc3..8a4709a 100644
+> --- a/include/linux/uio.h
+> +++ b/include/linux/uio.h
+> @@ -89,5 +89,9 @@ static inline size_t iov_iter_count(struct iov_iter *i)
+>  
+>  int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len);
+>  int memcpy_toiovec(struct iovec *iov, unsigned char *kdata, int len);
+> +int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
+> +			int offset, int len);
+> +int memcpy_toiovecend(const struct iovec *v, unsigned char *kdata,
+> +		      int offset, int len);
+>  
+>  #endif
+> diff --git a/lib/iovec.c b/lib/iovec.c
+> index 454baa8..7a7c2da 100644
+> --- a/lib/iovec.c
+> +++ b/lib/iovec.c
+> @@ -51,3 +51,58 @@ int memcpy_toiovec(struct iovec *iov, unsigned char *kdata, int len)
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL(memcpy_toiovec);
+> +
+> +/*
+> + *	Copy kernel to iovec. Returns -EFAULT on error.
+> + */
+> +
+> +int memcpy_toiovecend(const struct iovec *iov, unsigned char *kdata,
+> +		      int offset, int len)
+> +{
+> +	int copy;
+> +	for (; len > 0; ++iov) {
+> +		/* Skip over the finished iovecs */
+> +		if (unlikely(offset >= iov->iov_len)) {
+> +			offset -= iov->iov_len;
+> +			continue;
+> +		}
+> +		copy = min_t(unsigned int, iov->iov_len - offset, len);
+> +		if (copy_to_user(iov->iov_base + offset, kdata, copy))
+> +			return -EFAULT;
+> +		offset = 0;
+> +		kdata += copy;
+> +		len -= copy;
+> +	}
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(memcpy_toiovecend);
+> +
+> +/*
+> + *	Copy iovec to kernel. Returns -EFAULT on error.
+> + */
+> +
+> +int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
+> +			int offset, int len)
+> +{
+> +	/* Skip over the finished iovecs */
+> +	while (offset >= iov->iov_len) {
+> +		offset -= iov->iov_len;
+> +		iov++;
+> +	}
+> +
+> +	while (len > 0) {
+> +		u8 __user *base = iov->iov_base + offset;
+> +		int copy = min_t(unsigned int, len, iov->iov_len - offset);
+> +
+> +		offset = 0;
+> +		if (copy_from_user(kdata, base, copy))
+> +			return -EFAULT;
+> +		len -= copy;
+> +		kdata += copy;
+> +		iov++;
+> +	}
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(memcpy_fromiovecend);
+> diff --git a/net/core/iovec.c b/net/core/iovec.c
+> index b618694..827dd6b 100644
+> --- a/net/core/iovec.c
+> +++ b/net/core/iovec.c
+> @@ -75,61 +75,6 @@ int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr_storage *a
+>  }
+>  
+>  /*
+> - *	Copy kernel to iovec. Returns -EFAULT on error.
+> - */
+> -
+> -int memcpy_toiovecend(const struct iovec *iov, unsigned char *kdata,
+> -		      int offset, int len)
+> -{
+> -	int copy;
+> -	for (; len > 0; ++iov) {
+> -		/* Skip over the finished iovecs */
+> -		if (unlikely(offset >= iov->iov_len)) {
+> -			offset -= iov->iov_len;
+> -			continue;
+> -		}
+> -		copy = min_t(unsigned int, iov->iov_len - offset, len);
+> -		if (copy_to_user(iov->iov_base + offset, kdata, copy))
+> -			return -EFAULT;
+> -		offset = 0;
+> -		kdata += copy;
+> -		len -= copy;
+> -	}
+> -
+> -	return 0;
+> -}
+> -EXPORT_SYMBOL(memcpy_toiovecend);
+> -
+> -/*
+> - *	Copy iovec to kernel. Returns -EFAULT on error.
+> - */
+> -
+> -int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
+> -			int offset, int len)
+> -{
+> -	/* Skip over the finished iovecs */
+> -	while (offset >= iov->iov_len) {
+> -		offset -= iov->iov_len;
+> -		iov++;
+> -	}
+> -
+> -	while (len > 0) {
+> -		u8 __user *base = iov->iov_base + offset;
+> -		int copy = min_t(unsigned int, len, iov->iov_len - offset);
+> -
+> -		offset = 0;
+> -		if (copy_from_user(kdata, base, copy))
+> -			return -EFAULT;
+> -		len -= copy;
+> -		kdata += copy;
+> -		iov++;
+> -	}
+> -
+> -	return 0;
+> -}
+> -EXPORT_SYMBOL(memcpy_fromiovecend);
+> -
+> -/*
+>   *	And now for the all-in-one: copy and checksum from a user iovec
+>   *	directly to a datagram
+>   *	Calls to csum_partial but the last must be in 32 bit chunks
+> 
 
-->end_page_unpin(struct page *page)
-	- Reinstantiate any possible access to page.
 
-For KVM:
-
-->begin_page_unpin()
-	- Remove APIC-access page address from VMCS.
-	  or
-	- Remove spte translation to pinned page.
-	
-	- Put vcpu in state where no VM-entries are allowed.
-
-->end_page_unpin()
-	- Setup APIC-access page, ...
-	- Allow vcpu to VM-entry.
-
-
-Because allocating APIC access page from distant NUMA node can
-be a performance problem, i believe.
-
-I'd be happy to know why notifiers are overkill.
-
-
+-- 
+~Randy
