@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934310AbaFSTGy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 15:06:54 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:34107 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754100AbaFSTGw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 15:06:52 -0400
-Date: Thu, 19 Jun 2014 15:06:49 -0400
-From: Tejun Heo <tj@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, cl@linux-foundation.org,
-        kmo@daterainc.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 6/6] percpu-refcount: implement percpu_ref_reinit()
- and percpu_ref_is_zero()
-Message-ID: <20140619190649.GB7390@mtj.dyndns.org>
-References: <1403053685-28240-1-git-send-email-tj@kernel.org>
- <1403053685-28240-7-git-send-email-tj@kernel.org>
- <20140619022055.GD20100@mtj.dyndns.org>
- <53A25286.1030003@cn.fujitsu.com>
- <20140619133104.GH11042@htj.dyndns.org>
- <20140619165501.GB4904@linux.vnet.ibm.com>
- <20140619170305.GA8723@linux.vnet.ibm.com>
+	id S934343AbaFSTHM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 15:07:12 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51294 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933059AbaFSTGx convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 15:06:53 -0400
+X-Sasl-enc: GzXC5Qd7ggEvsYznSwKvGEBs1IMxy3zSs61+Yz+zGkQg 1403204812
+Date: Thu, 19 Jun 2014 12:10:51 -0700
+From: Greg KH <greg@kroah.com>
+To: dann frazier <dann.frazier@canonical.com>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Peng Tao <bergwolf@gmail.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: lustre virtual block device doesn't build w/
+ CONFIG_ARM64_64K_PAGES=y
+Message-ID: <20140619191051.GA26573@kroah.com>
+References: <20140619183321.GA23200@fluid.dannf>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140619170305.GA8723@linux.vnet.ibm.com>
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140619183321.GA23200@fluid.dannf>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 10:03:05AM -0700, Paul E. McKenney wrote:
-> documentation: Add acquire/release barriers to pairing rules
+On Thu, Jun 19, 2014 at 12:33:21PM -0600, dann frazier wrote:
+> With current git, lustre fails to build with CONFIG_ARM64_64K_PAGES=y
+> and CONFIG_LUSTRE_LLITE_LLOOP=m:
 > 
-> It is possible to pair acquire and release barriers with other barriers,
-> so this commit adds them to the list in the SMP barrier pairing section.
-> 
-> Reported-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-> index a6ca533a73fc..2a7c3c4fb53f 100644
-> --- a/Documentation/memory-barriers.txt
-> +++ b/Documentation/memory-barriers.txt
-> @@ -757,10 +757,12 @@ SMP BARRIER PAIRING
->  When dealing with CPU-CPU interactions, certain types of memory barrier should
->  always be paired.  A lack of appropriate pairing is almost certainly an error.
->  
-> -A write barrier should always be paired with a data dependency barrier or read
-> -barrier, though a general barrier would also be viable.  Similarly a read
-> -barrier or a data dependency barrier should always be paired with at least an
-> -write barrier, though, again, a general barrier is viable:
-> +A write barrier should always be paired with a data dependency barrier,
-> +acquire barrier, release barrier, or read barrier, though a general
-> +barrier would also be viable.  Similarly a read barrier or a data
-> +dependency barrier should always be paired with at least a write barrier,
-> +an acquire barrier, or a release barrier, though, again, a general
-> +barrier is viable:
+> make -f scripts/Makefile.build obj=drivers/staging/lustre/lustre/llite
+>   gcc -Wp,-MD,drivers/staging/lustre/lustre/llite/.lloop.o.d  -nostdinc -isystem /usr/lib/gcc/aarch64-linux-gnu/4.8/include -I./arch/arm64/include -Iarch/arm64/include/generated  -Iinclude -I./arch/arm64/include/uapi -Iarch/arm64/include/generated/uapi -I./include/uapi -Iinclude/generated/uapi -include ./include/linux/kconfig.h -D__KERNEL__ -mlittle-endian -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -mgeneral-regs-only -fno-delete-null-pointer-checks -O2 -Wframe-larger-than=1024 -fno-stack-protector -Wno-unused-but-set-variable -fno-omit-frame-pointer -fno-optimize-sibling-calls -g -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -Werror=implicit-int -Werror=strict-prototypes -Idrivers/staging/lustre/include/ -Idrivers/staging/lustre/lustre/llite/../include  -DMODULE  -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(lloop)"  -D"KBUILD_MODNAME=KBUILD_STR(llite_lloop)" -c -o drivers/staging/lustre/lustre/llite/.tmp_lloop.o drivers/staging/lustre/lustre/llite/lloop.c
+> drivers/staging/lustre/lustre/llite/lloop.c: In function ‘loop_set_fd’:
+> drivers/staging/lustre/lustre/llite/lloop.c:523:78: error: duplicate case value
+>   CLASSERT(PAGE_CACHE_SIZE < (1 << (sizeof(unsigned short) * 8)));
+>                                                                               ^
+> drivers/staging/lustre/lustre/llite/lloop.c:523:18: error: previously used here
+>   CLASSERT(PAGE_CACHE_SIZE < (1 << (sizeof(unsigned short) * 8)));
+>                   ^
 
-FWIW,
+Looks like lustre can't handle 64K page sizes, so it refuses to build :(
 
-Reviewed-by: Tejun Heo <tj@kernel.org>
+I sugest turning this code off, you really don't want to be running it
+anyway...
 
-Thanks.
-
--- 
-tejun
+greg k-h
