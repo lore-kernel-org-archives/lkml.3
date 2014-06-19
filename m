@@ -1,38 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758037AbaFSWpg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 18:45:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52481 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754692AbaFSWpf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 18:45:35 -0400
-Date: Thu, 19 Jun 2014 15:49:35 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tair Rzayev <tair.rzayev@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: media: solo6x10: solo6x10-jpeg.h: Fix sparse
- warning
-Message-ID: <20140619224935.GA15181@kroah.com>
-References: <538A3BD7.7000607@gmail.com>
+	id S1758188AbaFSWqT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 18:46:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35244 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757998AbaFSWqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 18:46:18 -0400
+Message-ID: <53A36831.8090901@zytor.com>
+Date: Thu, 19 Jun 2014 15:46:09 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <538A3BD7.7000607@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Andy Lutomirski <luto@amacapital.net>,
+        Josh Boyer <jwboyer@fedoraproject.org>
+CC: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] x86,vdso: Create .build-id links for unstripped vdso
+ files
+References: <cover.1403129369.git.luto@amacapital.net> <26fa44a597716445c134d21194170c292d46a421.1403129369.git.luto@amacapital.net>
+In-Reply-To: <26fa44a597716445c134d21194170c292d46a421.1403129369.git.luto@amacapital.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 31, 2014 at 11:30:15PM +0300, Tair Rzayev wrote:
-> Make jpeg_dqt[][] static
+On 06/18/2014 03:59 PM, Andy Lutomirski wrote:
 > 
-> Signed-off-by: Tair Rzayev <tair.rzayev@gmail.com>
-> ---
->  drivers/staging/media/solo6x10/solo6x10-jpeg.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> This may break make vdso_install with binutils before 2.17.50.0.17.
+> On the other hand, make vdso_install was probably never useful with
+> earlier binutils, since the installed files are AFAIK completely
+> useless without build-id.
+> 
 
-Please always use scripts/get_maintainer.pl to determine who to send
-patches to (hint, I can't do anything with this one...)
+How does it fail?
 
-greg k-h
+	-hpa
+
+
