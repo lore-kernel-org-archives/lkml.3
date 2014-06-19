@@ -1,108 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757725AbaFSPWw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 11:22:52 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:54857 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757637AbaFSPWt (ORCPT
+	id S1757507AbaFSP0o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 11:26:44 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:23765 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756928AbaFSP0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 11:22:49 -0400
+	Thu, 19 Jun 2014 11:26:42 -0400
+Date: Thu, 19 Jun 2014 11:26:35 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: kbuild test robot <fengguang.wu@intel.com>, kbuild-all@01.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tyler Hicks <tyhicks@canonical.com>, ecryptfs@vger.kernel.org
+Subject: Re: [trace:ftrace/core 1/3] include/trace/syscall.h:39:6: error:
+ 'TIF_SYSCALL_TRACEPOINT' undeclared
+Message-ID: <20140619112635.41412408@gandalf.local.home>
+In-Reply-To: <20140619150300.GA7215@redhat.com>
+References: <53a1e7ba.ZIiv6DbOB78b9RzY%fengguang.wu@intel.com>
+	<20140618211559.76bdea15@gandalf.local.home>
+	<20140618211737.719fcf49@gandalf.local.home>
+	<20140618213833.731d5fc4@gandalf.local.home>
+	<20140619150300.GA7215@redhat.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140619063727.GL5821@phenom.ffwll.local>
-References: <20140618102957.15728.43525.stgit@patser>
-	<20140618103711.15728.97842.stgit@patser>
-	<20140619011556.GE10921@kroah.com>
-	<20140619063727.GL5821@phenom.ffwll.local>
-Date: Thu, 19 Jun 2014 08:22:48 -0700
-Message-ID: <CAMbhsRRZOHuDkW9GzWbBCQiBjdUFv7MtkB_qhx+pofT+38gugQ@mail.gmail.com>
-Subject: Re: [REPOST PATCH 4/8] android: convert sync to fence api, v5
-From: Colin Cross <ccross@google.com>
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        "open list:GENERIC INCLUDE/A..." <linux-arch@vger.kernel.org>,
-        thellstrom@vmware.com, lkml <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        Rob Clark <robdclark@gmail.com>, thierry.reding@gmail.com,
-        Colin Cross <ccross@google.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        "open list:DMA BUFFER SHARIN..." <linux-media@vger.kernel.org>
-Cc: daniel@ffwll.ch
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 11:37 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Wed, Jun 18, 2014 at 06:15:56PM -0700, Greg KH wrote:
->> On Wed, Jun 18, 2014 at 12:37:11PM +0200, Maarten Lankhorst wrote:
->> > Just to show it's easy.
->> >
->> > Android syncpoints can be mapped to a timeline. This removes the need
->> > to maintain a separate api for synchronization. I've left the android
->> > trace events in place, but the core fence events should already be
->> > sufficient for debugging.
->> >
->> > v2:
->> > - Call fence_remove_callback in sync_fence_free if not all fences have fired.
->> > v3:
->> > - Merge Colin Cross' bugfixes, and the android fence merge optimization.
->> > v4:
->> > - Merge with the upstream fixes.
->> > v5:
->> > - Fix small style issues pointed out by Thomas Hellstrom.
->> >
->> > Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
->> > Acked-by: John Stultz <john.stultz@linaro.org>
->> > ---
->> >  drivers/staging/android/Kconfig      |    1
->> >  drivers/staging/android/Makefile     |    2
->> >  drivers/staging/android/sw_sync.c    |    6
->> >  drivers/staging/android/sync.c       |  913 +++++++++++-----------------------
->> >  drivers/staging/android/sync.h       |   79 ++-
->> >  drivers/staging/android/sync_debug.c |  247 +++++++++
->> >  drivers/staging/android/trace/sync.h |   12
->> >  7 files changed, 609 insertions(+), 651 deletions(-)
->> >  create mode 100644 drivers/staging/android/sync_debug.c
->>
->> With these changes, can we pull the android sync logic out of
->> drivers/staging/ now?
->
-> Afaik the google guys never really looked at this and acked it. So I'm not
-> sure whether they'll follow along. The other issue I have as the
-> maintainer of gfx driver is that I don't want to implement support for two
-> different sync object primitives (once for dma-buf and once for android
-> syncpts), and my impression thus far has been that even with this we're
-> not there.
+On Thu, 19 Jun 2014 17:03:00 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-We have tested these patches to use dma fences to back the android
-sync driver and not found any major issues.  However, my understanding
-is that dma fences are designed for implicit sync, and explicit sync
-through the android sync driver is bolted on the side to share code.
-Android is not moving away from explicit sync, but we do wrap all of
-our userspace sync accesses through libsync
-(https://android.googlesource.com/platform/system/core/+/master/libsync/sync.c,
-ignore the sw_sync parts), so if the kernel supported a slightly
-different userspace explicit sync interface we could adapt to it
-fairly easily.  All we require is that individual kernel drivers need
-to be able to accept work alongisde an fd to wait on, and to return an
-fd that will signal when the work is done, and that userspace has some
-way to merge two of those fds, wait on an fd, and get some debugging
-info from an fd.  However, this patch set doesn't do that, it has no
-way to export a dma fence as an fd except through the android sync
-driver, so it is not yet ready to fully replace android sync.
+> On 06/18, Steven Rostedt wrote:
+> >
+> > On Wed, 18 Jun 2014 21:17:37 -0400
+> > Steven Rostedt <rostedt@goodmis.org> wrote:
+> >
+> > > On Wed, 18 Jun 2014 21:15:59 -0400
+> > > Steven Rostedt <rostedt@goodmis.org> wrote:
+> > >
+> > > > On Thu, 19 Jun 2014 03:25:46 +0800
+> > > > kbuild test robot <fengguang.wu@intel.com> wrote:
+> > > >
+> > > > > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git ftrace/core
+> > > > > head:   72fa1a896d8ef355e81270667803ceb16a3dd13f
+> > > > > commit: 32def52ce8faec72c353b6304ca98176687e18f1 [1/3] tracing: Fix syscall_*regfunc() vs copy_process() race
+> > > > > config: make ARCH=xtensa allyesconfig
+> > > > >
+> > > > > All error/warnings:
+> > > > >
+> > > > >    In file included from include/linux/syscalls.h:80:0,
+> > > > >                     from fs/ecryptfs/keystore.c:29:
+> > > > >    include/trace/syscall.h: In function 'syscall_tracepoint_update':
+> > > > > >> include/trace/syscall.h:39:6: error: 'TIF_SYSCALL_TRACEPOINT' undeclared (first use in this function)
+> > > > >    include/trace/syscall.h:39:6: note: each undeclared identifier is reported only once for each function it appears in
+> > > > >
+> > > > > vim +/TIF_SYSCALL_TRACEPOINT +39 include/trace/syscall.h
+> > > > >
+> > > > >     33		struct ftrace_event_call *exit_event;
+> > > > >     34	};
+> > > > >     35
+> > > > >     36	#ifdef CONFIG_TRACEPOINTS
+> > > > >     37	static inline void syscall_tracepoint_update(struct task_struct *p)
+> > > > >     38	{
+> > > > >   > 39		if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
+> > > > >     40			set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
+> > > > >     41		else
+> > > > >     42			clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
+> > > > >
+> > > > > ---
+> > > > > 0-DAY kernel build testing backend              Open Source Technology Center
+> > > > > http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
+> > > >
+> > > > My allyesconfig build passed with flying colors. Although we should
+> > >
+> > > I should elaborate. I was building against mainline, I noticed that the
+> > > kbuild test included linux-next.
+> >
+> > My entire test suite passed. I'm not going to bother with adding the
+> > header now, as it shouldn't affect mainline. I'm going to push my
+> > changes up to linux-next tonight and push to Linus tomorrow.
+> 
+> Argh... but it seems that that patch really needs a fix?
+> 
+> 	- #ifdef CONFIG_TRACEPOINTS
+> 	+ #ifdef CONFIG_HAVE_SYSCALL_TRACEPOINTS
+> 
+> or even
+> 	- #ifdef CONFIG_TRACEPOINTS
+> 	+ #if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_HAVE_SYSCALL_TRACEPOINTS)
+> 
+> or I am totally confused?
 
-> I'm trying to get our own android guys to upstream their i915 syncpts
-> support, but thus far I haven't managed to convince them to throw people's
-> time at this.
->
-> It looks like a step into the right direction, but until I have the proof
-> in the form of i915 patches that I won't have to support 2 gfx fencing
-> frameworks I'm opposed to de-staging android syncpts. Ofc someone else
-> could do that too, but besides i915 I don't see a full-fledged (modeset
-> side only kinda doesn't count) upstream gfx driver shipping on android.
-> -Daniel
-> --
-> Daniel Vetter
-> Software Engineer, Intel Corporation
-> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+I think the second one is needed.
+
+-- Steve
+
+> 
+> Oleg.
+
