@@ -1,119 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934241AbaFSSOP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 14:14:15 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:54762 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933173AbaFSSON (ORCPT
+	id S934258AbaFSSPV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 14:15:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50416 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933173AbaFSSPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 14:14:13 -0400
-Date: Thu, 19 Jun 2014 11:14:04 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave.hansen@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>, Christoph Lameter <cl@linux.com>
-Subject: Re: [bisected] pre-3.16 regression on open() scalability
-Message-ID: <20140619181403.GF4904@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <53A132D4.60408@intel.com>
- <20140618125831.GB4669@linux.vnet.ibm.com>
- <53A1CE19.7040103@intel.com>
- <20140618203052.GT4669@linux.vnet.ibm.com>
- <20140618235131.GA25946@linux.vnet.ibm.com>
- <20140619014200.GO8178@tassilo.jf.intel.com>
- <20140619021337.GA4669@linux.vnet.ibm.com>
- <20140619033816.GQ8178@tassilo.jf.intel.com>
- <20140619041900.GD4669@linux.vnet.ibm.com>
- <1403155458.5189.54.camel@marge.simpson.net>
+	Thu, 19 Jun 2014 14:15:18 -0400
+Date: Thu, 19 Jun 2014 11:19:18 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Rob Clark <robdclark@gmail.com>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        linux-arch@vger.kernel.org, Thomas Hellstrom <thellstrom@vmware.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Colin Cross <ccross@google.com>, Daniel Vetter <daniel@ffwll.ch>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Subject: Re: [REPOST PATCH 1/8] fence: dma-buf cross-device synchronization
+ (v17)
+Message-ID: <20140619181918.GA24155@kroah.com>
+References: <20140618102957.15728.43525.stgit@patser>
+ <20140618103653.15728.4942.stgit@patser>
+ <20140619011327.GC10921@kroah.com>
+ <CAF6AEGv4Ms+zsrEtpA10bGq04LnRjzVb925co49eVxh4ugkd=A@mail.gmail.com>
+ <20140619170059.GA1224@kroah.com>
+ <CAF6AEGuXKw1w=outX+QgFE2XZxV8c6pyhORL+mRp4uZR8Jnq7g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403155458.5189.54.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061918-6688-0000-0000-000002AE1B56
+In-Reply-To: <CAF6AEGuXKw1w=outX+QgFE2XZxV8c6pyhORL+mRp4uZR8Jnq7g@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 07:24:18AM +0200, Mike Galbraith wrote:
-> On Wed, 2014-06-18 at 21:19 -0700, Paul E. McKenney wrote: 
-> > On Wed, Jun 18, 2014 at 08:38:16PM -0700, Andi Kleen wrote:
-> > > On Wed, Jun 18, 2014 at 07:13:37PM -0700, Paul E. McKenney wrote:
-> > > > On Wed, Jun 18, 2014 at 06:42:00PM -0700, Andi Kleen wrote:
-> > > > > 
-> > > > > I still think it's totally the wrong direction to pollute so 
-> > > > > many fast paths with this obscure debugging check workaround
-> > > > > unconditionally.
-> > > > 
-> > > > OOM prevention should count for something, I would hope.
-> > > 
-> > > OOM in what scenario? This is getting bizarre.
-> > 
-> > On the bizarre part, at least we agree on something.  ;-)
-> > 
-> > CONFIG_NO_HZ_FULL booted with at least one nohz_full CPU.  Said CPU
-> > gets into the kernel and stays there, not necessarily generating RCU
-> > callbacks.  The other CPUs are very likely generating RCU callbacks.
-> > Because the nohz_full CPU is in the kernel, and because there are no
-> > scheduling-clock interrupts on that CPU, grace periods do not complete.
-> > Eventually, the callbacks from the other CPUs (and perhaps also some
-> > from the nohz_full CPU, for that matter) OOM the machine.
-> > 
-> > Now this scenario constitutes an abuse of CONFIG_NO_HZ_FULL, because it
-> > is intended for CPUs that execute either in userspace (in which case
-> > those CPUs are in extended quiescent states so that RCU can happily
-> > ignore them) or for real-time workloads with low CPU untilization (in
-> > which case RCU sees them go idle, which is also a quiescent state).
-> > But that won't stop people from abusing their kernels and complaining
-> > when things break.
+On Thu, Jun 19, 2014 at 01:45:30PM -0400, Rob Clark wrote:
+> On Thu, Jun 19, 2014 at 1:00 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Thu, Jun 19, 2014 at 10:00:18AM -0400, Rob Clark wrote:
+> >> On Wed, Jun 18, 2014 at 9:13 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >> > On Wed, Jun 18, 2014 at 12:36:54PM +0200, Maarten Lankhorst wrote:
+> >> >> +#define CREATE_TRACE_POINTS
+> >> >> +#include <trace/events/fence.h>
+> >> >> +
+> >> >> +EXPORT_TRACEPOINT_SYMBOL(fence_annotate_wait_on);
+> >> >> +EXPORT_TRACEPOINT_SYMBOL(fence_emit);
+> >> >
+> >> > Are you really willing to live with these as tracepoints for forever?
+> >> > What is the use of them in debugging?  Was it just for debugging the
+> >> > fence code, or for something else?
+> >> >
+> >> >> +/**
+> >> >> + * fence_context_alloc - allocate an array of fence contexts
+> >> >> + * @num:     [in]    amount of contexts to allocate
+> >> >> + *
+> >> >> + * This function will return the first index of the number of fences allocated.
+> >> >> + * The fence context is used for setting fence->context to a unique number.
+> >> >> + */
+> >> >> +unsigned fence_context_alloc(unsigned num)
+> >> >> +{
+> >> >> +     BUG_ON(!num);
+> >> >> +     return atomic_add_return(num, &fence_context_counter) - num;
+> >> >> +}
+> >> >> +EXPORT_SYMBOL(fence_context_alloc);
+> >> >
+> >> > EXPORT_SYMBOL_GPL()?  Same goes for all of the exports in here.
+> >> > Traditionally all of the driver core exports have been with this
+> >> > marking, any objection to making that change here as well?
+> >>
+> >> tbh, I prefer EXPORT_SYMBOL()..  well, I'd prefer even more if there
+> >> wasn't even a need for EXPORT_SYMBOL_GPL(), but sadly it is a fact of
+> >> life.  We already went through this debate once with dma-buf.  We
+> >> aren't going to change $evil_vendor's mind about non-gpl modules.  The
+> >> only result will be a more flugly convoluted solution (ie. use syncpt
+> >> EXPORT_SYMBOL() on top of fence EXPORT_SYMBOL_GPL()) just as a
+> >> workaround, with the result that no-one benefits.
+> >
+> > It has been proven that using _GPL() exports have caused companies to
+> > release their code "properly" over the years, so as these really are
+> > Linux-only apis, please change them to be marked this way, it helps
+> > everyone out in the end.
 > 
-> IMHO, those people can keep the pieces.
+> Well, maybe that is the true in some cases.  But it certainly didn't
+> work out that way for dma-buf.  And I think the end result is worse.
 > 
-> I don't even enable RCU_BOOST in -rt kernels, because that safety net
-> has a price.  The instant Joe User picks up the -rt shovel, it's his
-> grave, and he gets to do the digging.  Instead of trying to save his
-> bacon, I hand him a slightly better shovel, let him prioritize all
-> kthreads including workqueues.  Joe can dig all he wants to, and it's on
-> him, I just make sure he has the means to bury himself properly :)
+> I don't really like coming down on the side of EXPORT_SYMBOL() instead
+> of EXPORT_SYMBOL_GPL(), but if we do use EXPORT_SYMBOL_GPL() then the
+> result will only be creative workarounds using the _GPL symbols
+> indirectly by whatever is available via EXPORT_SYMBOL().  I don't
+> really see how that will be better.
 
-One of the nice things about NO_HZ_FULL is that it should reduce the
-need for RCU_BOOST.  One of the purposes of RCU_BOOST is for the guy
-who has an infinite-loop bug in a high-priority RT-priority process,
-because such processes can starve out low-priority RCU readers.  But
-with a properly configured NO_HZ_FULL system, the low-priority processes
-aren't sharing CPUs with the RT-priority processes.
+You are saying that you _know_ companies will violate our license, so
+you should just "give up"?  And how do you know people aren't working on
+preventing those "indirect" usages as well?  :)
 
-In fact, it might be worth making RCU_BOOST depend on !NO_HZ_FULL in -rt.
+Sorry, I'm not going to give up here, again, it has proven to work in
+the past in changing the ways of _very_ large companies, why stop now?
 
-> > This same thing can also happen without CONFIG_NO_HZ full, though
-> > the system has to work a bit harder.  In this case, the CPU looping
-> > in the kernel has scheduling-clock interrupts, but if all it does
-> > is cond_resched(), RCU is never informed of any quiescent states.
-> > The whole point of this patch is to make those cond_resched() calls,
-> > which are quiescent states, visible to RCU.
-> > 
-> > > If something keeps looping forever in the kernel creating 
-> > > RCU callbacks without any real quiescent states it's simply broken.
-> > 
-> > I could get behind that.  But by that definition, there is a lot of
-> > breakage in the current kernel, especially as we move to larger CPU
-> > counts.
-> 
-> Not only larger CPU counts: skipping the -rq clock update on wakeup
-> (cycle saving optimization) turned out to be deadly to boxen with a
-> zillion disks because our wakeup latency can be so incredibly horrible
-> that falsely attributing wakeup latency to the next task to run
-> (watchdog) resulted in it being throttled for long enough that big IO
-> boxen panicked during boot.
-> 
-> The root cause of that wasn't the optimization, the root was the
-> horrific amounts of time we can spend locked up in the kernel.
+thanks,
 
-Completely agreed!
-
-							Thanx, Paul
-
+greg k-h
