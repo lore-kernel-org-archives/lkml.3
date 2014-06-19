@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932687AbaFSLmQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 07:42:16 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:59293 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932579AbaFSLmN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 07:42:13 -0400
-Message-ID: <53A2CC92.6050508@free-electrons.com>
-Date: Thu, 19 Jun 2014 13:42:10 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Bo Shen <voice.shen@atmel.com>
-CC: Thierry Reding <thierry.reding@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        David Airlie <airlied@linux.ie>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, devicetree@vger.kernel.org,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        linux-doc@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 4/7] ARM: at91/dt: split sama5d3 lcd pin definitions
- to match RGB mode configs
-References: <1402329860-27520-1-git-send-email-boris.brezillon@free-electrons.com> <1402329860-27520-5-git-send-email-boris.brezillon@free-electrons.com> <53A28C2C.1010001@atmel.com>
-In-Reply-To: <53A28C2C.1010001@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932741AbaFSLmi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 07:42:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44312 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932451AbaFSLlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 07:41:36 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 3/5] perf tools: Fix scrollbar refresh row index
+Date: Thu, 19 Jun 2014 13:41:14 +0200
+Message-Id: <1403178076-14072-4-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1403178076-14072-1-git-send-email-jolsa@kernel.org>
+References: <1403178076-14072-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The ui_browser__gotorc function needs offset from 'y' member,
+so the row index has to begin with 0, which happens by accident
+in current code, because we display only one header line.
 
-On 19/06/2014 09:07, Bo Shen wrote:
-> Hi Boris,
->
-> On 06/10/2014 12:04 AM, Boris BREZILLON wrote:
->> The HLCDC (High LCD Controller) IP supports 4 different output mode
->> (RGB444, RGB565, RGB666 and RGB888) and the pin muxing depends on the
->> chosen RGB mode.
->>
->> Split the pin definition to be able to set the pin config according
->> to the
->> selected mode.
->>
->> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
->> ---
->>   arch/arm/boot/dts/sama5d3_lcd.dtsi | 127
->> ++++++++++++++++++++++++++++---------
->>   1 file changed, 96 insertions(+), 31 deletions(-)
->
-> On sama5d3xek board, it only works in 24bits output mode. And it
-> depends on the hardware design. So, I think only keep only one pinctrl
-> configuration.
+The bug shows when we want to display more than 1 header lines
+like columns headers in following patches.
 
-As you pointed out (during our discussion on IRC) sama5d3 SoCs support
-several pin muxing for LCDDAT pins.
-I'll take care to define all these pin mux here and select the
-appropriate ones in sama5d3xdm.dtsi (patch 6) instead of
-sama5d3_lcd.dtsi (patch 5).
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/ui/browser.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
-Best Regards,
-
-Boris
-
+diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
+index e6f96be..6792efb 100644
+--- a/tools/perf/ui/browser.c
++++ b/tools/perf/ui/browser.c
+@@ -285,7 +285,7 @@ static void ui_browser__scrollbar_set(struct ui_browser *browser)
+ {
+ 	int height = browser->height, h = 0, pct = 0,
+ 	    col = browser->width,
+-	    row = browser->y - 1;
++	    row = 0;
+ 
+ 	if (browser->nr_entries > 1) {
+ 		pct = ((browser->index * (browser->height - 1)) /
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+1.8.3.1
 
