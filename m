@@ -1,98 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758292AbaFSQDK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:03:10 -0400
-Received: from mail.fireflyinternet.com ([87.106.93.118]:56467 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757797AbaFSQDG (ORCPT
+	id S1758313AbaFSQDU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:03:20 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:58917 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758296AbaFSQDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:03:06 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
-Date: Thu, 19 Jun 2014 17:02:57 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: mmu_notifier and i915_gem_userptr.c
-Message-ID: <20140619160257.GB8476@nuc-i3427.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Joerg Roedel <joro@8bytes.org>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org
-References: <20140619153655.GG31771@8bytes.org>
+	Thu, 19 Jun 2014 12:03:16 -0400
+Date: Thu, 19 Jun 2014 17:03:10 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+Cc: linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [GIT PULL v2] LinusW - Immutable branch between MFD and GPIO
+Message-ID: <20140619160310.GE26560@lee--X1>
+References: <1401773164-30326-1-git-send-email-lejun.zhu@linux.intel.com>
+ <20140617150738.GL29841@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140619153655.GG31771@8bytes.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140617150738.GL29841@lee--X1>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 05:36:55PM +0200, Joerg Roedel wrote:
-> Hey Chris,
-> 
-> recently I had a look at i915_gem_userptr.c in order to extend the
-> mmu_notifier call-backs implemented there. My goal is to implement the
-> change_pte call-back where it is necessary to get rid of it being
-> wrapped mn_invalidate_range_start/end() calls (for the reason see
-> commit 6bdb913f).
-> 
-> For most users of mmu_notifiers this is easy, except the i915 driver :)
-> The invalidate_range_start notifier implemented there can sleep, so it
-> can't be reused for a change_pte implementation (because change_pte is
-> called under ptl spin_lock and is not allowed to sleep). On the other
-> hand you also didn't implement the invalidate_page notifier, so I am not
-> sure whether the code actually cares about the somewhat similar
-> change_pte events?
+Linus,
 
-Maybe it should hook the invalidate_page notifier. I picked
-invalidate_range() as it seemed to be called first and seemed to cover
-all operations that affected an mm's addr range.  The invalidate_page
-seemed to be only called during writeback, which aiui will not affect gup.
-Should we be hooking more notifiers?
- 
-> Here is where change_pte is called from:
-> 
-> 	* In KSM code when pages are merged (shouldn't be relevant
-> 	  because KSM doesn't merged pages returned by get_user_pages())
-> 	* In uprobes code when a user-page is replaced by a kernel page
-> 	  (should only handle .text sections, so probaly not relevant
-> 	   here)
-> 	* When someone writes to a COW page in mm/memory.c (this looks
-> 	  relevant looking at forked processes, on the other hand,
-> 	  this is currently handled by unbinding the vma from the
-> 	  object list in the i915 driver)
-> 
-> I am not familiar with the i915 hardware and the driver implementation
-> details, so I wanted to ask whether the driver
-> 
-> 	1) Cares about the change_pte event?
+Slight amendment.  I've applied a fix, as this branch broke PPC.
 
-I don't think so... If I understand correctly, change_pte only gets
-called when the PTE is updated, not the physical page itself. If that is
-true, then the dma mapping of the page is unaffected, and so the GPU
-view of the page is not affected either. So, as long as the GPU
-maintains a remapped address of a page that is associated by a process
-address, we don't need to change anything.
+The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
 
-> 	2) If it cares, what is the best way to implement it? What the
-> 	   invalidate_range_start() notifier does seems a bit overkill,
-> 	   since for the change_pte event nothing is unmapped (but maybe
-> 	   remapped)
+  Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
 
-If need be, start with overkill. I'd rather drop everything and rebuild
-it through the layers of mappings we have, as this is a new area for us
-and we want some solid foundations before trying to be smart.
- 
-> So any insight you could provide here would be useful :)
+are available in the git repository at:
 
-Likewise. :-p
--Chris
+  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-gpio-v3.17
+
+for you to fetch changes up to 8dbf2aa3c308ade864261e8047b0dce1f4ed9a7e:
+
+  gpio: crystalcove: Fix implicit declaration of function 'seq_printf' error (2014-06-19 16:56:28 +0100)
+
+----------------------------------------------------------------
+Immutable branch between MFD and GPIO for v3.17.
+
+----------------------------------------------------------------
+Lee Jones (1):
+      gpio: crystalcove: Fix implicit declaration of function 'seq_printf' error
+
+Zhu, Lejun (3):
+      mfd: intel_soc_pmic: Core driver
+      mfd: intel_soc_pmic: Crystal Cove support
+      gpio: Add support for Intel Crystal Cove PMIC
+
+ drivers/gpio/Kconfig               |  13 ++
+ drivers/gpio/Makefile              |   1 +
+ drivers/gpio/gpio-crystalcove.c    | 380 +++++++++++++++++++++++++++++++++++++
+ drivers/mfd/Kconfig                |  12 ++
+ drivers/mfd/Makefile               |   3 +
+ drivers/mfd/intel_soc_pmic_core.c  | 168 ++++++++++++++++
+ drivers/mfd/intel_soc_pmic_core.h  |  32 ++++
+ drivers/mfd/intel_soc_pmic_crc.c   | 158 +++++++++++++++
+ include/linux/mfd/intel_soc_pmic.h |  30 +++
+ 9 files changed, 797 insertions(+)
+ create mode 100644 drivers/gpio/gpio-crystalcove.c
+ create mode 100644 drivers/mfd/intel_soc_pmic_core.c
+ create mode 100644 drivers/mfd/intel_soc_pmic_core.h
+ create mode 100644 drivers/mfd/intel_soc_pmic_crc.c
+ create mode 100644 include/linux/mfd/intel_soc_pmic.h
 
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
