@@ -1,185 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757678AbaFSIYD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 04:24:03 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:18932 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757611AbaFSIX7 (ORCPT
+	id S1757704AbaFSIYQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 04:24:16 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:19840 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757684AbaFSIYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 04:23:59 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 19 Jun 2014 01:14:34 -0700
-From: Allen Yu <alleny@nvidia.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Alan Stern <stern@rowland.harvard.edu>
-CC: Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 19 Jun 2014 16:23:29 +0800
-Subject: RE: [PATCH 1/1] PM / Runtime: let rpm_resume fail if rpm disabled
- and device suspended.
-Thread-Topic: [PATCH 1/1] PM / Runtime: let rpm_resume fail if rpm disabled
- and device suspended.
-Thread-Index: Ac+LTp+m+ZtF76U6T16Z2eYX4IKP1AAP8KUg
-Message-ID: <9E7892CE01168A46922BCCE04DB02F9828F863E9@HKMAIL01.nvidia.com>
-References: <Pine.LNX.4.44L0.1406181121220.1467-100000@iolanthe.rowland.org>
- <3528855.Z370J7O75B@vostro.rjw.lan>
-In-Reply-To: <3528855.Z370J7O75B@vostro.rjw.lan>
-Accept-Language: zh-CN, en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="utf-8"
+	Thu, 19 Jun 2014 04:24:12 -0400
+X-AuditID: cbfee61a-b7fef6d00000200b-9e-53a29e291ad1
+From: Chao Yu <chao2.yu@samsung.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [f2fs-dev][PATCH] f2fs: support ->tmpfile()
+Date: Thu, 19 Jun 2014 16:23:19 +0800
+Message-id: <001901cf8b97$d7dea910$879bfb30$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac+LhUO9NM6/Sc3yRoiPgYBMKenUiA==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t9jQV3NeYuCDQ6/07G4tq+RyeLJ+lnM
+	FpcWuVvs2XuSxeLyrjlsDqwem1Z1snnsXvCZyaNvyypGj8+b5AJYorhsUlJzMstSi/TtErgy
+	WraIFSyRqTg2tY+xgbFZvIuRk0NCwETi2bYVjBC2mMSFe+vZuhi5OIQEpjNKXLmxnB3C+cEo
+	sfnlWVaQKjYBFYnlHf+ZQGwRAS+JSftPsIDYzAKZEveaZjCD2MJAU59PawezWQRUJf5tngM0
+	lYODV8BSonGdDEiYV0BQ4sfke1CtWhLrdx5ngrDlJTavecsMcZCCxI6zrxkhVulJvFv+nxWi
+	Rlxi45FbLBMYBWYhGTULyahZSEbNQtKygJFlFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZw
+	aD+T2sG4ssHiEKMAB6MSD6/HxYXBQqyJZcWVuYcYJTiYlUR4VVMXBQvxpiRWVqUW5ccXleak
+	Fh9ilOZgURLnPdBqHSgkkJ5YkpqdmlqQWgSTZeLglGpgbHKX4ZY4FZD/PVzd80uW/oQ5L67W
+	Pg7eYXErvrn19Kt3/xrt7YyeSV9bd3jXVcOHBRy3On2qTP2/yTz9d0BxeSpLkSFPkxrbgpVr
+	pLjWfD9pEuNlZ7apeFPz++P/X5j+OFERcdrvTZSVyvu/P3oCvykJnH1WUuN9bXZKs0G+49/j
+	B71uC7QuU2Ipzkg01GIuKk4EAOJF5ctpAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5J8O9jk024602
 
-On Thursday, June 19, 2014, Rafael J. Wysocki wrote: 
-> On Wednesday, June 18, 2014 11:30:51 AM Alan Stern wrote:
-> > On Tue, 17 Jun 2014, Rafael J. Wysocki wrote:
-> >
-> > > On Tuesday, June 17, 2014 10:37:03 PM Rafael J. Wysocki wrote:
-> > > > On Tuesday, June 17, 2014 10:26:14 PM Rafael J. Wysocki wrote:
-> > > > > On Tuesday, June 17, 2014 10:11:32 AM Alan Stern wrote:
-> > > > > > On Mon, 16 Jun 2014, Rafael J. Wysocki wrote:
-> > > > > >
-> > > > > > > > For reasons having nothing to do with Allen's suggested
-> > > > > > > > change, I wonder if we shouldn't replace this line with
-> something like:
-> > > > > > > >
-> > > > > > > > -	else if (dev->power.disable_depth == 1 && dev-
-> >power.is_suspended
-> > > > > > > > +	else if (dev->power.disable > 0 &&
-> > > > > > > > +!dev->power.is_suspended
-> > > > > > > > 	    && dev->power.runtime_status == RPM_ACTIVE)
-> > > > > > > > 		retval = 1;
-> > > > > > > >
-> > > > > > > > It seems that I've been bitten by this several times in the past.
-> > > > > > > > When a device is disabled for runtime PM, and more or less
-> > > > > > > > permanently stuck in the RPM_ACTIVE state, calls to
-> > > > > > > > pm_runtime_resume() or
-> > > > > > > > pm_runtime_get_sync() shouldn't fail.
-> > > > > > > >
-> > > > > > > > For example, suppose some devices of a certain type
-> > > > > > > > support runtime power management but others don't.  We
-> > > > > > > > naturally want to call
-> > > > > > > > pm_runtime_disable() for the ones that don't.  But we also
-> > > > > > > > want the same driver to work for all the devices, which
-> > > > > > > > means that
-> > > > > > > > pm_runtime_get_sync() should return success -- otherwise
-> > > > > > > > the driver will think that something has gone wrong.
-> > > > > > > >
-> > > > > > > > Rafael, what do you think?
-> > > > > > >
-> > > > > > > That condition is there specifically to take care of the
-> > > > > > > system suspend code path.  It means that if runtime PM is
-> > > > > > > disabled, but it only has been disabled by the system
-> > > > > > > suspend code path, we should treat the device as "active" (ie.
-> return 1).  That won't work after the proposed change.
-> > > > > >
-> > > > > > Ah, yes, quite true.  Okay, suppose we replace that line with just:
-> > > > > >
-> > > > > > +	else if (dev->power.disable > 0
-> > > > > >
-> > > > > > > I guess drivers that want to work with devices where runtime
-> > > > > > > PM may be disabled can just check the return value of
-> rpm_resume() for -EACCES?
-> > > > > >
-> > > > > > They could, but it's extra work and it's extremely easy to
-> > > > > > forget about.  I'd prefer not to do things that way.
-> > > > >
-> > > > > In that case we need to audit all code that checks the return
-> > > > > value of
-> > > > > __pm_runtime_resume() to verify that it doesn't depend on the
-> > > > > current behavior in any way.  It shouldn't, but still.
-> > > > >
-> > > > > Also we probably should drop the -EACCES return value from
-> > > > > rpm_resume() in the same patch, because it specifically only
-> > > > > covers the dev->power.disable > 0 case (which BTW is consistent
-> > > > > with the suspend side of things, so I'm totally unsure about that being
-> the right thing to do to be honest).
-> >
-> > It's still the correct action with runtime PM is disabled and the
-> > device's runtime_status isn't RPM_ACTIVE.
-> 
-> Well, we used to have the notion that runtime_status is not meaningful for
-> devices with dev->power.disable_depth greater than 0 (except for the
-> special case in the suspend code path where we know why it is greater than
-> 0).  I think it was useful. :-)
+Add function f2fs_tmpfile() to support O_TMPFILE file creation, and modify logic
+of init_inode_metadata to enable linkat temp file.
 
-So what's the exact state of device if dev->power.is_suspended flag is set and runtime_status is RPM_ACTIVE? Is it a state like "suspended but still can be accessed"? 
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/dir.c   |   10 ++++++++-
+ fs/f2fs/namei.c |   64 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 73 insertions(+), 1 deletion(-)
 
-I'm just afraid the existing code would cause a device hang if we allow it to be accessed even though it's suspended (at this point RPM_ACTIVE could be meaningless). I don't understand the original motivation of these code. If it's a valid case, most likely it should be handled in the specific device driver instead of the PM core.
-
-> 
-> > > > Perhaps it'd be better to rework __pm_runtime_resume() to convert
-> > > > the -EACCES return value from rpm_resume() into 0 if RPM_GET_PUT is
-> set?
-> > >
-> > > Or do something like this?
-> > >
-> > > ---
-> > >  drivers/base/power/runtime.c |    3 ++-
-> > >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > >
-> > > Index: linux-pm/drivers/base/power/runtime.c
-> > >
-> ==========================================================
-> =========
-> > > --- linux-pm.orig/drivers/base/power/runtime.c
-> > > +++ linux-pm/drivers/base/power/runtime.c
-> > > @@ -608,7 +608,8 @@ static int rpm_resume(struct device *dev
-> > >   repeat:
-> > >  	if (dev->power.runtime_error)
-> > >  		retval = -EINVAL;
-> > > -	else if (dev->power.disable_depth == 1 && dev-
-> >power.is_suspended
-> > > +	else if (((dev->power.disable_depth > 0 && (rpmflags &
-> RPM_GET_PUT))
-> > > +	    || (dev->power.disable_depth == 1 && dev-
-> >power.is_suspended))
-> > >  	    && dev->power.runtime_status == RPM_ACTIVE)
-> > >  		retval = 1;
-> > >  	else if (dev->power.disable_depth > 0)
-> >
-> > So pm_runtime_resume() and pm_request_resume() would still fail, but
-> > pm_runtime_get() and pm_runtime_get_sync() would work?  I'm not sure
-> > about the reason for this distinction.
-> 
-> The meaning of pm_runtime_get()/pm_runtime_get_sync() is "prevent the
-> device from being suspended from now on and resume it if necessary" while
-> "runtime PM disabled and runtime_status == RPM_ACTIVE" may be
-> interpreted as "not necessary to resume", so it is reasonable to special case
-> this particular situation for these particular routines IMHO.
-
-As Rafael mentioned above that runtime_sataus is not meaningful if runtime PM is disabled, so shouldn't we avoid using the runtime_staus here and instead use dev->power.is_suspended only to decide the return value?
-
-@@ -608,11 +608,13 @@ static int rpm_resume(struct device *dev, int rpmflags)
-  repeat:
-        if (dev->power.runtime_error)
-                retval = -EINVAL;
--       else if (dev->power.disable_depth == 1 && dev->power.is_suspended
--           && dev->power.runtime_status == RPM_ACTIVE)
--               retval = 1;
--       else if (dev->power.disable_depth > 0)
--               retval = -EACCES;
-+       else if (dev->power.disable_depth > 0) {
-+               if (!dev->power.is_suspended)
-+                       retval = 1;
-+               else
-+                       retval = -EACCES;
-+       }
+diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+index 966acb0..09760d5 100644
+--- a/fs/f2fs/dir.c
++++ b/fs/f2fs/dir.c
+@@ -333,10 +333,12 @@ static int make_empty_dir(struct inode *inode,
+ static struct page *init_inode_metadata(struct inode *inode,
+ 		struct inode *dir, const struct qstr *name)
+ {
++	struct f2fs_sb_info *sbi = F2FS_SB(dir->i_sb);
+ 	struct page *page;
+ 	int err;
+ 
+-	if (is_inode_flag_set(F2FS_I(inode), FI_NEW_INODE)) {
++	if (is_inode_flag_set(F2FS_I(inode), FI_NEW_INODE) &&
++			inode->i_nlink) {
+ 		page = new_inode_page(inode, name);
+ 		if (IS_ERR(page))
+ 			return page;
+@@ -370,6 +372,12 @@ static struct page *init_inode_metadata(struct inode *inode,
+ 	 */
+ 	if (is_inode_flag_set(F2FS_I(inode), FI_INC_LINK)) {
+ 		file_lost_pino(inode);
++		/*
++		 * If link the tmpfile to alias through linkat path,
++		 * we should remove this inode from orphan list.
++		 */
++		if (inode->i_nlink == 0)
++			remove_orphan_inode(sbi, inode->i_ino);
+ 		inc_nlink(inode);
+ 	}
+ 	return page;
+diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
+index 9138c32..0d55517 100644
+--- a/fs/f2fs/namei.c
++++ b/fs/f2fs/namei.c
+@@ -13,6 +13,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/sched.h>
+ #include <linux/ctype.h>
++#include <linux/dcache.h>
+ 
+ #include "f2fs.h"
+ #include "node.h"
+@@ -488,6 +489,68 @@ out:
+ 	return err;
+ }
+ 
++static int f2fs_tmpfile(struct inode *dir, struct dentry *dentry, umode_t mode)
++{
++	struct super_block *sb = dir->i_sb;
++	struct f2fs_sb_info *sbi = F2FS_SB(sb);
++	struct inode *inode;
++	struct page *page;
++	int err;
 +
-        if (retval)
-                goto out;
++	inode = f2fs_new_inode(dir, mode);
++	if (IS_ERR(inode))
++		return PTR_ERR(inode);
++
++	inode->i_op = &f2fs_file_inode_operations;
++	inode->i_fop = &f2fs_file_operations;
++	inode->i_mapping->a_ops = &f2fs_dblock_aops;
++
++	f2fs_lock_op(sbi);
++	err = acquire_orphan_inode(sbi);
++	if (err)
++		goto out;
++	/*
++	 * add this non-linked tmpfile to orphan list, in this way we could
++	 * remove all unused data of tmpfile after abnormal power-off.
++	 */
++	add_orphan_inode(sbi, inode->i_ino);
++
++	page = new_inode_page(inode, NULL);
++	if (IS_ERR(page)) {
++		err = PTR_ERR(page);
++		goto remove_out;
++	}
++
++	err = f2fs_init_acl(inode, dir, page);
++	if (err)
++		goto unlock_out;
++
++	err = f2fs_init_security(inode, dir, NULL, page);
++	if (err)
++		goto unlock_out;
++
++	f2fs_put_page(page, 1);
++	f2fs_unlock_op(sbi);
++
++	alloc_nid_done(sbi, inode->i_ino);
++	mark_inode_dirty(inode);
++	d_tmpfile(dentry, inode);
++	unlock_new_inode(inode);
++	return 0;
++unlock_out:
++	f2fs_put_page(page, 1);
++remove_out:
++	remove_orphan_inode(sbi, inode->i_ino);
++out:
++	f2fs_unlock_op(sbi);
++	clear_nlink(inode);
++	unlock_new_inode(inode);
++	make_bad_inode(inode);
++	iput(inode);
++	alloc_nid_failed(sbi, inode->i_ino);
++	return err;
++}
++
+ const struct inode_operations f2fs_dir_inode_operations = {
+ 	.create		= f2fs_create,
+ 	.lookup		= f2fs_lookup,
+@@ -498,6 +561,7 @@ const struct inode_operations f2fs_dir_inode_operations = {
+ 	.rmdir		= f2fs_rmdir,
+ 	.mknod		= f2fs_mknod,
+ 	.rename		= f2fs_rename,
++	.tmpfile	= f2fs_tmpfile,
+ 	.getattr	= f2fs_getattr,
+ 	.setattr	= f2fs_setattr,
+ 	.get_acl	= f2fs_get_acl,
+-- 
+1.7.9.5
 
-However, this requires us to make sure device is in full functional state if it's not suspended before disabling runtime PM, just like the case runtime PM is not configured at all. And also requires device suspend routine to check dev->power.usage_count before suspending device.
 
-Thanks,
-Allen Yu
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
