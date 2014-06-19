@@ -1,112 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965413AbaFSVFr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 17:05:47 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:46937 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965269AbaFSVFq (ORCPT
+	id S965497AbaFSVGy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 17:06:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51479 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965418AbaFSVGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 17:05:46 -0400
-Date: Thu, 19 Jun 2014 14:04:19 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: josh@joshtriplett.org, davidshan@tencent.com, cl@linux.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] rcu: use __this_cpu_read helper instead of
- per_cpu_ptr(p, raw_smp_processor_id())
-Message-ID: <20140619210419.GP4904@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <53A3443E.8010102@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53A3443E.8010102@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061921-0928-0000-0000-000002D10FD2
+	Thu, 19 Jun 2014 17:06:53 -0400
+Date: Thu, 19 Jun 2014 14:06:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>, ryabinin.a.a@gmail.com,
+        Pekka Enberg <penberg@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: Re: [PATCH] mm: slub: SLUB_DEBUG=n: use the same alloc/free hooks
+ as for SLUB_DEBUG=y
+Message-Id: <20140619140651.c3c49cf70a7f349db595239e@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.11.1406191555110.4002@gentwo.org>
+References: <1403193138-7677-1-git-send-email-a.ryabinin@samsung.com>
+	<alpine.DEB.2.11.1406191555110.4002@gentwo.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 04:12:46PM -0400, Pranith Kumar wrote:
-> Use __this_cpu_read() instead of per_cpu_ptr() for optimized access.
-> 
-> Last time when Shan Wei posted this, you wanted before/after code for ARM and x86.
-> (http://lkml.iu.edu//hypermail/linux/kernel/1211.2/00498.html).
+On Thu, 19 Jun 2014 15:56:56 -0500 (CDT) Christoph Lameter <cl@gentwo.org> wrote:
 
-That was some time back, wasn't it?
+> On Thu, 19 Jun 2014, Andrey Ryabinin wrote:
+> 
+> > I see no reason why calls to other debugging subsystems (LOCKDEP,
+> > DEBUG_ATOMIC_SLEEP, KMEMCHECK and FAILSLAB) are hidden under SLUB_DEBUG.
+> > All this features should work regardless of SLUB_DEBUG config, as all of
+> > them already have own Kconfig options.
+> 
+> The reason for hiding this under SLUB_DEBUG was to have some way to
+> guarantee that no instrumentations is added if one does not want it.
+> 
+> SLUB_DEBUG is on by default and builds in a general
+> debugging framework that can be enabled at runtime in
+> production kernels.
+> 
+> If someone disabled SLUB_DEBUG then that has been done with the intend to
+> get a minimal configuration.
+> 
 
-Anyway, yes, this does look quite a bit more convincing.
+(Is that a nack?)
 
-							Thanx, Paul
+The intent seems to have been implemented strangely.  Perhaps it would
+be clearer and more conventional to express all this using Kconfig
+logic.
 
-> There are few other location which use per_cpu_ops instead of this_cpu_ops. I
-> can convert them accordingly if you are accept this :)
-> 
-> Using gcc (Ubuntu/Linaro 4.7.3-12ubuntu1) 4.7.3, I get (trimmed to relevant assembly, from make kernel/rcu/tree.s)
-> 
-> ARMv7 per_cpu_ptr():
-> 
-> force_quiescent_state:
->     mov    r3, sp    @,
->     bic    r1, r3, #8128    @ tmp171,,
->     ldr    r2, .L98    @ tmp169,
->     bic    r1, r1, #63    @ tmp170, tmp171,
->     ldr    r3, [r0, #220]    @ __ptr, rsp_6(D)->rda
->     ldr    r1, [r1, #20]    @ D.35903_68->cpu, D.35903_68->cpu
->     mov    r6, r0    @ rsp, rsp
->     ldr    r2, [r2, r1, asl #2]    @ tmp173, __per_cpu_offset
->     add    r3, r3, r2    @ tmp175, __ptr, tmp173
->     ldr    r5, [r3, #12]    @ rnp_old, D.29162_13->mynode
-> 
-> ARMv7 using __this_cpu_read():
-> 
-> force_quiescent_state:
->     ldr    r3, [r0, #220]    @ rsp_7(D)->rda, rsp_7(D)->rda
->     mov    r6, r0    @ rsp, rsp
->     add    r3, r3, #12    @ __ptr, rsp_7(D)->rda,
->     ldr    r5, [r2, r3]    @ rnp_old, *D.29176_13
-> 
-> Using gcc 4.8.2:
-> 
-> x86_64 per_cpu_ptr():
-> 
->     movl %gs:cpu_number,%edx    # cpu_number, pscr_ret__
->     movslq    %edx, %rdx    # pscr_ret__, pscr_ret__
->     movq    __per_cpu_offset(,%rdx,8), %rdx    # __per_cpu_offset, tmp93
->     movq    %rdi, %r13    # rsp, rsp
->     movq    1000(%rdi), %rax    # rsp_9(D)->rda, __ptr
->     movq    24(%rdx,%rax), %r12    # _15->mynode, rnp_old
-> 
-> x86_64 __this_cpu_read():
-> 
->     movq    %rdi, %r13    # rsp, rsp
->     movq    1000(%rdi), %rax    # rsp_9(D)->rda, rsp_9(D)->rda
->     movq %gs:24(%rax),%r12    # _10->mynode, rnp_old
-> 
-> 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> Signed-off-by: Shan Wei <davidshan@tencent.com>
-> Acked-by: Christoph Lameter <cl@linux.com>
-> ---
->  kernel/rcu/tree.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> index f1ba773..c6de285 100644
-> --- a/kernel/rcu/tree.c
-> +++ b/kernel/rcu/tree.c
-> @@ -2404,7 +2404,7 @@ static void force_quiescent_state(struct rcu_state *rsp)
->      struct rcu_node *rnp_old = NULL;
-> 
->      /* Funnel through hierarchy to reduce memory contention. */
-> -    rnp = per_cpu_ptr(rsp->rda, raw_smp_processor_id())->mynode;
-> +    rnp = __this_cpu_read(rsp->rda->mynode);
->      for (; rnp != NULL; rnp = rnp->parent) {
->          ret = (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) ||
->                !raw_spin_trylock(&rnp->fqslock);
-> -- 
-> 2.0.0
-> 
+Anyway, if we plan to leave the code as-is then can we please get a
+comment in there so the next person is not similarly confused?
 
