@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932283AbaFSMia (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 08:38:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57582 "EHLO
+	id S1754662AbaFSMiv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 08:38:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57596 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932188AbaFSMiZ (ORCPT
+	with ESMTP id S1754559AbaFSMit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 08:38:25 -0400
-Date: Thu, 19 Jun 2014 05:37:28 -0700
+	Thu, 19 Jun 2014 08:38:49 -0400
+Date: Thu, 19 Jun 2014 05:37:41 -0700
 From: tip-bot for Vince Weaver <tipbot@zytor.com>
-Message-ID: <tip-6e316f9c19a088586fd9ae058f9ea35b271571f3@git.kernel.org>
+Message-ID: <tip-1b92722fafe2003e49ec904f33c0020ade36bd16@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, acme@kernel.org,
-        vincent.weaver@maine.edu, realmz6@gmail.com, tglx@linutronix.de
+        mingo@kernel.org, james.hogan@imgtec.com, peterz@infradead.org,
+        acme@kernel.org, vincent.weaver@maine.edu, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, acme@kernel.org,
-        vincent.weaver@maine.edu, realmz6@gmail.com, tglx@linutronix.de
-In-Reply-To: <alpine.DEB.2.10.1406150200360.16738@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.10.1406150200360.16738@vincent-weaver-1.umelst.maine.edu>
+        linux-kernel@vger.kernel.org, james.hogan@imgtec.com,
+        peterz@infradead.org, acme@kernel.org, vincent.weaver@maine.edu,
+        tglx@linutronix.de
+In-Reply-To: <alpine.DEB.2.10.1406150202050.16738@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.10.1406150202050.16738@vincent-weaver-1.umelst.maine.edu>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] blackfin, perf:
+Subject: [tip:perf/core] metag, perf:
   Use common PMU interrupt disabled code
-Git-Commit-ID: 6e316f9c19a088586fd9ae058f9ea35b271571f3
+Git-Commit-ID: 1b92722fafe2003e49ec904f33c0020ade36bd16
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,60 +35,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6e316f9c19a088586fd9ae058f9ea35b271571f3
-Gitweb:     http://git.kernel.org/tip/6e316f9c19a088586fd9ae058f9ea35b271571f3
+Commit-ID:  1b92722fafe2003e49ec904f33c0020ade36bd16
+Gitweb:     http://git.kernel.org/tip/1b92722fafe2003e49ec904f33c0020ade36bd16
 Author:     Vince Weaver <vincent.weaver@maine.edu>
-AuthorDate: Sun, 15 Jun 2014 02:01:58 -0400
+AuthorDate: Sun, 15 Jun 2014 02:03:13 -0400
 Committer:  Ingo Molnar <mingo@kernel.org>
 CommitDate: Wed, 18 Jun 2014 18:43:45 +0200
 
-blackfin, perf: Use common PMU interrupt disabled code
+metag, perf: Use common PMU interrupt disabled code
 
 Transition to using the new generic PERF_PMU_CAP_NO_INTERRUPT method for
 failing a sampling event when no PMU interrupt is available.
 
 Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
+Acked-by: James Hogan <james.hogan@imgtec.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Steven Miao <realmz6@gmail.com>
-Cc: adi-buildroot-devel@lists.sourceforge.net
-Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1406150200360.16738@vincent-weaver-1.umelst.maine.edu
+Cc: linux-metag@vger.kernel.org
+Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1406150202050.16738@vincent-weaver-1.umelst.maine.edu
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/blackfin/kernel/perf_event.c | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ arch/metag/kernel/perf/perf_event.c | 19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
-diff --git a/arch/blackfin/kernel/perf_event.c b/arch/blackfin/kernel/perf_event.c
-index 974e554..ea20320 100644
---- a/arch/blackfin/kernel/perf_event.c
-+++ b/arch/blackfin/kernel/perf_event.c
-@@ -389,14 +389,6 @@ static int bfin_pmu_event_init(struct perf_event *event)
- 	if (attr->exclude_hv || attr->exclude_idle)
- 		return -EPERM;
+diff --git a/arch/metag/kernel/perf/perf_event.c b/arch/metag/kernel/perf/perf_event.c
+index 5cc4d4d..02c0873 100644
+--- a/arch/metag/kernel/perf/perf_event.c
++++ b/arch/metag/kernel/perf/perf_event.c
+@@ -568,16 +568,6 @@ static int _hw_perf_event_init(struct perf_event *event)
+ 		return -EINVAL;
  
--	/*
--	 * All of the on-chip counters are "limited", in that they have
--	 * no interrupts, and are therefore unable to do sampling without
--	 * further work and timer assistance.
+ 	/*
+-	 * Early cores have "limited" counters - they have no overflow
+-	 * interrupts - and so are unable to do sampling without extra work
+-	 * and timer assistance.
 -	 */
--	if (hwc->sample_period)
--		return -EINVAL;
+-	if (metag_pmu->max_period == 0) {
+-		if (hwc->sample_period)
+-			return -EINVAL;
+-	}
 -
- 	ret = 0;
- 	switch (attr->type) {
- 	case PERF_TYPE_RAW:
-@@ -490,6 +482,13 @@ static int __init bfin_pmu_init(void)
- {
- 	int ret;
+-	/*
+ 	 * Don't assign an index until the event is placed into the hardware.
+ 	 * -1 signifies that we're still deciding where to put it. On SMP
+ 	 * systems each core has its own set of counters, so we can't do any
+@@ -866,6 +856,15 @@ static int __init init_hw_perf_events(void)
+ 	pr_info("enabled with %s PMU driver, %d counters available\n",
+ 			metag_pmu->name, metag_pmu->max_events);
  
 +	/*
-+	 * All of the on-chip counters are "limited", in that they have
-+	 * no interrupts, and are therefore unable to do sampling without
-+	 * further work and timer assistance.
++	 * Early cores have "limited" counters - they have no overflow
++	 * interrupts - and so are unable to do sampling without extra work
++	 * and timer assistance.
 +	 */
-+	pmu.capabilities |= PERF_PMU_CAP_NO_INTERRUPT;
++	if (metag_pmu->max_period == 0) {
++		metag_pmu->pmu.capabilities |= PERF_PMU_CAP_NO_INTERRUPT;
++	}
 +
- 	ret = perf_pmu_register(&pmu, "cpu", PERF_TYPE_RAW);
- 	if (!ret)
- 		perf_cpu_notifier(bfin_pmu_notifier);
+ 	/* Initialise the active events and reservation mutex */
+ 	atomic_set(&metag_pmu->active_events, 0);
+ 	mutex_init(&metag_pmu->reserve_mutex);
