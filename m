@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932900AbaFSOmW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 10:42:22 -0400
-Received: from qmta15.emeryville.ca.mail.comcast.net ([76.96.27.228]:50372
-	"EHLO qmta15.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756624AbaFSOmV (ORCPT
+	id S932975AbaFSOm1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 10:42:27 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:44377 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932547AbaFSOmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 10:42:21 -0400
-Date: Thu, 19 Jun 2014 09:42:18 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Andi Kleen <ak@linux.intel.com>
-cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-Subject: Re: [bisected] pre-3.16 regression on open() scalability
-In-Reply-To: <20140619014200.GO8178@tassilo.jf.intel.com>
-Message-ID: <alpine.DEB.2.11.1406190941180.2785@gentwo.org>
-References: <539B594C.8070004@intel.com> <20140613224519.GV4581@linux.vnet.ibm.com> <53A0CAE5.9000702@intel.com> <20140618001836.GV4669@linux.vnet.ibm.com> <53A132D4.60408@intel.com> <20140618125831.GB4669@linux.vnet.ibm.com> <53A1CE19.7040103@intel.com>
- <20140618203052.GT4669@linux.vnet.ibm.com> <20140618235131.GA25946@linux.vnet.ibm.com> <20140619014200.GO8178@tassilo.jf.intel.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 19 Jun 2014 10:42:24 -0400
+Date: Thu, 19 Jun 2014 16:42:19 +0200
+From: Konrad Zapalowicz <bergo.torino@gmail.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: "Nikula, Jani" <jani.nikula@linux.intel.com>,
+        Dave Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/i915: Fix unnoticed failure of init_ring_common()
+Message-ID: <20140619144219.GB12390@t400>
+References: <1403131134-9533-1-git-send-email-bergo.torino@gmail.com>
+ <CAKMK7uFbZgoVDkiJV34Tvf_KDdZo+xi9w3Qi+9_9-+WvPOKR3w@mail.gmail.com>
+ <20140619124507.GA12390@t400>
+ <CAKMK7uGEVFnSYkaxLgfJ=JxUjEFst=axmQ-OW_jyFzKFqZZyVA@mail.gmail.com>
+ <CAKMK7uEbtqa3uF82CwnD4mBYfOsFpGO-Cm94_U2UFw7orTULnA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKMK7uEbtqa3uF82CwnD4mBYfOsFpGO-Cm94_U2UFw7orTULnA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jun 2014, Andi Kleen wrote:
+On 06/19, Daniel Vetter wrote:
+> On Thu, Jun 19, 2014 at 4:35 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> > The actual bug we seem to have is blowing up on the ggtt_unpin in
+> > context_fini. Which is doubly-impossible: Gen4 doesn't have hw
+> > contexts, so should have dctx->obj == NULL. And ring init failures
+> > fail earlier so shouldn't even hit the context_fini code below the
+> > cleanup_gem: label in driver_load. Seriously confused here.
+> 
+> Also please retest with latest upstream, we've made the ring init
+> failure non-letal for the driver. That should help you, too.
+> -Daniel
 
-> I still think it's totally the wrong direction to pollute so
-> many fast paths with this obscure debugging check workaround
-> unconditionally.
->
-> cond_resched() is in EVERY sleeping lock and in EVERY memory allocation!
-> And these are really critical paths for many workloads.
->
-> If you really wanted to do this I think you would first need
-> to define a cond_resched_i_am_not_fast() or somesuch.
->
-> Or put it all behind some debugging ifdef.
+Thanks for comments and I will resubmit the patch, still it is better
+to have it.
 
-Again I am fully on Andi's side here. Please remove these frequent calls
-to cond_resched. If one wants a fully preemptable kernel then please use
-CONFIG_PREEMPT.
+/Konrad
 
+> -- 
+> Daniel Vetter
+> Software Engineer, Intel Corporation
+> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
