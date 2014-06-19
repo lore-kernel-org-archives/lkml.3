@@ -1,97 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933434AbaFSQZI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:25:08 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60867 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757494AbaFSQZH (ORCPT
+	id S933593AbaFSQZW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:25:22 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:35622 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933445AbaFSQZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:25:07 -0400
-Message-ID: <53A30EDA.7050407@free-electrons.com>
-Date: Thu, 19 Jun 2014 18:24:58 +0200
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 19 Jun 2014 12:25:17 -0400
+Date: Thu, 19 Jun 2014 12:25:13 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] workqueue: remove the empty check in too_many_workers()
+Message-ID: <20140619162513.GJ26904@htj.dyndns.org>
+References: <1401780727-12161-1-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: mvebu: Fix missing binding documentation for Armada
- 38x
-References: <1403186871-28204-1-git-send-email-gregory.clement@free-electrons.com> <CAL_Jsq+JyngWXvk6ZzV8LPfGqVMDPyouJsADaokAGzgHv=gphQ@mail.gmail.com>
-In-Reply-To: <CAL_Jsq+JyngWXvk6ZzV8LPfGqVMDPyouJsADaokAGzgHv=gphQ@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401780727-12161-1-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
-
-On 19/06/2014 16:54, Rob Herring wrote:
-> On Thu, Jun 19, 2014 at 9:07 AM, Gregory CLEMENT
-> <gregory.clement@free-electrons.com> wrote:
->> For the Armada 380 and Armada 385 SoCs, the common bindings for those
->> 2 SoCs, was forgotten. This patch add the documentation for the
->> marvell,aramda38x property.
->>
->> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
->> ---
->> Hi,
->>
->> This fix should be merged in 3.16. For 3.15 I am not sure as it is not
->> a regression.
->>
->> Thanks,
->> Gregory
->>
->>  Documentation/devicetree/bindings/arm/armada-38x.txt | 4 ++++
->>  1 file changed, 4 insertions(+)
->>
->> diff --git a/Documentation/devicetree/bindings/arm/armada-38x.txt b/Documentation/devicetree/bindings/arm/armada-38x.txt
->> index 11f2330a6554..b68bcb80d2de 100644
->> --- a/Documentation/devicetree/bindings/arm/armada-38x.txt
->> +++ b/Documentation/devicetree/bindings/arm/armada-38x.txt
->> @@ -6,5 +6,9 @@ following property:
->>
->>  Required root node property:
->>
->> +compatible: must contain "marvell,armada38x"
->> +
->> +Required root node property:
->> +
->>   - compatible: must contain either "marvell,armada380" or
->>     "marvell,armada385" depending on the variant of the SoC being used.
+On Tue, Jun 03, 2014 at 03:32:07PM +0800, Lai Jiangshan wrote:
+> The commit ea1abd6197d5 ("workqueue: reimplement idle worker rebinding")
+> used a trick which simply removes all to-be-bound idle workers from the
+> idle list and lets them add themselves back after completing rebinding.
 > 
-> This looks a bit strange. How about something like this:
+> And this trick caused the @worker_pool->nr_idle may deviate than the actual
+> number of idle workers on @worker_pool->idle_list.  More specifically,
+> nr_idle may be non-zero while ->idle_list is empty.  All users of
+> ->nr_idle and ->idle_list are audited.  The only affected one is
+> too_many_workers() which is updated to check %false if ->idle_list is
+> empty regardless of ->nr_idle.
 > 
->    - compatible: must contain either "marvell,armada380" or
->      "marvell,armada385" depending on the variant of the SoC being
-> used and contain "marvell,armada38x".
-
-Indeed it will be more clear written in this way.
-
-
-Thanks,
-
-Gregory
-
-
+> The commit/trick was complicated due to it just tried to simplify an even
+> more complicated problem (workers had to rebind itself). But the commit
+> a9ab775bcadf ("workqueue: directly restore CPU affinity of workers
+> from CPU_ONLINE") fixed all these problems and the mentioned trick was
+> useless and is gone.
 > 
-> Rob
+> So, now the @worker_pool->nr_idle is exactly the actual number of workers
+> on @worker_pool->idle_list. too_many_workers() should recover as it was
+> before the trick. So we remove the empty check.
 > 
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 
+Applied to wq/for-3.17.
+
+Thanks.
 
 -- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+tejun
