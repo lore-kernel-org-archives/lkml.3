@@ -1,171 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757704AbaFSIYQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 04:24:16 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:19840 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757684AbaFSIYM (ORCPT
+	id S1757653AbaFSIaE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 04:30:04 -0400
+Received: from mail-yk0-f174.google.com ([209.85.160.174]:40084 "EHLO
+	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757466AbaFSIaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 04:24:12 -0400
-X-AuditID: cbfee61a-b7fef6d00000200b-9e-53a29e291ad1
-From: Chao Yu <chao2.yu@samsung.com>
-To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][PATCH] f2fs: support ->tmpfile()
-Date: Thu, 19 Jun 2014 16:23:19 +0800
-Message-id: <001901cf8b97$d7dea910$879bfb30$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac+LhUO9NM6/Sc3yRoiPgYBMKenUiA==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t9jQV3NeYuCDQ6/07G4tq+RyeLJ+lnM
-	FpcWuVvs2XuSxeLyrjlsDqwem1Z1snnsXvCZyaNvyypGj8+b5AJYorhsUlJzMstSi/TtErgy
-	WraIFSyRqTg2tY+xgbFZvIuRk0NCwETi2bYVjBC2mMSFe+vZuhi5OIQEpjNKXLmxnB3C+cEo
-	sfnlWVaQKjYBFYnlHf+ZQGwRAS+JSftPsIDYzAKZEveaZjCD2MJAU59PawezWQRUJf5tngM0
-	lYODV8BSonGdDEiYV0BQ4sfke1CtWhLrdx5ngrDlJTavecsMcZCCxI6zrxkhVulJvFv+nxWi
-	Rlxi45FbLBMYBWYhGTULyahZSEbNQtKygJFlFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZw
-	aD+T2sG4ssHiEKMAB6MSD6/HxYXBQqyJZcWVuYcYJTiYlUR4VVMXBQvxpiRWVqUW5ccXleak
-	Fh9ilOZgURLnPdBqHSgkkJ5YkpqdmlqQWgSTZeLglGpgbHKX4ZY4FZD/PVzd80uW/oQ5L67W
-	Pg7eYXErvrn19Kt3/xrt7YyeSV9bd3jXVcOHBRy3On2qTP2/yTz9d0BxeSpLkSFPkxrbgpVr
-	pLjWfD9pEuNlZ7apeFPz++P/X5j+OFERcdrvTZSVyvu/P3oCvykJnH1WUuN9bXZKs0G+49/j
-	B71uC7QuU2Ipzkg01GIuKk4EAOJF5ctpAgAA
+	Thu, 19 Jun 2014 04:30:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAD=FV=WHK7TDdqcAd6aVs2g8rcHJx834im_4nTKHJAkUisWq4A@mail.gmail.com>
+References: <1403091060-5054-1-git-send-email-amit.daniel@samsung.com>
+	<CAD=FV=WHK7TDdqcAd6aVs2g8rcHJx834im_4nTKHJAkUisWq4A@mail.gmail.com>
+Date: Thu, 19 Jun 2014 13:59:59 +0530
+X-Google-Sender-Auth: DA7QIUrw0b_SYEFTqhFNVjWLcuc
+Message-ID: <CADGdYn6-SnwgTiOi5f8waXBStPaxndep6T6swfkuAcU4=KdcUQ@mail.gmail.com>
+Subject: Re: [PATCH] clocksource: exynos-mct: Register the timer for stable udelay
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Riley <davidriley@chromium.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add function f2fs_tmpfile() to support O_TMPFILE file creation, and modify logic
-of init_inode_metadata to enable linkat temp file.
-
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/dir.c   |   10 ++++++++-
- fs/f2fs/namei.c |   64 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 73 insertions(+), 1 deletion(-)
-
-diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
-index 966acb0..09760d5 100644
---- a/fs/f2fs/dir.c
-+++ b/fs/f2fs/dir.c
-@@ -333,10 +333,12 @@ static int make_empty_dir(struct inode *inode,
- static struct page *init_inode_metadata(struct inode *inode,
- 		struct inode *dir, const struct qstr *name)
- {
-+	struct f2fs_sb_info *sbi = F2FS_SB(dir->i_sb);
- 	struct page *page;
- 	int err;
- 
--	if (is_inode_flag_set(F2FS_I(inode), FI_NEW_INODE)) {
-+	if (is_inode_flag_set(F2FS_I(inode), FI_NEW_INODE) &&
-+			inode->i_nlink) {
- 		page = new_inode_page(inode, name);
- 		if (IS_ERR(page))
- 			return page;
-@@ -370,6 +372,12 @@ static struct page *init_inode_metadata(struct inode *inode,
- 	 */
- 	if (is_inode_flag_set(F2FS_I(inode), FI_INC_LINK)) {
- 		file_lost_pino(inode);
-+		/*
-+		 * If link the tmpfile to alias through linkat path,
-+		 * we should remove this inode from orphan list.
-+		 */
-+		if (inode->i_nlink == 0)
-+			remove_orphan_inode(sbi, inode->i_ino);
- 		inc_nlink(inode);
- 	}
- 	return page;
-diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
-index 9138c32..0d55517 100644
---- a/fs/f2fs/namei.c
-+++ b/fs/f2fs/namei.c
-@@ -13,6 +13,7 @@
- #include <linux/pagemap.h>
- #include <linux/sched.h>
- #include <linux/ctype.h>
-+#include <linux/dcache.h>
- 
- #include "f2fs.h"
- #include "node.h"
-@@ -488,6 +489,68 @@ out:
- 	return err;
- }
- 
-+static int f2fs_tmpfile(struct inode *dir, struct dentry *dentry, umode_t mode)
+On Thu, Jun 19, 2014 at 4:47 AM, Doug Anderson <dianders@chromium.org> wrote:
+> Amit,
+>
+> Thanks for posting!
+>
+> On Wed, Jun 18, 2014 at 4:31 AM, Amit Daniel Kachhap
+> <amit.daniel@samsung.com> wrote:
+>> This patch register the exynos mct clocksource as the current timer
+>> as it has constant clock rate. This will generate correct udelay for the
+>> exynos platform and avoid using unnecessary calibrated jiffies. This change
+>> have been tested on exynos5420 based board.
+>>
+>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>> ---
+>>
+>> Patches from David Riley confirmed that udelay is broken in exynos5420.
+>> Link to those patches are,
+>> 1) https://patchwork.kernel.org/patch/4344911/
+>> 2) https://patchwork.kernel.org/patch/4344881/
+>>
+>>  drivers/clocksource/exynos_mct.c | 11 +++++++++++
+>>  1 file changed, 11 insertions(+)
+>>
+>> diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
+>> index 8d64200..57cb3dc 100644
+>> --- a/drivers/clocksource/exynos_mct.c
+>> +++ b/drivers/clocksource/exynos_mct.c
+>> @@ -198,10 +198,21 @@ static u64 notrace exynos4_read_sched_clock(void)
+>>         return exynos4_frc_read(&mct_frc);
+>>  }
+>>
+>> +static struct delay_timer exynos4_delay_timer;
+>> +
+>> +static unsigned long exynos4_read_current_timer(void)
+>> +{
+>> +       return exynos4_frc_read(&mct_frc);
+>
+> This is terribly inefficient to read all 64-bits and then cast back to
+> a 32-bit value.  Replace with:
+Yes agree.
+This unsigned long strangely behaves as 32 bits for arm32 and 64 bits for arm64.
+So I think it better is to do something like this,
++static unsigned long exynos4_read_current_timer(void)
 +{
-+	struct super_block *sb = dir->i_sb;
-+	struct f2fs_sb_info *sbi = F2FS_SB(sb);
-+	struct inode *inode;
-+	struct page *page;
-+	int err;
-+
-+	inode = f2fs_new_inode(dir, mode);
-+	if (IS_ERR(inode))
-+		return PTR_ERR(inode);
-+
-+	inode->i_op = &f2fs_file_inode_operations;
-+	inode->i_fop = &f2fs_file_operations;
-+	inode->i_mapping->a_ops = &f2fs_dblock_aops;
-+
-+	f2fs_lock_op(sbi);
-+	err = acquire_orphan_inode(sbi);
-+	if (err)
-+		goto out;
-+	/*
-+	 * add this non-linked tmpfile to orphan list, in this way we could
-+	 * remove all unused data of tmpfile after abnormal power-off.
-+	 */
-+	add_orphan_inode(sbi, inode->i_ino);
-+
-+	page = new_inode_page(inode, NULL);
-+	if (IS_ERR(page)) {
-+		err = PTR_ERR(page);
-+		goto remove_out;
-+	}
-+
-+	err = f2fs_init_acl(inode, dir, page);
-+	if (err)
-+		goto unlock_out;
-+
-+	err = f2fs_init_security(inode, dir, NULL, page);
-+	if (err)
-+		goto unlock_out;
-+
-+	f2fs_put_page(page, 1);
-+	f2fs_unlock_op(sbi);
-+
-+	alloc_nid_done(sbi, inode->i_ino);
-+	mark_inode_dirty(inode);
-+	d_tmpfile(dentry, inode);
-+	unlock_new_inode(inode);
-+	return 0;
-+unlock_out:
-+	f2fs_put_page(page, 1);
-+remove_out:
-+	remove_orphan_inode(sbi, inode->i_ino);
-+out:
-+	f2fs_unlock_op(sbi);
-+	clear_nlink(inode);
-+	unlock_new_inode(inode);
-+	make_bad_inode(inode);
-+	iput(inode);
-+	alloc_nid_failed(sbi, inode->i_ino);
-+	return err;
++#ifdef ARM
++       return __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
++#else /* ARM64, etc */
++       return exynos4_frc_read(&mct_frc);
++#endif
 +}
 +
- const struct inode_operations f2fs_dir_inode_operations = {
- 	.create		= f2fs_create,
- 	.lookup		= f2fs_lookup,
-@@ -498,6 +561,7 @@ const struct inode_operations f2fs_dir_inode_operations = {
- 	.rmdir		= f2fs_rmdir,
- 	.mknod		= f2fs_mknod,
- 	.rename		= f2fs_rename,
-+	.tmpfile	= f2fs_tmpfile,
- 	.getattr	= f2fs_getattr,
- 	.setattr	= f2fs_setattr,
- 	.get_acl	= f2fs_get_acl,
--- 
-1.7.9.5
+I will post V2 version like above and see what the maintainer says.
 
+>
+> return __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
+>
+>
+>> +}
+>> +
+>>  static void __init exynos4_clocksource_init(void)
+>>  {
+>>         exynos4_mct_frc_start(0, 0);
+>
+> Please rebase atop (1d80415 clocksource: exynos_mct: Don't reset the
+> counter during boot and resume), which is in linuxnext among other
+> places.
+OK will re base my patch on top of this.
+>
+>>
+>> +       exynos4_delay_timer.read_current_timer = &exynos4_read_current_timer;
+>> +       exynos4_delay_timer.freq = clk_rate;
+>> +       register_current_timer_delay(&exynos4_delay_timer);
+>> +
+>>         if (clocksource_register_hz(&mct_frc, clk_rate))
+>>                 panic("%s: can't register clocksource\n", mct_frc.name);
+>
+> It does seem to work for me though.  :)
+thanks,
 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
