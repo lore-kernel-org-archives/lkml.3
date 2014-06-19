@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757779AbaFSOli (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 10:41:38 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:41867 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757599AbaFSOlg (ORCPT
+	id S932900AbaFSOmW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 10:42:22 -0400
+Received: from qmta15.emeryville.ca.mail.comcast.net ([76.96.27.228]:50372
+	"EHLO qmta15.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756624AbaFSOmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 10:41:36 -0400
-MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <1403188160.3707.242.camel@ul30vt.home>
-References: <20140613162901.4550.94476.stgit@bling.home>
-	<1402983303.3707.94.camel@ul30vt.home>
-	<1402988692.7595.106.camel@i7.infradead.org>
-	<1403007757.3707.100.camel@ul30vt.home>
-	<1403008864.7595.144.camel@i7.infradead.org>
-	<1403010982.3707.123.camel@ul30vt.home>
-	<20140617134408.GM5821@phenom.ffwll.local>
-	<1403128088.3707.223.camel@ul30vt.home>
-	<1403142438.3707.234.camel@ul30vt.home>
-	<CAKMK7uE6Ab7pvyNvz7sd7QD1ZKDXd6kkEmXHxTzeFCmH1Z_bMQ@mail.gmail.com>
-	<1403188160.3707.242.camel@ul30vt.home>
-Date: Thu, 19 Jun 2014 16:41:35 +0200
-X-Google-Sender-Auth: lF8gsCyGUo_k5IMs5Ar0a-AKPk8
-Message-ID: <CAKMK7uHhNfRn0LD7YQnmkBmK05KDDfeYNVjmpJOxh2cw8qPtyw@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH v2] iommu/intel: Exclude devices using RMRRs
- from IOMMU API domains
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, iommu@lists.linux-foundation.org,
-        chegu_vinod@hp.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 19 Jun 2014 10:42:21 -0400
+Date: Thu, 19 Jun 2014 09:42:18 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Andi Kleen <ak@linux.intel.com>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>
+Subject: Re: [bisected] pre-3.16 regression on open() scalability
+In-Reply-To: <20140619014200.GO8178@tassilo.jf.intel.com>
+Message-ID: <alpine.DEB.2.11.1406190941180.2785@gentwo.org>
+References: <539B594C.8070004@intel.com> <20140613224519.GV4581@linux.vnet.ibm.com> <53A0CAE5.9000702@intel.com> <20140618001836.GV4669@linux.vnet.ibm.com> <53A132D4.60408@intel.com> <20140618125831.GB4669@linux.vnet.ibm.com> <53A1CE19.7040103@intel.com>
+ <20140618203052.GT4669@linux.vnet.ibm.com> <20140618235131.GA25946@linux.vnet.ibm.com> <20140619014200.GO8178@tassilo.jf.intel.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 4:29 PM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> But is there a way for software to discover its location from the
-> device?  If so, then I think we can recreate all the identity maps we'd
-> need for a guest from the device.  If not, then we'd need to figure out
-> some IOMMU API extension to handle the mapping.  The spec excerpt above
-> seems to indicate that hardware designers decided software doesn't need
-> to know about it, but the RMRR seems to be the "oh crap" moment when
-> they realized that yes we do need to know about it.  Thanks,
+On Wed, 18 Jun 2014, Andi Kleen wrote:
 
-It's all specified somewhere how it exactly works. But we've just had
-piles of fun trying to get the stolen range (i.e. for gfx buffer
-usage, no the gtt pte block) to work correctly and it's not been fun.
-The issue is that these registers are sw-defined and set by the bios.
-And the bios team occasionally smokes strong stuff and nilly-willy
-changes the definitions without telling anyone ... And we know that
-there's more reserved stuff in that stolen range that occasionally
-shouldn't be used by the driver. We have regular discussions with
-them.
+> I still think it's totally the wrong direction to pollute so
+> many fast paths with this obscure debugging check workaround
+> unconditionally.
+>
+> cond_resched() is in EVERY sleeping lock and in EVERY memory allocation!
+> And these are really critical paths for many workloads.
+>
+> If you really wanted to do this I think you would first need
+> to define a cond_resched_i_am_not_fast() or somesuch.
+>
+> Or put it all behind some debugging ifdef.
 
-Otoh the same bios teams also set up the RMRR ranges with equallly
-predictable results.
+Again I am fully on Andi's side here. Please remove these frequent calls
+to cond_resched. If one wants a fully preemptable kernel then please use
+CONFIG_PREEMPT.
 
-I don't have a recommendation here, but expect breakage no matter what you do.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
