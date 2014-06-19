@@ -1,95 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758057AbaFSLw2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 07:52:28 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:33748 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757949AbaFSLw1 (ORCPT
+	id S1758076AbaFSLwj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 07:52:39 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:7951 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757949AbaFSLwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 07:52:27 -0400
-Message-ID: <53A2CEF4.3050902@gmail.com>
-Date: Thu, 19 Jun 2014 14:52:20 +0300
-From: Nadav Amit <nadav.amit@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 19 Jun 2014 07:52:37 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 19 Jun 2014 04:43:11 -0700
+From: Mikko Perttunen <mperttunen@nvidia.com>
+To: <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>,
+        <pdeschrijver@nvidia.com>, <rui.zhang@intel.com>,
+        <edubezval@gmail.com>
+CC: <devicetree@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <mikko.perttunen@kapsi.fi>,
+        <mlongnecker@nvidia.com>, <dtundlam@nvidia.com>, <talho@nvidia.com>,
+        Mikko Perttunen <mperttunen@nvidia.com>
+Subject: [RFC 0/5] Tegra124 thermal management
+Date: Thu, 19 Jun 2014 14:50:35 +0300
+Message-ID: <1403178640-16052-1-git-send-email-mperttunen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@kernel.org>
-CC: "Michael S. Tsirkin" <mst@redhat.com>,
-        "Gabriel L. Somlo" <gsomlo@gmail.com>,
-        Eric Northup <digitaleric@google.com>,
-        Nadav Amit <namit@cs.technion.ac.il>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>, joro@8bytes.org, agraf@suse.de
-Subject: Re: [PATCH 3/3] KVM: x86: correct mwait and monitor emulation
-References: <CAG7+5M1T=OSqMLOJjb-txRCL_J_q=KSNV9yOfeP=98YuyD27Fw@mail.gmail.com> <20140618184601.GE1695@ERROL.INI.CMU.EDU> <20140619101811.GA5777@redhat.com> <1B06E887-9D07-4E85-AE06-75B01787C488@gmail.com> <20140619112356.GB429@minantech.com>
-In-Reply-To: <20140619112356.GB429@minantech.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/19/14, 2:23 PM, Gleb Natapov wrote:
-> On Thu, Jun 19, 2014 at 01:53:36PM +0300, Nadav Amit wrote:
->>
->> On Jun 19, 2014, at 1:18 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
->>
->>> On Wed, Jun 18, 2014 at 02:46:01PM -0400, Gabriel L. Somlo wrote:
->>>> On Wed, Jun 18, 2014 at 10:59:14AM -0700, Eric Northup wrote:
->>>>> On Wed, Jun 18, 2014 at 7:19 AM, Nadav Amit <namit@cs.technion.ac.il> wrote:
->>>>>> mwait and monitor are currently handled as nop. Considering this behavior, they
->>>>>> should still be handled correctly, i.e., check execution conditions and generate
->>>>>> exceptions when required. mwait and monitor may also be executed in real-mode
->>>>>> and are not handled in that case.  This patch performs the emulation of
->>>>>> monitor-mwait according to Intel SDM (other than checking whether interrupt can
->>>>>> be used as a break event).
->>>>>>
->>>>>> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
->>>>
->>>> How about this instead (details in the commit log below) ? Please let
->>>> me know what you think, and if you'd prefer me to send it out as a
->>>> separate patch rather than a reply to this thread.
->>>>
->>>> Thanks,
->>>> --Gabriel
->>>
->>> If there's an easy workaround, I'm inclined to agree.
->>> We can always go back to Gabriel's patch (and then we'll need
->>> Nadav's one too) but if we release a kernel with this
->>> support it becomes an ABI and we can't go back.
->>>
->>> So let's be careful here, and revert the hack for 3.16.
->>>
->>>
->>> Acked-by: Michael S. Tsirkin <mst@redhat.com>
->>>
->> Personally, I got a custom guest which requires mwait for executing correctly.
-> Can you elaborate on this guest a little bit. With nop implementation
-> for mwait the guest will hog a host cpu. Do you consider this to be
-> "executing correctly?"
->
-> --
+Hi, this patchset implements basic polled thermal sensing support and
+hardware initiated shutdown ("thermtrip") in an overheating situations 
+for the Tegra124 system-on-chip.
 
-mwait is not as "clean" as it may appear. It encounters false wake-ups 
-due to a variety of reasons, and any code need to recheck the wake-up 
-condition afterwards. Actually, some CPUs had bugs that caused excessive 
-wake-ups that degraded performance considerably (Nehalem, if I am not 
-mistaken).
-Therefore, handling mwait as nop is logically correct (although it may 
-degrade performance).
+The driver uses the of-thermal framework to expose the sensors to the
+thermal subsystem, and this works well for the simplest case of polled
+sensors. However, there are two features I'd like to implement that
+as far as I know the framework isn't really ready for:
+- hardware based trip points, i.e., interrupts at a configured temperature
+- hardware initiated cooling
 
-For the reference, if you look at the SDM 8.10.4, you'll see:
-"Multiple events other than a write to the triggering address range can 
-cause a processor that executed MWAIT to wake up. These include events 
-that would lead to voluntary or involuntary context switches, such as..."
+Thermtrip is an example of the latter, but the hardware is also capable
+of less drastic measures. Currently, the driver doesn't attempt to expose
+thermtrip using the framework, instead opting to use custom device tree
+properties, but this is something I'd like to move away from.
 
-Note the words "include" in the sentence "These include events". 
-Software has no way of controlling whether it gets false wake-ups and 
-cannot rely on the wake-up as indication to anything.
+To implement hardware based trip points, the sensor - of-thermal interface
+would need a new function, which the of-thermal framework would use to
+tell the driver of a new trip point. I suppose the best way to do this
+would be to have of-thermal manage trip points, and when one is reached,
+tell the driver to prepare for the next one. The sensor driver should
+be capable of managing two trip points, and below and one above the
+current temperature.
 
-Nadav
+Hardware initiated cooling is a bit more interesting. The hardware that
+initiates the cooling procedure necessarily has some view of the thermal
+sensors / thermal zones, so the thermal zones defined in the device tree
+should map exactly to those ones. Hardware based cooling devices should
+be defined in the device tree just like any other cooling devices.
+The problematic part is binding a trip point to a hardware cooling device.
+There would need some additional interface to tell the cooling device
+the temperature of the trip point it is bound to.
 
+Hardware cooling devices can also track multiple thermal zones (for example,
+thermtrip can trigger based on cpu, gpu, memory and tsense sensors). To
+distinguish between these in the device tree, I can think of two options:
+1. Implement each tracked zone as a separate cooling device. (Probably by 
+   having an additional cooling-cell) This would make the interface simpler 
+   but allow impossible cooling mappings to be made in the device tree.
+2. When telling the cooling device of a particular trip point, also tell it
+   which thermal zone it is related to. This would require the cooling device
+   to have some kind of ability to detect that a thermal zone object is a
+   specific thermal zone.
+
+One more question related to hardware-initiated reset in an overheating
+situation: the "critical" trip level is designed to initiate a controller
+shutdown. Should there be a new trip level for an uncontrolled shutdown?
+
+Any thoughts would be appreciated.
+
+Thanks,
+Mikko Perttunen
+
+Mikko Perttunen (5):
+  ARM: tegra: Add PMC thermtrip programming to Jetson TK1 device tree
+  ARM: tegra: Add soctherm and thermal zones to Tegra124 device tree
+  ARM: tegra: Add thermal reset (thermtrip) support to PMC
+  clk: tegra: Add soctherm and tsensor clocks to T124 initialization
+    table
+  thermal: Add Tegra SOCTHERM thermal management driver
+
+ arch/arm/boot/dts/tegra124-jetson-tk1.dts |   5 +
+ arch/arm/boot/dts/tegra124.dtsi           |  47 +++
+ arch/arm/mach-tegra/pmc.c                 |  95 +++++-
+ drivers/clk/tegra/clk-tegra124.c          |   2 +
+ drivers/thermal/Kconfig                   |   6 +
+ drivers/thermal/Makefile                  |   1 +
+ drivers/thermal/tegra_soctherm.c          | 502 ++++++++++++++++++++++++++++++
+ 7 files changed, 654 insertions(+), 4 deletions(-)
+ create mode 100644 drivers/thermal/tegra_soctherm.c
+
+-- 
+1.8.1.5
 
