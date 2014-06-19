@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934091AbaFSQk5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:40:57 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:11735 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933683AbaFSQkx (ORCPT
+	id S934060AbaFSQk4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:40:56 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60984 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933669AbaFSQkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 19 Jun 2014 12:40:53 -0400
-Date: Thu, 19 Jun 2014 12:40:51 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Jet Chen <jet.chen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        lkp@01.org
-Subject: Re: [tracing] 939c7a4f04f: -46.4% cpuidle.C3-IVT.time
-Message-ID: <20140619124051.1af1d777@gandalf.local.home>
-In-Reply-To: <20140619162842.GB10268@localhost>
-References: <53A10460.1040705@intel.com>
-	<53A27D66.6070409@hitachi.com>
-	<20140619162842.GB10268@localhost>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] ARM: mvebu: Fix missing binding documentation for Armada 38x
+Date: Thu, 19 Jun 2014 18:40:43 +0200
+Message-Id: <1403196043-6317-1-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jun 2014 00:28:42 +0800
-Fengguang Wu <fengguang.wu@intel.com> wrote:
+For the Armada 380 and Armada 385 SoCs, the common bindings for those
+2 SoCs, was forgotten. This patch add the documentation for the
+marvell,aramda38x property.
 
-> Hi Yoshihiro,
-> 
-> On Thu, Jun 19, 2014 at 03:04:22PM +0900, Yoshihiro YUNOMAE wrote:
-> > Hi Jet,
-> > 
-> > Thank you for your report.
-> > I have some questions for your test.
-> > 
-> > 1. Did you enable ftrace?
-> 
-> Yes, ftrace is enabled. Attached is the kernel config.
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+--
+Hi,
 
-I guess the question isn't about enabling it in the kernel, but
-actually enabling the tracing itself at runtime.
+This fix should be merged in 3.16. For 3.15 I am not sure as it is not
+a regression.
 
-Just enabling it in the kernel, still does not make this code executed.
+Changelog:
+v1->v2
 
-> 
-> > This patch added a feature for ftrace. If you disabled ftrace in
-> > this test, my patch will not affect the system. Moreover, in my patch,
-> > arrays for saved_cmdlines were just changed from using static global
-> > variables to using kmalloc() on default setting. So, even if you enabled
-> > ftrace, this patch will not induce a big problem, I think.
-> 
-> Agreed, the patch itself looks good. Unfortunately sometimes a small
-> change in one place may lead to subtle changes in other places due to
-> data alignment etc. effects.
+- Reformulate to make clear that we will need marvell,armada38x _and_ a
+SoC specific string. For consistency I duplicated what we have done in
+armada-370-xp.txt
 
-There's nothing we can do to change that. We were lucky that we had
-some data alignment that gave us an improvement. But that's it. Shear
-luck! This isn't the fault of the patch then, it's the linker and
-compiler that you need to take issue with.
+
+Thanks,
+Gregory
+
+
+ Documentation/devicetree/bindings/arm/armada-38x.txt | 17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/arm/armada-38x.txt b/Documentation/devicetree/bindings/arm/armada-38x.txt
+index 11f2330a6554..fa08760046df 100644
+--- a/Documentation/devicetree/bindings/arm/armada-38x.txt
++++ b/Documentation/devicetree/bindings/arm/armada-38x.txt
+@@ -6,5 +6,18 @@ following property:
  
-> 
-> > 2. How did you test it and what does the result mean?
-> > Please tell me the workload, how to calculate the score,
-> > system settings, etc...
-> 
-> Workload is aim7's brk_test case, running on an Ivy Bridge-EX machine.
-> However it's not aim7's throughput that's regressed, but there are
-> changes in the C3 state, number of RCU softirqs and power consumption
-> etc.
+ Required root node property:
+ 
+- - compatible: must contain either "marvell,armada380" or
+-   "marvell,armada385" depending on the variant of the SoC being used.
++compatible: must contain "marvell,armada38x"
++
++In addition, boards using the Marvell Armada 380 SoC shall have the
++following property:
++
++Required root node property:
++
++compatible: must contain "marvell,armada380"
++
++In addition, boards using the Marvell Armada 385 SoC shall have the
++following property:
++
++Required root node property:
++
++compatible: must contain "marvell,armada385"
+-- 
+1.8.1.2
 
-This is still rather weird. As if tracing wasn't happening, then this
-should not have had any affect at all. I mean really? The patch just
-changes some local code to kernel/trace/trace.c, which is not even
-remotely related to RCU softirqs or power consumption. It's dead code
-as far as you are concerned (unless you enabled running some tracing).
-
--- Steve
