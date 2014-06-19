@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966257AbaFSVj6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 17:39:58 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:59802 "EHLO
+	id S966000AbaFSVj4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 17:39:56 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:59725 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965317AbaFSVjy (ORCPT
+	by vger.kernel.org with ESMTP id S965141AbaFSVjy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 19 Jun 2014 17:39:54 -0400
-Message-Id: <20140619213329.478113470@goodmis.org>
+Message-Id: <20140619213952.209176403@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Thu, 19 Jun 2014 17:33:29 -0400
+Date: Thu, 19 Jun 2014 17:33:31 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -18,50 +18,123 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Jiri Kosina <jkosina@suse.cz>, Michal Hocko <mhocko@suse.cz>,
         Jan Kara <jack@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
         Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>
-Subject: [RFC][PATCH 0/3] x86/nmi: Print all cpu stacks from NMI safely
-X-RR-Connecting-IP: 107.14.168.142:25
+Subject: [RFC][PATCH 2/3] printk: Add per_cpu printk func to allow printk to be diverted
+References: <20140619213329.478113470@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0002-printk-Add-per_cpu-printk-func-to-allow-printk-to-be.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is my proposal to print the NMI stack traces from an RCU stall safely.
-Here's the gist of it.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Patch 1: move the trace_seq out of the tracing code. It's useful for other
- purposes too. Like writing from an NMI context.
+Being able to divert printk to call another function besides the normal
+logging is useful for such things like NMI handling. If some functions
+are to be called from NMI that does printk() it is possible to lock up
+the box if the nmi handler triggers when another printk is happening.
 
-Patch 2: Add a per_cpu "printk_func" that printk calls. By default it calls
- vprintk_def() which does what it has always done. This allows us to
- override what printk() calls normally on a per cpu basis.
+One example of this use is to perform a stack trace on all CPUs via NMI.
+But if the NMI is to do the printk() it can cause the system to lock up.
+By allowing the printk to be diverted to another function that can safely
+record the printk output and then print it when it in a safe context
+then NMIs will be safe to call these functions like show_regs().
 
-Patch 3: Have the NMI handler that dumps the stack trace just change the
- printk_func to call a NMI safe printk function that writes to a per cpu
- trace_seq. When all NMI handlers chimed in, the original caller prints
- out the trace_seqs for each CPU from a printk safe context.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/percpu.h |  3 +++
+ include/linux/printk.h |  2 ++
+ kernel/printk/printk.c | 38 +++++++++++++++++++++++++++++---------
+ 3 files changed, 34 insertions(+), 9 deletions(-)
 
-This is much less intrusive than the other versions out there.
+diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+index 8419053d0f2e..9997c92ce3bd 100644
+--- a/include/linux/percpu.h
++++ b/include/linux/percpu.h
+@@ -802,4 +802,7 @@ do { __this_cpu_preempt_check("or");					\
+ 	(__this_cpu_preempt_check("cmpxchg_double"),__pcpu_double_call_return_bool(raw_cpu_cmpxchg_double_, (pcp1), (pcp2), (oval1), (oval2), (nval1), (nval2)))
+ #endif
+ 
++/* To avoid include hell, as printk can not declare this, we declare it here */
++DECLARE_PER_CPU(printk_func_t, printk_func);
++
+ #endif /* __LINUX_PERCPU_H */
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 319ff7e53efb..e26310b2d2fd 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -159,6 +159,8 @@ extern int kptr_restrict;
+ 
+ extern void wake_up_klogd(void);
+ 
++typedef int(*printk_func_t)(const char *fmt, va_list args);
++
+ void log_buf_kexec_setup(void);
+ void __init setup_log_buf(int early);
+ void dump_stack_set_arch_desc(const char *fmt, ...);
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index ea2d5f6962ed..d019ccd10d4c 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1764,6 +1764,30 @@ asmlinkage int printk_emit(int facility, int level,
+ }
+ EXPORT_SYMBOL(printk_emit);
+ 
++int vprintk_default(const char *fmt, va_list args)
++{
++	int r;
++
++#ifdef CONFIG_KGDB_KDB
++	if (unlikely(kdb_trap_printk)) {
++		r = vkdb_printf(fmt, args);
++		return r;
++	}
++#endif
++	r = vprintk_emit(0, -1, NULL, 0, fmt, args);
++
++	return r;
++}
++EXPORT_SYMBOL_GPL(vprintk_default);
++
++/*
++ * This allows printk to be diverted to another function per cpu.
++ * This is useful for calling printk functions from within NMI
++ * without worrying about race conditions that can lock up the
++ * box.
++ */
++DEFINE_PER_CPU(printk_func_t, printk_func) = vprintk_default;
++	
+ /**
+  * printk - print a kernel message
+  * @fmt: format string
+@@ -1787,19 +1811,15 @@ EXPORT_SYMBOL(printk_emit);
+  */
+ asmlinkage __visible int printk(const char *fmt, ...)
+ {
++	printk_func_t vprintk_func;
+ 	va_list args;
+ 	int r;
+ 
+-#ifdef CONFIG_KGDB_KDB
+-	if (unlikely(kdb_trap_printk)) {
+-		va_start(args, fmt);
+-		r = vkdb_printf(fmt, args);
+-		va_end(args);
+-		return r;
+-	}
+-#endif
+ 	va_start(args, fmt);
+-	r = vprintk_emit(0, -1, NULL, 0, fmt, args);
++	preempt_disable();
++	vprintk_func = this_cpu_read(printk_func);
++	r = vprintk_func(fmt, args);
++	preempt_enable();
+ 	va_end(args);
+ 
+ 	return r;
+-- 
+2.0.0.rc2
 
-Note, The biggest change was the moving of trace_seq code out of trace_output.c
-and into the new trace_seq.c library.
 
-Thoughts?
-
-
-Steven Rostedt (Red Hat) (3):
-      trace_seq: Move the trace_seq code to lib/
-      printk: Add per_cpu printk func to allow printk to be diverted
-      x86/nmi: Perform a safe NMI stack trace on all CPUs
-
-----
- arch/x86/kernel/apic/hw_nmi.c |  66 ++++++++-
- include/linux/percpu.h        |   3 +
- include/linux/printk.h        |   2 +
- include/linux/trace_seq.h     |  68 ++--------
- kernel/printk/printk.c        |  38 ++++--
- kernel/trace/trace.c          |  24 ----
- kernel/trace/trace_output.c   | 268 -------------------------------------
- kernel/trace/trace_output.h   |  16 ---
- lib/Makefile                  |   2 +-
- lib/trace_seq.c               | 303 ++++++++++++++++++++++++++++++++++++++++++
- 10 files changed, 412 insertions(+), 378 deletions(-)
