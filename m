@@ -1,51 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933319AbaFSPNT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 11:13:19 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51220 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932357AbaFSPNR (ORCPT
+	id S932514AbaFSPTU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 11:19:20 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:45436 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756534AbaFSPTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 11:13:17 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: lee.jones@linaro.org
-Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mfd: arizona: Add comment to explain non-devm regulator_get
-Date: Thu, 19 Jun 2014 16:04:23 +0100
-Message-Id: <1403190263-32737-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
+	Thu, 19 Jun 2014 11:19:19 -0400
+Date: Thu, 19 Jun 2014 16:19:13 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Subject: Re: [PATCH] gpio: crystalcove: Fix implicit declaration of function
+ 'seq_printf' error
+Message-ID: <20140619151913.GD26560@lee--X1>
+References: <1403190228-14344-1-git-send-email-lee.jones@linaro.org>
+ <CAAVeFuKppwDusknaJg88m6r8KwWPJ=BJRuLsZavQL_JZTHTd+A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAAVeFuKppwDusknaJg88m6r8KwWPJ=BJRuLsZavQL_JZTHTd+A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To avoid someone attempting to change this regulator_get back into a
-devm_regulator_get put a comment in explaining that devres can't be used
-here as the regulator will be destroyed before devres calls
-regulator_put.
+On Fri, 20 Jun 2014, Alexandre Courbot wrote:
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/mfd/arizona-core.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+> On Fri, Jun 20, 2014 at 12:03 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> > drivers/gpio/gpio-crystalcove.c: In function 'crystalcove_gpio_dbg_show':
+> > drivers/gpio/gpio-crystalcove.c:286:3: error: implicit declaration of function 'seq_printf'
+> >    seq_printf(s, " gpio-%-2d %s %s %s %s ctlo=%2x,%s %s %s\n",
+> >
+> > Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> > I'm looking for a quick Ack on this patch.  It's a fix to an immutable
+> > branch that I'm carrying which is shared between GPIO and MFD.  Stephen
+> > reported it when the MFD tree was sucked into -next.
+> >
+> > Alexandre,
+> >   I believe Linus is out on vacation this week, so if you could take a
+> > quick look at this, I'd be much obliged.
+> 
+> Acked-by: Alexandre Courbot <acourbot@nvidia.com>
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 27936fe..b4f22e7 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -683,6 +683,12 @@ int arizona_dev_init(struct arizona *arizona)
- 		goto err_early;
- 	}
- 
-+	/**
-+	 * Don't use devres here because the only device we have to get
-+	 * against is the MFD device and DCVDD will likely be supplied by
-+	 * one of its children. Meaning that the regulator will be
-+	 * destroyed by the time devres calls regulator put.
-+	 */
- 	arizona->dcvdd = regulator_get(arizona->dev, "DCVDD");
- 	if (IS_ERR(arizona->dcvdd)) {
- 		ret = PTR_ERR(arizona->dcvdd);
+Thanks Alexandre.
+
+> Hope that's fast enough. ;)
+
+~4 mins.  Not too bad! ;)
+
+> > Linus,
+> >   Once I've acquired the aforementioned Ack I'll fix this patch up into
+> > our immutable branch and send another pull-request.
+> > ---
+> >  drivers/gpio/gpio-crystalcove.c | 1 +
+> >  1 file changed, 1 insertion(+)
+> >
+> > diff --git a/drivers/gpio/gpio-crystalcove.c b/drivers/gpio/gpio-crystalcove.c
+> > index 5a98499..934462f 100644
+> > --- a/drivers/gpio/gpio-crystalcove.c
+> > +++ b/drivers/gpio/gpio-crystalcove.c
+> > @@ -18,6 +18,7 @@
+> >  #include <linux/interrupt.h>
+> >  #include <linux/platform_device.h>
+> >  #include <linux/gpio.h>
+> > +#include <linux/seq_file.h>
+> >  #include <linux/bitops.h>
+> >  #include <linux/regmap.h>
+> >  #include <linux/mfd/intel_soc_pmic.h>
+> >
+
 -- 
-1.7.2.5
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
