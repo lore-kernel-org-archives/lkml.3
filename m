@@ -1,116 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756479AbaFSGtJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 02:49:09 -0400
-Received: from mga11.intel.com ([192.55.52.93]:25202 "EHLO mga11.intel.com"
+	id S1756534AbaFSGx7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 02:53:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:38062 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753266AbaFSGtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 02:49:08 -0400
+	id S1753061AbaFSGx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 02:53:58 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,505,1400050800"; 
-   d="scan'208";a="557788797"
-Message-ID: <53A287A9.7000203@intel.com>
-Date: Thu, 19 Jun 2014 14:48:09 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+   d="scan'208";a="557790825"
+From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "Hansen, Dave" <dave.hansen@intel.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v6 07/10] x86, mpx: decode MPX instruction to get bound
+ violation information
+Thread-Topic: [PATCH v6 07/10] x86, mpx: decode MPX instruction to get bound
+ violation information
+Thread-Index: AQHPitp5+re2FjJ0DkeRHdzRM5ptp5t2HnuAgAGAu2D//9RQAIAAiwew
+Date: Thu, 19 Jun 2014 06:53:28 +0000
+Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE016A3F75@shsmsx102.ccr.corp.intel.com>
+References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
+ <1403084656-27284-8-git-send-email-qiaowei.ren@intel.com>
+ <20140618100745.GB24419@pd.tnic>
+ <9E0BE1322F2F2246BD820DA9FC397ADE016A3BAA@shsmsx102.ccr.corp.intel.com>
+ <20140619062824.GB22025@pd.tnic>
+In-Reply-To: <20140619062824.GB22025@pd.tnic>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: David Rientjes <rientjes@google.com>, lenb@kernel.org, naszar@ya.ru,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] ACPI/Battery: Retry to get Battery information if
- failed during probing
-References: <1402988994-27067-1-git-send-email-tianyu.lan@intel.com> <1474004.fDjayHqHT9@vostro.rjw.lan> <alpine.DEB.2.02.1406181515160.21927@chino.kir.corp.google.com> <2223803.V8Foed99uq@vostro.rjw.lan>
-In-Reply-To: <2223803.V8Foed99uq@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5J6s4Oi024239
 
-On 2014å¹´06æœˆ19æ—¥ 07:00, Rafael J. Wysocki wrote:
-> On Wednesday, June 18, 2014 03:15:47 PM David Rientjes wrote:
->> On Tue, 17 Jun 2014, Rafael J. Wysocki wrote:
->>
->>>> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
->>>> index e48fc98..8ed93a3 100644
->>>> --- a/drivers/acpi/battery.c
->>>> +++ b/drivers/acpi/battery.c
->>>> @@ -34,6 +34,7 @@
->>>>  #include <linux/dmi.h>
->>>>  #include <linux/slab.h>
->>>>  #include <linux/suspend.h>
->>>> +#include <linux/delay.h>
->>>>  #include <asm/unaligned.h>
->>>>  
->>>>  #ifdef CONFIG_ACPI_PROCFS_POWER
->>>> @@ -1119,7 +1120,7 @@ static struct dmi_system_id bat_dmi_table[] = {
->>>>  
->>>>  static int acpi_battery_add(struct acpi_device *device)
->>>>  {
->>>> -	int result = 0;
->>>> +	int result = 0, retry = 5;
->>>>  	struct acpi_battery *battery = NULL;
->>>>  
->>>>  	if (!device)
->>>> @@ -1135,9 +1136,20 @@ static int acpi_battery_add(struct acpi_device *device)
->>>>  	mutex_init(&battery->sysfs_lock);
->>>>  	if (acpi_has_method(battery->device->handle, "_BIX"))
->>>>  		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
->>>> -	result = acpi_battery_update(battery, false);
->>>> +
->>>> +	/*
->>>> +	 * Some machines'(E,G Lenovo Z480) ECs are not stable
->>>> +	 * during boot up and this causes battery driver fails to be
->>>> +	 * probed due to failure of getting battery information
->>>> +	 * from EC sometimes. After several retries, the operation
->>>> +	 * may work. So add retry code here and 20ms sleep between
->>>> +	 * every retries.
->>>> +	 */
->>>> +	while ((result = acpi_battery_update(battery, false)) && retry--)
->>>> +		msleep(20);
->>>>  	if (result)
->>>>  		goto fail;
->>>
->>> Why not to write this as
->>>
->>> 	for (;;) {
->>> 		result = acpi_battery_update(battery, false);
->>> 		if (!result)
->>> 			break;
->>> 		else if (!--retry)
->>> 			goto fail;
->>>
->>> 		msleep(20);
->>> 	}
->>>
->>
->> I suggested a similar for loop earlier, I think it's cleaner.
+On 2014-06-19, Borislav Petkov wrote:
+> On Thu, Jun 19, 2014 at 01:13:48AM +0000, Ren, Qiaowei wrote:
+>> On 2014-06-18, Borislav Petkov wrote:
+>>> On Wed, Jun 18, 2014 at 05:44:13PM +0800, Qiaowei Ren wrote:
+>>> 
+>>> This whole insn decoding machinery above looks like adapted from
+>>> arch/x86/lib/insn.c. You should merge it with the generic code in
+>>> insn.c instead of homegrowing it here only for the purposes of MPX.
+>>> And if it doesn't work for your needs, you should should extend
+>>> the generic code to do so.
 > 
-> Precisely.  And it would be even more clean to introduce
+>> Petkov, as we discussed on initial version of this patchset, general
+>> insn framework didn't work out well and I have tried to use generic
+>> struct insn, insn_field, etc. for obvious benefits.
 > 
-> static bool acpi_battery_update_retry(struct acpi_battery *battery)
-> {
-> 	int retry, ret;
+> Let me repeat myself: "And if it doesn't work for your needs, you
+> should extend the generic code to do so."
 > 
-> 	for (retry = 5; retry; retry--) {
-> 		ret = acpi_battery_update(battery, false);
-> 		if (!ret)
-> 			break;
-> 
-> 		msleep(20);
-> 	}
-> 	return ret;
-> }
-> 
-> and use that instead of the open-coded loop.
+> We don't do homegrown almost-copies of generic code.
+>
+I see. If possible, I will be very happy to use or extend generic code. But due to extra overhead caused by MPX, I have to use MPX specific decoding to do performance optimization.
 
-Ok. I will update patch like this.
+You can check the discussion on this: https://lkml.org/lkml/2014/1/11/190
 
-> 
-> Rafael
-> 
+Thanks,
+Qiaowei
 
-
--- 
-Best regards
-Tianyu Lan
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
