@@ -1,203 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933829AbaFSQ5B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:57:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49853 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932232AbaFSQ47 (ORCPT
+	id S933838AbaFSQ7R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:59:17 -0400
+Received: from smtprelay0023.hostedemail.com ([216.40.44.23]:42231 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932232AbaFSQ7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:56:59 -0400
-Date: Thu, 19 Jun 2014 10:00:59 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Rob Clark <robdclark@gmail.com>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-arch@vger.kernel.org, Thomas Hellstrom <thellstrom@vmware.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Colin Cross <ccross@google.com>, Daniel Vetter <daniel@ffwll.ch>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Subject: Re: [REPOST PATCH 1/8] fence: dma-buf cross-device synchronization
- (v17)
-Message-ID: <20140619170059.GA1224@kroah.com>
-References: <20140618102957.15728.43525.stgit@patser>
- <20140618103653.15728.4942.stgit@patser>
- <20140619011327.GC10921@kroah.com>
- <CAF6AEGv4Ms+zsrEtpA10bGq04LnRjzVb925co49eVxh4ugkd=A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAF6AEGv4Ms+zsrEtpA10bGq04LnRjzVb925co49eVxh4ugkd=A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 19 Jun 2014 12:59:16 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:960:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2693:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:5007:7652:7903:8957:10004:10400:10848:11232:11658:11914:12296:12517:12519:12663:12740:13069:13095:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: view46_16637c8ae3e47
+X-Filterd-Recvd-Size: 2371
+Message-ID: <1403197152.9958.5.camel@joe-AO725>
+Subject: Re: [PATCH] Coccinelle: Script to drop parenthesis in the return
+ statements
+From: Joe Perches <joe@perches.com>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: Himangi Saraogi <himangi774@gmail.com>,
+        Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>, Michal Marek <mmarek@suse.cz>,
+        cocci@systeme.lip6.fr, linux-kernel@vger.kernel.org,
+        benoit.taine@lip6.fr
+Date: Thu, 19 Jun 2014 09:59:12 -0700
+In-Reply-To: <alpine.DEB.2.10.1406191848020.2078@hadrien>
+References: <20140619162954.GA4698@himangi-Dell>
+	 <1403195662.7875.5.camel@joe-AO725>
+	 <alpine.DEB.2.10.1406191848020.2078@hadrien>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 10:00:18AM -0400, Rob Clark wrote:
-> On Wed, Jun 18, 2014 at 9:13 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Wed, Jun 18, 2014 at 12:36:54PM +0200, Maarten Lankhorst wrote:
-> >> +#define CREATE_TRACE_POINTS
-> >> +#include <trace/events/fence.h>
-> >> +
-> >> +EXPORT_TRACEPOINT_SYMBOL(fence_annotate_wait_on);
-> >> +EXPORT_TRACEPOINT_SYMBOL(fence_emit);
+On Thu, 2014-06-19 at 18:49 +0200, Julia Lawall wrote:
+> On Thu, 19 Jun 2014, Joe Perches wrote:
+> > On Thu, 2014-06-19 at 21:59 +0530, Himangi Saraogi wrote:
+> > > This script detects the use of a parenthesis around return value ot the
+> > > return statements and removes them as they are unnecessary and against
+> > > the CodingStyle. A new directory called checkpatch is added for semantic
+> > > patches that just make patches for what checkpatch does. This will help
+> > > developers having checkpatch problems, to run the semantic patches in this
+> > > directory on their code and fix some of them automatically.
 > >
-> > Are you really willing to live with these as tracepoints for forever?
-> > What is the use of them in debugging?  Was it just for debugging the
-> > fence code, or for something else?
-> >
-> >> +/**
-> >> + * fence_context_alloc - allocate an array of fence contexts
-> >> + * @num:     [in]    amount of contexts to allocate
-> >> + *
-> >> + * This function will return the first index of the number of fences allocated.
-> >> + * The fence context is used for setting fence->context to a unique number.
-> >> + */
-> >> +unsigned fence_context_alloc(unsigned num)
-> >> +{
-> >> +     BUG_ON(!num);
-> >> +     return atomic_add_return(num, &fence_context_counter) - num;
-> >> +}
-> >> +EXPORT_SYMBOL(fence_context_alloc);
-> >
-> > EXPORT_SYMBOL_GPL()?  Same goes for all of the exports in here.
-> > Traditionally all of the driver core exports have been with this
-> > marking, any objection to making that change here as well?
+> > checkpatch already has --fix and --fix-inplace options that
+> > do something similar.
 > 
-> tbh, I prefer EXPORT_SYMBOL()..  well, I'd prefer even more if there
-> wasn't even a need for EXPORT_SYMBOL_GPL(), but sadly it is a fact of
-> life.  We already went through this debate once with dma-buf.  We
-> aren't going to change $evil_vendor's mind about non-gpl modules.  The
-> only result will be a more flugly convoluted solution (ie. use syncpt
-> EXPORT_SYMBOL() on top of fence EXPORT_SYMBOL_GPL()) just as a
-> workaround, with the result that no-one benefits.
-
-It has been proven that using _GPL() exports have caused companies to
-release their code "properly" over the years, so as these really are
-Linux-only apis, please change them to be marked this way, it helps
-everyone out in the end.
-
-> >> +int __fence_signal(struct fence *fence)
-> >> +{
-> >> +     struct fence_cb *cur, *tmp;
-> >> +     int ret = 0;
-> >> +
-> >> +     if (WARN_ON(!fence))
-> >> +             return -EINVAL;
-> >> +
-> >> +     if (!ktime_to_ns(fence->timestamp)) {
-> >> +             fence->timestamp = ktime_get();
-> >> +             smp_mb__before_atomic();
-> >> +     }
-> >> +
-> >> +     if (test_and_set_bit(FENCE_FLAG_SIGNALED_BIT, &fence->flags)) {
-> >> +             ret = -EINVAL;
-> >> +
-> >> +             /*
-> >> +              * we might have raced with the unlocked fence_signal,
-> >> +              * still run through all callbacks
-> >> +              */
-> >> +     } else
-> >> +             trace_fence_signaled(fence);
-> >> +
-> >> +     list_for_each_entry_safe(cur, tmp, &fence->cb_list, node) {
-> >> +             list_del_init(&cur->node);
-> >> +             cur->func(fence, cur);
-> >> +     }
-> >> +     return ret;
-> >> +}
-> >> +EXPORT_SYMBOL(__fence_signal);
-> >
-> > Don't export a function with __ in front of it, you are saying that an
-> > internal function is somehow "valid" for everyone else to call?  Why?
-> > You aren't even documenting the function, so who knows how to use it?
+> OK.  Then it is not worth adding coccinelle scripts for simple changes
+> like this one.
 > 
-> fwiw, the __ versions appear to mainly be concessions for android
-> syncpt.  That is the only user outside of fence.c, and it should stay
-> that way.
+> I guess that some of the more complex changes, like choosing an
+> appropriate error message function, checkpatch does not do?
 
-How are you going to "ensure" this?  And where did you document it?
-Please fix this up, it's a horrid way to create a new api.
+I'm not quite sure what you're suggesting.
 
-If the android code needs to be fixed to fit into this model, then fix
-it.
+You mean choosing pr_err vs pr_notice or something
+like finding an active struct <foo> and converting
+printks to <foo>_<level>(&foo, fmt, ...)
 
-> >> +void
-> >> +__fence_init(struct fence *fence, const struct fence_ops *ops,
-> >> +          spinlock_t *lock, unsigned context, unsigned seqno)
-> >> +{
-> >> +     BUG_ON(!lock);
-> >> +     BUG_ON(!ops || !ops->wait || !ops->enable_signaling ||
-> >> +            !ops->get_driver_name || !ops->get_timeline_name);
-> >> +
-> >> +     kref_init(&fence->refcount);
-> >> +     fence->ops = ops;
-> >> +     INIT_LIST_HEAD(&fence->cb_list);
-> >> +     fence->lock = lock;
-> >> +     fence->context = context;
-> >> +     fence->seqno = seqno;
-> >> +     fence->flags = 0UL;
-> >> +
-> >> +     trace_fence_init(fence);
-> >> +}
-> >> +EXPORT_SYMBOL(__fence_init);
-> >
-> > Again with the __ exported function...
-> >
-> > I don't even see a fence_init() function anywhere, why the __ ?
-> >
-> 
-> think of it as a 'protected' constructor.. only the derived fence
-> subclass should call.
+from:
+{
+	struct device *dev;
+	...
+	printk(KERN_ERR "msg", ...)
+to:
+	dev_err(dev, "msg", ...)
 
-Where do you say this?  Again, not a good reason, fix up the api please.
+checkpatch definitely can not do that.
 
-> >> +     kref_get(&fence->refcount);
-> >> +}
-> >
-> > Why is this inline?
-> 
-> performance can be critical.. especially if the driver is using this
-> fence mechanism for internal buffers as well as shared buffers (which
-> is what I'd like to do to avoid having to deal with two different
-> fencing mechanisms for shared vs non-shared buffers), since you could
-> easily have 100's or perhaps 1000's of buffers involved in a submit.
+Is it something else?
 
-"can be".  Did you actually measure it?  Please do so.
-
-> The fence stuff does try to inline as much stuff as possible,
-> especially critical-path stuff, for this reason.
-
-Inlining code doesn't always mean "faster", in fact, on lots of
-processors and with "large" inline functions, the opposite is true.  So
-only do so if you can measure it.
-
-> >> +/**
-> >> + * fence_later - return the chronologically later fence
-> >> + * @f1:      [in]    the first fence from the same context
-> >> + * @f2:      [in]    the second fence from the same context
-> >> + *
-> >> + * Returns NULL if both fences are signaled, otherwise the fence that would be
-> >> + * signaled last. Both fences must be from the same context, since a seqno is
-> >> + * not re-used across contexts.
-> >> + */
-> >> +static inline struct fence *fence_later(struct fence *f1, struct fence *f2)
-> >> +{
-> >> +     BUG_ON(f1->context != f2->context);
-> >
-> > Nice, you just crashed the kernel, making it impossible to debug or
-> > recover :(
-> 
-> agreed, that should probably be 'if (WARN_ON(...)) return NULL;'
-> 
-> (but at least I wouldn't expect to hit that under console_lock so you
-> should at least see the last N lines of the backtrace on the screen
-> ;-))
-
-Lots of devices don't have console screens :)
-
-thanks,
-
-greg k-h
