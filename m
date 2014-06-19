@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934700AbaFSVMU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 17:12:20 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:47713 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934434AbaFSVMT (ORCPT
+	id S934715AbaFSVNQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 17:13:16 -0400
+Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:50768 "EHLO
+	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934620AbaFSVNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 17:12:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <1403211188.2753.9.camel@joe-AO725>
-References: <1403209102-10633-1-git-send-email-xerofoify@gmail.com>
-	<CAPDOMVhBHa3QqFY+5T+noCxKkffN6Mo0PrN1_1ZRV22RNXUKXg@mail.gmail.com>
-	<1403211188.2753.9.camel@joe-AO725>
-Date: Thu, 19 Jun 2014 17:12:18 -0400
-Message-ID: <CAPDOMVgacNsgNAM+e+GNJd17Rpae+j8h3KGizDoS2Edfu-q=gw@mail.gmail.com>
-Subject: Re: [PATCH] staging: rtl8192 Check for Null return from dev_skb_alloc
-From: Nick Krause <xerofoify@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, lisa@xenapiadmin.com,
-        Valentina Manea <valentina.manea.m@gmail.com>, ben@decadent.org.uk,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 19 Jun 2014 17:13:15 -0400
+Date: Thu, 19 Jun 2014 16:13:12 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave.hansen@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>
+Subject: Re: [bisected] pre-3.16 regression on open() scalability
+In-Reply-To: <20140619204220.GJ4904@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.11.1406191612000.5484@gentwo.org>
+References: <20140618001836.GV4669@linux.vnet.ibm.com> <53A132D4.60408@intel.com> <20140618125831.GB4669@linux.vnet.ibm.com> <53A1CE19.7040103@intel.com> <20140618203052.GT4669@linux.vnet.ibm.com> <20140618235131.GA25946@linux.vnet.ibm.com>
+ <20140619014200.GO8178@tassilo.jf.intel.com> <alpine.DEB.2.11.1406190941180.2785@gentwo.org> <20140619180916.GE4904@linux.vnet.ibm.com> <alpine.DEB.2.11.1406191531020.4002@gentwo.org> <20140619204220.GJ4904@linux.vnet.ibm.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Joe,
-I need to read my patches more carefully.
-Nick :)
+On Thu, 19 Jun 2014, Paul E. McKenney wrote:
 
+> On Thu, Jun 19, 2014 at 03:31:56PM -0500, Christoph Lameter wrote:
+> > On Thu, 19 Jun 2014, Paul E. McKenney wrote:
+> >
+> > > That is a separate issue, but unnecessary calls to cond_resched()
+> > > should of course be removed -- no argument there.
+> >
+> > It looks like we are fighting higher latencies by adding calls in most of
+> > the critical sections which will in turn increase the latencies that we
+> > are trying to reduce.
+>
+> That is on battle in a larger war.  Another battle is to keep big systems
+> from choking and dying.  We need to win both battles, though I understand
+> that you are focused primarily on latency reduction.  I don't get that
+> luxury because RCU is used across the board.
 
-On Thu, Jun 19, 2014 at 4:53 PM, Joe Perches <joe@perches.com> wrote:
-> On Thu, 2014-06-19 at 16:20 -0400, Nick Krause wrote:
->> Hey Guys,
->> So Sorry about wasting your time with bad patchs.
->> I feel bad about that. I hope this patch is O.K.
->> now. :(
->
-> Oh, one other thing...
->
->> > diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-> []
->> > @@ -36,7 +36,6 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
->> >                              u32 buffer_len)
->> >  {
->> >         struct r8192_priv *priv = rtllib_priv(dev);
->> > -       bool                rt_status = true;
->> >         u16                 frag_threshold;
->> >         u16                 frag_length, frag_offset = 0;
->> >         int                 i;
-> []
->> > @@ -99,7 +100,7 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
->> >
->> >         write_nic_byte(dev, TPPoll, TPPoll_CQ);
->> >
->> > -       return rt_status;
->> > +       return false;
->
-> This should be:
->
->         return true;
->
->
->
+At least reduce the increased latencies to a processor or put it somewhere
+outside of the regular execution paths. Sprinkling this throughout the
+kernel via a inline function that did not generate code in the non debug
+situation before is not that nice.
+
