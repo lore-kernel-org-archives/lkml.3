@@ -1,223 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758051AbaFSMFc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 08:05:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41650 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757442AbaFSMFa (ORCPT
+	id S932520AbaFSMG7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 08:06:59 -0400
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:52436 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757442AbaFSMG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 08:05:30 -0400
-Message-ID: <53A2D1CE.6040402@gmail.com>
-Date: Thu, 19 Jun 2014 17:34:30 +0530
-From: Varka Bhadram <varkabhadram@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 19 Jun 2014 08:06:58 -0400
+X-Yandex-Uniq: 7793d61b-4d4a-46c4-b4f9-2afb0afe51a6
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Date: Thu, 19 Jun 2014 16:06:52 +0400
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        dsahern@gmail.com, jolsa@redhat.com, xiaoguangrong@linux.vnet.ibm.com,
+        yangds.fnst@cn.fujitsu.com, adrian.hunter@intel.com,
+        namhyung@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] perf trace: add support for pagefault tracing
+Message-ID: <20140619120652.GF15620@stfomichev-desktop.yandex.net>
+References: <1403103565-6388-1-git-send-email-stfomichev@yandex-team.ru>
+ <1403103565-6388-2-git-send-email-stfomichev@yandex-team.ru>
+ <20140618154751.GC2702@kernel.org>
+ <20140618174254.GD15620@stfomichev-desktop.yandex.net>
+ <20140618200432.GA20252@kernel.org>
 MIME-Version: 1.0
-To: Alexander Aring <alex.aring@gmail.com>,
-        Varka Bhadram <varkabhadram@gmail.com>
-CC: netdev@vger.kernel.org, alex.bluesman.smirnov@gmail.com,
-        dbaryshkov@gmail.com, linux-zigbee-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, davem@davemloft.net, sowjanyap@cdac.in,
-        santoshk@cdac.in, venkatas@cdac.in
-Subject: Re: [PATCH net-next v5 1/3] ieee802154: cc2520: adds driver for TI
- CC2520 radio
-References: <1403167131-22092-1-git-send-email-varkab@cdac.in> <1403167131-22092-2-git-send-email-varkab@cdac.in> <20140619104440.GA17994@omega>
-In-Reply-To: <20140619104440.GA17994@omega>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140618200432.GA20252@kernel.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+> So make it default to the most common case :-)
+Ok, agreed, will make --pf=all|maj|min and will default it to maj.
 
-Thanks for the comments
+> That is my expectation, yes, if I ask for the map where address N is, it
+> should return just that, where have you found this bug?
+> 
+> The thread__find_addr_map will end up calling maps__find() and it does
+> this:
+> 
+>                 if (ip < m->start)
+>                         p = &(*p)->rb_left;
+>                 else if (ip > m->end)
+>                         p = &(*p)->rb_right;
+>                 else
+>                         return m;
+> 
+> Where is the problem?
+You're right, we don't need to check the range, if map is non-null it's a
+valid one. I'll remove valid_dso and will just check al.map for null.
 
-On 06/19/2014 04:14 PM, Alexander Aring wrote:
-> Hi Varka,
->
-> why do you add new features while you trying to get the first version
-> mainline?
+> Understood the intent, but the test here is really:
+> 
+> 		if (evsel->attr.type == PERF_TYPE_TRACEPOINT &&
+> 		    sample.raw_data == NULL)
+> 
+> Ok?
+Yes, makes more sense.
 
-This h/w address filtering feature is required for me to get CC2520 Hardware ACK, which
-enable TinyOS nodes to communicate with the linux node.
-
-I want to get this feature also in mainline for the first version. So that it will be full fledged driver.
-
-> On Thu, Jun 19, 2014 at 02:08:48PM +0530, Varka Bhadram wrote:
->> This patch adds the driver support for the cc2520 radio.
->>
->> Driver support:
->> 	- Tx and Rx of IEEE-802.15.4 packets.
->> 	- Energy Detection on channel.
->> 	- Setting the Channel for the radio. [b/w 11 - 26 channels]
->> 	- Start and Stop the radio
->> 	- h/w address filtering.
->>
-[...]
-
->> +static int
->> +cc2520_read_rxfifo(struct cc2520_private *priv, u8 *data, u8 len, u8 *lqi)
->> +{
->> +	int status;
->> +	struct spi_message msg;
->> +
->> +	struct spi_transfer xfer_head = {
->> +		.len = 0,
->> +		.tx_buf = priv->buf,
->> +		.rx_buf = priv->buf,
->> +	};
->> +	struct spi_transfer xfer_buf = {
->> +		.len = len,
->> +		.rx_buf = data,
->> +	};
->> +
->> +	spi_message_init(&msg);
->> +	spi_message_add_tail(&xfer_head, &msg);
->> +	spi_message_add_tail(&xfer_buf, &msg);
->> +
->> +	mutex_lock(&priv->buffer_mutex);
->> +	priv->buf[xfer_head.len++] = CC2520_CMD_RXBUF;
->> +
->> +	dev_vdbg(&priv->spi->dev, "read rxfifo buf[0] = %02x\n", priv->buf[0]);
->> +	dev_vdbg(&priv->spi->dev, "buf[1] = %02x\n", priv->buf[1]);
->> +
->> +	status = spi_sync(priv->spi, &msg);
->> +	dev_vdbg(&priv->spi->dev, "status = %d\n", status);
->> +	if (msg.status)
->> +		status = msg.status;
->> +	dev_vdbg(&priv->spi->dev, "status = %d\n", status);
->> +	dev_vdbg(&priv->spi->dev,
->> +		 "return status buf[0] = %02x\n", priv->buf[0]);
->> +	dev_vdbg(&priv->spi->dev, "length buf[1] = %02x\n", priv->buf[1]);
->> +
->> +	*lqi = data[priv->buf[1] - 1] & 0x7f;
-> This is a little bit critical... but I know others driver doesn't check
-> also on this.
-
-I will check how other drivers using lqi field , which is actually passing to higher layers.
-
-> After the cc2520_read_rxfifo you check if (len < 2 ...) but here you
-> already use the len. Maybe but the length constraints check in this function.
->
->> +
->> +	mutex_unlock(&priv->buffer_mutex);
->> +
->> +	return status;
-
-[...]
-
->> +static int cc2520_rx(struct cc2520_private *priv)
->> +{
->> +	u8 len = 0, lqi = 0, bytes = 1;
->> +	struct sk_buff *skb;
->> +
->> +	cc2520_read_rxfifo(priv, &len, bytes, &lqi);
-> Okay, you get here the length for your pdu. But then you can check
-> afterwards on:
->
-> if (len < 2) instead of doing this in the second rxfifo call. And please
-> do a:
->
-> if (len < 2 || len > IEEE802154_MTU)
-
-I will make this change in v6
-
-> The reason is, I don't know if your chip does filter something like
-> that. The at86rf230 don't filter pdu above the MTU size and we have no
-> generic mac802154 layer function right now to check on this. I like to
-> improve that in the near future...
->
-> When you do this check you can save the kfree_skb in this branch.
->
->> +
->> +	skb = alloc_skb(len, GFP_KERNEL);
->> +	if (!skb)
->> +		return -ENOMEM;
->> +
->> +	cc2520_read_rxfifo(priv, skb_put(skb, len), len, &lqi);
->> +	if (len < 2) {
->> +		kfree_skb(skb);
->> +		return -EINVAL;
->> +	}
->> +
->> +	skb_trim(skb, skb->len - 2);
->> +
->> +	ieee802154_rx_irqsafe(priv->dev, skb, lqi);
->> +
->> +	dev_vdbg(&priv->spi->dev, "RXFIFO: %x %x\n", len, lqi);
->> +
->> +	return 0;
->> +}
->> +
->> +static int
->> +cc2520_ed(struct ieee802154_dev *dev, u8 *level)
->> +{
->> +	struct cc2520_private *priv = dev->priv;
->> +	u8 status = 0xff;
->> +	u8 rssi;
->> +	int ret;
->> +
->> +	ret = cc2520_read_register(priv , CC2520_RSSISTAT, &status);
->> +	if (ret)
->> +		return ret;
->> +
->> +	if (status != RSSI_VALID) {
->> +		ret = -EINVAL;
->> +		return ret;
-> return -EINVAL;
-
-Ok. I will do it in v6
-
->> +	}
->> +
->> +	ret = cc2520_read_register(priv , CC2520_RSSI, &rssi);
->> +	if (ret)
->> +		return ret;
->> +
->> +	/* level = RSSI(rssi) - OFFSET [dBm] : offset is 76dBm*/
->> +	*level = rssi - RSSI_OFFSET;
->> +
->> +	return ret;
->> +}
->> +
-[...]
->> +static int
->> +cc2520_filter(struct ieee802154_dev *dev,
->> +	      struct ieee802154_hw_addr_filt *filt, unsigned long changed)
->> +{
->> +	struct cc2520_private *priv = dev->priv;
->> +
->> +	if (changed & IEEE802515_AFILT_PANID_CHANGED) {
->> +		u8 panid[2];
->> +		panid[0] = filt->pan_id & 0xff;
->> +		panid[1] = filt->pan_id >> 8;
-> const u16 panid = le16_to_cpu(filt->pan_id);
-
-Ok.
-
->> +		cc2520_write_ram(priv, CC2520RAM_PANID, sizeof(panid), panid);
->> +	}
->> +
->> +	if (changed & IEEE802515_AFILT_IEEEADDR_CHANGED)
->> +		cc2520_write_ram(priv, CC2520RAM_IEEEADDR,
->> +				sizeof(filt->ieee_addr), (u8 *)&filt->ieee_addr);
->> +
->> +	return 0;
->> +
->> +}
-> What's about to handle IEEE802515_AFILT_PANC_CHANGED and
-> IEEE802515_AFILT_SADDR_CHANGED? These are fully ignored, your chip
-> should have such functions.
-
-CC2520 supports IEEE802515_AFILT_SADDR_CHANGED functionality , but i didn't find any info about
-Pan co-coordinator changed register details. If that is possible i will do it in v6
-
-> If you don't support them you need to return -EOPNOTSUPP; but this would
-> be weird because you have a IEEE 802.15.4 complaint chip. :-)
->
-Ok.
-
-
--Varka Bhadram
-
-
+> Also, have you considered using:
+> 
+> [root@zoo ~]# perf list exceptions:page_fault*
+>   exceptions:page_fault_user                         [Tracepoint event]
+>   exceptions:page_fault_kernel                       [Tracepoint event]
+> [root@zoo ~]#
+> 
+> Instead? I need to check if they're completely equivalent to what we
+> need here...
+Hm, didn't know there are two kinds of fault events :-/
+But it seems these are x86 only.
