@@ -1,89 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199AbaFSN5X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 09:57:23 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:52706 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891AbaFSN5W (ORCPT
+	id S1756317AbaFSN7M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 09:59:12 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:33507 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754277AbaFSN7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 09:57:22 -0400
+	Thu, 19 Jun 2014 09:59:10 -0400
+Date: Thu, 19 Jun 2014 09:59:08 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [GIT PULL] tracing: Cleanups and fixes to syscall tracepoints
+Message-ID: <20140619095908.49dbc025@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1403154257-14591-1-git-send-email-lauraa@codeaurora.org>
-References: <1403154257-14591-1-git-send-email-lauraa@codeaurora.org>
-From: Rob Herring <robherring2@gmail.com>
-Date: Thu, 19 Jun 2014 08:57:00 -0500
-Message-ID: <CAL_JsqJW-mBb7C=ni2YLK-h9kfcAHs6b-uVJ-Zi-+MW0F_x1=Q@mail.gmail.com>
-Subject: Re: [PATCH] of: Check for phys_addr_t overflows in early_init_dt_add_memory_arch
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 12:04 AM, Laura Abbott <lauraa@codeaurora.org> wrote:
-> The common early_init_dt_add_memory_arch takes the base and size
-> of a memory region as u64 types. The function never checks if
-> the base and size can actually fit in a phys_addr_t which may
-> be smaller than 64-bits. This may result in incorrect memory
-> being passed to memblock_add if the memory falls outside the
-> range of phys_addr_t. Add range checks for the base and size if
-> phys_addr_t is smaller than u64.
->
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
-> ---
-> Geert, can you drop my other patch and give this a test to see if it fixes
-> your bootup problem?
->
-> ---
->  drivers/of/fdt.c | 15 +++++++++++++++
->  1 file changed, 15 insertions(+)
->
-> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> index c4cddf0..f72132c 100644
-> --- a/drivers/of/fdt.c
-> +++ b/drivers/of/fdt.c
-> @@ -880,6 +880,21 @@ void __init __weak early_init_dt_add_memory_arch(u64 base, u64 size)
->         const u64 phys_offset = __pa(PAGE_OFFSET);
->         base &= PAGE_MASK;
->         size &= PAGE_MASK;
-> +
-> +#ifndef CONFIG_ARCH_PHYS_ADDR_T_64BIT
-> +       if (base > ULONG_MAX) {
 
-How about removing the ifdef and doing something like:
+Linus,
 
-if ((base >> 32) && (sizeof(phys_addr_t) != sizeof(u64)))
+This includes three patches from Oleg Nesterov. The first is a fix to a
+race condition that happens between enabling/disabling syscall tracepoints
+and new process creations (the check to go into the ptrace path for a process
+can be set when it shouldn't, or not set when it should). Not a major bug
+but one that should be fixed and even applied to stable.
 
-> +               pr_warning("Ignoring memory block 0x%llx - 0x%llx\n",
-> +                               base, base + size);
-> +               return;
-> +       }
-> +
-> +       if (base + size > ULONG_MAX) {
-> +               pr_warning("Ignoring memory range 0x%lx - 0x%llx\n",
-> +                               ULONG_MAX, base + size);
-> +               size = ULONG_MAX - base;
-> +       }
-> +#endif
-> +
->         if (base + size < phys_offset) {
->                 pr_warning("Ignoring memory block 0x%llx - 0x%llx\n",
->                            base, base + size);
-> --
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+The other two patches are cleanup/fixes that are not that critical, but
+for an -rc1 release would be nice to have. They both deal with syscall
+tracepoints.
+
+I would have included these with my initial pull request, but as Oleg
+posted his last version as a reply to the bottom of the patch 1/3
+thread, I missed it.
+
+Please pull the latest trace-fixes-v3.16-rc1 tree, which can be found at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+trace-fixes-v3.16-rc1
+
+Tag SHA1: b6890d3b54aa3ff1aa34afb6c7af367895b9f07a
+Head SHA1: 72fa1a896d8ef355e81270667803ceb16a3dd13f
+
+
+Oleg Nesterov (3):
+      tracing: Fix syscall_*regfunc() vs copy_process() race
+      tracing: Change syscall_*regfunc() to check PF_KTHREAD and use for_each_process_thread()
+      tracing: syscall_regfunc() should not skip kernel threads
+
+----
+ include/trace/syscall.h | 15 +++++++++++++++
+ kernel/fork.c           |  2 ++
+ kernel/tracepoint.c     | 26 +++++++++++---------------
+ 3 files changed, 28 insertions(+), 15 deletions(-)
+---------------------------
+diff --git a/include/trace/syscall.h b/include/trace/syscall.h
+index fed853f3d7aa..291c2824fafb 100644
+--- a/include/trace/syscall.h
++++ b/include/trace/syscall.h
+@@ -4,6 +4,7 @@
+ #include <linux/tracepoint.h>
+ #include <linux/unistd.h>
+ #include <linux/ftrace_event.h>
++#include <linux/thread_info.h>
+ 
+ #include <asm/ptrace.h>
+ 
+@@ -32,4 +33,18 @@ struct syscall_metadata {
+ 	struct ftrace_event_call *exit_event;
+ };
+ 
++#ifdef CONFIG_TRACEPOINTS
++static inline void syscall_tracepoint_update(struct task_struct *p)
++{
++	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
++		set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
++	else
++		clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
++}
++#else
++static inline void syscall_tracepoint_update(struct task_struct *p)
++{
++}
++#endif
++
+ #endif /* _TRACE_SYSCALL_H */
+diff --git a/kernel/fork.c b/kernel/fork.c
+index d2799d1fc952..6a13c46cd87d 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1487,7 +1487,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 
+ 	total_forks++;
+ 	spin_unlock(&current->sighand->siglock);
++	syscall_tracepoint_update(p);
+ 	write_unlock_irq(&tasklist_lock);
++
+ 	proc_fork_connector(p);
+ 	cgroup_post_fork(p);
+ 	if (clone_flags & CLONE_THREAD)
+diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+index 33cbd8c203f8..3490407dc7b7 100644
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -492,33 +492,29 @@ static int sys_tracepoint_refcount;
+ 
+ void syscall_regfunc(void)
+ {
+-	unsigned long flags;
+-	struct task_struct *g, *t;
++	struct task_struct *p, *t;
+ 
+ 	if (!sys_tracepoint_refcount) {
+-		read_lock_irqsave(&tasklist_lock, flags);
+-		do_each_thread(g, t) {
+-			/* Skip kernel threads. */
+-			if (t->mm)
+-				set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
+-		} while_each_thread(g, t);
+-		read_unlock_irqrestore(&tasklist_lock, flags);
++		read_lock(&tasklist_lock);
++		for_each_process_thread(p, t) {
++			set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
++		}
++		read_unlock(&tasklist_lock);
+ 	}
+ 	sys_tracepoint_refcount++;
+ }
+ 
+ void syscall_unregfunc(void)
+ {
+-	unsigned long flags;
+-	struct task_struct *g, *t;
++	struct task_struct *p, *t;
+ 
+ 	sys_tracepoint_refcount--;
+ 	if (!sys_tracepoint_refcount) {
+-		read_lock_irqsave(&tasklist_lock, flags);
+-		do_each_thread(g, t) {
++		read_lock(&tasklist_lock);
++		for_each_process_thread(p, t) {
+ 			clear_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
+-		} while_each_thread(g, t);
+-		read_unlock_irqrestore(&tasklist_lock, flags);
++		}
++		read_unlock(&tasklist_lock);
+ 	}
+ }
+ #endif
