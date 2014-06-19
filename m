@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757025AbaFSBSl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 21:18:41 -0400
-Received: from exprod5og122.obsmtp.com ([64.18.0.192]:39863 "HELO
-	exprod5og122.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753813AbaFSBRP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 21:17:15 -0400
-From: Iyappan Subramanian <isubramanian@apm.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, devicetree@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
-        Iyappan Subramanian <isubramanian@apm.com>,
-        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
-Subject: [PATCH v7 1/4] MAINTAINERS: Add entry for APM X-Gene SoC ethernet driver
-Date: Wed, 18 Jun 2014 18:17:11 -0700
-Message-Id: <1403140634-27104-2-git-send-email-isubramanian@apm.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403140634-27104-1-git-send-email-isubramanian@apm.com>
-References: <1403140634-27104-1-git-send-email-isubramanian@apm.com>
+	id S1756505AbaFSBVV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 21:21:21 -0400
+Received: from know-smtprelay-omc-10.server.virginmedia.net ([80.0.253.74]:50786
+	"EHLO know-smtprelay-omc-10.server.virginmedia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752452AbaFSBVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 21:21:19 -0400
+X-Originating-IP: [81.106.150.188]
+X-Spam: 0
+X-Authority: v=2.1 cv=FZq5xfO6 c=1 sm=1 tr=0 a=DGj713NdaxKrsjjgQne7PA==:117
+ a=DGj713NdaxKrsjjgQne7PA==:17 a=J0QyKEt1u0cA:10 a=QS53e1nJ1J0A:10
+ a=uObrxnre4hsA:10 a=IkcTkHD0fZMA:10 a=NLZqzBF-AAAA:8 a=oScGYhKmRCsqZtO54iAA:9
+ a=QEXdDO2ut3YA:10
+Date: Thu, 19 Jun 2014 02:21:16 +0100
+From: Ken Moffat <zarniwhoop@ntlworld.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: relative objtree change broke tar builds?
+Message-ID: <20140619012116.GA10046@milliways>
+References: <20140617223854.GC6168@fieldses.org>
+ <53A15684.9000002@suse.cz>
+ <20140618122029.GA17790@fieldses.org>
+ <53A18712.6030907@suse.cz>
+ <20140618131452.GB17790@fieldses.org>
+ <53A1B72E.7030907@infradead.org>
+ <53A1ECD0.2030001@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53A1ECD0.2030001@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a MAINTAINERS entry for APM X-Gene SoC
-ethernet driver.
+On Wed, Jun 18, 2014 at 09:47:28PM +0200, Michal Marek wrote:
+> 
+> The idea is that one should be able to compare as much as possible
+> between the build of /usr/src/linux-<version_a> built in
+> /usr/src/linux-<version_a>/build and /usr/src/linux-<version_b> built in
+> /usr/src/linux-<version_b>/build.
 
-Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
-Signed-off-by: Ravi Patel <rapatel@apm.com>
-Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
----
- MAINTAINERS | 8 ++++++++
- 1 file changed, 8 insertions(+)
+Michal,
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 134483f..d65a3be 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -700,6 +700,14 @@ S:	Maintained
- F:	drivers/net/appletalk/
- F:	net/appletalk/
- 
-+APPLIED MICRO (APM) X-GENE SOC ETHERNET DRIVER
-+M:	Iyappan Subramanian <isubramanian@apm.com>
-+M:	Keyur Chudgar <kchudgar@apm.com>
-+M:	Ravi Patel <rapatel@apm.com>
-+S:	Supported
-+F:	drivers/net/ethernet/apm/xgene/
-+F:	Documentation/devicetree/bindings/net/apm-xgene-enet.txt
-+
- APTINA CAMERA SENSOR PLL
- M:	Laurent Pinchart <Laurent.pinchart@ideasonboard.com>
- L:	linux-media@vger.kernel.org
+ Now that you have sent a pull request to Linus, and therefore
+addressed the main problem, may I dare to question your example ?
+
+ I only started building kernels in (approximately) spring 2000, so I
+am sure that I am missing a lot of history.  But /usr/src/linux*
+smells of "tradition" in the Scots sense of "whit ma faither telt me
+that his faither telt him" ("what my father told me that his father
+told him" in english).  I am sure that /usr/src/linux might have been
+an expectation in the distant past, but it tends to bring along the
+assumption that kernels are _built_ by that dangerous guy called
+'root'.
+
+ Some of us (me included) often build things as root, but it has
+many risks and people ought not to be led to believe it is
+necessarily the correct way to do things.  Over the past 14 years I
+have built kernels in ~/ as well as in other user-writable
+directories and I am puzzled about why the idea of /usr/src/linux*
+continues to exist.
+
+ĸen
 -- 
-1.9.1
-
+Nanny Ogg usually went to bed early. After all, she was an old lady.
+Sometimes she went to bed as early as 6 a.m.
