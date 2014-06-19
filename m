@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231AbaFSM4x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 08:56:53 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:63830 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434AbaFSM4v (ORCPT
+	id S1754163AbaFSNBC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 09:01:02 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:50538 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570AbaFSNA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 08:56:51 -0400
-Subject: Re: [PATCH 5/5] perf tools: Add report.show-headers config file
- option
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <1403178076-14072-6-git-send-email-jolsa@kernel.org>
-References: <1403178076-14072-1-git-send-email-jolsa@kernel.org>
-	 <1403178076-14072-6-git-send-email-jolsa@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 19 Jun 2014 21:56:44 +0900
-Message-ID: <1403182604.1670.26.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 19 Jun 2014 09:00:59 -0400
+Message-ID: <53A2DEDA.5050104@ti.com>
+Date: Thu, 19 Jun 2014 18:30:10 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Tero Kristo <t-kristo@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <arnd@arndb.de>, <tony@atomide.com>, <jg1.han@samsung.com>,
+        Keerthy <j-keerthy@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH v2 07/18] ARM: dts: DRA7: Change the parent of apll_pcie_in_clk_mux
+ to dpll_pcie_ref_m2ldo_ck
+References: <1401345500-20188-1-git-send-email-kishon@ti.com> <1401345500-20188-8-git-send-email-kishon@ti.com> <53A2C5B4.9080300@ti.com>
+In-Reply-To: <53A2C5B4.9080300@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+Hi Tero,
 
-2014-06-19 (목), 13:41 +0200, Jiri Olsa:
-> Adding report.show-headers config file option to setup
-> the appearance of the columns headers.
+On Thursday 19 June 2014 04:42 PM, Tero Kristo wrote:
+> On 05/29/2014 09:38 AM, Kishon Vijay Abraham I wrote:
+>> From: Keerthy <j-keerthy@ti.com>
+>>
+>> Change the parent of apll_pcie_in_clk_mux to dpll_pcie_ref_m2ldo_ck
+>> from dpll_pcie_ref_ck.
 > 
-> Currently columns headers are displayed by default, following
-> lines in ~/.perfconfig file will disable that:
+> Why? Needs a better changelog also.
+
+Figure 26-22. DPLL_PCIE_REF Functional Block Diagram in vE of DRA7xx ES1.0 TRM
+shows the signal name for the output of post divider (M2) is CLKOUTLDO.
+
+Figure 26-21. PCIe PHY Clock Generator Overview shows CLKOUTLDO is used as
+input to apll mux.
+
+So the actual output of dpll should be dpll_pcie_ref_m2ldo_ck instead of
+dpll_pcie_ref_ck (which is the input of apll mux).
+
+Thanks
+Kishon
 > 
->   [report]
->         show-headers = true
-
-This also applies to perf top, right?  And it's TUI-specific.  So how
-about calling it something like "tui.show-headers"?
-
-
-[SNIP]
-> @@ -35,6 +35,7 @@ struct symbol_conf symbol_conf = {
->  	.demangle		= true,
->  	.cumulate_callchain	= true,
->  	.symfs			= "",
-> +	.show_headers		= -1,
-
-Hmm.. why not just making it boolean and set it to true (like others)?
-
-Thanks,
-Namhyung
-
-
->  };
->  
->  static enum dso_binary_type binary_type_symtab[] = {
-> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-> index 615c752..8f1854a 100644
-> --- a/tools/perf/util/symbol.h
-> +++ b/tools/perf/util/symbol.h
-> @@ -139,6 +139,7 @@ struct symbol_conf {
->  			*sym_from_list,
->  			*sym_to_list;
->  	const char	*symfs;
-> +	int		show_headers;
->  };
->  
->  extern struct symbol_conf symbol_conf;
-
-
-
+> -Tero
+> 
+>>
+>> Cc: Rajendra Nayak <rnayak@ti.com>
+>> Cc: Tero Kristo <t-kristo@ti.com>
+>> Cc: Paul Walmsley <paul@pwsan.com>
+>> Signed-off-by: Keerthy <j-keerthy@ti.com>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> ---
+>>   arch/arm/boot/dts/dra7xx-clocks.dtsi |    2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi
+>> b/arch/arm/boot/dts/dra7xx-clocks.dtsi
+>> index 55e95c5..44993ec 100644
+>> --- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
+>> +++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
+>> @@ -1152,7 +1152,7 @@
+>>
+>>       apll_pcie_in_clk_mux: apll_pcie_in_clk_mux@4ae06118 {
+>>           compatible = "ti,mux-clock";
+>> -        clocks = <&dpll_pcie_ref_ck>, <&pciesref_acs_clk_ck>;
+>> +        clocks = <&dpll_pcie_ref_m2ldo_ck>, <&pciesref_acs_clk_ck>;
+>>           #clock-cells = <0>;
+>>           reg = <0x021c 0x4>;
+>>           ti,bit-shift = <7>;
+>>
+> 
