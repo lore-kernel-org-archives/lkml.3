@@ -1,90 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194AbaFSBaj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 21:30:39 -0400
-Received: from ozlabs.org ([103.22.144.67]:34293 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752240AbaFSBah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 21:30:37 -0400
-Message-ID: <1403141433.4768.1.camel@concordia>
-Subject: Re: Re: [RFT PATCH -next v3] [BUGFIX] kprobes: Fix "Failed to find
- blacklist" error on ia64 and ppc64
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
-        Tony Luck <tony.luck@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
-        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-tip-commits@vger.kernel.org, anil.s.keshavamurthy@intel.com,
-        Ingo Molnar <mingo@kernel.org>, Fenghua Yu <fenghua.yu@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
-        akataria@vmware.com, Tony Luck <tony.luck@intel.com>,
-        Kevin Hao <haokexin@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, rdunlap@infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>
-Date: Thu, 19 Jun 2014 11:30:33 +1000
-In-Reply-To: <53A15201.7060404@hitachi.com>
-References: <5387F150.5000307@hitachi.com>
-	  <20140530031838.17427.75896.stgit@ltc230.yrl.intra.hitachi.co.jp>
-	  <539161D6.7020508@hitachi.com> <1403078179.32307.7.camel@concordia>
-	 <53A15201.7060404@hitachi.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1755647AbaFSBij (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 21:38:39 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:20649 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752670AbaFSBii (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 21:38:38 -0400
+Date: Wed, 18 Jun 2014 21:38:33 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: kbuild test robot <fengguang.wu@intel.com>, kbuild-all@01.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tyler Hicks <tyhicks@canonical.com>, ecryptfs@vger.kernel.org
+Subject: Re: [trace:ftrace/core 1/3] include/trace/syscall.h:39:6: error:
+ 'TIF_SYSCALL_TRACEPOINT' undeclared
+Message-ID: <20140618213833.731d5fc4@gandalf.local.home>
+In-Reply-To: <20140618211737.719fcf49@gandalf.local.home>
+References: <53a1e7ba.ZIiv6DbOB78b9RzY%fengguang.wu@intel.com>
+	<20140618211559.76bdea15@gandalf.local.home>
+	<20140618211737.719fcf49@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-18 at 17:46 +0900, Masami Hiramatsu wrote:
-> (2014/06/18 16:56), Michael Ellerman wrote:
-> > On Fri, 2014-06-06 at 15:38 +0900, Masami Hiramatsu wrote:
-> >> Ping?
-> >>
-> >> I guess this should go to 3.16 branch, shouldn't it?
-> > 
-> >>> diff --git a/arch/powerpc/include/asm/types.h b/arch/powerpc/include/asm/types.h
-> >>> index bfb6ded..8b89d65 100644
-> >>> --- a/arch/powerpc/include/asm/types.h
-> >>> +++ b/arch/powerpc/include/asm/types.h
-> >>> @@ -25,6 +25,17 @@ typedef struct {
-> >>>  	unsigned long env;
-> >>>  } func_descr_t;
-> >>>  
-> >>> +#if defined(CONFIG_PPC64) && (!defined(_CALL_ELF) || _CALL_ELF == 1)
-> >>> +/*
-> >>> + * On PPC64 ABIv1 the function pointer actually points to the
-> >>> + * function's descriptor. The first entry in the descriptor is the
-> >>> + * address of the function text.
-> >>> + */
-> >>> +#define function_entry(fn)	(((func_descr_t *)(fn))->entry)
-> >>> +#else
-> >>> +#define function_entry(fn)	((unsigned long)(fn))
-> >>> +#endif
-> > 
-> > We already have ppc_function_entry(), can't you use that?
+
+Hmm, removed Michael Halcrow as I'm guessing he no longer works for IBM.
+
+On Wed, 18 Jun 2014 21:17:37 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> On Wed, 18 Jun 2014 21:15:59 -0400
+> Steven Rostedt <rostedt@goodmis.org> wrote:
 > 
-> I'd like to ask you whether the address which ppc_function_entry() returns on
-> PPC ABIv2 is really same address in kallsyms or not.
-> As you can see, kprobes uses function_entry() to get the actual entry address
-> where kallsyms knows. I have not much information about that, but it seems that
-> the "global entry point" is the address which kallsyms knows, isn't it?
+> > On Thu, 19 Jun 2014 03:25:46 +0800
+> > kbuild test robot <fengguang.wu@intel.com> wrote:
+> > 
+> > > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git ftrace/core
+> > > head:   72fa1a896d8ef355e81270667803ceb16a3dd13f
+> > > commit: 32def52ce8faec72c353b6304ca98176687e18f1 [1/3] tracing: Fix syscall_*regfunc() vs copy_process() race
+> > > config: make ARCH=xtensa allyesconfig
+> > > 
+> > > All error/warnings:
+> > > 
+> > >    In file included from include/linux/syscalls.h:80:0,
+> > >                     from fs/ecryptfs/keystore.c:29:
+> > >    include/trace/syscall.h: In function 'syscall_tracepoint_update':
+> > > >> include/trace/syscall.h:39:6: error: 'TIF_SYSCALL_TRACEPOINT' undeclared (first use in this function)
+> > >    include/trace/syscall.h:39:6: note: each undeclared identifier is reported only once for each function it appears in
+> > > 
+> > > vim +/TIF_SYSCALL_TRACEPOINT +39 include/trace/syscall.h
+> > > 
+> > >     33		struct ftrace_event_call *exit_event;
+> > >     34	};
+> > >     35	
+> > >     36	#ifdef CONFIG_TRACEPOINTS
+> > >     37	static inline void syscall_tracepoint_update(struct task_struct *p)
+> > >     38	{
+> > >   > 39		if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
+> > >     40			set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
+> > >     41		else
+> > >     42			clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
+> > > 
+> > > ---
+> > > 0-DAY kernel build testing backend              Open Source Technology Center
+> > > http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
+> > 
+> > My allyesconfig build passed with flying colors. Although we should
+> 
+> I should elaborate. I was building against mainline, I noticed that the
+> kbuild test included linux-next.
 
-OK. I'm not sure off the top of my head which address kallsyms knows about, but
-yes it's likely that it is the global entry point.
+My entire test suite passed. I'm not going to bother with adding the
+header now, as it shouldn't affect mainline. I'm going to push my
+changes up to linux-next tonight and push to Linus tomorrow.
 
-I recently sent a patch to add ppc_global_function_entry(), because we need it
-in the ftrace code. Once that is merged you could use that.
+The keystore.c shouldn't have included the syscall.h file, so if it
+needs to be fixed before we get the thread_info.h in, they can just
+remove it (my patch was attached to the previous email).
 
-How do you hit the original problem, you don't actually specify in your commit
-message? Something with kprobes obviously, but what exactly? I'll try and
-reproduce it here.
-
-cheers
-
-
+-- Steve
