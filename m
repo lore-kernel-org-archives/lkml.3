@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966127AbaFSXHh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 19:07:37 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:44333 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964958AbaFSXHg (ORCPT
+	id S966194AbaFSXIM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 19:08:12 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:60876 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964958AbaFSXIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 19:07:36 -0400
-Date: Thu, 19 Jun 2014 16:07:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: josh@joshtriplett.org
-Cc: Christoph Lameter <cl@gentwo.org>, Andi Kleen <ak@linux.intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-Subject: Re: [bisected] pre-3.16 regression on open() scalability
-Message-ID: <20140619230732.GX4904@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140618203052.GT4669@linux.vnet.ibm.com>
- <20140618235131.GA25946@linux.vnet.ibm.com>
- <20140619014200.GO8178@tassilo.jf.intel.com>
- <alpine.DEB.2.11.1406190941180.2785@gentwo.org>
- <20140619180916.GE4904@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1406191531020.4002@gentwo.org>
- <20140619204220.GJ4904@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1406191612000.5484@gentwo.org>
- <alpine.DEB.2.11.1406191614270.5484@gentwo.org>
- <20140619213203.GA16747@cloud>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140619213203.GA16747@cloud>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061923-6688-0000-0000-000002AFC70D
+	Thu, 19 Jun 2014 19:08:10 -0400
+Message-ID: <1403219288.1962.17.camel@jarvis.lan>
+Subject: Re: [REPOST PATCH 1/8] fence: dma-buf cross-device synchronization
+ (v17)
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Daniel Vetter <daniel@ffwll.ch>,
+        Rob Clark <robdclark@gmail.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        linux-arch@vger.kernel.org, Thomas Hellstrom <thellstrom@vmware.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Colin Cross <ccross@google.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Date: Thu, 19 Jun 2014 16:08:08 -0700
+In-Reply-To: <53A366B3.8020808@zytor.com>
+References: <20140618102957.15728.43525.stgit@patser>
+	 <20140618103653.15728.4942.stgit@patser> <20140619011327.GC10921@kroah.com>
+	 <CAF6AEGv4Ms+zsrEtpA10bGq04LnRjzVb925co49eVxh4ugkd=A@mail.gmail.com>
+	 <20140619170059.GA1224@kroah.com>
+	 <CAKMK7uFa57YjeJCFQhWFr_5cRTTpWxBdJ1qtb5Ojnu-KZpe-Lw@mail.gmail.com>
+	 <20140619200159.GA27883@kroah.com> <53A366B3.8020808@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 02:32:03PM -0700, josh@joshtriplett.org wrote:
-> On Thu, Jun 19, 2014 at 04:16:34PM -0500, Christoph Lameter wrote:
-> > This looks very much like the CONFIG_PREEMPT problem in not so
-> > extreme form. Maybe we need to add another config option:
+On Thu, 2014-06-19 at 15:39 -0700, H. Peter Anvin wrote:
+> On 06/19/2014 01:01 PM, Greg KH wrote:
+> > On Thu, Jun 19, 2014 at 09:15:36PM +0200, Daniel Vetter wrote:
+> >> On Thu, Jun 19, 2014 at 7:00 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >>>>>> +     BUG_ON(f1->context != f2->context);
+> >>>>>
+> >>>>> Nice, you just crashed the kernel, making it impossible to debug or
+> >>>>> recover :(
+> >>>>
+> >>>> agreed, that should probably be 'if (WARN_ON(...)) return NULL;'
+> >>>>
+> >>>> (but at least I wouldn't expect to hit that under console_lock so you
+> >>>> should at least see the last N lines of the backtrace on the screen
+> >>>> ;-))
+> >>>
+> >>> Lots of devices don't have console screens :)
+> >>
+> >> Aside: This is a pet peeve of mine and recently I've switched to
+> >> rejecting all patch that have a BUG_ON, period.
 > > 
-> > CONFIG_REALLY_REALLY_NO_PREEMPT
+> > Please do, I have been for a few years now as well for the same reasons
+> > you cite.
 > > 
-> > to get the fastest code possible and those cond_rescheds removed from the
-> > critical paths?
-> > 
-> > Or better
-> > 
-> > CONFIG_PREEMPT_HALF_WAY
-> > 
-> > to enable those cond_rescheds.
 > 
-> That much actually does seem quite reasonable: making cond_resched() do
-> non-trivial work ought to have a config option to disable it.
+> I'm actually concerned about this trend.  Downgrading things to WARN_ON
+> can allow a security bug in the kernel to continue to exist, for
+> example, or make the error message disappear.
 
-I am putting together patches based on Eric Dumazet's suggestion and on a
-variant of the above approach.  However, I do expect the distros to starve
-to death between those two bales of hay.  But perhaps the actual patches
-will inspire a bit of light to go with this thread's heat and smoke.
+Me too.  We use BUG_ON in the I/O subsystem where we're forced to
+violate a guarantee.  When the choice is corrupt something or panic the
+system, I prefer the latter every time.
 
-							Thanx, Paul
+> I am wondering if the right thing here isn't to have a user (command
+> line?) settable policy as to how to proceed on an assert violation,
+> instead of hardcoding it at compile time.
+
+I'd say it depends on the consequence of the assertion violation.  We
+have assertions that are largely theoretical, ones that govern process
+internal state (so killing the process mostly sanitizes the system) and
+a few that imply data loss or data corruption.
+
+James
+
 
