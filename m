@@ -1,115 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932260AbaFSJ1E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 05:27:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36352 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757774AbaFSJ1C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 05:27:02 -0400
-Date: Thu, 19 Jun 2014 11:26:48 +0200 (CEST)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lczerner@localhost.localdomain
-To: Pavel Machek <pavel@ucw.cz>
-cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Daniel Phillips <daniel@phunq.net>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC] Tux3 for review
-In-Reply-To: <20140619082129.GA4309@xo-6d-61-c0.localdomain>
-Message-ID: <alpine.LFD.2.00.1406191117240.2182@localhost.localdomain>
-References: <5376B273.7000800@partner.samsung.com> <20140518235555.GC18954@dastard> <537AA802.408@phunq.net> <20140520031802.GF18954@dastard> <20140613103216.GA4589@amd.pavel.ucw.cz> <02d3b094-808c-4b17-903d-1280d451704b@phunq.net> <20140613202039.GA23872@amd.pavel.ucw.cz>
- <b67e55e1-af54-4f34-802c-95749771aca4@phunq.net> <1402932354.2197.61.camel@dabdike.int.hansenpartnership.com> <20140619082129.GA4309@xo-6d-61-c0.localdomain>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757866AbaFSJaI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 05:30:08 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58345 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757769AbaFSJaF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 05:30:05 -0400
+Date: Thu, 19 Jun 2014 11:28:47 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Luc Verhaegen <libv@skynet.be>
+Subject: Re: [PATCH v2 12/20] clk: sunxi: Add A23 APB0 support to
+ sun6i-a31-apb0-clk
+Message-ID: <20140619092847.GW19730@lukather>
+References: <1403016777-15121-1-git-send-email-wens@csie.org>
+ <1403016777-15121-13-git-send-email-wens@csie.org>
+ <20140618102623.GQ19730@lukather>
+ <CAGb2v64D6qBtXGXzn25443s_oj_=Z-u_P6+-MX52Lz54+9bQyQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9I0HVnGRacHebCDW"
+Content-Disposition: inline
+In-Reply-To: <CAGb2v64D6qBtXGXzn25443s_oj_=Z-u_P6+-MX52Lz54+9bQyQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Jun 2014, Pavel Machek wrote:
 
-> Date: Thu, 19 Jun 2014 10:21:29 +0200
-> From: Pavel Machek <pavel@ucw.cz>
-> To: James Bottomley <James.Bottomley@HansenPartnership.com>
-> Cc: Daniel Phillips <daniel@phunq.net>, Dave Chinner <david@fromorbit.com>,
->     linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
->     Linus Torvalds <torvalds@linux-foundation.org>,
->     Andrew Morton <akpm@linux-foundation.org>
-> Subject: Re: [RFC] Tux3 for review
-> 
-> On Mon 2014-06-16 08:25:54, James Bottomley wrote:
-> > On Sun, 2014-06-15 at 14:41 -0700, Daniel Phillips wrote:
-> > > On Friday, June 13, 2014 1:20:39 PM PDT, Pavel Machek wrote:
-> > > > On Fri 2014-06-13 10:49:39, Daniel Phillips wrote:
-> > >  to sign up for a ridiculous amount of largely thankless, but 
-> > > perhaps fascinating work. Any volunteers?
-> > 
-> > The whole suggestion is a non starter: we can't stage core API changes.
-> > Even if we worked out how to do that, the staging trees mostly don't get
-> > the type of in-depth expert review that you need anyway.
-> 
-> Well.. most filesystems do not need any core API changes, right?
-> 
-> > The Cardinal concern has always been the viability page forking and its
-> > impact on writeback  ... and since writeback is our most difficult an
-> > performance sensitive area, the bar to changing it is high.
-> 
-> And in this particular case, Daniel was flamed for poor coding style, not
-> for page forking. So staging/ would actually help him -- he could concentrate
-> on core changes without being distracted by unimportant stuff.
+--9I0HVnGRacHebCDW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Flamed ? really ? Dave pointed out some serious coding style problems.
-Those should be very easy to fix.
+On Thu, Jun 19, 2014 at 12:33:41PM +0800, Chen-Yu Tsai wrote:
+> On Wed, Jun 18, 2014 at 6:26 PM, Maxime Ripard
+> <maxime.ripard@free-electrons.com> wrote:
+> > On Tue, Jun 17, 2014 at 10:52:49PM +0800, Chen-Yu Tsai wrote:
+> >> The A23 has an almost identical PRCM clock tree. The difference in
+> >> the APB0 clock is the smallest divisor is 1, instead of 2.
+> >>
+> >> This patch extends the sun6i-a31-apb0-clk driver to take divider
+> >> tables associated to compatibles, and adds a compatible for the A23
+> >> variant.
+> >>
+> >> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+> >> ---
+> >>  Documentation/devicetree/bindings/clock/sunxi.txt |  1 +
+> >>  drivers/clk/sunxi/clk-sun6i-apb0.c                | 28 ++++++++++++++=
+++++-----
+> >>  2 files changed, 23 insertions(+), 6 deletions(-)
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Docum=
+entation/devicetree/bindings/clock/sunxi.txt
+> >> index af9e47d..e3a47ec 100644
+> >> --- a/Documentation/devicetree/bindings/clock/sunxi.txt
+> >> +++ b/Documentation/devicetree/bindings/clock/sunxi.txt
+> >> @@ -28,6 +28,7 @@ Required properties:
+> >>       "allwinner,sun8i-a23-ahb1-gates-clk" - for the AHB1 gates on A23
+> >>       "allwinner,sun4i-a10-apb0-clk" - for the APB0 clock
+> >>       "allwinner,sun6i-a31-apb0-clk" - for the APB0 clock on A31
+> >> +     "allwinner,sun8i-a23-apb0-clk" - for the APB0 clock on A23
+> >>       "allwinner,sun4i-a10-apb0-gates-clk" - for the APB0 gates on A10
+> >>       "allwinner,sun5i-a13-apb0-gates-clk" - for the APB0 gates on A13
+> >>       "allwinner,sun5i-a10s-apb0-gates-clk" - for the APB0 gates on A1=
+0s
+> >> diff --git a/drivers/clk/sunxi/clk-sun6i-apb0.c b/drivers/clk/sunxi/cl=
+k-sun6i-apb0.c
+> >> index 11f17c3..2197ac7 100644
+> >> --- a/drivers/clk/sunxi/clk-sun6i-apb0.c
+> >> +++ b/drivers/clk/sunxi/clk-sun6i-apb0.c
+> >> @@ -11,6 +11,7 @@
+> >>  #include <linux/clk-provider.h>
+> >>  #include <linux/module.h>
+> >>  #include <linux/of.h>
+> >> +#include <linux/of_device.h>
+> >>  #include <linux/platform_device.h>
+> >>
+> >>  /*
+> >> @@ -28,6 +29,21 @@ static const struct clk_div_table sun6i_a31_apb0_di=
+vs[] =3D {
+>=20
+> For reference:
+>=20
+> static const struct clk_div_table sun6i_a31_apb0_divs[] =3D {
+>         { .val =3D 0, .div =3D 2, },
+>         { .val =3D 1, .div =3D 2, },
+>         { .val =3D 2, .div =3D 4, },
+>         { .val =3D 3, .div =3D 8, },
+>         { /* sentinel */ },
+> };
+>=20
+>=20
+> >>       { /* sentinel */ },
+> >>  };
+> >>
+> >> +/* The A23 APB0 clock has a standard power of 2 divisor */
+> >
+> > Why not just pass CLK_DIVIDER_POWER_OF_TWO then, instead of a table?
+>=20
+> The A31 APB0 clock uses a table for the odd /2 divisor for value 0.
+> The standard table I'm using for the A23 is just to keep it simple
+> and alike.
+>=20
+> >> +static const struct clk_div_table sun8i_a23_apb0_divs[] =3D {
+> >> +     { .val =3D 0, .div =3D 1, },
+> >> +     { .val =3D 1, .div =3D 2, },
+> >> +     { .val =3D 2, .div =3D 4, },
+> >> +     { .val =3D 3, .div =3D 8, },
+> >> +     { /* sentinel */ },
+> >> +};
+> >> +
+> >> +const struct of_device_id sun6i_a31_apb0_clk_dt_ids[] =3D {
+> >> +     { .compatible =3D "allwinner,sun6i-a31-apb0-clk", .data =3D &sun=
+6i_a31_apb0_divs },
+> >> +     { .compatible =3D "allwinner,sun8i-a23-apb0-clk", .data =3D &sun=
+8i_a23_apb0_divs },
+> >> +     { /* sentinel */ }
+> >> +};
+> >> +
+> >>  static int sun6i_a31_apb0_clk_probe(struct platform_device *pdev)
+> >>  {
+> >>       struct device_node *np =3D pdev->dev.of_node;
+> >> @@ -36,12 +52,17 @@ static int sun6i_a31_apb0_clk_probe(struct platfor=
+m_device *pdev)
+> >>       struct resource *r;
+> >>       void __iomem *reg;
+> >>       struct clk *clk;
+> >> +     const struct of_device_id *device;
+> >>
+> >>       r =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> >>       reg =3D devm_ioremap_resource(&pdev->dev, r);
+> >>       if (IS_ERR(reg))
+> >>               return PTR_ERR(reg);
+> >>
+> >> +     device =3D of_match_device(sun6i_a31_apb0_clk_dt_ids, &pdev->dev=
+);
+> >> +     if (!device)
+> >> +             return -EINVAL;
+> >> +
+> >>       clk_parent =3D of_clk_get_parent_name(np, 0);
+> >>       if (!clk_parent)
+> >>               return -EINVAL;
+> >> @@ -49,7 +70,7 @@ static int sun6i_a31_apb0_clk_probe(struct platform_=
+device *pdev)
+> >>       of_property_read_string(np, "clock-output-names", &clk_name);
+> >>
+> >>       clk =3D clk_register_divider_table(&pdev->dev, clk_name, clk_par=
+ent,
+> >> -                                      0, reg, 0, 2, 0, sun6i_a31_apb0=
+_divs,
+> >> +                                      0, reg, 0, 2, 0, device->data,
+> >
+> > I'm not sure that it will actually work for the A31, since it does
+> > define some dividers anyway, and the divider table is !NULL, even
+> > though there's actually no dividers defined.
+>=20
+> I'm not following. The A31 does have a table defined. It's just cut
+> off in this patch. I asked Boris to add the table when he was working
+> on the A31 PRCM clocks. See above.
 
-Let me remind you some more important problems Dave brought up,
-including page forking:
+Ah right. My bad.
 
-"
- The hacks around VFS and MM functionality need to have demonstrated
- methods for being removed. We're not going to merge that page
- forking stuff (like you were told at LSF 2013 more than a year ago:
- http://lwn.net/Articles/548091/) without rigorous design review and
- a demonstration of the solutions to all the hard corner cases it
- has. The current code doesn't solve them (e.g. direct IO doesn't
- work in tux3), and there's no clear patch set we can review that
- demonstrates how it is all supposed to work. i.e. you need to
- separate out all the page forking code into a separate patchset for
- review, independent of the tux3 code and applies to the core mm/
- code.
-"
+If these two clocks are these different though, maybe it would just be
+easier to add a new driver. These are trivial enough anyway.
 
-"
- Then there's all the writeback hacks. You've simply copy-n-pasted
- most of fs-writeback.c, including duplicating structures like struct
- wb_writeback_work and then hacked in crap (kallsyms lookups!) to be
- able to access core structures from kernel module context
- (tux3_setup_writeback(), I'm looking at you). This is completely
- unacceptible for a merge. Again, you need to separate out all the
- writeback changes you need into an independent patchset so that they
- can be reviewed independently of the tux3 code that uses it.
-"
+Maxime
 
--Lukas
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
+--9I0HVnGRacHebCDW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-> 
-> > When you presented page forking at LSF/MM in 2013, it didn't even stand
-> > up to basic scrutiny before people found unresolved problems:
-> > 
-> > http://lwn.net/Articles/548091/
-> > 
-> > After lots of prodding, you finally coughed up a patch for discussion:
-> > 
-> > http://thread.gmane.org/gmane.linux.file-systems/85619
-> > 
-> > But then that petered out again.  I can't emphasise enough that
-> > iterating these threads to a conclusion and reposting interface
-> > suggestions is the way to proceed on this ... as far as I can tell from
-> > the discussion, the reviewers were making helpful suggestions, even if
-> > they didn't like the original interface you proposed.
-> 
-> This obviously needs to be solved, first...
-> 									Pavel
-> 
+iQIcBAEBAgAGBQJToq1PAAoJEBx+YmzsjxAg5tUP/2stiaLgscHuFsIat0WDUwmt
+5nhU0wKP5YyskkDpsLncJizyBggF9DS6/CopS6Lr76v2R9B4s4knGHtSOsQ8YNFR
+/Ea1NNRd4zhwQSFX0MVH2JA/XcfQ0/54rXjEBqmoXTyH4IdJgkqrLyr98ayqBgtA
+txE2rxpHTlns8H4LhqCDu/D+pcch45MCcn5UP8Irwu8wZPfhgxr3XXDqO6MDdenX
+02m53fKzIKHUtZXt2TE2Dr65Rrz2hloCUEZ2sbey6s6D73CTNwK019Xkm/3IOeri
+Mzg4Ielz14mKZf2UeLUzjBPllabdnk1QyE1wEBcDPqDF/ihtHASXEKmow2tydkt/
+a3/gGQD26RgrhMEujW0xQCeS52l6lIAG8QQA7ExPKhOp4J+D43u53SPy8Sv8T00O
+1JCawxb4lGHFTdZx4hCqazWZQFKFo2YV6KkJUzmjNeQzH1Ful1ljHYCcE11Zy6H/
+loRC/irv+SOozuNosRo65/jU+XR9baLc+R9rz/jX6PWRPqXsJ3HirJBChIElOYGG
+mZjeHmnpfhrj4hTku/Yxaz5R1dDpBcQnXIFPc/6RzW2t2sjtjdJaUE7F5p46rgBj
+V+W5OSTdEyCJwda5ZVBYUXXQfkr+ahmCfEbzEf5XFPite1rr8LATA3zWUUyNx9EE
+LUbrLpFI9jgRTybvZiq7
+=01Zg
+-----END PGP SIGNATURE-----
+
+--9I0HVnGRacHebCDW--
