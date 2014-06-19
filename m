@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965558AbaFSVOO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 17:14:14 -0400
-Received: from mail.kernel.org ([198.145.19.201]:34077 "EHLO mail.kernel.org"
+	id S965609AbaFSVOR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 17:14:17 -0400
+Received: from mail.kernel.org ([198.145.19.201]:34092 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965188AbaFSVOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 17:14:10 -0400
+	id S965571AbaFSVOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 17:14:14 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 01/11] perf trace: Fix up fd -> pathname resolution
-Date: Thu, 19 Jun 2014 18:13:43 -0300
-Message-Id: <1403212433-2714-2-git-send-email-acme@kernel.org>
+Subject: [PATCH 02/11] perf evlist: Add suggestion of how to set perf_event_paranoid sysctl
+Date: Thu, 19 Jun 2014 18:13:44 -0300
+Message-Id: <1403212433-2714-3-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1403212433-2714-1-git-send-email-acme@kernel.org>
 References: <1403212433-2714-1-git-send-email-acme@kernel.org>
@@ -28,59 +28,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-There was a brown paper bag bug in the patch that introduced a reference
-implementation on using 'perf probe' made wannabe tracepoints that broke fd ->
-pathname resolution, fix it:
-
-  [root@zoo ~]# perf probe 'vfs_getname=getname_flags:65 pathname=result->name:string'
-  Added new event:
-    probe:vfs_getname    (on getname_flags:65 with pathname=result->name:string)
-
-  You can now use it in all perf tools, such as:
-
-	perf record -e probe:vfs_getname -aR sleep 1
-
-  [root@zoo ~]
-
-Before:
-
-  [acme@zoo linux]$ trace touch -e open,fstat /tmp/b
-     1.159 ( 0.007 ms): open(filename: 0x7fd73f2fe088, flags: CLOEXEC                         ) = 3
-     1.163 ( 0.002 ms): fstat(fd: 3, statbuf: 0x7fff1b25e610                                  ) = 0
-     1.192 ( 0.009 ms): open(filename: 0x7fd73f4fedb8, flags: CLOEXEC                         ) = 3
-     1.201 ( 0.002 ms): fstat(fd: 3, statbuf: 0x7fff1b25e660                                  ) = 0
-     1.501 ( 0.013 ms): open(filename: 0x7fd73f0a1610, flags: CLOEXEC                         ) = 3
-     1.505 ( 0.002 ms): fstat(fd: 3, statbuf: 0x7fd73f2ddb60                                  ) = 0
-     1.581 ( 0.011 ms): open(filename: 0x7fff1b2603da, flags: CREAT|NOCTTY|NONBLOCK|WRONLY, mode: 438) = 3
-  [acme@zoo linux]$
-
-After:
-
-  [acme@zoo linux]$ trace touch -e open,fstat,dup2,mmap,close /tmp/b
-     1.105 ( 0.004 ms): mmap(len: 4096, prot: READ|WRITE, flags: PRIVATE|ANONYMOUS, fd: -1    ) = 0x2fbf000
-     1.136 ( 0.008 ms): open(filename: 0x7f8902dbc088, flags: CLOEXEC                         ) = 3
-     1.140 ( 0.002 ms): fstat(fd: 3</etc/ld.so.cache>, statbuf: 0x7fff19889ef0                ) = 0
-     1.146 ( 0.004 ms): mmap(len: 86079, prot: READ, flags: PRIVATE, fd: 3</etc/ld.so.cache>  ) = 0x2fa9000
-     1.149 ( 0.001 ms): close(fd: 3</etc/ld.so.cache>                                         ) = 0
-     1.170 ( 0.010 ms): open(filename: 0x7f8902fbcdb8, flags: CLOEXEC                         ) = 3
-     1.178 ( 0.002 ms): fstat(fd: 3</lib64/libc.so.6>, statbuf: 0x7fff19889f40                ) = 0
-     1.188 ( 0.006 ms): mmap(len: 3924576, prot: EXEC|READ, flags: PRIVATE|DENYWRITE, fd: 3</lib64/libc.so.6>) = 0x29e2000
-     1.207 ( 0.007 ms): mmap(addr: 0x7f8902d96000, len: 24576, prot: READ|WRITE, flags: PRIVATE|DENYWRITE|FIXED, fd: 3</lib64/libc.so.6>, off: 1785856) = 0x2d96000
-     1.217 ( 0.004 ms): mmap(addr: 0x7f8902d9c000, len: 16992, prot: READ|WRITE, flags: PRIVATE|ANONYMOUS|FIXED, fd: -1) = 0x2d9c000
-     1.228 ( 0.002 ms): close(fd: 3</lib64/libc.so.6>                                         ) = 0
-     1.243 ( 0.003 ms): mmap(len: 4096, prot: READ|WRITE, flags: PRIVATE|ANONYMOUS, fd: -1    ) = 0x2fa8000
-     1.250 ( 0.003 ms): mmap(len: 8192, prot: READ|WRITE, flags: PRIVATE|ANONYMOUS, fd: -1    ) = 0x2fa6000
-     1.452 ( 0.010 ms): open(filename: 0x7f8902b5f610, flags: CLOEXEC                         ) = 3
-     1.455 ( 0.002 ms): fstat(fd: 3</usr/lib/locale/locale-archive>, statbuf: 0x7f8902d9bb60  ) = 0
-     1.461 ( 0.004 ms): mmap(len: 106070960, prot: READ, flags: PRIVATE, fd: 3</usr/lib/locale/locale-archive>) = 0xfc4b9000
-     1.469 ( 0.002 ms): close(fd: 3</usr/lib/locale/locale-archive>                           ) = 0
-     1.528 ( 0.010 ms): open(filename: 0x7fff1988c3da, flags: CREAT|NOCTTY|NONBLOCK|WRONLY, mode: 438) = 3
-     1.532 ( 0.002 ms): dup2(oldfd: 3</tmp/b>                                                 ) = 0
-     1.535 ( 0.001 ms): close(fd: 3</tmp/b>                                                   ) = 0
-     1.544 ( 0.001 ms): close(                                                                ) = 0
-     1.555 ( 0.001 ms): close(fd: 1                                                           ) = 0
-     1.558 ( 0.001 ms): close(fd: 2                                                           ) = 0
-  [acme@zoo linux]$
+Minor hint to speed up problem resolution and get 'trace' working for
+non root users.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -92,30 +41,30 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-vcm22xpjxc3j4hbyuzjzf7ik@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-abdqi8km4fj9osrn70q2zj9v@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/util/evlist.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index f954c26de231..5ab2f674fed2 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1276,11 +1276,11 @@ static const char *thread__fd_path(struct thread *thread, int fd,
- 	if (fd < 0)
- 		return NULL;
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 59ef2802fcf6..c51223ac25f4 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -1214,10 +1214,11 @@ int perf_evlist__strerror_open(struct perf_evlist *evlist __maybe_unused,
+ 					     "For your workloads it needs to be <= 1\nHint:\t");
+ 		}
+ 		printed += scnprintf(buf + printed, size - printed,
+-				     "For system wide tracing it needs to be set to -1");
++				     "For system wide tracing it needs to be set to -1.\n");
  
--	if ((fd > ttrace->paths.max || ttrace->paths.table[fd] == NULL))
-+	if ((fd > ttrace->paths.max || ttrace->paths.table[fd] == NULL)) {
- 		if (!trace->live)
- 			return NULL;
- 		++trace->stats.proc_getname;
--		if (thread__read_fd_path(thread, fd)) {
-+		if (thread__read_fd_path(thread, fd))
- 			return NULL;
- 	}
- 
+ 		printed += scnprintf(buf + printed, size - printed,
+-				    ".\nHint:\tThe current value is %d.", value);
++				    "Hint:\tTry: 'sudo sh -c \"echo -1 > /proc/sys/kernel/perf_event_paranoid\"'\n"
++				    "Hint:\tThe current value is %d.", value);
+ 		break;
+ 	default:
+ 		scnprintf(buf, size, "%s", emsg);
 -- 
 1.9.3
 
