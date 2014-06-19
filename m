@@ -1,63 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965917AbaFSVPs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 17:15:48 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:48481 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965451AbaFSVPq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 17:15:46 -0400
-Date: Thu, 19 Jun 2014 17:15:43 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
- accessors and operations
-Message-ID: <20140619211543.GD9814@mtj.dyndns.org>
-References: <20140612135630.GA23606@htj.dyndns.org>
- <alpine.DEB.2.11.1406171401350.22064@gentwo.org>
- <20140617194017.GO4669@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1406191540240.4002@gentwo.org>
- <20140619204634.GB9814@mtj.dyndns.org>
- <alpine.DEB.2.11.1406191608290.5484@gentwo.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1406191608290.5484@gentwo.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S965943AbaFSVQK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 17:16:10 -0400
+Received: from mail.kernel.org ([198.145.19.201]:34213 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965756AbaFSVOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 17:14:38 -0400
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr@hp.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+        Jiri Olsa <jolsa@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 08/11] perf bench: Add --repeat option
+Date: Thu, 19 Jun 2014 18:13:50 -0300
+Message-Id: <1403212433-2714-9-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1403212433-2714-1-git-send-email-acme@kernel.org>
+References: <1403212433-2714-1-git-send-email-acme@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 04:11:47PM -0500, Christoph Lameter wrote:
-> The aim of having percpu data is to have the ability for a processor to
-> access memory dedicated to that processor in the fastest way possible by
-> avoiding synchronization. You are beginning to add synchronization
-> elements into the accesses of a processor to memory dedicated to its sole
-> use.
+From: Davidlohr Bueso <davidlohr@hp.com>
 
-Again, data dependency barrier is noop in all in-use archs.
+There are a number of benchmarks that do single runs and as a result
+does not really help users gain a general idea of how the workload
+performs. So the user must either manually do multiple runs or just use
+single bogus results.
 
-> Remote write events are contrary to that design and are exceedingly rare.
-> An IPI is justifiable for such a rare event. At least in my use cases I
-> have always found that to be sufficient. Well, I designed the data
-> structures in a way that made this possible because of the design criteria
-> that did not allow me remote write access to other processors per cpu
-> data.
+This option will enable users to specify the amount of runs (arbitrarily
+defaulted to 10, to use the existing benchmarks default) through the
+'--repeat' option.  Add it to perf-bench instead of implementing it
+always in each specific benchmark.
 
-You're repeatedly getting wayside in the discussion.  What are you
-suggesting?  Sending IPIs on each percpu allocation?
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: Jiri Olsa <jolsa@kernel.org>
+Link: http://lkml.kernel.org/r/1402942467-10671-2-git-send-email-davidlohr@hp.com
+[ Kept the existing default of 10, changing it to something else should
+  be done on separate patch ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Again, I'm leaning towards just clarifying the init write ownership to
-the allocating CPU as that seems the most straight forward way to deal
-with it, but please stop brining up the raw performance thing.  Nobody
-is doing anything to that.  It's not relevant in the discussion.
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Documentation/perf-bench.txt | 4 ++++
+ tools/perf/bench/bench.h                | 1 +
+ tools/perf/builtin-bench.c              | 7 +++++++
+ 3 files changed, 12 insertions(+)
 
-Thanks.
-
+diff --git a/tools/perf/Documentation/perf-bench.txt b/tools/perf/Documentation/perf-bench.txt
+index 4464ad770d51..f6480cbf309b 100644
+--- a/tools/perf/Documentation/perf-bench.txt
++++ b/tools/perf/Documentation/perf-bench.txt
+@@ -16,6 +16,10 @@ This 'perf bench' command is a general framework for benchmark suites.
+ 
+ COMMON OPTIONS
+ --------------
++-r::
++--repeat=::
++Specify amount of times to repeat the run (default 10).
++
+ -f::
+ --format=::
+ Specify format style.
+diff --git a/tools/perf/bench/bench.h b/tools/perf/bench/bench.h
+index eba46709b279..3c4dd44d45cb 100644
+--- a/tools/perf/bench/bench.h
++++ b/tools/perf/bench/bench.h
+@@ -43,5 +43,6 @@ extern int bench_futex_requeue(int argc, const char **argv, const char *prefix);
+ #define BENCH_FORMAT_UNKNOWN		-1
+ 
+ extern int bench_format;
++extern unsigned int bench_repeat;
+ 
+ #endif
+diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
+index 1e6e77710545..b9a56fa83330 100644
+--- a/tools/perf/builtin-bench.c
++++ b/tools/perf/builtin-bench.c
+@@ -104,9 +104,11 @@ static const char *bench_format_str;
+ 
+ /* Output/formatting style, exported to benchmark modules: */
+ int bench_format = BENCH_FORMAT_DEFAULT;
++unsigned int bench_repeat = 10; /* default number of times to repeat the run */
+ 
+ static const struct option bench_options[] = {
+ 	OPT_STRING('f', "format", &bench_format_str, "default", "Specify format style"),
++	OPT_UINTEGER('r', "repeat",  &bench_repeat,   "Specify amount of times to repeat the run"),
+ 	OPT_END()
+ };
+ 
+@@ -226,6 +228,11 @@ int cmd_bench(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		goto end;
+ 	}
+ 
++	if (bench_repeat == 0) {
++		printf("Invalid repeat option: Must specify a positive value\n");
++		goto end;
++	}
++
+ 	if (argc < 1) {
+ 		print_usage();
+ 		goto end;
 -- 
-tejun
+1.9.3
+
