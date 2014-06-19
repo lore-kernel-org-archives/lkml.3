@@ -1,62 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758181AbaFSP7e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 11:59:34 -0400
-Received: from smtprelay0191.hostedemail.com ([216.40.44.191]:56165 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757567AbaFSP7c (ORCPT
+	id S1758197AbaFSP7m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 11:59:42 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:33809 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757567AbaFSP7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 11:59:32 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:4321:5007:7652:7903:10004:10400:10848:11026:11232:11473:11658:11914:12043:12517:12519:12740:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,
-X-HE-Tag: cart08_52c2440dc3a59
-X-Filterd-Recvd-Size: 1950
-Message-ID: <1403193567.7875.4.camel@joe-AO725>
-Subject: Re: [PATCH 3/4] drivers/base: devres.c: use devm_kmemdup() from
- with devm_kstrdup()
-From: Joe Perches <joe@perches.com>
-To: Rob Jones <rob.jones@codethink.co.uk>
-Cc: linus.walleij@linaro.org, gnurou@gmail.com, lgirdwood@gmail.com,
-        broonie@kernel.org, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-kernel@codethink.co.uk,
-        ian.molton@codethink.co.uk, ben.dooks@codethink.co.uk, heiko@sntech.de
-Date: Thu, 19 Jun 2014 08:59:27 -0700
-In-Reply-To: <1403192765-3258-4-git-send-email-rob.jones@codethink.co.uk>
-References: <1403192765-3258-1-git-send-email-rob.jones@codethink.co.uk>
-	 <1403192765-3258-4-git-send-email-rob.jones@codethink.co.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	Thu, 19 Jun 2014 11:59:36 -0400
+Message-ID: <53A308DE.7080000@fb.com>
+Date: Thu, 19 Jun 2014 08:59:26 -0700
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: "Theodore Ts'o" <tytso@mit.edu>, <linux-kernel@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>
+Subject: Re: BUG: scheduling while atomic in blk_mq codepath?
+References: <20140619153550.GA12836@thunk.org>
+In-Reply-To: <20140619153550.GA12836@thunk.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-19_04:2014-06-19,2014-06-19,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=3.74302149774852e-06 kscore.compositescore=0
+ circleOfTrustscore=253.09852526342 compositescore=0.998851358762094
+ urlsuspect_oldscore=0.998851358762094 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.998851358762094 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1406190190
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-19 at 16:46 +0100, Rob Jones wrote:
-> Avoid code duplication by using devm_kmemdup() to copy data instead
-> of having a separate loop within devm_kstrdup().
-> 
-> Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
-> Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
-[]
-> diff --git a/drivers/base/devres.c b/drivers/base/devres.c
-[]
-> @@ -802,17 +802,10 @@ EXPORT_SYMBOL_GPL(devm_kmalloc);
->   */
->  char *devm_kstrdup(struct device *dev, const char *s, gfp_t gfp)
->  {
-[]
-> +	return devm_kmemdup(dev, s, (strlen(s) + 1), gfp);
->  }
->  EXPORT_SYMBOL_GPL(devm_kstrdup);
+On 2014-06-19 08:35, Theodore Ts'o wrote:
+> While trying to bisect some problems which were introduced sometime
+> between 3.15 and 3.16-rc1 (specifically, (1) reads to a block device
+> at offset 262144 * 4k are failing with a short read, and (2) block
+> device reads are sometimes causing the entire kernel to hang), the
+> following BUG got hit.
+>
+> [    0.000000] Linux version 3.15.0-rc8-06047-gaaeb255 (tytso@closure) (gcc version 4.8.3 (Debian 4.8.3-2) ) #1902 SMP Thu Jun 19 11:16:10 EDT 2014
+>
+> [....] Checking file systems...fsck from util-linux 2.20.1
+> /dev/vdg was not cleanly unmounted, check forced.
+> [    4.161703] BUG: scheduling while atomic: fsck.ext4/2072/0x0000000266.5%
+> [    4.163673] no locks held by fsck.ext4/2072.
+> [    4.164318] Modules linked in:
+> [    4.164845] CPU: 0 PID: 2072 Comm: fsck.ext4 Not tainted 3.15.0-rc8-06047-gaaeb255 #1902
+> [    4.166047] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [    4.166917]  00000000 00000000 f52c5ba0 c0832655 f5158610 f52c5bac c082f88a f6501e40
+> [    4.168188]  f52c5c20 c08362ca c0eb3e40 c0eb3e40 374d3933 00000001 0396a8da 00000000
+> [    4.169474]  f5158610 f51f1674 f4f46a00 f52c5be4 c015dd4b f4f46a00 f52c5bf0 c015dd5e
+> [    4.170781] Call Trace:
+> [    4.171159]  [<c0832655>] dump_stack+0x48/0x60
+> [    4.171838]  [<c082f88a>] __schedule_bug+0x5c/0x6d
+> [    4.172572]  [<c08362ca>] __schedule+0x61/0x65a
+> [    4.173228]  [<c015dd4b>] ? kvm_clock_read+0x1f/0x29
+> [    4.173977]  [<c015dd5e>] ? kvm_clock_get_cycles+0x9/0xc
+> [    4.174771]  [<c01b4cb9>] ? timekeeping_get_ns.constprop.14+0x10/0x56
+> [    4.175701]  [<c0836922>] schedule+0x5f/0x61
+> [    4.176345]  [<c0836aa2>] io_schedule+0x50/0x67
+> [    4.177060]  [<c0423b2d>] bt_get+0xaf/0xd1
+> [    4.177677]  [<c0198282>] ? wake_up_atomic_t+0x1f/0x1f
+> [    4.178444]  [<c0423bfd>] blk_mq_get_tag+0x26/0x82
+> [    4.179158]  [<c0420f14>] __blk_mq_alloc_request+0x2a/0x169
+> [    4.180022]  [<c04222b5>] blk_mq_map_request+0x137/0x1e3
+> [    4.180825]  [<c0422f89>] blk_sq_make_request+0x82/0x145
+> [    4.181630]  [<c041a687>] generic_make_request+0x82/0xb5
+> [    4.182430]  [<c041a7aa>] submit_bio+0xf0/0x109
+> [    4.183113]  [<c019e97c>] ? trace_hardirqs_on_caller+0x14e/0x169
+> [    4.184019]  [<c025de72>] _submit_bh+0x1ad/0x1ca
+> [    4.184661]  [<c025de9e>] submit_bh+0xf/0x11
+> [    4.185267]  [<c025f5c9>] block_read_full_page+0x1e2/0x1f2
+> [    4.186073]  [<c025f8cd>] ? I_BDEV+0xa/0xa
+> [    4.186695]  [<c020ad30>] ? __lru_cache_add+0x24/0x46
+> [    4.187452]  [<c020af13>] ? lru_cache_add+0xd/0xf
+> [    4.188130]  [<c025fc04>] blkdev_readpage+0x14/0x16
+> [    4.188832]  [<c0209adf>] __do_page_cache_readahead+0x1c0/0x1eb
+> [    4.189704]  [<c0209cb9>] ondemand_readahead+0x1af/0x1b9
+> [    4.190508]  [<c0209d22>] page_cache_async_readahead+0x5f/0x6a
+> [    4.191424]  [<c0202370>] generic_file_aio_read+0x226/0x4f4
+> [    4.192272]  [<c0260841>] blkdev_aio_read+0x90/0x9e
+> [    4.193017]  [<c02385cd>] do_sync_read+0x52/0x79
+> [    4.193731]  [<c023857b>] ? fdput_pos+0x25/0x25
+> [    4.194412]  [<c0238d27>] vfs_read+0x72/0xd1
+> [    4.195064]  [<c02391da>] SyS_read+0x49/0x7c
+> [    4.195700]  [<c083a0c9>] syscall_call+0x7/0xb
+> [    4.196385]  [<c0830000>] ? print_usage_bug+0xcd/0x18e
+>
+> Is any of these known problems?  This is blocking me from doing any
+> kind of testing at the moment...  (these problems are showing up while
+> running KVM using virtio devices).
 
-Making this static inline in the header and dropping
-EXPORT_SYMBOL_GPL might be smaller code.
+I believe you already reported this issue a while back, and it should be 
+fixed by commit cb96a42c in the kernel.
 
-static inline
-char *devm_kstrdup(struct device *dev, const char *s, gfp_t gfp)
-{
-	return devm_kmemdup(dev, s, strlen(s) + 1, gfp);
-}
+The other issue, not sure, not a lot of detail. It may be fixed by the 
+pull request I sent out yesterday. You can try pulling in:
 
+git://git.kernel.dk/linux-block.git for-linus
+
+and see if that fixes it for you.
+
+-- 
+Jens Axboe
 
