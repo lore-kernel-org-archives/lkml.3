@@ -1,134 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758160AbaFSQKS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:10:18 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:57758 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757405AbaFSQKQ (ORCPT
+	id S1758133AbaFSQMl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:12:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40171 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757405AbaFSQMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:10:16 -0400
-Message-ID: <53A30B63.107@brockmann-consult.de>
-Date: Thu, 19 Jun 2014 18:10:11 +0200
-From: Peter Maloney <peter.maloney@brockmann-consult.de>
+	Thu, 19 Jun 2014 12:12:38 -0400
+Message-ID: <53A30BF0.1060109@canonical.com>
+Date: Thu, 19 Jun 2014 18:12:32 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: kernel BUG - handle_mm_fault - Ubuntu 14.04 kernel 3.13.0-29-generic
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Colin Cross <ccross@google.com>, Greg KH <gregkh@linuxfoundation.org>,
+        "open list:GENERIC INCLUDE/A..." <linux-arch@vger.kernel.org>,
+        thellstrom@vmware.com, lkml <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        Rob Clark <robdclark@gmail.com>, thierry.reding@gmail.com,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        "open list:DMA BUFFER SHARIN..." <linux-media@vger.kernel.org>
+CC: daniel@ffwll.ch
+Subject: Re: [REPOST PATCH 4/8] android: convert sync to fence api, v5
+References: <20140618102957.15728.43525.stgit@patser>	<20140618103711.15728.97842.stgit@patser>	<20140619011556.GE10921@kroah.com>	<20140619063727.GL5821@phenom.ffwll.local> <CAMbhsRRZOHuDkW9GzWbBCQiBjdUFv7MtkB_qhx+pofT+38gugQ@mail.gmail.com>
+In-Reply-To: <CAMbhsRRZOHuDkW9GzWbBCQiBjdUFv7MtkB_qhx+pofT+38gugQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:3ihIEIOEcYwj2VRtlB5NHDiu+u0VqJE3RyxhDfnkCTG
- H2BSNP54ouNFdwx9HXwLyggP7i0ignLEBnbXGO01gwW3BXM70T
- nKr5wpCPhEHLTxIhmkNJOKo3wwYxAQzm9MakZdYhOOQNR6CNuw
- q6NFeCTLgh65VmUcdG3Wn983ecUUF24aZx6KDEC2aZbzml+5Qb
- oc52tOoGVXZ57AXoVFjMLorf3Hwvu8EWZxbwqif+kKeyKl6Eks
- WEEbI+CKH+n8LjWH0NWwD6ER5nIJCqQ9aHJYL2FQfM34MUMxWO
- GhlC4mBp3hklKVN3rQzZOKRvFWzCiW6gPPAxuhJf9fPVdPYcrh
- qLMYkv8mdyoJl2QB87CFaedEB14PLD7nBNEWIjnVZ
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, can someone please take a look at this and tell me what is going on?
+op 19-06-14 17:22, Colin Cross schreef:
+> On Wed, Jun 18, 2014 at 11:37 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+>> On Wed, Jun 18, 2014 at 06:15:56PM -0700, Greg KH wrote:
+>>> On Wed, Jun 18, 2014 at 12:37:11PM +0200, Maarten Lankhorst wrote:
+>>>> Just to show it's easy.
+>>>>
+>>>> Android syncpoints can be mapped to a timeline. This removes the need
+>>>> to maintain a separate api for synchronization. I've left the android
+>>>> trace events in place, but the core fence events should already be
+>>>> sufficient for debugging.
+>>>>
+>>>> v2:
+>>>> - Call fence_remove_callback in sync_fence_free if not all fences have fired.
+>>>> v3:
+>>>> - Merge Colin Cross' bugfixes, and the android fence merge optimization.
+>>>> v4:
+>>>> - Merge with the upstream fixes.
+>>>> v5:
+>>>> - Fix small style issues pointed out by Thomas Hellstrom.
+>>>>
+>>>> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+>>>> Acked-by: John Stultz <john.stultz@linaro.org>
+>>>> ---
+>>>>  drivers/staging/android/Kconfig      |    1
+>>>>  drivers/staging/android/Makefile     |    2
+>>>>  drivers/staging/android/sw_sync.c    |    6
+>>>>  drivers/staging/android/sync.c       |  913 +++++++++++-----------------------
+>>>>  drivers/staging/android/sync.h       |   79 ++-
+>>>>  drivers/staging/android/sync_debug.c |  247 +++++++++
+>>>>  drivers/staging/android/trace/sync.h |   12
+>>>>  7 files changed, 609 insertions(+), 651 deletions(-)
+>>>>  create mode 100644 drivers/staging/android/sync_debug.c
+>>> With these changes, can we pull the android sync logic out of
+>>> drivers/staging/ now?
+>> Afaik the google guys never really looked at this and acked it. So I'm not
+>> sure whether they'll follow along. The other issue I have as the
+>> maintainer of gfx driver is that I don't want to implement support for two
+>> different sync object primitives (once for dma-buf and once for android
+>> syncpts), and my impression thus far has been that even with this we're
+>> not there.
+> We have tested these patches to use dma fences to back the android
+> sync driver and not found any major issues.  However, my understanding
+> is that dma fences are designed for implicit sync, and explicit sync
+> through the android sync driver is bolted on the side to share code.
+> Android is not moving away from explicit sync, but we do wrap all of
+> our userspace sync accesses through libsync
+> (https://android.googlesource.com/platform/system/core/+/master/libsync/sync.c,
+> ignore the sw_sync parts), so if the kernel supported a slightly
+> different userspace explicit sync interface we could adapt to it
+> fairly easily.  All we require is that individual kernel drivers need
+> to be able to accept work alongisde an fd to wait on, and to return an
+> fd that will signal when the work is done, and that userspace has some
+> way to merge two of those fds, wait on an fd, and get some debugging
+> info from an fd.  However, this patch set doesn't do that, it has no
+> way to export a dma fence as an fd except through the android sync
+> driver, so it is not yet ready to fully replace android sync.
+>
+Dma fences can be exported as android fences, just didn't see a need for it yet. :-)
+To wait on all implicit fences attached to a dma-buf one could simply poll the dma-buf directly,
+or use something like a android userspace fence.
 
-The event log reports no ECC errors.
+sync_fence_create takes a sync_pt as function argument, but I kept that to keep source code
+compatibility, not because it uses any sync_pt functions. Here's a patch to create a userspace
+fd for dma-fence instead of a android fence, applied on top of "android: convert sync to fence api".
 
-This machine was working fine with an older Ubuntu version, and has
-failed this way twice since an upgrade 2 weeks ago.
-
-Symptoms include:
- - load goes up high, currently 1872.72
- - "ps -ef" hangs
- - this time I tested "echo w > /proc/sysrq-trigger" which made the
-local shell and ssh hang, and ctrl+alt+del doesn't work, but machine
-still responds to ping
-
-Please CC me; I'm not on the list.
-
-Thanks,
-Peter
-
-
-
-Here's the log:
-
-Jun 12 15:42:42 node73 kernel: [17196.908781] ------------[ cut here
-]------------
-Jun 12 15:42:42 node73 kernel: [17196.909789] kernel BUG at
-/build/buildd/linux-3.13.0/mm/memory.c:3756!
-Jun 12 15:42:42 node73 kernel: [17196.911210] invalid opcode: 0000 [#1] SMP
-Jun 12 15:42:42 node73 kernel: [17196.912130] Modules linked in: nfsd
-auth_rpcgss nfs_acl nfs lockd sunrpc fscache gpio_ich intel_rapl
-x86_pkg_temp_thermal intel_powerclamp coretemp kvm_inte
-l kvm crct10dif_pclmul crc32_pclmul ghash_clmulni_intel aesni_intel
-aes_x86_64 lrw gf128mul glue_helper ablk_helper cryptd sb_edac joydev
-edac_core ioatdma mei_me mei lpc_ich wmi ipmi_si mac
-_hid lp parport raid10 raid456 async_raid6_recov async_memcpy async_pq
-async_xor async_tx xor raid6_pq raid1 igb hid_generic mpt2sas
-i2c_algo_bit raid0 raid_class usbhid dca multipath ptp sc
-si_transport_sas ahci hid libahci linear pps_core
-Jun 12 15:42:42 node73 kernel: [17196.924647] CPU: 5 PID: 25935 Comm:
-java Not tainted 3.13.0-29-generic #53-Ubuntu
-Jun 12 15:42:42 node73 kernel: [17196.926280] Hardware name: Supermicro
-X9DRFF-iG+/-7G+/-iTG+/-7TG+/X9DRFF-iG+/-7G+/-iTG+/-7TG+, BIOS 2.0a
-04/30/2013
-Jun 12 15:42:42 node73 kernel: [17196.928566] task: ffff880c4a795fc0 ti:
-ffff880ce7d96000 task.ti: ffff880ce7d96000
-Jun 12 15:42:42 node73 kernel: [17196.930200] RIP:
-0010:[<ffffffff81179521>]  [<ffffffff81179521>] handle_mm_fault+0xe61/0xf10
-Jun 12 15:42:42 node73 kernel: [17196.932066] RSP:
-0018:ffff880ce7d97d98  EFLAGS: 00010246
-Jun 12 15:42:42 node73 kernel: [17196.933217] RAX: 0000000000000100 RBX:
-000000078ddfdc38 RCX: ffff880ce7d97b00
-Jun 12 15:42:42 node73 kernel: [17196.934773] RDX: ffff880c4a795fc0 RSI:
-0000000000000000 RDI: 80000001a82009e6
-Jun 12 15:42:42 node73 kernel: [17196.936328] RBP: ffff880ce7d97e20 R08:
-0000000000000000 R09: 00000000000000a9
-Jun 12 15:42:42 node73 kernel: [17196.937884] R10: 0000000000000001 R11:
-0000000000000000 R12: ffff880dee484370
-Jun 12 15:42:42 node73 kernel: [17196.939440] R13: ffff881e0c4d3d40 R14:
-ffff88102511c280 R15: 0000000000000080
-Jun 12 15:42:42 node73 kernel: [17196.940996] FS: 
-00007f2529340700(0000) GS:ffff88103fca0000(0000) knlGS:0000000000000000
-Jun 12 15:42:42 node73 kernel: [17196.979078] CS:  0010 DS: 0000 ES:
-0000 CR0: 0000000080050033
-Jun 12 15:42:42 node73 kernel: [17197.017222] CR2: 0000000718184000 CR3:
-0000001021ae8000 CR4: 00000000000407e0
-Jun 12 15:42:42 node73 kernel: [17197.056416] Stack:
-Jun 12 15:42:42 node73 kernel: [17197.094614]  0000000000000001
-ffff880ce7d97db0 ffffffff8109a790 ffff880ce7d97dd0
-Jun 12 15:42:42 node73 kernel: [17197.171848]  ffffffff810d7b56
-0000000000000001 ffffffff81f1fed0 ffff880ce7d97e78
-Jun 12 15:42:42 node73 kernel: [17197.249793]  ffffffff810d996d
-ffff880ce7d97e48 00000000000000a9 00000001ffffffff
-Jun 12 15:42:42 node73 kernel: [17197.327660] Call Trace:
-Jun 12 15:42:42 node73 kernel: [17197.365233]  [<ffffffff8109a790>] ?
-wake_up_state+0x10/0x20
-Jun 12 15:42:42 node73 kernel: [17197.403036]  [<ffffffff810d7b56>] ?
-wake_futex+0x66/0x90
-Jun 12 15:42:42 node73 kernel: [17197.439822]  [<ffffffff810d996d>] ?
-futex_wake_op+0x4ed/0x620
-Jun 12 15:42:42 node73 kernel: [17197.475937]  [<ffffffff81726164>]
-__do_page_fault+0x184/0x560
-Jun 12 15:42:42 node73 kernel: [17197.511226]  [<ffffffff8111140c>] ?
-acct_account_cputime+0x1c/0x20
-Jun 12 15:42:42 node73 kernel: [17197.546109]  [<ffffffff8109d77b>] ?
-account_user_time+0x8b/0xa0
-Jun 12 15:42:42 node73 kernel: [17197.580167]  [<ffffffff8109dd94>] ?
-vtime_account_user+0x54/0x60
-Jun 12 15:42:42 node73 kernel: [17197.613381]  [<ffffffff8172655a>]
-do_page_fault+0x1a/0x70
-Jun 12 15:42:42 node73 kernel: [17197.645771]  [<ffffffff817229c8>]
-page_fault+0x28/0x30
-Jun 12 15:42:42 node73 kernel: [17197.677251] Code: ff 48 89 d9 4c 89 e2
-4c 89 ee 4c 89 f7 44 89 4d c8 e8 34 c1 ff ff 85 c0 0f 85 94 f5 ff ff 49
-8b 3c 24 44 8b 4d c8 e9 68 f3 ff ff <0f> 0b be 8e 00 00 00 48 c7 c7 c0
-3c a6 81 44 89 4d c8 e8 48 e2
-Jun 12 15:42:42 node73 kernel: [17197.772738] RIP  [<ffffffff81179521>]
-handle_mm_fault+0xe61/0xf10
-Jun 12 15:42:42 node73 kernel: [17197.804166]  RSP <ffff880ce7d97d98>
-Jun 12 15:42:42 node73 kernel: [17197.881409] ---[ end trace
-b093101191f33d70 ]---
-Jun 12 17:15:21 node73 kernel: [22748.792239] ------------[ cut here
-]------------
+diff --git a/drivers/staging/android/sw_sync.c b/drivers/staging/android/sw_sync.c
+index a76db3ff87cb..afc3c63b0438 100644
+--- a/drivers/staging/android/sw_sync.c
++++ b/drivers/staging/android/sw_sync.c
+@@ -184,7 +184,7 @@ static long sw_sync_ioctl_create_fence(struct sw_sync_timeline *obj,
+ 	}
+ 
+ 	data.name[sizeof(data.name) - 1] = '\0';
+-	fence = sync_fence_create(data.name, pt);
++	fence = sync_fence_create(data.name, &pt->base);
+ 	if (fence == NULL) {
+ 		sync_pt_free(pt);
+ 		err = -ENOMEM;
+diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
+index 70b09b5001ba..c89a6f954e41 100644
+--- a/drivers/staging/android/sync.c
++++ b/drivers/staging/android/sync.c
+@@ -188,7 +188,7 @@ static void fence_check_cb_func(struct fence *f, struct fence_cb *cb)
+ }
+ 
+ /* TODO: implement a create which takes more that one sync_pt */
+-struct sync_fence *sync_fence_create(const char *name, struct sync_pt *pt)
++struct sync_fence *sync_fence_create(const char *name, struct fence *pt)
+ {
+ 	struct sync_fence *fence;
+ 
+@@ -199,10 +199,10 @@ struct sync_fence *sync_fence_create(const char *name, struct sync_pt *pt)
+ 	fence->num_fences = 1;
+ 	atomic_set(&fence->status, 1);
+ 
+-	fence_get(&pt->base);
+-	fence->cbs[0].sync_pt = &pt->base;
++	fence_get(pt);
++	fence->cbs[0].sync_pt = pt;
+ 	fence->cbs[0].fence = fence;
+-	if (fence_add_callback(&pt->base, &fence->cbs[0].cb,
++	if (fence_add_callback(pt, &fence->cbs[0].cb,
+ 			       fence_check_cb_func))
+ 		atomic_dec(&fence->status);
+ 
+diff --git a/drivers/staging/android/sync.h b/drivers/staging/android/sync.h
+index 66b0f431f63e..3020751f3c5d 100644
+--- a/drivers/staging/android/sync.h
++++ b/drivers/staging/android/sync.h
+@@ -252,7 +252,7 @@ void sync_pt_free(struct sync_pt *pt);
+  * Creates a fence containg @pt.  Once this is called, the fence takes
+  * ownership of @pt.
+  */
+-struct sync_fence *sync_fence_create(const char *name, struct sync_pt *pt);
++struct sync_fence *sync_fence_create(const char *name, struct fence *fence);
+ 
+ /*
+  * API for sync_fence consumers
 
