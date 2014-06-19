@@ -1,33 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965339AbaFSVFc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 17:05:32 -0400
-Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:48906 "EHLO
-	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965269AbaFSVFb (ORCPT
+	id S965413AbaFSVFr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 17:05:47 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:46937 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965269AbaFSVFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 17:05:31 -0400
-Date: Thu, 19 Jun 2014 16:05:29 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Tejun Heo <tj@kernel.org>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET percpu/for-3.17] percpu: clean up percpu accessor and
- operation definitions
-In-Reply-To: <20140617232202.GD8838@mtj.dyndns.org>
-Message-ID: <alpine.DEB.2.11.1406191603570.5484@gentwo.org>
-References: <1402590209-31610-1-git-send-email-tj@kernel.org> <20140617232202.GD8838@mtj.dyndns.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 19 Jun 2014 17:05:46 -0400
+Date: Thu, 19 Jun 2014 14:04:19 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: josh@joshtriplett.org, davidshan@tencent.com, cl@linux.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] rcu: use __this_cpu_read helper instead of
+ per_cpu_ptr(p, raw_smp_processor_id())
+Message-ID: <20140619210419.GP4904@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <53A3443E.8010102@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53A3443E.8010102@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061921-0928-0000-0000-000002D10FD2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jun 2014, Tejun Heo wrote:
+On Thu, Jun 19, 2014 at 04:12:46PM -0400, Pranith Kumar wrote:
+> Use __this_cpu_read() instead of per_cpu_ptr() for optimized access.
+> 
+> Last time when Shan Wei posted this, you wanted before/after code for ARM and x86.
+> (http://lkml.iu.edu//hypermail/linux/kernel/1211.2/00498.html).
 
-> >   linus master c31c24b8251f ("Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux")
-> > + [1] [PATCH RFC] percpu: add data dependency barrier in percpu accessors and operations
->
-> Omitted the data dependency barrier and applied the series to
-> percpu/for-3.17.
+That was some time back, wasn't it?
 
-Ok I hope all of that dependency material is removed from the tree?
+Anyway, yes, this does look quite a bit more convincing.
+
+							Thanx, Paul
+
+> There are few other location which use per_cpu_ops instead of this_cpu_ops. I
+> can convert them accordingly if you are accept this :)
+> 
+> Using gcc (Ubuntu/Linaro 4.7.3-12ubuntu1) 4.7.3, I get (trimmed to relevant assembly, from make kernel/rcu/tree.s)
+> 
+> ARMv7 per_cpu_ptr():
+> 
+> force_quiescent_state:
+>     mov    r3, sp    @,
+>     bic    r1, r3, #8128    @ tmp171,,
+>     ldr    r2, .L98    @ tmp169,
+>     bic    r1, r1, #63    @ tmp170, tmp171,
+>     ldr    r3, [r0, #220]    @ __ptr, rsp_6(D)->rda
+>     ldr    r1, [r1, #20]    @ D.35903_68->cpu, D.35903_68->cpu
+>     mov    r6, r0    @ rsp, rsp
+>     ldr    r2, [r2, r1, asl #2]    @ tmp173, __per_cpu_offset
+>     add    r3, r3, r2    @ tmp175, __ptr, tmp173
+>     ldr    r5, [r3, #12]    @ rnp_old, D.29162_13->mynode
+> 
+> ARMv7 using __this_cpu_read():
+> 
+> force_quiescent_state:
+>     ldr    r3, [r0, #220]    @ rsp_7(D)->rda, rsp_7(D)->rda
+>     mov    r6, r0    @ rsp, rsp
+>     add    r3, r3, #12    @ __ptr, rsp_7(D)->rda,
+>     ldr    r5, [r2, r3]    @ rnp_old, *D.29176_13
+> 
+> Using gcc 4.8.2:
+> 
+> x86_64 per_cpu_ptr():
+> 
+>     movl %gs:cpu_number,%edx    # cpu_number, pscr_ret__
+>     movslq    %edx, %rdx    # pscr_ret__, pscr_ret__
+>     movq    __per_cpu_offset(,%rdx,8), %rdx    # __per_cpu_offset, tmp93
+>     movq    %rdi, %r13    # rsp, rsp
+>     movq    1000(%rdi), %rax    # rsp_9(D)->rda, __ptr
+>     movq    24(%rdx,%rax), %r12    # _15->mynode, rnp_old
+> 
+> x86_64 __this_cpu_read():
+> 
+>     movq    %rdi, %r13    # rsp, rsp
+>     movq    1000(%rdi), %rax    # rsp_9(D)->rda, rsp_9(D)->rda
+>     movq %gs:24(%rax),%r12    # _10->mynode, rnp_old
+> 
+> 
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> Signed-off-by: Shan Wei <davidshan@tencent.com>
+> Acked-by: Christoph Lameter <cl@linux.com>
+> ---
+>  kernel/rcu/tree.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> index f1ba773..c6de285 100644
+> --- a/kernel/rcu/tree.c
+> +++ b/kernel/rcu/tree.c
+> @@ -2404,7 +2404,7 @@ static void force_quiescent_state(struct rcu_state *rsp)
+>      struct rcu_node *rnp_old = NULL;
+> 
+>      /* Funnel through hierarchy to reduce memory contention. */
+> -    rnp = per_cpu_ptr(rsp->rda, raw_smp_processor_id())->mynode;
+> +    rnp = __this_cpu_read(rsp->rda->mynode);
+>      for (; rnp != NULL; rnp = rnp->parent) {
+>          ret = (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) ||
+>                !raw_spin_trylock(&rnp->fqslock);
+> -- 
+> 2.0.0
+> 
 
