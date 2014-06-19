@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932125AbaFSCD4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 22:03:56 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:9250 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752726AbaFSCDz (ORCPT
+	id S1756985AbaFSCHc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 22:07:32 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:61837 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726AbaFSCHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 22:03:55 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvcGALVDolN5LC2v/2dsb2JhbABagw2DSKd2AQIBAQaZJwGBDhd1hAMBAQUnExwzCAMYCSUPBSUDIQESiEHNbRcWhUyJG4RDAQOaQosxiCiDVCs
-Date: Thu, 19 Jun 2014 12:03:40 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Dave Jones <davej@redhat.com>, xfs@oss.sgi.com,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: XFS WARN_ON in xfs_vm_writepage
-Message-ID: <20140619020340.GI4453@dastard>
-References: <20140613051631.GA9394@redhat.com>
- <20140613062645.GZ9508@dastard>
- <20140613141925.GA24199@redhat.com>
+	Wed, 18 Jun 2014 22:07:31 -0400
+Date: Wed, 18 Jun 2014 22:07:27 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: cl@linux-foundation.org, kmo@daterainc.com, linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 6/6] percpu-refcount: implement percpu_ref_reinit() and
+ percpu_ref_is_zero()
+Message-ID: <20140619020727.GC20100@mtj.dyndns.org>
+References: <1403053685-28240-1-git-send-email-tj@kernel.org>
+ <1403053685-28240-7-git-send-email-tj@kernel.org>
+ <53A1097F.3060400@cn.fujitsu.com>
+ <20140618153222.GA11042@htj.dyndns.org>
+ <53A243B8.4010501@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140613141925.GA24199@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53A243B8.4010501@cn.fujitsu.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 10:19:25AM -0400, Dave Jones wrote:
-> On Fri, Jun 13, 2014 at 04:26:45PM +1000, Dave Chinner wrote:
+On Thu, Jun 19, 2014 at 09:58:16AM +0800, Lai Jiangshan wrote:
+> On 06/18/2014 11:32 PM, Tejun Heo wrote:
+> > On Wed, Jun 18, 2014 at 11:37:35AM +0800, Lai Jiangshan wrote:
+> >>> @@ -97,7 +98,10 @@ static inline void percpu_ref_kill(struct percpu_ref *ref)
+> >>>  static inline bool __pcpu_ref_alive(struct percpu_ref *ref,
+> >>>  				    unsigned __percpu **pcpu_countp)
+> >>>  {
+> >>> -	unsigned long pcpu_ptr = ACCESS_ONCE(ref->pcpu_count_ptr);
+> >>> +	unsigned long pcpu_ptr;
+> >>> +
+> >>> +	/* paired with smp_store_release() in percpu_ref_reinit() */
+> >>> +	pcpu_ptr = smp_load_acquire(&ref->pcpu_count_ptr);
+> >>
+> >>
+> >> Does "smp_load_acquire()" hurts the performance of percpu_ref_get/put()
+> >> in non-x86 system?
+> > 
+> > It's equivalent to data dependency barrier.  The only arch which needs
+> > something more than barrier() is alpha.  It isn't an issue.
+> > 
 > 
-> > >  970         if (WARN_ON_ONCE((current->flags & (PF_MEMALLOC|PF_KSWAPD)) ==
-> > >  971                         PF_MEMALLOC))
-> >
-> > What were you running at the time? The XFS warning is there to
-> > indicate that memory reclaim is doing something it shouldn't (i.e.
-> > dirty page writeback from direct reclaim), so this is one for the mm
-> > folk to work out...
-> 
-> Trinity had driven the machine deeply into swap, and the oom killer was
-> kicking in pretty often. Then this happened.
+> But I searched from the source, smp_load_acquire() is just barrier() in
+> x86, arm64, ia64, s390, sparc, but it includes memory barrier 
+> instruction in other archs.
 
-Yup, sounds like a problem somewhere in mm/vmscan.c....
+Hmmm, right, it's a stronger guarantee than the data dependency
+barrier.  This should probably use smp_wmb() and
+smp_read_barrier_depends().  That's all it needs anyway.
 
-Cheers,
+Thanks.
 
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+tejun
