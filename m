@@ -1,75 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805AbaFSNnj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 09:43:39 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:52321 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754216AbaFSNni (ORCPT
+	id S1756143AbaFSNoW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 09:44:22 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:51281 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755967AbaFSNoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 09:43:38 -0400
-Date: Thu, 19 Jun 2014 08:43:30 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: Kishon Vijay Abraham I <kishon@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: [PATCHv2 6/6] usb: dwc3: host: convey the PHYs to xhci
-Message-ID: <20140619134330.GA23782@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1401972778-5880-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1401972778-5880-7-git-send-email-heikki.krogerus@linux.intel.com>
+	Thu, 19 Jun 2014 09:44:20 -0400
+Date: Thu, 19 Jun 2014 09:44:16 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: Re: [ANNOUNCE] 3.12.22-rt33
+Message-ID: <20140619094416.302f5ef3@gandalf.local.home>
+In-Reply-To: <1403149603.5189.10.camel@marge.simpson.net>
+References: <20140618201233.4dd3a59d@gandalf.local.home>
+	<1403149603.5189.10.camel@marge.simpson.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
-Content-Disposition: inline
-In-Reply-To: <1401972778-5880-7-git-send-email-heikki.krogerus@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---G4iJoqBmSsgzjUCe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 19 Jun 2014 05:46:43 +0200
+Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
 
-On Thu, Jun 05, 2014 at 03:52:58PM +0300, Heikki Krogerus wrote:
-> On some platforms a PHY may need to be handled also in the
-> host controller driver. Exynos5420 SoC requires some "PHY
-> tuning" based on the USB speed. This patch delivers dwc3's
-> PHYs to the xhci platform device when it's created.
->=20
-> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> Cc: Felipe Balbi <balbi@ti.com>
+> On Wed, 2014-06-18 at 20:12 -0400, Steven Rostedt wrote: 
+> > Dear RT Folks,
+> > 
+> > I'm pleased to announce the 3.12.22-rt33 stable release.
 
-if the rest of the series gets applied, I'm fine with this change
+Didn't we have this issue before?
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+> 
+> 
+> git@marge:~/linux-2.6> git diff v3.12... drivers/net/ethernet/dec/tulip/tulip_core.c
+> diff --git a/drivers/net/ethernet/dec/tulip/tulip_core.c b/drivers/net/ethernet/dec/tulip/tulip_core.c
+> index 4e8cfa2ac803..a6d4653ebbc3 100644
+> --- a/drivers/net/ethernet/dec/tulip/tulip_core.c
+> +++ b/drivers/net/ethernet/dec/tulip/tulip_core.c
+> @@ -1939,7 +1939,9 @@ static void tulip_remove_one(struct pci_dev *pdev)
+>  	pci_iounmap(pdev, tp->base_addr);
+>  	free_netdev (dev);
+>  	pci_release_regions (pdev);
+> +	pci_disable_device(pdev);
+>  	pci_set_drvdata (pdev, NULL);
+> +	pci_disable_device(pdev);
+>  
+>  	/* pci_power_off (pdev, -1); */
+>  }
+> 
+> commit 4a77edc195f0b03644e84dda00fcfe9827868e8e
+> Author: Ingo Molnar <mingo@elte.hu>
+> Date:   Fri Jul 3 08:30:18 2009 -0500
+> 
+>     drivers/net: tulip_remove_one needs to call pci_disable_device()
+>     
+>     Otherwise the device is not completely shut down.
 
---=20
-balbi
+Grumble, this was a fix that went into -rt without going into stable
+first.
 
---G4iJoqBmSsgzjUCe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+OK, I'll remove this commit and keep the stable one.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Thanks!
 
-iQIcBAEBAgAGBQJToukCAAoJEIaOsuA1yqRESHAP/RH7+llSjaspPZrue8kV+DGh
-7bpp/OpVHmB0DQ/84QoZtBReH29KMnPhqlAHrpsWWYmuyKlCwAiTLxhxP3wmVTIv
-23L/r2pCgzTN1wKuPA+UaJLdlXW1ZeriR+lMjMyLfUQb8LPbXc1+BHs5ny0gtxTA
-cPx0daa8OqNrd/wsT8AkORX8umRHt4QiR6emxL2HlLqZuk6QmNlj+4w++dvwgSZd
-U8WkqG7klByZi+Nf727+TO2JvLQaxNgVyCJIBQh6p+GqMVW0s76WyjqjG3w+7X7T
-r1G8939IqbR1bMtenLTNRDdk0YFxI6AFLPonQz6sBKdVkLVWNGtRWWaPIuvtv9Cq
-aaJlTCXWWvgqs0s/vliaPYOU48eYaMmlXqHtQk/boewpOD+4jBZ523TPIwaYhGpA
-6xnq7ibntxMEy9cZhE07SqO2rOt0M3CQ4N7XdQidrlnFHdsIkqaR22RVFsckyKAC
-5k8ktc7pPfWUCSYvQqkeY10zDg77yNvMCvn6hZvF9TdYIVOPl62xhRmSs1NYel+Y
-zh337QTa2xviDzZsuLo3WqPgH88Jxo+PaQjpqzkSFxRIUXZPegYROsi1Wqzs4lCv
-qX77+Ckpqj4SyiaaS2TpA8veez1pW8ExyUVHFyPMQ8AkoJRlK0hS19/ZAU1xSOrg
-/uAE1dR3wd2KtI37nrJ1
-=fpUL
------END PGP SIGNATURE-----
+-- Steve
 
---G4iJoqBmSsgzjUCe--
+>     
+>     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+>     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> 
+> diff --git a/drivers/net/ethernet/dec/tulip/tulip_core.c b/drivers/net/ethernet/dec/tulip/tulip_core.c
+> index 4e8cfa2ac803..7565b994ec50 100644
+> --- a/drivers/net/ethernet/dec/tulip/tulip_core.c
+> +++ b/drivers/net/ethernet/dec/tulip/tulip_core.c
+> @@ -1939,6 +1939,7 @@ static void tulip_remove_one(struct pci_dev *pdev)
+>  	pci_iounmap(pdev, tp->base_addr);
+>  	free_netdev (dev);
+>  	pci_release_regions (pdev);
+> +	pci_disable_device(pdev);
+>  	pci_set_drvdata (pdev, NULL);
+>  
+>  	/* pci_power_off (pdev, -1); */
+> 
+> 
+> commit 831bb5573dcbeb0da783c82e21084ac191dafc24
+> Author: Ingo Molnar <mingo@elte.hu>
+> Date:   Fri Feb 14 15:32:20 2014 +0100
+> 
+>     drivers/net: tulip_remove_one needs to call pci_disable_device()
+>     
+>     commit c321f7d7c87cdc623c87845f6378620573e57512 upstream.
+>     
+>     Otherwise the device is not completely shut down.
+>     
+>     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+>     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+>     Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+>     Signed-off-by: David S. Miller <davem@davemloft.net>
+>     Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> 
+> diff --git a/drivers/net/ethernet/dec/tulip/tulip_core.c b/drivers/net/ethernet/dec/tulip/tulip_core.c
+> index 4e8cfa2ac803..779016068a82 100644
+> --- a/drivers/net/ethernet/dec/tulip/tulip_core.c
+> +++ b/drivers/net/ethernet/dec/tulip/tulip_core.c
+> @@ -1940,6 +1940,7 @@ static void tulip_remove_one(struct pci_dev *pdev)
+>  	free_netdev (dev);
+>  	pci_release_regions (pdev);
+>  	pci_set_drvdata (pdev, NULL);
+> +	pci_disable_device(pdev);
+
+>  
+>  	/* pci_power_off (pdev, -1); */
+>  }
+> 
+
