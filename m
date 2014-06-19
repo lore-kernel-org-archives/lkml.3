@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757754AbaFSIjW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 04:39:22 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:65102 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757460AbaFSIjT (ORCPT
+	id S1757784AbaFSIkK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 04:40:10 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:58326 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757635AbaFSIkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 04:39:19 -0400
-From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-To: linux-samsung-soc@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        David Riley <davidriley@chromium.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [PATCH v2] clocksource: exynos-mct: Register the timer for stable udelay
-Date: Thu, 19 Jun 2014 14:09:05 +0530
-Message-Id: <1403167145-5267-1-git-send-email-amit.daniel@samsung.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 19 Jun 2014 04:40:06 -0400
+From: Varka Bhadram <varkabhadram@gmail.com>
+X-Google-Original-From: Varka Bhadram <varkab@cdac.in>
+To: netdev@vger.kernel.org
+Cc: alex.bluesman.smirnov@gmail.com, dbaryshkov@gmail.com,
+        linux-zigbee-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, sowjanyap@cdac.in, santoshk@cdac.in,
+        venkatas@cdac.in, Varka Bhadram <varkab@cdac.in>
+Subject: [PATCH net-next v5 0/3] Driver for TI CC2520 Radio
+Date: Thu, 19 Jun 2014 14:08:47 +0530
+Message-Id: <1403167131-22092-1-git-send-email-varkab@cdac.in>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch register the exynos mct clocksource as the current timer
-as it has constant clock rate. This will generate correct udelay for the
-exynos platform and avoid using unnecessary calibrated jiffies. This change
-has been tested on exynos5420 based board and udelay is very close to
-expected.
+This series adds the driver support for TI cc2520 radio.
+also devicetree bindings for the driver.
 
-Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
----
-Changes in V2:
-* Added #defines for ARM and ARM64 as pointed by Doug Anderson.
+changes since v4:
+	- feature to write into cc2520 RAM
+	- added h/w address filtering
+	
+changes since v3:
+	- drop the unused varible
 
-Patches from David Riley confirmed that udelay is broken in exynos5420.
-Link to those patches are,
-1) https://patchwork.kernel.org/patch/4344911/
-2) https://patchwork.kernel.org/patch/4344881/
+changes since v2:
+	- drop spi mode dt binding
 
- drivers/clocksource/exynos_mct.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+changes since v1:
+	- improvement in gpio setup
+	- changed len pointer to len variable
 
-diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
-index f71d55f..02927e2 100644
---- a/drivers/clocksource/exynos_mct.c
-+++ b/drivers/clocksource/exynos_mct.c
-@@ -195,10 +195,25 @@ static u64 notrace exynos4_read_sched_clock(void)
- 	return exynos4_frc_read(&mct_frc);
- }
- 
-+static struct delay_timer exynos4_delay_timer;
-+
-+static unsigned long exynos4_read_current_timer(void)
-+{
-+#ifdef ARM
-+	return __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
-+#else /* ARM64, etc */
-+	return exynos4_frc_read(&mct_frc);
-+#endif
-+}
-+
- static void __init exynos4_clocksource_init(void)
- {
- 	exynos4_mct_frc_start();
- 
-+	exynos4_delay_timer.read_current_timer = &exynos4_read_current_timer;
-+	exynos4_delay_timer.freq = clk_rate;
-+	register_current_timer_delay(&exynos4_delay_timer);
-+
- 	if (clocksource_register_hz(&mct_frc, clk_rate))
- 		panic("%s: can't register clocksource\n", mct_frc.name);
- 
+changes for v1:
+	- improvements in the locking mechanism in Tx and SFD ISR
+	- proper checkings for GPIO pins
+	- avoids the memory leak for priv
+	- used devm_* APIs
+	- moved the code from header file to .c file
+	- removed cc2520_unregister()
+
+Varka Bhadram (3):
+  ieee802154: cc2520: adds driver for TI CC2520 radio
+  ieee802154: cc2520: add driver to kernel build system
+  devicetree: add device tree bindings for cc2520 driver
+
+ .../devicetree/bindings/net/ieee802154/cc2520.txt  |   29 +
+ drivers/net/ieee802154/Kconfig                     |   11 +
+ drivers/net/ieee802154/Makefile                    |    1 +
+ drivers/net/ieee802154/cc2520.c                    | 1022 ++++++++++++++++++++
+ include/linux/spi/cc2520.h                         |   26 +
+ 5 files changed, 1089 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/net/ieee802154/cc2520.txt
+ create mode 100644 drivers/net/ieee802154/cc2520.c
+ create mode 100644 include/linux/spi/cc2520.h
+
 -- 
-1.9.1
+1.7.9.5
 
