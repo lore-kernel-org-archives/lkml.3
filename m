@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758240AbaFSQCE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:02:04 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41406 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757405AbaFSQCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:02:00 -0400
-Date: Thu, 19 Jun 2014 11:01:53 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: George Cherian <george.cherian@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <balbi@ti.com>, <zonque@gmail.com>,
-        <b-liu@ti.com>
-Subject: Re: [PATCH v6 1/5] usb: musb: core: Handle Babble condition only in
- HOST mode
-Message-ID: <20140619160153.GJ23782@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1401096012-6895-1-git-send-email-george.cherian@ti.com>
- <1401096012-6895-2-git-send-email-george.cherian@ti.com>
- <20140619104441.GD29055@atomide.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sT9gWZPUZYhvPS56"
-Content-Disposition: inline
-In-Reply-To: <20140619104441.GD29055@atomide.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1758256AbaFSQCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:02:09 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:62129 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758082AbaFSQCG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 12:02:06 -0400
+From: Anil Belur <askb23@gmail.com>
+X-Google-Original-From: Anil Belur
+To: andreas.dilger@intel.com, oleg.drokin@intel.com,
+        gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, hpdd-discuss@ml01.01.org,
+        Anil Belur <askb23@gmail.com>
+Subject: [PATCH 2/3] staging: lustre: lustre: ldlm: ldlm_lib.c - removed unnecessary braces
+Date: Fri, 20 Jun 2014 02:01:47 +1000
+Message-Id: <1403193708-22407-2-git-send-email-askb23@gmail.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1403193708-22407-1-git-send-email-askb23@gmail.com>
+References: <1403193708-22407-1-git-send-email-askb23@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---sT9gWZPUZYhvPS56
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Anil Belur <askb23@gmail.com>
 
-Hi,
+- this change fixes "WARNING: braces {} are not necessary for single
+  statement blocks"
 
-On Thu, Jun 19, 2014 at 03:44:42AM -0700, Tony Lindgren wrote:
-> * George Cherian <george.cherian@ti.com> [140526 02:25]:
-> > BABBLE and RESET share the same interrupt. The interrupt
-> > is considered to be RESET if MUSB is in peripheral mode and
-> > as a BABBLE if MUSB is in HOST mode.
-> >=20
-> > Handle babble condition iff MUSB is in HOST mode.
->=20
-> Please get this into mainline kernel for v3.16-rc.
+Signed-off-by: Anil Belur <askb23@gmail.com>
+---
+ drivers/staging/lustre/lustre/ldlm/ldlm_lib.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-will do. Finishing up my series of build-tests, you should receive
-confirmation that the patch applied in a few hours.
+diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_lib.c b/drivers/staging/lustre/lustre/ldlm/ldlm_lib.c
+index 8bb5915..5d69af5 100644
+--- a/drivers/staging/lustre/lustre/ldlm/ldlm_lib.c
++++ b/drivers/staging/lustre/lustre/ldlm/ldlm_lib.c
+@@ -74,9 +74,8 @@ static int import_set_conn(struct obd_import *imp, struct obd_uuid *uuid,
+ 
+ 	if (create) {
+ 		OBD_ALLOC(imp_conn, sizeof(*imp_conn));
+-		if (!imp_conn) {
++		if (!imp_conn)
+ 			GOTO(out_put, rc = -ENOMEM);
+-		}
+ 	}
+ 
+ 	spin_lock(&imp->imp_lock);
+@@ -662,9 +661,8 @@ void target_send_reply(struct ptlrpc_request *req, int rc, int fail_id)
+ 	struct ptlrpc_reply_state *rs;
+ 	struct obd_export	 *exp;
+ 
+-	if (req->rq_no_reply) {
++	if (req->rq_no_reply)
+ 		return;
+-	}
+ 
+ 	svcpt = req->rq_rqbd->rqbd_svcpt;
+ 	rs = req->rq_reply_state;
+-- 
+1.9.0
 
---=20
-balbi
-
---sT9gWZPUZYhvPS56
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTowlxAAoJEIaOsuA1yqREjjAP/1iOJQuomqLuFrUlq+cNdDTG
-7la8fVIN15yPkumM64XbruZt1WuHtuZHEfAHLF0BFhB/wh5Po2SHUyQdS136drwo
-oyR1e/vyqeRkBiLT71jYXVNZjSoKcvpgy1+XfbhoDmJg+hXlxaW+qir1Cd6Wcyte
-n8+2qAh6OgEGIiNW0v+rcJAs42grEKx4W5QAro6BUP0kuem56kMa3SSCc/uQ8J6L
-WCEms3FefM8DcXE0i7goEDg3nsjKUXk0/hchM55VTCl10Tfvs/gGkUllOnp1rOjm
-2eI0qmNnLDfRPkCZB6yVhO1eLdz60DVZlKVmKARO9kkN3O+NXFiEXR7O40Zk2NaT
-q1/PkjCs5yXowUt30RvTdOcoz6ZiTRKVqWSbQ6sQI4X/nqFauV+55bfxrXnAqMuB
-B4Tz+V+owB3es3Y6l+ceXQrto7t94tQ26QIhpD00+ommDSYF99BoLc9JDQTQ2BUP
-Ky6QfdxbxINJ9+g3rUyrxG3/qcqlVqV2LuH28+SwiFv1ZClX2z2Q8+MYzZVEITAl
-A4/0EIKjsAqjR28Y6MGPqYeY0eyzJxdgiq4+/4qvhjaUaNFt6c6ZY0KjSm3eFxFe
-+w+VmFJwdQJ3LZMdY6A4M4iVVos1eb30rD0+D9WFVjA0tsUx/W70KxYBDD06dpbN
-JebAdbS7eSkR2R9vAXue
-=fgxK
------END PGP SIGNATURE-----
-
---sT9gWZPUZYhvPS56--
