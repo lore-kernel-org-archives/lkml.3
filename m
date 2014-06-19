@@ -1,202 +1,802 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934263AbaFSSRF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 14:17:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33799 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933173AbaFSSRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 14:17:03 -0400
-Date: Thu, 19 Jun 2014 20:15:43 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Vladimir Davydov <vdavydov@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>
-Cc: akpm@linux-foundation.org, rientjes@google.com, cl@linux.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] fork/exec: cleanup mm initialization
-Message-ID: <20140619181543.GA32548@redhat.com>
-References: <fa98629155872c1b97ba4dcd00d509a1e467c1c3.1403168346.git.vdavydov@parallels.com>
+	id S934279AbaFSSRO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 14:17:14 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:51955 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933173AbaFSSRJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 14:17:09 -0400
+Message-ID: <53A32927.4060004@arm.com>
+Date: Thu, 19 Jun 2014 19:17:11 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <fa98629155872c1b97ba4dcd00d509a1e467c1c3.1403168346.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Jassi Brar <jaswinder.singh@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Sudeep Holla <sudeep.holla@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "mporter@linaro.org" <mporter@linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "bjorn@kryo.se" <bjorn@kryo.se>,
+        "ashwin.chaugule@linaro.org" <ashwin.chaugule@linaro.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "s-anna@ti.com" <s-anna@ti.com>,
+        "loic.pallardy@st.com" <loic.pallardy@st.com>,
+        "lftan.linux@gmail.com" <lftan.linux@gmail.com>,
+        "slapdau@yahoo.com.au" <slapdau@yahoo.com.au>,
+        "courtney.cavin@sonymobile.com" <courtney.cavin@sonymobile.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "joshc@codeaurora.org" <joshc@codeaurora.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "ks.giri@samsung.com" <ks.giri@samsung.com>
+Subject: Re: [PATCHv7 2/5] mailbox: Introduce framework for mailbox
+References: <1402592317-7043-1-git-send-email-jaswinder.singh@linaro.org> <1402592479-7244-1-git-send-email-jaswinder.singh@linaro.org>
+In-Reply-To: <1402592479-7244-1-git-send-email-jaswinder.singh@linaro.org>
+X-OriginalArrivalTime: 19 Jun 2014 18:16:57.0606 (UTC) FILETIME=[A81C2A60:01CF8BEA]
+X-MC-Unique: 114061919170601001
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19, Vladimir Davydov wrote:
->
-> mm initialization on fork/exec is spread all over the place, which makes
-> the code look inconsistent.
->
-> We have mm_init(), which is supposed to init/nullify mm's internals, but
-> it doesn't init all the fields it should:
->
->  - on fork ->mmap,mm_rb,vmacache_seqnum,map_count,mm_cpumask,locked_vm
->    are zeroed in dup_mmap();
->
->  - on fork ->pmd_huge_pte is zeroed in dup_mm(), immediately before
->    calling mm_init();
->
->  - ->cpu_vm_mask_var ptr is initialized by mm_init_cpumask(), which is
->    called before mm_init() on both fork and exec;
->
->  - ->context is initialized by init_new_context(), which is called after
->    mm_init() on both fork and exec;
->
-> Let's consolidate all the initializations in mm_init() to make the code
-> look cleaner.
+Hi Jassi,
 
-Yes, agreed. Afaics, the patch is fine (2 and 3 too).
+I started using this from v5 and tried briefly to follow previous versions
+and discussion. Please forgive me if I ask questions that are already answered.
 
-
-This is off-topic, but why init_new_context() copies ldt even on exec?
-
-
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+On 12/06/14 18:01, Jassi Brar wrote:
+> Introduce common framework for client/protocol drivers and
+> controller drivers of Inter-Processor-Communication (IPC).
+>
+> Client driver developers should have a look at
+>   include/linux/mailbox_client.h to understand the part of
+> the API exposed to client drivers.
+> Similarly controller driver developers should have a look
+> at include/linux/mailbox_controller.h
+>
+> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
 > ---
->  fs/exec.c                |    4 ----
->  include/linux/mm_types.h |    1 +
->  kernel/fork.c            |   47 ++++++++++++++++++++--------------------------
->  3 files changed, 21 insertions(+), 31 deletions(-)
-> 
-> diff --git a/fs/exec.c b/fs/exec.c
-> index a3d33fe592d6..2ef2751f5a8d 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -368,10 +368,6 @@ static int bprm_mm_init(struct linux_binprm *bprm)
->  	if (!mm)
->  		goto err;
->  
-> -	err = init_new_context(current, mm);
-> -	if (err)
-> -		goto err;
-> -
->  	err = __bprm_mm_init(bprm);
->  	if (err)
->  		goto err;
-> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-> index 96c5750e3110..21bff4be4379 100644
-> --- a/include/linux/mm_types.h
-> +++ b/include/linux/mm_types.h
-> @@ -461,6 +461,7 @@ static inline void mm_init_cpumask(struct mm_struct *mm)
->  #ifdef CONFIG_CPUMASK_OFFSTACK
->  	mm->cpu_vm_mask_var = &mm->cpumask_allocation;
->  #endif
-> +	cpumask_clear(mm->cpu_vm_mask_var);
->  }
->  
->  /* Future-safe accessor for struct mm_struct's cpu_vm_mask. */
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index d2799d1fc952..01f0d0c56cb9 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -365,12 +365,6 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
->  	 */
->  	down_write_nested(&mm->mmap_sem, SINGLE_DEPTH_NESTING);
->  
-> -	mm->locked_vm = 0;
-> -	mm->mmap = NULL;
-> -	mm->vmacache_seqnum = 0;
-> -	mm->map_count = 0;
-> -	cpumask_clear(mm_cpumask(mm));
-> -	mm->mm_rb = RB_ROOT;
->  	rb_link = &mm->mm_rb.rb_node;
->  	rb_parent = NULL;
->  	pprev = &mm->mmap;
-> @@ -529,17 +523,27 @@ static void mm_init_aio(struct mm_struct *mm)
->  
->  static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
->  {
-> +	mm->mmap = NULL;
-> +	mm->mm_rb = RB_ROOT;
-> +	mm->vmacache_seqnum = 0;
->  	atomic_set(&mm->mm_users, 1);
->  	atomic_set(&mm->mm_count, 1);
->  	init_rwsem(&mm->mmap_sem);
->  	INIT_LIST_HEAD(&mm->mmlist);
->  	mm->core_state = NULL;
->  	atomic_long_set(&mm->nr_ptes, 0);
-> +	mm->map_count = 0;
-> +	mm->locked_vm = 0;
->  	memset(&mm->rss_stat, 0, sizeof(mm->rss_stat));
->  	spin_lock_init(&mm->page_table_lock);
-> +	mm_init_cpumask(mm);
->  	mm_init_aio(mm);
->  	mm_init_owner(mm, p);
-> +	mmu_notifier_mm_init(mm);
->  	clear_tlb_flush_pending(mm);
-> +#if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
-> +	mm->pmd_huge_pte = NULL;
-> +#endif
->  
->  	if (current->mm) {
->  		mm->flags = current->mm->flags & MMF_INIT_MASK;
-> @@ -549,11 +553,17 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
->  		mm->def_flags = 0;
->  	}
->  
-> -	if (likely(!mm_alloc_pgd(mm))) {
-> -		mmu_notifier_mm_init(mm);
-> -		return mm;
-> -	}
-> +	if (mm_alloc_pgd(mm))
-> +		goto fail_nopgd;
+>   drivers/mailbox/Makefile           |   4 +
+>   drivers/mailbox/mailbox.c          | 487 +++++++++++++++++++++++++++++++++++++
+>   include/linux/mailbox_client.h     |  45 ++++
+>   include/linux/mailbox_controller.h | 121 +++++++++
+>   4 files changed, 657 insertions(+)
+>   create mode 100644 drivers/mailbox/mailbox.c
+>   create mode 100644 include/linux/mailbox_client.h
+>   create mode 100644 include/linux/mailbox_controller.h
+>
+> diff --git a/drivers/mailbox/Makefile b/drivers/mailbox/Makefile
+> index e0facb3..2fa343a 100644
+> --- a/drivers/mailbox/Makefile
+> +++ b/drivers/mailbox/Makefile
+> @@ -1,3 +1,7 @@
+> +# Generic MAILBOX API
 > +
-> +	if (init_new_context(p, mm))
-> +		goto fail_nocontext;
->  
-> +	return mm;
+> +obj-$(CONFIG_MAILBOX)          += mailbox.o
 > +
-> +fail_nocontext:
-> +	mm_free_pgd(mm);
-> +fail_nopgd:
->  	free_mm(mm);
->  	return NULL;
->  }
-> @@ -587,7 +597,6 @@ struct mm_struct *mm_alloc(void)
->  		return NULL;
->  
->  	memset(mm, 0, sizeof(*mm));
-> -	mm_init_cpumask(mm);
->  	return mm_init(mm, current);
->  }
->  
-> @@ -819,17 +828,10 @@ static struct mm_struct *dup_mm(struct task_struct *tsk)
->  		goto fail_nomem;
->  
->  	memcpy(mm, oldmm, sizeof(*mm));
-> -	mm_init_cpumask(mm);
->  
-> -#if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
-> -	mm->pmd_huge_pte = NULL;
-> -#endif
->  	if (!mm_init(mm, tsk))
->  		goto fail_nomem;
->  
-> -	if (init_new_context(tsk, mm))
-> -		goto fail_nocontext;
-> -
->  	dup_mm_exe_file(oldmm, mm);
->  
->  	err = dup_mmap(mm, oldmm);
-> @@ -851,15 +853,6 @@ free_pt:
->  
->  fail_nomem:
->  	return NULL;
-> -
-> -fail_nocontext:
-> -	/*
-> -	 * If init_new_context() failed, we cannot use mmput() to free the mm
-> -	 * because it calls destroy_context()
-> -	 */
-> -	mm_free_pgd(mm);
-> -	free_mm(mm);
-> -	return NULL;
->  }
->  
->  static int copy_mm(unsigned long clone_flags, struct task_struct *tsk)
-> -- 
-> 1.7.10.4
-> 
+>   obj-$(CONFIG_PL320_MBOX)       += pl320-ipc.o
+>
+>   obj-$(CONFIG_OMAP_MBOX)                += omap-mailbox.o
+> diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
+> new file mode 100644
+> index 0000000..336fa10
+> --- /dev/null
+> +++ b/drivers/mailbox/mailbox.c
+> @@ -0,0 +1,487 @@
+> +/*
+> + * Mailbox: Common code for Mailbox controllers and users
+> + *
+> + * Copyright (C) 2014 Linaro Ltd.
+> + * Author: Jassi Brar <jassisinghbrar@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/interrupt.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/mutex.h>
+> +#include <linux/delay.h>
+> +#include <linux/slab.h>
+> +#include <linux/err.h>
+> +#include <linux/module.h>
+> +#include <linux/device.h>
+> +#include <linux/mailbox_client.h>
+> +#include <linux/mailbox_controller.h>
+> +
+> +#define TXDONE_BY_IRQ  (1 << 0) /* controller has remote RTR irq */
+> +#define TXDONE_BY_POLL (1 << 1) /* controller can read status of last TX */
+> +#define TXDONE_BY_ACK  (1 << 2) /* S/W ACK recevied by Client ticks the TX */
+> +
+> +static LIST_HEAD(mbox_cons);
+> +static DEFINE_MUTEX(con_mutex);
+> +
+> +static int _add_to_rbuf(struct mbox_chan *chan, void *mssg)
+> +{
+> +       int idx;
+> +       unsigned long flags;
+> +
+> +       spin_lock_irqsave(&chan->lock, flags);
+> +
+> +       /* See if there is any space left */
+> +       if (chan->msg_count == MBOX_TX_QUEUE_LEN) {
+> +               spin_unlock_irqrestore(&chan->lock, flags);
+> +               return -ENOMEM;
+> +       }
+> +
+
+Any particular reason why the standard list implementation can't be used
+instead of this. It eliminates limitation of MBOX_TX_QUEUE_LEN and would
+remove msg_free/count
+
+> +       idx = chan->msg_free;
+> +       chan->msg_data[idx] = mssg;
+> +       chan->msg_count++;
+> +
+> +       if (idx == MBOX_TX_QUEUE_LEN - 1)
+> +               chan->msg_free = 0;
+> +       else
+> +               chan->msg_free++;
+> +
+> +       spin_unlock_irqrestore(&chan->lock, flags);
+> +
+> +       return idx;
+> +}
+> +
+> +static void _msg_submit(struct mbox_chan *chan)
+> +{
+> +       unsigned count, idx;
+> +       unsigned long flags;
+> +       void *data;
+> +       int err;
+> +
+> +       spin_lock_irqsave(&chan->lock, flags);
+> +
+> +       if (!chan->msg_count || chan->active_req) {
+> +               spin_unlock_irqrestore(&chan->lock, flags);
+> +               return;
+> +       }
+> +
+> +       count = chan->msg_count;
+> +       idx = chan->msg_free;
+> +       if (idx >= count)
+> +               idx -= count;
+> +       else
+> +               idx += MBOX_TX_QUEUE_LEN - count;
+> +
+> +       data = chan->msg_data[idx];
+> +
+> +       /* Try to submit a message to the MBOX controller */
+> +       err = chan->mbox->ops->send_data(chan, data);
+> +       if (!err) {
+> +               chan->active_req = data;
+> +               chan->msg_count--;
+> +       }
+> +
+> +       spin_unlock_irqrestore(&chan->lock, flags);
+> +}
+> +
+> +static void tx_tick(struct mbox_chan *chan, int r)
+> +{
+> +       unsigned long flags;
+> +       void *mssg;
+> +
+> +       spin_lock_irqsave(&chan->lock, flags);
+> +       mssg = chan->active_req;
+> +       chan->active_req = NULL;
+> +       spin_unlock_irqrestore(&chan->lock, flags);
+> +
+> +       /* Submit next message */
+> +       _msg_submit(chan);
+> +
+> +       /* Notify the client */
+> +       if (chan->cl->tx_block)
+> +               complete(&chan->tx_complete);
+> +       else if (mssg && chan->cl->tx_done)
+> +               chan->cl->tx_done(chan->cl, mssg, r);
+> +}
+> +
+> +static void poll_txdone(unsigned long data)
+> +{
+> +       struct mbox_controller *mbox = (struct mbox_controller *)data;
+> +       bool txdone, resched = false;
+> +       int i;
+> +
+> +       for (i = 0; i < mbox->num_chans; i++) {
+> +               struct mbox_chan *chan = &mbox->chans[i];
+> +
+> +               if (chan->active_req && chan->cl) {
+> +                       resched = true;
+> +                       txdone = chan->mbox->ops->last_tx_done(chan);
+> +                       if (txdone)
+> +                               tx_tick(chan, 0);
+> +               }
+> +       }
+> +
+> +       if (resched)
+> +               mod_timer(&mbox->poll,
+> +                       jiffies + msecs_to_jiffies(mbox->period));
+
+[Nit] Alignment here and few other places to '('
+
+> +}
+> +
+> +/**
+> + * mbox_chan_received_data - A way for controller driver to push data
+> + *                             received from remote to the upper layer.
+> + * @chan: Pointer to the mailbox channel on which RX happened.
+> + * @data: Client specific message typecasted as void *
+> + *
+
+[Nit] 'data' needs to be changed to 'mssg' or vice-versa
+
+> + * After startup and before shutdown any data received on the chan
+> + * is passed on to the API via atomic mbox_chan_received_data().
+> + * The controller should ACK the RX only after this call returns.
+
+Does this mean we can't support asynchronous messages from the remote.
+One possible scenario I can think is if the remote system power controller
+has feature to configure the bounds for thermal sensors and it can send
+async interrupt when the bounds are crossed. We can't just block one channel
+for this always. Again this might have been discussed before and you might have
+solution, I could not gather it with my brief look at older discussions.
+
+> + */
+> +void mbox_chan_received_data(struct mbox_chan *chan, void *mssg)
+> +{
+> +       /* No buffering the received data */
+> +       if (chan->cl->rx_callback)
+> +               chan->cl->rx_callback(chan->cl, mssg);
+> +}
+> +EXPORT_SYMBOL_GPL(mbox_chan_received_data);
+> +
+> +/**
+> + * mbox_chan_txdone - A way for controller driver to notify the
+> + *                     framework that the last TX has completed.
+> + * @chan: Pointer to the mailbox chan on which TX happened.
+> + * @r: Status of last TX - OK or ERROR
+> + *
+> + * The controller that has IRQ for TX ACK calls this atomic API
+> + * to tick the TX state machine. It works only if txdone_irq
+> + * is set by the controller.
+> + */
+> +void mbox_chan_txdone(struct mbox_chan *chan, int r)
+> +{
+> +       if (unlikely(!(chan->txdone_method & TXDONE_BY_IRQ))) {
+> +               pr_err("Controller can't run the TX ticker\n");
+> +               return;
+> +       }
+> +
+> +       tx_tick(chan, r);
+> +}
+> +EXPORT_SYMBOL_GPL(mbox_chan_txdone);
+> +
+> +/**
+> + * mbox_client_txdone - The way for a client to run the TX state machine.
+> + * @chan: Mailbox channel assigned to this client.
+> + * @r: Success status of last transmission.
+> + *
+> + * The client/protocol had received some 'ACK' packet and it notifies
+> + * the API that the last packet was sent successfully. This only works
+> + * if the controller can't sense TX-Done.
+> + */
+> +void mbox_client_txdone(struct mbox_chan *chan, int r)
+> +{
+> +       if (unlikely(!(chan->txdone_method & TXDONE_BY_ACK))) {
+> +               pr_err("Client can't run the TX ticker\n");
+> +               return;
+> +       }
+> +
+> +       tx_tick(chan, r);
+> +}
+> +EXPORT_SYMBOL_GPL(mbox_client_txdone);
+> +
+> +/**
+> + * mbox_client_peek_data - A way for client driver to pull data
+> + *                     received from remote by the controller.
+> + * @chan: Mailbox channel assigned to this client.
+> + *
+> + * A poke to controller driver for any received data.
+> + * The data is actually passed onto client via the
+> + * mbox_chan_received_data()
+> + * The call can be made from atomic context, so the controller's
+> + * implementation of peek_data() must not sleep.
+> + *
+> + * Return: True, if controller has, and is going to push after this,
+> + *          some data.
+> + *         False, if controller doesn't have any data to be read.
+> + */
+> +bool mbox_client_peek_data(struct mbox_chan *chan)
+> +{
+> +       if (chan->mbox->ops->peek_data)
+> +               return chan->mbox->ops->peek_data(chan);
+> +
+> +       return false;
+> +}
+> +EXPORT_SYMBOL_GPL(mbox_client_peek_data);
+
+I am unable to understand how this API will be used. IIUC when the controller
+receives any data from remote, it calls mbox_chan_received_data to push data to
+client.
+
+> +
+> +/**
+> + * mbox_send_message - For client to submit a message to be
+> + *                             sent to the remote.
+> + * @chan: Mailbox channel assigned to this client.
+> + * @mssg: Client specific message typecasted.
+> + *
+> + * For client to submit data to the controller destined for a remote
+> + * processor. If the client had set 'tx_block', the call will return
+> + * either when the remote receives the data or when 'tx_tout' millisecs
+> + * run out.
+> + *  In non-blocking mode, the requests are buffered by the API and a
+> + * non-negative token is returned for each queued request. If the request
+> + * is not queued, a negative token is returned. Upon failure or successful
+> + * TX, the API calls 'tx_done' from atomic context, from which the client
+> + * could submit yet another request.
+> + *  In blocking mode, 'tx_done' is not called, effectively making the
+> + * queue length 1.
+> + * The pointer to message should be preserved until it is sent
+> + * over the chan, i.e, tx_done() is made.
+> + * This function could be called from atomic context as it simply
+> + * queues the data and returns a token against the request.
+> + *
+> + * Return: Non-negative integer for successful submission (non-blocking mode)
+> + *     or transmission over chan (blocking mode).
+> + *     Negative value denotes failure.
+> + */
+> +int mbox_send_message(struct mbox_chan *chan, void *mssg)
+> +{
+> +       int t;
+> +
+> +       if (!chan || !chan->cl)
+> +               return -EINVAL;
+> +
+> +       t = _add_to_rbuf(chan, mssg);
+> +       if (t < 0) {
+> +               pr_err("Try increasing MBOX_TX_QUEUE_LEN\n");
+> +               return t;
+> +       }
+> +
+> +       _msg_submit(chan);
+> +
+> +       reinit_completion(&chan->tx_complete);
+> +
+> +       if (chan->txdone_method == TXDONE_BY_POLL)
+> +               poll_txdone((unsigned long)chan->mbox);
+> +
+> +       if (chan->cl->tx_block && chan->active_req) {
+> +               unsigned long wait;
+> +               int ret;
+> +
+> +               if (!chan->cl->tx_tout) /* wait for ever */
+> +                       wait = msecs_to_jiffies(3600000);
+> +               else
+> +                       wait = msecs_to_jiffies(chan->cl->tx_tout);
+> +
+> +               ret = wait_for_completion_timeout(&chan->tx_complete, wait);
+> +               if (ret == 0) {
+> +                       t = -EIO;
+> +                       tx_tick(chan, -EIO);
+> +               }
+> +       }
+> +
+> +       return t;
+> +}
+> +EXPORT_SYMBOL_GPL(mbox_send_message);
+> +
+> +/**
+> + * mbox_request_channel - Request a mailbox channel.
+> + * @cl: Identity of the client requesting the channel.
+> + *
+> + * The Client specifies its requirements and capabilities while asking for
+> + * a mailbox channel. It can't be called from atomic context.
+> + * The channel is exclusively allocated and can't be used by another
+> + * client before the owner calls mbox_free_channel.
+> + * After assignment, any packet received on this channel will be
+> + * handed over to the client via the 'rx_callback'.
+> + * The framework holds reference to the client, so the mbox_client
+> + * structure shouldn't be modified until the mbox_free_channel returns.
+> + *
+> + * Return: Pointer to the channel assigned to the client if successful.
+> + *             ERR_PTR for request failure.
+> + */
+> +struct mbox_chan *mbox_request_channel(const struct mbox_client *cl)
+> +{
+> +       struct device *dev = cl->dev;
+> +       struct mbox_controller *mbox;
+> +       struct of_phandle_args spec;
+> +       struct mbox_chan *chan;
+> +       unsigned long flags;
+> +       int count, i, ret;
+> +
+> +       if (!dev || !dev->of_node) {
+> +               pr_err("%s: No owner device node\n", __func__);
+> +               return ERR_PTR(-ENODEV);
+> +       }
+> +
+> +       count = of_property_count_strings(dev->of_node, "mbox-names");
+> +       if (count < 0) {
+> +               pr_err("%s: mbox-names property of node '%s' missing\n",
+> +                       __func__, dev->of_node->full_name);
+> +               return ERR_PTR(-ENODEV);
+> +       }
+> +
+> +       mutex_lock(&con_mutex);
+> +
+> +       ret = -ENODEV;
+> +       for (i = 0; i < count; i++) {
+> +               const char *s;
+> +
+> +               if (of_property_read_string_index(dev->of_node,
+> +                                               "mbox-names", i, &s))
+> +                       continue;
+> +
+> +               if (strcmp(cl->chan_name, s))
+> +                       continue;
+> +
+> +               if (of_parse_phandle_with_args(dev->of_node,
+> +                                        "mbox", "#mbox-cells", i, &spec))
+> +                       continue;
+> +
+> +               chan = NULL;
+> +               list_for_each_entry(mbox, &mbox_cons, node)
+> +                       if (mbox->dev->of_node == spec.np) {
+> +                               chan = mbox->of_xlate(mbox, &spec);
+> +                               break;
+> +                       }
+> +
+> +               of_node_put(spec.np);
+> +
+> +               if (!chan)
+> +                       continue;
+> +
+> +               ret = -EBUSY;
+> +               if (!chan->cl && try_module_get(mbox->dev->driver->owner))
+> +                       break;
+> +       }
+> +
+> +       if (i == count) {
+> +               mutex_unlock(&con_mutex);
+> +               return ERR_PTR(ret);
+> +       }
+> +
+> +       spin_lock_irqsave(&chan->lock, flags);
+> +       chan->msg_free = 0;
+> +       chan->msg_count = 0;
+> +       chan->active_req = NULL;
+> +       chan->cl = cl;
+> +       init_completion(&chan->tx_complete);
+> +
+> +       if (chan->txdone_method == TXDONE_BY_POLL
+> +                       && cl->knows_txdone)
+> +               chan->txdone_method |= TXDONE_BY_ACK;
+> +       spin_unlock_irqrestore(&chan->lock, flags);
+> +
+> +       ret = chan->mbox->ops->startup(chan);
+> +       if (ret) {
+> +               pr_err("Unable to startup the chan (%d)\n", ret);
+> +               mbox_free_channel(chan);
+> +               chan = ERR_PTR(ret);
+> +       }
+> +
+> +       mutex_unlock(&con_mutex);
+> +       return chan;
+> +}
+> +EXPORT_SYMBOL_GPL(mbox_request_channel);
+> +
+> +/**
+> + * mbox_free_channel - The client relinquishes control of a mailbox
+> + *                     channel by this call.
+> + * @chan: The mailbox channel to be freed.
+> + */
+> +void mbox_free_channel(struct mbox_chan *chan)
+> +{
+> +       unsigned long flags;
+> +
+> +       if (!chan || !chan->cl)
+> +               return;
+> +
+> +       chan->mbox->ops->shutdown(chan);
+> +
+> +       /* The queued TX requests are simply aborted, no callbacks are made */
+> +       spin_lock_irqsave(&chan->lock, flags);
+> +       chan->cl = NULL;
+> +       chan->active_req = NULL;
+> +       if (chan->txdone_method == (TXDONE_BY_POLL | TXDONE_BY_ACK))
+> +               chan->txdone_method = TXDONE_BY_POLL;
+> +
+> +       module_put(chan->mbox->dev->driver->owner);
+> +       spin_unlock_irqrestore(&chan->lock, flags);
+> +}
+> +EXPORT_SYMBOL_GPL(mbox_free_channel);
+> +
+> +static struct mbox_chan *
+> +of_mbox_index_xlate(struct mbox_controller *mbox,
+> +                               const struct of_phandle_args *sp)
+> +{
+> +       int ind = sp->args[0];
+> +
+> +       if (ind >= mbox->num_chans)
+> +               return NULL;
+> +
+> +       return &mbox->chans[ind];
+> +}
+> +
+> +/**
+> + * mbox_controller_register - Register the mailbox controller
+> + * @mbox:      Pointer to the mailbox controller.
+> + *
+> + * The controller driver registers its communication chans
+> + */
+> +int mbox_controller_register(struct mbox_controller *mbox)
+> +{
+> +       int i, txdone;
+> +
+> +       /* Sanity check */
+> +       if (!mbox || !mbox->dev || !mbox->ops || !mbox->num_chans)
+> +               return -EINVAL;
+> +
+> +       if (mbox->txdone_irq)
+> +               txdone = TXDONE_BY_IRQ;
+> +       else if (mbox->txdone_poll)
+> +               txdone = TXDONE_BY_POLL;
+> +       else /* It has to be ACK then */
+> +               txdone = TXDONE_BY_ACK;
+> +
+> +       if (txdone == TXDONE_BY_POLL) {
+> +               mbox->poll.function = &poll_txdone;
+> +               mbox->poll.data = (unsigned long)mbox;
+> +               init_timer(&mbox->poll);
+> +       }
+> +
+> +       for (i = 0; i < mbox->num_chans; i++) {
+> +               struct mbox_chan *chan = &mbox->chans[i];
+
+[Nit] Newline to separate declarations
+
+> +               chan->cl = NULL;
+> +               chan->mbox = mbox;
+> +               chan->txdone_method = txdone;
+> +               spin_lock_init(&chan->lock);
+> +       }
+> +
+> +       if (!mbox->of_xlate)
+> +               mbox->of_xlate = of_mbox_index_xlate;
+> +
+> +       mutex_lock(&con_mutex);
+> +       list_add_tail(&mbox->node, &mbox_cons);
+> +       mutex_unlock(&con_mutex);
+> +
+> +       return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(mbox_controller_register);
+> +
+> +/**
+> + * mbox_controller_unregister - UnRegister the mailbox controller
+> + * @mbox:      Pointer to the mailbox controller.
+> + */
+> +void mbox_controller_unregister(struct mbox_controller *mbox)
+> +{
+> +       int i;
+> +
+> +       if (!mbox)
+> +               return;
+> +
+> +       mutex_lock(&con_mutex);
+> +
+> +       list_del(&mbox->node);
+> +
+> +       for (i = 0; i < mbox->num_chans; i++)
+> +               mbox_free_channel(&mbox->chans[i]);
+> +
+> +       del_timer_sync(&mbox->poll);
+> +
+> +       mutex_unlock(&con_mutex);
+> +}
+> +EXPORT_SYMBOL_GPL(mbox_controller_unregister);
+> diff --git a/include/linux/mailbox_client.h b/include/linux/mailbox_client.h
+> new file mode 100644
+> index 0000000..53eb078
+> --- /dev/null
+> +++ b/include/linux/mailbox_client.h
+> @@ -0,0 +1,45 @@
+> +/*
+> + * Copyright (C) 2014 Linaro Ltd.
+> + * Author: Jassi Brar <jassisinghbrar@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#ifndef __MAILBOX_CLIENT_H
+> +#define __MAILBOX_CLIENT_H
+> +
+> +#include <linux/of.h>
+> +
+> +struct mbox_chan;
+> +
+> +/**
+> + * struct mbox_client - User of a mailbox
+> + * @dev:               The client device
+> + * @chan_name:         The "controller:channel" this client wants
+> + * @rx_callback:       Atomic callback to provide client the data received
+> + * @tx_done:           Atomic callback to tell client of data transmission
+> + * @tx_block:          If the mbox_send_message should block until data is
+> + *                     transmitted.
+> + * @tx_tout:           Max block period in ms before TX is assumed failure
+> + * @knows_txdone:      if the client could run the TX state machine. Usually
+> + *                     if the client receives some ACK packet for transmission.
+> + *                     Unused if the controller already has TX_Done/RTR IRQ.
+> + */
+> +struct mbox_client {
+> +       struct device *dev;
+> +       const char *chan_name;
+> +       void (*rx_callback)(struct mbox_client *cl, void *mssg);
+> +       void (*tx_done)(struct mbox_client *cl, void *mssg, int r);
+> +       bool tx_block;
+> +       unsigned long tx_tout;
+> +       bool knows_txdone;
+> +};
+> +
+> +struct mbox_chan *mbox_request_channel(const struct mbox_client *cl);
+> +int mbox_send_message(struct mbox_chan *chan, void *mssg);
+> +void mbox_client_txdone(struct mbox_chan *chan, int r);
+> +void mbox_free_channel(struct mbox_chan *chan);
+> +
+> +#endif /* __MAILBOX_CLIENT_H */
+> diff --git a/include/linux/mailbox_controller.h b/include/linux/mailbox_controller.h
+> new file mode 100644
+> index 0000000..5d1915b
+> --- /dev/null
+> +++ b/include/linux/mailbox_controller.h
+> @@ -0,0 +1,121 @@
+> +/*
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#ifndef __MAILBOX_CONTROLLER_H
+> +#define __MAILBOX_CONTROLLER_H
+> +
+> +#include <linux/of.h>
+> +
+> +struct mbox_chan;
+> +
+> +/**
+> + * struct mbox_chan_ops - s/w representation of a communication chan
+> + * @send_data: The API asks the MBOX controller driver, in atomic
+> + *             context try to transmit a message on the bus. Returns 0 if
+> + *             data is accepted for transmission, -EBUSY while rejecting
+> + *             if the remote hasn't yet read the last data sent. Actual
+> + *             transmission of data is reported by the controller via
+> + *             mbox_chan_txdone (if it has some TX ACK irq). It must not
+> + *             block.
+> + * @startup:   Called when a client requests the chan. The controller
+> + *             could ask clients for additional parameters of communication
+> + *             to be provided via client's chan_data. This call may
+> + *             block. After this call the Controller must forward any
+> + *             data received on the chan by calling mbox_chan_received_data.
+> + * @shutdown:  Called when a client relinquishes control of a chan.
+> + *             This call may block too. The controller must not forwared
+> + *             any received data anymore.
+> + * @last_tx_done: If the controller sets 'txdone_poll', the API calls
+> + *               this to poll status of last TX. The controller must
+> + *               give priority to IRQ method over polling and never
+> + *               set both txdone_poll and txdone_irq. Only in polling
+> + *               mode 'send_data' is expected to return -EBUSY.
+> + *               Used only if txdone_poll:=true && txdone_irq:=false
+> + * @peek_data: Atomic check for any received data. Return true if controller
+> + *               has some data to push to the client. False otherwise.
+> + */
+> +struct mbox_chan_ops {
+> +       int (*send_data)(struct mbox_chan *chan, void *data);
+> +       int (*startup)(struct mbox_chan *chan);
+> +       void (*shutdown)(struct mbox_chan *chan);
+> +       bool (*last_tx_done)(struct mbox_chan *chan);
+> +       bool (*peek_data)(struct mbox_chan *chan);
+> +};
+> +
+> +/**
+> + * struct mbox_controller - Controller of a class of communication chans
+> + * @dev:               Device backing this controller
+> + * @controller_name:   Literal name of the controller.
+
+Looks like this is gone now
+
+> + * @ops:               Operators that work on each communication chan
+> + * @chans:             Null terminated array of chans.
+> + * @txdone_irq:                Indicates if the controller can report to API when
+> + *                     the last transmitted data was read by the remote.
+> + *                     Eg, if it has some TX ACK irq.
+> + * @txdone_poll:       If the controller can read but not report the TX
+> + *                     done. Ex, some register shows the TX status but
+> + *                     no interrupt rises. Ignored if 'txdone_irq' is set.
+> + * @txpoll_period:     If 'txdone_poll' is in effect, the API polls for
+> + *                     last TX's status after these many millisecs
+
+Does it makes sense to add description for of_xlate and num_chans ?
+
+> + */
+> +struct mbox_controller {
+> +       struct device *dev;
+> +       struct mbox_chan_ops *ops;
+> +       struct mbox_chan *chans;
+> +       int num_chans;
+> +       bool txdone_irq;
+> +       bool txdone_poll;
+> +       unsigned txpoll_period;
+> +       struct mbox_chan *(*of_xlate)(struct mbox_controller *mbox,
+> +                                       const struct of_phandle_args *sp);
+> +       /*
+> +        * If the controller supports only TXDONE_BY_POLL,
+> +        * this timer polls all the links for txdone.
+> +        */
+> +       struct timer_list poll;
+> +       unsigned period;
+> +       /* Hook to add to the global controller list */
+> +       struct list_head node;
+> +};
+> +
+> +/*
+> + * The length of circular buffer for queuing messages from a client.
+> + * 'msg_count' tracks the number of buffered messages while 'msg_free'
+> + * is the index where the next message would be buffered.
+> + * We shouldn't need it too big because every transferr is interrupt
+> + * triggered and if we have lots of data to transfer, the interrupt
+> + * latencies are going to be the bottleneck, not the buffer length.
+> + * Besides, mbox_send_message could be called from atomic context and
+> + * the client could also queue another message from the notifier 'tx_done'
+> + * of the last transfer done.
+> + * REVIST: If too many platforms see the "Try increasing MBOX_TX_QUEUE_LEN"
+> + * print, it needs to be taken from config option or somesuch.
+> + */
+> +#define MBOX_TX_QUEUE_LEN      20
+> +
+
+As mentioned before IMO using std list might eliminate this.
+
+> +struct mbox_chan {
+> +       struct mbox_controller *mbox; /* Parent Controller */
+> +       unsigned txdone_method;
+> +
+> +       /* client */
+> +       struct mbox_client *cl;
+> +       struct completion tx_complete;
+> +
+> +       void *active_req;
+> +       unsigned msg_count, msg_free;
+> +       void *msg_data[MBOX_TX_QUEUE_LEN];
+> +       /* Access to the channel */
+> +       spinlock_t lock;
+> +
+> +       /* Private data for controller */
+> +       void *con_priv;
+> +};
+> +
+> +int mbox_controller_register(struct mbox_controller *mbox);
+> +void mbox_chan_received_data(struct mbox_chan *chan, void *data);
+> +void mbox_chan_txdone(struct mbox_chan *chan, int r);
+> +void mbox_controller_unregister(struct mbox_controller *mbox);
+> +
+> +#endif /* __MAILBOX_CONTROLLER_H */
+> --
+> 1.8.1.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
