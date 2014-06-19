@@ -1,96 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757745AbaFSJzb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 05:55:31 -0400
-Received: from mga11.intel.com ([192.55.52.93]:33895 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757323AbaFSJz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 05:55:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,506,1400050800"; 
-   d="scan'208";a="557874894"
-From: Tiejun Chen <tiejun.chen@intel.com>
-To: daniel.vetter@ffwll.ch, jani.nikula@linux.intel.com, airlied@linux.ie
-Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        qemu-devel@nongnu.org
-Subject: [RFC][PATCH] gpu:drm:i915:intel_detect_pch: back to check devfn instead of check class type
-Date: Thu, 19 Jun 2014 17:53:51 +0800
-Message-Id: <1403171631-3452-1-git-send-email-tiejun.chen@intel.com>
-X-Mailer: git-send-email 1.9.1
+	id S1756850AbaFSJ6z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 05:58:55 -0400
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:47989 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753129AbaFSJ6x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 05:58:53 -0400
+X-Yandex-Uniq: e11e4595-6a91-4faf-b23b-ef3b97325e3b
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Date: Thu, 19 Jun 2014 13:58:48 +0400
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: acme@kernel.org, artagnon@gmail.com, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] perf timechart: implement IO mode
+Message-ID: <20140619095848.GE15620@stfomichev-desktop.yandex.net>
+References: <1402412694-5996-1-git-send-email-stfomichev@yandex-team.ru>
+ <1402412694-5996-2-git-send-email-stfomichev@yandex-team.ru>
+ <87ppif9c3y.fsf@sejong.aot.lge.com>
+ <20140616060804.GA9394@stfomichev-desktop.yandex.net>
+ <87sin383cw.fsf@sejong.aot.lge.com>
+ <20140618090034.GC15620@stfomichev-desktop.yandex.net>
+ <87fvj191w4.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87fvj191w4.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Originally the reason to probe ISA bridge instead of Dev31:Fun0
-is to make graphics device passthrough work easy for VMM, that
-only need to expose ISA bridge to let driver know the real
-hardware underneath. This is a requirement from virtualization
-team. Especially in that virtualized environments, XEN, there
-is irrelevant ISA bridge in the system with that legacy qemu
-version specific to xen, qemu-xen-traditional. So to work
-reliably, we should scan through all the ISA bridge devices
-and check for the first match, instead of only checking the
-first one.
-
-But actually, qemu-xen-traditional, is always enumerated with
-Dev31:Fun0, 00:1f.0 as follows:
-
-hw/pt-graphics.c:
-
-intel_pch_init()
-    |
-    + pci_isa_bridge_init(bus, PCI_DEVFN(0x1f, 0), ...);
-
-so this mean that isa bridge is still represented with Dev31:Func0
-like the native OS. Furthermore, currently we're pushing VGA
-passthrough support into qemu upstream, and with some discussion,
-we wouldn't set the bridge class type and just expose this devfn.
-
-So we just go back to check devfn to make life normal.
-
-Signed-off-by: Tiejun Chen <tiejun.chen@intel.com>
----
- drivers/gpu/drm/i915/i915_drv.c | 19 +++----------------
- 1 file changed, 3 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
-index 651e65e..cb2526e 100644
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -417,18 +417,8 @@ void intel_detect_pch(struct drm_device *dev)
- 		return;
- 	}
- 
--	/*
--	 * The reason to probe ISA bridge instead of Dev31:Fun0 is to
--	 * make graphics device passthrough work easy for VMM, that only
--	 * need to expose ISA bridge to let driver know the real hardware
--	 * underneath. This is a requirement from virtualization team.
--	 *
--	 * In some virtualized environments (e.g. XEN), there is irrelevant
--	 * ISA bridge in the system. To work reliably, we should scan trhough
--	 * all the ISA bridge devices and check for the first match, instead
--	 * of only checking the first one.
--	 */
--	while ((pch = pci_get_class(PCI_CLASS_BRIDGE_ISA << 8, pch))) {
-+	pch = pci_get_bus_and_slot(0, PCI_DEVFN(0x1f, 0));
-+	if (pch) {
- 		if (pch->vendor == PCI_VENDOR_ID_INTEL) {
- 			unsigned short id = pch->device & INTEL_PCH_DEVICE_ID_MASK;
- 			dev_priv->pch_id = id;
-@@ -462,10 +452,7 @@ void intel_detect_pch(struct drm_device *dev)
- 				DRM_DEBUG_KMS("Found LynxPoint LP PCH\n");
- 				WARN_ON(!IS_HASWELL(dev));
- 				WARN_ON(!IS_ULT(dev));
--			} else
--				continue;
--
--			break;
-+			}
- 		}
- 	}
- 	if (!pch)
--- 
-1.9.1
-
+> Hmm.. it looks like an unrelated issue.  I can see the bars in inkscape,
+> but still see empty grey bars in firefox.
+I'll try to have a look; maybe I'm writing some non-standard svg
+instructions which fail on (probably) standard-compliant firefox and
+work on more robust inkscape.
