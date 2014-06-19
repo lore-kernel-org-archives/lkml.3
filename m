@@ -1,76 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757932AbaFSLRA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 07:17:00 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58648 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753129AbaFSLQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 07:16:58 -0400
-Message-ID: <53A2C690.1060106@ti.com>
-Date: Thu, 19 Jun 2014 14:16:32 +0300
-From: Tero Kristo <t-kristo@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S932322AbaFSLRe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 07:17:34 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:61899 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757613AbaFSLRd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 07:17:33 -0400
+Message-ID: <53A2C6B0.3090200@gmail.com>
+Date: Thu, 19 Jun 2014 19:17:04 +0800
+From: =?gb18030?Q?=22newtongao=28=B8=DF=D0=A1=C3=F7=29=22?= 
+	<gxm.linux.kernel@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <arnd@arndb.de>, <tony@atomide.com>, <jg1.han@samsung.com>,
-        Rajendra Nayak <rnayak@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v2 10/18] ARM: dts: dra7xx-clocks: Add missing 32khz clocks
- used for PHY
-References: <1401345500-20188-1-git-send-email-kishon@ti.com> <1401345500-20188-11-git-send-email-kishon@ti.com>
-In-Reply-To: <1401345500-20188-11-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: gleb@kernel.org, pbonzini@redhat.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com
+CC: x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: fix hyperv tsc page clear wrong address
+References: <53A2BB7B.8070507@gmail.com> <53A2BC1A.4050702@gmail.com>
+In-Reply-To: <53A2BC1A.4050702@gmail.com>
+Content-Type: multipart/mixed;
+ boundary="------------010904010501080300020809"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2014 09:38 AM, Kishon Vijay Abraham I wrote:
-> Added missing 32khz clock used by PCIe PHY.
-> The documention for this node can be found @ ../bindings/clock/ti/gate.txt.
+This is a multi-part message in MIME format.
+--------------010904010501080300020809
+Content-Type: text/plain; charset=gb18030
+Content-Transfer-Encoding: 7bit
 
-You can drop the node documentation ref, and rather add a TRM reference 
-about hardware details. Other than that, looks good to me.
+This is more concisely
 
--Tero
+>From 6ddeb18347f9dda0fe37702e0d067a4129a89b54 Mon Sep 17 00:00:00 2001
+From: Xiaoming Gao <newtongao@tencent.com>
+Date: Thu, 19 Jun 2014 19:14:57 +0800
+Subject: [PATCH] kvm: fix hyperv tsc page clear wrong address
 
->
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: Rajendra Nayak <rnayak@ti.com>
-> Cc: Tero Kristo <t-kristo@ti.com>
-> Cc: Paul Walmsley <paul@pwsan.com>
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
->   arch/arm/boot/dts/dra7xx-clocks.dtsi |    8 ++++++++
->   1 file changed, 8 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-> index 44993ec..e1bd052 100644
-> --- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
-> +++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-> @@ -1165,6 +1165,14 @@
->   		reg = <0x021c>, <0x0220>;
->   	};
->
-> +	optfclk_pciephy_32khz: optfclk_pciephy_32khz@4a0093b0 {
-> +		compatible = "ti,gate-clock";
-> +		clocks = <&sys_32k_ck>;
-> +		#clock-cells = <0>;
-> +		reg = <0x13b0>;
-> +		ti,bit-shift = <8>;
-> +	};
-> +
->   	optfclk_pciephy_div: optfclk_pciephy_div@4a00821c {
->   		compatible = "ti,divider-clock";
->   		clocks = <&apll_pcie_ck>;
->
+tsc page addr need clear the low HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT bits
+before kvm_write_guest write the zero tsc_ref structure to guest, or it will lead
+guest to get wrong clocksource.
 
+windows guest will get strong impact, QueryPerformanceCounter will always return 0
+,all things in windows rely on clock source, will in serious chaos.
+
+Signed-off-by: Xiaoming Gao <newtongao@tencnet.com>
+---
+ arch/x86/kvm/x86.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index f32a025..f644933 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1898,7 +1898,7 @@ static int set_msr_hyperv_pw(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+ 		if (!(data & HV_X64_MSR_TSC_REFERENCE_ENABLE))
+ 			break;
+ 		gfn = data >> HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT;
+-		if (kvm_write_guest(kvm, data,
++		if (kvm_write_guest(kvm, gfn << HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT,
+ 			&tsc_ref, sizeof(tsc_ref)))
+ 			return 1;
+ 		mark_page_dirty(kvm, gfn);
+-- 
+1.7.1
+
+
+--------------010904010501080300020809
+Content-Type: text/plain; charset=gb18030;
+ name="0001-kvm-fix-hyperv-tsc-page-clear-wrong-address.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0001-kvm-fix-hyperv-tsc-page-clear-wrong-address.patch"
+
+>From 6ddeb18347f9dda0fe37702e0d067a4129a89b54 Mon Sep 17 00:00:00 2001
+From: Xiaoming Gao <newtongao@tencent.com>
+Date: Thu, 19 Jun 2014 19:14:57 +0800
+Subject: [PATCH] kvm: fix hyperv tsc page clear wrong address
+
+tsc page addr need clear the low HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT bits
+before kvm_write_guest write the zero tsc_ref structure to guest, or it will lead
+guest to get wrong clocksource.
+
+windows guest will get strong impact, QueryPerformanceCounter will always return 0
+,all things in windows rely on clock source, will in serious chaos.
+
+Signed-off-by: Xiaoming Gao <newtongao@tencnet.com>
+---
+ arch/x86/kvm/x86.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index f32a025..f644933 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1898,7 +1898,7 @@ static int set_msr_hyperv_pw(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+ 		if (!(data & HV_X64_MSR_TSC_REFERENCE_ENABLE))
+ 			break;
+ 		gfn = data >> HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT;
+-		if (kvm_write_guest(kvm, data,
++		if (kvm_write_guest(kvm, gfn << HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT,
+ 			&tsc_ref, sizeof(tsc_ref)))
+ 			return 1;
+ 		mark_page_dirty(kvm, gfn);
+-- 
+1.7.1
+
+
+--------------010904010501080300020809--
