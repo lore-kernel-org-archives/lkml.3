@@ -1,379 +1,536 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757265AbaFSODv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 10:03:51 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36996 "EHLO mga11.intel.com"
+	id S1757359AbaFSOFL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 10:05:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54904 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756950AbaFSOD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 10:03:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,507,1400050800"; 
-   d="scan'208";a="550397240"
-From: Jenny TC <jenny.tc@intel.com>
-To: linux-kernel@vger.kernel.org, Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Pavel Machek <pavel@ucw.cz>
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Cohen David A <david.a.cohen@intel.com>,
-        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
-        Jenny TC <jenny.tc@intel.com>
-Subject: [PATCH 3/4] power_supply: Introduce PSE compliant algorithm
-Date: Thu, 19 Jun 2014 19:32:56 +0530
-Message-Id: <1403186578-6026-4-git-send-email-jenny.tc@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403186578-6026-1-git-send-email-jenny.tc@intel.com>
-References: <1403186578-6026-1-git-send-email-jenny.tc@intel.com>
+	id S1756822AbaFSOFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 10:05:07 -0400
+Message-ID: <53A2EDCA.8080000@redhat.com>
+Date: Thu, 19 Jun 2014 16:03:54 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Ulf Hansson <ulf.hansson@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Chris Ball <chris@printf.net>,
+        Chen-Yu Tsai <wens@csie.org>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [RFC 1/2] pwrseq: Add subsystem to handle complex power sequences
+References: <1403183091-27876-1-git-send-email-ulf.hansson@linaro.org> <1403183091-27876-2-git-send-email-ulf.hansson@linaro.org>
+In-Reply-To: <1403183091-27876-2-git-send-email-ulf.hansson@linaro.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per Product Safety Engineering (PSE) specification for battery charging, the
-battery characteristics and thereby the charging rates can vary on different
-temperature zones. This patch introduces a PSE compliant charging algorithm with
-maintenance charging support. The algorithm can be selected by the power supply
-charging driver based on the type of the battery charging profile.
+Hi,
 
-Signed-off-by: Jenny TC <jenny.tc@intel.com>
----
- drivers/power/Kconfig                      |   15 ++
- drivers/power/Makefile                     |    1 +
- drivers/power/charging_algo_pse.c          |  211 ++++++++++++++++++++++++++++
- include/linux/power/power_supply_charger.h |   63 +++++++++
- 4 files changed, 290 insertions(+)
- create mode 100644 drivers/power/charging_algo_pse.c
+Overall I like the idea, I've some comments on the implementation inline.
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index f679f82..54a0321 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -22,6 +22,21 @@ config POWER_SUPPLY_CHARGER
- 	  drivers to keep the charging logic outside and the charger driver
- 	  just need to abstract the charger hardware.
- 
-+config POWER_SUPPLY_CHARGING_ALGO_PSE
-+	bool "PSE compliant charging algorithm"
-+	depends on POWER_SUPPLY_CHARGER
-+	help
-+	  Say Y here to select Product Safety Engineering (PSE) compliant
-+	  charging algorithm. As per PSE standard the battery characteristics
-+	  and thereby the charging rates can vary on different temperature
-+	  zones. Select this if your charging algorithm need to change the
-+	  charging parameters based on the battery temperature and the battery
-+	  charging profile follows the struct psy_pse_chrg_prof definition.
-+	  This  config will enable PSE compliant charging algorithm with
-+	  maintenance charging support. At runtime the algorithm will be
-+	  selected by the psy charger driver based on the type of the battery
-+	  charging profile.
-+
- config PDA_POWER
- 	tristate "Generic PDA/phone power driver"
- 	depends on !S390
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index 405f0f4..77535fd 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -8,6 +8,7 @@ obj-$(CONFIG_POWER_SUPPLY)	+= power_supply.o
- obj-$(CONFIG_GENERIC_ADC_BATTERY)	+= generic-adc-battery.o
- 
- obj-$(CONFIG_POWER_SUPPLY_CHARGER) += power_supply_charger.o
-+obj-$(CONFIG_POWER_SUPPLY_CHARGING_ALGO_PSE) += charging_algo_pse.o
- obj-$(CONFIG_PDA_POWER)		+= pda_power.o
- obj-$(CONFIG_APM_POWER)		+= apm_power.o
- obj-$(CONFIG_MAX8925_POWER)	+= max8925_power.o
-diff --git a/drivers/power/charging_algo_pse.c b/drivers/power/charging_algo_pse.c
-new file mode 100644
-index 0000000..2b13c74
---- /dev/null
-+++ b/drivers/power/charging_algo_pse.c
-@@ -0,0 +1,211 @@
-+/*
-+ * Copyright (C) 2012 Intel Corporation
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the GNU
-+ * General Public License for more details.
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ * Author: Jenny TC <jenny.tc@intel.com>
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/device.h>
-+#include <linux/err.h>
-+#include <linux/power_supply.h>
-+#include <linux/thermal.h>
-+#include "power_supply.h"
-+#include "power_supply_charger.h"
-+
-+/* 98% of CV is considered as voltage to detect Full */
-+#define FULL_CV_MIN 98
-+
-+/*
-+ * Offset to exit from maintenance charging. In maintenance charging
-+ * if the volatge is less than the (maintenance_lower_threshold -
-+ * MAINT_EXIT_OFFSET) then system can switch to normal charging
-+ */
-+
-+#define MAINT_EXIT_OFFSET 50  /* mV */
-+
-+static int get_tempzone(struct psy_pse_chrg_prof *pse_mod_bprof,
-+		int temp)
-+{
-+	int i = 0;
-+	int temp_range_cnt = min_t(u16, pse_mod_bprof->temp_mon_ranges,
-+					BATT_TEMP_NR_RNG);
-+
-+	if ((temp < pse_mod_bprof->temp_low_lim) ||
-+		(temp > pse_mod_bprof->temp_mon_range[0].temp_up_lim))
-+		return -EINVAL;
-+
-+	for (i = 0; i < temp_range_cnt; ++i)
-+		if (temp > pse_mod_bprof->temp_mon_range[i].temp_up_lim)
-+			break;
-+	return i-1;
-+}
-+
-+static inline bool is_charge_terminated(long volt, long cur,
-+				long iterm, unsigned long cv)
-+{
-+	pr_devel("%s:current=%ld pse_mod_bprof->chrg_term_mA =%ld voltage_now=%ld full_cond=%ld",
-+			__func__, cur, iterm, volt * 100, (FULL_CV_MIN * cv));
-+
-+	return (cur > 0) && (cur <= iterm) &&
-+				((volt * 100)  >= (FULL_CV_MIN * cv));
-+
-+}
-+
-+static inline bool is_battery_full(struct psy_batt_context *batt_cxt,
-+		struct psy_pse_chrg_prof *pse_mod_bprof, unsigned long cv)
-+{
-+
-+	int i;
-+	struct psy_batt_props batt_props;
-+
-+	batt_props =  batt_cxt->batt_props;
-+
-+	/*
-+	* Software full detection. Check the battery charge current to detect
-+	* battery Full. The voltage also verified to avoid false charge
-+	* full detection.
-+	*/
-+	pr_devel("%s:current=%ld pse_mod_bprof->chrg_term_mA =%d batt_props.voltage_now=%ld full_cond=%ld",
-+		__func__, batt_props.current_now, (pse_mod_bprof->chrg_term_mA),
-+		batt_props.voltage_now * 100, (FULL_CV_MIN * cv));
-+
-+	for (i = (MAX_CUR_VOLT_SAMPLES - 1); i >= 0; --i) {
-+
-+		if (!(is_charge_terminated(batt_cxt->voltage_now_cache[i],
-+				batt_cxt->current_now_cache[i],
-+				pse_mod_bprof->chrg_term_mA, cv)))
-+			return false;
-+	}
-+
-+	return true;
-+}
-+
-+static int  pse_get_bat_thresholds(struct psy_batt_chrg_prof  bprof,
-+			struct psy_batt_thresholds *bat_thresh)
-+{
-+	struct psy_pse_chrg_prof *pse_mod_bprof =
-+			(struct psy_pse_chrg_prof *) bprof.batt_prof;
-+
-+	if ((bprof.chrg_prof_type != PSY_CHRG_PROF_PSE) || (!pse_mod_bprof))
-+		return -EINVAL;
-+
-+	bat_thresh->iterm = pse_mod_bprof->chrg_term_mA;
-+	bat_thresh->temp_min = pse_mod_bprof->temp_low_lim;
-+	bat_thresh->temp_max = pse_mod_bprof->temp_mon_range[0].temp_up_lim;
-+
-+	return 0;
-+}
-+
-+static enum psy_algo_stat pse_get_next_cc_cv(struct psy_batt_context *batt_cxt,
-+	struct psy_batt_chrg_prof  bprof, unsigned long *cc, unsigned long *cv)
-+{
-+	int tzone;
-+	struct psy_pse_chrg_prof *pse_mod_bprof;
-+	struct psy_batt_props batt_props;
-+	enum psy_algo_stat algo_stat;
-+	int maint_exit_volt;
-+
-+	pse_mod_bprof = (struct psy_pse_chrg_prof *) bprof.batt_prof;
-+	algo_stat = batt_cxt->algo_stat;
-+
-+	batt_props = batt_cxt->batt_props;
-+
-+	*cc = *cv = 0;
-+
-+	/*
-+	* If STATUS is discharging, assume that charger is not connected.
-+	* If charger is not connected, no need to take any action.
-+	* If charge profile type is not PSY_CHRG_PROF_PSE or the charge profile
-+	* is not present, no need to take any action.
-+	*/
-+
-+	pr_devel("%s:battery status = %ld algo_status=%d\n",
-+			__func__, batt_props.status, algo_stat);
-+
-+	if (!pse_mod_bprof)
-+		return PSY_ALGO_STAT_NOT_CHARGE;
-+
-+	tzone = get_tempzone(pse_mod_bprof, batt_props.temperature);
-+
-+	if (tzone < 0)
-+		return PSY_ALGO_STAT_NOT_CHARGE;
-+
-+	/*
-+	* Change the algo status to not charging, if battery is
-+	* not really charging or less than maintenance exit threshold.
-+	* This way algorithm can switch to normal charging if current
-+	* status is full/maintenance.
-+	*/
-+	maint_exit_volt = pse_mod_bprof->
-+				temp_mon_range[tzone].maint_chrg_vol_ll -
-+				MAINT_EXIT_OFFSET;
-+
-+	if ((batt_props.status == POWER_SUPPLY_STATUS_DISCHARGING) ||
-+		(batt_props.status == POWER_SUPPLY_STATUS_NOT_CHARGING) ||
-+			batt_props.voltage_now < maint_exit_volt) {
-+
-+		algo_stat = PSY_ALGO_STAT_NOT_CHARGE;
-+
-+	}
-+
-+	/* read cc and cv based on temperature and algorithm status */
-+	if (algo_stat == PSY_ALGO_STAT_FULL ||
-+			algo_stat == PSY_ALGO_STAT_MAINT) {
-+
-+		/*
-+		* if status is full and voltage is lower than maintenance lower
-+		* threshold change status to maintenance
-+		*/
-+
-+		if (algo_stat == PSY_ALGO_STAT_FULL && (batt_props.voltage_now <=
-+			pse_mod_bprof->temp_mon_range[tzone].maint_chrg_vol_ll))
-+				algo_stat = PSY_ALGO_STAT_MAINT;
-+
-+		/* Read maintenance CC and CV */
-+		if (algo_stat == PSY_ALGO_STAT_MAINT) {
-+			*cv = pse_mod_bprof->temp_mon_range
-+					[tzone].maint_chrg_vol_ul;
-+			*cc = pse_mod_bprof->temp_mon_range
-+					[tzone].maint_chrg_cur;
-+		}
-+	} else {
-+		*cv = pse_mod_bprof->temp_mon_range[tzone].full_chrg_vol;
-+		*cc = pse_mod_bprof->temp_mon_range[tzone].full_chrg_cur;
-+		algo_stat = PSY_ALGO_STAT_CHARGE;
-+	}
-+
-+	if (is_battery_full(batt_cxt, pse_mod_bprof, *cv)) {
-+		*cc = *cv = 0;
-+		algo_stat = PSY_ALGO_STAT_FULL;
-+	}
-+
-+	return algo_stat;
-+}
-+
-+static int __init pse_algo_init(void)
-+{
-+	struct psy_charging_algo pse_algo;
-+	pse_algo.chrg_prof_type = PSY_CHRG_PROF_PSE;
-+	pse_algo.name = "pse_algo";
-+	pse_algo.get_next_cc_cv = pse_get_next_cc_cv;
-+	pse_algo.get_batt_thresholds = pse_get_bat_thresholds;
-+	power_supply_register_charging_algo(&pse_algo);
-+	return 0;
-+}
-+
-+module_init(pse_algo_init);
-diff --git a/include/linux/power/power_supply_charger.h b/include/linux/power/power_supply_charger.h
-index 2b59817..8f3797d 100644
---- a/include/linux/power/power_supply_charger.h
-+++ b/include/linux/power/power_supply_charger.h
-@@ -94,8 +94,71 @@ enum battery_events {
- 
- enum psy_batt_chrg_prof_type {
- 	PSY_CHRG_PROF_NONE = 0,
-+	PSY_CHRG_PROF_PSE,
- };
- 
-+/* Product Safety Engineering (PSE) compliant charging profile */
-+
-+/**
-+ * struct psy_ps_temp_chg_table - charging temperature zones definition
-+ * @temp_up_lim: upper temperature limit for each zone in Degree Celsius
-+ * @full_chrg_vol: charge voltage till battery full in mV
-+ * @full_chrg_cur: charge current till battery full in mA
-+ * @maint_chrg_vol_ll: voltage at which maintenance charging should start in mV
-+ * @maint_chrg_vol_ul: voltage at which maintenance charging should stop in mV.
-+ *	This is the charging voltage in maintenance charging mode
-+ * @maint_chrg_cur: charge current in maintenance charging mode
-+ *
-+ * Charging temperature zone definition to decide the charging parameters on
-+ * each zone. An array of the structure is used to define multiple temperature
-+ * zones
-+ */
-+
-+struct psy_ps_temp_chg_table {
-+	short int temp_up_lim;
-+	short int full_chrg_vol;
-+	short int full_chrg_cur;
-+	short int maint_chrg_vol_ll;
-+	short int maint_chrg_vol_ul;
-+	short int maint_chrg_cur;
-+} __packed;
-+
-+#define BATTID_STR_LEN		8
-+#define BATT_TEMP_NR_RNG	6
-+
-+/**
-+ * struct psy_pse_chrg_prof - PSE charging profile structure
-+ * @batt_id: battery identifier
-+ * @battery_type: as defined in POWER_SUPPLY_TECHNOLOGY_*
-+ * @capacity: battery capacity in mAh
-+ * @voltage_max: maximum battery volatge in mV
-+ * @chrg_term_ma: charge termination current in mA
-+ * @low_batt_mv: Low battery level voltage in mV
-+ * @disch_temp_ul: maximum operating temperature when battery is discharging
-+ * @disch_temp_ll: lowest operating temperature when battery is discharging
-+ * @temp_mon_ranges: number of temperature zones
-+ * @psy_ps_temp_chg_table: temperature zone table array
-+ * @temp_low_lim: minimum charging temperature
-+ *
-+ * PSE compliant charging profile which can be stored in battery EEPROM
-+ * (if digital battery interface like MIPI BIF/SDQ supported) or in secondary
-+ * storage to support analog battery (with BSI sensing support)
-+ */
-+
-+struct psy_pse_chrg_prof {
-+	char batt_id[BATTID_STR_LEN];
-+	u16 battery_type;
-+	u16 capacity;
-+	u16 voltage_max;
-+	u16 chrg_term_mA;
-+	u16 low_batt_mV;
-+	s8 disch_temp_ul;
-+	s8 disch_temp_ll;
-+	u16 temp_mon_ranges;
-+	struct psy_ps_temp_chg_table temp_mon_range[BATT_TEMP_NR_RNG];
-+	s8 temp_low_lim;
-+} __packed;
-+
- /**
-  * struct psy_batt_chrg_prof - power supply charging profile structure
-  * @chrg_prof_type: charging profile type
--- 
-1.7.9.5
+On 06/19/2014 03:04 PM, Ulf Hansson wrote:
+> The pwrseq subsystem handles complex power sequences, typically useful
+> for subsystems that makes use of discoverable buses, like for example
+> MMC and I2C.
 
+I2C is not discoverable, I do agree that this could be useful for spi and
+i2c too, so you may want to reword things so that it does not look like
+you're suggesting that i2c is discoverable.
+
+> 
+> The pwrseq subsystem is dependant on CONFIG_OF to be able to parse a DT
+> childnode to find out what power sequence method to bind for a device.
+> 
+> From the DT childnode, the pwrseq DT parser tries to locate a
+> "power-method" property, which string is matched towards the list of
+> supported pwrseq methods.
+> 
+> Each pwrseq method implements it's own power sequence and interfaces
+> the pwrseq core through a few callback functions.
+> 
+> To instantiate a pwrseq method, clients shall use the devm_pwrseq_get()
+> API. If needed, clients can explicity drop the references to a pwrseq
+> method using devm_pwrseq_put() API.
+> 
+> Besides instantiation, the pwrseq API provides clients opportunity to
+> select a certain power state. In this intial version, PWRSEQ_POWER_ON
+> and PWRSEQ_POWER_OFF are supported. Those are also mandatory for each
+> pwrseq method to support.
+> 
+> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+> ---
+>  .../devicetree/bindings/pwrseq/pwrseq.txt          |   48 ++++++
+>  drivers/Makefile                                   |    2 +-
+>  drivers/pwrseq/Makefile                            |    2 +
+>  drivers/pwrseq/core.c                              |  175 ++++++++++++++++++++
+>  drivers/pwrseq/core.h                              |   37 +++++
+>  drivers/pwrseq/method.c                            |   38 +++++
+>  include/linux/pwrseq.h                             |   50 ++++++
+>  7 files changed, 351 insertions(+), 1 deletion(-)
+>  create mode 100644 Documentation/devicetree/bindings/pwrseq/pwrseq.txt
+>  create mode 100644 drivers/pwrseq/Makefile
+>  create mode 100644 drivers/pwrseq/core.c
+>  create mode 100644 drivers/pwrseq/core.h
+>  create mode 100644 drivers/pwrseq/method.c
+>  create mode 100644 include/linux/pwrseq.h
+> 
+> diff --git a/Documentation/devicetree/bindings/pwrseq/pwrseq.txt b/Documentation/devicetree/bindings/pwrseq/pwrseq.txt
+> new file mode 100644
+> index 0000000..80848ae
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pwrseq/pwrseq.txt
+> @@ -0,0 +1,48 @@
+> +Power sequence DT bindings
+> +
+> +Each power sequence method has a corresponding "power-method" property string.
+> +This property shall be set in a subnode for a device. That subnode should also
+> +describe resourses which are specific to that power method.
+> +
+> +Do note, power sequences as such isn't encoded through DT. Instead those are
+> +implemented by each power method.
+> +
+> +Required subnode properties:
+> +- power-method: should contain the string for the power method to bind.
+> +
+> +	Supported power methods: None.
+> +
+> +Example:
+> +
+> +Note, the "clock" power method in this example isn't actually supported, but
+> +used to visualize how a childnode could be described.
+> +
+> +// WLAN SDIO channel
+> +sdi1_per2@80118000 {
+> +	compatible = "arm,pl18x", "arm,primecell";
+> +	reg = <0x80118000 0x1000>;
+> +	interrupts = <0 50 IRQ_TYPE_LEVEL_HIGH>;
+> +
+> +	dmas = <&dma 32 0 0x2>, /* Logical - DevToMem */
+> +	       <&dma 32 0 0x0>; /* Logical - MemToDev */
+> +	dma-names = "rx", "tx";
+> +
+> +	clocks = <&prcc_kclk 2 4>, <&prcc_pclk 2 6>;
+> +	clock-names = "sdi", "apb_pclk";
+> +
+> +	arm,primecell-periphid = <0x10480180>;
+> +	max-frequency = <100000000>;
+> +	bus-width = <4>;
+> +	non-removable;
+> +	pinctrl-names = "default", "sleep";
+> +	pinctrl-0 = <&sdi1_default_mode>;
+> +	pinctrl-1 = <&sdi1_sleep_mode>;
+> +
+> +	status = "okay";
+> +
+> +	pwrseq: pwrseq1 {
+> +		power-method = "clock";
+> +		clocks = <&someclk 1 2>, <&someclk 3 4>;
+> +		clock-names = "pwrseq1", "pwrseq2";
+> +	};
+> +};
+> diff --git a/drivers/Makefile b/drivers/Makefile
+> index f98b50d..ac1bf5b 100644
+> --- a/drivers/Makefile
+> +++ b/drivers/Makefile
+> @@ -128,7 +128,7 @@ endif
+>  obj-$(CONFIG_DCA)		+= dca/
+>  obj-$(CONFIG_HID)		+= hid/
+>  obj-$(CONFIG_PPC_PS3)		+= ps3/
+> -obj-$(CONFIG_OF)		+= of/
+> +obj-$(CONFIG_OF)		+= of/ pwrseq/
+>  obj-$(CONFIG_SSB)		+= ssb/
+>  obj-$(CONFIG_BCMA)		+= bcma/
+>  obj-$(CONFIG_VHOST_RING)	+= vhost/
+> diff --git a/drivers/pwrseq/Makefile b/drivers/pwrseq/Makefile
+> new file mode 100644
+> index 0000000..afb914f
+> --- /dev/null
+> +++ b/drivers/pwrseq/Makefile
+> @@ -0,0 +1,2 @@
+> +#Support for the power sequence subsystem
+> +obj-y = core.o method.o
+> diff --git a/drivers/pwrseq/core.c b/drivers/pwrseq/core.c
+> new file mode 100644
+> index 0000000..baf7bb6
+> --- /dev/null
+> +++ b/drivers/pwrseq/core.c
+> @@ -0,0 +1,175 @@
+> +/*
+> + * Core of the power sequence subsystem
+> + *
+> + * Copyright (C) 2014 Linaro Ltd
+> + *
+> + * Author: Ulf Hansson <ulf.hansson@linaro.org>
+> + *
+> + * License terms: GNU General Public License (GPL) version 2
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/export.h>
+> +#include <linux/device.h>
+> +#include <linux/string.h>
+> +#include <linux/err.h>
+> +#include <linux/of.h>
+> +
+> +#include <linux/pwrseq.h>
+> +#include "core.h"
+> +
+> +static int pwrseq_find(const char *power_method)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; pwrseq_methods[i].bind_method != NULL; i++)
+> +		if (!strcasecmp(power_method, pwrseq_methods[i].method))
+> +			return i;
+> +	return -ENODEV;
+> +}
+> +
+> +static void devm_pwrseq_release(struct device *dev, void *res)
+> +{
+> +	struct pwrseq *ps = res;
+> +
+> +	dev_dbg(dev, "%s: Release method=%s\n", __func__, ps->method);
+> +
+> +	ps->ps_ops->release(ps);
+> +	of_node_put(ps->np_child);
+> +}
+> +
+> +static struct pwrseq *pwrseq_get(struct device *dev,
+> +				struct device_node *np,
+> +				const char *power_method)
+> +{
+> +	struct pwrseq *ps;
+> +	int ret;
+> +
+> +	ret = pwrseq_find(power_method);
+> +	if (ret < 0)
+> +		return ERR_PTR(ret);
+> +
+> +	ps = devres_alloc(devm_pwrseq_release, sizeof(ps), GFP_KERNEL);
+> +	if (!ps)
+> +		return ERR_PTR(-ENOMEM);
+
+Why not have the method have a create or init function rather then a
+bind function, passing in struct device_node *np to this function,
+and let it have a struct containing what ever info it needs like this:
+
+struct pwrseq_method_foo {
+	struct pwrseq ps;
+	/* more members */
+};
+
+And then have it alloc that struct and end with:
+
+	return &pwrseq_method_foo->ps;
+
+That way we only have one alloc rather then 2, and if we ever need to add
+refcounting only one struct to refcount.
+
+
+Also I'm not sold on how you're making this a devm only thing, and
+are using devres_alloc to not only allocate memory for resource tracking,
+but also the actual backing struct, that is not how devres_alloc is
+intended to be used AFAIK.
+
+A problem with having this one always devm managed is that it makes it
+hard to use in library functions without side effects.
+
+e.g. if you look at how your using this in mmc_of_parse in the next
+patch, this gives mmc_of_parse the side-effect of having allocated
+and bound the power-seq method, even if mmc_of_parse later
+fails on e.g. gpio binding. If then for some reason the mmc host
+probe method decides to not propagate the mmc_of_parse method
+error (leading to freeing of all devm managed resources), then this is
+undesirable.
+
+Where as with a non devm version, it would be clear that on error
+mmc_of_parse would need to explicitly release the pwrseq again.
+
+I realize that pwrseq implementations likely will want to use
+devm functions too, and I'm a great fan of devm. But this is something
+to keep in mind. At a minimum the description of of_mmc_parse needs
+to get updated with info about it having potential side-effects even
+when it fails, and that failure should always be treated as a fatal
+error and cause the host probe method to fail.
+
+Regards,
+
+Hans
+
+
+
+> +
+> +	ps->dev = dev;
+> +	ps->np_child = np;
+> +	ps->method = pwrseq_methods[ret].method;
+> +
+> +	/*
+> +	 * The on/off states is mandatory to be supported. Additional states
+> +	 * shall be added by each method during binding.
+> +	 */
+> +	ps->supported_states = PWRSEQ_POWER_OFF | PWRSEQ_POWER_ON;
+> +	/*
+> +	 * The default current state is PWRSEQ_POWER_OFF, it may be updated
+> +	 * during binding.
+> +	 */
+> +	ps->current_state = PWRSEQ_POWER_OFF;
+> +
+> +	ret = pwrseq_methods[ret].bind_method(ps);
+> +	if (ret) {
+> +		devres_free(ps);
+> +		return ERR_PTR(ret);
+> +	}
+> +
+> +	devres_add(dev, ps);
+> +	return ps;
+> +}
+> +
+> +static int pwrseq_of_find(struct device *dev,
+> +			struct device_node **np_child,
+> +			const char **power_method)
+> +{
+> +	struct device_node *np;
+> +	const char *pm;
+> +
+> +	if (!dev->of_node)
+> +		return -ENODEV;
+> +
+> +	/* Parse childnodes to find a power-method property. */
+> +	for_each_child_of_node(dev->of_node, np) {
+> +		if (!of_property_read_string(np, "power-method", &pm)) {
+> +			*np_child = np;
+> +			*power_method = pm;
+> +			return 1;
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static struct pwrseq *_devm_pwrseq_get(struct device *dev, bool optional)
+> +{
+> +	struct pwrseq *ps;
+> +	struct device_node *np;
+> +	const char *pm;
+> +	int ret;
+> +
+> +	if (!dev)
+> +		return ERR_PTR(-ENODEV);
+> +
+> +	ret = pwrseq_of_find(dev, &np, &pm);
+> +	if (ret < 0) {
+> +		return ERR_PTR(ret);
+> +	} else if (ret) {
+> +		ps = pwrseq_get(dev, np, pm);
+> +		if (IS_ERR(ps))
+> +			of_node_put(np);
+> +	} else if (optional) {
+> +		ps = pwrseq_get(dev, NULL, "dummy");
+> +	} else {
+> +		return ERR_PTR(-ENODEV);
+> +	}
+> +
+> +	if (!IS_ERR(ps))
+> +		dev_dbg(dev, "%s: Bound method=%s\n", __func__, ps->method);
+> +
+> +	return ps;
+> +}
+> +
+> +struct pwrseq *devm_pwrseq_get_optional(struct device *dev)
+> +{
+> +	return _devm_pwrseq_get(dev, true);
+> +}
+> +EXPORT_SYMBOL_GPL(devm_pwrseq_get_optional);
+> +
+> +struct pwrseq *devm_pwrseq_get(struct device *dev)
+> +{
+> +	return _devm_pwrseq_get(dev, false);
+> +}
+> +EXPORT_SYMBOL_GPL(devm_pwrseq_get);
+> +
+> +static int devm_pwrseq_match(struct device *dev, void *res, void *data)
+> +{
+> +	struct pwrseq **ps = res;
+> +
+> +	return *ps == data;
+> +}
+> +
+> +void devm_pwrseq_put(struct pwrseq *ps)
+> +{
+> +	devres_release(ps->dev, devm_pwrseq_release, devm_pwrseq_match, ps);
+> +}
+> +EXPORT_SYMBOL_GPL(devm_pwrseq_put);
+> +
+> +int pwrseq_select_state(struct pwrseq *ps, enum pwrseq_state ps_state)
+> +{
+> +	int ret = 0;
+> +
+> +	if (ps->current_state != ps_state)
+> +		ret = ps->ps_ops->select_state(ps, ps_state);
+> +
+> +	if (!ret)
+> +		ps->current_state = ps_state;
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(pwrseq_select_state);
+> +
+> +unsigned int pwrseq_supported_states(struct pwrseq *ps)
+> +{
+> +	return ps->supported_states;
+> +}
+> +EXPORT_SYMBOL_GPL(pwrseq_supported_states);
+> diff --git a/drivers/pwrseq/core.h b/drivers/pwrseq/core.h
+> new file mode 100644
+> index 0000000..84a6449
+> --- /dev/null
+> +++ b/drivers/pwrseq/core.h
+> @@ -0,0 +1,37 @@
+> +/*
+> + * Core private header for the power sequence subsystem
+> + *
+> + * Copyright (C) 2014 Linaro Ltd
+> + *
+> + * Author: Ulf Hansson <ulf.hansson@linaro.org>
+> + *
+> + * License terms: GNU General Public License (GPL) version 2
+> + */
+> +
+> +#ifndef __PWRSEQ_PWRSEQ_H
+> +#define __PWRSEQ_PWRSEQ_H
+> +
+> +#include <linux/pwrseq.h>
+> +
+> +struct pwrseq_ops {
+> +	int (*select_state)(struct pwrseq *, enum pwrseq_state);
+> +	void (*release)(struct pwrseq *);
+> +};
+> +
+> +struct pwrseq {
+> +	struct device *dev;
+> +	struct device_node *np_child;
+> +	const char *method;
+> +	enum pwrseq_state supported_states;
+> +	enum pwrseq_state current_state;
+> +	struct pwrseq_ops *ps_ops;
+> +	void *data;
+> +};
+> +
+> +struct pwrseq_method {
+> +	int (*bind_method)(struct pwrseq *);
+> +	const char *method;
+> +};
+> +
+> +extern struct pwrseq_method pwrseq_methods[];
+> +#endif
+> diff --git a/drivers/pwrseq/method.c b/drivers/pwrseq/method.c
+> new file mode 100644
+> index 0000000..fe16579
+> --- /dev/null
+> +++ b/drivers/pwrseq/method.c
+> @@ -0,0 +1,38 @@
+> +/*
+> + * Implements a dummy power method for power sequence subsystem
+> + *
+> + * Copyright (C) 2014 Linaro Ltd
+> + *
+> + * Author: Ulf Hansson <ulf.hansson@linaro.org>
+> + *
+> + * License terms: GNU General Public License (GPL) version 2
+> + */
+> +
+> +#include <linux/kernel.h>
+> +
+> +#include <linux/pwrseq.h>
+> +#include "core.h"
+> +
+> +static int pwrseq_dummy_select_state(struct pwrseq *ps, enum pwrseq_state s)
+> +{
+> +	return 0;
+> +}
+> +
+> +static void pwrseq_dummy_release(struct pwrseq *ps) { }
+> +
+> +static struct pwrseq_ops pwrseq_dummy_ops = {
+> +	.select_state = pwrseq_dummy_select_state,
+> +	.release = pwrseq_dummy_release,
+> +};
+> +
+> +static int pwrseq_dummy_bind(struct pwrseq *ps)
+> +{
+> +	ps->ps_ops = &pwrseq_dummy_ops;
+> +	return 0;
+> +}
+> +
+> +/* The extern list of supported power sequence_methods */
+> +struct pwrseq_method pwrseq_methods[] = {
+> +	{ pwrseq_dummy_bind, "dummy" },
+> +	{ NULL, NULL },
+> +};
+> diff --git a/include/linux/pwrseq.h b/include/linux/pwrseq.h
+> new file mode 100644
+> index 0000000..528b544
+> --- /dev/null
+> +++ b/include/linux/pwrseq.h
+> @@ -0,0 +1,50 @@
+> +/*
+> + * Interface for the power sequence subsystem
+> + *
+> + * Copyright (C) 2014 Linaro Ltd
+> + *
+> + * Author: Ulf Hansson <ulf.hansson@linaro.org>
+> + *
+> + * License terms: GNU General Public License (GPL) version 2
+> + */
+> +#ifndef __LINUX_PWRSEQ_PWRSEQ_H
+> +#define __LINUX_PWRSEQ_PWRSEQ_H
+> +
+> +#include <linux/bitops.h>
+> +
+> +struct device;
+> +struct pwrseq;
+> +
+> +enum pwrseq_state {
+> +	PWRSEQ_POWER_OFF = BIT(0),
+> +	PWRSEQ_POWER_ON = BIT(1),
+> +};
+> +
+> +#ifdef CONFIG_OF
+> +extern struct pwrseq *devm_pwrseq_get(struct device *dev);
+> +extern struct pwrseq *devm_pwrseq_get_optional(struct device *dev);
+> +extern void devm_pwrseq_put(struct pwrseq *ps);
+> +extern int pwrseq_select_state(struct pwrseq *ps, unsigned int ps_state);
+> +extern unsigned int pwrseq_supported_states(struct pwrseq *ps);
+> +#else
+> +static inline struct pwrseq *devm_pwrseq_get(struct device *dev)
+> +{
+> +	return ERR_PTR(-ENODEV);
+> +}
+> +static inline struct pwrseq *devm_pwrseq_get_optional(struct device *dev)
+> +{
+> +	return ERR_PTR(-ENODEV);
+> +}
+> +static inline void devm_pwrseq_put(struct pwrseq *ps) {}
+> +static inline int pwrseq_select_state(struct pwrseq *ps,
+> +				enum pwrseq_state ps_state)
+> +{
+> +	return 0;
+> +}
+> +static inline unsigned int pwrseq_supported_states(struct pwrseq *ps)
+> +{
+> +	return 0;
+> +}
+> +#endif
+> +
+> +#endif /* __LINUX_PWRSEQ_PWRSEQ_H */
+> 
