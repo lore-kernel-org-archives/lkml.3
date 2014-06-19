@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756410AbaFSBL7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 21:11:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43641 "EHLO
+	id S1756592AbaFSBM5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 21:12:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43644 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628AbaFSBL5 (ORCPT
+	with ESMTP id S1752240AbaFSBMz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 21:11:57 -0400
-Date: Wed, 18 Jun 2014 18:15:56 -0700
+	Wed, 18 Jun 2014 21:12:55 -0400
+Date: Wed, 18 Jun 2014 18:16:53 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 Cc: linux-arch@vger.kernel.org, thellstrom@vmware.com,
@@ -15,51 +15,182 @@ Cc: linux-arch@vger.kernel.org, thellstrom@vmware.com,
         linaro-mm-sig@lists.linaro.org, robdclark@gmail.com,
         thierry.reding@gmail.com, ccross@google.com, daniel@ffwll.ch,
         sumit.semwal@linaro.org, linux-media@vger.kernel.org
-Subject: Re: [REPOST PATCH 4/8] android: convert sync to fence api, v5
-Message-ID: <20140619011556.GE10921@kroah.com>
+Subject: Re: [REPOST PATCH 1/8] fence: dma-buf cross-device synchronization
+ (v17)
+Message-ID: <20140619011653.GF10921@kroah.com>
 References: <20140618102957.15728.43525.stgit@patser>
- <20140618103711.15728.97842.stgit@patser>
+ <20140618103653.15728.4942.stgit@patser>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140618103711.15728.97842.stgit@patser>
+In-Reply-To: <20140618103653.15728.4942.stgit@patser>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 12:37:11PM +0200, Maarten Lankhorst wrote:
-> Just to show it's easy.
+On Wed, Jun 18, 2014 at 12:36:54PM +0200, Maarten Lankhorst wrote:
+> A fence can be attached to a buffer which is being filled or consumed
+> by hw, to allow userspace to pass the buffer without waiting to another
+> device.  For example, userspace can call page_flip ioctl to display the
+> next frame of graphics after kicking the GPU but while the GPU is still
+> rendering.  The display device sharing the buffer with the GPU would
+> attach a callback to get notified when the GPU's rendering-complete IRQ
+> fires, to update the scan-out address of the display, without having to
+> wake up userspace.
 > 
-> Android syncpoints can be mapped to a timeline. This removes the need
-> to maintain a separate api for synchronization. I've left the android
-> trace events in place, but the core fence events should already be
-> sufficient for debugging.
+> A driver must allocate a fence context for each execution ring that can
+> run in parallel. The function for this takes an argument with how many
+> contexts to allocate:
+>   + fence_context_alloc()
 > 
-> v2:
-> - Call fence_remove_callback in sync_fence_free if not all fences have fired.
-> v3:
-> - Merge Colin Cross' bugfixes, and the android fence merge optimization.
-> v4:
-> - Merge with the upstream fixes.
-> v5:
-> - Fix small style issues pointed out by Thomas Hellstrom.
+> A fence is transient, one-shot deal.  It is allocated and attached
+> to one or more dma-buf's.  When the one that attached it is done, with
+> the pending operation, it can signal the fence:
+>   + fence_signal()
+> 
+> To have a rough approximation whether a fence is fired, call:
+>   + fence_is_signaled()
+> 
+> The dma-buf-mgr handles tracking, and waiting on, the fences associated
+> with a dma-buf.
+> 
+> The one pending on the fence can add an async callback:
+>   + fence_add_callback()
+> 
+> The callback can optionally be cancelled with:
+>   + fence_remove_callback()
+> 
+> To wait synchronously, optionally with a timeout:
+>   + fence_wait()
+>   + fence_wait_timeout()
+> 
+> When emitting a fence, call:
+>   + trace_fence_emit()
+> 
+> To annotate that a fence is blocking on another fence, call:
+>   + trace_fence_annotate_wait_on(fence, on_fence)
+> 
+> A default software-only implementation is provided, which can be used
+> by drivers attaching a fence to a buffer when they have no other means
+> for hw sync.  But a memory backed fence is also envisioned, because it
+> is common that GPU's can write to, or poll on some memory location for
+> synchronization.  For example:
+> 
+>   fence = custom_get_fence(...);
+>   if ((seqno_fence = to_seqno_fence(fence)) != NULL) {
+>     dma_buf *fence_buf = seqno_fence->sync_buf;
+>     get_dma_buf(fence_buf);
+> 
+>     ... tell the hw the memory location to wait ...
+>     custom_wait_on(fence_buf, seqno_fence->seqno_ofs, fence->seqno);
+>   } else {
+>     /* fall-back to sw sync * /
+>     fence_add_callback(fence, my_cb);
+>   }
+> 
+> On SoC platforms, if some other hw mechanism is provided for synchronizing
+> between IP blocks, it could be supported as an alternate implementation
+> with it's own fence ops in a similar way.
+> 
+> enable_signaling callback is used to provide sw signaling in case a cpu
+> waiter is requested or no compatible hardware signaling could be used.
+> 
+> The intention is to provide a userspace interface (presumably via eventfd)
+> later, to be used in conjunction with dma-buf's mmap support for sw access
+> to buffers (or for userspace apps that would prefer to do their own
+> synchronization).
+> 
+> v1: Original
+> v2: After discussion w/ danvet and mlankhorst on #dri-devel, we decided
+>     that dma-fence didn't need to care about the sw->hw signaling path
+>     (it can be handled same as sw->sw case), and therefore the fence->ops
+>     can be simplified and more handled in the core.  So remove the signal,
+>     add_callback, cancel_callback, and wait ops, and replace with a simple
+>     enable_signaling() op which can be used to inform a fence supporting
+>     hw->hw signaling that one or more devices which do not support hw
+>     signaling are waiting (and therefore it should enable an irq or do
+>     whatever is necessary in order that the CPU is notified when the
+>     fence is passed).
+> v3: Fix locking fail in attach_fence() and get_fence()
+> v4: Remove tie-in w/ dma-buf..  after discussion w/ danvet and mlankorst
+>     we decided that we need to be able to attach one fence to N dma-buf's,
+>     so using the list_head in dma-fence struct would be problematic.
+> v5: [ Maarten Lankhorst ] Updated for dma-bikeshed-fence and dma-buf-manager.
+> v6: [ Maarten Lankhorst ] I removed dma_fence_cancel_callback and some comments
+>     about checking if fence fired or not. This is broken by design.
+>     waitqueue_active during destruction is now fatal, since the signaller
+>     should be holding a reference in enable_signalling until it signalled
+>     the fence. Pass the original dma_fence_cb along, and call __remove_wait
+>     in the dma_fence_callback handler, so that no cleanup needs to be
+>     performed.
+> v7: [ Maarten Lankhorst ] Set cb->func and only enable sw signaling if
+>     fence wasn't signaled yet, for example for hardware fences that may
+>     choose to signal blindly.
+> v8: [ Maarten Lankhorst ] Tons of tiny fixes, moved __dma_fence_init to
+>     header and fixed include mess. dma-fence.h now includes dma-buf.h
+>     All members are now initialized, so kmalloc can be used for
+>     allocating a dma-fence. More documentation added.
+> v9: Change compiler bitfields to flags, change return type of
+>     enable_signaling to bool. Rework dma_fence_wait. Added
+>     dma_fence_is_signaled and dma_fence_wait_timeout.
+>     s/dma// and change exports to non GPL. Added fence_is_signaled and
+>     fence_enable_sw_signaling calls, add ability to override default
+>     wait operation.
+> v10: remove event_queue, use a custom list, export try_to_wake_up from
+>     scheduler. Remove fence lock and use a global spinlock instead,
+>     this should hopefully remove all the locking headaches I was having
+>     on trying to implement this. enable_signaling is called with this
+>     lock held.
+> v11:
+>     Use atomic ops for flags, lifting the need for some spin_lock_irqsaves.
+>     However I kept the guarantee that after fence_signal returns, it is
+>     guaranteed that enable_signaling has either been called to completion,
+>     or will not be called any more.
+> 
+>     Add contexts and seqno to base fence implementation. This allows you
+>     to wait for less fences, by testing for seqno + signaled, and then only
+>     wait on the later fence.
+> 
+>     Add FENCE_TRACE, FENCE_WARN, and FENCE_ERR. This makes debugging easier.
+>     An CONFIG_DEBUG_FENCE will be added to turn off the FENCE_TRACE
+>     spam, and another runtime option can turn it off at runtime.
+> v12:
+>     Add CONFIG_FENCE_TRACE. Add missing documentation for the fence->context
+>     and fence->seqno members.
+> v13:
+>     Fixup CONFIG_FENCE_TRACE kconfig description.
+>     Move fence_context_alloc to fence.
+>     Simplify fence_later.
+>     Kill priv member to fence_cb.
+> v14:
+>     Remove priv argument from fence_add_callback, oops!
+> v15:
+>     Remove priv from documentation.
+>     Explicitly include linux/atomic.h.
+> v16:
+>     Add trace events.
+>     Import changes required by android syncpoints.
+> v17:
+>     Use wake_up_state instead of try_to_wake_up. (Colin Cross)
+>     Fix up commit description for seqno_fence. (Rob Clark)
 > 
 > Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-> Acked-by: John Stultz <john.stultz@linaro.org>
+> Signed-off-by: Thierry Reding <thierry.reding@gmail.com> #use smp_mb__before_atomic()
+> Reviewed-by: Rob Clark <robdclark@gmail.com>
 > ---
->  drivers/staging/android/Kconfig      |    1 
->  drivers/staging/android/Makefile     |    2 
->  drivers/staging/android/sw_sync.c    |    6 
->  drivers/staging/android/sync.c       |  913 +++++++++++-----------------------
->  drivers/staging/android/sync.h       |   79 ++-
->  drivers/staging/android/sync_debug.c |  247 +++++++++
->  drivers/staging/android/trace/sync.h |   12 
->  7 files changed, 609 insertions(+), 651 deletions(-)
->  create mode 100644 drivers/staging/android/sync_debug.c
+>  Documentation/DocBook/device-drivers.tmpl |    2 
+>  drivers/base/Kconfig                      |    9 +
+>  drivers/base/Makefile                     |    2 
+>  drivers/base/fence.c                      |  416 +++++++++++++++++++++++++++++
+>  include/linux/fence.h                     |  333 +++++++++++++++++++++++
+>  include/trace/events/fence.h              |  128 +++++++++
+>  6 files changed, 889 insertions(+), 1 deletion(-)
+>  create mode 100644 drivers/base/fence.c
+>  create mode 100644 include/linux/fence.h
+>  create mode 100644 include/trace/events/fence.h
 
-With these changes, can we pull the android sync logic out of
-drivers/staging/ now?
+Who is going to sign up to maintain this code?  (hint, it's not me...)
 
 thanks,
 
