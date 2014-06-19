@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658AbaFSNaG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 09:30:06 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:45180 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977AbaFSNaE (ORCPT
+	id S1755470AbaFSNbK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 09:31:10 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:56272 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753506AbaFSNbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 09:30:04 -0400
-Date: Thu, 19 Jun 2014 14:29:59 +0100
-From: Peter Griffin <peter.griffin@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pwm@vger.kernel.org, kernel@stlinux.com,
-        devicetree@vger.kernel.org, srinivas.kandagatla@gmail.com,
-        thierry.reding@gmail.com
-Subject: Re: [STLinux Kernel] [PATCH 4/7] ARM: stih416-b2020e: Enable PWM on
- the B2020 Rev-E
-Message-ID: <20140619132959.GA22592@griffinp-ThinkPad-X1-Carbon-2nd>
-References: <1403103172-19856-1-git-send-email-lee.jones@linaro.org>
- <1403103172-19856-4-git-send-email-lee.jones@linaro.org>
- <20140619090546.GB2131@griffinp-ThinkPad-X1-Carbon-2nd>
- <20140619092042.GB26560@lee--X1>
- <20140619101236.GA7390@griffinp-ThinkPad-X1-Carbon-2nd>
- <20140619112239.GC26560@lee--X1>
+	Thu, 19 Jun 2014 09:31:08 -0400
+Date: Thu, 19 Jun 2014 09:31:04 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: cl@linux-foundation.org, kmo@daterainc.com, linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 6/6] percpu-refcount: implement percpu_ref_reinit()
+ and percpu_ref_is_zero()
+Message-ID: <20140619133104.GH11042@htj.dyndns.org>
+References: <1403053685-28240-1-git-send-email-tj@kernel.org>
+ <1403053685-28240-7-git-send-email-tj@kernel.org>
+ <20140619022055.GD20100@mtj.dyndns.org>
+ <53A25286.1030003@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140619112239.GC26560@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53A25286.1030003@cn.fujitsu.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
-
-> > > Purely for testing purposes, as it's the only board I have.  If
-> > > anyone has the other revisions and would be happy to test the driver
-> > > for me then great.
-> > 
-> > Ok that's what I suspected.
-> > 
-> > If you tell me how, I can test on a Rev C board. But as there are several other 
-> > revisions I think checking the board schematics would be the quickest way forward.
+On Thu, Jun 19, 2014 at 11:01:26AM +0800, Lai Jiangshan wrote:
+> > +	/*
+> > +	 * Restore per-cpu operation.  smp_store_release() is paired with
+> > +	 * smp_load_acquire() in __pcpu_ref_alive() and guarantees that the
 > 
-> Great.  Do you have a oscilloscope/logic analyser?
+> s/smp_load_acquire()/smp_read_barrier_depends()/
 
-I have an old scope, and I've been wanting to buy a decent logic analyser ;-)
-Also can you email me the rev E schematic? I currently only have rev C.
+Will update.
 
-> > > > If you make the stih415 DT PWM nodes part of this series as well, then 
-> > > > assuming there is no good reason to the contary, the PWM could 
-> > > > be enabled for both stih415/6 in the common stih41x-b2020 DTS file which
-> > > > is also included by rev-E (assuming that PWM wiring is not some rev-E specific
-> > > > thing).
-> > 
-> > Can you add the stih415 bindings in V2 as well?
+> s/smp_store_release()/smp_mb()/  if you accept my next comment.
+>
+> > +	 * zeroing is visible to all percpu accesses which can see the
+> > +	 * following PCPU_REF_DEAD clearing.
+> > +	 */
+> > +	for_each_possible_cpu(cpu)
+> > +		*per_cpu_ptr(pcpu_count, cpu) = 0;
+> > +
+> > +	smp_store_release(&ref->pcpu_count_ptr,
+> > +			  ref->pcpu_count_ptr & ~PCPU_REF_DEAD);
 > 
-> Who's using Orly1?
+> I think it would be better if smp_mb() is used.
 
-I'll let ST answer that.
+smp_wmb() would be better here.  We don't need the reader side.
 
-AFAIK drivers upstreamed so far for Orly based hardware have generally been enabled for both
-SoCs, hence querying why the stih415 bindings are missing from this series.
+> it is documented that smp_read_barrier_depends() and smp_mb() are paired.
+> Not smp_read_barrier_depends() and smp_store_release().
 
-Being pinout compatible, a b2020 board can be populated with a stih415, so it seems strange 
-for it to then be missing PWM support given that the SoC, board and pwm driver all support it.
+I don't know.  I thought about doing that but the RCU accessors are
+pairing store_release with read_barrier_depends, so I don't think the
+particular paring is problematic and store_release is better at
+documenting what's being barriered.
 
-regards,
+Thanks.
 
-Peter.
+-- 
+tejun
