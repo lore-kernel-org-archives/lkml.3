@@ -1,49 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757335AbaFSUmM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 16:42:12 -0400
-Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:37833 "EHLO
-	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754264AbaFSUmK (ORCPT
+	id S964956AbaFSUm3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 16:42:29 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:59185 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754837AbaFSUm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 16:42:10 -0400
-Date: Thu, 19 Jun 2014 15:42:07 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Tejun Heo <tj@kernel.org>, David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Thu, 19 Jun 2014 16:42:28 -0400
+Date: Thu, 19 Jun 2014 13:39:09 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Christoph Lameter <cl@gentwo.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
- accessors and operations
-In-Reply-To: <20140617194017.GO4669@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.11.1406191540240.4002@gentwo.org>
-References: <20140612135630.GA23606@htj.dyndns.org> <alpine.DEB.2.11.1406171401350.22064@gentwo.org> <20140617194017.GO4669@linux.vnet.ibm.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+        Dave Jones <davej@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: slub/debugobjects: lockup when freeing memory
+Message-ID: <20140619203909.GI4904@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <53A2F406.4010109@oracle.com>
+ <alpine.DEB.2.11.1406191001090.2785@gentwo.org>
+ <20140619165247.GA4904@linux.vnet.ibm.com>
+ <alpine.DEB.2.10.1406192127100.5170@nanos>
+ <20140619202928.GG4904@linux.vnet.ibm.com>
+ <53A348E6.3050404@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53A348E6.3050404@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061920-6688-0000-0000-000002AF0E62
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jun 2014, Paul E. McKenney wrote:
+On Thu, Jun 19, 2014 at 04:32:38PM -0400, Sasha Levin wrote:
+> On 06/19/2014 04:29 PM, Paul E. McKenney wrote:
+> > On Thu, Jun 19, 2014 at 09:29:08PM +0200, Thomas Gleixner wrote:
+> >> > On Thu, 19 Jun 2014, Paul E. McKenney wrote:
+> >> > 
+> >>> > > On Thu, Jun 19, 2014 at 10:03:04AM -0500, Christoph Lameter wrote:
+> >>>> > > > On Thu, 19 Jun 2014, Sasha Levin wrote:
+> >>>> > > > 
+> >>>>> > > > > [  690.770137] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+> >>>>> > > > > [  690.770137] __slab_alloc (mm/slub.c:1732 mm/slub.c:2205 mm/slub.c:2369)
+> >>>>> > > > > [  690.770137] ? __lock_acquire (kernel/locking/lockdep.c:3189)
+> >>>>> > > > > [  690.770137] ? __debug_object_init (lib/debugobjects.c:100 lib/debugobjects.c:312)
+> >>>>> > > > > [  690.770137] kmem_cache_alloc (mm/slub.c:2442 mm/slub.c:2484 mm/slub.c:2489)
+> >>>>> > > > > [  690.770137] ? __debug_object_init (lib/debugobjects.c:100 lib/debugobjects.c:312)
+> >>>>> > > > > [  690.770137] ? debug_object_activate (lib/debugobjects.c:439)
+> >>>>> > > > > [  690.770137] __debug_object_init (lib/debugobjects.c:100 lib/debugobjects.c:312)
+> >>>>> > > > > [  690.770137] debug_object_init (lib/debugobjects.c:365)
+> >>>>> > > > > [  690.770137] rcuhead_fixup_activate (kernel/rcu/update.c:231)
+> >>>>> > > > > [  690.770137] debug_object_activate (lib/debugobjects.c:280 lib/debugobjects.c:439)
+> >>>>> > > > > [  690.770137] ? discard_slab (mm/slub.c:1486)
+> >>>>> > > > > [  690.770137] __call_rcu (kernel/rcu/rcu.h:76 (discriminator 2) kernel/rcu/tree.c:2585 (discriminator 2))
+> >>>> > > > 
+> >>>> > > > __call_rcu does a slab allocation? This means __call_rcu can no longer be
+> >>>> > > > used in slab allocators? What happened?
+> >>> > > 
+> >>> > > My guess is that the root cause is a double call_rcu(), call_rcu_sched(),
+> >>> > > call_rcu_bh(), or call_srcu().
+> >>> > > 
+> >>> > > Perhaps the DEBUG_OBJECTS code now allocates memory to report errors?
+> >>> > > That would be unfortunate...
+> >> > 
+> >> > Well, no. Look at the callchain:
+> >> > 
+> >> > __call_rcu
+> >> >     debug_object_activate
+> >> >        rcuhead_fixup_activate
+> >> >           debug_object_init
+> >> >               kmem_cache_alloc
+> >> > 
+> >> > So call rcu activates the object, but the object has no reference in
+> >> > the debug objects code so the fixup code is called which inits the
+> >> > object and allocates a reference ....
+> > OK, got it.  And you are right, call_rcu() has done this for a very
+> > long time, so not sure what changed.
+> 
+> It's probable my fault. I've introduced clone() and unshare() fuzzing.
+> 
+> Those two are full with issues and I've been waiting with enabling those
+> until the rest of the kernel could survive trinity for more than an hour.
 
-> > Similar in swapon(). The percpu allocation is performed before access to
-> > the containing structure (via enable_swap_info).
->
-> Those are indeed common use cases.  However...
->
-> There is code where one CPU writes to another CPU's per-CPU variables.
-> One example is RCU callback offloading, where a kernel thread (which
-> might be running anywhere) dequeues a given CPU's RCU callbacks and
-> processes them.  The act of dequeuing requires write access to that
-> CPU's per-CPU rcu_data structure.  And yes, atomic operations and memory
-> barriers are of course required to make this work.
+Well, that might explain why I haven't seen it in my testing.  ;-)
 
-In that case special care needs to be taken to get this right. True.
-
-I typically avoid these scenarios by sending an IPI with a pointer to the
-data structure. The modification is done by the cpu for which the per cpu
-data is local.
-
-Maybe rewrite the code to avoid writing to other processors percpu data
-would be the right approach?
+							Thanx, Paul
 
