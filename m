@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934667AbaFSVLw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 17:11:52 -0400
-Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:55756
-	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934434AbaFSVLv (ORCPT
+	id S934685AbaFSVMH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 17:12:07 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:50255 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934434AbaFSVME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 17:11:51 -0400
-Date: Thu, 19 Jun 2014 16:11:47 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Tejun Heo <tj@kernel.org>
-cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
- accessors and operations
-In-Reply-To: <20140619204634.GB9814@mtj.dyndns.org>
-Message-ID: <alpine.DEB.2.11.1406191608290.5484@gentwo.org>
-References: <20140612135630.GA23606@htj.dyndns.org> <alpine.DEB.2.11.1406171401350.22064@gentwo.org> <20140617194017.GO4669@linux.vnet.ibm.com> <alpine.DEB.2.11.1406191540240.4002@gentwo.org> <20140619204634.GB9814@mtj.dyndns.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 19 Jun 2014 17:12:04 -0400
+Message-ID: <1403212322.6872.6.camel@x220>
+Subject: Re: Cannot partition 32GB disk on a 32bit machine (correct version
+ of the patch this time)
+From: Paul Bolle <pebolle@tiscali.nl>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: "Cox, Alan" <alan.cox@intel.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "aeb@cwi.nl" <aeb@cwi.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 19 Jun 2014 23:12:02 +0200
+In-Reply-To: <1403203437.17294.25.camel@dabdike.int.hansenpartnership.com>
+References: <1403170201.10778.36.camel@acox1-desk.ger.corp.intel.com>
+	 <1403170400.10778.38.camel@acox1-desk.ger.corp.intel.com>
+	 <1403203437.17294.25.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 19 Jun 2014 21:12:02.0876 (UTC) FILETIME=[1DBD27C0:01CF8C03]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Jun 2014, Tejun Heo wrote:
+On Thu, 2014-06-19 at 11:43 -0700, James Bottomley wrote:
+> On Thu, 2014-06-19 at 09:33 +0000, Cox, Alan wrote:
+> > NrybXǧv^)޺{.n+{~^b^nrzh&Gh(階ݢj"mzޖfh~m
+> 
+> Wow that's junk issued by an Exchange server ... Alan, really ...
 
-> On Thu, Jun 19, 2014 at 03:42:07PM -0500, Christoph Lameter wrote:
-> > In that case special care needs to be taken to get this right. True.
-> >
-> > I typically avoid these scenarios by sending an IPI with a pointer to the
-> > data structure. The modification is done by the cpu for which the per cpu
-> > data is local.
-> >
-> > Maybe rewrite the code to avoid writing to other processors percpu data
-> > would be the right approach?
->
-> It depends on the specific use case but in general no.  IPIs would be
-> far more expensive than making use of proper barriers in vast majority
-> of cases especially when the "hot" side is data dependency barrier,
-> IOW, nothing.  Also, we are talking about extremely low frequency
-> events like init and recycling after reinit.  Regular per-cpu
-> operation isn't really the subject here.
+I'm guessing that would be your client (Evolution) trying to decode
+lkml's footer as if it were base64. I use Evolution too and notice that
+all the time.
 
-The aim of having percpu data is to have the ability for a processor to
-access memory dedicated to that processor in the fastest way possible by
-avoiding synchronization. You are beginning to add synchronization
-elements into the accesses of a processor to memory dedicated to its sole
-use.
 
-Remote write events are contrary to that design and are exceedingly rare.
-An IPI is justifiable for such a rare event. At least in my use cases I
-have always found that to be sufficient. Well, I designed the data
-structures in a way that made this possible because of the design criteria
-that did not allow me remote write access to other processors per cpu
-data.
+Paul Bolle
 
