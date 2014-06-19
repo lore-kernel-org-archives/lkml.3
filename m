@@ -1,65 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965040AbaFSUS1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 16:18:27 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:52508 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756643AbaFSUS0 (ORCPT
+	id S1756966AbaFSUSk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 16:18:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51272 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756643AbaFSUSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 16:18:26 -0400
-From: Nicholas Krause <xerofoify@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: lisa@xenapiadmin.com, valentina.manea.m@gmail.com, ben@decadent.org.uk,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: rtl8192 Check for Null return from dev_skb_alloc
-Date: Thu, 19 Jun 2014 16:18:22 -0400
-Message-Id: <1403209102-10633-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 19 Jun 2014 16:18:39 -0400
+Date: Thu, 19 Jun 2014 13:18:37 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Anish Bhatt <anish@chelsio.com>
+Subject: Re: [PATCH V2] checkpatch: Warn on unnecessary void function return
+ statements
+Message-Id: <20140619131837.b13ab73f682469ff852cee49@linux-foundation.org>
+In-Reply-To: <1403113484.3839.13.camel@joe-AO725>
+References: <1401728316.5770.9.camel@joe-AO725>
+	<1403113484.3839.13.camel@joe-AO725>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checks for Null return from dev_skb_alloc if it returns Null,
-fw_download returns false. Otherwise it returns true.Also
-removed rt_status due to returning true of false directly.
+On Wed, 18 Jun 2014 10:44:44 -0700 Joe Perches <joe@perches.com> wrote:
 
-Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> With some exceptions, warn on void functions that end with a
+> "return;", because it's unnecessary.
+> 
+> Check the closing brace at the start of a line.
+> If the line before that has a single tab, then return;
+> look at the line before that.  If it's not a label,
+> emit a warning.
+> 
+> So, emit a warning on:
+> 
+> void function(...)
+> {
+> 	[...]
+> 	return;
+> }
+> 
+> but do not emit a warning on the below because
+> gcc requires any statement (including a bare
+> semicolon) before the closing function brace:
+> 
+> void function(...)
+> {
+> 	[...]
+> 		goto label;
+> 	[...]
+> 
+> label:
+> 	return;
+> }
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+> 
+> V2: The previous patch had a few too many false positives
+>     on styles that should be acceptable.
+
+Previous patch is now in mainline, so I did this:
+
+
+From: Joe Perches <joe@perches.com>
+Subject: checkpatch: reduce false positives when checking void function return statements
+
+The previous patch had a few too many false positives on styles that
+should be acceptable.
+
+Signed-off-by: Joe Perches <joe@perches.com>
+Tested-by: Anish Bhatt <anish@chelsio.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-index 1a95d1f..affa89a 100644
---- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-+++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-@@ -36,7 +36,6 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
- 			     u32 buffer_len)
- {
- 	struct r8192_priv *priv = rtllib_priv(dev);
--	bool		    rt_status = true;
- 	u16		    frag_threshold;
- 	u16		    frag_length, frag_offset = 0;
- 	int		    i;
-@@ -59,7 +58,9 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
- 			bLastIniPkt = 1;
- 
+ scripts/checkpatch.pl |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
+
+diff -puN scripts/checkpatch.pl~checkpatch-reduce-false-positives-when-checking-void-function-return-statements scripts/checkpatch.pl
+--- a/scripts/checkpatch.pl~checkpatch-reduce-false-positives-when-checking-void-function-return-statements
++++ a/scripts/checkpatch.pl
+@@ -3484,12 +3484,17 @@ sub process {
+ 			}
  		}
--
-+		skb  = dev_alloc_skb(frag_length + 4);
-+		if (!skb)
-+			return false;
- 		skb  = dev_alloc_skb(frag_length + 4);
- 		memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
- 		tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
-@@ -99,7 +100,7 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
  
- 	write_nic_byte(dev, TPPoll, TPPoll_CQ);
+-# unnecessary return in a void function? (a single leading tab, then return;)
+-		if ($sline =~ /^\+\treturn\s*;\s*$/ &&
+-		    $prevline =~ /^\+/) {
++# unnecessary return in a void function
++# at end-of-function, with the previous line a single leading tab, then return;
++# and the line before that not a goto label target like "out:"
++		if ($sline =~ /^[ \+]}\s*$/ &&
++		    $prevline =~ /^\+\treturn\s*;\s*$/ &&
++		    $linenr >= 3 &&
++		    $lines[$linenr - 3] =~ /^[ +]/ &&
++		    $lines[$linenr - 3] !~ /^[ +]\s*$Ident\s*:/) {
+ 			WARN("RETURN_VOID",
+-			     "void function return statements are not generally useful\n" . $herecurr);
+-		}
++			     "void function return statements are not generally useful\n" . $hereprev);
++               }
  
--	return rt_status;
-+	return false;
- }
- 
- static bool CPUcheck_maincodeok_turnonCPU(struct net_device *dev)
--- 
-1.9.1
+ # if statements using unnecessary parentheses - ie: if ((foo == bar))
+ 		if ($^V && $^V ge 5.10.0 &&
+_
 
