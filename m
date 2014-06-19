@@ -1,67 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933794AbaFSQg0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:36:26 -0400
-Received: from mta-out1.inet.fi ([62.71.2.198]:43828 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932213AbaFSQgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:36:25 -0400
-Date: Thu, 19 Jun 2014 19:36:14 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Peter Maloney <peter.maloney@brockmann-consult.de>,
-        Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Kamal Mostafa <kamal@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: kernel BUG - handle_mm_fault - Ubuntu 14.04 kernel
- 3.13.0-29-generic
-Message-ID: <20140619163614.GA24297@node.dhcp.inet.fi>
+	id S933273AbaFSQiJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:38:09 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:52649 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757558AbaFSQiG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 12:38:06 -0400
+X-IronPort-AV: E=Sophos;i="5.01,508,1400050800"; 
+   d="scan'208";a="34986495"
+Message-ID: <53A311E4.301@broadcom.com>
+Date: Thu, 19 Jun 2014 18:37:56 +0200
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53A30B63.107@brockmann-consult.de>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>, <brudley@broadcom.com>,
+        Franky Lin <frankyl@broadcom.com>, <meuleman@broadcom.com>,
+        <linville@tuxdriver.com>, <pieterpg@broadcom.com>,
+        <dekim@broadcom.com>, <mcgrof@do-not-panic.com>,
+        <antonio@open-mesh.com>, <johannes.berg@intel.com>
+CC: <linux-wireless@vger.kernel.org>, <brcm80211-dev-list@broadcom.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] brcmfmac: prevent watchdog from interfering with scanning
+ and connecting
+References: <539E8559.3010601@linux.intel.com> <539EA79C.7010206@broadcom.com> <53A30F96.3010206@linux.intel.com>
+In-Reply-To: <53A30F96.3010206@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 06:10:11PM +0200, Peter Maloney wrote:
-> Hi, can someone please take a look at this and tell me what is going on?
-> 
-> The event log reports no ECC errors.
-> 
-> This machine was working fine with an older Ubuntu version, and has
-> failed this way twice since an upgrade 2 weeks ago.
-> 
-> Symptoms include:
->  - load goes up high, currently 1872.72
->  - "ps -ef" hangs
->  - this time I tested "echo w > /proc/sysrq-trigger" which made the
-> local shell and ssh hang, and ctrl+alt+del doesn't work, but machine
-> still responds to ping
-> 
-> Please CC me; I'm not on the list.
-> 
+On 19-06-14 18:28, Fu, Zhonghui wrote:
+>
+> On 2014/6/16 16:15, Arend van Spriel wrote:
+>> On 16-06-14 07:49, Fu, Zhonghui wrote:
+>>>   From 14485894add32aedacb3e486ebb2cc2b73861abf Mon Sep 17 00:00:00 2001
+>>> From: Fu zhonghui <zhonghui.fu@linux.intel.com>
+>>> Date: Wed, 11 Jun 2014 11:06:55 +0800
+>>> Subject: [PATCH] brcmfmac: prevent watchdog from interfering with scanning and connecting
+>>>
+>>> Watchdog in brcmfmac driver may make WiFi chip enter sleep mode
+>>> before completion of scanning or connecting.
+>>>
+>>> This will lead to scanning or connecting failure.
+>>>
+>>> Increasing temporarily idle-time threshold during scanning or
+>>> connecting can ensure scanning or connecting success without
+>>> watchdog interference.
+>>
+>> Are you sure you are not having runtime PM enabled. That could be your problem as the host controller code disables sdio irqs. Please see this thread [1]. For our device runtime pm should not be enabled, but I am not sure if that is taken into account in mmc_attach_sdio() (see code below).
+> I have tried brcmfmac driver with "CONFIG_PM_RUNTIME is not set", and scanning and connecting  always succeeded. This means that CONFIG_PM_RUNTIME should not be set if we use SDIO WiFi device driven by brcmfmac driver, right?
+
+Depends which kernel you are using. In 3.16-rc1 the sdio interrupt issue 
+has been fixed so you should be fine to use CONFIG_PM_RUNTIME. Here is 
+the commit
+
+commit be138554a7923658ded799b0e8794d9c1d08a6e5
+Author: Russell King <rmk+kernel@arm.linux.org.uk>
+Date:   Fri Apr 25 12:55:56 2014 +0100
+
+     mmc: sdhci: allow sdio interrupts while sdhci runtime suspended
+
+Regards,
+Arend
+
 > Thanks,
-> Peter
-> 
-> 
-> 
-> Here's the log:
-> 
-> Jun 12 15:42:42 node73 kernel: [17196.908781] ------------[ cut here
-> ]------------
-> Jun 12 15:42:42 node73 kernel: [17196.909789] kernel BUG at
-> /build/buildd/linux-3.13.0/mm/memory.c:3756!
+> Zhonghui
+>>
+>> Gr. AvS
+>>
+>> [1] http://www.spinics.net/lists/linux-mmc/msg25978.html
+>>
+>> --8<----------------------------------------------------------------
+>>
+>>      /*
+>>       * Enable runtime PM only if supported by host+card+board
+>>       */
+>>      if (host->caps & MMC_CAP_POWER_OFF_CARD) {
+>>          /*
+>>           * Let runtime PM core know our card is active
+>>           */
+>>          err = pm_runtime_set_active(&card->dev);
+>>          if (err)
+>>              goto remove;
+>>
+>>          /*
+>>           * Enable runtime PM for this card
+>>           */
+>>          pm_runtime_enable(&card->dev);
+>>      }
+>>
+>>> Signed-off-by: Fu zhonghui <zhonghui.fu@linux.intel.com>
+>>> ---
+>>>    drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c |   18 ++++++++++++++++--
+>>>    .../net/wireless/brcm80211/brcmfmac/wl_cfg80211.c  |    3 ++-
+>>>    2 files changed, 18 insertions(+), 3 deletions(-)
+>>>
+>>> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+>>> index 13c89a0..729deab 100644
+>>> --- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+>>> +++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+>>> @@ -34,6 +34,7 @@
+>>>    #include <linux/vmalloc.h>
+>>>    #include <linux/platform_data/brcmfmac-sdio.h>
+>>>    #include <linux/moduleparam.h>
+>>> +#include <net/cfg80211.h>
+>>>    #include <asm/unaligned.h>
+>>>    #include <defs.h>
+>>>    #include <brcmu_wifi.h>
+>>> @@ -43,6 +44,10 @@
+>>>    #include "sdio_host.h"
+>>>    #include "chip.h"
+>>>    #include "nvram.h"
+>>> +#include "dhd.h"
+>>> +#include "fwil_types.h"
+>>> +#include "p2p.h"
+>>> +#include "wl_cfg80211.h"
+>>>
+>>>    #define DCMD_RESP_TIMEOUT  2000    /* In milli second */
+>>>
+>>> @@ -307,6 +312,7 @@ struct rte_console {
+>>>                         * when idle
+>>>                         */
+>>>    #define BRCMF_IDLE_INTERVAL    1
+>>> +#define BRCMF_IDLE_INTERVAL_SCANNING_CONNECTING    100
+>>>
+>>>    #define KSO_WAIT_US 50
+>>>    #define MAX_KSO_ATTEMPTS (PMU_MAX_TRANSITION_DLY/KSO_WAIT_US)
+>>> @@ -3613,9 +3619,9 @@ void brcmf_sdio_isr(struct brcmf_sdio *bus)
+>>>
+>>>    static bool brcmf_sdio_bus_watchdog(struct brcmf_sdio *bus)
+>>>    {
+>>> -#ifdef DEBUG
+>>>        struct brcmf_bus *bus_if = dev_get_drvdata(bus->sdiodev->dev);
+>>> -#endif    /* DEBUG */
+>>> +    struct brcmf_cfg80211_info *cfg = bus_if->drvr->config;
+>>> +    struct brcmf_if *ifp = cfg->pub->iflist[0];
+>>>
+>>>        brcmf_dbg(TIMER, "Enter\n");
+>>>
+>>> @@ -3678,6 +3684,14 @@ static bool brcmf_sdio_bus_watchdog(struct brcmf_sdio *bus)
+>>>
+>>>        /* On idle timeout clear activity flag and/or turn off clock */
+>>>        if ((bus->idletime > 0) && (bus->clkstate == CLK_AVAIL)) {
+>>> +
+>>> +        if (test_bit(BRCMF_SCAN_STATUS_BUSY, &cfg->scan_status) ||
+>>> +            test_bit(BRCMF_VIF_STATUS_CONNECTING, &ifp->vif->sme_state)) {
+>>> +            bus->idletime = BRCMF_IDLE_INTERVAL_SCANNING_CONNECTING;
+>>> +        } else {
+>>> +            bus->idletime = BRCMF_IDLE_INTERVAL;
+>>> +        }
+>>> +
+>>>            if (++bus->idlecount >= bus->idletime) {
+>>>                bus->idlecount = 0;
+>>>                if (bus->activity) {
+>>> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+>>> index be19852..e76517e 100644
+>>> --- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+>>> +++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+>>> @@ -913,6 +913,8 @@ brcmf_cfg80211_escan(struct wiphy *wiphy, struct brcmf_cfg80211_vif *vif,
+>>>            return -EAGAIN;
+>>>        }
+>>>
+>>> +    set_bit(BRCMF_SCAN_STATUS_BUSY, &cfg->scan_status);
+>>> +
+>>>        /* If scan req comes for p2p0, send it over primary I/F */
+>>>        if (vif == cfg->p2p.bss_idx[P2PAPI_BSSCFG_DEVICE].vif)
+>>>            vif = cfg->p2p.bss_idx[P2PAPI_BSSCFG_PRIMARY].vif;
+>>> @@ -933,7 +935,6 @@ brcmf_cfg80211_escan(struct wiphy *wiphy, struct brcmf_cfg80211_vif *vif,
+>>>        }
+>>>
+>>>        cfg->scan_request = request;
+>>> -    set_bit(BRCMF_SCAN_STATUS_BUSY, &cfg->scan_status);
+>>>        if (escan_req) {
+>>>            cfg->escan_info.run = brcmf_run_escan;
+>>>            err = brcmf_p2p_scan_prep(wiphy, request, vif);
+>>> -- 1.7.1
+>>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-Looks like this:
-
-http://lkml.org/lkml/2014/5/8/275
-
-It seems the commit 107437febd49 has added to 3.13.11.3 "extended stable",
-but not in other -stable.
-
-Rik, should it be there too?
-
--- 
- Kirill A. Shutemov
