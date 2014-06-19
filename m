@@ -1,87 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757389AbaFSGgO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 02:36:14 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:15307 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156AbaFSGgN (ORCPT
+	id S1757412AbaFSGhE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 02:37:04 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:52678 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754272AbaFSGhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 02:36:13 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 18 Jun 2014 23:26:47 -0700
-From: Vidya Sagar <vidyas@nvidia.com>
-To: <linux@arm.linux.org.uk>, <bhelgaas@google.com>, <wangyijing@huawei.com>,
-        <thierry.reding@gmail.com>, <jason@lakedaemon.net>,
-        <will.deacon@arm.com>, <swarren@nvidia.com>, <kthota@nvidia.com>,
-        <vidyas@nvidia.com>
-CC: <sagar.tv@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v4] ARM: fix debug prints relevant to PCI devices
-Date: Thu, 19 Jun 2014 12:06:00 +0530
-Message-ID: <1403159760-32627-1-git-send-email-vidyas@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
+	Thu, 19 Jun 2014 02:37:01 -0400
+Message-ID: <53A28505.90406@hitachi.com>
+Date: Thu, 19 Jun 2014 15:36:53 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Tom Zanussi <tom.zanussi@intel.com>
+Subject: Re: Re: [PATCH v2 0/5] Add glob pattern matching support on trigger
+ and kprobe-event
+References: <20130522021903.4299.85911.stgit@mhiramat-M0-7522> <20140618212707.3b6e3172@gandalf.local.home>
+In-Reply-To: <20140618212707.3b6e3172@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per PCIe spec, fast back-to-back transactions feature
-is not applicable to PCIe devices. Hence, do not print
-that fast back-to-back trasactions are disabled when
-there is a PCIe device found on the bus
+(2014/06/19 10:27), Steven Rostedt wrote:
+> 
+> A blast from the past! (I'm cleaning out my inbox).
+> 
+> On Wed, 22 May 2013 11:19:03 +0900
+> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> 
+>> Hi,
+>>
+>> Here is a series of ftrace/perf updates to support multiple
+>> event select operation by glob-based wild cards.
+>>
+>> I've ported strglobmatch from perf-tools (with recursive call
+>> limitation) for this use. It is easier to use (just replacing
+>> strcmp) but slower than current parser-based matching.
+>> I don't care about the speed of matching because the all of
+>> the matching which I've introduced in this series are done
+>> on slow-path.
+>>
+>> Changes in v2:
+>>  - Update the comment of patch [2/5] for explaining more
+>>    detail of the backgroud.
+>>
+>> ---
+>>
+>> Masami Hiramatsu (5):
+>>       [BUGFIX] tracing: Returns -EBUSY when event_enable_func fails to get module
+> 
+> This is applied.
+> 
+> 
+>>       perf: Swap the parameters of strglobmatch
+>>       lib/string: Add a generic wildcard string matching function
+>>       tracing/kprobes: Allow user to delete kprobe events by wild cards
+>>       tracing: Support enable/disable multiple events trigger by wild cards
+> 
+> These don't look to be applied. Looks like this patch series was lost.
+> 
+> Masami, are these still relevant?
 
-Signed-off-by: Vidya Sagar <vidyas@nvidia.com>
----
-v4:
-* initialized 'has_pcie_dev' to 'false'
+These are separated enhancement. Feel free to apply the 1st bugfix patch.
+I'll update the series :)
 
-v3:
-* removed KERN_INFO from pr_info() which was not removed by mistake in previous patch
+Thank you,
 
-v2:
-* Modified has_pcie_dev type to bool and used pci_is_pcie() instead of pci_pcie_cap()
-* replaced printk with pr_info
+> 
+> -- Steve
+> 
+> 
+>>
+>>
+>>  Documentation/trace/ftrace.txt      |   12 ++-
+>>  Documentation/trace/kprobetrace.txt |   19 +++--
+>>  include/linux/string.h              |    8 ++
+>>  kernel/trace/trace_events.c         |  121 +++++++++++++++++++++++++----------
+>>  kernel/trace/trace_kprobe.c         |   97 ++++++++++++++++++++--------
+>>  lib/string.c                        |   91 ++++++++++++++++++++++++++
+>>  tools/perf/util/parse-events.c      |   14 ++--
+>>  tools/perf/util/probe-event.c       |    2 -
+>>  tools/perf/util/strfilter.c         |    2 -
+>>  tools/perf/util/string.c            |   16 ++---
+>>  tools/perf/util/util.h              |    4 +
+>>  11 files changed, 295 insertions(+), 91 deletions(-)
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
- arch/arm/kernel/bios32.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
-index 17a26c1..03c56ba 100644
---- a/arch/arm/kernel/bios32.c
-+++ b/arch/arm/kernel/bios32.c
-@@ -290,6 +290,7 @@ void pcibios_fixup_bus(struct pci_bus *bus)
- {
- 	struct pci_dev *dev;
- 	u16 features = PCI_COMMAND_SERR | PCI_COMMAND_PARITY | PCI_COMMAND_FAST_BACK;
-+	bool has_pcie_dev = false;
- 
- 	/*
- 	 * Walk the devices on this bus, working out what we can
-@@ -298,6 +299,8 @@ void pcibios_fixup_bus(struct pci_bus *bus)
- 	list_for_each_entry(dev, &bus->devices, bus_list) {
- 		u16 status;
- 
-+		if (!has_pcie_dev)
-+			has_pcie_dev = pci_is_pcie(dev);
- 		pci_read_config_word(dev, PCI_STATUS, &status);
- 
- 		/*
-@@ -354,9 +357,11 @@ void pcibios_fixup_bus(struct pci_bus *bus)
- 
- 	/*
- 	 * Report what we did for this bus
-+	 * (only if the bus doesn't have any PCIe devices)
- 	 */
--	printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
--		bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
-+	if (!has_pcie_dev)
-+		pr_info("PCI: bus%d: Fast back to back transfers %sabled\n",
-+			bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
- }
- EXPORT_SYMBOL(pcibios_fixup_bus);
- 
 -- 
-1.8.1.5
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
