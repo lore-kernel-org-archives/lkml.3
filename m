@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934008AbaFSSCL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 14:02:11 -0400
-Received: from mga02.intel.com ([134.134.136.20]:57256 "EHLO mga02.intel.com"
+	id S934145AbaFSSD3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 14:03:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60730 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933226AbaFSSCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 14:02:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,508,1400050800"; 
-   d="scan'208";a="560300359"
-Date: Thu, 19 Jun 2014 11:00:28 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        jmario@redhat.com, dzickus@redhat.com, jolsa@redhat.com,
-        acme@redhat.com
-Subject: Re: [PATCH 1/2] perf/x86: update Haswell PEBS event constraints
-Message-ID: <20140619180028.GU8178@tassilo.jf.intel.com>
-References: <1403193509-22393-1-git-send-email-eranian@google.com>
- <1403193509-22393-2-git-send-email-eranian@google.com>
+	id S933226AbaFSSD1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 14:03:27 -0400
+Message-ID: <53A325CE.5020206@zytor.com>
+Date: Thu, 19 Jun 2014 11:02:54 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403193509-22393-2-git-send-email-eranian@google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Dave Hansen <dave.hansen@intel.com>, Borislav Petkov <bp@alien8.de>,
+        Qiaowei Ren <qiaowei.ren@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 03/10] x86, mpx: add macro cpu_has_mpx
+References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com> <1403084656-27284-4-git-send-email-qiaowei.ren@intel.com> <20140618095739.GA24419@pd.tnic> <53A1A3A5.9010109@intel.com> <53A1A942.1090001@zytor.com> <53A1BD95.10701@intel.com>
+In-Reply-To: <53A1BD95.10701@intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 05:58:28PM +0200, Stephane Eranian wrote:
-> The following events support PEBS for all umasks,
-> thus use INTEL_EVENT_CONSTRAINT() instead of
-> INTEL_UEVENT_CONSTRAINT():
+On 06/18/2014 09:25 AM, Dave Hansen wrote:
+> On 06/18/2014 07:59 AM, H. Peter Anvin wrote:
+>> On 06/18/2014 07:35 AM, Dave Hansen wrote:
+>>> It looks like static_cpu_has() is the right thing to use instead of
+>>> boot_cpu_has().  But, this doesn't just obfuscate things.
+>>>
+>>> We actually _want_ the compiler to cull code out when the config option
+>>> is off.  Things like do_bounds() will see code savings with _some_ kind
+>>> of #ifdef rather than using static_cpu_has().
+>>>
+>>> So, we can either use the well worn, consistent with other features in
+>>> x86, cpu_has_$foo approach.  Or, we can roll our own macros.
+>>
+>> We could do something like:
+>>
+>> #define MPX_ENABLED (IS_ENABLED(CONFIG_X86_MPX) &&
+>> static_cpu_has(X86_FEATURE_MPX))
 > 
-> 0xd1 MEM_LOAD_UOPS_RETIRED
-> 0xd2 MEM_LOAD_UOPS_LLC_HIT_RETIRED
-> 0xd3 MEM_LOAD_UOPS_LLC_MISS_RETIRED
+> How about something like the attached patch?
 > 
-> For event 0xd0 (MEM_UOPS_RETIRED), the same is true, except
-> we need to distinguish precise store (umask 0x82) from load
-> latency events, thus we keep the breakdown per umask. But all
-> umasks do support PEBS.
+> This lets us use static_cpu_has() for the checks, and allows us to
+> easily add new checks for other features that might be compile-time
+> disabled.
+> 
 
-I sent a similar patch some time ago
+Hmm... I would like something similar to required-features.h which
+reflect features which *cannot* be enabled or will always be ignored; we
+actually already have a handful of those.
 
-http://lkml.iu.edu/hypermail/linux/kernel/1404.2/01509.html
+	-hpa
 
-However these days I'm actually thinking of just getting
-rid of the detailed table except for PREC_DIST. All the PEBS
-controls should be noops if the event does not support PEBS
-
--Andi
