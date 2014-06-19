@@ -1,98 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934543AbaFSVCI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 17:02:08 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:50611 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932343AbaFSVCF (ORCPT
+	id S934631AbaFSVDh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 17:03:37 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:46179 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932343AbaFSVDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 17:02:05 -0400
-Date: Thu, 19 Jun 2014 14:00:31 -0700
+	Thu, 19 Jun 2014 17:03:36 -0400
+Date: Thu, 19 Jun 2014 13:53:07 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Joe Perches <joe@perches.com>
-Cc: Julia Lawall <julia.lawall@lip6.fr>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Christoph Lameter <cl@gentwo.org>, Sasha Levin <sasha.levin@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>,
-        benoit.taine@lip6.fr, romanov.arya@gmail.com, bobby.prani@gmail.com
-Subject: Re: [RFC PATCH] checkpatch: Attempt to find unnecessary 'out of
- memory' messages
-Message-ID: <20140619210031.GN4904@linux.vnet.ibm.com>
+        Dave Jones <davej@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: slub/debugobjects: lockup when freeing memory
+Message-ID: <20140619205307.GL4904@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <1402419340.30479.18.camel@joe-AO725>
- <20140611074704.GS5015@mwanda>
- <1402502500.6169.5.camel@joe-AO725>
- <alpine.DEB.2.02.1406140937370.2003@localhost6.localdomain6>
- <alpine.DEB.2.02.1406141151170.2045@localhost6.localdomain6>
- <20140618193345.GR4669@linux.vnet.ibm.com>
- <1403120982.3839.25.camel@joe-AO725>
+References: <53A2F406.4010109@oracle.com>
+ <alpine.DEB.2.11.1406191001090.2785@gentwo.org>
+ <20140619165247.GA4904@linux.vnet.ibm.com>
+ <alpine.DEB.2.10.1406192127100.5170@nanos>
+ <20140619202928.GG4904@linux.vnet.ibm.com>
+ <alpine.DEB.2.10.1406192230390.5170@nanos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403120982.3839.25.camel@joe-AO725>
+In-Reply-To: <alpine.DEB.2.10.1406192230390.5170@nanos>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061921-3532-0000-0000-00000296DAFD
+x-cbid: 14061920-0928-0000-0000-000002D0F915
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 12:49:42PM -0700, Joe Perches wrote:
-> On Wed, 2014-06-18 at 12:33 -0700, Paul E. McKenney wrote:
-> > On Sat, Jun 14, 2014 at 11:51:41AM +0200, Julia Lawall wrote:
-> > > On Sat, 14 Jun 2014, Julia Lawall wrote:
-> > > > With a semantic patch that searches for the various calls and then a 
-> > > > string containing the letters "emory", I get removals of the messages 
-> > > > below.  Do any of these messages look useful?  For example, some are 
-> > > > generated with specific functions, such as IRDA_ERROR or BT_ERR.  If none 
-> > > > of the messages look useful, should just one big patch go to trivial, or 
-> > > > should the patches go to the individual maintainers?
+On Thu, Jun 19, 2014 at 10:37:17PM +0200, Thomas Gleixner wrote:
+> On Thu, 19 Jun 2014, Paul E. McKenney wrote:
+> > On Thu, Jun 19, 2014 at 09:29:08PM +0200, Thomas Gleixner wrote:
+> > > On Thu, 19 Jun 2014, Paul E. McKenney wrote:
+> > > Well, no. Look at the callchain:
 > > > 
-> > > Sorry, I left out all the strings...
+> > > __call_rcu
+> > >     debug_object_activate
+> > >        rcuhead_fixup_activate
+> > >           debug_object_init
+> > >               kmem_cache_alloc
+> > > 
+> > > So call rcu activates the object, but the object has no reference in
+> > > the debug objects code so the fixup code is called which inits the
+> > > object and allocates a reference ....
 > > 
-> > I would like the rcu-torture message to stay:
+> > OK, got it.  And you are right, call_rcu() has done this for a very
+> > long time, so not sure what changed.  But it seems like the right
+> > approach is to provide a debug-object-free call_rcu_alloc() for use
+> > by the memory allocators.
 > > 
-> > > -		pr_err("rcu-torture: Out of memory, need: %d", size);
-> > 
-> > This is in a module that is not loaded into any reasonable production
-> > kernel, and has helped me to catch typos.
+> > Seem reasonable?  If so, please see the following patch.
 > 
-> I believe the function doesn't work well.
+> Not really, you're torpedoing the whole purpose of debugobjects :)
 > 
-> static void
-> rcu_torture_stats_print(void)
-> {
-> 	int size = nr_cpu_ids * 200 + 8192;
-> 	char *buf;
-> 
-> 	buf = kmalloc(size, GFP_KERNEL);
-> 	if (!buf) {
-> 		pr_err("rcu-torture: Out of memory, need: %d\n", size);
-> 		return;
-> 	}
-> 	rcu_torture_printk(buf);
-> 	pr_alert("%s", buf);
-> 	kfree(buf);
-> }
-> 
-> rcu_torture_printk simply fills buf
-> 
-> btw: I believe the arguments should pass size and
->      rcu_torture_printk should use snprintf/size
-> 
-> but all printks are limited to a maximum of 1024
-> bytes so the large allocation is senseless and
-> would even if it worked, would likely need to be
-> vmalloc/vfree
+> So, why can't we just init the rcu head when the stuff is created?
 
-Fair point!
-
-Pranith, Romanov, if you would like part of RCU that is less touchy
-about random hacking, this would be a good place to start.  Scripts in
-tools/testing/selftests/rcutorture/bin do care about some of the format,
-but the variable-length portion generated by cur_ops->stats() is as far
-as I know only parsed by human eyes.
+That would allow me to keep my code unchanged, so I am in favor.  ;-)
 
 							Thanx, Paul
+
+> If that's impossible due to other memory allocator constraints, then
+> instead of inventing a whole new API we can simply flag the relevent
+> data in the memory allocator as we do with the debug objects mem cache
+> itself (SLAB_DEBUG_OBJECTS).
+> 
+> Thanks,
+> 
+> 	tglx
+> 
 
