@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934340AbaFSSuB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 14:50:01 -0400
-Received: from sauhun.de ([89.238.76.85]:37034 "EHLO pokefinder.org"
+	id S934359AbaFSSuL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 14:50:11 -0400
+Received: from mga09.intel.com ([134.134.136.24]:14728 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933059AbaFSSt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 14:49:28 -0400
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-kernel@vger.kernel.org
-Cc: Tushar Behera <tushar.behera@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: [PATCH 1/3] DRM: Armada: Use devm_ioremap_resource
-Date: Thu, 19 Jun 2014 20:48:59 +0200
-Message-Id: <1403203741-5113-2-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1403203741-5113-1-git-send-email-wsa@the-dreams.de>
-References: <1403203741-5113-1-git-send-email-wsa@the-dreams.de>
+	id S933059AbaFSSuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 14:50:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,508,1400050800"; 
+   d="scan'208";a="560321060"
+Message-ID: <53A330DD.1090106@intel.com>
+Date: Thu, 19 Jun 2014 11:50:05 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
+        Qiaowei Ren <qiaowei.ren@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 03/10] x86, mpx: add macro cpu_has_mpx
+References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com> <1403084656-27284-4-git-send-email-qiaowei.ren@intel.com> <20140618095739.GA24419@pd.tnic> <53A1A3A5.9010109@intel.com> <53A1A942.1090001@zytor.com> <53A1BD95.10701@intel.com> <53A325CE.5020206@zytor.com>
+In-Reply-To: <53A325CE.5020206@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tushar Behera <tushar.behera@linaro.org>
+On 06/19/2014 11:02 AM, H. Peter Anvin wrote:
+> On 06/18/2014 09:25 AM, Dave Hansen wrote:
+>> How about something like the attached patch?
+>>
+>> This lets us use static_cpu_has() for the checks, and allows us to
+>> easily add new checks for other features that might be compile-time
+>> disabled.
+> 
+> Hmm... I would like something similar to required-features.h which
+> reflect features which *cannot* be enabled or will always be ignored; we
+> actually already have a handful of those
 
-While at it, propagate the error code.
+Could you elaborate a bit?  I'll try and include them in the approach to
+make sure it works broadly.
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
----
- drivers/gpu/drm/armada/armada_crtc.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+Is there a benefit to the required-features.h approach that's missing
+from mine?  I _believe_ all of the compiler optimization around
+__builtin_constant_p() continues to work with the inline function
+instead of the #defines and bitmasks.  I think the inline function
+approach is a bit easier to work with.
 
-diff --git a/drivers/gpu/drm/armada/armada_crtc.c b/drivers/gpu/drm/armada/armada_crtc.c
-index 81c34f949dfc..3aedf9e993e6 100644
---- a/drivers/gpu/drm/armada/armada_crtc.c
-+++ b/drivers/gpu/drm/armada/armada_crtc.c
-@@ -1039,11 +1039,9 @@ int armada_drm_crtc_create(struct drm_device *dev, unsigned num,
- 	if (ret)
- 		return ret;
- 
--	base = devm_request_and_ioremap(dev->dev, res);
--	if (!base) {
--		DRM_ERROR("failed to ioremap register\n");
--		return -ENOMEM;
--	}
-+	base = devm_ioremap_resource(dev->dev, res);
-+	if (IS_ERR(base))
-+		return PTR_ERR(base);
- 
- 	dcrtc = kzalloc(sizeof(*dcrtc), GFP_KERNEL);
- 	if (!dcrtc) {
--- 
-2.0.0
-
+Could the required-features.h approach just be from a time before
+__builtin_constant_p() worked well across inlines?
