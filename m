@@ -1,17 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758063AbaFSMQe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 08:16:34 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:55418 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757919AbaFSMQc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 08:16:32 -0400
-Date: Thu, 19 Jun 2014 15:16:27 +0300
-From: Gleb Natapov <gleb@kernel.org>
+	id S932655AbaFSMRu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 08:17:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32944 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757919AbaFSMRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 08:17:48 -0400
+Date: Thu, 19 Jun 2014 15:17:56 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
 To: Nadav Amit <nadav.amit@gmail.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        "Gabriel L. Somlo" <gsomlo@gmail.com>,
+Cc: Gleb Natapov <gleb@kernel.org>, "Gabriel L. Somlo" <gsomlo@gmail.com>,
         Eric Northup <digitaleric@google.com>,
         Nadav Amit <namit@cs.technion.ac.il>,
         Paolo Bonzini <pbonzini@redhat.com>,
@@ -21,7 +19,7 @@ Cc: "Michael S. Tsirkin" <mst@redhat.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>, joro@8bytes.org, agraf@suse.de
 Subject: Re: [PATCH 3/3] KVM: x86: correct mwait and monitor emulation
-Message-ID: <20140619121627.GB7289@minantech.com>
+Message-ID: <20140619121756.GA28523@redhat.com>
 References: <CAG7+5M1T=OSqMLOJjb-txRCL_J_q=KSNV9yOfeP=98YuyD27Fw@mail.gmail.com>
  <20140618184601.GE1695@ERROL.INI.CMU.EDU>
  <20140619101811.GA5777@redhat.com>
@@ -111,7 +109,10 @@ On Thu, Jun 19, 2014 at 03:10:21PM +0300, Nadav Amit wrote:
 > workload. In this specific workload I do not care about performance but only
 > about correctness.
 > 
-Fair enough. But can you at least hint what is this mysterious guest?
+> Nadav
 
---
-			Gleb.
+No one prevents you from patching your kernel to run this workload.  But
+is this of use to anyone else? If yes why?
+
+-- 
+MST
