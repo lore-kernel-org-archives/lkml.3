@@ -1,77 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758313AbaFSQDU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:03:20 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:58917 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758296AbaFSQDQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:03:16 -0400
-Date: Thu, 19 Jun 2014 17:03:10 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
-Cc: linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [GIT PULL v2] LinusW - Immutable branch between MFD and GPIO
-Message-ID: <20140619160310.GE26560@lee--X1>
-References: <1401773164-30326-1-git-send-email-lejun.zhu@linux.intel.com>
- <20140617150738.GL29841@lee--X1>
+	id S1758053AbaFSQIL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:08:11 -0400
+Received: from imap.thunk.org ([74.207.234.97]:47906 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757539AbaFSQIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 12:08:09 -0400
+Date: Thu, 19 Jun 2014 12:08:01 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Jens Axboe <axboe@fb.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: BUG: scheduling while atomic in blk_mq codepath?
+Message-ID: <20140619160801.GB4907@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Jens Axboe <axboe@fb.com>,
+	linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+References: <20140619153550.GA12836@thunk.org>
+ <53A308DE.7080000@fb.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140617150738.GL29841@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53A308DE.7080000@fb.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Thu, Jun 19, 2014 at 08:59:26AM -0700, Jens Axboe wrote:
+> I believe you already reported this issue a while back, and it should be
+> fixed by commit cb96a42c in the kernel.
 
-Slight amendment.  I've applied a fix, as this branch broke PPC.
+Ah yes, I had forgotten.  Thanks for the reminder!
 
-The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
+> The other issue, not sure, not a lot of detail. It may be fixed by the pull
+> request I sent out yesterday. You can try pulling in:
+> 
+> git://git.kernel.dk/linux-block.git for-linus
 
-  Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
+Thanks, I'll give that a try.
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-gpio-v3.17
-
-for you to fetch changes up to 8dbf2aa3c308ade864261e8047b0dce1f4ed9a7e:
-
-  gpio: crystalcove: Fix implicit declaration of function 'seq_printf' error (2014-06-19 16:56:28 +0100)
-
-----------------------------------------------------------------
-Immutable branch between MFD and GPIO for v3.17.
-
-----------------------------------------------------------------
-Lee Jones (1):
-      gpio: crystalcove: Fix implicit declaration of function 'seq_printf' error
-
-Zhu, Lejun (3):
-      mfd: intel_soc_pmic: Core driver
-      mfd: intel_soc_pmic: Crystal Cove support
-      gpio: Add support for Intel Crystal Cove PMIC
-
- drivers/gpio/Kconfig               |  13 ++
- drivers/gpio/Makefile              |   1 +
- drivers/gpio/gpio-crystalcove.c    | 380 +++++++++++++++++++++++++++++++++++++
- drivers/mfd/Kconfig                |  12 ++
- drivers/mfd/Makefile               |   3 +
- drivers/mfd/intel_soc_pmic_core.c  | 168 ++++++++++++++++
- drivers/mfd/intel_soc_pmic_core.h  |  32 ++++
- drivers/mfd/intel_soc_pmic_crc.c   | 158 +++++++++++++++
- include/linux/mfd/intel_soc_pmic.h |  30 +++
- 9 files changed, 797 insertions(+)
- create mode 100644 drivers/gpio/gpio-crystalcove.c
- create mode 100644 drivers/mfd/intel_soc_pmic_core.c
- create mode 100644 drivers/mfd/intel_soc_pmic_core.h
- create mode 100644 drivers/mfd/intel_soc_pmic_crc.c
- create mode 100644 include/linux/mfd/intel_soc_pmic.h
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+				- Ted
