@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933085AbaFSOn2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 10:43:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63627 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932411AbaFSOn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 10:43:26 -0400
-Message-ID: <53A2F6E3.6020703@redhat.com>
-Date: Thu, 19 Jun 2014 16:42:43 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>, Andi Kleen <ak@linux.intel.com>
-CC: Andi Kleen <andi@firstfloor.org>, peterz@infradead.org, gleb@kernel.org,
-        eranian@google.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] kvm: Implement PEBS virtualization
-References: <1401412327-14810-1-git-send-email-andi@firstfloor.org> <1401412327-14810-5-git-send-email-andi@firstfloor.org> <20140610180448.GA9485@amt.cnet> <20140610192207.GC8178@tassilo.jf.intel.com> <20140610210654.GA16344@amt.cnet>
-In-Reply-To: <20140610210654.GA16344@amt.cnet>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757944AbaFSOoY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 10:44:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:39580 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756435AbaFSOoX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 10:44:23 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Makefile: version.h macros KERNEL_EXTRAVERSION, LINUX_EXTRAVERSION_CODE
+Date: Thu, 19 Jun 2014 07:44:18 -0700
+Message-Id: <1403189058-24103-1-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 10/06/2014 23:06, Marcelo Tosatti ha scritto:
-> > BTW how about general PMU migration? As far as I can tell there
-> > is no code to save/restore the state for that currently, right?
->
-> Paolo wrote support for it, recently. Paolo?
+Adds new macro KERNEL_EXTRAVERSION(a,b,c,d) and value
+LINUX_EXTRAVERSION_CODE to version.h, allowing ranged version checks of
+extended-stable versions that use a numeric EXTRAVERSION value.
 
-Yes, on the KVM side all that is needed is to special case MSR reads and 
-writes that have side effects, for example:
+The new KERNEL_EXTRAVERSION(a,b,c,d) works like KERNEL_VERSION(a,b,c)...
+If EXTRAVERSION is set to ".{integer}" (the common extended-stable kernel
+version number scheme) then {integer} corresponds to KERNEL_EXTRAVERSION's
+fourth arg.  If EXTRAVERSION is blank or a non-".{integer}" string like
+"-rc5", that corresponds to a fourth parameter of 0.
 
-         case MSR_CORE_PERF_GLOBAL_STATUS:
-                 if (msr_info->host_initiated) {
-                         pmu->global_status = data;
-                         return 0;
-                 }
-                 break; /* RO MSR */
-         case MSR_CORE_PERF_GLOBAL_OVF_CTRL:
-                 if (!(data & (pmu->global_ctrl_mask & ~(3ull<<62)))) {
-                         if (!msr_info->host_initiated)
-                                 pmu->global_status &= ~data;
-                         pmu->global_ovf_ctrl = data;
-                         return 0;
-                 }
-                 break;
+Example usage:
 
-Right now this is only needed for writes.
+  #if ( LINUX_EXTRAVERSION_CODE >= KERNEL_EXTRAVERSION(3,13,11,5) )
+      // compiles for (3.13.11 with "EXTRAVERSION = .5") or greater value
+  #endif
 
-Userspace then can read/write these MSRs, and add them to the migration 
-stream.  QEMU has code for that.
+Cc: stable@vger.kernel.org
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ Makefile | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-Paolo
+diff --git a/Makefile b/Makefile
+index 97b2861..e579628 100644
+--- a/Makefile
++++ b/Makefile
+@@ -953,10 +953,15 @@ define filechk_utsrelease.h
+ 	(echo \#define UTS_RELEASE \"$(KERNELRELEASE)\";)
+ endef
+ 
++extraversionnum := $(shell \
++	echo "$(EXTRAVERSION)" | sed -n '/\.\([0-9]*\).*/s//\1/p')
+ define filechk_version.h
+ 	(echo \#define LINUX_VERSION_CODE $(shell                         \
+ 	expr $(VERSION) \* 65536 + 0$(PATCHLEVEL) \* 256 + 0$(SUBLEVEL)); \
+-	echo '#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))';)
++	echo '#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))'; \
++	echo \#define LINUX_EXTRAVERSION_CODE $(shell                      \
++	expr $(VERSION) \* 268435456 + 0$(PATCHLEVEL) \* 1048576 + 0$(SUBLEVEL) \* 4096 + 0$(extraversionnum)); \
++	echo '#define KERNEL_EXTRAVERSION(a,b,c,d) (((a)<<28) + ((b)<<20) + ((c)<<12) + (d))';)
+ endef
+ 
+ $(version_h): $(srctree)/Makefile FORCE
+-- 
+1.9.1
+
