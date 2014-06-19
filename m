@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757944AbaFSOoY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 10:44:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:39580 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756435AbaFSOoX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 10:44:23 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Makefile: version.h macros KERNEL_EXTRAVERSION, LINUX_EXTRAVERSION_CODE
-Date: Thu, 19 Jun 2014 07:44:18 -0700
-Message-Id: <1403189058-24103-1-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
+	id S1757715AbaFSOui (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 10:50:38 -0400
+Received: from mout.gmx.net ([212.227.17.22]:51694 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756435AbaFSOuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 10:50:37 -0400
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+To: Kees Cook <keescook@chromium.org>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Michael Krufky <mkrufky@linuxtv.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Heinrich Schuchardt <xypron.glpk@gmx.de>
+Subject: [PATCH 1/1 v2] media: dib9000: avoid out of bound access
+Date: Thu, 19 Jun 2014 16:49:40 +0200
+Message-Id: <1403189380-25134-1-git-send-email-xypron.glpk@gmx.de>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <CAGXu5jLJGpPhycff9OSMGu6wduLGQWhsu2mkGeM7R0O9CQZ7pg@mail.gmail.com>
+References: <CAGXu5jLJGpPhycff9OSMGu6wduLGQWhsu2mkGeM7R0O9CQZ7pg@mail.gmail.com>
+X-Provags-ID: V03:K0:MMsP1MxjMEyckSenHVJWVA1UewdLxlBEIYR+DgVJOlFLVJ1vJVQ
+ 1EyoPEyzWHWw6E12Qnqzym23LhBeZnncg3n5fJJ80HXCEeE94kiTKhGRV+Rd2zGEYxQWcrz
+ psBAQqNgOxFGgmXB5fRpDpkDJyUd7EQkV24Aw1qmSZZJVUsNpbaobf3qyXVqJpyWJyYMawt
+ 9VgBw05Ig0s8A/kyKw2Aw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds new macro KERNEL_EXTRAVERSION(a,b,c,d) and value
-LINUX_EXTRAVERSION_CODE to version.h, allowing ranged version checks of
-extended-stable versions that use a numeric EXTRAVERSION value.
+This updated patch also fixes out of bound access to b[].
 
-The new KERNEL_EXTRAVERSION(a,b,c,d) works like KERNEL_VERSION(a,b,c)...
-If EXTRAVERSION is set to ".{integer}" (the common extended-stable kernel
-version number scheme) then {integer} corresponds to KERNEL_EXTRAVERSION's
-fourth arg.  If EXTRAVERSION is blank or a non-".{integer}" string like
-"-rc5", that corresponds to a fourth parameter of 0.
+In dib9000_risc_apb_access_write() an out of bound access to mb[].
 
-Example usage:
+The current test to avoid out of bound access to mb[] is insufficient.
+For len = 19 non-existent mb[10] will be accessed.
 
-  #if ( LINUX_EXTRAVERSION_CODE >= KERNEL_EXTRAVERSION(3,13,11,5) )
-      // compiles for (3.13.11 with "EXTRAVERSION = .5") or greater value
-  #endif
+For odd values of len b[] is accessed out of bounds.
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+For large values of len an of bound access to mb[] may occur in
+dib9000_mbx_send_attr.
+
+Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
 ---
- Makefile | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/media/dvb-frontends/dib9000.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/Makefile b/Makefile
-index 97b2861..e579628 100644
---- a/Makefile
-+++ b/Makefile
-@@ -953,10 +953,15 @@ define filechk_utsrelease.h
- 	(echo \#define UTS_RELEASE \"$(KERNELRELEASE)\";)
- endef
+diff --git a/drivers/media/dvb-frontends/dib9000.c b/drivers/media/dvb-frontends/dib9000.c
+index e540cfb..f75dec4 100644
+--- a/drivers/media/dvb-frontends/dib9000.c
++++ b/drivers/media/dvb-frontends/dib9000.c
+@@ -1040,13 +1040,18 @@ static int dib9000_risc_apb_access_write(struct dib9000_state *state, u32 addres
+ 	if (address >= 1024 || !state->platform.risc.fw_is_running)
+ 		return -EINVAL;
  
-+extraversionnum := $(shell \
-+	echo "$(EXTRAVERSION)" | sed -n '/\.\([0-9]*\).*/s//\1/p')
- define filechk_version.h
- 	(echo \#define LINUX_VERSION_CODE $(shell                         \
- 	expr $(VERSION) \* 65536 + 0$(PATCHLEVEL) \* 256 + 0$(SUBLEVEL)); \
--	echo '#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))';)
-+	echo '#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))'; \
-+	echo \#define LINUX_EXTRAVERSION_CODE $(shell                      \
-+	expr $(VERSION) \* 268435456 + 0$(PATCHLEVEL) \* 1048576 + 0$(SUBLEVEL) \* 4096 + 0$(extraversionnum)); \
-+	echo '#define KERNEL_EXTRAVERSION(a,b,c,d) (((a)<<28) + ((b)<<20) + ((c)<<12) + (d))';)
- endef
++	if (len > 18)
++		return -EINVAL;
++
+ 	/* dprintk( "APB access thru wr fw %d %x", address, attribute); */
  
- $(version_h): $(srctree)/Makefile FORCE
+-	mb[0] = (unsigned short)address;
+-	for (i = 0; i < len && i < 20; i += 2)
+-		mb[1 + (i / 2)] = (b[i] << 8 | b[i + 1]);
++	mb[0] = (u16)address;
++	for (i = 0; i + 1 < len; i += 2)
++		mb[1 + i / 2] = b[i] << 8 | b[i + 1];
++	if (len & 1)
++		mb[1 + len / 2] = b[len - 1] << 8;
+ 
+-	dib9000_mbx_send_attr(state, OUT_MSG_BRIDGE_APB_W, mb, 1 + len / 2, attribute);
++	dib9000_mbx_send_attr(state, OUT_MSG_BRIDGE_APB_W, mb, (3 + len) / 2, attribute);
+ 	return dib9000_mbx_get_message_attr(state, IN_MSG_END_BRIDGE_APB_RW, mb, &s, attribute) == 1 ? 0 : -EINVAL;
+ }
+ 
 -- 
-1.9.1
+2.0.0
 
