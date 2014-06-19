@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965273AbaFSUoy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 16:44:54 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:51801 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964975AbaFSUow (ORCPT
+	id S965327AbaFSUpZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 16:45:25 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:44579 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964975AbaFSUpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 16:44:52 -0400
-Date: Thu, 19 Jun 2014 13:42:20 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave.hansen@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-Subject: Re: [bisected] pre-3.16 regression on open() scalability
-Message-ID: <20140619204220.GJ4904@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140618001836.GV4669@linux.vnet.ibm.com>
- <53A132D4.60408@intel.com>
- <20140618125831.GB4669@linux.vnet.ibm.com>
- <53A1CE19.7040103@intel.com>
- <20140618203052.GT4669@linux.vnet.ibm.com>
- <20140618235131.GA25946@linux.vnet.ibm.com>
- <20140619014200.GO8178@tassilo.jf.intel.com>
- <alpine.DEB.2.11.1406190941180.2785@gentwo.org>
- <20140619180916.GE4904@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1406191531020.4002@gentwo.org>
+	Thu, 19 Jun 2014 16:45:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1406191531020.4002@gentwo.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061920-1344-0000-0000-0000024F25F1
+In-Reply-To: <20140619204041.GW8178@tassilo.jf.intel.com>
+References: <1403193509-22393-1-git-send-email-eranian@google.com>
+	<1403193509-22393-2-git-send-email-eranian@google.com>
+	<20140619180028.GU8178@tassilo.jf.intel.com>
+	<CABPqkBTw9wi1LSoqWUYcN2W1fvBYDfsdqkdxDTPQ0rWUEUFLmA@mail.gmail.com>
+	<20140619201801.GV8178@tassilo.jf.intel.com>
+	<CABPqkBRy=u6oyyFV9yC9uOykHbNUdDqDgeQ3XSTpcAfQAyS-+g@mail.gmail.com>
+	<20140619204041.GW8178@tassilo.jf.intel.com>
+Date: Thu, 19 Jun 2014 22:45:23 +0200
+Message-ID: <CABPqkBQfqsS3JRf2Kh0u4k=uS_GmYFr2APnmVzud_3-ndstU4w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] perf/x86: update Haswell PEBS event constraints
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, Joe Mario <jmario@redhat.com>,
+        Don Zickus <dzickus@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 03:31:56PM -0500, Christoph Lameter wrote:
-> On Thu, 19 Jun 2014, Paul E. McKenney wrote:
-> 
-> > That is a separate issue, but unnecessary calls to cond_resched()
-> > should of course be removed -- no argument there.
-> 
-> It looks like we are fighting higher latencies by adding calls in most of
-> the critical sections which will in turn increase the latencies that we
-> are trying to reduce.
+On Thu, Jun 19, 2014 at 10:40 PM, Andi Kleen <ak@linux.intel.com> wrote:
+> On Thu, Jun 19, 2014 at 10:31:29PM +0200, Stephane Eranian wrote:
+>> On Thu, Jun 19, 2014 at 10:18 PM, Andi Kleen <ak@linux.intel.com> wrote:
+>> >> I don't quite understand that.
+>> >> You need to know which events support PEBS. You need a table
+>> >
+>> > We're talking about the kernel allowing things here.
+>> > Yes the user still needs to know what supports PEBS, but
+>> > that doesn't concern the kernel.
+>> >
+>> Just need to make sure you don't return bogus information.
+>
+> GIGO. We only need to prevent security issues.
+>
+>> > You can just allow it for all, it's a nop if the event doesn't
+>> > support it. And also the fields like DataLA are simply 0 when
+>> > not supported.
+>> >
+>>
+>> Let's take a example. If I do resource_stalls:pp, the kernel
+>> will let it go through and clear the PMI bit on the config as
+>> is required for PEBS mode. The counter will count normally
+>> and never fire an interrupt, even when it overflows. It would
+>> never execute the PMI handler and thus never look at the
+>> PEBS content. You'd never get any samples.
+>
+> Yes if the user specifies a bogus raw event it will not count.
+> That's fine. The important part is just that nothing ever crashes.
+>
+That would certainly avoid the problem of missing events in pebs table.
+I had a problem with that just today. It also speed up scheduling
+as well by avoid the table lookups.
 
-That is on battle in a larger war.  Another battle is to keep big systems
-from choking and dying.  We need to win both battles, though I understand
-that you are focused primarily on latency reduction.  I don't get that
-luxury because RCU is used across the board.
-
-							Thanx, Paul
-
+Note that I will soon post a patch to speed up scheduling for all x86
+processors.
