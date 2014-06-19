@@ -1,37 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758172AbaFSQ2i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:28:38 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:52651 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757558AbaFSQ2g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:28:36 -0400
-Date: Thu, 19 Jun 2014 12:28:33 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] workqueue: remove useless WARN_ON_ONCE()
-Message-ID: <20140619162833.GL26904@htj.dyndns.org>
-References: <1401780761-12229-1-git-send-email-laijs@cn.fujitsu.com>
+	id S1758195AbaFSQ2t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:28:49 -0400
+Received: from mga01.intel.com ([192.55.52.88]:37670 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757558AbaFSQ2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 12:28:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,507,1400050800"; 
+   d="scan'208";a="550469789"
+Date: Fri, 20 Jun 2014 00:28:42 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Jet Chen <jet.chen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        lkp@01.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [tracing] 939c7a4f04f: -46.4% cpuidle.C3-IVT.time
+Message-ID: <20140619162842.GB10268@localhost>
+References: <53A10460.1040705@intel.com>
+ <53A27D66.6070409@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1401780761-12229-1-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53A27D66.6070409@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 03:32:41PM +0800, Lai Jiangshan wrote:
-> The @cpu is fetched via smp_processor_id() in this function,
-> so the check is useless.
+Hi Yoshihiro,
+
+On Thu, Jun 19, 2014 at 03:04:22PM +0900, Yoshihiro YUNOMAE wrote:
+> Hi Jet,
 > 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Thank you for your report.
+> I have some questions for your test.
+> 
+> 1. Did you enable ftrace?
 
-Applied to wq/for-3.17.
+Yes, ftrace is enabled. Attached is the kernel config.
 
-Thanks.
+> This patch added a feature for ftrace. If you disabled ftrace in
+> this test, my patch will not affect the system. Moreover, in my patch,
+> arrays for saved_cmdlines were just changed from using static global
+> variables to using kmalloc() on default setting. So, even if you enabled
+> ftrace, this patch will not induce a big problem, I think.
 
--- 
-tejun
+Agreed, the patch itself looks good. Unfortunately sometimes a small
+change in one place may lead to subtle changes in other places due to
+data alignment etc. effects.
+
+> 2. How did you test it and what does the result mean?
+> Please tell me the workload, how to calculate the score,
+> system settings, etc...
+
+Workload is aim7's brk_test case, running on an Ivy Bridge-EX machine.
+However it's not aim7's throughput that's regressed, but there are
+changes in the C3 state, number of RCU softirqs and power consumption
+etc.
+
+Thanks,
+Fengguang
+
+
+> Thanks,
+> Yoshihiro YUNOMAE
+> 
+> (2014/06/18 12:15), Jet Chen wrote:
+> >Hi Yoshihiro,
+> >
+> >FYI, we noticed the below changes on
+> >
+> >commit 939c7a4f04fcd2162109744e8bf88194948a6e65 ("tracing: Introduce
+> >saved_cmdlines_size file")
+> >
+> >test case: brickland3/aim7/3000-brk_test
+> >
+> >beba4bb096201ce  939c7a4f04fcd2162109744e8
+> >---------------  -------------------------
+> >     352643 ~40%     -46.4%     189136 ~15%  TOTAL cpuidle.C3-IVT.time
+> >        750 ~ 2%     -13.3%        650 ~ 2%  TOTAL vmstat.procs.b
+> >     362016 ~ 3%      -6.0%     340296 ~ 3%  TOTAL
+> >proc-vmstat.pgmigrate_success
+> >     362016 ~ 3%      -6.0%     340296 ~ 3%  TOTAL
+> >proc-vmstat.numa_pages_migrated
+> >    1642328 ~ 3%     +13.3%    1860721 ~ 2%  TOTAL softirqs.RCU
+> >    2278829 ~ 2%     -14.0%    1959647 ~ 2%  TOTAL
+> >time.voluntary_context_switches
+> >        207 ~ 0%     -10.4%        185 ~ 0%  TOTAL time.user_time
+> >             ~ 0%      +8.5%            ~ 0%  TOTAL turbostat.RAM_W
+> >    4418246 ~ 3%      -6.4%    4136447 ~ 1%  TOTAL time.minor_page_faults
+> >            ~ 0%      +3.4%            ~ 0%  TOTAL turbostat.Cor_W
+> >            ~ 0%      +3.0%            ~ 0%  TOTAL turbostat.Pkg_W
+> >   11354889 ~ 0%      +2.0%   11579897 ~ 0%  TOTAL
+> >time.involuntary_context_switches
+> >
+> >Legend:
+> >     ~XX%    - stddev percent
+> >     [+-]XX% - change percent
+> >
+> >
+> >                             time.voluntary_context_switches
+> >
+> >   2.4e+06
+> >++---------------------------------------------------*------------+
+> >           *..                         *..                    ..
+> >..         |
+> >   2.3e+06 ++      .*..          *.. ..
+> >*               |
+> >           |  *..*.    .  .*.. ..   *     *..               +
+> >*..   *..*
+> >           |            *.    *              .     .*..*.. +
+> >..   |
+> >   2.2e+06 ++                                 *..*.       *
+> >*     |
+> >
+> >|                                                                 |
+> >   2.1e+06
+> >++                                                                |
+> >
+> >|                                                                 |
+> >     2e+06 O+                                 O           O
+> >O     |
+> >           |                     O     O                     O
+> >O        |
+> >           |        O   O  O  O
+> >O                           |
+> >   1.9e+06 ++ O  O                                  O
+> >O            |
+> >           |                        O     O
+> >O                     |
+> >   1.8e+06
+> >++----------------------------------------------------------------+
+> >
+> >
+> >                                   turbostat.Pkg_W
+> >
+> >    ++--------------------------------------------------------------------+
+> >    O+ O   O     O      O                O                                |
+> >    |         O      O     O   O  O  O      O      O     O   O  O  O      |
+> >    ++                                         O      O                   |
+> >    ++                                                                    |
+> >    ++                                                                    |
+> >    ++                                                                    |
+> >    |                                                                     |
+> >    ++                                                                    |
+> >    ++                                                                    |
+> >    ++        *..      .*..                                               |
+> >    *+.*... ..   *...*.    *...*..*..*...*..*..  ..*..   *...*..*..*...*..*
+> >    |      *                                   *.      ..                 |
+> >    ++                                                *                   |
+> >    ++--------------------------------------------------------------------+
+> >
+> >
+> >                                   turbostat.Cor_W
+> >
+> >    ++--------------------------------------------------------------------+
+> >    O+ O   O  O  O   O  O                O  O                      O      |
+> >    |                      O   O  O  O         O   O  O  O   O  O         |
+> >    ++                                                                    |
+> >    ++                                                                    |
+> >    |                                                                     |
+> >    ++                                                                    |
+> >    ++                                                                    |
+> >    ++                                                                    |
+> >    |                                                                     |
+> >    ++        *..                                                         |
+> >    *+.*... ..   *...*..*..*...*..*..*...*..*..  ..*..   *...  .*..*...*..*
+> >    |      *                                   *.      ..    *.           |
+> >    ++                                                *                   |
+> >    ++--------------------------------------------------------------------+
+> >
+> >
+> >                                  turbostat.RAM_W
+> >
+> >   ++---------------------------------------------------------------------+
+> >   |  O      O         O                O   O         O         O  O      |
+> >   O+     O         O      O  O  O   O         O  O      O  O             |
+> >   |             O                                                        |
+> >   ++                                                                     |
+> >   |                                                                      |
+> >   ++                                                                     |
+> >   |                                                                      |
+> >   ++                                                                     |
+> >   |                   *                                                  |
+> >   ++                .. +                      *..                        |
+> >   |            .*..*    +    *..       *..   +     ..*..*..      .*...   |
+> >   ++         ..          + ..        ..   . +    *.        *...*.     *..*
+> >   *..*...*..*             *     *...*      *                             |
+> >   ++---------------------------------------------------------------------+
+> >
+> >
+> >     [*] bisect-good sample
+> >     [O] bisect-bad  sample
+> >
+> >
+> >Disclaimer:
+> >Results have been estimated based on internal Intel analysis and are
+> >provided
+> >for informational purposes only. Any difference in system hardware or
+> >software
+> >design or configuration may affect actual performance.
+> >
+> >Thanks,
+> >Jet
+> >
+> >
+> 
+> -- 
+> Yoshihiro YUNOMAE
+> Software Platform Research Dept. Linux Technology Center
+> Hitachi, Ltd., Yokohama Research Laboratory
+> E-mail: yoshihiro.yunomae.ez@hitachi.com
+> 
