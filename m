@@ -1,85 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965702AbaFSW6P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 18:58:15 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:29178 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965348AbaFSW6O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 18:58:14 -0400
-Date: Thu, 19 Jun 2014 18:58:10 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>
-Subject: Re: [RFC][PATCH 0/3] x86/nmi: Print all cpu stacks from NMI safely
-Message-ID: <20140619185810.4137e14b@gandalf.local.home>
-In-Reply-To: <alpine.LNX.2.00.1406192349400.15014@pobox.suse.cz>
-References: <20140619213329.478113470@goodmis.org>
-	<alpine.LNX.2.00.1406192349400.15014@pobox.suse.cz>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S965866AbaFSW7l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 18:59:41 -0400
+Received: from ozlabs.org ([103.22.144.67]:55335 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964958AbaFSW7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 18:59:40 -0400
+Date: Fri, 20 Jun 2014 08:59:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Moore <paul@paul-moore.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Morris <james.l.morris@oracle.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: linux-next: the selinux tree needs cleaning up
+Message-ID: <20140620085931.6427678d@canb.auug.org.au>
+In-Reply-To: <3494783.s5KPIUO972@sifl>
+References: <20140618084046.1bce12cc@canb.auug.org.au>
+	<1446656.4HCLD295vV@sifl>
+	<20140620010837.692e5472@canb.auug.org.au>
+	<3494783.s5KPIUO972@sifl>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/V6HksuFMCbdmoS87h+.cZKl"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Jun 2014 23:56:36 +0200 (CEST)
-Jiri Kosina <jkosina@suse.cz> wrote:
+--Sig_/V6HksuFMCbdmoS87h+.cZKl
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
+Hi Paul,
 
-> I agree this is less intrusive than having printk() use two versions of 
-> the buffers and perform merging, OTOH, it doesn't really seem to be 
-> fully clean and systematic solution either.
+On Thu, 19 Jun 2014 15:47:01 -0400 Paul Moore <paul@paul-moore.com> wrote:
+>
+> I want to avoid use a -rcX release as the foundation of any of my trees; =
+the -
+> rc releases aren't as stable and it goes against what we're trying to do =
+with=20
+> the different Linux Security trees.  Unfortunately, based on what I've re=
+ad=20
+> above, this seems to be incompatible with linux-next.
 
-I'm not sure why you consider it not fully clean. I think it is quite
-elegant ;-)
+The problem with basing your development for v3.17 on v3.15 is that
+you  do not take into account any of the changes done by others during
+v3.16-rc1 (or even your upstream tree) some of which may be core API
+changes.
 
-> 
-> I had a different idea earlier today, and Petr seems to have implemented 
-> it already; I guess he'll be sending it out as RFC tomorrow for 
-> comparision.
-> 
-> The idea basically is to *switch* what arch_trigger_all_cpu_backtrace() 
-> and arch_trigger_all_cpu_backtrace_handler() are doing; i.e. use the NMI 
-> as a way to stop all the CPUs (one by one), and let the CPU that is 
-> sending the NMIs around to actually walk and dump the stacks of the CPUs 
-> receiving the NMI IPI.
+> While I hate to split my development branch from the #next branch, it see=
+ms=20
 
-And this is cleaner? Stopping a CPU via NMI and then what happens if
-something else goes wrong and that CPU never starts back up? This
-sounds like something that can cause more problems than it was
-reporting on.
+I don't want that either ...
 
-The code had better handle all the strange cases where an NMI comes in
-after the code that sent it timed out waiting for the NMIs to return.
-Then you also need to print out the data while the NMIs still spin.
+> like that is the only way to accomplish both a reasonably current and sta=
+ble=20
+> development tree and get the patches into linux-next.  Unless you, or any=
+one=20
+> else for that matter, has a different suggestion I'm going to go ahead an=
+d=20
+> turn the current SELinux #next branch into a development branch and creat=
+e a=20
+> new #next branch that will be based on the most current -rc1, this new #n=
+ext=20
+> branch will be created new for each major release.  Not exactly what I wa=
+s=20
+> hoping for, but will that work?
 
-> 
-> It's the most trivial aproach I've been able to come up with, and should 
-> be usable for everybody (RCU stall detector and sysrq). The only tricky 
-> part is: if we want pt_regs to be part of the dump as well, how to pass 
-> those cleanly between the 'stopped' CPU and the CPU that is doing the 
-> printing. Other than that, it's just moving a few lines of code around, I 
-> believe.
+Do you mean that your #next branch will just be a merge of -rc1 and
+your development branch?  That would not actually change anything
+(except that you would possibly take care of some conflicts for me).
 
-Note, I first tried to just save the data and pass it to the calling
-functions, but found that rather messy, as there is a lot of stuff
-being dumped, and it's different if it is x86_64 vs i386 or if the NMI
-happened when in userspace or kernel. That's when I realized it would
-be trivial to just switch what printk does and then have the NMI do the
-printing to another NMI safe buffer.
+At the core, what is in linux-next should just be exactly what will be
+merged by your upstream.  My real point here is that that is not what
+has happened recently.  The patches in your tree have been
+cherry-picked or rebased into James' or Serge's trees, not merged so we
+now have duplication.  This is what you need to solve with James and
+Serge.  linux-next is a side issue - I can cope with a lot.
 
-It was even more convenient that trace_seq already existed and made it
-much easier to implement.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- Steve
+--Sig_/V6HksuFMCbdmoS87h+.cZKl
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTo2tYAAoJEMDTa8Ir7ZwVvBsP/iaD9clMzjw3fSpeR5i0vYif
+/lDeX/46lqyEJcn/qYeax5Murc/+oXgwllhyNpjkaCZsDMZzUhlBmR4KiZvNx36G
+dkyOacmOGMJP2rWEaRS5qXWuW2A1tBFlhmYiGkjb8HqBOfT+r0faonxivXNymLD6
+vfcV48cVb9rXa+IhmXlXF1GTmkJVJVHPWcEoKqsaP+12wZKeb3NoMYs8tVSR1KPg
+3TUhv+k62idy66qKRNlbQvlOdGfZegQj+FO65qo+9DVc42C69qYf+gkAeEi6eKBw
+RahS6V3rJEMeSS5YNKwInuJ9kaToJB9dlM3Wj2OT674pmMi4bk4XfyHzVLm6eXW0
+FXFO9wwYF4kjSQMvfwp7WxeT1VnChaz/IeTcEd4x5Tl7v/MHCJuACHh8aP3VJ+pW
+a02MlVCk8uw4eENI9BwkKUvFzJ+N9rrSpzTt0vYF96SbHZCva+sBI+wo5HboivXG
+rRSmG0IfRGBuYUlmsOsRh8rHPBUGbDtNlUGfj21qH+rHivvacafn2VtkD+uva52R
+teZhoA7dC/Jnwkc60rphAo+LLjCqmtKdjKmCslxhr8S0mCv/S1mvoxbS4bkpCYzd
+LnKpwYKl9Iv86iKwUH3WePOFKqSxpV8wJljrFYssYCJuLTFZ+/OoDyRzAnVz+AIV
+4fos8y7Uh+OoHrsmhNp3
+=ApKi
+-----END PGP SIGNATURE-----
+
+--Sig_/V6HksuFMCbdmoS87h+.cZKl--
