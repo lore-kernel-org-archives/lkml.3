@@ -1,82 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964830AbaFSQjU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:39:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62827 "EHLO mx1.redhat.com"
+	id S933993AbaFSQjO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:39:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12464 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933602AbaFSQjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:39:17 -0400
+	id S933953AbaFSQjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 12:39:10 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Jiri Olsa <jolsa@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Simon Que <sque@chromium.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [GIT PULL 0/9] perf/core improvements and fixes
-Date: Thu, 19 Jun 2014 18:38:39 +0200
-Message-Id: <1403195928-1331-1-git-send-email-jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Simon Que <sque@chromium.org>,
+        Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCH 9/9] perf symbols: Get kernel start address by symbol name
+Date: Thu, 19 Jun 2014 18:38:48 +0200
+Message-Id: <1403195928-1331-10-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1403195928-1331-1-git-send-email-jolsa@kernel.org>
+References: <1403195928-1331-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Ingo,
-please consider pulling
+From: Simon Que <sque@chromium.org>
 
-thanks,
-jirka
+The function machine__get_kernel_start_addr() was taking the first symbol
+of kallsyms as the start address. This is incorrect in certain cases
+where the first symbol is something at 0, while the actual kernel
+functions begin at a later point (e.g. 0x80200000).
 
+This patch fixes machine__get_kernel_start_addr() to search for the
+symbol "_text" or "_stext", which marks the beginning of kernel mapping.
+This was already being done in machine__create_kernel_maps(). Thus, this
+patch is just a refactor, to move that code into
+machine__get_kernel_start_addr().
 
-The following changes since commit 4ba96195051be30160af6d5f5f83f9a055ab1f23:
-
-  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf into perf/core (2014-06-13 08:19:06 +0200)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
-
-for you to fetch changes up to 26d664a30d08002ac0a4dbd09217ea084da07bc9:
-
-  perf symbols: Get kernel start address by symbol name (2014-06-19 18:18:38 +0200)
-
-----------------------------------------------------------------
-perf/core improvements and fixes:
-
-. Updates from trace-cmd for traceevent plugin_kvm plus args cleanup (Steven Rostedt)
-
-. Fix kernel start address lookup in report code (Simon Que)
-
-. Fix segfault in cumulative.callchain report (Jiri Olsa)
-
+Signed-off-by: Simon Que <sque@chromium.org>
+Link: http://lkml.kernel.org/r/1402943529-13244-1-git-send-email-sque@chromium.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/util/machine.c | 54 +++++++++++++++++++----------------------------
+ 1 file changed, 22 insertions(+), 32 deletions(-)
 
-----------------------------------------------------------------
-Jan Kiszka (3):
-      tools lib traceevent: Report unknown VMX exit reasons with code
-      tools lib traceevent: Factor out print_exit_reason in kvm plugin
-      tools lib traceevent: Fix and cleanup kvm_nested_vmexit tracepoints
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 0e5fea9..c73e1fc 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -496,18 +496,6 @@ struct process_args {
+ 	u64 start;
+ };
+ 
+-static int symbol__in_kernel(void *arg, const char *name,
+-			     char type __maybe_unused, u64 start)
+-{
+-	struct process_args *args = arg;
+-
+-	if (strchr(name, '['))
+-		return 0;
+-
+-	args->start = start;
+-	return 1;
+-}
+-
+ static void machine__get_kallsyms_filename(struct machine *machine, char *buf,
+ 					   size_t bufsz)
+ {
+@@ -517,27 +505,41 @@ static void machine__get_kallsyms_filename(struct machine *machine, char *buf,
+ 		scnprintf(buf, bufsz, "%s/proc/kallsyms", machine->root_dir);
+ }
+ 
+-/* Figure out the start address of kernel map from /proc/kallsyms */
+-static u64 machine__get_kernel_start_addr(struct machine *machine)
++const char *ref_reloc_sym_names[] = {"_text", "_stext", NULL};
++
++/* Figure out the start address of kernel map from /proc/kallsyms.
++ * Returns the name of the start symbol in *symbol_name. Pass in NULL as
++ * symbol_name if it's not that important.
++ */
++static u64 machine__get_kernel_start_addr(struct machine *machine,
++					  const char **symbol_name)
+ {
+ 	char filename[PATH_MAX];
+-	struct process_args args;
++	int i;
++	const char *name;
++	u64 addr = 0;
+ 
+ 	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
+ 
+ 	if (symbol__restricted_filename(filename, "/proc/kallsyms"))
+ 		return 0;
+ 
+-	if (kallsyms__parse(filename, &args, symbol__in_kernel) <= 0)
+-		return 0;
++	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
++		addr = kallsyms__get_function_start(filename, name);
++		if (addr)
++			break;
++	}
++
++	if (symbol_name)
++		*symbol_name = name;
+ 
+-	return args.start;
++	return addr;
+ }
+ 
+ int __machine__create_kernel_maps(struct machine *machine, struct dso *kernel)
+ {
+ 	enum map_type type;
+-	u64 start = machine__get_kernel_start_addr(machine);
++	u64 start = machine__get_kernel_start_addr(machine, NULL);
+ 
+ 	for (type = 0; type < MAP__NR_TYPES; ++type) {
+ 		struct kmap *kmap;
+@@ -852,23 +854,11 @@ static int machine__create_modules(struct machine *machine)
+ 	return 0;
+ }
+ 
+-const char *ref_reloc_sym_names[] = {"_text", "_stext", NULL};
+-
+ int machine__create_kernel_maps(struct machine *machine)
+ {
+ 	struct dso *kernel = machine__get_kernel(machine);
+-	char filename[PATH_MAX];
+ 	const char *name;
+-	u64 addr = 0;
+-	int i;
+-
+-	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
+-
+-	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
+-		addr = kallsyms__get_function_start(filename, name);
+-		if (addr)
+-			break;
+-	}
++	u64 addr = machine__get_kernel_start_addr(machine, &name);
+ 	if (!addr)
+ 		return -1;
+ 
+-- 
+1.8.3.1
 
-Jiri Olsa (1):
-      perf tools: Fix segfault in cumulative.callchain report
-
-Simon Que (1):
-      perf symbols: Get kernel start address by symbol name
-
-Steven Rostedt (3):
-      tools lib traceevent: Fix format in plugin_kvm
-      tools lib traceevent: Clean up format of args in cfg80211 plugin
-      tools lib traceevent: Clean up format of args in jbd2 plugin
-
-Steven Rostedt (Red Hat) (1):
-      tools lib traceevent: Add back in kvm plugins nested_vmexit events
-
- tools/lib/traceevent/plugin_cfg80211.c |  3 +-
- tools/lib/traceevent/plugin_jbd2.c     |  6 ++--
- tools/lib/traceevent/plugin_kvm.c      | 64 +++++++++++++++++++++++++++++-----
- tools/perf/ui/browsers/hists.c         | 21 ++++++++---
- tools/perf/util/machine.c              | 54 ++++++++++++----------------
- 5 files changed, 97 insertions(+), 51 deletions(-)
