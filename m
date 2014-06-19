@@ -1,222 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934473AbaFSSXI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 14:23:08 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:56863 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934371AbaFSSVd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 14:21:33 -0400
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v3 11/14] clk: Add driver for Maxim 77802 PMIC clocks
-Date: Thu, 19 Jun 2014 20:20:37 +0200
-Message-Id: <1403202040-12641-12-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1403202040-12641-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1403202040-12641-1-git-send-email-javier.martinez@collabora.co.uk>
+	id S934487AbaFSSXc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 14:23:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19735 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933441AbaFSSXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 14:23:30 -0400
+Date: Thu, 19 Jun 2014 21:22:56 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        stephen hemminger <stephen@networkplumber.org>,
+        Sean Hefty <sean.hefty@intel.com>, FX Le Bail <fx.lebail@yahoo.com>,
+        Jason Wang <jasowang@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>, netdev@vger.kernel.org
+Subject: [PATCH] iovec: move memcpy_from/toiovecend to lib/iovec.c
+Message-ID: <1403201568-22828-1-git-send-email-mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MAX77802 PMIC has two 32.768kHz Buffered Clock Outputs with
-Low Jitter Mode. This patch adds support for these two clocks.
+ERROR: "memcpy_fromiovecend" [drivers/vhost/vhost_scsi.ko] undefined!
 
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+commit 9f977ef7b671f6169eca78bf40f230fe84b7c7e5
+    vhost-scsi: Include prot_bytes into expected data transfer length
+in target-pending makes drivers/vhost/scsi.c call memcpy_fromiovecend().
+This function is not available when CONFIG_NET is not enabled.
+
+socket.h already includes uio.h, so no callers need updating.
+
+Reported-by: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
 
-Changes since v2: None
+David, could you please ack merging this through
+target-pending to avoid dependency issues?
 
-Changes since v1:
- - Use module_platform_driver() instead of having init/exit functions.
-   Suggested by Mark Brown.
- - Use the generic maxim clock driver to reduce code duplication with
-   clk-max77686.c driver.
+Thanks!
 
- drivers/clk/Kconfig                        |  7 +++
- drivers/clk/Makefile                       |  1 +
- drivers/clk/clk-max77802.c                 | 99 ++++++++++++++++++++++++++++++
- include/dt-bindings/clock/maxim,max77802.h | 22 +++++++
- 4 files changed, 129 insertions(+)
- create mode 100644 drivers/clk/clk-max77802.c
- create mode 100644 include/dt-bindings/clock/maxim,max77802.h
+ include/linux/socket.h |  4 ----
+ include/linux/uio.h    |  4 ++++
+ lib/iovec.c            | 55 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ net/core/iovec.c       | 55 --------------------------------------------------
+ 4 files changed, 59 insertions(+), 59 deletions(-)
 
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index 3fd4270..221260b 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -42,6 +42,13 @@ config COMMON_CLK_MAX77686
- 	---help---
- 	  This driver supports Maxim 77686 crystal oscillator clock. 
+diff --git a/include/linux/socket.h b/include/linux/socket.h
+index 8e98297..ec538fc 100644
+--- a/include/linux/socket.h
++++ b/include/linux/socket.h
+@@ -305,8 +305,6 @@ struct ucred {
+ /* IPX options */
+ #define IPX_TYPE	1
  
-+config COMMON_CLK_MAX77802
-+	tristate "Clock driver for Maxim 77802 MFD"
-+	depends on MFD_MAX77802
-+	select COMMON_CLK_MAX_GEN
-+	---help---
-+	  This driver supports Maxim 77802 crystal oscillator clock.
+-extern int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
+-			       int offset, int len);
+ extern int csum_partial_copy_fromiovecend(unsigned char *kdata, 
+ 					  struct iovec *iov, 
+ 					  int offset, 
+@@ -315,8 +313,6 @@ extern unsigned long iov_pages(const struct iovec *iov, int offset,
+ 			       unsigned long nr_segs);
+ 
+ extern int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr_storage *address, int mode);
+-extern int memcpy_toiovecend(const struct iovec *v, unsigned char *kdata,
+-			     int offset, int len);
+ extern int move_addr_to_kernel(void __user *uaddr, int ulen, struct sockaddr_storage *kaddr);
+ extern int put_cmsg(struct msghdr*, int level, int type, int len, void *data);
+ 
+diff --git a/include/linux/uio.h b/include/linux/uio.h
+index 199bcc3..8a4709a 100644
+--- a/include/linux/uio.h
++++ b/include/linux/uio.h
+@@ -89,5 +89,9 @@ static inline size_t iov_iter_count(struct iov_iter *i)
+ 
+ int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len);
+ int memcpy_toiovec(struct iovec *iov, unsigned char *kdata, int len);
++int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
++			int offset, int len);
++int memcpy_toiovecend(const struct iovec *v, unsigned char *kdata,
++		      int offset, int len);
+ 
+ #endif
+diff --git a/lib/iovec.c b/lib/iovec.c
+index 454baa8..7a7c2da 100644
+--- a/lib/iovec.c
++++ b/lib/iovec.c
+@@ -51,3 +51,58 @@ int memcpy_toiovec(struct iovec *iov, unsigned char *kdata, int len)
+ 	return 0;
+ }
+ EXPORT_SYMBOL(memcpy_toiovec);
 +
- config COMMON_CLK_SI5351
- 	tristate "Clock driver for SiLabs 5351A/B/C"
- 	depends on I2C
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 6c1aff6..520ff76 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -20,6 +20,7 @@ obj-$(CONFIG_ARCH_HIGHBANK)		+= clk-highbank.o
- obj-$(CONFIG_MACH_LOONGSON1)		+= clk-ls1x.o
- obj-$(CONFIG_COMMON_CLK_MAX_GEN)	+= clk-max-gen.o
- obj-$(CONFIG_COMMON_CLK_MAX77686)	+= clk-max77686.o
-+obj-$(CONFIG_COMMON_CLK_MAX77802)	+= clk-max77802.o
- obj-$(CONFIG_ARCH_MOXART)		+= clk-moxart.o
- obj-$(CONFIG_ARCH_NOMADIK)		+= clk-nomadik.o
- obj-$(CONFIG_ARCH_NSPIRE)		+= clk-nspire.o
-diff --git a/drivers/clk/clk-max77802.c b/drivers/clk/clk-max77802.c
-new file mode 100644
-index 0000000..4253b44
---- /dev/null
-+++ b/drivers/clk/clk-max77802.c
-@@ -0,0 +1,99 @@
 +/*
-+ * clk-max77802.c - Clock driver for Maxim 77802
-+ *
-+ * Copyright (C) 2014 Google, Inc
-+ *
-+ * Copyright (C) 2012 Samsung Electornics
-+ * Jonghwa Lee <jonghwa3.lee@samsung.com>
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * This driver is based on clk-max77686.c
++ *	Copy kernel to iovec. Returns -EFAULT on error.
 + */
 +
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/mfd/max77802.h>
-+#include <linux/mfd/max77802-private.h>
-+#include <linux/clk-provider.h>
-+#include <linux/mutex.h>
-+#include <linux/clkdev.h>
-+
-+#include <dt-bindings/clock/maxim,max77802.h>
-+#include "clk-max-gen.h"
-+
-+#define MAX77802_CLOCK_OPMODE_MASK	0x1
-+#define MAX77802_CLOCK_LOW_JITTER_SHIFT 0x3
-+
-+static struct clk_init_data max77802_clks_init[MAX77802_CLKS_NUM] = {
-+	[MAX77802_CLK_32K_AP] = {
-+		.name = "32khz_ap",
-+		.ops = &max_gen_clk_ops,
-+		.flags = CLK_IS_ROOT,
-+	},
-+	[MAX77802_CLK_32K_CP] = {
-+		.name = "32khz_cp",
-+		.ops = &max_gen_clk_ops,
-+		.flags = CLK_IS_ROOT,
-+	},
-+};
-+
-+static int max77802_clk_probe(struct platform_device *pdev)
++int memcpy_toiovecend(const struct iovec *iov, unsigned char *kdata,
++		      int offset, int len)
 +{
-+	struct max77802_dev *iodev = dev_get_drvdata(pdev->dev.parent);
-+	int ret;
-+
-+	ret = max_gen_clk_probe(pdev, iodev->regmap, MAX77802_REG_32KHZ,
-+				max77802_clks_init, MAX77802_CLKS_NUM);
-+
-+	if (ret) {
-+		dev_err(&pdev->dev, "generic probe failed %d\n", ret);
-+		return ret;
++	int copy;
++	for (; len > 0; ++iov) {
++		/* Skip over the finished iovecs */
++		if (unlikely(offset >= iov->iov_len)) {
++			offset -= iov->iov_len;
++			continue;
++		}
++		copy = min_t(unsigned int, iov->iov_len - offset, len);
++		if (copy_to_user(iov->iov_base + offset, kdata, copy))
++			return -EFAULT;
++		offset = 0;
++		kdata += copy;
++		len -= copy;
 +	}
 +
-+	/* Enable low-jitter mode on the 32khz clocks. */
-+	ret = regmap_update_bits(iodev->regmap, MAX77802_REG_32KHZ,
-+				 1 << MAX77802_CLOCK_LOW_JITTER_SHIFT,
-+				 1 << MAX77802_CLOCK_LOW_JITTER_SHIFT);
-+	if (ret < 0)
-+		dev_err(&pdev->dev, "failed to enable low-jitter mode\n");
-+
-+	return ret;
++	return 0;
 +}
++EXPORT_SYMBOL(memcpy_toiovecend);
 +
-+static int max77802_clk_remove(struct platform_device *pdev)
-+{
-+	return max_gen_clk_remove(pdev, MAX77802_CLKS_NUM);
-+}
-+
-+static const struct platform_device_id max77802_clk_id[] = {
-+	{ "max77802-clk", 0},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(platform, max77802_clk_id);
-+
-+static struct platform_driver max77802_clk_driver = {
-+	.driver = {
-+		.name  = "max77802-clk",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = max77802_clk_probe,
-+	.remove = max77802_clk_remove,
-+	.id_table = max77802_clk_id,
-+};
-+
-+module_platform_driver(max77802_clk_driver);
-+
-+MODULE_DESCRIPTION("MAXIM 77802 Clock Driver");
-+MODULE_AUTHOR("Javier Martinez Canillas <javier.martinez@collabora.co.uk>");
-+MODULE_LICENSE("GPL");
-diff --git a/include/dt-bindings/clock/maxim,max77802.h b/include/dt-bindings/clock/maxim,max77802.h
-new file mode 100644
-index 0000000..997312e
---- /dev/null
-+++ b/include/dt-bindings/clock/maxim,max77802.h
-@@ -0,0 +1,22 @@
 +/*
-+ * Copyright (C) 2014 Google, Inc
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Device Tree binding constants clocks for the Maxim 77802 PMIC.
++ *	Copy iovec to kernel. Returns -EFAULT on error.
 + */
 +
-+#ifndef _DT_BINDINGS_CLOCK_MAXIM_MAX77802_CLOCK_H
-+#define _DT_BINDINGS_CLOCK_MAXIM_MAX77802_CLOCK_H
++int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
++			int offset, int len)
++{
++	/* Skip over the finished iovecs */
++	while (offset >= iov->iov_len) {
++		offset -= iov->iov_len;
++		iov++;
++	}
 +
-+/* Fixed rate clocks. */
++	while (len > 0) {
++		u8 __user *base = iov->iov_base + offset;
++		int copy = min_t(unsigned int, len, iov->iov_len - offset);
 +
-+#define MAX77802_CLK_32K_AP		0
-+#define MAX77802_CLK_32K_CP		1
++		offset = 0;
++		if (copy_from_user(kdata, base, copy))
++			return -EFAULT;
++		len -= copy;
++		kdata += copy;
++		iov++;
++	}
 +
-+/* Total number of clocks. */
-+#define MAX77802_CLKS_NUM		(MAX77802_CLK_32K_CP + 1)
-+
-+#endif /* _DT_BINDINGS_CLOCK_MAXIM_MAX77802_CLOCK_H */
++	return 0;
++}
++EXPORT_SYMBOL(memcpy_fromiovecend);
+diff --git a/net/core/iovec.c b/net/core/iovec.c
+index b618694..827dd6b 100644
+--- a/net/core/iovec.c
++++ b/net/core/iovec.c
+@@ -75,61 +75,6 @@ int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr_storage *a
+ }
+ 
+ /*
+- *	Copy kernel to iovec. Returns -EFAULT on error.
+- */
+-
+-int memcpy_toiovecend(const struct iovec *iov, unsigned char *kdata,
+-		      int offset, int len)
+-{
+-	int copy;
+-	for (; len > 0; ++iov) {
+-		/* Skip over the finished iovecs */
+-		if (unlikely(offset >= iov->iov_len)) {
+-			offset -= iov->iov_len;
+-			continue;
+-		}
+-		copy = min_t(unsigned int, iov->iov_len - offset, len);
+-		if (copy_to_user(iov->iov_base + offset, kdata, copy))
+-			return -EFAULT;
+-		offset = 0;
+-		kdata += copy;
+-		len -= copy;
+-	}
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL(memcpy_toiovecend);
+-
+-/*
+- *	Copy iovec to kernel. Returns -EFAULT on error.
+- */
+-
+-int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
+-			int offset, int len)
+-{
+-	/* Skip over the finished iovecs */
+-	while (offset >= iov->iov_len) {
+-		offset -= iov->iov_len;
+-		iov++;
+-	}
+-
+-	while (len > 0) {
+-		u8 __user *base = iov->iov_base + offset;
+-		int copy = min_t(unsigned int, len, iov->iov_len - offset);
+-
+-		offset = 0;
+-		if (copy_from_user(kdata, base, copy))
+-			return -EFAULT;
+-		len -= copy;
+-		kdata += copy;
+-		iov++;
+-	}
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL(memcpy_fromiovecend);
+-
+-/*
+  *	And now for the all-in-one: copy and checksum from a user iovec
+  *	directly to a datagram
+  *	Calls to csum_partial but the last must be in 32 bit chunks
 -- 
-2.0.0.rc2
-
+MST
