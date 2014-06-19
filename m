@@ -1,97 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757678AbaFSSff (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 14:35:35 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:54908 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503AbaFSSfe (ORCPT
+	id S964844AbaFSSho (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 14:37:44 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59828 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757784AbaFSShn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 14:35:34 -0400
-From: Vince Weaver <vincent.weaver@maine.edu>
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Thu, 19 Jun 2014 14:40:09 -0400 (EDT)
-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, cody@linux.vnet.ibm.com,
-        peterz@infradead.org, mpe@ellerman.id.au, benh@kernel.crashing.org,
-        vincent.weaver@maine.edu, tglx@linutronix.de, fengguang.wu@intel.com
-Subject: Re: [tip:perf/core] powerpc, perf:  Use common PMU interrupt disabled
- code
-In-Reply-To: <tip-703daddffe550121e607c8294176ad2b12661147@git.kernel.org>
-Message-ID: <alpine.DEB.2.10.1406191435440.27913@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.10.1406150203210.16738@vincent-weaver-1.umelst.maine.edu> <tip-703daddffe550121e607c8294176ad2b12661147@git.kernel.org>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 19 Jun 2014 14:37:43 -0400
+Message-ID: <1403203061.17294.21.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [REPOST PATCH 1/8] fence: dma-buf cross-device synchronization
+ (v17)
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Rob Clark <robdclark@gmail.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        linux-arch@vger.kernel.org, Thomas Hellstrom <thellstrom@vmware.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Colin Cross <ccross@google.com>, Daniel Vetter <daniel@ffwll.ch>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Date: Thu, 19 Jun 2014 11:37:41 -0700
+In-Reply-To: <20140619181918.GA24155@kroah.com>
+References: <20140618102957.15728.43525.stgit@patser>
+	 <20140618103653.15728.4942.stgit@patser> <20140619011327.GC10921@kroah.com>
+	 <CAF6AEGv4Ms+zsrEtpA10bGq04LnRjzVb925co49eVxh4ugkd=A@mail.gmail.com>
+	 <20140619170059.GA1224@kroah.com>
+	 <CAF6AEGuXKw1w=outX+QgFE2XZxV8c6pyhORL+mRp4uZR8Jnq7g@mail.gmail.com>
+	 <20140619181918.GA24155@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2014-06-19 at 11:19 -0700, Greg KH wrote:
+> On Thu, Jun 19, 2014 at 01:45:30PM -0400, Rob Clark wrote:
+> > On Thu, Jun 19, 2014 at 1:00 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > > On Thu, Jun 19, 2014 at 10:00:18AM -0400, Rob Clark wrote:
+> > >> On Wed, Jun 18, 2014 at 9:13 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > >> > On Wed, Jun 18, 2014 at 12:36:54PM +0200, Maarten Lankhorst wrote:
+> > >> >> +#define CREATE_TRACE_POINTS
+> > >> >> +#include <trace/events/fence.h>
+> > >> >> +
+> > >> >> +EXPORT_TRACEPOINT_SYMBOL(fence_annotate_wait_on);
+> > >> >> +EXPORT_TRACEPOINT_SYMBOL(fence_emit);
+> > >> >
+> > >> > Are you really willing to live with these as tracepoints for forever?
+> > >> > What is the use of them in debugging?  Was it just for debugging the
+> > >> > fence code, or for something else?
+> > >> >
+> > >> >> +/**
+> > >> >> + * fence_context_alloc - allocate an array of fence contexts
+> > >> >> + * @num:     [in]    amount of contexts to allocate
+> > >> >> + *
+> > >> >> + * This function will return the first index of the number of fences allocated.
+> > >> >> + * The fence context is used for setting fence->context to a unique number.
+> > >> >> + */
+> > >> >> +unsigned fence_context_alloc(unsigned num)
+> > >> >> +{
+> > >> >> +     BUG_ON(!num);
+> > >> >> +     return atomic_add_return(num, &fence_context_counter) - num;
+> > >> >> +}
+> > >> >> +EXPORT_SYMBOL(fence_context_alloc);
+> > >> >
+> > >> > EXPORT_SYMBOL_GPL()?  Same goes for all of the exports in here.
+> > >> > Traditionally all of the driver core exports have been with this
+> > >> > marking, any objection to making that change here as well?
+> > >>
+> > >> tbh, I prefer EXPORT_SYMBOL()..  well, I'd prefer even more if there
+> > >> wasn't even a need for EXPORT_SYMBOL_GPL(), but sadly it is a fact of
+> > >> life.  We already went through this debate once with dma-buf.  We
+> > >> aren't going to change $evil_vendor's mind about non-gpl modules.  The
+> > >> only result will be a more flugly convoluted solution (ie. use syncpt
+> > >> EXPORT_SYMBOL() on top of fence EXPORT_SYMBOL_GPL()) just as a
+> > >> workaround, with the result that no-one benefits.
+> > >
+> > > It has been proven that using _GPL() exports have caused companies to
+> > > release their code "properly" over the years, so as these really are
+> > > Linux-only apis, please change them to be marked this way, it helps
+> > > everyone out in the end.
+> > 
+> > Well, maybe that is the true in some cases.  But it certainly didn't
+> > work out that way for dma-buf.  And I think the end result is worse.
+> > 
+> > I don't really like coming down on the side of EXPORT_SYMBOL() instead
+> > of EXPORT_SYMBOL_GPL(), but if we do use EXPORT_SYMBOL_GPL() then the
+> > result will only be creative workarounds using the _GPL symbols
+> > indirectly by whatever is available via EXPORT_SYMBOL().  I don't
+> > really see how that will be better.
+> 
+> You are saying that you _know_ companies will violate our license, so
+> you should just "give up"?  And how do you know people aren't working on
+> preventing those "indirect" usages as well?  :)
+> 
+> Sorry, I'm not going to give up here, again, it has proven to work in
+> the past in changing the ways of _very_ large companies, why stop now?
 
-Brown-paper bag time, the patch didn't compile due to missing parenthesis.
-I really need to get a new powerpc machine to test on, haven't had one 
-since both my g3 and g4 laptops died.
+When you try to train a dog, you have to be consistent about it.  We're
+fantastically inconsistent in symbol exports.
 
-Problem was caught by the kbuild test robot.
+For instance, the mutex primitives are all EXPORT_SYMBOL(), so we're
+telling proprietary modules they can use them.  However, when the kernel
+is built with CONFIG_DEBUG_MUTEX, they all become
+EXPORT_SYMBOL_GPL() ... what type of crazy message is that supposed to
+send?  It's OK to use mutexes but it's potentially a GPL violation to
+debug them?
 
-The below patch is a corrected version of the original, I could
-probably provide an incremental one if that's better.
+We either need to decide that we have a defined and consistent part of
+our API that's GPL only or make the bold statement that we don't have
+any part of our API that's usable by non-GPL modules.  Right at the
+minute we do neither and it confuses people no end about what is and
+isn't allowed.
 
-Vince
+James
 
----
 
-[PATCH 4/6] powerpc,perf: Use common PMU interrupt disabled code
-
-Transition to using the new generic PERF_PMU_CAP_NO_INTERRUPT method for
-failing a sampling event when no PMU interrupt is available.
-
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
-
-diff --git a/arch/powerpc/perf/hv-24x7.c b/arch/powerpc/perf/hv-24x7.c
-index e0766b8..3de7920 100644
---- a/arch/powerpc/perf/hv-24x7.c
-+++ b/arch/powerpc/perf/hv-24x7.c
-@@ -387,8 +387,7 @@ static int h_24x7_event_init(struct perf_event *event)
- 	    event->attr.exclude_hv     ||
- 	    event->attr.exclude_idle   ||
- 	    event->attr.exclude_host   ||
--	    event->attr.exclude_guest  ||
--	    is_sampling_event(event)) /* no sampling */
-+	    event->attr.exclude_guest)
- 		return -EINVAL;
- 
- 	/* no branch sampling */
-@@ -513,6 +512,9 @@ static int hv_24x7_init(void)
- 	if (!hv_page_cache)
- 		return -ENOMEM;
- 
-+	/* sampling not supported */
-+	h_24x7_pmu.capabilities |= PERF_PMU_CAP_NO_INTERRUPT;
-+
- 	r = perf_pmu_register(&h_24x7_pmu, h_24x7_pmu.name, -1);
- 	if (r)
- 		return r;
-diff --git a/arch/powerpc/perf/hv-gpci.c b/arch/powerpc/perf/hv-gpci.c
-index c9d399a..6d9c8e4 100644
---- a/arch/powerpc/perf/hv-gpci.c
-+++ b/arch/powerpc/perf/hv-gpci.c
-@@ -210,8 +210,7 @@ static int h_gpci_event_init(struct perf_event *event)
- 	    event->attr.exclude_hv     ||
- 	    event->attr.exclude_idle   ||
- 	    event->attr.exclude_host   ||
--	    event->attr.exclude_guest  ||
--	    is_sampling_event(event)) /* no sampling */
-+	    event->attr.exclude_guest)
- 		return -EINVAL;
- 
- 	/* no branch sampling */
-@@ -284,6 +283,9 @@ static int hv_gpci_init(void)
- 		return -ENODEV;
- 	}
- 
-+	/* sampling not supported */
-+	h_gpci_pmu.capabilities |= PERF_PMU_CAP_NO_INTERRUPT;
-+
- 	r = perf_pmu_register(&h_gpci_pmu, h_gpci_pmu.name, -1);
- 	if (r)
- 		return r;
