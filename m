@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769AbaFSAHP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 20:07:15 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:40548 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756510AbaFSAHN (ORCPT
+	id S1756693AbaFSAMg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 20:12:36 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:12910 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756178AbaFSAMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 20:07:13 -0400
-Message-ID: <1403136272.12954.4.camel@debian>
-Subject: Re: [PATCH] mm/vmscan.c: fix an implementation flaw in proportional
- scanning
-From: Chen Yucong <slaoub@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: minchan@kernel.org, mgorman@suse.de, hannes@cmpxchg.org, mhocko@suse.cz,
-        riel@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Thu, 19 Jun 2014 08:04:32 +0800
-In-Reply-To: <20140618152751.283deda95257cc32ccea8f20@linux-foundation.org>
-References: <1402980902-6345-1-git-send-email-slaoub@gmail.com>
-	 <20140618152751.283deda95257cc32ccea8f20@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	Wed, 18 Jun 2014 20:12:35 -0400
+Date: Wed, 18 Jun 2014 20:12:33 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [ANNOUNCE] 3.12.22-rt33
+Message-ID: <20140618201233.4dd3a59d@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-18 at 15:27 -0700, Andrew Morton wrote:
-> On Tue, 17 Jun 2014 12:55:02 +0800 Chen Yucong <slaoub@gmail.com> wrote:
-> 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index a8ffe4e..2c35e34 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -2087,8 +2086,8 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
-> >  	blk_start_plug(&plug);
-> >  	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
-> >  					nr[LRU_INACTIVE_FILE]) {
-> > -		unsigned long nr_anon, nr_file, percentage;
-> > -		unsigned long nr_scanned;
-> > +		unsigned long nr_anon, nr_file, file_percent, anon_percent;
-> > +		unsigned long nr_to_scan, nr_scanned, percentage;
-> >  
-> >  		for_each_evictable_lru(lru) {
-> >  			if (nr[lru]) {
-> 
-> The increased stack use is a slight concern - we can be very deep here.
-> I suspect the "percent" locals are more for convenience/clarity, and
-> they could be eliminated (in a separate patch) at some cost of clarity?
-> 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index a8ffe4e..2c35e34 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2057,8 +2057,7 @@ out:
- static void shrink_lruvec(struct lruvec *lruvec, struct scan_control
-*sc)
- {
-        unsigned long nr[NR_LRU_LISTS];
--       unsigned long targets[NR_LRU_LISTS];
--       unsigned long nr_to_scan;
-+       unsigned long file_target, anon_target;
 
->From the above snippet, we can know that the "percent" locals come from
-targets[NR_LRU_LISTS]. So this fix does not increase the stack.
+Dear RT Folks,
 
-thx!
-cyc
+I'm pleased to announce the 3.12.22-rt33 stable release.
 
+
+This release is just an update to the new stable 3.12.22 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  branch: v3.12-rt
+  Head SHA1: 4baf645b5bfe1bc83f21e6b0cdcacb411a1e5f15
+
+
+Or to build 3.12.22-rt33 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.12.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.12.22.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.12/patch-3.12.22-rt33.patch.xz
+
+
+
+
+Enjoy,
+
+-- Steve
 
