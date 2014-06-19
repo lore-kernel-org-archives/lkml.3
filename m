@@ -1,98 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757652AbaFSIgS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 04:36:18 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:7786 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756663AbaFSIgQ (ORCPT
+	id S1757718AbaFSIin (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 04:38:43 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:59890 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757608AbaFSIik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 04:36:16 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 19 Jun 2014 01:30:31 -0700
-Date: Thu, 19 Jun 2014 11:36:12 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Thierry Reding <thierry.reding@gmail.com>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: [PATCH 6/9] ARM: tegra: Export tegra_powergate_power_on
-Message-ID: <20140619083612.GL3407@tbergstrom-lnx.Nvidia.com>
-References: <1401881559-18469-1-git-send-email-mperttunen@nvidia.com>
- <1401881559-18469-7-git-send-email-mperttunen@nvidia.com>
- <539F691E.5030204@wwwdotorg.org>
- <20140617121313.GE18816@ulmo>
- <20140617140146.GH3407@tbergstrom-lnx.Nvidia.com>
- <20140617215119.GC24743@mithrandir>
- <20140618121806.GJ3407@tbergstrom-lnx.Nvidia.com>
- <53A1B252.1030204@wwwdotorg.org>
- <20140619080234.GK3407@tbergstrom-lnx.Nvidia.com>
+	Thu, 19 Jun 2014 04:38:40 -0400
+Date: Thu, 19 Jun 2014 09:38:35 +0100
+From: Peter Griffin <peter.griffin@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org, kernel@stlinux.com,
+        devicetree@vger.kernel.org, srinivas.kandagatla@gmail.com,
+        thierry.reding@gmail.com
+Subject: Re: [STLinux Kernel] [PATCH 1/7] ARM: stih407: Add DT nodes for for
+ PWM
+Message-ID: <20140619083835.GA2131@griffinp-ThinkPad-X1-Carbon-2nd>
+References: <1403103172-19856-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140619080234.GK3407@tbergstrom-lnx.Nvidia.com>
-X-NVConfidentiality: public
+In-Reply-To: <1403103172-19856-1-git-send-email-lee.jones@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 10:02:35AM +0200, Peter De Schrijver wrote:
-> On Wed, Jun 18, 2014 at 05:37:54PM +0200, Stephen Warren wrote:
-> > On 06/18/2014 06:18 AM, Peter De Schrijver wrote:
-> > > On Tue, Jun 17, 2014 at 11:51:20PM +0200, Thierry Reding wrote:
-> > >> * PGP Signed by an unknown key
-> > >>
-> > >> On Tue, Jun 17, 2014 at 05:01:46PM +0300, Peter De Schrijver wrote:
-> > >>> On Tue, Jun 17, 2014 at 02:13:15PM +0200, Thierry Reding wrote:
-> > >>>>> Old Signed by an unknown key
-> > >>>>
-> > >>>> On Mon, Jun 16, 2014 at 04:01:02PM -0600, Stephen Warren wrote:
-> > >>>>> On 06/04/2014 05:32 AM, Mikko Perttunen wrote:
-> > >>>>>> This symbol needs to be exported to power on rails without using
-> > >>>>>> tegra_powergate_sequence_power_up. tegra_powergate_sequence_power_up
-> > >>>>>> cannot be used in situations where the driver wants to handle clocking
-> > >>>>>> by itself.
-> > >>>>>
-> > >>>>> Thierry, are you OK with this change?
-> > >>>>
-> > >>>> I would've preferred tegra_powergate_sequence_power_up() to be used
-> > >>>
-> > >>> I don't think the current tegra_powergate_sequence_power_up() API is very well
-> > >>> defined though. I don't think the clocks and resets required by the sequence
-> > >>> should be provided by the driver. For one, there can be several clocks and
-> > >>> resets that need to be controlled for a single domain.
-> > >>
-> > >> Do you have any suggestions for what the API should look like? Even if
-> > >> we plan to move to some different API, I think there's some advantage in
-> > >> using it consistently if for no other reason than to make it easier to
-> > >> replace occurrences later on.
-> > >>
-> > > 
-> > > I think the API should only have the domain ID as input so:
-> > > 
-> > > int tegra_powerdomain_on(int id) 
-> > > 
-> > > /*
-> > >  * Prerequisites: domain is off
-> > >  * Result: domain is on, clocks of the modules in the domain are off, modules are in reset
-> > >  */
-> > > 
-> > > int tegra_powerdomain_off(int id)
-> > > 
-> > > /*
-> > >  * Prerequisites: all clocks of the modules in the domain are off
-> > >  * result: domain is off
-> > >  */
-> > 
-> > That doesn't make sense; the PMC doesn't have access to the clock and
-> > reset IDs - that's why the API requires them to be passed in.
-> > 
-> 
-> We should make driver look them up by name then. It doesn't make sense to
+Hi Lee,
 
-I mean the PMC driver here.
+> +		/* SBC PWM Module */
+> +		pwm1: pwm@9510000 {
+> +			compatible	= "st,sti-pwm";
+> +			status		= "disabled";
+> +			#pwm-cells	= <2>;
+> +			reg		= <0x9510000 0x68>;
+> +			pinctrl-names	= "default";
+> +		        pinctrl-0	= <&pinctrl_pwm1_chan0_default
+> +					&pinctrl_pwm1_chan1_default
+> +					&pinctrl_pwm1_chan2_default
+> +					&pinctrl_pwm1_chan3_default>;
+
+If you're passing pin config for 4 channels, I think you should also be using the 
+'st,pwm-num-chan = <4>' property like the doc example in patch 7.
+
+After that: 
+Acked-by: Peter Griffin <peter.griffin@linaro.org>
+
+regards,
+
+Peter. 
+
