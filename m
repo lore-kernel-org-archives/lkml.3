@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965666AbaFSVcK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 17:32:10 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:49572 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964833AbaFSVcI (ORCPT
+	id S965768AbaFSVcr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 17:32:47 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34139 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964833AbaFSVcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 17:32:08 -0400
-Date: Thu, 19 Jun 2014 14:32:03 -0700
-From: josh@joshtriplett.org
-To: Christoph Lameter <cl@gentwo.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave.hansen@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-Subject: Re: [bisected] pre-3.16 regression on open() scalability
-Message-ID: <20140619213203.GA16747@cloud>
-References: <53A1CE19.7040103@intel.com>
- <20140618203052.GT4669@linux.vnet.ibm.com>
- <20140618235131.GA25946@linux.vnet.ibm.com>
- <20140619014200.GO8178@tassilo.jf.intel.com>
- <alpine.DEB.2.11.1406190941180.2785@gentwo.org>
- <20140619180916.GE4904@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1406191531020.4002@gentwo.org>
- <20140619204220.GJ4904@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1406191612000.5484@gentwo.org>
- <alpine.DEB.2.11.1406191614270.5484@gentwo.org>
+	Thu, 19 Jun 2014 17:32:46 -0400
+X-Sasl-enc: RG51fGoApXyx61UIqhvgGVlCiYmbRWjWjqXwn7/Rk3FS 1403213565
+Date: Thu, 19 Jun 2014 14:36:45 -0700
+From: GregKH <greg@kroah.com>
+To: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: Scott Alfter <scott@alfter.us>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: revised driver: w1_ds2406
+Message-ID: <20140619213645.GA1139@kroah.com>
+References: <31a597fc9f165ccc4998451b0ae91fc6.squirrel@webmail.alfter.us>
+ <6295551403198966@web5h.yandex.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1406191614270.5484@gentwo.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <6295551403198966@web5h.yandex.ru>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 04:16:34PM -0500, Christoph Lameter wrote:
-> This looks very much like the CONFIG_PREEMPT problem in not so
-> extreme form. Maybe we need to add another config option:
+On Thu, Jun 19, 2014 at 09:29:26PM +0400, Evgeniy Polyakov wrote:
+> Hi Scott
 > 
-> CONFIG_REALLY_REALLY_NO_PREEMPT
+> I've added Greg to copy.
 > 
-> to get the fastest code possible and those cond_rescheds removed from the
-> critical paths?
+> 18.06.2014, 00:42, "Scott Alfter" <scott@alfter.us>:
+> > Some preliminary work at making use of this driver led me to implement
+> > CRC-16 checks on read and write to deal with the occasional glitchiness of
+> > the 1-Wire bus.  The revised driver (attached) returns an I/O error if the
+> > CRC check fails.  When reading the chip's state, either you get a valid
+> > indication or you get an I/O error.  When changing its state, either the
+> > change is successful or an I/O error is returned.
+> >
+> > This patch supersedes the patch I had previously submitted.
+> >
+> > Signed-off-by: Scott Alfter <scott@alfter.us>
 > 
-> Or better
-> 
-> CONFIG_PREEMPT_HALF_WAY
-> 
-> to enable those cond_rescheds.
+> Greg, this patch looks good, please pull it into your tree.
+> If you already applied previous ds2406, let us know.
 
-That much actually does seem quite reasonable: making cond_resched() do
-non-trivial work ought to have a config option to disable it.
+I didn't, I'll take this one instead, thanks.
+
+greg k-h
