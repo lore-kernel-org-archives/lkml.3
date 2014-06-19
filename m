@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932925AbaFSMXq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 08:23:46 -0400
-Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:55144 "EHLO
-	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932717AbaFSMXn (ORCPT
+	id S932828AbaFSMXj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 08:23:39 -0400
+Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:54736 "EHLO
+	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757963AbaFSMXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 08:23:43 -0400
-X-Yandex-Uniq: 826b74e1-ebbf-489a-ac74-396b058dfdef
+	Thu, 19 Jun 2014 08:23:36 -0400
+X-Yandex-Uniq: 73bb85bd-5711-44d0-9922-92e73238d17a
 Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
 From: Stanislav Fomichev <stfomichev@yandex-team.ru>
 To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
@@ -15,42 +15,37 @@ To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
         artagnon@gmail.com, jolsa@redhat.com, rusty@rustcorp.com.au,
         bp@suse.de
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v3 0/3] perf timechart io mode
-Date: Thu, 19 Jun 2014 16:23:00 +0400
-Message-Id: <1403180583-12309-1-git-send-email-stfomichev@yandex-team.ru>
+Subject: [PATCH 2/3] perf timechart: conditionally update start_time on fork
+Date: Thu, 19 Jun 2014 16:23:02 +0400
+Message-Id: <1403180583-12309-3-git-send-email-stfomichev@yandex-team.ru>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1403180583-12309-1-git-send-email-stfomichev@yandex-team.ru>
+References: <1403180583-12309-1-git-send-email-stfomichev@yandex-team.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds IO mode: instead of process time we record io syscalls
-and then draw timechart of writes/reads/tx/rx/polls.
+We don't need to overwrite current task start_time on fork, so update it
+only if it's zero.
 
-v3:
-  - fixed segfault when skipping invalid tracepoints
-  - added ms/us units support for --io-xyz time options
-  - fixed missing boxes on Firefox
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+---
+ tools/perf/builtin-timechart.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-v2:
-  - separated start_time fix into distinct commit
-  - separated --io-xyz options into distinct commit
-  - fixed 'error' shadowing
-  - initialized variables in declaration when possible
-  - removed assert usage
-  - fprintf -> pr_err
-  - removed wrongly placed __maybe_unused
-
-Stanislav Fomichev (3):
-  perf timechart: implement IO mode
-  perf timechart: conditionally update start_time on fork
-  perf timechart: add more options to IO mode
-
- tools/perf/Documentation/perf-timechart.txt |  38 +-
- tools/perf/builtin-timechart.c              | 686 +++++++++++++++++++++++++++-
- tools/perf/util/svghelper.c                 |  98 +++-
- tools/perf/util/svghelper.h                 |   6 +-
- 4 files changed, 803 insertions(+), 25 deletions(-)
-
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index 7386e91de838..6ccc2ffa3156 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -242,7 +242,7 @@ static void pid_fork(struct timechart *tchart, int pid, int ppid, u64 timestamp)
+ 		pid_set_comm(tchart, pid, pp->current->comm);
+ 
+ 	p->start_time = timestamp;
+-	if (p->current) {
++	if (p->current && !p->current->start_time) {
+ 		p->current->start_time = timestamp;
+ 		p->current->state_since = timestamp;
+ 	}
 -- 
 1.8.3.2
 
