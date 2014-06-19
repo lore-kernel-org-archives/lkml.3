@@ -1,110 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932322AbaFSLRe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 07:17:34 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:61899 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757613AbaFSLRd (ORCPT
+	id S1757691AbaFSLU6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 07:20:58 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:40971 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753129AbaFSLUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 07:17:33 -0400
-Message-ID: <53A2C6B0.3090200@gmail.com>
-Date: Thu, 19 Jun 2014 19:17:04 +0800
-From: =?gb18030?Q?=22newtongao=28=B8=DF=D0=A1=C3=F7=29=22?= 
-	<gxm.linux.kernel@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 19 Jun 2014 07:20:55 -0400
+Message-ID: <53A2C78D.9060708@hitachi.com>
+Date: Thu, 19 Jun 2014 20:20:45 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: gleb@kernel.org, pbonzini@redhat.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com
-CC: x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kvm: fix hyperv tsc page clear wrong address
-References: <53A2BB7B.8070507@gmail.com> <53A2BC1A.4050702@gmail.com>
-In-Reply-To: <53A2BC1A.4050702@gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------010904010501080300020809"
+To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+Cc: Michael Ellerman <mpe@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-tip-commits@vger.kernel.org, anil.s.keshavamurthy@intel.com,
+        Ingo Molnar <mingo@kernel.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        akataria@vmware.com, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: Re: Re: [RFT PATCH -next v3] [BUGFIX] kprobes: Fix "Failed
+ to find blacklist" error on ia64 and ppc64
+References: <5387F150.5000307@hitachi.com> <20140530031838.17427.75896.stgit@ltc230.yrl.intra.hitachi.co.jp> <539161D6.7020508@hitachi.com> <1403078179.32307.7.camel@concordia> <53A15201.7060404@hitachi.com> <1403141433.4768.1.camel@concordia> <53A26C99.6060000@hitachi.com> <53A285D0.1030106@in.ibm.com> <53A2908E.2000806@hitachi.com> <53A2B136.108@in.ibm.com> <53A2C315.9030006@hitachi.com>
+In-Reply-To: <53A2C315.9030006@hitachi.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010904010501080300020809
-Content-Type: text/plain; charset=gb18030
-Content-Transfer-Encoding: 7bit
+(2014/06/19 20:01), Masami Hiramatsu wrote:
 
-This is more concisely
+>>>>> Ah, those messages should be shown in dmesg when booting if it doesn't work,
+>>>>> because the messages are printed by initialization process of kprobe blacklist.
+>>>>> So, reproducing it is just enabling CONFIG_KPROBES and boot it.
+>>>> Well,  we don't get those messages on Power, since the kallsyms has the
+>>>> entries for ".function_name". The correct way to verify is, either  :
+>>>
+>>> Hmm, that seems another issue on powerpc. Is that expected(and designed)
+>>> behavior?
+>> AFAIK, yes, it is.
+>> To be more precise :
+>>
+>> we have 'foo' and '.foo' for a function foo(), where 'foo' points to the
+>> function_entry and '.foo' points to the actual function.
+> 
+> Ah, I see. So if we run
+> 
+>   func_ptr p = foo;
+>   return p == kallsyms_lookup_name(".foo");
+> 
+> it returns true.
 
->From 6ddeb18347f9dda0fe37702e0d067a4129a89b54 Mon Sep 17 00:00:00 2001
-From: Xiaoming Gao <newtongao@tencent.com>
-Date: Thu, 19 Jun 2014 19:14:57 +0800
-Subject: [PATCH] kvm: fix hyperv tsc page clear wrong address
+One more thing I should know, is the address of ".function_name" within the
+kernel text? In other words, does kernel_text_address() return true for that
+address? If not, it's easy to verify the address.
 
-tsc page addr need clear the low HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT bits
-before kvm_write_guest write the zero tsc_ref structure to guest, or it will lead
-guest to get wrong clocksource.
+Thank you,
 
-windows guest will get strong impact, QueryPerformanceCounter will always return 0
-,all things in windows rely on clock source, will in serious chaos.
-
-Signed-off-by: Xiaoming Gao <newtongao@tencnet.com>
----
- arch/x86/kvm/x86.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index f32a025..f644933 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1898,7 +1898,7 @@ static int set_msr_hyperv_pw(struct kvm_vcpu *vcpu, u32 msr, u64 data)
- 		if (!(data & HV_X64_MSR_TSC_REFERENCE_ENABLE))
- 			break;
- 		gfn = data >> HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT;
--		if (kvm_write_guest(kvm, data,
-+		if (kvm_write_guest(kvm, gfn << HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT,
- 			&tsc_ref, sizeof(tsc_ref)))
- 			return 1;
- 		mark_page_dirty(kvm, gfn);
 -- 
-1.7.1
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
---------------010904010501080300020809
-Content-Type: text/plain; charset=gb18030;
- name="0001-kvm-fix-hyperv-tsc-page-clear-wrong-address.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="0001-kvm-fix-hyperv-tsc-page-clear-wrong-address.patch"
-
->From 6ddeb18347f9dda0fe37702e0d067a4129a89b54 Mon Sep 17 00:00:00 2001
-From: Xiaoming Gao <newtongao@tencent.com>
-Date: Thu, 19 Jun 2014 19:14:57 +0800
-Subject: [PATCH] kvm: fix hyperv tsc page clear wrong address
-
-tsc page addr need clear the low HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT bits
-before kvm_write_guest write the zero tsc_ref structure to guest, or it will lead
-guest to get wrong clocksource.
-
-windows guest will get strong impact, QueryPerformanceCounter will always return 0
-,all things in windows rely on clock source, will in serious chaos.
-
-Signed-off-by: Xiaoming Gao <newtongao@tencnet.com>
----
- arch/x86/kvm/x86.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index f32a025..f644933 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1898,7 +1898,7 @@ static int set_msr_hyperv_pw(struct kvm_vcpu *vcpu, u32 msr, u64 data)
- 		if (!(data & HV_X64_MSR_TSC_REFERENCE_ENABLE))
- 			break;
- 		gfn = data >> HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT;
--		if (kvm_write_guest(kvm, data,
-+		if (kvm_write_guest(kvm, gfn << HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT,
- 			&tsc_ref, sizeof(tsc_ref)))
- 			return 1;
- 		mark_page_dirty(kvm, gfn);
--- 
-1.7.1
-
-
---------------010904010501080300020809--
