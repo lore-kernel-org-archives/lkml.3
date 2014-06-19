@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444AbaFSUUU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 16:20:20 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:53376 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757286AbaFSUUS (ORCPT
+	id S965170AbaFSUUl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 16:20:41 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:54334 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757286AbaFSUUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 16:20:18 -0400
-Date: Thu, 19 Jun 2014 13:20:14 -0700
-From: josh@joshtriplett.org
-To: Johannes Stadlinger <Johannes.Stadlinger@fau.de>
-Cc: devel@linuxdriverproject.org,
-        Maximilian Eschenbacher <maximilian@eschenbacher.email>,
-        linux-kernel@i4.cs.fau.de,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tugce Sirin <ztugcesirin@gmail.com>,
-        Vitaly Osipov <vitaly.osipov@gmail.com>,
-        Neil Armstrong <superna9999@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/8] wlan-ng/prism2sta:checkpatch: Fix string split
-Message-ID: <20140619202014.GG16404@cloud>
-References: <1403205620-10219-1-git-send-email-Johannes.Stadlinger@fau.de>
- <1403205620-10219-7-git-send-email-Johannes.Stadlinger@fau.de>
+	Thu, 19 Jun 2014 16:20:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403205620-10219-7-git-send-email-Johannes.Stadlinger@fau.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1403209102-10633-1-git-send-email-xerofoify@gmail.com>
+References: <1403209102-10633-1-git-send-email-xerofoify@gmail.com>
+Date: Thu, 19 Jun 2014 16:20:39 -0400
+Message-ID: <CAPDOMVhBHa3QqFY+5T+noCxKkffN6Mo0PrN1_1ZRV22RNXUKXg@mail.gmail.com>
+Subject: Re: [PATCH] staging: rtl8192 Check for Null return from dev_skb_alloc
+From: Nick Krause <xerofoify@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: lisa@xenapiadmin.com, Valentina Manea <valentina.manea.m@gmail.com>,
+        ben@decadent.org.uk, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 09:20:19PM +0200, Johannes Stadlinger wrote:
-> This patch fixes a warning of checkpatch about string splitting.
-> 
-> Signed-off-by: Johannes Stadlinger <Johannes.Stadlinger@fau.de>
-> Signed-off-by: Maximilian Eschenbacher <maximilian@eschenbacher.email>
-> CC: linux-kernel@i4.cs.fau.de
-> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> CC: Tugce Sirin <ztugcesirin@gmail.com>
-> CC: Josh Triplett <josh@joshtriplett.org>
-> CC: Vitaly Osipov <vitaly.osipov@gmail.com>
-> CC: Neil Armstrong <superna9999@gmail.com>
-> CC: Paul Gortmaker <paul.gortmaker@windriver.com>
-> CC: devel@driverdev.osuosl.org
-> CC: linux-kernel@vger.kernel.org
+Hey Guys,
+So Sorry about wasting your time with bad patchs.
+I feel bad about that. I hope this patch is O.K.
+now. :(
+Nicholas Krause
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-
->  drivers/staging/wlan-ng/prism2sta.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/wlan-ng/prism2sta.c b/drivers/staging/wlan-ng/prism2sta.c
-> index a449fdf..9444006 100644
-> --- a/drivers/staging/wlan-ng/prism2sta.c
-> +++ b/drivers/staging/wlan-ng/prism2sta.c
-> @@ -468,8 +468,7 @@ u32 prism2sta_ifstate(wlandevice_t *wlandev, u32 ifstate)
->  			break;
->  		case WLAN_MSD_RUNNING:
->  			netdev_warn(wlandev->netdev,
-> -			       "Cannot enter fwload state from enable state,"
-> -			       "you must disable first.\n");
-> +				    "Cannot enter fwload state from enable state, you must disable first.\n");
->  			result = P80211ENUM_resultcode_invalid_parameters;
->  			break;
->  		case WLAN_MSD_HWFAIL:
-> -- 
+On Thu, Jun 19, 2014 at 4:18 PM, Nicholas Krause <xerofoify@gmail.com> wrote:
+> Checks for Null return from dev_skb_alloc if it returns Null,
+> fw_download returns false. Otherwise it returns true.Also
+> removed rt_status due to returning true of false directly.
+>
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> ---
+>  drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+> index 1a95d1f..affa89a 100644
+> --- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+> +++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+> @@ -36,7 +36,6 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+>                              u32 buffer_len)
+>  {
+>         struct r8192_priv *priv = rtllib_priv(dev);
+> -       bool                rt_status = true;
+>         u16                 frag_threshold;
+>         u16                 frag_length, frag_offset = 0;
+>         int                 i;
+> @@ -59,7 +58,9 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+>                         bLastIniPkt = 1;
+>
+>                 }
+> -
+> +               skb  = dev_alloc_skb(frag_length + 4);
+> +               if (!skb)
+> +                       return false;
+>                 skb  = dev_alloc_skb(frag_length + 4);
+>                 memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
+>                 tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
+> @@ -99,7 +100,7 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+>
+>         write_nic_byte(dev, TPPoll, TPPoll_CQ);
+>
+> -       return rt_status;
+> +       return false;
+>  }
+>
+>  static bool CPUcheck_maincodeok_turnonCPU(struct net_device *dev)
+> --
 > 1.9.1
-> 
+>
