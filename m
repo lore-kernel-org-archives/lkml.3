@@ -1,802 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934279AbaFSSRO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 14:17:14 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:51955 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933173AbaFSSRJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 14:17:09 -0400
-Message-ID: <53A32927.4060004@arm.com>
-Date: Thu, 19 Jun 2014 19:17:11 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S934285AbaFSSS6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 14:18:58 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:37892 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933173AbaFSSSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 14:18:55 -0400
+Date: Thu, 19 Jun 2014 14:18:50 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 3/4] mm: page_alloc: Reset fair zone allocation policy
+ when batch counts are expired
+Message-ID: <20140619181850.GG7331@cmpxchg.org>
+References: <1403079807-24690-1-git-send-email-mgorman@suse.de>
+ <1403079807-24690-4-git-send-email-mgorman@suse.de>
+ <20140618200129.GD7331@cmpxchg.org>
+ <20140618215734.GD10819@suse.de>
 MIME-Version: 1.0
-To: Jassi Brar <jaswinder.singh@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Sudeep Holla <sudeep.holla@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "mporter@linaro.org" <mporter@linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "bjorn@kryo.se" <bjorn@kryo.se>,
-        "ashwin.chaugule@linaro.org" <ashwin.chaugule@linaro.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "s-anna@ti.com" <s-anna@ti.com>,
-        "loic.pallardy@st.com" <loic.pallardy@st.com>,
-        "lftan.linux@gmail.com" <lftan.linux@gmail.com>,
-        "slapdau@yahoo.com.au" <slapdau@yahoo.com.au>,
-        "courtney.cavin@sonymobile.com" <courtney.cavin@sonymobile.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "joshc@codeaurora.org" <joshc@codeaurora.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "ks.giri@samsung.com" <ks.giri@samsung.com>
-Subject: Re: [PATCHv7 2/5] mailbox: Introduce framework for mailbox
-References: <1402592317-7043-1-git-send-email-jaswinder.singh@linaro.org> <1402592479-7244-1-git-send-email-jaswinder.singh@linaro.org>
-In-Reply-To: <1402592479-7244-1-git-send-email-jaswinder.singh@linaro.org>
-X-OriginalArrivalTime: 19 Jun 2014 18:16:57.0606 (UTC) FILETIME=[A81C2A60:01CF8BEA]
-X-MC-Unique: 114061919170601001
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140618215734.GD10819@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jassi,
+On Wed, Jun 18, 2014 at 10:57:34PM +0100, Mel Gorman wrote:
+> > > On large NUMA machines, the scanning overhead is higher as zones are
+> > > scanned that are ineligible for zone allocation policy.
+> > 
+> > I'm not sure we can use your fix for that because of zone-order
+> > zonelists, see inline comments below.
+> > 
+> 
+> At one point I had a comment on that but then deleted it again. In the case
+> of zone ordering the expectation is that low zones are preserved. The fair
+> zone allocation policy actually breaks that expectation and violates the zone
+> ordering rules but in a way that involves scanning zones that cannot be used.
 
-I started using this from v5 and tried briefly to follow previous versions
-and discussion. Please forgive me if I ask questions that are already answered.
+That makes a lot of sense.  It would be great to make this a separate,
+documented change, though.
 
-On 12/06/14 18:01, Jassi Brar wrote:
-> Introduce common framework for client/protocol drivers and
-> controller drivers of Inter-Processor-Communication (IPC).
+> > It would be good to start with an analysis of the problem(s) and then
+> > propose a solution based on that, otherwise it makes it very hard to
+> > follow your thought process, and especially match these rather broad
+> > statements to the code when you change multiple things at once.
+> > 
+> 
+> I'm not sure what you're looking for here. The problem is that there was a
+> sizable performance hit due to spending too much time in the allocator fast
+> path. I suspected there was a secondary hit because the cache footprint is
+> heavier when switching between the zones but profiles were inconclusive.
+> There were higher number of cache misses during the copying of data and it
+> could be inferred that this is partially due to a heavier cache footprint in
+> the page allocator but profiles are not really suitable for proving that.
+> The fact is that using vmstat counters increased cache footprint because
+> of the numbers of spills from the per-cpu counter to the zone counter. Of
+> course the VM already has a lot of these but the fair zone policy added more.
+
+I think mainly I'm asking to split these individual changes out.  It's
+a single change that almost doubles the implementation size and
+changed the behavior in non-obvious ways, and it was hard to find
+descriptions or justification for each change in the changelog.
+
+> > > Second, when the fair zone batch counter is expired, the zone is
+> > > flagged which has a lighter cache footprint than accessing the
+> > > counters. Lastly, if the local node has only one zone then the fair
+> > > zone allocation policy is not applied to reduce overall overhead.
+> > 
+> > These two are plausible, but they also make the code harder to
+> > understand and their performance impact is not represented in your
+> > test results, so we can't compare cost and value.
+> > 
+> 
+> Do you mean that I hadn't posted results for a NUMA machine? They weren't
+> available at the time I was writing the changelog but I knew from old results
+> based on earlier iterations of the patch that it made a difference. The
+> problem with the NUMA machine is that the results are much more variable
+> due to locality and the fact that automatic NUMA balancing is enabled
+> on any tests I do to match what I expect a distribution config to look
+> like. I felt it was self-evident that applying the fair policy to a node
+> with a single zone was a bad idea.
+
+The single-zone node avoidance does make sense when considered in
+isolation, agreed.  The depleted flags come with atomic bit ops and
+add an extra conditional in the fast path to avoid a word-sized read,
+and writes to that word are batched depending on machine size, so to
+me the cost/benefit of it really isn't all that obvious.
+
+> > > Comparison is tiobench with data size 2*RAM on a small single-node machine
+> > > and on an ext3 filesystem although it is known that ext4 sees similar gains.
+> > > I'm reporting sequental reads only as the other operations are essentially
+> > > flat.
+> > > 
+> > >                                       3.16.0-rc1            3.16.0-rc1            3.16.0-rc1                 3.0.0
+> > >                                          vanilla          cfq600              fairzone                     vanilla
+> > > Mean   SeqRead-MB/sec-1         121.88 (  0.00%)      121.60 ( -0.23%)      131.68 (  8.04%)      134.59 ( 10.42%)
+> > > Mean   SeqRead-MB/sec-2         101.99 (  0.00%)      102.35 (  0.36%)      113.24 ( 11.04%)      122.59 ( 20.20%)
+> > > Mean   SeqRead-MB/sec-4          97.42 (  0.00%)       99.71 (  2.35%)      107.43 ( 10.28%)      114.78 ( 17.82%)
+> > > Mean   SeqRead-MB/sec-8          83.39 (  0.00%)       90.39 (  8.39%)       96.81 ( 16.09%)      100.14 ( 20.09%)
+> > > Mean   SeqRead-MB/sec-16         68.90 (  0.00%)       77.29 ( 12.18%)       81.88 ( 18.85%)       81.64 ( 18.50%)
+> > > 
+> > > Where as the CFQ patch helped throughput for higher number of threads, this
+> > > patch (fairzone) whos performance increases for all thread counts and brings
+> > > performance much closer to 3.0-vanilla. Note that performance can be further
+> > > increased by tuning CFQ but the latencies of read operations are then higher
+> > > but from the IO stats they are still acceptable.
+> > > 
+> > >                   3.16.0-rc1  3.16.0-rc1  3.16.0-rc1       3.0.0
+> > >                      vanilla      cfq600    fairzone     vanilla
+> > > Mean sda-avgqz        912.29      939.89      947.90     1000.70
+> > > Mean sda-await       4268.03     4403.99     4450.89     4887.67
+> > > Mean sda-r_await       79.42       80.33       81.34      108.53
+> > > Mean sda-w_await    13073.49    11038.81    13217.25    11599.83
+> > > Max  sda-avgqz       2194.84     2215.01     2307.48     2626.78
+> > > Max  sda-await      18157.88    17586.08    14189.21    24971.00
+> > > Max  sda-r_await      888.40      874.22      800.80     5308.00
+> > > Max  sda-w_await   212563.59   190265.33   173295.33   177698.47
+> > > 
+> > > The primary concern with this patch is that it'll break the fair zone
+> > > allocation policy but it should be still fine as long as the working set
+> > > fits in memory. When the low watermark is constantly hit and the spread
+> > > is still even as before. However, the policy is still in force most of the
+> > > time. This is the allocation spread when running tiobench at 80% of memory
+> > > 
+> > >                             3.16.0-rc1  3.16.0-rc1  3.16.0-rc1       3.0.0
+> > >                                vanilla      cfq600    fairzone     vanilla
+> > > DMA32 allocs                  11099122    11020083     9459921     7698716
+> > > Normal allocs                 18823134    18801874    20429838    18787406
+> > > Movable allocs                       0           0           0           0
+> > > 
+> > > Note that the number of pages allocated from the Normal zone is still
+> > > comparable.
+> > 
+> > When you translate them to percentages, it rather looks like fairness
+> > is closer to pre-fairpolicy levels for this workload:
+> > 
+> >                              3.16.0-rc1  3.16.0-rc1  3.16.0-rc1       3.0.0
+> >                                 vanilla      cfq600    fairzone     vanilla
+> >  DMA32 allocs                     37.1%       37.0%       31.6%       29.1%
+> >  Normal allocs                    62.9%       63.0%       68.4%       70.9%
+> >  Movable allocs                      0%          0%          0%          0%
+> > 
+> 
+> I can re-examine it again. The key problem here is that once the low
+> watermark is reached that we can either adhere to the fair zone policy
+> and stall the allocator by dropping into the slow path and/or waiting for
+> kswapd to make progress or we can break the fair zone allocation policy,
+> make progress now and hope that reclaim does not cause problems later. That
+> is a bleak choice.
+
+I'm not sure I follow entirely, but we definitely do rely on kswapd to
+make forward progress right now because the assumption is that once we
+allocated high - low wmark pages, kswapd will reclaim that same amount
+as well.  And we do break fairness if that's not the case, but I think
+that's actually good enough for practical purposes.
+
+An alternative would be to increase the reclaim cycle and make the
+distance between low and high watermarks bigger.  That would trade
+some memory utilization for CPU time in the allocator.
+
+> Ideally zones would go away altogether and LRU lists and alloctor paths
+> used the same list with overhead of additional scanning if pages from
+> a particular zone was required. That would remove the need for the fair
+> zone policy entirely. However, this would be a heavy reachitecting of the
+> current infrastructure and not guaranteed to work correctly.
+
+Good lord, yes please!
+
+But not exactly something we can do now and backport into stable ;-)
+
+> > > @@ -1909,6 +1914,18 @@ static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
+> > >  
+> > >  #endif	/* CONFIG_NUMA */
+> > >  
+> > > +static void reset_alloc_batches(struct zone *preferred_zone)
+> > > +{
+> > > +	struct zone *zone = preferred_zone->zone_pgdat->node_zones;
+> > > +
+> > > +	do {
+> > > +		mod_zone_page_state(zone, NR_ALLOC_BATCH,
+> > > +			(zone->managed_pages >> 2) -
+> > > +			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
+> > > +		zone_clear_flag(zone, ZONE_FAIR_DEPLETED);
+> > > +	} while (zone++ != preferred_zone);
+> > 
+> > What is zone->managed_pages >> 2 based on?
+> > 
+> 
+> Magic number that would allow more progress to be made before switching
+> to the lower zone.
 >
-> Client driver developers should have a look at
->   include/linux/mailbox_client.h to understand the part of
-> the API exposed to client drivers.
-> Similarly controller driver developers should have a look
-> at include/linux/mailbox_controller.h
->
-> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
-> ---
->   drivers/mailbox/Makefile           |   4 +
->   drivers/mailbox/mailbox.c          | 487 +++++++++++++++++++++++++++++++++++++
->   include/linux/mailbox_client.h     |  45 ++++
->   include/linux/mailbox_controller.h | 121 +++++++++
->   4 files changed, 657 insertions(+)
->   create mode 100644 drivers/mailbox/mailbox.c
->   create mode 100644 include/linux/mailbox_client.h
->   create mode 100644 include/linux/mailbox_controller.h
->
-> diff --git a/drivers/mailbox/Makefile b/drivers/mailbox/Makefile
-> index e0facb3..2fa343a 100644
-> --- a/drivers/mailbox/Makefile
-> +++ b/drivers/mailbox/Makefile
-> @@ -1,3 +1,7 @@
-> +# Generic MAILBOX API
-> +
-> +obj-$(CONFIG_MAILBOX)          += mailbox.o
-> +
->   obj-$(CONFIG_PL320_MBOX)       += pl320-ipc.o
->
->   obj-$(CONFIG_OMAP_MBOX)                += omap-mailbox.o
-> diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
-> new file mode 100644
-> index 0000000..336fa10
-> --- /dev/null
-> +++ b/drivers/mailbox/mailbox.c
-> @@ -0,0 +1,487 @@
-> +/*
-> + * Mailbox: Common code for Mailbox controllers and users
-> + *
-> + * Copyright (C) 2014 Linaro Ltd.
-> + * Author: Jassi Brar <jassisinghbrar@gmail.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/interrupt.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/mutex.h>
-> +#include <linux/delay.h>
-> +#include <linux/slab.h>
-> +#include <linux/err.h>
-> +#include <linux/module.h>
-> +#include <linux/device.h>
-> +#include <linux/mailbox_client.h>
-> +#include <linux/mailbox_controller.h>
-> +
-> +#define TXDONE_BY_IRQ  (1 << 0) /* controller has remote RTR irq */
-> +#define TXDONE_BY_POLL (1 << 1) /* controller can read status of last TX */
-> +#define TXDONE_BY_ACK  (1 << 2) /* S/W ACK recevied by Client ticks the TX */
-> +
-> +static LIST_HEAD(mbox_cons);
-> +static DEFINE_MUTEX(con_mutex);
-> +
-> +static int _add_to_rbuf(struct mbox_chan *chan, void *mssg)
-> +{
-> +       int idx;
-> +       unsigned long flags;
-> +
-> +       spin_lock_irqsave(&chan->lock, flags);
-> +
-> +       /* See if there is any space left */
-> +       if (chan->msg_count == MBOX_TX_QUEUE_LEN) {
-> +               spin_unlock_irqrestore(&chan->lock, flags);
-> +               return -ENOMEM;
-> +       }
-> +
+> > The batch size was picked so that after all zones were used according
+> > to their size, they would also get reclaimed according to their size,
+> > and the cycle would start over.  This ensures that available memory is
+> > fully utilized and page lifetime stays independent of zone placement.
+> > 
+> > The page allocator depletes the zones to their low watermark, then
+> > kswapd restores them to their high watermark before the reclaim cycle
+> > starts over.  This means that a reclaim cycle is high - low watermark
+> > pages, which is reflected in the current round-robin batch sizes.
+> > 
+> > Now, we agree that the batches might drift from the actual reclaim
+> > cycle due to per-cpu counter inaccuracies, but it's still a better
+> > match for the reclaim cycle than "quarter zone size"...?
+> > 
+> 
+> Fair enough, I'll restore it. At the time the priority was to minimise
+> any cache effect from switching zones.
 
-Any particular reason why the standard list implementation can't be used
-instead of this. It eliminates limitation of MBOX_TX_QUEUE_LEN and would
-remove msg_free/count
+Unfortunately, for the given tests, this might be the main impact of
+this patch.  Here are my tiobench results with ONLY increasing the
+batch size to managed_pages >> 2, without even the CFQ patch, which I
+understand accounts for the remaining drop at higher concurrency:
 
-> +       idx = chan->msg_free;
-> +       chan->msg_data[idx] = mssg;
-> +       chan->msg_count++;
-> +
-> +       if (idx == MBOX_TX_QUEUE_LEN - 1)
-> +               chan->msg_free = 0;
-> +       else
-> +               chan->msg_free++;
-> +
-> +       spin_unlock_irqrestore(&chan->lock, flags);
-> +
-> +       return idx;
-> +}
-> +
-> +static void _msg_submit(struct mbox_chan *chan)
-> +{
-> +       unsigned count, idx;
-> +       unsigned long flags;
-> +       void *data;
-> +       int err;
-> +
-> +       spin_lock_irqsave(&chan->lock, flags);
-> +
-> +       if (!chan->msg_count || chan->active_req) {
-> +               spin_unlock_irqrestore(&chan->lock, flags);
-> +               return;
-> +       }
-> +
-> +       count = chan->msg_count;
-> +       idx = chan->msg_free;
-> +       if (idx >= count)
-> +               idx -= count;
-> +       else
-> +               idx += MBOX_TX_QUEUE_LEN - count;
-> +
-> +       data = chan->msg_data[idx];
-> +
-> +       /* Try to submit a message to the MBOX controller */
-> +       err = chan->mbox->ops->send_data(chan, data);
-> +       if (!err) {
-> +               chan->active_req = data;
-> +               chan->msg_count--;
-> +       }
-> +
-> +       spin_unlock_irqrestore(&chan->lock, flags);
-> +}
-> +
-> +static void tx_tick(struct mbox_chan *chan, int r)
-> +{
-> +       unsigned long flags;
-> +       void *mssg;
-> +
-> +       spin_lock_irqsave(&chan->lock, flags);
-> +       mssg = chan->active_req;
-> +       chan->active_req = NULL;
-> +       spin_unlock_irqrestore(&chan->lock, flags);
-> +
-> +       /* Submit next message */
-> +       _msg_submit(chan);
-> +
-> +       /* Notify the client */
-> +       if (chan->cl->tx_block)
-> +               complete(&chan->tx_complete);
-> +       else if (mssg && chan->cl->tx_done)
-> +               chan->cl->tx_done(chan->cl, mssg, r);
-> +}
-> +
-> +static void poll_txdone(unsigned long data)
-> +{
-> +       struct mbox_controller *mbox = (struct mbox_controller *)data;
-> +       bool txdone, resched = false;
-> +       int i;
-> +
-> +       for (i = 0; i < mbox->num_chans; i++) {
-> +               struct mbox_chan *chan = &mbox->chans[i];
-> +
-> +               if (chan->active_req && chan->cl) {
-> +                       resched = true;
-> +                       txdone = chan->mbox->ops->last_tx_done(chan);
-> +                       if (txdone)
-> +                               tx_tick(chan, 0);
-> +               }
-> +       }
-> +
-> +       if (resched)
-> +               mod_timer(&mbox->poll,
-> +                       jiffies + msecs_to_jiffies(mbox->period));
+tiobench MB/sec
+                                               3              3.16-rc1              3.16-rc1
+                                             3.0                                  bigbatches
+Mean   SeqRead-MB/sec-1         130.39 (  0.00%)      129.69 ( -0.54%)      137.02 (  5.08%)
+Mean   SeqRead-MB/sec-2         128.14 (  0.00%)      115.63 ( -9.76%)      127.25 ( -0.69%)
+Mean   SeqRead-MB/sec-4         125.06 (  0.00%)      110.03 (-12.02%)      121.35 ( -2.97%)
+Mean   SeqRead-MB/sec-8         118.97 (  0.00%)      101.86 (-14.38%)      110.48 ( -7.14%)
+Mean   SeqRead-MB/sec-16         96.30 (  0.00%)       86.30 (-10.39%)       94.07 ( -2.32%)
 
-[Nit] Alignment here and few other places to '('
+But yeah, they also wreck fairness to prehistoric levels:
 
-> +}
-> +
-> +/**
-> + * mbox_chan_received_data - A way for controller driver to push data
-> + *                             received from remote to the upper layer.
-> + * @chan: Pointer to the mailbox channel on which RX happened.
-> + * @data: Client specific message typecasted as void *
-> + *
+                                 3.    3.16-rc1    3.16-rc1
+                                3.0              bigbatches
+Zone normal velocity      15772.202   11346.939   15234.211
+Zone dma32 velocity        3102.806    8196.689    3437.191
 
-[Nit] 'data' needs to be changed to 'mssg' or vice-versa
+> > All in all, I still don't really understand exactly how your changes
+> > work and the changelog doesn't clarify much :( I'm just having a hard
+> > time seeing how you get 10%-20% performance increase for an IO-bound
+> > workload by making the allocator paths a little leaner.  Your results
+> > certainly show that you *are* improving this particular workload, but
+> > I think we should be clear on the mental model and then go from there.
+> > 
+> 
+> Mental model is that too much overhead in the allocator fast path builds
+> up over time. Second part is switching between free lists between zones
+> and skipping the preferred zone when the batch is depleted has a heavier
+> cache footprint which in turn has additional follow-on effects. Consider
+> for example that recently freed pages that are potentially cache hot may
+> get ignored by the fair zone allocation policy in favour of cache cold
+> pages in a lower zone. The exact impact of this would depend on the CPU
+> that did the freeing and whether cache was shared so analysing it in the
+> general sense would be prohibitive.
 
-> + * After startup and before shutdown any data received on the chan
-> + * is passed on to the API via atomic mbox_chan_received_data().
-> + * The controller should ACK the RX only after this call returns.
+Yes, I think these problems are inherent in a fairness system, it's
+just a question how we find the right balance between fairness and
+throughput while preserving a meaningful model of how it's supposed to
+work, which I think the proposed magic batch sizes don't qualify for.
 
-Does this mean we can't support asynchronous messages from the remote.
-One possible scenario I can think is if the remote system power controller
-has feature to configure the bounds for thermal sensors and it can send
-async interrupt when the bounds are crossed. We can't just block one channel
-for this always. Again this might have been discussed before and you might have
-solution, I could not gather it with my brief look at older discussions.
+The expired-flags and skipping single-zone nodes OTOH were immediately
+obvious because they optimize while preserving the existing semantics,
+although I kind of still want to see these things quantified.
 
-> + */
-> +void mbox_chan_received_data(struct mbox_chan *chan, void *mssg)
-> +{
-> +       /* No buffering the received data */
-> +       if (chan->cl->rx_callback)
-> +               chan->cl->rx_callback(chan->cl, mssg);
-> +}
-> +EXPORT_SYMBOL_GPL(mbox_chan_received_data);
-> +
-> +/**
-> + * mbox_chan_txdone - A way for controller driver to notify the
-> + *                     framework that the last TX has completed.
-> + * @chan: Pointer to the mailbox chan on which TX happened.
-> + * @r: Status of last TX - OK or ERROR
-> + *
-> + * The controller that has IRQ for TX ACK calls this atomic API
-> + * to tick the TX state machine. It works only if txdone_irq
-> + * is set by the controller.
-> + */
-> +void mbox_chan_txdone(struct mbox_chan *chan, int r)
-> +{
-> +       if (unlikely(!(chan->txdone_method & TXDONE_BY_IRQ))) {
-> +               pr_err("Controller can't run the TX ticker\n");
-> +               return;
-> +       }
-> +
-> +       tx_tick(chan, r);
-> +}
-> +EXPORT_SYMBOL_GPL(mbox_chan_txdone);
-> +
-> +/**
-> + * mbox_client_txdone - The way for a client to run the TX state machine.
-> + * @chan: Mailbox channel assigned to this client.
-> + * @r: Success status of last transmission.
-> + *
-> + * The client/protocol had received some 'ACK' packet and it notifies
-> + * the API that the last packet was sent successfully. This only works
-> + * if the controller can't sense TX-Done.
-> + */
-> +void mbox_client_txdone(struct mbox_chan *chan, int r)
-> +{
-> +       if (unlikely(!(chan->txdone_method & TXDONE_BY_ACK))) {
-> +               pr_err("Client can't run the TX ticker\n");
-> +               return;
-> +       }
-> +
-> +       tx_tick(chan, r);
-> +}
-> +EXPORT_SYMBOL_GPL(mbox_client_txdone);
-> +
-> +/**
-> + * mbox_client_peek_data - A way for client driver to pull data
-> + *                     received from remote by the controller.
-> + * @chan: Mailbox channel assigned to this client.
-> + *
-> + * A poke to controller driver for any received data.
-> + * The data is actually passed onto client via the
-> + * mbox_chan_received_data()
-> + * The call can be made from atomic context, so the controller's
-> + * implementation of peek_data() must not sleep.
-> + *
-> + * Return: True, if controller has, and is going to push after this,
-> + *          some data.
-> + *         False, if controller doesn't have any data to be read.
-> + */
-> +bool mbox_client_peek_data(struct mbox_chan *chan)
-> +{
-> +       if (chan->mbox->ops->peek_data)
-> +               return chan->mbox->ops->peek_data(chan);
-> +
-> +       return false;
-> +}
-> +EXPORT_SYMBOL_GPL(mbox_client_peek_data);
+> > I haven't managed to reproduce it locally yet, will continue to play
+> > around with the parameters.
+> 
+> Does that mean you have tried using tiobench and saw no effect or you
+> haven't run tiobench yet? FWIW, I've seen this impact on multiple machines.
 
-I am unable to understand how this API will be used. IIUC when the controller
-receives any data from remote, it calls mbox_chan_received_data to push data to
-client.
+I tried My Favorite IO Benchmarks first, but they wouldn't yield
+anything.  I could reproduce the problem with tiobench and the mmtests
+standard configuration.
 
-> +
-> +/**
-> + * mbox_send_message - For client to submit a message to be
-> + *                             sent to the remote.
-> + * @chan: Mailbox channel assigned to this client.
-> + * @mssg: Client specific message typecasted.
-> + *
-> + * For client to submit data to the controller destined for a remote
-> + * processor. If the client had set 'tx_block', the call will return
-> + * either when the remote receives the data or when 'tx_tout' millisecs
-> + * run out.
-> + *  In non-blocking mode, the requests are buffered by the API and a
-> + * non-negative token is returned for each queued request. If the request
-> + * is not queued, a negative token is returned. Upon failure or successful
-> + * TX, the API calls 'tx_done' from atomic context, from which the client
-> + * could submit yet another request.
-> + *  In blocking mode, 'tx_done' is not called, effectively making the
-> + * queue length 1.
-> + * The pointer to message should be preserved until it is sent
-> + * over the chan, i.e, tx_done() is made.
-> + * This function could be called from atomic context as it simply
-> + * queues the data and returns a token against the request.
-> + *
-> + * Return: Non-negative integer for successful submission (non-blocking mode)
-> + *     or transmission over chan (blocking mode).
-> + *     Negative value denotes failure.
-> + */
-> +int mbox_send_message(struct mbox_chan *chan, void *mssg)
-> +{
-> +       int t;
-> +
-> +       if (!chan || !chan->cl)
-> +               return -EINVAL;
-> +
-> +       t = _add_to_rbuf(chan, mssg);
-> +       if (t < 0) {
-> +               pr_err("Try increasing MBOX_TX_QUEUE_LEN\n");
-> +               return t;
-> +       }
-> +
-> +       _msg_submit(chan);
-> +
-> +       reinit_completion(&chan->tx_complete);
-> +
-> +       if (chan->txdone_method == TXDONE_BY_POLL)
-> +               poll_txdone((unsigned long)chan->mbox);
-> +
-> +       if (chan->cl->tx_block && chan->active_req) {
-> +               unsigned long wait;
-> +               int ret;
-> +
-> +               if (!chan->cl->tx_tout) /* wait for ever */
-> +                       wait = msecs_to_jiffies(3600000);
-> +               else
-> +                       wait = msecs_to_jiffies(chan->cl->tx_tout);
-> +
-> +               ret = wait_for_completion_timeout(&chan->tx_complete, wait);
-> +               if (ret == 0) {
-> +                       t = -EIO;
-> +                       tx_tick(chan, -EIO);
-> +               }
-> +       }
-> +
-> +       return t;
-> +}
-> +EXPORT_SYMBOL_GPL(mbox_send_message);
-> +
-> +/**
-> + * mbox_request_channel - Request a mailbox channel.
-> + * @cl: Identity of the client requesting the channel.
-> + *
-> + * The Client specifies its requirements and capabilities while asking for
-> + * a mailbox channel. It can't be called from atomic context.
-> + * The channel is exclusively allocated and can't be used by another
-> + * client before the owner calls mbox_free_channel.
-> + * After assignment, any packet received on this channel will be
-> + * handed over to the client via the 'rx_callback'.
-> + * The framework holds reference to the client, so the mbox_client
-> + * structure shouldn't be modified until the mbox_free_channel returns.
-> + *
-> + * Return: Pointer to the channel assigned to the client if successful.
-> + *             ERR_PTR for request failure.
-> + */
-> +struct mbox_chan *mbox_request_channel(const struct mbox_client *cl)
-> +{
-> +       struct device *dev = cl->dev;
-> +       struct mbox_controller *mbox;
-> +       struct of_phandle_args spec;
-> +       struct mbox_chan *chan;
-> +       unsigned long flags;
-> +       int count, i, ret;
-> +
-> +       if (!dev || !dev->of_node) {
-> +               pr_err("%s: No owner device node\n", __func__);
-> +               return ERR_PTR(-ENODEV);
-> +       }
-> +
-> +       count = of_property_count_strings(dev->of_node, "mbox-names");
-> +       if (count < 0) {
-> +               pr_err("%s: mbox-names property of node '%s' missing\n",
-> +                       __func__, dev->of_node->full_name);
-> +               return ERR_PTR(-ENODEV);
-> +       }
-> +
-> +       mutex_lock(&con_mutex);
-> +
-> +       ret = -ENODEV;
-> +       for (i = 0; i < count; i++) {
-> +               const char *s;
-> +
-> +               if (of_property_read_string_index(dev->of_node,
-> +                                               "mbox-names", i, &s))
-> +                       continue;
-> +
-> +               if (strcmp(cl->chan_name, s))
-> +                       continue;
-> +
-> +               if (of_parse_phandle_with_args(dev->of_node,
-> +                                        "mbox", "#mbox-cells", i, &spec))
-> +                       continue;
-> +
-> +               chan = NULL;
-> +               list_for_each_entry(mbox, &mbox_cons, node)
-> +                       if (mbox->dev->of_node == spec.np) {
-> +                               chan = mbox->of_xlate(mbox, &spec);
-> +                               break;
-> +                       }
-> +
-> +               of_node_put(spec.np);
-> +
-> +               if (!chan)
-> +                       continue;
-> +
-> +               ret = -EBUSY;
-> +               if (!chan->cl && try_module_get(mbox->dev->driver->owner))
-> +                       break;
-> +       }
-> +
-> +       if (i == count) {
-> +               mutex_unlock(&con_mutex);
-> +               return ERR_PTR(ret);
-> +       }
-> +
-> +       spin_lock_irqsave(&chan->lock, flags);
-> +       chan->msg_free = 0;
-> +       chan->msg_count = 0;
-> +       chan->active_req = NULL;
-> +       chan->cl = cl;
-> +       init_completion(&chan->tx_complete);
-> +
-> +       if (chan->txdone_method == TXDONE_BY_POLL
-> +                       && cl->knows_txdone)
-> +               chan->txdone_method |= TXDONE_BY_ACK;
-> +       spin_unlock_irqrestore(&chan->lock, flags);
-> +
-> +       ret = chan->mbox->ops->startup(chan);
-> +       if (ret) {
-> +               pr_err("Unable to startup the chan (%d)\n", ret);
-> +               mbox_free_channel(chan);
-> +               chan = ERR_PTR(ret);
-> +       }
-> +
-> +       mutex_unlock(&con_mutex);
-> +       return chan;
-> +}
-> +EXPORT_SYMBOL_GPL(mbox_request_channel);
-> +
-> +/**
-> + * mbox_free_channel - The client relinquishes control of a mailbox
-> + *                     channel by this call.
-> + * @chan: The mailbox channel to be freed.
-> + */
-> +void mbox_free_channel(struct mbox_chan *chan)
-> +{
-> +       unsigned long flags;
-> +
-> +       if (!chan || !chan->cl)
-> +               return;
-> +
-> +       chan->mbox->ops->shutdown(chan);
-> +
-> +       /* The queued TX requests are simply aborted, no callbacks are made */
-> +       spin_lock_irqsave(&chan->lock, flags);
-> +       chan->cl = NULL;
-> +       chan->active_req = NULL;
-> +       if (chan->txdone_method == (TXDONE_BY_POLL | TXDONE_BY_ACK))
-> +               chan->txdone_method = TXDONE_BY_POLL;
-> +
-> +       module_put(chan->mbox->dev->driver->owner);
-> +       spin_unlock_irqrestore(&chan->lock, flags);
-> +}
-> +EXPORT_SYMBOL_GPL(mbox_free_channel);
-> +
-> +static struct mbox_chan *
-> +of_mbox_index_xlate(struct mbox_controller *mbox,
-> +                               const struct of_phandle_args *sp)
-> +{
-> +       int ind = sp->args[0];
-> +
-> +       if (ind >= mbox->num_chans)
-> +               return NULL;
-> +
-> +       return &mbox->chans[ind];
-> +}
-> +
-> +/**
-> + * mbox_controller_register - Register the mailbox controller
-> + * @mbox:      Pointer to the mailbox controller.
-> + *
-> + * The controller driver registers its communication chans
-> + */
-> +int mbox_controller_register(struct mbox_controller *mbox)
-> +{
-> +       int i, txdone;
-> +
-> +       /* Sanity check */
-> +       if (!mbox || !mbox->dev || !mbox->ops || !mbox->num_chans)
-> +               return -EINVAL;
-> +
-> +       if (mbox->txdone_irq)
-> +               txdone = TXDONE_BY_IRQ;
-> +       else if (mbox->txdone_poll)
-> +               txdone = TXDONE_BY_POLL;
-> +       else /* It has to be ACK then */
-> +               txdone = TXDONE_BY_ACK;
-> +
-> +       if (txdone == TXDONE_BY_POLL) {
-> +               mbox->poll.function = &poll_txdone;
-> +               mbox->poll.data = (unsigned long)mbox;
-> +               init_timer(&mbox->poll);
-> +       }
-> +
-> +       for (i = 0; i < mbox->num_chans; i++) {
-> +               struct mbox_chan *chan = &mbox->chans[i];
+o bigbatches is increasing the batch to managed_pages >> 2
 
-[Nit] Newline to separate declarations
+o bigbatches1node is additionally avoiding the unfair second remote
+  spill pass on a single node system and goes straight into the slow
+  path, but it looks like that optimization drowns in the noise
 
-> +               chan->cl = NULL;
-> +               chan->mbox = mbox;
-> +               chan->txdone_method = txdone;
-> +               spin_lock_init(&chan->lock);
-> +       }
-> +
-> +       if (!mbox->of_xlate)
-> +               mbox->of_xlate = of_mbox_index_xlate;
-> +
-> +       mutex_lock(&con_mutex);
-> +       list_add_tail(&mbox->node, &mbox_cons);
-> +       mutex_unlock(&con_mutex);
-> +
-> +       return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(mbox_controller_register);
-> +
-> +/**
-> + * mbox_controller_unregister - UnRegister the mailbox controller
-> + * @mbox:      Pointer to the mailbox controller.
-> + */
-> +void mbox_controller_unregister(struct mbox_controller *mbox)
-> +{
-> +       int i;
-> +
-> +       if (!mbox)
-> +               return;
-> +
-> +       mutex_lock(&con_mutex);
-> +
-> +       list_del(&mbox->node);
-> +
-> +       for (i = 0; i < mbox->num_chans; i++)
-> +               mbox_free_channel(&mbox->chans[i]);
-> +
-> +       del_timer_sync(&mbox->poll);
-> +
-> +       mutex_unlock(&con_mutex);
-> +}
-> +EXPORT_SYMBOL_GPL(mbox_controller_unregister);
-> diff --git a/include/linux/mailbox_client.h b/include/linux/mailbox_client.h
-> new file mode 100644
-> index 0000000..53eb078
-> --- /dev/null
-> +++ b/include/linux/mailbox_client.h
-> @@ -0,0 +1,45 @@
-> +/*
-> + * Copyright (C) 2014 Linaro Ltd.
-> + * Author: Jassi Brar <jassisinghbrar@gmail.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#ifndef __MAILBOX_CLIENT_H
-> +#define __MAILBOX_CLIENT_H
-> +
-> +#include <linux/of.h>
-> +
-> +struct mbox_chan;
-> +
-> +/**
-> + * struct mbox_client - User of a mailbox
-> + * @dev:               The client device
-> + * @chan_name:         The "controller:channel" this client wants
-> + * @rx_callback:       Atomic callback to provide client the data received
-> + * @tx_done:           Atomic callback to tell client of data transmission
-> + * @tx_block:          If the mbox_send_message should block until data is
-> + *                     transmitted.
-> + * @tx_tout:           Max block period in ms before TX is assumed failure
-> + * @knows_txdone:      if the client could run the TX state machine. Usually
-> + *                     if the client receives some ACK packet for transmission.
-> + *                     Unused if the controller already has TX_Done/RTR IRQ.
-> + */
-> +struct mbox_client {
-> +       struct device *dev;
-> +       const char *chan_name;
-> +       void (*rx_callback)(struct mbox_client *cl, void *mssg);
-> +       void (*tx_done)(struct mbox_client *cl, void *mssg, int r);
-> +       bool tx_block;
-> +       unsigned long tx_tout;
-> +       bool knows_txdone;
-> +};
-> +
-> +struct mbox_chan *mbox_request_channel(const struct mbox_client *cl);
-> +int mbox_send_message(struct mbox_chan *chan, void *mssg);
-> +void mbox_client_txdone(struct mbox_chan *chan, int r);
-> +void mbox_free_channel(struct mbox_chan *chan);
-> +
-> +#endif /* __MAILBOX_CLIENT_H */
-> diff --git a/include/linux/mailbox_controller.h b/include/linux/mailbox_controller.h
-> new file mode 100644
-> index 0000000..5d1915b
-> --- /dev/null
-> +++ b/include/linux/mailbox_controller.h
-> @@ -0,0 +1,121 @@
-> +/*
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#ifndef __MAILBOX_CONTROLLER_H
-> +#define __MAILBOX_CONTROLLER_H
-> +
-> +#include <linux/of.h>
-> +
-> +struct mbox_chan;
-> +
-> +/**
-> + * struct mbox_chan_ops - s/w representation of a communication chan
-> + * @send_data: The API asks the MBOX controller driver, in atomic
-> + *             context try to transmit a message on the bus. Returns 0 if
-> + *             data is accepted for transmission, -EBUSY while rejecting
-> + *             if the remote hasn't yet read the last data sent. Actual
-> + *             transmission of data is reported by the controller via
-> + *             mbox_chan_txdone (if it has some TX ACK irq). It must not
-> + *             block.
-> + * @startup:   Called when a client requests the chan. The controller
-> + *             could ask clients for additional parameters of communication
-> + *             to be provided via client's chan_data. This call may
-> + *             block. After this call the Controller must forward any
-> + *             data received on the chan by calling mbox_chan_received_data.
-> + * @shutdown:  Called when a client relinquishes control of a chan.
-> + *             This call may block too. The controller must not forwared
-> + *             any received data anymore.
-> + * @last_tx_done: If the controller sets 'txdone_poll', the API calls
-> + *               this to poll status of last TX. The controller must
-> + *               give priority to IRQ method over polling and never
-> + *               set both txdone_poll and txdone_irq. Only in polling
-> + *               mode 'send_data' is expected to return -EBUSY.
-> + *               Used only if txdone_poll:=true && txdone_irq:=false
-> + * @peek_data: Atomic check for any received data. Return true if controller
-> + *               has some data to push to the client. False otherwise.
-> + */
-> +struct mbox_chan_ops {
-> +       int (*send_data)(struct mbox_chan *chan, void *data);
-> +       int (*startup)(struct mbox_chan *chan);
-> +       void (*shutdown)(struct mbox_chan *chan);
-> +       bool (*last_tx_done)(struct mbox_chan *chan);
-> +       bool (*peek_data)(struct mbox_chan *chan);
-> +};
-> +
-> +/**
-> + * struct mbox_controller - Controller of a class of communication chans
-> + * @dev:               Device backing this controller
-> + * @controller_name:   Literal name of the controller.
-
-Looks like this is gone now
-
-> + * @ops:               Operators that work on each communication chan
-> + * @chans:             Null terminated array of chans.
-> + * @txdone_irq:                Indicates if the controller can report to API when
-> + *                     the last transmitted data was read by the remote.
-> + *                     Eg, if it has some TX ACK irq.
-> + * @txdone_poll:       If the controller can read but not report the TX
-> + *                     done. Ex, some register shows the TX status but
-> + *                     no interrupt rises. Ignored if 'txdone_irq' is set.
-> + * @txpoll_period:     If 'txdone_poll' is in effect, the API polls for
-> + *                     last TX's status after these many millisecs
-
-Does it makes sense to add description for of_xlate and num_chans ?
-
-> + */
-> +struct mbox_controller {
-> +       struct device *dev;
-> +       struct mbox_chan_ops *ops;
-> +       struct mbox_chan *chans;
-> +       int num_chans;
-> +       bool txdone_irq;
-> +       bool txdone_poll;
-> +       unsigned txpoll_period;
-> +       struct mbox_chan *(*of_xlate)(struct mbox_controller *mbox,
-> +                                       const struct of_phandle_args *sp);
-> +       /*
-> +        * If the controller supports only TXDONE_BY_POLL,
-> +        * this timer polls all the links for txdone.
-> +        */
-> +       struct timer_list poll;
-> +       unsigned period;
-> +       /* Hook to add to the global controller list */
-> +       struct list_head node;
-> +};
-> +
-> +/*
-> + * The length of circular buffer for queuing messages from a client.
-> + * 'msg_count' tracks the number of buffered messages while 'msg_free'
-> + * is the index where the next message would be buffered.
-> + * We shouldn't need it too big because every transferr is interrupt
-> + * triggered and if we have lots of data to transfer, the interrupt
-> + * latencies are going to be the bottleneck, not the buffer length.
-> + * Besides, mbox_send_message could be called from atomic context and
-> + * the client could also queue another message from the notifier 'tx_done'
-> + * of the last transfer done.
-> + * REVIST: If too many platforms see the "Try increasing MBOX_TX_QUEUE_LEN"
-> + * print, it needs to be taken from config option or somesuch.
-> + */
-> +#define MBOX_TX_QUEUE_LEN      20
-> +
-
-As mentioned before IMO using std list might eliminate this.
-
-> +struct mbox_chan {
-> +       struct mbox_controller *mbox; /* Parent Controller */
-> +       unsigned txdone_method;
-> +
-> +       /* client */
-> +       struct mbox_client *cl;
-> +       struct completion tx_complete;
-> +
-> +       void *active_req;
-> +       unsigned msg_count, msg_free;
-> +       void *msg_data[MBOX_TX_QUEUE_LEN];
-> +       /* Access to the channel */
-> +       spinlock_t lock;
-> +
-> +       /* Private data for controller */
-> +       void *con_priv;
-> +};
-> +
-> +int mbox_controller_register(struct mbox_controller *mbox);
-> +void mbox_chan_received_data(struct mbox_chan *chan, void *data);
-> +void mbox_chan_txdone(struct mbox_chan *chan, int r);
-> +void mbox_controller_unregister(struct mbox_controller *mbox);
-> +
-> +#endif /* __MAILBOX_CONTROLLER_H */
-> --
-> 1.8.1.2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
+tiobench MB/sec
+                                              3.              3.16-rc1              3.16-rc1              3.16-rc1
+                                             3.0                                  bigbatches       bigbatches1node
+Mean   SeqRead-MB/sec-1         130.39 (  0.00%)      129.69 ( -0.54%)      137.02 (  5.08%)      137.19 (  5.21%)
+Mean   SeqRead-MB/sec-2         128.14 (  0.00%)      115.63 ( -9.76%)      127.25 ( -0.69%)      127.45 ( -0.53%)
+Mean   SeqRead-MB/sec-4         125.06 (  0.00%)      110.03 (-12.02%)      121.35 ( -2.97%)      120.83 ( -3.38%)
+Mean   SeqRead-MB/sec-8         118.97 (  0.00%)      101.86 (-14.38%)      110.48 ( -7.14%)      111.06 ( -6.65%)
+Mean   SeqRead-MB/sec-16         96.30 (  0.00%)       86.30 (-10.39%)       94.07 ( -2.32%)       94.42 ( -1.96%)
+Mean   RandRead-MB/sec-1          1.10 (  0.00%)        1.16 (  4.83%)        1.13 (  2.11%)        1.12 (  1.51%)
+Mean   RandRead-MB/sec-2          1.29 (  0.00%)        1.27 ( -1.55%)        1.27 ( -1.81%)        1.27 ( -1.29%)
+Mean   RandRead-MB/sec-4          1.51 (  0.00%)        1.48 ( -1.98%)        1.43 ( -5.51%)        1.46 ( -3.30%)
+Mean   RandRead-MB/sec-8          1.60 (  0.00%)        1.70 (  6.46%)        1.62 (  1.25%)        1.68 (  5.21%)
+Mean   RandRead-MB/sec-16         1.71 (  0.00%)        1.74 (  1.76%)        1.65 ( -3.52%)        1.72 (  0.98%)
+Mean   SeqWrite-MB/sec-1        124.36 (  0.00%)      124.53 (  0.14%)      124.48 (  0.09%)      124.41 (  0.04%)
+Mean   SeqWrite-MB/sec-2        117.16 (  0.00%)      117.58 (  0.36%)      117.59 (  0.37%)      117.74 (  0.50%)
+Mean   SeqWrite-MB/sec-4        112.48 (  0.00%)      113.65 (  1.04%)      113.76 (  1.14%)      113.96 (  1.32%)
+Mean   SeqWrite-MB/sec-8        110.40 (  0.00%)      110.76 (  0.33%)      111.28 (  0.80%)      111.65 (  1.14%)
+Mean   SeqWrite-MB/sec-16       107.62 (  0.00%)      108.26 (  0.59%)      108.90 (  1.19%)      108.64 (  0.94%)
+Mean   RandWrite-MB/sec-1         1.23 (  0.00%)        1.26 (  2.99%)        1.29 (  4.89%)        1.28 (  4.08%)
+Mean   RandWrite-MB/sec-2         1.27 (  0.00%)        1.27 ( -0.26%)        1.28 (  0.79%)        1.31 (  3.41%)
+Mean   RandWrite-MB/sec-4         1.23 (  0.00%)        1.24 (  0.81%)        1.27 (  3.25%)        1.27 (  3.25%)
+Mean   RandWrite-MB/sec-8         1.23 (  0.00%)        1.26 (  2.17%)        1.26 (  2.44%)        1.24 (  0.81%)
+Mean   RandWrite-MB/sec-16        1.19 (  0.00%)        1.24 (  4.21%)        1.24 (  4.21%)        1.25 (  5.06%)
