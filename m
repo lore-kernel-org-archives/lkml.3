@@ -1,134 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757586AbaFSPfc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 11:35:32 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:40872 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757419AbaFSPf3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 11:35:29 -0400
+	id S933124AbaFSPf4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 11:35:56 -0400
+Received: from imap.thunk.org ([74.207.234.97]:47775 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932669AbaFSPfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 11:35:55 -0400
+Date: Thu, 19 Jun 2014 11:35:51 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Jens Axboe <axboe@fb.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: BUG: scheduling while atomic in blk_mq codepath?
+Message-ID: <20140619153550.GA12836@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Jens Axboe <axboe@fb.com>,
+	linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <CAKMK7uE_B3pCZB9orh5+BJGooNfyEa0APrZqRpXqYu5xfQ0PCQ@mail.gmail.com>
-References: <20140618102957.15728.43525.stgit@patser>
-	<20140618103711.15728.97842.stgit@patser>
-	<20140619011556.GE10921@kroah.com>
-	<20140619063727.GL5821@phenom.ffwll.local>
-	<20140619114825.GB28111@ulmo>
-	<CAKMK7uE_B3pCZB9orh5+BJGooNfyEa0APrZqRpXqYu5xfQ0PCQ@mail.gmail.com>
-Date: Thu, 19 Jun 2014 08:35:29 -0700
-Message-ID: <CAMbhsRTsoUR9J8SwMVfos89rvDpoq_Jun71btAEXSBYS38ppNQ@mail.gmail.com>
-Subject: Re: [REPOST PATCH 4/8] android: convert sync to fence api, v5
-From: Colin Cross <ccross@google.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        "open list:GENERIC INCLUDE/A..." <linux-arch@vger.kernel.org>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "Clark, Rob" <robdclark@gmail.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 5:28 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Thu, Jun 19, 2014 at 1:48 PM, Thierry Reding
-> <thierry.reding@gmail.com> wrote:
->>> > With these changes, can we pull the android sync logic out of
->>> > drivers/staging/ now?
->>>
->>> Afaik the google guys never really looked at this and acked it. So I'm not
->>> sure whether they'll follow along. The other issue I have as the
->>> maintainer of gfx driver is that I don't want to implement support for two
->>> different sync object primitives (once for dma-buf and once for android
->>> syncpts), and my impression thus far has been that even with this we're
->>> not there.
->>>
->>> I'm trying to get our own android guys to upstream their i915 syncpts
->>> support, but thus far I haven't managed to convince them to throw people's
->>> time at this.
->>
->> This has been discussed a fair bit internally recently and some of our
->> GPU experts have raised concerns that this may result in seriously
->> degraded performance in our proprietary graphics stack. Now I don't care
->> very much for the proprietary graphics stack, but by extension I would
->> assume that the same restrictions are relevant for any open-source
->> driver as well.
->>
->> I'm still trying to fully understand all the implications and at the
->> same time get some of the people who raised concerns to join in this
->> discussion. As I understand it the concern is mostly about explicit vs.
->> implicit synchronization and having this mechanism in the kernel will
->> implicitly synchronize all accesses to these buffers even in cases where
->> it's not needed (read vs. write locks, etc.). In one particular instance
->> it was even mentioned that this kind of implicit synchronization can
->> lead to deadlocks in some use-cases (this was mentioned for Android
->> compositing, but I suspect that the same may happen for Wayland or X
->> compositors).
->
-> Well the implicit fences here actually can't deadlock. That's the
-> entire point behind using ww mutexes. I've also heard tons of
-> complaints about implicit enforced syncing (especially from opencl
-> people), but in the end drivers and always expose unsynchronized
-> access for specific cases. We do that in i915 for upload buffers and
-> other fun stuff. This is about shared stuff across different drivers
-> and different processes.
->
-> I also expect that i915 will loose implicit syncing in a few upcoming
-> hw modes because explicit syncing is a more natural fit there.
->
-> All that isn't about the discussion at hand imo since no matter what
-> i915 needs to have on internal representation for a bit of gpu work,
-> and afaics right now we don't have that. With this patch android
-> syncpts use Maarten's fences internally, but I can't freely exchange
-> one for the other. So in i915 I still expect to get stuck with both of
-> them, which is one too many.
->
-> The other issue (and I haven't dug into details that much) I have with
-> syncpts are some of the interface choices. Apparently you can commit a
-> fence after creation (or at least the hw composer interface works like
-> that) which means userspace can construct deadlocks with android
-> syncpts if I'm not super careful in my driver. I haven't seen any
-> generic code to do that, so I presume everyone just blindly trusts
-> surface-flinger to not do that. Speaks of the average quality of an
-> android gfx driver if the kernel is less trusted than the compositor
-> in userspace ...
+While trying to bisect some problems which were introduced sometime
+between 3.15 and 3.16-rc1 (specifically, (1) reads to a block device
+at offset 262144 * 4k are failing with a short read, and (2) block
+device reads are sometimes causing the entire kernel to hang), the
+following BUG got hit.
 
-Android sync is designed not to allow userspace to deadlock the
-kernel, a sync_pt should only get created by the kernel when it has
-received a chunk of work that it expects to complete in the near
-future.  The CONFIG_SW_SYNC_USER driver violates that by allowing
-userspace to create and signal arbitrary sync points, but that is
-intended only for testing sync.
+[    0.000000] Linux version 3.15.0-rc8-06047-gaaeb255 (tytso@closure) (gcc version 4.8.3 (Debian 4.8.3-2) ) #1902 SMP Thu Jun 19 11:16:10 EDT 2014
 
-> There's a few other things like exposing timestamps (which are tricky
-> to do right, our driver is littered with wrong attempts) and other
-> details.
+[....] Checking file systems...fsck from util-linux 2.20.1
+/dev/vdg was not cleanly unmounted, check forced.
+[    4.161703] BUG: scheduling while atomic: fsck.ext4/2072/0x0000000266.5%    
+[    4.163673] no locks held by fsck.ext4/2072.
+[    4.164318] Modules linked in:
+[    4.164845] CPU: 0 PID: 2072 Comm: fsck.ext4 Not tainted 3.15.0-rc8-06047-gaaeb255 #1902
+[    4.166047] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[    4.166917]  00000000 00000000 f52c5ba0 c0832655 f5158610 f52c5bac c082f88a f6501e40
+[    4.168188]  f52c5c20 c08362ca c0eb3e40 c0eb3e40 374d3933 00000001 0396a8da 00000000
+[    4.169474]  f5158610 f51f1674 f4f46a00 f52c5be4 c015dd4b f4f46a00 f52c5bf0 c015dd5e
+[    4.170781] Call Trace:
+[    4.171159]  [<c0832655>] dump_stack+0x48/0x60
+[    4.171838]  [<c082f88a>] __schedule_bug+0x5c/0x6d
+[    4.172572]  [<c08362ca>] __schedule+0x61/0x65a
+[    4.173228]  [<c015dd4b>] ? kvm_clock_read+0x1f/0x29
+[    4.173977]  [<c015dd5e>] ? kvm_clock_get_cycles+0x9/0xc
+[    4.174771]  [<c01b4cb9>] ? timekeeping_get_ns.constprop.14+0x10/0x56
+[    4.175701]  [<c0836922>] schedule+0x5f/0x61
+[    4.176345]  [<c0836aa2>] io_schedule+0x50/0x67
+[    4.177060]  [<c0423b2d>] bt_get+0xaf/0xd1
+[    4.177677]  [<c0198282>] ? wake_up_atomic_t+0x1f/0x1f
+[    4.178444]  [<c0423bfd>] blk_mq_get_tag+0x26/0x82
+[    4.179158]  [<c0420f14>] __blk_mq_alloc_request+0x2a/0x169
+[    4.180022]  [<c04222b5>] blk_mq_map_request+0x137/0x1e3
+[    4.180825]  [<c0422f89>] blk_sq_make_request+0x82/0x145
+[    4.181630]  [<c041a687>] generic_make_request+0x82/0xb5
+[    4.182430]  [<c041a7aa>] submit_bio+0xf0/0x109
+[    4.183113]  [<c019e97c>] ? trace_hardirqs_on_caller+0x14e/0x169
+[    4.184019]  [<c025de72>] _submit_bh+0x1ad/0x1ca
+[    4.184661]  [<c025de9e>] submit_bh+0xf/0x11
+[    4.185267]  [<c025f5c9>] block_read_full_page+0x1e2/0x1f2
+[    4.186073]  [<c025f8cd>] ? I_BDEV+0xa/0xa
+[    4.186695]  [<c020ad30>] ? __lru_cache_add+0x24/0x46
+[    4.187452]  [<c020af13>] ? lru_cache_add+0xd/0xf
+[    4.188130]  [<c025fc04>] blkdev_readpage+0x14/0x16
+[    4.188832]  [<c0209adf>] __do_page_cache_readahead+0x1c0/0x1eb
+[    4.189704]  [<c0209cb9>] ondemand_readahead+0x1af/0x1b9
+[    4.190508]  [<c0209d22>] page_cache_async_readahead+0x5f/0x6a
+[    4.191424]  [<c0202370>] generic_file_aio_read+0x226/0x4f4
+[    4.192272]  [<c0260841>] blkdev_aio_read+0x90/0x9e
+[    4.193017]  [<c02385cd>] do_sync_read+0x52/0x79
+[    4.193731]  [<c023857b>] ? fdput_pos+0x25/0x25
+[    4.194412]  [<c0238d27>] vfs_read+0x72/0xd1
+[    4.195064]  [<c02391da>] SyS_read+0x49/0x7c
+[    4.195700]  [<c083a0c9>] syscall_call+0x7/0xb
+[    4.196385]  [<c0830000>] ? print_usage_bug+0xcd/0x18e
 
-Timestamps are necessary for vsync synchronization to reduce the frame latency.
+Is any of these known problems?  This is blocking me from doing any
+kind of testing at the moment...  (these problems are showing up while
+running KVM using virtio devices).
 
-> Finally I've never seen anyone from google or any android product guy
-> push a real driver enabling for syncpts to upstream, and google itself
-> has a bit a history of constantly exchanging their gfx framework for
-> the next best thing. So I really doubt this is worthwhile to pursue in
-> upstream with our essentially eternal api guarantees. At least until
-> we see serious uptake from vendors and gfx driver guys. Unfortunately
-> the Intel android folks are no exception here and haven't pushed
-> anything like this in my direction yet at all. Despite multiple pokes
-> from my side.
-
-As far as I know, every SoC vendor that supports android is using sync
-now, but none of them have succeeded in pushing their drivers upstream
-for a variety of other reasons (interfaces only used by closed source
-userspaces, KMS/DRM vs ADF, ION, etc.).
-
-> So from my side I think we should move ahead with Maarten's work and
-> figure the android side out once there's real interest.
-
-As long as that doesn't involve removing the Android sync interfaces
-from staging until dma fence fds are supported, that's fine with me.
+						- Ted
