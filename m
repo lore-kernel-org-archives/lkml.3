@@ -1,51 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934343AbaFSTHM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 15:07:12 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51294 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933059AbaFSTGx convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 15:06:53 -0400
-X-Sasl-enc: GzXC5Qd7ggEvsYznSwKvGEBs1IMxy3zSs61+Yz+zGkQg 1403204812
-Date: Thu, 19 Jun 2014 12:10:51 -0700
-From: Greg KH <greg@kroah.com>
-To: dann frazier <dann.frazier@canonical.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Peng Tao <bergwolf@gmail.com>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: lustre virtual block device doesn't build w/
- CONFIG_ARM64_64K_PAGES=y
-Message-ID: <20140619191051.GA26573@kroah.com>
-References: <20140619183321.GA23200@fluid.dannf>
+	id S934362AbaFSTKq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 15:10:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37205 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934039AbaFSTKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 15:10:44 -0400
+Date: Thu, 19 Jun 2014 16:00:24 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Gleb Natapov <gleb@kernel.org>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, pbonzini@redhat.com,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, mgorman@suse.de,
+        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, laijs@cn.fujitsu.com, kvm@vger.kernel.org,
+        linux-mm@kvack.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        Avi Kivity <avi.kivity@gmail.com>
+Subject: Re: [RFC PATCH 1/1] Move two pinned pages to non-movable node in kvm.
+Message-ID: <20140619190024.GA3887@amt.cnet>
+References: <1403070600-6083-1-git-send-email-tangchen@cn.fujitsu.com>
+ <20140618061230.GA10948@minantech.com>
+ <53A136C4.5070206@cn.fujitsu.com>
+ <20140619092031.GA429@minantech.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20140619183321.GA23200@fluid.dannf>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140619092031.GA429@minantech.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 12:33:21PM -0600, dann frazier wrote:
-> With current git, lustre fails to build with CONFIG_ARM64_64K_PAGES=y
-> and CONFIG_LUSTRE_LLITE_LLOOP=m:
+On Thu, Jun 19, 2014 at 12:20:32PM +0300, Gleb Natapov wrote:
+> CCing Marcelo,
 > 
-> make -f scripts/Makefile.build obj=drivers/staging/lustre/lustre/llite
->   gcc -Wp,-MD,drivers/staging/lustre/lustre/llite/.lloop.o.d  -nostdinc -isystem /usr/lib/gcc/aarch64-linux-gnu/4.8/include -I./arch/arm64/include -Iarch/arm64/include/generated  -Iinclude -I./arch/arm64/include/uapi -Iarch/arm64/include/generated/uapi -I./include/uapi -Iinclude/generated/uapi -include ./include/linux/kconfig.h -D__KERNEL__ -mlittle-endian -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -mgeneral-regs-only -fno-delete-null-pointer-checks -O2 -Wframe-larger-than=1024 -fno-stack-protector -Wno-unused-but-set-variable -fno-omit-frame-pointer -fno-optimize-sibling-calls -g -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -Werror=implicit-int -Werror=strict-prototypes -Idrivers/staging/lustre/include/ -Idrivers/staging/lustre/lustre/llite/../include  -DMODULE  -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(lloop)"  -D"KBUILD_MODNAME=KBUILD_STR(llite_lloop)" -c -o drivers/staging/lustre/lustre/llite/.tmp_lloop.o drivers/staging/lustre/lustre/llite/lloop.c
-> drivers/staging/lustre/lustre/llite/lloop.c: In function ‘loop_set_fd’:
-> drivers/staging/lustre/lustre/llite/lloop.c:523:78: error: duplicate case value
->   CLASSERT(PAGE_CACHE_SIZE < (1 << (sizeof(unsigned short) * 8)));
->                                                                               ^
-> drivers/staging/lustre/lustre/llite/lloop.c:523:18: error: previously used here
->   CLASSERT(PAGE_CACHE_SIZE < (1 << (sizeof(unsigned short) * 8)));
->                   ^
+> On Wed, Jun 18, 2014 at 02:50:44PM +0800, Tang Chen wrote:
+> > Hi Gleb,
+> > 
+> > Thanks for the quick reply. Please see below.
+> > 
+> > On 06/18/2014 02:12 PM, Gleb Natapov wrote:
+> > >On Wed, Jun 18, 2014 at 01:50:00PM +0800, Tang Chen wrote:
+> > >>[Questions]
+> > >>And by the way, would you guys please answer the following questions for me ?
+> > >>
+> > >>1. What's the ept identity pagetable for ?  Only one page is enough ?
+> > >>
+> > >>2. Is the ept identity pagetable only used in realmode ?
+> > >>    Can we free it once the guest is up (vcpu in protect mode)?
+> > >>
+> > >>3. Now, ept identity pagetable is allocated in qemu userspace.
+> > >>    Can we allocate it in kernel space ?
+> > >What would be the benefit?
+> > 
+> > I think the benefit is we can hot-remove the host memory a kvm guest
+> > is using.
+> > 
+> > For now, only memory in ZONE_MOVABLE can be migrated/hot-removed. And the
+> > kernel
+> > will never use ZONE_MOVABLE memory. So if we can allocate these two pages in
+> > kernel space, we can pin them without any trouble. When doing memory
+> > hot-remove,
+> > the kernel will not try to migrate these two pages.
+> But we can do that by other means, no? The patch you've sent for instance.
+> 
+> > 
+> > >
+> > >>
+> > >>4. If I want to migrate these two pages, what do you think is the best way ?
+> > >>
+> > >I answered most of those here: http://www.mail-archive.com/kvm@vger.kernel.org/msg103718.html
+> > 
+> > I'm sorry I must missed this email.
+> > 
+> > Seeing your advice, we can unpin these two pages and repin them in the next
+> > EPT violation.
+> > So about this problem, which solution would you prefer, allocate these two
+> > pages in kernel
+> > space, or migrate them before memory hot-remove ?
+> > 
+> > I think the first solution is simpler. But I'm not quite sure if there is
+> > any other pages
+> > pinned in memory. If we have the same problem with other kvm pages, I think
+> > it is better to
+> > solve it in the second way.
+> > 
+> > What do you think ?
+> Remove pinning is preferable. In fact looks like for identity pagetable
+> it should be trivial, just don't pin. APIC access page is a little bit
+> more complicated since its physical address needs to be tracked to be
+> updated in VMCS.
 
-Looks like lustre can't handle 64K page sizes, so it refuses to build :(
+Yes, and there are new users of page pinning as well soon (see PEBS
+threads on kvm-devel).
 
-I sugest turning this code off, you really don't want to be running it
-anyway...
+Was thinking of notifiers scheme. Perhaps:
 
-greg k-h
+->begin_page_unpin(struct page *page)
+	- Remove any possible access to page.
+
+->end_page_unpin(struct page *page)
+	- Reinstantiate any possible access to page.
+
+For KVM:
+
+->begin_page_unpin()
+	- Remove APIC-access page address from VMCS.
+	  or
+	- Remove spte translation to pinned page.
+	
+	- Put vcpu in state where no VM-entries are allowed.
+
+->end_page_unpin()
+	- Setup APIC-access page, ...
+	- Allow vcpu to VM-entry.
+
+
+Because allocating APIC access page from distant NUMA node can
+be a performance problem, i believe.
+
+I'd be happy to know why notifiers are overkill.
+
+
