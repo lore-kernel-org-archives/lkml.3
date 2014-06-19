@@ -1,185 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932638AbaFSLlq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 07:41:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46138 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932579AbaFSLln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 07:41:43 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 4/5] perf tools tui: Display columns header text on 'H' press
-Date: Thu, 19 Jun 2014 13:41:15 +0200
-Message-Id: <1403178076-14072-5-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1403178076-14072-1-git-send-email-jolsa@kernel.org>
-References: <1403178076-14072-1-git-send-email-jolsa@kernel.org>
+	id S932687AbaFSLmQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 07:42:16 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:59293 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932579AbaFSLmN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 07:42:13 -0400
+Message-ID: <53A2CC92.6050508@free-electrons.com>
+Date: Thu, 19 Jun 2014 13:42:10 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Bo Shen <voice.shen@atmel.com>
+CC: Thierry Reding <thierry.reding@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        David Airlie <airlied@linux.ie>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, devicetree@vger.kernel.org,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        linux-doc@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 4/7] ARM: at91/dt: split sama5d3 lcd pin definitions
+ to match RGB mode configs
+References: <1402329860-27520-1-git-send-email-boris.brezillon@free-electrons.com> <1402329860-27520-5-git-send-email-boris.brezillon@free-electrons.com> <53A28C2C.1010001@atmel.com>
+In-Reply-To: <53A28C2C.1010001@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Displaying columns header text whenever 'H' is pressed,
-and hiding it on on another press. Displaying headers
-by default.
 
-Note I removed the original width setup pcode code in
-hist_browser__refresh_dimensions function, because it
-was never used and overwritten by ui_browser setup.
-Also all the TUI output expect width ot be the current
-terminal width.
+On 19/06/2014 09:07, Bo Shen wrote:
+> Hi Boris,
+>
+> On 06/10/2014 12:04 AM, Boris BREZILLON wrote:
+>> The HLCDC (High LCD Controller) IP supports 4 different output mode
+>> (RGB444, RGB565, RGB666 and RGB888) and the pin muxing depends on the
+>> chosen RGB mode.
+>>
+>> Split the pin definition to be able to set the pin config according
+>> to the
+>> selected mode.
+>>
+>> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+>> ---
+>>   arch/arm/boot/dts/sama5d3_lcd.dtsi | 127
+>> ++++++++++++++++++++++++++++---------
+>>   1 file changed, 96 insertions(+), 31 deletions(-)
+>
+> On sama5d3xek board, it only works in 24bits output mode. And it
+> depends on the hardware design. So, I think only keep only one pinctrl
+> configuration.
 
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/ui/browsers/hists.c | 80 ++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 77 insertions(+), 3 deletions(-)
+As you pointed out (during our discussion on IRC) sama5d3 SoCs support
+several pin muxing for LCDDAT pins.
+I'll take care to define all these pin mux here and select the
+appropriate ones in sama5d3xdm.dtsi (patch 6) instead of
+sama5d3_lcd.dtsi (patch 5).
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 6aeed29..b923f61 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -26,6 +26,7 @@ struct hist_browser {
- 	struct map_symbol   *selection;
- 	int		     print_seq;
- 	bool		     show_dso;
-+	bool		     show_headers;
- 	float		     min_pcnt;
- 	u64		     nr_non_filtered_entries;
- 	u64		     nr_callchain_rows;
-@@ -58,9 +59,13 @@ static u32 hist_browser__nr_entries(struct hist_browser *hb)
- 
- static void hist_browser__refresh_dimensions(struct hist_browser *browser)
- {
--	/* 3 == +/- toggle symbol before actual hist_entry rendering */
--	browser->b.width = 3 + (hists__sort_list_width(browser->hists) +
--			     sizeof("[k]"));
-+	u16 header = browser->show_headers ? 1 : 0;
-+
-+	ui_browser__refresh_dimensions(&browser->b);
-+
-+	/* shrink view size if there are headers displayed */
-+	browser->b.height = SLtt_Screen_Rows - 2 - header;
-+	browser->b.y      = 1 + header;
- }
- 
- static void hist_browser__reset(struct hist_browser *browser)
-@@ -409,6 +414,9 @@ static int hist_browser__run(struct hist_browser *browser,
- 			/* Expand the whole world. */
- 			hist_browser__set_folding(browser, true);
- 			break;
-+		case 'H':
-+			browser->show_headers = !browser->show_headers;
-+			continue;
- 		case K_ENTER:
- 			if (hist_browser__toggle_fold(browser))
- 				break;
-@@ -787,6 +795,65 @@ static int hist_browser__show_entry(struct hist_browser *browser,
- 	return printed;
- }
- 
-+static int advance_hpp_check(struct perf_hpp *hpp, int inc)
-+{
-+	advance_hpp(hpp, inc);
-+	return hpp->size <= 0;
-+}
-+
-+static int hists__scnprintf_headers(char *buf, size_t size, struct hists *hists)
-+{
-+	struct perf_hpp dummy_hpp = {
-+		.buf    = buf,
-+		.size   = size,
-+	};
-+	struct perf_hpp_fmt *fmt;
-+	size_t ret = 0;
-+
-+	if (symbol_conf.use_callchain) {
-+		ret = scnprintf(buf, size, "  ");
-+		if (advance_hpp_check(&dummy_hpp, ret))
-+			return ret;
-+	}
-+
-+	perf_hpp__for_each_format(fmt) {
-+		if (perf_hpp__should_skip(fmt))
-+			continue;
-+
-+		/* We need to add the length of the columns header. */
-+		perf_hpp__reset_width(fmt, hists);
-+
-+		ret = fmt->header(fmt, &dummy_hpp, hists_to_evsel(hists));
-+		if (advance_hpp_check(&dummy_hpp, ret))
-+			break;
-+
-+		ret = scnprintf(dummy_hpp.buf, dummy_hpp.size, "  ");
-+		if (advance_hpp_check(&dummy_hpp, ret))
-+			break;
-+	}
-+
-+	return ret;
-+}
-+
-+static void ui_browser__show_headers(struct ui_browser *b, char *headers)
-+{
-+	SLsmg_gotorc(1, 0);
-+	ui_browser__set_color(b, HE_COLORSET_ROOT);
-+	slsmg_write_nstring(headers, b->width + 1);
-+}
-+
-+static void hist_browser__show_headers(struct hist_browser *hb)
-+{
-+	static char buf[1024], *headers;
-+
-+	if (!headers) {
-+		hists__scnprintf_headers(buf, sizeof(buf), hb->hists);
-+		headers = buf;
-+	}
-+
-+	ui_browser__show_headers(&hb->b, headers);
-+}
-+
- static void ui_browser__hists_init_top(struct ui_browser *browser)
- {
- 	if (browser->top == NULL) {
-@@ -803,6 +870,11 @@ static unsigned int hist_browser__refresh(struct ui_browser *browser)
- 	struct rb_node *nd;
- 	struct hist_browser *hb = container_of(browser, struct hist_browser, b);
- 
-+	hist_browser__refresh_dimensions(hb);
-+
-+	if (hb->show_headers)
-+		hist_browser__show_headers(hb);
-+
- 	ui_browser__hists_init_top(browser);
- 
- 	for (nd = browser->top; nd; nd = rb_next(nd)) {
-@@ -1192,6 +1264,7 @@ static struct hist_browser *hist_browser__new(struct hists *hists)
- 		browser->b.ops.refresh = hist_browser__refresh;
- 		browser->b.ops.seek = ui_browser__hists_seek;
- 		browser->b.use_navkeypressed = true;
-+		browser->show_headers = true;
- 	}
- 
- 	return browser;
-@@ -1421,6 +1494,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 	"d             Zoom into current DSO\n"				\
- 	"E             Expand all callchains\n"				\
- 	"F             Toggle percentage of filtered entries\n"		\
-+	"H             Display column headers\n"			\
- 
- 	/* help messages are sorted by lexical order of the hotkey */
- 	const char report_help[] = HIST_BROWSER_HELP_COMMON
+
+Best Regards,
+
+Boris
+
 -- 
-1.8.3.1
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
 
