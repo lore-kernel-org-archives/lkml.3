@@ -1,144 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756469AbaFSNq7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 09:46:59 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:59591 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754545AbaFSNq5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 09:46:57 -0400
+	id S1756692AbaFSNsP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 09:48:15 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48706 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753858AbaFSNsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 09:48:13 -0400
+Date: Thu, 19 Jun 2014 08:48:05 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: David Laight <David.Laight@ACULAB.COM>
+CC: "'Robert Baldyga'" <r.baldyga@samsung.com>, "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "andrzej.p@samsung.com" <andrzej.p@samsung.com>
+Subject: Re: [PATCH] usb: gadget: composite: unlock spinlock before
+ usb_gadget_disconnect()
+Message-ID: <20140619134805.GC23782@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1402658893-4809-1-git-send-email-r.baldyga@samsung.com>
+ <063D6719AE5E284EB5DD2968C1650D6D1725C37A@AcuExch.aculab.com>
 MIME-Version: 1.0
-Date: Thu, 19 Jun 2014 15:46:56 +0200
-X-Google-Sender-Auth: YyK59DcpVdzm3Gw5mN1fl91hknU
-Message-ID: <CAJZ5v0hH13nA1Qq5BYA+N5D0OBGozvNgiEGi4u8_-5i=vdjkPg@mail.gmail.com>
-Subject: [GIT PULL] ACPI and power management updates for v3.16-rc2
-From: "Rafael J. Wysocki" <rafael@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TYecfFk8j8mZq+dy"
+Content-Disposition: inline
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1725C37A@AcuExch.aculab.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+--TYecfFk8j8mZq+dy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please pull from
+On Fri, Jun 13, 2014 at 11:36:24AM +0000, David Laight wrote:
+> From: Robert Baldyga
+> > usb_gadget_disconnect() shouldn't be called under spinlock to avoid
+> > spinlock recursion. Function usb_gadget_disconnect() calls pullup(),
+> > which is callback from UDC driver, usually calling composite_disconnect=
+().
+> > This function wants to lock spinlock used in usb_function_deactivate()
+> > causing spinlock recursion.
+> ...
+> > +++ b/drivers/usb/gadget/composite.c
+> > @@ -260,8 +260,11 @@ int usb_function_deactivate(struct usb_function *f=
+unction)
+> >=20
+> >  	spin_lock_irqsave(&cdev->lock, flags);
+> >=20
+> > -	if (cdev->deactivations =3D=3D 0)
+> > +	if (cdev->deactivations =3D=3D 0) {
+> > +		spin_unlock_irqrestore(&cdev->lock, flags);
+> >  		status =3D usb_gadget_disconnect(cdev->gadget);
+> > +		spin_lock_irqsave(&cdev->lock, flags);
+> > +	}
+> >  	if (status =3D=3D 0)
+> >  		cdev->deactivations++;
+>=20
+> That sort of change rings big alarm bells.
+> You've effectively isolated the usb_gadget_disconnect() call
+> from the check that cdev->deactivations =3D=3D 0.
+> And then you increment cdev->deactivations below.
+>=20
+> Looks like it will be racy to me.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git \
- pm+acpi-3.16-rc2
+yes, it will. Fixing this requires a much more involved change.
 
-to receive ACPI and power management updates for v3.16-rc2
-with top-most commit 2ba87ea132a7364dbeb71126f3d7b8ec8e59d0e9
+--=20
+balbi
 
- Merge branches 'pm-cpufreq' and 'pm-cpuidle'
+--TYecfFk8j8mZq+dy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-on top of commit 7171511eaec5bf23fb06078f59784a3a0626b38f
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
- Linux 3.16-rc1
+iQIcBAEBAgAGBQJTouoVAAoJEIaOsuA1yqRE83wP/1W1PvC3jgA+vGSqicFXNa3O
+XV3T9G/zb0hVuHW5vhZf3jZCTYhA4pHjdO9bWenBY6p4CELdBI0Czd7DesCwcQ99
+c0VIqaQjFYRNM24zFvm4Bfze2LIkriTZoDstJYLzqUj1yMihdawN6Fi1kKtR81VR
+W00ZmAUSAqxzfUkTNOC3eV5tAcRpKJQBPFqwlZDvolwdBpbn8vL1nBbcXkeBfUVV
+3OvbfAaWr5a7my/FeDFbl1BDptl2wS4ymjR3VSk/FxgdQpSRqWsSos/Y4RZYdhru
+pi+6VPuSljxLTTexej7Qo5Urqa8A396RbjJvD25mwRWibnRWXYFTCDkzXpxgOSYI
+5t4MF8LVBKDAWDHUiU2f3bvHjUnfzF7kXeWfKHAOQeKXnlMbC2eJ8uVPJZa53tp/
+4rO0RwFM835RYlYv1dLkRxXiowjgwG3y/0BXX6Ze+UZq6r6tUrHNDjD5zG/2s3/M
+jP9gmK7EBOjWKeC3bjVNc7UESbWALzCnJ4L+Yo8SncvbsUvAdzhZxCnwWTx5bVXm
+G3MeoB9KGUPc/Pa2qLbOaSzauHuoZBcJN0uKg8YDjkga+Bdda3J3OHGCmwtfNwqZ
+0Ln1EbGGHPAEGikoHVeH4n3vr4Nd5LieZqbS9bwjwtr7Nk69Lzu+ZqZCMlIR6lTd
+SBXTq3DzeBtlVfcZmtma
+=1KSA
+-----END PGP SIGNATURE-----
 
-These are fixes mostly (ia64 regression related to the ACPI
-enumeration of devices, cpufreq regressions, fix for I2C
-controllers included in Intel SoCs, mvebu cpuidle driver fix
-related to sysfs) plus additional kernel command line arguments
-from Kees to make it possible to build kernel images with hibernation
-and the kernel address space randomization included simultaneously,
-a new ACPI battery driver quirk for a system with a broken BIOS and
-a couple of ACPI core cleanups.
-
-Specifics:
-
- - Fix for an ia64 regression introduced during the 3.11 cycle by a
-   commit that modified the hardware initialization ordering and made
-   device discovery fail on some systems.
-
- - Fix for a build problem on systems where the cpufreq-cpu0 driver
-   is built-in and the cpu-thermal driver is modular from Arnd Bergmann.
-
- - Fix for a recently introduced computational mistake in the
-   intel_pstate driver that leads to excessive rounding errors from
-   Doug Smythies.
-
- - Fix for a failure code path in cpufreq_update_policy() that fails
-   to unlock the locks acquired previously from Aaron Plattner.
-
- - Fix for the cpuidle mvebu driver to use shorter state names which
-   will prevent the sysfs interface from returning mangled strings.
-   From Gregory Clement.
-
- - ACPI LPSS driver fix to make sure that the I2C controllers
-   included in BayTrail SoCs are not held in the reset state while
-   they are being probed from Mika Westerberg.
-
- - New kernel command line arguments making it possible to build
-   kernel images with hibernation and kASLR included at the same
-   time and to select which of them will be used via the command
-   line (they are still functionally mutually exclusive, though).
-   From Kees Cook.
-
- - ACPI battery driver quirk for Acer Aspire V5-573G that fails
-   to send battery status change notifications timely from
-   Alexander Mezin.
-
- - Two ACPI core cleanups from Christoph Jaeger and Fabian Frederick.
-
-Thanks!
-
-
-
----------------
-
-Aaron Plattner (1):
-      cpufreq: unlock when failing cpufreq_update_policy()
-
-Alexander Mezin (2):
-      ACPI / battery: use callback for setting up quirks
-      ACPI / battery: add quirk for Acer Aspire V5-573G
-
-Arnd Bergmann (1):
-      cpufreq: cpufreq-cpu0: fix CPU_THERMAL dependency
-
-Christoph Jaeger (1):
-      ACPI: use kstrto*() instead of simple_strto*()
-
-Doug Smythies (1):
-      intel_pstate: Correct rounding in busy calculation
-
-Fabian Frederick (1):
-      ACPI / processor replace __attribute__((packed)) by __packed
-
-Gregory CLEMENT (1):
-      cpuidle: mvebu: Fix the name of the states
-
-Kees Cook (2):
-      PM / hibernate: introduce "nohibernate" boot parameter
-      x86, kaslr: boot-time selectable with hibernation
-
-Mika Westerberg (1):
-      ACPI / LPSS: Take I2C host controllers out of reset
-
-Rafael J. Wysocki (1):
-      ACPI / ia64 / sba_iommu: Restore the working initialization ordering
-
----------------
-
- Documentation/kernel-parameters.txt     | 14 +++++---
- arch/ia64/hp/common/sba_iommu.c         | 64 +++++++++++++++++++--------------
- arch/x86/Kconfig                        |  1 -
- arch/x86/boot/compressed/aslr.c         |  9 ++++-
- drivers/acpi/acpi_lpss.c                | 15 ++++++++
- drivers/acpi/battery.c                  | 39 ++++++++++++++++++--
- drivers/acpi/osl.c                      |  3 +-
- drivers/acpi/tables.c                   |  3 +-
- drivers/cpufreq/Kconfig                 |  2 ++
- drivers/cpufreq/cpufreq.c               | 10 +++---
- drivers/cpufreq/intel_pstate.c          |  5 +--
- drivers/cpuidle/cpuidle-armada-370-xp.c |  4 +--
- include/acpi/processor.h                | 10 +++---
- include/linux/suspend.h                 |  2 ++
- kernel/power/hibernate.c                | 37 ++++++++++++++++++-
- kernel/power/main.c                     |  6 ++--
- kernel/power/user.c                     |  3 ++
- 17 files changed, 167 insertions(+), 60 deletions(-)
+--TYecfFk8j8mZq+dy--
