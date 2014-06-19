@@ -1,79 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934459AbaFSSWp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 14:22:45 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:41948 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933601AbaFSSWm (ORCPT
+	id S934473AbaFSSXI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 14:23:08 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:56863 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934371AbaFSSVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 14:22:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAJe_ZhfmsgvnVu-VgN63LaZ-522HuAY_EVfB6ujQjdzBE+u=zA@mail.gmail.com>
-References: <1402944372-31901-1-git-send-email-bjorn.andersson@sonymobile.com>
-	<7hvbrzbh1u.fsf@paris.lan>
-	<CAJAp7OhHr4Cgcp9pvQ3=MAie_zSnFJxG28Vf37qJ98BK7P1jaQ@mail.gmail.com>
-	<7hzjha8b97.fsf@paris.lan>
-	<842A7147-A2CC-42BD-9947-CBADF738DC92@codeaurora.org>
-	<7hegym6uca.fsf@paris.lan>
-	<CAJe_ZhfmsgvnVu-VgN63LaZ-522HuAY_EVfB6ujQjdzBE+u=zA@mail.gmail.com>
-Date: Thu, 19 Jun 2014 11:22:41 -0700
-Message-ID: <CAJAp7OgfsVs9C0RNrDnQ5g7heba7JjaYFrj7wVUqT_m+wu-A3A@mail.gmail.com>
-Subject: Re: [PATCH v3 0/3] Qualcomm Resource Power Manager driver
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: Kevin Hilman <khilman@linaro.org>, Kumar Gala <galak@codeaurora.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        Paul Walmsley <paul@pwsan.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 19 Jun 2014 14:21:33 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Daniel Stone <daniels@collabora.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH v3 11/14] clk: Add driver for Maxim 77802 PMIC clocks
+Date: Thu, 19 Jun 2014 20:20:37 +0200
+Message-Id: <1403202040-12641-12-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.0.0.rc2
+In-Reply-To: <1403202040-12641-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1403202040-12641-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 8:55 PM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
-> On 18 June 2014 22:14, Kevin Hilman <khilman@linaro.org> wrote:
-[...]
->> Thinking more about what this RPM driver actually does, and since you
->> mentioned patterns across SoCs, it seems to me the RPM driver bascially
->> just doing the IPC.
->>
->> So, rather than MFD or drivers/soc, it seems to me that it should be
->> implmented as a controller in the new common mailbox framwork[1] being
->> worked on by Jassi Brar (added to Cc.)
->>
->> IIUC, RPM is actually only doing one-way IPC (it only exposes a write()
->> interface to clients) so it seems like a rather simple implementation of
->> a mailbox controller.
->>
-> Yup, qcom_rpm.c is exactly what drivers/mailbox/ is meant for.
->
+The MAX77802 PMIC has two 32.768kHz Buffered Clock Outputs with
+Low Jitter Mode. This patch adds support for these two clocks.
 
-The RPM provides a register file with 80ish registers of variable size, to
-program the hardware you write to these registers. Then you write to a register
-selector register and then signal an outgoing interrupt.
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+---
 
-That is, the interface exposed to the kernel by the SoC is not an mailbox like
-interface.
+Changes since v2: None
 
-So I do not share your view that this is "exactly what mailbox is meant for",
-because if so then you're just re-inventing regmap - with variable size regs.
+Changes since v1:
+ - Use module_platform_driver() instead of having init/exit functions.
+   Suggested by Mark Brown.
+ - Use the generic maxim clock driver to reduce code duplication with
+   clk-max77686.c driver.
 
+ drivers/clk/Kconfig                        |  7 +++
+ drivers/clk/Makefile                       |  1 +
+ drivers/clk/clk-max77802.c                 | 99 ++++++++++++++++++++++++++++++
+ include/dt-bindings/clock/maxim,max77802.h | 22 +++++++
+ 4 files changed, 129 insertions(+)
+ create mode 100644 drivers/clk/clk-max77802.c
+ create mode 100644 include/dt-bindings/clock/maxim,max77802.h
 
-The reason why I'm not using a regmap as my abstraction between the rpm and the
-clients (e.g. regulator driver) is because it only supports fixed size
-registers.
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index 3fd4270..221260b 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -42,6 +42,13 @@ config COMMON_CLK_MAX77686
+ 	---help---
+ 	  This driver supports Maxim 77686 crystal oscillator clock. 
+ 
++config COMMON_CLK_MAX77802
++	tristate "Clock driver for Maxim 77802 MFD"
++	depends on MFD_MAX77802
++	select COMMON_CLK_MAX_GEN
++	---help---
++	  This driver supports Maxim 77802 crystal oscillator clock.
++
+ config COMMON_CLK_SI5351
+ 	tristate "Clock driver for SiLabs 5351A/B/C"
+ 	depends on I2C
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index 6c1aff6..520ff76 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -20,6 +20,7 @@ obj-$(CONFIG_ARCH_HIGHBANK)		+= clk-highbank.o
+ obj-$(CONFIG_MACH_LOONGSON1)		+= clk-ls1x.o
+ obj-$(CONFIG_COMMON_CLK_MAX_GEN)	+= clk-max-gen.o
+ obj-$(CONFIG_COMMON_CLK_MAX77686)	+= clk-max77686.o
++obj-$(CONFIG_COMMON_CLK_MAX77802)	+= clk-max77802.o
+ obj-$(CONFIG_ARCH_MOXART)		+= clk-moxart.o
+ obj-$(CONFIG_ARCH_NOMADIK)		+= clk-nomadik.o
+ obj-$(CONFIG_ARCH_NSPIRE)		+= clk-nspire.o
+diff --git a/drivers/clk/clk-max77802.c b/drivers/clk/clk-max77802.c
+new file mode 100644
+index 0000000..4253b44
+--- /dev/null
++++ b/drivers/clk/clk-max77802.c
+@@ -0,0 +1,99 @@
++/*
++ * clk-max77802.c - Clock driver for Maxim 77802
++ *
++ * Copyright (C) 2014 Google, Inc
++ *
++ * Copyright (C) 2012 Samsung Electornics
++ * Jonghwa Lee <jonghwa3.lee@samsung.com>
++ *
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * This driver is based on clk-max77686.c
++ */
++
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/platform_device.h>
++#include <linux/mfd/max77802.h>
++#include <linux/mfd/max77802-private.h>
++#include <linux/clk-provider.h>
++#include <linux/mutex.h>
++#include <linux/clkdev.h>
++
++#include <dt-bindings/clock/maxim,max77802.h>
++#include "clk-max-gen.h"
++
++#define MAX77802_CLOCK_OPMODE_MASK	0x1
++#define MAX77802_CLOCK_LOW_JITTER_SHIFT 0x3
++
++static struct clk_init_data max77802_clks_init[MAX77802_CLKS_NUM] = {
++	[MAX77802_CLK_32K_AP] = {
++		.name = "32khz_ap",
++		.ops = &max_gen_clk_ops,
++		.flags = CLK_IS_ROOT,
++	},
++	[MAX77802_CLK_32K_CP] = {
++		.name = "32khz_cp",
++		.ops = &max_gen_clk_ops,
++		.flags = CLK_IS_ROOT,
++	},
++};
++
++static int max77802_clk_probe(struct platform_device *pdev)
++{
++	struct max77802_dev *iodev = dev_get_drvdata(pdev->dev.parent);
++	int ret;
++
++	ret = max_gen_clk_probe(pdev, iodev->regmap, MAX77802_REG_32KHZ,
++				max77802_clks_init, MAX77802_CLKS_NUM);
++
++	if (ret) {
++		dev_err(&pdev->dev, "generic probe failed %d\n", ret);
++		return ret;
++	}
++
++	/* Enable low-jitter mode on the 32khz clocks. */
++	ret = regmap_update_bits(iodev->regmap, MAX77802_REG_32KHZ,
++				 1 << MAX77802_CLOCK_LOW_JITTER_SHIFT,
++				 1 << MAX77802_CLOCK_LOW_JITTER_SHIFT);
++	if (ret < 0)
++		dev_err(&pdev->dev, "failed to enable low-jitter mode\n");
++
++	return ret;
++}
++
++static int max77802_clk_remove(struct platform_device *pdev)
++{
++	return max_gen_clk_remove(pdev, MAX77802_CLKS_NUM);
++}
++
++static const struct platform_device_id max77802_clk_id[] = {
++	{ "max77802-clk", 0},
++	{ },
++};
++MODULE_DEVICE_TABLE(platform, max77802_clk_id);
++
++static struct platform_driver max77802_clk_driver = {
++	.driver = {
++		.name  = "max77802-clk",
++		.owner = THIS_MODULE,
++	},
++	.probe = max77802_clk_probe,
++	.remove = max77802_clk_remove,
++	.id_table = max77802_clk_id,
++};
++
++module_platform_driver(max77802_clk_driver);
++
++MODULE_DESCRIPTION("MAXIM 77802 Clock Driver");
++MODULE_AUTHOR("Javier Martinez Canillas <javier.martinez@collabora.co.uk>");
++MODULE_LICENSE("GPL");
+diff --git a/include/dt-bindings/clock/maxim,max77802.h b/include/dt-bindings/clock/maxim,max77802.h
+new file mode 100644
+index 0000000..997312e
+--- /dev/null
++++ b/include/dt-bindings/clock/maxim,max77802.h
+@@ -0,0 +1,22 @@
++/*
++ * Copyright (C) 2014 Google, Inc
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Device Tree binding constants clocks for the Maxim 77802 PMIC.
++ */
++
++#ifndef _DT_BINDINGS_CLOCK_MAXIM_MAX77802_CLOCK_H
++#define _DT_BINDINGS_CLOCK_MAXIM_MAX77802_CLOCK_H
++
++/* Fixed rate clocks. */
++
++#define MAX77802_CLK_32K_AP		0
++#define MAX77802_CLK_32K_CP		1
++
++/* Total number of clocks. */
++#define MAX77802_CLKS_NUM		(MAX77802_CLK_32K_CP + 1)
++
++#endif /* _DT_BINDINGS_CLOCK_MAXIM_MAX77802_CLOCK_H */
+-- 
+2.0.0.rc2
 
-
-To me the mailbox api is supposed to abstract communication hardware, not to
-abstract communication between software components.
-
-Regards,
-Bjorn
