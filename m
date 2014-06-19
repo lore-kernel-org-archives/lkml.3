@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933830AbaFSRvu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 13:51:50 -0400
-Received: from xavier.telenet-ops.be ([195.130.132.52]:48412 "EHLO
-	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932295AbaFSRvt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 13:51:49 -0400
-Message-ID: <53A3232E.4080601@acm.org>
-Date: Thu, 19 Jun 2014 19:51:42 +0200
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S934120AbaFSRw6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 13:52:58 -0400
+Received: from mga01.intel.com ([192.55.52.88]:20029 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932295AbaFSRw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 13:52:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,508,1400050800"; 
+   d="scan'208";a="558105555"
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra 5A <peterz@infradead.org>
+Cc: "Liang\, Kan" <kan.liang@intel.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm\@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Kleen\, Andi" <andi.kleen@intel.com>
+Subject: Re: [PATCH 1/2] perf: ignore LBR and offcore_rsp.
+References: <37D7C6CF3E00A74B8858931C1DB2F0770148F513@SHSMSX103.ccr.corp.intel.com>
+	<20140618155916.GZ6758@twins.programming.kicks-ass.net>
+	<87lhsu8arx.fsf@tassilo.jf.intel.com>
+Date: Thu, 19 Jun 2014 10:52:52 -0700
+In-Reply-To: <87lhsu8arx.fsf@tassilo.jf.intel.com> (Andi Kleen's message of
+	"Wed, 18 Jun 2014 09:04:02 -0700")
+Message-ID: <87ha3g947f.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: josh@joshtriplett.org, Arnd Bergmann <arnd@arndb.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] bug: Fix CONFIG_BUG=n BUG_ON()
-References: <53A2E573.6080407@acm.org> <5061693.b4BPIj9quA@wuerfel> <20140619172142.GA15696@cloud>
-In-Reply-To: <20140619172142.GA15696@cloud>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/14 19:21, josh@joshtriplett.org wrote:
-> That's exactly what BUG_ON becomes if CONFIG_BUG=y, and that
-> significantly increases kernel size; if you want that, set CONFIG_BUG=y.
-> BUG_ON should continue to compile to nothing if CONFIG_BUG=n, or
-> CONFIG_BUG=n has no reason to exist.
+Andi Kleen <andi@firstfloor.org> writes:
+>>
+>>>     Signed-off-by: Kan Liang <kan.liang@intel.com>
+>>
+>> And here I thought that Andi was of the opinion that if you set CPUID to
+>> indicate a particular CPU you had better also handle all its MSRs.
+>
+> Yes, philosophically that would be the right way,
+> but we needed a short term fix to stop things from crashing, and that
+> was the simplest.
 
-Hello Josh,
+I should add there is another reason for this patch now,
+and doing it in perf instead of somewhere else
+(this should probably go into the description).
 
-I wasn't aware that the current behavior of BUG_ON() with CONFIG_BUG=n
-was intentional. The reason I started looking into this is because
-different compiler warnings are generated for code with BUG_ON(1)
-statements when building against a kernel with CONFIG_BUG=y or
-CONFIG_BUG=n. There is an easy alternative though: changing BUG_ON(1)
-into BUG() in my code.
+With PT on enabling LBR can #GP. So perf needs to handle
+this case without crashing. This can happen independently
+of any hypervisors.
 
-Bart.
+-Andi
 
+-- 
+ak@linux.intel.com -- Speaking for myself only
