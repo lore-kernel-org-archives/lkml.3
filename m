@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965974AbaFSVQj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 17:16:39 -0400
-Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:55152 "EHLO
-	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965515AbaFSVQh (ORCPT
+	id S934582AbaFSVS2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 17:18:28 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:64253 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933503AbaFSVS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 17:16:37 -0400
-Date: Thu, 19 Jun 2014 16:16:34 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave.hansen@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-Subject: Re: [bisected] pre-3.16 regression on open() scalability
-In-Reply-To: <alpine.DEB.2.11.1406191612000.5484@gentwo.org>
-Message-ID: <alpine.DEB.2.11.1406191614270.5484@gentwo.org>
-References: <20140618001836.GV4669@linux.vnet.ibm.com> <53A132D4.60408@intel.com> <20140618125831.GB4669@linux.vnet.ibm.com> <53A1CE19.7040103@intel.com> <20140618203052.GT4669@linux.vnet.ibm.com> <20140618235131.GA25946@linux.vnet.ibm.com>
- <20140619014200.GO8178@tassilo.jf.intel.com> <alpine.DEB.2.11.1406190941180.2785@gentwo.org> <20140619180916.GE4904@linux.vnet.ibm.com> <alpine.DEB.2.11.1406191531020.4002@gentwo.org> <20140619204220.GJ4904@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1406191612000.5484@gentwo.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 19 Jun 2014 17:18:27 -0400
+From: Nicholas Krause <xerofoify@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: lisa@xenapiadmin.com, valentina.manea.m@gmail.com, ben@decadent.org.uk,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: rtl8192 Check for Null return from dev_skb_alloc
+Date: Thu, 19 Jun 2014 17:18:05 -0400
+Message-Id: <1403212685-2427-1-git-send-email-xerofoify@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This looks very much like the CONFIG_PREEMPT problem in not so
-extreme form. Maybe we need to add another config option:
+Checks for Null return from dev_skb_alloc if it returns Null,
+fw_download returns false. Otherwise it returns true.Also
+removed rt_status due to returning true of false directly.
 
-CONFIG_REALLY_REALLY_NO_PREEMPT
+Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+---
+ drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-to get the fastest code possible and those cond_rescheds removed from the
-critical paths?
-
-Or better
-
-CONFIG_PREEMPT_HALF_WAY
-
-to enable those cond_rescheds.
+diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+index 1a95d1f..affa89a 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
++++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+@@ -36,7 +36,6 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+ 			     u32 buffer_len)
+ {
+ 	struct r8192_priv *priv = rtllib_priv(dev);
+-	bool		    rt_status = true;
+ 	u16		    frag_threshold;
+ 	u16		    frag_length, frag_offset = 0;
+ 	int		    i;
+@@ -59,7 +58,9 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+ 			bLastIniPkt = 1;
+ 
+ 		}
+       skb  = dev_alloc_skb(frag_length + 4);
++		if (!skb)
++			return false;
+ 		memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
+ 		tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
+@@ -99,7 +100,7 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+ 
+ 	write_nic_byte(dev, TPPoll, TPPoll_CQ);
+ 
+-	return rt_status;
++	return true;
+ }
+ 
+ static bool CPUcheck_maincodeok_turnonCPU(struct net_device *dev)
+-- 
+1.9.1
 
