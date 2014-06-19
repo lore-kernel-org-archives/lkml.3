@@ -1,102 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757217AbaFSCzd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 22:55:33 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:40562 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757132AbaFSCzb (ORCPT
+	id S1757221AbaFSDA5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 23:00:57 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:9498 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757140AbaFSDA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 22:55:31 -0400
+	Wed, 18 Jun 2014 23:00:56 -0400
+X-IronPort-AV: E=Sophos;i="5.00,735,1396972800"; 
+   d="scan'208";a="32125957"
+Message-ID: <53A25286.1030003@cn.fujitsu.com>
+Date: Thu, 19 Jun 2014 11:01:26 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <7hzjha5ew2.fsf@paris.lan>
-References: <1402592317-7043-1-git-send-email-jaswinder.singh@linaro.org>
-	<1402592479-7244-1-git-send-email-jaswinder.singh@linaro.org>
-	<7hionz9i5e.fsf@paris.lan>
-	<CAJe_ZhcuOa39Db_tE4JupY74aze02=v1FWzduFD0sO15nMrKvw@mail.gmail.com>
-	<7hzjha5ew2.fsf@paris.lan>
-Date: Thu, 19 Jun 2014 08:25:30 +0530
-Message-ID: <CAJe_ZhfTCw3OHNeSTW71bc6U2g_d=5hYknu+dwhBkuZvPg=D6w@mail.gmail.com>
-Subject: Re: [PATCHv7 2/5] mailbox: Introduce framework for mailbox
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Matt Porter <mporter@linaro.org>, Patch Tracking <patches@linaro.org>,
-        Bjorn Andersson <bjorn@kryo.se>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Anna, Suman" <s-anna@ti.com>, Loic Pallardy <loic.pallardy@st.com>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Craig McGeachie <slapdau@yahoo.com.au>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, ijc+devicetree@hellion.org.uk,
-        Arnd Bergmann <arnd@arndb.de>, Josh Cartwright <joshc@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        "ks.giri@samsung.com" <ks.giri@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: <cl@linux-foundation.org>, <kmo@daterainc.com>,
+        <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 6/6] percpu-refcount: implement percpu_ref_reinit()
+ and percpu_ref_is_zero()
+References: <1403053685-28240-1-git-send-email-tj@kernel.org> <1403053685-28240-7-git-send-email-tj@kernel.org> <20140619022055.GD20100@mtj.dyndns.org>
+In-Reply-To: <20140619022055.GD20100@mtj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 June 2014 22:33, Kevin Hilman <khilman@linaro.org> wrote:
-> Jassi Brar <jaswinder.singh@linaro.org> writes:
->
->> On 18 June 2014 05:57, Kevin Hilman <khilman@linaro.org> wrote:
->>> Jassi Brar <jaswinder.singh@linaro.org> writes:
->>>
->>>> Introduce common framework for client/protocol drivers and
->>>> controller drivers of Inter-Processor-Communication (IPC).
->>>>
->>>> Client driver developers should have a look at
->>>>  include/linux/mailbox_client.h to understand the part of
->>>> the API exposed to client drivers.
->>>> Similarly controller driver developers should have a look
->>>> at include/linux/mailbox_controller.h
->>>>
->>>> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
->>>
->>> This series is shaping up nicely.  The one thing I think it would
->>> benefit from, being a new common framework is something under
->>> Documentation giving a brief overview, but more importantly some
->>> example code snippets of a mailbox client using the API, and maybe an
->>> example usage of the controller API as well.
->>>
->>> Not only will that guide developers who want to use/implement this API
->>> on their platforms, it will also aid reviewers.
->>>
->> I have been trying to get it upstream for quite some time now because
->> my platform depends upon it. I am planning to submit my platform
->> support which should have a client and controller side of the mailbox
->> API.
->
-> Having a reference implementation is great, but I don't think that
-> removes the need for a bit of Documentation when introducing a new
-> framework.
->
-> It's pretty common to see new IPC mechanisms posted and being able to
-> point somone to this framework and something under Documentation/* would
-> be a great help in getting more users of the framework.
->
-Of course. I didn't mean I won't add Documentation.
+On 06/19/2014 10:20 AM, Tejun Heo wrote:
+> Now that explicit invocation of percpu_ref_exit() is necessary to free
+> the percpu counter, we can implement percpu_ref_reinit() which
+> reinitializes a released percpu_ref.  This can be used implement
+> scalable gating switch which can be drained and then re-opened without
+> worrying about memory allocation failures.
+> 
+> percpu_ref_is_zero() is added to be used in a sanity check in
+> percpu_ref_exit().  As this function will be useful for other purposes
+> too, make it a public interface.
+> 
+> v2: Use smp_read_barrier_depends() instead of smp_load_acquire().  We
+>     only need data dep barrier and smp_load_acquire() is stronger and
+>     heavier on some archs.  Spotted by Lai Jiangshan.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Kent Overstreet <kmo@daterainc.com>
+> Cc: Christoph Lameter <cl@linux-foundation.org>
+> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+>  include/linux/percpu-refcount.h |   19 +++++++++++++++++++
+>  lib/percpu-refcount.c           |   35 +++++++++++++++++++++++++++++++++++
+>  2 files changed, 54 insertions(+)
+> 
+> --- a/include/linux/percpu-refcount.h
+> +++ b/include/linux/percpu-refcount.h
+> @@ -67,6 +67,7 @@ struct percpu_ref {
+>  
+>  int __must_check percpu_ref_init(struct percpu_ref *ref,
+>  				 percpu_ref_func_t *release);
+> +void percpu_ref_reinit(struct percpu_ref *ref);
+>  void percpu_ref_exit(struct percpu_ref *ref);
+>  void percpu_ref_kill_and_confirm(struct percpu_ref *ref,
+>  				 percpu_ref_func_t *confirm_kill);
+> @@ -99,6 +100,9 @@ static inline bool __pcpu_ref_alive(stru
+>  {
+>  	unsigned long pcpu_ptr = ACCESS_ONCE(ref->pcpu_count_ptr);
+>  
+> +	/* paired with smp_store_release() in percpu_ref_reinit() */
+> +	smp_read_barrier_depends();
+> +
+>  	if (unlikely(pcpu_ptr & PCPU_REF_DEAD))
+>  		return false;
+>  
+> @@ -206,4 +210,19 @@ static inline void percpu_ref_put(struct
+>  	rcu_read_unlock_sched();
+>  }
+>  
+> +/**
+> + * percpu_ref_is_zero - test whether a percpu refcount reached zero
+> + * @ref: percpu_ref to test
+> + *
+> + * Returns %true if @ref reached zero.
+> + */
+> +static inline bool percpu_ref_is_zero(struct percpu_ref *ref)
+> +{
+> +	unsigned __percpu *pcpu_count;
+> +
+> +	if (__pcpu_ref_alive(ref, &pcpu_count))
+> +		return false;
+> +	return !atomic_read(&ref->count);
+> +}
+> +
+>  #endif
+> --- a/lib/percpu-refcount.c
+> +++ b/lib/percpu-refcount.c
+> @@ -61,6 +61,41 @@ int percpu_ref_init(struct percpu_ref *r
+>  EXPORT_SYMBOL_GPL(percpu_ref_init);
+>  
+>  /**
+> + * percpu_ref_reinit - re-initialize a percpu refcount
+> + * @ref: perpcu_ref to re-initialize
+> + *
+> + * Re-initialize @ref so that it's in the same state as when it finished
+> + * percpu_ref_init().  @ref must have been initialized successfully, killed
+> + * and reached 0 but not exited.
+> + *
+> + * Note that percpu_ref_tryget[_live]() are safe to perform on @ref while
+> + * this function is in progress.
+> + */
+> +void percpu_ref_reinit(struct percpu_ref *ref)
+> +{
+> +	unsigned __percpu *pcpu_count = pcpu_count_ptr(ref);
+> +	int cpu;
+> +
+> +	BUG_ON(!pcpu_count);
+> +	WARN_ON(!percpu_ref_is_zero(ref));
+> +
+> +	atomic_set(&ref->count, 1 + PCPU_COUNT_BIAS);
+> +
+> +	/*
+> +	 * Restore per-cpu operation.  smp_store_release() is paired with
+> +	 * smp_load_acquire() in __pcpu_ref_alive() and guarantees that the
 
->> Though I am told the API (until v4 at least) supported usecases for 5
->> different platforms.
->
-> That's great.
->
-> I sure would like to see some more Reviewed-by tags from those folks to
-> confirm that those starting to use it think it's on the right track.
->
-The upstreaming attempts have been going on for months now, and via
-non-public interactions with developers I understand it last worked
-before the revision mandating DT support and ipc->mailbox symbol
-renaming. So basic working should still remain the same.
-   Suman(TI), Loic(ST), Girish(Samsung), Ashwin (PCC+ACPI).... guys,
-any word for v7?
+s/smp_load_acquire()/smp_read_barrier_depends()/
 
-LFTan(Intel) and Craig(Broadcom) seem unresponsive now, unfortunately :(
+s/smp_store_release()/smp_mb()/  if you accept my next comment.
 
-Thanks
--Jassi
+> +	 * zeroing is visible to all percpu accesses which can see the
+> +	 * following PCPU_REF_DEAD clearing.
+> +	 */
+> +	for_each_possible_cpu(cpu)
+> +		*per_cpu_ptr(pcpu_count, cpu) = 0;
+> +
+> +	smp_store_release(&ref->pcpu_count_ptr,
+> +			  ref->pcpu_count_ptr & ~PCPU_REF_DEAD);
+
+I think it would be better if smp_mb() is used.
+
+it is documented that smp_read_barrier_depends() and smp_mb() are paired.
+Not smp_read_barrier_depends() and smp_store_release().
+
+> +}
+> +EXPORT_SYMBOL_GPL(percpu_ref_reinit);
+> +
+> +/**
+>   * percpu_ref_exit - undo percpu_ref_init()
+>   * @ref: percpu_ref to exit
+>   *
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> .
+> 
+
