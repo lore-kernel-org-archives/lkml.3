@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757060AbaFSKfI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 06:35:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14865 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752098AbaFSKfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 06:35:06 -0400
-Date: Thu, 19 Jun 2014 12:34:48 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCHv2 00/18] perf tools: Factor ordered samples queue
-Message-ID: <20140619103448.GA7619@krava.brq.redhat.com>
-References: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
- <53A1EC2E.1010706@gmail.com>
+	id S1757054AbaFSKk2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 06:40:28 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43144 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399AbaFSKk0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 06:40:26 -0400
+Date: Thu, 19 Jun 2014 11:40:06 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>
+Cc: "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] GPIO button wth wakeup attribute is supposed to wake
+ the system up
+Message-ID: <20140619114006.72ac8e06@alan.etchedpixels.co.uk>
+In-Reply-To: <53A2340D.9030503@linux.intel.com>
+References: <53A2340D.9030503@linux.intel.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53A1EC2E.1010706@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 01:44:46PM -0600, David Ahern wrote:
+On Thu, 19 Jun 2014 08:51:25 +0800
+"Li, Aubrey" <aubrey.li@linux.intel.com> wrote:
 
-SNIP
-
-> >
-> >Also now we have one of our big memory spender under control
-> >and the ordered events queue code is put in separated object
-> >with clear interface ready to be used by another command
-> >like script.
-> >
-> >Also reachable in here:
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-> >   perf/core_ordered_events
-> >
+> When the wakeup attribute is set, the GPIO button is capable of
+> waking up the system from sleep states, including the "freeze"
+> sleep state.  For that to work, its driver needs to pass the
+> IRQF_NO_SUSPEND flag to devm_request_any_context_irq(), or the
+> interrupt will be disabled by suspend_device_irqs() and the
+> system won't be woken up by it from the "freeze" sleep state.
 > 
-> I've skimmed through the patches. What happens if you are in the middle of a
-> round and the max queue size is reached?
+> The suspend_device_irqs() routine is a workaround for drivers
+> that mishandle interrupts triggered when the devices handled
+> by them are suspended, so it is safe to use IRQF_NO_SUSPEND in
+> all drivers that don't have that problem.
+> 
+> The affected/tested machines include Dell Venue 11 Pro and Asus T100TA.
+> 
+> Signed-off-by: Aubrey Li <aubrey.li@linux.intel.com>
+> Reviewed-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-half of the queue (time half) is flushed to make some free space
+Reviewed-by: Alan Cox <alan@linux.intel.com>
 
-> I need to find some time for a detailed review, and to run through some
-> stress case scenarios. e.g., a couple that come to mind
-> perf sched record -- perf bench sched pipe
-> perf kvm record while booting a nested VM which causes a lot of VMEXITs
-
-will try.. at least the first one ;-)
-
-thanks for looking on this,
-jirka
