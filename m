@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964925AbaFSUSH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 16:18:07 -0400
-Received: from mga09.intel.com ([134.134.136.24]:63718 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755026AbaFSUSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 16:18:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,508,1400050800"; 
-   d="scan'208";a="560357933"
-Date: Thu, 19 Jun 2014 13:18:01 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, Joe Mario <jmario@redhat.com>,
-        Don Zickus <dzickus@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 1/2] perf/x86: update Haswell PEBS event constraints
-Message-ID: <20140619201801.GV8178@tassilo.jf.intel.com>
-References: <1403193509-22393-1-git-send-email-eranian@google.com>
- <1403193509-22393-2-git-send-email-eranian@google.com>
- <20140619180028.GU8178@tassilo.jf.intel.com>
- <CABPqkBTw9wi1LSoqWUYcN2W1fvBYDfsdqkdxDTPQ0rWUEUFLmA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBTw9wi1LSoqWUYcN2W1fvBYDfsdqkdxDTPQ0rWUEUFLmA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S965040AbaFSUS1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 16:18:27 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:52508 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756643AbaFSUS0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 16:18:26 -0400
+From: Nicholas Krause <xerofoify@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: lisa@xenapiadmin.com, valentina.manea.m@gmail.com, ben@decadent.org.uk,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: rtl8192 Check for Null return from dev_skb_alloc
+Date: Thu, 19 Jun 2014 16:18:22 -0400
+Message-Id: <1403209102-10633-1-git-send-email-xerofoify@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I don't quite understand that.
-> You need to know which events support PEBS. You need a table
+Checks for Null return from dev_skb_alloc if it returns Null,
+fw_download returns false. Otherwise it returns true.Also
+removed rt_status due to returning true of false directly.
 
-We're talking about the kernel allowing things here.
-Yes the user still needs to know what supports PEBS, but 
-that doesn't concern the kernel.
+Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+---
+ drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-You can just allow it for all, it's a nop if the event doesn't
-support it. And also the fields like DataLA are simply 0 when 
-not supported.
+diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+index 1a95d1f..affa89a 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
++++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+@@ -36,7 +36,6 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+ 			     u32 buffer_len)
+ {
+ 	struct r8192_priv *priv = rtllib_priv(dev);
+-	bool		    rt_status = true;
+ 	u16		    frag_threshold;
+ 	u16		    frag_length, frag_offset = 0;
+ 	int		    i;
+@@ -59,7 +58,9 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+ 			bLastIniPkt = 1;
+ 
+ 		}
+-
++		skb  = dev_alloc_skb(frag_length + 4);
++		if (!skb)
++			return false;
+ 		skb  = dev_alloc_skb(frag_length + 4);
+ 		memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
+ 		tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
+@@ -99,7 +100,7 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+ 
+ 	write_nic_byte(dev, TPPoll, TPPoll_CQ);
+ 
+-	return rt_status;
++	return false;
+ }
+ 
+ static bool CPUcheck_maincodeok_turnonCPU(struct net_device *dev)
+-- 
+1.9.1
 
-The only thing you need is a rule to limit to 4 counters.
-
-Then only cases that are special (PREC_DIST, extra registers) 
-would need to be handled explicitely.
-
--Andi
