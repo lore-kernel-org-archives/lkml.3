@@ -1,189 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933273AbaFSQiJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:38:09 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:52649 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757558AbaFSQiG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:38:06 -0400
-X-IronPort-AV: E=Sophos;i="5.01,508,1400050800"; 
-   d="scan'208";a="34986495"
-Message-ID: <53A311E4.301@broadcom.com>
-Date: Thu, 19 Jun 2014 18:37:56 +0200
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S933813AbaFSQjB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:39:01 -0400
+Received: from mail.kernel.org ([198.145.19.201]:50939 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932335AbaFSQjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 12:39:00 -0400
+Date: Thu, 19 Jun 2014 13:38:51 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: jolsa@kernel.org, mitake@dcl.info.waseda.ac.jp, aswin@hp.com,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/9] perf bench: futex: Replace --silent option with
+ global --format
+Message-ID: <20140619163851.GG20252@kernel.org>
+References: <1402942467-10671-1-git-send-email-davidlohr@hp.com>
+ <1402942467-10671-7-git-send-email-davidlohr@hp.com>
 MIME-Version: 1.0
-To: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>, <brudley@broadcom.com>,
-        Franky Lin <frankyl@broadcom.com>, <meuleman@broadcom.com>,
-        <linville@tuxdriver.com>, <pieterpg@broadcom.com>,
-        <dekim@broadcom.com>, <mcgrof@do-not-panic.com>,
-        <antonio@open-mesh.com>, <johannes.berg@intel.com>
-CC: <linux-wireless@vger.kernel.org>, <brcm80211-dev-list@broadcom.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] brcmfmac: prevent watchdog from interfering with scanning
- and connecting
-References: <539E8559.3010601@linux.intel.com> <539EA79C.7010206@broadcom.com> <53A30F96.3010206@linux.intel.com>
-In-Reply-To: <53A30F96.3010206@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402942467-10671-7-git-send-email-davidlohr@hp.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19-06-14 18:28, Fu, Zhonghui wrote:
->
-> On 2014/6/16 16:15, Arend van Spriel wrote:
->> On 16-06-14 07:49, Fu, Zhonghui wrote:
->>>   From 14485894add32aedacb3e486ebb2cc2b73861abf Mon Sep 17 00:00:00 2001
->>> From: Fu zhonghui <zhonghui.fu@linux.intel.com>
->>> Date: Wed, 11 Jun 2014 11:06:55 +0800
->>> Subject: [PATCH] brcmfmac: prevent watchdog from interfering with scanning and connecting
->>>
->>> Watchdog in brcmfmac driver may make WiFi chip enter sleep mode
->>> before completion of scanning or connecting.
->>>
->>> This will lead to scanning or connecting failure.
->>>
->>> Increasing temporarily idle-time threshold during scanning or
->>> connecting can ensure scanning or connecting success without
->>> watchdog interference.
->>
->> Are you sure you are not having runtime PM enabled. That could be your problem as the host controller code disables sdio irqs. Please see this thread [1]. For our device runtime pm should not be enabled, but I am not sure if that is taken into account in mmc_attach_sdio() (see code below).
-> I have tried brcmfmac driver with "CONFIG_PM_RUNTIME is not set", and scanning and connecting  always succeeded. This means that CONFIG_PM_RUNTIME should not be set if we use SDIO WiFi device driven by brcmfmac driver, right?
+Em Mon, Jun 16, 2014 at 11:14:24AM -0700, Davidlohr Bueso escreveu:
+> Using the already existing '--format simple' option in perf-bench
+> is/should be equivalent to disabling any verbose output. Replace
+> it and free up the -s option specific to the futex benchmark.
 
-Depends which kernel you are using. In 3.16-rc1 the sdio interrupt issue 
-has been fixed so you should be fine to use CONFIG_PM_RUNTIME. Here is 
-the commit
+Isn't this much longer?
 
-commit be138554a7923658ded799b0e8794d9c1d08a6e5
-Author: Russell King <rmk+kernel@arm.linux.org.uk>
-Date:   Fri Apr 25 12:55:56 2014 +0100
+I haven't seen any patch in this series wanting to use -s.
 
-     mmc: sdhci: allow sdio interrupts while sdhci runtime suspended
+Ingo, are you Ok with this?
 
-Regards,
-Arend
+I.e. I'm just trying to be careful when changing existing cmd line args,
+perhaps someone is used to this, who knows, and at least for me,
+--silent is way, way more clear than '--format simple', that says
+nothing to me.
 
-> Thanks,
-> Zhonghui
->>
->> Gr. AvS
->>
->> [1] http://www.spinics.net/lists/linux-mmc/msg25978.html
->>
->> --8<----------------------------------------------------------------
->>
->>      /*
->>       * Enable runtime PM only if supported by host+card+board
->>       */
->>      if (host->caps & MMC_CAP_POWER_OFF_CARD) {
->>          /*
->>           * Let runtime PM core know our card is active
->>           */
->>          err = pm_runtime_set_active(&card->dev);
->>          if (err)
->>              goto remove;
->>
->>          /*
->>           * Enable runtime PM for this card
->>           */
->>          pm_runtime_enable(&card->dev);
->>      }
->>
->>> Signed-off-by: Fu zhonghui <zhonghui.fu@linux.intel.com>
->>> ---
->>>    drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c |   18 ++++++++++++++++--
->>>    .../net/wireless/brcm80211/brcmfmac/wl_cfg80211.c  |    3 ++-
->>>    2 files changed, 18 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
->>> index 13c89a0..729deab 100644
->>> --- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
->>> +++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
->>> @@ -34,6 +34,7 @@
->>>    #include <linux/vmalloc.h>
->>>    #include <linux/platform_data/brcmfmac-sdio.h>
->>>    #include <linux/moduleparam.h>
->>> +#include <net/cfg80211.h>
->>>    #include <asm/unaligned.h>
->>>    #include <defs.h>
->>>    #include <brcmu_wifi.h>
->>> @@ -43,6 +44,10 @@
->>>    #include "sdio_host.h"
->>>    #include "chip.h"
->>>    #include "nvram.h"
->>> +#include "dhd.h"
->>> +#include "fwil_types.h"
->>> +#include "p2p.h"
->>> +#include "wl_cfg80211.h"
->>>
->>>    #define DCMD_RESP_TIMEOUT  2000    /* In milli second */
->>>
->>> @@ -307,6 +312,7 @@ struct rte_console {
->>>                         * when idle
->>>                         */
->>>    #define BRCMF_IDLE_INTERVAL    1
->>> +#define BRCMF_IDLE_INTERVAL_SCANNING_CONNECTING    100
->>>
->>>    #define KSO_WAIT_US 50
->>>    #define MAX_KSO_ATTEMPTS (PMU_MAX_TRANSITION_DLY/KSO_WAIT_US)
->>> @@ -3613,9 +3619,9 @@ void brcmf_sdio_isr(struct brcmf_sdio *bus)
->>>
->>>    static bool brcmf_sdio_bus_watchdog(struct brcmf_sdio *bus)
->>>    {
->>> -#ifdef DEBUG
->>>        struct brcmf_bus *bus_if = dev_get_drvdata(bus->sdiodev->dev);
->>> -#endif    /* DEBUG */
->>> +    struct brcmf_cfg80211_info *cfg = bus_if->drvr->config;
->>> +    struct brcmf_if *ifp = cfg->pub->iflist[0];
->>>
->>>        brcmf_dbg(TIMER, "Enter\n");
->>>
->>> @@ -3678,6 +3684,14 @@ static bool brcmf_sdio_bus_watchdog(struct brcmf_sdio *bus)
->>>
->>>        /* On idle timeout clear activity flag and/or turn off clock */
->>>        if ((bus->idletime > 0) && (bus->clkstate == CLK_AVAIL)) {
->>> +
->>> +        if (test_bit(BRCMF_SCAN_STATUS_BUSY, &cfg->scan_status) ||
->>> +            test_bit(BRCMF_VIF_STATUS_CONNECTING, &ifp->vif->sme_state)) {
->>> +            bus->idletime = BRCMF_IDLE_INTERVAL_SCANNING_CONNECTING;
->>> +        } else {
->>> +            bus->idletime = BRCMF_IDLE_INTERVAL;
->>> +        }
->>> +
->>>            if (++bus->idlecount >= bus->idletime) {
->>>                bus->idlecount = 0;
->>>                if (bus->activity) {
->>> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
->>> index be19852..e76517e 100644
->>> --- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
->>> +++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
->>> @@ -913,6 +913,8 @@ brcmf_cfg80211_escan(struct wiphy *wiphy, struct brcmf_cfg80211_vif *vif,
->>>            return -EAGAIN;
->>>        }
->>>
->>> +    set_bit(BRCMF_SCAN_STATUS_BUSY, &cfg->scan_status);
->>> +
->>>        /* If scan req comes for p2p0, send it over primary I/F */
->>>        if (vif == cfg->p2p.bss_idx[P2PAPI_BSSCFG_DEVICE].vif)
->>>            vif = cfg->p2p.bss_idx[P2PAPI_BSSCFG_PRIMARY].vif;
->>> @@ -933,7 +935,6 @@ brcmf_cfg80211_escan(struct wiphy *wiphy, struct brcmf_cfg80211_vif *vif,
->>>        }
->>>
->>>        cfg->scan_request = request;
->>> -    set_bit(BRCMF_SCAN_STATUS_BUSY, &cfg->scan_status);
->>>        if (escan_req) {
->>>            cfg->escan_info.run = brcmf_run_escan;
->>>            err = brcmf_p2p_scan_prep(wiphy, request, vif);
->>> -- 1.7.1
->>>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
+- Arnaldo
 
+> Furthermore only show the raw output if used, as it is intended
+> to make scripting/parsing easier.
+ 
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> ---
+>  tools/perf/bench/futex-hash.c    | 32 +++++++++++++++++++++++---------
+>  tools/perf/bench/futex-requeue.c | 34 +++++++++++++++++++++++-----------
+>  tools/perf/bench/futex-wake.c    | 33 ++++++++++++++++++++++-----------
+>  3 files changed, 68 insertions(+), 31 deletions(-)
+> 
+> diff --git a/tools/perf/bench/futex-hash.c b/tools/perf/bench/futex-hash.c
+> index a84206e..14791eb 100644
+> --- a/tools/perf/bench/futex-hash.c
+> +++ b/tools/perf/bench/futex-hash.c
+> @@ -25,7 +25,7 @@ static unsigned int nthreads = 0;
+>  static unsigned int nsecs    = 10;
+>  /* amount of futexes per thread */
+>  static unsigned int nfutexes = 1024;
+> -static bool fshared = false, done = false, silent = false;
+> +static bool fshared = false, done = false;
+>  
+>  struct timeval start, end, runtime;
+>  static pthread_mutex_t thread_lock;
+> @@ -44,7 +44,6 @@ static const struct option options[] = {
+>  	OPT_UINTEGER('t', "threads", &nthreads, "Specify amount of threads"),
+>  	OPT_UINTEGER('r', "runtime", &nsecs,    "Specify runtime (in seconds)"),
+>  	OPT_UINTEGER('f', "futexes", &nfutexes, "Specify amount of futexes per threads"),
+> -	OPT_BOOLEAN( 's', "silent",  &silent,   "Silent mode: do not display data/details"),
+>  	OPT_BOOLEAN( 'S', "shared",  &fshared,  "Use shared futexes instead of private ones"),
+>  	OPT_END()
+>  };
+> @@ -77,7 +76,7 @@ static void *workerfn(void *arg)
+>  			 */
+>  			ret = futex_wait(&w->futex[i], 1234, NULL,
+>  					 fshared ? 0 : FUTEX_PRIVATE_FLAG);
+> -			if (!silent &&
+> +			if (bench_format == BENCH_FORMAT_DEFAULT &&
+>  			    (!ret || errno != EAGAIN || errno != EWOULDBLOCK))
+>  				warn("Non-expected futex return call");
+>  		}
+> @@ -101,9 +100,22 @@ static void print_summary(void)
+>  	unsigned long avg = avg_stats(&throughput_stats);
+>  	double stddev = stddev_stats(&throughput_stats);
+>  
+> -	printf("%sAveraged %ld operations/sec (+- %.2f%%), total secs = %d\n",
+> -	       !silent ? "\n" : "", avg, rel_stddev_stats(stddev, avg),
+> -	       (int) runtime.tv_sec);
+> +	switch (bench_format) {
+> +	case BENCH_FORMAT_DEFAULT:
+> +		printf("%sAveraged %ld operations/sec (+- %.2f%%), total secs = %d\n",
+> +		       !bench_format == BENCH_FORMAT_DEFAULT ? "\n" : "",
+> +		       avg, rel_stddev_stats(stddev, avg),
+> +		       (int) runtime.tv_sec);
+> +		break;
+> +	case BENCH_FORMAT_SIMPLE:
+> +		printf("%ld\n", avg);
+> +		break;
+> +	default:
+> +		/* reaching here is something disaster */
+> +		fprintf(stderr, "Unknown format:%d\n", bench_format);
+> +		exit(EXIT_FAILURE);
+> +
+> +	}
+>  }
+>  
+>  int bench_futex_hash(int argc, const char **argv,
+> @@ -135,8 +147,10 @@ int bench_futex_hash(int argc, const char **argv,
+>  	if (!worker)
+>  		goto errmem;
+>  
+> -	printf("Run summary [PID %d]: %d threads, each operating on %d [%s] futexes for %d secs.\n\n",
+> -	       getpid(), nthreads, nfutexes, fshared ? "shared":"private", nsecs);
+> +	if (bench_format == BENCH_FORMAT_DEFAULT) {
+> +		printf("Run summary [PID %d]: %d threads, each operating on %d [%s] futexes for %d secs.\n\n",
+> +		       getpid(), nthreads, nfutexes, fshared ? "shared":"private", nsecs);
+> +	}
+>  
+>  	init_stats(&throughput_stats);
+>  	pthread_mutex_init(&thread_lock, NULL);
+> @@ -190,7 +204,7 @@ int bench_futex_hash(int argc, const char **argv,
+>  	for (i = 0; i < nthreads; i++) {
+>  		unsigned long t = worker[i].ops/runtime.tv_sec;
+>  		update_stats(&throughput_stats, t);
+> -		if (!silent) {
+> +		if (bench_format == BENCH_FORMAT_DEFAULT) {
+>  			if (nfutexes == 1)
+>  				printf("[thread %2d] futex: %p [ %ld ops/sec ]\n",
+>  				       worker[i].tid, &worker[i].futex[0], t);
+> diff --git a/tools/perf/bench/futex-requeue.c b/tools/perf/bench/futex-requeue.c
+> index 732403b..7b211c1 100644
+> --- a/tools/perf/bench/futex-requeue.c
+> +++ b/tools/perf/bench/futex-requeue.c
+> @@ -30,7 +30,7 @@ static u_int32_t futex1 = 0, futex2 = 0;
+>  static unsigned int nrequeue = 1;
+>  
+>  static pthread_t *worker;
+> -static bool done = 0, silent = 0;
+> +static bool done = 0;
+>  static pthread_mutex_t thread_lock;
+>  static pthread_cond_t thread_parent, thread_worker;
+>  static struct stats requeuetime_stats, requeued_stats;
+> @@ -39,7 +39,6 @@ static unsigned int ncpus, threads_starting, nthreads = 0;
+>  static const struct option options[] = {
+>  	OPT_UINTEGER('t', "threads",  &nthreads, "Specify amount of threads"),
+>  	OPT_UINTEGER('q', "nrequeue", &nrequeue, "Specify amount of threads to requeue at once"),
+> -	OPT_BOOLEAN( 's', "silent",   &silent,   "Silent mode: do not display data/details"),
+>  	OPT_END()
+>  };
+>  
+> @@ -54,11 +53,22 @@ static void print_summary(void)
+>  	double requeuetime_stddev = stddev_stats(&requeuetime_stats);
+>  	unsigned int requeued_avg = avg_stats(&requeued_stats);
+>  
+> -	printf("Requeued %d of %d threads in %.4f ms (+-%.2f%%)\n",
+> -	       requeued_avg,
+> -	       nthreads,
+> -	       requeuetime_avg/1e3,
+> -	       rel_stddev_stats(requeuetime_stddev, requeuetime_avg));
+> +	switch (bench_format) {
+> +	case BENCH_FORMAT_DEFAULT:
+> +		printf("Requeued %d of %d threads in %.4f ms (+-%.2f%%)\n",
+> +		       requeued_avg,
+> +		       nthreads,
+> +		       requeuetime_avg/1e3,
+> +		       rel_stddev_stats(requeuetime_stddev, requeuetime_avg));
+> +		break;
+> +	case BENCH_FORMAT_SIMPLE:
+> +		printf("%.3f\n", requeuetime_avg/1e3);
+> +		break;
+> +	default:
+> +		/* reaching here is something disaster */
+> +		fprintf(stderr, "Unknown format:%d\n", bench_format);
+> +		exit(EXIT_FAILURE);
+> +	}
+>  }
+>  
+>  static void *workerfn(void *arg __maybe_unused)
+> @@ -127,9 +137,11 @@ int bench_futex_requeue(int argc, const char **argv,
+>  	if (!worker)
+>  		err(EXIT_FAILURE, "calloc");
+>  
+> -	printf("Run summary [PID %d]: Requeuing %d threads (from %p to %p), "
+> -	       "%d at a time.\n\n",
+> -	       getpid(), nthreads, &futex1, &futex2, nrequeue);
+> +	if (bench_format == BENCH_FORMAT_DEFAULT) {
+> +		printf("Run summary [PID %d]: Requeuing %d threads (from %p to %p), "
+> +		       "%d at a time.\n\n",
+> +		       getpid(), nthreads, &futex1, &futex2, nrequeue);
+> +	}
+>  
+>  	init_stats(&requeued_stats);
+>  	init_stats(&requeuetime_stats);
+> @@ -169,7 +181,7 @@ int bench_futex_requeue(int argc, const char **argv,
+>  		update_stats(&requeued_stats, nrequeued);
+>  		update_stats(&requeuetime_stats, runtime.tv_usec);
+>  
+> -		if (!silent) {
+> +		if (bench_format == BENCH_FORMAT_DEFAULT) {
+>  			printf("[Run %d]: Requeued %d of %d threads in %.4f ms\n",
+>  			       j + 1, nrequeued, nthreads, runtime.tv_usec/1e3);
+>  		}
+> diff --git a/tools/perf/bench/futex-wake.c b/tools/perf/bench/futex-wake.c
+> index 50022cb..eae6d09 100644
+> --- a/tools/perf/bench/futex-wake.c
+> +++ b/tools/perf/bench/futex-wake.c
+> @@ -31,7 +31,7 @@ static u_int32_t futex1 = 0;
+>  static unsigned int nwakes = 1;
+>  
+>  pthread_t *worker;
+> -static bool done = false, silent = false;
+> +static bool done = false;
+>  static pthread_mutex_t thread_lock;
+>  static pthread_cond_t thread_parent, thread_worker;
+>  static struct stats waketime_stats, wakeup_stats;
+> @@ -40,7 +40,6 @@ static unsigned int ncpus, threads_starting, nthreads = 0;
+>  static const struct option options[] = {
+>  	OPT_UINTEGER('t', "threads", &nthreads, "Specify amount of threads"),
+>  	OPT_UINTEGER('w', "nwakes",  &nwakes,   "Specify amount of threads to wake at once"),
+> -	OPT_BOOLEAN( 's', "silent",  &silent,   "Silent mode: do not display data/details"),
+>  	OPT_END()
+>  };
+>  
+> @@ -68,11 +67,22 @@ static void print_summary(void)
+>  	double waketime_stddev = stddev_stats(&waketime_stats);
+>  	unsigned int wakeup_avg = avg_stats(&wakeup_stats);
+>  
+> -	printf("Wokeup %d of %d threads in %.4f ms (+-%.2f%%)\n",
+> -	       wakeup_avg,
+> -	       nthreads,
+> -	       waketime_avg/1e3,
+> -	       rel_stddev_stats(waketime_stddev, waketime_avg));
+> +	switch (bench_format) {
+> +	case BENCH_FORMAT_DEFAULT:
+> +		printf("Wokeup %d of %d threads in %.4f ms (+-%.2f%%)\n",
+> +		       wakeup_avg,
+> +		       nthreads,
+> +		       waketime_avg/1e3,
+> +		       rel_stddev_stats(waketime_stddev, waketime_avg));
+> +		break;
+> +	case BENCH_FORMAT_SIMPLE:
+> +		printf("%.4f\n", waketime_avg/1e3);
+> +		break;
+> +	default:
+> +		/* reaching here is something disaster */
+> +		fprintf(stderr, "Unknown format:%d\n", bench_format);
+> +		exit(EXIT_FAILURE);
+> +	}
+>  }
+>  
+>  static void block_threads(pthread_t *w,
+> @@ -130,9 +140,10 @@ int bench_futex_wake(int argc, const char **argv,
+>  	if (!worker)
+>  		err(EXIT_FAILURE, "calloc");
+>  
+> -	printf("Run summary [PID %d]: blocking on %d threads (at futex %p), "
+> -	       "waking up %d at a time.\n\n",
+> -	       getpid(), nthreads, &futex1, nwakes);
+> +	if (bench_format == BENCH_FORMAT_DEFAULT)
+> +		printf("Run summary [PID %d]: blocking on %d threads (at futex %p), "
+> +		       "waking up %d at a time.\n\n",
+> +		       getpid(), nthreads, &futex1, nwakes);
+>  
+>  	init_stats(&wakeup_stats);
+>  	init_stats(&waketime_stats);
+> @@ -167,7 +178,7 @@ int bench_futex_wake(int argc, const char **argv,
+>  		update_stats(&wakeup_stats, nwoken);
+>  		update_stats(&waketime_stats, runtime.tv_usec);
+>  
+> -		if (!silent) {
+> +		if (bench_format == BENCH_FORMAT_DEFAULT) {
+>  			printf("[Run %d]: Wokeup %d of %d threads in %.4f ms\n",
+>  			       j + 1, nwoken, nthreads, runtime.tv_usec/1e3);
+>  		}
+> -- 
+> 1.8.1.4
