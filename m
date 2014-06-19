@@ -1,60 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964939AbaFSTY0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 15:24:26 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:58741 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964893AbaFSTYY (ORCPT
+	id S965006AbaFSTZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 15:25:20 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:42620 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964957AbaFSTZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 15:24:24 -0400
-From: Nicholas Krause <xerofoify@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: valentina.manea.m@gmail.com, lisa@xenapiadmin.com, ben@decadent.org.uk,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Checks if dev_skb_alloc returns Null in function,
-Date: Thu, 19 Jun 2014 15:24:19 -0400
-Message-Id: <1403205859-3615-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
-Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+	Thu, 19 Jun 2014 15:25:17 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Allen Yu <alleny@nvidia.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] PM / Runtime: let rpm_resume fail if rpm disabled and device suspended.
+References: <Pine.LNX.4.44L0.1406191049240.1247-100000@iolanthe.rowland.org>
+Date: Thu, 19 Jun 2014 12:25:14 -0700
+In-Reply-To: <Pine.LNX.4.44L0.1406191049240.1247-100000@iolanthe.rowland.org>
+	(Alan Stern's message of "Thu, 19 Jun 2014 10:56:30 -0400 (EDT)")
+Message-ID: <7h61jwwvl1.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Alan Stern <stern@rowland.harvard.edu> writes:
 
-diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-index 1a95d1f..d8a9427 100644
---- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-+++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-@@ -36,7 +36,6 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
- 			     u32 buffer_len)
- {
- 	struct r8192_priv *priv = rtllib_priv(dev);
--	bool		    rt_status = true;
- 	u16		    frag_threshold;
- 	u16		    frag_length, frag_offset = 0;
- 	int		    i;
-@@ -59,7 +58,8 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
- 			bLastIniPkt = 1;
- 
- 		}
--
-+		if (!skb)
-+			return false;
- 		skb  = dev_alloc_skb(frag_length + 4);
- 		memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
- 		tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
-@@ -99,7 +99,7 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
- 
- 	write_nic_byte(dev, TPPoll, TPPoll_CQ);
- 
--	return rt_status;
-+	return true;
- }
- 
- static bool CPUcheck_maincodeok_turnonCPU(struct net_device *dev)
--- 
-1.9.1
+> On Thu, 19 Jun 2014, Allen Yu wrote:
+>
+>> So what's the exact state of device if dev->power.is_suspended flag
+>> is set and runtime_status is RPM_ACTIVE? Is it a state like
+>> "suspended but still can be accessed"?
+>> 
+>> I'm just afraid the existing code would cause a device hang if we
+>> allow it to be accessed even though it's suspended (at this point
+>> RPM_ACTIVE could be meaningless). I don't understand the original
+>> motivation of these code. If it's a valid case, most likely it should
+>> be handled in the specific device driver instead of the PM core.
+>
+> You should read the Changelog for commit 6f3c77b040f (PM / Runtime:  
+> let rpm_resume() succeed if RPM_ACTIVE, even when disabled, v2).  It
+> explains why the code looks the way it does.
+>
+> However, I'm starting to think the reasoning in that commit may not be
+> valid.  While perhaps it is okay for some I2C devices (mentioned in the
+> commit log), it probably isn't okay in general.
 
+Why not?
+
+> Kevin, do have any comments on this matter?  What do you think about 
+> making the following change to rpm_resume():
+>
+>  repeat:
+> 	if (dev->power.runtime_error)
+> 		retval = -EINVAL;
+> -	else if (dev->power.disable_depth == 1 && dev->power.is_suspended
+> +	else if (dev->power.disable_depth > 0
+> 	    && dev->power.runtime_status == RPM_ACTIVE)
+> 		retval = 1;
+> 	else if (dev->power.disable_depth > 0)
+>
+> Or even:
+>
+> +	else if (dev->power.disable_depth > 0 && !dev->power.is_suspended
+>
+> although this would require the I2C driver you mentioned in your commit 
+> to change.
+
+My change was introduced to catch a very specific case.  Namely, when we
+know that the core has successfully asked the device to do a system suspend
+(dev->power.is_suspended == true) *and* we know that runtime PM was
+disabled *only* by the PM core (disable_depth == 0) while the device was
+still active (runtime_status == RPM_ACTIVE.)
+
+In your first idea above, it would allow a _get() to succeed even if
+someone other than the core (including the driver itself) had called
+pm_runtime_disable().  I don't think we want that.
+
+In the second idea above, we'd completely miss the case where runtime PM
+has been disabled by the core (because the core would have set
+dev->power.is_suspended)
+
+In both cases, we're no longer just checking for that specific condition
+I was after, so I'd have to spend more time thinking about any other
+possible consequences as well.
+
+I think part of the confusion here is coming from what
+dev->power.is_suspended means.  From the core's perspective, it just
+means that the core has called the ->suspend callback, and didn't detect
+any errors.  
+
+Depending on the driver though, it doesn't have to mean that the device
+is actually fully suspended.  For example, there are several cases of
+"runtime PM centric" drivers are may be needed by other devices during
+the system suspend/resume process and so are runtime PM resumed during
+system suspend.
+
+Kevin
