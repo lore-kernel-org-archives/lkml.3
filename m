@@ -1,74 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757715AbaFSOui (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 10:50:38 -0400
-Received: from mout.gmx.net ([212.227.17.22]:51694 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756435AbaFSOuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 10:50:37 -0400
-From: Heinrich Schuchardt <xypron.glpk@gmx.de>
-To: Kees Cook <keescook@chromium.org>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Michael Krufky <mkrufky@linuxtv.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Heinrich Schuchardt <xypron.glpk@gmx.de>
-Subject: [PATCH 1/1 v2] media: dib9000: avoid out of bound access
-Date: Thu, 19 Jun 2014 16:49:40 +0200
-Message-Id: <1403189380-25134-1-git-send-email-xypron.glpk@gmx.de>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <CAGXu5jLJGpPhycff9OSMGu6wduLGQWhsu2mkGeM7R0O9CQZ7pg@mail.gmail.com>
-References: <CAGXu5jLJGpPhycff9OSMGu6wduLGQWhsu2mkGeM7R0O9CQZ7pg@mail.gmail.com>
-X-Provags-ID: V03:K0:MMsP1MxjMEyckSenHVJWVA1UewdLxlBEIYR+DgVJOlFLVJ1vJVQ
- 1EyoPEyzWHWw6E12Qnqzym23LhBeZnncg3n5fJJ80HXCEeE94kiTKhGRV+Rd2zGEYxQWcrz
- psBAQqNgOxFGgmXB5fRpDpkDJyUd7EQkV24Aw1qmSZZJVUsNpbaobf3qyXVqJpyWJyYMawt
- 9VgBw05Ig0s8A/kyKw2Aw==
+	id S932679AbaFSOxF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 10:53:05 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:40041 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932295AbaFSOxA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 10:53:00 -0400
+Message-ID: <53A2F949.9090100@plexistor.com>
+Date: Thu, 19 Jun 2014 17:52:57 +0300
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Michal Marek <mmarek@suse.cz>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: [PATCH] kbuild: support of new KBUILD_FULL_PATH
+References: <53A1D3A1.70202@gmail.com> <53A2B7A9.7080605@gmail.com> <53A2BE65.2070501@suse.cz> <53A2D0FC.7040309@plexistor.com> <53A2E22F.6060100@suse.cz>
+In-Reply-To: <53A2E22F.6060100@suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This updated patch also fixes out of bound access to b[].
 
-In dib9000_risc_apb_access_write() an out of bound access to mb[].
+The commit 9da0763bdd82572be243fcf5161734f11568960f
 
-The current test to avoid out of bound access to mb[] is insufficient.
-For len = 19 non-existent mb[10] will be accessed.
+	kbuild: Use relative path when building in a subdir of the source tree
 
-For odd values of len b[] is accessed out of bounds.
+	When doing make O=<subdir>, use '..' to refer to the source tree. This
+	allows for more readable compiler messages, and, more importantly, it
+	sets the VPATH to '..', so filenames in WARN_ON() etc. will be shorter.
 
-For large values of len an of bound access to mb[] may occur in
-dib9000_mbx_send_attr.
+	Acked-by: Sam Ravnborg <sam@ravnborg.org>
+	Signed-off-by: Michal Marek <mmarek@suse.cz>
 
-Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Broke IDEs and other tools which analyze the make output.
+Introduce a new KBUILD_FULL_PATH switch to Makefile that will revert
+to the old output if KBUILD_FULL_PATH=1 is specified.
+The default is KBUILD_FULL_PATH=0
+
+Signed-off-by: Boaz Harrosh <boaz@plexistor.com>
 ---
- drivers/media/dvb-frontends/dib9000.c | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ Documentation/kbuild/kbuild.txt |  9 +++++++++
+ Makefile                        | 13 ++++++++-----
+ 2 files changed, 17 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/media/dvb-frontends/dib9000.c b/drivers/media/dvb-frontends/dib9000.c
-index e540cfb..f75dec4 100644
---- a/drivers/media/dvb-frontends/dib9000.c
-+++ b/drivers/media/dvb-frontends/dib9000.c
-@@ -1040,13 +1040,18 @@ static int dib9000_risc_apb_access_write(struct dib9000_state *state, u32 addres
- 	if (address >= 1024 || !state->platform.risc.fw_is_running)
- 		return -EINVAL;
+diff --git a/Documentation/kbuild/kbuild.txt b/Documentation/kbuild/kbuild.txt
+index 6466704..9133b47 100644
+--- a/Documentation/kbuild/kbuild.txt
++++ b/Documentation/kbuild/kbuild.txt
+@@ -77,6 +77,15 @@ Specify the output directory when building the kernel.
+ The output directory can also be specified using "O=...".
+ Setting "O=..." takes precedence over KBUILD_OUTPUT.
  
-+	if (len > 18)
-+		return -EINVAL;
++KBUILD_FULL_PATH
++--------------------------------------------------
++Since Linux v3.16-rc1 the Kernel build system prefers to use
++relative paths when supplying file-paths to gcc and other
++tools. This will break IDEs and other environments that would
++parse the gcc output to find files and lines.
++Use KBUILD_FULL_PATH=1 on make command line to revert to old
++way of feeding tools with full-paths.
 +
- 	/* dprintk( "APB access thru wr fw %d %x", address, attribute); */
- 
--	mb[0] = (unsigned short)address;
--	for (i = 0; i < len && i < 20; i += 2)
--		mb[1 + (i / 2)] = (b[i] << 8 | b[i + 1]);
-+	mb[0] = (u16)address;
-+	for (i = 0; i + 1 < len; i += 2)
-+		mb[1 + i / 2] = b[i] << 8 | b[i + 1];
-+	if (len & 1)
-+		mb[1 + len / 2] = b[len - 1] << 8;
- 
--	dib9000_mbx_send_attr(state, OUT_MSG_BRIDGE_APB_W, mb, 1 + len / 2, attribute);
-+	dib9000_mbx_send_attr(state, OUT_MSG_BRIDGE_APB_W, mb, (3 + len) / 2, attribute);
- 	return dib9000_mbx_get_message_attr(state, IN_MSG_END_BRIDGE_APB_RW, mb, &s, attribute) == 1 ? 0 : -EINVAL;
- }
- 
+ KBUILD_DEBARCH
+ --------------------------------------------------
+ For the deb-pkg target, allows overriding the normal heuristics deployed by
+diff --git a/Makefile b/Makefile
+index 97b2861..51fcebd 100644
+--- a/Makefile
++++ b/Makefile
+@@ -153,11 +153,14 @@ ifeq ($(KBUILD_SRC),)
+         # building in the source tree
+         srctree := .
+ else
+-        ifeq ($(KBUILD_SRC)/,$(dir $(CURDIR)))
+-                # building in a subdirectory of the source tree
+-                srctree := ..
+-        else
+-                srctree := $(KBUILD_SRC)
++        srctree := $(KBUILD_SRC)
++
++        # if KBUILD_FULL_PATH=1 then do not use relative path
++	ifneq ($(KBUILD_FULL_PATH), 1)
++                ifeq ($(KBUILD_SRC)/,$(dir $(CURDIR)))
++                        # building in a subdirectory of the source tree
++                        srctree := ..
++                endif
+         endif
+ endif
+ objtree		:= .
 -- 
-2.0.0
+1.9.3
+
 
