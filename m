@@ -1,158 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757221AbaFSDA5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 23:00:57 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:9498 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757140AbaFSDA4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 23:00:56 -0400
-X-IronPort-AV: E=Sophos;i="5.00,735,1396972800"; 
-   d="scan'208";a="32125957"
-Message-ID: <53A25286.1030003@cn.fujitsu.com>
-Date: Thu, 19 Jun 2014 11:01:26 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1757224AbaFSDF6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 23:05:58 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53566 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756081AbaFSDF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 23:05:56 -0400
+Date: Wed, 18 Jun 2014 22:05:20 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Nishanth Menon <nm@ti.com>
+CC: <balbi@ti.com>, <devicetree@vger.kernel.org>, <linux@arm.linux.org.uk>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>, Rajendra Nayak <rnayak@ti.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Darren Etheridge <detheridge@ti.com>, <r.sricharan@ti.com>,
+        <robh+dt@kernel.org>, Josh Elliot <jelliott@ti.com>,
+        <galak@codeaurora.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 2/2] arm: dts: add support for AM437x StarterKit
+Message-ID: <20140619030520.GA13805@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1403106200-777-1-git-send-email-balbi@ti.com>
+ <1403106200-777-3-git-send-email-balbi@ti.com>
+ <53A1BADD.7050309@ti.com>
+ <20140618193113.GC4570@saruman.home>
+ <53A20A7D.3060508@ti.com>
+ <20140618231923.GA9855@saruman.home>
+ <53A24A39.4080100@ti.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <cl@linux-foundation.org>, <kmo@daterainc.com>,
-        <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 6/6] percpu-refcount: implement percpu_ref_reinit()
- and percpu_ref_is_zero()
-References: <1403053685-28240-1-git-send-email-tj@kernel.org> <1403053685-28240-7-git-send-email-tj@kernel.org> <20140619022055.GD20100@mtj.dyndns.org>
-In-Reply-To: <20140619022055.GD20100@mtj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Kj7319i9nmIyA2yE"
+Content-Disposition: inline
+In-Reply-To: <53A24A39.4080100@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2014 10:20 AM, Tejun Heo wrote:
-> Now that explicit invocation of percpu_ref_exit() is necessary to free
-> the percpu counter, we can implement percpu_ref_reinit() which
-> reinitializes a released percpu_ref.  This can be used implement
-> scalable gating switch which can be drained and then re-opened without
-> worrying about memory allocation failures.
-> 
-> percpu_ref_is_zero() is added to be used in a sanity check in
-> percpu_ref_exit().  As this function will be useful for other purposes
-> too, make it a public interface.
-> 
-> v2: Use smp_read_barrier_depends() instead of smp_load_acquire().  We
->     only need data dep barrier and smp_load_acquire() is stronger and
->     heavier on some archs.  Spotted by Lai Jiangshan.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Kent Overstreet <kmo@daterainc.com>
-> Cc: Christoph Lameter <cl@linux-foundation.org>
-> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
->  include/linux/percpu-refcount.h |   19 +++++++++++++++++++
->  lib/percpu-refcount.c           |   35 +++++++++++++++++++++++++++++++++++
->  2 files changed, 54 insertions(+)
-> 
-> --- a/include/linux/percpu-refcount.h
-> +++ b/include/linux/percpu-refcount.h
-> @@ -67,6 +67,7 @@ struct percpu_ref {
->  
->  int __must_check percpu_ref_init(struct percpu_ref *ref,
->  				 percpu_ref_func_t *release);
-> +void percpu_ref_reinit(struct percpu_ref *ref);
->  void percpu_ref_exit(struct percpu_ref *ref);
->  void percpu_ref_kill_and_confirm(struct percpu_ref *ref,
->  				 percpu_ref_func_t *confirm_kill);
-> @@ -99,6 +100,9 @@ static inline bool __pcpu_ref_alive(stru
->  {
->  	unsigned long pcpu_ptr = ACCESS_ONCE(ref->pcpu_count_ptr);
->  
-> +	/* paired with smp_store_release() in percpu_ref_reinit() */
-> +	smp_read_barrier_depends();
-> +
->  	if (unlikely(pcpu_ptr & PCPU_REF_DEAD))
->  		return false;
->  
-> @@ -206,4 +210,19 @@ static inline void percpu_ref_put(struct
->  	rcu_read_unlock_sched();
->  }
->  
-> +/**
-> + * percpu_ref_is_zero - test whether a percpu refcount reached zero
-> + * @ref: percpu_ref to test
-> + *
-> + * Returns %true if @ref reached zero.
-> + */
-> +static inline bool percpu_ref_is_zero(struct percpu_ref *ref)
-> +{
-> +	unsigned __percpu *pcpu_count;
-> +
-> +	if (__pcpu_ref_alive(ref, &pcpu_count))
-> +		return false;
-> +	return !atomic_read(&ref->count);
-> +}
-> +
->  #endif
-> --- a/lib/percpu-refcount.c
-> +++ b/lib/percpu-refcount.c
-> @@ -61,6 +61,41 @@ int percpu_ref_init(struct percpu_ref *r
->  EXPORT_SYMBOL_GPL(percpu_ref_init);
->  
->  /**
-> + * percpu_ref_reinit - re-initialize a percpu refcount
-> + * @ref: perpcu_ref to re-initialize
-> + *
-> + * Re-initialize @ref so that it's in the same state as when it finished
-> + * percpu_ref_init().  @ref must have been initialized successfully, killed
-> + * and reached 0 but not exited.
-> + *
-> + * Note that percpu_ref_tryget[_live]() are safe to perform on @ref while
-> + * this function is in progress.
-> + */
-> +void percpu_ref_reinit(struct percpu_ref *ref)
-> +{
-> +	unsigned __percpu *pcpu_count = pcpu_count_ptr(ref);
-> +	int cpu;
-> +
-> +	BUG_ON(!pcpu_count);
-> +	WARN_ON(!percpu_ref_is_zero(ref));
-> +
-> +	atomic_set(&ref->count, 1 + PCPU_COUNT_BIAS);
-> +
-> +	/*
-> +	 * Restore per-cpu operation.  smp_store_release() is paired with
-> +	 * smp_load_acquire() in __pcpu_ref_alive() and guarantees that the
+--Kj7319i9nmIyA2yE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-s/smp_load_acquire()/smp_read_barrier_depends()/
+Hi,
 
-s/smp_store_release()/smp_mb()/  if you accept my next comment.
+On Wed, Jun 18, 2014 at 09:26:01PM -0500, Nishanth Menon wrote:
+> On 06/18/2014 06:19 PM, Felipe Balbi wrote:
+> [...]
+> >>>>>Add support for TI's AM437x StarterKit Evaluation
+> >>>>>Module.
+> >>>>
+> >>>>is there a link for this platform?
+> >>>
+> >>>internal only
+> >>
+> >>but will eventually be sold externally? I assume this is not an TI
+> >
+> >probably, but there's nothing public yet.
+> >
+> >>internal only board.
+> >
+> >correct assumption for all I know.
+>=20
+> Yikes.. ok.. I'd let Tony et.al make the call on this, I guess.
 
-> +	 * zeroing is visible to all percpu accesses which can see the
-> +	 * following PCPU_REF_DEAD clearing.
-> +	 */
-> +	for_each_possible_cpu(cpu)
-> +		*per_cpu_ptr(pcpu_count, cpu) = 0;
-> +
-> +	smp_store_release(&ref->pcpu_count_ptr,
-> +			  ref->pcpu_count_ptr & ~PCPU_REF_DEAD);
+would we really block a DTS just because there's no public wiki page
+available (yet) ?
 
-I think it would be better if smp_mb() is used.
+Sounds a bit extreme to me.
 
-it is documented that smp_read_barrier_depends() and smp_mb() are paired.
-Not smp_read_barrier_depends() and smp_store_release().
+> >>>>>+	edt-ft5306@38 {
+> >>>>>+		status =3D "okay";
+> >>>>>+		compatible =3D "edt,edt-ft5306", "edt,edt-ft5x06";
+> >>>>>+		pinctrl-names =3D "default";
+> >>>>>+		pinctrl-0 =3D <&edt_ft5306_ts_pins>;
+> >>>>>+		reg =3D <0x38>;
+> >>>>>+		interrupt-parent =3D <&gpio0>;
+> >>>>>+		interrupts =3D <31 0>;
+> >>>>>+
+> >>>>>+		wake-gpios =3D <&gpio1 28 GPIO_ACTIVE_HIGH>;
+> >>>>
+> >>>>why wake-gpios? we should be using pinctrl with interrupt-extended to
+> >>>>do wakeup sequence, no?
+> >>>
+> >>>sure, can you patch the edt driver ? I'll fix the DTS after that gets
+> >>>merged
+> >>
+> >>If you really want to go down that road, so you could probably help
+> >>review the pinctrl patches I posted to enable pinctrl wakeup[1]?
+> >>
+> >>Come on, as of today, there is no ability to suspend AM437x without
+> >>doing [1], let alone talk about wakeup gpio vs interrupt-extended. and
+> >>do we really want to wakeup from suspend when touch screen is touched?
+> >>
+> >>Do you expect wake-gpio to work even after doing interrupt based
+> >>solution? I am no edt driver expert... maybe you can help me here.
+> >
+> >you missed the point entirely. This pin is not used for the touchscreen
+> >to wake SoC up, it's the other way around, see how the pin is an
+> >*output*. Pull it low and the touchscreen won't generate IRQs, won't
+> >respond to i2c accesses, etc. Pull it high, and the thing wakes up.
+>=20
+> Aaah.. My apologies.. I was confused. Thanks for clarifying.
 
-> +}
-> +EXPORT_SYMBOL_GPL(percpu_ref_reinit);
-> +
-> +/**
->   * percpu_ref_exit - undo percpu_ref_init()
->   * @ref: percpu_ref to exit
->   *
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> .
-> 
+np
 
+> [...]
+> >>>>>+	cd-gpios =3D <&gpio0 6 GPIO_ACTIVE_HIGH>;
+> >>>>>+};
+> >>>>>+
+> >>>>>+&usb2_phy1 {
+> >>>>>+	status =3D "okay";
+> >>>>>+};
+> >>>>>+
+> >>>>>+&usb1 {
+> >>>>>+	dr_mode =3D "peripheral";
+> >>>>>+	status =3D "okay";
+> >>>>>+};
+> >>>>>+
+> >>>>>+&usb2_phy2 {
+> >>>>>+	status =3D "okay";
+> >>>>>+};
+> >>>>>+
+> >>>>>+&usb2 {
+> >>>>>+	dr_mode =3D "host";
+> >>>>>+	status =3D "okay";
+> >>>>>+};
+> >>>>none of the above need pinctrl? no regulator supplies?
+> >>>
+> >>>pins in default states, drivers don't use regulators.
+> >>
+> >>USB works without a supply? even a fixed voltage supply? that is
+> >>weird.
+> >
+> >take a look at the minicom output I posted if you don't believe. Well,
+> >to be exact, tps63010 [1] is the one which generates the regulated V5_0D
+> >which is used as VBUS_USB. The enable pin in that device is tied to the
+> >3v3 rail (dcdc4 regulator in the PMIC as most everything else) but
+> >there's no way (otherwise) to control that thing. There's no control
+> >bus, no way to write a driver.
+> >
+> >Since the board will anyways turn off if you disable the 3v3 rail, it's
+> >pretty much pointless to figure out a hack just to add this to DTS.
+> >
+> >[1] http://www.ti.com/product/TPS63010
+>=20
+> I am sure to trust you on the test log :) ->  but then from dts descripti=
+on
+> perspective, it is good if we describe the supplies, even as a always on
+> fixed-regulator. We had instances like 2430SDP ethernet where... umm... we
+> originally missed describing ethernet supply and boom, one fine morning, =
+no
+> more nfs filesystem - I mean, it is a one off scenario there, but describ=
+ing
+> regulators helps us atleast understand the power tree of the board a litt=
+le
+> better.
+>=20
+> Again, no strong opinions on my side, it is a good thing to do is all
+> I feel about it.
+
+you mean something like:
+
+	V5_0D: fixedregulator@0 {
+		compatible =3D "regulator-fixed";
+		regulator-name =3D "V5_0D";
+		regulator-min-microvolt =3D <5000000>;
+		regulator-max-microvolt =3D <5000000>;
+		regulator-boot-on;
+		regulator-always-on;
+		vin-supply =3D <&dcdc4>;
+	};
+
+	VBUS_USB: fixedregulator@1 {
+		compatible =3D "regulator-fixed";
+		regulator-name =3D "VBUS_USB";
+		regulator-min-microvolt =3D <5000000>;
+		regulator-max-microvolt =3D <5000000>;
+		regulator-boot-on;
+		regulator-always-on;
+		vin-supply =3D <&V5_0D>;
+	};
+
+I can add that, but note that it's *solely* to make sysfs look nice. And
+if that's the case, most likely *every* DTS file in tree today as
+incomplete. OTOH, I really consider this to be hugely unnecessary
+because of the fact that board will turn off if 3v3 (dcdc4) is disabled.
+
+--=20
+balbi
+
+--Kj7319i9nmIyA2yE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTolNvAAoJEIaOsuA1yqREVG4P/1gK7gnUW7jimJzUc0fmGabk
+e80I8zSYsAl+JoUARINpqeKSg/6X5Clg7pQttaIqUOxGfBL7L/LBL9UbUu34XJto
+pK1feddh98mTEPlCDsMELV6W2OSg9mcksX0g0MmerHeUx/biRUQBPkJzCGXU91Z8
+Td/wH/6in9hY47o+WJx9A2dCP+am/ibr9QsUsx7Rf5vFuWyMdZgM9PGtTjEjFnZN
+POc1IMUzX61cMGV2ttq8cF3R3vYrS9qq2QPVPO6prBXI7QQYhcbwEMg1FggtB037
+vK4H3ER9IoAvLg8DYppQs/aZ3HbwcCOUbDyu50VFpvf3rt0GRcn0wkhjq8gexu0J
+ErootrLTJrBzqjMYDg263bIkUuWEv0m4QD4dwNq3S7s4Ob0OtYw04kUZMhzwQ9YI
+reJU71ocQkXuvOoyaqwyQ6LByO+CfHEj9Eu4Vb2yElIuTyjMCjrJPR6mMRax+hwg
+HdBBhIkJ5XsE0wtxeCxeFGCEhchdf2BjQpOPMGuViVdHMz6dHm67T8c1+0bdi0/2
+afMHN85sAXwEnLx9KYeKhhRsZY45cgk5/qriH2LE0c1wKX7kCXJqC8cY40r/KGsV
+pnPW+K3ZCaKyJCuXZnmZx9tgwVq7RDmeKnZLNqZVDvfBpbMf73D28nopfYDA2/Xk
+MOVAzdSvbZ12DVdL897b
+=nDt4
+-----END PGP SIGNATURE-----
+
+--Kj7319i9nmIyA2yE--
