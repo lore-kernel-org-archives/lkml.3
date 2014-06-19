@@ -1,169 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808AbaFSAvF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 20:51:05 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:54375 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632AbaFSAvD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 20:51:03 -0400
-Message-ID: <53A233E9.6030006@ozlabs.ru>
-Date: Thu, 19 Jun 2014 10:50:49 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753587AbaFSAva (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 20:51:30 -0400
+Received: from mga01.intel.com ([192.55.52.88]:1524 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752978AbaFSAv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jun 2014 20:51:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="355784429"
+Message-ID: <53A2340D.9030503@linux.intel.com>
+Date: Thu, 19 Jun 2014 08:51:25 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alexander Graf <agraf@suse.de>,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-Subject: Re: [PATCH] vfio: Fix endianness handling for emulated BARs
-References: <1403091391-31780-1-git-send-email-aik@ozlabs.ru> <1403116512.3707.175.camel@ul30vt.home>
-In-Reply-To: <1403116512.3707.175.camel@ul30vt.home>
-Content-Type: text/plain; charset=KOI8-R
+To: "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] GPIO button wth wakeup attribute is supposed to wake the
+ system up
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2014 04:35 AM, Alex Williamson wrote:
-> On Wed, 2014-06-18 at 21:36 +1000, Alexey Kardashevskiy wrote:
->> VFIO exposes BARs to user space as a byte stream so userspace can
->> read it using pread()/pwrite(). Since this is a byte stream, VFIO should
->> not do byte swapping and simply return values as it gets them from
->> PCI device.
->>
->> Instead, the existing code assumes that byte stream in read/write is
->> little-endian and it fixes endianness for values which it passes to
->> ioreadXX/iowriteXX helpers. This works for little-endian as PCI is
->> little endian and le32_to_cpu/... are stubs.
-> 
-> vfio read32:
-> 
-> val = cpu_to_le32(ioread32(io + off));
-> 
-> Where the typical x86 case, ioread32 is:
-> 
-> #define ioread32(addr)          readl(addr)
-> 
-> and readl is:
-> 
-> __le32_to_cpu(__raw_readl(addr));
-> 
-> So we do canceling byte swaps, which are both nops on x86, and end up
-> returning device endian, which we assume is little endian.
-> 
-> vfio write32 is similar:
-> 
-> iowrite32(le32_to_cpu(val), io + off);
-> 
-> The implicit cpu_to_le32 of iowrite32() and our explicit swap cancel
-> out, so input data is device endian, which is assumed little.
-> 
->> This also works for big endian but rather by an accident: it reads 4 bytes
->> from the stream (@val is big endian), converts to CPU format (which should
->> be big endian) as it was little endian (@val becomes actually little
->> endian) and calls iowrite32() which does not do swapping on big endian
->> system.
-> 
-> Really?
-> 
-> In arch/powerpc/kernel/iomap.c iowrite32() is just a wrapper around
-> writel(), which seems to use the generic implementation, which does
-> include a cpu_to_le32.
+When the wakeup attribute is set, the GPIO button is capable of
+waking up the system from sleep states, including the "freeze"
+sleep state.  For that to work, its driver needs to pass the
+IRQF_NO_SUSPEND flag to devm_request_any_context_irq(), or the
+interrupt will be disabled by suspend_device_irqs() and the
+system won't be woken up by it from the "freeze" sleep state.
 
+The suspend_device_irqs() routine is a workaround for drivers
+that mishandle interrupts triggered when the devices handled
+by them are suspended, so it is safe to use IRQF_NO_SUSPEND in
+all drivers that don't have that problem.
 
-Ouch, wrong comment. iowrite32() does swapping. My bad.
+The affected/tested machines include Dell Venue 11 Pro and Asus T100TA.
 
+Signed-off-by: Aubrey Li <aubrey.li@linux.intel.com>
+Reviewed-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/input/keyboard/gpio_keys.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-> 
-> I also see other big endian archs like parisc doing cpu_to_le32 on
-> iowrite32, so I don't think this statement is true.  I imagine it's
-> probably working for you because the swap cancel.
-> 
->> This removes byte swapping and makes use ioread32be/iowrite32be
->> (and 16bit versions) on big-endian systems. The "be" helpers take
->> native endian values and do swapping at the moment of writing to a PCI
->> register using one of "store byte-reversed" instructions.
-> 
-> So now you want iowrite32() on little endian and iowrite32be() on big
-> endian, the former does a cpu_to_le32 (which is a nop on little endian)
-> and the latter does a cpu_to_be32 (which is a nop on big endian)...
-> should we just be using __raw_writel() on both?
-
-
-We can do that too. The beauty of iowrite32be on ppc64 is that it does not
-swap and write separately, it is implemented via the "Store Word
-Byte-Reverse Indexed X-form" single instruction.
-
-And some archs (do not know which ones) may add memory barriers in their
-implementations of ioread/iowrite. __raw_writel is too raw :)
-
->  There doesn't actually
-> seem to be any change in behavior here, it just eliminates back-to-back
-> byte swaps, which are a nop on x86, but not power, right?
-
-Exactly. No dependency for QEMU.
-
-
-> 
->> Suggested-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->> ---
->>  drivers/vfio/pci/vfio_pci_rdwr.c | 20 ++++++++++++++++----
->>  1 file changed, 16 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/vfio/pci/vfio_pci_rdwr.c b/drivers/vfio/pci/vfio_pci_rdwr.c
->> index 210db24..f363b5a 100644
->> --- a/drivers/vfio/pci/vfio_pci_rdwr.c
->> +++ b/drivers/vfio/pci/vfio_pci_rdwr.c
->> @@ -21,6 +21,18 @@
->>  
->>  #include "vfio_pci_private.h"
->>  
->> +#ifdef __BIG_ENDIAN__
->> +#define ioread16_native		ioread16be
->> +#define ioread32_native		ioread32be
->> +#define iowrite16_native	iowrite16be
->> +#define iowrite32_native	iowrite32be
->> +#else
->> +#define ioread16_native		ioread16
->> +#define ioread32_native		ioread32
->> +#define iowrite16_native	iowrite16
->> +#define iowrite32_native	iowrite32
->> +#endif
->> +
->>  /*
->>   * Read or write from an __iomem region (MMIO or I/O port) with an excluded
->>   * range which is inaccessible.  The excluded range drops writes and fills
->> @@ -50,9 +62,9 @@ static ssize_t do_io_rw(void __iomem *io, char __user *buf,
->>  				if (copy_from_user(&val, buf, 4))
->>  					return -EFAULT;
->>  
->> -				iowrite32(le32_to_cpu(val), io + off);
->> +				iowrite32_native(val, io + off);
->>  			} else {
->> -				val = cpu_to_le32(ioread32(io + off));
->> +				val = ioread32_native(io + off);
->>  
->>  				if (copy_to_user(buf, &val, 4))
->>  					return -EFAULT;
->> @@ -66,9 +78,9 @@ static ssize_t do_io_rw(void __iomem *io, char __user *buf,
->>  				if (copy_from_user(&val, buf, 2))
->>  					return -EFAULT;
->>  
->> -				iowrite16(le16_to_cpu(val), io + off);
->> +				iowrite16_native(val, io + off);
->>  			} else {
->> -				val = cpu_to_le16(ioread16(io + off));
->> +				val = ioread16_native(io + off);
->>  
->>  				if (copy_to_user(buf, &val, 2))
->>  					return -EFAULT;
-> 
-> 
-> 
-
-
+diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
+index 8c98e97..b046dc6 100644
+--- a/drivers/input/keyboard/gpio_keys.c
++++ b/drivers/input/keyboard/gpio_keys.c
+@@ -527,6 +527,14 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
+ 	if (!button->can_disable)
+ 		irqflags |= IRQF_SHARED;
+ 
++	/*
++	 * If platform has specified the wakeup attribute of the button,
++	 * we add IRQF_NO_SUSPEND to desc->action->flag. So the wake up
++	 * interrupt will not be disabled in suspend_device_irqs
++	 */
++	if (button->wakeup)
++		irqflags |= IRQF_NO_SUSPEND;
++
+ 	error = devm_request_any_context_irq(&pdev->dev, bdata->irq,
+ 					     isr, irqflags, desc, bdata);
+ 	if (error < 0) {
 -- 
-Alexey
+1.7.10.4
