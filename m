@@ -1,49 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753843AbaFSMe0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 08:34:26 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:37999 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753707AbaFSMeY (ORCPT
+	id S1754059AbaFSMej (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 08:34:39 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:43431 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753881AbaFSMeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 08:34:24 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH] drivers/sbus/char: Micro-optimization in display7seg.c
-Date: Thu, 19 Jun 2014 14:31:52 +0200
-Message-Id: <1403181112-12018-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 19 Jun 2014 08:34:37 -0400
+Subject: Re: [PATCH -tip v2 3/3] kprobes: Set IPMODIFY flag only if the
+ probe can change regs->ip
+From: Namhyung Kim <namhyung@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140617110456.15167.89566.stgit@kbuild-fedora.novalocal>
+References: <20140617110436.15167.7179.stgit@kbuild-fedora.novalocal>
+	 <20140617110456.15167.89566.stgit@kbuild-fedora.novalocal>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 19 Jun 2014 21:34:31 +0900
+Message-ID: <1403181271.1670.18.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Flipping a bit doesn't need four lines of code; and gcc seems to
-actually generate two branches.
+Hi Masami,
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
- drivers/sbus/char/display7seg.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+2014-06-17 (화), 11:04 +0000, Masami Hiramatsu:
+> +static int __ftrace_add_filter_ip(struct ftrace_ops *ops, unsigned long ip,
+> +				  int *ref)
+> +{
+> +	int ret;
+> +
+> +	/* Try to set given ip to filter */
+> +	ret = ftrace_set_filter_ip(ops, ip, 0, 0);
+> +	if (ret >= 0) {
 
-diff --git a/drivers/sbus/char/display7seg.c b/drivers/sbus/char/display7seg.c
-index 7c71e7b..3221dff 100644
---- a/drivers/sbus/char/display7seg.c
-+++ b/drivers/sbus/char/display7seg.c
-@@ -143,10 +143,7 @@ static long d7s_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 
- 	case D7SIOCTM:
- 		/* toggle device mode-- flip display orientation */
--		if (regs & D7S_FLIP)
--			regs &= ~D7S_FLIP;
--		else
--			regs |= D7S_FLIP;
-+		regs ^= D7S_FLIP;
- 		writeb(regs, p->regs);
- 		break;
- 	}
--- 
-1.9.2
+Hmm.. this doesn't look comfortable.  What not using usual pattern?
+
+	if (ret < 0)
+		return ret;
+
+This way we can reduce a indent level.
+
+
+> +		(*ref)++;
+> +		if (*ref == 1) {
+> +			ret = register_ftrace_function(ops);
+> +			if (ret < 0) {
+> +				/* Rollback refcounter and filter */
+> +				(*ref)--;
+> +				ftrace_set_filter_ip(ops, ip, 1, 0);
+> +			}
+> +		}
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +static int __ftrace_remove_filter_ip(struct ftrace_ops *ops, unsigned long ip,
+> +				     int *ref)
+> +{
+> +	int ret = 0;
+> +
+> +	(*ref)--;
+> +	if (*ref == 0)
+> +		ret = unregister_ftrace_function(ops);
+> +	if (ret >= 0)
+> +		/* Try to remove given ip to filter */
+> +		ret = ftrace_set_filter_ip(ops, ip, 1, 0);
+
+I think any failure at this time can be problematic.  Since we already
+unregistered the ops but the refcount will get increased again, future
+attemp to register won't enable the ops anymore IMHO.
+
+I think it'd better just ignoring faiure of filter removal here.  We'll
+miss a filter entry but it'll be usable anyway.
+
+What about this?
+
+static int __ftrace_remove_filter_ip(...)
+{
+	if (*ref == 1) {
+		int ret = unregister_ftrace_function(ops);
+		if (ret < 0)
+			return ret;
+
+		ftrace_set_filter_ip(ops, ip, 1, 0);
+	}
+
+	(*ref)--;
+	return 0;
+}
+
+Thanks,
+Namhyung
+
+
+> +	if (ret < 0)	/* Rollback refcounter if an error occurs */
+> +		(*ref)++;
+> +
+> +	return ret;
+> +}
+
 
