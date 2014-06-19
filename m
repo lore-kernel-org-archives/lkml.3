@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568AbaFSNlC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 09:41:02 -0400
-Received: from mail-wi0-f194.google.com ([209.85.212.194]:42316 "EHLO
-	mail-wi0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754697AbaFSNkc (ORCPT
+	id S1755805AbaFSNnj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 09:43:39 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:52321 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754216AbaFSNni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 09:40:32 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: linux-efi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "H. Peter Anvin" <hpa@zytor.com>, Mark Salter <msalter@redhat.com>,
-        Aubrey Li <aubrey.li@linux.intel.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [PATCH 2/3] efi/reboot: Allow powering off machines using EFI
-Date: Thu, 19 Jun 2014 14:40:24 +0100
-Message-Id: <1403185225-9031-3-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1403185225-9031-1-git-send-email-matt@console-pimps.org>
-References: <1403185225-9031-1-git-send-email-matt@console-pimps.org>
+	Thu, 19 Jun 2014 09:43:38 -0400
+Date: Thu, 19 Jun 2014 08:43:30 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: Kishon Vijay Abraham I <kishon@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCHv2 6/6] usb: dwc3: host: convey the PHYs to xhci
+Message-ID: <20140619134330.GA23782@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1401972778-5880-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <1401972778-5880-7-git-send-email-heikki.krogerus@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
+Content-Disposition: inline
+In-Reply-To: <1401972778-5880-7-git-send-email-heikki.krogerus@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+--G4iJoqBmSsgzjUCe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Not only can EfiResetSystem() be used to reboot, it can also be used to
-power down machines.
+On Thu, Jun 05, 2014 at 03:52:58PM +0300, Heikki Krogerus wrote:
+> On some platforms a PHY may need to be handled also in the
+> host controller driver. Exynos5420 SoC requires some "PHY
+> tuning" based on the USB speed. This patch delivers dwc3's
+> PHYs to the xhci platform device when it's created.
+>=20
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> Cc: Felipe Balbi <balbi@ti.com>
 
-By and large, this functionality doesn't work very well across the range
-of EFI machines in the wild, so it should definitely only be used as a
-last resort. In an ideal world, this wouldn't be needed at all.
+if the rest of the series gets applied, I'm fine with this change
 
-Unfortunately, we're starting to see machines where EFI is the *only*
-reliable way to power down, and nothing else, not PCI, not ACPI, works.
+Acked-by: Felipe Balbi <balbi@ti.com>
 
-efi_poweroff_required() should be implemented on a per-architecture
-basis, since exactly when we should be using EFI runtime services is a
-platform-specific decision. There's no analogue for reboot because each
-architecture handles reboot very differently - the x86 code in
-particular is pretty complex.
+--=20
+balbi
 
-Patches to enable this for specific classes of hardware will be
-submitted separately.
+--G4iJoqBmSsgzjUCe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Cc: Mark Salter <msalter@redhat.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- drivers/firmware/efi/reboot.c | 22 ++++++++++++++++++++++
- include/linux/efi.h           |  2 ++
- 2 files changed, 24 insertions(+)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-diff --git a/drivers/firmware/efi/reboot.c b/drivers/firmware/efi/reboot.c
-index d10acc0a0370..794a276dbe92 100644
---- a/drivers/firmware/efi/reboot.c
-+++ b/drivers/firmware/efi/reboot.c
-@@ -23,3 +23,25 @@ void efi_reboot(enum reboot_mode reboot_mode, const char *__unused)
- 
- 	efi.reset_system(efi_mode, EFI_SUCCESS, 0, NULL);
- }
-+
-+bool __weak efi_poweroff_required(void)
-+{
-+	return false;
-+}
-+
-+static void efi_power_off(void)
-+{
-+	efi.reset_system(EFI_RESET_SHUTDOWN, EFI_SUCCESS, 0, NULL);
-+}
-+
-+static int __init efi_shutdown_init(void)
-+{
-+	if (!efi_enabled(EFI_RUNTIME_SERVICES))
-+		return -ENODEV;
-+
-+	if (efi_poweroff_required())
-+		pm_power_off = efi_power_off;
-+
-+	return 0;
-+}
-+late_initcall(efi_shutdown_init);
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 0958d4bb399f..2539aff31808 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -876,6 +876,8 @@ extern void efi_reserve_boot_services(void);
- extern int efi_get_fdt_params(struct efi_fdt_params *params, int verbose);
- extern struct efi_memory_map memmap;
- 
-+extern bool efi_poweroff_required(void);
-+
- /* Iterate through an efi_memory_map */
- #define for_each_efi_memory_desc(m, md)					   \
- 	for ((md) = (m)->map;						   \
--- 
-1.9.0
+iQIcBAEBAgAGBQJToukCAAoJEIaOsuA1yqRESHAP/RH7+llSjaspPZrue8kV+DGh
+7bpp/OpVHmB0DQ/84QoZtBReH29KMnPhqlAHrpsWWYmuyKlCwAiTLxhxP3wmVTIv
+23L/r2pCgzTN1wKuPA+UaJLdlXW1ZeriR+lMjMyLfUQb8LPbXc1+BHs5ny0gtxTA
+cPx0daa8OqNrd/wsT8AkORX8umRHt4QiR6emxL2HlLqZuk6QmNlj+4w++dvwgSZd
+U8WkqG7klByZi+Nf727+TO2JvLQaxNgVyCJIBQh6p+GqMVW0s76WyjqjG3w+7X7T
+r1G8939IqbR1bMtenLTNRDdk0YFxI6AFLPonQz6sBKdVkLVWNGtRWWaPIuvtv9Cq
+aaJlTCXWWvgqs0s/vliaPYOU48eYaMmlXqHtQk/boewpOD+4jBZ523TPIwaYhGpA
+6xnq7ibntxMEy9cZhE07SqO2rOt0M3CQ4N7XdQidrlnFHdsIkqaR22RVFsckyKAC
+5k8ktc7pPfWUCSYvQqkeY10zDg77yNvMCvn6hZvF9TdYIVOPl62xhRmSs1NYel+Y
+zh337QTa2xviDzZsuLo3WqPgH88Jxo+PaQjpqzkSFxRIUXZPegYROsi1Wqzs4lCv
+qX77+Ckpqj4SyiaaS2TpA8veez1pW8ExyUVHFyPMQ8AkoJRlK0hS19/ZAU1xSOrg
+/uAE1dR3wd2KtI37nrJ1
+=fpUL
+-----END PGP SIGNATURE-----
 
+--G4iJoqBmSsgzjUCe--
