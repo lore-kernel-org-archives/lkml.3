@@ -1,177 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934550AbaFSS0t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 14:26:49 -0400
-Received: from exprod5og103.obsmtp.com ([64.18.0.145]:42008 "HELO
-	exprod5og103.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S934270AbaFSS0q (ORCPT
+	id S934552AbaFSS1J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 14:27:09 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:44605 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934205AbaFSS1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 14:26:46 -0400
+	Thu, 19 Jun 2014 14:27:05 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Olof Johansson <olof@lixom.net>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: zImage: ensure header in LE format for BE8 kernels
+References: <1397147232-28516-1-git-send-email-taras.kondratiuk@linaro.org>
+	<CAGa+x85P-M3qUD6L=kezkiQ1NJymEZ9P=u2ANUZJu2b3F+o5LA@mail.gmail.com>
+	<53A1D701.8060404@codeaurora.org>
+	<CAGa+x86DfDjQG8gN2-x7Kapt2ipsYt879R4OK6JWGoaT93VVig@mail.gmail.com>
+	<53A1D8FE.6030404@codeaurora.org>
+	<CAGa+x87rnQntQpTkR6dZr29NvEQ4x8SOAyo+z9xuYHEdxdG1xg@mail.gmail.com>
+	<alpine.LFD.2.11.1406181720130.16842@knanqh.ubzr>
+Date: Thu, 19 Jun 2014 11:27:02 -0700
+In-Reply-To: <alpine.LFD.2.11.1406181720130.16842@knanqh.ubzr> (Nicolas
+	Pitre's message of "Wed, 18 Jun 2014 17:35:08 -0400 (EDT)")
+Message-ID: <7hk38cycuh.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CACVXFVNx4gCGuE9=4Z8iaY+hhy6b3db-vAQuKFoA4spY4s_QmQ@mail.gmail.com>
-References: <1403140634-27104-1-git-send-email-isubramanian@apm.com>
-	<1403140634-27104-5-git-send-email-isubramanian@apm.com>
-	<CACVXFVNx4gCGuE9=4Z8iaY+hhy6b3db-vAQuKFoA4spY4s_QmQ@mail.gmail.com>
-Date: Thu, 19 Jun 2014 11:26:43 -0700
-Message-ID: <CAKh23FmrHPeBF_QvMrrUngQXbP4LBRdEj+hbbx77LKy1FJfgGw@mail.gmail.com>
-Subject: Re: [PATCH v7 4/4] drivers: net: Add APM X-Gene SoC ethernet driver support.
-From: Iyappan Subramanian <isubramanian@apm.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: David Miller <davem@davemloft.net>,
-        Network Development <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jon Masters <jcm@redhat.com>, patches <patches@apm.com>,
-        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 1:46 AM, Ming Lei <tom.leiming@gmail.com> wrote:
-> On Thu, Jun 19, 2014 at 9:17 AM, Iyappan Subramanian
-> <isubramanian@apm.com> wrote:
->> This patch adds network driver for APM X-Gene SoC ethernet.
->>
->> Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
->> Signed-off-by: Ravi Patel <rapatel@apm.com>
->> Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
->> ---
->>  drivers/net/ethernet/Kconfig                       |   1 +
->>  drivers/net/ethernet/Makefile                      |   1 +
->>  drivers/net/ethernet/apm/Kconfig                   |   1 +
->>  drivers/net/ethernet/apm/Makefile                  |   5 +
->>  drivers/net/ethernet/apm/xgene/Kconfig             |   9 +
->>  drivers/net/ethernet/apm/xgene/Makefile            |   6 +
->>  .../net/ethernet/apm/xgene/xgene_enet_ethtool.c    | 125 +++
->>  drivers/net/ethernet/apm/xgene/xgene_enet_hw.c     | 848 +++++++++++++++++++
->>  drivers/net/ethernet/apm/xgene/xgene_enet_hw.h     | 394 +++++++++
->>  drivers/net/ethernet/apm/xgene/xgene_enet_main.c   | 939 +++++++++++++++++++++
->>  drivers/net/ethernet/apm/xgene/xgene_enet_main.h   | 109 +++
->>  11 files changed, 2438 insertions(+)
->>  create mode 100644 drivers/net/ethernet/apm/Kconfig
->>  create mode 100644 drivers/net/ethernet/apm/Makefile
->>  create mode 100644 drivers/net/ethernet/apm/xgene/Kconfig
->>  create mode 100644 drivers/net/ethernet/apm/xgene/Makefile
->>  create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_ethtool.c
->>  create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_hw.c
->>  create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_hw.h
->>  create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_main.c
->>  create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_main.h
->>
->> diff --git a/drivers/net/ethernet/Kconfig b/drivers/net/ethernet/Kconfig
->> index edb7186..dc7406c 100644
->> --- a/drivers/net/ethernet/Kconfig
->> +++ b/drivers/net/ethernet/Kconfig
->> @@ -24,6 +24,7 @@ source "drivers/net/ethernet/allwinner/Kconfig"
->>  source "drivers/net/ethernet/alteon/Kconfig"
->>  source "drivers/net/ethernet/altera/Kconfig"
->>  source "drivers/net/ethernet/amd/Kconfig"
->> +source "drivers/net/ethernet/apm/Kconfig"
->>  source "drivers/net/ethernet/apple/Kconfig"
->>  source "drivers/net/ethernet/arc/Kconfig"
->>  source "drivers/net/ethernet/atheros/Kconfig"
->> diff --git a/drivers/net/ethernet/Makefile b/drivers/net/ethernet/Makefile
->> index 58de333..224a018 100644
->> --- a/drivers/net/ethernet/Makefile
->> +++ b/drivers/net/ethernet/Makefile
->> @@ -10,6 +10,7 @@ obj-$(CONFIG_NET_VENDOR_ALLWINNER) += allwinner/
->>  obj-$(CONFIG_NET_VENDOR_ALTEON) += alteon/
->>  obj-$(CONFIG_ALTERA_TSE) += altera/
->>  obj-$(CONFIG_NET_VENDOR_AMD) += amd/
->> +obj-$(CONFIG_NET_XGENE) += apm/
->>  obj-$(CONFIG_NET_VENDOR_APPLE) += apple/
->>  obj-$(CONFIG_NET_VENDOR_ARC) += arc/
->>  obj-$(CONFIG_NET_VENDOR_ATHEROS) += atheros/
->> diff --git a/drivers/net/ethernet/apm/Kconfig b/drivers/net/ethernet/apm/Kconfig
->> new file mode 100644
->> index 0000000..ec63d70
->> --- /dev/null
->> +++ b/drivers/net/ethernet/apm/Kconfig
->> @@ -0,0 +1 @@
->> +source "drivers/net/ethernet/apm/xgene/Kconfig"
->> diff --git a/drivers/net/ethernet/apm/Makefile b/drivers/net/ethernet/apm/Makefile
->> new file mode 100644
->> index 0000000..65ce32a
->> --- /dev/null
->> +++ b/drivers/net/ethernet/apm/Makefile
->> @@ -0,0 +1,5 @@
->> +#
->> +# Makefile for APM X-GENE Ethernet driver.
->> +#
->> +
->> +obj-$(CONFIG_NET_XGENE) += xgene/
->> diff --git a/drivers/net/ethernet/apm/xgene/Kconfig b/drivers/net/ethernet/apm/xgene/Kconfig
->> new file mode 100644
->> index 0000000..616dff6
->> --- /dev/null
->> +++ b/drivers/net/ethernet/apm/xgene/Kconfig
->> @@ -0,0 +1,9 @@
->> +config NET_XGENE
->> +       tristate "APM X-Gene SoC Ethernet Driver"
->> +       select PHYLIB
->> +       help
->> +         This is the Ethernet driver for the on-chip ethernet interface on the
->> +         APM X-Gene SoC.
->> +
->> +         To compile this driver as a module, choose M here. This module will
->> +         be called xgene_enet.
->> diff --git a/drivers/net/ethernet/apm/xgene/Makefile b/drivers/net/ethernet/apm/xgene/Makefile
->> new file mode 100644
->> index 0000000..c643e8a
->> --- /dev/null
->> +++ b/drivers/net/ethernet/apm/xgene/Makefile
->> @@ -0,0 +1,6 @@
->> +#
->> +# Makefile for APM X-Gene Ethernet Driver.
->> +#
->> +
->> +xgene-enet-objs := xgene_enet_hw.o xgene_enet_main.o xgene_enet_ethtool.o
->> +obj-$(CONFIG_NET_XGENE) += xgene-enet.o
->> diff --git a/drivers/net/ethernet/apm/xgene/xgene_enet_ethtool.c b/drivers/net/ethernet/apm/xgene/xgene_enet_ethtool.c
->> new file mode 100644
->> index 0000000..bac097e
->> --- /dev/null
->> +++ b/drivers/net/ethernet/apm/xgene/xgene_enet_ethtool.c
->> @@ -0,0 +1,125 @@
->> +/* Applied Micro X-Gene SoC Ethernet Driver
->> + *
->> + * Copyright (c) 2014, Applied Micro Circuits Corporation
->> + * Authors: Iyappan Subramanian <isubramanian@apm.com>
->> + *
->> + * This program is free software; you can redistribute  it and/or modify it
->> + * under  the terms of  the GNU General  Public License as published by the
->> + * Free Software Foundation;  either version 2 of the  License, or (at your
->> + * option) any later version.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
->> + * GNU General Public License for more details.
->> + *
->> + * You should have received a copy of the GNU General Public License
->> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
->> + */
->> +
->> +#include <linux/ethtool.h>
->> +#include <xgene_enet_main.h>
->
-> drivers/net/ethernet/apm/xgene/xgene_enet_ethtool.c:21:29: fatal
-> error: xgene_enet_main.h: No such file or directory
->  #include <xgene_enet_main.h>
->                              ^
-> compilation terminated.
+Nicolas Pitre <nicolas.pitre@linaro.org> writes:
 
-I should have used "xgene_enet_main.h" instead.  I will fix it.
+> On Wed, 18 Jun 2014, Kevin Hilman wrote:
+>
+>> On Wed, Jun 18, 2014 at 11:22 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>> > On 06/18/14 11:21, Kevin Hilman wrote:
+>> >> On Wed, Jun 18, 2014 at 11:14 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>> >>> On 06/18/14 10:55, Kevin Hilman wrote:
+>> >>>> All of that to say, with this patch applied, I need a new (and
+>> >>>> reliable) way to determine the endianness of a kernel just by looking
+>> >>>> at the zImage.  Recommendations welcome.
+>> >>> Assuming that you have the .config configured to be built into the
+>> >>> kernel you could use extract-ikconfig
+>> >>>
+>> >>> $ ./scripts/extract-ikconfig zImage | grep CONFIG_CPU_ENDIAN_BE8
+>> >> Unfortunately, I can't rely on having that built in since I want the
+>> >> boot tools to be as generic as possible.
+>> >>
+>> >>
+>> >
+>> > Yeah ok. Perhaps you can look for the 'setend be' instruction right
+>> > after the magic values instead.
+>> 
+>> Yeah, that works, as long as I can always assume that instruction will
+>> be at the same offset (currently at 0x30).
+>
+> Well... then you also have to test for the Thumb2 variant. 
 
+Ah, right.
+
+> And that forces this instruction to always be there.
 >
-> Thanks,
-> --
-> Ming Lei
+> If we're to "officialize" this, I'd much prefer we add another magic 
+> value like this:
 >
->
->
-> --
-> Ming Lei
+> diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
+> index c95feab6ce..413fd94b53 100644
+> --- a/arch/arm/boot/compressed/head.S
+> +++ b/arch/arm/boot/compressed/head.S
+> @@ -128,6 +128,7 @@ start:
+>  		.word	_magic_sig	@ Magic numbers to help the loader
+>  		.word	_magic_start	@ absolute load/run zImage address
+>  		.word	_magic_end	@ zImage end address
+> +		.word	0x04030201	@ endianness flag
+>  
+>   THUMB(		.thumb			)
+>  1:
+
+I think this should probably be officialized since we've taken away the
+ability for magic-number checking tools (like 'file') to distinguish
+between big- and little-endian zImages.
+
+For now, I've updated my tools to check for 'setend be' in ARM and
+Thumb2 mode, but if this does get officialized, I'll gladly move over to
+it.
+
+Kevin
+
