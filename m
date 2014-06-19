@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757086AbaFSGdn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 02:33:43 -0400
-Received: from mga01.intel.com ([192.55.52.88]:55117 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752683AbaFSGdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 02:33:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,505,1400050800"; 
-   d="scan'208";a="550202693"
-Message-ID: <53A28408.8040001@intel.com>
-Date: Thu, 19 Jun 2014 14:32:40 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1757389AbaFSGgO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 02:36:14 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:15307 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752156AbaFSGgN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 02:36:13 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 18 Jun 2014 23:26:47 -0700
+From: Vidya Sagar <vidyas@nvidia.com>
+To: <linux@arm.linux.org.uk>, <bhelgaas@google.com>, <wangyijing@huawei.com>,
+        <thierry.reding@gmail.com>, <jason@lakedaemon.net>,
+        <will.deacon@arm.com>, <swarren@nvidia.com>, <kthota@nvidia.com>,
+        <vidyas@nvidia.com>
+CC: <sagar.tv@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v4] ARM: fix debug prints relevant to PCI devices
+Date: Thu, 19 Jun 2014 12:06:00 +0530
+Message-ID: <1403159760-32627-1-git-send-email-vidyas@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Sorin Manolache <sorinm@gmail.com>, Zhang Rui <rui.zhang@intel.com>,
-        linux-kernel@vger.kernel.org,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: drivers/acpi/ac.c, re-enabling CONFIG_ACPI_PROCFS_POWER?
-References: <53A1F65C.9090907@gmail.com> <1891948.UFv8RnVsZc@vostro.rjw.lan>
-In-Reply-To: <1891948.UFv8RnVsZc@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年06月19日 07:17, Rafael J. Wysocki wrote:
-> On Wednesday, June 18, 2014 10:28:12 PM Sorin Manolache wrote:
->> Hello,
->>
->> Would it be worth considering re-enabling the old procfs interface for 
->> ac.c? There are old tools still around (kpowersave from kde 3.5.10) that 
->> expect /proc/acpi/ac_adapter.
-> 
-> Can you please CC ACPI-related messages to linux-acpi@vger.kernel.org?
-> 
-> I'm not sure how much effort that would require at this point.  Rui, Tianyu?
+As per PCIe spec, fast back-to-back transactions feature
+is not applicable to PCIe devices. Hence, do not print
+that fast back-to-back trasactions are disabled when
+there is a PCIe device found on the bus
 
-I think we need to revert commit ab0fd67.
+Signed-off-by: Vidya Sagar <vidyas@nvidia.com>
+---
+v4:
+* initialized 'has_pcie_dev' to 'false'
 
-commit ab0fd674d6cef0904baa511f22613ef6474f8169
-Author: Lan Tianyu <tianyu.lan@intel.com>
-Date:   Sat Oct 12 21:04:48 2013 +0800
+v3:
+* removed KERN_INFO from pr_info() which was not removed by mistake in previous patch
 
-    ACPI / AC: Remove AC's proc directory.
+v2:
+* Modified has_pcie_dev type to bool and used pci_is_pcie() instead of pci_pcie_cap()
+* replaced printk with pr_info
 
-    AC's proc directory is not used and so remove it. Prepare for removing
-    /proc/acpi directory.
+ arch/arm/kernel/bios32.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-    Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-    Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-
-
-> 
-> Rafael
-> 
-
-
+diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+index 17a26c1..03c56ba 100644
+--- a/arch/arm/kernel/bios32.c
++++ b/arch/arm/kernel/bios32.c
+@@ -290,6 +290,7 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ {
+ 	struct pci_dev *dev;
+ 	u16 features = PCI_COMMAND_SERR | PCI_COMMAND_PARITY | PCI_COMMAND_FAST_BACK;
++	bool has_pcie_dev = false;
+ 
+ 	/*
+ 	 * Walk the devices on this bus, working out what we can
+@@ -298,6 +299,8 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ 	list_for_each_entry(dev, &bus->devices, bus_list) {
+ 		u16 status;
+ 
++		if (!has_pcie_dev)
++			has_pcie_dev = pci_is_pcie(dev);
+ 		pci_read_config_word(dev, PCI_STATUS, &status);
+ 
+ 		/*
+@@ -354,9 +357,11 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ 
+ 	/*
+ 	 * Report what we did for this bus
++	 * (only if the bus doesn't have any PCIe devices)
+ 	 */
+-	printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
+-		bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
++	if (!has_pcie_dev)
++		pr_info("PCI: bus%d: Fast back to back transfers %sabled\n",
++			bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
+ }
+ EXPORT_SYMBOL(pcibios_fixup_bus);
+ 
 -- 
-Best regards
-Tianyu Lan
+1.8.1.5
+
