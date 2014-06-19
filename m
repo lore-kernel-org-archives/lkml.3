@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792AbaFSAND (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 20:13:03 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:49850 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756559AbaFSANB (ORCPT
+	id S1756841AbaFSANO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 20:13:14 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37810 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756559AbaFSANL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 20:13:01 -0400
-Date: Wed, 18 Jun 2014 20:12:59 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [ANNOUNCE] 3.10.44-rt45
-Message-ID: <20140618201259.26672959@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 18 Jun 2014 20:13:11 -0400
+Date: Wed, 18 Jun 2014 17:13:06 -0700
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] builddeb: fix errors caused by objtree redefinition
+Message-ID: <20140619001305.GA24952@birch.djwong.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In commit 7e1c04779efd51154baf652e653ceb24ce68939b ("kbuild: Use
+relative path for $(objtree)"), objtree was redefined from whatever
+$(CURDIR) is to a simple ".".  Unfortunately, this breaks builddeb,
+which was relying on $objtree to be an absolute path, not a relative
+one.  Since the script is run from the object directory, pick up a
+more absolute value for objtree where it's needed.
 
-Dear RT Folks,
+Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+---
+ scripts/package/builddeb |    1 +
+ 1 file changed, 1 insertion(+)
 
-I'm pleased to announce the 3.10.44-rt45 stable release.
-
-
-This release is just an update to the new stable 3.10.44 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  branch: v3.10-rt
-  Head SHA1: 13afb57e599c8b613bde5b6456528cb78f58fb4e
-
-
-Or to build 3.10.44-rt45 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.10.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.10.44.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patch-3.10.44-rt45.patch.xz
-
-
-
-
-Enjoy,
-
--- Steve
-
+diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+index 2f3ec77..ce7d05b 100644
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -299,6 +299,7 @@ EOF
+ fi
+ 
+ # Build header package
++objtree="$(pwd)"
+ (cd $srctree; find . -name Makefile\* -o -name Kconfig\* -o -name \*.pl > "$objtree/debian/hdrsrcfiles")
+ (cd $srctree; find arch/$SRCARCH/include include scripts -type f >> "$objtree/debian/hdrsrcfiles")
+ (cd $objtree; find arch/$SRCARCH/include Module.symvers include scripts -type f >> "$objtree/debian/hdrobjfiles")
