@@ -1,190 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966058AbaFSVnD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 17:43:03 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:55858 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964845AbaFSVnA (ORCPT
+	id S965675AbaFSVtx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 17:49:53 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:60407 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964833AbaFSVtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 17:43:00 -0400
-Date: Thu, 19 Jun 2014 17:42:57 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>, Joe Lawrence <joe.lawrence@stratus.com>
-Cc: linux-kernel@vger.kernel.org, Cgroups <cgroups@vger.kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH block/for-linus] blkcg: fix use-after-free in
- __blkg_release_rcu() by making blkcg_gq refcnt an atomic_t
-Message-ID: <20140619214257.GE9814@mtj.dyndns.org>
-References: <alpine.DEB.2.02.1406081816540.17948@jlaw-desktop.mno.stratus.com>
- <20140609174708.GA31499@redhat.com>
- <20140609182728.GB31499@redhat.com>
- <20140610143906.0d2f35d0@jlaw-desktop.mno.stratus.com>
- <20140611163229.GA12974@redhat.com>
- <20140619202640.GA9814@mtj.dyndns.org>
+	Thu, 19 Jun 2014 17:49:52 -0400
+Date: Thu, 19 Jun 2014 17:49:49 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Kevin Hilman <khilman@linaro.org>
+cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Olof Johansson <olof@lixom.net>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: zImage: ensure header in LE format for BE8
+ kernels
+In-Reply-To: <7hk38cvcrm.fsf@paris.lan>
+Message-ID: <alpine.LFD.2.11.1406191732590.16842@knanqh.ubzr>
+References: <1397147232-28516-1-git-send-email-taras.kondratiuk@linaro.org> <CAGa+x85P-M3qUD6L=kezkiQ1NJymEZ9P=u2ANUZJu2b3F+o5LA@mail.gmail.com> <53A1D701.8060404@codeaurora.org> <CAGa+x86DfDjQG8gN2-x7Kapt2ipsYt879R4OK6JWGoaT93VVig@mail.gmail.com>
+ <53A1D8FE.6030404@codeaurora.org> <CAGa+x87rnQntQpTkR6dZr29NvEQ4x8SOAyo+z9xuYHEdxdG1xg@mail.gmail.com> <alpine.LFD.2.11.1406181720130.16842@knanqh.ubzr> <7hk38cycuh.fsf@paris.lan> <alpine.LFD.2.11.1406191630260.16842@knanqh.ubzr>
+ <7hk38cvcrm.fsf@paris.lan>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140619202640.GA9814@mtj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 19 Jun 2014, Kevin Hilman wrote:
 
-So, this patch should do.  Joe, Vivek, can one of you guys please
-verify that the oops goes away with this patch?
+> Nicolas Pitre <nicolas.pitre@linaro.org> writes:
+> 
+> > On Thu, 19 Jun 2014, Kevin Hilman wrote:
+> >
+> >> I think this should probably be officialized since we've taken away the
+> >> ability for magic-number checking tools (like 'file') to distinguish
+> >> between big- and little-endian zImages.
+> >> 
+> >> For now, I've updated my tools to check for 'setend be' in ARM and
+> >> Thumb2 mode, but if this does get officialized, I'll gladly move over to
+> >> it.
+> >
+> > Would you ACK this patch?
+> >
+> > ----- >8
+> > ARM: zImage: identify kernel endianness
+> >
+> > With patch #8067/1 applied, it is no longer possible to determine the
+> 
+> minor nit: I'd rather see a commit id (commit subject) instead of the
+> reference in RMK's patch tracker, but other than that...
 
-Jens, the original thread can be read at
+The commit ID may not be stable, unless RMK moves it to his devel-stable 
+branch.  I'll add the commit subject though.
 
-  http://thread.gmane.org/gmane.linux.kernel/1720729
+Queued as patch #8079/1.
 
-The fix converts blkg->refcnt from int to atomic_t.  It does some
-overhead but it should be minute compared to everything else which is
-going on and the involved cacheline bouncing, so I think it's highly
-unlikely to cause any noticeable difference.  Also, the refcnt in
-question should be converted to a perpcu_ref for blk-mq anyway, so the
-atomic_t is likely to go away pretty soon anyway.
 
-Thanks.
-
-------- 8< -------
-__blkg_release_rcu() may be invoked after the associated request_queue
-is released with a RCU grace period inbetween.  As such, the function
-and callbacks invoked from it must not dereference the associated
-request_queue.  This is clearly indicated in the comment above the
-function.
-
-Unfortunately, while trying to fix a different issue, 2a4fd070ee85
-("blkcg: move bulk of blkcg_gq release operations to the RCU
-callback") ignored this and added [un]locking of @blkg->q->queue_lock
-to __blkg_release_rcu().  This of course can cause oops as the
-request_queue may be long gone by the time this code gets executed.
-
-  general protection fault: 0000 [#1] SMP
-  CPU: 21 PID: 30 Comm: rcuos/21 Not tainted 3.15.0 #1
-  Hardware name: Stratus ftServer 6400/G7LAZ, BIOS BIOS Version 6.3:57 12/25/2013
-  task: ffff880854021de0 ti: ffff88085403c000 task.ti: ffff88085403c000
-  RIP: 0010:[<ffffffff8162e9e5>]  [<ffffffff8162e9e5>] _raw_spin_lock_irq+0x15/0x60
-  RSP: 0018:ffff88085403fdf0  EFLAGS: 00010086
-  RAX: 0000000000020000 RBX: 0000000000000010 RCX: 0000000000000000
-  RDX: 000060ef80008248 RSI: 0000000000000286 RDI: 6b6b6b6b6b6b6b6b
-  RBP: ffff88085403fdf0 R08: 0000000000000286 R09: 0000000000009f39
-  R10: 0000000000020001 R11: 0000000000020001 R12: ffff88103c17a130
-  R13: ffff88103c17a080 R14: 0000000000000000 R15: 0000000000000000
-  FS:  0000000000000000(0000) GS:ffff88107fca0000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-  CR2: 00000000006e5ab8 CR3: 000000000193d000 CR4: 00000000000407e0
-  Stack:
-   ffff88085403fe18 ffffffff812cbfc2 ffff88103c17a130 0000000000000000
-   ffff88103c17a130 ffff88085403fec0 ffffffff810d1d28 ffff880854021de0
-   ffff880854021de0 ffff88107fcaec58 ffff88085403fe80 ffff88107fcaec30
-  Call Trace:
-   [<ffffffff812cbfc2>] __blkg_release_rcu+0x72/0x150
-   [<ffffffff810d1d28>] rcu_nocb_kthread+0x1e8/0x300
-   [<ffffffff81091d81>] kthread+0xe1/0x100
-   [<ffffffff8163813c>] ret_from_fork+0x7c/0xb0
-  Code: ff 47 04 48 8b 7d 08 be 00 02 00 00 e8 55 48 a4 ff 5d c3 0f 1f 00 66 66 66 66 90 55 48 89 e5
-  +fa 66 66 90 66 66 90 b8 00 00 02 00 <f0> 0f c1 07 89 c2 c1 ea 10 66 39 c2 75 02 5d c3 83 e2 fe 0f
-  +b7
-  RIP  [<ffffffff8162e9e5>] _raw_spin_lock_irq+0x15/0x60
-   RSP <ffff88085403fdf0>
-
-The request_queue locking was added because blkcg_gq->refcnt is an int
-protected with the queue lock and __blkg_release_rcu() needs to put
-the parent.  Let's fix it by making blkcg_gq->refcnt an atomic_t and
-dropping queue locking in the function.
-
-Given the general heavy weight of the current request_queue and blkcg
-operations, this is unlikely to cause any noticeable overhead.
-Moreover, blkcg_gq->refcnt is likely to be converted to percpu_ref in
-the near future, so whatever (most likely negligible) overhead it may
-add is temporary.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Joe Lawrence <joe.lawrence@stratus.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Link: http://lkml.kernel.org/g/alpine.DEB.2.02.1406081816540.17948@jlaw-desktop.mno.stratus.com
-Cc: stable@vger.kernel.org
----
- block/blk-cgroup.c |    7 ++-----
- block/blk-cgroup.h |   17 +++++++----------
- 2 files changed, 9 insertions(+), 15 deletions(-)
-
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -80,7 +80,7 @@ static struct blkcg_gq *blkg_alloc(struc
- 	blkg->q = q;
- 	INIT_LIST_HEAD(&blkg->q_node);
- 	blkg->blkcg = blkcg;
--	blkg->refcnt = 1;
-+	atomic_set(&blkg->refcnt, 1);
- 
- 	/* root blkg uses @q->root_rl, init rl only for !root blkgs */
- 	if (blkcg != &blkcg_root) {
-@@ -399,11 +399,8 @@ void __blkg_release_rcu(struct rcu_head
- 
- 	/* release the blkcg and parent blkg refs this blkg has been holding */
- 	css_put(&blkg->blkcg->css);
--	if (blkg->parent) {
--		spin_lock_irq(blkg->q->queue_lock);
-+	if (blkg->parent)
- 		blkg_put(blkg->parent);
--		spin_unlock_irq(blkg->q->queue_lock);
--	}
- 
- 	blkg_free(blkg);
- }
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -18,6 +18,7 @@
- #include <linux/seq_file.h>
- #include <linux/radix-tree.h>
- #include <linux/blkdev.h>
-+#include <linux/atomic.h>
- 
- /* Max limits for throttle policy */
- #define THROTL_IOPS_MAX		UINT_MAX
-@@ -104,7 +105,7 @@ struct blkcg_gq {
- 	struct request_list		rl;
- 
- 	/* reference count */
--	int				refcnt;
-+	atomic_t			refcnt;
- 
- 	/* is this blkg online? protected by both blkcg and q locks */
- 	bool				online;
-@@ -257,13 +258,12 @@ static inline int blkg_path(struct blkcg
-  * blkg_get - get a blkg reference
-  * @blkg: blkg to get
-  *
-- * The caller should be holding queue_lock and an existing reference.
-+ * The caller should be holding an existing reference.
-  */
- static inline void blkg_get(struct blkcg_gq *blkg)
- {
--	lockdep_assert_held(blkg->q->queue_lock);
--	WARN_ON_ONCE(!blkg->refcnt);
--	blkg->refcnt++;
-+	WARN_ON_ONCE(atomic_read(&blkg->refcnt) <= 0);
-+	atomic_inc(&blkg->refcnt);
- }
- 
- void __blkg_release_rcu(struct rcu_head *rcu);
-@@ -271,14 +271,11 @@ void __blkg_release_rcu(struct rcu_head
- /**
-  * blkg_put - put a blkg reference
-  * @blkg: blkg to put
-- *
-- * The caller should be holding queue_lock.
-  */
- static inline void blkg_put(struct blkcg_gq *blkg)
- {
--	lockdep_assert_held(blkg->q->queue_lock);
--	WARN_ON_ONCE(blkg->refcnt <= 0);
--	if (!--blkg->refcnt)
-+	WARN_ON_ONCE(atomic_read(&blkg->refcnt) <= 0);
-+	if (atomic_dec_and_test(&blkg->refcnt))
- 		call_rcu(&blkg->rcu_head, __blkg_release_rcu);
- }
- 
+Nicolas
