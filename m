@@ -1,40 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758188AbaFSWqT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 18:46:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35244 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757998AbaFSWqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 18:46:18 -0400
-Message-ID: <53A36831.8090901@zytor.com>
-Date: Thu, 19 Jun 2014 15:46:09 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S965588AbaFSWrB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 18:47:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52488 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964958AbaFSWrA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 18:47:00 -0400
+Date: Thu, 19 Jun 2014 15:51:00 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        devel@driverdev.osuosl.org, Sascha Hauer <s.hauer@pengutronix.de>,
+        Valentina Manea <valentina.manea.m@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [PATCH] staging: imx-drm: ipu-v3: ipu-common.c: Cleaning up
+ return of uninitialized variable
+Message-ID: <20140619225100.GA15258@kroah.com>
+References: <1402788921-15458-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <1402788921-15458-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>,
-        Josh Boyer <jwboyer@fedoraproject.org>
-CC: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] x86,vdso: Create .build-id links for unstripped vdso
- files
-References: <cover.1403129369.git.luto@amacapital.net> <26fa44a597716445c134d21194170c292d46a421.1403129369.git.luto@amacapital.net>
-In-Reply-To: <26fa44a597716445c134d21194170c292d46a421.1403129369.git.luto@amacapital.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402788921-15458-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2014 03:59 PM, Andy Lutomirski wrote:
+On Sun, Jun 15, 2014 at 01:35:21AM +0200, Rickard Strandqvist wrote:
+> Before when there was an error a uninitialized variable would be returnd.
+> Now it returns -ENODEV
 > 
-> This may break make vdso_install with binutils before 2.17.50.0.17.
-> On the other hand, make vdso_install was probably never useful with
-> earlier binutils, since the installed files are AFAIK completely
-> useless without build-id.
-> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/staging/imx-drm/ipu-v3/ipu-common.c |    4 ++--
 
-How does it fail?
-
-	-hpa
-
-
+This file isn't even in the tree anymore, what did you make this patch
+against?
