@@ -1,118 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756906AbaFSGl5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 02:41:57 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:60263 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753082AbaFSGlz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 02:41:55 -0400
-Message-ID: <53A285D0.1030106@in.ibm.com>
-Date: Thu, 19 Jun 2014 12:10:16 +0530
-From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1756479AbaFSGtJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 02:49:09 -0400
+Received: from mga11.intel.com ([192.55.52.93]:25202 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753266AbaFSGtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 02:49:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,505,1400050800"; 
+   d="scan'208";a="557788797"
+Message-ID: <53A287A9.7000203@intel.com>
+Date: Thu, 19 Jun 2014 14:48:09 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Michael Ellerman <mpe@ellerman.id.au>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
-        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-tip-commits@vger.kernel.org, anil.s.keshavamurthy@intel.com,
-        Ingo Molnar <mingo@kernel.org>, Fenghua Yu <fenghua.yu@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
-        akataria@vmware.com, Tony Luck <tony.luck@intel.com>,
-        Kevin Hao <haokexin@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, rdunlap@infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [RFT PATCH -next v3] [BUGFIX] kprobes: Fix "Failed to find blacklist"
- error on ia64 and ppc64
-References: <5387F150.5000307@hitachi.com> <20140530031838.17427.75896.stgit@ltc230.yrl.intra.hitachi.co.jp> <539161D6.7020508@hitachi.com> <1403078179.32307.7.camel@concordia> <53A15201.7060404@hitachi.com> <1403141433.4768.1.camel@concordia> <53A26C99.6060000@hitachi.com>
-In-Reply-To: <53A26C99.6060000@hitachi.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: David Rientjes <rientjes@google.com>, lenb@kernel.org, naszar@ya.ru,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] ACPI/Battery: Retry to get Battery information if
+ failed during probing
+References: <1402988994-27067-1-git-send-email-tianyu.lan@intel.com> <1474004.fDjayHqHT9@vostro.rjw.lan> <alpine.DEB.2.02.1406181515160.21927@chino.kir.corp.google.com> <2223803.V8Foed99uq@vostro.rjw.lan>
+In-Reply-To: <2223803.V8Foed99uq@vostro.rjw.lan>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061906-6102-0000-0000-000005CFE870
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2014 10:22 AM, Masami Hiramatsu wrote:
-> (2014/06/19 10:30), Michael Ellerman wrote:
->> On Wed, 2014-06-18 at 17:46 +0900, Masami Hiramatsu wrote:
->>> (2014/06/18 16:56), Michael Ellerman wrote:
->>>> On Fri, 2014-06-06 at 15:38 +0900, Masami Hiramatsu wrote:
->>>>> Ping?
->>>>>
->>>>> I guess this should go to 3.16 branch, shouldn't it?
->>>>
->>>>>> diff --git a/arch/powerpc/include/asm/types.h b/arch/powerpc/include/asm/types.h
->>>>>> index bfb6ded..8b89d65 100644
->>>>>> --- a/arch/powerpc/include/asm/types.h
->>>>>> +++ b/arch/powerpc/include/asm/types.h
->>>>>> @@ -25,6 +25,17 @@ typedef struct {
->>>>>>  	unsigned long env;
->>>>>>  } func_descr_t;
->>>>>>  
->>>>>> +#if defined(CONFIG_PPC64) && (!defined(_CALL_ELF) || _CALL_ELF == 1)
->>>>>> +/*
->>>>>> + * On PPC64 ABIv1 the function pointer actually points to the
->>>>>> + * function's descriptor. The first entry in the descriptor is the
->>>>>> + * address of the function text.
->>>>>> + */
->>>>>> +#define function_entry(fn)	(((func_descr_t *)(fn))->entry)
->>>>>> +#else
->>>>>> +#define function_entry(fn)	((unsigned long)(fn))
->>>>>> +#endif
->>>>
->>>> We already have ppc_function_entry(), can't you use that?
+On 2014年06月19日 07:00, Rafael J. Wysocki wrote:
+> On Wednesday, June 18, 2014 03:15:47 PM David Rientjes wrote:
+>> On Tue, 17 Jun 2014, Rafael J. Wysocki wrote:
+>>
+>>>> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+>>>> index e48fc98..8ed93a3 100644
+>>>> --- a/drivers/acpi/battery.c
+>>>> +++ b/drivers/acpi/battery.c
+>>>> @@ -34,6 +34,7 @@
+>>>>  #include <linux/dmi.h>
+>>>>  #include <linux/slab.h>
+>>>>  #include <linux/suspend.h>
+>>>> +#include <linux/delay.h>
+>>>>  #include <asm/unaligned.h>
+>>>>  
+>>>>  #ifdef CONFIG_ACPI_PROCFS_POWER
+>>>> @@ -1119,7 +1120,7 @@ static struct dmi_system_id bat_dmi_table[] = {
+>>>>  
+>>>>  static int acpi_battery_add(struct acpi_device *device)
+>>>>  {
+>>>> -	int result = 0;
+>>>> +	int result = 0, retry = 5;
+>>>>  	struct acpi_battery *battery = NULL;
+>>>>  
+>>>>  	if (!device)
+>>>> @@ -1135,9 +1136,20 @@ static int acpi_battery_add(struct acpi_device *device)
+>>>>  	mutex_init(&battery->sysfs_lock);
+>>>>  	if (acpi_has_method(battery->device->handle, "_BIX"))
+>>>>  		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
+>>>> -	result = acpi_battery_update(battery, false);
+>>>> +
+>>>> +	/*
+>>>> +	 * Some machines'(E,G Lenovo Z480) ECs are not stable
+>>>> +	 * during boot up and this causes battery driver fails to be
+>>>> +	 * probed due to failure of getting battery information
+>>>> +	 * from EC sometimes. After several retries, the operation
+>>>> +	 * may work. So add retry code here and 20ms sleep between
+>>>> +	 * every retries.
+>>>> +	 */
+>>>> +	while ((result = acpi_battery_update(battery, false)) && retry--)
+>>>> +		msleep(20);
+>>>>  	if (result)
+>>>>  		goto fail;
 >>>
->>> I'd like to ask you whether the address which ppc_function_entry() returns on
->>> PPC ABIv2 is really same address in kallsyms or not.
->>> As you can see, kprobes uses function_entry() to get the actual entry address
->>> where kallsyms knows. I have not much information about that, but it seems that
->>> the "global entry point" is the address which kallsyms knows, isn't it?
+>>> Why not to write this as
+>>>
+>>> 	for (;;) {
+>>> 		result = acpi_battery_update(battery, false);
+>>> 		if (!result)
+>>> 			break;
+>>> 		else if (!--retry)
+>>> 			goto fail;
+>>>
+>>> 		msleep(20);
+>>> 	}
+>>>
 >>
->> OK. I'm not sure off the top of my head which address kallsyms knows about, but
->> yes it's likely that it is the global entry point.
->>
->> I recently sent a patch to add ppc_global_function_entry(), because we need it
->> in the ftrace code. Once that is merged you could use that.
+>> I suggested a similar for loop earlier, I think it's cleaner.
 > 
-> Yeah, I could use that. But since this is used in arch-independent code (e.g. IA64
-> needs similar macro), I think we'd better define function_entry() in asm/types.h for
-> general use (for kallsyms), and rename ppc_function_entry to local_function_entry()
-> in asm/code-patching.h.
+> Precisely.  And it would be even more clean to introduce
 > 
+> static bool acpi_battery_update_retry(struct acpi_battery *battery)
+> {
+> 	int retry, ret;
 > 
->> How do you hit the original problem, you don't actually specify in your commit
->> message? Something with kprobes obviously, but what exactly? I'll try and
->> reproduce it here.
+> 	for (retry = 5; retry; retry--) {
+> 		ret = acpi_battery_update(battery, false);
+> 		if (!ret)
+> 			break;
 > 
-> Ah, those messages should be shown in dmesg when booting if it doesn't work,
-> because the messages are printed by initialization process of kprobe blacklist.
-> So, reproducing it is just enabling CONFIG_KPROBES and boot it.
-Well,  we don't get those messages on Power, since the kallsyms has the
-entries for ".function_name". The correct way to verify is, either  :
+> 		msleep(20);
+> 	}
+> 	return ret;
+> }
+> 
+> and use that instead of the open-coded loop.
 
-1) Dump the black_list via xmon ( see :
-https://lkml.org/lkml/2014/5/29/893 ) and verify the entries.
-
-or
-
-2) Issue a kprobe on a black listed entry and hit a success,(which we
-will, since we don't check the actual function address).
-
-Thanks
-Suzuki
-
+Ok. I will update patch like this.
 
 > 
-> Thank you,
+> Rafael
 > 
 
+
+-- 
+Best regards
+Tianyu Lan
