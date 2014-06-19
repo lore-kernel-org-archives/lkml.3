@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933183AbaFSPB0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 11:01:26 -0400
-Received: from fieldses.org ([174.143.236.118]:54028 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932564AbaFSPBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 11:01:25 -0400
-Date: Thu, 19 Jun 2014 11:01:23 -0400
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kinglong Mee <kinglongmee@gmail.com>, NeilBrown <neilb@suse.de>
-Subject: bugfixes for 3.16
-Message-ID: <20140619150123.GA4787@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+	id S933219AbaFSPCR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 11:02:17 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:59196 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932357AbaFSPCQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 11:02:16 -0400
+From: Anil Belur <askb23@gmail.com>
+X-Google-Original-From: Anil Belur
+To: andreas.dilger@intel.com, oleg.drokin@intel.com,
+        gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, hpdd-discuss@ml01.01.org,
+        Anil Belur <askb23@gmail.com>
+Subject: [PATCH 1/1] staging: lustre: ldlm: ldlm_resource.c replace obsolete function with kstrtoul()
+Date: Fri, 20 Jun 2014 01:02:08 +1000
+Message-Id: <1403190128-18039-1-git-send-email-askb23@gmail.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull bugfixes for 3.16 from
+From: Anil Belur <askb23@gmail.com>
 
-  git://linux-nfs.org/~bfields/linux.git for-3.16
+- this change fixes the warning "WARNING: simple_strtoul is obsolete, use
+kstrtoul instead"
+- removed the unused var 'end' as this is no longer required for
+  kstrtoul()
 
-Fixes for a new regression from the xdr encoding rewrite, and a
-delegation problem we've had for a while (made somewhat more annoying by
-the vfs delegation support added in 3.13.)
+Signed-off-by: Anil Belur <askb23@gmail.com>
+---
+ drivers/staging/lustre/lustre/ldlm/ldlm_resource.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---b.
+diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_resource.c b/drivers/staging/lustre/lustre/ldlm/ldlm_resource.c
+index c55d72f..5070a60 100644
+--- a/drivers/staging/lustre/lustre/ldlm/ldlm_resource.c
++++ b/drivers/staging/lustre/lustre/ldlm/ldlm_resource.c
+@@ -194,9 +194,10 @@ static ssize_t lprocfs_lru_size_seq_write(struct file *file, const char *buffer,
+ 				      size_t count, loff_t *off)
+ {
+ 	struct ldlm_namespace *ns = ((struct seq_file *)file->private_data)->private;
+-	char dummy[MAX_STRING_SIZE + 1], *end;
++	char dummy[MAX_STRING_SIZE + 1];
+ 	unsigned long tmp;
+ 	int lru_resize;
++	int err;
+ 
+ 	dummy[MAX_STRING_SIZE] = '\0';
+ 	if (copy_from_user(dummy, buffer, MAX_STRING_SIZE))
+@@ -228,8 +229,8 @@ static ssize_t lprocfs_lru_size_seq_write(struct file *file, const char *buffer,
+ 		return count;
+ 	}
+ 
+-	tmp = simple_strtoul(dummy, &end, 0);
+-	if (dummy == end) {
++	err = kstrtoul(dummy, 10, &tmp);
++	if (err != 0) {
+ 		CERROR("invalid value written\n");
+ 		return -EINVAL;
+ 	}
+-- 
+1.9.0
 
-----------------------------------------------------------------
-Kinglong Mee (1):
-      NFSD: fix bug for readdir of pseudofs
-
-NeilBrown (1):
-      NFSD: Don't hand out delegations for 30 seconds after recalling them.
-
- fs/nfsd/nfs4state.c | 78 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/nfsd/nfs4xdr.c   |  1 +
- 2 files changed, 79 insertions(+)
