@@ -1,108 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932408AbaFSLVJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 07:21:09 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43043 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757444AbaFSLVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 07:21:05 -0400
-Message-ID: <53A2C787.5060905@ti.com>
-Date: Thu, 19 Jun 2014 14:20:39 +0300
-From: Tero Kristo <t-kristo@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1757985AbaFSLWr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 07:22:47 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:63735 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757228AbaFSLWp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 07:22:45 -0400
+Date: Thu, 19 Jun 2014 12:22:39 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Peter Griffin <peter.griffin@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org, kernel@stlinux.com,
+        devicetree@vger.kernel.org, srinivas.kandagatla@gmail.com,
+        thierry.reding@gmail.com
+Subject: Re: [STLinux Kernel] [PATCH 4/7] ARM: stih416-b2020e: Enable PWM on
+ the B2020 Rev-E
+Message-ID: <20140619112239.GC26560@lee--X1>
+References: <1403103172-19856-1-git-send-email-lee.jones@linaro.org>
+ <1403103172-19856-4-git-send-email-lee.jones@linaro.org>
+ <20140619090546.GB2131@griffinp-ThinkPad-X1-Carbon-2nd>
+ <20140619092042.GB26560@lee--X1>
+ <20140619101236.GA7390@griffinp-ThinkPad-X1-Carbon-2nd>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <arnd@arndb.de>, <tony@atomide.com>, <jg1.han@samsung.com>,
-        Rajendra Nayak <rnayak@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Keerthy <j-keerthy@ti.com>
-Subject: Re: [PATCH v2 13/18] ARM: dts: dra7xx-clocks: Add missing clocks
- for second PCIe PHY instance
-References: <1401345500-20188-1-git-send-email-kishon@ti.com> <1401345500-20188-14-git-send-email-kishon@ti.com>
-In-Reply-To: <1401345500-20188-14-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140619101236.GA7390@griffinp-ThinkPad-X1-Carbon-2nd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2014 09:38 AM, Kishon Vijay Abraham I wrote:
-> Added missing clocks used by second instance of PCIe PHY.
-> The documention for this nodes can be found @ ../bindings/clock/ti/gate.txt.
+> > > Why are you only enabling this for rev-E board?
+> > 
+> > Purely for testing purposes, as it's the only board I have.  If
+> > anyone has the other revisions and would be happy to test the driver
+> > for me then great.
+> 
+> Ok that's what I suspected.
+> 
+> If you tell me how, I can test on a Rev C board. But as there are several other 
+> revisions I think checking the board schematics would be the quickest way forward.
 
-Drop the ref to the binding doc and rather add a ref to TRM about the 
-clock layout. Also, is the register offset wrong on these? Should be 
-0x13b8, no, or is my TRM version wrong?
+Great.  Do you have a oscilloscope/logic analyser?
 
--Tero
+> > > If you make the stih415 DT PWM nodes part of this series as well, then 
+> > > assuming there is no good reason to the contary, the PWM could 
+> > > be enabled for both stih415/6 in the common stih41x-b2020 DTS file which
+> > > is also included by rev-E (assuming that PWM wiring is not some rev-E specific
+> > > thing).
+> 
+> Can you add the stih415 bindings in V2 as well?
 
->
-> Cc: Rajendra Nayak <rnayak@ti.com>
-> Cc: Tero Kristo <t-kristo@ti.com>
-> Cc: Paul Walmsley <paul@pwsan.com>
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Signed-off-by: Keerthy <j-keerthy@ti.com>
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
->   arch/arm/boot/dts/dra7xx-clocks.dtsi |   24 ++++++++++++++++++++++++
->   1 file changed, 24 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-> index 3d8c9c2..a9ff0dc 100644
-> --- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
-> +++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-> @@ -1173,6 +1173,14 @@
->   		ti,bit-shift = <8>;
->   	};
->
-> +	optfclk_pciephy2_32khz: optfclk_pciephy_32khz@4a0093b4 {
-> +		compatible = "ti,gate-clock";
-> +		clocks = <&sys_32k_ck>;
-> +		#clock-cells = <0>;
-> +		reg = <0x13b4>;
-> +		ti,bit-shift = <8>;
-> +	};
-> +
->   	optfclk_pciephy_div: optfclk_pciephy_div@4a00821c {
->   		compatible = "ti,divider-clock";
->   		clocks = <&apll_pcie_ck>;
-> @@ -1191,6 +1199,14 @@
->   		ti,bit-shift = <9>;
->   	};
->
-> +	optfclk_pciephy2_clk: optfclk_pciephy_clk@4a0093b4 {
-> +		compatible = "ti,gate-clock";
-> +		clocks = <&apll_pcie_ck>;
-> +		#clock-cells = <0>;
-> +		reg = <0x13b4>;
-> +		ti,bit-shift = <9>;
-> +	};
-> +
->   	optfclk_pciephy1_div_clk: optfclk_pciephy_div_clk@4a0093b0 {
->   		compatible = "ti,gate-clock";
->   		clocks = <&optfclk_pciephy_div>;
-> @@ -1199,6 +1215,14 @@
->   		ti,bit-shift = <10>;
->   	};
->
-> +	optfclk_pciephy2_div_clk: optfclk_pciephy_div_clk@4a0093b4 {
-> +		compatible = "ti,gate-clock";
-> +		clocks = <&optfclk_pciephy_div>;
-> +		#clock-cells = <0>;
-> +		reg = <0x13b4>;
-> +		ti,bit-shift = <10>;
-> +	};
-> +
->   	apll_pcie_clkvcoldo: apll_pcie_clkvcoldo {
->   		#clock-cells = <0>;
->   		compatible = "fixed-factor-clock";
->
+Who's using Orly1?
 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
