@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965438AbaFSUv5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 16:51:57 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:45879 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965016AbaFSUvx (ORCPT
+	id S965253AbaFSUvs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 16:51:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51408 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964993AbaFSUvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 16:51:53 -0400
-Date: Thu, 19 Jun 2014 13:51:37 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Tejun Heo <tj@kernel.org>, David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
- accessors and operations
-Message-ID: <20140619205137.GK4904@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140612135630.GA23606@htj.dyndns.org>
- <alpine.DEB.2.11.1406171401350.22064@gentwo.org>
- <20140617194017.GO4669@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1406191540240.4002@gentwo.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1406191540240.4002@gentwo.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061920-1542-0000-0000-000002B12703
+	Thu, 19 Jun 2014 16:51:47 -0400
+Date: Thu, 19 Jun 2014 13:51:45 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: "Cox, Alan" <alan.cox@intel.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "aeb@cwi.nl" <aeb@cwi.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: Cannot partition 32GB disk on a 32bit machine (correct version
+ of the patch this time)
+Message-Id: <20140619135145.9fb9f65404028d656b3f8ec5@linux-foundation.org>
+In-Reply-To: <1403203437.17294.25.camel@dabdike.int.hansenpartnership.com>
+References: <1403170201.10778.36.camel@acox1-desk.ger.corp.intel.com>
+	<1403170400.10778.38.camel@acox1-desk.ger.corp.intel.com>
+	<1403203437.17294.25.camel@dabdike.int.hansenpartnership.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 03:42:07PM -0500, Christoph Lameter wrote:
-> On Tue, 17 Jun 2014, Paul E. McKenney wrote:
-> 
-> > > Similar in swapon(). The percpu allocation is performed before access to
-> > > the containing structure (via enable_swap_info).
-> >
-> > Those are indeed common use cases.  However...
-> >
-> > There is code where one CPU writes to another CPU's per-CPU variables.
-> > One example is RCU callback offloading, where a kernel thread (which
-> > might be running anywhere) dequeues a given CPU's RCU callbacks and
-> > processes them.  The act of dequeuing requires write access to that
-> > CPU's per-CPU rcu_data structure.  And yes, atomic operations and memory
-> > barriers are of course required to make this work.
-> 
-> In that case special care needs to be taken to get this right. True.
-> 
-> I typically avoid these scenarios by sending an IPI with a pointer to the
-> data structure. The modification is done by the cpu for which the per cpu
-> data is local.
-> 
-> Maybe rewrite the code to avoid writing to other processors percpu data
-> would be the right approach?
+On Thu, 19 Jun 2014 11:43:57 -0700 James Bottomley <James.Bottomley@hansenpartnership.com> wrote:
 
-Or just keep doing what I am doing.  What exactly is the problem with it?
-(Other than probably needing to clean up the cache alignment of some
-of the per-CPU structures?)
+> Do you have CONFIG_LBD turned on?  That's supposed to let us go up to
+> about 16TB before we run out of page index bits.  If you do, we might
+> have a variable that's int but should be sector_t somewhere.
 
-							Thanx, Paul
+I assume the problem is that iov_iter uses size_t (which is 32-bit on
+32-bit) and we're trying to use iov_iter for blockdevs.
 
+All this code is new and I've NFI how it's supposed to work and cannot
+find a description anywhere.
+
+cc's viro and runs away.
