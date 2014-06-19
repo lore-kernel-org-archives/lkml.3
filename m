@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163AbaFSNBC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 09:01:02 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:50538 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570AbaFSNA7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 09:00:59 -0400
-Message-ID: <53A2DEDA.5050104@ti.com>
-Date: Thu, 19 Jun 2014 18:30:10 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754313AbaFSNCV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 09:02:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50995 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752145AbaFSNCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 09:02:20 -0400
+Date: Thu, 19 Jun 2014 15:02:02 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 5/5] perf tools: Add report.show-headers config file
+ option
+Message-ID: <20140619130202.GA24328@krava.brq.redhat.com>
+References: <1403178076-14072-1-git-send-email-jolsa@kernel.org>
+ <1403178076-14072-6-git-send-email-jolsa@kernel.org>
+ <1403182604.1670.26.camel@leonhard>
 MIME-Version: 1.0
-To: Tero Kristo <t-kristo@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <arnd@arndb.de>, <tony@atomide.com>, <jg1.han@samsung.com>,
-        Keerthy <j-keerthy@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCH v2 07/18] ARM: dts: DRA7: Change the parent of apll_pcie_in_clk_mux
- to dpll_pcie_ref_m2ldo_ck
-References: <1401345500-20188-1-git-send-email-kishon@ti.com> <1401345500-20188-8-git-send-email-kishon@ti.com> <53A2C5B4.9080300@ti.com>
-In-Reply-To: <53A2C5B4.9080300@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1403182604.1670.26.camel@leonhard>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tero,
-
-On Thursday 19 June 2014 04:42 PM, Tero Kristo wrote:
-> On 05/29/2014 09:38 AM, Kishon Vijay Abraham I wrote:
->> From: Keerthy <j-keerthy@ti.com>
->>
->> Change the parent of apll_pcie_in_clk_mux to dpll_pcie_ref_m2ldo_ck
->> from dpll_pcie_ref_ck.
+On Thu, Jun 19, 2014 at 09:56:44PM +0900, Namhyung Kim wrote:
+> Hi Jiri,
 > 
-> Why? Needs a better changelog also.
-
-Figure 26-22. DPLL_PCIE_REF Functional Block Diagram in vE of DRA7xx ES1.0 TRM
-shows the signal name for the output of post divider (M2) is CLKOUTLDO.
-
-Figure 26-21. PCIe PHY Clock Generator Overview shows CLKOUTLDO is used as
-input to apll mux.
-
-So the actual output of dpll should be dpll_pcie_ref_m2ldo_ck instead of
-dpll_pcie_ref_ck (which is the input of apll mux).
-
-Thanks
-Kishon
+> 2014-06-19 (목), 13:41 +0200, Jiri Olsa:
+> > Adding report.show-headers config file option to setup
+> > the appearance of the columns headers.
+> > 
+> > Currently columns headers are displayed by default, following
+> > lines in ~/.perfconfig file will disable that:
+> > 
+> >   [report]
+> >         show-headers = true
 > 
-> -Tero
+> This also applies to perf top, right?  And it's TUI-specific.  So how
+> about calling it something like "tui.show-headers"?
+
+ook
+
 > 
->>
->> Cc: Rajendra Nayak <rnayak@ti.com>
->> Cc: Tero Kristo <t-kristo@ti.com>
->> Cc: Paul Walmsley <paul@pwsan.com>
->> Signed-off-by: Keerthy <j-keerthy@ti.com>
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> ---
->>   arch/arm/boot/dts/dra7xx-clocks.dtsi |    2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi
->> b/arch/arm/boot/dts/dra7xx-clocks.dtsi
->> index 55e95c5..44993ec 100644
->> --- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
->> +++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
->> @@ -1152,7 +1152,7 @@
->>
->>       apll_pcie_in_clk_mux: apll_pcie_in_clk_mux@4ae06118 {
->>           compatible = "ti,mux-clock";
->> -        clocks = <&dpll_pcie_ref_ck>, <&pciesref_acs_clk_ck>;
->> +        clocks = <&dpll_pcie_ref_m2ldo_ck>, <&pciesref_acs_clk_ck>;
->>           #clock-cells = <0>;
->>           reg = <0x021c 0x4>;
->>           ti,bit-shift = <7>;
->>
 > 
+> [SNIP]
+> > @@ -35,6 +35,7 @@ struct symbol_conf symbol_conf = {
+> >  	.demangle		= true,
+> >  	.cumulate_callchain	= true,
+> >  	.symfs			= "",
+> > +	.show_headers		= -1,
+> 
+> Hmm.. why not just making it boolean and set it to true (like others)?
+
+I need 'unset' value, otherwise I dont know if the config
+option was unset by user or not touched at all
+
+jirka
