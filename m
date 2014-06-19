@@ -1,57 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757909AbaFSJI2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 05:08:28 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:38472 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757885AbaFSJIE (ORCPT
+	id S932181AbaFSJLU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 05:11:20 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:60483 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757804AbaFSJLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 05:08:04 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <oleg@redhat.com>, <rientjes@google.com>, <cl@linux.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] fork: copy mm's vm usage counters under mmap_sem
-Date: Thu, 19 Jun 2014 13:07:48 +0400
-Message-ID: <8efb9247108e3b327a321853025a09774cdaf032.1403168346.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <fa98629155872c1b97ba4dcd00d509a1e467c1c3.1403168346.git.vdavydov@parallels.com>
-References: <fa98629155872c1b97ba4dcd00d509a1e467c1c3.1403168346.git.vdavydov@parallels.com>
+	Thu, 19 Jun 2014 05:11:18 -0400
+Message-ID: <53A2A936.3070109@linaro.org>
+Date: Thu, 19 Jun 2014 11:11:18 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        David Riley <davidriley@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Subject: Re: [PATCH v2] clocksource: exynos-mct: Register the timer for stable
+ udelay
+References: <1403167145-5267-1-git-send-email-amit.daniel@samsung.com>
+In-Reply-To: <1403167145-5267-1-git-send-email-amit.daniel@samsung.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a forking process has a thread calling (un)mmap (silly but still),
-the child process may have some of its mm's vm usage counters (total_vm
-and friends) screwed up, because currently they are copied from oldmm
-w/o holding any locks (memcpy in dup_mm).
+On 06/19/2014 10:39 AM, Amit Daniel Kachhap wrote:
+> This patch register the exynos mct clocksource as the current timer
+> as it has constant clock rate. This will generate correct udelay for the
+> exynos platform and avoid using unnecessary calibrated jiffies. This change
+> has been tested on exynos5420 based board and udelay is very close to
+> expected.
+>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> ---
+> Changes in V2:
+> * Added #defines for ARM and ARM64 as pointed by Doug Anderson.
+>
+> Patches from David Riley confirmed that udelay is broken in exynos5420.
+> Link to those patches are,
+> 1) https://patchwork.kernel.org/patch/4344911/
+> 2) https://patchwork.kernel.org/patch/4344881/
+>
+>   drivers/clocksource/exynos_mct.c | 15 +++++++++++++++
+>   1 file changed, 15 insertions(+)
+>
+> diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
+> index f71d55f..02927e2 100644
+> --- a/drivers/clocksource/exynos_mct.c
+> +++ b/drivers/clocksource/exynos_mct.c
+> @@ -195,10 +195,25 @@ static u64 notrace exynos4_read_sched_clock(void)
+>   	return exynos4_frc_read(&mct_frc);
+>   }
+>
+> +static struct delay_timer exynos4_delay_timer;
+> +
+> +static unsigned long exynos4_read_current_timer(void)
+> +{
+> +#ifdef ARM
+> +	return __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
+> +#else /* ARM64, etc */
+> +	return exynos4_frc_read(&mct_frc);
+> +#endif
+> +}
+> +
 
-This patch moves the counters initialization to dup_mmap() to be called
-under oldmm->mmap_sem, which eliminates any possibility of race.
+There isn't another solution than that ? macros definitions in C file 
+are avoided as much as possible.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- kernel/fork.c |    5 +++++
- 1 file changed, 5 insertions(+)
+>   static void __init exynos4_clocksource_init(void)
+>   {
+>   	exynos4_mct_frc_start();
+>
+> +	exynos4_delay_timer.read_current_timer = &exynos4_read_current_timer;
 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 938707e108db..5002b1188554 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -365,6 +365,11 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
- 	 */
- 	down_write_nested(&mm->mmap_sem, SINGLE_DEPTH_NESTING);
- 
-+	mm->total_vm = oldmm->total_vm;
-+	mm->shared_vm = oldmm->shared_vm;
-+	mm->exec_vm = oldmm->exec_vm;
-+	mm->stack_vm = oldmm->stack_vm;
-+
- 	rb_link = &mm->mm_rb.rb_node;
- 	rb_parent = NULL;
- 	pprev = &mm->mmap;
+&exynos4_read_current_timer ?
+
+> +	exynos4_delay_timer.freq = clk_rate;
+> +	register_current_timer_delay(&exynos4_delay_timer);
+> +
+>   	if (clocksource_register_hz(&mct_frc, clk_rate))
+>   		panic("%s: can't register clocksource\n", mct_frc.name);
+>
+>
+
+
 -- 
-1.7.10.4
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
