@@ -1,90 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933390AbaFSPET (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 11:04:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48756 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933322AbaFSPEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 11:04:07 -0400
-Date: Thu, 19 Jun 2014 17:03:00 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: kbuild test robot <fengguang.wu@intel.com>, kbuild-all@01.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Tyler Hicks <tyhicks@canonical.com>, ecryptfs@vger.kernel.org
-Subject: Re: [trace:ftrace/core 1/3] include/trace/syscall.h:39:6: error:
-	'TIF_SYSCALL_TRACEPOINT' undeclared
-Message-ID: <20140619150300.GA7215@redhat.com>
-References: <53a1e7ba.ZIiv6DbOB78b9RzY%fengguang.wu@intel.com> <20140618211559.76bdea15@gandalf.local.home> <20140618211737.719fcf49@gandalf.local.home> <20140618213833.731d5fc4@gandalf.local.home>
+	id S933426AbaFSPHc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 11:07:32 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:16167 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933127AbaFSPHa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 11:07:30 -0400
+Date: Thu, 19 Jun 2014 11:07:28 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>
+Subject: [ANNOUNCE] 3.12.22-rt34
+Message-ID: <20140619110728.795da4ee@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140618213833.731d5fc4@gandalf.local.home>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18, Steven Rostedt wrote:
->
-> On Wed, 18 Jun 2014 21:17:37 -0400
-> Steven Rostedt <rostedt@goodmis.org> wrote:
->
-> > On Wed, 18 Jun 2014 21:15:59 -0400
-> > Steven Rostedt <rostedt@goodmis.org> wrote:
-> >
-> > > On Thu, 19 Jun 2014 03:25:46 +0800
-> > > kbuild test robot <fengguang.wu@intel.com> wrote:
-> > >
-> > > > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git ftrace/core
-> > > > head:   72fa1a896d8ef355e81270667803ceb16a3dd13f
-> > > > commit: 32def52ce8faec72c353b6304ca98176687e18f1 [1/3] tracing: Fix syscall_*regfunc() vs copy_process() race
-> > > > config: make ARCH=xtensa allyesconfig
-> > > >
-> > > > All error/warnings:
-> > > >
-> > > >    In file included from include/linux/syscalls.h:80:0,
-> > > >                     from fs/ecryptfs/keystore.c:29:
-> > > >    include/trace/syscall.h: In function 'syscall_tracepoint_update':
-> > > > >> include/trace/syscall.h:39:6: error: 'TIF_SYSCALL_TRACEPOINT' undeclared (first use in this function)
-> > > >    include/trace/syscall.h:39:6: note: each undeclared identifier is reported only once for each function it appears in
-> > > >
-> > > > vim +/TIF_SYSCALL_TRACEPOINT +39 include/trace/syscall.h
-> > > >
-> > > >     33		struct ftrace_event_call *exit_event;
-> > > >     34	};
-> > > >     35
-> > > >     36	#ifdef CONFIG_TRACEPOINTS
-> > > >     37	static inline void syscall_tracepoint_update(struct task_struct *p)
-> > > >     38	{
-> > > >   > 39		if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
-> > > >     40			set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-> > > >     41		else
-> > > >     42			clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-> > > >
-> > > > ---
-> > > > 0-DAY kernel build testing backend              Open Source Technology Center
-> > > > http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
-> > >
-> > > My allyesconfig build passed with flying colors. Although we should
-> >
-> > I should elaborate. I was building against mainline, I noticed that the
-> > kbuild test included linux-next.
->
-> My entire test suite passed. I'm not going to bother with adding the
-> header now, as it shouldn't affect mainline. I'm going to push my
-> changes up to linux-next tonight and push to Linus tomorrow.
 
-Argh... but it seems that that patch really needs a fix?
+Dear RT Folks,
 
-	- #ifdef CONFIG_TRACEPOINTS
-	+ #ifdef CONFIG_HAVE_SYSCALL_TRACEPOINTS
+I'm pleased to announce the 3.12.22-rt34 stable release.
 
-or even
-	- #ifdef CONFIG_TRACEPOINTS
-	+ #if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_HAVE_SYSCALL_TRACEPOINTS)
+Usually for non stable merged releases I post an -rc iteration. But as
+this is a small simple fix, I'm posting this next version directly.
 
-or I am totally confused?
+-- Steve
 
-Oleg.
 
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  branch: v3.12-rt
+  Head SHA1: e07e87d7680b060c0c19f1595952fd74a565b17d
+
+
+Or to build 3.12.22-rt34 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.12.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.12.22.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.12/patch-3.12.22-rt34.patch.xz
+
+
+
+You can also build from 3.12.22-rt33 by applying the incremental patch:
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.12/incr/patch-3.12.22-rt33-rt34.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+Changes from v3.12.22-rt33:
+
+---
+
+Steven Rostedt (Red Hat) (2):
+      Revert "drivers/net: tulip_remove_one needs to call pci_disable_device()"
+      Linux 3.12.22-rt34
+
+----
+ drivers/net/ethernet/dec/tulip/tulip_core.c | 1 -
+ localversion-rt                             | 2 +-
+ 2 files changed, 1 insertion(+), 2 deletions(-)
+---------------------------
+diff --git a/drivers/net/ethernet/dec/tulip/tulip_core.c b/drivers/net/ethernet/dec/tulip/tulip_core.c
+index a6d4653ebbc3..779016068a82 100644
+--- a/drivers/net/ethernet/dec/tulip/tulip_core.c
++++ b/drivers/net/ethernet/dec/tulip/tulip_core.c
+@@ -1939,7 +1939,6 @@ static void tulip_remove_one(struct pci_dev *pdev)
+ 	pci_iounmap(pdev, tp->base_addr);
+ 	free_netdev (dev);
+ 	pci_release_regions (pdev);
+-	pci_disable_device(pdev);
+ 	pci_set_drvdata (pdev, NULL);
+ 	pci_disable_device(pdev);
+ 
+diff --git a/localversion-rt b/localversion-rt
+index e1d836252017..21988f9ad53f 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt33
++-rt34
