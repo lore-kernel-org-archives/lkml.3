@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934715AbaFSVNQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 17:13:16 -0400
-Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:50768 "EHLO
-	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934620AbaFSVNP (ORCPT
+	id S965175AbaFSVNp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 17:13:45 -0400
+Received: from smtprelay0174.hostedemail.com ([216.40.44.174]:45853 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934620AbaFSVNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 17:13:15 -0400
-Date: Thu, 19 Jun 2014 16:13:12 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave.hansen@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-Subject: Re: [bisected] pre-3.16 regression on open() scalability
-In-Reply-To: <20140619204220.GJ4904@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.11.1406191612000.5484@gentwo.org>
-References: <20140618001836.GV4669@linux.vnet.ibm.com> <53A132D4.60408@intel.com> <20140618125831.GB4669@linux.vnet.ibm.com> <53A1CE19.7040103@intel.com> <20140618203052.GT4669@linux.vnet.ibm.com> <20140618235131.GA25946@linux.vnet.ibm.com>
- <20140619014200.GO8178@tassilo.jf.intel.com> <alpine.DEB.2.11.1406190941180.2785@gentwo.org> <20140619180916.GE4904@linux.vnet.ibm.com> <alpine.DEB.2.11.1406191531020.4002@gentwo.org> <20140619204220.GJ4904@linux.vnet.ibm.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 19 Jun 2014 17:13:43 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3867:3868:3871:3874:4321:5007:6119:7652:7875:7903:8957:10004:10400:10848:11232:11658:11914:12043:12214:12517:12519:12555:12663:12740:13069:13071:13163:13200:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: salt12_3d27638aa3305
+X-Filterd-Recvd-Size: 1464
+Message-ID: <1403212419.2753.12.camel@joe-AO725>
+Subject: Re: [PATCH] staging: iio: kernel style neatening
+From: Joe Perches <joe@perches.com>
+To: Federico Di Pierro <nierro92@gmail.com>
+Cc: Jonathan Cameron <jic23@kernel.org>, gregkh@linuxfoundation.org,
+        jg1.han@samsung.com, sachin.kamat@linaro.org,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 19 Jun 2014 14:13:39 -0700
+In-Reply-To: <53A35062.7070705@gmail.com>
+References: <53A35062.7070705@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Jun 2014, Paul E. McKenney wrote:
+On Thu, 2014-06-19 at 23:04 +0200, Federico Di Pierro wrote:
+> This is a very small patch that fixes 3 little coding style problems.
+> I'm using linux-next.
 
-> On Thu, Jun 19, 2014 at 03:31:56PM -0500, Christoph Lameter wrote:
-> > On Thu, 19 Jun 2014, Paul E. McKenney wrote:
-> >
-> > > That is a separate issue, but unnecessary calls to cond_resched()
-> > > should of course be removed -- no argument there.
-> >
-> > It looks like we are fighting higher latencies by adding calls in most of
-> > the critical sections which will in turn increase the latencies that we
-> > are trying to reduce.
->
-> That is on battle in a larger war.  Another battle is to keep big systems
-> from choking and dying.  We need to win both battles, though I understand
-> that you are focused primarily on latency reduction.  I don't get that
-> luxury because RCU is used across the board.
+Hello Federico.
 
-At least reduce the increased latencies to a processor or put it somewhere
-outside of the regular execution paths. Sprinkling this throughout the
-kernel via a inline function that did not generate code in the non debug
-situation before is not that nice.
+Your patch is word wrapped and can't be applied.
+
+Please read Documentation/SubmittingPatches and
+Documentation/email-clients.txt
+
+Ideally, try to use git, git format-patch and
+git send-email.
+
+> --- linux/drivers/staging/iio/frequency/ad9832.c.orig	2014-06-02 
+> 17:26:12.929978122 +0200
+> +++ linux/drivers/staging/iio/frequency/ad9832.c	2014-06-02 
+> 19:34:57.129506826 +0200
+
 
