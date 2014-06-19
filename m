@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933949AbaFSRCG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 13:02:06 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:56174 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932232AbaFSRCF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 13:02:05 -0400
-Message-ID: <1403197317.29394.14.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 6/9] perf bench: futex: Replace --silent option with
- global --format
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: jolsa@kernel.org, mitake@dcl.info.waseda.ac.jp, aswin@hp.com,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Date: Thu, 19 Jun 2014 10:01:57 -0700
-In-Reply-To: <20140619163851.GG20252@kernel.org>
-References: <1402942467-10671-1-git-send-email-davidlohr@hp.com>
-	 <1402942467-10671-7-git-send-email-davidlohr@hp.com>
-	 <20140619163851.GG20252@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933984AbaFSRCh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 13:02:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3641 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932232AbaFSRCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 13:02:36 -0400
+Date: Thu, 19 Jun 2014 18:51:13 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 5/5] perf tools: Add report.show-headers config file
+ option
+Message-ID: <20140619165113.GB31520@krava.brq.redhat.com>
+References: <1403178076-14072-1-git-send-email-jolsa@kernel.org>
+ <1403178076-14072-6-git-send-email-jolsa@kernel.org>
+ <1403182604.1670.26.camel@leonhard>
+ <20140619130202.GA24328@krava.brq.redhat.com>
+ <1403183399.1670.30.camel@leonhard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1403183399.1670.30.camel@leonhard>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-19 at 13:38 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Jun 16, 2014 at 11:14:24AM -0700, Davidlohr Bueso escreveu:
-> > Using the already existing '--format simple' option in perf-bench
-> > is/should be equivalent to disabling any verbose output. Replace
-> > it and free up the -s option specific to the futex benchmark.
+On Thu, Jun 19, 2014 at 10:09:59PM +0900, Namhyung Kim wrote:
+> 2014-06-19 (목), 15:02 +0200, Jiri Olsa:
+> > On Thu, Jun 19, 2014 at 09:56:44PM +0900, Namhyung Kim wrote:
+> > > [SNIP]
+> > > > @@ -35,6 +35,7 @@ struct symbol_conf symbol_conf = {
+> > > >  	.demangle		= true,
+> > > >  	.cumulate_callchain	= true,
+> > > >  	.symfs			= "",
+> > > > +	.show_headers		= -1,
+> > > 
+> > > Hmm.. why not just making it boolean and set it to true (like others)?
+> > 
+> > I need 'unset' value, otherwise I dont know if the config
+> > option was unset by user or not touched at all
 > 
-> Isn't this much longer?
+> I don't understand why you need it..  isn't it enough to check the
+> config option before using the value?
 
-It is, and to be honest I detest the whole --format option. But its
-already there and I really want to make use of global parameters in
-order to recycle options that are benchmark-specific. What I'd really
-like is to replace it with --silent and just have perf spit out the raw
-data (for scripting). But that would be too disruptive to users, imho.
-Does it matter? I dunno.
+if config file option is not specified the show_headers
+value will be 'false' ... which will cause headers not
+to be displayed.. but they should be by default
 
-> I haven't seen any patch in this series wanting to use -s.
-> 
-> Ingo, are you Ok with this?
-> 
-> I.e. I'm just trying to be careful when changing existing cmd line args,
-> perhaps someone is used to this, who knows, and at least for me,
-> --silent is way, way more clear than '--format simple', that says
-> nothing to me.
-
-If we can get away with it then lets.
-
-Thanks,
-Davidlohr
-
+jirka
