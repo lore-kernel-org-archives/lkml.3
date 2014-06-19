@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757525AbaFSWcU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 18:32:20 -0400
-Received: from mail-pa0-f73.google.com ([209.85.220.73]:64004 "EHLO
-	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877AbaFSWcS (ORCPT
+	id S1757780AbaFSWi0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 18:38:26 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:44424 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754675AbaFSWiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 18:32:18 -0400
-From: Greg Thelen <gthelen@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Greg Thelen <gthelen@google.com>
-Subject: [PATCH] memcg: remove lookup_cgroup_page() prototype
-Date: Thu, 19 Jun 2014 15:32:16 -0700
-Message-Id: <1403217136-4863-1-git-send-email-gthelen@google.com>
-X-Mailer: git-send-email 2.0.0.526.g5318336
+	Thu, 19 Jun 2014 18:38:24 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArJmAK1lo1N5LC2vPGdsb2JhbABZDoJ/UoJ2hQiidQEBAQEBAQaZKQGBDhcEAQEBATg1hAMBAQU6HDMIAxgJJQ8FJQMHGgESiEHNTBaFTIkbhEMBA5pCizGLKFQr
+Date: Fri, 20 Jun 2014 08:38:20 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Jens Axboe <axboe@fb.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: BUG: scheduling while atomic in blk_mq codepath?
+Message-ID: <20140619223820.GN4453@dastard>
+References: <20140619153550.GA12836@thunk.org>
+ <53A308DE.7080000@fb.com>
+ <20140619160801.GB4907@thunk.org>
+ <20140619162144.GC4907@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140619162144.GC4907@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-6b208e3f6e35 ("mm: memcg: remove unused node/section info from
-pc->flags") deleted the lookup_cgroup_page() function but left a
-prototype for it.
+On Thu, Jun 19, 2014 at 12:21:44PM -0400, Theodore Ts'o wrote:
+> On Thu, Jun 19, 2014 at 12:08:01PM -0400, Theodore Ts'o wrote:
+> > > The other issue, not sure, not a lot of detail. It may be fixed by the pull
+> > > request I sent out yesterday. You can try pulling in:
+> > > 
+> > > git://git.kernel.dk/linux-block.git for-linus
+> > 
+> > Thanks, I'll give that a try.
+> 
+> I tried merging in your for-linus branch in v3.16-rc1, and I'm seeing
+> the following.  On a 32-bit x86 3.15 kernel, run: "mke2fs -t ext3
+> /dev/vdc" where /dev/vdc is a 5 gig virtio partition.
 
-Kill the vestigial prototype.
+Short reads are more likely a bug in all the iovec iterator stuff
+that got merged in from the vfs tree. ISTR a 32 bit-only bug in that
+stuff go past in to do with not being able to partition a 32GB block
+dev on a 32 bit system due to a 32 bit size_t overflow somewhere....
 
-Signed-off-by: Greg Thelen <gthelen@google.com>
----
- include/linux/page_cgroup.h | 1 -
- 1 file changed, 1 deletion(-)
+Cheers,
 
-diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-index 777a524716db..0ff470de3c12 100644
---- a/include/linux/page_cgroup.h
-+++ b/include/linux/page_cgroup.h
-@@ -42,7 +42,6 @@ static inline void __init page_cgroup_init(void)
- #endif
- 
- struct page_cgroup *lookup_page_cgroup(struct page *page);
--struct page *lookup_cgroup_page(struct page_cgroup *pc);
- 
- #define TESTPCGFLAG(uname, lname)			\
- static inline int PageCgroup##uname(struct page_cgroup *pc)	\
+Dave.
 -- 
-2.0.0.526.g5318336
-
+Dave Chinner
+david@fromorbit.com
