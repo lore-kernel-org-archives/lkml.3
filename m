@@ -1,109 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757264AbaFSLAS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 07:00:18 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:55792 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751875AbaFSLAQ (ORCPT
+	id S1757571AbaFSLA0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 07:00:26 -0400
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:55221 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751875AbaFSLAU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 07:00:16 -0400
-Message-ID: <53A2C28F.1080007@st.com>
-Date: Thu, 19 Jun 2014 12:59:27 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 19 Jun 2014 07:00:20 -0400
 MIME-Version: 1.0
-To: Peter Griffin <peter.griffin@linaro.org>, Lee Jones <lee.jones@linaro.org>
-Cc: <linux-pwm@vger.kernel.org>, <kernel@stlinux.com>,
-        <devicetree@vger.kernel.org>, <srinivas.kandagatla@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <thierry.reding@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [STLinux Kernel] [PATCH 4/7] ARM: stih416-b2020e: Enable PWM
- on the B2020 Rev-E
-References: <1403103172-19856-1-git-send-email-lee.jones@linaro.org>	<1403103172-19856-4-git-send-email-lee.jones@linaro.org>	<20140619090546.GB2131@griffinp-ThinkPad-X1-Carbon-2nd>	<20140619092042.GB26560@lee--X1> <20140619101236.GA7390@griffinp-ThinkPad-X1-Carbon-2nd>
-In-Reply-To: <20140619101236.GA7390@griffinp-ThinkPad-X1-Carbon-2nd>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="pqjER9VX6Q2lQG3rsnDrcg9HRWeE28jtA"
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-19_04:2014-06-19,2014-06-19,1970-01-01 signatures=0
+In-Reply-To: <53A2BBD0.3050106@linaro.org>
+References: <1403167145-5267-1-git-send-email-amit.daniel@samsung.com>
+	<53A2A936.3070109@linaro.org>
+	<CADGdYn6YObHdRq6A9-L7qbD+EYiPrwhrKkLwyA5Z=0tDoWUzvA@mail.gmail.com>
+	<53A2BBD0.3050106@linaro.org>
+Date: Thu, 19 Jun 2014 16:30:19 +0530
+X-Google-Sender-Auth: OK8SBl5AJTPVKBrLlcUBJ_g0ojA
+Message-ID: <CADGdYn67L9StxiojQN0c5rwgDo6jLNOS9uWyj__B6ViGRm080A@mail.gmail.com>
+Subject: Re: [PATCH v2] clocksource: exynos-mct: Register the timer for stable udelay
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Riley <davidriley@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---pqjER9VX6Q2lQG3rsnDrcg9HRWeE28jtA
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-Hi Peter,
-
-On 06/19/2014 12:12 PM, Peter Griffin wrote:
-> Hi Lee,
->=20
->>> Why are you only enabling this for rev-E board?
+On Thu, Jun 19, 2014 at 4:00 PM, Daniel Lezcano
+<daniel.lezcano@linaro.org> wrote:
+> On 06/19/2014 12:21 PM, amit daniel kachhap wrote:
 >>
->> Purely for testing purposes, as it's the only board I have.  If
->> anyone has the other revisions and would be happy to test the driver
->> for me then great.
->=20
-> Ok that's what I suspected.
->=20
-> If you tell me how, I can test on a Rev C board. But as there are sever=
-al other=20
-> revisions I think checking the board schematics would be the quickest w=
-ay forward.
-
-Only Rev C & E are in the wild now, so checking these two boards will
-be enough.
-
-Thanks,
-Maxime
-
->=20
->>> If you make the stih415 DT PWM nodes part of this series as well, the=
-n=20
->>> assuming there is no good reason to the contary, the PWM could=20
->>> be enabled for both stih415/6 in the common stih41x-b2020 DTS file wh=
-ich
->>> is also included by rev-E (assuming that PWM wiring is not some rev-E=
- specific
->>> thing).
->=20
-> Can you add the stih415 bindings in V2 as well?
->=20
-> regards,
->=20
-> Peter
->=20
-> _______________________________________________
-> Kernel mailing list
-> Kernel@stlinux.com
-> http://www.stlinux.com/mailman/listinfo/kernel
->=20
-
-
---pqjER9VX6Q2lQG3rsnDrcg9HRWeE28jtA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTosKPAAoJEMo4jShGhw+JX7QP/0Fk44XXnazRCpk2cbDCbtZd
-2LRmSwbys3M0Re22DoMqxj7aoct9Gt6KfwMCf7AJqa+0qNO+6QEGC3oTTweEGa3y
-Way6+zd7vy1o9NklPgsm00yD5GzhwM5IW7Gz5AplnStvGLzMb37BTquggaE7e6Wg
-zsJYOkylfIODpZA8i8s7th7IebLFsmd5HAZdrvnvHji2DOpxr58bnV1ZPK7Qvweb
-mChY+BjiR02PfSaRh1heleMvV7raU9f+o3EvND3aZUF171UIMv6TrRmZ/2GP1Zp7
-xpT3bIg9xhZ/K6yo5PugTIbaUD2o9+nTcnSJV62EhEmvGkGD5wVhnoNavOlU5x6r
-G4znapR31t/06yCB3qubNK6YNPkgBqE/P6AjH3clRI6flwAFGjDEB9XzXmBir1DZ
-4p8qsO2Vwdg1/ZuDrdQg/bKBe4rSIHj0EykiH102DPaPIi2I2O2fqDpvOyUqG3dg
-QGGnQFqVRQf+jeCrXBz8kO7sqtARN4YDYA3GLP+UeCeY9W5Bq2Zx0QQPw7I36naH
-xgeZ+T1co8wStRAsluHSNDdRLiHQztxmQctcFXhj70w30ZiSWduYPlWT+tK9PFgy
-YGBfGRibwoxyrl5Dd+rM+2dL9Hlz4yk5nLTNULyc1mVoFN/rlZ9SULwQM6kertBl
-aGuCktPG26r4p90S2+g/
-=B8eR
------END PGP SIGNATURE-----
-
---pqjER9VX6Q2lQG3rsnDrcg9HRWeE28jtA--
+>> On Thu, Jun 19, 2014 at 2:41 PM, Daniel Lezcano
+>> <daniel.lezcano@linaro.org> wrote:
+>>>
+>>> On 06/19/2014 10:39 AM, Amit Daniel Kachhap wrote:
+>>>>
+>>>>
+>>>> This patch register the exynos mct clocksource as the current timer
+>>>> as it has constant clock rate. This will generate correct udelay for the
+>>>> exynos platform and avoid using unnecessary calibrated jiffies. This
+>>>> change
+>>>> has been tested on exynos5420 based board and udelay is very close to
+>>>> expected.
+>>>>
+>>>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>>>> ---
+>>>> Changes in V2:
+>>>> * Added #defines for ARM and ARM64 as pointed by Doug Anderson.
+>>>>
+>>>> Patches from David Riley confirmed that udelay is broken in exynos5420.
+>>>> Link to those patches are,
+>>>> 1) https://patchwork.kernel.org/patch/4344911/
+>>>> 2) https://patchwork.kernel.org/patch/4344881/
+>>>>
+>>>>    drivers/clocksource/exynos_mct.c | 15 +++++++++++++++
+>>>>    1 file changed, 15 insertions(+)
+>>>>
+>>>> diff --git a/drivers/clocksource/exynos_mct.c
+>>>> b/drivers/clocksource/exynos_mct.c
+>>>> index f71d55f..02927e2 100644
+>>>> --- a/drivers/clocksource/exynos_mct.c
+>>>> +++ b/drivers/clocksource/exynos_mct.c
+>>>> @@ -195,10 +195,25 @@ static u64 notrace exynos4_read_sched_clock(void)
+>>>>          return exynos4_frc_read(&mct_frc);
+>>>>    }
+>>>>
+>>>> +static struct delay_timer exynos4_delay_timer;
+>>>> +
+>>>> +static unsigned long exynos4_read_current_timer(void)
+>>>> +{
+>>>> +#ifdef ARM
+>>>> +       return __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
+>>>> +#else /* ARM64, etc */
+>>>> +       return exynos4_frc_read(&mct_frc);
+>>>> +#endif
+>>>> +}
+>>>> +
+>>>
+>>>
+>>>
+>>> There isn't another solution than that ? macros definitions in C file are
+>>> avoided as much as possible.
+>>
+>> I also didn't want to use macros but used as a last option. you want
+>> me to put more comments here?
+>> Or something like below is also possible for checking the size of
+>> (unsigned long) in runtime.
+>>
+>> unsigned long x;
+>> unsigned int size = (char *)(&x + 1) - (char *)(&x);
+>> if (size == 4)
+>>             return __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
+>> else
+>>             return exynos4_frc_read(&mct_frc);
+>>
+>> But this involves extra computation which should not be used for time
+>> critical functions.
+>> Any suggestion?
+>
+>
+> AFAIU, Doug may change the exynos4_frc_read to be 32 bits. So may not need
+> those macros as 'exynos4_frc_read' could be used instead.
+right, its better to wait till those patches are out.
+>
+> Doug may confirm this.
+>
+>
+>>>>    static void __init exynos4_clocksource_init(void)
+>>>>    {
+>>>>          exynos4_mct_frc_start();
+>>>>
+>>>> +       exynos4_delay_timer.read_current_timer =
+>>>> &exynos4_read_current_timer;
+>>>
+>>>
+>>>
+>>> &exynos4_read_current_timer ?
+>>
+>> Any issue in the naming?
+>
+>
+> No problem with the naming. As Tomasz pointed also, you are passing '&' for
+> the function pointer.
+yes my mistake.
+>
+>
+>>>> +       exynos4_delay_timer.freq = clk_rate;
+>>>> +       register_current_timer_delay(&exynos4_delay_timer);
+>>>> +
+>>>>          if (clocksource_register_hz(&mct_frc, clk_rate))
+>>>>                  panic("%s: can't register clocksource\n",
+>>>> mct_frc.name);
+>>>>
+>>>>
+>>>
+>>>
+>>> --
+>>>   <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+>>>
+>>> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+>>> <http://twitter.com/#!/linaroorg> Twitter |
+>>> <http://www.linaro.org/linaro-blog/> Blog
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe
+>>> linux-samsung-soc"
+>>> in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+>
+> --
+>  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+>
+> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+> <http://twitter.com/#!/linaroorg> Twitter |
+> <http://www.linaro.org/linaro-blog/> Blog
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc"
+> in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
