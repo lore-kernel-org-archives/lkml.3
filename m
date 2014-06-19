@@ -1,121 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965356AbaFSVOI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 17:14:08 -0400
-Received: from mail.kernel.org ([198.145.19.201]:34056 "EHLO mail.kernel.org"
+	id S965558AbaFSVOO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 17:14:14 -0400
+Received: from mail.kernel.org ([198.145.19.201]:34077 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965188AbaFSVOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 17:14:06 -0400
+	id S965188AbaFSVOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 17:14:10 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Adrian Hunter <adrian.hunter@intel.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 00/11] perf/core improvements and fixes
-Date: Thu, 19 Jun 2014 18:13:42 -0300
-Message-Id: <1403212433-2714-1-git-send-email-acme@kernel.org>
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 01/11] perf trace: Fix up fd -> pathname resolution
+Date: Thu, 19 Jun 2014 18:13:43 -0300
+Message-Id: <1403212433-2714-2-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1403212433-2714-1-git-send-email-acme@kernel.org>
+References: <1403212433-2714-1-git-send-email-acme@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-	Please conseider pulling,
+There was a brown paper bag bug in the patch that introduced a reference
+implementation on using 'perf probe' made wannabe tracepoints that broke fd ->
+pathname resolution, fix it:
 
-- Arnaldo
+  [root@zoo ~]# perf probe 'vfs_getname=getname_flags:65 pathname=result->name:string'
+  Added new event:
+    probe:vfs_getname    (on getname_flags:65 with pathname=result->name:string)
 
-The following changes since commit a10d60c08cc3bbea9195e2b36440f557373623eb:
+  You can now use it in all perf tools, such as:
 
-  sh, perf: Use common PMU interrupt disabled code (2014-06-19 19:37:51 +0200)
+	perf record -e probe:vfs_getname -aR sleep 1
 
-are available in the git repository at:
+  [root@zoo ~]
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
+Before:
 
-for you to fetch changes up to ecdac96899e3db3f428e4d2e978f25e3f8d35a6c:
+  [acme@zoo linux]$ trace touch -e open,fstat /tmp/b
+     1.159 ( 0.007 ms): open(filename: 0x7fd73f2fe088, flags: CLOEXEC                         ) = 3
+     1.163 ( 0.002 ms): fstat(fd: 3, statbuf: 0x7fff1b25e610                                  ) = 0
+     1.192 ( 0.009 ms): open(filename: 0x7fd73f4fedb8, flags: CLOEXEC                         ) = 3
+     1.201 ( 0.002 ms): fstat(fd: 3, statbuf: 0x7fff1b25e660                                  ) = 0
+     1.501 ( 0.013 ms): open(filename: 0x7fd73f0a1610, flags: CLOEXEC                         ) = 3
+     1.505 ( 0.002 ms): fstat(fd: 3, statbuf: 0x7fd73f2ddb60                                  ) = 0
+     1.581 ( 0.011 ms): open(filename: 0x7fff1b2603da, flags: CREAT|NOCTTY|NONBLOCK|WRONLY, mode: 438) = 3
+  [acme@zoo linux]$
 
-  perf bench sched-messaging: Drop barf() (2014-06-19 16:13:17 -0300)
+After:
 
-----------------------------------------------------------------
-perf/core improvements and fixes:
+  [acme@zoo linux]$ trace touch -e open,fstat,dup2,mmap,close /tmp/b
+     1.105 ( 0.004 ms): mmap(len: 4096, prot: READ|WRITE, flags: PRIVATE|ANONYMOUS, fd: -1    ) = 0x2fbf000
+     1.136 ( 0.008 ms): open(filename: 0x7f8902dbc088, flags: CLOEXEC                         ) = 3
+     1.140 ( 0.002 ms): fstat(fd: 3</etc/ld.so.cache>, statbuf: 0x7fff19889ef0                ) = 0
+     1.146 ( 0.004 ms): mmap(len: 86079, prot: READ, flags: PRIVATE, fd: 3</etc/ld.so.cache>  ) = 0x2fa9000
+     1.149 ( 0.001 ms): close(fd: 3</etc/ld.so.cache>                                         ) = 0
+     1.170 ( 0.010 ms): open(filename: 0x7f8902fbcdb8, flags: CLOEXEC                         ) = 3
+     1.178 ( 0.002 ms): fstat(fd: 3</lib64/libc.so.6>, statbuf: 0x7fff19889f40                ) = 0
+     1.188 ( 0.006 ms): mmap(len: 3924576, prot: EXEC|READ, flags: PRIVATE|DENYWRITE, fd: 3</lib64/libc.so.6>) = 0x29e2000
+     1.207 ( 0.007 ms): mmap(addr: 0x7f8902d96000, len: 24576, prot: READ|WRITE, flags: PRIVATE|DENYWRITE|FIXED, fd: 3</lib64/libc.so.6>, off: 1785856) = 0x2d96000
+     1.217 ( 0.004 ms): mmap(addr: 0x7f8902d9c000, len: 16992, prot: READ|WRITE, flags: PRIVATE|ANONYMOUS|FIXED, fd: -1) = 0x2d9c000
+     1.228 ( 0.002 ms): close(fd: 3</lib64/libc.so.6>                                         ) = 0
+     1.243 ( 0.003 ms): mmap(len: 4096, prot: READ|WRITE, flags: PRIVATE|ANONYMOUS, fd: -1    ) = 0x2fa8000
+     1.250 ( 0.003 ms): mmap(len: 8192, prot: READ|WRITE, flags: PRIVATE|ANONYMOUS, fd: -1    ) = 0x2fa6000
+     1.452 ( 0.010 ms): open(filename: 0x7f8902b5f610, flags: CLOEXEC                         ) = 3
+     1.455 ( 0.002 ms): fstat(fd: 3</usr/lib/locale/locale-archive>, statbuf: 0x7f8902d9bb60  ) = 0
+     1.461 ( 0.004 ms): mmap(len: 106070960, prot: READ, flags: PRIVATE, fd: 3</usr/lib/locale/locale-archive>) = 0xfc4b9000
+     1.469 ( 0.002 ms): close(fd: 3</usr/lib/locale/locale-archive>                           ) = 0
+     1.528 ( 0.010 ms): open(filename: 0x7fff1988c3da, flags: CREAT|NOCTTY|NONBLOCK|WRONLY, mode: 438) = 3
+     1.532 ( 0.002 ms): dup2(oldfd: 3</tmp/b>                                                 ) = 0
+     1.535 ( 0.001 ms): close(fd: 3</tmp/b>                                                   ) = 0
+     1.544 ( 0.001 ms): close(                                                                ) = 0
+     1.555 ( 0.001 ms): close(fd: 1                                                           ) = 0
+     1.558 ( 0.001 ms): close(fd: 2                                                           ) = 0
+  [acme@zoo linux]$
 
-User visible:
-
-. Add --repeat global option to 'perf bench' to be used in benchmarks
-  such as the existing 'futex' one, that was modified to use it instead
-  of a local option. (Davidlohr Bueso)
-
-. Fix fd -> pathname resolution in 'trace', be it using /proc or
-  a vfs_getname probe point. (Arnaldo Carvalho de Melo)
-
-. Add suggestion of how to set perf_event_paranoid sysctl, to help
-  non-root users trying tools like 'trace' to get a working environment.
-  (Arnaldo Carvalho de Melo)
-
-Fixes:
-
-. Fix memory leak in the 'sched-messaging' perf bench test. (Davidlohr Bueso)
-
-. The -o and -n 'perf bench mem' options are mutually exclusive, emit error
-  when both are specified. (Davidlohr Bueso)
-
-. Fix scrollbar refresh row index in the ui browser, problem exposed now
-  that headers will be added and will be allowed to be switched on/off.
-  (Jiri Olsa)
-
-Cleanups:
-
-. Remove needless reassignments in 'trace' (Arnaldo Carvalho de Melo)
-
-. Cache the is_exit syscall test in 'trace) (Arnaldo Carvalho de Melo)
-
-. No need to reimplement err() in 'perf bench sched-messaging', drop barf().
-  (Davidlohr Bueso).
-
-. Remove ev_name argument from perf_evsel__hists_browse, can be obtained
-  from the other parameters. (Jiri Olsa)
-
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-vcm22xpjxc3j4hbyuzjzf7ik@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-trace.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-----------------------------------------------------------------
-Arnaldo Carvalho de Melo (4):
-      perf trace: Fix up fd -> pathname resolution
-      perf evlist: Add suggestion of how to set perf_event_paranoid sysctl
-      perf trace: Remove needless reassignments
-      perf trace: Cache the is_exit syscall test
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index f954c26de231..5ab2f674fed2 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -1276,11 +1276,11 @@ static const char *thread__fd_path(struct thread *thread, int fd,
+ 	if (fd < 0)
+ 		return NULL;
+ 
+-	if ((fd > ttrace->paths.max || ttrace->paths.table[fd] == NULL))
++	if ((fd > ttrace->paths.max || ttrace->paths.table[fd] == NULL)) {
+ 		if (!trace->live)
+ 			return NULL;
+ 		++trace->stats.proc_getname;
+-		if (thread__read_fd_path(thread, fd)) {
++		if (thread__read_fd_path(thread, fd))
+ 			return NULL;
+ 	}
+ 
+-- 
+1.9.3
 
-Davidlohr Bueso (5):
-      perf bench sched-messaging: Plug memleak
-      perf bench: Add --repeat option
-      perf bench futex: Use global --repeat option
-      perf bench mem: The -o and -n options are mutually exclusive
-      perf bench sched-messaging: Drop barf()
-
-Jiri Olsa (2):
-      perf hists browser: Remove ev_name argument from perf_evsel__hists_browse
-      perf ui browser: Fix scrollbar refresh row index
-
- tools/perf/Documentation/perf-bench.txt |  4 +++
- tools/perf/bench/bench.h                |  1 +
- tools/perf/bench/futex-requeue.c        | 10 +------
- tools/perf/bench/futex-wake.c           | 12 ++-------
- tools/perf/bench/mem-memcpy.c           |  5 ++++
- tools/perf/bench/mem-memset.c           |  5 ++++
- tools/perf/bench/sched-messaging.c      | 47 +++++++++++++++------------------
- tools/perf/builtin-bench.c              |  7 +++++
- tools/perf/builtin-trace.c              | 12 ++++-----
- tools/perf/ui/browser.c                 |  2 +-
- tools/perf/ui/browsers/hists.c          | 25 ++++++++----------
- tools/perf/util/evlist.c                |  5 ++--
- 12 files changed, 67 insertions(+), 68 deletions(-)
