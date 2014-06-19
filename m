@@ -1,167 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308AbaFSPyP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 11:54:15 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48740 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757949AbaFSPxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 11:53:50 -0400
-Date: Thu, 19 Jun 2014 12:41:14 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 2/5] perf tools: Remove ev_name argument from
- perf_evsel__hists_browse
-Message-ID: <20140619154114.GF20252@kernel.org>
-References: <1403178076-14072-1-git-send-email-jolsa@kernel.org>
- <1403178076-14072-3-git-send-email-jolsa@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403178076-14072-3-git-send-email-jolsa@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1758123AbaFSP5f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 11:57:35 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:62703 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757405AbaFSP5d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 11:57:33 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-09-53a3086ab9d0
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: ryabinin.a.a@gmail.com, Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: [PATCH] mm: slub: SLUB_DEBUG=n: use the same alloc/free hooks as for
+ SLUB_DEBUG=y
+Date: Thu, 19 Jun 2014 19:52:18 +0400
+Message-id: <1403193138-7677-1-git-send-email-a.ryabinin@samsung.com>
+X-Mailer: git-send-email 1.8.5.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBJMWRmVeSWpSXmKPExsVy+t/xq7pZHIuDDa6u0rDY9usRm8Wc9WvY
+	LG6u2s5ssbK7mc1iZecDVovLu+awWdxb85/Vou3zPyCxZCOTxfGtW5gduDx2zrrL7rFgU6nH
+	plWdbB6bPk1i9+h6e4XJ48SM3ywefVtWMXp83iQXwBHFZZOSmpNZllqkb5fAlfHqt2/BYfWK
+	h8vdGhhPKXQxcnBICJhI9Exh7WLkBDLFJC7cW8/WxcjFISSwlFHi9dbbzBBOH5PEp12vwKrY
+	BPQk/s3azgZiiwjoSqx6vgusiFngCJPE22lt7CAJYYEYibf7zrKA2CwCqhKLfrawgWzjFXCV
+	mLolHmKbgsSy5TNZJzByL2BkWMUomlqaXFCclJ5rqFecmFtcmpeul5yfu4kRElpfdjAuPmZ1
+	iFGAg1GJh/fD2wXBQqyJZcWVuYcYJTiYlUR4d39dFCzEm5JYWZValB9fVJqTWnyIkYmDU6qB
+	kd1JduOOY09XHEq+nd3uU/Dhxq7ZUYHVnrsebPkw165Sp6hwW4D+/5VcOU5Xz5vHbvzsb5es
+	LsjLFfLx2tqkO9Z53O1BXUVyk2b95pmR9ez2WX0Ju6Pbwyd4TI/6YH6i4fjTX/2uO2yc/Z+5
+	X2orfdpT47Btc0XnQvtQx78Tb7/2aeQxqdWJVWIpzkg01GIuKk4EAH4NfLELAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jun 19, 2014 at 01:41:13PM +0200, Jiri Olsa escreveu:
-> Removing ev_name argument from perf_evsel__hists_browse
-> function, because it's not needed. We can get the name
-> out of the 'struct perf_evsel' which is passed as
-> argument as well.
+There are two versions of alloc/free hooks now - one for CONFIG_SLUB_DEBUG=y
+and another one for CONFIG_SLUB_DEBUG=n.
 
-See? What you did, why you did it, thanks! Applied, will push together
-with a batch today.
+I see no reason why calls to other debugging subsystems (LOCKDEP,
+DEBUG_ATOMIC_SLEEP, KMEMCHECK and FAILSLAB) are hidden under SLUB_DEBUG.
+All this features should work regardless of SLUB_DEBUG config, as all of
+them already have own Kconfig options.
 
-- Arnaldo
+This also fixes failslab for CONFIG_SLUB_DEBUG=n configuration.
+It simply not worked before because should_failslab() call was in hook
+hidden under "#ifdef CONFIG_SLUB_DEBUG #else".
+
+Note: There is one concealed change in allocation path for SLUB_DEBUG=n and all
+other debugging features disabled. might_sleep_if() call can generate some code
+even if DEBUG_ATOMIC_SLEEP=n. For PREEMPT_VOLUNTARY=y migth_sleep() inserts
+_cond_resched() call, but I think it should be ok.
+
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+---
+ mm/slub.c | 97 ++++++++++++++++++++++++---------------------------------------
+ 1 file changed, 36 insertions(+), 61 deletions(-)
+
+diff --git a/mm/slub.c b/mm/slub.c
+index b2b0473..8f477c3 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -945,60 +945,6 @@ static void trace(struct kmem_cache *s, struct page *page, void *object,
+ }
  
-> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-> ---
->  tools/perf/ui/browsers/hists.c | 25 +++++++++++--------------
->  1 file changed, 11 insertions(+), 14 deletions(-)
-> 
-> diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-> index 7cb6309..6aeed29 100644
-> --- a/tools/perf/ui/browsers/hists.c
-> +++ b/tools/perf/ui/browsers/hists.c
-> @@ -33,8 +33,7 @@ struct hist_browser {
->  
->  extern void hist_browser__init_hpp(void);
->  
-> -static int hists__browser_title(struct hists *hists, char *bf, size_t size,
-> -				const char *ev_name);
-> +static int hists__browser_title(struct hists *hists, char *bf, size_t size);
->  static void hist_browser__update_nr_entries(struct hist_browser *hb);
->  
->  static struct rb_node *hists__filter_entries(struct rb_node *nd,
-> @@ -346,7 +345,7 @@ static void ui_browser__warn_lost_events(struct ui_browser *browser)
->  		"Or reduce the sampling frequency.");
->  }
->  
-> -static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
-> +static int hist_browser__run(struct hist_browser *browser,
->  			     struct hist_browser_timer *hbt)
->  {
->  	int key;
-> @@ -357,7 +356,7 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
->  	browser->b.nr_entries = hist_browser__nr_entries(browser);
->  
->  	hist_browser__refresh_dimensions(browser);
-> -	hists__browser_title(browser->hists, title, sizeof(title), ev_name);
-> +	hists__browser_title(browser->hists, title, sizeof(title));
->  
->  	if (ui_browser__show(&browser->b, title,
->  			     "Press '?' for help on key bindings") < 0)
-> @@ -384,7 +383,7 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
->  				ui_browser__warn_lost_events(&browser->b);
->  			}
->  
-> -			hists__browser_title(browser->hists, title, sizeof(title), ev_name);
-> +			hists__browser_title(browser->hists, title, sizeof(title));
->  			ui_browser__show_title(&browser->b, title);
->  			continue;
->  		}
-> @@ -1213,8 +1212,7 @@ static struct thread *hist_browser__selected_thread(struct hist_browser *browser
->  	return browser->he_selection->thread;
->  }
->  
-> -static int hists__browser_title(struct hists *hists, char *bf, size_t size,
-> -				const char *ev_name)
-> +static int hists__browser_title(struct hists *hists, char *bf, size_t size)
->  {
->  	char unit;
->  	int printed;
-> @@ -1223,6 +1221,7 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
->  	unsigned long nr_samples = hists->stats.nr_events[PERF_RECORD_SAMPLE];
->  	u64 nr_events = hists->stats.total_period;
->  	struct perf_evsel *evsel = hists_to_evsel(hists);
-> +	const char *ev_name = perf_evsel__name(evsel);
->  	char buf[512];
->  	size_t buflen = sizeof(buf);
->  
-> @@ -1390,7 +1389,7 @@ static void hist_browser__update_nr_entries(struct hist_browser *hb)
->  }
->  
->  static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
-> -				    const char *helpline, const char *ev_name,
-> +				    const char *helpline,
->  				    bool left_exits,
->  				    struct hist_browser_timer *hbt,
->  				    float min_pcnt,
-> @@ -1465,7 +1464,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
->  
->  		nr_options = 0;
->  
-> -		key = hist_browser__run(browser, ev_name, hbt);
-> +		key = hist_browser__run(browser, hbt);
->  
->  		if (browser->he_selection != NULL) {
->  			thread = hist_browser__selected_thread(browser);
-> @@ -1843,7 +1842,7 @@ static int perf_evsel_menu__run(struct perf_evsel_menu *menu,
->  {
->  	struct perf_evlist *evlist = menu->b.priv;
->  	struct perf_evsel *pos;
-> -	const char *ev_name, *title = "Available samples";
-> +	const char *title = "Available samples";
->  	int delay_secs = hbt ? hbt->refresh : 0;
->  	int key;
->  
-> @@ -1876,9 +1875,8 @@ browse_hists:
->  			 */
->  			if (hbt)
->  				hbt->timer(hbt->arg);
-> -			ev_name = perf_evsel__name(pos);
->  			key = perf_evsel__hists_browse(pos, nr_events, help,
-> -						       ev_name, true, hbt,
-> +						       true, hbt,
->  						       menu->min_pcnt,
->  						       menu->env);
->  			ui_browser__show_title(&menu->b, title);
-> @@ -1984,10 +1982,9 @@ int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
->  single_entry:
->  	if (nr_entries == 1) {
->  		struct perf_evsel *first = perf_evlist__first(evlist);
-> -		const char *ev_name = perf_evsel__name(first);
->  
->  		return perf_evsel__hists_browse(first, nr_entries, help,
-> -						ev_name, false, hbt, min_pcnt,
-> +						false, hbt, min_pcnt,
->  						env);
->  	}
->  
-> -- 
-> 1.8.3.1
+ /*
+- * Hooks for other subsystems that check memory allocations. In a typical
+- * production configuration these hooks all should produce no code at all.
+- */
+-static inline void kmalloc_large_node_hook(void *ptr, size_t size, gfp_t flags)
+-{
+-	kmemleak_alloc(ptr, size, 1, flags);
+-}
+-
+-static inline void kfree_hook(const void *x)
+-{
+-	kmemleak_free(x);
+-}
+-
+-static inline int slab_pre_alloc_hook(struct kmem_cache *s, gfp_t flags)
+-{
+-	flags &= gfp_allowed_mask;
+-	lockdep_trace_alloc(flags);
+-	might_sleep_if(flags & __GFP_WAIT);
+-
+-	return should_failslab(s->object_size, flags, s->flags);
+-}
+-
+-static inline void slab_post_alloc_hook(struct kmem_cache *s,
+-					gfp_t flags, void *object)
+-{
+-	flags &= gfp_allowed_mask;
+-	kmemcheck_slab_alloc(s, flags, object, slab_ksize(s));
+-	kmemleak_alloc_recursive(object, s->object_size, 1, s->flags, flags);
+-}
+-
+-static inline void slab_free_hook(struct kmem_cache *s, void *x)
+-{
+-	kmemleak_free_recursive(x, s->flags);
+-
+-	/*
+-	 * Trouble is that we may no longer disable interrupts in the fast path
+-	 * So in order to make the debug calls that expect irqs to be
+-	 * disabled we need to disable interrupts temporarily.
+-	 */
+-#if defined(CONFIG_KMEMCHECK) || defined(CONFIG_LOCKDEP)
+-	{
+-		unsigned long flags;
+-
+-		local_irq_save(flags);
+-		kmemcheck_slab_free(s, x, s->object_size);
+-		debug_check_no_locks_freed(x, s->object_size);
+-		local_irq_restore(flags);
+-	}
+-#endif
+-	if (!(s->flags & SLAB_DEBUG_OBJECTS))
+-		debug_check_no_obj_freed(x, s->object_size);
+-}
+-
+-/*
+  * Tracking of fully allocated slabs for debugging purposes.
+  */
+ static void add_full(struct kmem_cache *s,
+@@ -1282,6 +1228,12 @@ static inline void inc_slabs_node(struct kmem_cache *s, int node,
+ static inline void dec_slabs_node(struct kmem_cache *s, int node,
+ 							int objects) {}
+ 
++#endif /* CONFIG_SLUB_DEBUG */
++
++/*
++ * Hooks for other subsystems that check memory allocations. In a typical
++ * production configuration these hooks all should produce no code at all.
++ */
+ static inline void kmalloc_large_node_hook(void *ptr, size_t size, gfp_t flags)
+ {
+ 	kmemleak_alloc(ptr, size, 1, flags);
+@@ -1293,22 +1245,45 @@ static inline void kfree_hook(const void *x)
+ }
+ 
+ static inline int slab_pre_alloc_hook(struct kmem_cache *s, gfp_t flags)
+-							{ return 0; }
++{
++	flags &= gfp_allowed_mask;
++	lockdep_trace_alloc(flags);
++	might_sleep_if(flags & __GFP_WAIT);
++
++	return should_failslab(s->object_size, flags, s->flags);
++}
+ 
+-static inline void slab_post_alloc_hook(struct kmem_cache *s, gfp_t flags,
+-		void *object)
++static inline void slab_post_alloc_hook(struct kmem_cache *s,
++					gfp_t flags, void *object)
+ {
+-	kmemleak_alloc_recursive(object, s->object_size, 1, s->flags,
+-		flags & gfp_allowed_mask);
++	flags &= gfp_allowed_mask;
++	kmemcheck_slab_alloc(s, flags, object, slab_ksize(s));
++	kmemleak_alloc_recursive(object, s->object_size, 1, s->flags, flags);
+ }
+ 
+ static inline void slab_free_hook(struct kmem_cache *s, void *x)
+ {
+ 	kmemleak_free_recursive(x, s->flags);
++
++	/*
++	 * Trouble is that we may no longer disable interrupts in the fast path
++	 * So in order to make the debug calls that expect irqs to be
++	 * disabled we need to disable interrupts temporarily.
++	 */
++#if defined(CONFIG_KMEMCHECK) || defined(CONFIG_LOCKDEP)
++	{
++		unsigned long flags;
++
++		local_irq_save(flags);
++		kmemcheck_slab_free(s, x, s->object_size);
++		debug_check_no_locks_freed(x, s->object_size);
++		local_irq_restore(flags);
++	}
++#endif
++	if (!(s->flags & SLAB_DEBUG_OBJECTS))
++		debug_check_no_obj_freed(x, s->object_size);
+ }
+ 
+-#endif /* CONFIG_SLUB_DEBUG */
+-
+ /*
+  * Slab allocation and freeing
+  */
+-- 
+1.8.5.5
+
