@@ -1,108 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755641AbaFSNqS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 09:46:18 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48645 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752145AbaFSNqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 09:46:17 -0400
-Date: Thu, 19 Jun 2014 08:45:45 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-CC: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        kishon <kishon@ti.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, <alexandre.belloni@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        zhiming Xu <zmxu@marvell.com>, <jszhang@marvell.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/9] usb: phy: add the Berlin USB PHY driver
-Message-ID: <20140619134545.GB23782@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1401983326-19205-1-git-send-email-antoine.tenart@free-electrons.com>
- <1401983326-19205-5-git-send-email-antoine.tenart@free-electrons.com>
- <CAFp+6iEKLD_rLg84h3J2oyzw7vizEV-Eqo0e_jqurx_v9ZX2JA@mail.gmail.com>
- <20140606071106.GA30156@kwain>
- <CAFp+6iH+J4T=7pJU_+ZZKrgDwJWwQfznv9NWuy5SkLgz_j75_Q@mail.gmail.com>
+	id S1756469AbaFSNq7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 09:46:59 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:59591 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754545AbaFSNq5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 09:46:57 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="b5gNqxB1S1yM7hjW"
-Content-Disposition: inline
-In-Reply-To: <CAFp+6iH+J4T=7pJU_+ZZKrgDwJWwQfznv9NWuy5SkLgz_j75_Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Date: Thu, 19 Jun 2014 15:46:56 +0200
+X-Google-Sender-Auth: YyK59DcpVdzm3Gw5mN1fl91hknU
+Message-ID: <CAJZ5v0hH13nA1Qq5BYA+N5D0OBGozvNgiEGi4u8_-5i=vdjkPg@mail.gmail.com>
+Subject: [GIT PULL] ACPI and power management updates for v3.16-rc2
+From: "Rafael J. Wysocki" <rafael@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---b5gNqxB1S1yM7hjW
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Linus,
 
-On Fri, Jun 06, 2014 at 04:32:03PM +0530, Vivek Gautam wrote:
-> Hi,
->=20
-> On Fri, Jun 6, 2014 at 12:41 PM, Antoine T=E9nart
-> <antoine.tenart@free-electrons.com> wrote:
-> > Hi,
-> >
-> > On Fri, Jun 06, 2014 at 12:09:06PM +0530, Vivek Gautam wrote:
-> >> On Thu, Jun 5, 2014 at 9:18 PM, Antoine T=E9nart
-> >> <antoine.tenart@free-electrons.com> wrote:
-> >> > Add the driver driving the Marvell Berlin USB PHY. This allows to
-> >> > initialize the PHY and to use it from the USB driver later.
-> >>
-> >> Just out of curiosity, going forward we would like to have phy drivers=
- based on
-> >> generic phy framework (drivers/phy).
-> >> Any particular reason that we are still adding phy drivers in usb-phy =
-layer ?
-> >>
-> >> Looking at it, seems like it can very well be written based on phy fra=
-mework.
-> >
-> > This USB controller are ChipIdea compatible, and the ChipIdea common
-> > functions use the usb_phy framework. That's why this PHY driver is
-> > there.
->=20
-> Ok, i see that now. In that case shouldn't we be moving even the chipidea
-> drivers to use the generic phy functions to get the phy and init/exit it.
+Please pull from
 
-yes, we should :-)
+ git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git \
+ pm+acpi-3.16-rc2
 
-> I think Felipe and Kishon can comment on this better, and tell how
-> things should be. :-)
+to receive ACPI and power management updates for v3.16-rc2
+with top-most commit 2ba87ea132a7364dbeb71126f3d7b8ec8e59d0e9
 
-yeah, this will just make it a little more difficult to deprecate
-current usb phy layer.
+ Merge branches 'pm-cpufreq' and 'pm-cpuidle'
 
---=20
-balbi
+on top of commit 7171511eaec5bf23fb06078f59784a3a0626b38f
 
---b5gNqxB1S1yM7hjW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ Linux 3.16-rc1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+These are fixes mostly (ia64 regression related to the ACPI
+enumeration of devices, cpufreq regressions, fix for I2C
+controllers included in Intel SoCs, mvebu cpuidle driver fix
+related to sysfs) plus additional kernel command line arguments
+from Kees to make it possible to build kernel images with hibernation
+and the kernel address space randomization included simultaneously,
+a new ACPI battery driver quirk for a system with a broken BIOS and
+a couple of ACPI core cleanups.
 
-iQIcBAEBAgAGBQJToumJAAoJEIaOsuA1yqRE3voP/1ZpPY0cPnThMMpVrcovqGsv
-U90PnNMf8AZBDjh6kb3rJ1gTqF+E16T36udWdsTnjqdcA6pyEwqIFO8EUyeOlB2e
-uBys80CpiJfRHBht0AXxyjUms0MQtwgAy8wZ+kAtGuZizWZf/b4MRGSwQ0X1ipN1
-q4X0BsleU9+fVHVyLwtc18GG1taP+DdGASNC7vlHxKa+T1lYex/lWc+i9MhC5agK
-+cKIBuOgIHrmIws7tO7UNTKK6RHJNMtv/2oNRr5MhGzaPcCf2IubcWAVYKw8DWz7
-vg+hs40h3XxS8sS2qEzahNeakrJFvISbMSpFp1TfVjABDPULPDkkX5Z+sVSK8bta
-dBwqqt/KjLMXSpu+LL4d7MYoj7QosAMgYgxyHL5CMoveRYvOK5sKZ6Vkxtd80mWS
-e+AVoddqVPlIousVGRC8oLRW0Jf7Hfa+2yJulGwno6zu5Zq8TNXWmbdko2G4mf1o
-TL8Jy8NnoRrC5ZEP0nMhzsBJ39vHDjj2DrpNozc1jx2PxyHzV9n7z9h0VrWdEHLk
-o832vYoMgjUcIhB0apbyWrGBDvzsRtwQ8oiKf61eJ1Rzq50UJE+h5FVHH67X8Laq
-7J6RYXfMGUyskaIGBjFe5diCZ8IitJavXYf40fu1+2d8UC+GaoPgHOCg5vTn8YFX
-6ZuezRttNpaMjF/jRYFf
-=dz48
------END PGP SIGNATURE-----
+Specifics:
 
---b5gNqxB1S1yM7hjW--
+ - Fix for an ia64 regression introduced during the 3.11 cycle by a
+   commit that modified the hardware initialization ordering and made
+   device discovery fail on some systems.
+
+ - Fix for a build problem on systems where the cpufreq-cpu0 driver
+   is built-in and the cpu-thermal driver is modular from Arnd Bergmann.
+
+ - Fix for a recently introduced computational mistake in the
+   intel_pstate driver that leads to excessive rounding errors from
+   Doug Smythies.
+
+ - Fix for a failure code path in cpufreq_update_policy() that fails
+   to unlock the locks acquired previously from Aaron Plattner.
+
+ - Fix for the cpuidle mvebu driver to use shorter state names which
+   will prevent the sysfs interface from returning mangled strings.
+   From Gregory Clement.
+
+ - ACPI LPSS driver fix to make sure that the I2C controllers
+   included in BayTrail SoCs are not held in the reset state while
+   they are being probed from Mika Westerberg.
+
+ - New kernel command line arguments making it possible to build
+   kernel images with hibernation and kASLR included at the same
+   time and to select which of them will be used via the command
+   line (they are still functionally mutually exclusive, though).
+   From Kees Cook.
+
+ - ACPI battery driver quirk for Acer Aspire V5-573G that fails
+   to send battery status change notifications timely from
+   Alexander Mezin.
+
+ - Two ACPI core cleanups from Christoph Jaeger and Fabian Frederick.
+
+Thanks!
+
+
+
+---------------
+
+Aaron Plattner (1):
+      cpufreq: unlock when failing cpufreq_update_policy()
+
+Alexander Mezin (2):
+      ACPI / battery: use callback for setting up quirks
+      ACPI / battery: add quirk for Acer Aspire V5-573G
+
+Arnd Bergmann (1):
+      cpufreq: cpufreq-cpu0: fix CPU_THERMAL dependency
+
+Christoph Jaeger (1):
+      ACPI: use kstrto*() instead of simple_strto*()
+
+Doug Smythies (1):
+      intel_pstate: Correct rounding in busy calculation
+
+Fabian Frederick (1):
+      ACPI / processor replace __attribute__((packed)) by __packed
+
+Gregory CLEMENT (1):
+      cpuidle: mvebu: Fix the name of the states
+
+Kees Cook (2):
+      PM / hibernate: introduce "nohibernate" boot parameter
+      x86, kaslr: boot-time selectable with hibernation
+
+Mika Westerberg (1):
+      ACPI / LPSS: Take I2C host controllers out of reset
+
+Rafael J. Wysocki (1):
+      ACPI / ia64 / sba_iommu: Restore the working initialization ordering
+
+---------------
+
+ Documentation/kernel-parameters.txt     | 14 +++++---
+ arch/ia64/hp/common/sba_iommu.c         | 64 +++++++++++++++++++--------------
+ arch/x86/Kconfig                        |  1 -
+ arch/x86/boot/compressed/aslr.c         |  9 ++++-
+ drivers/acpi/acpi_lpss.c                | 15 ++++++++
+ drivers/acpi/battery.c                  | 39 ++++++++++++++++++--
+ drivers/acpi/osl.c                      |  3 +-
+ drivers/acpi/tables.c                   |  3 +-
+ drivers/cpufreq/Kconfig                 |  2 ++
+ drivers/cpufreq/cpufreq.c               | 10 +++---
+ drivers/cpufreq/intel_pstate.c          |  5 +--
+ drivers/cpuidle/cpuidle-armada-370-xp.c |  4 +--
+ include/acpi/processor.h                | 10 +++---
+ include/linux/suspend.h                 |  2 ++
+ kernel/power/hibernate.c                | 37 ++++++++++++++++++-
+ kernel/power/main.c                     |  6 ++--
+ kernel/power/user.c                     |  3 ++
+ 17 files changed, 167 insertions(+), 60 deletions(-)
