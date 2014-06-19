@@ -1,128 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966048AbaFSWCK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 18:02:10 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:51234 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965552AbaFSWCH (ORCPT
+	id S965831AbaFSWE4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 18:04:56 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:48203 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965319AbaFSWEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 18:02:07 -0400
+	Thu, 19 Jun 2014 18:04:55 -0400
+Date: Thu, 19 Jun 2014 15:04:49 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Christoph Lameter <cl@gentwo.org>, Sasha Levin <sasha.levin@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: slub/debugobjects: lockup when freeing memory
+Message-ID: <20140619220449.GT4904@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <53A2F406.4010109@oracle.com>
+ <alpine.DEB.2.11.1406191001090.2785@gentwo.org>
+ <20140619165247.GA4904@linux.vnet.ibm.com>
+ <alpine.DEB.2.10.1406192127100.5170@nanos>
+ <20140619202928.GG4904@linux.vnet.ibm.com>
+ <alpine.DEB.2.10.1406192230390.5170@nanos>
+ <20140619205307.GL4904@linux.vnet.ibm.com>
+ <alpine.DEB.2.10.1406192331250.5170@nanos>
 MIME-Version: 1.0
-In-Reply-To: <53A353E5.1010704@codeaurora.org>
-References: <1403124927-21514-1-git-send-email-hali@codeaurora.org>
-	<53A353E5.1010704@codeaurora.org>
-Date: Thu, 19 Jun 2014 18:02:06 -0400
-Message-ID: <CAF6AEGsQjL3=Qar3=tYjEY3wDXWdjHE3z5=rKc6F1RWtneMZQQ@mail.gmail.com>
-Subject: Re: [PATCH] drm/msm: Implement msm drm fb_mmap callback function
-From: Rob Clark <robdclark@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Hai Li <hali@codeaurora.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        linux-arm-msm@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stephane Viau <sviau@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1406192331250.5170@nanos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061922-1344-0000-0000-0000024F7A12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 5:19 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 06/18/14 13:55, Hai Li wrote:
->> diff --git a/drivers/gpu/drm/msm/msm_fbdev.c b/drivers/gpu/drm/msm/msm_fbdev.c
->> index 4f4e7b4..2522f51 100644
->> --- a/drivers/gpu/drm/msm/msm_fbdev.c
->> +++ b/drivers/gpu/drm/msm/msm_fbdev.c
->> @@ -19,6 +19,11 @@
->>
->>  #include "drm_crtc.h"
->>  #include "drm_fb_helper.h"
->> +#include "msm_gem.h"
->> +
->> +extern int msm_gem_mmap_obj(struct drm_gem_object *obj,
->> +                                     struct vm_area_struct *vma);
->
-> This can't go into some header file?
+On Thu, Jun 19, 2014 at 11:32:41PM +0200, Thomas Gleixner wrote:
+> 
+> 
+> On Thu, 19 Jun 2014, Paul E. McKenney wrote:
+> 
+> > On Thu, Jun 19, 2014 at 10:37:17PM +0200, Thomas Gleixner wrote:
+> > > On Thu, 19 Jun 2014, Paul E. McKenney wrote:
+> > > > On Thu, Jun 19, 2014 at 09:29:08PM +0200, Thomas Gleixner wrote:
+> > > > > On Thu, 19 Jun 2014, Paul E. McKenney wrote:
+> > > > > Well, no. Look at the callchain:
+> > > > > 
+> > > > > __call_rcu
+> > > > >     debug_object_activate
+> > > > >        rcuhead_fixup_activate
+> > > > >           debug_object_init
+> > > > >               kmem_cache_alloc
+> > > > > 
+> > > > > So call rcu activates the object, but the object has no reference in
+> > > > > the debug objects code so the fixup code is called which inits the
+> > > > > object and allocates a reference ....
+> > > > 
+> > > > OK, got it.  And you are right, call_rcu() has done this for a very
+> > > > long time, so not sure what changed.  But it seems like the right
+> > > > approach is to provide a debug-object-free call_rcu_alloc() for use
+> > > > by the memory allocators.
+> > > > 
+> > > > Seem reasonable?  If so, please see the following patch.
+> > > 
+> > > Not really, you're torpedoing the whole purpose of debugobjects :)
+> > > 
+> > > So, why can't we just init the rcu head when the stuff is created?
+> > 
+> > That would allow me to keep my code unchanged, so I am in favor.  ;-)
+> 
+> Almost unchanged. You need to provide a function to do so, i.e. make
+> use of
+> 
+>     debug_init_rcu_head()
 
-it probably should go in msm_gem.h.. although this would be the one
-special case where it is needed outside of msm_gem.c so I don't mind
-too much
+You mean like this?
 
->> +static int msm_fbdev_mmap(struct fb_info *info, struct vm_area_struct *vma);
->>
->>  /*
->>   * fbdev funcs, to implement legacy fbdev interface on top of drm driver
->> @@ -43,6 +48,7 @@ static struct fb_ops msm_fb_ops = {
->>       .fb_fillrect = sys_fillrect,
->>       .fb_copyarea = sys_copyarea,
->>       .fb_imageblit = sys_imageblit,
->> +     .fb_mmap = msm_fbdev_mmap,
->>
->>       .fb_check_var = drm_fb_helper_check_var,
->>       .fb_set_par = drm_fb_helper_set_par,
->> @@ -51,6 +57,31 @@ static struct fb_ops msm_fb_ops = {
->>       .fb_setcmap = drm_fb_helper_setcmap,
->>  };
->>
->> +static int msm_fbdev_mmap(struct fb_info *info, struct vm_area_struct *vma)
->> +{
->> +     struct drm_fb_helper *helper = (struct drm_fb_helper *)info->par;
->> +     struct msm_fbdev *fbdev = to_msm_fbdev(helper);
->> +     struct drm_gem_object *drm_obj = fbdev->bo;
->> +     struct drm_device *dev = helper->dev;
->> +     int ret = 0;
->
-> unnecessary initialization to 0.
->
->> +
->> +     if (drm_device_is_unplugged(dev))
->> +             return -ENODEV;
->> +
->> +     mutex_lock(&dev->struct_mutex);
->> +
->> +     ret = drm_gem_mmap_obj(drm_obj, drm_obj->size, vma);
->> +
->> +     mutex_unlock(&dev->struct_mutex);
->> +
->> +     if (ret) {
->> +             pr_err("%s:drm_gem_mmap_obj fail\n", __func__);
->> +             return ret;
->> +     }
->> +
->> +     return msm_gem_mmap_obj(drm_obj, vma);
->> +}
->> +
->>  static int msm_fbdev_create(struct drm_fb_helper *helper,
->>               struct drm_fb_helper_surface_size *sizes)
->>  {
->> @@ -108,7 +139,11 @@ static int msm_fbdev_create(struct drm_fb_helper *helper,
->>       mutex_lock(&dev->struct_mutex);
->>
->>       /* TODO implement our own fb_mmap so we don't need this: */
->
-> Is this comment still relevant?
+							Thanx, Paul
 
-partially.. although it changes to the "can we make sure we can safely
-pin on panic when fbcon is restored"..
+------------------------------------------------------------------------
 
-probably a low priority thing, because we are not really tight on
-device virtual space.
+rcu: Export debug_init_rcu_head() and and debug_init_rcu_head()
 
-BR,
--R
+Currently, call_rcu() relies on implicit allocation and initialization
+for the debug-objects handling of RCU callbacks.  If you hammer the
+kernel hard enough with Sasha's modified version of trinity, you can end
+up with the sl*b allocators recursing into themselves via this implicit
+call_rcu() allocation.
 
+This commit therefore exports the debug_init_rcu_head() and
+debug_rcu_head_free() functions, which permits the allocators to allocated
+and pre-initialize the debug-objects information, so that there no longer
+any need for call_rcu() to do that initialization, which in turn prevents
+the recursion into the memory allocators.
 
->> -     msm_gem_get_iova_locked(fbdev->bo, 0, &paddr);
->> +     ret = msm_gem_get_iova_locked(fbdev->bo, 0, &paddr);
->> +     if (ret) {
->> +             dev_err(dev->dev, "failed to get buffer obj iova: %d\n", ret);
->> +             goto fail;
->> +     }
->>
->>       fbi = framebuffer_alloc(0, dev->dev);
->>       if (!fbi) {
->
->
-> --
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> hosted by The Linux Foundation
->
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 063a6bf1a2b6..34ae5c376e35 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -358,9 +358,19 @@ void wait_rcu_gp(call_rcu_func_t crf);
+  * initialization.
+  */
+ #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
++void debug_init_rcu_head(struct rcu_head *head);
++void debug_rcu_head_free(struct rcu_head *head);
+ void init_rcu_head_on_stack(struct rcu_head *head);
+ void destroy_rcu_head_on_stack(struct rcu_head *head);
+ #else /* !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
++static inline void debug_init_rcu_head(struct rcu_head *head)
++{
++}
++
++static inline void debug_rcu_head_free(struct rcu_head *head)
++{
++}
++
+ static inline void init_rcu_head_on_stack(struct rcu_head *head)
+ {
+ }
+diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+index a2aeb4df0f60..a41c81a26506 100644
+--- a/kernel/rcu/update.c
++++ b/kernel/rcu/update.c
+@@ -200,12 +200,12 @@ void wait_rcu_gp(call_rcu_func_t crf)
+ EXPORT_SYMBOL_GPL(wait_rcu_gp);
+ 
+ #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
+-static inline void debug_init_rcu_head(struct rcu_head *head)
++void debug_init_rcu_head(struct rcu_head *head)
+ {
+ 	debug_object_init(head, &rcuhead_debug_descr);
+ }
+ 
+-static inline void debug_rcu_head_free(struct rcu_head *head)
++void debug_rcu_head_free(struct rcu_head *head)
+ {
+ 	debug_object_free(head, &rcuhead_debug_descr);
+ }
+
