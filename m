@@ -1,159 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756317AbaFSN7M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 09:59:12 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:33507 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754277AbaFSN7K (ORCPT
+	id S1756744AbaFSN7k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 09:59:40 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:36282 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755195AbaFSN7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 09:59:10 -0400
-Date: Thu, 19 Jun 2014 09:59:08 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [GIT PULL] tracing: Cleanups and fixes to syscall tracepoints
-Message-ID: <20140619095908.49dbc025@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 19 Jun 2014 09:59:38 -0400
+Date: Thu, 19 Jun 2014 09:59:35 -0400
+From: "Gabriel L. Somlo" <gsomlo@gmail.com>
+To: KVM <kvm@vger.kernel.org>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Eric Northup <digitaleric@google.com>,
+        Nadav Amit <namit@cs.technion.ac.il>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        nadav.amit@gmail.com, joro@8bytes.org, agraf@suse.de
+Subject: [PATCH] Revert "kvm: x86: emulate monitor and mwait instructions as
+ nop"
+Message-ID: <20140619135935.GG1695@ERROL.INI.CMU.EDU>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This reverts commit 87c00572ba05aa8c9db118da75c608f47eb10b9e.
 
-Linus,
+OS X <= 10.7.* are the only known guests which realistically required
+this functionality. As it turns out, OS X can be told to forego using
+monitor/mwait by passing it "idlehalt=0" as a kernel argument, so we're
+better off removing this hack from KVM altogether, at least for now.
 
-This includes three patches from Oleg Nesterov. The first is a fix to a
-race condition that happens between enabling/disabling syscall tracepoints
-and new process creations (the check to go into the ptrace path for a process
-can be set when it shouldn't, or not set when it should). Not a major bug
-but one that should be fixed and even applied to stable.
+Signed-off-by: Gabriel L. Somlo <somlo@cmu.edu>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
-The other two patches are cleanup/fixes that are not that critical, but
-for an -rc1 release would be nice to have. They both deal with syscall
-tracepoints.
+OK, here's the formal proposal to revert my original monitor/mwait hack...
+I wish I knew about the "idlehalt=0" before I submitted it, but such is life.
+Depending on how those of you higher up the food chain feel, I can tolerate
+leaving the hack in if it's never on by default (i.e. no CPUID advertisement),
+but would feel better if we could simply undo this until we have a better
+solution, something less controversial...
 
-I would have included these with my initial pull request, but as Oleg
-posted his last version as a reply to the bottom of the patch 1/3
-thread, I missed it.
+Thanks, and sorry for all the noise,
+  Gabriel
 
-Please pull the latest trace-fixes-v3.16-rc1 tree, which can be found at:
+ arch/x86/kvm/cpuid.c |  2 --
+ arch/x86/kvm/svm.c   | 28 ++++++++--------------------
+ arch/x86/kvm/vmx.c   | 20 ++++----------------
+ 3 files changed, 12 insertions(+), 38 deletions(-)
 
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-trace-fixes-v3.16-rc1
-
-Tag SHA1: b6890d3b54aa3ff1aa34afb6c7af367895b9f07a
-Head SHA1: 72fa1a896d8ef355e81270667803ceb16a3dd13f
-
-
-Oleg Nesterov (3):
-      tracing: Fix syscall_*regfunc() vs copy_process() race
-      tracing: Change syscall_*regfunc() to check PF_KTHREAD and use for_each_process_thread()
-      tracing: syscall_regfunc() should not skip kernel threads
-
-----
- include/trace/syscall.h | 15 +++++++++++++++
- kernel/fork.c           |  2 ++
- kernel/tracepoint.c     | 26 +++++++++++---------------
- 3 files changed, 28 insertions(+), 15 deletions(-)
----------------------------
-diff --git a/include/trace/syscall.h b/include/trace/syscall.h
-index fed853f3d7aa..291c2824fafb 100644
---- a/include/trace/syscall.h
-+++ b/include/trace/syscall.h
-@@ -4,6 +4,7 @@
- #include <linux/tracepoint.h>
- #include <linux/unistd.h>
- #include <linux/ftrace_event.h>
-+#include <linux/thread_info.h>
+diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+index 38a0afe..17b42fa 100644
+--- a/arch/x86/kvm/cpuid.c
++++ b/arch/x86/kvm/cpuid.c
+@@ -283,8 +283,6 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+ 		0 /* Reserved */ | f_lm | F(3DNOWEXT) | F(3DNOW);
+ 	/* cpuid 1.ecx */
+ 	const u32 kvm_supported_word4_x86_features =
+-		/* NOTE: MONITOR (and MWAIT) are emulated as NOP,
+-		 * but *not* advertised to guests via CPUID ! */
+ 		F(XMM3) | F(PCLMULQDQ) | 0 /* DTES64, MONITOR */ |
+ 		0 /* DS-CPL, VMX, SMX, EST */ |
+ 		0 /* TM2 */ | F(SSSE3) | 0 /* CNXT-ID */ | 0 /* Reserved */ |
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index ec8366c..6b88b6a 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -2763,6 +2763,12 @@ static int xsetbv_interception(struct vcpu_svm *svm)
+ 	return 1;
+ }
  
- #include <asm/ptrace.h>
++static int invalid_op_interception(struct vcpu_svm *svm)
++{
++	kvm_queue_exception(&svm->vcpu, UD_VECTOR);
++	return 1;
++}
++
+ static int task_switch_interception(struct vcpu_svm *svm)
+ {
+ 	u16 tss_selector;
+@@ -3274,24 +3280,6 @@ static int pause_interception(struct vcpu_svm *svm)
+ 	return 1;
+ }
  
-@@ -32,4 +33,18 @@ struct syscall_metadata {
- 	struct ftrace_event_call *exit_event;
+-static int nop_interception(struct vcpu_svm *svm)
+-{
+-	skip_emulated_instruction(&(svm->vcpu));
+-	return 1;
+-}
+-
+-static int monitor_interception(struct vcpu_svm *svm)
+-{
+-	printk_once(KERN_WARNING "kvm: MONITOR instruction emulated as NOP!\n");
+-	return nop_interception(svm);
+-}
+-
+-static int mwait_interception(struct vcpu_svm *svm)
+-{
+-	printk_once(KERN_WARNING "kvm: MWAIT instruction emulated as NOP!\n");
+-	return nop_interception(svm);
+-}
+-
+ static int (*const svm_exit_handlers[])(struct vcpu_svm *svm) = {
+ 	[SVM_EXIT_READ_CR0]			= cr_interception,
+ 	[SVM_EXIT_READ_CR3]			= cr_interception,
+@@ -3349,8 +3337,8 @@ static int (*const svm_exit_handlers[])(struct vcpu_svm *svm) = {
+ 	[SVM_EXIT_CLGI]				= clgi_interception,
+ 	[SVM_EXIT_SKINIT]			= skinit_interception,
+ 	[SVM_EXIT_WBINVD]                       = emulate_on_interception,
+-	[SVM_EXIT_MONITOR]			= monitor_interception,
+-	[SVM_EXIT_MWAIT]			= mwait_interception,
++	[SVM_EXIT_MONITOR]			= invalid_op_interception,
++	[SVM_EXIT_MWAIT]			= invalid_op_interception,
+ 	[SVM_EXIT_XSETBV]			= xsetbv_interception,
+ 	[SVM_EXIT_NPF]				= pf_interception,
+ };
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 801332e..163958f 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -5672,24 +5672,12 @@ static int handle_pause(struct kvm_vcpu *vcpu)
+ 	return 1;
+ }
+ 
+-static int handle_nop(struct kvm_vcpu *vcpu)
++static int handle_invalid_op(struct kvm_vcpu *vcpu)
+ {
+-	skip_emulated_instruction(vcpu);
++	kvm_queue_exception(vcpu, UD_VECTOR);
+ 	return 1;
+ }
+ 
+-static int handle_mwait(struct kvm_vcpu *vcpu)
+-{
+-	printk_once(KERN_WARNING "kvm: MWAIT instruction emulated as NOP!\n");
+-	return handle_nop(vcpu);
+-}
+-
+-static int handle_monitor(struct kvm_vcpu *vcpu)
+-{
+-	printk_once(KERN_WARNING "kvm: MONITOR instruction emulated as NOP!\n");
+-	return handle_nop(vcpu);
+-}
+-
+ /*
+  * To run an L2 guest, we need a vmcs02 based on the L1-specified vmcs12.
+  * We could reuse a single VMCS for all the L2 guests, but we also want the
+@@ -6651,8 +6639,8 @@ static int (*const kvm_vmx_exit_handlers[])(struct kvm_vcpu *vcpu) = {
+ 	[EXIT_REASON_EPT_VIOLATION]	      = handle_ept_violation,
+ 	[EXIT_REASON_EPT_MISCONFIG]           = handle_ept_misconfig,
+ 	[EXIT_REASON_PAUSE_INSTRUCTION]       = handle_pause,
+-	[EXIT_REASON_MWAIT_INSTRUCTION]	      = handle_mwait,
+-	[EXIT_REASON_MONITOR_INSTRUCTION]     = handle_monitor,
++	[EXIT_REASON_MWAIT_INSTRUCTION]	      = handle_invalid_op,
++	[EXIT_REASON_MONITOR_INSTRUCTION]     = handle_invalid_op,
+ 	[EXIT_REASON_INVEPT]                  = handle_invept,
  };
  
-+#ifdef CONFIG_TRACEPOINTS
-+static inline void syscall_tracepoint_update(struct task_struct *p)
-+{
-+	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
-+		set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-+	else
-+		clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-+}
-+#else
-+static inline void syscall_tracepoint_update(struct task_struct *p)
-+{
-+}
-+#endif
-+
- #endif /* _TRACE_SYSCALL_H */
-diff --git a/kernel/fork.c b/kernel/fork.c
-index d2799d1fc952..6a13c46cd87d 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1487,7 +1487,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 
- 	total_forks++;
- 	spin_unlock(&current->sighand->siglock);
-+	syscall_tracepoint_update(p);
- 	write_unlock_irq(&tasklist_lock);
-+
- 	proc_fork_connector(p);
- 	cgroup_post_fork(p);
- 	if (clone_flags & CLONE_THREAD)
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index 33cbd8c203f8..3490407dc7b7 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -492,33 +492,29 @@ static int sys_tracepoint_refcount;
- 
- void syscall_regfunc(void)
- {
--	unsigned long flags;
--	struct task_struct *g, *t;
-+	struct task_struct *p, *t;
- 
- 	if (!sys_tracepoint_refcount) {
--		read_lock_irqsave(&tasklist_lock, flags);
--		do_each_thread(g, t) {
--			/* Skip kernel threads. */
--			if (t->mm)
--				set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
--		} while_each_thread(g, t);
--		read_unlock_irqrestore(&tasklist_lock, flags);
-+		read_lock(&tasklist_lock);
-+		for_each_process_thread(p, t) {
-+			set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
-+		}
-+		read_unlock(&tasklist_lock);
- 	}
- 	sys_tracepoint_refcount++;
- }
- 
- void syscall_unregfunc(void)
- {
--	unsigned long flags;
--	struct task_struct *g, *t;
-+	struct task_struct *p, *t;
- 
- 	sys_tracepoint_refcount--;
- 	if (!sys_tracepoint_refcount) {
--		read_lock_irqsave(&tasklist_lock, flags);
--		do_each_thread(g, t) {
-+		read_lock(&tasklist_lock);
-+		for_each_process_thread(p, t) {
- 			clear_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
--		} while_each_thread(g, t);
--		read_unlock_irqrestore(&tasklist_lock, flags);
-+		}
-+		read_unlock(&tasklist_lock);
- 	}
- }
- #endif
+-- 
+1.9.3
+
