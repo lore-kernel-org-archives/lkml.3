@@ -1,109 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100AbaFSBRl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 21:17:41 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:65257 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753587AbaFSBRj (ORCPT
+	id S1757004AbaFSBSY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 21:18:24 -0400
+Received: from exprod5og112.obsmtp.com ([64.18.0.24]:33902 "HELO
+	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756889AbaFSBRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 21:17:39 -0400
-Date: Wed, 18 Jun 2014 21:17:37 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: kbuild test robot <fengguang.wu@intel.com>,
-        Oleg Nesterov <oleg@redhat.com>, kbuild-all@01.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Michael Halcrow <mhalcrow@us.ibm.com>,
-        Tyler Hicks <tyhicks@canonical.com>, ecryptfs@vger.kernel.org
-Subject: Re: [trace:ftrace/core 1/3] include/trace/syscall.h:39:6: error:
- 'TIF_SYSCALL_TRACEPOINT' undeclared
-Message-ID: <20140618211737.719fcf49@gandalf.local.home>
-In-Reply-To: <20140618211559.76bdea15@gandalf.local.home>
-References: <53a1e7ba.ZIiv6DbOB78b9RzY%fengguang.wu@intel.com>
-	<20140618211559.76bdea15@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Wed, 18 Jun 2014 21:17:16 -0400
+From: Iyappan Subramanian <isubramanian@apm.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, devicetree@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
+        Iyappan Subramanian <isubramanian@apm.com>,
+        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
+Subject: [PATCH v7 2/4] Documentation: dts: Add bindings for APM X-Gene SoC ethernet driver
+Date: Wed, 18 Jun 2014 18:17:12 -0700
+Message-Id: <1403140634-27104-3-git-send-email-isubramanian@apm.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403140634-27104-1-git-send-email-isubramanian@apm.com>
+References: <1403140634-27104-1-git-send-email-isubramanian@apm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jun 2014 21:15:59 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+This patch adds documentation for APM X-Gene SoC ethernet DTS binding.
 
-> On Thu, 19 Jun 2014 03:25:46 +0800
-> kbuild test robot <fengguang.wu@intel.com> wrote:
-> 
-> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git ftrace/core
-> > head:   72fa1a896d8ef355e81270667803ceb16a3dd13f
-> > commit: 32def52ce8faec72c353b6304ca98176687e18f1 [1/3] tracing: Fix syscall_*regfunc() vs copy_process() race
-> > config: make ARCH=xtensa allyesconfig
-> > 
-> > All error/warnings:
-> > 
-> >    In file included from include/linux/syscalls.h:80:0,
-> >                     from fs/ecryptfs/keystore.c:29:
-> >    include/trace/syscall.h: In function 'syscall_tracepoint_update':
-> > >> include/trace/syscall.h:39:6: error: 'TIF_SYSCALL_TRACEPOINT' undeclared (first use in this function)
-> >    include/trace/syscall.h:39:6: note: each undeclared identifier is reported only once for each function it appears in
-> > 
-> > vim +/TIF_SYSCALL_TRACEPOINT +39 include/trace/syscall.h
-> > 
-> >     33		struct ftrace_event_call *exit_event;
-> >     34	};
-> >     35	
-> >     36	#ifdef CONFIG_TRACEPOINTS
-> >     37	static inline void syscall_tracepoint_update(struct task_struct *p)
-> >     38	{
-> >   > 39		if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
-> >     40			set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-> >     41		else
-> >     42			clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-> > 
-> > ---
-> > 0-DAY kernel build testing backend              Open Source Technology Center
-> > http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
-> 
-> My allyesconfig build passed with flying colors. Although we should
+Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
+Signed-off-by: Ravi Patel <rapatel@apm.com>
+Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
+---
+ .../devicetree/bindings/net/apm-xgene-enet.txt     | 72 ++++++++++++++++++++++
+ 1 file changed, 72 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/net/apm-xgene-enet.txt
 
-I should elaborate. I was building against mainline, I noticed that the
-kbuild test included linux-next.
-
--- Steve
-
-> probably still add the include of thread_info.h into trace/syscalls.h,
-> there's no reason that ecryptfs/keystore.c includes linux/syscalls.h.
-> 
-> I suggest adding the patch below.
-> 
-> -- Steve
-> 
-> From 58029546c4acf896b9ce01a820e0093e37bb98be Mon Sep 17 00:00:00 2001
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> Date: Wed, 18 Jun 2014 21:12:38 -0400
-> Subject: [PATCH] ecryptfs: Remove unnecessary include of syscall.h in
->  keystore.c
-> 
-> There's no reason to include syscalls.h in keystore.c. Remove it.
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  fs/ecryptfs/keystore.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-> index 4725a07f003c..831c5f8529be 100644
-> --- a/fs/ecryptfs/keystore.c
-> +++ b/fs/ecryptfs/keystore.c
-> @@ -26,7 +26,6 @@
->   */
->  
->  #include <linux/string.h>
-> -#include <linux/syscalls.h>
->  #include <linux/pagemap.h>
->  #include <linux/key.h>
->  #include <linux/random.h>
+diff --git a/Documentation/devicetree/bindings/net/apm-xgene-enet.txt b/Documentation/devicetree/bindings/net/apm-xgene-enet.txt
+new file mode 100644
+index 0000000..3e2a295
+--- /dev/null
++++ b/Documentation/devicetree/bindings/net/apm-xgene-enet.txt
+@@ -0,0 +1,72 @@
++APM X-Gene SoC Ethernet nodes
++
++Ethernet nodes are defined to describe on-chip ethernet interfaces in
++APM X-Gene SoC.
++
++Required properties:
++- compatible:		Should be "apm,xgene-enet"
++- reg: Address and length of the register set for the device. It contains the
++       information of registers in the same order as described by reg-names
++- reg-names: Should contain the register set names
++  "enet_csr":		Ethernet control and status register address space
++  "ring_csr":		Descriptor ring control and status register address space
++  "ring_cmd":		Descriptor ring command register address space
++- interrupts:		Ethernet main interrupt
++- clocks:		Reference to the clock entry.
++- local-mac-address:	MAC address assigned to this device
++- phy-connection-type:	Interface type between ethernet device and PHY device
++- phy-handle:		Reference to a PHY node connected to this device
++
++- mdio: 		Device tree subnode with the following required
++			properties:
++
++	- compatible: Must be "apm,xgene-mdio".
++	- #address-cells: Must be <1>.
++	- #size-cells: Must be <0>.
++
++	For the phy on the mdio bus, there must be a node with the following
++	fields:
++
++	- compatible: PHY identifier.  Please refer ./phy.txt for the format.
++	- reg: The ID number for the phy.
++
++Optional properties:
++- status		: Should be "ok" or "disabled" for enabled/disabled.
++			  Default is "ok".
++
++
++Example:
++	menetclk: menetclk {
++		compatible = "apm,xgene-device-clock";
++		clock-output-names = "menetclk";
++		status = "ok";
++	};
++
++	menet: ethernet@17020000 {
++		compatible = "apm,xgene-enet";
++		status = "disabled";
++		reg = <0x0 0x17020000 0x0 0xd100>,
++		      <0x0 0X17030000 0x0 0X400>,
++		      <0x0 0X10000000 0x0 0X200>;
++		reg-names = "enet_csr", "ring_csr", "ring_cmd";
++		interrupts = <0x0 0x3c 0x4>;
++		clocks = <&menetclk 0>;
++		local-mac-address = [00 01 73 00 00 01];
++		phy-connection-type = "rgmii";
++		phy-handle = <&menetphy>;
++		mdio {
++			compatible = "apm,xgene-mdio";
++			#address-cells = <1>;
++			#size-cells = <0>;
++			menetphy: menetphy@3 {
++				compatible = "ethernet-phy-id001c.c915";
++				reg = <0x3>;
++			};
++
++		};
++	};
++
++/* Board-specific peripheral configurations */
++&menet {
++        status = "ok";
++};
+-- 
+1.9.1
 
