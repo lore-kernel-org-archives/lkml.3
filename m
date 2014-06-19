@@ -1,195 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292AbaFSGE0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 02:04:26 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:36277 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674AbaFSGEZ (ORCPT
+	id S1755462AbaFSGKE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 02:10:04 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:61667 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762AbaFSGKC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 02:04:25 -0400
-X-AuditID: 85900ec0-d452db9000001514-89-53a27d65b383
-Message-ID: <53A27D66.6070409@hitachi.com>
-Date: Thu, 19 Jun 2014 15:04:22 +0900
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
+	Thu, 19 Jun 2014 02:10:02 -0400
 MIME-Version: 1.0
-To: Jet Chen <jet.chen@intel.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        lkp@01.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [tracing] 939c7a4f04f: -46.4% cpuidle.C3-IVT.time
-References: <53A10460.1040705@intel.com>
-In-Reply-To: <53A10460.1040705@intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <1403142438.3707.234.camel@ul30vt.home>
+References: <20140613162901.4550.94476.stgit@bling.home>
+	<1402983303.3707.94.camel@ul30vt.home>
+	<1402988692.7595.106.camel@i7.infradead.org>
+	<1403007757.3707.100.camel@ul30vt.home>
+	<1403008864.7595.144.camel@i7.infradead.org>
+	<1403010982.3707.123.camel@ul30vt.home>
+	<20140617134408.GM5821@phenom.ffwll.local>
+	<1403128088.3707.223.camel@ul30vt.home>
+	<1403142438.3707.234.camel@ul30vt.home>
+Date: Thu, 19 Jun 2014 08:10:00 +0200
+X-Google-Sender-Auth: pOvtTd9j9-fPmE0WSw2XP4QWMlQ
+Message-ID: <CAKMK7uE6Ab7pvyNvz7sd7QD1ZKDXd6kkEmXHxTzeFCmH1Z_bMQ@mail.gmail.com>
+Subject: Re: [Intel-gfx] [PATCH v2] iommu/intel: Exclude devices using RMRRs
+ from IOMMU API domains
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, iommu@lists.linux-foundation.org,
+        chegu_vinod@hp.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jet,
-
-Thank you for your report.
-I have some questions for your test.
-
-1. Did you enable ftrace?
-This patch added a feature for ftrace. If you disabled ftrace in
-this test, my patch will not affect the system. Moreover, in my patch,
-arrays for saved_cmdlines were just changed from using static global
-variables to using kmalloc() on default setting. So, even if you enabled
-ftrace, this patch will not induce a big problem, I think.
-
-2. How did you test it and what does the result mean?
-Please tell me the workload, how to calculate the score,
-system settings, etc...
-
-Thanks,
-Yoshihiro YUNOMAE
-
-(2014/06/18 12:15), Jet Chen wrote:
-> Hi Yoshihiro,
+On Thu, Jun 19, 2014 at 3:47 AM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> Finding some more specs... the MGGC0 register (50h) seems to indicate
+> the GTT stolen memory size is 2M, which sounds suspiciously like the 2M
+> that the RMRR is reporting.  However, from the IvyBridge MMIO, Media
+> Registers & Programming Env manual:
 >
-> FYI, we noticed the below changes on
+>         4.6.1 Changes to GTT
 >
-> commit 939c7a4f04fcd2162109744e8bf88194948a6e65 ("tracing: Introduce
-> saved_cmdlines_size file")
+>         The GTT is constrained to be located at the beginning of a
+>         special section of stolen memory called the GTT stolen memory
+>         (GSM). There is no longer an MMIO register containing the
+>         physical base address of the GTT as on prior devices. Instead of
+>         using the PGTBL_CTL register to specify the base address of the
+>         GTT, the GTT base is now defined to be at the bottom (offset 0)
+>         of GSM.
 >
-> test case: brickland3/aim7/3000-brk_test
+>         Since the graphics device (including the driver) knows nothing
+>         about the location of GSM, it does not “know” where the GTT is
+>         located in memory. In fact, the CPU cannot directly access the
+>         GSM containing the GTT.
 >
-> beba4bb096201ce  939c7a4f04fcd2162109744e8
-> ---------------  -------------------------
->      352643 ~40%     -46.4%     189136 ~15%  TOTAL cpuidle.C3-IVT.time
->         750 ~ 2%     -13.3%        650 ~ 2%  TOTAL vmstat.procs.b
->      362016 ~ 3%      -6.0%     340296 ~ 3%  TOTAL
-> proc-vmstat.pgmigrate_success
->      362016 ~ 3%      -6.0%     340296 ~ 3%  TOTAL
-> proc-vmstat.numa_pages_migrated
->     1642328 ~ 3%     +13.3%    1860721 ~ 2%  TOTAL softirqs.RCU
->     2278829 ~ 2%     -14.0%    1959647 ~ 2%  TOTAL
-> time.voluntary_context_switches
->         207 ~ 0%     -10.4%        185 ~ 0%  TOTAL time.user_time
->              ~ 0%      +8.5%            ~ 0%  TOTAL turbostat.RAM_W
->     4418246 ~ 3%      -6.4%    4136447 ~ 1%  TOTAL time.minor_page_faults
->             ~ 0%      +3.4%            ~ 0%  TOTAL turbostat.Cor_W
->             ~ 0%      +3.0%            ~ 0%  TOTAL turbostat.Pkg_W
->    11354889 ~ 0%      +2.0%   11579897 ~ 0%  TOTAL
-> time.involuntary_context_switches
+> That seems to suggest we can't discover this region from the device, but
+> the device does need to maintain access to it... I don't know how to
+> resolve that without exposing the RMRR through the IOMMU API.
 >
-> Legend:
->      ~XX%    - stddev percent
->      [+-]XX% - change percent
->
->
->                              time.voluntary_context_switches
->
->    2.4e+06
-> ++---------------------------------------------------*------------+
->            *..                         *..                    ..
-> ..         |
->    2.3e+06 ++      .*..          *.. ..
-> *               |
->            |  *..*.    .  .*.. ..   *     *..               +
-> *..   *..*
->            |            *.    *              .     .*..*.. +
-> ..   |
->    2.2e+06 ++                                 *..*.       *
-> *     |
->
-> |                                                                 |
->    2.1e+06
-> ++                                                                |
->
-> |                                                                 |
->      2e+06 O+                                 O           O
-> O     |
->            |                     O     O                     O
-> O        |
->            |        O   O  O  O
-> O                           |
->    1.9e+06 ++ O  O                                  O
-> O            |
->            |                        O     O
-> O                     |
->    1.8e+06
-> ++----------------------------------------------------------------+
->
->
->                                    turbostat.Pkg_W
->
->     ++--------------------------------------------------------------------+
->     O+ O   O     O      O                O                                |
->     |         O      O     O   O  O  O      O      O     O   O  O  O      |
->     ++                                         O      O                   |
->     ++                                                                    |
->     ++                                                                    |
->     ++                                                                    |
->     |                                                                     |
->     ++                                                                    |
->     ++                                                                    |
->     ++        *..      .*..                                               |
->     *+.*... ..   *...*.    *...*..*..*...*..*..  ..*..   *...*..*..*...*..*
->     |      *                                   *.      ..                 |
->     ++                                                *                   |
->     ++--------------------------------------------------------------------+
->
->
->                                    turbostat.Cor_W
->
->     ++--------------------------------------------------------------------+
->     O+ O   O  O  O   O  O                O  O                      O      |
->     |                      O   O  O  O         O   O  O  O   O  O         |
->     ++                                                                    |
->     ++                                                                    |
->     |                                                                     |
->     ++                                                                    |
->     ++                                                                    |
->     ++                                                                    |
->     |                                                                     |
->     ++        *..                                                         |
->     *+.*... ..   *...*..*..*...*..*..*...*..*..  ..*..   *...  .*..*...*..*
->     |      *                                   *.      ..    *.           |
->     ++                                                *                   |
->     ++--------------------------------------------------------------------+
->
->
->                                   turbostat.RAM_W
->
->    ++---------------------------------------------------------------------+
->    |  O      O         O                O   O         O         O  O      |
->    O+     O         O      O  O  O   O         O  O      O  O             |
->    |             O                                                        |
->    ++                                                                     |
->    |                                                                      |
->    ++                                                                     |
->    |                                                                      |
->    ++                                                                     |
->    |                   *                                                  |
->    ++                .. +                      *..                        |
->    |            .*..*    +    *..       *..   +     ..*..*..      .*...   |
->    ++         ..          + ..        ..   . +    *.        *...*.     *..*
->    *..*...*..*             *     *...*      *                             |
->    ++---------------------------------------------------------------------+
->
->
->      [*] bisect-good sample
->      [O] bisect-bad  sample
->
->
-> Disclaimer:
-> Results have been estimated based on internal Intel analysis and are
-> provided
-> for informational purposes only. Any difference in system hardware or
-> software
-> design or configuration may affect actual performance.
->
+> In any case, I don't know that any of this should block the original
+> patch.  All of this seems like "acceptable" use of RMRRs that we can
+> later add an exception to allow if we get to the point of understanding
+> it and being able to reproduce any required mappings in the guest.
 > Thanks,
-> Jet
->
->
 
+GTT stolen is the place where the gpu stores page tables. We never
+access them directly but through a special mmio range so that the gpu
+can intercept pte updates and invalidate tlbs accordingly. So yeah, we
+need this, too.
+-Daniel
 -- 
-Yoshihiro YUNOMAE
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: yoshihiro.yunomae.ez@hitachi.com
-
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
