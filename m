@@ -1,51 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934629AbaFSU6i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 16:58:38 -0400
-Received: from mga09.intel.com ([134.134.136.24]:43454 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932343AbaFSU6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 16:58:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,509,1400050800"; 
-   d="scan'208";a="560374922"
-Message-ID: <53A34EFC.5070809@intel.com>
-Date: Thu, 19 Jun 2014 13:58:36 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S934543AbaFSVCI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 17:02:08 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:50611 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932343AbaFSVCF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 17:02:05 -0400
+Date: Thu, 19 Jun 2014 14:00:31 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Joe Perches <joe@perches.com>
+Cc: Julia Lawall <julia.lawall@lip6.fr>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>,
+        benoit.taine@lip6.fr, romanov.arya@gmail.com, bobby.prani@gmail.com
+Subject: Re: [RFC PATCH] checkpatch: Attempt to find unnecessary 'out of
+ memory' messages
+Message-ID: <20140619210031.GN4904@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1402419340.30479.18.camel@joe-AO725>
+ <20140611074704.GS5015@mwanda>
+ <1402502500.6169.5.camel@joe-AO725>
+ <alpine.DEB.2.02.1406140937370.2003@localhost6.localdomain6>
+ <alpine.DEB.2.02.1406141151170.2045@localhost6.localdomain6>
+ <20140618193345.GR4669@linux.vnet.ibm.com>
+ <1403120982.3839.25.camel@joe-AO725>
 MIME-Version: 1.0
-To: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER,
- PR_MPX_UNREGISTER
-References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com> <1403084656-27284-9-git-send-email-qiaowei.ren@intel.com>
-In-Reply-To: <1403084656-27284-9-git-send-email-qiaowei.ren@intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403120982.3839.25.camel@joe-AO725>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061921-3532-0000-0000-00000296DAFD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2014 02:44 AM, Qiaowei Ren wrote:
-> +static __user void *task_get_bounds_dir(struct task_struct *tsk)
-> +{
-> +	struct xsave_struct *xsave_buf;
-> +
-> +	fpu_xsave(&tsk->thread.fpu);
-> +	xsave_buf = &(tsk->thread.fpu.state->xsave);
-> +	if (!(xsave_buf->bndcsr.cfg_reg_u & MPX_BNDCFG_ENABLE_FLAG))
-> +		return NULL;
-> +
-> +	return (void __user *)(xsave_buf->bndcsr.cfg_reg_u &
-> +			MPX_BNDCFG_ADDR_MASK);
-> +}
+On Wed, Jun 18, 2014 at 12:49:42PM -0700, Joe Perches wrote:
+> On Wed, 2014-06-18 at 12:33 -0700, Paul E. McKenney wrote:
+> > On Sat, Jun 14, 2014 at 11:51:41AM +0200, Julia Lawall wrote:
+> > > On Sat, 14 Jun 2014, Julia Lawall wrote:
+> > > > With a semantic patch that searches for the various calls and then a 
+> > > > string containing the letters "emory", I get removals of the messages 
+> > > > below.  Do any of these messages look useful?  For example, some are 
+> > > > generated with specific functions, such as IRDA_ERROR or BT_ERR.  If none 
+> > > > of the messages look useful, should just one big patch go to trivial, or 
+> > > > should the patches go to the individual maintainers?
+> > > 
+> > > Sorry, I left out all the strings...
+> > 
+> > I would like the rcu-torture message to stay:
+> > 
+> > > -		pr_err("rcu-torture: Out of memory, need: %d", size);
+> > 
+> > This is in a module that is not loaded into any reasonable production
+> > kernel, and has helped me to catch typos.
+> 
+> I believe the function doesn't work well.
+> 
+> static void
+> rcu_torture_stats_print(void)
+> {
+> 	int size = nr_cpu_ids * 200 + 8192;
+> 	char *buf;
+> 
+> 	buf = kmalloc(size, GFP_KERNEL);
+> 	if (!buf) {
+> 		pr_err("rcu-torture: Out of memory, need: %d\n", size);
+> 		return;
+> 	}
+> 	rcu_torture_printk(buf);
+> 	pr_alert("%s", buf);
+> 	kfree(buf);
+> }
+> 
+> rcu_torture_printk simply fills buf
+> 
+> btw: I believe the arguments should pass size and
+>      rcu_torture_printk should use snprintf/size
+> 
+> but all printks are limited to a maximum of 1024
+> bytes so the large allocation is senseless and
+> would even if it worked, would likely need to be
+> vmalloc/vfree
 
-This spits out a warning on 32-bit:
+Fair point!
 
-arch/x86/kernel/mpx.c: In function ‘task_get_bounds_dir’:
-arch/x86/kernel/mpx.c:21:9: warning: cast to pointer from integer of
-different size [-Wint-to-pointer-cast]
+Pranith, Romanov, if you would like part of RCU that is less touchy
+about random hacking, this would be a good place to start.  Scripts in
+tools/testing/selftests/rcutorture/bin do care about some of the format,
+but the variable-length portion generated by cur_ops->stats() is as far
+as I know only parsed by human eyes.
 
-
+							Thanx, Paul
 
