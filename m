@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418AbaFSG2c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 02:28:32 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41629 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751875AbaFSG2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 02:28:31 -0400
-Date: Thu, 19 Jun 2014 08:28:24 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Ren, Qiaowei" <qiaowei.ren@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "Hansen, Dave" <dave.hansen@intel.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 07/10] x86, mpx: decode MPX instruction to get bound
- violation information
-Message-ID: <20140619062824.GB22025@pd.tnic>
-References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
- <1403084656-27284-8-git-send-email-qiaowei.ren@intel.com>
- <20140618100745.GB24419@pd.tnic>
- <9E0BE1322F2F2246BD820DA9FC397ADE016A3BAA@shsmsx102.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <9E0BE1322F2F2246BD820DA9FC397ADE016A3BAA@shsmsx102.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756577AbaFSGck (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 02:32:40 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:52806 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755510AbaFSGci (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 02:32:38 -0400
+From: Lei Li <lilei@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, mhocko@suse.cz,
+        Lei Li <lilei@linux.vnet.ibm.com>
+Subject: [PATCH] Documentation: Update remove_from_page_cache with delete_from_page_cache
+Date: Thu, 19 Jun 2014 14:32:25 +0800
+Message-Id: <1403159545-8029-1-git-send-email-lilei@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.5.3
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061906-2000-0000-0000-0000009A107B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 01:13:48AM +0000, Ren, Qiaowei wrote:
-> On 2014-06-18, Borislav Petkov wrote:
-> > On Wed, Jun 18, 2014 at 05:44:13PM +0800, Qiaowei Ren wrote:
-> > 
-> > This whole insn decoding machinery above looks like adapted from
-> > arch/x86/lib/insn.c. You should merge it with the generic code in
-> > insn.c instead of homegrowing it here only for the purposes of MPX.
-> > And if it doesn't work for your needs, you should should extend the
-> > generic code to do so.
+remove_from_page_cache has been renamed to delete_from_page_cache
+since Commit 702cfbf9 ("mm: goodbye remove_from_page_cache()"), adapt
+to it in Memcg documentation.
 
-> Petkov, as we discussed on initial version of this patchset, general
-> insn framework didn't work out well and I have tried to use generic
-> struct insn, insn_field, etc. for obvious benefits.
+Signed-off-by: Lei Li <lilei@linux.vnet.ibm.com>
+---
+ Documentation/cgroups/memcg_test.txt | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Let me repeat myself: "And if it doesn't work for your needs, you should
-extend the generic code to do so."
-
-We don't do homegrown almost-copies of generic code.
-
+diff --git a/Documentation/cgroups/memcg_test.txt b/Documentation/cgroups/memcg_test.txt
+index 80ac454..b2d6ccc 100644
+--- a/Documentation/cgroups/memcg_test.txt
++++ b/Documentation/cgroups/memcg_test.txt
+@@ -171,10 +171,10 @@ Under below explanation, we assume CONFIG_MEM_RES_CTRL_SWAP=y.
+ 	- add_to_page_cache_locked().
+ 
+ 	uncharged at
+-	- __remove_from_page_cache().
++	- __delete_from_page_cache().
+ 
+ 	The logic is very clear. (About migration, see below)
+-	Note: __remove_from_page_cache() is called by remove_from_page_cache()
++	Note: __delete_from_page_cache() is called by delete_from_page_cache()
+ 	and __remove_mapping().
+ 
+ 6. Shmem(tmpfs) Page Cache
 -- 
-Regards/Gruss,
-    Boris.
+1.8.5.3
 
-Sent from a fat crate under my desk. Formatting is fine.
---
