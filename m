@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934064AbaFSRGD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 13:06:03 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:46974 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933127AbaFSRGA (ORCPT
+	id S934081AbaFSRHW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 13:07:22 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:34327 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932894AbaFSRHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 13:06:00 -0400
-Message-ID: <1403197556.4872.21.camel@marge.simpson.net>
-Subject: Re: How to disable Lazy Preempt in the kernel
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: tdjames <tdjames@umd.edu>
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 19 Jun 2014 19:05:56 +0200
-In-Reply-To: <1403192952555-885031.post@n7.nabble.com>
-References: <1403190681610-885003.post@n7.nabble.com>
-	 <20140619153555.GA1740@fancy-poultry.org>
-	 <1403192952555-885031.post@n7.nabble.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 19 Jun 2014 13:07:21 -0400
+From: Konrad Zapalowicz <bergo.torino@gmail.com>
+To: daniel.vetter@ffwll.ch
+Cc: jani.nikula@linux.intel.com, airlied@linux.ie,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org,
+        Konrad Zapalowicz <bergo.torino@gmail.com>
+Subject: [PATCH v2] drivers/i915: Fix unnoticed failure of init_ring_common()
+Date: Thu, 19 Jun 2014 19:07:15 +0200
+Message-Id: <1403197635-14598-1-git-send-email-bergo.torino@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1403131134-9533-1-git-send-email-bergo.torino@gmail.com>
+References: <1403131134-9533-1-git-send-email-bergo.torino@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-19 at 08:49 -0700, tdjames wrote: 
-> When I use 
-> echo NO_PREEMPT_LAZY >/sys/kernel/debug/sched_features
-> (as root), I get the following error:
-> 
-> bash: echo: write error: Invalid argument
-> 
-> How do I get past this?  Thanks
+This commit add check for return value of init_ring_common() in the
+init_render_ring(). Now, when failure is detected the error code is
+propagated to the caller instead of being ignored.
 
-Easy, do.. nothing.  (it's build-time disabled on x86_64;)
+Signed-off-by: Konrad Zapalowicz <bergo.torino@gmail.com>
+---
+ 
+ v2:
+   - remove from commit message references to the Oops.
 
--Mike
+ drivers/gpu/drm/i915/intel_ringbuffer.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
+diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
+index 279488a..d205b0d 100644
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -604,6 +604,8 @@ static int init_render_ring(struct intel_engine_cs *ring)
+ 	struct drm_device *dev = ring->dev;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	int ret = init_ring_common(ring);
++	if (ret)
++		return ret;
+ 
+ 	/* WaTimedSingleVertexDispatch:cl,bw,ctg,elk,ilk,snb */
+ 	if (INTEL_INFO(dev)->gen >= 4 && INTEL_INFO(dev)->gen < 7)
+-- 
+1.8.1.2
 
