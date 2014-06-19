@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965327AbaFSUpZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 16:45:25 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:44579 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964975AbaFSUpY (ORCPT
+	id S965376AbaFSUqj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 16:46:39 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:51077 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964975AbaFSUqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 16:45:24 -0400
+	Thu, 19 Jun 2014 16:46:37 -0400
+Date: Thu, 19 Jun 2014 16:46:34 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
+ accessors and operations
+Message-ID: <20140619204634.GB9814@mtj.dyndns.org>
+References: <20140612135630.GA23606@htj.dyndns.org>
+ <alpine.DEB.2.11.1406171401350.22064@gentwo.org>
+ <20140617194017.GO4669@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1406191540240.4002@gentwo.org>
 MIME-Version: 1.0
-In-Reply-To: <20140619204041.GW8178@tassilo.jf.intel.com>
-References: <1403193509-22393-1-git-send-email-eranian@google.com>
-	<1403193509-22393-2-git-send-email-eranian@google.com>
-	<20140619180028.GU8178@tassilo.jf.intel.com>
-	<CABPqkBTw9wi1LSoqWUYcN2W1fvBYDfsdqkdxDTPQ0rWUEUFLmA@mail.gmail.com>
-	<20140619201801.GV8178@tassilo.jf.intel.com>
-	<CABPqkBRy=u6oyyFV9yC9uOykHbNUdDqDgeQ3XSTpcAfQAyS-+g@mail.gmail.com>
-	<20140619204041.GW8178@tassilo.jf.intel.com>
-Date: Thu, 19 Jun 2014 22:45:23 +0200
-Message-ID: <CABPqkBQfqsS3JRf2Kh0u4k=uS_GmYFr2APnmVzud_3-ndstU4w@mail.gmail.com>
-Subject: Re: [PATCH 1/2] perf/x86: update Haswell PEBS event constraints
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, Joe Mario <jmario@redhat.com>,
-        Don Zickus <dzickus@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1406191540240.4002@gentwo.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 10:40 PM, Andi Kleen <ak@linux.intel.com> wrote:
-> On Thu, Jun 19, 2014 at 10:31:29PM +0200, Stephane Eranian wrote:
->> On Thu, Jun 19, 2014 at 10:18 PM, Andi Kleen <ak@linux.intel.com> wrote:
->> >> I don't quite understand that.
->> >> You need to know which events support PEBS. You need a table
->> >
->> > We're talking about the kernel allowing things here.
->> > Yes the user still needs to know what supports PEBS, but
->> > that doesn't concern the kernel.
->> >
->> Just need to make sure you don't return bogus information.
->
-> GIGO. We only need to prevent security issues.
->
->> > You can just allow it for all, it's a nop if the event doesn't
->> > support it. And also the fields like DataLA are simply 0 when
->> > not supported.
->> >
->>
->> Let's take a example. If I do resource_stalls:pp, the kernel
->> will let it go through and clear the PMI bit on the config as
->> is required for PEBS mode. The counter will count normally
->> and never fire an interrupt, even when it overflows. It would
->> never execute the PMI handler and thus never look at the
->> PEBS content. You'd never get any samples.
->
-> Yes if the user specifies a bogus raw event it will not count.
-> That's fine. The important part is just that nothing ever crashes.
->
-That would certainly avoid the problem of missing events in pebs table.
-I had a problem with that just today. It also speed up scheduling
-as well by avoid the table lookups.
+On Thu, Jun 19, 2014 at 03:42:07PM -0500, Christoph Lameter wrote:
+> In that case special care needs to be taken to get this right. True.
+> 
+> I typically avoid these scenarios by sending an IPI with a pointer to the
+> data structure. The modification is done by the cpu for which the per cpu
+> data is local.
+> 
+> Maybe rewrite the code to avoid writing to other processors percpu data
+> would be the right approach?
 
-Note that I will soon post a patch to speed up scheduling for all x86
-processors.
+It depends on the specific use case but in general no.  IPIs would be
+far more expensive than making use of proper barriers in vast majority
+of cases especially when the "hot" side is data dependency barrier,
+IOW, nothing.  Also, we are talking about extremely low frequency
+events like init and recycling after reinit.  Regular per-cpu
+operation isn't really the subject here.
+
+Thanks.
+
+-- 
+tejun
