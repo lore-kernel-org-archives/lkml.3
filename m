@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934037AbaFSQkd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:40:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60770 "EHLO mx1.redhat.com"
+	id S964858AbaFSQku (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:40:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12863 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933876AbaFSQjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:39:07 -0400
+	id S933856AbaFSQjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 12:39:05 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
         Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 7/9] tools lib traceevent: Clean up format of args in jbd2 plugin
-Date: Thu, 19 Jun 2014 18:38:46 +0200
-Message-Id: <1403195928-1331-8-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 6/9] tools lib traceevent: Clean up format of args in cfg80211 plugin
+Date: Thu, 19 Jun 2014 18:38:45 +0200
+Message-Id: <1403195928-1331-7-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1403195928-1331-1-git-send-email-jolsa@kernel.org>
 References: <1403195928-1331-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,53 +22,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Steven Rostedt <rostedt@goodmis.org>
 
 While synchronizing what's in trace-cmd vs what's in perf, I came
-across a change that was made when entering the jbd2 plugin into
-the tools/lib/traceevent directory. For example, one of the function
-prototypes went from:
+across a change that was made when entering the cfg80211 plugin into
+the tools/lib/traceevent directory. The function prototype went from:
 
-unsigned long long process_jbd2_dev_to_name(struct trace_seq *s,
-					    unsigned long long *args)
+static unsigned long long process___le16_to_cpup(struct trace_seq *s,
+						 unsigned long long *args)
 
 to:
 
 static unsigned long long
-process_jbd2_dev_to_name(struct trace_seq *s,
-			 unsigned long long *args)
+process___le16_to_cpup(struct trace_seq *s,
+		       unsigned long long *args)
 
 I can understand the line break after the long long, but there's no
 reason to keep args on a separate line.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/20140612204144.018410d4@gandalf.local.home
+Link: http://lkml.kernel.org/r/20140612194420.24073744@gandalf.local.home
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/lib/traceevent/plugin_jbd2.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ tools/lib/traceevent/plugin_cfg80211.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/tools/lib/traceevent/plugin_jbd2.c b/tools/lib/traceevent/plugin_jbd2.c
-index 0db714c..5c23d5b 100644
---- a/tools/lib/traceevent/plugin_jbd2.c
-+++ b/tools/lib/traceevent/plugin_jbd2.c
-@@ -30,8 +30,7 @@
- #define MINOR(dev)	((unsigned int) ((dev) & MINORMASK))
+diff --git a/tools/lib/traceevent/plugin_cfg80211.c b/tools/lib/traceevent/plugin_cfg80211.c
+index c066b25..4592d84 100644
+--- a/tools/lib/traceevent/plugin_cfg80211.c
++++ b/tools/lib/traceevent/plugin_cfg80211.c
+@@ -5,8 +5,7 @@
+ #include "event-parse.h"
  
  static unsigned long long
--process_jbd2_dev_to_name(struct trace_seq *s,
--			 unsigned long long *args)
-+process_jbd2_dev_to_name(struct trace_seq *s, unsigned long long *args)
+-process___le16_to_cpup(struct trace_seq *s,
+-		       unsigned long long *args)
++process___le16_to_cpup(struct trace_seq *s, unsigned long long *args)
  {
- 	unsigned int dev = args[0];
- 
-@@ -40,8 +39,7 @@ process_jbd2_dev_to_name(struct trace_seq *s,
- }
- 
- static unsigned long long
--process_jiffies_to_msecs(struct trace_seq *s,
--			 unsigned long long *args)
-+process_jiffies_to_msecs(struct trace_seq *s, unsigned long long *args)
- {
- 	unsigned long long jiffies = args[0];
- 
+ 	uint16_t *val = (uint16_t *) (unsigned long) args[0];
+ 	return val ? (long long) le16toh(*val) : 0;
 -- 
 1.8.3.1
 
