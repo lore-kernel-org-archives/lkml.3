@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754AbaFSAap (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 20:30:45 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:48192 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066AbaFSAao (ORCPT
+	id S1752531AbaFSAmX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 20:42:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43507 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829AbaFSAmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 20:30:44 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: acme@kernel.org, artagnon@gmail.com, jolsa@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] perf timechart: implement IO mode
-References: <1402412694-5996-1-git-send-email-stfomichev@yandex-team.ru>
-	<1402412694-5996-2-git-send-email-stfomichev@yandex-team.ru>
-	<87ppif9c3y.fsf@sejong.aot.lge.com>
-	<20140616060804.GA9394@stfomichev-desktop.yandex.net>
-	<87sin383cw.fsf@sejong.aot.lge.com>
-	<20140618090034.GC15620@stfomichev-desktop.yandex.net>
-Date: Thu, 19 Jun 2014 09:30:35 +0900
-In-Reply-To: <20140618090034.GC15620@stfomichev-desktop.yandex.net> (Stanislav
-	Fomichev's message of "Wed, 18 Jun 2014 13:00:34 +0400")
-Message-ID: <87fvj191w4.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 18 Jun 2014 20:42:22 -0400
+Date: Wed, 18 Jun 2014 17:40:01 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Chen Yucong <slaoub@gmail.com>
+Cc: minchan@kernel.org, mgorman@suse.de, hannes@cmpxchg.org, mhocko@suse.cz,
+        riel@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/vmscan.c: fix an implementation flaw in proportional
+ scanning
+Message-Id: <20140618174001.a5de7668.akpm@linux-foundation.org>
+In-Reply-To: <1403136272.12954.4.camel@debian>
+References: <1402980902-6345-1-git-send-email-slaoub@gmail.com>
+	<20140618152751.283deda95257cc32ccea8f20@linux-foundation.org>
+	<1403136272.12954.4.camel@debian>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stanislav,
+On Thu, 19 Jun 2014 08:04:32 +0800 Chen Yucong <slaoub@gmail.com> wrote:
 
-On Wed, 18 Jun 2014 13:00:34 +0400, Stanislav Fomichev wrote:
->> > Can you somehow share your perf.data with me? I'll check what's going
->> > on.
->> 
->> https://git.kernel.org/cgit/linux/kernel/git/namhyung/linux-perf.git/plain/tools/perf/perf.timechart.data?h=perf/tmp
-> Hm, I don't see any issue with your data, I can see dd disk io and firefox polls.
-> I attached output.png, but it has some artifacts (I used imagemagick to convert
-> it); if I use Inkscape to view SVG, I don't see any artifacts (maybe
-> there is a problem, but another one).
->
-> Do you get different picture (empty process bars) if you run it on your side?
-> If you do, then I'm puzzled...
+> On Wed, 2014-06-18 at 15:27 -0700, Andrew Morton wrote:
+> > On Tue, 17 Jun 2014 12:55:02 +0800 Chen Yucong <slaoub@gmail.com> wrote:
+> > 
+> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > > index a8ffe4e..2c35e34 100644
+> > > --- a/mm/vmscan.c
+> > > +++ b/mm/vmscan.c
+> > > @@ -2087,8 +2086,8 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+> > >  	blk_start_plug(&plug);
+> > >  	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
+> > >  					nr[LRU_INACTIVE_FILE]) {
+> > > -		unsigned long nr_anon, nr_file, percentage;
+> > > -		unsigned long nr_scanned;
+> > > +		unsigned long nr_anon, nr_file, file_percent, anon_percent;
+> > > +		unsigned long nr_to_scan, nr_scanned, percentage;
+> > >  
+> > >  		for_each_evictable_lru(lru) {
+> > >  			if (nr[lru]) {
+> > 
+> > The increased stack use is a slight concern - we can be very deep here.
+> > I suspect the "percent" locals are more for convenience/clarity, and
+> > they could be eliminated (in a separate patch) at some cost of clarity?
+> > 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index a8ffe4e..2c35e34 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2057,8 +2057,7 @@ out:
+>  static void shrink_lruvec(struct lruvec *lruvec, struct scan_control
+> *sc)
+>  {
+>         unsigned long nr[NR_LRU_LISTS];
+> -       unsigned long targets[NR_LRU_LISTS];
+> -       unsigned long nr_to_scan;
+> +       unsigned long file_target, anon_target;
+> 
+> >From the above snippet, we can know that the "percent" locals come from
+> targets[NR_LRU_LISTS]. So this fix does not increase the stack.
 
-Hmm.. it looks like an unrelated issue.  I can see the bars in inkscape,
-but still see empty grey bars in firefox.
+OK.  But I expect the stack use could be decreased by using more
+complex expressions.
 
-Thanks,
-Namhyung
