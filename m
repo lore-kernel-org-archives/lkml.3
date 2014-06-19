@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337AbaFSFXo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 01:23:44 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:52564 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754AbaFSFXn (ORCPT
+	id S1757399AbaFSFXz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 01:23:55 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:36209 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757347AbaFSFXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 01:23:43 -0400
-Date: Wed, 18 Jun 2014 22:23:37 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave.hansen@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>, Christoph Lameter <cl@linux.com>
-Subject: Re: [bisected] pre-3.16 regression on open() scalability
-Message-ID: <20140619052337.GG4669@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140618001836.GV4669@linux.vnet.ibm.com>
- <53A132D4.60408@intel.com>
- <20140618125831.GB4669@linux.vnet.ibm.com>
- <53A1CE19.7040103@intel.com>
- <20140618203052.GT4669@linux.vnet.ibm.com>
- <20140618235131.GA25946@linux.vnet.ibm.com>
- <20140619014200.GO8178@tassilo.jf.intel.com>
- <20140619021337.GA4669@linux.vnet.ibm.com>
- <20140619033816.GQ8178@tassilo.jf.intel.com>
- <1403153545.1225.8.camel@edumazet-glaptop2.roam.corp.google.com>
+	Thu, 19 Jun 2014 01:23:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403153545.1225.8.camel@edumazet-glaptop2.roam.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061905-1344-0000-0000-0000024AFD53
+In-Reply-To: <1403153691-15606-1-git-send-email-dianders@chromium.org>
+References: <1403153691-15606-1-git-send-email-dianders@chromium.org>
+Date: Wed, 18 Jun 2014 22:23:51 -0700
+X-Google-Sender-Auth: f0D7aoK864Vls55OwCLmOR7o3hQ
+Message-ID: <CAD=FV=U0RAS3pi=i7smGo2rBJ+NfijXhmjX1PUs1rrwKkQewPA@mail.gmail.com>
+Subject: Re: [PATCH] i2c: s3c2410: resume the I2C controller earlier
+From: Doug Anderson <dianders@chromium.org>
+To: Wolfram Sang <wsa@the-dreams.de>, Kukjin Kim <kgene.kim@samsung.com>,
+        Ben Dooks <ben-linux@fluff.org>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 09:52:25PM -0700, Eric Dumazet wrote:
-> On Wed, 2014-06-18 at 20:38 -0700, Andi Kleen wrote:
-> > On Wed, Jun 18, 2014 at 07:13:37PM -0700, Paul E. McKenney wrote:
-> > > On Wed, Jun 18, 2014 at 06:42:00PM -0700, Andi Kleen wrote:
-> > > > 
-> > > > I still think it's totally the wrong direction to pollute so 
-> > > > many fast paths with this obscure debugging check workaround
-> > > > unconditionally.
-> > > 
-> > > OOM prevention should count for something, I would hope.
-> > 
-> > OOM in what scenario? This is getting bizarre.
-> > 
-> > If something keeps looping forever in the kernel creating 
-> > RCU callbacks without any real quiescent states it's simply broken.
-> 
-> Typical problem we faced in the past is in exit() path when multi
-> thousands of files/sockets are rcu-freed, and qhimark is hit.
-> 
-> Huge latency alerts, as freeing 10000+ items takes a while (about 70 ns
-> per item...)
-> 
-> Maybe close_files() should use a
-> cond_resched_and_keep_rcu_queues_small_please() ;)
+Hi,
 
-That sort of approach would work for me.  Over time, I would guess
-that the cond_resched_and_keep_rcu_queues_small_please() function would
-find its way to where it needed to be.  ;-)
+On Wed, Jun 18, 2014 at 9:54 PM, Doug Anderson <dianders@chromium.org> wrote:
+> From: Vincent Palatin <vpalatin@chromium.org>
+>
+> When the wake-up is triggered by the PMIC RTC, the RTC driver is trying
+> to read the PMIC interrupt status over I2C and fails because the I2C
+> controller is not resumed yet.
+> Let's resume the I2C controller earlier in the _noirq phase
+> (as other hardwares are doing), so we can properly get the wake-up
+> condition.
+>
+> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+>  drivers/i2c/busses/i2c-s3c2410.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
+> index e828a1d..b904132 100644
+> --- a/drivers/i2c/busses/i2c-s3c2410.c
+> +++ b/drivers/i2c/busses/i2c-s3c2410.c
+> @@ -1267,7 +1267,7 @@ static int s3c24xx_i2c_suspend_noirq(struct device *dev)
+>         return 0;
+>  }
+>
+> -static int s3c24xx_i2c_resume(struct device *dev)
+> +static int s3c24xx_i2c_resume_noirq(struct device *dev)
+>  {
+>         struct platform_device *pdev = to_platform_device(dev);
+>         struct s3c24xx_i2c *i2c = platform_get_drvdata(pdev);
+> @@ -1285,7 +1285,7 @@ static int s3c24xx_i2c_resume(struct device *dev)
+>  static const struct dev_pm_ops s3c24xx_i2c_dev_pm_ops = {
+>  #ifdef CONFIG_PM_SLEEP
+>         .suspend_noirq = s3c24xx_i2c_suspend_noirq,
+> -       .resume = s3c24xx_i2c_resume,
+> +       .resume_noirq = s3c24xx_i2c_resume_noirq,
 
-							Thanx, Paul
+I looked at applying this to another i2c controller and stumbled upon
+feedback from Wolfram suggesting that I should add "poweroff, thaw,
+freeze, restore".  I'm happy to squash that into this patch or send a
+separate patch if people would like it.  Just let me know.
 
+-Doug
