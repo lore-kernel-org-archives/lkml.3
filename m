@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085AbaFSEOf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 00:14:35 -0400
-Received: from smtprelay0236.hostedemail.com ([216.40.44.236]:53199 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750708AbaFSEOe (ORCPT
+	id S1752125AbaFSETP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 00:19:15 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:34938 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708AbaFSETO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 00:14:34 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3873:4250:4321:5007:6119:7652:7903:8829:8957:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12296:12438:12517:12519:12679:12740:13069:13071:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: boat95_278ef0122b631
-X-Filterd-Recvd-Size: 2081
-Message-ID: <1403151270.14018.17.camel@joe-AO725>
-Subject: Re: [PATCH] staging: rtl8192e: check return value of dev_skb_alloc
-From: Joe Perches <joe@perches.com>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: gregkh@linuxfoundation.org, lisa@xenapiadmin.com,
-        valentina.manea.m@gmail.com, ben@decadent.org.uk,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Wed, 18 Jun 2014 21:14:30 -0700
-In-Reply-To: <1403144681-6902-1-git-send-email-xerofoify@gmail.com>
-References: <1403144681-6902-1-git-send-email-xerofoify@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Jun 2014 00:19:14 -0400
+Date: Wed, 18 Jun 2014 21:19:00 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Dave Hansen <dave.hansen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>, Christoph Lameter <cl@linux.com>
+Subject: Re: [bisected] pre-3.16 regression on open() scalability
+Message-ID: <20140619041900.GD4669@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <53A0CAE5.9000702@intel.com>
+ <20140618001836.GV4669@linux.vnet.ibm.com>
+ <53A132D4.60408@intel.com>
+ <20140618125831.GB4669@linux.vnet.ibm.com>
+ <53A1CE19.7040103@intel.com>
+ <20140618203052.GT4669@linux.vnet.ibm.com>
+ <20140618235131.GA25946@linux.vnet.ibm.com>
+ <20140619014200.GO8178@tassilo.jf.intel.com>
+ <20140619021337.GA4669@linux.vnet.ibm.com>
+ <20140619033816.GQ8178@tassilo.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140619033816.GQ8178@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061904-0928-0000-0000-000002CC5821
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-18 at 22:24 -0400, Nicholas Krause wrote:
-> Checks if dev_skb_alloc returns Null in function, fw_download_code.
-> If the return value of dev_skb_alloc is NULL return false and exit
-> this function.
+On Wed, Jun 18, 2014 at 08:38:16PM -0700, Andi Kleen wrote:
+> On Wed, Jun 18, 2014 at 07:13:37PM -0700, Paul E. McKenney wrote:
+> > On Wed, Jun 18, 2014 at 06:42:00PM -0700, Andi Kleen wrote:
+> > > 
+> > > I still think it's totally the wrong direction to pollute so 
+> > > many fast paths with this obscure debugging check workaround
+> > > unconditionally.
+> > 
+> > OOM prevention should count for something, I would hope.
+> 
+> OOM in what scenario? This is getting bizarre.
 
-Hello Nicholas.
+On the bizarre part, at least we agree on something.  ;-)
 
-If you're going to try add these checks, please look at
-the code a bit more before submitting defective patches.
+CONFIG_NO_HZ_FULL booted with at least one nohz_full CPU.  Said CPU
+gets into the kernel and stays there, not necessarily generating RCU
+callbacks.  The other CPUs are very likely generating RCU callbacks.
+Because the nohz_full CPU is in the kernel, and because there are no
+scheduling-clock interrupts on that CPU, grace periods do not complete.
+Eventually, the callbacks from the other CPUs (and perhaps also some
+from the nohz_full CPU, for that matter) OOM the machine.
 
-> diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
-[]
-> @@ -62,6 +62,8 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
->  
->  		skb  = dev_alloc_skb(frag_length + 4);
->  		memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
-> +		if (!skb)
-> +			return !rt_status;
+Now this scenario constitutes an abuse of CONFIG_NO_HZ_FULL, because it
+is intended for CPUs that execute either in userspace (in which case
+those CPUs are in extended quiescent states so that RCU can happily
+ignore them) or for real-time workloads with low CPU untilization (in
+which case RCU sees them go idle, which is also a quiescent state).
+But that won't stop people from abusing their kernels and complaining
+when things break.
 
-Umm, if you're going to check whether or not skb is NULL,
-do it before it's dereferenced  as skb->cb.
+This same thing can also happen without CONFIG_NO_HZ full, though
+the system has to work a bit harder.  In this case, the CPU looping
+in the kernel has scheduling-clock interrupts, but if all it does
+is cond_resched(), RCU is never informed of any quiescent states.
+The whole point of this patch is to make those cond_resched() calls,
+which are quiescent states, visible to RCU.
 
-Oh, and get rid of rt_status and use
+> If something keeps looping forever in the kernel creating 
+> RCU callbacks without any real quiescent states it's simply broken.
 
-			return false;
+I could get behind that.  But by that definition, there is a lot of
+breakage in the current kernel, especially as we move to larger CPU
+counts.
 
-directly.
-
->  		tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
->  		tcb_desc->queue_index = TXCMD_QUEUE;
->  		tcb_desc->bCmdOrInit = DESC_PACKET_TYPE_INIT;
-
-and change the end of function
-
-from:
-	return rt_status;
-to:
-	return true;
+							Thanx, Paul
 
