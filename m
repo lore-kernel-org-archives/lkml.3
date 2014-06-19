@@ -1,102 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758099AbaFSLxp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 07:53:45 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:16448 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932300AbaFSLwp (ORCPT
+	id S932561AbaFSMBF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 08:01:05 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:34416 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757454AbaFSMBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 07:52:45 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 19 Jun 2014 04:46:59 -0700
-From: Mikko Perttunen <mperttunen@nvidia.com>
-To: <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>,
-        <pdeschrijver@nvidia.com>, <rui.zhang@intel.com>,
-        <edubezval@gmail.com>
-CC: <devicetree@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <mikko.perttunen@kapsi.fi>,
-        <mlongnecker@nvidia.com>, <dtundlam@nvidia.com>, <talho@nvidia.com>,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Subject: [RFC 2/5] ARM: tegra: Add soctherm and thermal zones to Tegra124 device tree
-Date: Thu, 19 Jun 2014 14:50:37 +0300
-Message-ID: <1403178640-16052-3-git-send-email-mperttunen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1403178640-16052-1-git-send-email-mperttunen@nvidia.com>
-References: <1403178640-16052-1-git-send-email-mperttunen@nvidia.com>
-X-NVConfidentiality: public
+	Thu, 19 Jun 2014 08:01:04 -0400
+Message-ID: <53A2D0FC.7040309@plexistor.com>
+Date: Thu, 19 Jun 2014 15:01:00 +0300
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Michal Marek <mmarek@suse.cz>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: kbuild: support of new KBUILD_FULL_PATH
+References: <53A1D3A1.70202@gmail.com> <53A2B7A9.7080605@gmail.com> <53A2BE65.2070501@suse.cz>
+In-Reply-To: <53A2BE65.2070501@suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the soctherm thermal sensing and management unit to the
-Tegra124 device tree along with the four thermal zones it exports.
+On 06/19/2014 01:41 PM, Michal Marek wrote:
+<>
+>> Is there a document I need to edit for this new parameter?
+> 
+> That would be Documentation/kbuild/kbuild.txt
+> 
 
-Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
----
- arch/arm/boot/dts/tegra124.dtsi | 47 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 47 insertions(+)
+Will send a VER2 thanks
 
-diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
-index d675186..ca884e8 100644
---- a/arch/arm/boot/dts/tegra124.dtsi
-+++ b/arch/arm/boot/dts/tegra124.dtsi
-@@ -724,6 +724,53 @@
- 		status = "disabled";
- 	};
- 
-+	thermal-zones {
-+		cpu {
-+			polling-delay-passive = <1000>;
-+			polling-delay = <1000>;
-+
-+			thermal-sensors = <&soctherm 0>;
-+		};
-+
-+		mem {
-+			polling-delay-passive = <1000>;
-+			polling-delay = <1000>;
-+
-+			thermal-sensors = <&soctherm 1>;
-+		};
-+
-+		gpu {
-+			polling-delay-passive = <1000>;
-+			polling-delay = <1000>;
-+
-+			thermal-sensors = <&soctherm 2>;
-+		};
-+
-+		pllx {
-+			polling-delay-passive = <1000>;
-+			polling-delay = <1000>;
-+
-+			thermal-sensors = <&soctherm 3>;
-+		};
-+	};
-+
-+	soctherm: soctherm@0,700e2000 {
-+		compatible = "nvidia,tegra124-soctherm";
-+		reg = <0x0 0x700e2000 0x0 0x1000>;
-+		interrupts = <GIC_SPI 48 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&tegra_car TEGRA124_CLK_TSENSOR>,
-+			<&tegra_car TEGRA124_CLK_SOC_THERM>;
-+		clock-names = "tsensor", "soc-therm";
-+		resets = <&tegra_car 78>;
-+		reset-names = "soc-therm";
-+
-+		nvidia,thermtrip-threshold-cpu = <105>;
-+		nvidia,thermtrip-threshold-gpu-mem = <105>;
-+		nvidia,thermtrip-threshold-tsense = <105>;
-+
-+		#thermal-sensor-cells = <1>;
-+	};
-+
- 	cpus {
- 		#address-cells = <1>;
- 		#size-cells = <0>;
--- 
-1.8.1.5
+> 
+>> Signed-off-by: Boaz Harrosh <boaz@plexistor.com>
+>> ---
+>>  Makefile | 8 +++++++-
+>>  1 file changed, 7 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/Makefile b/Makefile
+>> index 97b2861..778732a 100644
+>> --- a/Makefile
+>> +++ b/Makefile
+>> @@ -149,11 +149,17 @@ else
+>>  _all: modules
+>>  endif
+>>  
+>> +# put KBUILD_FULL_PATH=1 if relative path to sources breaks your system
+>> +ifneq ($(KBUILD_FULL_PATH), 1)
+>> +	KBUILD_FULL_PATH=""
+>> +endif
+>> +
+>>  ifeq ($(KBUILD_SRC),)
+>>          # building in the source tree
+>>          srctree := .
+>>  else
+>> -        ifeq ($(KBUILD_SRC)/,$(dir $(CURDIR)))
+>> +        # if KBUILD_FULL_PATH is not empty then condition will fail
+>> +        ifeq ($(KBUILD_FULL_PATH)$(KBUILD_SRC)/,$(dir $(CURDIR)))
+> 
+> This is an ugly way to express the logic.
+> 
+
+I kind of agree. My Makefile foo is not very strong any other way I
+know would duplicate code. What would you suggest?
+
+[ Best I can think of is:
+
+        srctree := $(KBUILD_SRC)
+
+        # if KBUILD_FULL_PATH=1 then do not use relative path
+	ifneq ($(KBUILD_FULL_PATH), 1)
+                ifeq ($(KBUILD_SRC)/,$(dir $(CURDIR)))
+                        # building in a subdirectory of the source tree
+                        srctree := ..
+                endif
+        endif
+
+
+Is this better?
+]
+
+> 
+>>                  # building in a subdirectory of the source tree
+>>                  srctree := ..
+>>          else
+> 
+> How about generated sources like asm-offsets.s or the lexer and parser
+> in scripts/kconfig, does kdevelop figure out where the files live? If
+> not, you might need to add
+> 
+> -objtree                := .
+> +ifeq ($(KBUILD_FULL_PATH),1)
+> +       objtree := $(CURDIR)
+> +else
+> +        objtree        := .
+> +endif
+> 
+> to use the full path also for the O= directory.
+> 
+
+I would not care for those at all. The important is those files that
+you need to point and edit to fix stuff. The generated files I better
+not edit usually. The edit is in some other place, right?
+
+> Michal
+> 
+
+I saw that this patch caused other breakage as well. Will you be
+fixing those? Do you want to own this or you still need a ver2
+of this patch?
+
+Thanks
+Boaz
 
