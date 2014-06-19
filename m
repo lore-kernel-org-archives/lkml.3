@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481AbaFSEUG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 00:20:06 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:41229 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752215AbaFSEUE (ORCPT
+	id S1756895AbaFSEV1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 00:21:27 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:54233 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752560AbaFSEV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 00:20:04 -0400
-Date: Wed, 18 Jun 2014 21:19:51 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave.hansen@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>, Christoph Lameter <cl@linux.com>
-Subject: Re: [bisected] pre-3.16 regression on open() scalability
-Message-ID: <20140619041951.GE4669@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <53A0CAE5.9000702@intel.com>
- <20140618001836.GV4669@linux.vnet.ibm.com>
- <53A132D4.60408@intel.com>
- <20140618125831.GB4669@linux.vnet.ibm.com>
- <53A1CE19.7040103@intel.com>
- <20140618203052.GT4669@linux.vnet.ibm.com>
- <20140618235131.GA25946@linux.vnet.ibm.com>
- <20140619014200.GO8178@tassilo.jf.intel.com>
- <20140619021337.GA4669@linux.vnet.ibm.com>
- <1403146219.5189.4.camel@marge.simpson.net>
+	Thu, 19 Jun 2014 00:21:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403146219.5189.4.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14061904-1344-0000-0000-0000024AD84C
+In-Reply-To: <1403080802-2794-1-git-send-email-cw00.choi@samsung.com>
+References: <1403080802-2794-1-git-send-email-cw00.choi@samsung.com>
+Date: Thu, 19 Jun 2014 09:51:23 +0530
+Message-ID: <CAJuA9aiYGXYYORkbB66ZJs3rTjAu4a7HcPhMSOZs_qUJyy_o7g@mail.gmail.com>
+Subject: Re: [PATCHv2 0/3] cpufreq: Use cpufreq-cpu0 driver for Exynos3250
+From: Thomas Abraham <ta.omasab@gmail.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: Tomasz Figa <t.figa@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 04:50:19AM +0200, Mike Galbraith wrote:
-> On Wed, 2014-06-18 at 19:13 -0700, Paul E. McKenney wrote: 
-> > On Wed, Jun 18, 2014 at 06:42:00PM -0700, Andi Kleen wrote:
-> > > 
-> > > I still think it's totally the wrong direction to pollute so 
-> > > many fast paths with this obscure debugging check workaround
-> > > unconditionally.
-> > 
-> > OOM prevention should count for something, I would hope.
-> > 
-> > > cond_resched() is in EVERY sleeping lock and in EVERY memory allocation!
-> > > And these are really critical paths for many workloads.
-> > > 
-> > > If you really wanted to do this I think you would first need
-> > > to define a cond_resched_i_am_not_fast() or somesuch.
-> > > 
-> > > Or put it all behind some debugging ifdef.
-> > 
-> > My first thought was to put it behind CONFIG_NO_HZ_FULL, but everyone
-> > seems to be enabling that one.
-> 
-> Not everybody, SUSE doesn't even have it enabled in factory.
+On Wed, Jun 18, 2014 at 2:09 PM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+> This patchset use cpufreq-cpu0 driver to support Exynos3250 cpufreq. So, this
+> patchset is based on following patchset[1] by Thomas Abraham.
+>  [1] http://www.spinics.net/lists/arm-kernel/msg339392.html
+>
+> Changes from v1:
+> - Rebased on new patchset[1] by Thomas Abraham
+> - Modify clk-cpu.c to support Exynos3250
+> - Drop documentation patch on previous patchset[2]
+>  [2] http://www.spinics.net/lists/cpufreq/msg10265.html
+> - Add only operating-points for Exynos3250 without armclk-divider-table
+>
+> Chanwoo Choi (3):
+>   clk: samsung: cpu: Add support for cpu clocks of Exynos3250
+>   clk: samsung: exynos3250: Use cpu-clock provider type to support cpufreq
+>   ARM: dts: Exynos: Add cpu clock table for Exynos3250
+>
+>  arch/arm/boot/dts/exynos3250.dtsi    | 15 +++++++++++++++
+>  drivers/clk/samsung/clk-cpu.c        | 31 +++++++++++++++++++++++++++++++
+>  drivers/clk/samsung/clk-exynos3250.c | 14 ++++++++++----
+>  3 files changed, 56 insertions(+), 4 deletions(-)
 
-OK, apologies for the over-generalization.
+Hi Chanwoo,
 
-But you would think that I would have learned this lesson with
-CONFIG_RCU_FAST_NO_HZ, wouldn't you?  :-/
+I have reviewed this series and it looks fine. If the cpu clock type
+is merged without any further changes, please add
+Reviewed-by: Thomas Abraham <thomas.ab@samsung.com>
 
-							Thanx, Paul
+Thanks,
+Thomas.
 
+>
+> --
+> 1.8.0
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
