@@ -1,134 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966197AbaFSXVf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 19:21:35 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:55096 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965467AbaFSXVd (ORCPT
+	id S966329AbaFSXYz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 19:24:55 -0400
+Received: from mail-yk0-f169.google.com ([209.85.160.169]:41399 "EHLO
+	mail-yk0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965467AbaFSXYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 19:21:33 -0400
+	Thu, 19 Jun 2014 19:24:51 -0400
+Message-ID: <53A37140.3020003@gmail.com>
+Date: Thu, 19 Jun 2014 19:24:48 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <CAPM=9tzsT+nah2P-qZ8iKW=aTZJzYgm18mMWyy2-RVkoOSwyjg@mail.gmail.com>
-References: <20140618102957.15728.43525.stgit@patser>
-	<20140618103653.15728.4942.stgit@patser>
-	<20140619011327.GC10921@kroah.com>
-	<CAF6AEGv4Ms+zsrEtpA10bGq04LnRjzVb925co49eVxh4ugkd=A@mail.gmail.com>
-	<20140619170059.GA1224@kroah.com>
-	<CAF6AEGuXKw1w=outX+QgFE2XZxV8c6pyhORL+mRp4uZR8Jnq7g@mail.gmail.com>
-	<20140619181918.GA24155@kroah.com>
-	<CAPM=9tzsT+nah2P-qZ8iKW=aTZJzYgm18mMWyy2-RVkoOSwyjg@mail.gmail.com>
-Date: Thu, 19 Jun 2014 19:21:32 -0400
-Message-ID: <CAF6AEGsEGwzU3HoqZ_ELbQLqoKZm+FeeDUmSwqVFPLg_U0X9BQ@mail.gmail.com>
-Subject: Re: [REPOST PATCH 1/8] fence: dma-buf cross-device synchronization (v17)
-From: Rob Clark <robdclark@gmail.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-arch@vger.kernel.org,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        Colin Cross <ccross@google.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: paulmck@linux.vnet.ibm.com, Joe Perches <joe@perches.com>
+CC: LKML <linux-kernel@vger.kernel.org>, romanov.arya@gmail.com,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [RFC PATCH] use snprintf instead of sprintf in rcu_torture_printk
+References: <1402419340.30479.18.camel@joe-AO725> <20140611074704.GS5015@mwanda> <1402502500.6169.5.camel@joe-AO725> <alpine.DEB.2.02.1406140937370.2003@localhost6.localdomain6> <alpine.DEB.2.02.1406141151170.2045@localhost6.localdomain6> <20140618193345.GR4669@linux.vnet.ibm.com> <1403120982.3839.25.camel@joe-AO725> <20140619210031.GN4904@linux.vnet.ibm.com>
+In-Reply-To: <20140619210031.GN4904@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 5:50 PM, Dave Airlie <airlied@gmail.com> wrote:
-> On 20 June 2014 04:19, Greg KH <gregkh@linuxfoundation.org> wrote:
->> On Thu, Jun 19, 2014 at 01:45:30PM -0400, Rob Clark wrote:
->>> On Thu, Jun 19, 2014 at 1:00 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->>> > On Thu, Jun 19, 2014 at 10:00:18AM -0400, Rob Clark wrote:
->>> >> On Wed, Jun 18, 2014 at 9:13 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->>> >> > On Wed, Jun 18, 2014 at 12:36:54PM +0200, Maarten Lankhorst wrote:
->>> >> >> +#define CREATE_TRACE_POINTS
->>> >> >> +#include <trace/events/fence.h>
->>> >> >> +
->>> >> >> +EXPORT_TRACEPOINT_SYMBOL(fence_annotate_wait_on);
->>> >> >> +EXPORT_TRACEPOINT_SYMBOL(fence_emit);
->>> >> >
->>> >> > Are you really willing to live with these as tracepoints for forever?
->>> >> > What is the use of them in debugging?  Was it just for debugging the
->>> >> > fence code, or for something else?
->>> >> >
->>> >> >> +/**
->>> >> >> + * fence_context_alloc - allocate an array of fence contexts
->>> >> >> + * @num:     [in]    amount of contexts to allocate
->>> >> >> + *
->>> >> >> + * This function will return the first index of the number of fences allocated.
->>> >> >> + * The fence context is used for setting fence->context to a unique number.
->>> >> >> + */
->>> >> >> +unsigned fence_context_alloc(unsigned num)
->>> >> >> +{
->>> >> >> +     BUG_ON(!num);
->>> >> >> +     return atomic_add_return(num, &fence_context_counter) - num;
->>> >> >> +}
->>> >> >> +EXPORT_SYMBOL(fence_context_alloc);
->>> >> >
->>> >> > EXPORT_SYMBOL_GPL()?  Same goes for all of the exports in here.
->>> >> > Traditionally all of the driver core exports have been with this
->>> >> > marking, any objection to making that change here as well?
->>> >>
->>> >> tbh, I prefer EXPORT_SYMBOL()..  well, I'd prefer even more if there
->>> >> wasn't even a need for EXPORT_SYMBOL_GPL(), but sadly it is a fact of
->>> >> life.  We already went through this debate once with dma-buf.  We
->>> >> aren't going to change $evil_vendor's mind about non-gpl modules.  The
->>> >> only result will be a more flugly convoluted solution (ie. use syncpt
->>> >> EXPORT_SYMBOL() on top of fence EXPORT_SYMBOL_GPL()) just as a
->>> >> workaround, with the result that no-one benefits.
->>> >
->>> > It has been proven that using _GPL() exports have caused companies to
->>> > release their code "properly" over the years, so as these really are
->>> > Linux-only apis, please change them to be marked this way, it helps
->>> > everyone out in the end.
->>>
->>> Well, maybe that is the true in some cases.  But it certainly didn't
->>> work out that way for dma-buf.  And I think the end result is worse.
->>>
->>> I don't really like coming down on the side of EXPORT_SYMBOL() instead
->>> of EXPORT_SYMBOL_GPL(), but if we do use EXPORT_SYMBOL_GPL() then the
->>> result will only be creative workarounds using the _GPL symbols
->>> indirectly by whatever is available via EXPORT_SYMBOL().  I don't
->>> really see how that will be better.
+(dropping some CCs)
+
+On 06/19/2014 05:00 PM, Paul E. McKenney wrote:
+> On Wed, Jun 18, 2014 at 12:49:42PM -0700, Joe Perches wrote:
 >>
->> You are saying that you _know_ companies will violate our license, so
->> you should just "give up"?  And how do you know people aren't working on
->> preventing those "indirect" usages as well?  :)
+>> I believe the function doesn't work well.
 >>
->> Sorry, I'm not going to give up here, again, it has proven to work in
->> the past in changing the ways of _very_ large companies, why stop now?
->
-> I've found large companies shipping lots of hw putting pressure on
-> other large/small companies seems to be only way this has ever
-> happened, we'd like to cover that up and say its some great GPL
-> enforcement thing.
->
-> To be honest, author's choice is how I'd treat this.
->
-> Personally I think _GPL is broken by design, and that Linus's initial
-> point for them has been so diluted by random lobby groups asking for
-> every symbol to be _GPL that they are becoming effectively pointless
-> now. I also dislike the fact that the lobby groups don't just bring
-> violators to court. I'm also sure someone like the LF could have a
-> nice income stream if Linus gave them permission to enforce his
-> copyrights.
->
-> But anyways, has someone checked that iOS or Windows don't have a
-> fence interface? so we know that this is a Linux only interface and
-> any works using it are derived? Say the nvidia driver isn't a derived
-> work now, will using this interface magically translate it into a
-> derived work, so we can go sue them? I don't think so.
+>> static void
+>> rcu_torture_stats_print(void)
+>> {
+>> 	int size = nr_cpu_ids * 200 + 8192;
+>> 	char *buf;
+>>
+>> 	buf = kmalloc(size, GFP_KERNEL);
+>> 	if (!buf) {
+>> 		pr_err("rcu-torture: Out of memory, need: %d\n", size);
+>> 		return;
+>> 	}
+>> 	rcu_torture_printk(buf);
+>> 	pr_alert("%s", buf);
+>> 	kfree(buf);
+>> }
+>>
+>> rcu_torture_printk simply fills buf
+>>
+>> btw: I believe the arguments should pass size and
+>>      rcu_torture_printk should use snprintf/size
+>>
+>> but all printks are limited to a maximum of 1024
+>> bytes so the large allocation is senseless and
+>> would even if it worked, would likely need to be
+>> vmalloc/vfree
+> 
+> Fair point!
+> 
+> Pranith, Romanov, if you would like part of RCU that is less touchy
+> about random hacking, this would be a good place to start.  Scripts in
+> tools/testing/selftests/rcutorture/bin do care about some of the format,
+> but the variable-length portion generated by cur_ops->stats() is as far
+> as I know only parsed by human eyes.
+> 
 
-I've no ideas about what the APIs are in windows, but windows has had
-multi-gpu support for a *long* time, which implies some mechanism like
-dmabuf and fence.. this isn't exactly an area where we are
-trailblazing here.
+Here is a first run of the change. Please let me know if I am totally off. RFC. :)
 
-BR,
--R
+Three things on Todo list:
 
+* We need to check that we are using less than the allocated size of the buffer (used > size). (we are allocating a big buffer, so not sure if necessary)
+* Need to check with the scripts if they are working.
+* I used a loop for pr_alert(). I am not sure this is right, there should be a better way for printing large buffers
 
-> But its up to Maarten and Rob, and if they say no _GPL then I don't
-> think we should be overriding authors intents.
->
-> Dave.
+If the overall structure is ok I will go ahead and check how the scripts are handling these changes. 
+
+>From 0d52fdcd941b0eaaacb6732f59f609595ac14d11 Mon Sep 17 00:00:00 2001
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Thu, 19 Jun 2014 19:00:46 -0400
+Subject: [PATCH 1/1] use snprintf instead of sprintf in rcu_torture_print_stats
+
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+---
+ include/linux/torture.h |  2 +-
+ kernel/rcu/rcutorture.c | 76 ++++++++++++++++++++++++++++---------------------
+ kernel/torture.c        |  7 +++--
+ 3 files changed, 48 insertions(+), 37 deletions(-)
+
+diff --git a/include/linux/torture.h b/include/linux/torture.h
+index 5ca58fc..1e47ec7 100644
+--- a/include/linux/torture.h
++++ b/include/linux/torture.h
+@@ -51,7 +51,7 @@
+ 
+ /* Definitions for online/offline exerciser. */
+ int torture_onoff_init(long ooholdoff, long oointerval);
+-char *torture_onoff_stats(char *page);
++int torture_onoff_stats(char *page, int size);
+ bool torture_onoff_failures(void);
+ 
+ /* Low-rider random number generator. */
+diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+index 7fa34f8..f708db4 100644
+--- a/kernel/rcu/rcutorture.c
++++ b/kernel/rcu/rcutorture.c
+@@ -242,7 +242,7 @@ struct rcu_torture_ops {
+ 	void (*call)(struct rcu_head *head, void (*func)(struct rcu_head *rcu));
+ 	void (*cb_barrier)(void);
+ 	void (*fqs)(void);
+-	void (*stats)(char *page);
++	int (*stats)(char *page, int size);
+ 	int irq_capable;
+ 	int can_boost;
+ 	const char *name;
+@@ -525,21 +525,22 @@ static void srcu_torture_barrier(void)
+ 	srcu_barrier(&srcu_ctl);
+ }
+ 
+-static void srcu_torture_stats(char *page)
++static int srcu_torture_stats(char *page, int size)
+ {
+-	int cpu;
++	int cpu, used = 0;
+ 	int idx = srcu_ctl.completed & 0x1;
+ 
+-	page += sprintf(page, "%s%s per-CPU(idx=%d):",
++	used = snprintf(page, size, "%s%s per-CPU(idx=%d):",
+ 		       torture_type, TORTURE_FLAG, idx);
+ 	for_each_possible_cpu(cpu) {
+ 		long c0, c1;
+ 
+ 		c0 = (long)per_cpu_ptr(srcu_ctl.per_cpu_ref, cpu)->c[!idx];
+ 		c1 = (long)per_cpu_ptr(srcu_ctl.per_cpu_ref, cpu)->c[idx];
+-		page += sprintf(page, " %d(%ld,%ld)", cpu, c0, c1);
++		used += snprintf(page + used, size - used, " %d(%ld,%ld)", cpu, c0, c1);
+ 	}
+-	sprintf(page, "\n");
++	used += snprintf(page + used, size - used, "\n");
++	return used;
+ }
+ 
+ static void srcu_torture_synchronize_expedited(void)
+@@ -1033,10 +1034,10 @@ rcu_torture_reader(void *arg)
+ /*
+  * Create an RCU-torture statistics message in the specified buffer.
+  */
+-static void
+-rcu_torture_printk(char *page)
++static int
++rcu_torture_printk(char *page, int size)
+ {
+-	int cpu;
++	int cpu, used = 0;
+ 	int i;
+ 	long pipesummary[RCU_TORTURE_PIPE_LEN + 1] = { 0 };
+ 	long batchsummary[RCU_TORTURE_PIPE_LEN + 1] = { 0 };
+@@ -1052,8 +1053,8 @@ rcu_torture_printk(char *page)
+ 		if (pipesummary[i] != 0)
+ 			break;
+ 	}
+-	page += sprintf(page, "%s%s ", torture_type, TORTURE_FLAG);
+-	page += sprintf(page,
++	used += snprintf(page + used, size - used, "%s%s ", torture_type, TORTURE_FLAG);
++	used += snprintf(page + used, size - used,
+ 		       "rtc: %p ver: %lu tfle: %d rta: %d rtaf: %d rtf: %d ",
+ 		       rcu_torture_current,
+ 		       rcu_torture_current_version,
+@@ -1061,46 +1062,47 @@ rcu_torture_printk(char *page)
+ 		       atomic_read(&n_rcu_torture_alloc),
+ 		       atomic_read(&n_rcu_torture_alloc_fail),
+ 		       atomic_read(&n_rcu_torture_free));
+-	page += sprintf(page, "rtmbe: %d rtbke: %ld rtbre: %ld ",
++	used += snprintf(page + used, size - used, "rtmbe: %d rtbke: %ld rtbre: %ld ",
+ 		       atomic_read(&n_rcu_torture_mberror),
+ 		       n_rcu_torture_boost_ktrerror,
+ 		       n_rcu_torture_boost_rterror);
+-	page += sprintf(page, "rtbf: %ld rtb: %ld nt: %ld ",
++	used += snprintf(page + used, size - used, "rtbf: %ld rtb: %ld nt: %ld ",
+ 		       n_rcu_torture_boost_failure,
+ 		       n_rcu_torture_boosts,
+ 		       n_rcu_torture_timers);
+-	page = torture_onoff_stats(page);
+-	page += sprintf(page, "barrier: %ld/%ld:%ld",
++	used += torture_onoff_stats(page + used, size - used);
++	used += snprintf(page + used, size - used, 
++			   "barrier: %ld/%ld:%ld",
+ 		       n_barrier_successes,
+ 		       n_barrier_attempts,
+ 		       n_rcu_torture_barrier_error);
+-	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
++	used += snprintf(page + used, size - used, "\n%s%s ", torture_type, TORTURE_FLAG);
+ 	if (atomic_read(&n_rcu_torture_mberror) != 0 ||
+ 	    n_rcu_torture_barrier_error != 0 ||
+ 	    n_rcu_torture_boost_ktrerror != 0 ||
+ 	    n_rcu_torture_boost_rterror != 0 ||
+ 	    n_rcu_torture_boost_failure != 0 ||
+ 	    i > 1) {
+-		page += sprintf(page, "!!! ");
++		used += snprintf(page + used, size - used, "!!! ");
+ 		atomic_inc(&n_rcu_torture_error);
+ 		WARN_ON_ONCE(1);
+ 	}
+-	page += sprintf(page, "Reader Pipe: ");
++	used += snprintf(page + used, size - used, "Reader Pipe: ");
+ 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++)
+-		page += sprintf(page, " %ld", pipesummary[i]);
+-	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
+-	page += sprintf(page, "Reader Batch: ");
++		used += snprintf(page + used, size - used, " %ld", pipesummary[i]);
++	used += snprintf(page + used, size - used, "\n%s%s ", torture_type, TORTURE_FLAG);
++	used += snprintf(page + used, size - used, "Reader Batch: ");
+ 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++)
+-		page += sprintf(page, " %ld", batchsummary[i]);
+-	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
+-	page += sprintf(page, "Free-Block Circulation: ");
++		used += snprintf(page + used, size - used, " %ld", batchsummary[i]);
++	used += snprintf(page + used, size - used, "\n%s%s ", torture_type, TORTURE_FLAG);
++	used += snprintf(page + used, size - used, "Free-Block Circulation: ");
+ 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++) {
+-		page += sprintf(page, " %d",
++		used += snprintf(page + used, size - used, " %d",
+ 			       atomic_read(&rcu_torture_wcount[i]));
+ 	}
+-	page += sprintf(page, "\n");
++	used += snprintf(page + used, size - used, "\n");
+ 	if (cur_ops->stats)
+-		cur_ops->stats(page);
++		used += cur_ops->stats(page, size - used);
+ 	if (rtcv_snap == rcu_torture_current_version &&
+ 	    rcu_torture_current != NULL) {
+ 		int __maybe_unused flags;
+@@ -1109,7 +1111,7 @@ rcu_torture_printk(char *page)
+ 
+ 		rcutorture_get_gp_data(cur_ops->ttype,
+ 				       &flags, &gpnum, &completed);
+-		page += sprintf(page,
++		used += snprintf(page + used, size - used,
+ 				"??? Writer stall state %d g%lu c%lu f%#x\n",
+ 				rcu_torture_writer_state,
+ 				gpnum, completed, flags);
+@@ -1117,6 +1119,8 @@ rcu_torture_printk(char *page)
+ 		rcutorture_trace_dump();
+ 	}
+ 	rtcv_snap = rcu_torture_current_version;
++
++	return used;
+ }
+ 
+ /*
+@@ -1130,17 +1134,23 @@ rcu_torture_printk(char *page)
+ static void
+ rcu_torture_stats_print(void)
+ {
+-	int size = nr_cpu_ids * 200 + 8192;
++	int size = nr_cpu_ids * 200 + 8192, used = 0, size_pr;
+ 	char *buf;
+ 
+-	buf = kmalloc(size, GFP_KERNEL);
++	buf = vmalloc(size);
+ 	if (!buf) {
+ 		pr_err("rcu-torture: Out of memory, need: %d", size);
+ 		return;
+ 	}
+-	rcu_torture_printk(buf);
+-	pr_alert("%s", buf);
+-	kfree(buf);
++	used = rcu_torture_printk(buf, size);
++
++	/* printk can print only print LOG_LINE_MAX chars at a time */
++	while (used > 0) {
++		size_pr = pr_alert("%s", buf);
++		used -= size_pr;
++		buf  += size_pr;
++	}
++	vfree(buf);
+ }
+ 
+ /*
+diff --git a/kernel/torture.c b/kernel/torture.c
+index 40bb511..da95335 100644
+--- a/kernel/torture.c
++++ b/kernel/torture.c
+@@ -211,10 +211,11 @@ EXPORT_SYMBOL_GPL(torture_onoff_cleanup);
+ /*
+  * Print online/offline testing statistics.
+  */
+-char *torture_onoff_stats(char *page)
++int torture_onoff_stats(char *page, int size)
+ {
++	int used = 0;
+ #ifdef CONFIG_HOTPLUG_CPU
+-	page += sprintf(page,
++	used = snprintf(page, size,
+ 		       "onoff: %ld/%ld:%ld/%ld %d,%d:%d,%d %lu:%lu (HZ=%d) ",
+ 		       n_online_successes, n_online_attempts,
+ 		       n_offline_successes, n_offline_attempts,
+@@ -222,7 +223,7 @@ char *torture_onoff_stats(char *page)
+ 		       min_offline, max_offline,
+ 		       sum_online, sum_offline, HZ);
+ #endif /* #ifdef CONFIG_HOTPLUG_CPU */
+-	return page;
++	return used;
+ }
+ EXPORT_SYMBOL_GPL(torture_onoff_stats);
+ 
+-- 
+1.9.1
+
