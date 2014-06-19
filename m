@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757748AbaFSJAc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 05:00:32 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:62078 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757598AbaFSJAb (ORCPT
+	id S1757830AbaFSJFy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 05:05:54 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:53815 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757772AbaFSJFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 05:00:31 -0400
+	Thu, 19 Jun 2014 05:05:51 -0400
+Date: Thu, 19 Jun 2014 10:05:46 +0100
+From: Peter Griffin <peter.griffin@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org, kernel@stlinux.com,
+        devicetree@vger.kernel.org, srinivas.kandagatla@gmail.com,
+        thierry.reding@gmail.com
+Subject: Re: [STLinux Kernel] [PATCH 4/7] ARM: stih416-b2020e: Enable PWM on
+ the B2020 Rev-E
+Message-ID: <20140619090546.GB2131@griffinp-ThinkPad-X1-Carbon-2nd>
+References: <1403103172-19856-1-git-send-email-lee.jones@linaro.org>
+ <1403103172-19856-4-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <1403167807.23136.31.camel@x220>
-References: <1403167807.23136.31.camel@x220>
-Date: Thu, 19 Jun 2014 17:00:29 +0800
-Message-ID: <CAD6h2NRb3tStSy-qiBRQHDo7Yy=Obvgt1hx17M13atXEtTxcaA@mail.gmail.com>
-Subject: Re: clk: hisilicon: ARCH_HIP04 and ARCH_HIX5HD2?
-From: Haojian Zhuang <haojian.zhuang@linaro.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Zhangfei Gao <zhangfei.gao@linaro.org>,
-        Haifeng Yan <haifeng.yan@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403103172-19856-4-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 June 2014 16:50, Paul Bolle <pebolle@tiscali.nl> wrote:
-> 0) Commit d3e6573c48f4 ("clk: hip04: add clock driver") was included in
-> v3.15. That clock driver is built only if CONFIG_ARCH_HIP04 is set.
->
-> And commit 5efaf09021a5 ("clk: hisi: add clk-hix5hd2.c") was included in
-> v3.16-rc1. And that driver is built only if CONFIG_ARCH_HIX5HD2 is set.
->
-> 1) Neither the symbol ARCH_HIP04 nor the symbol ARCH_HIX5HD2 is part of
-> v3.16-rc1. These symbols are also not part of next-20140619. I assume
-> that both are pending somewhere. Is that correct?
->
-> 2) It would probably be nice if these drivers got some (automatic) build
-> coverage until those symbols enter the tree. I don't know how that could
-> be achieved.
->
->
-> Paul Bolle
->
+Hi Lee,
 
-Because clock driver is the first component should be merged into
-kernel tree. Otherwise, SoC couldn't be compiled at all since SoC &
-clock are in two different git tree.
+> All the infrastructure is now in place for ST's PWM controller.  This
+> patch takes the final step and enables the IP on the 2020 Rev-E
+> development platform.
 
-I also hope that SoC patches could be merged as soon as possible. But
-we also need to follow up the comments on SoC patches from mailing
-list. I can't not say when those SoC patches could be merged into
-mainline since I'm not the gate keeper. I could only say that we're
-making effort on this.
+Why are you only enabling this for rev-E board?
 
-Regards
-Haojian
+If you make the stih415 DT PWM nodes part of this series as well, then 
+assuming there is no good reason to the contary, the PWM could 
+be enabled for both stih415/6 in the common stih41x-b2020 DTS file which
+is also included by rev-E (assuming that PWM wiring is not some rev-E specific
+thing).
+
+Also Ajit Signed-off-by needs adding to this series.
+
+After that:
+Acked-by: Peter Griffin <peter.griffin@linaro.org>
+
+regards,
+
+Peter.
