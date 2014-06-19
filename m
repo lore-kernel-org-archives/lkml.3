@@ -1,119 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758132AbaFSQI2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:08:28 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:50726 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757952AbaFSQI1 (ORCPT
+	id S1758131AbaFSQJz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:09:55 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:36226 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757478AbaFSQJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:08:27 -0400
-Date: Thu, 19 Jun 2014 12:08:24 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: kbuild test robot <fengguang.wu@intel.com>, kbuild-all@01.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Tyler Hicks <tyhicks@canonical.com>, ecryptfs@vger.kernel.org
-Subject: Re: [trace:ftrace/core 1/3] include/trace/syscall.h:39:6: error:
- 'TIF_SYSCALL_TRACEPOINT' undeclared
-Message-ID: <20140619120824.1fed4b2f@gandalf.local.home>
-In-Reply-To: <20140619155108.GA15883@redhat.com>
-References: <53a1e7ba.ZIiv6DbOB78b9RzY%fengguang.wu@intel.com>
-	<20140618211559.76bdea15@gandalf.local.home>
-	<20140618211737.719fcf49@gandalf.local.home>
-	<20140618213833.731d5fc4@gandalf.local.home>
-	<20140619150300.GA7215@redhat.com>
-	<20140619112635.41412408@gandalf.local.home>
-	<20140619155108.GA15883@redhat.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 19 Jun 2014 12:09:54 -0400
+Date: Thu, 19 Jun 2014 18:09:46 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+Subject: Re: [Intel-gfx] Display glitching (and possibly related lockup) in
+ 3.16-rc1?
+Message-ID: <20140619160946.GX5821@phenom.ffwll.local>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+References: <nsxppi6tcsg.fsf@closure.thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <nsxppi6tcsg.fsf@closure.thunk.org>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Jun 2014 17:51:08 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
-
-> Please tell me if I should another "[PATCH]" email or resend 2-3 as well.
-> Sorry for inconvenience.
-
-This is fine. I'm going to do what I seldom do and rebase my for-next
-branch with this one instead.
-
-But first I'll run this through my cross-compile tests. I should have
-done that the fist time :-/
-
--- Steve
-
+On Wed, Jun 18, 2014 at 12:14:55PM -0400, Theodore Ts'o wrote:
+> Is this a known problem?
 > 
-> -------------------------------------------------------------------------------
-> Subject: [PATCH] tracing: Fix syscall_*regfunc() vs copy_process() race
+> On my T540p, occasionally the display will go black and then be
+> completely locked.  One time when this happened, the display started
+> glitching and tearing (like what you might see if an analog display had
+> a loose connector and it was being wiggled) when the system locked up,
+> but the at least 75% of the time when the bug manifests, the screen goes
+> black instead.
 > 
-> syscall_regfunc() and syscall_unregfunc() should set/clear
-> TIF_SYSCALL_TRACEPOINT system-wide, but do_each_thread() can race
-> with copy_process() and miss the new child which was not added to
-> the process/thread lists yet.
+> This appears to only happen when the system is running on battery --- it
+> doesn't seem to manifest if I'm plugged into the AC mains.  And I've
+> been typing an e-mail message when the system locks up, so I don't think
+> it's related to DPMS or the screen saver kicking in.
 > 
-> Change copy_process() to update the child's TIF_SYSCALL_TRACEPOINT
-> under tasklist.
-> 
-> Link: http://lkml.kernel.org/p/20140413185854.GB20668@redhat.com
-> 
-> Cc: stable@vger.kernel.org # 2.6.33
-> Fixes: a871bd33a6c0 "tracing: Add syscall tracepoints"
-> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  include/trace/syscall.h |   15 +++++++++++++++
->  kernel/fork.c           |    2 ++
->  2 files changed, 17 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/trace/syscall.h b/include/trace/syscall.h
-> index fed853f..9674145 100644
-> --- a/include/trace/syscall.h
-> +++ b/include/trace/syscall.h
-> @@ -4,6 +4,7 @@
->  #include <linux/tracepoint.h>
->  #include <linux/unistd.h>
->  #include <linux/ftrace_event.h>
-> +#include <linux/thread_info.h>
->  
->  #include <asm/ptrace.h>
->  
-> @@ -32,4 +33,18 @@ struct syscall_metadata {
->  	struct ftrace_event_call *exit_event;
->  };
->  
-> +#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_HAVE_SYSCALL_TRACEPOINTS)
-> +static inline void syscall_tracepoint_update(struct task_struct *p)
-> +{
-> +	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
-> +		set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-> +	else
-> +		clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-> +}
-> +#else
-> +static inline void syscall_tracepoint_update(struct task_struct *p)
-> +{
-> +}
-> +#endif
-> +
->  #endif /* _TRACE_SYSCALL_H */
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index cafea61..f7417f5 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -1485,7 +1485,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
->  
->  	total_forks++;
->  	spin_unlock(&current->sighand->siglock);
-> +	syscall_tracepoint_update(p);
->  	write_unlock_irq(&tasklist_lock);
-> +
->  	proc_fork_connector(p);
->  	cgroup_post_fork(p);
->  	if (clone_flags & CLONE_THREAD)
+> I can try to bisect this regression (3.15 didn't have this problem), but
+> I thought I would ask first if this was a known problem.   I don't know
+> for certain that it's an i915 bug, but the symptoms do somewhat point in
+> that direction, especially the display glitches.
 
+Doesn't ring a bell, but can you please boot with drm.debug=0xe and attach
+dmesg here so we know what kind of hardware you have? Also any dying
+breadths over netconsole or similar? Can't hurt to check that before doing
+the bisect.
+
+Thanks, Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
