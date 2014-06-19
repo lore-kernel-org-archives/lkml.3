@@ -1,141 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933993AbaFSQjO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:39:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12464 "EHLO mx1.redhat.com"
+	id S934026AbaFSQjk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:39:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16779 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933953AbaFSQjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:39:10 -0400
+	id S964833AbaFSQji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 12:39:38 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Simon Que <sque@chromium.org>,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 9/9] perf symbols: Get kernel start address by symbol name
-Date: Thu, 19 Jun 2014 18:38:48 +0200
-Message-Id: <1403195928-1331-10-git-send-email-jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 8/9] perf tools: Fix segfault in cumulative.callchain report
+Date: Thu, 19 Jun 2014 18:38:47 +0200
+Message-Id: <1403195928-1331-9-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1403195928-1331-1-git-send-email-jolsa@kernel.org>
 References: <1403195928-1331-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Simon Que <sque@chromium.org>
+When cumulative callchain mode is on, we could get samples with
+with no actual hits. This breaks the assumption of the annotation
+code, that each sample has annotation counts allocated and leads
+to segfault.
 
-The function machine__get_kernel_start_addr() was taking the first symbol
-of kallsyms as the start address. This is incorrect in certain cases
-where the first symbol is something at 0, while the actual kernel
-functions begin at a later point (e.g. 0x80200000).
+Fixing this by additional checks for annotation stats.
 
-This patch fixes machine__get_kernel_start_addr() to search for the
-symbol "_text" or "_stext", which marks the beginning of kernel mapping.
-This was already being done in machine__create_kernel_maps(). Thus, this
-patch is just a refactor, to move that code into
-machine__get_kernel_start_addr().
-
-Signed-off-by: Simon Que <sque@chromium.org>
-Link: http://lkml.kernel.org/r/1402943529-13244-1-git-send-email-sque@chromium.org
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1402821332-12419-1-git-send-email-jolsa@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/machine.c | 54 +++++++++++++++++++----------------------------
- 1 file changed, 22 insertions(+), 32 deletions(-)
+ tools/perf/ui/browsers/hists.c | 21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 0e5fea9..c73e1fc 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -496,18 +496,6 @@ struct process_args {
- 	u64 start;
- };
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 52c03fb..04a229a 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -17,6 +17,7 @@
+ #include "../util.h"
+ #include "../ui.h"
+ #include "map.h"
++#include "annotate.h"
  
--static int symbol__in_kernel(void *arg, const char *name,
--			     char type __maybe_unused, u64 start)
--{
--	struct process_args *args = arg;
+ struct hist_browser {
+ 	struct ui_browser   b;
+@@ -1593,13 +1594,18 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 					 bi->to.sym->name) > 0)
+ 				annotate_t = nr_options++;
+ 		} else {
 -
--	if (strchr(name, '['))
--		return 0;
--
--	args->start = start;
--	return 1;
--}
--
- static void machine__get_kallsyms_filename(struct machine *machine, char *buf,
- 					   size_t bufsz)
- {
-@@ -517,27 +505,41 @@ static void machine__get_kallsyms_filename(struct machine *machine, char *buf,
- 		scnprintf(buf, bufsz, "%s/proc/kallsyms", machine->root_dir);
- }
- 
--/* Figure out the start address of kernel map from /proc/kallsyms */
--static u64 machine__get_kernel_start_addr(struct machine *machine)
-+const char *ref_reloc_sym_names[] = {"_text", "_stext", NULL};
+ 			if (browser->selection != NULL &&
+ 			    browser->selection->sym != NULL &&
+-			    !browser->selection->map->dso->annotate_warned &&
+-				asprintf(&options[nr_options], "Annotate %s",
+-					 browser->selection->sym->name) > 0)
+-				annotate = nr_options++;
++			    !browser->selection->map->dso->annotate_warned) {
++				struct annotation *notes;
 +
-+/* Figure out the start address of kernel map from /proc/kallsyms.
-+ * Returns the name of the start symbol in *symbol_name. Pass in NULL as
-+ * symbol_name if it's not that important.
-+ */
-+static u64 machine__get_kernel_start_addr(struct machine *machine,
-+					  const char **symbol_name)
- {
- 	char filename[PATH_MAX];
--	struct process_args args;
-+	int i;
-+	const char *name;
-+	u64 addr = 0;
- 
- 	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
- 
- 	if (symbol__restricted_filename(filename, "/proc/kallsyms"))
- 		return 0;
- 
--	if (kallsyms__parse(filename, &args, symbol__in_kernel) <= 0)
--		return 0;
-+	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
-+		addr = kallsyms__get_function_start(filename, name);
-+		if (addr)
-+			break;
-+	}
++				notes = symbol__annotation(browser->selection->sym);
 +
-+	if (symbol_name)
-+		*symbol_name = name;
++				if (notes->src &&
++				    asprintf(&options[nr_options], "Annotate %s",
++						 browser->selection->sym->name) > 0)
++					annotate = nr_options++;
++			}
+ 		}
  
--	return args.start;
-+	return addr;
- }
+ 		if (thread != NULL &&
+@@ -1656,6 +1662,7 @@ retry_popup_menu:
  
- int __machine__create_kernel_maps(struct machine *machine, struct dso *kernel)
- {
- 	enum map_type type;
--	u64 start = machine__get_kernel_start_addr(machine);
-+	u64 start = machine__get_kernel_start_addr(machine, NULL);
+ 		if (choice == annotate || choice == annotate_t || choice == annotate_f) {
+ 			struct hist_entry *he;
++			struct annotation *notes;
+ 			int err;
+ do_annotate:
+ 			if (!objdump_path && perf_session_env__lookup_objdump(env))
+@@ -1679,6 +1686,10 @@ do_annotate:
+ 				he->ms.map = he->branch_info->to.map;
+ 			}
  
- 	for (type = 0; type < MAP__NR_TYPES; ++type) {
- 		struct kmap *kmap;
-@@ -852,23 +854,11 @@ static int machine__create_modules(struct machine *machine)
- 	return 0;
- }
- 
--const char *ref_reloc_sym_names[] = {"_text", "_stext", NULL};
--
- int machine__create_kernel_maps(struct machine *machine)
- {
- 	struct dso *kernel = machine__get_kernel(machine);
--	char filename[PATH_MAX];
- 	const char *name;
--	u64 addr = 0;
--	int i;
--
--	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
--
--	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
--		addr = kallsyms__get_function_start(filename, name);
--		if (addr)
--			break;
--	}
-+	u64 addr = machine__get_kernel_start_addr(machine, &name);
- 	if (!addr)
- 		return -1;
- 
++			notes = symbol__annotation(he->ms.sym);
++			if (!notes->src)
++				continue;
++
+ 			/*
+ 			 * Don't let this be freed, say, by hists__decay_entry.
+ 			 */
 -- 
 1.8.3.1
 
