@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933751AbaFSQei (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:34:38 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:42173 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933709AbaFSQef (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:34:35 -0400
+	id S933794AbaFSQg0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:36:26 -0400
+Received: from mta-out1.inet.fi ([62.71.2.198]:43828 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932213AbaFSQgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 12:36:25 -0400
+Date: Thu, 19 Jun 2014 19:36:14 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Peter Maloney <peter.maloney@brockmann-consult.de>,
+        Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Kamal Mostafa <kamal@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: kernel BUG - handle_mm_fault - Ubuntu 14.04 kernel
+ 3.13.0-29-generic
+Message-ID: <20140619163614.GA24297@node.dhcp.inet.fi>
 MIME-Version: 1.0
-In-Reply-To: <1403189380-25134-1-git-send-email-xypron.glpk@gmx.de>
-References: <CAGXu5jLJGpPhycff9OSMGu6wduLGQWhsu2mkGeM7R0O9CQZ7pg@mail.gmail.com>
-	<1403189380-25134-1-git-send-email-xypron.glpk@gmx.de>
-Date: Thu, 19 Jun 2014 09:34:34 -0700
-X-Google-Sender-Auth: TGzjywoJnfZfolFtfAlq7TtNJfE
-Message-ID: <CAGXu5jJCqJpAX0gbyK+GOW2fntr7LTEGHxhEk-dEQrhi9oSX4w@mail.gmail.com>
-Subject: Re: [PATCH 1/1 v2] media: dib9000: avoid out of bound access
-From: Kees Cook <keescook@chromium.org>
-To: Heinrich Schuchardt <xypron.glpk@gmx.de>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Michael Krufky <mkrufky@linuxtv.org>, linux-media@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53A30B63.107@brockmann-consult.de>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 7:49 AM, Heinrich Schuchardt <xypron.glpk@gmx.de> wrote:
-> This updated patch also fixes out of bound access to b[].
->
-> In dib9000_risc_apb_access_write() an out of bound access to mb[].
->
-> The current test to avoid out of bound access to mb[] is insufficient.
-> For len = 19 non-existent mb[10] will be accessed.
->
-> For odd values of len b[] is accessed out of bounds.
->
-> For large values of len an of bound access to mb[] may occur in
-> dib9000_mbx_send_attr.
->
-> Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
-> ---
->  drivers/media/dvb-frontends/dib9000.c | 13 +++++++++----
->  1 file changed, 9 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/media/dvb-frontends/dib9000.c b/drivers/media/dvb-frontends/dib9000.c
-> index e540cfb..f75dec4 100644
-> --- a/drivers/media/dvb-frontends/dib9000.c
-> +++ b/drivers/media/dvb-frontends/dib9000.c
-> @@ -1040,13 +1040,18 @@ static int dib9000_risc_apb_access_write(struct dib9000_state *state, u32 addres
->         if (address >= 1024 || !state->platform.risc.fw_is_running)
->                 return -EINVAL;
->
-> +       if (len > 18)
-> +               return -EINVAL;
-> +
->         /* dprintk( "APB access thru wr fw %d %x", address, attribute); */
->
-> -       mb[0] = (unsigned short)address;
-> -       for (i = 0; i < len && i < 20; i += 2)
-> -               mb[1 + (i / 2)] = (b[i] << 8 | b[i + 1]);
-> +       mb[0] = (u16)address;
-> +       for (i = 0; i + 1 < len; i += 2)
-> +               mb[1 + i / 2] = b[i] << 8 | b[i + 1];
-> +       if (len & 1)
-> +               mb[1 + len / 2] = b[len - 1] << 8;
->
-> -       dib9000_mbx_send_attr(state, OUT_MSG_BRIDGE_APB_W, mb, 1 + len / 2, attribute);
-> +       dib9000_mbx_send_attr(state, OUT_MSG_BRIDGE_APB_W, mb, (3 + len) / 2, attribute);
->         return dib9000_mbx_get_message_attr(state, IN_MSG_END_BRIDGE_APB_RW, mb, &s, attribute) == 1 ? 0 : -EINVAL;
->  }
->
-> --
-> 2.0.0
->
+On Thu, Jun 19, 2014 at 06:10:11PM +0200, Peter Maloney wrote:
+> Hi, can someone please take a look at this and tell me what is going on?
+> 
+> The event log reports no ECC errors.
+> 
+> This machine was working fine with an older Ubuntu version, and has
+> failed this way twice since an upgrade 2 weeks ago.
+> 
+> Symptoms include:
+>  - load goes up high, currently 1872.72
+>  - "ps -ef" hangs
+>  - this time I tested "echo w > /proc/sysrq-trigger" which made the
+> local shell and ssh hang, and ctrl+alt+del doesn't work, but machine
+> still responds to ping
+> 
+> Please CC me; I'm not on the list.
+> 
+> Thanks,
+> Peter
+> 
+> 
+> 
+> Here's the log:
+> 
+> Jun 12 15:42:42 node73 kernel: [17196.908781] ------------[ cut here
+> ]------------
+> Jun 12 15:42:42 node73 kernel: [17196.909789] kernel BUG at
+> /build/buildd/linux-3.13.0/mm/memory.c:3756!
 
-That looks great, thanks!
+Looks like this:
 
-Reviewed-by: Kees Cook <keescook@chromium.org>
+http://lkml.org/lkml/2014/5/8/275
 
--Kees
+It seems the commit 107437febd49 has added to 3.13.11.3 "extended stable",
+but not in other -stable.
 
+Rik, should it be there too?
 
 -- 
-Kees Cook
-Chrome OS Security
+ Kirill A. Shutemov
