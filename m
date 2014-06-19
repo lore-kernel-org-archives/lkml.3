@@ -1,202 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934233AbaFSSMo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 14:12:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22740 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932083AbaFSSMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 14:12:43 -0400
-Message-ID: <1403201524.32688.62.camel@deneb.redhat.com>
-Subject: Re: [PATCH] arm64: fix MAX_ORDER for 64K pagesize
-From: Mark Salter <msalter@redhat.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: David Rientjes <rientjes@google.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 19 Jun 2014 14:12:04 -0400
-In-Reply-To: <xa1t61jzwfo6.fsf@mina86.com>
-References: <1402522435-13884-1-git-send-email-msalter@redhat.com>
-	 <alpine.DEB.2.02.1406111557030.27885@chino.kir.corp.google.com>
-	 <xa1t61jzwfo6.fsf@mina86.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S934241AbaFSSOP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 14:14:15 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:54762 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933173AbaFSSON (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 14:14:13 -0400
+Date: Thu, 19 Jun 2014 11:14:04 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave.hansen@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>, Christoph Lameter <cl@linux.com>
+Subject: Re: [bisected] pre-3.16 regression on open() scalability
+Message-ID: <20140619181403.GF4904@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <53A132D4.60408@intel.com>
+ <20140618125831.GB4669@linux.vnet.ibm.com>
+ <53A1CE19.7040103@intel.com>
+ <20140618203052.GT4669@linux.vnet.ibm.com>
+ <20140618235131.GA25946@linux.vnet.ibm.com>
+ <20140619014200.GO8178@tassilo.jf.intel.com>
+ <20140619021337.GA4669@linux.vnet.ibm.com>
+ <20140619033816.GQ8178@tassilo.jf.intel.com>
+ <20140619041900.GD4669@linux.vnet.ibm.com>
+ <1403155458.5189.54.camel@marge.simpson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403155458.5189.54.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14061918-6688-0000-0000-000002AE1B56
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-06-17 at 20:32 +0200, Michal Nazarewicz wrote:
-> On Wed, Jun 11 2014, David Rientjes wrote:
-> > On Wed, 11 Jun 2014, Mark Salter wrote:
-> >
-> >> With a kernel configured with ARM64_64K_PAGES && !TRANSPARENT_HUGEPAGE
-> >> I get this at early boot:
-> >> 
-> >>   SMP: Total of 8 processors activated.
-> >>   devtmpfs: initialized
-> >>   Unable to handle kernel NULL pointer dereference at virtual address 00000008
-> >>   pgd = fffffe0000050000
-> >>   [00000008] *pgd=00000043fba00003, *pmd=00000043fba00003, *pte=00e0000078010407
-> >>   Internal error: Oops: 96000006 [#1] SMP
-> >>   Modules linked in:
-> >>   CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc864k+ #44
-> >>   task: fffffe03bc040000 ti: fffffe03bc080000 task.ti: fffffe03bc080000
-> >>   PC is at __list_add+0x10/0xd4
-> >>   LR is at free_one_page+0x270/0x638
-> >>   ...
-> >>   Call trace:
-> >>   [<fffffe00003ee970>] __list_add+0x10/0xd4
-> >>   [<fffffe000019c478>] free_one_page+0x26c/0x638
-> >>   [<fffffe000019c8c8>] __free_pages_ok.part.52+0x84/0xbc
-> >>   [<fffffe000019d5e8>] __free_pages+0x74/0xbc
-> >>   [<fffffe0000c01350>] init_cma_reserved_pageblock+0xe8/0x104
-> >>   [<fffffe0000c24de0>] cma_init_reserved_areas+0x190/0x1e4
-> >>   [<fffffe0000090418>] do_one_initcall+0xc4/0x154
-> >>   [<fffffe0000bf0a50>] kernel_init_freeable+0x204/0x2a8
-> >>   [<fffffe00007520a0>] kernel_init+0xc/0xd4
-> >> 
-> >> This happens in this configuration because __free_one_page() is called
-> >> with an order greater than MAX_ORDER, accesses past zone->free_list[]
-> >> and passes a bogus list_head to list_add().
-> >> 
-> >> arch/arm64/Kconfig has:
-> >> 
-> >>   config FORCE_MAX_ZONEORDER
-> >> 	int
-> >> 	default "14" if (ARM64_64K_PAGES && TRANSPARENT_HUGEPAGE)
-> >> 	default "11"
-> >> 
-> >> So with THP turned off MAX_ORDER == 11 but init_cma_reserved_pageblock()
-> >> passes __free_pages() an order of pageblock_order which is based on
-> >> (HPAGE_SHIFT - PAGE_SHIFT) which is 13 for 64K pages. I worked around
-> >> this by removing the THP test so FORCE_MAX_ZONEORDER is always 14 for
-> >> ARM64_64K_PAGES.
-> >> 
-> >> Signed-off-by: Mark Salter <msalter@redhat.com>
-> >> ---
-> >>  arch/arm64/Kconfig | 2 +-
-> >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >> 
-> >> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> >> index 7295419..42a334e 100644
-> >> --- a/arch/arm64/Kconfig
-> >> +++ b/arch/arm64/Kconfig
-> >> @@ -269,7 +269,7 @@ config XEN
-> >>  
-> >>  config FORCE_MAX_ZONEORDER
-> >>  	int
-> >> -	default "14" if (ARM64_64K_PAGES && TRANSPARENT_HUGEPAGE)
-> >> +	default "14" if ARM64_64K_PAGES
-> >>  	default "11"
-> >>  
-> >>  endmenu
-> >
-> > Any reason to not switch this to
-> >
-> > 	ARM64_64K_PAGES && TRANSPARENT_HUGEPAGE && CMA
-> >
-> > instead?  If pageblock_order > MAX_ORDER because of 
-> > HPAGE_SHIFT > PAGE_SHIFT, then cma is always going to be passing a 
-> > too-large-order to free_pages_prepare() via this path.
-> >
-> > Adding Michal and Marek to the cc.
+On Thu, Jun 19, 2014 at 07:24:18AM +0200, Mike Galbraith wrote:
+> On Wed, 2014-06-18 at 21:19 -0700, Paul E. McKenney wrote: 
+> > On Wed, Jun 18, 2014 at 08:38:16PM -0700, Andi Kleen wrote:
+> > > On Wed, Jun 18, 2014 at 07:13:37PM -0700, Paul E. McKenney wrote:
+> > > > On Wed, Jun 18, 2014 at 06:42:00PM -0700, Andi Kleen wrote:
+> > > > > 
+> > > > > I still think it's totally the wrong direction to pollute so 
+> > > > > many fast paths with this obscure debugging check workaround
+> > > > > unconditionally.
+> > > > 
+> > > > OOM prevention should count for something, I would hope.
+> > > 
+> > > OOM in what scenario? This is getting bizarre.
+> > 
+> > On the bizarre part, at least we agree on something.  ;-)
+> > 
+> > CONFIG_NO_HZ_FULL booted with at least one nohz_full CPU.  Said CPU
+> > gets into the kernel and stays there, not necessarily generating RCU
+> > callbacks.  The other CPUs are very likely generating RCU callbacks.
+> > Because the nohz_full CPU is in the kernel, and because there are no
+> > scheduling-clock interrupts on that CPU, grace periods do not complete.
+> > Eventually, the callbacks from the other CPUs (and perhaps also some
+> > from the nohz_full CPU, for that matter) OOM the machine.
+> > 
+> > Now this scenario constitutes an abuse of CONFIG_NO_HZ_FULL, because it
+> > is intended for CPUs that execute either in userspace (in which case
+> > those CPUs are in extended quiescent states so that RCU can happily
+> > ignore them) or for real-time workloads with low CPU untilization (in
+> > which case RCU sees them go idle, which is also a quiescent state).
+> > But that won't stop people from abusing their kernels and complaining
+> > when things break.
 > 
-> The correct fix would be to change init_cma_reserved_pageblock such that
-> it checks whether pageblock_order > MAX_ORDER and if so frees each max
-> order page of the pageblock individually:
+> IMHO, those people can keep the pieces.
 > 
-> --------- >8 ---------------------------------------------------------
-> From: Michal Nazarewicz <mina86@mina86.com>
-> Subject: [PATCH] mm: cma: fix cases where pageblock is bigger then MAX_ORDER
-> 
-> With a kernel configured with ARM64_64K_PAGES && !TRANSPARENT_HUGEPAGE,
-> the following is triggered at early boot:
-> 
->   SMP: Total of 8 processors activated.
->   devtmpfs: initialized
->   Unable to handle kernel NULL pointer dereference at virtual address 00000008
->   pgd = fffffe0000050000
->   [00000008] *pgd=00000043fba00003, *pmd=00000043fba00003, *pte=00e0000078010407
->   Internal error: Oops: 96000006 [#1] SMP
->   Modules linked in:
->   CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc864k+ #44
->   task: fffffe03bc040000 ti: fffffe03bc080000 task.ti: fffffe03bc080000
->   PC is at __list_add+0x10/0xd4
->   LR is at free_one_page+0x270/0x638
->   ...
->   Call trace:
->   [<fffffe00003ee970>] __list_add+0x10/0xd4
->   [<fffffe000019c478>] free_one_page+0x26c/0x638
->   [<fffffe000019c8c8>] __free_pages_ok.part.52+0x84/0xbc
->   [<fffffe000019d5e8>] __free_pages+0x74/0xbc
->   [<fffffe0000c01350>] init_cma_reserved_pageblock+0xe8/0x104
->   [<fffffe0000c24de0>] cma_init_reserved_areas+0x190/0x1e4
->   [<fffffe0000090418>] do_one_initcall+0xc4/0x154
->   [<fffffe0000bf0a50>] kernel_init_freeable+0x204/0x2a8
->   [<fffffe00007520a0>] kernel_init+0xc/0xd4
-> 
-> This happens in this configuration because __free_one_page() is called
-> with an order greater than MAX_ORDER, accesses past zone->free_list[]
-> and passes a bogus list_head to list_add().
-> 
-> arch/arm64/Kconfig has:
-> 
->   config FORCE_MAX_ZONEORDER
-> 	int
-> 	default "14" if (ARM64_64K_PAGES && TRANSPARENT_HUGEPAGE)
-> 	default "11"
-> 
-> So with THP turned off MAX_ORDER == 11 but init_cma_reserved_pageblock()
-> passes __free_pages() an order of pageblock_order which is based on
-> (HPAGE_SHIFT - PAGE_SHIFT) which is 13 for 64K pages.
-> 
-> Fix the problem by changing init_cma_reserved_pageblock() such that it
-> splits pageblock into individual MAX_ORDER pages if pageblock is
-> bigger than a MAX_ORDER page.
-> 
-> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> Reported-by: Mark Salter <msalter@redhat.com>
-> ---
->  mm/page_alloc.c | 10 +++++++++-
->  1 file changed, 9 insertions(+), 1 deletion(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 5dba293..6e657ce 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -801,7 +801,15 @@ void __init init_cma_reserved_pageblock(struct page *page)
->  
->  	set_page_refcounted(page);
->  	set_pageblock_migratetype(page, MIGRATE_CMA);
-> -	__free_pages(page, pageblock_order);
-> +	if (pageblock_order > MAX_ORDER) {
-> +		struct page *subpage = p;
-> +		unsigned count = 1 << (pageblock_order - MAX_ORDER);
-> +		do {
-> +			__free_pages(subpage, pageblock_order);
-                                               ^^^^^^^
-                                               MAX_ORDER
+> I don't even enable RCU_BOOST in -rt kernels, because that safety net
+> has a price.  The instant Joe User picks up the -rt shovel, it's his
+> grave, and he gets to do the digging.  Instead of trying to save his
+> bacon, I hand him a slightly better shovel, let him prioritize all
+> kthreads including workqueues.  Joe can dig all he wants to, and it's on
+> him, I just make sure he has the means to bury himself properly :)
 
-> +		} while (subpage += MAX_ORDER_NR_PAGES, --count);
-> +	} else {
-> +		__free_pages(page, pageblock_order);
-> +	}
->  	adjust_managed_page_count(page, pageblock_nr_pages);
->  }
->  #endif
-> --------- >8 ---------------------------------------------------------
-> 
-> Thoughts?  This has not been tested and I think it may cause performance
-> degradation in some cases since pageblock_order is not always
-> a constant, so the comparison may end up not being stripped away even on
-> systems where it's always false.
-> 
+One of the nice things about NO_HZ_FULL is that it should reduce the
+need for RCU_BOOST.  One of the purposes of RCU_BOOST is for the guy
+who has an infinite-loop bug in a high-priority RT-priority process,
+because such processes can starve out low-priority RCU readers.  But
+with a properly configured NO_HZ_FULL system, the low-priority processes
+aren't sharing CPUs with the RT-priority processes.
 
-This works with the above tweak. So it fixes the problm here, but I was
-not sure if we'd get bitten elsewhere by pageblock_order > MAX_ORDER.
-It will be slower, but does it only gets called a few time at most at
-boot time, right?
+In fact, it might be worth making RCU_BOOST depend on !NO_HZ_FULL in -rt.
 
+> > This same thing can also happen without CONFIG_NO_HZ full, though
+> > the system has to work a bit harder.  In this case, the CPU looping
+> > in the kernel has scheduling-clock interrupts, but if all it does
+> > is cond_resched(), RCU is never informed of any quiescent states.
+> > The whole point of this patch is to make those cond_resched() calls,
+> > which are quiescent states, visible to RCU.
+> > 
+> > > If something keeps looping forever in the kernel creating 
+> > > RCU callbacks without any real quiescent states it's simply broken.
+> > 
+> > I could get behind that.  But by that definition, there is a lot of
+> > breakage in the current kernel, especially as we move to larger CPU
+> > counts.
+> 
+> Not only larger CPU counts: skipping the -rq clock update on wakeup
+> (cycle saving optimization) turned out to be deadly to boxen with a
+> zillion disks because our wakeup latency can be so incredibly horrible
+> that falsely attributing wakeup latency to the next task to run
+> (watchdog) resulted in it being throttled for long enough that big IO
+> boxen panicked during boot.
+> 
+> The root cause of that wasn't the optimization, the root was the
+> horrific amounts of time we can spend locked up in the kernel.
+
+Completely agreed!
+
+							Thanx, Paul
 
