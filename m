@@ -1,224 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845AbaFSE2A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 00:28:00 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:64408 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752419AbaFSE14 convert rfc822-to-8bit (ORCPT
+	id S1752358AbaFSEeF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 00:34:05 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:44670 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782AbaFSEeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 00:27:56 -0400
+	Thu, 19 Jun 2014 00:34:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAF6AEGtzv0+PoMwSfK=NTYAO=bxsnS2BcwLxLNmLqnGTEUV8ng@mail.gmail.com>
-References: <20140618102957.15728.43525.stgit@patser> <20140618103653.15728.4942.stgit@patser>
- <20140619011653.GF10921@kroah.com> <CAF6AEGtzv0+PoMwSfK=NTYAO=bxsnS2BcwLxLNmLqnGTEUV8ng@mail.gmail.com>
-From: Sumit Semwal <sumit.semwal@linaro.org>
-Date: Thu, 19 Jun 2014 09:57:35 +0530
-Message-ID: <CAO_48GF_hb5PZFwEmx8vsy+gW=Mq=cnEq8H4W74hCdz9qg0+SQ@mail.gmail.com>
-Subject: Re: [REPOST PATCH 1/8] fence: dma-buf cross-device synchronization (v17)
-To: Rob Clark <robdclark@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-arch@vger.kernel.org, Thomas Hellstrom <thellstrom@vmware.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Colin Cross <ccross@google.com>, Daniel Vetter <daniel@ffwll.ch>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+In-Reply-To: <20140618102623.GQ19730@lukather>
+References: <1403016777-15121-1-git-send-email-wens@csie.org>
+ <1403016777-15121-13-git-send-email-wens@csie.org> <20140618102623.GQ19730@lukather>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Thu, 19 Jun 2014 12:33:41 +0800
+X-Google-Sender-Auth: 4RKnPFKnVVu5HMyzLvGp85TdcrM
+Message-ID: <CAGb2v64D6qBtXGXzn25443s_oj_=Z-u_P6+-MX52Lz54+9bQyQ@mail.gmail.com>
+Subject: Re: [PATCH v2 12/20] clk: sunxi: Add A23 APB0 support to sun6i-a31-apb0-clk
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Luc Verhaegen <libv@skynet.be>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-On 19 June 2014 06:55, Rob Clark <robdclark@gmail.com> wrote:
-> On Wed, Jun 18, 2014 at 9:16 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> On Wed, Jun 18, 2014 at 12:36:54PM +0200, Maarten Lankhorst wrote:
->>> A fence can be attached to a buffer which is being filled or consumed
->>> by hw, to allow userspace to pass the buffer without waiting to another
->>> device.  For example, userspace can call page_flip ioctl to display the
->>> next frame of graphics after kicking the GPU but while the GPU is still
->>> rendering.  The display device sharing the buffer with the GPU would
->>> attach a callback to get notified when the GPU's rendering-complete IRQ
->>> fires, to update the scan-out address of the display, without having to
->>> wake up userspace.
->>>
->>> A driver must allocate a fence context for each execution ring that can
->>> run in parallel. The function for this takes an argument with how many
->>> contexts to allocate:
->>>   + fence_context_alloc()
->>>
->>> A fence is transient, one-shot deal.  It is allocated and attached
->>> to one or more dma-buf's.  When the one that attached it is done, with
->>> the pending operation, it can signal the fence:
->>>   + fence_signal()
->>>
->>> To have a rough approximation whether a fence is fired, call:
->>>   + fence_is_signaled()
->>>
->>> The dma-buf-mgr handles tracking, and waiting on, the fences associated
->>> with a dma-buf.
->>>
->>> The one pending on the fence can add an async callback:
->>>   + fence_add_callback()
->>>
->>> The callback can optionally be cancelled with:
->>>   + fence_remove_callback()
->>>
->>> To wait synchronously, optionally with a timeout:
->>>   + fence_wait()
->>>   + fence_wait_timeout()
->>>
->>> When emitting a fence, call:
->>>   + trace_fence_emit()
->>>
->>> To annotate that a fence is blocking on another fence, call:
->>>   + trace_fence_annotate_wait_on(fence, on_fence)
->>>
->>> A default software-only implementation is provided, which can be used
->>> by drivers attaching a fence to a buffer when they have no other means
->>> for hw sync.  But a memory backed fence is also envisioned, because it
->>> is common that GPU's can write to, or poll on some memory location for
->>> synchronization.  For example:
->>>
->>>   fence = custom_get_fence(...);
->>>   if ((seqno_fence = to_seqno_fence(fence)) != NULL) {
->>>     dma_buf *fence_buf = seqno_fence->sync_buf;
->>>     get_dma_buf(fence_buf);
->>>
->>>     ... tell the hw the memory location to wait ...
->>>     custom_wait_on(fence_buf, seqno_fence->seqno_ofs, fence->seqno);
->>>   } else {
->>>     /* fall-back to sw sync * /
->>>     fence_add_callback(fence, my_cb);
->>>   }
->>>
->>> On SoC platforms, if some other hw mechanism is provided for synchronizing
->>> between IP blocks, it could be supported as an alternate implementation
->>> with it's own fence ops in a similar way.
->>>
->>> enable_signaling callback is used to provide sw signaling in case a cpu
->>> waiter is requested or no compatible hardware signaling could be used.
->>>
->>> The intention is to provide a userspace interface (presumably via eventfd)
->>> later, to be used in conjunction with dma-buf's mmap support for sw access
->>> to buffers (or for userspace apps that would prefer to do their own
->>> synchronization).
->>>
->>> v1: Original
->>> v2: After discussion w/ danvet and mlankhorst on #dri-devel, we decided
->>>     that dma-fence didn't need to care about the sw->hw signaling path
->>>     (it can be handled same as sw->sw case), and therefore the fence->ops
->>>     can be simplified and more handled in the core.  So remove the signal,
->>>     add_callback, cancel_callback, and wait ops, and replace with a simple
->>>     enable_signaling() op which can be used to inform a fence supporting
->>>     hw->hw signaling that one or more devices which do not support hw
->>>     signaling are waiting (and therefore it should enable an irq or do
->>>     whatever is necessary in order that the CPU is notified when the
->>>     fence is passed).
->>> v3: Fix locking fail in attach_fence() and get_fence()
->>> v4: Remove tie-in w/ dma-buf..  after discussion w/ danvet and mlankorst
->>>     we decided that we need to be able to attach one fence to N dma-buf's,
->>>     so using the list_head in dma-fence struct would be problematic.
->>> v5: [ Maarten Lankhorst ] Updated for dma-bikeshed-fence and dma-buf-manager.
->>> v6: [ Maarten Lankhorst ] I removed dma_fence_cancel_callback and some comments
->>>     about checking if fence fired or not. This is broken by design.
->>>     waitqueue_active during destruction is now fatal, since the signaller
->>>     should be holding a reference in enable_signalling until it signalled
->>>     the fence. Pass the original dma_fence_cb along, and call __remove_wait
->>>     in the dma_fence_callback handler, so that no cleanup needs to be
->>>     performed.
->>> v7: [ Maarten Lankhorst ] Set cb->func and only enable sw signaling if
->>>     fence wasn't signaled yet, for example for hardware fences that may
->>>     choose to signal blindly.
->>> v8: [ Maarten Lankhorst ] Tons of tiny fixes, moved __dma_fence_init to
->>>     header and fixed include mess. dma-fence.h now includes dma-buf.h
->>>     All members are now initialized, so kmalloc can be used for
->>>     allocating a dma-fence. More documentation added.
->>> v9: Change compiler bitfields to flags, change return type of
->>>     enable_signaling to bool. Rework dma_fence_wait. Added
->>>     dma_fence_is_signaled and dma_fence_wait_timeout.
->>>     s/dma// and change exports to non GPL. Added fence_is_signaled and
->>>     fence_enable_sw_signaling calls, add ability to override default
->>>     wait operation.
->>> v10: remove event_queue, use a custom list, export try_to_wake_up from
->>>     scheduler. Remove fence lock and use a global spinlock instead,
->>>     this should hopefully remove all the locking headaches I was having
->>>     on trying to implement this. enable_signaling is called with this
->>>     lock held.
->>> v11:
->>>     Use atomic ops for flags, lifting the need for some spin_lock_irqsaves.
->>>     However I kept the guarantee that after fence_signal returns, it is
->>>     guaranteed that enable_signaling has either been called to completion,
->>>     or will not be called any more.
->>>
->>>     Add contexts and seqno to base fence implementation. This allows you
->>>     to wait for less fences, by testing for seqno + signaled, and then only
->>>     wait on the later fence.
->>>
->>>     Add FENCE_TRACE, FENCE_WARN, and FENCE_ERR. This makes debugging easier.
->>>     An CONFIG_DEBUG_FENCE will be added to turn off the FENCE_TRACE
->>>     spam, and another runtime option can turn it off at runtime.
->>> v12:
->>>     Add CONFIG_FENCE_TRACE. Add missing documentation for the fence->context
->>>     and fence->seqno members.
->>> v13:
->>>     Fixup CONFIG_FENCE_TRACE kconfig description.
->>>     Move fence_context_alloc to fence.
->>>     Simplify fence_later.
->>>     Kill priv member to fence_cb.
->>> v14:
->>>     Remove priv argument from fence_add_callback, oops!
->>> v15:
->>>     Remove priv from documentation.
->>>     Explicitly include linux/atomic.h.
->>> v16:
->>>     Add trace events.
->>>     Import changes required by android syncpoints.
->>> v17:
->>>     Use wake_up_state instead of try_to_wake_up. (Colin Cross)
->>>     Fix up commit description for seqno_fence. (Rob Clark)
->>>
->>> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
->>> Signed-off-by: Thierry Reding <thierry.reding@gmail.com> #use smp_mb__before_atomic()
->>> Reviewed-by: Rob Clark <robdclark@gmail.com>
->>> ---
->>>  Documentation/DocBook/device-drivers.tmpl |    2
->>>  drivers/base/Kconfig                      |    9 +
->>>  drivers/base/Makefile                     |    2
->>>  drivers/base/fence.c                      |  416 +++++++++++++++++++++++++++++
->>>  include/linux/fence.h                     |  333 +++++++++++++++++++++++
->>>  include/trace/events/fence.h              |  128 +++++++++
->>>  6 files changed, 889 insertions(+), 1 deletion(-)
->>>  create mode 100644 drivers/base/fence.c
->>>  create mode 100644 include/linux/fence.h
->>>  create mode 100644 include/trace/events/fence.h
+On Wed, Jun 18, 2014 at 6:26 PM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> On Tue, Jun 17, 2014 at 10:52:49PM +0800, Chen-Yu Tsai wrote:
+>> The A23 has an almost identical PRCM clock tree. The difference in
+>> the APB0 clock is the smallest divisor is 1, instead of 2.
 >>
->> Who is going to sign up to maintain this code?  (hint, it's not me...)
->
-> that would be Sumit (dma-buf tree)..
->
-> probably we should move fence/reservation/dma-buf into drivers/dma-buf
-> (or something approximately like that)
-Yes, that would be me - it might be better to create a new directory
-as suggested above (drivers/dma-buf).
->
-> BR,
-> -R
->
->
->> thanks,
+>> This patch extends the sun6i-a31-apb0-clk driver to take divider
+>> tables associated to compatibles, and adds a compatible for the A23
+>> variant.
 >>
->> greg k-h
-Best regards,
-~Sumit.
+>> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+>> ---
+>>  Documentation/devicetree/bindings/clock/sunxi.txt |  1 +
+>>  drivers/clk/sunxi/clk-sun6i-apb0.c                | 28 ++++++++++++++++++-----
+>>  2 files changed, 23 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Documentation/devicetree/bindings/clock/sunxi.txt
+>> index af9e47d..e3a47ec 100644
+>> --- a/Documentation/devicetree/bindings/clock/sunxi.txt
+>> +++ b/Documentation/devicetree/bindings/clock/sunxi.txt
+>> @@ -28,6 +28,7 @@ Required properties:
+>>       "allwinner,sun8i-a23-ahb1-gates-clk" - for the AHB1 gates on A23
+>>       "allwinner,sun4i-a10-apb0-clk" - for the APB0 clock
+>>       "allwinner,sun6i-a31-apb0-clk" - for the APB0 clock on A31
+>> +     "allwinner,sun8i-a23-apb0-clk" - for the APB0 clock on A23
+>>       "allwinner,sun4i-a10-apb0-gates-clk" - for the APB0 gates on A10
+>>       "allwinner,sun5i-a13-apb0-gates-clk" - for the APB0 gates on A13
+>>       "allwinner,sun5i-a10s-apb0-gates-clk" - for the APB0 gates on A10s
+>> diff --git a/drivers/clk/sunxi/clk-sun6i-apb0.c b/drivers/clk/sunxi/clk-sun6i-apb0.c
+>> index 11f17c3..2197ac7 100644
+>> --- a/drivers/clk/sunxi/clk-sun6i-apb0.c
+>> +++ b/drivers/clk/sunxi/clk-sun6i-apb0.c
+>> @@ -11,6 +11,7 @@
+>>  #include <linux/clk-provider.h>
+>>  #include <linux/module.h>
+>>  #include <linux/of.h>
+>> +#include <linux/of_device.h>
+>>  #include <linux/platform_device.h>
+>>
+>>  /*
+>> @@ -28,6 +29,21 @@ static const struct clk_div_table sun6i_a31_apb0_divs[] = {
+
+For reference:
+
+static const struct clk_div_table sun6i_a31_apb0_divs[] = {
+        { .val = 0, .div = 2, },
+        { .val = 1, .div = 2, },
+        { .val = 2, .div = 4, },
+        { .val = 3, .div = 8, },
+        { /* sentinel */ },
+};
 
 
--- 
-Thanks and regards,
+>>       { /* sentinel */ },
+>>  };
+>>
+>> +/* The A23 APB0 clock has a standard power of 2 divisor */
+>
+> Why not just pass CLK_DIVIDER_POWER_OF_TWO then, instead of a table?
 
-Sumit Semwal
-Graphics Engineer - Graphics working group
-Linaro.org │ Open source software for ARM SoCs
+The A31 APB0 clock uses a table for the odd /2 divisor for value 0.
+The standard table I'm using for the A23 is just to keep it simple
+and alike.
+
+>> +static const struct clk_div_table sun8i_a23_apb0_divs[] = {
+>> +     { .val = 0, .div = 1, },
+>> +     { .val = 1, .div = 2, },
+>> +     { .val = 2, .div = 4, },
+>> +     { .val = 3, .div = 8, },
+>> +     { /* sentinel */ },
+>> +};
+>> +
+>> +const struct of_device_id sun6i_a31_apb0_clk_dt_ids[] = {
+>> +     { .compatible = "allwinner,sun6i-a31-apb0-clk", .data = &sun6i_a31_apb0_divs },
+>> +     { .compatible = "allwinner,sun8i-a23-apb0-clk", .data = &sun8i_a23_apb0_divs },
+>> +     { /* sentinel */ }
+>> +};
+>> +
+>>  static int sun6i_a31_apb0_clk_probe(struct platform_device *pdev)
+>>  {
+>>       struct device_node *np = pdev->dev.of_node;
+>> @@ -36,12 +52,17 @@ static int sun6i_a31_apb0_clk_probe(struct platform_device *pdev)
+>>       struct resource *r;
+>>       void __iomem *reg;
+>>       struct clk *clk;
+>> +     const struct of_device_id *device;
+>>
+>>       r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>       reg = devm_ioremap_resource(&pdev->dev, r);
+>>       if (IS_ERR(reg))
+>>               return PTR_ERR(reg);
+>>
+>> +     device = of_match_device(sun6i_a31_apb0_clk_dt_ids, &pdev->dev);
+>> +     if (!device)
+>> +             return -EINVAL;
+>> +
+>>       clk_parent = of_clk_get_parent_name(np, 0);
+>>       if (!clk_parent)
+>>               return -EINVAL;
+>> @@ -49,7 +70,7 @@ static int sun6i_a31_apb0_clk_probe(struct platform_device *pdev)
+>>       of_property_read_string(np, "clock-output-names", &clk_name);
+>>
+>>       clk = clk_register_divider_table(&pdev->dev, clk_name, clk_parent,
+>> -                                      0, reg, 0, 2, 0, sun6i_a31_apb0_divs,
+>> +                                      0, reg, 0, 2, 0, device->data,
+>
+> I'm not sure that it will actually work for the A31, since it does
+> define some dividers anyway, and the divider table is !NULL, even
+> though there's actually no dividers defined.
+
+I'm not following. The A31 does have a table defined. It's just cut
+off in this patch. I asked Boris to add the table when he was working
+on the A31 PRCM clocks. See above.
+
+
+Cheers
+ChenYu
