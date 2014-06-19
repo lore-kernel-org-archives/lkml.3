@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933905AbaFSQ7Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:59:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32639 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932232AbaFSQ7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:59:22 -0400
-Date: Thu, 19 Jun 2014 18:58:15 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 5/5] perf tools: Add report.show-headers config file
- option
-Message-ID: <20140619165815.GC31520@krava.brq.redhat.com>
-References: <1403178076-14072-1-git-send-email-jolsa@kernel.org>
- <1403178076-14072-6-git-send-email-jolsa@kernel.org>
- <1403182604.1670.26.camel@leonhard>
- <20140619152843.GB20252@kernel.org>
+	id S933944AbaFSRAZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 13:00:25 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:53909 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932232AbaFSRAY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 13:00:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] bug: Fix CONFIG_BUG=n BUG_ON()
+Date: Thu, 19 Jun 2014 19:00:14 +0200
+Message-ID: <5061693.b4BPIj9quA@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53A2E573.6080407@acm.org>
+References: <53A2E573.6080407@acm.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140619152843.GB20252@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:9seRW8KMWQ96XwQpDahM12Kav+3OeNA0F5PsMW9cZwV
+ DLCOS+4B+hy5KcjcB6/Z0BmktATtI/wtrHJFP6pKrKlY2+AUcD
+ bdUEQZV/YtpsvTKncEgDDAYt3UDFl/o4k5qx6aw7QuF0wxXN/3
+ LRPtFH/pK/uKhQUIm3gdvDBai9tRkyjXRBecZCs7YRm4clv0Sj
+ kIo421C2EkYGjKuKA50tWnBDJswwyF8PxgotjAIIci8ZFCg+2u
+ C1NXU5nYgawQmC9xOAyf3nZ5SL965GoF9HFtDVMvZJCteR+fsb
+ E7Qn7SUWYEAiME2q0IR4i11QkPX6iSqe8uhhf5dNWs1ETu/WnX
+ RV0p1MzGipsZgially4s=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 12:28:43PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Jun 19, 2014 at 09:56:44PM +0900, Namhyung Kim escreveu:
-> > 2014-06-19 (목), 13:41 +0200, Jiri Olsa:
-> > > Adding report.show-headers config file option to setup
-> > > the appearance of the columns headers.
-> > > 
-> > > Currently columns headers are displayed by default, following
-> > > lines in ~/.perfconfig file will disable that:
-> > > 
-> > >   [report]
-> > >         show-headers = true
-> > 
-> > This also applies to perf top, right?  And it's TUI-specific.  So how
-> > about calling it something like "tui.show-headers"?
+On Thursday 19 June 2014 15:28:19 Bart Van Assche wrote:
+> Patch "bug: Make BUG() always stop the machine" changed the
+> behavior of BUG() with CONFIG_BUG=n from a no-op into an infinite
+> loop. Modify the definition of BUG_ON() accordingly such that the
+> behavior of BUG_ON(1) is identical to that of BUG().
 > 
-> Why should it be TUI specific? You either show the headers or you don't,
-> in all UIs.
+> Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Josh Triplett <josh@joshtriplett.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>  include/asm-generic/bug.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> And also in all tools, I think, so I suggest putting it in some global,
-> for all tools, section in the config file, i.e. something like
-> all.show-headers.
+> diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+> index 630dd23..f3241cd 100644
+> --- a/include/asm-generic/bug.h
+> +++ b/include/asm-generic/bug.h
+> @@ -142,7 +142,7 @@ extern void warn_slowpath_null(const char *file, const int line);
+>  #endif
+>  
+>  #ifndef HAVE_ARCH_BUG_ON
+> -#define BUG_ON(condition) do { if (condition) ; } while (0)
+> +#define BUG_ON(condition) do { } while (unlikely(condition))
+>  #endif
+>  
+>  #ifndef HAVE_ARCH_WARN_ON
+> 
 
-seems like so far we have 'core.' and 'hist.' as non-command specific
-config sections (note '.core' does not hold any options yet)
+How about making it 
 
-I can add another 'all.' section
+	do { if (condition) BUG(); } while (0)
 
-jirka
+That way it can be optimized for architectures that have their own
+BUG but not BUG_ON.
+
+	Arnd
