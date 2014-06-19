@@ -1,120 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932796AbaFSM2S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 08:28:18 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:60295 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932300AbaFSM2P (ORCPT
+	id S932909AbaFSM2l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 08:28:41 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:56425 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932300AbaFSM2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 08:28:15 -0400
+	Thu, 19 Jun 2014 08:28:39 -0400
+Message-ID: <53A2D771.3000700@gmail.com>
+Date: Thu, 19 Jun 2014 15:28:33 +0300
+From: Nadav Amit <nadav.amit@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <20140619114825.GB28111@ulmo>
-References: <20140618102957.15728.43525.stgit@patser>
-	<20140618103711.15728.97842.stgit@patser>
-	<20140619011556.GE10921@kroah.com>
-	<20140619063727.GL5821@phenom.ffwll.local>
-	<20140619114825.GB28111@ulmo>
-Date: Thu, 19 Jun 2014 14:28:14 +0200
-X-Google-Sender-Auth: vX6QDDYVnW9vBoXAnCIOV1T9zDs
-Message-ID: <CAKMK7uE_B3pCZB9orh5+BJGooNfyEa0APrZqRpXqYu5xfQ0PCQ@mail.gmail.com>
-Subject: Re: [REPOST PATCH 4/8] android: convert sync to fence api, v5
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-arch@vger.kernel.org, Thomas Hellstrom <thellstrom@vmware.com>,
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Gleb Natapov <gleb@kernel.org>, "Gabriel L. Somlo" <gsomlo@gmail.com>,
+        Eric Northup <digitaleric@google.com>,
+        Nadav Amit <namit@cs.technion.ac.il>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "Clark, Rob" <robdclark@gmail.com>, Colin Cross <ccross@google.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        KVM <kvm@vger.kernel.org>, joro@8bytes.org, agraf@suse.de
+Subject: Re: [PATCH 3/3] KVM: x86: correct mwait and monitor emulation
+References: <CAG7+5M1T=OSqMLOJjb-txRCL_J_q=KSNV9yOfeP=98YuyD27Fw@mail.gmail.com> <20140618184601.GE1695@ERROL.INI.CMU.EDU> <20140619101811.GA5777@redhat.com> <1B06E887-9D07-4E85-AE06-75B01787C488@gmail.com> <20140619112356.GB429@minantech.com> <53A2CEF4.3050902@gmail.com> <20140619120739.GA7289@minantech.com> <53A2D32D.8020305@gmail.com> <20140619121756.GA28523@redhat.com>
+In-Reply-To: <20140619121756.GA28523@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 1:48 PM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
->> > With these changes, can we pull the android sync logic out of
->> > drivers/staging/ now?
+On 6/19/14, 3:17 PM, Michael S. Tsirkin wrote:
+> On Thu, Jun 19, 2014 at 03:10:21PM +0300, Nadav Amit wrote:
+>> On 6/19/14, 3:07 PM, Gleb Natapov wrote:
+>>> On Thu, Jun 19, 2014 at 02:52:20PM +0300, Nadav Amit wrote:
+>>>> On 6/19/14, 2:23 PM, Gleb Natapov wrote:
+>>>>> On Thu, Jun 19, 2014 at 01:53:36PM +0300, Nadav Amit wrote:
+>>>>>>
+>>>>>> On Jun 19, 2014, at 1:18 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+>>>>>>
+>>>>>>> On Wed, Jun 18, 2014 at 02:46:01PM -0400, Gabriel L. Somlo wrote:
+>>>>>>>> On Wed, Jun 18, 2014 at 10:59:14AM -0700, Eric Northup wrote:
+>>>>>>>>> On Wed, Jun 18, 2014 at 7:19 AM, Nadav Amit <namit@cs.technion.ac.il> wrote:
+>>>>>>>>>> mwait and monitor are currently handled as nop. Considering this behavior, they
+>>>>>>>>>> should still be handled correctly, i.e., check execution conditions and generate
+>>>>>>>>>> exceptions when required. mwait and monitor may also be executed in real-mode
+>>>>>>>>>> and are not handled in that case.  This patch performs the emulation of
+>>>>>>>>>> monitor-mwait according to Intel SDM (other than checking whether interrupt can
+>>>>>>>>>> be used as a break event).
+>>>>>>>>>>
+>>>>>>>>>> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+>>>>>>>>
+>>>>>>>> How about this instead (details in the commit log below) ? Please let
+>>>>>>>> me know what you think, and if you'd prefer me to send it out as a
+>>>>>>>> separate patch rather than a reply to this thread.
+>>>>>>>>
+>>>>>>>> Thanks,
+>>>>>>>> --Gabriel
+>>>>>>>
+>>>>>>> If there's an easy workaround, I'm inclined to agree.
+>>>>>>> We can always go back to Gabriel's patch (and then we'll need
+>>>>>>> Nadav's one too) but if we release a kernel with this
+>>>>>>> support it becomes an ABI and we can't go back.
+>>>>>>>
+>>>>>>> So let's be careful here, and revert the hack for 3.16.
+>>>>>>>
+>>>>>>>
+>>>>>>> Acked-by: Michael S. Tsirkin <mst@redhat.com>
+>>>>>>>
+>>>>>> Personally, I got a custom guest which requires mwait for executing correctly.
+>>>>> Can you elaborate on this guest a little bit. With nop implementation
+>>>>> for mwait the guest will hog a host cpu. Do you consider this to be
+>>>>> "executing correctly?"
+>>>>>
+>>>>> --
+>>>>
+>>>> mwait is not as "clean" as it may appear. It encounters false wake-ups due
+>>>> to a variety of reasons, and any code need to recheck the wake-up condition
+>>>> afterwards. Actually, some CPUs had bugs that caused excessive wake-ups that
+>>>> degraded performance considerably (Nehalem, if I am not mistaken).
+>>>> Therefore, handling mwait as nop is logically correct (although it may
+>>>> degrade performance).
+>>>>
+>>>> For the reference, if you look at the SDM 8.10.4, you'll see:
+>>>> "Multiple events other than a write to the triggering address range can
+>>>> cause a processor that executed MWAIT to wake up. These include events that
+>>>> would lead to voluntary or involuntary context switches, such as..."
+>>>>
+>>>> Note the words "include" in the sentence "These include events". Software
+>>>> has no way of controlling whether it gets false wake-ups and cannot rely on
+>>>> the wake-up as indication to anything.
+>>>>
+>>> That's all well and good and I didn't say that nop is not a valid
+>>> mwait implementation, it is, though there is a big difference between
+>>> "encounters false wake-ups" and never sleeps.  What I asked is do you
+>>> consider your guest hogging host cpu to be "executing correctly?". What
+>>> this guest is doing that such behaviour is tolerated and shouldn't it
+>>> be better to just poll for a condition you are waiting for instead of
+>>> executing expensive vmexits. This will also hog 100% host cpu, but will
+>>> be actually faster.
+>>>
+>> You are correct, but unfortunately I have no control over the guest
+>> workload. In this specific workload I do not care about performance but only
+>> about correctness.
 >>
->> Afaik the google guys never really looked at this and acked it. So I'm not
->> sure whether they'll follow along. The other issue I have as the
->> maintainer of gfx driver is that I don't want to implement support for two
->> different sync object primitives (once for dma-buf and once for android
->> syncpts), and my impression thus far has been that even with this we're
->> not there.
->>
->> I'm trying to get our own android guys to upstream their i915 syncpts
->> support, but thus far I haven't managed to convince them to throw people's
->> time at this.
+>> Nadav
 >
-> This has been discussed a fair bit internally recently and some of our
-> GPU experts have raised concerns that this may result in seriously
-> degraded performance in our proprietary graphics stack. Now I don't care
-> very much for the proprietary graphics stack, but by extension I would
-> assume that the same restrictions are relevant for any open-source
-> driver as well.
+> No one prevents you from patching your kernel to run this workload.  But
+> is this of use to anyone else? If yes why?
 >
-> I'm still trying to fully understand all the implications and at the
-> same time get some of the people who raised concerns to join in this
-> discussion. As I understand it the concern is mostly about explicit vs.
-> implicit synchronization and having this mechanism in the kernel will
-> implicitly synchronize all accesses to these buffers even in cases where
-> it's not needed (read vs. write locks, etc.). In one particular instance
-> it was even mentioned that this kind of implicit synchronization can
-> lead to deadlocks in some use-cases (this was mentioned for Android
-> compositing, but I suspect that the same may happen for Wayland or X
-> compositors).
+I do not say it should be the default behavior, and I can try to push to 
+qemu some setting to turn it on by demand.
 
-Well the implicit fences here actually can't deadlock. That's the
-entire point behind using ww mutexes. I've also heard tons of
-complaints about implicit enforced syncing (especially from opencl
-people), but in the end drivers and always expose unsynchronized
-access for specific cases. We do that in i915 for upload buffers and
-other fun stuff. This is about shared stuff across different drivers
-and different processes.
+Anyhow, I believe there are cases you may want mwait support - either an 
+OS X guest which was not modified to run without mwait, or for debugging 
+the monitor-mwait flow of a guest OS.
 
-I also expect that i915 will loose implicit syncing in a few upcoming
-hw modes because explicit syncing is a more natural fit there.
+I am not going to argue too much. Since I was under the impression there 
+are needs for mwait, other than mine, I thought it would make all of our 
+lives easier to have a better implementation.
 
-All that isn't about the discussion at hand imo since no matter what
-i915 needs to have on internal representation for a bit of gpu work,
-and afaics right now we don't have that. With this patch android
-syncpts use Maarten's fences internally, but I can't freely exchange
-one for the other. So in i915 I still expect to get stuck with both of
-them, which is one too many.
-
-The other issue (and I haven't dug into details that much) I have with
-syncpts are some of the interface choices. Apparently you can commit a
-fence after creation (or at least the hw composer interface works like
-that) which means userspace can construct deadlocks with android
-syncpts if I'm not super careful in my driver. I haven't seen any
-generic code to do that, so I presume everyone just blindly trusts
-surface-flinger to not do that. Speaks of the average quality of an
-android gfx driver if the kernel is less trusted than the compositor
-in userspace ...
-
-There's a few other things like exposing timestamps (which are tricky
-to do right, our driver is littered with wrong attempts) and other
-details.
-
-Finally I've never seen anyone from google or any android product guy
-push a real driver enabling for syncpts to upstream, and google itself
-has a bit a history of constantly exchanging their gfx framework for
-the next best thing. So I really doubt this is worthwhile to pursue in
-upstream with our essentially eternal api guarantees. At least until
-we see serious uptake from vendors and gfx driver guys. Unfortunately
-the Intel android folks are no exception here and haven't pushed
-anything like this in my direction yet at all. Despite multiple pokes
-from my side.
-
-So from my side I think we should move ahead with Maarten's work and
-figure the android side out once there's real interest.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Nadav
