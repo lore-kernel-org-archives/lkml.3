@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757889AbaFSSlO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 14:41:14 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:56360 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756850AbaFSSlM (ORCPT
+	id S934230AbaFSSnQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 14:43:16 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:51770 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756018AbaFSSnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 14:41:12 -0400
+	Thu, 19 Jun 2014 14:43:14 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, javier.martinez@collabora.co.uk,
+        ch.naveen@samsung.com, jg1.han@samsung.com, jdelvare@suse.de,
+        sjg@google.com, paul.gortmaker@windriver.com, standby24x7@gmail.com,
+        sachin.kamat@linaro.org, linux-i2c@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: exynos5: Properly use the "noirq" variants of suspend/resume
+References: <1403155273-1057-1-git-send-email-dianders@chromium.org>
+Date: Thu, 19 Jun 2014 11:43:11 -0700
+In-Reply-To: <1403155273-1057-1-git-send-email-dianders@chromium.org> (Doug
+	Anderson's message of "Wed, 18 Jun 2014 22:21:13 -0700")
+Message-ID: <7h8uosyc3k.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20140619052910.GP5500@mwanda>
-References: <1403144681-6902-1-git-send-email-xerofoify@gmail.com>
-	<20140619052910.GP5500@mwanda>
-Date: Thu, 19 Jun 2014 14:41:11 -0400
-Message-ID: <CAPDOMViz=cte8_YkxFMLSZmsgC5LysDMoNCokB8f4A3YKmDhSg@mail.gmail.com>
-Subject: Re: [PATCH] staging: rtl8192e: check return value of dev_skb_alloc
-From: Nick Krause <xerofoify@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
-        ben@decadent.org.uk, lisa@xenapiadmin.com,
-        Valentina Manea <valentina.manea.m@gmail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey  guys,
-Sorry about no reply,
-my power supply died last night,
-have to get a new one. I will be RMAing
-the old old in order to get a packup in
-case this PSU dies.
-Cheers Nick
+Doug Anderson <dianders@chromium.org> writes:
 
+> The original code for the exynos i2c controller registered for the
+> "noirq" variants.  However during review feedback it was moved to
+> SIMPLE_DEV_PM_OPS without anyone noticing that it meant we were no
+> longer actually "noirq" (despite functions named
+> exynos5_i2c_suspend_noirq and exynos5_i2c_resume_noirq).
+>
+> i2c controllers that might have wakeup sources on them seem to need to
+> resume at noirq time so that the individual drivers can actually read
+> the i2c bus to handle their wakeup.
 
-On Thu, Jun 19, 2014 at 1:29 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> On Wed, Jun 18, 2014 at 10:24:41PM -0400, Nicholas Krause wrote:
->> Checks if dev_skb_alloc returns Null in function, fw_download_code.
->> If the return value of dev_skb_alloc is NULL return false and exit
->> this function.
->> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->> ---
->>  drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 2 ++
->>  1 file changed, 2 insertions(+)
->>
->> diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
->> index 1a95d1f..38ae236 100644
->> --- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
->> +++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
->> @@ -62,6 +62,8 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
->>
->>               skb  = dev_alloc_skb(frag_length + 4);
->>               memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
->> +             if (!skb)
->> +                     return !rt_status;
->
-> What's this !rt_status?  Just return false.
->
-> regards,
-> dan carpenter
->
+I suspect usage of the noirq variants pre-dates the existence of the
+late/early callbacks in the PM core, but based on the description above,
+I suspect what you actually want is the late/early callbacks.
+
+Kevin
