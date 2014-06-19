@@ -1,85 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934616AbaFSUdI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 16:33:08 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:51156 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071AbaFSUdH (ORCPT
+	id S934623AbaFSUeg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 16:34:36 -0400
+Received: from mx5-phx2.redhat.com ([209.132.183.37]:58786 "EHLO
+	mx5-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754264AbaFSUee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 16:33:07 -0400
-Message-ID: <53A348E6.3050404@oracle.com>
-Date: Thu, 19 Jun 2014 16:32:38 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 19 Jun 2014 16:34:34 -0400
+Date: Thu, 19 Jun 2014 16:33:45 -0400 (EDT)
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        peterz@infradead.org, gleb@kernel.org, eranian@google.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <378397117.29564840.1403210025829.JavaMail.zimbra@redhat.com>
+In-Reply-To: <20140619173326.GS8178@tassilo.jf.intel.com>
+References: <1401412327-14810-1-git-send-email-andi@firstfloor.org> <1401412327-14810-5-git-send-email-andi@firstfloor.org> <20140610180448.GA9485@amt.cnet> <20140610192207.GC8178@tassilo.jf.intel.com> <20140610210654.GA16344@amt.cnet> <53A2F6E3.6020703@redhat.com> <20140619173326.GS8178@tassilo.jf.intel.com>
+Subject: Re: [PATCH 4/4] kvm: Implement PEBS virtualization
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>
-CC: Christoph Lameter <cl@gentwo.org>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: slub/debugobjects: lockup when freeing memory
-References: <53A2F406.4010109@oracle.com> <alpine.DEB.2.11.1406191001090.2785@gentwo.org> <20140619165247.GA4904@linux.vnet.ibm.com> <alpine.DEB.2.10.1406192127100.5170@nanos> <20140619202928.GG4904@linux.vnet.ibm.com>
-In-Reply-To: <20140619202928.GG4904@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF29 (Linux)/8.0.6_GA_5922)
+Thread-Topic: Implement PEBS virtualization
+Thread-Index: Ewoot2mDHbTuEaaFTJqjuTr5hq6EIg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2014 04:29 PM, Paul E. McKenney wrote:
-> On Thu, Jun 19, 2014 at 09:29:08PM +0200, Thomas Gleixner wrote:
->> > On Thu, 19 Jun 2014, Paul E. McKenney wrote:
->> > 
->>> > > On Thu, Jun 19, 2014 at 10:03:04AM -0500, Christoph Lameter wrote:
->>>> > > > On Thu, 19 Jun 2014, Sasha Levin wrote:
->>>> > > > 
->>>>> > > > > [  690.770137] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
->>>>> > > > > [  690.770137] __slab_alloc (mm/slub.c:1732 mm/slub.c:2205 mm/slub.c:2369)
->>>>> > > > > [  690.770137] ? __lock_acquire (kernel/locking/lockdep.c:3189)
->>>>> > > > > [  690.770137] ? __debug_object_init (lib/debugobjects.c:100 lib/debugobjects.c:312)
->>>>> > > > > [  690.770137] kmem_cache_alloc (mm/slub.c:2442 mm/slub.c:2484 mm/slub.c:2489)
->>>>> > > > > [  690.770137] ? __debug_object_init (lib/debugobjects.c:100 lib/debugobjects.c:312)
->>>>> > > > > [  690.770137] ? debug_object_activate (lib/debugobjects.c:439)
->>>>> > > > > [  690.770137] __debug_object_init (lib/debugobjects.c:100 lib/debugobjects.c:312)
->>>>> > > > > [  690.770137] debug_object_init (lib/debugobjects.c:365)
->>>>> > > > > [  690.770137] rcuhead_fixup_activate (kernel/rcu/update.c:231)
->>>>> > > > > [  690.770137] debug_object_activate (lib/debugobjects.c:280 lib/debugobjects.c:439)
->>>>> > > > > [  690.770137] ? discard_slab (mm/slub.c:1486)
->>>>> > > > > [  690.770137] __call_rcu (kernel/rcu/rcu.h:76 (discriminator 2) kernel/rcu/tree.c:2585 (discriminator 2))
->>>> > > > 
->>>> > > > __call_rcu does a slab allocation? This means __call_rcu can no longer be
->>>> > > > used in slab allocators? What happened?
->>> > > 
->>> > > My guess is that the root cause is a double call_rcu(), call_rcu_sched(),
->>> > > call_rcu_bh(), or call_srcu().
->>> > > 
->>> > > Perhaps the DEBUG_OBJECTS code now allocates memory to report errors?
->>> > > That would be unfortunate...
->> > 
->> > Well, no. Look at the callchain:
->> > 
->> > __call_rcu
->> >     debug_object_activate
->> >        rcuhead_fixup_activate
->> >           debug_object_init
->> >               kmem_cache_alloc
->> > 
->> > So call rcu activates the object, but the object has no reference in
->> > the debug objects code so the fixup code is called which inits the
->> > object and allocates a reference ....
-> OK, got it.  And you are right, call_rcu() has done this for a very
-> long time, so not sure what changed.
+> > Userspace then can read/write these MSRs, and add them to the migration
+> > stream.  QEMU has code for that.
+> 
+> Thanks. The PEBS setup always redoes its state, can be arbitarily often
+> redone.
+> 
+> So the only change needed would be to add the MSRs to some list in qemu?
 
-It's probable my fault. I've introduced clone() and unshare() fuzzing.
+Yes, and also adding them to the migration stream if the MSRs do not
+have the default (all-zero? need to look at the SDM) values.
 
-Those two are full with issues and I've been waiting with enabling those
-until the rest of the kernel could survive trinity for more than an hour.
-
-
-Thanks,
-Sasha
-
+Paolo
