@@ -1,281 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933813AbaFSQjB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:39:01 -0400
-Received: from mail.kernel.org ([198.145.19.201]:50939 "EHLO mail.kernel.org"
+	id S933870AbaFSQjG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:39:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38083 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932335AbaFSQjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:39:00 -0400
-Date: Thu, 19 Jun 2014 13:38:51 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: jolsa@kernel.org, mitake@dcl.info.waseda.ac.jp, aswin@hp.com,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/9] perf bench: futex: Replace --silent option with
- global --format
-Message-ID: <20140619163851.GG20252@kernel.org>
-References: <1402942467-10671-1-git-send-email-davidlohr@hp.com>
- <1402942467-10671-7-git-send-email-davidlohr@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402942467-10671-7-git-send-email-davidlohr@hp.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S932335AbaFSQjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 12:39:03 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jan Kiszka <jan.kiszka@siemens.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCH 2/9] tools lib traceevent: Factor out print_exit_reason in kvm plugin
+Date: Thu, 19 Jun 2014 18:38:41 +0200
+Message-Id: <1403195928-1331-3-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1403195928-1331-1-git-send-email-jolsa@kernel.org>
+References: <1403195928-1331-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jun 16, 2014 at 11:14:24AM -0700, Davidlohr Bueso escreveu:
-> Using the already existing '--format simple' option in perf-bench
-> is/should be equivalent to disabling any verbose output. Replace
-> it and free up the -s option specific to the futex benchmark.
+From: Jan Kiszka <jan.kiszka@siemens.com>
 
-Isn't this much longer?
+We will reuse it for nested vmexit tracepoints.
 
-I haven't seen any patch in this series wanting to use -s.
+Link: http://lkml.kernel.org/r/619c418c8af87f03027b8c8013b0443996605700.1388855989.git.jan.kiszka@web.de
 
-Ingo, are you Ok with this?
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/lib/traceevent/plugin_kvm.c | 17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
 
-I.e. I'm just trying to be careful when changing existing cmd line args,
-perhaps someone is used to this, who knows, and at least for me,
---silent is way, way more clear than '--format simple', that says
-nothing to me.
-
-- Arnaldo
-
-> Furthermore only show the raw output if used, as it is intended
-> to make scripting/parsing easier.
+diff --git a/tools/lib/traceevent/plugin_kvm.c b/tools/lib/traceevent/plugin_kvm.c
+index 3e61220..2d7d1d7 100644
+--- a/tools/lib/traceevent/plugin_kvm.c
++++ b/tools/lib/traceevent/plugin_kvm.c
+@@ -244,15 +244,14 @@ static const char *find_exit_reason(unsigned isa, int val)
+ 	return strings[i].str;
+ }
  
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> ---
->  tools/perf/bench/futex-hash.c    | 32 +++++++++++++++++++++++---------
->  tools/perf/bench/futex-requeue.c | 34 +++++++++++++++++++++++-----------
->  tools/perf/bench/futex-wake.c    | 33 ++++++++++++++++++++++-----------
->  3 files changed, 68 insertions(+), 31 deletions(-)
-> 
-> diff --git a/tools/perf/bench/futex-hash.c b/tools/perf/bench/futex-hash.c
-> index a84206e..14791eb 100644
-> --- a/tools/perf/bench/futex-hash.c
-> +++ b/tools/perf/bench/futex-hash.c
-> @@ -25,7 +25,7 @@ static unsigned int nthreads = 0;
->  static unsigned int nsecs    = 10;
->  /* amount of futexes per thread */
->  static unsigned int nfutexes = 1024;
-> -static bool fshared = false, done = false, silent = false;
-> +static bool fshared = false, done = false;
->  
->  struct timeval start, end, runtime;
->  static pthread_mutex_t thread_lock;
-> @@ -44,7 +44,6 @@ static const struct option options[] = {
->  	OPT_UINTEGER('t', "threads", &nthreads, "Specify amount of threads"),
->  	OPT_UINTEGER('r', "runtime", &nsecs,    "Specify runtime (in seconds)"),
->  	OPT_UINTEGER('f', "futexes", &nfutexes, "Specify amount of futexes per threads"),
-> -	OPT_BOOLEAN( 's', "silent",  &silent,   "Silent mode: do not display data/details"),
->  	OPT_BOOLEAN( 'S', "shared",  &fshared,  "Use shared futexes instead of private ones"),
->  	OPT_END()
->  };
-> @@ -77,7 +76,7 @@ static void *workerfn(void *arg)
->  			 */
->  			ret = futex_wait(&w->futex[i], 1234, NULL,
->  					 fshared ? 0 : FUTEX_PRIVATE_FLAG);
-> -			if (!silent &&
-> +			if (bench_format == BENCH_FORMAT_DEFAULT &&
->  			    (!ret || errno != EAGAIN || errno != EWOULDBLOCK))
->  				warn("Non-expected futex return call");
->  		}
-> @@ -101,9 +100,22 @@ static void print_summary(void)
->  	unsigned long avg = avg_stats(&throughput_stats);
->  	double stddev = stddev_stats(&throughput_stats);
->  
-> -	printf("%sAveraged %ld operations/sec (+- %.2f%%), total secs = %d\n",
-> -	       !silent ? "\n" : "", avg, rel_stddev_stats(stddev, avg),
-> -	       (int) runtime.tv_sec);
-> +	switch (bench_format) {
-> +	case BENCH_FORMAT_DEFAULT:
-> +		printf("%sAveraged %ld operations/sec (+- %.2f%%), total secs = %d\n",
-> +		       !bench_format == BENCH_FORMAT_DEFAULT ? "\n" : "",
-> +		       avg, rel_stddev_stats(stddev, avg),
-> +		       (int) runtime.tv_sec);
-> +		break;
-> +	case BENCH_FORMAT_SIMPLE:
-> +		printf("%ld\n", avg);
-> +		break;
-> +	default:
-> +		/* reaching here is something disaster */
-> +		fprintf(stderr, "Unknown format:%d\n", bench_format);
-> +		exit(EXIT_FAILURE);
-> +
-> +	}
->  }
->  
->  int bench_futex_hash(int argc, const char **argv,
-> @@ -135,8 +147,10 @@ int bench_futex_hash(int argc, const char **argv,
->  	if (!worker)
->  		goto errmem;
->  
-> -	printf("Run summary [PID %d]: %d threads, each operating on %d [%s] futexes for %d secs.\n\n",
-> -	       getpid(), nthreads, nfutexes, fshared ? "shared":"private", nsecs);
-> +	if (bench_format == BENCH_FORMAT_DEFAULT) {
-> +		printf("Run summary [PID %d]: %d threads, each operating on %d [%s] futexes for %d secs.\n\n",
-> +		       getpid(), nthreads, nfutexes, fshared ? "shared":"private", nsecs);
-> +	}
->  
->  	init_stats(&throughput_stats);
->  	pthread_mutex_init(&thread_lock, NULL);
-> @@ -190,7 +204,7 @@ int bench_futex_hash(int argc, const char **argv,
->  	for (i = 0; i < nthreads; i++) {
->  		unsigned long t = worker[i].ops/runtime.tv_sec;
->  		update_stats(&throughput_stats, t);
-> -		if (!silent) {
-> +		if (bench_format == BENCH_FORMAT_DEFAULT) {
->  			if (nfutexes == 1)
->  				printf("[thread %2d] futex: %p [ %ld ops/sec ]\n",
->  				       worker[i].tid, &worker[i].futex[0], t);
-> diff --git a/tools/perf/bench/futex-requeue.c b/tools/perf/bench/futex-requeue.c
-> index 732403b..7b211c1 100644
-> --- a/tools/perf/bench/futex-requeue.c
-> +++ b/tools/perf/bench/futex-requeue.c
-> @@ -30,7 +30,7 @@ static u_int32_t futex1 = 0, futex2 = 0;
->  static unsigned int nrequeue = 1;
->  
->  static pthread_t *worker;
-> -static bool done = 0, silent = 0;
-> +static bool done = 0;
->  static pthread_mutex_t thread_lock;
->  static pthread_cond_t thread_parent, thread_worker;
->  static struct stats requeuetime_stats, requeued_stats;
-> @@ -39,7 +39,6 @@ static unsigned int ncpus, threads_starting, nthreads = 0;
->  static const struct option options[] = {
->  	OPT_UINTEGER('t', "threads",  &nthreads, "Specify amount of threads"),
->  	OPT_UINTEGER('q', "nrequeue", &nrequeue, "Specify amount of threads to requeue at once"),
-> -	OPT_BOOLEAN( 's', "silent",   &silent,   "Silent mode: do not display data/details"),
->  	OPT_END()
->  };
->  
-> @@ -54,11 +53,22 @@ static void print_summary(void)
->  	double requeuetime_stddev = stddev_stats(&requeuetime_stats);
->  	unsigned int requeued_avg = avg_stats(&requeued_stats);
->  
-> -	printf("Requeued %d of %d threads in %.4f ms (+-%.2f%%)\n",
-> -	       requeued_avg,
-> -	       nthreads,
-> -	       requeuetime_avg/1e3,
-> -	       rel_stddev_stats(requeuetime_stddev, requeuetime_avg));
-> +	switch (bench_format) {
-> +	case BENCH_FORMAT_DEFAULT:
-> +		printf("Requeued %d of %d threads in %.4f ms (+-%.2f%%)\n",
-> +		       requeued_avg,
-> +		       nthreads,
-> +		       requeuetime_avg/1e3,
-> +		       rel_stddev_stats(requeuetime_stddev, requeuetime_avg));
-> +		break;
-> +	case BENCH_FORMAT_SIMPLE:
-> +		printf("%.3f\n", requeuetime_avg/1e3);
-> +		break;
-> +	default:
-> +		/* reaching here is something disaster */
-> +		fprintf(stderr, "Unknown format:%d\n", bench_format);
-> +		exit(EXIT_FAILURE);
-> +	}
->  }
->  
->  static void *workerfn(void *arg __maybe_unused)
-> @@ -127,9 +137,11 @@ int bench_futex_requeue(int argc, const char **argv,
->  	if (!worker)
->  		err(EXIT_FAILURE, "calloc");
->  
-> -	printf("Run summary [PID %d]: Requeuing %d threads (from %p to %p), "
-> -	       "%d at a time.\n\n",
-> -	       getpid(), nthreads, &futex1, &futex2, nrequeue);
-> +	if (bench_format == BENCH_FORMAT_DEFAULT) {
-> +		printf("Run summary [PID %d]: Requeuing %d threads (from %p to %p), "
-> +		       "%d at a time.\n\n",
-> +		       getpid(), nthreads, &futex1, &futex2, nrequeue);
-> +	}
->  
->  	init_stats(&requeued_stats);
->  	init_stats(&requeuetime_stats);
-> @@ -169,7 +181,7 @@ int bench_futex_requeue(int argc, const char **argv,
->  		update_stats(&requeued_stats, nrequeued);
->  		update_stats(&requeuetime_stats, runtime.tv_usec);
->  
-> -		if (!silent) {
-> +		if (bench_format == BENCH_FORMAT_DEFAULT) {
->  			printf("[Run %d]: Requeued %d of %d threads in %.4f ms\n",
->  			       j + 1, nrequeued, nthreads, runtime.tv_usec/1e3);
->  		}
-> diff --git a/tools/perf/bench/futex-wake.c b/tools/perf/bench/futex-wake.c
-> index 50022cb..eae6d09 100644
-> --- a/tools/perf/bench/futex-wake.c
-> +++ b/tools/perf/bench/futex-wake.c
-> @@ -31,7 +31,7 @@ static u_int32_t futex1 = 0;
->  static unsigned int nwakes = 1;
->  
->  pthread_t *worker;
-> -static bool done = false, silent = false;
-> +static bool done = false;
->  static pthread_mutex_t thread_lock;
->  static pthread_cond_t thread_parent, thread_worker;
->  static struct stats waketime_stats, wakeup_stats;
-> @@ -40,7 +40,6 @@ static unsigned int ncpus, threads_starting, nthreads = 0;
->  static const struct option options[] = {
->  	OPT_UINTEGER('t', "threads", &nthreads, "Specify amount of threads"),
->  	OPT_UINTEGER('w', "nwakes",  &nwakes,   "Specify amount of threads to wake at once"),
-> -	OPT_BOOLEAN( 's', "silent",  &silent,   "Silent mode: do not display data/details"),
->  	OPT_END()
->  };
->  
-> @@ -68,11 +67,22 @@ static void print_summary(void)
->  	double waketime_stddev = stddev_stats(&waketime_stats);
->  	unsigned int wakeup_avg = avg_stats(&wakeup_stats);
->  
-> -	printf("Wokeup %d of %d threads in %.4f ms (+-%.2f%%)\n",
-> -	       wakeup_avg,
-> -	       nthreads,
-> -	       waketime_avg/1e3,
-> -	       rel_stddev_stats(waketime_stddev, waketime_avg));
-> +	switch (bench_format) {
-> +	case BENCH_FORMAT_DEFAULT:
-> +		printf("Wokeup %d of %d threads in %.4f ms (+-%.2f%%)\n",
-> +		       wakeup_avg,
-> +		       nthreads,
-> +		       waketime_avg/1e3,
-> +		       rel_stddev_stats(waketime_stddev, waketime_avg));
-> +		break;
-> +	case BENCH_FORMAT_SIMPLE:
-> +		printf("%.4f\n", waketime_avg/1e3);
-> +		break;
-> +	default:
-> +		/* reaching here is something disaster */
-> +		fprintf(stderr, "Unknown format:%d\n", bench_format);
-> +		exit(EXIT_FAILURE);
-> +	}
->  }
->  
->  static void block_threads(pthread_t *w,
-> @@ -130,9 +140,10 @@ int bench_futex_wake(int argc, const char **argv,
->  	if (!worker)
->  		err(EXIT_FAILURE, "calloc");
->  
-> -	printf("Run summary [PID %d]: blocking on %d threads (at futex %p), "
-> -	       "waking up %d at a time.\n\n",
-> -	       getpid(), nthreads, &futex1, nwakes);
-> +	if (bench_format == BENCH_FORMAT_DEFAULT)
-> +		printf("Run summary [PID %d]: blocking on %d threads (at futex %p), "
-> +		       "waking up %d at a time.\n\n",
-> +		       getpid(), nthreads, &futex1, nwakes);
->  
->  	init_stats(&wakeup_stats);
->  	init_stats(&waketime_stats);
-> @@ -167,7 +178,7 @@ int bench_futex_wake(int argc, const char **argv,
->  		update_stats(&wakeup_stats, nwoken);
->  		update_stats(&waketime_stats, runtime.tv_usec);
->  
-> -		if (!silent) {
-> +		if (bench_format == BENCH_FORMAT_DEFAULT) {
->  			printf("[Run %d]: Wokeup %d of %d threads in %.4f ms\n",
->  			       j + 1, nwoken, nthreads, runtime.tv_usec/1e3);
->  		}
-> -- 
-> 1.8.1.4
+-static int kvm_exit_handler(struct trace_seq *s, struct pevent_record *record,
+-			    struct event_format *event, void *context)
++static int print_exit_reason(struct trace_seq *s, struct pevent_record *record,
++			     struct event_format *event, const char *field)
+ {
+ 	unsigned long long isa;
+ 	unsigned long long val;
+-	unsigned long long info1 = 0, info2 = 0;
+ 	const char *reason;
+ 
+-	if (pevent_get_field_val(s, event, "exit_reason", record, &val, 1) < 0)
++	if (pevent_get_field_val(s, event, field, record, &val, 1) < 0)
+ 		return -1;
+ 
+ 	if (pevent_get_field_val(s, event, "isa", record, &isa, 0) < 0)
+@@ -263,6 +262,16 @@ static int kvm_exit_handler(struct trace_seq *s, struct pevent_record *record,
+ 		trace_seq_printf(s, "reason %s", reason);
+ 	else
+ 		trace_seq_printf(s, "reason UNKNOWN (%llu)", val);
++	return 0;
++}
++
++static int kvm_exit_handler(struct trace_seq *s, struct pevent_record *record,
++			    struct event_format *event, void *context)
++{
++	unsigned long long info1 = 0, info2 = 0;
++
++	if (print_exit_reason(s, record, event, "exit_reason") < 0)
++		return -1;
+ 
+ 	pevent_print_num_field(s, " rip 0x%lx", event, "guest_rip", record, 1);
+ 
+-- 
+1.8.3.1
+
