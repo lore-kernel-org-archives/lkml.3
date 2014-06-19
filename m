@@ -1,128 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757281AbaFSFDk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 01:03:40 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:52249 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757231AbaFSFDj (ORCPT
+	id S1757318AbaFSFEY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 01:04:24 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52736 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757231AbaFSFEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 01:03:39 -0400
-Message-ID: <53A26F23.1050702@hitachi.com>
-Date: Thu, 19 Jun 2014 14:03:31 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Josh Poimboeuf <jpoimboe@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "systemtap@sources.redhat.com" <systemtap@sources.redhat.com>
-Subject: Re: Re: [PATCH -tip v2 0/3] ftrace, kprobes: Introduce IPMODIFY
- flag for ftrace_ops to detect conflicts
-References: <20140617110436.15167.7179.stgit@kbuild-fedora.novalocal> <20140619020831.GA21146@treble.redhat.com>
-In-Reply-To: <20140619020831.GA21146@treble.redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Jun 2014 01:04:23 -0400
+From: Laura Abbott <lauraa@codeaurora.org>
+To: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Laura Abbott <lauraa@codeaurora.org>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] of: Check for phys_addr_t overflows in early_init_dt_add_memory_arch
+Date: Wed, 18 Jun 2014 22:04:17 -0700
+Message-Id: <1403154257-14591-1-git-send-email-lauraa@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/06/19 11:08), Josh Poimboeuf wrote:
-> On Tue, Jun 17, 2014 at 11:04:36AM +0000, Masami Hiramatsu wrote:
->> Hi,
->>
->> Here is the version 2 of the series of patches which introduces
->> IPMODIFY flag for ftrace_ops to detect conflicts of ftrace users
->> who can modify regs->ip in their handler.
->> In this version, I fixed some bugs in previous version and
->> added a patch which made kprobe itself free from IPMODIFY
->> except for jprobe.
-> 
-> Hi Masami,
-> 
-> This seems better, but I still saw a few issues.  I'm not sure if the
-> issues are specific to stap or kprobes.  For the following issues I used
-> this command to set a kprobe:
-> 
->   stap -v -e 'probe kernel.function("meminfo_proc_show") {printf("meminfo_proc_show called\n");}'
-> 
-> With patches 1-2, when I used stap to kprobe the function after it was
-> already kpatched, stap didn't return an error and instead acted like it
-> succeeded (though the probe didn't work):
-> 
->   $ sudo stap -v -e 'probe kernel.function("meminfo_proc_show") {printf("meminfo_proc_show called\n");}'
->   Pass 1: parsed user script and 112 library script(s) using 221516virt/41612res/6028shr/36228data kb, in 130usr/0sys/132real ms.
->   Pass 2: analyzed script: 1 probe(s), 0 function(s), 0 embed(s), 0 global(s) using 255840virt/77132res/7132shr/70552data kb, in 510usr/20sys/577real ms.
->   Pass 3: translated to C into "/tmp/stap3Qunba/stap_2690192fea570fb7bba78c7ed7fa1e0d_898_src.c" using 255840virt/77392res/7392shr/70552data kb, in 10usr/0sys/4real ms.
->   Pass 4: compiled C into "stap_2690192fea570fb7bba78c7ed7fa1e0d_898.ko" in 5020usr/640sys/7105real ms.
->   Pass 5: starting run.
->   (no error)
+The common early_init_dt_add_memory_arch takes the base and size
+of a memory region as u64 types. The function never checks if
+the base and size can actually fit in a phys_addr_t which may
+be smaller than 64-bits. This may result in incorrect memory
+being passed to memblock_add if the memory falls outside the
+range of phys_addr_t. Add range checks for the base and size if
+phys_addr_t is smaller than u64.
 
-Yeah, I guess you can see some warning messages in dmesg (by
-arm_kprobe) at this point.
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+---
+Geert, can you drop my other patch and give this a test to see if it fixes
+your bootup problem?
 
-> 
-> With all 3 patches, I expected kprobes and kpatch to be able to ftrace
-> the same function.  But when I tried to kpatch the function after it was
-> kprobed, I got the following oops in stap:
-> 
->   [  455.842797] BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
->   [  455.843388] IP: [<ffffffffa0833d1e>] _stp_module_notifier+0x1e/0x320 [stap_2690192fea570fb7bba78c7ed7fa1e_20189]
+---
+ drivers/of/fdt.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-Hmm, since this happens in _stp_module_notifier() which is a code in systemtap,
-I guess it's a systemtap problem.
-
-Could you test it with kprobe-tracer as below?
-
-# (do something kpatch related activation)
-# echo p meminfo_proc_show > /sys/kernel/debug/tracing/kprobe_events
-# echo 1 > /sys/kernel/debug/tracing/events/kprobe/enable
-
-Thank you,
-
->   [  455.844011] PGD 33f898067 PUD 422083067 PMD 0 
->   [  455.844638] Oops: 0000 [#1] SMP 
->   [  455.845255] Modules linked in: kpatch(OE+) stap_2690192fea570fb7bba78c7ed7fa1e_20189(OE) rfcomm ipt_MASQUERADE fuse ccm xt_CHECKSUM tun ip6t_rpfilter ip6t_REJECT xt_conntrack ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6 nf_nat_ipv6 ip6table_mangle ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle iptable_security iptable_raw bnep arc4 iwldvm mac80211 iTCO_wdt snd_hda_codec_hdmi iTCO_vendor_support x86_pkg_temp_thermal snd_hda_codec_realtek coretemp iwlwifi snd_hda_codec_generic kvm_intel snd_hda_intel kvm uvcvideo snd_hda_controller cfg80211 snd_hda_codec btusb videobuf2_vmalloc bluetooth videobuf2_memops snd_hwdep snd_seq nfsd videobuf2_core
->   [  455.848272]  v4l2_common videodev snd_seq_device e1000e microcode snd_pcm sdhci_pci media joydev sdhci serio_raw i2c_i801 pcspkr mmc_core thinkpad_acpi mei_me snd_timer auth_rpcgss mei snd lpc_ich ptp mfd_core shpchp nfs_acl lockd pps_core wmi tpm_tis soundcore tpm rfkill sunrpc dm_crypt i915 i2c_algo_bit drm_kms_helper drm crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel i2c_core video
->   [  455.850887] CPU: 3 PID: 19857 Comm: insmod Tainted: G        W  OE 3.16.0-rc1+ #2
->   [  455.851768] Hardware name: LENOVO 2356BH8/2356BH8, BIOS G7ET63WW (2.05 ) 11/12/2012
->   [  455.852638] task: ffff880095d65460 ti: ffff88039d1d4000 task.ti: ffff88039d1d4000
->   [  455.853456] RIP: 0010:[<ffffffffa0833d1e>]  [<ffffffffa0833d1e>] _stp_module_notifier+0x1e/0x320 [stap_2690192fea570fb7bba78c7ed7fa1e_20189]
->   [  455.854335] RSP: 0018:ffff88039d1d7ce0  EFLAGS: 00010246
->   [  455.855212] RAX: ffffffffa0837f50 RBX: 0000000000000000 RCX: 00000000ffffffff
->   [  455.856109] RDX: ffffffffa08400e0 RSI: 0000000000000001 RDI: ffffffffa0837f50
->   [  455.856986] RBP: ffff88039d1d7d00 R08: 0000000000000000 R09: 0000000000000000
->   [  455.857880] R10: 0000000000000001 R11: ffffc9001aed2d8f R12: ffffffff81c593e0
->   [  455.858761] R13: 0000000000000001 R14: ffffffffa08400e0 R15: 0000000000000000
->   [  455.859640] FS:  00007feac5f10740(0000) GS:ffff88043e2c0000(0000) knlGS:0000000000000000
->   [  455.860523] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->   [  455.861403] CR2: 0000000000000020 CR3: 00000004224e7000 CR4: 00000000001407e0
->   [  455.862309] Stack:
->   [  455.863236]  00000000fffffffd ffffffff81c593e0 0000000000000001 ffffffffa08400e0
->   [  455.864163]  ffff88039d1d7d38 ffffffff810b45bc ffffffff81c557c0 0000000000000000
->   [  455.865103]  0000000000000001 ffffffffa08400e0 00000000ffffffff ffff88039d1d7d78
->   [  455.866067] Call Trace:
->   [  455.867100]  [<ffffffff810b45bc>] notifier_call_chain+0x4c/0x70
->   [  455.868202]  [<ffffffff810b491d>] __blocking_notifier_call_chain+0x4d/0x70
->   [  455.869155]  [<ffffffff810b4956>] blocking_notifier_call_chain+0x16/0x20
->   [  455.870111]  [<ffffffff8110749c>] load_module+0x1aac/0x25f0
->   [  455.871067]  [<ffffffff811f6720>] ? kernel_read+0x50/0x80
->   [  455.872022]  [<ffffffff81108196>] SyS_finit_module+0xa6/0xd0
->   [  455.872982]  [<ffffffff817082e9>] system_call_fastpath+0x16/0x1b
->   [  455.873941] Code: 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 55 48 83 fe 01 48 89 e5 41 56 49 89 d6 41 55 41 54 53 48 8b 9a d0 01 00 00 <8b> 43 20 0f 84 59 01 00 00 48 85 f6 75 44 85 c0 74 4a 83 e8 01 
->   [  455.876073] RIP  [<ffffffffa0833d1e>] _stp_module_notifier+0x1e/0x320 [stap_2690192fea570fb7bba78c7ed7fa1e_20189]
->   [  455.877146]  RSP <ffff88039d1d7ce0>
->   [  455.878243] CR2: 0000000000000020
->   [  455.883707] ---[ end trace 388d9e62d4390d42 ]---
-> 
-
-
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index c4cddf0..f72132c 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -880,6 +880,21 @@ void __init __weak early_init_dt_add_memory_arch(u64 base, u64 size)
+ 	const u64 phys_offset = __pa(PAGE_OFFSET);
+ 	base &= PAGE_MASK;
+ 	size &= PAGE_MASK;
++
++#ifndef CONFIG_ARCH_PHYS_ADDR_T_64BIT
++	if (base > ULONG_MAX) {
++		pr_warning("Ignoring memory block 0x%llx - 0x%llx\n",
++				base, base + size);
++		return;
++	}
++
++	if (base + size > ULONG_MAX) {
++		pr_warning("Ignoring memory range 0x%lx - 0x%llx\n",
++				ULONG_MAX, base + size);
++		size = ULONG_MAX - base;
++	}
++#endif
++
+ 	if (base + size < phys_offset) {
+ 		pr_warning("Ignoring memory block 0x%llx - 0x%llx\n",
+ 			   base, base + size);
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
