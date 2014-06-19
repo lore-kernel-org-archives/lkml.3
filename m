@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757124AbaFSBnE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jun 2014 21:43:04 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:29909 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756953AbaFSBl7 (ORCPT
+	id S1756902AbaFSBqH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jun 2014 21:46:07 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:44895 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726AbaFSBqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jun 2014 21:41:59 -0400
-Message-Id: <20140619014158.273347256@goodmis.org>
-User-Agent: quilt/0.63-1
-Date: Wed, 18 Jun 2014 21:40:39 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [for-next][PATCH 3/3] tracing: syscall_regfunc() should not skip kernel threads
-References: <20140619014036.116976241@goodmis.org>
+	Wed, 18 Jun 2014 21:46:04 -0400
+Date: Wed, 18 Jun 2014 21:46:00 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Paolo Valente <paolo.valente@unimore.it>
+Cc: Jens Axboe <axboe@kernel.dk>, Li Zefan <lizefan@huawei.com>,
+        Fabio Checconi <fchecconi@gmail.com>,
+        Arianna Avanzini <avanzini.arianna@gmail.com>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH RFC - TAKE TWO - 00/12] New version of the BFQ I/O
+ Scheduler
+Message-ID: <20140619014600.GA20100@mtj.dyndns.org>
+References: <20140528221929.GG1419@htj.dyndns.org>
+ <1401354343-5527-1-git-send-email-paolo.valente@unimore.it>
+ <20140530160712.GG24871@htj.dyndns.org>
+ <538926F6.7080409@kernel.dk>
+ <20140531051635.GA19925@mtj.dyndns.org>
+ <538C8A47.1050502@kernel.dk>
+ <0A5218F8-0215-4B4F-959B-EE5AAEFC164A@unimore.it>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0003-tracing-syscall_regfunc-should-not-skip-kernel-threa.patch
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0A5218F8-0215-4B4F-959B-EE5AAEFC164A@unimore.it>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+Hello,
 
-syscall_regfunc() ignores the kernel threads because "it has no effect",
-see cc3b13c1 "Don't trace kernel thread syscalls" which added this check.
+On Tue, Jun 17, 2014 at 05:55:57PM +0200, Paolo Valente wrote:
+> In general, with both a smooth but messy and a sharp but clean
+> transformation, there seems to be the following common problems:
+>
+> 1) The main benefits highlighted by Jens, i.e., being able to move
+> back and forth and easily understand what works and what does not,
+> seem to be lost, because, with both solutions, intermediate versions
+> would likely have a worse performance than the current version of
+> cfq.
 
-However, this means that a user-space task spawned by call_usermodehelper()
-will run without TIF_SYSCALL_TRACEPOINT if sys_tracepoint_refcount != 0.
+So, the perfectly smooth and performant transformation is possible,
+it'd be great, but I don't really think that'd be the case.  My
+opinion is that if the infrastructure pieces can be mostly maintained
+while making logical gradual steps it should be fine.  ie. pick
+whatever strategy which seems executable, chop down the pieces which
+get in the way (ie. tear down all the cfq heuristics if you have to),
+transform the base and then build things on top again.  Ensuring that
+each step is logical and keeps working should give us enough safety
+net, IMO.
 
-Remove this check. The unnecessary report from ret_from_fork path mentioned
-by cc3b13c1 is no longer possible, see See commit fb45550d76bb5 "make sure
-that kernel_thread() callbacks call do_exit() themselves".
+Jens, what do you think?
 
-A kernel_thread() callback can only return and take the int_ret_from_sys_call
-path after do_execve() succeeds, otherwise the kernel will crash. But in this
-case it is no longer a kernel thread and thus is needs TIF_SYSCALL_TRACEPOINT.
+> 2) bfq, on one side, does not export some of the sysfs parameters of
+> cfq, such as slice_sync, and, on the other side, uses other common
+> parameters in a different way. For example, bfq turns I/O priorities
+> into throughput shares in a different way than cfq does. As a
+> consequence, existing configurations may break or behave in
+> unexpected ways.
 
-Link: http://lkml.kernel.org/p/20140413185938.GD20668@redhat.com
+This is why I hate exposing internal knobs without layering proper
+semantic interpretation on top.  It ends up creating unnecessary
+lock-in effect too often just to serve some esoteric cases which
+aren't all that useful.  For knobs which don't make any sense for the
+new scheduler, the appropriate thing to do would be just making them
+noop and generate a warning message when it's written to.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/tracepoint.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+As for behavior change for existing users, any change to scheduler
+does that.  I don't think it's practical to avoid any changes for that
+reason.  I think there already is a pretty solid platform to base
+things on and the way forward is making the changes and iterating as
+testing goes on and issues get reported.
 
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index 9cf12640de5a..3490407dc7b7 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -497,9 +497,7 @@ void syscall_regfunc(void)
- 	if (!sys_tracepoint_refcount) {
- 		read_lock(&tasklist_lock);
- 		for_each_process_thread(p, t) {
--			/* Skip kernel threads. */
--			if (!(t->flags & PF_KTHREAD))
--				set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
-+			set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
- 		}
- 		read_unlock(&tasklist_lock);
- 	}
+Thanks.
+
 -- 
-2.0.0.rc2
-
-
+tejun
