@@ -1,126 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757376AbaFSKlh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 06:41:37 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:56241 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757207AbaFSKle (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 06:41:34 -0400
-Date: Thu, 19 Jun 2014 11:41:30 +0100
-From: Andy Whitcroft <apw@canonical.com>
-To: Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: ACPI resource change triggers loss of serial ports
-Message-ID: <20140619104130.GA11561@dm>
+	id S1757570AbaFSKlp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 06:41:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33342 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757207AbaFSKln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 06:41:43 -0400
+Message-ID: <53A2BE65.2070501@suse.cz>
+Date: Thu, 19 Jun 2014 12:41:41 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Boaz Harrosh <openosd@gmail.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Alexei Starovoitov <alexei.starovoitov@gmail.com>,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: kbuild: support of new KBUILD_FULL_PATH
+References: <53A1D3A1.70202@gmail.com> <53A2B7A9.7080605@gmail.com>
+In-Reply-To: <53A2B7A9.7080605@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recently merged change (in v3.14-rc6) to ACPI resource detection
-(below) causes all zero length ACPI resources to be elided from the table:
+On 2014-06-19 12:12, Boaz Harrosh wrote:
+> 
+> The commit:
+> 
+> 	commit 9da0763bdd82572be243fcf5161734f11568960f
+> 	Author: Michal Marek <mmarek@suse.cz>
+> 	Date:   Fri Apr 25 23:25:18 2014 +0200
+> 
+> 	kbuild: Use relative path when building in a subdir of the source tree
+> 
+> 	When doing make O=<subdir>, use '..' to refer to the source tree. This
+> 	allows for more readable compiler messages, and, more importantly, it
+> 	sets the VPATH to '..', so filenames in WARN_ON() etc. will be shorter.
+> 
+> 	Acked-by: Sam Ravnborg <sam@ravnborg.org>
+> 	Signed-off-by: Michal Marek <mmarek@suse.cz>
+> 
+> Broke IDEs and other tools which analyze the make output.
+> Introduce a new KBUILD_FULL_PATH switch to Makefile that will revert
+> to the old output if KBUILD_FULL_PATH=1 is specified.
+> The default is KBUILD_FULL_PATH=0
 
-  commit b355cee88e3b1a193f0e9a81db810f6f83ad728b
-  Author: Zhang Rui <rui.zhang@intel.com>
-  Date:   Thu Feb 27 11:37:15 2014 +0800
-
-    ACPI / resources: ignore invalid ACPI device resources
-
-This change has caused a regression in (at least) serial port detection
-for a number of machines (see LP#1313981 [1]).  These seem to represent
-their IO regions (presumably incorrectly) as a zero length region.
-Reverting the above commit restores these serial devices.
-
-For Zhang's case I wonder if this check could be tightened up to cover
-only the zero base, something like the (untested) patch below.
-
--apw
-
-[1] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1313981
+Parsing make output is a use case I did not think of, so the knob seems
+inevitable :-/.
 
 
->From e5211c68278387ef65e483bcfedd5581a79ec783 Mon Sep 17 00:00:00 2001
-From: Andy Whitcroft <apw@canonical.com>
-Date: Thu, 19 Jun 2014 11:19:16 +0100
-Subject: [PATCH] ACPI / Resources: only reject zero length resources based at
- address zero
+> Is there a document I need to edit for this new parameter?
 
-The recently merged change (in v3.14-rc6) to ACPI resource detection
-(below) causes all zero length ACPI resources to be elided from the
-table:
+That would be Documentation/kbuild/kbuild.txt
 
-  commit b355cee88e3b1a193f0e9a81db810f6f83ad728b
-  Author: Zhang Rui <rui.zhang@intel.com>
-  Date:   Thu Feb 27 11:37:15 2014 +0800
 
-    ACPI / resources: ignore invalid ACPI device resources
+> Signed-off-by: Boaz Harrosh <boaz@plexistor.com>
+> ---
+>  Makefile | 8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Makefile b/Makefile
+> index 97b2861..778732a 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -149,11 +149,17 @@ else
+>  _all: modules
+>  endif
+>  
+> +# put KBUILD_FULL_PATH=1 if relative path to sources breaks your system
+> +ifneq ($(KBUILD_FULL_PATH), 1)
+> +	KBUILD_FULL_PATH=""
+> +endif
+> +
+>  ifeq ($(KBUILD_SRC),)
+>          # building in the source tree
+>          srctree := .
+>  else
+> -        ifeq ($(KBUILD_SRC)/,$(dir $(CURDIR)))
+> +        # if KBUILD_FULL_PATH is not empty then condition will fail
+> +        ifeq ($(KBUILD_FULL_PATH)$(KBUILD_SRC)/,$(dir $(CURDIR)))
 
-This change has caused a regression in (at least) serial port detection
-for a number of machines (see LP#1313981 [1]).  These seem to represent
-their IO regions (presumably incorrectly) as a zero length region.
-Reverting the above commit restores these serial devices.
+This is an ugly way to express the logic.
 
-Only elide zero length resources which lie at address 0.
 
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
----
- drivers/acpi/resource.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+>                  # building in a subdirectory of the source tree
+>                  srctree := ..
+>          else
 
-diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
-index 0bdacc5..2ba8f02 100644
---- a/drivers/acpi/resource.c
-+++ b/drivers/acpi/resource.c
-@@ -77,7 +77,7 @@ bool acpi_dev_resource_memory(struct acpi_resource *ares, struct resource *res)
- 	switch (ares->type) {
- 	case ACPI_RESOURCE_TYPE_MEMORY24:
- 		memory24 = &ares->data.memory24;
--		if (!memory24->address_length)
-+		if (!memory24->minimum && !memory24->address_length)
- 			return false;
- 		acpi_dev_get_memresource(res, memory24->minimum,
- 					 memory24->address_length,
-@@ -85,7 +85,7 @@ bool acpi_dev_resource_memory(struct acpi_resource *ares, struct resource *res)
- 		break;
- 	case ACPI_RESOURCE_TYPE_MEMORY32:
- 		memory32 = &ares->data.memory32;
--		if (!memory32->address_length)
-+		if (!memory32->minimum && !memory32->address_length)
- 			return false;
- 		acpi_dev_get_memresource(res, memory32->minimum,
- 					 memory32->address_length,
-@@ -93,7 +93,7 @@ bool acpi_dev_resource_memory(struct acpi_resource *ares, struct resource *res)
- 		break;
- 	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
- 		fixed_memory32 = &ares->data.fixed_memory32;
--		if (!fixed_memory32->address_length)
-+		if (!fixed_memory32->address && !fixed_memory32->address_length)
- 			return false;
- 		acpi_dev_get_memresource(res, fixed_memory32->address,
- 					 fixed_memory32->address_length,
-@@ -150,7 +150,7 @@ bool acpi_dev_resource_io(struct acpi_resource *ares, struct resource *res)
- 	switch (ares->type) {
- 	case ACPI_RESOURCE_TYPE_IO:
- 		io = &ares->data.io;
--		if (!io->address_length)
-+		if (!io->minimum && !io->address_length)
- 			return false;
- 		acpi_dev_get_ioresource(res, io->minimum,
- 					io->address_length,
-@@ -158,7 +158,7 @@ bool acpi_dev_resource_io(struct acpi_resource *ares, struct resource *res)
- 		break;
- 	case ACPI_RESOURCE_TYPE_FIXED_IO:
- 		fixed_io = &ares->data.fixed_io;
--		if (!fixed_io->address_length)
-+		if (!fixed_io->address && !fixed_io->address_length)
- 			return false;
- 		acpi_dev_get_ioresource(res, fixed_io->address,
- 					fixed_io->address_length,
--- 
-1.9.1
+How about generated sources like asm-offsets.s or the lexer and parser
+in scripts/kconfig, does kdevelop figure out where the files live? If
+not, you might need to add
 
+-objtree                := .
++ifeq ($(KBUILD_FULL_PATH),1)
++       objtree := $(CURDIR)
++else
++        objtree        := .
++endif
+
+to use the full path also for the O= directory.
+
+Michal
