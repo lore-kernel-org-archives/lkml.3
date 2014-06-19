@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534AbaFSGx7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 02:53:59 -0400
-Received: from mga11.intel.com ([192.55.52.93]:38062 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753061AbaFSGx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 02:53:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,505,1400050800"; 
-   d="scan'208";a="557790825"
-From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "Hansen, Dave" <dave.hansen@intel.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v6 07/10] x86, mpx: decode MPX instruction to get bound
- violation information
-Thread-Topic: [PATCH v6 07/10] x86, mpx: decode MPX instruction to get bound
- violation information
-Thread-Index: AQHPitp5+re2FjJ0DkeRHdzRM5ptp5t2HnuAgAGAu2D//9RQAIAAiwew
-Date: Thu, 19 Jun 2014 06:53:28 +0000
-Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE016A3F75@shsmsx102.ccr.corp.intel.com>
-References: <1403084656-27284-1-git-send-email-qiaowei.ren@intel.com>
- <1403084656-27284-8-git-send-email-qiaowei.ren@intel.com>
- <20140618100745.GB24419@pd.tnic>
- <9E0BE1322F2F2246BD820DA9FC397ADE016A3BAA@shsmsx102.ccr.corp.intel.com>
- <20140619062824.GB22025@pd.tnic>
-In-Reply-To: <20140619062824.GB22025@pd.tnic>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1756955AbaFSHEm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 03:04:42 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:5654 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754272AbaFSHEk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 03:04:40 -0400
+Message-ID: <53A28B82.9040701@atmel.com>
+Date: Thu, 19 Jun 2014 09:04:34 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
+To: Michael Welling <mwelling@ieee.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, <linux-fbdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers:video:fbdev atmel_lcdfb.c power GPIO registration
+ bug
+References: <1403142732-31706-1-git-send-email-mwelling@ieee.org>
+In-Reply-To: <1403142732-31706-1-git-send-email-mwelling@ieee.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5J6s4Oi024239
 
-On 2014-06-19, Borislav Petkov wrote:
-> On Thu, Jun 19, 2014 at 01:13:48AM +0000, Ren, Qiaowei wrote:
->> On 2014-06-18, Borislav Petkov wrote:
->>> On Wed, Jun 18, 2014 at 05:44:13PM +0800, Qiaowei Ren wrote:
->>> 
->>> This whole insn decoding machinery above looks like adapted from
->>> arch/x86/lib/insn.c. You should merge it with the generic code in
->>> insn.c instead of homegrowing it here only for the purposes of MPX.
->>> And if it doesn't work for your needs, you should should extend
->>> the generic code to do so.
+On 19/06/2014 03:52, Michael Welling :
+> A list that was intended for storing power control GPIOs was never
+> initialized correctly or filled. Without these lines of added code
+> the kernel hangs when trying to access an uninitialized list when a
+> power control GPIO is registered with the device tree.
 > 
->> Petkov, as we discussed on initial version of this patchset, general
->> insn framework didn't work out well and I have tried to use generic
->> struct insn, insn_field, etc. for obvious benefits.
+> Signed-off-by: Michael Welling <mwelling@ieee.org>
+
+Indeed.
+
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+Thanks, best regards,
+
+> ---
+>  drivers/video/fbdev/atmel_lcdfb.c |    2 ++
+>  1 file changed, 2 insertions(+)
 > 
-> Let me repeat myself: "And if it doesn't work for your needs, you
-> should extend the generic code to do so."
+> diff --git a/drivers/video/fbdev/atmel_lcdfb.c b/drivers/video/fbdev/atmel_lcdfb.c
+> index e683b6e..d36e830 100644
+> --- a/drivers/video/fbdev/atmel_lcdfb.c
+> +++ b/drivers/video/fbdev/atmel_lcdfb.c
+> @@ -1057,6 +1057,7 @@ static int atmel_lcdfb_of_init(struct atmel_lcdfb_info *sinfo)
+>  		goto put_display_node;
+>  	}
+>  
+> +	INIT_LIST_HEAD(&pdata->pwr_gpios);
+>  	ret = -ENOMEM;
+>  	for (i = 0; i < of_gpio_named_count(display_np, "atmel,power-control-gpio"); i++) {
+>  		gpio = of_get_named_gpio_flags(display_np, "atmel,power-control-gpio",
+> @@ -1082,6 +1083,7 @@ static int atmel_lcdfb_of_init(struct atmel_lcdfb_info *sinfo)
+>  			dev_err(dev, "set direction output gpio %d failed\n", gpio);
+>  			goto put_display_node;
+>  		}
+> +		list_add(&og->list, &pdata->pwr_gpios);
+>  	}
+>  
+>  	if (is_gpio_power)
 > 
-> We don't do homegrown almost-copies of generic code.
->
-I see. If possible, I will be very happy to use or extend generic code. But due to extra overhead caused by MPX, I have to use MPX specific decoding to do performance optimization.
 
-You can check the discussion on this: https://lkml.org/lkml/2014/1/11/190
 
-Thanks,
-Qiaowei
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Nicolas Ferre
