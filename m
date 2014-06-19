@@ -1,40 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757423AbaFSHRk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 03:17:40 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:55251 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753794AbaFSHRj (ORCPT
+	id S1757463AbaFSHSq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 03:18:46 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:34560 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754272AbaFSHSo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 03:17:39 -0400
-Date: Thu, 19 Jun 2014 11:17:29 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: slab.h: wrap the whole file with guarding macro
-Message-ID: <20140619071729.GB20390@esperanza>
-References: <1403100695-1350-1-git-send-email-a.ryabinin@samsung.com>
+	Thu, 19 Jun 2014 03:18:44 -0400
+Message-ID: <53A28ECD.7000503@hitachi.com>
+Date: Thu, 19 Jun 2014 16:18:37 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1403100695-1350-1-git-send-email-a.ryabinin@samsung.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: Re: [RFC][PATCH] ftrace: Use schedule_on_each_cpu() as a heavy
+ synchronize_sched()
+References: <1369785676.15552.55.camel@gandalf.local.home> <20130529075249.GC12193@twins.programming.kicks-ass.net> <20140618215626.3b109d31@gandalf.local.home> <20140619022801.GC4669@linux.vnet.ibm.com>
+In-Reply-To: <20140619022801.GC4669@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 06:11:35PM +0400, Andrey Ryabinin wrote:
-> Guarding section:
-> 	#ifndef MM_SLAB_H
-> 	#define MM_SLAB_H
-> 	...
-> 	#endif
-> currently doesn't cover the whole mm/slab.h. It seems like it was
-> done unintentionally.
-> 
-> Wrap the whole file by moving closing #endif to the end of it.
-> 
-> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+(2014/06/19 11:28), Paul E. McKenney wrote:
+> On Wed, Jun 18, 2014 at 09:56:26PM -0400, Steven Rostedt wrote:
+>>
+>> Another blast from the past (from the book of cleaning out inbox)
+>>
+>> On Wed, 29 May 2013 09:52:49 +0200
+>> Peter Zijlstra <peterz@infradead.org> wrote:
+>>
+>>> On Tue, May 28, 2013 at 08:01:16PM -0400, Steven Rostedt wrote:
+>>>> The function tracer uses preempt_disable/enable_notrace() for
+>>>> synchronization between reading registered ftrace_ops and unregistering
+>>>> them.
+>>>>
+>>>> Most of the ftrace_ops are global permanent structures that do not
+>>>> require this synchronization. That is, ops may be added and removed from
+>>>> the hlist but are never freed, and wont hurt if a synchronization is
+>>>> missed.
+>>>>
+>>>> But this is not true for dynamically created ftrace_ops or control_ops,
+>>>> which are used by the perf function tracing.
+>>>>
+>>>> The problem here is that the function tracer can be used to trace
+>>>> kernel/user context switches as well as going to and from idle.
+>>>> Basically, it can be used to trace blind spots of the RCU subsystem.
+>>>> This means that even though preempt_disable() is done, a
+>>>> synchronize_sched() will ignore CPUs that haven't made it out of user
+>>>> space or idle. These can include functions that are being traced just
+>>>> before entering or exiting the kernel sections.
+>>>
+>>> Just to be clear, its the idle part that's a problem, right? Being stuck
+>>> in userspace isn't a problem since if that CPU is in userspace its
+>>> certainly not got a reference to whatever list entry we're removing.
+>>>
+>>> Now when the CPU really is idle, its obviously not using tracing either;
+>>> so only the gray area where RCU thinks we're idle but we're not actually
+>>> idle is a problem?
+>>>
+>>> Is there something a little smarter we can do? Could we use
+>>> on_each_cpu_cond() with a function that checks if the CPU really is
+>>> fully idle?
+>>>
+>>>> To implement the RCU synchronization, instead of using
+>>>> synchronize_sched() the use of schedule_on_each_cpu() is performed. This
+>>>> means that when a dynamically allocated ftrace_ops, or a control ops is
+>>>> being unregistered, all CPUs must be touched and execute a ftrace_sync()
+>>>> stub function via the work queues. This will rip CPUs out from idle or
+>>>> in dynamic tick mode. This only happens when a user disables perf
+>>>> function tracing or other dynamically allocated function tracers, but it
+>>>> allows us to continue to debug RCU and context tracking with function
+>>>> tracing.
+>>>
+>>> I don't suppose there's anything perf can do to about this right? Since
+>>> its all on user demand we're kinda stuck with dynamic memory.
+>>
+>> If Paul finished his "synchronize_all_tasks_scheduled()" then we could
+>> use that instead. Where "synchornize_all_tasks_scheduled()" would
+>> return after all tasks have either scheduled, in userspace, or idle
+>> (that is, not on the run queue). And scheduled means a non preempted
+>> schedule, where the task itself actually called schedule.
 
-Reviewed-by: Vladimir Davydov <vdavydov@parallels.com>
+This is also good for jump-optimized kprobes on preemptive kernel.
+Since there is no way to ensure that no one is running on an dynamically
+allocated code buffer, the jump optimization is currently disabled
+with CONFIG_PREEMPT. However, this new API can allow us to enable it.
+
+>>
+>> Paul, how you doing on that? You said you could have something by 3.17.
+>> That's coming up quick :-)
+> 
+> I am still expecting to, depite my misadventures with performance
+> regressions.
+
+Nice. I look forward to that :-)
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
