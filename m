@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757776AbaFSIuP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 04:50:15 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:59259 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757598AbaFSIuN (ORCPT
+	id S1757748AbaFSJAc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 05:00:32 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:62078 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757598AbaFSJAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 04:50:13 -0400
-Message-ID: <1403167807.23136.31.camel@x220>
-Subject: clk: hisilicon: ARCH_HIP04 and ARCH_HIX5HD2?
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Mike Turquette <mturquette@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
+	Thu, 19 Jun 2014 05:00:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <1403167807.23136.31.camel@x220>
+References: <1403167807.23136.31.camel@x220>
+Date: Thu, 19 Jun 2014 17:00:29 +0800
+Message-ID: <CAD6h2NRb3tStSy-qiBRQHDo7Yy=Obvgt1hx17M13atXEtTxcaA@mail.gmail.com>
+Subject: Re: clk: hisilicon: ARCH_HIP04 and ARCH_HIX5HD2?
+From: Haojian Zhuang <haojian.zhuang@linaro.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Mike Turquette <mturquette@linaro.org>,
         Zhangfei Gao <zhangfei.gao@linaro.org>,
-        Haifeng Yan <haifeng.yan@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 19 Jun 2014 10:50:07 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Jun 2014 08:50:11.0343 (UTC) FILETIME=[7ACC39F0:01CF8B9B]
-X-RcptDomain: vger.kernel.org
+        Haifeng Yan <haifeng.yan@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-0) Commit d3e6573c48f4 ("clk: hip04: add clock driver") was included in
-v3.15. That clock driver is built only if CONFIG_ARCH_HIP04 is set.
+On 19 June 2014 16:50, Paul Bolle <pebolle@tiscali.nl> wrote:
+> 0) Commit d3e6573c48f4 ("clk: hip04: add clock driver") was included in
+> v3.15. That clock driver is built only if CONFIG_ARCH_HIP04 is set.
+>
+> And commit 5efaf09021a5 ("clk: hisi: add clk-hix5hd2.c") was included in
+> v3.16-rc1. And that driver is built only if CONFIG_ARCH_HIX5HD2 is set.
+>
+> 1) Neither the symbol ARCH_HIP04 nor the symbol ARCH_HIX5HD2 is part of
+> v3.16-rc1. These symbols are also not part of next-20140619. I assume
+> that both are pending somewhere. Is that correct?
+>
+> 2) It would probably be nice if these drivers got some (automatic) build
+> coverage until those symbols enter the tree. I don't know how that could
+> be achieved.
+>
+>
+> Paul Bolle
+>
 
-And commit 5efaf09021a5 ("clk: hisi: add clk-hix5hd2.c") was included in
-v3.16-rc1. And that driver is built only if CONFIG_ARCH_HIX5HD2 is set.
+Because clock driver is the first component should be merged into
+kernel tree. Otherwise, SoC couldn't be compiled at all since SoC &
+clock are in two different git tree.
 
-1) Neither the symbol ARCH_HIP04 nor the symbol ARCH_HIX5HD2 is part of
-v3.16-rc1. These symbols are also not part of next-20140619. I assume
-that both are pending somewhere. Is that correct?
+I also hope that SoC patches could be merged as soon as possible. But
+we also need to follow up the comments on SoC patches from mailing
+list. I can't not say when those SoC patches could be merged into
+mainline since I'm not the gate keeper. I could only say that we're
+making effort on this.
 
-2) It would probably be nice if these drivers got some (automatic) build
-coverage until those symbols enter the tree. I don't know how that could
-be achieved.
-
-
-Paul Bolle
-
+Regards
+Haojian
