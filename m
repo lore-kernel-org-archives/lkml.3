@@ -1,77 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757399AbaFSFXz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 01:23:55 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:36209 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757347AbaFSFXw (ORCPT
+	id S1757415AbaFSFYX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 01:24:23 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:62273 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757303AbaFSFYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 01:23:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <1403153691-15606-1-git-send-email-dianders@chromium.org>
-References: <1403153691-15606-1-git-send-email-dianders@chromium.org>
-Date: Wed, 18 Jun 2014 22:23:51 -0700
-X-Google-Sender-Auth: f0D7aoK864Vls55OwCLmOR7o3hQ
-Message-ID: <CAD=FV=U0RAS3pi=i7smGo2rBJ+NfijXhmjX1PUs1rrwKkQewPA@mail.gmail.com>
-Subject: Re: [PATCH] i2c: s3c2410: resume the I2C controller earlier
-From: Doug Anderson <dianders@chromium.org>
-To: Wolfram Sang <wsa@the-dreams.de>, Kukjin Kim <kgene.kim@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Doug Anderson <dianders@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 19 Jun 2014 01:24:22 -0400
+Message-ID: <1403155458.5189.54.camel@marge.simpson.net>
+Subject: Re: [bisected] pre-3.16 regression on open() scalability
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave.hansen@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>, Christoph Lameter <cl@linux.com>
+Date: Thu, 19 Jun 2014 07:24:18 +0200
+In-Reply-To: <20140619041900.GD4669@linux.vnet.ibm.com>
+References: <53A0CAE5.9000702@intel.com>
+	 <20140618001836.GV4669@linux.vnet.ibm.com> <53A132D4.60408@intel.com>
+	 <20140618125831.GB4669@linux.vnet.ibm.com> <53A1CE19.7040103@intel.com>
+	 <20140618203052.GT4669@linux.vnet.ibm.com>
+	 <20140618235131.GA25946@linux.vnet.ibm.com>
+	 <20140619014200.GO8178@tassilo.jf.intel.com>
+	 <20140619021337.GA4669@linux.vnet.ibm.com>
+	 <20140619033816.GQ8178@tassilo.jf.intel.com>
+	 <20140619041900.GD4669@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 2014-06-18 at 21:19 -0700, Paul E. McKenney wrote: 
+> On Wed, Jun 18, 2014 at 08:38:16PM -0700, Andi Kleen wrote:
+> > On Wed, Jun 18, 2014 at 07:13:37PM -0700, Paul E. McKenney wrote:
+> > > On Wed, Jun 18, 2014 at 06:42:00PM -0700, Andi Kleen wrote:
+> > > > 
+> > > > I still think it's totally the wrong direction to pollute so 
+> > > > many fast paths with this obscure debugging check workaround
+> > > > unconditionally.
+> > > 
+> > > OOM prevention should count for something, I would hope.
+> > 
+> > OOM in what scenario? This is getting bizarre.
+> 
+> On the bizarre part, at least we agree on something.  ;-)
+> 
+> CONFIG_NO_HZ_FULL booted with at least one nohz_full CPU.  Said CPU
+> gets into the kernel and stays there, not necessarily generating RCU
+> callbacks.  The other CPUs are very likely generating RCU callbacks.
+> Because the nohz_full CPU is in the kernel, and because there are no
+> scheduling-clock interrupts on that CPU, grace periods do not complete.
+> Eventually, the callbacks from the other CPUs (and perhaps also some
+> from the nohz_full CPU, for that matter) OOM the machine.
+> 
+> Now this scenario constitutes an abuse of CONFIG_NO_HZ_FULL, because it
+> is intended for CPUs that execute either in userspace (in which case
+> those CPUs are in extended quiescent states so that RCU can happily
+> ignore them) or for real-time workloads with low CPU untilization (in
+> which case RCU sees them go idle, which is also a quiescent state).
+> But that won't stop people from abusing their kernels and complaining
+> when things break.
 
-On Wed, Jun 18, 2014 at 9:54 PM, Doug Anderson <dianders@chromium.org> wrote:
-> From: Vincent Palatin <vpalatin@chromium.org>
->
-> When the wake-up is triggered by the PMIC RTC, the RTC driver is trying
-> to read the PMIC interrupt status over I2C and fails because the I2C
-> controller is not resumed yet.
-> Let's resume the I2C controller earlier in the _noirq phase
-> (as other hardwares are doing), so we can properly get the wake-up
-> condition.
->
-> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
->  drivers/i2c/busses/i2c-s3c2410.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-> index e828a1d..b904132 100644
-> --- a/drivers/i2c/busses/i2c-s3c2410.c
-> +++ b/drivers/i2c/busses/i2c-s3c2410.c
-> @@ -1267,7 +1267,7 @@ static int s3c24xx_i2c_suspend_noirq(struct device *dev)
->         return 0;
->  }
->
-> -static int s3c24xx_i2c_resume(struct device *dev)
-> +static int s3c24xx_i2c_resume_noirq(struct device *dev)
->  {
->         struct platform_device *pdev = to_platform_device(dev);
->         struct s3c24xx_i2c *i2c = platform_get_drvdata(pdev);
-> @@ -1285,7 +1285,7 @@ static int s3c24xx_i2c_resume(struct device *dev)
->  static const struct dev_pm_ops s3c24xx_i2c_dev_pm_ops = {
->  #ifdef CONFIG_PM_SLEEP
->         .suspend_noirq = s3c24xx_i2c_suspend_noirq,
-> -       .resume = s3c24xx_i2c_resume,
-> +       .resume_noirq = s3c24xx_i2c_resume_noirq,
+IMHO, those people can keep the pieces.
 
-I looked at applying this to another i2c controller and stumbled upon
-feedback from Wolfram suggesting that I should add "poweroff, thaw,
-freeze, restore".  I'm happy to squash that into this patch or send a
-separate patch if people would like it.  Just let me know.
+I don't even enable RCU_BOOST in -rt kernels, because that safety net
+has a price.  The instant Joe User picks up the -rt shovel, it's his
+grave, and he gets to do the digging.  Instead of trying to save his
+bacon, I hand him a slightly better shovel, let him prioritize all
+kthreads including workqueues.  Joe can dig all he wants to, and it's on
+him, I just make sure he has the means to bury himself properly :)
 
--Doug
+> This same thing can also happen without CONFIG_NO_HZ full, though
+> the system has to work a bit harder.  In this case, the CPU looping
+> in the kernel has scheduling-clock interrupts, but if all it does
+> is cond_resched(), RCU is never informed of any quiescent states.
+> The whole point of this patch is to make those cond_resched() calls,
+> which are quiescent states, visible to RCU.
+> 
+> > If something keeps looping forever in the kernel creating 
+> > RCU callbacks without any real quiescent states it's simply broken.
+> 
+> I could get behind that.  But by that definition, there is a lot of
+> breakage in the current kernel, especially as we move to larger CPU
+> counts.
+
+Not only larger CPU counts: skipping the -rq clock update on wakeup
+(cycle saving optimization) turned out to be deadly to boxen with a
+zillion disks because our wakeup latency can be so incredibly horrible
+that falsely attributing wakeup latency to the next task to run
+(watchdog) resulted in it being throttled for long enough that big IO
+boxen panicked during boot.
+
+The root cause of that wasn't the optimization, the root was the
+horrific amounts of time we can spend locked up in the kernel.
+
+-Mike
+
