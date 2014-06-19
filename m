@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758088AbaFSQP6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:15:58 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:58103 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757663AbaFSQP5 (ORCPT
+	id S1758096AbaFSQRf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:17:35 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:51996 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757301AbaFSQRd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:15:57 -0400
-Date: Thu, 19 Jun 2014 12:15:53 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] workqueue: use "pool->cpu < 0" to stand for an unbound
- pool
-Message-ID: <20140619161553.GI26904@htj.dyndns.org>
-References: <1401780714-12127-1-git-send-email-laijs@cn.fujitsu.com>
+	Thu, 19 Jun 2014 12:17:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401780714-12127-1-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53A309A5.9040204@linaro.org>
+References: <1403091060-5054-1-git-send-email-amit.daniel@samsung.com>
+	<CAD=FV=WHK7TDdqcAd6aVs2g8rcHJx834im_4nTKHJAkUisWq4A@mail.gmail.com>
+	<53A2A86E.4090903@linaro.org>
+	<CAD=FV=VUomY-h2euRVWNO=ND0pUNLO5mZr_=sMm_oUSrwBssnA@mail.gmail.com>
+	<53A309A5.9040204@linaro.org>
+Date: Thu, 19 Jun 2014 09:17:32 -0700
+X-Google-Sender-Auth: W9svIXIzHHBJPCb5WQmofcHLm-Q
+Message-ID: <CAD=FV=X0NHALPJWaszKLCLPFY-xJvT7iio=hvQCeqCz5O5c-MQ@mail.gmail.com>
+Subject: Re: [PATCH] clocksource: exynos-mct: Register the timer for stable udelay
+From: Doug Anderson <dianders@chromium.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Riley <davidriley@chromium.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 03:31:45PM +0800, Lai Jiangshan wrote:
-> There is a piece of sanity checks code in the put_unbound_pool().
-> The meaning of this code is "if it is not an unbound pool, it will complain
-> and return" IIUC. But the code uses "pool->flags & POOL_DISASSOCIATED"
-> imprecisely due to a non-unbound pool may also have this flags.
-> 
-> We should use "pool->cpu < 0" to stand for an unbound pool, so we covert the
-> code to it.
-> 
-> There is no strictly wrong if we still keep "pool->flags & POOL_DISASSOCIATED"
-> here, but it is just a noise if we keep it:
->   1) we focus on "unbound" here, not "[dis]association".
->   2) "pool->cpu < 0" already implies "pool->flags & POOL_DISASSOCIATED".
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Daniel,
 
-Applied to wq/for-3.17.
+On Thu, Jun 19, 2014 at 9:02 AM, Daniel Lezcano
+<daniel.lezcano@linaro.org> wrote:
+>> My understanding of the current status is:
+>> * I posed the 64-bit version that's almost as fast as the 32-bit version.
+>> * I asked if people want the 32-bit version: no answer
+>> * I asked if anyone is opposed to the 64-bit version: no answer
+>
+>
+> Yeah, that happens. I thought you were working on the 32 bits.
 
-Thansk.
+It was on my list of things to do today to touch base and make sure we
+were on the same page.  Apparently we weren't.  ;)
 
--- 
-tejun
+
+>> I know that you wanted me to clean up the description of the 64-bit
+>> version so I was going to do that and repost.  If there's someone
+>> willing to review / ack the 32-bit version I'd be happy to do that
+>> instead.  Possibly I'll do both and a maintainer can choose which to
+>> apply?
+>
+>
+> Please, resend me the patch 1/3 as it is urgent with the changelog changed.
+
+OK, I'll do that right now, but just send it as a single patch (so I
+can get it out right away).  Then I'll post up the 32-bit versions
+with an implicit dependency on that patch.
+
+-Doug
