@@ -1,76 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716AbaFSNWT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 09:22:19 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:52433 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129AbaFSNUK (ORCPT
+	id S1755883AbaFSNYb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 09:24:31 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:51461 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141AbaFSNY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 09:20:10 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: kgdb-bugreport@lists.sourceforge.net,
-        Jason Wessel <jason.wessel@windriver.com>
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, John Stultz <john.stultz@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Daniel Thompson <daniel.thompson@liaro.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH v5 1/8] kdb: Remove currently unused kdbtab_t->cmd_flags
-Date: Thu, 19 Jun 2014 14:19:30 +0100
-Message-Id: <1403183977-3454-2-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1403183977-3454-1-git-send-email-daniel.thompson@linaro.org>
-References: <1399381429-16194-1-git-send-email-daniel.thompson@linaro.org>
- <1403183977-3454-1-git-send-email-daniel.thompson@linaro.org>
+	Thu, 19 Jun 2014 09:24:29 -0400
+Message-ID: <53A2E452.5020109@ti.com>
+Date: Thu, 19 Jun 2014 18:53:30 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Tero Kristo <t-kristo@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <arnd@arndb.de>, <tony@atomide.com>, <jg1.han@samsung.com>,
+        Rajendra Nayak <rnayak@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v2 10/18] ARM: dts: dra7xx-clocks: Add missing 32khz clocks
+ used for PHY
+References: <1401345500-20188-1-git-send-email-kishon@ti.com> <1401345500-20188-11-git-send-email-kishon@ti.com> <53A2C690.1060106@ti.com>
+In-Reply-To: <53A2C690.1060106@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
+Hi Tero,
 
-The struct member is never used in the code, so we can remove it.
+On Thursday 19 June 2014 04:46 PM, Tero Kristo wrote:
+> On 05/29/2014 09:38 AM, Kishon Vijay Abraham I wrote:
+>> Added missing 32khz clock used by PCIe PHY.
+>> The documention for this node can be found @ ../bindings/clock/ti/gate.txt.
+> 
+> You can drop the node documentation ref, and rather add a TRM reference about
+> hardware details. Other than that, looks good to me.
 
-We will introduce real flags soon by renaming cmd_repeat to cmd_flags.
+You mean something like why 32KHz clock is used (**PRCM.PCIE_32K_GFCLK (based
+on PRM.SYS_32K) for debounce and wakeup logic inside the PCIe1_PHY_RX**)? Or
+something like **Figure 26-19. PCIe PHY Subsystem Integration of DRA TRM vE
+shows how 32KHz clock is being used** ?
 
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Daniel Thompson <daniel.thompson@liaro.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: kgdb-bugreport@lists.sourceforge.net
----
- kernel/debug/kdb/kdb_main.c    | 1 -
- kernel/debug/kdb/kdb_private.h | 1 -
- 2 files changed, 2 deletions(-)
+Thanks
+Kishon
 
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 2f7c760..0b28bb0 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -2694,7 +2694,6 @@ int kdb_register_repeat(char *cmd,
- 	kp->cmd_func   = func;
- 	kp->cmd_usage  = usage;
- 	kp->cmd_help   = help;
--	kp->cmd_flags  = 0;
- 	kp->cmd_minlen = minlen;
- 	kp->cmd_repeat = repeat;
- 
-diff --git a/kernel/debug/kdb/kdb_private.h b/kernel/debug/kdb/kdb_private.h
-index 7afd3c8..c4c46c7 100644
---- a/kernel/debug/kdb/kdb_private.h
-+++ b/kernel/debug/kdb/kdb_private.h
-@@ -172,7 +172,6 @@ typedef struct _kdbtab {
- 	kdb_func_t cmd_func;		/* Function to execute command */
- 	char    *cmd_usage;		/* Usage String for this command */
- 	char    *cmd_help;		/* Help message for this command */
--	short    cmd_flags;		/* Parsing flags */
- 	short    cmd_minlen;		/* Minimum legal # command
- 					 * chars required */
- 	kdb_repeat_t cmd_repeat;	/* Does command auto repeat on enter? */
--- 
-1.9.3
-
+> 
+> -Tero
+> 
+>>
+>> Cc: Tony Lindgren <tony@atomide.com>
+>> Cc: Rajendra Nayak <rnayak@ti.com>
+>> Cc: Tero Kristo <t-kristo@ti.com>
+>> Cc: Paul Walmsley <paul@pwsan.com>
+>> Cc: Tony Lindgren <tony@atomide.com>
+>> Cc: Rob Herring <robh+dt@kernel.org>
+>> Cc: Pawel Moll <pawel.moll@arm.com>
+>> Cc: Mark Rutland <mark.rutland@arm.com>
+>> Cc: Kumar Gala <galak@codeaurora.org>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> ---
+>>   arch/arm/boot/dts/dra7xx-clocks.dtsi |    8 ++++++++
+>>   1 file changed, 8 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi
+>> b/arch/arm/boot/dts/dra7xx-clocks.dtsi
+>> index 44993ec..e1bd052 100644
+>> --- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
+>> +++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
+>> @@ -1165,6 +1165,14 @@
+>>           reg = <0x021c>, <0x0220>;
+>>       };
+>>
+>> +    optfclk_pciephy_32khz: optfclk_pciephy_32khz@4a0093b0 {
+>> +        compatible = "ti,gate-clock";
+>> +        clocks = <&sys_32k_ck>;
+>> +        #clock-cells = <0>;
+>> +        reg = <0x13b0>;
+>> +        ti,bit-shift = <8>;
+>> +    };
+>> +
+>>       optfclk_pciephy_div: optfclk_pciephy_div@4a00821c {
+>>           compatible = "ti,divider-clock";
+>>           clocks = <&apll_pcie_ck>;
+>>
+> 
