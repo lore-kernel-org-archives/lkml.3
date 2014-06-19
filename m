@@ -1,147 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758277AbaFSQCs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 12:02:48 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:61000 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757376AbaFSQCp (ORCPT
+	id S1758292AbaFSQDK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 12:03:10 -0400
+Received: from mail.fireflyinternet.com ([87.106.93.118]:56467 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757797AbaFSQDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 12:02:45 -0400
-Message-ID: <53A309A5.9040204@linaro.org>
-Date: Thu, 19 Jun 2014 18:02:45 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 19 Jun 2014 12:03:06 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
+Date: Thu, 19 Jun 2014 17:02:57 +0100
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: mmu_notifier and i915_gem_userptr.c
+Message-ID: <20140619160257.GB8476@nuc-i3427.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Joerg Roedel <joro@8bytes.org>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org
+References: <20140619153655.GG31771@8bytes.org>
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Riley <davidriley@chromium.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Subject: Re: [PATCH] clocksource: exynos-mct: Register the timer for stable
- udelay
-References: <1403091060-5054-1-git-send-email-amit.daniel@samsung.com>	<CAD=FV=WHK7TDdqcAd6aVs2g8rcHJx834im_4nTKHJAkUisWq4A@mail.gmail.com>	<53A2A86E.4090903@linaro.org> <CAD=FV=VUomY-h2euRVWNO=ND0pUNLO5mZr_=sMm_oUSrwBssnA@mail.gmail.com>
-In-Reply-To: <CAD=FV=VUomY-h2euRVWNO=ND0pUNLO5mZr_=sMm_oUSrwBssnA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140619153655.GG31771@8bytes.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2014 05:49 PM, Doug Anderson wrote:
-> Daniel,
->
-> On Thu, Jun 19, 2014 at 2:07 AM, Daniel Lezcano
-> <daniel.lezcano@linaro.org> wrote:
->> On 06/19/2014 01:17 AM, Doug Anderson wrote:
->>>
->>> Amit,
->>>
->>> Thanks for posting!
->>>
->>> On Wed, Jun 18, 2014 at 4:31 AM, Amit Daniel Kachhap
->>> <amit.daniel@samsung.com> wrote:
->>>>
->>>> This patch register the exynos mct clocksource as the current timer
->>>> as it has constant clock rate. This will generate correct udelay for the
->>>> exynos platform and avoid using unnecessary calibrated jiffies. This
->>>> change
->>>> have been tested on exynos5420 based board.
->>>>
->>>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
->>>> ---
->>>>
->>>> Patches from David Riley confirmed that udelay is broken in exynos5420.
->>>> Link to those patches are,
->>>> 1) https://patchwork.kernel.org/patch/4344911/
->>>> 2) https://patchwork.kernel.org/patch/4344881/
->>>>
->>>>    drivers/clocksource/exynos_mct.c | 11 +++++++++++
->>>>    1 file changed, 11 insertions(+)
->>>>
->>>> diff --git a/drivers/clocksource/exynos_mct.c
->>>> b/drivers/clocksource/exynos_mct.c
->>>> index 8d64200..57cb3dc 100644
->>>> --- a/drivers/clocksource/exynos_mct.c
->>>> +++ b/drivers/clocksource/exynos_mct.c
->>>> @@ -198,10 +198,21 @@ static u64 notrace exynos4_read_sched_clock(void)
->>>>           return exynos4_frc_read(&mct_frc);
->>>>    }
->>>>
->>>> +static struct delay_timer exynos4_delay_timer;
->>>> +
->>>> +static unsigned long exynos4_read_current_timer(void)
->>>> +{
->>>> +       return exynos4_frc_read(&mct_frc);
->>>
->>>
->>> This is terribly inefficient to read all 64-bits and then cast back to
->>> a 32-bit value.  Replace with:
->>>
->>> return __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
->>>
->>>
->>>> +}
->>>> +
->>>>    static void __init exynos4_clocksource_init(void)
->>>>    {
->>>>           exynos4_mct_frc_start(0, 0);
->>>
->>>
->>> Please rebase atop (1d80415 clocksource: exynos_mct: Don't reset the
->>> counter during boot and resume), which is in linuxnext among other
->>> places.
->>>
->>>>
->>>> +       exynos4_delay_timer.read_current_timer =
->>>> &exynos4_read_current_timer;
->>>> +       exynos4_delay_timer.freq = clk_rate;
->>>> +       register_current_timer_delay(&exynos4_delay_timer);
->>>> +
->>>>           if (clocksource_register_hz(&mct_frc, clk_rate))
->>>>                   panic("%s: can't register clocksource\n", mct_frc.name);
->>>
->>>
->>> It does seem to work for me though.  :)
->>
->>
->> Doug,
->>
->> aren't you working on a 32 bits version ? So this patch could be simplified
->
-> I could do that if someone told me that they'll land it.
->
-> My understanding of the current status is:
-> * I posed the 64-bit version that's almost as fast as the 32-bit version.
-> * I asked if people want the 32-bit version: no answer
-> * I asked if anyone is opposed to the 64-bit version: no answer
+On Thu, Jun 19, 2014 at 05:36:55PM +0200, Joerg Roedel wrote:
+> Hey Chris,
+> 
+> recently I had a look at i915_gem_userptr.c in order to extend the
+> mmu_notifier call-backs implemented there. My goal is to implement the
+> change_pte call-back where it is necessary to get rid of it being
+> wrapped mn_invalidate_range_start/end() calls (for the reason see
+> commit 6bdb913f).
+> 
+> For most users of mmu_notifiers this is easy, except the i915 driver :)
+> The invalidate_range_start notifier implemented there can sleep, so it
+> can't be reused for a change_pte implementation (because change_pte is
+> called under ptl spin_lock and is not allowed to sleep). On the other
+> hand you also didn't implement the invalidate_page notifier, so I am not
+> sure whether the code actually cares about the somewhat similar
+> change_pte events?
 
-Yeah, that happens. I thought you were working on the 32 bits.
+Maybe it should hook the invalidate_page notifier. I picked
+invalidate_range() as it seemed to be called first and seemed to cover
+all operations that affected an mm's addr range.  The invalidate_page
+seemed to be only called during writeback, which aiui will not affect gup.
+Should we be hooking more notifiers?
+ 
+> Here is where change_pte is called from:
+> 
+> 	* In KSM code when pages are merged (shouldn't be relevant
+> 	  because KSM doesn't merged pages returned by get_user_pages())
+> 	* In uprobes code when a user-page is replaced by a kernel page
+> 	  (should only handle .text sections, so probaly not relevant
+> 	   here)
+> 	* When someone writes to a COW page in mm/memory.c (this looks
+> 	  relevant looking at forked processes, on the other hand,
+> 	  this is currently handled by unbinding the vma from the
+> 	  object list in the i915 driver)
+> 
+> I am not familiar with the i915 hardware and the driver implementation
+> details, so I wanted to ask whether the driver
+> 
+> 	1) Cares about the change_pte event?
 
-> I know that you wanted me to clean up the description of the 64-bit
-> version so I was going to do that and repost.  If there's someone
-> willing to review / ack the 32-bit version I'd be happy to do that
-> instead.  Possibly I'll do both and a maintainer can choose which to
-> apply?
+I don't think so... If I understand correctly, change_pte only gets
+called when the PTE is updated, not the physical page itself. If that is
+true, then the dma mapping of the page is unaffected, and so the GPU
+view of the page is not affected either. So, as long as the GPU
+maintains a remapped address of a page that is associated by a process
+address, we don't need to change anything.
 
-Please, resend me the patch 1/3 as it is urgent with the changelog changed.
+> 	2) If it cares, what is the best way to implement it? What the
+> 	   invalidate_range_start() notifier does seems a bit overkill,
+> 	   since for the change_pte event nothing is unmapped (but maybe
+> 	   remapped)
 
-> In the case here I was suggesting using the 32-bit version just
-> because on ARM32 there's totally no reason to read 64-bits.  I hadn't
-> given a thought to ARM64.  More on that in response to the other
-> messages.
+If need be, start with overkill. I'd rather drop everything and rebuild
+it through the layers of mappings we have, as this is a new area for us
+and we want some solid foundations before trying to be smart.
+ 
+> So any insight you could provide here would be useful :)
 
-Is there a 64bits platform using exynos_mct ?
-
+Likewise. :-p
+-Chris
 
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Chris Wilson, Intel Open Source Technology Centre
