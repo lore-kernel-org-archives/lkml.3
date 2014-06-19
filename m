@@ -1,39 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757360AbaFSFei (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 01:34:38 -0400
-Received: from s21.ceferty.it ([37.59.21.59]:57056 "EHLO s21.ceferty.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750919AbaFSFeh convert rfc822-to-8bit (ORCPT
+	id S1757371AbaFSFsh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 01:48:37 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:44172 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674AbaFSFsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 01:34:37 -0400
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 19 Jun 2014 01:48:36 -0400
+Date: Thu, 19 Jun 2014 05:48:35 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Roger Quadros <rogerq@ti.com>
+cc: tony@atomide.com, rnayak@ti.com, nm@ti.com, kishon@ti.com,
+        george.cherian@ti.com, balbi@ti.com, balajitk@ti.com, nsekhar@ti.com,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: DRA7: hwmod: Add OCP2SCP3 module
+In-Reply-To: <1403093816-10960-2-git-send-email-rogerq@ti.com>
+Message-ID: <alpine.DEB.2.02.1406190546520.13869@utopia.booyaka.com>
+References: <1403093816-10960-1-git-send-email-rogerq@ti.com> <1403093816-10960-2-git-send-email-rogerq@ti.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Skrzynka Pocztowa Zostala Tymczasowo Zawieszona !!!
-To: Recipients <info_webmaster@finezjacatering.pl>
-From: IT ADMIN <info_webmaster@finezjacatering.pl>
-Date: Thu, 19 Jun 2014 06:09:49 +0100
-Reply-To: noreply@webmaster.pl
-X-Antivirus: avast! (VPS 140618-0, 06/18/2014), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20140619053436.10E731376F6@s21.ceferty.it>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Szanowny uzytkowniku
+On Wed, 18 Jun 2014, Roger Quadros wrote:
+
+> This module is needed for the SATA and PCIe PHYs.
+> 
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> Tested-by: Roger Quadros <rogerq@ti.com>
+
+Is this one a fix?  It looks to me like a new IP block addition.
 
 
-              Niedawno wykryto nietypowe dzialania z konta e-mail, wiec skrzynka pocztowa zostala czasowo zawieszona przez administratora systemu, nalezy odzyskac swoje konto, klikajac na ponizszy link lub skopiuj do przegladarki:   http://itadminhelpdeskcenterr.webs.com/
-
-W wyniku tego, moze pojawic sie ten komunikat w folderze spamu, prosimy przejsc do skrzynki odbiorczej i kliknij link.
-
-Przepraszamy za niedogodnosci.
-HELP DESK IT ADMIN
-
----
-This email is free from viruses and malware because avast! Antivirus protection is active.
-http://www.avast.com
-
+- Paul
