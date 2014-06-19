@@ -1,106 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934401AbaFST2m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 15:28:42 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:54004 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934281AbaFST1u (ORCPT
+	id S934469AbaFST3Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 15:29:24 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55127 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934265AbaFST3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 15:27:50 -0400
-From: Johannes Stadlinger <Johannes.Stadlinger@fau.de>
-To: devel@linuxdriverproject.org
-Cc: Johannes Stadlinger <Johannes.Stadlinger@fau.de>,
-        Maximilian Eschenbacher <maximilian@eschenbacher.email>,
-        linux-kernel@i4.cs.fau.de,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tugce Sirin <ztugcesirin@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Neil Armstrong <superna9999@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Vitaly Osipov <vitaly.osipov@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/8] wlan-ng/prism2sta:checkpatch: Fix long lines
-Date: Thu, 19 Jun 2014 21:20:18 +0200
-Message-Id: <1403205620-10219-6-git-send-email-Johannes.Stadlinger@fau.de>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403205620-10219-1-git-send-email-Johannes.Stadlinger@fau.de>
-References: <1403205620-10219-1-git-send-email-Johannes.Stadlinger@fau.de>
+	Thu, 19 Jun 2014 15:29:21 -0400
+Date: Thu, 19 Jun 2014 21:29:08 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Christoph Lameter <cl@gentwo.org>, Sasha Levin <sasha.levin@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: slub/debugobjects: lockup when freeing memory
+In-Reply-To: <20140619165247.GA4904@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.10.1406192127100.5170@nanos>
+References: <53A2F406.4010109@oracle.com> <alpine.DEB.2.11.1406191001090.2785@gentwo.org> <20140619165247.GA4904@linux.vnet.ibm.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes all warning of checkpatch about lines over 80
-characters.
+On Thu, 19 Jun 2014, Paul E. McKenney wrote:
 
-Signed-off-by: Johannes Stadlinger <Johannes.Stadlinger@fau.de>
-Signed-off-by: Maximilian Eschenbacher <maximilian@eschenbacher.email>
-CC: linux-kernel@i4.cs.fau.de
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Tugce Sirin <ztugcesirin@gmail.com>
-CC: Josh Triplett <josh@joshtriplett.org>
-CC: Neil Armstrong <superna9999@gmail.com>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: Vitaly Osipov <vitaly.osipov@gmail.com>
-CC: devel@driverdev.osuosl.org
-CC: linux-kernel@vger.kernel.org
----
- drivers/staging/wlan-ng/prism2sta.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+> On Thu, Jun 19, 2014 at 10:03:04AM -0500, Christoph Lameter wrote:
+> > On Thu, 19 Jun 2014, Sasha Levin wrote:
+> > 
+> > > [  690.770137] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+> > > [  690.770137] __slab_alloc (mm/slub.c:1732 mm/slub.c:2205 mm/slub.c:2369)
+> > > [  690.770137] ? __lock_acquire (kernel/locking/lockdep.c:3189)
+> > > [  690.770137] ? __debug_object_init (lib/debugobjects.c:100 lib/debugobjects.c:312)
+> > > [  690.770137] kmem_cache_alloc (mm/slub.c:2442 mm/slub.c:2484 mm/slub.c:2489)
+> > > [  690.770137] ? __debug_object_init (lib/debugobjects.c:100 lib/debugobjects.c:312)
+> > > [  690.770137] ? debug_object_activate (lib/debugobjects.c:439)
+> > > [  690.770137] __debug_object_init (lib/debugobjects.c:100 lib/debugobjects.c:312)
+> > > [  690.770137] debug_object_init (lib/debugobjects.c:365)
+> > > [  690.770137] rcuhead_fixup_activate (kernel/rcu/update.c:231)
+> > > [  690.770137] debug_object_activate (lib/debugobjects.c:280 lib/debugobjects.c:439)
+> > > [  690.770137] ? discard_slab (mm/slub.c:1486)
+> > > [  690.770137] __call_rcu (kernel/rcu/rcu.h:76 (discriminator 2) kernel/rcu/tree.c:2585 (discriminator 2))
+> > 
+> > __call_rcu does a slab allocation? This means __call_rcu can no longer be
+> > used in slab allocators? What happened?
+> 
+> My guess is that the root cause is a double call_rcu(), call_rcu_sched(),
+> call_rcu_bh(), or call_srcu().
+> 
+> Perhaps the DEBUG_OBJECTS code now allocates memory to report errors?
+> That would be unfortunate...
 
-diff --git a/drivers/staging/wlan-ng/prism2sta.c b/drivers/staging/wlan-ng/prism2sta.c
-index 278b6a1..a449fdf 100644
---- a/drivers/staging/wlan-ng/prism2sta.c
-+++ b/drivers/staging/wlan-ng/prism2sta.c
-@@ -452,7 +452,8 @@ u32 prism2sta_ifstate(wlandevice_t *wlandev, u32 ifstate)
- 			result = hfa384x_drvr_start(hw);
- 			if (result) {
- 				netdev_err(wlandev->netdev,
--				       "hfa384x_drvr_start() failed,result=%d\n", (int)result);
-+					   "hfa384x_drvr_start() failed,result=%d\n",
-+					   (int)result);
- 				result =
- 				 P80211ENUM_resultcode_implementation_failure;
- 				wlandev->msdstate = WLAN_MSD_HWPRESENT;
-@@ -496,7 +497,8 @@ u32 prism2sta_ifstate(wlandevice_t *wlandev, u32 ifstate)
- 			result = hfa384x_drvr_start(hw);
- 			if (result) {
- 				netdev_err(wlandev->netdev,
--				       "hfa384x_drvr_start() failed,result=%d\n", (int)result);
-+					   "hfa384x_drvr_start() failed,result=%d\n",
-+					   (int)result);
- 				result =
- 				  P80211ENUM_resultcode_implementation_failure;
- 				wlandev->msdstate = WLAN_MSD_HWPRESENT;
-@@ -506,7 +508,8 @@ u32 prism2sta_ifstate(wlandevice_t *wlandev, u32 ifstate)
- 			result = prism2sta_getcardinfo(wlandev);
- 			if (result) {
- 				netdev_err(wlandev->netdev,
--				       "prism2sta_getcardinfo() failed,result=%d\n", (int)result);
-+					   "prism2sta_getcardinfo() failed,result=%d\n",
-+					   (int)result);
- 				result =
- 				  P80211ENUM_resultcode_implementation_failure;
- 				hfa384x_drvr_stop(hw);
-@@ -516,7 +519,8 @@ u32 prism2sta_ifstate(wlandevice_t *wlandev, u32 ifstate)
- 			result = prism2sta_globalsetup(wlandev);
- 			if (result) {
- 				netdev_err(wlandev->netdev,
--				       "prism2sta_globalsetup() failed,result=%d\n", (int)result);
-+					   "prism2sta_globalsetup() failed,result=%d\n",
-+					   (int)result);
- 				result =
- 				  P80211ENUM_resultcode_implementation_failure;
- 				hfa384x_drvr_stop(hw);
-@@ -1271,7 +1275,8 @@ void prism2sta_processing_defer(struct work_struct *data)
- 				     HFA384x_RID_CURRENTSSID, result);
- 				return;
- 			}
--			prism2mgmt_bytestr2pstr((struct hfa384x_bytestr *) &ssid,
-+			prism2mgmt_bytestr2pstr((struct hfa384x_bytestr *)
-+									&ssid,
- 						(p80211pstrd_t *) &
- 						wlandev->ssid);
- 
--- 
-1.9.1
+Well, no. Look at the callchain:
 
+__call_rcu
+    debug_object_activate
+       rcuhead_fixup_activate
+          debug_object_init
+              kmem_cache_alloc
+
+So call rcu activates the object, but the object has no reference in
+the debug objects code so the fixup code is called which inits the
+object and allocates a reference ....
+
+Thanks,
+
+	tglx
