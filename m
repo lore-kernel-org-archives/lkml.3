@@ -1,109 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934412AbaFSUN1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 16:13:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51186 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071AbaFSUNY (ORCPT
+	id S934441AbaFSUPF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 16:15:05 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:39583 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932071AbaFSUPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 16:13:24 -0400
-Date: Thu, 19 Jun 2014 13:13:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Chen Yucong <slaoub@gmail.com>, mgorman@suse.de, hannes@cmpxchg.org,
-        mhocko@suse.cz, riel@redhat.com, linux-mm@kvack.org,
+	Thu, 19 Jun 2014 16:15:03 -0400
+Date: Thu, 19 Jun 2014 13:14:59 -0700
+From: josh@joshtriplett.org
+To: Johannes Stadlinger <Johannes.Stadlinger@fau.de>
+Cc: devel@linuxdriverproject.org,
+        Maximilian Eschenbacher <maximilian@eschenbacher.email>,
+        linux-kernel@i4.cs.fau.de,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Vitaly Osipov <vitaly.osipov@gmail.com>,
+        Himangi Saraogi <himangi774@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/vmscan.c: fix an implementation flaw in proportional
- scanning
-Message-Id: <20140619131322.1ab89e3380bf2eed477f9030@linux-foundation.org>
-In-Reply-To: <20140619010239.GA2071@bbox>
-References: <1402980902-6345-1-git-send-email-slaoub@gmail.com>
-	<20140618152751.283deda95257cc32ccea8f20@linux-foundation.org>
-	<1403136272.12954.4.camel@debian>
-	<20140618174001.a5de7668.akpm@linux-foundation.org>
-	<20140619010239.GA2071@bbox>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 5/8] wlan-ng/prism2mib:checkpatch: Insert blank lines
+Message-ID: <20140619201459.GD16404@cloud>
+References: <1403205620-10219-1-git-send-email-Johannes.Stadlinger@fau.de>
+ <1403205620-10219-5-git-send-email-Johannes.Stadlinger@fau.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403205620-10219-5-git-send-email-Johannes.Stadlinger@fau.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Jun 2014 10:02:39 +0900 Minchan Kim <minchan@kernel.org> wrote:
-
-> > > @@ -2057,8 +2057,7 @@ out:
-> > >  static void shrink_lruvec(struct lruvec *lruvec, struct scan_control
-> > > *sc)
-> > >  {
-> > >         unsigned long nr[NR_LRU_LISTS];
-> > > -       unsigned long targets[NR_LRU_LISTS];
-> > > -       unsigned long nr_to_scan;
-> > > +       unsigned long file_target, anon_target;
-> > > 
-> > > >From the above snippet, we can know that the "percent" locals come from
-> > > targets[NR_LRU_LISTS]. So this fix does not increase the stack.
-> > 
-> > OK.  But I expect the stack use could be decreased by using more
-> > complex expressions.
+On Thu, Jun 19, 2014 at 09:20:17PM +0200, Johannes Stadlinger wrote:
+> This patch inserts blank lines after declarations to avoid checkpatch
+> warning.
 > 
-> I didn't look at this patch yet but want to say.
+> After our fixes in 'wlan-ng/prism2mib.c' there are still two checkpatch
+> warnings about lines over 80 characters remaining.
 > 
-> The expression is not easy to follow since several people already
-> confused/discuss/fixed a bit so I'd like to put more concern to clarity
-> rather than stack footprint.
+> Signed-off-by: Johannes Stadlinger <Johannes.Stadlinger@fau.de>
+> Signed-off-by: Maximilian Eschenbacher <maximilian@eschenbacher.email>
+> CC: linux-kernel@i4.cs.fau.de
+> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> CC: Josh Triplett <josh@joshtriplett.org>
+> CC: Vitaly Osipov <vitaly.osipov@gmail.com>
+> CC: Himangi Saraogi <himangi774@gmail.com>
+> CC: devel@driverdev.osuosl.org
+> CC: linux-kernel@vger.kernel.org
+> ---
+>  drivers/staging/wlan-ng/prism2mib.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/wlan-ng/prism2mib.c b/drivers/staging/wlan-ng/prism2mib.c
+> index bdd3b4c..3ea24d6 100644
+> --- a/drivers/staging/wlan-ng/prism2mib.c
+> +++ b/drivers/staging/wlan-ng/prism2mib.c
+> @@ -85,7 +85,8 @@ struct mibrec {
+>  	u16 parm1;
+>  	u16 parm2;
+>  	u16 parm3;
+> -	int (*func) (struct mibrec *mib,
+> +
+> +	int (*func)(struct mibrec *mib,
 
-That code is absolutely awful :( It's terribly difficult to work out
-what the design is - what the code is actually setting out to achieve. 
-One is reduced to trying to reverse-engineer the intent from the
-implementation and that becomes near impossible when the
-implementation has bugs!
+Eliminating the space here makes sense, but checkpatch shouldn't warn
+about spaces after declarations between two fields in the middle of a
+structure declaration.
 
-Look at this miserable comment:
-
-		/*
-		 * For kswapd and memcg, reclaim at least the number of pages
-		 * requested. Ensure that the anon and file LRUs are scanned
-		 * proportionally what was requested by get_scan_count(). We
-		 * stop reclaiming one LRU and reduce the amount scanning
-		 * proportional to the original scan target.
-		 */
-
-
-> For kswapd and memcg, reclaim at least the number of pages
-> requested.
-
-*why*?
-
-> Ensure that the anon and file LRUs are scanned
-> proportionally what was requested by get_scan_count().
-
-Ungramattical.  Lacks specificity.  Fails to explain *why*.
-
-> We stop reclaiming one LRU and reduce the amount scanning
-> proportional to the original scan target.
-
-Ungramattical.  Lacks specificity.  Fails to explain *why*.
-
-
-The only way we're going to fix all this up is to stop looking at the
-code altogether.  Write down the design and the intentions in English. 
-Review that.  Then implement that design in C.
-
-So review and understanding of this code then is a two-stage thing. 
-First, we review and understand the *design*, as written in English. 
-Secondly, we check that the code faithfully implements that design. 
-This second step becomes quite trivial.
-
-
-That may all sound excessively long-winded and formal, but
-shrink_lruvec() of all places needs such treatment.  I am completely
-fed up with peering at the code trying to work out what on earth people
-were thinking when they typed it in :(
-
-
-So my suggestion is: let's stop fiddling with the code.  Someone please
-prepare a patch which fully documents the design and let's get down and
-review that.  Once that patch is complete, let's then start looking at
-the implementation.
-
+>  		     int isget,
+>  		     wlandevice_t *wlandev,
+>  		     hfa384x_t *hw,
+> @@ -722,6 +723,7 @@ static int prism2mib_priv(struct mibrec *mib,
+>  	switch (mib->did) {
+>  	case DIDmib_lnx_lnxConfigTable_lnxRSNAIE:{
+>  			hfa384x_WPAData_t wpa;
+> +
+>  			if (isget) {
+>  				hfa384x_drvr_getconfig(hw,
+>  						       HFA384x_RID_CNFWPADATA,
+> -- 
+> 1.9.1
+> 
