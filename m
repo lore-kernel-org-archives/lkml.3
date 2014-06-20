@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966105AbaFTRsE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 13:48:04 -0400
-Received: from mail-qc0-f202.google.com ([209.85.216.202]:42675 "EHLO
-	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757410AbaFTRsB (ORCPT
+	id S966328AbaFTRsk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 13:48:40 -0400
+Received: from mail-qa0-f74.google.com ([209.85.216.74]:34268 "EHLO
+	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757414AbaFTRsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Jun 2014 13:48:01 -0400
 From: Doug Anderson <dianders@chromium.org>
@@ -18,9 +18,9 @@ Cc: Vincent Guittot <vincent.guittot@linaro.org>,
         javier.martinez@collabora.co.uk, Doug Anderson <dianders@chromium.org>,
         tglx@linutronix.de, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3 3/3] clocksource: exynos_mct: Only use 32-bits where possible
-Date: Fri, 20 Jun 2014 10:47:52 -0700
-Message-Id: <1403286472-6817-4-git-send-email-dianders@chromium.org>
+Subject: [PATCH v3 2/3] clocksource: exynos_mct: __raw_readl/__raw_writel => readl_relaxed/writel_relaxed
+Date: Fri, 20 Jun 2014 10:47:51 -0700
+Message-Id: <1403286472-6817-3-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 2.0.0.526.g5318336
 In-Reply-To: <1403286472-6817-1-git-send-email-dianders@chromium.org>
 References: <1403286472-6817-1-git-send-email-dianders@chromium.org>
@@ -28,164 +28,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MCT has a nice 64-bit counter.  That means that we _can_ register
-as a 64-bit clocksource and sched_clock.  ...but that doesn't mean we
-should.
-
-The 64-bit counter is read by reading two 32-bit registers.  That
-means reading needs to be something like:
-- Read upper half
-- Read lower half
-- Read upper half and confirm that it hasn't changed.
-
-That wouldn't be terrible, but:
-- THe MCT isn't very fast to access (hundreds of nanoseconds).
-- The clocksource is queried _all the time_.
-
-In total system profiles of real workloads on ChromeOS, we've seen
-exynos_frc_read() taking 2% or more of CPU time even after optimizing
-the 3 reads above to 2 (see below).
-
-The MCT is clocked at ~24MHz on all known systems.  That means that
-the 32-bit half of the counter rolls over every ~178 seconds.  This
-inspired an optimization in ChromeOS to cache the upper half between
-calls, moving 3 reads to 2.  ...but we can do better!  Having a 32-bit
-timer that flips every 178 seconds is more than sufficient for Linux.
-Let's just use the lower half of the MCT.
-
-Times on 5420 to do 1000000 gettimeofday() calls from userspace:
-* Original code:                      1323852 us
-* ChromeOS cache upper half:          1173084 us
-* ChromeOS + ldmia to optimize:       1045674 us
-* Use lower 32-bit only (this code):  1014429 us
-
-As you can see, the time used doesn't increase linearly with the
-number of reads and we can make 64-bit work almost as fast as 32-bit
-with a bit of assembly code.  But since there's no real gain for
-64-bit, let's go with the simplest and fastest implementation.
-
-Note: with this change roughly half the time for gettimeofday() is
-spent in exynos_frc_read().  The rest is timer / system call overhead.
-
-Also note: this patch disables the use of the MCT on ARM64 systems
-until we've sorted out how to make "cycles_t" always 32-bit.  Really
-ARM64 systems should be using arch timers anyway.
+Using the __raw functions is discouraged.  Update the file to
+consistently use the proper functions.
 
 Signed-off-by: Doug Anderson <dianders@chromium.org>
 ---
 Changes in v3:
-- Now 32-bit version instead of ldmia version
+- __raw_readl / __raw_writel patch new for version 3
 
-Changes in v2: None
+ drivers/clocksource/exynos_mct.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
- drivers/clocksource/Kconfig      |  1 +
- drivers/clocksource/exynos_mct.c | 39 ++++++++++++++++++++++++++++++++-------
- 2 files changed, 33 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index 065131c..a7aeee8 100644
---- a/drivers/clocksource/Kconfig
-+++ b/drivers/clocksource/Kconfig
-@@ -125,6 +125,7 @@ config CLKSRC_METAG_GENERIC
- 
- config CLKSRC_EXYNOS_MCT
- 	def_bool y if ARCH_EXYNOS
-+	depends on !ARM64
- 	help
- 	  Support for Multi Core Timer controller on Exynos SoCs.
- 
 diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
-index 2df03e2..9403061 100644
+index ab51bf20a..2df03e2 100644
 --- a/drivers/clocksource/exynos_mct.c
 +++ b/drivers/clocksource/exynos_mct.c
-@@ -162,7 +162,17 @@ static void exynos4_mct_frc_start(void)
+@@ -94,7 +94,7 @@ static void exynos4_mct_write(unsigned int value, unsigned long offset)
+ 	u32 mask;
+ 	u32 i;
+ 
+-	__raw_writel(value, reg_base + offset);
++	writel_relaxed(value, reg_base + offset);
+ 
+ 	if (likely(offset >= EXYNOS4_MCT_L_BASE(0))) {
+ 		stat_addr = (offset & ~EXYNOS4_MCT_L_MASK) + MCT_L_WSTAT_OFFSET;
+@@ -144,8 +144,8 @@ static void exynos4_mct_write(unsigned int value, unsigned long offset)
+ 
+ 	/* Wait maximum 1 ms until written values are applied */
+ 	for (i = 0; i < loops_per_jiffy / 1000 * HZ; i++)
+-		if (__raw_readl(reg_base + stat_addr) & mask) {
+-			__raw_writel(mask, reg_base + stat_addr);
++		if (readl_relaxed(reg_base + stat_addr) & mask) {
++			writel_relaxed(mask, reg_base + stat_addr);
+ 			return;
+ 		}
+ 
+@@ -157,7 +157,7 @@ static void exynos4_mct_frc_start(void)
+ {
+ 	u32 reg;
+ 
+-	reg = __raw_readl(reg_base + EXYNOS4_MCT_G_TCON);
++	reg = readl_relaxed(reg_base + EXYNOS4_MCT_G_TCON);
+ 	reg |= MCT_G_TCON_START;
  	exynos4_mct_write(reg, EXYNOS4_MCT_G_TCON);
  }
- 
--static cycle_t notrace _exynos4_frc_read(void)
-+/**
-+ * exynos4_read_count_64 - Read all 64-bits of the global counter
-+ *
-+ * This will read all 64-bits of the global counter taking care to make sure
-+ * that the upper and lower half match.  Note that reading the MCT can be quite
-+ * slow (hundreds of nanoseconds) so you should use the 32-bit (lower half
-+ * only) version when possible.
-+ *
-+ * Returns the number of cycles in the global counter.
-+ */
-+static u64 exynos4_read_count_64(void)
+@@ -165,12 +165,12 @@ static void exynos4_mct_frc_start(void)
+ static cycle_t notrace _exynos4_frc_read(void)
  {
  	unsigned int lo, hi;
- 	u32 hi2 = readl_relaxed(reg_base + EXYNOS4_MCT_G_CNT_U);
-@@ -176,9 +186,22 @@ static cycle_t notrace _exynos4_frc_read(void)
+-	u32 hi2 = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_U);
++	u32 hi2 = readl_relaxed(reg_base + EXYNOS4_MCT_G_CNT_U);
+ 
+ 	do {
+ 		hi = hi2;
+-		lo = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
+-		hi2 = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_U);
++		lo = readl_relaxed(reg_base + EXYNOS4_MCT_G_CNT_L);
++		hi2 = readl_relaxed(reg_base + EXYNOS4_MCT_G_CNT_U);
+ 	} while (hi != hi2);
+ 
  	return ((cycle_t)hi << 32) | lo;
- }
- 
-+/**
-+ * exynos4_read_count_32 - Read the lower 32-bits of the global counter
-+ *
-+ * This will read just the lower 32-bits of the global counter.  This is marked
-+ * as notrace so it can be used by the scheduler clock.
-+ *
-+ * Returns the number of cycles in the global counter (lower 32 bits).
-+ */
-+static u32 notrace exynos4_read_count_32(void)
-+{
-+	return readl_relaxed(reg_base + EXYNOS4_MCT_G_CNT_L);
-+}
-+
- static cycle_t exynos4_frc_read(struct clocksource *cs)
+@@ -225,7 +225,7 @@ static void exynos4_mct_comp0_stop(void)
  {
--	return _exynos4_frc_read();
-+	return exynos4_read_count_32();
- }
+ 	unsigned int tcon;
  
- static void exynos4_frc_resume(struct clocksource *cs)
-@@ -190,21 +213,23 @@ struct clocksource mct_frc = {
- 	.name		= "mct-frc",
- 	.rating		= 400,
- 	.read		= exynos4_frc_read,
--	.mask		= CLOCKSOURCE_MASK(64),
-+	.mask		= CLOCKSOURCE_MASK(32),
- 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
- 	.resume		= exynos4_frc_resume,
- };
+-	tcon = __raw_readl(reg_base + EXYNOS4_MCT_G_TCON);
++	tcon = readl_relaxed(reg_base + EXYNOS4_MCT_G_TCON);
+ 	tcon &= ~(MCT_G_TCON_COMP0_ENABLE | MCT_G_TCON_COMP0_AUTO_INC);
  
- static u64 notrace exynos4_read_sched_clock(void)
- {
--	return _exynos4_frc_read();
-+	return exynos4_read_count_32();
- }
+ 	exynos4_mct_write(tcon, EXYNOS4_MCT_G_TCON);
+@@ -238,7 +238,7 @@ static void exynos4_mct_comp0_start(enum clock_event_mode mode,
+ 	unsigned int tcon;
+ 	cycle_t comp_cycle;
  
- static struct delay_timer exynos4_delay_timer;
+-	tcon = __raw_readl(reg_base + EXYNOS4_MCT_G_TCON);
++	tcon = readl_relaxed(reg_base + EXYNOS4_MCT_G_TCON);
  
- static cycles_t exynos4_read_current_timer(void)
- {
--	return _exynos4_frc_read();
-+	BUILD_BUG_ON_MSG(sizeof(cycles_t) != sizeof(u32),
-+			 "cycles_t needs to move to 32-bit for ARM64 usage");
-+	return exynos4_read_count_32();
- }
+ 	if (mode == CLOCK_EVT_MODE_PERIODIC) {
+ 		tcon |= MCT_G_TCON_COMP0_AUTO_INC;
+@@ -327,7 +327,7 @@ static void exynos4_mct_tick_stop(struct mct_clock_event_device *mevt)
+ 	unsigned long mask = MCT_L_TCON_INT_START | MCT_L_TCON_TIMER_START;
+ 	unsigned long offset = mevt->base + MCT_L_TCON_OFFSET;
  
- static void __init exynos4_clocksource_init(void)
-@@ -218,7 +243,7 @@ static void __init exynos4_clocksource_init(void)
- 	if (clocksource_register_hz(&mct_frc, clk_rate))
- 		panic("%s: can't register clocksource\n", mct_frc.name);
+-	tmp = __raw_readl(reg_base + offset);
++	tmp = readl_relaxed(reg_base + offset);
+ 	if (tmp & mask) {
+ 		tmp &= ~mask;
+ 		exynos4_mct_write(tmp, offset);
+@@ -349,7 +349,7 @@ static void exynos4_mct_tick_start(unsigned long cycles,
+ 	/* enable MCT tick interrupt */
+ 	exynos4_mct_write(0x1, mevt->base + MCT_L_INT_ENB_OFFSET);
  
--	sched_clock_register(exynos4_read_sched_clock, 64, clk_rate);
-+	sched_clock_register(exynos4_read_sched_clock, 32, clk_rate);
- }
+-	tmp = __raw_readl(reg_base + mevt->base + MCT_L_TCON_OFFSET);
++	tmp = readl_relaxed(reg_base + mevt->base + MCT_L_TCON_OFFSET);
+ 	tmp |= MCT_L_TCON_INT_START | MCT_L_TCON_TIMER_START |
+ 	       MCT_L_TCON_INTERVAL_MODE;
+ 	exynos4_mct_write(tmp, mevt->base + MCT_L_TCON_OFFSET);
+@@ -401,7 +401,7 @@ static int exynos4_mct_tick_clear(struct mct_clock_event_device *mevt)
+ 		exynos4_mct_tick_stop(mevt);
  
- static void exynos4_mct_comp0_stop(void)
-@@ -245,7 +270,7 @@ static void exynos4_mct_comp0_start(enum clock_event_mode mode,
- 		exynos4_mct_write(cycles, EXYNOS4_MCT_G_COMP0_ADD_INCR);
- 	}
- 
--	comp_cycle = exynos4_frc_read(&mct_frc) + cycles;
-+	comp_cycle = exynos4_read_count_64() + cycles;
- 	exynos4_mct_write((u32)comp_cycle, EXYNOS4_MCT_G_COMP0_L);
- 	exynos4_mct_write((u32)(comp_cycle >> 32), EXYNOS4_MCT_G_COMP0_U);
- 
+ 	/* Clear the MCT tick interrupt */
+-	if (__raw_readl(reg_base + mevt->base + MCT_L_INT_CSTAT_OFFSET) & 1) {
++	if (readl_relaxed(reg_base + mevt->base + MCT_L_INT_CSTAT_OFFSET) & 1) {
+ 		exynos4_mct_write(0x1, mevt->base + MCT_L_INT_CSTAT_OFFSET);
+ 		return 1;
+ 	} else {
 -- 
 2.0.0.526.g5318336
 
