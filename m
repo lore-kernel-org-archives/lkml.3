@@ -1,38 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754807AbaFTPUk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 11:20:40 -0400
-Received: from qmta14.emeryville.ca.mail.comcast.net ([76.96.27.212]:44269
-	"EHLO qmta14.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753164AbaFTPUj (ORCPT
+	id S1755037AbaFTPVO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 11:21:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47090 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753840AbaFTPVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 11:20:39 -0400
-Date: Fri, 20 Jun 2014 10:20:36 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: josh@joshtriplett.org, Andi Kleen <ak@linux.intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-Subject: Re: [bisected] pre-3.16 regression on open() scalability
-In-Reply-To: <20140619230732.GX4904@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.11.1406201019430.10810@gentwo.org>
-References: <20140618203052.GT4669@linux.vnet.ibm.com> <20140618235131.GA25946@linux.vnet.ibm.com> <20140619014200.GO8178@tassilo.jf.intel.com> <alpine.DEB.2.11.1406190941180.2785@gentwo.org> <20140619180916.GE4904@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1406191531020.4002@gentwo.org> <20140619204220.GJ4904@linux.vnet.ibm.com> <alpine.DEB.2.11.1406191612000.5484@gentwo.org> <alpine.DEB.2.11.1406191614270.5484@gentwo.org> <20140619213203.GA16747@cloud>
- <20140619230732.GX4904@linux.vnet.ibm.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 20 Jun 2014 11:21:12 -0400
+Message-ID: <53A4515C.8090103@canonical.com>
+Date: Fri, 20 Jun 2014 11:21:00 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: greg@kroah.com, kamal.mostafa@canonical.com, luis.henriques@canonical.com,
+        jslaby@suse.cz, clm@fb.com, jbacik@fb.com, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: Re: [v3.10.y][v3.11.y][v3.12.y][v3.13.y][v3.14.y][PATCH 1/1][V2]
+ ALSA: usb-audio: Prevent printk ratelimiting from spamming kernel log while
+ DEBUG not defined
+References: <cover.1403113867.git.joseph.salisbury@canonical.com>	 <a377cdb51b1a98e9fa6bffaa124502fc15c47903.1403113867.git.joseph.salisbury@canonical.com> <1403142759.23472.28.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <1403142759.23472.28.camel@deadeye.wl.decadent.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Jun 2014, Paul E. McKenney wrote:
+On 06/18/2014 09:52 PM, Ben Hutchings wrote:
+> On Wed, 2014-06-18 at 14:32 -0400, Joseph Salisbury wrote:
+>> From: Sander Eikelenboom <linux@eikelenboom.it>
+>>
+>> BugLink: http://bugs.launchpad.net/bugs/1319457
+>>
+>> This (widely used) construction:
+>>
+>> if(printk_ratelimit())
+>> 	dev_dbg()
+>>
+>> Causes the ratelimiting to spam the kernel log with the "callbacks suppressed"
+>> message below, even while the dev_dbg it is supposed to rate limit wouldn't
+>> print anything because DEBUG is not defined for this device.
+>>
+>> [  533.803964] retire_playback_urb: 852 callbacks suppressed
+>> [  538.807930] retire_playback_urb: 852 callbacks suppressed
+>> [  543.811897] retire_playback_urb: 852 callbacks suppressed
+>> [  548.815745] retire_playback_urb: 852 callbacks suppressed
+>> [  553.819826] retire_playback_urb: 852 callbacks suppressed
+>>
+>> So use dev_dbg_ratelimited() instead of this construction.
+>>
+>> Signed-off-by: Sander Eikelenboom <linux@eikelenboom.it>
+>> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>> (backported from commit b7a7723513dc89f83d6df13206df55d4dc26e825)
+>> Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
+> It looks like you have combined the commit identified here with the
+> preceding:
+>
+> commit a5065eb6da55b226661456e6a7435f605df98111
+> Author: Tim Gardner <tim.gardner@canonical.com>
+> Date:   Wed Apr 9 11:30:44 2014 -0600
+>
+>     ALSA: usb-audio: Suppress repetitive debug messages from retire_playback_urb()
+>
+> They should not be squashed together like this.
+>
+> Ben.
+>
+>> ---
+>>  sound/usb/pcm.c | 3 ++-
+>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/sound/usb/pcm.c b/sound/usb/pcm.c
+>> index ca3256d..ede4b92 100644
+>> --- a/sound/usb/pcm.c
+>> +++ b/sound/usb/pcm.c
+>> @@ -1488,7 +1488,8 @@ static void retire_playback_urb(struct snd_usb_substream *subs,
+>>  	 * on two reads of a counter updated every ms.
+>>  	 */
+>>  	if (abs(est_delay - subs->last_delay) * 1000 > runtime->rate * 2)
+>> -		snd_printk(KERN_DEBUG "delay: estimated %d, actual %d\n",
+>> +		dev_dbg_ratelimited(&subs->dev->dev,
+>> +			"delay: estimated %d, actual %d\n",
+>>  			est_delay, subs->last_delay);
+>>  
+>>  	if (!subs->running) {
+Hi Ben,
 
-> I am putting together patches based on Eric Dumazet's suggestion and on a
-> variant of the above approach.  However, I do expect the distros to starve
-> to death between those two bales of hay.  But perhaps the actual patches
-> will inspire a bit of light to go with this thread's heat and smoke.
+Thanks for the feedback.  Do you think it's best to cherry-pick these
+two commits?  If so, I'll do that and test.  If it all works, I can send
+a request to stable to cherry pick the commits and revert my backport.
 
-Yep. Note that the large systems are only a few and the smaller systems
-are many. You are penalizing the overwhelming majority for support of a
-few systems.
+Thanks,
+
+Joe
 
