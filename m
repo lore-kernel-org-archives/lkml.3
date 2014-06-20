@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758004AbaFTUgD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:36:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60941 "EHLO
+	id S1758020AbaFTUg1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:36:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60946 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747AbaFTUgB (ORCPT
+	with ESMTP id S1750747AbaFTUg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 16:36:01 -0400
-Date: Fri, 20 Jun 2014 13:40:03 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ramesh Basukala <basukalaramesh@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/01] Drivers: Fixes coding style warning
-Message-ID: <20140620204003.GB16973@kroah.com>
-References: <53A498B2.1000808@gmail.com>
+	Fri, 20 Jun 2014 16:36:26 -0400
+Date: Fri, 20 Jun 2014 13:40:27 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: devel@driverdev.osuosl.org, Jiri Kosina <trivial@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] trivial: drivers/staging/rtl8821ae/rtl8821ae: Fix
+ closing brace followed by if
+Message-ID: <20140620204027.GC16973@kroah.com>
+References: <1403294195-18209-1-git-send-email-linux@rasmusvillemoes.dk>
+ <20140620200707.GA16329@kroah.com>
+ <87simz49ie.fsf@rasmusvillemoes.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53A498B2.1000808@gmail.com>
+In-Reply-To: <87simz49ie.fsf@rasmusvillemoes.dk>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 04:25:22PM -0400, Ramesh Basukala wrote:
-> *
-
-What is that for?
-
+On Fri, Jun 20, 2014 at 10:21:45PM +0200, Rasmus Villemoes wrote:
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
 > 
-> From: Ramesh Basukala <basukalaramesh@gmail.com>
+> > On Fri, Jun 20, 2014 at 09:56:35PM +0200, Rasmus Villemoes wrote:
+> >> All of the code is #if 0'd out, and the change just replaces a
+> >> space with a newline, so this obviously doesn't change anything.
+> >
+> > How about just deleting all the #if 0 code out entirely so no one has to
+> > worry about it anymore?
 > 
+> Fine by me. Like this?
 > 
-> Attached is a patch which fixes coding style warning message while running
-> checkpatch script.
+> From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+> Subject: [PATCH] drivers/staging/rtl8821ae/rtl8821ae: Remove dead code
 > 
+> This is all #if 0'ed out, and it contains some rather weird stuff
+> (post-increment of a bool, for example). Nuke it.
 > 
-> This patch is currently against a linux 3.15.0-rc15-next kernel. I am
+> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 
-There is no 3.15-rc15 kernel release :(
+Looks good, if you send it in a stand-along email, I can even apply it
+:)
 
-> submitting this patch as a part of Eudyptula Challenge task.
-
-Not needed here.
-
-> 
-> 
-> Signed-off-by: Ramesh Basukala <basukalaramesh@gmail.com>
-> *---
-> Signed-off-by: Ramesh Basukala <basukalaramesh@gmail.com>
-> --- xlr_net.c.original 2014-06-20 15:32:10.069732488 -0400
-> +++ xlr_net.c 2014-06-20 15:35:06.841105038 -0400
-> @@ -1105,6 +1105,7 @@ err_gmac:
-> static int xlr_net_remove(struct platform_device *pdev)
-> {
-> struct xlr_net_priv *priv = platform_get_drvdata(pdev);
-> +
-> unregister_netdev(priv->ndev);
-> mdiobus_unregister(priv->mii_bus);
-> mdiobus_free(priv->mii_bus);
-> **
-
-
-This doesn't apply at all, please always test your patches yourself
-before resending them.
-
-Also, be explicit as to what you are fixing (what part of the kernel),
-and use the scripts/get_maintainers.pl tool to send the patches to the
-correct people and mailing list.
-
-Care to try again?
+thanks,
 
 greg k-h
