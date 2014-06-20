@@ -1,95 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758149AbaFTXLR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 19:11:17 -0400
-Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:37821
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758122AbaFTXLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 19:11:13 -0400
-From: <tthayer@altera.com>
-To: <robherring2@gmail.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>, <dinguyen@altera.com>,
-        <dougthompson@xmission.com>, <grant.likely@linaro.org>, <bp@alien8.de>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>,
-        <tthayer@altera.com>
-Subject: [PATCHv6 2/3] devicetree: Addition of the Altera SDRAM EDAC
-Date: Fri, 20 Jun 2014 18:16:58 -0500
-Message-ID: <1403306219-3903-4-git-send-email-tthayer@altera.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403306219-3903-1-git-send-email-tthayer@altera.com>
-References: <1403306219-3903-1-git-send-email-tthayer@altera.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(83072002)(31966008)(48376002)(85852003)(89996001)(102836001)(104166001)(86152002)(92566001)(2201001)(92726001)(87936001)(88136002)(87286001)(50466002)(95666004)(85306003)(50226001)(21056001)(106466001)(105596002)(4396001)(74502001)(16796002)(76482001)(74662001)(77096002)(46102001)(42186005)(36756003)(86362001)(79102001)(77156001)(83322001)(19580405001)(19580395003)(33646001)(68736004)(93916002)(50986999)(76176999)(81542001)(77982001)(62966002)(6806004)(81342001)(44976005)(80022001)(99396002)(84676001)(47776003)(20776003)(97736001)(64706001)(921003)(1121002)(83996005)(2101003);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB065;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-OriginatorOrg: altera.onmicrosoft.com
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 024847EE92
-Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
- smtp.mailfrom=tthayer@altera.com; 
+	id S964946AbaFTXNR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 19:13:17 -0400
+Received: from gate.crashing.org ([63.228.1.57]:59762 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752850AbaFTXNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 19:13:16 -0400
+Message-ID: <1403305961.4587.66.camel@pasglop>
+Subject: Re: [PATCH] vfio: Fix endianness handling for emulated BARs
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexander Graf <agraf@suse.de>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+Date: Sat, 21 Jun 2014 09:12:41 +1000
+In-Reply-To: <1403234514.3707.278.camel@ul30vt.home>
+References: <1403091391-31780-1-git-send-email-aik@ozlabs.ru>
+	 <1403116512.3707.175.camel@ul30vt.home> <53A233E9.6030006@ozlabs.ru>
+	 <53A241F6.9010307@ozlabs.ru> <53A25D74.5000804@ozlabs.ru>
+	 <1403234514.3707.278.camel@ul30vt.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thor Thayer <tthayer@altera.com>
+On Thu, 2014-06-19 at 21:21 -0600, Alex Williamson wrote:
 
-v2: Changes to SoC EDAC source code.
+> Working on big endian being an accident may be a matter of perspective
 
-v3: Fix typo in device tree documentation.
+ :-)
 
-v4,v5: No changes - bump version for consistency.
+> The comment remains that this patch doesn't actually fix anything except
+> the overhead on big endian systems doing redundant byte swapping and
+> maybe the philosophy that vfio regions are little endian.
 
-v6: Assign ECC registers in SDRAM controller to EDAC
+Yes, that works by accident because technically VFIO is a transport and
+thus shouldn't perform any endian swapping of any sort, which remains
+the responsibility of the end driver which is the only one to know
+whether a given BAR location is a a register or some streaming data
+and in the former case whether it's LE or BE (some PCI devices are BE
+even ! :-)
 
-Signed-off-by: Thor Thayer <tthayer@altera.com>
----
- .../bindings/arm/altera/socfpga-sdram-edac.txt     |   15 +++++++++++++++
- arch/arm/boot/dts/socfpga.dtsi                     |    6 ++++++
- 2 files changed, 21 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
+But yes, in the end, it works with the dual "cancelling" swaps and the
+overhead of those swaps is probably drowned in the noise of the syscall
+overhead.
 
-diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
-new file mode 100644
-index 0000000..540c9cf
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
-@@ -0,0 +1,15 @@
-+Altera SOCFPGA SDRAM Error Detection & Correction [EDAC]
-+
-+Required properties:
-+- compatible : should contain "altr,sdram-edac";
-+- reg : should contain the ECC register range in sdram
-+        controller (address and length).
-+- interrupts : Should contain the SDRAM ECC IRQ in the
-+	appropriate format for the IRQ controller.
-+
-+Example:
-+	sdramedac@0 {
-+		compatible = "altr,sdram-edac";
-+		reg = <0xffc2502C 0x28>;
-+		interrupts = <0 39 4>;
-+	};
-diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
-index 310292e..fe9832e 100644
---- a/arch/arm/boot/dts/socfpga.dtsi
-+++ b/arch/arm/boot/dts/socfpga.dtsi
-@@ -687,6 +687,12 @@
- 			reg = <0xffc25000 0x4>;
- 		};
- 
-+		sdramedac@0 {
-+			compatible = "altr,sdram-edac";
-+			reg = <0xffc2502C 0x28>;
-+			interrupts = <0 39 4>;
-+		};
-+
- 		rst: rstmgr@ffd05000 {
- 			compatible = "altr,rst-mgr";
- 			reg = <0xffd05000 0x1000>;
--- 
-1.7.9.5
+> I'm still not a fan of iowrite vs iowritebe, there must be something we
+> can use that doesn't have an implicit swap.
+
+Sadly there isn't ... In the old day we didn't even have the "be"
+variant and readl/writel style accessors still don't have them either
+for all archs.
+
+There is __raw_readl/writel but here the semantics are much more than
+just "don't swap", they also don't have memory barriers (which means
+they are essentially useless to most drivers unless those are platform
+specific drivers which know exactly what they are doing, or in the rare
+cases such as accessing a framebuffer which we know never have side
+effects). 
+
+>  Calling it iowrite*_native is also an abuse of the namespace.
+
+
+>  Next thing we know some common code
+> will legitimately use that name. 
+
+I might make sense to those definitions into a common header. There have
+been a handful of cases in the past that wanted that sort of "native
+byte order" MMIOs iirc (though don't ask me for examples, I can't really
+remember).
+
+>  If we do need to define an alias
+> (which I'd like to avoid) it should be something like vfio_iowrite32.
+> Thanks,
+
+Cheers,
+Ben.
+
+> Alex
+> 
+> > > ===
+> > > 
+> > > any better?
+> > > 
+> > > 
+> > > 
+> > > 
+> > >>>> Suggested-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > >>>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> > >>>> ---
+> > >>>>  drivers/vfio/pci/vfio_pci_rdwr.c | 20 ++++++++++++++++----
+> > >>>>  1 file changed, 16 insertions(+), 4 deletions(-)
+> > >>>>
+> > >>>> diff --git a/drivers/vfio/pci/vfio_pci_rdwr.c b/drivers/vfio/pci/vfio_pci_rdwr.c
+> > >>>> index 210db24..f363b5a 100644
+> > >>>> --- a/drivers/vfio/pci/vfio_pci_rdwr.c
+> > >>>> +++ b/drivers/vfio/pci/vfio_pci_rdwr.c
+> > >>>> @@ -21,6 +21,18 @@
+> > >>>>  
+> > >>>>  #include "vfio_pci_private.h"
+> > >>>>  
+> > >>>> +#ifdef __BIG_ENDIAN__
+> > >>>> +#define ioread16_native		ioread16be
+> > >>>> +#define ioread32_native		ioread32be
+> > >>>> +#define iowrite16_native	iowrite16be
+> > >>>> +#define iowrite32_native	iowrite32be
+> > >>>> +#else
+> > >>>> +#define ioread16_native		ioread16
+> > >>>> +#define ioread32_native		ioread32
+> > >>>> +#define iowrite16_native	iowrite16
+> > >>>> +#define iowrite32_native	iowrite32
+> > >>>> +#endif
+> > >>>> +
+> > >>>>  /*
+> > >>>>   * Read or write from an __iomem region (MMIO or I/O port) with an excluded
+> > >>>>   * range which is inaccessible.  The excluded range drops writes and fills
+> > >>>> @@ -50,9 +62,9 @@ static ssize_t do_io_rw(void __iomem *io, char __user *buf,
+> > >>>>  				if (copy_from_user(&val, buf, 4))
+> > >>>>  					return -EFAULT;
+> > >>>>  
+> > >>>> -				iowrite32(le32_to_cpu(val), io + off);
+> > >>>> +				iowrite32_native(val, io + off);
+> > >>>>  			} else {
+> > >>>> -				val = cpu_to_le32(ioread32(io + off));
+> > >>>> +				val = ioread32_native(io + off);
+> > >>>>  
+> > >>>>  				if (copy_to_user(buf, &val, 4))
+> > >>>>  					return -EFAULT;
+> > >>>> @@ -66,9 +78,9 @@ static ssize_t do_io_rw(void __iomem *io, char __user *buf,
+> > >>>>  				if (copy_from_user(&val, buf, 2))
+> > >>>>  					return -EFAULT;
+> > >>>>  
+> > >>>> -				iowrite16(le16_to_cpu(val), io + off);
+> > >>>> +				iowrite16_native(val, io + off);
+> > >>>>  			} else {
+> > >>>> -				val = cpu_to_le16(ioread16(io + off));
+> > >>>> +				val = ioread16_native(io + off);
+> > >>>>  
+> > >>>>  				if (copy_to_user(buf, &val, 2))
+> > >>>>  					return -EFAULT;
+> > >>>
+> > >>>
+> > >>>
+> > >>
+> > >>
+> > > 
+> > > 
+> > 
+> > 
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 
