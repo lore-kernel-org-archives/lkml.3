@@ -1,148 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758031AbaFTWVX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 18:21:23 -0400
-Received: from mail-pa0-f73.google.com ([209.85.220.73]:40208 "EHLO
-	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753880AbaFTWVV (ORCPT
+	id S966990AbaFTW1T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 18:27:19 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:60849 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756196AbaFTW1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 18:21:21 -0400
-Subject: [PATCH] sched: Fix potential near-infinite distribute_cfs_runtime
- loop
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        pjt@google.com
-From: Ben Segall <bsegall@google.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Fri, 20 Jun 2014 15:21:20 -0700
-Message-ID: <20140620222120.13814.21652.stgit@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: StGit/0.16
+	Fri, 20 Jun 2014 18:27:17 -0400
+Date: Sat, 21 Jun 2014 00:27:13 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Ajit Pal <ajitpal.singh@st.com>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel@stlinux.com" <kernel@stlinux.com>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        Maxime COQUELIN <maxime.coquelin@st.com>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        "srinivas.kandagatla@gmail.com" <srinivas.kandagatla@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 6/7] pwm: st: Add new driver for ST's PWM IP
+Message-ID: <20140620222712.GB29400@mithrandir>
+References: <1403103172-19856-1-git-send-email-lee.jones@linaro.org>
+ <1403103172-19856-6-git-send-email-lee.jones@linaro.org>
+ <20140618231127.GF26514@mithrandir>
+ <20140619084404.GA26560@lee--X1>
+ <53A2F342.7030606@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Fba/0zbH8Xs+Fj9o"
+Content-Disposition: inline
+In-Reply-To: <53A2F342.7030606@st.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-distribute_cfs_runtime intentionally only hands out enough runtime to
-bring each cfs_rq to 1 ns of runtime, expecting the cfs_rqs to then take
-the runtime they need only once they actually get to run. However, if
-they get to run sufficiently quickly, the period timer is still in
-distribute_cfs_runtime and no runtime is available, causing them to
-throttle. Then distribute has to handle them again, and this can go on
-until distribute has handed out all of the runtime 1ns at a time, which
-takes far too long.
 
-Instead allow access to the same runtime that distribute is handing out,
-accepting that corner cases with very low quota may be able to spend the
-entire cfs_b->runtime during distribute_cfs_runtime, meaning that the
-runtime directly handed out by distribute_cfs_runtime was over quota. In
-addition, if a cfs_rq does manage to throttle like this, make sure the
-existing distribute_cfs_runtime no longer loops over it again.
+--Fba/0zbH8Xs+Fj9o
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Ben Segall <bsegall@google.com>
----
- kernel/sched/fair.c |   41 ++++++++++++++++++++---------------------
- 1 file changed, 20 insertions(+), 21 deletions(-)
+On Thu, Jun 19, 2014 at 07:57:14PM +0530, Ajit Pal wrote:
+> On Thursday 19 June 2014 02:14 PM, Lee Jones wrote:
+> >On Thu, 19 Jun 2014, Thierry Reding wrote:
+> >>On Wed, Jun 18, 2014 at 03:52:51PM +0100, Lee Jones wrote:
+[...]
+> >>>+                   cdata->max_prescale + 1, sizeof(unsigned long),
+> >>>+                   st_pwm_cmp_periods);
+> >>>+   if (!found) {
+> >>>+           dev_err(dev, "failed to find matching period\n");
+> >>>+           return -EINVAL;
+> >>>+   }
+> >>>+
+> >>>+   prescale =3D found - &pc->pwm_periods[0];
+> >>
+> >>This is somewhat unconventional. None of the other drivers precompute
+> >>possible periods and I'm not convinced that it's an advantage. Setting
+> >>the period (and configuring the PWM in general) is a fairly uncommon
+> >>operation.
+> >
+> >Another one for Ajit I feel.
+>=20
+> For ST PWM IP, the PWM period is fixed to 256 local clock pulses.There is=
+ no
+> register interface to select PWM periods.To change the period we have to
+> change the prescaler.
+> We precompute the possible periods, so as to avoid the calculations
+> everytime the .config function is called. Based upon a matching period we
+> then select the prescaler.
+> Sorry but why do you think precomputing is not helpful ?
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 1f9c457..ef5eac7 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3361,7 +3361,11 @@ static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
- 	cfs_rq->throttled = 1;
- 	cfs_rq->throttled_clock = rq_clock(rq);
- 	raw_spin_lock(&cfs_b->lock);
--	list_add_tail_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
-+	/*
-+	 * Add to the _head_ of the list, so that an already-started
-+	 * distribute_cfs_runtime will not see us
-+	 */
-+	list_add_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
- 	if (!cfs_b->timer_active)
- 		__start_cfs_bandwidth(cfs_b, false);
- 	raw_spin_unlock(&cfs_b->lock);
-@@ -3418,7 +3422,8 @@ static u64 distribute_cfs_runtime(struct cfs_bandwidth *cfs_b,
- 		u64 remaining, u64 expires)
- {
- 	struct cfs_rq *cfs_rq;
--	u64 runtime = remaining;
-+	u64 runtime;
-+	u64 starting_runtime = remaining;
- 
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(cfs_rq, &cfs_b->throttled_cfs_rq,
-@@ -3449,7 +3454,7 @@ next:
- 	}
- 	rcu_read_unlock();
- 
--	return remaining;
-+	return starting_runtime - remaining;
- }
- 
- /*
-@@ -3495,22 +3500,17 @@ static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
- 	/* account preceding periods in which throttling occurred */
- 	cfs_b->nr_throttled += overrun;
- 
--	/*
--	 * There are throttled entities so we must first use the new bandwidth
--	 * to unthrottle them before making it generally available.  This
--	 * ensures that all existing debts will be paid before a new cfs_rq is
--	 * allowed to run.
--	 */
--	runtime = cfs_b->runtime;
- 	runtime_expires = cfs_b->runtime_expires;
--	cfs_b->runtime = 0;
- 
- 	/*
--	 * This check is repeated as we are holding onto the new bandwidth
--	 * while we unthrottle.  This can potentially race with an unthrottled
--	 * group trying to acquire new bandwidth from the global pool.
-+	 * This check is repeated as we are holding onto the new bandwidth while
-+	 * we unthrottle. This can potentially race with an unthrottled group
-+	 * trying to acquire new bandwidth from the global pool. This can result
-+	 * in us over-using our runtime if it is all used during this loop, but
-+	 * only by limited amounts in that extreme case.
- 	 */
--	while (throttled && runtime > 0) {
-+	while (throttled && cfs_b->runtime > 0) {
-+		runtime = cfs_b->runtime;
- 		raw_spin_unlock(&cfs_b->lock);
- 		/* we can't nest cfs_b->lock while distributing bandwidth */
- 		runtime = distribute_cfs_runtime(cfs_b, runtime,
-@@ -3518,10 +3518,10 @@ static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
- 		raw_spin_lock(&cfs_b->lock);
- 
- 		throttled = !list_empty(&cfs_b->throttled_cfs_rq);
-+
-+		cfs_b->runtime -= min(runtime, cfs_b->runtime);
- 	}
- 
--	/* return (any) remaining runtime */
--	cfs_b->runtime = runtime;
- 	/*
- 	 * While we are ensured activity in the period following an
- 	 * unthrottle, this also covers the case in which the new bandwidth is
-@@ -3632,10 +3632,9 @@ static void do_sched_cfs_slack_timer(struct cfs_bandwidth *cfs_b)
- 		return;
- 	}
- 
--	if (cfs_b->quota != RUNTIME_INF && cfs_b->runtime > slice) {
-+	if (cfs_b->quota != RUNTIME_INF && cfs_b->runtime > slice)
- 		runtime = cfs_b->runtime;
--		cfs_b->runtime = 0;
--	}
-+
- 	expires = cfs_b->runtime_expires;
- 	raw_spin_unlock(&cfs_b->lock);
- 
-@@ -3646,7 +3645,7 @@ static void do_sched_cfs_slack_timer(struct cfs_bandwidth *cfs_b)
- 
- 	raw_spin_lock(&cfs_b->lock);
- 	if (expires == cfs_b->runtime_expires)
--		cfs_b->runtime = runtime;
-+		cfs_b->runtime -= min(runtime, cfs_b->runtime);
- 	raw_spin_unlock(&cfs_b->lock);
- }
- 
+Mostly I dislike it here because it sticks out as nobody else is doing
+it. Secondly I'm not convinced that it gives you much of a performance
+gain since the computations aren't that involved and typically the
+period isn't changed all that often.
 
+Also computing the value directly in .config() makes the code much
+easier to follow.
+
+> >>>+static int st_pwm_enable(struct pwm_chip *chip, struct pwm_device *pw=
+m)
+> >>>+{
+> >>>+   struct st_pwm_chip *pc =3D to_st_pwmchip(chip);
+> >>>+   struct device *dev =3D pc->dev;
+> >>>+   int ret;
+> >>>+
+> >>>+   ret =3D clk_enable(pc->clk);
+> >>>+   if (ret)
+> >>>+           return ret;
+> >>>+
+> >>>+   ret =3D regmap_field_write(pc->pwm_en, 1);
+> >>>+   if (ret)
+> >>>+           dev_err(dev, "%s,pwm_en write failed\n", __func__);
+>=20
+> >>
+> >>This error message is somewhat cryptic, perhaps:
+> >>
+> >>       "failed to enable PWM"
+> >
+> >Agreed.  I also can't believe I missed that nasty __func__ too.
+> >
+> >>? Also what implications does this have on controllers with multiple
+> >>channels?
+> >
+> >I believe this enables both channels, but I'm sure Ajit will correct
+> >me if I'm wrong.
+>=20
+> Yes it enables all channels.Unfortunately we do not have the facility to
+> enable/disable individual channels on the ST PWM IP.
+
+That's bad. If you can't control them separately then there's no way you
+can guarantee the semantics of the PWM framework.
+
+> >>>+   dev_dbg(dev, "pwm counter :%u\n", val);
+> >>>+
+> >>>+   clk_disable(pc->clk);
+> >>>+}
+> >>>+
+> >>>+static const struct pwm_ops st_pwm_ops =3D {
+> >>>+   .config =3D st_pwm_config,
+> >>>+   .enable =3D st_pwm_enable,
+> >>>+   .disable =3D st_pwm_disable,
+> >>>+   .owner =3D THIS_MODULE,
+> >>>+};
+> >>>+
+> >>>+static int st_pwm_probe_dt(struct st_pwm_chip *pc)
+> >>>+{
+> >>>+   struct device *dev =3D pc->dev;
+> >>>+   const struct reg_field *reg_fields;
+> >>>+   struct device_node *np =3D dev->of_node;
+> >>>+   struct st_pwm_compat_data *cdata =3D pc->cdata;
+> >>>+   u32 num_chan;
+> >>>+
+> >>>+   of_property_read_u32(np, "st,pwm-num-chan", &num_chan);
+> >>>+   if (num_chan)
+> >>>+           cdata->num_chan =3D num_chan;
+> >>
+> >>I don't like this very much. What influences the number of channels? Is
+> >>it that specific SoC revisions have one and others have two?
+> >
+> >Ajit?
+> >
+> Depends on the board type on which the SoC is used.
+
+I don't understand. How can the board influence the number of PWM
+channels that the SoC supports? It does make sense for a board to define
+how many of them are actually *used*, but that's nothing that DT should
+contain nor that the driver should care about. The driver (and DT for
+that matter) should expose the hardware block's full capabilities. The
+use-case is what should determine what's used and what not.
+
+Thierry
+
+--Fba/0zbH8Xs+Fj9o
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTpLVAAAoJEN0jrNd/PrOhxo8P/2NPA4B7hscu4BkkbyMkVUYu
+lZlU4XCZx5r2SMg6i+GKHrJPr/P51g3g5t7B7mTmSTz42HIWc+zHheaYqMr9ABU+
+jR27jQlt697tLX7IeRsKAAIJkH2OR8LsSwy00NxpdPBufQjM1slWBCgzymKcTd4O
+JE2GO0CIerUl375GX/CR8lnjHXe3LWfQ5F7OYYlRi8N1EowV7CjvWKqwDicBa+ii
+vA4ZIGkhnrHl4avRTDAOLF85pg5cf5sMLrm5Coe+MoHucoHVvD/Gz9U3rrUdETK9
+r3n59o1noDifzxPd9epznPjS4uas2ROtoQuUfEzIxnGOdNm6UtI5N6nhksivtD/d
+DGae3rgDR9DgAsqTgBiAXL32IwFTGXzK5LRvzVQIHEjtL12Eivgd/zZYnlWHsJGK
+2tcwRFaKuuMY8dqVPnaBGi3LMOFYoDq01Gp+GUMvea6xrry0R3Ph5ArCDKhcW0OV
+dB6Osf1y9zemKuZaLb5t/AjkFOu+caf1cfZXRepIvkcOxMHQsa8yR6em/tnX6vYn
+implY79FOS2yOZk55OEQ20nQBlGp93jXon66qm6QZ5Tbyqnag0FKPiI20aHRVZJm
+BRRW3X87vmKbukj7H4KPG9j7p4R0x8UbLGyARBfUWyRCtlXtDw6SAB0BmpIFL8EC
+vBQeyN6E7slGtf7GbvZ7
+=3bAs
+-----END PGP SIGNATURE-----
+
+--Fba/0zbH8Xs+Fj9o--
