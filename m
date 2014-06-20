@@ -1,67 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155AbaFTOxv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 10:53:51 -0400
-Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:41715 "EHLO
-	mirror2.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752567AbaFTOxJ (ORCPT
+	id S1754569AbaFTOyb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 10:54:31 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:49819 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752786AbaFTOy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 10:53:09 -0400
-From: Chen-Yu Tsai <wens@csie.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
-        linux-sunxi@googlegroups.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 1/4] ARM: sunxi: Introduce Allwinner A23 support
-Date: Fri, 20 Jun 2014 22:52:50 +0800
-Message-Id: <1403275973-24259-2-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1403275973-24259-1-git-send-email-wens@csie.org>
-References: <1403275973-24259-1-git-send-email-wens@csie.org>
+	Fri, 20 Jun 2014 10:54:29 -0400
+From: Hai Li <hali@codeaurora.org>
+To: dri-devel@lists.freedesktop.org
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        robdclark@gmail.com, Hai Li <hali@codeaurora.org>,
+        Stephane Viau <sviau@codeaurora.org>
+Subject: [PATCH] drm/msm: Implement msm drm fb_mmap callback function
+Date: Fri, 20 Jun 2014 10:53:32 -0400
+Message-Id: <1403276012-21832-1-git-send-email-hali@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1403124927-21514-1-git-send-email-hali@codeaurora.org>
+References: <1403124927-21514-1-git-send-email-hali@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Allwinner A23 is a dual-core Cortex-A7-based SoC. It re-uses most of
-the IPs found in previous SoCs, notably the A31.
+This change implements msm drm specific fb_mmap function for fb device
+to properly map the fb address to userspace.
 
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+Signed-off-by: Hai Li <hali@codeaurora.org>
+Signed-off-by: Stephane Viau <sviau@codeaurora.org>
 ---
- arch/arm/mach-sunxi/Kconfig | 5 +++++
- arch/arm/mach-sunxi/sunxi.c | 9 +++++++++
- 2 files changed, 14 insertions(+)
+ drivers/gpu/drm/msm/msm_fbdev.c | 38 ++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 36 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
-index 0fbd4f1..f776c5f 100644
---- a/arch/arm/mach-sunxi/Kconfig
-+++ b/arch/arm/mach-sunxi/Kconfig
-@@ -35,4 +35,9 @@ config MACH_SUN7I
- 	select HAVE_ARM_ARCH_TIMER
- 	select SUN5I_HSTIMER
+diff --git a/drivers/gpu/drm/msm/msm_fbdev.c b/drivers/gpu/drm/msm/msm_fbdev.c
+index a752ab8..2694e90 100644
+--- a/drivers/gpu/drm/msm/msm_fbdev.c
++++ b/drivers/gpu/drm/msm/msm_fbdev.c
+@@ -19,6 +19,11 @@
  
-+config MACH_SUN8I
-+	bool "Allwinner A23 (sun8i) SoCs support"
-+	default ARCH_SUNXI
-+	select ARM_GIC
+ #include "drm_crtc.h"
+ #include "drm_fb_helper.h"
++#include "msm_gem.h"
 +
- endif
-diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
-index 3f9587b..4d09469 100644
---- a/arch/arm/mach-sunxi/sunxi.c
-+++ b/arch/arm/mach-sunxi/sunxi.c
-@@ -53,3 +53,12 @@ static const char * const sun7i_board_dt_compat[] = {
- DT_MACHINE_START(SUN7I_DT, "Allwinner sun7i (A20) Family")
- 	.dt_compat	= sun7i_board_dt_compat,
- MACHINE_END
++extern int msm_gem_mmap_obj(struct drm_gem_object *obj,
++					struct vm_area_struct *vma);
++static int msm_fbdev_mmap(struct fb_info *info, struct vm_area_struct *vma);
+ 
+ /*
+  * fbdev funcs, to implement legacy fbdev interface on top of drm driver
+@@ -43,6 +48,7 @@ static struct fb_ops msm_fb_ops = {
+ 	.fb_fillrect = sys_fillrect,
+ 	.fb_copyarea = sys_copyarea,
+ 	.fb_imageblit = sys_imageblit,
++	.fb_mmap = msm_fbdev_mmap,
+ 
+ 	.fb_check_var = drm_fb_helper_check_var,
+ 	.fb_set_par = drm_fb_helper_set_par,
+@@ -51,6 +57,31 @@ static struct fb_ops msm_fb_ops = {
+ 	.fb_setcmap = drm_fb_helper_setcmap,
+ };
+ 
++static int msm_fbdev_mmap(struct fb_info *info, struct vm_area_struct *vma)
++{
++	struct drm_fb_helper *helper = (struct drm_fb_helper *)info->par;
++	struct msm_fbdev *fbdev = to_msm_fbdev(helper);
++	struct drm_gem_object *drm_obj = fbdev->bo;
++	struct drm_device *dev = helper->dev;
++	int ret;
 +
-+static const char * const sun8i_board_dt_compat[] = {
-+	"allwinner,sun8i-a23",
-+	NULL,
-+};
++	if (drm_device_is_unplugged(dev))
++		return -ENODEV;
 +
-+DT_MACHINE_START(SUN8I_DT, "Allwinner sun8i (A23) Family")
-+	.dt_compat	= sun8i_board_dt_compat,
-+MACHINE_END
++	mutex_lock(&dev->struct_mutex);
++
++	ret = drm_gem_mmap_obj(drm_obj, drm_obj->size, vma);
++
++	mutex_unlock(&dev->struct_mutex);
++
++	if (ret) {
++		pr_err("%s:drm_gem_mmap_obj fail\n", __func__);
++		return ret;
++	}
++
++	return msm_gem_mmap_obj(drm_obj, vma);
++}
++
+ static int msm_fbdev_create(struct drm_fb_helper *helper,
+ 		struct drm_fb_helper_surface_size *sizes)
+ {
+@@ -104,8 +135,11 @@ static int msm_fbdev_create(struct drm_fb_helper *helper,
+ 
+ 	mutex_lock(&dev->struct_mutex);
+ 
+-	/* TODO implement our own fb_mmap so we don't need this: */
+-	msm_gem_get_iova_locked(fbdev->bo, 0, &paddr);
++	ret = msm_gem_get_iova_locked(fbdev->bo, 0, &paddr);
++	if (ret) {
++		dev_err(dev->dev, "failed to get buffer obj iova: %d\n", ret);
++		goto fail;
++	}
+ 
+ 	fbi = framebuffer_alloc(0, dev->dev);
+ 	if (!fbi) {
 -- 
-2.0.0
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
