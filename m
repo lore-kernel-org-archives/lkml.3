@@ -1,338 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966990AbaFTUOU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:14:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11285 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754805AbaFTUMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 16:12:13 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: [PATCH v3 11/13] mempolicy: apply page table walker on queue_pages_range()
-Date: Fri, 20 Jun 2014 16:11:37 -0400
-Message-Id: <1403295099-6407-12-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1403295099-6407-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1403295099-6407-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1757753AbaFTUPF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:15:05 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:34031 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754805AbaFTUPB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 16:15:01 -0400
+Date: Fri, 20 Jun 2014 22:14:57 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Alban Bedel <alban.bedel@avionic-design.de>
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm/panel: add support for Innolux N156BGE-L21 panel
+Message-ID: <20140620201456.GA28814@mithrandir>
+References: <1402585745-28127-1-git-send-email-alban.bedel@avionic-design.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EeQfGwPcQSOJBaQU"
+Content-Disposition: inline
+In-Reply-To: <1402585745-28127-1-git-send-email-alban.bedel@avionic-design.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-queue_pages_range() does page table walking in its own way now, but there
-is some code duplicate. This patch applies page table walker to reduce
-lines of code.
 
-queue_pages_range() has to do some precheck to determine whether we really
-walk over the vma or just skip it. Now we have test_walk() callback in
-mm_walk for this purpose, so we can do this replacement cleanly.
-queue_pages_test_walk() depends on not only the current vma but also the
-previous one, so queue_pages->prev is introduced to remember it.
+--EeQfGwPcQSOJBaQU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- mm/mempolicy.c | 228 +++++++++++++++++++++++----------------------------------
- 1 file changed, 93 insertions(+), 135 deletions(-)
+On Thu, Jun 12, 2014 at 05:09:05PM +0200, Alban Bedel wrote:
+> This panel is used by the Medcom Wide and supported by the
+> simple-panel driver.
+>=20
+> Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
+> ---
+>  drivers/gpu/drm/panel/panel-simple.c | 25 +++++++++++++++++++++++++
+>  1 file changed, 25 insertions(+)
+>=20
+> diff --git a/drivers/gpu/drm/panel/panel-simple.c b/drivers/gpu/drm/panel=
+/panel-simple.c
+> index 309f29e..6a361bb 100644
+> --- a/drivers/gpu/drm/panel/panel-simple.c
+> +++ b/drivers/gpu/drm/panel/panel-simple.c
+> @@ -372,6 +372,28 @@ static const struct panel_desc samsung_ltn101nt05 =
+=3D {
+>  	},
+>  };
+> =20
+> +static const struct drm_display_mode innolux_n156bge_l21_mode =3D {
+> +	.clock =3D 69300,
+> +	.hdisplay =3D 1366,
+> +	.hsync_start =3D 1366,
+> +	.hsync_end =3D 1366,
+> +	.htotal =3D 1366 + 100,
+> +	.vdisplay =3D 768,
+> +	.vsync_start =3D 768,
+> +	.vsync_end =3D 768,
+> +	.vtotal =3D 768 + 20,
 
-diff --git v3.16-rc1.orig/mm/mempolicy.c v3.16-rc1/mm/mempolicy.c
-index 284974230459..17467d476c63 100644
---- v3.16-rc1.orig/mm/mempolicy.c
-+++ v3.16-rc1/mm/mempolicy.c
-@@ -479,24 +479,34 @@ static const struct mempolicy_operations mpol_ops[MPOL_MAX] = {
- static void migrate_page_add(struct page *page, struct list_head *pagelist,
- 				unsigned long flags);
- 
-+struct queue_pages {
-+	struct list_head *pagelist;
-+	unsigned long flags;
-+	nodemask_t *nmask;
-+	struct vm_area_struct *prev;
-+};
-+
- /*
-  * Scan through pages checking if pages follow certain conditions,
-  * and move them to the pagelist if they do.
-  */
--static int queue_pages_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
--		unsigned long addr, unsigned long end,
--		const nodemask_t *nodes, unsigned long flags,
--		void *private)
-+static int queue_pages_pte_range(pmd_t *pmd, unsigned long addr,
-+			unsigned long end, struct mm_walk *walk)
- {
--	pte_t *orig_pte;
-+	struct vm_area_struct *vma = walk->vma;
-+	struct page *page;
-+	struct queue_pages *qp = walk->private;
-+	unsigned long flags = qp->flags;
-+	int nid;
- 	pte_t *pte;
- 	spinlock_t *ptl;
- 
--	orig_pte = pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
--	do {
--		struct page *page;
--		int nid;
-+	split_huge_page_pmd(vma, addr, pmd);
-+	if (pmd_trans_unstable(pmd))
-+		return 0;
- 
-+	pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
-+	for (; addr != end; pte++, addr += PAGE_SIZE) {
- 		if (!pte_present(*pte))
- 			continue;
- 		page = vm_normal_page(vma, addr, *pte);
-@@ -509,114 +519,46 @@ static int queue_pages_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 		if (PageReserved(page))
- 			continue;
- 		nid = page_to_nid(page);
--		if (node_isset(nid, *nodes) == !!(flags & MPOL_MF_INVERT))
-+		if (node_isset(nid, *qp->nmask) == !!(flags & MPOL_MF_INVERT))
- 			continue;
- 
- 		if (flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL))
--			migrate_page_add(page, private, flags);
--		else
--			break;
--	} while (pte++, addr += PAGE_SIZE, addr != end);
--	pte_unmap_unlock(orig_pte, ptl);
--	return addr != end;
-+			migrate_page_add(page, qp->pagelist, flags);
-+	}
-+	pte_unmap_unlock(pte - 1, ptl);
-+	cond_resched();
-+	return 0;
- }
- 
--static void queue_pages_hugetlb_pmd_range(struct vm_area_struct *vma,
--		pmd_t *pmd, const nodemask_t *nodes, unsigned long flags,
--				    void *private)
-+static int queue_pages_hugetlb(pte_t *pte, unsigned long hmask,
-+			       unsigned long addr, unsigned long end,
-+			       struct mm_walk *walk)
- {
- #ifdef CONFIG_HUGETLB_PAGE
-+	struct queue_pages *qp = walk->private;
-+	unsigned long flags = qp->flags;
- 	int nid;
- 	struct page *page;
- 	spinlock_t *ptl;
- 	pte_t entry;
- 
--	ptl = huge_pte_lock(hstate_vma(vma), vma->vm_mm, (pte_t *)pmd);
--	entry = huge_ptep_get((pte_t *)pmd);
-+	ptl = huge_pte_lock(hstate_vma(walk->vma), walk->mm, pte);
-+	entry = huge_ptep_get(pte);
- 	if (!pte_present(entry))
- 		goto unlock;
- 	page = pte_page(entry);
- 	nid = page_to_nid(page);
--	if (node_isset(nid, *nodes) == !!(flags & MPOL_MF_INVERT))
-+	if (node_isset(nid, *qp->nmask) == !!(flags & MPOL_MF_INVERT))
- 		goto unlock;
- 	/* With MPOL_MF_MOVE, we migrate only unshared hugepage. */
- 	if (flags & (MPOL_MF_MOVE_ALL) ||
- 	    (flags & MPOL_MF_MOVE && page_mapcount(page) == 1))
--		isolate_huge_page(page, private);
-+		isolate_huge_page(page, qp->pagelist);
- unlock:
- 	spin_unlock(ptl);
- #else
- 	BUG();
- #endif
--}
--
--static inline int queue_pages_pmd_range(struct vm_area_struct *vma, pud_t *pud,
--		unsigned long addr, unsigned long end,
--		const nodemask_t *nodes, unsigned long flags,
--		void *private)
--{
--	pmd_t *pmd;
--	unsigned long next;
--
--	pmd = pmd_offset(pud, addr);
--	do {
--		next = pmd_addr_end(addr, end);
--		if (!pmd_present(*pmd))
--			continue;
--		if (pmd_huge(*pmd) && is_vm_hugetlb_page(vma)) {
--			queue_pages_hugetlb_pmd_range(vma, pmd, nodes,
--						flags, private);
--			continue;
--		}
--		split_huge_page_pmd(vma, addr, pmd);
--		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
--			continue;
--		if (queue_pages_pte_range(vma, pmd, addr, next, nodes,
--				    flags, private))
--			return -EIO;
--	} while (pmd++, addr = next, addr != end);
--	return 0;
--}
--
--static inline int queue_pages_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
--		unsigned long addr, unsigned long end,
--		const nodemask_t *nodes, unsigned long flags,
--		void *private)
--{
--	pud_t *pud;
--	unsigned long next;
--
--	pud = pud_offset(pgd, addr);
--	do {
--		next = pud_addr_end(addr, end);
--		if (pud_huge(*pud) && is_vm_hugetlb_page(vma))
--			continue;
--		if (pud_none_or_clear_bad(pud))
--			continue;
--		if (queue_pages_pmd_range(vma, pud, addr, next, nodes,
--				    flags, private))
--			return -EIO;
--	} while (pud++, addr = next, addr != end);
--	return 0;
--}
--
--static inline int queue_pages_pgd_range(struct vm_area_struct *vma,
--		unsigned long addr, unsigned long end,
--		const nodemask_t *nodes, unsigned long flags,
--		void *private)
--{
--	pgd_t *pgd;
--	unsigned long next;
--
--	pgd = pgd_offset(vma->vm_mm, addr);
--	do {
--		next = pgd_addr_end(addr, end);
--		if (pgd_none_or_clear_bad(pgd))
--			continue;
--		if (queue_pages_pud_range(vma, pgd, addr, next, nodes,
--				    flags, private))
--			return -EIO;
--	} while (pgd++, addr = next, addr != end);
- 	return 0;
- }
- 
-@@ -649,6 +591,44 @@ static unsigned long change_prot_numa(struct vm_area_struct *vma,
- }
- #endif /* CONFIG_NUMA_BALANCING */
- 
-+static int queue_pages_test_walk(unsigned long start, unsigned long end,
-+				struct mm_walk *walk)
-+{
-+	struct vm_area_struct *vma = walk->vma;
-+	struct queue_pages *qp = walk->private;
-+	unsigned long endvma = vma->vm_end;
-+	unsigned long flags = qp->flags;
-+
-+	if (endvma > end)
-+		endvma = end;
-+	if (vma->vm_start > start)
-+		start = vma->vm_start;
-+
-+	if (!(flags & MPOL_MF_DISCONTIG_OK)) {
-+		if (!vma->vm_next && vma->vm_end < end)
-+			return -EFAULT;
-+		if (qp->prev && qp->prev->vm_end < vma->vm_start)
-+			return -EFAULT;
-+	}
-+
-+	qp->prev = vma;
-+
-+	if (vma->vm_flags & VM_PFNMAP)
-+		return 1;
-+
-+	if (flags & MPOL_MF_LAZY) {
-+		change_prot_numa(vma, start, endvma);
-+		return 1;
-+	}
-+
-+	if ((flags & MPOL_MF_STRICT) ||
-+	    ((flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) &&
-+	     vma_migratable(vma)))
-+		/* queue pages from current vma */
-+		return 0;
-+	return 1;
-+}
-+
- /*
-  * Walk through page tables and collect pages to be migrated.
-  *
-@@ -658,51 +638,29 @@ static unsigned long change_prot_numa(struct vm_area_struct *vma,
-  */
- static struct vm_area_struct *
- queue_pages_range(struct mm_struct *mm, unsigned long start, unsigned long end,
--		const nodemask_t *nodes, unsigned long flags, void *private)
-+		nodemask_t *nodes, unsigned long flags,
-+		struct list_head *pagelist)
- {
- 	int err;
--	struct vm_area_struct *first, *vma, *prev;
--
--
--	first = find_vma(mm, start);
--	if (!first)
--		return ERR_PTR(-EFAULT);
--	prev = NULL;
--	for (vma = first; vma && vma->vm_start < end; vma = vma->vm_next) {
--		unsigned long endvma = vma->vm_end;
--
--		if (endvma > end)
--			endvma = end;
--		if (vma->vm_start > start)
--			start = vma->vm_start;
--
--		if (!(flags & MPOL_MF_DISCONTIG_OK)) {
--			if (!vma->vm_next && vma->vm_end < end)
--				return ERR_PTR(-EFAULT);
--			if (prev && prev->vm_end < vma->vm_start)
--				return ERR_PTR(-EFAULT);
--		}
--
--		if (flags & MPOL_MF_LAZY) {
--			change_prot_numa(vma, start, endvma);
--			goto next;
--		}
--
--		if ((flags & MPOL_MF_STRICT) ||
--		     ((flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) &&
--		      vma_migratable(vma))) {
--
--			err = queue_pages_pgd_range(vma, start, endvma, nodes,
--						flags, private);
--			if (err) {
--				first = ERR_PTR(err);
--				break;
--			}
--		}
--next:
--		prev = vma;
--	}
--	return first;
-+	struct queue_pages qp = {
-+		.pagelist = pagelist,
-+		.flags = flags,
-+		.nmask = nodes,
-+		.prev = NULL,
-+	};
-+	struct mm_walk queue_pages_walk = {
-+		.hugetlb_entry = queue_pages_hugetlb,
-+		.pmd_entry = queue_pages_pte_range,
-+		.test_walk = queue_pages_test_walk,
-+		.mm = mm,
-+		.private = &qp,
-+	};
-+
-+	err = walk_page_range(start, end, &queue_pages_walk);
-+	if (err < 0)
-+		return ERR_PTR(err);
-+	else
-+		return find_vma(mm, start);
- }
- 
- /*
--- 
-1.9.3
+The timings here look slightly strange. Typically
 
+	.{h,v}display < .{h,v}sync_start < .{h,v}hsync_end < .{h,v}total
+
+Given your timings above essentially means that the vsync pulse starts
+immediately after the last active pixel or line and is of length zero.
+
+> +	.vrefresh =3D 60,
+> +};
+> +
+> +static const struct panel_desc innolux_n156bge_l21 =3D {
+> +	.modes =3D &innolux_n156bge_l21_mode,
+> +	.num_modes =3D 1,
+> +	.size =3D {
+> +		.width =3D 1366,
+> +		.height =3D 768,
+
+This size is the physical size (in mm) of the active area of the panel.
+
+> +	},
+> +};
+> +
+>  static const struct of_device_id platform_of_match[] =3D {
+>  	{
+>  		.compatible =3D "auo,b101aw03",
+> @@ -389,6 +411,9 @@ static const struct of_device_id platform_of_match[] =
+=3D {
+>  		.compatible =3D "samsung,ltn101nt05",
+>  		.data =3D &samsung_ltn101nt05,
+>  	}, {
+> +		.compatible =3D "innolux,n156bge-l21",
+> +		.data =3D &innolux_n156bge_l21,
+> +	}, {
+
+This patch should also be adding a device tree binding document for this
+panel.
+
+Thierry
+
+--EeQfGwPcQSOJBaQU
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTpJZAAAoJEN0jrNd/PrOhwXAQAMFtUt3QkXHbG2qxJgNNbp+0
+7WIFLPIgsTxYBOAWB2LAH9F2n3hA/2R+GWU4uSWIHZbW8bA+yyzUvBYh1PX2t7MY
+tpgIfqUJjz07tLsA0fGrmIw8mlCHfCEivOkI7FpkE2oVs4dTowZr012c2hp11dx2
+084IuvZINPO/HwXfp78isArqN1JLm1N9Ssoyzaw1LGk2BXPddYDX+FWyUIlyTmDK
+BU61USEL3DwxX1RNvgT/RudVP7Flm+QjmpCrBEbVSDqDa+gDnmhPPSrIzh9haeeI
+rDY9AoBii9fprhkX/WArl6hucjgn81hYWaZCaui3BX28vmI5lt1WMsXP0ZmUDV6F
+EXntfTheEabiZY5Vhv3WR7s31a0IVBdevEa+ZNdEB/c667YL3j4Z5ullKERNZhW5
+yEcZWBoaIeSNos0LAfRfynkriOfvckZLNYT8fNU1bUmySsD/qMh0YMAT5eDhpZYe
+B1FKJnKkimBPspMChaCCf7OL6j3chKzsftb0mR2KiKqNVhMqYA03/nagQ1KRc0Ah
+pfa/BE4IguvSrIJvAuWzkY7qgjiegyiQ42Fto2Os7QVIZBX40GrJrQJHL4z0GzcA
+471+VG8Kq8206TnJQycDZrDvCvXE6g7v6VsPHs9IUa9ijgFeKyEHaZCuHHkzlYJD
+wlEqyiBEwmN3bDWRjK4B
+=yoom
+-----END PGP SIGNATURE-----
+
+--EeQfGwPcQSOJBaQU--
