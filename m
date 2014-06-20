@@ -1,53 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967567AbaFTSuu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 14:50:50 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:55629 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966716AbaFTSus (ORCPT
+	id S967064AbaFTSwy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 14:52:54 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:29905 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965992AbaFTSww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 14:50:48 -0400
-Message-ID: <53A4828D.9000200@kernel.dk>
-Date: Fri, 20 Jun 2014 12:50:53 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 20 Jun 2014 14:52:52 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19mbhX27sWvlOvn9DHaDBQRDYMQtSuMHP4=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 55BF6594515
+Date: Fri, 20 Jun 2014 14:52:41 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: mvebu: Fix missing binding documentation for
+ Armada 38x
+Message-ID: <20140620185241.GC21711@titan.lakedaemon.net>
+References: <1403196043-6317-1-git-send-email-gregory.clement@free-electrons.com>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>
-CC: Joe Lawrence <joe.lawrence@stratus.com>, linux-kernel@vger.kernel.org,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH block/for-linus] blkcg: fix use-after-free in __blkg_release_rcu()
- by making blkcg_gq refcnt an atomic_t
-References: <alpine.DEB.2.02.1406081816540.17948@jlaw-desktop.mno.stratus.com> <20140609174708.GA31499@redhat.com> <20140609182728.GB31499@redhat.com> <20140610143906.0d2f35d0@jlaw-desktop.mno.stratus.com> <20140611163229.GA12974@redhat.com> <20140619202640.GA9814@mtj.dyndns.org> <20140619214257.GE9814@mtj.dyndns.org> <20140620143901.GC7354@redhat.com>
-In-Reply-To: <20140620143901.GC7354@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403196043-6317-1-git-send-email-gregory.clement@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2014 08:39 AM, Vivek Goyal wrote:
-> On Thu, Jun 19, 2014 at 05:42:57PM -0400, Tejun Heo wrote:
->> Hello,
->>
->> So, this patch should do.  Joe, Vivek, can one of you guys please
->> verify that the oops goes away with this patch?
+On Thu, Jun 19, 2014 at 06:40:43PM +0200, Gregory CLEMENT wrote:
+> For the Armada 380 and Armada 385 SoCs, the common bindings for those
+> 2 SoCs, was forgotten. This patch add the documentation for the
+> marvell,aramda38x property.
 > 
-> Hi Tejun,
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> --
+> Hi,
 > 
-> This patch seems to fix the issue for me. Tried 10 times and no crash.
+> This fix should be merged in 3.16. For 3.15 I am not sure as it is not
+> a regression.
 > 
-> So now one need to hold queue lock for getting refernce on the group
-> only if caller does not already have a reference and if group has been
-> looked up from some tree/queue etc. I guess only such usage seems to
-> be in blkg_create() where we take a reference on parent after looking
-> it up.
+> Changelog:
+> v1->v2
 > 
-> This patch looks good to me.
+> - Reformulate to make clear that we will need marvell,armada38x _and_ a
+> SoC specific string. For consistency I duplicated what we have done in
+> armada-370-xp.txt
 > 
-> Acked-by: Vivek Goyal <vgoyal@redhat.com>
+> 
+> Thanks,
+> Gregory
+> 
+> 
+>  Documentation/devicetree/bindings/arm/armada-38x.txt | 17 +++++++++++++++--
+>  1 file changed, 15 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/armada-38x.txt b/Documentation/devicetree/bindings/arm/armada-38x.txt
+> index 11f2330a6554..fa08760046df 100644
+> --- a/Documentation/devicetree/bindings/arm/armada-38x.txt
+> +++ b/Documentation/devicetree/bindings/arm/armada-38x.txt
+> @@ -6,5 +6,18 @@ following property:
+>  
+>  Required root node property:
+>  
+> - - compatible: must contain either "marvell,armada380" or
+> -   "marvell,armada385" depending on the variant of the SoC being used.
+> +compatible: must contain "marvell,armada38x"
 
-Thanks. Tejun, I'll queue this up for this cycle.
+I agree with Sergei on this one.  We generally avoid wildcards in
+compatible strings.  Is there a use case where specifying one of the
+below wouldn't be sufficient?
 
--- 
-Jens Axboe
+> +
+> +In addition, boards using the Marvell Armada 380 SoC shall have the
+> +following property:
+> +
+> +Required root node property:
+> +
+> +compatible: must contain "marvell,armada380"
+> +
+> +In addition, boards using the Marvell Armada 385 SoC shall have the
+> +following property:
+> +
+> +Required root node property:
+> +
+> +compatible: must contain "marvell,armada385"
 
+thx,
+
+Jason.
