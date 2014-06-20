@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934241AbaFTDpL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 23:45:11 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:41166 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932890AbaFTDpI (ORCPT
+	id S934300AbaFTDqW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 23:46:22 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:32818 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775AbaFTDqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 23:45:08 -0400
+	Thu, 19 Jun 2014 23:46:21 -0400
 MIME-Version: 1.0
-In-Reply-To: <1403115247-8853-11-git-send-email-dianders@chromium.org>
-References: <1403115247-8853-1-git-send-email-dianders@chromium.org>
-	<1403115247-8853-11-git-send-email-dianders@chromium.org>
-Date: Thu, 19 Jun 2014 21:45:07 -0600
-X-Google-Sender-Auth: DJePm3kHhyknTej9US3-vDwijG8
-Message-ID: <CAPnjgZ1=J+4GC6r1piVcmEbHJUJnM-N0jZmnhOQS5fNTGUySaA@mail.gmail.com>
-Subject: Re: [PATCH v2 10/10] mfd: cros_ec: move EC interrupt to cros_ec_keyb
-From: Simon Glass <sjg@chromium.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Bill Richardson <wfrichar@chromium.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Mark Brown <broonie@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        lk <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAPDOMVhUf=X8Fp1stntiLstJw1sF80G=ZJhO7xNUP=jT4oagLA@mail.gmail.com>
+References: <1403212685-2427-1-git-send-email-xerofoify@gmail.com>
+	<CAPDOMVhUf=X8Fp1stntiLstJw1sF80G=ZJhO7xNUP=jT4oagLA@mail.gmail.com>
+Date: Thu, 19 Jun 2014 23:46:20 -0400
+Message-ID: <CAPDOMViFK01Y=WYCnSzdtcXZVDutd09_nn=1KkvBAdc+t4uTRg@mail.gmail.com>
+Subject: Re: [PATCH] staging: rtl8192 Check for Null return from dev_skb_alloc
+From: Nick Krause <xerofoify@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: lisa@xenapiadmin.com, Valentina Manea <valentina.manea.m@gmail.com>,
+        ben@decadent.org.uk, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 June 2014 12:14, Doug Anderson <dianders@chromium.org> wrote:
-> From: Andrew Bresticker <abrestic@chromium.org>
->
-> If we receive EC interrupts after the cros_ec driver has probed, but
-> before the cros_ec_keyb driver has probed, the cros_ec IRQ handler
-> will not run the cros_ec_keyb notifier and the EC will leave the IRQ
-> line asserted.  The cros_ec IRQ handler then returns IRQ_HANDLED and
-> the resulting flood of interrupts causes the machine to hang.
->
-> Since the EC interrupt is currently only used for the keyboard, move
-> the setup and handling of the EC interrupt to the cros_ec_keyb driver.
->
-> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+Our you Guys just removing me from your emails I have checked this patch
+and it seems right. If you don't want to accept it , the less you can
+do is give me a reply.
+Nick
 
-Reviewed-by: Simon Glass <sjg@chromium.org>
-
-We never needed an EC-level interrupt, and have shipped at least three
-products now that use this code, so I think it is safe enough to
-declare that we won't need it.
-
-Regards,
-Simon
+On Thu, Jun 19, 2014 at 10:12 PM, Nick Krause <xerofoify@gmail.com> wrote:
+> If anyone able to check this patch it would be great.
+> Thanks Nick
+>
+> On Thu, Jun 19, 2014 at 5:18 PM, Nicholas Krause <xerofoify@gmail.com> wrote:
+>> Checks for Null return from dev_skb_alloc if it returns Null,
+>> fw_download returns false. Otherwise it returns true.Also
+>> removed rt_status due to returning true of false directly.
+>>
+>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>> ---
+>>  drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 7 ++++---
+>>  1 file changed, 4 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+>> index 1a95d1f..affa89a 100644
+>> --- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+>> +++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+>> @@ -36,7 +36,6 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+>>                              u32 buffer_len)
+>>  {
+>>         struct r8192_priv *priv = rtllib_priv(dev);
+>> -       bool                rt_status = true;
+>>         u16                 frag_threshold;
+>>         u16                 frag_length, frag_offset = 0;
+>>         int                 i;
+>> @@ -59,7 +58,9 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+>>                         bLastIniPkt = 1;
+>>
+>>                 }
+>>        skb  = dev_alloc_skb(frag_length + 4);
+>> +               if (!skb)
+>> +                       return false;
+>>                 memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
+>>                 tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
+>> @@ -99,7 +100,7 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+>>
+>>         write_nic_byte(dev, TPPoll, TPPoll_CQ);
+>>
+>> -       return rt_status;
+>> +       return true;
+>>  }
+>>
+>>  static bool CPUcheck_maincodeok_turnonCPU(struct net_device *dev)
+>> --
+>> 1.9.1
+>>
