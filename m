@@ -1,117 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967242AbaFTM3R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 08:29:17 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:47209 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965113AbaFTM3P (ORCPT
+	id S967321AbaFTMcO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 08:32:14 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:54316 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965113AbaFTMcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 08:29:15 -0400
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, linux@arm.linux.org.uk,
-        daniel.lezcano@linaro.org, tglx@linutronix.de, grant.likely@linaro.org,
-        matthias.bgg@gmail.com, thierry.reding@gmail.com,
-        florian.vaussard@epfl.ch, jic23@kernel.org, jason@lakedaemon.net,
-        andrew@lunn.ch, silvio.fricke@gmail.com, heiko.stuebner@bq.com,
-        olof@lixom.net, sebastian.hesselbarth@gmail.com, sboyd@codeaurora.org,
-        gregory.clement@free-electrons.com, arnd@arndb.de,
-        robherring2@gmail.com, marc.zyngier@arm.com,
-        maxime.ripard@free-electrons.com, soren.brinkmann@xilinx.com,
-        shawn.guo@freescale.com, anders.berg@lsi.com, linus.walleij@linaro.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v9.1] of: Provide function to request and map memory
-Date: Fri, 20 Jun 2014 14:28:48 +0200
-Message-Id: <1403267328-23085-1-git-send-email-matthias.bgg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403264929-21325-2-git-send-email-matthias.bgg@gmail.com>
-References: <1403264929-21325-2-git-send-email-matthias.bgg@gmail.com>
+	Fri, 20 Jun 2014 08:32:12 -0400
+MIME-Version: 1.0
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <53A40198.6020007@intel.com>
+References: <1403171631-3452-1-git-send-email-tiejun.chen@intel.com>
+	<53A40198.6020007@intel.com>
+Date: Fri, 20 Jun 2014 14:32:11 +0200
+Message-ID: <CAKMK7uGr=Mn13eRO-AZBM7aEBrNEp7Zn+5mQyEbuoq9XeqT-pQ@mail.gmail.com>
+Subject: Re: [RFC][PATCH] gpu:drm:i915:intel_detect_pch: back to check devfn
+ instead of check class type
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: "Chen, Tiejun" <tiejun.chen@intel.com>
+Cc: "Nikula, Jani" <jani.nikula@linux.intel.com>,
+        Dave Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        xen-devel@lists.xensource.com, qemu-devel@nongnu.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A call to of_iomap does not request the memory region.
-This patch adds the function of_io_request_and_map which requests
-the memory region before mapping it.
+Well I have no clue about forwarding the intel gpu to virtualized
+hosts and also no idea who could review this really. There's been a
+bit a discussion around the iommu mapping forwarding and similar
+topics though. So I really wonder how well our driver works in this
+use case ...
+-Daniel
 
-Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
-Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-Suggested-by: Rob Herring <robh@kernel.org>
-Acked-by: Grant Likely <grant.likely@linaro.org>
----
-Changes for v9.1:
-- fixed the Author email address
+On Fri, Jun 20, 2014 at 11:40 AM, Chen, Tiejun <tiejun.chen@intel.com> wrote:
+> Just ping, any comments?
+>
+> Thanks
+> Tiejun
+>
+>
+> On 2014/6/19 17:53, Tiejun Chen wrote:
+>>
+>> Originally the reason to probe ISA bridge instead of Dev31:Fun0
+>> is to make graphics device passthrough work easy for VMM, that
+>> only need to expose ISA bridge to let driver know the real
+>> hardware underneath. This is a requirement from virtualization
+>> team. Especially in that virtualized environments, XEN, there
+>> is irrelevant ISA bridge in the system with that legacy qemu
+>> version specific to xen, qemu-xen-traditional. So to work
+>> reliably, we should scan through all the ISA bridge devices
+>> and check for the first match, instead of only checking the
+>> first one.
+>>
+>> But actually, qemu-xen-traditional, is always enumerated with
+>> Dev31:Fun0, 00:1f.0 as follows:
+>>
+>> hw/pt-graphics.c:
+>>
+>> intel_pch_init()
+>>      |
+>>      + pci_isa_bridge_init(bus, PCI_DEVFN(0x1f, 0), ...);
+>>
+>> so this mean that isa bridge is still represented with Dev31:Func0
+>> like the native OS. Furthermore, currently we're pushing VGA
+>> passthrough support into qemu upstream, and with some discussion,
+>> we wouldn't set the bridge class type and just expose this devfn.
+>>
+>> So we just go back to check devfn to make life normal.
+>>
+>> Signed-off-by: Tiejun Chen <tiejun.chen@intel.com>
+>> ---
+>>   drivers/gpu/drm/i915/i915_drv.c | 19 +++----------------
+>>   1 file changed, 3 insertions(+), 16 deletions(-)
+>>
+>> diff --git a/drivers/gpu/drm/i915/i915_drv.c
+>> b/drivers/gpu/drm/i915/i915_drv.c
+>> index 651e65e..cb2526e 100644
+>> --- a/drivers/gpu/drm/i915/i915_drv.c
+>> +++ b/drivers/gpu/drm/i915/i915_drv.c
+>> @@ -417,18 +417,8 @@ void intel_detect_pch(struct drm_device *dev)
+>>                 return;
+>>         }
+>>
+>> -       /*
+>> -        * The reason to probe ISA bridge instead of Dev31:Fun0 is to
+>> -        * make graphics device passthrough work easy for VMM, that only
+>> -        * need to expose ISA bridge to let driver know the real hardware
+>> -        * underneath. This is a requirement from virtualization team.
+>> -        *
+>> -        * In some virtualized environments (e.g. XEN), there is
+>> irrelevant
+>> -        * ISA bridge in the system. To work reliably, we should scan
+>> trhough
+>> -        * all the ISA bridge devices and check for the first match,
+>> instead
+>> -        * of only checking the first one.
+>> -        */
+>> -       while ((pch = pci_get_class(PCI_CLASS_BRIDGE_ISA << 8, pch))) {
+>> +       pch = pci_get_bus_and_slot(0, PCI_DEVFN(0x1f, 0));
+>> +       if (pch) {
+>>                 if (pch->vendor == PCI_VENDOR_ID_INTEL) {
+>>                         unsigned short id = pch->device &
+>> INTEL_PCH_DEVICE_ID_MASK;
+>>                         dev_priv->pch_id = id;
+>> @@ -462,10 +452,7 @@ void intel_detect_pch(struct drm_device *dev)
+>>                                 DRM_DEBUG_KMS("Found LynxPoint LP PCH\n");
+>>                                 WARN_ON(!IS_HASWELL(dev));
+>>                                 WARN_ON(!IS_ULT(dev));
+>> -                       } else
+>> -                               continue;
+>> -
+>> -                       break;
+>> +                       }
+>>                 }
+>>         }
+>>         if (!pch)
+>>
+>
 
- drivers/of/address.c       |   29 +++++++++++++++++++++++++++++
- include/linux/of_address.h |    8 ++++++++
- 2 files changed, 37 insertions(+)
 
-diff --git a/drivers/of/address.c b/drivers/of/address.c
-index cb4242a..09074ba 100644
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -721,3 +721,32 @@ void __iomem *of_iomap(struct device_node *np, int index)
- 	return ioremap(res.start, resource_size(&res));
- }
- EXPORT_SYMBOL(of_iomap);
-+
-+/*
-+ * of_io_request_and_map - Requests a resource and maps the memory mapped IO
-+ *			   for a given device_node
-+ * @device:	the device whose io range will be mapped
-+ * @index:	index of the io range
-+ * @name:	name of the resource
-+ *
-+ * Returns a pointer to the requested and mapped memory
-+ */
-+void __iomem *of_io_request_and_map(struct device_node *np, int index,
-+					char *name)
-+{
-+	struct resource res;
-+	void __iomem *mem;
-+
-+	if (of_address_to_resource(np, index, &res))
-+		return NULL;
-+
-+	if (!request_mem_region(res.start, resource_size(&res), name))
-+		return NULL;
-+
-+	mem = ioremap(res.start, resource_size(&res));
-+	if (!mem)
-+		release_mem_region(res.start, resource_size(&res));
-+
-+	return mem;
-+}
-+EXPORT_SYMBOL(of_io_request_and_map);
-diff --git a/include/linux/of_address.h b/include/linux/of_address.h
-index 5f6ed6b..725b875 100644
---- a/include/linux/of_address.h
-+++ b/include/linux/of_address.h
-@@ -96,6 +96,8 @@ static inline struct of_pci_range *of_pci_range_parser_one(
- extern int of_address_to_resource(struct device_node *dev, int index,
- 				  struct resource *r);
- void __iomem *of_iomap(struct device_node *node, int index);
-+void __iomem *of_io_request_and_map(struct device_node *device,
-+					int index, char *name);
- #else
- static inline int of_address_to_resource(struct device_node *dev, int index,
- 					 struct resource *r)
-@@ -107,6 +109,12 @@ static inline void __iomem *of_iomap(struct device_node *device, int index)
- {
- 	return NULL;
- }
-+
-+static inline void __iomem *of_io_request_and_map(struct device_node *device,
-+					int index, char *name)
-+{
-+	return NULL;
-+}
- #endif
- 
- #if defined(CONFIG_OF_ADDRESS) && defined(CONFIG_PCI)
+
 -- 
-1.7.9.5
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
