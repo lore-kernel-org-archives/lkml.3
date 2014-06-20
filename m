@@ -1,109 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934534AbaFTFU7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 01:20:59 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:54857 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217AbaFTFU6 (ORCPT
+	id S934563AbaFTFWo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 01:22:44 -0400
+Received: from smtprelay0071.hostedemail.com ([216.40.44.71]:49970 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933667AbaFTFWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 01:20:58 -0400
-Date: Fri, 20 Jun 2014 14:19:58 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
-Cc: markh@compro.net, driverdev-devel@linuxdriverproject.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: dgap: make dgap_found_board() return a brd pointer
-Message-ID: <20140620051958.GA17076@devel.8.8.4.4>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Fri, 20 Jun 2014 01:22:43 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3653:3865:3866:3867:3868:3871:3872:3874:4321:4605:5007:6119:7652:7903:8531:10004:10400:10848:11026:11658:11914:12043:12517:12519:12555:12663:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: copy38_6ee07ddac4033
+X-Filterd-Recvd-Size: 1870
+Message-ID: <1403241760.2753.46.camel@joe-AO725>
+Subject: [PATCH] checkpatch: Ignore email headers better
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 19 Jun 2014 22:22:40 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make dgap_found_board() return a brd pointer and that brd pointer
-assign to dgap_board[] in the end of the dgap_init_one().
+There are some patches created by git format-patch
+that when scanned by checkpatch report errors on
+lines like
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+To:	address.tld
+
+This is a checkpatch false positive.
+
+Improve the logic a bit to ignore folded email headers
+to avoid emitting these messages.
+
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/staging/dgap/dgap.c |   22 +++++++++++-----------
- 1 files changed, 11 insertions(+), 11 deletions(-)
+ scripts/checkpatch.pl | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index 5c8e622..55c9761 100644
---- a/drivers/staging/dgap/dgap.c
-+++ b/drivers/staging/dgap/dgap.c
-@@ -70,7 +70,8 @@ MODULE_SUPPORTED_DEVICE("dgap");
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index dd845b9..1e17de2 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1637,7 +1637,7 @@ sub process {
+ 	my $signoff = 0;
+ 	my $is_patch = 0;
  
- static int dgap_start(void);
- static void dgap_init_globals(void);
--static int dgap_found_board(struct pci_dev *pdev, int id, int boardnum);
-+static struct board_t *dgap_found_board(struct pci_dev *pdev, int id,
-+					int boardnum);
- static void dgap_cleanup_board(struct board_t *brd);
- static void dgap_poll_handler(ulong dummy);
- static int dgap_init_pci(void);
-@@ -582,11 +583,10 @@ static int dgap_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	if (rc)
- 		return -EIO;
+-	my $in_header_lines = 1;
++	my $in_header_lines = $file ? 0 : 1;
+ 	my $in_commit_log = 0;		#Scanning lines before patch
  
--	rc = dgap_found_board(pdev, ent->driver_data, dgap_numboards);
--	if (rc)
-+	brd = dgap_found_board(pdev, ent->driver_data, dgap_numboards);
-+	if (IS_ERR(brd))
- 		return rc;
- 
--	brd = dgap_board[dgap_numboards++];
- 	rc = dgap_firmware_load(pdev, ent->driver_data, brd);
- 	if (rc)
- 		goto cleanup_brd;
-@@ -617,6 +617,8 @@ static int dgap_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	brd->state = BOARD_READY;
- 	brd->dpastatus = BD_RUNNING;
- 
-+	dgap_board[dgap_numboards++] = brd;
-+
- 	return 0;
- 
- tty_free:
-@@ -717,7 +719,8 @@ static void dgap_cleanup_board(struct board_t *brd)
-  *
-  * A board has been found, init it.
-  */
--static int dgap_found_board(struct pci_dev *pdev, int id, int boardnum)
-+static struct board_t *dgap_found_board(struct pci_dev *pdev, int id,
-+					int boardnum)
- {
- 	struct board_t *brd;
- 	unsigned int pci_irq;
-@@ -727,9 +730,7 @@ static int dgap_found_board(struct pci_dev *pdev, int id, int boardnum)
- 	/* get the board structure and prep it */
- 	brd = kzalloc(sizeof(struct board_t), GFP_KERNEL);
- 	if (!brd)
--		return -ENOMEM;
--
--	dgap_board[boardnum] = brd;
-+		return ERR_PTR(-ENOMEM);
- 
- 	/* store the info for the board we've found */
- 	brd->magic = DGAP_BOARD_MAGIC;
-@@ -828,13 +829,12 @@ static int dgap_found_board(struct pci_dev *pdev, int id, int boardnum)
- 	pr_info("dgap: board %d: %s (rev %d), irq %ld\n",
- 		boardnum, brd->name, brd->rev, brd->irq);
- 
--	return 0;
-+	return brd;
- 
- free_brd:
- 	kfree(brd);
--	dgap_board[boardnum] = NULL;
- 
--	return ret;
-+	return ERR_PTR(ret);
- }
- 
- 
--- 
-1.7.1
+ 	my $non_utf8_charset = 0;
+@@ -1993,7 +1993,8 @@ sub process {
+ # Check if it's the start of a commit log
+ # (not a header line and we haven't seen the patch filename)
+ 		if ($in_header_lines && $realfile =~ /^$/ &&
+-		    $rawline !~ /^(commit\b|from\b|[\w-]+:).+$/i) {
++		    !($rawline =~ /^\s+\S/ ||
++		      $rawline =~ /^(commit\b|from\b|[\w-]+:).*$/i)) {
+ 			$in_header_lines = 0;
+ 			$in_commit_log = 1;
+ 		}
+
 
