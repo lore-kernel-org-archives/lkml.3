@@ -1,58 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966013AbaFTUTA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:19:00 -0400
-Received: from smtprelay0201.hostedemail.com ([216.40.44.201]:46636 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753696AbaFTUS7 (ORCPT
+	id S966572AbaFTUU0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:20:26 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:42010 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751731AbaFTUUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 16:18:59 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2898:3138:3139:3140:3141:3142:3352:3622:3868:3873:4321:4605:5007:7652:7903:10004:10400:10848:11232:11658:11914:12517:12519:12555:12740:13019:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: nail87_4e35ed5fee52a
-X-Filterd-Recvd-Size: 1770
-Message-ID: <1403295536.4076.8.camel@joe-AO725>
-Subject: Re: [PATCH] checkpatch.pl: Also suggest 'else if' when if follows
- brace
-From: Joe Perches <joe@perches.com>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Date: Fri, 20 Jun 2014 13:18:56 -0700
-In-Reply-To: <1403294665-18344-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1403294665-18344-1-git-send-email-linux@rasmusvillemoes.dk>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Jun 2014 16:20:24 -0400
+Date: Fri, 20 Jun 2014 16:20:17 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jungseok Lee <jays.lee@samsung.com>
+Cc: linux-kernel@vger.kernel.org, sungjinn.chung@samsung.com,
+        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH] swiotlb: Correct kernel command line handler
+Message-ID: <20140620202017.GB5558@laptop.dumpdata.com>
+References: <011801cf4d4c$f7ba51f0$e72ef5d0$@samsung.com>
+ <20140401124606.GA7135@phenom.dumpdata.com>
+ <004c01cf4e2d$1d84a1c0$588de540$@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <004c01cf4e2d$1d84a1c0$588de540$@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-20 at 22:04 +0200, Rasmus Villemoes wrote:
-> This might help a kernel hacker think twice before blindly adding a
-> newline.
-
-Sure, fine by me.
-
-> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-> ---
->  scripts/checkpatch.pl | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+On Wed, Apr 02, 2014 at 01:36:29PM +0900, Jungseok Lee wrote:
+> On Tuesday, April 01, 2014 9:46 PM, Konrad Rzeszutek Wilk wrote:
+> > On Tue, Apr 01, 2014 at 10:51:58AM +0900, Jungseok Lee wrote:
+> > > This patch corrects kernel command line handler when io_tlb_nslabs is
+> > > set to 0.
+> > >
+> > > A current implementation allocates default size memory (64MB) when
+> > > 0 is given to io_tlb_nslabs ("swiotlb=0") by kernel command line.
+> > > In other words, memory is allocated unintentionally.
+> > 
+> > What are the other IOMMUs that end up taking over the DMA ops?
 > 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 010b18e..e1924eb 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -3601,7 +3601,7 @@ sub process {
->  # if should not continue a brace
->  		if ($line =~ /}\s*if\b/) {
->  			ERROR("TRAILING_STATEMENTS",
-> -			      "trailing statements should be on next line\n" .
-> +			      "trailing statements should be on next line (or did you mean 'else if'?)\n" .
->  				$herecurr);
->  		}
->  # case and default should not have general statements after them
+> I think that no other IOMMUs take over it on ARM64 system, except Xen.
+> 
+> > Or do you end up with no DMA ops?
+> 
+> I focus on ARM64 system which uses swiotlb as default DMA ops.
+> 
+> If some ARM64 platforms would like to use memory only from
+> __get_free_pages in swiotlb_alloc_coherent function, an
+> interface would be needed to configure reserved memory size.
+> 
+> Thus, I add it to kernel command line handler.
 
+OK. I somehow have lost track of this patch. Is this patch
+still valid?
 
-
+> 
+> Best Regards
+> Jungseok Lee
+> 
+> > >
+> > > Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
+> > > Signed-off-by: Sungjinn Chung <sungjinn.chung@samsung.com>
+> > > ---
+> > >  lib/swiotlb.c |    8 ++++++--
+> > >  1 file changed, 6 insertions(+), 2 deletions(-)
+> > >
+> > > diff --git a/lib/swiotlb.c b/lib/swiotlb.c index b604b83..9fe9f71
+> > > 100644
+> > > --- a/lib/swiotlb.c
+> > > +++ b/lib/swiotlb.c
+> > > @@ -55,6 +55,8 @@
+> > >
+> > >  int swiotlb_force;
+> > >
+> > > +static int swiotlb_no_use;
+> > > +
+> > >  /*
+> > >   * Used to do a quick range check in swiotlb_tbl_unmap_single and
+> > >   * swiotlb_tbl_sync_single_*, to see if the memory was in fact
+> > > allocated by this @@ -102,6 +104,8 @@ setup_io_tlb_npages(char *str)
+> > >  		io_tlb_nslabs = simple_strtoul(str, &str, 0);
+> > >  		/* avoid tail segment of size < IO_TLB_SEGSIZE */
+> > >  		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
+> > > +		if (!io_tlb_nslabs)
+> > > +			swiotlb_no_use = 1;
+> > >  	}
+> > >  	if (*str == ',')
+> > >  		++str;
+> > > @@ -212,7 +216,7 @@ swiotlb_init(int verbose)
+> > >  	unsigned char *vstart;
+> > >  	unsigned long bytes;
+> > >
+> > > -	if (!io_tlb_nslabs) {
+> > > +	if (!swiotlb_no_use && !io_tlb_nslabs) {
+> > >  		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
+> > >  		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
+> > >  	}
+> > > @@ -244,7 +248,7 @@ swiotlb_late_init_with_default_size(size_t default_size)
+> > >  	unsigned int order;
+> > >  	int rc = 0;
+> > >
+> > > -	if (!io_tlb_nslabs) {
+> > > +	if (!swiotlb_no_use && !io_tlb_nslabs) {
+> > >  		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
+> > >  		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
+> > >  	}
+> > > --
+> > > 1.7.10.4
+> > >
+> > >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in the body of a message
+> > to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
