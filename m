@@ -1,186 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932770AbaFTAfj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 20:35:39 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:53093
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	id S933183AbaFTAhc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 20:37:32 -0400
+Received: from ozlabs.org ([103.22.144.67]:51445 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752265AbaFTAfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 20:35:37 -0400
-x-originating-ip: 72.167.245.219
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org
-Subject: [PATCH net-next] hyperv: Add handler for RNDIS_STATUS_NETWORK_CHANGE event
-Date: Thu, 19 Jun 2014 18:34:36 -0700
-Message-Id: <1403228076-7596-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754038AbaFTAha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 20:37:30 -0400
+Message-ID: <1403224646.18509.1.camel@concordia>
+Subject: Re: Re: Re: [RFT PATCH -next v3] [BUGFIX] kprobes: Fix "Failed to
+ find blacklist" error on ia64 and ppc64
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: "Suzuki K. Poulose" <suzuki@in.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-tip-commits@vger.kernel.org, anil.s.keshavamurthy@intel.com,
+        Ingo Molnar <mingo@kernel.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        akataria@vmware.com, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>
+Date: Fri, 20 Jun 2014 10:37:26 +1000
+In-Reply-To: <53A2C78D.9060708@hitachi.com>
+References: <5387F150.5000307@hitachi.com>
+	 <20140530031838.17427.75896.stgit@ltc230.yrl.intra.hitachi.co.jp>
+	 <539161D6.7020508@hitachi.com> <1403078179.32307.7.camel@concordia>
+	 <53A15201.7060404@hitachi.com> <1403141433.4768.1.camel@concordia>
+	 <53A26C99.6060000@hitachi.com> <53A285D0.1030106@in.ibm.com>
+	 <53A2908E.2000806@hitachi.com> <53A2B136.108@in.ibm.com>
+	 <53A2C315.9030006@hitachi.com> <53A2C78D.9060708@hitachi.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The RNDIS_STATUS_NETWORK_CHANGE event is received after the Hyper-V host
-sleep or hibernation. We refresh network at this time.
-MS-TFS: 135162
+On Thu, 2014-06-19 at 20:20 +0900, Masami Hiramatsu wrote:
+> (2014/06/19 20:01), Masami Hiramatsu wrote:
+> 
+> >>>>> Ah, those messages should be shown in dmesg when booting if it doesn't work,
+> >>>>> because the messages are printed by initialization process of kprobe blacklist.
+> >>>>> So, reproducing it is just enabling CONFIG_KPROBES and boot it.
+> >>>> Well,  we don't get those messages on Power, since the kallsyms has the
+> >>>> entries for ".function_name". The correct way to verify is, either  :
+> >>>
+> >>> Hmm, that seems another issue on powerpc. Is that expected(and designed)
+> >>> behavior?
+> >> AFAIK, yes, it is.
+> >> To be more precise :
+> >>
+> >> we have 'foo' and '.foo' for a function foo(), where 'foo' points to the
+> >> function_entry and '.foo' points to the actual function.
+> > 
+> > Ah, I see. So if we run
+> > 
+> >   func_ptr p = foo;
+> >   return p == kallsyms_lookup_name(".foo");
+> > 
+> > it returns true.
+> 
+> One more thing I should know, is the address of ".function_name" within the
+> kernel text? In other words, does kernel_text_address() return true for that
+> address? If not, it's easy to verify the address.
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+Yes. That is the text address, kernel_text_address() should definitely return
+true.
 
----
- drivers/net/hyperv/hyperv_net.h   |    3 ++-
- drivers/net/hyperv/netvsc_drv.c   |   30 ++++++++++++++++++++++++++----
- drivers/net/hyperv/rndis_filter.c |   21 +--------------------
- include/linux/rndis.h             |    1 +
- 4 files changed, 30 insertions(+), 25 deletions(-)
+On 64-bit, ABIv1, "foo" points to the function descriptor, in the ".opd"
+section.
 
-diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
-index 6cc37c1..24441ae 100644
---- a/drivers/net/hyperv/hyperv_net.h
-+++ b/drivers/net/hyperv/hyperv_net.h
-@@ -170,6 +170,7 @@ struct rndis_device {
- 
- 	enum rndis_device_state state;
- 	bool link_state;
-+	bool link_change;
- 	atomic_t new_req_id;
- 
- 	spinlock_t request_lock;
-@@ -185,7 +186,7 @@ int netvsc_device_remove(struct hv_device *device);
- int netvsc_send(struct hv_device *device,
- 		struct hv_netvsc_packet *packet);
- void netvsc_linkstatus_callback(struct hv_device *device_obj,
--				unsigned int status);
-+				struct rndis_message *resp);
- int netvsc_recv_callback(struct hv_device *device_obj,
- 			struct hv_netvsc_packet *packet,
- 			struct ndis_tcp_ip_checksum_info *csum_info);
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 4fd71b7..9b27ca8 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -579,8 +579,9 @@ drop:
-  * netvsc_linkstatus_callback - Link up/down notification
-  */
- void netvsc_linkstatus_callback(struct hv_device *device_obj,
--				       unsigned int status)
-+				struct rndis_message *resp)
- {
-+	struct rndis_indicate_status *indicate = &resp->msg.indicate_status;
- 	struct net_device *net;
- 	struct net_device_context *ndev_ctx;
- 	struct netvsc_device *net_device;
-@@ -589,7 +590,19 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
- 	net_device = hv_get_drvdata(device_obj);
- 	rdev = net_device->extension;
- 
--	rdev->link_state = status != 1;
-+	switch (indicate->status) {
-+	case RNDIS_STATUS_MEDIA_CONNECT:
-+		rdev->link_state = false;
-+		break;
-+	case RNDIS_STATUS_MEDIA_DISCONNECT:
-+		rdev->link_state = true;
-+		break;
-+	case RNDIS_STATUS_NETWORK_CHANGE:
-+		rdev->link_change = true;
-+		break;
-+	default:
-+		return;
-+	}
- 
- 	net = net_device->ndev;
- 
-@@ -597,7 +610,7 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
- 		return;
- 
- 	ndev_ctx = netdev_priv(net);
--	if (status == 1) {
-+	if (!rdev->link_state) {
- 		schedule_delayed_work(&ndev_ctx->dwork, 0);
- 		schedule_delayed_work(&ndev_ctx->dwork, msecs_to_jiffies(20));
- 	} else {
-@@ -767,7 +780,9 @@ static void netvsc_link_change(struct work_struct *w)
- 	struct net_device *net;
- 	struct netvsc_device *net_device;
- 	struct rndis_device *rdev;
--	bool notify;
-+	bool notify, refresh = false;
-+	char *argv[] = { "/etc/init.d/network", "restart", NULL };
-+	char *envp[] = { "HOME=/", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
- 
- 	rtnl_lock();
- 
-@@ -782,10 +797,17 @@ static void netvsc_link_change(struct work_struct *w)
- 	} else {
- 		netif_carrier_on(net);
- 		notify = true;
-+		if (rdev->link_change) {
-+			rdev->link_change = false;
-+			refresh = true;
-+		}
- 	}
- 
- 	rtnl_unlock();
- 
-+	if (refresh)
-+		call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
-+
- 	if (notify)
- 		netdev_notify_peers(net);
- }
-diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-index 99c527a..2b86f0b 100644
---- a/drivers/net/hyperv/rndis_filter.c
-+++ b/drivers/net/hyperv/rndis_filter.c
-@@ -320,25 +320,6 @@ static void rndis_filter_receive_response(struct rndis_device *dev,
- 	}
- }
- 
--static void rndis_filter_receive_indicate_status(struct rndis_device *dev,
--					     struct rndis_message *resp)
--{
--	struct rndis_indicate_status *indicate =
--			&resp->msg.indicate_status;
--
--	if (indicate->status == RNDIS_STATUS_MEDIA_CONNECT) {
--		netvsc_linkstatus_callback(
--			dev->net_dev->dev, 1);
--	} else if (indicate->status == RNDIS_STATUS_MEDIA_DISCONNECT) {
--		netvsc_linkstatus_callback(
--			dev->net_dev->dev, 0);
--	} else {
--		/*
--		 * TODO:
--		 */
--	}
--}
--
- /*
-  * Get the Per-Packet-Info with the specified type
-  * return NULL if not found.
-@@ -464,7 +445,7 @@ int rndis_filter_receive(struct hv_device *dev,
- 
- 	case RNDIS_MSG_INDICATE:
- 		/* notification msgs */
--		rndis_filter_receive_indicate_status(rndis_dev, rndis_msg);
-+		netvsc_linkstatus_callback(dev, rndis_msg);
- 		break;
- 	default:
- 		netdev_err(ndev,
-diff --git a/include/linux/rndis.h b/include/linux/rndis.h
-index 0c8dc71..93c0a64 100644
---- a/include/linux/rndis.h
-+++ b/include/linux/rndis.h
-@@ -65,6 +65,7 @@
- #define	RNDIS_STATUS_MEDIA_SPECIFIC_INDICATION	0x40010012
- #define RNDIS_STATUS_WW_INDICATION		RDIA_SPECIFIC_INDICATION
- #define RNDIS_STATUS_LINK_SPEED_CHANGE		0x40010013L
-+#define RNDIS_STATUS_NETWORK_CHANGE		0x40010018
- 
- #define RNDIS_STATUS_NOT_RESETTABLE		0x80010001
- #define RNDIS_STATUS_SOFT_ERRORS		0x80010003
--- 
-1.7.4.1
+".foo" points to the actual text of the function, in ".text".
+
+On 64-bit, ABIv2, "foo" points to the text in ".text". There are no dot
+symbols.
+
+cheers
+
 
