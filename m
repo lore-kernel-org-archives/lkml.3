@@ -1,139 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966070AbaFTTbv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 15:31:51 -0400
+	id S1754651AbaFTTcB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 15:32:01 -0400
 Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:33485 "EHLO
 	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965334AbaFTTbs (ORCPT
+	by vger.kernel.org with ESMTP id S966047AbaFTTb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 15:31:48 -0400
-Message-Id: <20140620193125.907252541@linux.com>
-Date: Fri, 20 Jun 2014 14:31:24 -0500
+	Fri, 20 Jun 2014 15:31:57 -0400
+Message-Id: <20140620193126.411543066@linux.com>
+Date: Fri, 20 Jun 2014 14:31:28 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [PATCH 09/31] drivers/net/ethernet/tile: Replace __get_cpu_var uses for address calculation
+        James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH 13/31] metag: Replace __get_cpu_var uses for address calculation
 References: <20140620193115.547427118@linux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=this_driver_net_ethernet_tile
+Content-Disposition: inline; filename=this_metag
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace with this_cpu_ptr.
+Replace __get_cpu_var uses for address calculation with this_cpu_ptr().
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Acked-by: James Hogan <james.hogan@imgtec.com>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/drivers/net/ethernet/tile/tilegx.c
+Index: linux/arch/metag/kernel/perf/perf_event.c
 ===================================================================
---- linux.orig/drivers/net/ethernet/tile/tilegx.c	2014-06-16 09:40:53.465756338 -0500
-+++ linux/drivers/net/ethernet/tile/tilegx.c	2014-06-16 09:40:53.457756494 -0500
-@@ -423,7 +423,7 @@
- /* Provide linux buffers to mPIPE. */
- static void tile_net_provide_needed_buffers(void)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	int instance, kind;
- 	for (instance = 0; instance < NR_MPIPE_MAX &&
- 		     info->mpipe[instance].has_iqueue; instance++)	{
-@@ -585,7 +585,7 @@
- /* Handle a packet.  Return true if "processed", false if "filtered". */
- static bool tile_net_handle_packet(int instance, gxio_mpipe_idesc_t *idesc)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	struct mpipe_data *md = &mpipe_data[instance];
- 	struct net_device *dev = md->tile_net_devs_for_channel[idesc->channel];
- 	uint8_t l2_offset;
-@@ -651,7 +651,7 @@
-  */
- static int tile_net_poll(struct napi_struct *napi, int budget)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	unsigned int work = 0;
- 	gxio_mpipe_idesc_t *idesc;
- 	int instance, i, n;
-@@ -700,7 +700,7 @@
- /* Handle an ingress interrupt from an instance on the current cpu. */
- static irqreturn_t tile_net_handle_ingress_irq(int irq, void *id)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	napi_schedule(&info->mpipe[(uint64_t)id].napi);
- 	return IRQ_HANDLED;
- }
-@@ -763,7 +763,7 @@
- /* Make sure the egress timer is scheduled. */
- static void tile_net_schedule_egress_timer(void)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
+--- linux.orig/arch/metag/kernel/perf/perf_event.c	2014-04-14 13:24:54.921359116 -0500
++++ linux/arch/metag/kernel/perf/perf_event.c	2014-04-14 13:24:54.913359272 -0500
+@@ -258,7 +258,7 @@
  
- 	if (!info->egress_timer_scheduled) {
- 		hrtimer_start(&info->egress_timer,
-@@ -780,7 +780,7 @@
-  */
- static enum hrtimer_restart tile_net_handle_egress_timer(struct hrtimer *t)
+ static void metag_pmu_start(struct perf_event *event, int flags)
  {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	unsigned long irqflags;
- 	bool pending = false;
- 	int i, instance;
-@@ -1996,7 +1996,7 @@
- /* Help the kernel transmit a packet. */
- static int tile_net_tx(struct sk_buff *skb, struct net_device *dev)
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	int idx = hwc->idx;
+ 
+@@ -306,7 +306,7 @@
+ 
+ static int metag_pmu_add(struct perf_event *event, int flags)
  {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	struct tile_net_priv *priv = netdev_priv(dev);
- 	int instance = priv->instance;
- 	struct mpipe_data *md = &mpipe_data[instance];
-@@ -2138,7 +2138,7 @@
- static void tile_net_netpoll(struct net_device *dev)
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	int idx = 0, ret = 0;
+ 
+@@ -348,7 +348,7 @@
+ 
+ static void metag_pmu_del(struct perf_event *event, int flags)
  {
- 	int instance = mpipe_instance(dev);
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	struct mpipe_data *md = &mpipe_data[instance];
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	int idx = hwc->idx;
  
- 	disable_percpu_irq(md->ingress_irq);
-@@ -2238,7 +2238,7 @@
- /* Per-cpu module initialization. */
- static void tile_net_init_module_percpu(void *unused)
+@@ -607,7 +607,7 @@
+ 
+ static void metag_pmu_enable_counter(struct hw_perf_event *event, int idx)
  {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	int my_cpu = smp_processor_id();
- 	int instance;
+-	struct cpu_hw_events *events = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *events = this_cpu_ptr(&cpu_hw_events);
+ 	unsigned int config = event->config;
+ 	unsigned int tmp = config & 0xf0;
+ 	unsigned long flags;
+@@ -680,7 +680,7 @@
  
-Index: linux/drivers/net/ethernet/tile/tilepro.c
-===================================================================
---- linux.orig/drivers/net/ethernet/tile/tilepro.c	2014-06-16 09:40:53.465756338 -0500
-+++ linux/drivers/net/ethernet/tile/tilepro.c	2014-06-16 09:40:53.461756416 -0500
-@@ -996,13 +996,13 @@
- 	PDEBUG("tile_net_register(queue_id %d)\n", queue_id);
+ static void metag_pmu_disable_counter(struct hw_perf_event *event, int idx)
+ {
+-	struct cpu_hw_events *events = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *events = this_cpu_ptr(&cpu_hw_events);
+ 	unsigned int tmp = 0;
+ 	unsigned long flags;
  
- 	if (!strcmp(dev->name, "xgbe0"))
--		info = &__get_cpu_var(hv_xgbe0);
-+		info = this_cpu_ptr(&hv_xgbe0);
- 	else if (!strcmp(dev->name, "xgbe1"))
--		info = &__get_cpu_var(hv_xgbe1);
-+		info = this_cpu_ptr(&hv_xgbe1);
- 	else if (!strcmp(dev->name, "gbe0"))
--		info = &__get_cpu_var(hv_gbe0);
-+		info = this_cpu_ptr(&hv_gbe0);
- 	else if (!strcmp(dev->name, "gbe1"))
--		info = &__get_cpu_var(hv_gbe1);
-+		info = this_cpu_ptr(&hv_gbe1);
- 	else
- 		BUG();
+@@ -728,7 +728,7 @@
  
+ static void metag_pmu_write_counter(int idx, u32 val)
+ {
+-	struct cpu_hw_events *events = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *events = this_cpu_ptr(&cpu_hw_events);
+ 	u32 tmp = 0;
+ 	unsigned long flags;
+ 
+@@ -761,7 +761,7 @@
+ static irqreturn_t metag_pmu_counter_overflow(int irq, void *dev)
+ {
+ 	int idx = (int)dev;
+-	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
+ 	struct perf_event *event = cpuhw->events[idx];
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	struct pt_regs *regs = get_irq_regs();
 
