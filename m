@@ -1,117 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757112AbaFTCMj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 22:12:39 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:51517 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921AbaFTCMh (ORCPT
+	id S932561AbaFTCN0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 22:13:26 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:35600 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757338AbaFTCNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 22:12:37 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
-Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        "Daniel M. Weeks" <dan@danweeks.net>, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH] initramfs: Support initrd that is bigger then 2G.
-Date: Thu, 19 Jun 2014 19:12:16 -0700
-Message-Id: <1403230336-10444-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4.5
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Thu, 19 Jun 2014 22:13:24 -0400
+Message-ID: <53A398BB.2010909@hitachi.com>
+Date: Fri, 20 Jun 2014 11:13:15 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Michael Ellerman <mpe@ellerman.id.au>
+Cc: "Suzuki K. Poulose" <suzuki@in.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-tip-commits@vger.kernel.org, anil.s.keshavamurthy@intel.com,
+        Ingo Molnar <mingo@kernel.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        akataria@vmware.com, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [RFT PATCH -next v3] [BUGFIX] kprobes: Fix "Failed to find blacklist"
+ error on ia64 and ppc64
+References: <5387F150.5000307@hitachi.com>  <20140530031838.17427.75896.stgit@ltc230.yrl.intra.hitachi.co.jp>  <539161D6.7020508@hitachi.com> <1403078179.32307.7.camel@concordia>  <53A15201.7060404@hitachi.com> <1403141433.4768.1.camel@concordia>  <53A26C99.6060000@hitachi.com> <53A285D0.1030106@in.ibm.com>  <53A2908E.2000806@hitachi.com> <53A2B136.108@in.ibm.com>  <53A2C315.9030006@hitachi.com> <53A2C78D.9060708@hitachi.com> <1403224646.18509.1.camel@concordia>
+In-Reply-To: <1403224646.18509.1.camel@concordia>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When initrd (compressed or not) is used, kernel report data corrupted
-with /dev/ram0.
+(2014/06/20 9:37), Michael Ellerman wrote:
+> On Thu, 2014-06-19 at 20:20 +0900, Masami Hiramatsu wrote:
+>> (2014/06/19 20:01), Masami Hiramatsu wrote:
+>>
+>>>>>>> Ah, those messages should be shown in dmesg when booting if it doesn't work,
+>>>>>>> because the messages are printed by initialization process of kprobe blacklist.
+>>>>>>> So, reproducing it is just enabling CONFIG_KPROBES and boot it.
+>>>>>> Well,  we don't get those messages on Power, since the kallsyms has the
+>>>>>> entries for ".function_name". The correct way to verify is, either  :
+>>>>>
+>>>>> Hmm, that seems another issue on powerpc. Is that expected(and designed)
+>>>>> behavior?
+>>>> AFAIK, yes, it is.
+>>>> To be more precise :
+>>>>
+>>>> we have 'foo' and '.foo' for a function foo(), where 'foo' points to the
+>>>> function_entry and '.foo' points to the actual function.
+>>>
+>>> Ah, I see. So if we run
+>>>
+>>>   func_ptr p = foo;
+>>>   return p == kallsyms_lookup_name(".foo");
+>>>
+>>> it returns true.
+>>
+>> One more thing I should know, is the address of ".function_name" within the
+>> kernel text? In other words, does kernel_text_address() return true for that
+>> address? If not, it's easy to verify the address.
+> 
+> Yes. That is the text address, kernel_text_address() should definitely return
+> true.
+> 
+> On 64-bit, ABIv1, "foo" points to the function descriptor, in the ".opd"
+> section.
+> 
+> ".foo" points to the actual text of the function, in ".text".
 
-The root cause:
-During initramfs checking, if it is initrd, it will be transferred to
-/initrd.image with sys_write.
-sys_write only support 2G-4K write, so if the initrd ram is more than
-that, /initrd.image will not complete at all.
+Hmm, I misunderstood that. Anyway, we can verify it by kernel_text_address().
 
-Add local sys_write_large to loop calling sys_write to workaround the
-problem.
+> 
+> On 64-bit, ABIv2, "foo" points to the text in ".text". There are no dot
+> symbols.
 
-Also need to use that in write_buffer path for cpio that have file is
-more than file.
+OK, in that case, kernel_text_address() check is still available. :)
 
-At the same time, we don't need to worry about sys_read/sys_write in
-do_mounts_rd.c::crd_load. As decompressor will have fill/flush that
-means it will allocate buffer and buffer is smaller than 2G.
+Thank you,
 
-Test with uncompressed initrd, and compressed with gz, bz2, lzma,xz,
-lzop.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
----
- init/initramfs.c |   33 +++++++++++++++++++++++++++++----
- 1 file changed, 29 insertions(+), 4 deletions(-)
 
-Index: linux-2.6/init/initramfs.c
-===================================================================
---- linux-2.6.orig/init/initramfs.c
-+++ linux-2.6/init/initramfs.c
-@@ -19,6 +19,26 @@
- #include <linux/syscalls.h>
- #include <linux/utime.h>
- 
-+static long __init sys_write_large(unsigned int fd, char *p,
-+				   size_t count)
-+{
-+	ssize_t left = count;
-+	long written;
-+
-+	/* sys_write only can write MAX_RW_COUNT aka 2G-4K bytes at most */
-+	while (left > 0) {
-+		written = sys_write(fd, p, left);
-+
-+		if (written <= 0)
-+			break;
-+
-+		left -= written;
-+		p += written;
-+	}
-+
-+	return (written < 0) ? written : count;
-+}
-+
- static __initdata char *message;
- static void __init error(char *x)
- {
-@@ -346,7 +366,7 @@ static int __init do_name(void)
- static int __init do_copy(void)
- {
- 	if (count >= body_len) {
--		sys_write(wfd, victim, body_len);
-+		sys_write_large(wfd, victim, body_len);
- 		sys_close(wfd);
- 		do_utime(vcollected, mtime);
- 		kfree(vcollected);
-@@ -354,7 +374,7 @@ static int __init do_copy(void)
- 		state = SkipIt;
- 		return 0;
- 	} else {
--		sys_write(wfd, victim, count);
-+		sys_write_large(wfd, victim, count);
- 		body_len -= count;
- 		eat(count);
- 		return 1;
-@@ -604,8 +624,13 @@ static int __init populate_rootfs(void)
- 		fd = sys_open("/initrd.image",
- 			      O_WRONLY|O_CREAT, 0700);
- 		if (fd >= 0) {
--			sys_write(fd, (char *)initrd_start,
--					initrd_end - initrd_start);
-+			long written = sys_write_large(fd, (char *)initrd_start,
-+						initrd_end - initrd_start);
-+
-+			if (written != initrd_end - initrd_start)
-+				pr_err("/initrd.image: incomplete write (%ld != %ld)\n",
-+				       written, initrd_end - initrd_start);
-+
- 			sys_close(fd);
- 			free_initrd();
- 		}
