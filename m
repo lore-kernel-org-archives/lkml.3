@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757935AbaFTUe7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:34:59 -0400
-Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:19471 "EHLO
-	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750747AbaFTUe5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 16:34:57 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsHANaZpFNXQzOZ/2dsb2JhbABZgw2rRwUBAQEBAQEFAZkqgQ4XdYRgI4EaN4hGAcowF4ViiRQdhC0EmkSLMIgqg0Q7
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Jamal Hadi Salim <jhs@mojatatu.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [PATCH 1/1] net/sched/cls_bpf.c: remove null test before kfree
-Date: Fri, 20 Jun 2014 22:33:27 +0200
-Message-Id: <1403296407-5877-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	id S1757969AbaFTUfR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:35:17 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37448 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750747AbaFTUfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 16:35:15 -0400
+Date: Fri, 20 Jun 2014 22:35:07 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Dave Jones <davej@redhat.com>
+Subject: Re: [RFC][PATCH 3/3] x86: make MP  a required-feature on 64-bit
+Message-ID: <20140620203507.GM11391@pd.tnic>
+References: <20140620161740.BFB00798@viggo.jf.intel.com>
+ <53A46008.5060509@zytor.com>
+ <53A4619C.8020100@sr71.net>
+ <53A46365.6090101@zytor.com>
+ <20140620174345.GD11391@pd.tnic>
+ <53A473AA.7050301@zytor.com>
+ <20140620180523.GF11391@pd.tnic>
+ <53A48356.5080109@zytor.com>
+ <20140620200024.GJ11391@pd.tnic>
+ <53A4981F.3060901@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <53A4981F.3060901@zytor.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch warning:
-WARNING: kfree(NULL) is safe this check is probably not required
+On Fri, Jun 20, 2014 at 01:22:55PM -0700, H. Peter Anvin wrote:
+> Because the whole point is testing each CPU and warn if it is
+> unsuitable.
+>
+> static-anything is just plain useless, because we test this once for
+> each CPU and patching a branch that we are never going to cross again
+> is just wasted effort.
 
-Cc: Jamal Hadi Salim <jhs@mojatatu.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- net/sched/cls_bpf.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Ah, I see. :-)
 
-diff --git a/net/sched/cls_bpf.c b/net/sched/cls_bpf.c
-index 13f64df..715367a 100644
---- a/net/sched/cls_bpf.c
-+++ b/net/sched/cls_bpf.c
-@@ -212,8 +212,7 @@ static int cls_bpf_modify_existing(struct net *net, struct tcf_proto *tp,
- 
- 	if (fp_old)
- 		sk_unattached_filter_destroy(fp_old);
--	if (bpf_old)
--		kfree(bpf_old);
-+	kfree(bpf_old);
- 
- 	return 0;
- 
+Thanks.
+
 -- 
-1.8.4.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
