@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758020AbaFTUg1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:36:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60946 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747AbaFTUg0 (ORCPT
+	id S1756243AbaFTUgc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:36:32 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:56816 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756521AbaFTUga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 16:36:26 -0400
-Date: Fri, 20 Jun 2014 13:40:27 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: devel@driverdev.osuosl.org, Jiri Kosina <trivial@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] trivial: drivers/staging/rtl8821ae/rtl8821ae: Fix
- closing brace followed by if
-Message-ID: <20140620204027.GC16973@kroah.com>
-References: <1403294195-18209-1-git-send-email-linux@rasmusvillemoes.dk>
- <20140620200707.GA16329@kroah.com>
- <87simz49ie.fsf@rasmusvillemoes.dk>
+	Fri, 20 Jun 2014 16:36:30 -0400
+Message-ID: <53A49B4A.4090901@gmail.com>
+Date: Fri, 20 Jun 2014 16:36:26 -0400
+From: Ramesh Basukala <basukalaramesh@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87simz49ie.fsf@rasmusvillemoes.dk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 01/01] Drivers: Fixes coding style warning
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 10:21:45PM +0200, Rasmus Villemoes wrote:
-> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
-> 
-> > On Fri, Jun 20, 2014 at 09:56:35PM +0200, Rasmus Villemoes wrote:
-> >> All of the code is #if 0'd out, and the change just replaces a
-> >> space with a newline, so this obviously doesn't change anything.
-> >
-> > How about just deleting all the #if 0 code out entirely so no one has to
-> > worry about it anymore?
-> 
-> Fine by me. Like this?
-> 
-> From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-> Subject: [PATCH] drivers/staging/rtl8821ae/rtl8821ae: Remove dead code
-> 
-> This is all #if 0'ed out, and it contains some rather weird stuff
-> (post-increment of a bool, for example). Nuke it.
-> 
-> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+From: Ramesh Basukala <basukalaramesh@gmail.com>
 
-Looks good, if you send it in a stand-along email, I can even apply it
-:)
+Attached is a patch which fixes coding style warning message while 
+running checkpatch script.
+This patch is currently against a linux 3.15.0-rc15-next kernel. I am 
+submitting this patch as a part of Eudyptula Challenge task.
 
-thanks,
-
-greg k-h
+Signed-off-by: Ramesh Basukala <basukalaramesh@gmail.com>
+--- xlr_net.c.original 2014-06-20 15:32:10.069732488 -0400
++++ xlr_net.c 2014-06-20 15:35:06.841105038 -0400
+@@ -1105,6 +1105,7 @@ err_gmac:
+static int xlr_net_remove(struct platform_device *pdev)
+{
+struct xlr_net_priv *priv = platform_get_drvdata(pdev);
++
+unregister_netdev(priv->ndev);
+mdiobus_unregister(priv->mii_bus);
+mdiobus_free(priv->mii_bus);
