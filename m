@@ -1,40 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934352AbaFTEp7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 00:45:59 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:44869 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932561AbaFTEp6 (ORCPT
+	id S934388AbaFTErS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 00:47:18 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:56534 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932514AbaFTErQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 00:45:58 -0400
+	Fri, 20 Jun 2014 00:47:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140619213952.058255809@goodmis.org>
-References: <20140619213329.478113470@goodmis.org>
-	<20140619213952.058255809@goodmis.org>
-Date: Thu, 19 Jun 2014 18:45:57 -1000
-X-Google-Sender-Auth: 5LCKam_eo2FgEoynRkX1tm4ED84
-Message-ID: <CA+55aFx_BVK6EvMTcTy218coYEhvMdw3AkygDtiZk5aHxa-fuA@mail.gmail.com>
-Subject: Re: [RFC][PATCH 1/3] trace_seq: Move the trace_seq code to lib/
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Jan Kara <jack@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20140619215557.784621009@linutronix.de>
+References: <20140619215347.139324048@linutronix.de>
+	<20140619215557.784621009@linutronix.de>
+Date: Fri, 20 Jun 2014 10:17:15 +0530
+X-Google-Sender-Auth: AsaEq8jZXDgfGlrBGHD9QZHfNvo
+Message-ID: <CAOh2x=k_r3oH-bFPYctarQci3G6yi2U7WxhsR7U2UvU+BzMAjw@mail.gmail.com>
+Subject: Re: [patch 1/2] dts: spear: Fix sdhci compatible
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        devicetree@vger.kernel.org, spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 11:33 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Fri, Jun 20, 2014 at 3:26 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> Make it match the bindings and the implementation.
 >
-> The trace_seq functions are rather useful outside of tracing.
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  arch/arm/boot/dts/spear320.dtsi |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> Index: linux/arch/arm/boot/dts/spear320.dtsi
+> ===================================================================
+> --- linux.orig/arch/arm/boot/dts/spear320.dtsi
+> +++ linux/arch/arm/boot/dts/spear320.dtsi
+> @@ -48,7 +48,7 @@
+>                 };
+>
+>                 sdhci@70000000 {
+> -                       compatible = "st,sdhci-spear";
+> +                       compatible = "st,spear300-sdhci";
+>                         reg = <0x70000000 0x100>;
+>                         interrupts = <10>;
+>                         interrupt-parent = <&shirq>;
 
-They are? Why and where? And why are they still called "trace_xyz()" then?
-
-That commit message is useless and contains no actual information.
-
-                 Linus
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
