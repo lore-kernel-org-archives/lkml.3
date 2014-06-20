@@ -1,114 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934728AbaFTHen (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 03:34:43 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:41868 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934032AbaFTHel (ORCPT
+	id S934711AbaFTHiw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 03:38:52 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:56100 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934161AbaFTHiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 03:34:41 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, davem@davemloft.net,
-        masami.hiramatsu.pt@hitachi.com, rdunlap@infradead.org,
-        mingo@kernel.org
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nasa4836@gmail.com
-Subject: [PATCH RESEND] kprobes: be more permissive when user specifies both symbol name and address
-Date: Fri, 20 Jun 2014 15:34:19 +0800
-Message-Id: <1403249659-4822-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 2.0.0
+	Fri, 20 Jun 2014 03:38:51 -0400
+Date: Fri, 20 Jun 2014 11:38:38 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <oleg@redhat.com>, <rientjes@google.com>, <cl@linux.com>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] fork: reset mm->pinned_vm
+Message-ID: <20140620073838.GA5387@esperanza>
+References: <fa98629155872c1b97ba4dcd00d509a1e467c1c3.1403168346.git.vdavydov@parallels.com>
+ <63d594c88850aa64729fceec769681f9d1d6fa68.1403168346.git.vdavydov@parallels.com>
+ <20140619135820.57c4934dd613c5e723f9ca82@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140619135820.57c4934dd613c5e723f9ca82@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, I found that this patch wasn't merged into mainline during this merge
-window(maybe it wasn't cooked in any tree), while it has been acked-by for
-a couple of days.
+On Thu, Jun 19, 2014 at 01:58:20PM -0700, Andrew Morton wrote:
+> On Thu, 19 Jun 2014 13:07:47 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
+> 
+> > mm->pinned_vm counts pages of mm's address space that were permanently
+> > pinned in memory by increasing their reference counter. The counter was
+> > introduced by commit bc3e53f682d9 ("mm: distinguish between mlocked and
+> > pinned pages"), while before it locked_vm had been used for such pages.
+> > 
+> > Obviously, we should reset the counter on fork if !CLONE_VM, just like
+> > we do with locked_vm, but currently we don't. Let's fix it.
+> > 
+> > ...
+> >
+> > --- a/kernel/fork.c
+> > +++ b/kernel/fork.c
+> > @@ -534,6 +534,7 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
+> >  	atomic_long_set(&mm->nr_ptes, 0);
+> >  	mm->map_count = 0;
+> >  	mm->locked_vm = 0;
+> > +	mm->pinned_vm = 0;
+> >  	memset(&mm->rss_stat, 0, sizeof(mm->rss_stat));
+> >  	spin_lock_init(&mm->page_table_lock);
+> >  	mm_init_cpumask(mm);
+> 
+> What are the runtime effects of this?  I think it is only
+> "/proc/pid/status:VmPin is screwed up", because we don't use vm_pinned
+> in rlimit checks.  Yes?
 
-Ingo, would you mind queueing this one? Thanks.
+Hmm, ib_umem_get[infiniband] and perf_mmap still check pinned_vm against
+RLIMIT_MEMLOCK. It's left from the times when pinned pages were
+accounted under locked_vm, but today it looks wrong. It isn't clear to
+me how we should deal with it.
 
------<8-----
+And BTW, we still have some drivers accounting pinned pages under
+mm->locked_vm - this is what commit bc3e53f682d9 was fighting against.
+It's infiniband/usnic and vfio.
 
-Currently, if user specifies both symbol name and address, we just
-bail out.
-
-This might be too rude. This patch makes it give more tolerance.
-If both are specified, check address first, if the symbol found
-does not match the one user specify, print a waring. If not found,
-return -ENOENT, because some symbols might have muplitple instances,
-we don't bother to check symbol name.
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
----
- Documentation/kprobes.txt |  4 +++-
- kernel/kprobes.c          | 32 +++++++++++++++++++++++++++++---
- 2 files changed, 32 insertions(+), 4 deletions(-)
-
-diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
-index 4bbeca8..49af14e 100644
---- a/Documentation/kprobes.txt
-+++ b/Documentation/kprobes.txt
-@@ -358,7 +358,9 @@ to install a probepoint is known. This field is used to calculate the
- probepoint.
- 
- 3. Specify either the kprobe "symbol_name" OR the "addr". If both are
--specified, kprobe registration will fail with -EINVAL.
-+specified, only check "addr", because some symbols might have muplitple
-+instances. If neither is specified, kprobe registration will fail
-+with -EINVAL.
- 
- 4. With CISC architectures (such as i386 and x86_64), the kprobes code
- does not validate if the kprobe.addr is at an instruction boundary.
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 3214289..81d891b 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1358,15 +1358,41 @@ static bool within_kprobe_blacklist(unsigned long addr)
- static kprobe_opcode_t *kprobe_addr(struct kprobe *p)
- {
- 	kprobe_opcode_t *addr = p->addr;
-+	char namebuf[KSYM_NAME_LEN];
-+	const char *sym_name = NULL;
-+	unsigned long offset;
- 
--	if ((p->symbol_name && p->addr) ||
--	    (!p->symbol_name && !p->addr))
-+	if (!p->symbol_name && !p->addr)
- 		goto invalid;
- 
--	if (p->symbol_name) {
-+	/*
-+	 * Some symbols might have muplitple instances,
-+	 * so if both specified, only check address.
-+	 */
-+	if (unlikely(p->addr && p->symbol_name)) {
-+		sym_name = kallsyms_lookup((unsigned long)(p->addr),
-+				NULL, &offset, NULL, namebuf);
-+		if (!sym_name)
-+			return ERR_PTR(-ENOENT);
-+
-+		if (strncmp(sym_name, p->symbol_name, KSYM_NAME_LEN)
-+				|| offset != p->offset) {
-+			pr_err("Incorrect symbol or offset, should be "
-+				"symbol=%s, offset=%ld.\n", sym_name, offset);
-+			goto invalid;
-+		}
-+	} else if (p->symbol_name) {
-+		/* Only symbol case */
- 		kprobe_lookup_name(p->symbol_name, addr);
- 		if (!addr)
- 			return ERR_PTR(-ENOENT);
-+	} else {
-+		/*
-+		 * Only address case.
-+		 * Since we later will do sanity check of the
-+		 * address range in check_kprobe_address_safe(),
-+		 * do nothing here.
-+		 */
- 	}
- 
- 	addr = (kprobe_opcode_t *)(((char *)addr) + p->offset);
--- 
-2.0.0
-
+Thanks.
