@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934867AbaFTQX4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 12:23:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46727 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753631AbaFTQXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 12:23:55 -0400
-Message-ID: <53A46008.5060509@zytor.com>
-Date: Fri, 20 Jun 2014 09:23:36 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org
-CC: bp@alien8.de, x86@kernel.org
-Subject: Re: [RFC][PATCH 3/3] x86: make MP  a required-feature on 64-bit
-References: <20140620161736.D6AC16FD@viggo.jf.intel.com> <20140620161740.BFB00798@viggo.jf.intel.com>
-In-Reply-To: <20140620161740.BFB00798@viggo.jf.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S934893AbaFTQZX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 12:25:23 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:35908 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754097AbaFTQZV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 12:25:21 -0400
+From: Nicholas Krause <xerofoify@gmail.com>
+To: jkosina@suse.cz
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Fixes kernel panic with Null pointer in hid-appleir.c
+Date: Fri, 20 Jun 2014 12:25:15 -0400
+Message-Id: <1403281515-5508-1-git-send-email-xerofoify@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2014 09:17 AM, Dave Hansen wrote:
-> Today, we assume that all 64-bit cpus have X86_FEATURE_MP.  It
-> should be in the REQUIRED_MASK so that we do not need the #undef
-> trick for it.
+In for loop of function appleir_input_configured we hit
+a Null pointer after the for loop due to array_size not
+being correct needs to be changed to input_dev->keycodemax.
 
-I don't think we enforce that the MP bit is set in CPUID, though.
-Non-AMD processors will typically not set this bit at all, so the
-feature validation code would have to be modified to know to not require
-this bit.
+Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+---
+ drivers/hid/hid-appleir.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-	-hpa
-
->  
-> -#define REQUIRED_MASK1	(NEED_LM|NEED_3DNOW)
-> +#define REQUIRED_MASK1	(NEED_LM|NEED_3DNOW|NEED_MP)
->  
+diff --git a/drivers/hid/hid-appleir.c b/drivers/hid/hid-appleir.c
+index 0e6a42d..ab0a702 100644
+--- a/drivers/hid/hid-appleir.c
++++ b/drivers/hid/hid-appleir.c
+@@ -272,7 +272,7 @@ static void appleir_input_configured(struct hid_device *hid,
+ 	input_dev->evbit[0] = BIT(EV_KEY) | BIT(EV_REP);
+ 
+ 	memcpy(appleir->keymap, appleir_key_table, sizeof(appleir->keymap));
+-	for (i = 0; i < ARRAY_SIZE(appleir_key_table); i++)
++	for (i = 0; i < ARRAY_SIZE(input_dev->keycodemax); i++)
+ 		set_bit(appleir->keymap[i], input_dev->keybit);
+ 	clear_bit(KEY_RESERVED, input_dev->keybit);
+ }
+-- 
+1.9.1
 
