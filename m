@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628AbaFTT7l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 15:59:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60630 "EHLO
+	id S1757020AbaFTUAG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:00:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60634 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325AbaFTT7i (ORCPT
+	with ESMTP id S1756587AbaFTUAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 15:59:38 -0400
-Date: Fri, 20 Jun 2014 13:03:40 -0700
+	Fri, 20 Jun 2014 16:00:05 -0400
+Date: Fri, 20 Jun 2014 13:04:06 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PULL] Staging driver fixes for 3.16-rc2
-Message-ID: <20140620200340.GA28726@kroah.com>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] char/misc driver fixes for 3.16-rc2
+Message-ID: <20140620200406.GA28891@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,72 +29,35 @@ The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.16-rc2
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.16-rc2
 
-for you to fetch changes up to c026a3f3972344d0adf8ae060cddc357096c9815:
+for you to fetch changes up to 73b35d07ee20d6af95359fb86540528709dd58bb:
 
-  imx-drm: parallel-display: Fix DPMS default state. (2014-06-19 17:33:37 -0700)
+  MAINTAINERS: add entry for VMware Balloon driver (2014-06-20 11:47:33 -0700)
 
 ----------------------------------------------------------------
-Staging driver fixes for 3.16-rc2
+Char / Misc driver fixes for 3.16-rc2
 
-Here are a few fixes for staging and iio drivers that resolve issues
-reported in 3.16-rc1.
-
-All have been in linux-next just fine.
+Here are 3 patches, one a revert of the UIO patch you objected to in
+3.16-rc1 and that no one wanted to defend, a w1 driver bugfix, and a
+MAINTAINERS update for the vmware balloon driver.  All of these, except
+for the MAINTAINERS update which just got added, have been in linux-next just
+fine.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Archana Patni (1):
-      iio: hid-sensors: Get feature report from sensor hub after changing power state
+Alexander Shiyan (1):
+      w1: mxc_w1: Fix incorrect "presence" status
 
-Arnd Bergmann (2):
-      staging/iio: IIO_SIMPLE_DUMMY_BUFFER neds IIO_BUFFER
-      staging: comedi: addi_apci_1564: add addi_watchdog dependency
-
-Dan Carpenter (2):
-      iio: adc: at91: signedness bug in at91_adc_get_trigger_value_by_name()
-      iio: adc: checking for NULL instead of IS_ERR() in probe
-
-Denis Carikli (1):
-      imx-drm: parallel-display: Fix DPMS default state.
+Dmitry Torokhov (1):
+      MAINTAINERS: add entry for VMware Balloon driver
 
 Greg Kroah-Hartman (1):
-      Merge tag 'iio-fixes-for-3.16a' of git://git.kernel.org/.../jic23/iio into staging-linus
+      Revert "uio: fix vma io range check in mmap"
 
-Jes Sorensen (2):
-      staging: rtl8723au: Request correct firmware file for A-cut parts
-      staging: rtl8723au: Reference correct firmwarefiles with MODULE_FIRMWARE()
-
-Mario Schuknecht (1):
-      staging: iio: tsl2x7x_core: fix proximity treshold
-
-Paul Kocialkowski (1):
-      twl4030-madc: Request processed values in twl4030_get_madc_conversion
-
-Peter Meerwald (2):
-      iio: Fix two mpl3115 issues in measurement conversion
-      iio: Fix endianness issue in ak8975_read_axis()
-
-Robert Hodaszi (1):
-      iio: mxs-lradc: fix divider
-
-Yi Zhang (1):
-      staging: android: timed_output: fix use after free of dev
-
- drivers/iio/adc/at91_adc.c                          | 16 ++++++++--------
- drivers/iio/adc/men_z188_adc.c                      |  4 ++--
- drivers/iio/adc/twl4030-madc.c                      |  1 +
- drivers/iio/common/hid-sensors/hid-sensor-trigger.c |  3 +++
- drivers/iio/magnetometer/ak8975.c                   |  9 +--------
- drivers/iio/pressure/mpl3115.c                      |  6 +++---
- drivers/staging/android/timed_output.c              |  1 -
- drivers/staging/comedi/Kconfig                      |  1 +
- drivers/staging/iio/Kconfig                         |  9 +++++----
- drivers/staging/iio/adc/mxs-lradc.c                 | 12 ++++++++----
- drivers/staging/iio/light/tsl2x7x_core.c            |  8 ++++++--
- drivers/staging/imx-drm/parallel-display.c          |  7 +++++++
- drivers/staging/rtl8723au/hal/rtl8723a_hal_init.c   |  2 +-
- drivers/staging/rtl8723au/os_dep/os_intfs.c         |  4 +++-
- 14 files changed, 49 insertions(+), 34 deletions(-)
+ MAINTAINERS                 | 8 ++++++++
+ drivers/misc/vmw_balloon.c  | 3 ++-
+ drivers/uio/uio.c           | 2 +-
+ drivers/w1/masters/mxc_w1.c | 2 +-
+ 4 files changed, 12 insertions(+), 3 deletions(-)
