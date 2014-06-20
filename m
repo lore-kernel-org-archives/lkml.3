@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967204AbaFTNto (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 09:49:44 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:57467 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965330AbaFTNtn (ORCPT
+	id S967445AbaFTNwb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 09:52:31 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:63737 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965897AbaFTNw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 09:49:43 -0400
-Date: Fri, 20 Jun 2014 14:49:38 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] EFI urgent fix
-Message-ID: <20140620134938.GY24049@console-pimps.org>
-References: <20140620090008.GU24049@console-pimps.org>
- <20140620092848.GC23939@arm.com>
- <20140620133919.GK4179@bivouac.eciton.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140620133919.GK4179@bivouac.eciton.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 20 Jun 2014 09:52:28 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Andreas Noever <andreas.noever@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 2/3] thunderbolt: include linux/slab.h for kmalloc
+Date: Fri, 20 Jun 2014 15:52:10 +0200
+Message-Id: <1403272331-3790755-2-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1403272331-3790755-1-git-send-email-arnd@arndb.de>
+References: <1403272331-3790755-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:HfWj6wIC3A1PCil5wcHipNP8QEaXqGVMom0isPX6qFu
+ vbRyw8YoUNL579rvEvIn80iSTxUA8UA9GqaizuxzTIJnmIM5Vf
+ VH95zdvyetIYHG0lFdYYwRWDs5+PwtaZ1HQEfqTPoJRg+CvYji
+ 5vY1UKBxqs4KyN73fUHSxRZ/UyesgGdZMfqRZ1ISjtq+QkvXw7
+ edow4zfw6EdbCd3+kbr26DM3DztAhL4fA7Bb5tfwh+BaOV+q4U
+ aYUcIFa//s4/LhgpLlb2HXosWhNG+VkmWCuP8egTe51W4DMuRb
+ zuwCnSRpQwkXmYmPaOXpa4FnwAc3CQMa/UDnsvTzT7cHAGBulj
+ 2QFGbrzRHiAsOUgYKgzN7AOb1v2lNtT/mwAbP1jW+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jun, at 02:39:19PM, Leif Lindholm wrote:
-> 
-> I did post an alternative patch for one half of this a week before
-> anyone else, but that one seems to have been ignored, even by gmane:
-> http://www.spinics.net/lists/linux-efi/msg03924.html
+The kmalloc/kzalloc/kfree functions are declared in linux/slab.h,
+so we have to explicitly include that header to avoid build failures
+on ARM and other architectures that don't include these implicitly
+through another header.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/thunderbolt/eeprom.c | 1 +
+ drivers/thunderbolt/switch.c | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/drivers/thunderbolt/eeprom.c b/drivers/thunderbolt/eeprom.c
+index 0d5a80b..bc0449f 100644
+--- a/drivers/thunderbolt/eeprom.c
++++ b/drivers/thunderbolt/eeprom.c
+@@ -5,6 +5,7 @@
+  */
  
-Sorry Leif, I don't know why I didn't pick that one up. I do see it in
-my mail archive. Chalk it up to human error.
-
-> That form will still be required for the 32-bit arm support, since
-> strncmp is not available in the zImage.
-
-Are you planning on incorporating this fix into the 32-bit arm support
-patch series
-
+ #include <linux/crc32.h>
++#include <linux/slab.h>
+ #include "tb.h"
+ 
+ /**
+diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
+index 0d50e7e..26e76e4 100644
+--- a/drivers/thunderbolt/switch.c
++++ b/drivers/thunderbolt/switch.c
+@@ -5,6 +5,7 @@
+  */
+ 
+ #include <linux/delay.h>
++#include <linux/slab.h>
+ 
+ #include "tb.h"
+ 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.8.3.2
+
