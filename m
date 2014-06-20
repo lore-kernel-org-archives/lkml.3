@@ -1,52 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964810AbaFTEvg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 00:51:36 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:52308 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932514AbaFTEvf (ORCPT
+	id S965022AbaFTEyv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 00:54:51 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:50029 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932480AbaFTEyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 00:51:35 -0400
+	Fri, 20 Jun 2014 00:54:49 -0400
+Date: Thu, 19 Jun 2014 21:54:45 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
+        romanov.arya@gmail.com, Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [RFC PATCH] use snprintf instead of sprintf in rcu_torture_printk
+Message-ID: <20140620045445.GA4904@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140611074704.GS5015@mwanda>
+ <1402502500.6169.5.camel@joe-AO725>
+ <alpine.DEB.2.02.1406140937370.2003@localhost6.localdomain6>
+ <alpine.DEB.2.02.1406141151170.2045@localhost6.localdomain6>
+ <20140618193345.GR4669@linux.vnet.ibm.com>
+ <1403120982.3839.25.camel@joe-AO725>
+ <20140619210031.GN4904@linux.vnet.ibm.com>
+ <53A37140.3020003@gmail.com>
+ <20140619234922.GY4904@linux.vnet.ibm.com>
+ <53A37CA2.9030200@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140619215140.259138132@linutronix.de>
-References: <20140619214858.755664030@linutronix.de>
-	<20140619215140.259138132@linutronix.de>
-Date: Fri, 20 Jun 2014 10:21:34 +0530
-X-Google-Sender-Auth: 34ZuvqcA59P43AKVfRvjAbpIsiA
-Message-ID: <CAOh2x==Z3506u2DGZfRyTPs809npg0kZwMmNVV2C3X3dBKmDOw@mail.gmail.com>
-Subject: Re: [patch 1/2] clk: spear3xx: Use proper control register offset
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        spear-devel <spear-devel@list.st.com>, stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53A37CA2.9030200@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062004-0928-0000-0000-000002C740D6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 3:22 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> The control register is at offset 0x10, not 0x0. This is wreckaged
-> since commit 5df33a62c (SPEAr: Switch to common clock framework).
->
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: stable@vger.kernel.org
-> ---
->  drivers/clk/spear/spear3xx_clock.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> Index: linux/drivers/clk/spear/spear3xx_clock.c
-> ===================================================================
-> --- linux.orig/drivers/clk/spear/spear3xx_clock.c
-> +++ linux/drivers/clk/spear/spear3xx_clock.c
-> @@ -211,7 +211,7 @@ static inline void spear310_clk_init(voi
->  /* array of all spear 320 clock lookups */
->  #ifdef CONFIG_MACH_SPEAR320
->
-> -#define SPEAR320_CONTROL_REG           (soc_config_base + 0x0000)
-> +#define SPEAR320_CONTROL_REG           (soc_config_base + 0x0010)
->  #define SPEAR320_EXT_CTRL_REG          (soc_config_base + 0x0018)
->
->         #define SPEAR320_UARTX_PCLK_MASK                0x1
+On Thu, Jun 19, 2014 at 08:13:22PM -0400, Pranith Kumar wrote:
+> On 06/19/2014 07:49 PM, Paul E. McKenney wrote:
+> > On Thu, Jun 19, 2014 at 07:24:48PM -0400, Pranith Kumar wrote:
+> >> (dropping some CCs)
+> >>
+> >> On 06/19/2014 05:00 PM, Paul E. McKenney wrote:
+> >>> On Wed, Jun 18, 2014 at 12:49:42PM -0700, Joe Perches wrote:
+> >>>>
+> >>>> I believe the function doesn't work well.
+> >>>>
+> >>>> static void
+> >>>> rcu_torture_stats_print(void)
+> >>>> {
+> >>>> 	int size = nr_cpu_ids * 200 + 8192;
+> >>>> 	char *buf;
+> >>>>
+> >>>> 	buf = kmalloc(size, GFP_KERNEL);
+> >>>> 	if (!buf) {
+> >>>> 		pr_err("rcu-torture: Out of memory, need: %d\n", size);
+> >>>> 		return;
+> >>>> 	}
+> >>>> 	rcu_torture_printk(buf);
+> >>>> 	pr_alert("%s", buf);
+> >>>> 	kfree(buf);
+> >>>> }
+> >>>>
+> >>>> rcu_torture_printk simply fills buf
+> >>>>
+> >>>> btw: I believe the arguments should pass size and
+> >>>>      rcu_torture_printk should use snprintf/size
+> >>>>
+> >>>> but all printks are limited to a maximum of 1024
+> >>>> bytes so the large allocation is senseless and
+> >>>> would even if it worked, would likely need to be
+> >>>> vmalloc/vfree
+> >>>
+> >>> Fair point!
+> >>>
+> >>> Pranith, Romanov, if you would like part of RCU that is less touchy
+> >>> about random hacking, this would be a good place to start.  Scripts in
+> >>> tools/testing/selftests/rcutorture/bin do care about some of the format,
+> >>> but the variable-length portion generated by cur_ops->stats() is as far
+> >>> as I know only parsed by human eyes.
+> >>>
+> >>
+> >> Here is a first run of the change. Please let me know if I am totally off. RFC. :)
+> > 
+> > Thank you for taking this on!
+> 
+> You are most welcome :)
+> 
+> > 
+> >> Three things on Todo list:
+> >>
+> >> * We need to check that we are using less than the allocated size of the buffer (used > size). (we are allocating a big buffer, so not sure if necessary)
+> >> * Need to check with the scripts if they are working.
+> >> * I used a loop for pr_alert(). I am not sure this is right, there should be a better way for printing large buffers
+> >>
+> >> If the overall structure is ok I will go ahead and check how the scripts are handling these changes. 
+> > 
+> > One other thing...  Convince this function (and a few others that it
+> > calls) that the system really has 4096 CPUs, run this code, and see what
+> > actually happens both before and after.  Just to get a bit of practice
+> > mixed in with the theory.  ;-)
+> > 
+> 
+> OK. I think to do this I need to use 4096 instead of nr_cpu_ids. I will try this and see how it goes :)
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+That's the spirit!  You will probably have to adjust a few other things
+as well.
+
+							Thanx, Paul
+
