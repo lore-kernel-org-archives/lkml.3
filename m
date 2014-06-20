@@ -1,81 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757778AbaFTWR0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 18:17:26 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:36927 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754761AbaFTWRY (ORCPT
+	id S1758031AbaFTWVX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 18:21:23 -0400
+Received: from mail-pa0-f73.google.com ([209.85.220.73]:40208 "EHLO
+	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753880AbaFTWVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 18:17:24 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Willy Tarreau <w@1wt.eu>
-Cc: Luis Henriques <luis.henriques@canonical.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Michal Tesar <mtesar@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, tyler.hicks@canonical.com
-References: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
-	<20140512003203.088027167@1wt.eu> <20140611184644.GA5442@hercules>
-	<20140611194657.GU28551@1wt.eu> <87sinanv6u.fsf@canonical.com>
-	<20140614175047.GH15102@1wt.eu>
-Date: Fri, 20 Jun 2014 15:16:07 -0700
-In-Reply-To: <20140614175047.GH15102@1wt.eu> (Willy Tarreau's message of "Sat,
-	14 Jun 2014 19:50:47 +0200")
-Message-ID: <87simzgrbs.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Fri, 20 Jun 2014 18:21:21 -0400
+Subject: [PATCH] sched: Fix potential near-infinite distribute_cfs_runtime
+ loop
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        pjt@google.com
+From: Ben Segall <bsegall@google.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Fri, 20 Jun 2014 15:21:20 -0700
+Message-ID: <20140620222120.13814.21652.stgit@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19vtvh0ZjldyKVW00/X3M0KuJCSKc3fLVM=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4062]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Willy Tarreau <w@1wt.eu>
-X-Spam-Relay-Country: 
-Subject: Re: [ 059/143] sysctl net: Keep tcp_syn_retries inside the boundary
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Willy Tarreau <w@1wt.eu> writes:
+distribute_cfs_runtime intentionally only hands out enough runtime to
+bring each cfs_rq to 1 ns of runtime, expecting the cfs_rqs to then take
+the runtime they need only once they actually get to run. However, if
+they get to run sufficiently quickly, the period timer is still in
+distribute_cfs_runtime and no runtime is available, causing them to
+throttle. Then distribute has to handle them again, and this can go on
+until distribute has handed out all of the runtime 1ns at a time, which
+takes far too long.
 
-> Hi Luis,
->
-> On Thu, Jun 12, 2014 at 01:55:53PM +0100, Luis Henriques wrote:
->> I was finally able to spend some more time with this and tried (a
->> modified) Tyler's patch on top of 2.6.32.62, and it seems to work.
->> Although I haven't done any extended testing, I don't see the two
->> stack traces and the /proc/sys/net/ipv4/ directory seems to be
->> correctly populated.
->> 
->> I'm attaching the patch I've used, based on Tyler's.
->
-> Would any of you or Tyler please kindly pass me a signed-off-by with
-> a commit message ? That would be great. Alternately I'd do it myself
-> and mention you authored them.
+Instead allow access to the same runtime that distribute is handing out,
+accepting that corner cases with very low quota may be able to spend the
+entire cfs_b->runtime during distribute_cfs_runtime, meaning that the
+runtime directly handed out by distribute_cfs_runtime was over quota. In
+addition, if a cfs_rq does manage to throttle like this, make sure the
+existing distribute_cfs_runtime no longer loops over it again.
 
-If my memory serves it is possibe in 2.6.32 to set 
-.ctl_name = CTL_UNNEEDED
+Signed-off-by: Ben Segall <bsegall@google.com>
+---
+ kernel/sched/fair.c |   41 ++++++++++++++++++++---------------------
+ 1 file changed, 20 insertions(+), 21 deletions(-)
 
-and not need to implement a .strategy routine at all.
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 1f9c457..ef5eac7 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3361,7 +3361,11 @@ static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
+ 	cfs_rq->throttled = 1;
+ 	cfs_rq->throttled_clock = rq_clock(rq);
+ 	raw_spin_lock(&cfs_b->lock);
+-	list_add_tail_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
++	/*
++	 * Add to the _head_ of the list, so that an already-started
++	 * distribute_cfs_runtime will not see us
++	 */
++	list_add_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
+ 	if (!cfs_b->timer_active)
+ 		__start_cfs_bandwidth(cfs_b, false);
+ 	raw_spin_unlock(&cfs_b->lock);
+@@ -3418,7 +3422,8 @@ static u64 distribute_cfs_runtime(struct cfs_bandwidth *cfs_b,
+ 		u64 remaining, u64 expires)
+ {
+ 	struct cfs_rq *cfs_rq;
+-	u64 runtime = remaining;
++	u64 runtime;
++	u64 starting_runtime = remaining;
+ 
+ 	rcu_read_lock();
+ 	list_for_each_entry_rcu(cfs_rq, &cfs_b->throttled_cfs_rq,
+@@ -3449,7 +3454,7 @@ next:
+ 	}
+ 	rcu_read_unlock();
+ 
+-	return remaining;
++	return starting_runtime - remaining;
+ }
+ 
+ /*
+@@ -3495,22 +3500,17 @@ static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
+ 	/* account preceding periods in which throttling occurred */
+ 	cfs_b->nr_throttled += overrun;
+ 
+-	/*
+-	 * There are throttled entities so we must first use the new bandwidth
+-	 * to unthrottle them before making it generally available.  This
+-	 * ensures that all existing debts will be paid before a new cfs_rq is
+-	 * allowed to run.
+-	 */
+-	runtime = cfs_b->runtime;
+ 	runtime_expires = cfs_b->runtime_expires;
+-	cfs_b->runtime = 0;
+ 
+ 	/*
+-	 * This check is repeated as we are holding onto the new bandwidth
+-	 * while we unthrottle.  This can potentially race with an unthrottled
+-	 * group trying to acquire new bandwidth from the global pool.
++	 * This check is repeated as we are holding onto the new bandwidth while
++	 * we unthrottle. This can potentially race with an unthrottled group
++	 * trying to acquire new bandwidth from the global pool. This can result
++	 * in us over-using our runtime if it is all used during this loop, but
++	 * only by limited amounts in that extreme case.
+ 	 */
+-	while (throttled && runtime > 0) {
++	while (throttled && cfs_b->runtime > 0) {
++		runtime = cfs_b->runtime;
+ 		raw_spin_unlock(&cfs_b->lock);
+ 		/* we can't nest cfs_b->lock while distributing bandwidth */
+ 		runtime = distribute_cfs_runtime(cfs_b, runtime,
+@@ -3518,10 +3518,10 @@ static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
+ 		raw_spin_lock(&cfs_b->lock);
+ 
+ 		throttled = !list_empty(&cfs_b->throttled_cfs_rq);
++
++		cfs_b->runtime -= min(runtime, cfs_b->runtime);
+ 	}
+ 
+-	/* return (any) remaining runtime */
+-	cfs_b->runtime = runtime;
+ 	/*
+ 	 * While we are ensured activity in the period following an
+ 	 * unthrottle, this also covers the case in which the new bandwidth is
+@@ -3632,10 +3632,9 @@ static void do_sched_cfs_slack_timer(struct cfs_bandwidth *cfs_b)
+ 		return;
+ 	}
+ 
+-	if (cfs_b->quota != RUNTIME_INF && cfs_b->runtime > slice) {
++	if (cfs_b->quota != RUNTIME_INF && cfs_b->runtime > slice)
+ 		runtime = cfs_b->runtime;
+-		cfs_b->runtime = 0;
+-	}
++
+ 	expires = cfs_b->runtime_expires;
+ 	raw_spin_unlock(&cfs_b->lock);
+ 
+@@ -3646,7 +3645,7 @@ static void do_sched_cfs_slack_timer(struct cfs_bandwidth *cfs_b)
+ 
+ 	raw_spin_lock(&cfs_b->lock);
+ 	if (expires == cfs_b->runtime_expires)
+-		cfs_b->runtime = runtime;
++		cfs_b->runtime -= min(runtime, cfs_b->runtime);
+ 	raw_spin_unlock(&cfs_b->lock);
+ }
+ 
 
-Given the fact that most people got the strategy routines
-slightly wrong and that sys_sysctl is effectively unused
-a strategy where you don't implement code that no-one
-will use in a backport I would be preferable.
-
-Since you have mentioned this has come up a couple of times if something
-else this will be something to think about for next time.
-
-I am puzzled why .ctl_name was populated in a backport at all.
-
-Eric
