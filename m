@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967093AbaFTLUY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 07:20:24 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55397 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966627AbaFTLUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 07:20:21 -0400
-Message-ID: <53A418EF.5050005@ti.com>
-Date: Fri, 20 Jun 2014 16:50:15 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S967142AbaFTLUq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 07:20:46 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:61059 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967028AbaFTLUo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 07:20:44 -0400
 MIME-Version: 1.0
-To: Paul Walmsley <paul@pwsan.com>, Roger Quadros <rogerq@ti.com>
-CC: <tony@atomide.com>, <rnayak@ti.com>, <nm@ti.com>, <kishon@ti.com>,
-        <george.cherian@ti.com>, <balbi@ti.com>, <balajitk@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ARM: DRA7: hwmod: Add OCP2SCP3 module
-References: <1403093816-10960-1-git-send-email-rogerq@ti.com> <1403093816-10960-2-git-send-email-rogerq@ti.com> <alpine.DEB.2.02.1406190546520.13869@utopia.booyaka.com>
-In-Reply-To: <alpine.DEB.2.02.1406190546520.13869@utopia.booyaka.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140619225100.GA15258@kroah.com>
+References: <1402788921-15458-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<1402788921-15458-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<20140619225100.GA15258@kroah.com>
+Date: Fri, 20 Jun 2014 13:20:43 +0200
+Message-ID: <CAFo99gZKXEVVxZX12pqiaPuD2RqN=qxkKezSoP09ECSj37waSA@mail.gmail.com>
+Subject: Re: [PATCH] staging: imx-drm: ipu-v3: ipu-common.c: Cleaning up
+ return of uninitialized variable
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        devel@driverdev.osuosl.org, Sascha Hauer <s.hauer@pengutronix.de>,
+        Valentina Manea <valentina.manea.m@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 19 June 2014 11:18 AM, Paul Walmsley wrote:
-> On Wed, 18 Jun 2014, Roger Quadros wrote:
-> 
->> This module is needed for the SATA and PCIe PHYs.
+Hi
+
+The mainline form about Jun 6.
+And now it is in  drivers/gpu/ipu-v3/ipu-common.c
+Still with the same error.
+
+Sorry, I have started to compare to linux-next, but I do it as:
+diff `find . ../linux-next/ -name ipu-common.c`
+So missed that the file had moved :-/
+
+Ok, I send a new patch then..
+
+
+Kind regards
+Rickard Strandqvist
+
+
+2014-06-20 0:51 GMT+02:00 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
+> On Sun, Jun 15, 2014 at 01:35:21AM +0200, Rickard Strandqvist wrote:
+>> Before when there was an error a uninitialized variable would be returnd.
+>> Now it returns -ENODEV
 >>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> Tested-by: Roger Quadros <rogerq@ti.com>
-> 
-> Is this one a fix?  It looks to me like a new IP block addition.
-
-This is not a regression fix, but this is the only thing preventing
-users from using SATA on DRA7x - the DT fragments are already there.
-
-Since its still early -rc cycle, I am hoping enabling support for new
-devices can still go in.
-
-Thanks,
-Sekhar
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>>  drivers/staging/imx-drm/ipu-v3/ipu-common.c |    4 ++--
+>
+> This file isn't even in the tree anymore, what did you make this patch
+> against?
