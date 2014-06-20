@@ -1,116 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052AbaFTWy3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 18:54:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33428 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756530AbaFTWy2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 18:54:28 -0400
-Date: Fri, 20 Jun 2014 15:54:26 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: rtc-linux@googlegroups.com
-Cc: Raghavendra Ganiga <ravi23ganiga@gmail.com>, a.zummo@towertech.it,
-        linux-kernel@vger.kernel.org
-Subject: Re: [rtc-linux] [PATCH] rtc: add support of nvram for maxim dallas
- rtc ds1343
-Message-Id: <20140620155426.1c4d0a9936859d1b20679bdf@linux-foundation.org>
-In-Reply-To: <1400947473-19955-1-git-send-email-ravi23ganiga@gmail.com>
-References: <1400947473-19955-1-git-send-email-ravi23ganiga@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	id S967036AbaFTW6i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 18:58:38 -0400
+Received: from 1wt.eu ([62.212.114.60]:43749 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965046AbaFTW6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 18:58:36 -0400
+Date: Sat, 21 Jun 2014 00:58:27 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Luis Henriques <luis.henriques@canonical.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Michal Tesar <mtesar@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, tyler.hicks@canonical.com
+Subject: Re: [ 059/143] sysctl net: Keep tcp_syn_retries inside the boundary
+Message-ID: <20140620225827.GF9639@1wt.eu>
+References: <f07e5fe6d87f172fc73580b9c86ba9a2@local> <20140512003203.088027167@1wt.eu> <20140611184644.GA5442@hercules> <20140611194657.GU28551@1wt.eu> <87sinanv6u.fsf@canonical.com> <20140614175047.GH15102@1wt.eu> <87simzgrbs.fsf@x220.int.ebiederm.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87simzgrbs.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 24 May 2014 21:34:33 +0530 Raghavendra Ganiga <ravi23ganiga@gmail.com> wrote:
+Hi Eric,
 
-> This is a patch to add support of nvram for maxim dallas
-> rtc ds1343
+On Fri, Jun 20, 2014 at 03:16:07PM -0700, Eric W. Biederman wrote:
+> Willy Tarreau <w@1wt.eu> writes:
 > 
-> ...
->
-> --- a/drivers/rtc/rtc-ds1343.c
-> +++ b/drivers/rtc/rtc-ds1343.c
-> @@ -4,6 +4,7 @@
->   * Real Time Clock
->   *
->   * Author : Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
-> + *	    Ankur Srivastava <sankurece@gmail.com> : DS1343 Nvram Support
->   *
->   * This program is free software; you can redistribute it and/or modify
->   * it under the terms of the GNU General Public License version 2 as
-> @@ -45,6 +46,9 @@
->  #define DS1343_CONTROL_REG	0x0F
->  #define DS1343_STATUS_REG	0x10
->  #define DS1343_TRICKLE_REG	0x11
-> +#define DS1343_NVRAM		0x20
-> +
-> +#define DS1343_NVRAM_LEN	96
->  
->  /* DS1343 Control Registers bits */
->  #define DS1343_EOSC		0x80
-> @@ -149,6 +153,64 @@ static ssize_t ds1343_store_glitchfilter(struct device *dev,
->  static DEVICE_ATTR(glitch_filter, S_IRUGO | S_IWUSR, ds1343_show_glitchfilter,
->  			ds1343_store_glitchfilter);
->  
-> +static ssize_t ds1343_nvram_write(struct file *filp, struct kobject *kobj,
-> +			struct bin_attribute *attr,
-> +			char *buf, loff_t off, size_t count)
-> +{
-> +	int ret;
-> +	unsigned char address;
-> +	struct device *dev = kobj_to_dev(kobj);
-> +	struct ds1343_priv *priv = dev_get_drvdata(dev);
-> +
-> +	if (unlikely(!count))
-> +		return count;
-> +
-> +	if ((count + off) > DS1343_NVRAM_LEN)
+> > Hi Luis,
+> >
+> > On Thu, Jun 12, 2014 at 01:55:53PM +0100, Luis Henriques wrote:
+> >> I was finally able to spend some more time with this and tried (a
+> >> modified) Tyler's patch on top of 2.6.32.62, and it seems to work.
+> >> Although I haven't done any extended testing, I don't see the two
+> >> stack traces and the /proc/sys/net/ipv4/ directory seems to be
+> >> correctly populated.
+> >> 
+> >> I'm attaching the patch I've used, based on Tyler's.
+> >
+> > Would any of you or Tyler please kindly pass me a signed-off-by with
+> > a commit message ? That would be great. Alternately I'd do it myself
+> > and mention you authored them.
+> 
+> If my memory serves it is possibe in 2.6.32 to set 
+> .ctl_name = CTL_UNNEEDED
+> 
+> and not need to implement a .strategy routine at all.
 
-I worry about what happens if (count + off) wraps through zero.
+Ah that's quite interesting, thanks for the tip!
 
-> +		count = DS1343_NVRAM_LEN - off;
+> Given the fact that most people got the strategy routines
+> slightly wrong and that sys_sysctl is effectively unused
+> a strategy where you don't implement code that no-one
+> will use in a backport I would be preferable.
 
-We might end up with an enormous value in `count'?
+OK.
 
-> +	address = DS1343_NVRAM + off;
-> +
-> +	ret = regmap_bulk_write(priv->map, address, buf, count);
-> +	if (ret < 0)
-> +		dev_err(&priv->spi->dev, "Error in nvram write %d", ret);
-> +
-> +	return (ret < 0) ? ret : count;
-> +}
-> +
-> +
-> +static ssize_t ds1343_nvram_read(struct file *filp, struct kobject *kobj,
-> +				struct bin_attribute *attr,
-> +				char *buf, loff_t off, size_t count)
-> +{
-> +	int ret;
-> +	unsigned char address;
-> +	struct device *dev = kobj_to_dev(kobj);
-> +	struct ds1343_priv *priv = dev_get_drvdata(dev);
-> +
-> +	if (unlikely(!count))
-> +		return count;
-> +
-> +	if ((count + off) > DS1343_NVRAM_LEN)
-> +		count = DS1343_NVRAM_LEN - off;
+> Since you have mentioned this has come up a couple of times if something
+> else this will be something to think about for next time.
 
-Here too.
+I'm keeping your e-mail where I manage patches, hoping to recognize
+this case next time.
 
-> +	address = DS1343_NVRAM + off;
-> +
-> +	ret = regmap_bulk_read(priv->map, address, buf, count);
-> +	if (ret < 0)
-> +		dev_err(&priv->spi->dev, "Error in nvram read %d\n", ret);
-> +
-> +	return (ret < 0) ? ret : count;
-> +}
-> +
-> +
+> I am puzzled why .ctl_name was populated in a backport at all.
+
+Oh it's simply because I didn't know it did not have to be there,
+and among the few reviewers, I guess that it's not common to know
+what version uses what semantics.
+
+Thank you for the exaplanation, it's really helpful. We're not used
+to backport sysctl changes but here I got caught a few times and have
+found some sysctl.conf with bogus values in field a few times, so it
+was really important to backport this one.
+
+Best regards,
+Willy
 
