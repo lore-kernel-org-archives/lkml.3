@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964925AbaFTHJk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 03:09:40 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:46315 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934353AbaFTHJi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 03:09:38 -0400
+	id S934663AbaFTHQI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 03:16:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49438 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752779AbaFTHQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 03:16:06 -0400
+Date: Fri, 20 Jun 2014 09:15:49 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCHv2 00/18] perf tools: Factor ordered samples queue
+Message-ID: <20140620071549.GA1218@krava.brq.redhat.com>
+References: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
+ <53A1EC2E.1010706@gmail.com>
+ <20140619103448.GA7619@krava.brq.redhat.com>
+ <53A323E0.8040307@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140619212713.923306179@linutronix.de>
-References: <20140619212606.431750473@linutronix.de>
-	<20140619212713.923306179@linutronix.de>
-Date: Fri, 20 Jun 2014 12:39:36 +0530
-X-Google-Sender-Auth: jT9nyty3jHIRGnLlL4jusjjkaH0
-Message-ID: <CAOh2x==7awAgx0idqjauYJZk9-aoBEvDWneMksbyYH38c6+OSg@mail.gmail.com>
-Subject: Re: [patch 13/13] irqchip: spear_shirq: Simplify register access code
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Shiraz Hashim <shiraz.linux.kernel@gmail.com>,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53A323E0.8040307@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 3:04 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+On Thu, Jun 19, 2014 at 11:54:40AM -0600, David Ahern wrote:
+> On 6/19/14, 4:34 AM, Jiri Olsa wrote:
+> >>I've skimmed through the patches. What happens if you are in the middle of a
+> >>round and the max queue size is reached?
+> >
+> >half of the queue (time half) is flushed to make some free space
+> 
+> right, I believe there will be scenarios where that will cause failures with
+> out of order timestamps.
 
-> Index: linux/drivers/irqchip/spear-shirq.c
-> -struct shirq_regs {
-> -       u32 enb_reg;
-> -       u32 reset_to_enb;
+yep, but I did not hit any so far.. thats why I added
+patch 18 - not to drop out of seq. event if it's found
+after this flush
 
-I don't see something similar to 'reset_to_enb' is added again.
-AFAICT, this field is being used by two blocks:
-
-spear300_shirq_ras1: writes 0 to this. i.e. we need to write 0 to
-mask the interrupt
-
-and
-
-spear320_shirq_ras3: writes 1 to this. i.e. we need to write 1 to
-mask the interrupt.
-
-And so the new code you have added breaks it for SPEAr300 ?
-
-> -       u32 status_reg;
-> -};
+jirka
