@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966855AbaFTUMW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:12:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49615 "EHLO mx1.redhat.com"
+	id S966785AbaFTUMV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:12:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3000 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756342AbaFTUML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756669AbaFTUML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Jun 2014 16:12:11 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
@@ -13,49 +13,48 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         linux-kernel@vger.kernel.org,
         Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: [PATCH v3 06/13] pagemap: use walk->vma instead of calling find_vma()
-Date: Fri, 20 Jun 2014 16:11:32 -0400
-Message-Id: <1403295099-6407-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH v3 10/13] arch/powerpc/mm/subpage-prot.c: use walk->vma and walk_page_vma()
+Date: Fri, 20 Jun 2014 16:11:36 -0400
+Message-Id: <1403295099-6407-11-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1403295099-6407-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1403295099-6407-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Page table walker has the information of the current vma in mm_walk, so
-we don't have to call find_vma() in each pagemap_hugetlb_range() call.
-
-NULL-vma check is omitted because we assume that we never run hugetlb_entry()
-callback on the address without vma. And even if it were broken, null pointer
-dereference would be detected, so we can get enough information for debugging.
+We don't have to use mm_walk->private to pass vma to the callback function
+because of mm_walk->vma. And walk_page_vma() is useful if we walk over a
+single vma.
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- fs/proc/task_mmu.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ arch/powerpc/mm/subpage-prot.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git v3.16-rc1.orig/fs/proc/task_mmu.c v3.16-rc1/fs/proc/task_mmu.c
-index 3c42cd40ad36..74f87794afab 100644
---- v3.16-rc1.orig/fs/proc/task_mmu.c
-+++ v3.16-rc1/fs/proc/task_mmu.c
-@@ -1082,15 +1082,12 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
- 				 struct mm_walk *walk)
+diff --git v3.16-rc1.orig/arch/powerpc/mm/subpage-prot.c v3.16-rc1/arch/powerpc/mm/subpage-prot.c
+index 6c0b1f5f8d2c..fa9fb5b4c66c 100644
+--- v3.16-rc1.orig/arch/powerpc/mm/subpage-prot.c
++++ v3.16-rc1/arch/powerpc/mm/subpage-prot.c
+@@ -134,7 +134,7 @@ static void subpage_prot_clear(unsigned long addr, unsigned long len)
+ static int subpage_walk_pmd_entry(pmd_t *pmd, unsigned long addr,
+ 				  unsigned long end, struct mm_walk *walk)
  {
- 	struct pagemapread *pm = walk->private;
--	struct vm_area_struct *vma;
+-	struct vm_area_struct *vma = walk->private;
 +	struct vm_area_struct *vma = walk->vma;
- 	int err = 0;
- 	int flags2;
- 	pagemap_entry_t pme;
- 
--	vma = find_vma(walk->mm, addr);
--	WARN_ON_ONCE(!vma);
--
--	if (vma && (vma->vm_flags & VM_SOFTDIRTY))
-+	if (vma->vm_flags & VM_SOFTDIRTY)
- 		flags2 = __PM_SOFT_DIRTY;
- 	else
- 		flags2 = 0;
+ 	split_huge_page_pmd(vma, addr, pmd);
+ 	return 0;
+ }
+@@ -163,9 +163,7 @@ static void subpage_mark_vma_nohuge(struct mm_struct *mm, unsigned long addr,
+ 		if (vma->vm_start >= (addr + len))
+ 			break;
+ 		vma->vm_flags |= VM_NOHUGEPAGE;
+-		subpage_proto_walk.private = vma;
+-		walk_page_range(vma->vm_start, vma->vm_end,
+-				&subpage_proto_walk);
++		walk_page_vma(vma, &subpage_proto_walk);
+ 		vma = vma->vm_next;
+ 	}
+ }
 -- 
 1.9.3
 
