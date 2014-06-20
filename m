@@ -1,138 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967040AbaFTLrj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 07:47:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53677 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966096AbaFTLrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 07:47:37 -0400
-Message-ID: <53A41F54.8000501@suse.cz>
-Date: Fri, 20 Jun 2014 13:47:32 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S967195AbaFTLtU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 07:49:20 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:63819 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966096AbaFTLtS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 07:49:18 -0400
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, linux@arm.linux.org.uk,
+        daniel.lezcano@linaro.org, tglx@linutronix.de, grant.likely@linaro.org,
+        matthias.bgg@gmail.com, thierry.reding@gmail.com,
+        florian.vaussard@epfl.ch, jic23@kernel.org, jason@lakedaemon.net,
+        andrew@lunn.ch, silvio.fricke@gmail.com, heiko.stuebner@bq.com,
+        olof@lixom.net, sebastian.hesselbarth@gmail.com, sboyd@codeaurora.org,
+        gregory.clement@free-electrons.com, arnd@arndb.de,
+        robherring2@gmail.com, marc.zyngier@arm.com,
+        maxime.ripard@free-electrons.com, soren.brinkmann@xilinx.com,
+        shawn.guo@freescale.com, anders.berg@lsi.com, linus.walleij@linaro.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v9 0/3] arm: Add basic support for Mediatek Cortex-A7 SoCs
+Date: Fri, 20 Jun 2014 13:48:46 +0200
+Message-Id: <1403264929-21325-1-git-send-email-matthias.bgg@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 02/10] mm, compaction: report compaction as contended
- only due to lock contention
-References: <1402305982-6928-1-git-send-email-vbabka@suse.cz> <1402305982-6928-2-git-send-email-vbabka@suse.cz> <20140611011019.GC15630@bbox> <53984A06.6020607@suse.cz> <20140611234944.GA12415@bbox> <5399B2DC.2040004@suse.cz> <20140613024005.GA8704@gmail.com>
-In-Reply-To: <20140613024005.GA8704@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2014 04:40 AM, Minchan Kim wrote:
-> On Thu, Jun 12, 2014 at 04:02:04PM +0200, Vlastimil Babka wrote:
->> On 06/12/2014 01:49 AM, Minchan Kim wrote:
->> >On Wed, Jun 11, 2014 at 02:22:30PM +0200, Vlastimil Babka wrote:
->> >>On 06/11/2014 03:10 AM, Minchan Kim wrote:
->> >>>On Mon, Jun 09, 2014 at 11:26:14AM +0200, Vlastimil Babka wrote:
->> >>>>Async compaction aborts when it detects zone lock contention or need_resched()
->> >>>>is true. David Rientjes has reported that in practice, most direct async
->> >>>>compactions for THP allocation abort due to need_resched(). This means that a
->> >>>>second direct compaction is never attempted, which might be OK for a page
->> >>>>fault, but hugepaged is intended to attempt a sync compaction in such case and
->> >>>>in these cases it won't.
->> >>>>
->> >>>>This patch replaces "bool contended" in compact_control with an enum that
->> >>>>distinguieshes between aborting due to need_resched() and aborting due to lock
->> >>>>contention. This allows propagating the abort through all compaction functions
->> >>>>as before, but declaring the direct compaction as contended only when lock
->> >>>>contantion has been detected.
->> >>>>
->> >>>>As a result, hugepaged will proceed with second sync compaction as intended,
->> >>>>when the preceding async compaction aborted due to need_resched().
->> >>>
->> >>>You said "second direct compaction is never attempted, which might be OK
->> >>>for a page fault" and said "hugepagd is intented to attempt a sync compaction"
->> >>>so I feel you want to handle khugepaged so special unlike other direct compact
->> >>>(ex, page fault).
->> >>
->> >>Well khugepaged is my primary concern, but I imagine there are other
->> >>direct compaction users besides THP page fault and khugepaged.
->> >>
->> >>>By this patch, direct compaction take care only lock contention, not rescheduling
->> >>>so that pop questions.
->> >>>
->> >>>Is it okay not to consider need_resched in direct compaction really?
->> >>
->> >>It still considers need_resched() to back of from async compaction.
->> >>It's only about signaling contended_compaction back to
->> >>__alloc_pages_slowpath(). There's this code executed after the
->> >>first, async compaction fails:
->> >>
->> >>/*
->> >>  * It can become very expensive to allocate transparent hugepages at
->> >>  * fault, so use asynchronous memory compaction for THP unless it is
->> >>  * khugepaged trying to collapse.
->> >>  */
->> >>if (!(gfp_mask & __GFP_NO_KSWAPD) || (current->flags & PF_KTHREAD))
->> >>         migration_mode = MIGRATE_SYNC_LIGHT;
->> >>
->> >>/*
->> >>  * If compaction is deferred for high-order allocations, it is because
->> >>  * sync compaction recently failed. In this is the case and the caller
->> >>  * requested a movable allocation that does not heavily disrupt the
->> >>  * system then fail the allocation instead of entering direct reclaim.
->> >>  */
->> >>if ((deferred_compaction || contended_compaction) &&
->> >>                                         (gfp_mask & __GFP_NO_KSWAPD))
->> >>         goto nopage;
->> >>
->> >>Both THP page fault and khugepaged use __GFP_NO_KSWAPD. The first
->> >>if() decides whether the second attempt will be sync (for
->> >>khugepaged) or async (page fault). The second if() decides that if
->> >>compaction was contended, then there won't be any second attempt
->> >>(and reclaim) at all. Counting need_resched() as contended in this
->> >>case is bad for khugepaged. Even for page fault it means no direct
->> >
->> >I agree khugepaged shouldn't count on need_resched, even lock contention
->> >because it was a result from admin's decision.
->> >If it hurts system performance, he should adjust knobs for khugepaged.
->> >
->> >>reclaim and a second async compaction. David says need_resched()
->> >>occurs so often then it is a poor heuristic to decide this.
->> >
->> >But page fault is a bit different. Inherently, high-order allocation
->> >(ie, above PAGE_ALLOC_COSTLY_ORDER) is fragile so all of the caller
->> >shoud keep in mind that and prepare second plan(ex, 4K allocation)
->> >so direct reclaim/compaction should take care of latency rather than
->> >success ratio.
->> 
->> Yes it's a rather delicate balance. But the plan is now to try
->> balance this differently than using need_resched.
->> 
->> >If need_resched in second attempt(ie, synchronous compaction) is almost
->> >true, it means the process consumed his timeslice so it shouldn't be
->> >greedy and gives a CPU resource to others.
->> 
->> Synchronous compaction uses cond_resched() so that's fine I think?
-> 
-> Sorry for being not clear. I post for the clarification before taking
-> a rest in holiday. :)
-> 
-> When THP page fault occurs and found rescheduling while doing async
-> direct compaction, it goes "nopage" and fall-backed to 4K page.
-> It's good to me.
-> 
-> Another topic: I couldn't find any cond_resched. Anyway, it could be
-> another patch.
-> 
+This patch series includes just the patches for the timer driver.
+They are rebased against tip/timers/core from the tip repository [0].
 
-Thanks for the explanation. I'll include a cond_resched() at the level of
-try_to_compact_pages() where it fits better, so it's not necessary in the place you
-suggested. This should solve the "don't be greedy" problem. I will not yet include
-the "bail out for latency" part because we are now slowly moving towards removing
-need_resched() as a condition for stopping compaction, and this would on the contrary
-extend it to prevent direct reclaim as well. David's data suggests that compaction often
-bails out due to need_resched(), so this would reduce the amount of direct reclaim and I
-don't want to touch that area in this series :)
+The only change applied are line shifts in the OF patch.
+
+I will send the rest of the series as a pull-request.
+
+[0] git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
+
+
+Matthias Brugger (3):
+  of: Provide function to request and map memory
+  clocksource: Add support for the Mediatek SoCs
+  dt-bindings: add mtk-timer bindings
+
+ .../bindings/timer/mediatek,mtk-timer.txt          |   18 ++
+ drivers/clocksource/Kconfig                        |    5 +
+ drivers/clocksource/Makefile                       |    1 +
+ drivers/clocksource/mtk_timer.c                    |  261 ++++++++++++++++++++
+ drivers/of/address.c                               |   29 +++
+ include/linux/of_address.h                         |    8 +
+ 6 files changed, 322 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
+ create mode 100644 drivers/clocksource/mtk_timer.c
+
+-- 
+1.7.9.5
+
