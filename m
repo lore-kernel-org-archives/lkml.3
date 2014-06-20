@@ -1,42 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966802AbaFTUXe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:23:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48853 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966015AbaFTUXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 16:23:32 -0400
-Message-ID: <53A4981F.3060901@zytor.com>
-Date: Fri, 20 Jun 2014 13:22:55 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Dave Jones <davej@redhat.com>
-Subject: Re: [RFC][PATCH 3/3] x86: make MP  a required-feature on 64-bit
-References: <20140620161736.D6AC16FD@viggo.jf.intel.com> <20140620161740.BFB00798@viggo.jf.intel.com> <53A46008.5060509@zytor.com> <53A4619C.8020100@sr71.net> <53A46365.6090101@zytor.com> <20140620174345.GD11391@pd.tnic> <53A473AA.7050301@zytor.com> <20140620180523.GF11391@pd.tnic> <53A48356.5080109@zytor.com> <20140620200024.GJ11391@pd.tnic>
-In-Reply-To: <20140620200024.GJ11391@pd.tnic>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S966903AbaFTUXt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:23:49 -0400
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:3526 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966819AbaFTUXr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 16:23:47 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsHAEGXpFNXQzOZ/2dsb2JhbABZgw2rRwUBAQEBAQEFAZkqgQ4XdYQxLyOBGjeILgMVAcNlFYZDF4ViiEMBAQFOHYQtBI9tileLMIgqg0Q7gTo
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Evgeniy Dushistov <dushistov@mail.ru>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 3/5] fs/ufs/super.c: use __func__ in logging
+Date: Fri, 20 Jun 2014 22:22:29 +0200
+Message-Id: <1403295749-4898-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2014 01:00 PM, Borislav Petkov wrote:
-> On Fri, Jun 20, 2014 at 11:54:14AM -0700, H. Peter Anvin wrote:
->> No, it has to be cpu_has() -- the dynamic, CPU-specific version.
-> 
-> Ok, sry, but I have to ask: why cpu_has? Why not boot_cpu_has and thus
-> static_cpu_has_safe?
-> 
+Replace approximate function name by __func__
+using standard format "function():"
 
-Because the whole point is testing each CPU and warn if it is unsuitable.
+Cc: Evgeniy Dushistov <dushistov@mail.ru>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/ufs/super.c | 36 ++++++++++++++++++------------------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
 
-static-anything is just plain useless, because we test this once for
-each CPU and patching a branch that we are never going to cross again is
-just wasted effort.
-
-	-hpa
+diff --git a/fs/ufs/super.c b/fs/ufs/super.c
+index cfa878e..ca24557 100644
+--- a/fs/ufs/super.c
++++ b/fs/ufs/super.c
+@@ -1030,7 +1030,7 @@ again:
+ 		goto again;
+ 	}
+ 	if (!silent)
+-		pr_err("ufs_read_super: bad magic number\n");
++		pr_err("%s(): bad magic number\n", __func__);
+ 	goto failed;
+ 
+ magic_found:
+@@ -1044,33 +1044,33 @@ magic_found:
+ 	uspi->s_fshift = fs32_to_cpu(sb, usb1->fs_fshift);
+ 
+ 	if (!is_power_of_2(uspi->s_fsize)) {
+-		pr_err("ufs_read_super: fragment size %u is not a power of 2\n",
+-		       uspi->s_fsize);
++		pr_err("%s(): fragment size %u is not a power of 2\n",
++		       __func__, uspi->s_fsize);
+ 		goto failed;
+ 	}
+ 	if (uspi->s_fsize < 512) {
+-		pr_err("ufs_read_super: fragment size %u is too small\n",
+-		       uspi->s_fsize);
++		pr_err("%s(): fragment size %u is too small\n",
++		       __func__, uspi->s_fsize);
+ 		goto failed;
+ 	}
+ 	if (uspi->s_fsize > 4096) {
+-		pr_err("ufs_read_super: fragment size %u is too large\n",
+-		       uspi->s_fsize);
++		pr_err("%s(): fragment size %u is too large\n",
++		       __func__, uspi->s_fsize);
+ 		goto failed;
+ 	}
+ 	if (!is_power_of_2(uspi->s_bsize)) {
+-		pr_err("ufs_read_super: block size %u is not a power of 2\n",
+-		       uspi->s_bsize);
++		pr_err("%s(): block size %u is not a power of 2\n",
++		       __func__, uspi->s_bsize);
+ 		goto failed;
+ 	}
+ 	if (uspi->s_bsize < 4096) {
+-		pr_err("ufs_read_super: block size %u is too small\n",
+-		       uspi->s_bsize);
++		pr_err("%s(): block size %u is too small\n",
++		       __func__, uspi->s_bsize);
+ 		goto failed;
+ 	}
+ 	if (uspi->s_bsize / uspi->s_fsize > 8) {
+-		pr_err("ufs_read_super: too many fragments per block (%u)\n",
+-		       uspi->s_bsize / uspi->s_fsize);
++		pr_err("%s(): too many fragments per block (%u)\n",
++		       __func__, uspi->s_bsize / uspi->s_fsize);
+ 		goto failed;
+ 	}
+ 	if (uspi->s_fsize != block_size || uspi->s_sbsize != super_block_size) {
+@@ -1109,21 +1109,21 @@ magic_found:
+ 			UFSD("fs is DEC OSF/1\n");
+ 			break;
+ 		case UFS_FSACTIVE:
+-			pr_err("ufs_read_super: fs is active\n");
++			pr_err("%s(): fs is active\n", __func__);
+ 			sb->s_flags |= MS_RDONLY;
+ 			break;
+ 		case UFS_FSBAD:
+-			pr_err("ufs_read_super: fs is bad\n");
++			pr_err("%s(): fs is bad\n", __func__);
+ 			sb->s_flags |= MS_RDONLY;
+ 			break;
+ 		default:
+-			pr_err("ufs_read_super: can't grok fs_clean 0x%x\n",
+-			       usb1->fs_clean);
++			pr_err("%s(): can't grok fs_clean 0x%x\n",
++			       __func__, usb1->fs_clean);
+ 			sb->s_flags |= MS_RDONLY;
+ 			break;
+ 		}
+ 	} else {
+-		pr_err("ufs_read_super: fs needs fsck\n");
++		pr_err("%s(): fs needs fsck\n", __func__);
+ 		sb->s_flags |= MS_RDONLY;
+ 	}
+ 
+-- 
+1.8.4.5
 
