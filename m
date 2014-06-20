@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966551AbaFTRuM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 13:50:12 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:47896 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966335AbaFTRuG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 13:50:06 -0400
-From: Chaitanya Hazarey <c@24.io>
-To: gregkh@linuxfoundation.org, andrea.merello@gmail.com, anarey@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chaitanya Hazarey <c@24.io>
-Subject: [PATCH 2/3] Staging: rtl8192u: r8192U_wx.c Fixed some more code-style warnings about spaces
-Date: Fri, 20 Jun 2014 10:49:55 -0700
-Message-Id: <1403286596-6756-2-git-send-email-c@24.io>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403286596-6756-1-git-send-email-c@24.io>
-References: <1403286596-6756-1-git-send-email-c@24.io>
+	id S935147AbaFTRuq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 13:50:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47532 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753391AbaFTRuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 13:50:44 -0400
+Message-ID: <53A47461.4050409@zytor.com>
+Date: Fri, 20 Jun 2014 10:50:25 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>
+CC: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [RFC][PATCH 3/3] x86: make MP  a required-feature on 64-bit
+References: <20140620161736.D6AC16FD@viggo.jf.intel.com> <20140620161740.BFB00798@viggo.jf.intel.com> <53A46008.5060509@zytor.com> <53A4619C.8020100@sr71.net> <53A46365.6090101@zytor.com> <20140620174345.GD11391@pd.tnic>
+In-Reply-To: <20140620174345.GD11391@pd.tnic>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed the following warnings issued by checkpatch.pl
+Looking at the AMD init code, there is a whole bunch of other 32/64-bit
+differences that are clearly bogus.  I also see that amd_k7_smp_check()
+doesn't even *exist* on 64 bits, and that init_amd_k7() which calls
+amd_k7_smp_check() only is ever called for family == 6, despite having
+tests for family 7 and above in it.
 
-WARNING: please, no space before tabs
+Urgh.
 
-Signed-off-by: Chaitanya Hazarey <c@24.io>
----
- drivers/staging/rtl8192u/r8192U_wx.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Borislav, any way that you would be willing to take this on, or get
+someone from AMD to clean up this mess?
 
-diff --git a/drivers/staging/rtl8192u/r8192U_wx.c b/drivers/staging/rtl8192u/r8192U_wx.c
-index d061797..cccc88b 100644
---- a/drivers/staging/rtl8192u/r8192U_wx.c
-+++ b/drivers/staging/rtl8192u/r8192U_wx.c
-@@ -299,7 +299,7 @@ static int rtl8180_wx_get_range(struct net_device *dev,
- 	/* range->retry_capa; */	/* What retry options are supported */
- 	/* range->retry_flags; */	/* How to decode max/min retry limit */
- 	/* range->r_time_flags; */	/* How to decode max/min retry life */
--	/* range->min_retry; */ 	/* Minimal number of retries */
-+	/* range->min_retry; */		/* Minimal number of retries */
- 	/* range->max_retry; */		/* Maximal number of retries */
- 	/* range->min_r_time; */	/* Minimal retry lifetime */
- 	/* range->max_r_time; */	/* Maximal retry lifetime */
-@@ -802,7 +802,7 @@ static int r8192_wx_set_enc_ext(struct net_device *dev,
- 					alg,	/* KeyType */
- 					(u8 *)ieee->ap_mac_addr,/* MacAddr */
- 					0,			/* DefaultKey */
--					key);           	/* KeyContent */
-+					key);			/* KeyContent */
- 		}
- 
- 
--- 
-1.9.1
+	-hpa
 
