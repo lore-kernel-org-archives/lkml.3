@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624AbaFTRkt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 13:40:49 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:41555 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753111AbaFTRks (ORCPT
+	id S1757158AbaFTRlg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 13:41:36 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:38868 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757085AbaFTRle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 13:40:48 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Scott J Norton <scott.norton@hp.com>,
-        Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v2] lockdep: restrict the use of recursive read_lock with qrwlock
-Date: Fri, 20 Jun 2014 13:40:27 -0400
-Message-Id: <1403286027-34328-1-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
+	Fri, 20 Jun 2014 13:41:34 -0400
+Date: Fri, 20 Jun 2014 23:11:23 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] usb: host: xhci-plat: use devm_functions
+Message-ID: <20140620174123.GA6973@himangi-Dell>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v1->v2:
- - Use less conditional & make it easier to read
+This patch introduces the use of managed interface devm_ioremap_resource
+for ioremap_nocache and request_mem_region and removes the corresponding
+free functions in the probe and remove functions.
 
-Unlike the original unfair rwlock implementation, queued rwlock
-will grant lock according to the chronological sequence of the lock
-requests except when the lock requester is in the interrupt context.
-As a result, recursive read_lock calls will hang the process if there
-is a write_lock call somewhere in between the read_lock calls.
-
-This patch updates the lockdep implementation to look for recursive
-read_lock calls when queued rwlock is being used.
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 ---
- kernel/locking/lockdep.c |   14 ++++++++++++--
- 1 files changed, 12 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-plat.c | 24 ++++--------------------
+ 1 file changed, 4 insertions(+), 20 deletions(-)
 
-diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
-index d24e433..a430286 100644
---- a/kernel/locking/lockdep.c
-+++ b/kernel/locking/lockdep.c
-@@ -67,6 +67,16 @@ module_param(lock_stat, int, 0644);
- #define lock_stat 0
- #endif
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index 29d8adb..23eeb15 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -140,20 +140,12 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 	hcd->rsrc_start = res->start;
+ 	hcd->rsrc_len = resource_size(res);
  
-+#ifdef CONFIG_QUEUE_RWLOCK
-+/*
-+* Queue rwlock only allows read-after-read recursion of the same lock class
-+* when the latter read is in an interrupt context.
-+*/
-+#define allow_recursive_read	in_interrupt()
-+#else
-+#define allow_recursive_read	true
-+#endif
-+
- /*
-  * lockdep_lock: protects the lockdep graph, the hashes and the
-  *               class/list/hash allocators.
-@@ -1770,7 +1780,7 @@ check_deadlock(struct task_struct *curr, struct held_lock *next,
- 		 * Allow read-after-read recursion of the same
- 		 * lock class (i.e. read_lock(lock)+read_lock(lock)):
- 		 */
--		if ((read == 2) && prev->read)
-+		if ((read == 2) && prev->read && allow_recursive_read)
- 			return 2;
+-	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
+-				driver->description)) {
+-		dev_dbg(&pdev->dev, "controller already in use\n");
+-		ret = -EBUSY;
++	hcd->regs = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(hcd->regs)) {
++		ret = PTR_ERR(hcd->regs);
+ 		goto put_hcd;
+ 	}
  
- 		/*
-@@ -1852,7 +1862,7 @@ check_prev_add(struct task_struct *curr, struct held_lock *prev,
- 	 * write-lock never takes any other locks, then the reads are
- 	 * equivalent to a NOP.
- 	 */
--	if (next->read == 2 || prev->read == 2)
-+	if ((next->read == 2 || prev->read == 2) && allow_recursive_read)
- 		return 1;
+-	hcd->regs = ioremap_nocache(hcd->rsrc_start, hcd->rsrc_len);
+-	if (!hcd->regs) {
+-		dev_dbg(&pdev->dev, "error mapping memory\n");
+-		ret = -EFAULT;
+-		goto release_mem_region;
+-	}
+-
  	/*
- 	 * Is the <prev> -> <next> dependency already present?
+ 	 * Not all platforms have a clk so it is not an error if the
+ 	 * clock does not exists.
+@@ -162,7 +154,7 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 	if (!IS_ERR(clk)) {
+ 		ret = clk_prepare_enable(clk);
+ 		if (ret)
+-			goto unmap_registers;
++			goto put_hcd;
+ 	}
+ 
+ 	ret = usb_add_hcd(hcd, irq, IRQF_SHARED);
+@@ -207,12 +199,6 @@ disable_clk:
+ 	if (!IS_ERR(clk))
+ 		clk_disable_unprepare(clk);
+ 
+-unmap_registers:
+-	iounmap(hcd->regs);
+-
+-release_mem_region:
+-	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+-
+ put_hcd:
+ 	usb_put_hcd(hcd);
+ 
+@@ -231,8 +217,6 @@ static int xhci_plat_remove(struct platform_device *dev)
+ 	usb_remove_hcd(hcd);
+ 	if (!IS_ERR(clk))
+ 		clk_disable_unprepare(clk);
+-	iounmap(hcd->regs);
+-	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+ 	usb_put_hcd(hcd);
+ 	kfree(xhci);
+ 
 -- 
-1.7.1
+1.9.1
 
