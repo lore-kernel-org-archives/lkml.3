@@ -1,177 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967617AbaFTNPV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 09:15:21 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:49869 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967610AbaFTNPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 09:15:17 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: driverdev-devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: comedi: describe struct comedi_async
-Date: Fri, 20 Jun 2014 14:15:04 +0100
-Message-Id: <1403270104-26365-1-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.0.0
+	id S967629AbaFTNPu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 09:15:50 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:63623 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S966834AbaFTNPt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 09:15:49 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Allen Yu <alleny@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] PM / Runtime: let rpm_resume fail if rpm disabled and device suspended.
+Date: Fri, 20 Jun 2014 15:33:25 +0200
+Message-ID: <2531875.1yYGe4dtjp@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1406191020140.1247-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1406191020140.1247-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Describe `struct comedi_async` in kerneldoc format.  Expand on the
-members involved in reading/writing the buffer.
+On Thursday, June 19, 2014 10:34:01 AM Alan Stern wrote:
+> On Thu, 19 Jun 2014, Rafael J. Wysocki wrote:
+> 
+> > Well, we used to have the notion that runtime_status is not meaningful for
+> > devices with dev->power.disable_depth greater than 0 (except for the special
+> > case in the suspend code path where we know why it is greater than 0).  I think
+> > it was useful. :-)
+> 
+> Did we really have that notion?  My memory is a little cloudy, but I 
+> thought we decided that runtime_status would not be meaningful when 
+> dev->power.runtime_error was set -- not when dev->power.disable_depth 
+> was greater than 0.  Am I mixed up?
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
-This replaces a previous patch titled "staging: comedi: describe members
-involved when reading/writing buffer", Message-ID:
-<1401970286-32676-1-git-send-email-abbotti@mev.co.uk>
----
- drivers/staging/comedi/comedidev.h | 117 +++++++++++++++++++++++++++++--------
- 1 file changed, 92 insertions(+), 25 deletions(-)
+Well, we clearly did, because we added things like
 
-diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
-index 8f4e44b..71851bd 100644
---- a/drivers/staging/comedi/comedidev.h
-+++ b/drivers/staging/comedi/comedidev.h
-@@ -107,43 +107,110 @@ struct comedi_buf_map {
- 	struct kref refcount;
- };
- 
-+/**
-+ * struct comedi_async - control data for asynchronous comedi commands
-+ * @prealloc_buf:	preallocated buffer
-+ * @prealloc_bufsz:	buffer size (in bytes)
-+ * @buf_map:		map of buffer pages
-+ * @max_bufsize:	maximum buffer size (in bytes)
-+ * @buf_write_count:	"write completed" count (in bytes, modulo 2**32)
-+ * @buf_write_alloc_count: "allocated for writing" count (in bytes,
-+ *			modulo 2**32)
-+ * @buf_read_count:	"read completed" count (in bytes, modulo 2**32)
-+ * @buf_read_alloc_count: "allocated for reading" count (in bytes,
-+ *			modulo 2**32)
-+ * @buf_write_ptr:	buffer position for writer
-+ * @buf_read_ptr:	buffer position for reader
-+ * @cur_chan:		current position in chanlist for scan (for those
-+ *			drivers that use it)
-+ * @scan_progress:	amount received or sent for current scan (in bytes)
-+ * @munge_chan:		current position in chanlist for "munging"
-+ * @munge_count:	"munge" count (in bytes, modulo 2**32)
-+ * @munge_ptr:		buffer position for "munging"
-+ * @events:		bit-vector of events that have occurred
-+ * @cmd:		details of comedi command in progress
-+ * @wait_head:		task wait queue for file reader or writer
-+ * @cb_mask:		bit-vector of events that should wake waiting tasks
-+ * @inttrig:		software trigger function for command, or NULL
-+ *
-+ * Note about the ..._count and ..._ptr members:
-+ *
-+ * Think of the _Count values being integers of unlimited size, indexing
-+ * into a buffer of infinite length (though only an advancing portion
-+ * of the buffer of fixed length prealloc_bufsz is accessible at any time).
-+ * Then:
-+ *
-+ *   Buf_Read_Count <= Buf_Read_Alloc_Count <= Munge_Count <=
-+ *   Buf_Write_Count <= Buf_Write_Alloc_Count <=
-+ *   (Buf_Read_Count + prealloc_bufsz)
-+ *
-+ * (Those aren't the actual members, apart from prealloc_bufsz.) When
-+ * the buffer is reset, those _Count values start at 0 and only increase
-+ * in value, maintaining the above inequalities until the next time the
-+ * buffer is reset.  The buffer is divided into the following regions by
-+ * the inequalities:
-+ *
-+ *   [0, Buf_Read_Count):
-+ *     old region no longer accessible
-+ *   [Buf_Read_Count, Buf_Read_Alloc_Count):
-+ *     filled and munged region allocated for reading but not yet read
-+ *   [Buf_Read_Alloc_Count, Munge_Count):
-+ *     filled and munged region not yet allocated for reading
-+ *   [Munge_Count, Buf_Write_Count):
-+ *     filled region not yet munged
-+ *   [Buf_Write_Count, Buf_Write_Alloc_Count):
-+ *     unfilled region allocated for writing but not yet written
-+ *   [Buf_Write_Alloc_Count, Buf_Read_Count + prealloc_bufsz):
-+ *     unfilled region not yet allocated for writing
-+ *   [Buf_Read_Count + prealloc_bufsz, infinity):
-+ *     unfilled region not yet accessible
-+ *
-+ * Data needs to be written into the buffer before it can be read out,
-+ * and may need to be converted (or "munged") between the two
-+ * operations.  Extra unfilled buffer space may need to allocated for
-+ * writing (advancing Buf_Write_Alloc_Count) before new data is written.
-+ * After writing new data, the newly filled space needs to be released
-+ * (advancing Buf_Write_Count).  This also results in the new data being
-+ * "munged" (advancing Munge_Count).  Before data is read out of the
-+ * buffer, extra space may need to be allocated for reading (advancing
-+ * Buf_Read_Alloc_Count).  After the data has been read out, the space
-+ * needs to be released (advancing Buf_Read_Count).
-+ *
-+ * The actual members, buf_read_count, buf_read_alloc_count,
-+ * munge_count, buf_write_count, and buf_write_alloc_count take the
-+ * value of the corresponding capitalized _Count values modulo 2^32
-+ * (UINT_MAX+1).  Subtracting a "higher" _count value from a "lower"
-+ * _count value gives the same answer as subtracting a "higher" _Count
-+ * value from a lower _Count value because prealloc_bufsz < UINT_MAX+1.
-+ * The modulo operation is done implicitly.
-+ *
-+ * The buf_read_ptr, munge_ptr, and buf_write_ptr members take the value
-+ * of the corresponding capitalized _Count values modulo prealloc_bufsz.
-+ * These correspond to byte indices in the physical buffer.  The modulo
-+ * operation is done by subtracting prealloc_bufsz when the value
-+ * exceeds prealloc_bufsz (assuming prealloc_bufsz plus the increment is
-+ * less than or equal to UINT_MAX).
-+ */
- struct comedi_async {
--	void *prealloc_buf;	/* pre-allocated buffer */
--	unsigned int prealloc_bufsz;	/* buffer size, in bytes */
--	struct comedi_buf_map *buf_map;	/* map of buffer pages */
--
--	unsigned int max_bufsize;	/* maximum buffer size, bytes */
--
--	/* byte count for writer (write completed) */
-+	void *prealloc_buf;
-+	unsigned int prealloc_bufsz;
-+	struct comedi_buf_map *buf_map;
-+	unsigned int max_bufsize;
- 	unsigned int buf_write_count;
--	/* byte count for writer (allocated for writing) */
- 	unsigned int buf_write_alloc_count;
--	/* byte count for reader (read completed) */
- 	unsigned int buf_read_count;
--	/* byte count for reader (allocated for reading) */
- 	unsigned int buf_read_alloc_count;
--
--	unsigned int buf_write_ptr;	/* buffer marker for writer */
--	unsigned int buf_read_ptr;	/* buffer marker for reader */
--
--	unsigned int cur_chan;	/* useless channel marker for interrupt */
--	/* number of bytes that have been received for current scan */
-+	unsigned int buf_write_ptr;
-+	unsigned int buf_read_ptr;
-+	unsigned int cur_chan;
- 	unsigned int scan_progress;
--	/* keeps track of where we are in chanlist as for munging */
- 	unsigned int munge_chan;
--	/* number of bytes that have been munged */
- 	unsigned int munge_count;
--	/* buffer marker for munging */
- 	unsigned int munge_ptr;
--
--	unsigned int events;	/* events that have occurred */
--
-+	unsigned int events;
- 	struct comedi_cmd cmd;
--
- 	wait_queue_head_t wait_head;
--
- 	unsigned int cb_mask;
--
- 	int (*inttrig)(struct comedi_device *dev, struct comedi_subdevice *s,
- 		       unsigned int x);
- };
--- 
-2.0.0
+pm_runtime_set_active()
+pm_runtime_set_suspended()
+
+which allow the status to be changed without doing anything to the device
+while power.disable_depth is greater than 0.
+
+> In any case, I think it is reasonable to regard runtime_status as 
+> meaningful when disable_depth > 0.
+
+So we need to remove the above helpers and modify all code using them.
+
+> The PM core isn't allowed to invoke the runtime callbacks at such times,
+> that's all.  This makes perfect sense for a device that doesn't support
+> power management and hence must always be at full power.  Or when a driver
+> knows that runtime_status is out of agreement with the device's actual
+> power state and wants to update runtime_status directly.
+
+That's what it is supposed to use the above helpers for, isn't it?
+
+Devices that don't support power management, but that we want to use
+drivers supporting power management with are clearly a special case, so
+perhaps we should treat them as such instead of trying to modity the core
+to silently cover this case too automatically?
+
+> > > So pm_runtime_resume() and pm_request_resume() would still fail, but 
+> > > pm_runtime_get() and pm_runtime_get_sync() would work?  I'm not sure 
+> > > about the reason for this distinction.
+> > 
+> > The meaning of pm_runtime_get()/pm_runtime_get_sync() is "prevent the
+> > device from being suspended from now on and resume it if necessary" while
+> > "runtime PM disabled and runtime_status == RPM_ACTIVE" may be interpreted
+> > as "not necessary to resume", so it is reasonable to special case this
+> > particular situation for these particular routines IMHO.
+> 
+> By the same reasoning, the meaning of pm_runtime_resume() is "resume 
+> the device now if necsesary".  Since "runtime PM disabled and 
+> runtime_status == RPM_ACTIVE" means "not necessary to resume", isn't it 
+> logical for pm_runtime_resume() also to succeed under that condition?
+
+My point really is that pm_runtime_get()/pm_runtime_get_sync() actually carry
+out two operations, (1) incrementing the usage counter and (2) resuming the
+device if need be.  It is not particularly clear if/when the result of (2)
+should determine the return value of (1) and (2) together, so there is some
+freedom in that area which we can use to cover special cases.  That's all.
+
+I'm perfectly fine with leaving the code as is, though.  You wanted to change it. :-)
+
+Rafael
 
