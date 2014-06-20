@@ -1,87 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934959AbaFTQgT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 12:36:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59723 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932908AbaFTQgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 12:36:18 -0400
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Cc: Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm] memcg: mem_cgroup_charge_statistics needs preempt_disable
-Date: Fri, 20 Jun 2014 18:36:11 +0200
-Message-Id: <1403282171-25502-1-git-send-email-mhocko@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
-References: <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
+	id S935047AbaFTQhG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 12:37:06 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:61017 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754073AbaFTQhD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 12:37:03 -0400
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Mark Salter <msalter@redhat.com>
+Cc: David Rientjes <rientjes@google.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] mm: page_alloc: fix CMA area initialisation when pageblock > MAX_ORDER
+In-Reply-To: <1403279282.755.23.camel@deneb.redhat.com>
+Organization: http://mina86.com/
+References: <1402522435-13884-1-git-send-email-msalter@redhat.com> <alpine.DEB.2.02.1406111557030.27885@chino.kir.corp.google.com> <xa1t61jzwfo6.fsf@mina86.com> <1403201524.32688.62.camel@deneb.redhat.com> <xa1td2e41xs2.fsf@mina86.com> <1403279282.755.23.camel@deneb.redhat.com>
+User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+X-Hashcash: 1:20:140620:rientjes@google.com::rymIU0eV6yJ+R1gF:0000000000000000000000000000000000000000000Bs9
+X-Hashcash: 1:20:140620:catalin.marinas@arm.com::BDw9imfg9QAieLzK:000000000000000000000000000000000000000cCi
+X-Hashcash: 1:20:140620:msalter@redhat.com::o6oGeWRGnGGWFCHl:00000000000000000000000000000000000000000001YEm
+X-Hashcash: 1:20:140620:linux-arm-kernel@lists.infradead.org::gCVAg7/KDrP9JzrC:000000000000000000000000032qX
+X-Hashcash: 1:20:140620:m.szyprowski@samsung.com::a9QjjJ+lH1dPO+g8:00000000000000000000000000000000000003vgy
+X-Hashcash: 1:20:140620:linux-kernel@vger.kernel.org::EB9kPg2uu9vPLvIj:000000000000000000000000000000000A9ao
+Date: Fri, 20 Jun 2014 18:36:55 +0200
+Message-ID: <xa1tha3fv8pk.fsf@mina86.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-preempt_disable was previously disabled by lock_page_cgroup which has
-been removed by "mm: memcontrol: rewrite uncharge API".
+On Fri, Jun 20 2014, Mark Salter <msalter@redhat.com> wrote:
+> This still isn't quite right. __free_pages can only take up to
+> MAX_ORDER-1 (MAX_ORDER_NR_PAGES is 1 << (MAX_ORDER - 1)).
 
-This fixes the a flood of splats like this:
-[    3.149371] BUG: using __this_cpu_add() in preemptible [00000000] code: udevd/1271
-[    3.151458] caller is __this_cpu_preempt_check+0x13/0x15
-[    3.152927] CPU: 0 PID: 1271 Comm: udevd Not tainted 3.15.0-test1 #366
-[    3.154637] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
-[    3.156788]  0000000000000000 ffff88000005fba8 ffffffff814efe3f 0000000000000000
-[    3.158810]  ffff88000005fbd8 ffffffff8125b969 ffff880007413448 0000000000000001
-[    3.160836]  ffffea00001e8c00 0000000000000001 ffff88000005fbe8 ffffffff8125b9a8
-[    3.162950] Call Trace:
-[    3.163598]  [<ffffffff814efe3f>] dump_stack+0x4e/0x7a
-[    3.164942]  [<ffffffff8125b969>] check_preemption_disabled+0xd2/0xe5
-[    3.166618]  [<ffffffff8125b9a8>] __this_cpu_preempt_check+0x13/0x15
-[    3.168267]  [<ffffffff8112b630>] mem_cgroup_charge_statistics.isra.36+0xb5/0xc6
-[    3.170169]  [<ffffffff8112d2c5>] commit_charge+0x23c/0x256
-[    3.171823]  [<ffffffff8113101b>] mem_cgroup_commit_charge+0xb8/0xd7
-[    3.173838]  [<ffffffff810f5dab>] shmem_getpage_gfp+0x399/0x605
-[    3.175363]  [<ffffffff810f7456>] shmem_write_begin+0x3d/0x58
-[    3.176854]  [<ffffffff810e1361>] generic_perform_write+0xbc/0x192
-[    3.178445]  [<ffffffff8114a086>] ? file_update_time+0x34/0xac
-[    3.179952]  [<ffffffff810e2ae4>] __generic_file_aio_write+0x2c0/0x300
-[    3.181655]  [<ffffffff810e2b76>] generic_file_aio_write+0x52/0xbd
-[    3.183234]  [<ffffffff81133944>] do_sync_write+0x59/0x78
-[    3.184630]  [<ffffffff81133ea8>] vfs_write+0xc4/0x181
-[    3.185957]  [<ffffffff81134801>] SyS_write+0x4a/0x91
-[    3.187258]  [<ffffffff814fd30e>] tracesys+0xd0/0xd5
+Good catch.  I'll send v3 in a few days then.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
-Andrew,
-the changelog is quite modest but this should be folded into
-mm-memcontrol-rewrite-uncharge-api.patch anyway. If you want a
-regular patch, please let me know.
-
- mm/memcontrol.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 241cf4f91e24..cbf373085b6c 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -904,6 +904,8 @@ static void mem_cgroup_charge_statistics(struct mem_cgroup *memcg,
- 					 struct page *page,
- 					 int nr_pages)
- {
-+	preempt_disable();
-+
- 	/*
- 	 * Here, RSS means 'mapped anon' and anon's SwapCache. Shmem/tmpfs is
- 	 * counted as CACHE even if it's on ANON LRU.
-@@ -928,6 +930,7 @@ static void mem_cgroup_charge_statistics(struct mem_cgroup *memcg,
- 	}
- 
- 	__this_cpu_add(memcg->stat->nr_page_events, nr_pages);
-+	preempt_enable();
- }
- 
- unsigned long mem_cgroup_get_lru_size(struct lruvec *lruvec, enum lru_list lru)
 -- 
-2.0.0
-
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
