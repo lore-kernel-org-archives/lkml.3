@@ -1,137 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966626AbaFTKRS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 06:17:18 -0400
-Received: from andre.telenet-ops.be ([195.130.132.53]:58681 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966422AbaFTKQa (ORCPT
+	id S966723AbaFTKSS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 06:18:18 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:16803 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S965546AbaFTKSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 06:16:30 -0400
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Mark Brown <broonie@kernel.org>
-Cc: Magnus Damm <magnus.damm@gmail.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-spi@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH 4/5] spi: sh-msiof: Refactor sh_msiof_transfer_one()
-Date: Fri, 20 Jun 2014 12:16:19 +0200
-Message-Id: <1403259380-13634-5-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403259380-13634-1-git-send-email-geert+renesas@glider.be>
-References: <1403259380-13634-1-git-send-email-geert+renesas@glider.be>
+	Fri, 20 Jun 2014 06:18:15 -0400
+X-IronPort-AV: E=Sophos;i="5.00,744,1396972800"; 
+   d="scan'208";a="32195994"
+From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        David Howells <dhowells@redhat.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segooon@gmail.com>,
+        Gotou Yasunori <y-goto@jp.fujitsu.com>, <linux-api@vger.kernel.org>
+Subject: [PATCH v2] ns: introduce getnspid syscall
+Date: Fri, 20 Jun 2014 18:18:32 +0800
+Message-ID: <1403259512-10510-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+X-Mailer: git-send-email 1.9.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  - Move buffer pointer and length setup to the top,
-  - Make unsigned values unsigned,
-  - Loop over words and increment pointers instead of recalculating them,
-    which allows to kill bytes_done.
+We need a direct method of getting the pid inside containers.
+If some issues occurred inside container guest, host user
+could not know which process is in trouble just by guest pid:
+the users of container guest only knew the pid inside containers.
+This will bring obstacle for trouble shooting.
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+int getnspid(pid_t pid, int fd1, int fd2);
+
+pid: the pid number need to be translated.
+
+fd: a file descriptor referring to one of
+    the namespace entries in a /proc/[pid]/ns/pid.
+    fd1 for destination ns(ns1), where the pid came from.
+    fd2 for reference ns(ns2), while fd2 = -2 means for current ns.
+
+return value:
+    >0 : translated pid in ns1(fd1) seen from ns2(fd2).
+    <=0: on failure.
+
+Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
 ---
- drivers/spi/spi-sh-msiof.c | 43 +++++++++++++++++++++----------------------
- 1 file changed, 21 insertions(+), 22 deletions(-)
+v2: drop pidtype
+    check ns_ops before getting pid_namespace structure
 
-diff --git a/drivers/spi/spi-sh-msiof.c b/drivers/spi/spi-sh-msiof.c
-index 29dee0436a9a..ef831f1c1803 100644
---- a/drivers/spi/spi-sh-msiof.c
-+++ b/drivers/spi/spi-sh-msiof.c
-@@ -616,16 +616,17 @@ static int sh_msiof_transfer_one(struct spi_master *master,
- 	struct sh_msiof_spi_priv *p = spi_master_get_devdata(master);
- 	void (*tx_fifo)(struct sh_msiof_spi_priv *, const void *, int, int);
- 	void (*rx_fifo)(struct sh_msiof_spi_priv *, void *, int, int);
--	int bits;
--	int bytes_per_word;
--	int bytes_done;
--	int words;
-+	const void *tx_buf = t->tx_buf;
-+	void *rx_buf = t->rx_buf;
-+	unsigned int len = t->len;
-+	unsigned int bits = t->bits_per_word;
-+	unsigned int bytes_per_word;
-+	unsigned int words;
- 	int n;
- 	bool swab;
+ arch/x86/syscalls/syscall_32.tbl |  1 +
+ arch/x86/syscalls/syscall_64.tbl |  1 +
+ include/linux/syscalls.h         |  1 +
+ kernel/nsproxy.c                 | 45 ++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 48 insertions(+)
+
+diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
+index d6b8679..9de0b32 100644
+--- a/arch/x86/syscalls/syscall_32.tbl
++++ b/arch/x86/syscalls/syscall_32.tbl
+@@ -360,3 +360,4 @@
+ 351	i386	sched_setattr		sys_sched_setattr
+ 352	i386	sched_getattr		sys_sched_getattr
+ 353	i386	renameat2		sys_renameat2
++354	i386	getnspid		sys_getnspid
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index ec255a1..1630a8a 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -323,6 +323,7 @@
+ 314	common	sched_setattr		sys_sched_setattr
+ 315	common	sched_getattr		sys_sched_getattr
+ 316	common	renameat2		sys_renameat2
++317	common	getnspid		sys_getnspid
  
--	bits = t->bits_per_word;
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index b0881a0..53dd0e8 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -866,4 +866,5 @@ asmlinkage long sys_process_vm_writev(pid_t pid,
+ asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
+ 			 unsigned long idx1, unsigned long idx2);
+ asmlinkage long sys_finit_module(int fd, const char __user *uargs, int flags);
++asmlinkage long sys_getpidns(pid_t pid, int fd1, int fd2);
+ #endif
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index 8e78110..9701ade 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -261,6 +261,51 @@ out:
+ 	return err;
+ }
  
--	if (bits <= 8 && t->len > 15 && !(t->len & 3)) {
-+	if (bits <= 8 && len > 15 && !(len & 3)) {
- 		bits = 32;
- 		swab = true;
- 	} else {
-@@ -639,34 +640,34 @@ static int sh_msiof_transfer_one(struct spi_master *master,
- 		rx_fifo = sh_msiof_spi_read_fifo_8;
- 	} else if (bits <= 16) {
- 		bytes_per_word = 2;
--		if ((unsigned long)t->tx_buf & 0x01)
-+		if ((unsigned long)tx_buf & 0x01)
- 			tx_fifo = sh_msiof_spi_write_fifo_16u;
- 		else
- 			tx_fifo = sh_msiof_spi_write_fifo_16;
- 
--		if ((unsigned long)t->rx_buf & 0x01)
-+		if ((unsigned long)rx_buf & 0x01)
- 			rx_fifo = sh_msiof_spi_read_fifo_16u;
- 		else
- 			rx_fifo = sh_msiof_spi_read_fifo_16;
- 	} else if (swab) {
- 		bytes_per_word = 4;
--		if ((unsigned long)t->tx_buf & 0x03)
-+		if ((unsigned long)tx_buf & 0x03)
- 			tx_fifo = sh_msiof_spi_write_fifo_s32u;
- 		else
- 			tx_fifo = sh_msiof_spi_write_fifo_s32;
- 
--		if ((unsigned long)t->rx_buf & 0x03)
-+		if ((unsigned long)rx_buf & 0x03)
- 			rx_fifo = sh_msiof_spi_read_fifo_s32u;
- 		else
- 			rx_fifo = sh_msiof_spi_read_fifo_s32;
- 	} else {
- 		bytes_per_word = 4;
--		if ((unsigned long)t->tx_buf & 0x03)
-+		if ((unsigned long)tx_buf & 0x03)
- 			tx_fifo = sh_msiof_spi_write_fifo_32u;
- 		else
- 			tx_fifo = sh_msiof_spi_write_fifo_32;
- 
--		if ((unsigned long)t->rx_buf & 0x03)
-+		if ((unsigned long)rx_buf & 0x03)
- 			rx_fifo = sh_msiof_spi_read_fifo_32u;
- 		else
- 			rx_fifo = sh_msiof_spi_read_fifo_32;
-@@ -676,20 +677,18 @@ static int sh_msiof_transfer_one(struct spi_master *master,
- 	sh_msiof_spi_set_clk_regs(p, clk_get_rate(p->clk), t->speed_hz);
- 
- 	/* transfer in fifo sized chunks */
--	words = t->len / bytes_per_word;
--	bytes_done = 0;
--
--	while (bytes_done < t->len) {
--		void *rx_buf = t->rx_buf ? t->rx_buf + bytes_done : NULL;
--		const void *tx_buf = t->tx_buf ? t->tx_buf + bytes_done : NULL;
--		n = sh_msiof_spi_txrx_once(p, tx_fifo, rx_fifo,
--					   tx_buf,
--					   rx_buf,
-+	words = len / bytes_per_word;
++SYSCALL_DEFINE3(getnspid, pid_t, pid, int, fd1, int, fd2)
++{
++	struct file *file1 = NULL, *file2 = NULL;
++	struct pid *pid_struct;
++	struct pid_namespace *ns1, *ns2;
++	struct proc_ns *ei;
++	int ret = -EINVAL;
 +
-+	while (words > 0) {
-+		n = sh_msiof_spi_txrx_once(p, tx_fifo, rx_fifo, tx_buf, rx_buf,
- 					   words, bits);
- 		if (n < 0)
- 			return n;
- 
--		bytes_done += n * bytes_per_word;
-+		if (tx_buf)
-+			tx_buf += n * bytes_per_word;
-+		if (rx_buf)
-+			rx_buf += n * bytes_per_word;
- 		words -= n;
- 	}
- 
++	file1 = proc_ns_fget(fd1);
++	if (IS_ERR(file1))
++		return PTR_ERR(file1);
++	ei = get_proc_ns(file_inode(file1));
++	if (ei->ns_ops != &pidns_operations)
++		goto out;
++	ns1 = (struct pid_namespace *)ei->ns;
++
++	/* fd == -2 for current pid ns */
++	if (fd2 == -2) {
++		ns2 = task_active_pid_ns(current);
++	} else {
++		file2 = proc_ns_fget(fd2);
++		if (IS_ERR(file2)) {
++			fput(file1);
++			return PTR_ERR(file2);
++		}
++		ei = get_proc_ns(file_inode(file2));
++		if (ei->ns_ops != &pidns_operations)
++			goto out;
++		ns2 = (struct pid_namespace *)ei->ns;
++	}
++
++	pid_struct = find_pid_ns(pid, ns1);
++	if (!pid_struct) {
++		ret = -ESRCH;
++		goto out;
++	}
++
++	ret = pid_nr_ns(pid_struct, ns2);
++out:
++	fput(file1);
++	if (file2)
++		fput(file2);
++	return ret;
++}
++
+ int __init nsproxy_cache_init(void)
+ {
+ 	nsproxy_cachep = KMEM_CACHE(nsproxy, SLAB_PANIC);
 -- 
-1.9.1
+1.9.0
 
