@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967166AbaFTUZh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:25:37 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:35117 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457AbaFTUZg (ORCPT
+	id S934181AbaFTU2H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:28:07 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:64784 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933086AbaFTU2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 16:25:36 -0400
-Message-ID: <53A498B2.1000808@gmail.com>
-Date: Fri, 20 Jun 2014 16:25:22 -0400
-From: Ramesh Basukala <basukalaramesh@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 01/01] Drivers: Fixes coding style warning
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 20 Jun 2014 16:28:03 -0400
+Message-ID: <1403296080.16903.7.camel@x41>
+Subject: Re: [PATCH v5 01/15] thunderbolt: Add initial cactus ridge NHI
+ support
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Andreas Noever <andreas.noever@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>, Greg KH <greg@kroah.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Date: Fri, 20 Jun 2014 22:28:00 +0200
+In-Reply-To: <CAMxnaaXF4Rzg7=FA7FEJWbSvzk5HCjSbmPs57SYPye_hadiouw@mail.gmail.com>
+References: <1401825852-4745-1-git-send-email-andreas.noever@gmail.com>
+	 <1401825852-4745-2-git-send-email-andreas.noever@gmail.com>
+	 <1403250112.22857.7.camel@x220>
+	 <CAMxnaaXF4Rzg7=FA7FEJWbSvzk5HCjSbmPs57SYPye_hadiouw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Jun 2014 20:28:01.0167 (UTC) FILETIME=[219219F0:01CF8CC6]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-*
+Andreas,
 
-From: Ramesh Basukala <basukalaramesh@gmail.com>
+Andreas Noever schreef op vr 20-06-2014 om 21:45 [+0200]:
+> On Fri, Jun 20, 2014 at 9:41 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> > That should have been "default n". But "n" is the default anyway, so I'd
+> > say this line might as well be dropped. Should I draft the trivial patch
+> > to do that?
+> 
+> Not necessary. A patch has already been send.
+
+Good to hear!
+
+Thanks,
 
 
-Attached is a patch which fixes coding style warning message while 
-running checkpatch script.
+Paul Bolle
 
-
-This patch is currently against a linux 3.15.0-rc15-next kernel. I am 
-submitting this patch as a part of Eudyptula Challenge task.
-
-
-Signed-off-by: Ramesh Basukala <basukalaramesh@gmail.com>
-*---
-Signed-off-by: Ramesh Basukala <basukalaramesh@gmail.com>
---- xlr_net.c.original 2014-06-20 15:32:10.069732488 -0400
-+++ xlr_net.c 2014-06-20 15:35:06.841105038 -0400
-@@ -1105,6 +1105,7 @@ err_gmac:
-static int xlr_net_remove(struct platform_device *pdev)
-{
-struct xlr_net_priv *priv = platform_get_drvdata(pdev);
-+
-unregister_netdev(priv->ndev);
-mdiobus_unregister(priv->mii_bus);
-mdiobus_free(priv->mii_bus);
-**
