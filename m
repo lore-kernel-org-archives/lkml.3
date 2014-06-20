@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965500AbaFTUiD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:38:03 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60497 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757216AbaFTUiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 16:38:00 -0400
-Date: Fri, 20 Jun 2014 22:37:52 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [RFC][PATCH 3/3] x86: make MP  a required-feature on 64-bit
-Message-ID: <20140620203752.GN11391@pd.tnic>
-References: <20140620161736.D6AC16FD@viggo.jf.intel.com>
- <20140620161740.BFB00798@viggo.jf.intel.com>
- <53A46008.5060509@zytor.com>
- <53A4619C.8020100@sr71.net>
- <53A46365.6090101@zytor.com>
- <20140620174345.GD11391@pd.tnic>
- <53A47461.4050409@zytor.com>
- <20140620181518.GG11391@pd.tnic>
- <53A48411.6080602@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <53A48411.6080602@zytor.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S966591AbaFTUiH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:38:07 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:51314 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965677AbaFTUiE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 16:38:04 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsHADWbpFNXQzOZ/2dsb2JhbABZgw2rRwUBAQEBAQEFAZkqgQ4XdYQxLyOBGjeIRgHKLReFYokUHYQtBJpEk1qDRDs
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, "David S. Miller" <davem@davemloft.net>,
+        Grant Likely <grant.likely@linaro.org>, netdev@vger.kernel.org
+Subject: [PATCH 1/1] net/dsa/dsa.c: remove null test before kfree
+Date: Fri, 20 Jun 2014 22:36:47 +0200
+Message-Id: <1403296607-6065-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 11:57:21AM -0700, H. Peter Anvin wrote:
-> I actually have Linus' old dual-processor K7 sitting in my garage, but
-> $DEITY knows if it actually runs.
+Fix checkpatch warning:
+WARNING: kfree(NULL) is safe this check is probably not required
 
-Bah, bring it to the scrap yard so that you can free up some space.
-People have that computing power now in their pockets. :-)
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: netdev@vger.kernel.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ net/dsa/dsa.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
+diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
+index 5db37ce..0a49632 100644
+--- a/net/dsa/dsa.c
++++ b/net/dsa/dsa.c
+@@ -351,8 +351,7 @@ static void dsa_of_free_platform_data(struct dsa_platform_data *pd)
+ 	for (i = 0; i < pd->nr_chips; i++) {
+ 		port_index = 0;
+ 		while (port_index < DSA_MAX_PORTS) {
+-			if (pd->chip[i].port_names[port_index])
+-				kfree(pd->chip[i].port_names[port_index]);
++			kfree(pd->chip[i].port_names[port_index]);
+ 			port_index++;
+ 		}
+ 		kfree(pd->chip[i].rtable);
 -- 
-Regards/Gruss,
-    Boris.
+1.8.4.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
