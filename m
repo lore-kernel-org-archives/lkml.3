@@ -1,224 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757889AbaFTAbE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 20:31:04 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:47928 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752265AbaFTAbB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 20:31:01 -0400
-Message-ID: <53A380AD.3090307@gmail.com>
-Date: Fri, 20 Jun 2014 02:30:37 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>
-CC: jic23@kernel.org, ch.naveen@samsung.com, t.figa@samsung.com,
-        kgene.kim@samsung.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rdunlap@infradead.org, sachin.kamat@linaro.org,
-        linux-iio@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCHv4 2/4] iio: adc: exynos_adc: Control special clock of
- ADC to support Exynos3250 ADC
-References: <1403058061-24271-1-git-send-email-cw00.choi@samsung.com> <1403058061-24271-3-git-send-email-cw00.choi@samsung.com> <53A146A8.7050501@gmail.com> <53A37EDA.2030403@samsung.com> <53A37F34.1010808@gmail.com> <53A38016.1000308@samsung.com>
-In-Reply-To: <53A38016.1000308@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932770AbaFTAfj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 20:35:39 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:53093
+	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752265AbaFTAfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 20:35:37 -0400
+x-originating-ip: 72.167.245.219
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: [PATCH net-next] hyperv: Add handler for RNDIS_STATUS_NETWORK_CHANGE event
+Date: Thu, 19 Jun 2014 18:34:36 -0700
+Message-Id: <1403228076-7596-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.06.2014 02:28, Chanwoo Choi wrote:
-> On 06/20/2014 09:24 AM, Tomasz Figa wrote:
->> On 20.06.2014 02:22, Chanwoo Choi wrote:
->>> Hi Tomasz,
->>>
->>> On 06/18/2014 04:58 PM, Tomasz Figa wrote:
->>>> Hi Chanwoo,
->>>>
->>>> On 18.06.2014 04:20, Chanwoo Choi wrote:
->>>>> This patch control special clock for ADC in Exynos series's FSYS block.
->>>>> If special clock of ADC is registerd on clock list of common clk framework,
->>>>> Exynos ADC drvier have to control this clock.
->>>>>
->>>>> Exynos3250/Exynos4/Exynos5 has 'adc' clock as following:
->>>>> - 'adc' clock: bus clock for ADC
->>>>>
->>>>> Exynos3250 has additional 'sclk_adc' clock as following:
->>>>> - 'sclk_adc' clock: special clock for ADC which provide clock to internal ADC
->>>>>
->>>>> Exynos 4210/4212/4412 and Exynos5250/5420 has not included 'sclk_adc' clock
->>>>> in FSYS_BLK. But, Exynos3250 based on Cortex-A7 has only included 'sclk_adc'
->>>>> clock in FSYS_BLK.
->>>>>
->>>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->>>>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->>>>> ---
->>>>>  drivers/iio/adc/exynos_adc.c | 93 ++++++++++++++++++++++++++++++++++++++------
->>>>>  1 file changed, 81 insertions(+), 12 deletions(-)
->>>>>
->>>>> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
->>>>> index c30def6..6b026ac 100644
->>>>> --- a/drivers/iio/adc/exynos_adc.c
->>>>> +++ b/drivers/iio/adc/exynos_adc.c
->>>>> @@ -41,7 +41,8 @@
->>>>>  
->>>>>  enum adc_version {
->>>>>  	ADC_V1,
->>>>> -	ADC_V2
->>>>> +	ADC_V2,
->>>>> +	ADC_V2_EXYNOS3250,
->>>>>  };
->>>>>  
->>>>>  /* EXYNOS4412/5250 ADC_V1 registers definitions */
->>>>> @@ -85,9 +86,11 @@ enum adc_version {
->>>>>  #define EXYNOS_ADC_TIMEOUT	(msecs_to_jiffies(100))
->>>>>  
->>>>>  struct exynos_adc {
->>>>> +	struct device		*dev;
->>>>>  	void __iomem		*regs;
->>>>>  	void __iomem		*enable_reg;
->>>>>  	struct clk		*clk;
->>>>> +	struct clk		*sclk;
->>>>>  	unsigned int		irq;
->>>>>  	struct regulator	*vdd;
->>>>>  	struct exynos_adc_ops	*ops;
->>>>> @@ -96,6 +99,7 @@ struct exynos_adc {
->>>>>  
->>>>>  	u32			value;
->>>>>  	unsigned int            version;
->>>>> +	bool			needs_sclk;
->>>>
->>>> This should be rather a part of the variant struct. See my comments to
->>>> patch 1/4.
->>>
->>> OK, I'll include 'needs_sclk' in "variant" structure.
->>>
->>>>
->>>>>  };
->>>>>  
->>>>>  struct exynos_adc_ops {
->>>>> @@ -103,11 +107,21 @@ struct exynos_adc_ops {
->>>>>  	void (*clear_irq)(struct exynos_adc *info);
->>>>>  	void (*start_conv)(struct exynos_adc *info, unsigned long addr);
->>>>>  	void (*stop_conv)(struct exynos_adc *info);
->>>>> +	void (*disable_clk)(struct exynos_adc *info);
->>>>> +	int (*enable_clk)(struct exynos_adc *info);
->>>>>  };
->>>>>  
->>>>>  static const struct of_device_id exynos_adc_match[] = {
->>>>> -	{ .compatible = "samsung,exynos-adc-v1", .data = (void *)ADC_V1 },
->>>>> -	{ .compatible = "samsung,exynos-adc-v2", .data = (void *)ADC_V2 },
->>>>> +	{
->>>>> +		.compatible = "samsung,exynos-adc-v1",
->>>>> +		.data = (void *)ADC_V1,
->>>>> +	}, {
->>>>> +		.compatible = "samsung,exynos-adc-v2",
->>>>> +		.data = (void *)ADC_V2,
->>>>> +	}, {
->>>>> +		.compatible = "samsung,exynos3250-adc-v2",
->>>>> +		.data = (void *)ADC_V2_EXYNOS3250,
->>>>> +	},
->>>>>  	{},
->>>>>  };
->>>>>  MODULE_DEVICE_TABLE(of, exynos_adc_match);
->>>>> @@ -156,11 +170,42 @@ static void exynos_adc_v1_stop_conv(struct exynos_adc *info)
->>>>>  	writel(con, ADC_V1_CON(info->regs));
->>>>>  }
->>>>>  
->>>>> +static void exynos_adc_disable_clk(struct exynos_adc *info)
->>>>> +{
->>>>> +	if (info->needs_sclk)
->>>>> +		clk_disable_unprepare(info->sclk);
->>>>> +	clk_disable_unprepare(info->clk);
->>>>> +}
->>>>> +
->>>>> +static int exynos_adc_enable_clk(struct exynos_adc *info)
->>>>> +{
->>>>> +	int ret;
->>>>> +
->>>>> +	ret = clk_prepare_enable(info->clk);
->>>>> +	if (ret) {
->>>>> +		dev_err(info->dev, "failed enabling adc clock: %d\n", ret);
->>>>> +		return ret;
->>>>> +	}
->>>>> +
->>>>> +	if (info->needs_sclk) {
->>>>> +		ret = clk_prepare_enable(info->sclk);
->>>>> +		if (ret) {
->>>>> +			clk_disable_unprepare(info->clk);
->>>>> +			dev_err(info->dev,
->>>>> +				"failed enabling sclk_tsadc clock: %d\n", ret);
->>>>> +		}
->>>>> +	}
->>>>> +
->>>>> +	return 0;
->>>>> +}
->>>>> +
->>>>>  static struct exynos_adc_ops exynos_adc_v1_ops = {
->>>>>  	.init_hw	= exynos_adc_v1_init_hw,
->>>>>  	.clear_irq	= exynos_adc_v1_clear_irq,
->>>>>  	.start_conv	= exynos_adc_v1_start_conv,
->>>>>  	.stop_conv	= exynos_adc_v1_stop_conv,
->>>>> +	.disable_clk	= exynos_adc_disable_clk,
->>>>> +	.enable_clk	= exynos_adc_enable_clk,
->>>>>  };
->>>>>  
->>>>>  static void exynos_adc_v2_init_hw(struct exynos_adc *info)
->>>>> @@ -210,6 +255,8 @@ static struct exynos_adc_ops exynos_adc_v2_ops = {
->>>>>  	.start_conv	= exynos_adc_v2_start_conv,
->>>>>  	.clear_irq	= exynos_adc_v2_clear_irq,
->>>>>  	.stop_conv	= exynos_adc_v2_stop_conv,
->>>>> +	.disable_clk	= exynos_adc_disable_clk,
->>>>> +	.enable_clk	= exynos_adc_enable_clk,
->>>>
->>>> Based on the fact that all variants use the same function, I don't think
->>>> there is a reason to add .{disable,enable}_clk in the ops struct. If
->>>> they diverge in future, they could be added later, but right now it
->>>> doesn't have any value.
->>>
->>> OK, I'll not add .{disable,enable}_clk and then just use following functions for clock control:
->>> - exynos_adc_prepare_clk() : once execute this function in _probe()
->>> - exynos_adc_unprepare_clk() : once execute this function in _remove()
->>> - exynos_adc_enable_clk()
->>> - exynos_adc_disable_clk()
->>
->> Is there any need to separate prepare/unprepare from enable/disable?
->> Otherwise sounds good, thanks.
-> 
-> Naveen Krishna Chatradhi want to execute once prepare/unpreare in probe/remove function.
-> 
-> - Following comment of Naveen Krishna Chatradhi
->> +static void exynos_adc_disable_clk(struct exynos_adc *info)
->> +{
->> +       if (info->needs_sclk)
->> +               clk_disable_unprepare(info->sclk);
->> +       clk_disable_unprepare(info->clk);
-> 
-> (Just a nit pick) As a part of cleanup can we also change to use
-> clk_disable() here and clk_unprepare() once and for all at the end.
-> 
->> +}
->> +
->> +static int exynos_adc_enable_clk(struct exynos_adc *info)
->> +{
->> +       int ret;
->> +
->> +       ret = clk_prepare_enable(info->clk);
->> +       if (ret) {
->> +               dev_err(info->dev, "failed enabling adc clock: %d\n", ret);
->> +               return ret;
->> +       }
->> +
->> +       if (info->needs_sclk) {
->> +               ret = clk_prepare_enable(info->sclk);
-> Can we use clk_enable() here and clk_prepare() some where during the probe.
+The RNDIS_STATUS_NETWORK_CHANGE event is received after the Hyper-V host
+sleep or hibernation. We refresh network at this time.
+MS-TFS: 135162
 
-I still don't see any reason to do it. Naveen, what's the motivation for
-this change? For me, it only complicates the code, without any added value.
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
 
-Best regards,
-Tomasz
+---
+ drivers/net/hyperv/hyperv_net.h   |    3 ++-
+ drivers/net/hyperv/netvsc_drv.c   |   30 ++++++++++++++++++++++++++----
+ drivers/net/hyperv/rndis_filter.c |   21 +--------------------
+ include/linux/rndis.h             |    1 +
+ 4 files changed, 30 insertions(+), 25 deletions(-)
+
+diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
+index 6cc37c1..24441ae 100644
+--- a/drivers/net/hyperv/hyperv_net.h
++++ b/drivers/net/hyperv/hyperv_net.h
+@@ -170,6 +170,7 @@ struct rndis_device {
+ 
+ 	enum rndis_device_state state;
+ 	bool link_state;
++	bool link_change;
+ 	atomic_t new_req_id;
+ 
+ 	spinlock_t request_lock;
+@@ -185,7 +186,7 @@ int netvsc_device_remove(struct hv_device *device);
+ int netvsc_send(struct hv_device *device,
+ 		struct hv_netvsc_packet *packet);
+ void netvsc_linkstatus_callback(struct hv_device *device_obj,
+-				unsigned int status);
++				struct rndis_message *resp);
+ int netvsc_recv_callback(struct hv_device *device_obj,
+ 			struct hv_netvsc_packet *packet,
+ 			struct ndis_tcp_ip_checksum_info *csum_info);
+diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+index 4fd71b7..9b27ca8 100644
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -579,8 +579,9 @@ drop:
+  * netvsc_linkstatus_callback - Link up/down notification
+  */
+ void netvsc_linkstatus_callback(struct hv_device *device_obj,
+-				       unsigned int status)
++				struct rndis_message *resp)
+ {
++	struct rndis_indicate_status *indicate = &resp->msg.indicate_status;
+ 	struct net_device *net;
+ 	struct net_device_context *ndev_ctx;
+ 	struct netvsc_device *net_device;
+@@ -589,7 +590,19 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
+ 	net_device = hv_get_drvdata(device_obj);
+ 	rdev = net_device->extension;
+ 
+-	rdev->link_state = status != 1;
++	switch (indicate->status) {
++	case RNDIS_STATUS_MEDIA_CONNECT:
++		rdev->link_state = false;
++		break;
++	case RNDIS_STATUS_MEDIA_DISCONNECT:
++		rdev->link_state = true;
++		break;
++	case RNDIS_STATUS_NETWORK_CHANGE:
++		rdev->link_change = true;
++		break;
++	default:
++		return;
++	}
+ 
+ 	net = net_device->ndev;
+ 
+@@ -597,7 +610,7 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
+ 		return;
+ 
+ 	ndev_ctx = netdev_priv(net);
+-	if (status == 1) {
++	if (!rdev->link_state) {
+ 		schedule_delayed_work(&ndev_ctx->dwork, 0);
+ 		schedule_delayed_work(&ndev_ctx->dwork, msecs_to_jiffies(20));
+ 	} else {
+@@ -767,7 +780,9 @@ static void netvsc_link_change(struct work_struct *w)
+ 	struct net_device *net;
+ 	struct netvsc_device *net_device;
+ 	struct rndis_device *rdev;
+-	bool notify;
++	bool notify, refresh = false;
++	char *argv[] = { "/etc/init.d/network", "restart", NULL };
++	char *envp[] = { "HOME=/", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
+ 
+ 	rtnl_lock();
+ 
+@@ -782,10 +797,17 @@ static void netvsc_link_change(struct work_struct *w)
+ 	} else {
+ 		netif_carrier_on(net);
+ 		notify = true;
++		if (rdev->link_change) {
++			rdev->link_change = false;
++			refresh = true;
++		}
+ 	}
+ 
+ 	rtnl_unlock();
+ 
++	if (refresh)
++		call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
++
+ 	if (notify)
+ 		netdev_notify_peers(net);
+ }
+diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
+index 99c527a..2b86f0b 100644
+--- a/drivers/net/hyperv/rndis_filter.c
++++ b/drivers/net/hyperv/rndis_filter.c
+@@ -320,25 +320,6 @@ static void rndis_filter_receive_response(struct rndis_device *dev,
+ 	}
+ }
+ 
+-static void rndis_filter_receive_indicate_status(struct rndis_device *dev,
+-					     struct rndis_message *resp)
+-{
+-	struct rndis_indicate_status *indicate =
+-			&resp->msg.indicate_status;
+-
+-	if (indicate->status == RNDIS_STATUS_MEDIA_CONNECT) {
+-		netvsc_linkstatus_callback(
+-			dev->net_dev->dev, 1);
+-	} else if (indicate->status == RNDIS_STATUS_MEDIA_DISCONNECT) {
+-		netvsc_linkstatus_callback(
+-			dev->net_dev->dev, 0);
+-	} else {
+-		/*
+-		 * TODO:
+-		 */
+-	}
+-}
+-
+ /*
+  * Get the Per-Packet-Info with the specified type
+  * return NULL if not found.
+@@ -464,7 +445,7 @@ int rndis_filter_receive(struct hv_device *dev,
+ 
+ 	case RNDIS_MSG_INDICATE:
+ 		/* notification msgs */
+-		rndis_filter_receive_indicate_status(rndis_dev, rndis_msg);
++		netvsc_linkstatus_callback(dev, rndis_msg);
+ 		break;
+ 	default:
+ 		netdev_err(ndev,
+diff --git a/include/linux/rndis.h b/include/linux/rndis.h
+index 0c8dc71..93c0a64 100644
+--- a/include/linux/rndis.h
++++ b/include/linux/rndis.h
+@@ -65,6 +65,7 @@
+ #define	RNDIS_STATUS_MEDIA_SPECIFIC_INDICATION	0x40010012
+ #define RNDIS_STATUS_WW_INDICATION		RDIA_SPECIFIC_INDICATION
+ #define RNDIS_STATUS_LINK_SPEED_CHANGE		0x40010013L
++#define RNDIS_STATUS_NETWORK_CHANGE		0x40010018
+ 
+ #define RNDIS_STATUS_NOT_RESETTABLE		0x80010001
+ #define RNDIS_STATUS_SOFT_ERRORS		0x80010003
+-- 
+1.7.4.1
+
