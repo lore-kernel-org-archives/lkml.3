@@ -1,97 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965079AbaFTQKp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 12:10:45 -0400
-Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.25]:38170 "EHLO
-	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753321AbaFTQKn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 12:10:43 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Greg KH <greg@kroah.com>, Olaf Hering <olaf@aepfle.de>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: RE: [PATCH net-next] hyperv: Add handler for
- RNDIS_STATUS_NETWORK_CHANGE event
-Thread-Topic: [PATCH net-next] hyperv: Add handler for
- RNDIS_STATUS_NETWORK_CHANGE event
-Thread-Index: AQHPjB+WQKkwvkUXekGWoyJ+QmEz5Zt55UEAgAAEPICAADyUMA==
-Date: Fri, 20 Jun 2014 16:09:49 +0000
-Message-ID: <ff458d1b896d4a70a32fa7709911274c@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-References: <1403228076-7596-1-git-send-email-haiyangz@microsoft.com>
- <20140620045704.GA4850@aepfle.de> <20140620051213.GA9960@kroah.com>
-In-Reply-To: <20140620051213.GA9960@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756734AbaFTQLm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 12:11:42 -0400
+Received: from mail.kernel.org ([198.145.19.201]:43924 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754082AbaFTQLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 12:11:41 -0400
+Date: Fri, 20 Jun 2014 13:11:32 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        dsahern@gmail.com, jolsa@redhat.com, xiaoguangrong@linux.vnet.ibm.com,
+        yangds.fnst@cn.fujitsu.com, adrian.hunter@intel.com,
+        namhyung@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7] perf trace: add support for pagefault tracing
+Message-ID: <20140620161132.GJ31524@kernel.org>
+References: <1403261389-13423-1-git-send-email-stfomichev@yandex-team.ru>
+ <1403261389-13423-3-git-send-email-stfomichev@yandex-team.ru>
+ <20140620145955.GG31524@kernel.org>
+ <20140620154901.GM15620@stfomichev-desktop.yandex.net>
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.159.99;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(13464003)(377454003)(189002)(199002)(51704005)(24454002)(164054003)(21056001)(77982001)(79102001)(64706001)(76482001)(33646001)(47776003)(20776003)(92566001)(97756001)(97736001)(46102001)(46406003)(85326001)(2009001)(31966008)(81542001)(2656002)(74662001)(99396002)(74502001)(87936001)(86612001)(80022001)(66066001)(83072002)(85852003)(106116001)(6806004)(76176999)(50986999)(77096999)(54356999)(50466002)(81342001)(68736004)(23726002)(83322001)(19580405001)(4396001)(19580395003)(84676001)(44976005)(24736002)(106276001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2SR01MB596;H:hybrid.exchange.microsoft.com;FPR:;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 024847EE92
-X-OriginatorOrg: msft.ccsctp.net
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140620154901.GM15620@stfomichev-desktop.yandex.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Friday, June 20, 2014 1:12 AM
-> To: Olaf Hering
-> Cc: Haiyang Zhang; netdev@vger.kernel.org; jasowang@redhat.com;
-> driverdev-devel@linuxdriverproject.org; linux-kernel@vger.kernel.org;
-> davem@davemloft.net
-> Subject: Re: [PATCH net-next] hyperv: Add handler for
-> RNDIS_STATUS_NETWORK_CHANGE event
+Em Fri, Jun 20, 2014 at 07:49:01PM +0400, Stanislav Fomichev escreveu:
+> > > 1756272.905 ( 0.000 ms): curl/5937 majfault [0x7fa7261978b6] => /usr/lib/x86_64-linux-gnu/libkrb5.so.26.0.0+0x85288 (d.)
+> > 
+> > Things like the above may be better expressed using dso@symbol+offset,
+> > even more when the symbol is not resolved within a DSO, due to
+> > insufficient expressivity in the available symtab, i.e. perhaps the user
+> > needs to install a debuginfo package.
+> Currently, the format is:
+> <header> <min|maj>fault [ip.symbol+ip.offset] => addr.dso+addr.offset (<mmap_type><addr.level>)
 > 
-> On Fri, Jun 20, 2014 at 06:57:04AM +0200, Olaf Hering wrote:
-> > On Thu, Jun 19, Haiyang Zhang wrote:
-> >
-> > > The RNDIS_STATUS_NETWORK_CHANGE event is received after the Hyper-V
-> host
-> > > sleep or hibernation. We refresh network at this time.
-> >
-> > > +	char *argv[] = { "/etc/init.d/network", "restart", NULL };
-> >
-> > What happens if that file does not exist? Dead network in the guest?
-> > I tend to think if a VM with PV drivers goes to sleep it has to go
-> > through the whole suspend/resume cycle, very much like the "LID
-> closed"
-> > event. So I think this and the other fbdev change that is floating
-> > around is wrong.
+> if no symbol found for IP, we have:
+> <header> <min|maj>fault [ip.addr] => addr.dso+addr.offset (<mmap_type><addr.level>)
 > 
-> Ah, and what about systems with no /etc/init.d/ at all (like
-> systemd-based ones)?  You can't have a kernel driver ask userspace to
-> restart all networking connections, that seems really wrong.
+> mmap_type is d - for data, x - for executable vmas.
+> 
+> I think we may try to print [ip.dso+ip.offset] if we can't resolve ip symbol,
+> but I don't want dso@symbol+offset because if we have symbol, dso is
+> probably (?) redundant (ok, at least for me).
 
-Olaf and Greg,
+Well, I don't think it is :-)
 
-Thanks for your reviews. 
-On Server Hyper-V, the host sleep/hibernation is not supported. So this 
-event won't happen on most deployment of Hyper-V.
+dso->short_name should disambiguate 99.9% of the cases tho. Perhaps we
+can use --verbose, as in other places, to switch using dso->long_name,
+for cases where multiple versions of a library are used, some in non
+standard paths, which sometimes puzzles people looking at the tools
+output.
 
-On Client Hyper-V (e.g. Windows 8+ on a laptop), the host sleep/hibernation
-is supported. If the laptop is moved to another network during sleep, we 
-previously need to manually refresh the network (network restart) to renew 
-DHCP. With this patch, the network is refreshed on the event.
+> It also seems we don't need to resolve symbol of pagefault address
 
-This command ("/etc/init.d/network restart") exists on our supported distros
-currently. We will also look into some better ways to refresh the network for
-the distros without this command. I have tried setting IF_OPER_DORMANT then 
-IF_OPER_UP, but not working. I will look into the suspend/resume cycle as
-well.
+Well, in some cases if we can resolve to a variable, why not?
 
-Thanks,
-- Haiyang
+> because it's either some code or some address on the heap. Dso is enough.
 
+> > > 1862866.036 ( 0.000 ms): wget/8460 majfault [__clear_user+0x3f] => 0x659cb4 (?k)
 
+> > And here, where is this __clear_user symbol from? The kernel? Probaly
+> > that 'k' there means that? If so, probably that deserves an entry in the
+> > documentation.
+
+> Yes, k or . describes symbol 'level'.
+ 
+> > WRT documentation, please consider sending followup patches providing
+> > examples in the documentation, talking about the possible need of
+> > installing debuginfo packages as well.
+> I didn't put much effort into documentation because I just wanted to get
+> initial feedback. Will follow.
+
+Ok, but I think its good practice, as much as it is seldom done because
+it is boring, to do it exactly when doing the matching feature. Doing it
+judiciously may even help the person implementing to think about what is
+being done more thoroughly which sometimes leads to problems being
+solved at an early stage 8-)
+ 
+> > But its shaping up nicely, good work!
+> Thanks.
+
+- Arnaldo
