@@ -1,63 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935099AbaFTRRp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 13:17:45 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:24411 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756835AbaFTRRo (ORCPT
+	id S935157AbaFTRSe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 13:18:34 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35915 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935118AbaFTRSc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 13:17:44 -0400
-Date: Fri, 20 Jun 2014 13:17:36 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [RFC][PATCH 1/3] trace_seq: Move the trace_seq code to lib/
-Message-ID: <20140620131736.192cc072@gandalf.local.home>
-In-Reply-To: <20140620101244.a1f4534e.akpm@linux-foundation.org>
-References: <20140619213329.478113470@goodmis.org>
-	<20140619213952.058255809@goodmis.org>
-	<20140619220607.c6da2540.akpm@linux-foundation.org>
-	<20140620125823.5acb12dd@gandalf.local.home>
-	<20140620101244.a1f4534e.akpm@linux-foundation.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Fri, 20 Jun 2014 13:18:32 -0400
+Message-ID: <53A46CB7.1030109@ti.com>
+Date: Fri, 20 Jun 2014 13:17:43 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Rob Herring <robherring2@gmail.com>
+CC: Rob Herring <robh+dt@kernel.org>, Fabio Estevam <festevam@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Shawn Guo <shawn.guo@freescale.com>, Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] dt/documentation: add specification of dma bus information
+References: <1401981720-6946-1-git-send-email-santosh.shilimkar@ti.com> <CAOMZO5Ceg9RpC8Lgt0BwGTuaz-Z2614Die2PrbtT_j4QYjL_sA@mail.gmail.com> <5395BDA7.3060507@ti.com> <53A44D73.6080200@ti.com> <CAL_JsqJAtWnHKPVpDsdOOzT_X=npc3hroLNTGqULM2SJr=1OEg@mail.gmail.com>
+In-Reply-To: <CAL_JsqJAtWnHKPVpDsdOOzT_X=npc3hroLNTGqULM2SJr=1OEg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jun 2014 10:12:44 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
-
-
-> > Comment? What? Git blame isn't good enough for ya? ;-)
+On Friday 20 June 2014 11:50 AM, Rob Herring wrote:
+> On Fri, Jun 20, 2014 at 10:04 AM, Santosh Shilimkar
+> <santosh.shilimkar@ti.com> wrote:
+>> On Monday 09 June 2014 09:59 AM, Santosh Shilimkar wrote:
+>>> On Sunday 08 June 2014 10:13 PM, Fabio Estevam wrote:
+>>>> On Thu, Jun 5, 2014 at 12:22 PM, Santosh Shilimkar
+>>>> <santosh.shilimkar@ti.com> wrote:
+>>>>> Recently we introduced the generic device tree infrastructure for couple of DMA
+>>>>> bus parameter, dma-ranges and dma-coherent. Update the documentation so that
+>>>>> its useful for future users.
+>>>>>
+>>>>> The "dma-ranges" property is intended to be used for describing the
+>>>>> configuration of DMA bus RAM addresses and its offset w.r.t CPU addresses.
+>>>>>
+>>>>> The "dma-coherent" property is intended to be used for identifying devices
+>>>>> supported coherent DMA operations.
+>>>>>
+>>>>> Cc: Arnd Bergmann <arnd@arndb.de>
+>>>>> Cc: Grant Likely <grant.likely@linaro.org>
+>>>>> Cc: Rob Herring <robh+dt@kernel.org>
+>>>>> Cc: Pawel Moll <pawel.moll@arm.com>
+>>>>> Cc: Mark Rutland <mark.rutland@arm.com>
+>>>>> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+>>>>> Cc: Shawn Guo <shawn.guo@freescale.com>
+>>>>> Cc: Kumar Gala <galak@codeaurora.org>
+>>>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>>>>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>>>> ---
+>>>>>  Documentation/devicetree/booting-without-of.txt |   60 +++++++++++++++++++++++
+>>>>>  1 file changed, 60 insertions(+)
+>>>>>
+>>>>> diff --git a/Documentation/devicetree/booting-without-of.txt b/Documentation/devicetree/booting-without-of.txt
+>>>>> index 1f013bd..f0120c1 100644
+>>>>> --- a/Documentation/devicetree/booting-without-of.txt
+>>>>> +++ b/Documentation/devicetree/booting-without-of.txt
+>>>>> @@ -51,6 +51,8 @@ Table of Contents
+>>>>>
+>>>>>    VIII - Specifying device power management information (sleep property)
+>>>>>
+>>>>> +  VIV - Specifying dma bus information
+>>>>
+>>>> "9" in Roman numeral is "IX"
+>>>>
+>>> Yeah.. Not sure what I was thinking...
+>>>
+>> Updated patch end of the email with the typo fixed.
+>>
+>> Rob,
+>> Can you please pick this up if you are ok with the it.
+>>
+>> Regards,
+>> Santosh
+>>
+>> From b72e949a194d766fe029fe6bb5939467f2fbe9b9 Mon Sep 17 00:00:00 2001
+>> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Date: Fri, 20 Jun 2014 11:01:54 -0400
+>> Subject: [PATCH] dt/documentation: add specification of dma bus information
+>>
+>> Recently we introduced the generic device tree infrastructure for couple of DMA
+>> bus parameter, dma-ranges and dma-coherent. Update the documentation so that
+>> its useful for future users.
+>>
+>> The "dma-ranges" property is intended to be used for describing the
+>> configuration of DMA bus RAM addresses and its offset w.r.t CPU addresses.
+>>
+>> The "dma-coherent" property is intended to be used for identifying devices
+>> supported coherent DMA operations.
+>>
+>> Cc: Arnd Bergmann <arnd@arndb.de>
+>> Cc: Grant Likely <grant.likely@linaro.org>
+>> Cc: Rob Herring <robh+dt@kernel.org>
+>> Cc: Pawel Moll <pawel.moll@arm.com>
+>> Cc: Mark Rutland <mark.rutland@arm.com>
+>> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+>> Cc: Kumar Gala <galak@codeaurora.org>
+>> Acked-by: Shawn Guo <shawn.guo@freescale.com>
+>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> ---
+>>  Documentation/devicetree/booting-without-of.txt |   60 +++++++++++++++++++++++
+>>  1 file changed, 60 insertions(+)
+>>
+>> diff --git a/Documentation/devicetree/booting-without-of.txt b/Documentation/devicetree/booting-without-of.txt
+>> index 1f013bd..0b0928c 100644
+>> --- a/Documentation/devicetree/booting-without-of.txt
+>> +++ b/Documentation/devicetree/booting-without-of.txt
+>> @@ -51,6 +51,8 @@ Table of Contents
+>>
+>>    VIII - Specifying device power management information (sleep property)
+>>
+>> +  IX - Specifying dma bus information
+>> +
+>>    Appendix A - Sample SOC node for MPC8540
+>>
+>>
+>> @@ -1332,6 +1334,64 @@ reasonably grouped in this manner, then create a virtual sleep controller
+>>  (similar to an interrupt nexus, except that defining a standardized
+>>  sleep-map should wait until its necessity is demonstrated).
+>>
+>> +IX - Specifying dma bus information
+>> +
+>> +Some devices may have DMA memory range shifted relatively to the beginning of
+>> +RAM, or even placed outside of kernel RAM. For example, the Keystone 2 SoC
+>> +worked in LPAE mode with 4G memory has:
+>> +- RAM range: [0x8 0000 0000, 0x8 FFFF FFFF]
+>> +- DMA range: [  0x8000 0000,   0xFFFF FFFF]
+>> +and DMA range is aliased into first 2G of RAM in HW.
+>> +
+>> +In such cases, DMA addresses translation should be performed between CPU phys
+>> +and DMA addresses. The "dma-ranges" property is intended to be used
+>> +for describing the configuration of such system in DT.
+>> +
+>> +In addition, each DMA master device on the DMA bus may or may not support
+>> +coherent DMA operations. The "dma-coherent" property is intended to be used
+>> +for identifying devices supported coherent DMA operations in DT.
+>> +
+>> +* DMA Bus master
+>> +Optional property:
+>> +- dma-ranges: <prop-encoded-array> encoded as arbitrary number of triplets of
+>> +       (child-bus-address, parent-bus-address, length). Each triplet specified
+>> +       describes a contiguous DMA address range.
+>> +       The dma-ranges property is used to describe the direct memory access (DMA)
+>> +       structure of a memory-mapped bus whose device tree parent can be accessed
+>> +       from DMA operations originating from the bus. It provides a means of
+>> +       defining a mapping or translation between the physical address space of
+>> +       the bus and the physical address space of the parent of the bus.
+>> +       (for more information see ePAPR specification)
+>> +
+>> +* DMA Bus child
+>> +Optional property:
+>> +- dma-ranges: <empty> value. if present - It means that DMA addresses
+>> +       translation has to be enabled for this device.
+>> +- dma-coherent: Present if dma operations are coherent
+>> +
+>> +Example:
+>> +soc {
+>> +               compatible = "ti,keystone","simple-bus";
+>> +               ranges = <0x0 0x0 0x0 0xc0000000>;
+>> +               dma-ranges = <0x80000000 0x8 0x00000000 0x80000000>;
+>> +
+>> +               [...]
+>> +
+>> +               usb: usb@2680000 {
+>> +                       compatible = "ti,keystone-dwc3";
+>> +
+>> +                       [...]
+>> +
+>> +                       dma-coherent;
+>> +                       dma-ranges;
+>> +
+>> +                       dwc3@2690000 {
+>> +                               compatible = "synopsys,dwc3";
+>> +                               [...]
+>> +                       };
 > 
-> There's always that.  There's also googling for the original list
-> dicsussion.  But it's a bit user-unfriendly, particularly when then
-> code has aged was subsequently altered many times.
-
-I was replying mostly in jest as that was what I did to remember why we
-added it.
-
+> This example is a bit strange. I don't understand the relationship
+> between keystone-dwc3 and synopsys,dwc3, nor do I want to. I'd prefer
+> to see a simple example here.
 > 
-> >
-> > ...
-> >
-> > 
-> > Hey! Thanks for the review. Much appreciated. And maybe you should read
-> > those messages in your /dev/null folder that I cc you with. :-)
+OK. Will do.
+
+> dma-ranges is a property of the parent which you show, but
+> dma-coherent originally was a property of the bus master itself. While
+> we need to support that, are we changing that? We need to be clear on
+> where the property belongs even if the kernel is more lax.
 > 
-> I sometimes do.
+I don't think we are changing it fundamentally but may be I missing
+your point. The dma-coherent as is now a per-device property.
+USB is one of the bus master supports coherency and hence showed
+up in above example.
 
-Ah, the lurker.
+Regards,
+Santosh
 
--- Steve
+
+
