@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965702AbaFTIkR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 04:40:17 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42722 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934822AbaFTIkP (ORCPT
+	id S966074AbaFTIkh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 04:40:37 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:46567 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965748AbaFTIke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 04:40:15 -0400
-Date: Fri, 20 Jun 2014 09:39:47 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Neil Zhang <zhangwm@marvell.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm64: add the ability to hook the fault code
-Message-ID: <20140620083946.GF25104@arm.com>
-References: <1403175296-25181-1-git-send-email-zhangwm@marvell.com>
- <20140620082556.GD25104@arm.com>
- <9034CBD80F070943B59700D7F8149ED90182148D02@SC-VEXCH4.marvell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <9034CBD80F070943B59700D7F8149ED90182148D02@SC-VEXCH4.marvell.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 20 Jun 2014 04:40:34 -0400
+From: pramod.gurav.etc@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: Pramod Gurav <pramod.gurav.etc@gmail.com>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        Brian Swetland <swetland@google.com>
+Subject: [PATCH] staging: alarm-dev: Set the license to GPL
+Date: Fri, 20 Jun 2014 14:13:59 +0530
+Message-Id: <1403253839-30923-1-git-send-email-pramod.gurav.etc@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 09:33:59AM +0100, Neil Zhang wrote:
-> 
-> > -----Original Message-----
-> > From: Will Deacon [mailto:will.deacon@arm.com]
-> > Sent: 2014年6月20日 16:26
-> > To: Neil Zhang
-> > Cc: Catalin Marinas; linux-arm-kernel@lists.infradead.org;
-> > linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH] arm64: add the ability to hook the fault code
-> > 
-> > On Thu, Jun 19, 2014 at 11:54:56AM +0100, Neil Zhang wrote:
-> > > Add the ability to hook the fault code for future use.
-> > 
-> > Do you have a user for this in the kernel tree? I'd rather add the hook with
-> > the first user, if it doesn't exist already.
-> > 
-> 
-> Marvell Soc has a feature to use the external abort.
-> I didn't submit it since it's a private feature.
+From: Pramod Gurav <pramod.gurav.etc@gmail.com>
 
-In which case, let's wait until we have a user of this in the mainline tree.
+Adding "GPL" license to fix a warning while compiling as
+module.
 
-Will
+CC: Greg Kroah-Hartman <greg@kroah.com>
+CC: Brian Swetland <swetland@google.com>
+Signed-off-by: Pramod Gurav <pramod.gurav.etc@gmail.com>
+---
+ drivers/staging/android/alarm-dev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/android/alarm-dev.c b/drivers/staging/android/alarm-dev.c
+index 2fc7cdd..309aafe 100644
+--- a/drivers/staging/android/alarm-dev.c
++++ b/drivers/staging/android/alarm-dev.c
+@@ -442,4 +442,4 @@ static void  __exit alarm_dev_exit(void)
+ 
+ module_init(alarm_dev_init);
+ module_exit(alarm_dev_exit);
+-
++MODULE_LICENSE("GPL");
+-- 
+1.7.9.5
+
