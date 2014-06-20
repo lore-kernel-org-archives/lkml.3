@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967445AbaFTNwb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 09:52:31 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:63737 "EHLO
+	id S967563AbaFTNwi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 09:52:38 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:62975 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965897AbaFTNw2 (ORCPT
+	with ESMTP id S967461AbaFTNwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 09:52:28 -0400
+	Fri, 20 Jun 2014 09:52:34 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Andreas Noever <andreas.noever@gmail.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 2/3] thunderbolt: include linux/slab.h for kmalloc
-Date: Fri, 20 Jun 2014 15:52:10 +0200
-Message-Id: <1403272331-3790755-2-git-send-email-arnd@arndb.de>
+Subject: [PATCH 1/3] thunderbolt: add PCI dependency
+Date: Fri, 20 Jun 2014 15:52:09 +0200
+Message-Id: <1403272331-3790755-1-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1403272331-3790755-1-git-send-email-arnd@arndb.de>
-References: <1403272331-3790755-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:HfWj6wIC3A1PCil5wcHipNP8QEaXqGVMom0isPX6qFu
- vbRyw8YoUNL579rvEvIn80iSTxUA8UA9GqaizuxzTIJnmIM5Vf
- VH95zdvyetIYHG0lFdYYwRWDs5+PwtaZ1HQEfqTPoJRg+CvYji
- 5vY1UKBxqs4KyN73fUHSxRZ/UyesgGdZMfqRZ1ISjtq+QkvXw7
- edow4zfw6EdbCd3+kbr26DM3DztAhL4fA7Bb5tfwh+BaOV+q4U
- aYUcIFa//s4/LhgpLlb2HXosWhNG+VkmWCuP8egTe51W4DMuRb
- zuwCnSRpQwkXmYmPaOXpa4FnwAc3CQMa/UDnsvTzT7cHAGBulj
- 2QFGbrzRHiAsOUgYKgzN7AOb1v2lNtT/mwAbP1jW+
+X-Provags-ID: V02:K0:jVlsahH24k/3TJPVI1MdcaaGAsJP8TbZckGMo3kdRCl
+ wnva8GF1ZKPSjK/DHV5CXrBlbG0zn71Di0E8UnGVy1I/mgG8mK
+ J5qw6vRzc1vMmVaeKkrxsZSq1y55pgKSNbuRVSk5bWwEufuH5U
+ C5Joevpg0CjrPjlF/eqoT4Q9Oz1qV3+nbFlu5rBC37AHHUKTAZ
+ ydY2pLGakFyVjygthmH3h7BFcqukztLh0Nnjm0RhfAeKJ+aelV
+ 2s92Ttt7QmdUaU3bT7FXTIrFZr2zFSE0cZZYvsQPQaA+fQ/UlR
+ S5UuqKKgjgTlGyyHgEviwe//UcNdBBcNZGOHNW6VQw3/LDAv+6
+ eJYCyMFyvfqttoic/7QHBMK9Zsq+ceM4YNi0cEiPj
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kmalloc/kzalloc/kfree functions are declared in linux/slab.h,
-so we have to explicitly include that header to avoid build failures
-on ARM and other architectures that don't include these implicitly
-through another header.
+The thunderbolt drivers cannot be built if CONFIG_PCI is disabled,
+better add an explicit Kconfig dependency.
+The "default no" line is redundant and can be removed at the same
+time.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/thunderbolt/eeprom.c | 1 +
- drivers/thunderbolt/switch.c | 1 +
- 2 files changed, 2 insertions(+)
+ drivers/thunderbolt/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/thunderbolt/eeprom.c b/drivers/thunderbolt/eeprom.c
-index 0d5a80b..bc0449f 100644
---- a/drivers/thunderbolt/eeprom.c
-+++ b/drivers/thunderbolt/eeprom.c
-@@ -5,6 +5,7 @@
-  */
- 
- #include <linux/crc32.h>
-+#include <linux/slab.h>
- #include "tb.h"
- 
- /**
-diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
-index 0d50e7e..26e76e4 100644
---- a/drivers/thunderbolt/switch.c
-+++ b/drivers/thunderbolt/switch.c
-@@ -5,6 +5,7 @@
-  */
- 
- #include <linux/delay.h>
-+#include <linux/slab.h>
- 
- #include "tb.h"
- 
+diff --git a/drivers/thunderbolt/Kconfig b/drivers/thunderbolt/Kconfig
+index 3a25529..5aab79b 100644
+--- a/drivers/thunderbolt/Kconfig
++++ b/drivers/thunderbolt/Kconfig
+@@ -1,6 +1,6 @@
+ menuconfig THUNDERBOLT
+ 	tristate "Thunderbolt support for Apple devices"
+-	default no
++	depends on PCI
+ 	help
+ 	  Cactus Ridge Thunderbolt Controller driver
+ 	  This driver is required if you want to hotplug Thunderbolt devices on
 -- 
 1.8.3.2
 
