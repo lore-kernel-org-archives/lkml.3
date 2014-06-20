@@ -1,42 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965480AbaFTJTo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 05:19:44 -0400
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:36294 "EHLO
-	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933271AbaFTJTn (ORCPT
+	id S934772AbaFTJUM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 05:20:12 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:59241 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934598AbaFTJUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 05:19:43 -0400
-X-Yandex-Uniq: 826b74e1-ebbf-489a-ac74-396b058dfdef
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Date: Fri, 20 Jun 2014 13:19:34 +0400
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@kernel.org, artagnon@gmail.com, jolsa@redhat.com,
-        rusty@rustcorp.com.au, bp@suse.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] perf timechart: implement IO mode
-Message-ID: <20140620091934.GJ15620@stfomichev-desktop.yandex.net>
-References: <1403180583-12309-1-git-send-email-stfomichev@yandex-team.ru>
- <1403180583-12309-2-git-send-email-stfomichev@yandex-team.ru>
- <87egyk75nu.fsf@sejong.aot.lge.com>
+	Fri, 20 Jun 2014 05:20:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87egyk75nu.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140619212606.431750473@linutronix.de>
+References: <20140619212606.431750473@linutronix.de>
+Date: Fri, 20 Jun 2014 14:50:07 +0530
+X-Google-Sender-Auth: y_yrsiOeyOj44iEW4YOUH4GG1CI
+Message-ID: <CAOh2x=nYSzeb+fz1zA4-dQyD8jwzH69AEK5VyTTqhw_mNJgGEA@mail.gmail.com>
+Subject: Re: [patch 00/13] irqchip: spear_shirq: Cleanup the bitrot
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Shiraz Hashim <shiraz.linux.kernel@gmail.com>,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It (and others below) should be 'rec_argc -= 4' - i.e. I still see the
-> segfault. :)
-Damn, stupid me.
+On Fri, Jun 20, 2014 at 3:04 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> The driver is broken for spear320 since commit 80515a5a(ARM: SPEAr3xx:
+> shirq: simplify and move the shared irq multiplexor to DT). Clearly
+> never tested on spear320.
+>
+> Aside of that it's an unreadable overengineered trainwreck with lots
+> of obscure "functionality".
+>
+> Make it work and clean it up.
+>
+> Thanks,
 
-> Looks like this change should be applied to the exsting (for cpu and
-> power events) boxes too.  Care to send it as a separate fix?
-Yes, will add it as a first patch to the series, so it can be pulled
-without the whole series if it still has some bugs.
+For 1-7, 10 & 11
 
-> It seems you missed the change above (s/4.8f/.8f/g). :)
-Thanks, will do it in the context of a distinct patch.
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
