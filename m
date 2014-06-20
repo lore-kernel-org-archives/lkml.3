@@ -1,39 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934830AbaFTIRq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 04:17:46 -0400
-Received: from mga01.intel.com ([192.55.52.88]:63991 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934263AbaFTIRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 04:17:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,512,1400050800"; 
-   d="scan'208";a="558394296"
-From: "Chen, Alvin" <alvin.chen@intel.com>
-To: Chris Ball <chris@printf.net>, Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-mmc@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mmc: sdhci-pci: Add support for Intel Quark SDIO host controller
-Date: Fri, 20 Jun 2014 09:13:55 -0700
-Message-Id: <1403280836-26943-1-git-send-email-alvin.chen@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1757471AbaFTITj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 04:19:39 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:47400 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932189AbaFTITg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 04:19:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.10.1406201005400.5170@nanos>
+References: <20140619212606.431750473@linutronix.de>
+	<20140619212713.496614337@linutronix.de>
+	<CAOh2x==trCJcQnzekEdcFoBb2i1Mc7hMsJq94iu2dzrZ=Xkeow@mail.gmail.com>
+	<alpine.DEB.2.10.1406201005400.5170@nanos>
+Date: Fri, 20 Jun 2014 13:49:36 +0530
+Message-ID: <CAKohpom76zu0ec0rgcVH8J5hmAypS9WJ+i_bB43P3aFYzDW2Mw@mail.gmail.com>
+Subject: Re: [patch 08/13] irqchip: spear_shirq: Precalculate status mask
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Shiraz Hashim <shiraz.linux.kernel@gmail.com>,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Alvin (Weike) Chen" <alvin.chen@intel.com>
+On 20 June 2014 13:36, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Fri, 20 Jun 2014, Viresh Kumar wrote:
+>> On Fri, Jun 20, 2014 at 3:04 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> > @@ -176,6 +186,7 @@ static struct spear_shirq spear320_shirq
+>> >  static struct spear_shirq spear320_shirq_intrcomm_ras = {
+>> >         .offset         = 11,
+>> >         .nr_irqs        = 11,
+>> > +       .mask           = ((0x1 << 11) - 1) << 11,
+>> >         .regs = {
+>> >                 .enb_reg = -1,
+>> >                 .status_reg = SPEAR320_INT_STS_MASK_REG,
+>>
+>> If you like, maybe this instead of above diff:
+>
+> What's wrong with letting the compiler fill it in?
 
-Hi,
-Intel Quark consists of one SDIO host controller which can be PCI enumerated. 
-SDHCI-PCI layer doesn't support it. Thus, we add support for Intel Quark SDIO as well.
+>> +               shirq_blocks[i]->mask = ((0x1 << shirq_blocks[i]->nr_irqs) - 1)
+>> +                                       << shirq_blocks[i]->offset;
 
-Derek Browne (1):
-  Quark SDIO host controller
-
- drivers/mmc/host/sdhci-pci.c |   12 ++++++++++++
- include/linux/pci_ids.h      |    2 ++
- 2 files changed, 14 insertions(+)
-
--- 
-1.7.9.5
-
+Just for better readability as it doesn't have magic numbers in it
+and the performance impact wouldn't be much as its done just
+once on boot.
