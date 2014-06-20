@@ -1,168 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934584AbaFTGOX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 02:14:23 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:40456 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217AbaFTGOV (ORCPT
+	id S934473AbaFTGow (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 02:44:52 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:11215 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934032AbaFTGou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 02:14:21 -0400
+	Fri, 20 Jun 2014 02:44:50 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 19 Jun 2014 23:39:03 -0700
+Message-ID: <53A3D85E.7030704@nvidia.com>
+Date: Fri, 20 Jun 2014 15:44:46 +0900
+From: Alexandre Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140619092847.GW19730@lukather>
-References: <1403016777-15121-1-git-send-email-wens@csie.org>
- <1403016777-15121-13-git-send-email-wens@csie.org> <20140618102623.GQ19730@lukather>
- <CAGb2v64D6qBtXGXzn25443s_oj_=Z-u_P6+-MX52Lz54+9bQyQ@mail.gmail.com> <20140619092847.GW19730@lukather>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Fri, 20 Jun 2014 14:13:58 +0800
-X-Google-Sender-Auth: 3LEzhbIri1yJc40Ga5bTssjyPNA
-Message-ID: <CAGb2v64hFc7oVdydoNzKVqjnyNUxuqMXX2AiV3aJLFizKvkOPA@mail.gmail.com>
-Subject: Re: [linux-sunxi] Re: [PATCH v2 12/20] clk: sunxi: Add A23 APB0
- support to sun6i-a31-apb0-clk
-To: "maxime.ripard" <maxime.ripard@free-electrons.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Luc Verhaegen <libv@skynet.be>,
-        linux-sunxi <linux-sunxi@googlegroups.com>
-Content-Type: text/plain; charset=UTF-8
+To: Mark Brown <broonie@kernel.org>, Stephen Warren <swarren@wwwdotorg.org>,
+        Keerthy <j-keerthy@ti.com>, Nishanth Menon <nm@ti.com>
+CC: Thierry Reding <thierry.reding@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: tegra: TN7: relax some regulators
+References: <1403164154-1362-1-git-send-email-acourbot@nvidia.com> <53A308C8.2070004@wwwdotorg.org> <20140619175643.GR5099@sirena.org.uk> <53A3C613.8030207@nvidia.com>
+In-Reply-To: <53A3C613.8030207@nvidia.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 5:28 PM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> On Thu, Jun 19, 2014 at 12:33:41PM +0800, Chen-Yu Tsai wrote:
->> On Wed, Jun 18, 2014 at 6:26 PM, Maxime Ripard
->> <maxime.ripard@free-electrons.com> wrote:
->> > On Tue, Jun 17, 2014 at 10:52:49PM +0800, Chen-Yu Tsai wrote:
->> >> The A23 has an almost identical PRCM clock tree. The difference in
->> >> the APB0 clock is the smallest divisor is 1, instead of 2.
->> >>
->> >> This patch extends the sun6i-a31-apb0-clk driver to take divider
->> >> tables associated to compatibles, and adds a compatible for the A23
->> >> variant.
->> >>
->> >> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
->> >> ---
->> >>  Documentation/devicetree/bindings/clock/sunxi.txt |  1 +
->> >>  drivers/clk/sunxi/clk-sun6i-apb0.c                | 28 ++++++++++++++++++-----
->> >>  2 files changed, 23 insertions(+), 6 deletions(-)
->> >>
->> >> diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Documentation/devicetree/bindings/clock/sunxi.txt
->> >> index af9e47d..e3a47ec 100644
->> >> --- a/Documentation/devicetree/bindings/clock/sunxi.txt
->> >> +++ b/Documentation/devicetree/bindings/clock/sunxi.txt
->> >> @@ -28,6 +28,7 @@ Required properties:
->> >>       "allwinner,sun8i-a23-ahb1-gates-clk" - for the AHB1 gates on A23
->> >>       "allwinner,sun4i-a10-apb0-clk" - for the APB0 clock
->> >>       "allwinner,sun6i-a31-apb0-clk" - for the APB0 clock on A31
->> >> +     "allwinner,sun8i-a23-apb0-clk" - for the APB0 clock on A23
->> >>       "allwinner,sun4i-a10-apb0-gates-clk" - for the APB0 gates on A10
->> >>       "allwinner,sun5i-a13-apb0-gates-clk" - for the APB0 gates on A13
->> >>       "allwinner,sun5i-a10s-apb0-gates-clk" - for the APB0 gates on A10s
->> >> diff --git a/drivers/clk/sunxi/clk-sun6i-apb0.c b/drivers/clk/sunxi/clk-sun6i-apb0.c
->> >> index 11f17c3..2197ac7 100644
->> >> --- a/drivers/clk/sunxi/clk-sun6i-apb0.c
->> >> +++ b/drivers/clk/sunxi/clk-sun6i-apb0.c
->> >> @@ -11,6 +11,7 @@
->> >>  #include <linux/clk-provider.h>
->> >>  #include <linux/module.h>
->> >>  #include <linux/of.h>
->> >> +#include <linux/of_device.h>
->> >>  #include <linux/platform_device.h>
->> >>
->> >>  /*
->> >> @@ -28,6 +29,21 @@ static const struct clk_div_table sun6i_a31_apb0_divs[] = {
+On 06/20/2014 02:26 PM, Alexandre Courbot wrote:
+> On 06/20/2014 02:56 AM, Mark Brown wrote:
+>> * PGP Signed by an unknown key
 >>
->> For reference:
+>> On Thu, Jun 19, 2014 at 09:59:04AM -0600, Stephen Warren wrote:
+>>> On 06/19/2014 01:49 AM, Alexandre Courbot wrote:
 >>
->> static const struct clk_div_table sun6i_a31_apb0_divs[] = {
->>         { .val = 0, .div = 2, },
->>         { .val = 1, .div = 2, },
->>         { .val = 2, .div = 4, },
->>         { .val = 3, .div = 8, },
->>         { /* sentinel */ },
->> };
+>>>> Remove the regulator-always-on property from some regulators that do
+>>>> not
+>>>> need it. On recent kernels fixed regulators which supply is always on
+>>>> fail registration.
 >>
+>>> That sounds like a bug in the regulator core, which should be fixed
+>>> there.
 >>
->> >>       { /* sentinel */ },
->> >>  };
->> >>
->> >> +/* The A23 APB0 clock has a standard power of 2 divisor */
->> >
->> > Why not just pass CLK_DIVIDER_POWER_OF_TWO then, instead of a table?
->>
->> The A31 APB0 clock uses a table for the odd /2 divisor for value 0.
->> The standard table I'm using for the A23 is just to keep it simple
->> and alike.
->>
->> >> +static const struct clk_div_table sun8i_a23_apb0_divs[] = {
->> >> +     { .val = 0, .div = 1, },
->> >> +     { .val = 1, .div = 2, },
->> >> +     { .val = 2, .div = 4, },
->> >> +     { .val = 3, .div = 8, },
->> >> +     { /* sentinel */ },
->> >> +};
->> >> +
->> >> +const struct of_device_id sun6i_a31_apb0_clk_dt_ids[] = {
->> >> +     { .compatible = "allwinner,sun6i-a31-apb0-clk", .data = &sun6i_a31_apb0_divs },
->> >> +     { .compatible = "allwinner,sun8i-a23-apb0-clk", .data = &sun8i_a23_apb0_divs },
->> >> +     { /* sentinel */ }
->> >> +};
->> >> +
->> >>  static int sun6i_a31_apb0_clk_probe(struct platform_device *pdev)
->> >>  {
->> >>       struct device_node *np = pdev->dev.of_node;
->> >> @@ -36,12 +52,17 @@ static int sun6i_a31_apb0_clk_probe(struct platform_device *pdev)
->> >>       struct resource *r;
->> >>       void __iomem *reg;
->> >>       struct clk *clk;
->> >> +     const struct of_device_id *device;
->> >>
->> >>       r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> >>       reg = devm_ioremap_resource(&pdev->dev, r);
->> >>       if (IS_ERR(reg))
->> >>               return PTR_ERR(reg);
->> >>
->> >> +     device = of_match_device(sun6i_a31_apb0_clk_dt_ids, &pdev->dev);
->> >> +     if (!device)
->> >> +             return -EINVAL;
->> >> +
->> >>       clk_parent = of_clk_get_parent_name(np, 0);
->> >>       if (!clk_parent)
->> >>               return -EINVAL;
->> >> @@ -49,7 +70,7 @@ static int sun6i_a31_apb0_clk_probe(struct platform_device *pdev)
->> >>       of_property_read_string(np, "clock-output-names", &clk_name);
->> >>
->> >>       clk = clk_register_divider_table(&pdev->dev, clk_name, clk_parent,
->> >> -                                      0, reg, 0, 2, 0, sun6i_a31_apb0_divs,
->> >> +                                      0, reg, 0, 2, 0, device->data,
->> >
->> > I'm not sure that it will actually work for the A31, since it does
->> > define some dividers anyway, and the divider table is !NULL, even
->> > though there's actually no dividers defined.
->>
->> I'm not following. The A31 does have a table defined. It's just cut
->> off in this patch. I asked Boris to add the table when he was working
->> on the A31 PRCM clocks. See above.
+>> Please actually describe the problem you believe you are seeing - I've
+>> seen no reports and I can't tell anything from what you've described,
+>> nor can I see any obvious way that a regulator being fixed would have
+>> any effect on its supply.
 >
-> Ah right. My bad.
+> Here is some more information about what happens.
 >
-> If these two clocks are these different though, maybe it would just be
-> easier to add a new driver. These are trivial enough anyway.
+> We have a fixed regulator defined as follows:
+>
+> vdd_lcd: regulator@2 {
+>          compatible = "regulator-fixed";
+>          reg = <2>;
+>          regulator-name = "VD_LCD_1V8";
+>          regulator-min-microvolt = <1800000>;
+>          regulator-max-microvolt = <1800000>;
+>          gpio = <&palmas_gpio 4 GPIO_ACTIVE_HIGH>;
+>          enable-active-high;
+>          vin-supply = <&vdd_1v8>;
+>          regulator-boot-on;
+> };
+>
+> Its vin-supply is part of the palmas device:
+>
+> vdd_1v8: smps8 {
+>          regulator-name = "vs-pmu-1v8";
+>          regulator-min-microvolt = <1800000>;
+>          regulator-max-microvolt = <1800000>;
+>          regulator-always-on;
+>          regulator-boot-on;
+> };
+>
+> When vdd_lcd is registered, set_supply() is called, which creates a new
+> regulator for vdd_1v8. In create_regulator(),
+> _regulator_can_change_status() returns false (as it should since the
+> regulator is always_on) and _regulator_is_enabled() *also* returns
+> false, so as a result regulator->always_on remains false for vdd_1v8.
+>
+> Later in regulator_register(), we try to enable the supply. Since
+> regulator->always_on is false, _regulator_enable() is called on vdd_1v8,
+> and the pair _regulator_is_enabled() / _regulator_can_change_status() is
+> called again with the same result, which causes _regulator_enable() to
+> return -EPERM. This prevents vdd_lcd from being registered.
+>
+> So I can see three questions here:
+>
+> 1) Why does _regulator_enable() on vdd_1v8 return 0 while everything
+> suggests that it is enabled (this regulator powers lot of devices, like
+> eMMC, which are working fine). This may be an issue with the palmas driver.
 
-Yes it is. But it adds more of the same boilerplate code than actual
-differences of the hardware.
+Ran a bisect eventually, found that reverting this commit led to SMPS8's 
+enabled status to be properly reported at boot time (and consequently 
+the register probe to succeed):
 
-I'm inclined to keep it as it is for now, unless someone strongly
-objects.
+dbabd624d
+regulator: palmas: Reemove open coded functions with helper functions
 
+Keerthy, Nishanth, could it be that there is still something wrong with 
+the REGULATOR_LINEAR_RANGE() definitions?
 
-ChenYu
+This seems to be the cause for our trouble, but the other questions 
+might still stand, in case there is interest in discussing them.
+
+>
+> 2) When an always-on regulator that is not yet enabled is registered,
+> shouldn't it be switched on by the regulator framework?
+>
+> 3) When a boot-on regulator is registered and _regulator_is_enabled()
+> returns contradictory information, what should be done?
+>
+> Note that whether the regulator-boot-on property is present or not does
+> not change anything.
+>
+> I tried to find a recent patch that could have introduced a change of
+> behavior, but could not find anything so far. Bisecting is made harder
+> by the fact this happens on a newly-introduced board which requires a
+> bunch of patches of its own, but it we need more information I can try
+> to do it anyway.
+>
+> Thanks,
+> Alex.
+>
+
