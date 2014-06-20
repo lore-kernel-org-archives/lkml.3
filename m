@@ -1,60 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935007AbaFTQ1P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 12:27:15 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:37731 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934502AbaFTQ1N convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 12:27:13 -0400
+	id S934716AbaFTQaX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 12:30:23 -0400
+Received: from www.sr71.net ([198.145.64.142]:53776 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754228AbaFTQaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 12:30:22 -0400
+Message-ID: <53A4619C.8020100@sr71.net>
+Date: Fri, 20 Jun 2014 09:30:20 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1406201056270.1160-100000@iolanthe.rowland.org>
-References: <CADDKRnBqPVg63sbaWX-w4Log_Sr+DFth5nURY7T=nRh6UxymWg@mail.gmail.com>
-	<Pine.LNX.4.44L0.1406201056270.1160-100000@iolanthe.rowland.org>
-Date: Fri, 20 Jun 2014 18:27:12 +0200
-Message-ID: <CADDKRnAqQ16ng2VqPLnKBy2jVMm4tbm+AfjCUBd2pyX11zCHag@mail.gmail.com>
-Subject: Re: [usb resume regression] in 3.16-rc1
-From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+CC: bp@alien8.de, x86@kernel.org
+Subject: Re: [RFC][PATCH 3/3] x86: make MP  a required-feature on 64-bit
+References: <20140620161736.D6AC16FD@viggo.jf.intel.com> <20140620161740.BFB00798@viggo.jf.intel.com> <53A46008.5060509@zytor.com>
+In-Reply-To: <53A46008.5060509@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-06-20 16:57 GMT+02:00 Alan Stern <stern@rowland.harvard.edu>:
-> On Fri, 20 Jun 2014, Jörg Otte wrote:
->
->> 2014-06-19 19:35 GMT+02:00 Alan Stern <stern@rowland.harvard.edu>:
->> > On Thu, 19 Jun 2014, Jörg Otte wrote:
->> >
->> >> I don't know how to do this.
->> >
->> > To enable dynamic debugging (as root):
->> >
->> >     echo 'module usbcore =p' >/sys/kernel/debug/dynamic_debug/control
->> >     echo 'module ehci_hcd =p' >/sys/kernel/debug/dynamic_debug/control
->> >
->> > Do this before you carry out the suspend, and post the resulting dmesg
->> > log.
->> >
->> > Alan Stern
->> >
->> here it is.
->
-> Now I see the reason for the regression.  There already is a patch to
-> fix it:
->
->         http://marc.info/?l=linux-usb&m=140304702623966&w=2
->
-> The fix will probably be included in 3.16-rc2 or -rc3.
->
-> Alan Stern
->
-The patch works for me.
+On 06/20/2014 09:23 AM, H. Peter Anvin wrote:
+> On 06/20/2014 09:17 AM, Dave Hansen wrote:
+>> > Today, we assume that all 64-bit cpus have X86_FEATURE_MP.  It
+>> > should be in the REQUIRED_MASK so that we do not need the #undef
+>> > trick for it.
+> I don't think we enforce that the MP bit is set in CPUID, though.
+> Non-AMD processors will typically not set this bit at all, so the
+> feature validation code would have to be modified to know to not require
+> this bit.
 
-Thanks, Jörg
+Ahh, OK.  I'll drop this.
