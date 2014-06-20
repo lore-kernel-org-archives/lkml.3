@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966079AbaFTTnl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 15:43:41 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:39073 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752240AbaFTTmx (ORCPT
+	id S966218AbaFTTpM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 15:45:12 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:58763 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965936AbaFTTpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 15:42:53 -0400
-From: Andreas Noever <andreas.noever@gmail.com>
-To: linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
-Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH 2/4] thunderbolt: Fix header declaration of tb_find_cap
-Date: Fri, 20 Jun 2014 21:42:23 +0200
-Message-Id: <1403293345-20772-2-git-send-email-andreas.noever@gmail.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1403293345-20772-1-git-send-email-andreas.noever@gmail.com>
-References: <1403293345-20772-1-git-send-email-andreas.noever@gmail.com>
+	Fri, 20 Jun 2014 15:45:11 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jiri Kosina <trivial@kernel.org>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Subject: [PATCH] trivial: drivers/macintosh/smu.c: Fix closing brace followed by if
+Date: Fri, 20 Jun 2014 21:44:27 +0200
+Message-Id: <1403293467-17521-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tb_find_cap in cap.c takes an enum tb_cap and not an u32. Fix the
-declaration in tb.h.
+A closing brace followed by "if" is almost certainly a mistake. Maybe
+"else if" was meant, but in this case it doesn't really matter.
 
-Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 ---
- drivers/thunderbolt/tb.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/macintosh/smu.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
-index 18ade5e..8b0d7cf 100644
---- a/drivers/thunderbolt/tb.h
-+++ b/drivers/thunderbolt/tb.h
-@@ -233,7 +233,7 @@ int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged);
- int tb_port_add_nfc_credits(struct tb_port *port, int credits);
- int tb_port_clear_counter(struct tb_port *port, int counter);
- 
--int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, u32 value);
-+int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, enum tb_cap cap);
- 
- struct tb_path *tb_path_alloc(struct tb *tb, int num_hops);
- void tb_path_free(struct tb_path *path);
+diff --git a/drivers/macintosh/smu.c b/drivers/macintosh/smu.c
+index 23b4a3b..4eab93a 100644
+--- a/drivers/macintosh/smu.c
++++ b/drivers/macintosh/smu.c
+@@ -1257,7 +1257,8 @@ static unsigned int smu_fpoll(struct file *file, poll_table *wait)
+ 		if (pp->busy && pp->cmd.status != 1)
+ 			mask |= POLLIN;
+ 		spin_unlock_irqrestore(&pp->lock, flags);
+-	} if (pp->mode == smu_file_events) {
++	}
++	if (pp->mode == smu_file_events) {
+ 		/* Not yet implemented */
+ 	}
+ 	return mask;
 -- 
-2.0.0
+1.9.2
 
