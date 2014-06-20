@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934527AbaFTU3K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:29:10 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:39748 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933086AbaFTU3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 16:29:08 -0400
-Date: Fri, 20 Jun 2014 22:29:00 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: tony.luck@intel.com, linux-kernel@vger.kernel.org,
-        linux-edac@vger.kernel.org, mattieu.souchaud@free.fr
-Subject: Re: [PATCH] x86/mce: Don't unregister CPU hotplug notifier in error
- path
-Message-ID: <20140620202900.GL11391@pd.tnic>
-References: <1403274493-1371-1-git-send-email-boris.ostrovsky@oracle.com>
- <20140620152312.GB11391@pd.tnic>
- <53A45627.6090306@oracle.com>
- <20140620155845.GC11391@pd.tnic>
- <53A45E67.7070000@oracle.com>
- <20140620175240.GE11391@pd.tnic>
- <53A48DF6.9020503@oracle.com>
- <20140620200358.GK11391@pd.tnic>
- <53A496B2.2090701@oracle.com>
+	id S966666AbaFTUaK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:30:10 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:17457 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933086AbaFTUaH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 16:30:07 -0400
+Message-ID: <53A499B8.5050107@fb.com>
+Date: Fri, 20 Jun 2014 13:29:44 -0700
+From: Josef Bacik <jbacik@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <53A496B2.2090701@oracle.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>, Chris Mason <clm@fb.com>,
+        Jiri Kosina <trivial@kernel.org>
+CC: <linux-btrfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] trivial: fs/btrfs/tree-log.c: Fix closing brace followed
+ by if
+References: <1403293903-17696-1-git-send-email-linux@rasmusvillemoes.dk>
+In-Reply-To: <1403293903-17696-1-git-send-email-linux@rasmusvillemoes.dk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-20_07:2014-06-20,2014-06-20,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.03942965345993e-11 kscore.compositescore=0
+ circleOfTrustscore=0 compositescore=0.997600857122248
+ urlsuspect_oldscore=0.997600857122248 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.997600857122248 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1406200236
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 04:16:50PM -0400, Boris Ostrovsky wrote:
-> Sorry, mce_device_create().
-> 
-> We can't call it in the notifier until mcheck_init_device() has been
-> successfully executed (we need subsys_system_register(&mce_subsys)). I don't
-> know whether we can call subsys_system_register() in mcheck_init() -- it is
-> quite early in the boot.
+On 06/20/2014 12:51 PM, Rasmus Villemoes wrote:
+> Maybe "else if" was meant, but because of the goto out_unlock, it
+> doesn't make a difference. Anyway, I chose the "only whitespace" fix.
+>
+> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+> ---
+>   fs/btrfs/tree-log.c | 3 ++-
+>   1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
+> index 9e1f2cd..50af2b9 100644
+> --- a/fs/btrfs/tree-log.c
+> +++ b/fs/btrfs/tree-log.c
+> @@ -3980,7 +3980,8 @@ again:
+>   		if (ret < 0) {
+>   			err = ret;
+>   			goto out_unlock;
+> -		} if (ret) {
+> +		}
+> +		if (ret) {
+>   			ins_nr = 0;
+>   			btrfs_release_path(path);
+>   			continue;
+>
 
-I don't think it matters: we want to add only this oneliner to
-mcheck_init():
+Nope that's right, thanks,
 
-	__register_hotcpu_notifier(&mce_cpu_notifier);
+Reviewed-by: Josef Bacik <jbacik@fb.com>
 
-and remove it from mcheck_init_device(), nothing else. And we don't need
-the synchronization even because we're BSP only then.
-
-I mean, we won't be able to offline CPUs that early anyway - thus
-call mce_device_create() in the notifier callback - as we don't have
-userspace to do "echo 0 > ..."
-
-The rest of the code remains and mcheck_init_device() executes when it
-does. Unless I'm missing something, of course...
-
-Oh, not quite. We probably should remove the
-
-	__unregister_hotcpu_notifier(&mce_cpu_notifier);
-
-from the error path too, as you suggest.
-
-When you do, please hold that down in the commit message so that it is
-clear what we're doing.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
