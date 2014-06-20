@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934436AbaFTQId (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 12:08:33 -0400
-Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:57914 "EHLO
-	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753434AbaFTQIb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 12:08:31 -0400
-Date: Fri, 20 Jun 2014 12:07:08 -0400
-From: Rich Felker <dalias@libc.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Ian Lance Taylor <iant@golang.org>, Andi Kleen <andi@firstfloor.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Mikael Pettersson <mikpelinux@gmail.com>, Russ Cox <rsc@golang.org>,
-        Linux API <linux-api@vger.kernel.org>,
+	id S965079AbaFTQKp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 12:10:45 -0400
+Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.25]:38170 "EHLO
+	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753321AbaFTQKn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 12:10:43 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Greg KH <greg@kroah.com>, Olaf Hering <olaf@aepfle.de>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>
-Subject: Re: [RFC 0/2] __vdso_findsym
-Message-ID: <20140620160708.GY179@brightrain.aerifal.cx>
-References: <539DD26B.3060709@zytor.com>
- <CALCETrXTpkto2gJBiFC4CR5D=Lqf2YfP5BBH02f8hFW+TUGqeA@mail.gmail.com>
- <539DDE9C.3010903@zytor.com>
- <CALCETrWLBCNiJArMRPuHbfhj6=ytnx_YqykzgCgZ+DYu34M1Mg@mail.gmail.com>
- <20140616023604.GI5714@two.firstfloor.org>
- <CAKOQZ8wwKcDAXq0BnHwvL01LQNFeOGwgA9x8kCLWeFaP6USF4A@mail.gmail.com>
- <20140616143801.GJ5714@two.firstfloor.org>
- <CAKOQZ8zk8KfkObSZg8fmhZXm9nXQSneOywvV-NBj=N-tNWjNPg@mail.gmail.com>
- <20140616154228.GB179@brightrain.aerifal.cx>
- <CALCETrWnQyCk5vhDj-yAhRdAFOtFKSU6H-E_=LBC+FbA2REhrg@mail.gmail.com>
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: RE: [PATCH net-next] hyperv: Add handler for
+ RNDIS_STATUS_NETWORK_CHANGE event
+Thread-Topic: [PATCH net-next] hyperv: Add handler for
+ RNDIS_STATUS_NETWORK_CHANGE event
+Thread-Index: AQHPjB+WQKkwvkUXekGWoyJ+QmEz5Zt55UEAgAAEPICAADyUMA==
+Date: Fri, 20 Jun 2014 16:09:49 +0000
+Message-ID: <ff458d1b896d4a70a32fa7709911274c@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1403228076-7596-1-git-send-email-haiyangz@microsoft.com>
+ <20140620045704.GA4850@aepfle.de> <20140620051213.GA9960@kroah.com>
+In-Reply-To: <20140620051213.GA9960@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrWnQyCk5vhDj-yAhRdAFOtFKSU6H-E_=LBC+FbA2REhrg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.159.99;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(13464003)(377454003)(189002)(199002)(51704005)(24454002)(164054003)(21056001)(77982001)(79102001)(64706001)(76482001)(33646001)(47776003)(20776003)(92566001)(97756001)(97736001)(46102001)(46406003)(85326001)(2009001)(31966008)(81542001)(2656002)(74662001)(99396002)(74502001)(87936001)(86612001)(80022001)(66066001)(83072002)(85852003)(106116001)(6806004)(76176999)(50986999)(77096999)(54356999)(50466002)(81342001)(68736004)(23726002)(83322001)(19580405001)(4396001)(19580395003)(84676001)(44976005)(24736002)(106276001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2SR01MB596;H:hybrid.exchange.microsoft.com;FPR:;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 024847EE92
+X-OriginatorOrg: msft.ccsctp.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 08:55:01AM -0700, Andy Lutomirski wrote:
-> On Mon, Jun 16, 2014 at 8:42 AM, Rich Felker <dalias@libc.org> wrote:
-> > On Mon, Jun 16, 2014 at 08:31:39AM -0700, Ian Lance Taylor wrote:
-> >> On Mon, Jun 16, 2014 at 7:38 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> >> >> I think this issue started when some of the Go developers questioned
-> >> >> why the kernel needed to provide a very complex interface--parsing an
-> >> >> ELF shared shared library--for very simple functionality--looking up
-> >> >> the address of a magic function.  This approach has required special
-> >> >> support not just in Go, but also in the dynamic linker and gdb, and
-> >> >> does not work well for statically linked binaries.  The support in gdb
-> >> >> is perhaps a good idea, but elsewhere it does not make sense.
-> >> >>
-> >> >> So why not provide a simple interface?
-> >> >
-> >> > What good would it do now that everyone already supports it?
-> >>
-> >> Do statically linked binaries use the vDSO calls?
-> >
-> > Under glibc, I believe so (not checked). Under musl, yes, and even in
-> > the dynamic-linked case we use the same code that's used for static
-> > linking rather than trying to get the dynamic linker to do them
-> > correctly. I still have some cruft lying around from where (in the
-> > past) we tried to do it via the dynamic linker, but I'm probably going
-> > to remove that and make the vdso behave as RTLD_LOCAL so that there's
-> > no risk of weird symbols it exports interfering with the application
-> > (applications could still make it global via an explicit dlopen). The
-> > only reason for keeping it around at all in the dynamic linker is for
-> > the sake of gdb.
+
+
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Friday, June 20, 2014 1:12 AM
+> To: Olaf Hering
+> Cc: Haiyang Zhang; netdev@vger.kernel.org; jasowang@redhat.com;
+> driverdev-devel@linuxdriverproject.org; linux-kernel@vger.kernel.org;
+> davem@davemloft.net
+> Subject: Re: [PATCH net-next] hyperv: Add handler for
+> RNDIS_STATUS_NETWORK_CHANGE event
 > 
-> What about backtrace_symbols, dl_addr, and the unwinder (e.g.
-> siglongjmp)?  It would be nice to wean the vdso off of frame pointers
-> some day.
+> On Fri, Jun 20, 2014 at 06:57:04AM +0200, Olaf Hering wrote:
+> > On Thu, Jun 19, Haiyang Zhang wrote:
+> >
+> > > The RNDIS_STATUS_NETWORK_CHANGE event is received after the Hyper-V
+> host
+> > > sleep or hibernation. We refresh network at this time.
+> >
+> > > +	char *argv[] = { "/etc/init.d/network", "restart", NULL };
+> >
+> > What happens if that file does not exist? Dead network in the guest?
+> > I tend to think if a VM with PV drivers goes to sleep it has to go
+> > through the whole suspend/resume cycle, very much like the "LID
+> closed"
+> > event. So I think this and the other fbdev change that is floating
+> > around is wrong.
+> 
+> Ah, and what about systems with no /etc/init.d/ at all (like
+> systemd-based ones)?  You can't have a kernel driver ask userspace to
+> restart all networking connections, that seems really wrong.
 
-My comments were in the context of musl, which doesn't use unwinding
-internally whatsoever, but if you're asking about the usefulness of
-being able to see the vdso's elf/dwarf2/etc. stuff for various
-outside-of-libc purposes, then yes. My statement "for the sake of gdb"
-was just a poor substitute for this concept (debugging/introspective
-use in general).
+Olaf and Greg,
 
-Rich
+Thanks for your reviews. 
+On Server Hyper-V, the host sleep/hibernation is not supported. So this 
+event won't happen on most deployment of Hyper-V.
+
+On Client Hyper-V (e.g. Windows 8+ on a laptop), the host sleep/hibernation
+is supported. If the laptop is moved to another network during sleep, we 
+previously need to manually refresh the network (network restart) to renew 
+DHCP. With this patch, the network is refreshed on the event.
+
+This command ("/etc/init.d/network restart") exists on our supported distros
+currently. We will also look into some better ways to refresh the network for
+the distros without this command. I have tried setting IF_OPER_DORMANT then 
+IF_OPER_UP, but not working. I will look into the suspend/resume cycle as
+well.
+
+Thanks,
+- Haiyang
+
+
