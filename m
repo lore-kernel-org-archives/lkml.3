@@ -1,105 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966890AbaFTKsF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 06:48:05 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:51742 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S966643AbaFTKrN (ORCPT
+	id S966964AbaFTKuY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 06:50:24 -0400
+Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:39619 "EHLO
+	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966632AbaFTKuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 06:47:13 -0400
-Message-Id: <20140620104711.360115202@goodmis.org>
-User-Agent: quilt/0.63-1
-Date: Fri, 20 Jun 2014 06:45:20 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [for-next][PATCH v2 2/3] tracing: Change syscall_*regfunc() to check PF_KTHREAD and use
- for_each_process_thread()
-References: <20140620104518.722157733@goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0002-tracing-Change-syscall_-regfunc-to-check-PF_KTHREAD-.patch
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Fri, 20 Jun 2014 06:50:18 -0400
+X-Yandex-Uniq: 170c5bc9-43c0-4b50-bf52-032a47f669f3
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@kernel.org, dsahern@gmail.com, stfomichev@yandex-team.ru,
+        jolsa@redhat.com, xiaoguangrong@linux.vnet.ibm.com,
+        yangds.fnst@cn.fujitsu.com, adrian.hunter@intel.com,
+        namhyung@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 6/7] perf kvm: move perf_kvm__mmap_read into session utils
+Date: Fri, 20 Jun 2014 14:49:48 +0400
+Message-Id: <1403261389-13423-7-git-send-email-stfomichev@yandex-team.ru>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1403261389-13423-1-git-send-email-stfomichev@yandex-team.ru>
+References: <1403261389-13423-1-git-send-email-stfomichev@yandex-team.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+It will be reused by perf trace in the following commit.
 
-1. Remove _irqsafe from syscall_regfunc/syscall_unregfunc,
-   read_lock(tasklist) doesn't need to disable irqs.
-
-2. Change this code to avoid the deprecated do_each_thread()
-   and use for_each_process_thread() (stolen from the patch
-   from Frederic).
-
-3. Change syscall_regfunc() to check PF_KTHREAD to skip
-   the kernel threads, ->mm != NULL is the common mistake.
-
-   Note: probably this check should be simply removed, needs
-   another patch.
-
-[fweisbec@gmail.com: s/do_each_thread/for_each_process_thread/]
-Link: http://lkml.kernel.org/p/20140413185918.GC20668@redhat.com
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
 ---
- kernel/tracepoint.c | 24 +++++++++++-------------
- 1 file changed, 11 insertions(+), 13 deletions(-)
+ tools/perf/builtin-kvm.c  | 88 +++--------------------------------------------
+ tools/perf/util/session.c | 85 +++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/session.h |  5 +++
+ 3 files changed, 94 insertions(+), 84 deletions(-)
 
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index 33cbd8c203f8..9cf12640de5a 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -492,33 +492,31 @@ static int sys_tracepoint_refcount;
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 0f1e5a2f6ad7..a69ffe7512e5 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -885,89 +885,6 @@ static bool verify_vcpu(int vcpu)
+  */
+ #define PERF_KVM__MAX_EVENTS_PER_MMAP  25
  
- void syscall_regfunc(void)
- {
--	unsigned long flags;
--	struct task_struct *g, *t;
-+	struct task_struct *p, *t;
+-static s64 perf_kvm__mmap_read_idx(struct perf_kvm_stat *kvm, int idx,
+-				   u64 *mmap_time)
+-{
+-	union perf_event *event;
+-	struct perf_sample sample;
+-	s64 n = 0;
+-	int err;
+-
+-	*mmap_time = ULLONG_MAX;
+-	while ((event = perf_evlist__mmap_read(kvm->evlist, idx)) != NULL) {
+-		err = perf_evlist__parse_sample(kvm->evlist, event, &sample);
+-		if (err) {
+-			perf_evlist__mmap_consume(kvm->evlist, idx);
+-			pr_err("Failed to parse sample\n");
+-			return -1;
+-		}
+-
+-		err = perf_session_queue_event(kvm->session, event, &sample, 0);
+-		/*
+-		 * FIXME: Here we can't consume the event, as perf_session_queue_event will
+-		 *        point to it, and it'll get possibly overwritten by the kernel.
+-		 */
+-		perf_evlist__mmap_consume(kvm->evlist, idx);
+-
+-		if (err) {
+-			pr_err("Failed to enqueue sample: %d\n", err);
+-			return -1;
+-		}
+-
+-		/* save time stamp of our first sample for this mmap */
+-		if (n == 0)
+-			*mmap_time = sample.time;
+-
+-		/* limit events per mmap handled all at once */
+-		n++;
+-		if (n == PERF_KVM__MAX_EVENTS_PER_MMAP)
+-			break;
+-	}
+-
+-	return n;
+-}
+-
+-static int perf_kvm__mmap_read(struct perf_kvm_stat *kvm)
+-{
+-	int i, err, throttled = 0;
+-	s64 n, ntotal = 0;
+-	u64 flush_time = ULLONG_MAX, mmap_time;
+-
+-	for (i = 0; i < kvm->evlist->nr_mmaps; i++) {
+-		n = perf_kvm__mmap_read_idx(kvm, i, &mmap_time);
+-		if (n < 0)
+-			return -1;
+-
+-		/* flush time is going to be the minimum of all the individual
+-		 * mmap times. Essentially, we flush all the samples queued up
+-		 * from the last pass under our minimal start time -- that leaves
+-		 * a very small race for samples to come in with a lower timestamp.
+-		 * The ioctl to return the perf_clock timestamp should close the
+-		 * race entirely.
+-		 */
+-		if (mmap_time < flush_time)
+-			flush_time = mmap_time;
+-
+-		ntotal += n;
+-		if (n == PERF_KVM__MAX_EVENTS_PER_MMAP)
+-			throttled = 1;
+-	}
+-
+-	/* flush queue after each round in which we processed events */
+-	if (ntotal) {
+-		kvm->session->ordered_samples.next_flush = flush_time;
+-		err = kvm->tool.finished_round(&kvm->tool, NULL, kvm->session);
+-		if (err) {
+-			if (kvm->lost_events)
+-				pr_info("\nLost events: %" PRIu64 "\n\n",
+-					kvm->lost_events);
+-			return err;
+-		}
+-	}
+-
+-	return throttled;
+-}
+-
+ static volatile int done;
  
- 	if (!sys_tracepoint_refcount) {
--		read_lock_irqsave(&tasklist_lock, flags);
--		do_each_thread(g, t) {
-+		read_lock(&tasklist_lock);
-+		for_each_process_thread(p, t) {
- 			/* Skip kernel threads. */
--			if (t->mm)
-+			if (!(t->flags & PF_KTHREAD))
- 				set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
--		} while_each_thread(g, t);
--		read_unlock_irqrestore(&tasklist_lock, flags);
-+		}
-+		read_unlock(&tasklist_lock);
- 	}
- 	sys_tracepoint_refcount++;
+ static void sig_handler(int sig __maybe_unused)
+@@ -1133,7 +1050,10 @@ static int kvm_events_live_report(struct perf_kvm_stat *kvm)
+ 	while (!done) {
+ 		int rc;
+ 
+-		rc = perf_kvm__mmap_read(kvm);
++		rc = perf_session__mmap_read(&kvm->tool,
++			    kvm->session,
++			    kvm->evlist,
++			    PERF_KVM__MAX_EVENTS_PER_MMAP);
+ 		if (rc < 0)
+ 			break;
+ 
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 4526d966b10a..994846060c5e 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1671,3 +1671,88 @@ int __perf_session__set_tracepoints_handlers(struct perf_session *session,
+ out:
+ 	return err;
  }
- 
- void syscall_unregfunc(void)
- {
--	unsigned long flags;
--	struct task_struct *g, *t;
-+	struct task_struct *p, *t;
- 
- 	sys_tracepoint_refcount--;
- 	if (!sys_tracepoint_refcount) {
--		read_lock_irqsave(&tasklist_lock, flags);
--		do_each_thread(g, t) {
-+		read_lock(&tasklist_lock);
-+		for_each_process_thread(p, t) {
- 			clear_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
--		} while_each_thread(g, t);
--		read_unlock_irqrestore(&tasklist_lock, flags);
++
++static s64 perf_session__mmap_read_idx(struct perf_session *session,
++				       int idx,
++				       u64 *mmap_time,
++				       int nr_per_mmap)
++{
++	union perf_event *event;
++	struct perf_sample sample;
++	s64 n = 0;
++	int err;
++
++	*mmap_time = ULLONG_MAX;
++	while ((event = perf_evlist__mmap_read(session->evlist, idx)) != NULL) {
++		err = perf_evlist__parse_sample(session->evlist, event, &sample);
++		if (err) {
++			perf_evlist__mmap_consume(session->evlist, idx);
++			pr_err("Failed to parse sample\n");
++			return -1;
 +		}
-+		read_unlock(&tasklist_lock);
- 	}
- }
- #endif
++
++		err = perf_session_queue_event(session, event, &sample, 0);
++		/*
++		 * FIXME: Here we can't consume the event, as perf_session_queue_event will
++		 *        point to it, and it'll get possibly overwritten by the kernel.
++		 */
++		perf_evlist__mmap_consume(session->evlist, idx);
++
++		if (err) {
++			pr_err("Failed to enqueue sample: %d\n", err);
++			return -1;
++		}
++
++		/* save time stamp of our first sample for this mmap */
++		if (n == 0)
++			*mmap_time = sample.time;
++
++		/* limit events per mmap handled all at once */
++		n++;
++		if (n == nr_per_mmap)
++			break;
++	}
++
++	return n;
++}
++
++int perf_session__mmap_read(struct perf_tool *tool,
++			    struct perf_session *session,
++			    struct perf_evlist *evlist,
++			    int nr_per_mmap)
++{
++	int i, err, throttled = 0;
++	s64 n, ntotal = 0;
++	u64 flush_time = ULLONG_MAX, mmap_time;
++
++	for (i = 0; i < evlist->nr_mmaps; i++) {
++		n = perf_session__mmap_read_idx(session, i, &mmap_time,
++						nr_per_mmap);
++		if (n < 0)
++			return -1;
++
++		/* flush time is going to be the minimum of all the individual
++		 * mmap times. Essentially, we flush all the samples queued up
++		 * from the last pass under our minimal start time -- that leaves
++		 * a very small race for samples to come in with a lower timestamp.
++		 * The ioctl to return the perf_clock timestamp should close the
++		 * race entirely.
++		 */
++		if (mmap_time < flush_time)
++			flush_time = mmap_time;
++
++		ntotal += n;
++		if (n == nr_per_mmap)
++			throttled = 1;
++	}
++
++	/* flush queue after each round in which we processed events */
++	if (ntotal) {
++		session->ordered_samples.next_flush = flush_time;
++		err = tool->finished_round(tool, NULL, session);
++		if (err)
++			return err;
++	}
++
++	return throttled;
++}
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 9494fb68828a..e79da3c1071e 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -133,4 +133,9 @@ int __perf_session__set_tracepoints_handlers(struct perf_session *session,
+ extern volatile int session_done;
+ 
+ #define session_done()	(*(volatile int *)(&session_done))
++
++int perf_session__mmap_read(struct perf_tool *tool,
++			    struct perf_session *session,
++			    struct perf_evlist *evlist,
++			    int nr_per_mmap);
+ #endif /* __PERF_SESSION_H */
 -- 
-2.0.0
-
+1.8.3.2
 
