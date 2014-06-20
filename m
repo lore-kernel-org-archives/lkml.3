@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966572AbaFTJGG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 05:06:06 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:43503 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965860AbaFTJGA (ORCPT
+	id S965847AbaFTJJy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 05:09:54 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:18562 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755026AbaFTJJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 05:06:00 -0400
-From: Sachin Kamat <sachin.kamat@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, andreas.noever@gmail.com, spk.linux@gmail.com
-Subject: [PATCH 6/6] thunderbolt: Staticize nhi_ids
-Date: Fri, 20 Jun 2014 14:32:34 +0530
-Message-Id: <1403254954-14429-6-git-send-email-sachin.kamat@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1403254954-14429-1-git-send-email-sachin.kamat@samsung.com>
-References: <1403254954-14429-1-git-send-email-sachin.kamat@samsung.com>
+	Fri, 20 Jun 2014 05:09:51 -0400
+Date: Fri, 20 Jun 2014 12:09:37 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: lidza.louina@gmail.com, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, driverdev-devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: dgap: make dgap_found_board() return a brd
+ pointer
+Message-ID: <20140620090937.GS5500@mwanda>
+References: <20140620051958.GA17076@devel.8.8.4.4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140620051958.GA17076@devel.8.8.4.4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'nhi_ids' is local to this file.
+On Fri, Jun 20, 2014 at 02:19:58PM +0900, Daeseok Youn wrote:
+> -	rc = dgap_found_board(pdev, ent->driver_data, dgap_numboards);
+> -	if (rc)
+> +	brd = dgap_found_board(pdev, ent->driver_data, dgap_numboards);
+> +	if (IS_ERR(brd))
+>  		return rc;
 
-Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
----
- drivers/thunderbolt/nhi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+		return ERR_PTR(brd);
 
-diff --git a/drivers/thunderbolt/nhi.c b/drivers/thunderbolt/nhi.c
-index 0fc137af89f5..2054fbf8b382 100644
---- a/drivers/thunderbolt/nhi.c
-+++ b/drivers/thunderbolt/nhi.c
-@@ -632,7 +632,7 @@ static const struct dev_pm_ops nhi_pm_ops = {
- 	.restore_noirq = nhi_resume_noirq,
- };
- 
--struct pci_device_id nhi_ids[] = {
-+static struct pci_device_id nhi_ids[] = {
- 	/*
- 	 * We have to specify class, the TB bridges use the same device and
- 	 * vendor (sub)id.
--- 
-1.7.9.5
+
+>  
+> -	brd = dgap_board[dgap_numboards++];
+>  	rc = dgap_firmware_load(pdev, ent->driver_data, brd);
+>  	if (rc)
+>  		goto cleanup_brd;
+> @@ -617,6 +617,8 @@ static int dgap_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+>  	brd->state = BOARD_READY;
+>  	brd->dpastatus = BD_RUNNING;
+>  
+> +	dgap_board[dgap_numboards++] = brd;
+
+You need to update the error handling of this function to remove the
+reference do dgap_board[] as well.
+
+> +
+>  	return 0;
+>  
+
+regards,
+dan carpenter
 
