@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933183AbaFTAhc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 20:37:32 -0400
-Received: from ozlabs.org ([103.22.144.67]:51445 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754038AbaFTAha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 20:37:30 -0400
-Message-ID: <1403224646.18509.1.camel@concordia>
-Subject: Re: Re: Re: [RFT PATCH -next v3] [BUGFIX] kprobes: Fix "Failed to
- find blacklist" error on ia64 and ppc64
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: "Suzuki K. Poulose" <suzuki@in.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
-        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-tip-commits@vger.kernel.org, anil.s.keshavamurthy@intel.com,
-        Ingo Molnar <mingo@kernel.org>, Fenghua Yu <fenghua.yu@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
-        akataria@vmware.com, Tony Luck <tony.luck@intel.com>,
-        Kevin Hao <haokexin@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, rdunlap@infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>
-Date: Fri, 20 Jun 2014 10:37:26 +1000
-In-Reply-To: <53A2C78D.9060708@hitachi.com>
-References: <5387F150.5000307@hitachi.com>
-	 <20140530031838.17427.75896.stgit@ltc230.yrl.intra.hitachi.co.jp>
-	 <539161D6.7020508@hitachi.com> <1403078179.32307.7.camel@concordia>
-	 <53A15201.7060404@hitachi.com> <1403141433.4768.1.camel@concordia>
-	 <53A26C99.6060000@hitachi.com> <53A285D0.1030106@in.ibm.com>
-	 <53A2908E.2000806@hitachi.com> <53A2B136.108@in.ibm.com>
-	 <53A2C315.9030006@hitachi.com> <53A2C78D.9060708@hitachi.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754537AbaFTBEb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 21:04:31 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:58405 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753688AbaFTBEa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 21:04:30 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@kernel.org, artagnon@gmail.com, jolsa@redhat.com,
+        rusty@rustcorp.com.au, bp@suse.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] perf timechart: implement IO mode
+References: <1403180583-12309-1-git-send-email-stfomichev@yandex-team.ru>
+	<1403180583-12309-2-git-send-email-stfomichev@yandex-team.ru>
+Date: Fri, 20 Jun 2014 10:04:21 +0900
+In-Reply-To: <1403180583-12309-2-git-send-email-stfomichev@yandex-team.ru>
+	(Stanislav Fomichev's message of "Thu, 19 Jun 2014 16:23:01 +0400")
+Message-ID: <87egyk75nu.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-19 at 20:20 +0900, Masami Hiramatsu wrote:
-> (2014/06/19 20:01), Masami Hiramatsu wrote:
-> 
-> >>>>> Ah, those messages should be shown in dmesg when booting if it doesn't work,
-> >>>>> because the messages are printed by initialization process of kprobe blacklist.
-> >>>>> So, reproducing it is just enabling CONFIG_KPROBES and boot it.
-> >>>> Well,  we don't get those messages on Power, since the kallsyms has the
-> >>>> entries for ".function_name". The correct way to verify is, either  :
-> >>>
-> >>> Hmm, that seems another issue on powerpc. Is that expected(and designed)
-> >>> behavior?
-> >> AFAIK, yes, it is.
-> >> To be more precise :
-> >>
-> >> we have 'foo' and '.foo' for a function foo(), where 'foo' points to the
-> >> function_entry and '.foo' points to the actual function.
-> > 
-> > Ah, I see. So if we run
-> > 
-> >   func_ptr p = foo;
-> >   return p == kallsyms_lookup_name(".foo");
-> > 
-> > it returns true.
-> 
-> One more thing I should know, is the address of ".function_name" within the
-> kernel text? In other words, does kernel_text_address() return true for that
-> address? If not, it's easy to verify the address.
+Hi Stanislav,
 
-Yes. That is the text address, kernel_text_address() should definitely return
-true.
+On Thu, 19 Jun 2014 16:23:01 +0400, Stanislav Fomichev wrote:
+> In IO mode timechart shows any disk/network activity.
+> +	for (i = 0; i < disk_events_nr; i++) {
+> +		if (!is_valid_tracepoint(disk_events[i])) {
+> +			rec_argc--;
 
-On 64-bit, ABIv1, "foo" points to the function descriptor, in the ".opd"
-section.
-
-".foo" points to the actual text of the function, in ".text".
-
-On 64-bit, ABIv2, "foo" points to the text in ".text". There are no dot
-symbols.
-
-cheers
+It (and others below) should be 'rec_argc -= 4' - i.e. I still see the
+segfault. :)
 
 
+> +			continue;
+> +		}
+> +
+> +		*p++ = "-e";
+> +		*p++ = strdup(disk_events[i]);
+> +		*p++ = "--filter";
+> +		*p++ = filter;
+> +	}
+
+
+[SNIP]
+> +void svg_ubox(int Yslot, u64 start, u64 end, double height, const char *type, int fd, int err, int merges)
+> +{
+> +	double w = time2pixels(end) - time2pixels(start);
+> +	height = normalize_height(height);
+> +
+> +	if (!svgfile)
+> +		return;
+> +
+> +	fprintf(svgfile, "<g>\n");
+> +	fprintf(svgfile, "<title>fd=%d error=%d merges=%d</title>\n", fd, err, merges);
+> +	fprintf(svgfile, "<rect x=\"%.8f\" width=\"%.8f\" y=\"%.1f\" height=\"%.1f\" class=\"%s\"/>\n",
+
+Looks like this change should be applied to the exsting (for cpu and
+power events) boxes too.  Care to send it as a separate fix?
+
+
+> +		time2pixels(start),
+> +		w,
+> +		Yslot * SLOT_MULT,
+> +		SLOT_HALF * height,
+> +		type);
+> +	fprintf(svgfile, "</g>\n");
+> +}
+
+
+[SNIP]
+> @@ -579,8 +669,10 @@ void svg_time_grid(void)
+>  			color = 128;
+>  		}
+>  
+> -		fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%" PRIu64 "\" style=\"stroke:rgb(%i,%i,%i);stroke-width:%1.3f\"/>\n",
+> -			time2pixels(i), SLOT_MULT/2, time2pixels(i), total_height, color, color, color, thickness);
+> +		if (thickness >= min_thickness)
+> +			fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%" PRIu64 "\" style=\"stroke:rgb(%i,%i,%i);stroke-width:%1.3f\"/>\n",
+
+It seems you missed the change above (s/4.8f/.8f/g). :)
+
+Thanks,
+Namhyung
+
+
+> +				time2pixels(i), SLOT_MULT/2, time2pixels(i),
+> +				total_height, color, color, color, thickness);
+>  
+>  		i += 10000000;
+>  	}
