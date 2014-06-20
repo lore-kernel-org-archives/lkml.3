@@ -1,133 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935128AbaFTRMr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 13:12:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59692 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934676AbaFTRMq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 13:12:46 -0400
-Date: Fri, 20 Jun 2014 10:12:44 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [RFC][PATCH 1/3] trace_seq: Move the trace_seq code to lib/
-Message-Id: <20140620101244.a1f4534e.akpm@linux-foundation.org>
-In-Reply-To: <20140620125823.5acb12dd@gandalf.local.home>
-References: <20140619213329.478113470@goodmis.org>
-	<20140619213952.058255809@goodmis.org>
-	<20140619220607.c6da2540.akpm@linux-foundation.org>
-	<20140620125823.5acb12dd@gandalf.local.home>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S935141AbaFTRNW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 13:13:22 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40949 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756865AbaFTRNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 13:13:20 -0400
+Message-ID: <53A46B49.3040009@ti.com>
+Date: Fri, 20 Jun 2014 13:11:37 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Murali Karicheri <m-karicheri2@ti.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+CC: linux-arm <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mohit Kumar <mohit.kumar@st.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Richard Zhu <r65037@freescale.com>,
+        "ABRAHAM, KISHON VIJAY" <kishon@ti.com>, Marek Vasut <marex@denx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH v2 0/8] Add Keystone PCIe controller driver
+References: <1402426287-31157-1-git-send-email-m-karicheri2@ti.com> <CAErSpo6=vi0SR0A3u5BCLgiGxoH48N5R=e8VAnFDG=K61qLxnw@mail.gmail.com> <53A453D1.4040308@ti.com>
+In-Reply-To: <53A453D1.4040308@ti.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jun 2014 12:58:23 -0400 Steven Rostedt <rostedt@goodmis.org> wrote:
-
->
-> ...
->
-> > 
-> > > + * Writes a ASCII representation of a bitmask string into @s.
-> > > + */
-> > > +int
-> > > +trace_seq_bitmask(struct trace_seq *s, const unsigned long *maskp,
-> > > +		  int nmaskbits)
-> > > +{
-> > > +	int len = (PAGE_SIZE - 1) - s->len;
-> > > +	int ret;
-> > > +
-> > > +	if (s->full || !len)
-> > > +		return 0;
-> > > +
-> > > +	ret = bitmap_scnprintf(s->buffer, len, maskp, nmaskbits);
-> > > +	s->len += ret;
-> > > +
-> > > +	return 1;
-> > > +}
-> > > +EXPORT_SYMBOL_GPL(trace_seq_bitmask);
-> > 
-> > More dittos.
+On Friday 20 June 2014 11:31 AM, Murali Karicheri wrote:
+> On 6/17/2014 8:08 PM, Bjorn Helgaas wrote:
+>> On Tue, Jun 10, 2014 at 02:51:19PM -0400, Murali Karicheri wrote:
+>>> This patch adds a PCIe controller driver for Keystone SoCs. This
+>>> is based on v1 of the series posted to the mailing list.
+>>>
+>>> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>> CC: Russell King <linux@arm.linux.org.uk>
+>>> CC: Grant Likely <grant.likely@linaro.org>
+>>> CC: Rob Herring <robh+dt@kernel.org>
+>>> CC: Mohit Kumar <mohit.kumar@st.com>
+>>> CC: Jingoo Han <jg1.han@samsung.com>
+>>> CC: Bjorn Helgaas <bhelgaas@google.com>
+>>> CC: Pratyush Anand <pratyush.anand@st.com>
+>>> CC: Richard Zhu <r65037@freescale.com>
+>>> CC: Kishon Vijay Abraham I <kishon@ti.com>
+>>> CC: Marek Vasut <marex@denx.de>
+>>> CC: Arnd Bergmann <arnd@arndb.de>
+>>> CC: Pawel Moll <pawel.moll@arm.com>
+>>> CC: Mark Rutland <mark.rutland@arm.com>
+>>> CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
+>>> CC: Kumar Gala <galak@codeaurora.org>
+>>> CC: Randy Dunlap <rdunlap@infradead.org>
+>>> CC: Grant Likely <grant.likely@linaro.org>
+>>>
+>>>
+>>> Changelog:
+>>>
+>>> V2
+>>>   - Split the designware pcie enhancement patch to multiple
+>>>     patches based on functionality added
+>>>   - Remove the quirk code and add a patch to fix mps/mrss
+>>>     tuning for ARM. Use kernel command line parameter
+>>>     pci=pcie_bus_perf to work with Keystone PCI Controller.
+>>>     Following patch addressed this.
+>>>       [PATCH v1] ARM: pci: add call to pcie_bus_configure_settings()
+>>>   - Add documentation for device tree bindings
+>>>   - Add separate interrupt controller nodes for MSI and Legacy
+>>>     IRQs and use irq map for legacy IRQ
+>>>   - Use compatibility to identify v3.65 version of the DW hardware
+>>>     and use it to customize the designware common code.
+>>>   - Use reg property for configuration space instead of range
+>>>   - Other minor updates based on code inspection.
+>>>
+>>> V1
+>>>   - Add an interrupt controller node for Legacy irq chip and use
+>>>     interrupt map/map-mask property to map legacy IRQs A/B/C/D
+>>>   - Add a Phy driver to replace the original serdes driver
+>>>   - Move common application register handling code to a separate
+>>>     file to allow re-use across other platforms that use older
+>>>     DW PCIe h/w
+>>>   - PCI quirk for maximum read request size. Check and override only
+>>>     if the maximum is higher than what controller can handle.
+>>>   - Converted to a module platform driver.
+>>>
+>>>
+>>> Murali Karicheri (8):
+>>>    PCI: designware: add rd[wr]_other_conf API
+>>>    PCI: designware: refactor host init code to re-use on v3.65 DW pci hw
+>>>    PCI: designware: update pcie core driver to work with dw hw version
+>>>      3.65
+>>>    PCI: designware: add msi controller functions for v3.65 hw
+>>>    PCI: designware: add PCI controller functions for v3.65 DW hw
+>>>    phy: Add serdes phy driver for keystone
+>>>    PCI: keystone: add pcie driver based on designware core driver
+>>>    ARM: keystone: add pcie related options
+>>>
+>>>   .../devicetree/bindings/pci/designware-pcie.txt    |   42 ++
+>>>   .../devicetree/bindings/pci/pci-keystone.txt       |   56 +++
+>>>   .../bindings/phy/phy-keystone-serdes.txt           |   25 ++
+>>>   arch/arm/mach-keystone/Kconfig                     |    1 +
+>>>   drivers/pci/host/Kconfig                           |   12 +
+>>>   drivers/pci/host/Makefile                          |    2 +
+>>>   drivers/pci/host/pci-dw-v3_65-msi.c                |  149 +++++++
+>>>   drivers/pci/host/pci-dw-v3_65.c                    |  390 ++++++++++++++++++
+>>>   drivers/pci/host/pci-dw-v3_65.h                    |   34 ++
+>>>   drivers/pci/host/pci-keystone.c                    |  418 ++++++++++++++++++++
+>>>   drivers/pci/host/pcie-designware.c                 |  175 +++++---
+>>>   drivers/pci/host/pcie-designware.h                 |   42 +-
+>>>   drivers/phy/Kconfig                                |    6 +
+>>>   drivers/phy/Makefile                               |    1 +
+>>>   drivers/phy/phy-keystone-serdes.c                  |  230 +++++++++++
+>>>   15 files changed, 1531 insertions(+), 52 deletions(-)
+>>>   create mode 100644 Documentation/devicetree/bindings/pci/pci-keystone.txt
+>>>   create mode 100644 Documentation/devicetree/bindings/phy/phy-keystone-serdes.txt
+>>>   create mode 100644 drivers/pci/host/pci-dw-v3_65-msi.c
+>>>   create mode 100644 drivers/pci/host/pci-dw-v3_65.c
+>>>   create mode 100644 drivers/pci/host/pci-dw-v3_65.h
+>>>   create mode 100644 drivers/pci/host/pci-keystone.c
+>>>   create mode 100644 drivers/phy/phy-keystone-serdes.c
+>> I'm not willing to merge phy-keystone-serdes.c because I don't
+>> maintain drivers/phy and because of the binary blob of register values
+>> it contains, but maybe somebody else will.  I assume it could be
+>> merged by itself before the rest of this.
+>>
+>> I'm looking for acks from Mohit and/or Jingoo for the pci/host
+>> changes, and from Arnd for the devicetree/bindings changes.
+>>
+>> Adding these "-dw-3_64" files is sort of ugly.  If that code is only
+>> used by keystone, maybe it could just be moved to pci-keystone.c?  But
+>> I'll defer to Mohit and Jingoo on that and the way you modify
+>> pcie-designware.c.
+>>
+>> Bjorn
+> Bjorn, Jingoo,
 > 
-> Confused. What dittos is this dittoing?
-
-Unneeded newline, poorly considered choice of types.
-
->
-> ...
->
-> > > + * buffer (@s). Then the output may be either used by
-> > > + * the sequencer or pulled into another buffer.
-> > > + */
-> > > +int
-> > > +trace_seq_vprintf(struct trace_seq *s, const char *fmt, va_list args)
-> > > +{
-> > > +	int len = (PAGE_SIZE - 1) - s->len;
-> > > +	int ret;
-> > > +
-> > > +	if (s->full || !len)
-> > > +		return 0;
-> > > +
-> > > +	ret = vsnprintf(s->buffer + s->len, len, fmt, args);
-> > > +
-> > > +	/* If we can't write it all, don't bother writing anything */
-> > > +	if (ret >= len) {
-> > > +		s->full = 1;
-> > > +		return 0;
-> > > +	}
-> > > +
-> > > +	s->len += ret;
-> > > +
-> > > +	return len;
-> > > +}
-> > > +EXPORT_SYMBOL_GPL(trace_seq_vprintf);
-> > 
-> > Several dittos.
+> Unfortunately I lost Jingoo's email from my Inbox. So I cut-n-paste the comment from
+> internet and respond.
 > 
-> Oh, just on the function. You're not dittoing a comment about the
-> EXPORT_SYMBOL_GPL() that you forgot to add, are you?
-
-yup.  Unneded newline, types, EXPORT_ confusion.
-
->
-> ...
->
-> > 
-> > > +#define HEX_CHARS		(MAX_MEMHEX_BYTES*2 + 1)
-> > > +
-> > > +int trace_seq_putmem_hex(struct trace_seq *s, const void *mem, size_t len)
-> > > +{
-> > > +	unsigned char hex[HEX_CHARS];
-> > > +	const unsigned char *data = mem;
-> > > +	int i, j;
-> > > +
-> > > +	if (s->full)
-> > > +		return 0;
-> > 
-> > What's this ->full thing all about anyway?  Some central comment which
-> > explains the design is needed.
+> Jingoo Han wrote:-
+> =============================================================================
+> I think so, too.
 > 
-> Comment? What? Git blame isn't good enough for ya? ;-)
-
-There's always that.  There's also googling for the original list
-dicsussion.  But it's a bit user-unfriendly, particularly when then
-code has aged was subsequently altered many times.
-
->
-> ...
->
+> DT maintainers and arch maintainers should review the following
+> dt bindings.
+>   .../devicetree/bindings/pci/designware-pcie.txt    |   42 ++
+>   .../devicetree/bindings/pci/pci-keystone.txt       |   56 +++
+> Generic PHY maintainer (Kishon Vijay Abraham I) should review the
+> following phy driver.
+>   drivers/phy/phy-keystone-serdes.c
 > 
-> Hey! Thanks for the review. Much appreciated. And maybe you should read
-> those messages in your /dev/null folder that I cc you with. :-)
+>>
+>> I'm looking for acks from Mohit and/or Jingoo for the pci/host
+>> changes, and from Arnd for the devicetree/bindings changes.
+>>
+>> Adding these "-dw-3_64" files is sort of ugly.  If that code is only
+>> used by keystone, maybe it could just be moved to pci-keystone.c?  But
+>> I'll defer to Mohit and Jingoo on that and the way you modify
+>> pcie-designware.c.
+> 
+> I agree with Bjorn Helgaas's opinion. These three "-dw-3_64" files
+> look terrible! I don't have a good way to handle this; however,
+> moving this code to pci-keystone.c looks better.
+> ======================================================================
+> 
+> The original RFC I had submitted had all of the application space register
+> handling code as part of the Keystone PCI driver. As per Arnd's comment (See
+> my change log against v1), the code was moved to a separate file so that
+> the next driver that has same version of the DW hw could re-use this code.
+> I agree with Arnd and moved the code to v_3_65 specific files.  What is
+> your proposal?  Do you have objection to the file name? or it's content?
+> 
+> If objection is on the file name,  please suggest alternate names. If you
+> are okay with the file name, and doesn't like the code, it will be helpful
+> to review the code and provide specific comments against the patch itself
+> so that I can address the same.
+> 
+Arnd suggestion was to have the version 3.65 code in generic place since
+its IP specific and just in case some other vendor using the same version
+can leverage the code.
 
-I sometimes do.
+Concern here seems toe really those name of the files. I can't think of
+any other appropriate name. 
+
+Regards,
+Santosh
+
+
