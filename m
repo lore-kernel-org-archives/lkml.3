@@ -1,130 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966956AbaFTLPR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 07:15:17 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:63576 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965558AbaFTLPP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 07:15:15 -0400
-Date: Fri, 20 Jun 2014 14:15:10 +0300
-From: Gleb Natapov <gleb@minantech.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, pbonzini@redhat.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, mgorman@suse.de,
-        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, laijs@cn.fujitsu.com, kvm@vger.kernel.org,
-        linux-mm@kvack.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        Avi Kivity <avi.kivity@gmail.com>
-Subject: Re: [RFC PATCH 1/1] Move two pinned pages to non-movable node in kvm.
-Message-ID: <20140620111509.GE20764@minantech.com>
-References: <1403070600-6083-1-git-send-email-tangchen@cn.fujitsu.com>
- <20140618061230.GA10948@minantech.com>
- <53A136C4.5070206@cn.fujitsu.com>
- <20140619092031.GA429@minantech.com>
- <20140619190024.GA3887@amt.cnet>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140619190024.GA3887@amt.cnet>
+	id S966974AbaFTLQf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 07:16:35 -0400
+Received: from shell.v3.sk ([195.168.3.45]:35976 "EHLO shell.v3.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966747AbaFTLQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 07:16:33 -0400
+From: Lubomir Rintel <lkundrak@v3.sk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Lubomir Rintel <lkundrak@v3.sk>
+Subject: [PATCH] staging: crystalhd: Do not mix integers and user pointers
+Date: Fri, 20 Jun 2014 13:16:17 +0200
+Message-Id: <1403262977-26100-1-git-send-email-lkundrak@v3.sk>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 04:00:24PM -0300, Marcelo Tosatti wrote:
-> On Thu, Jun 19, 2014 at 12:20:32PM +0300, Gleb Natapov wrote:
-> > CCing Marcelo,
-> > 
-> > On Wed, Jun 18, 2014 at 02:50:44PM +0800, Tang Chen wrote:
-> > > Hi Gleb,
-> > > 
-> > > Thanks for the quick reply. Please see below.
-> > > 
-> > > On 06/18/2014 02:12 PM, Gleb Natapov wrote:
-> > > >On Wed, Jun 18, 2014 at 01:50:00PM +0800, Tang Chen wrote:
-> > > >>[Questions]
-> > > >>And by the way, would you guys please answer the following questions for me ?
-> > > >>
-> > > >>1. What's the ept identity pagetable for ?  Only one page is enough ?
-> > > >>
-> > > >>2. Is the ept identity pagetable only used in realmode ?
-> > > >>    Can we free it once the guest is up (vcpu in protect mode)?
-> > > >>
-> > > >>3. Now, ept identity pagetable is allocated in qemu userspace.
-> > > >>    Can we allocate it in kernel space ?
-> > > >What would be the benefit?
-> > > 
-> > > I think the benefit is we can hot-remove the host memory a kvm guest
-> > > is using.
-> > > 
-> > > For now, only memory in ZONE_MOVABLE can be migrated/hot-removed. And the
-> > > kernel
-> > > will never use ZONE_MOVABLE memory. So if we can allocate these two pages in
-> > > kernel space, we can pin them without any trouble. When doing memory
-> > > hot-remove,
-> > > the kernel will not try to migrate these two pages.
-> > But we can do that by other means, no? The patch you've sent for instance.
-> > 
-> > > 
-> > > >
-> > > >>
-> > > >>4. If I want to migrate these two pages, what do you think is the best way ?
-> > > >>
-> > > >I answered most of those here: http://www.mail-archive.com/kvm@vger.kernel.org/msg103718.html
-> > > 
-> > > I'm sorry I must missed this email.
-> > > 
-> > > Seeing your advice, we can unpin these two pages and repin them in the next
-> > > EPT violation.
-> > > So about this problem, which solution would you prefer, allocate these two
-> > > pages in kernel
-> > > space, or migrate them before memory hot-remove ?
-> > > 
-> > > I think the first solution is simpler. But I'm not quite sure if there is
-> > > any other pages
-> > > pinned in memory. If we have the same problem with other kvm pages, I think
-> > > it is better to
-> > > solve it in the second way.
-> > > 
-> > > What do you think ?
-> > Remove pinning is preferable. In fact looks like for identity pagetable
-> > it should be trivial, just don't pin. APIC access page is a little bit
-> > more complicated since its physical address needs to be tracked to be
-> > updated in VMCS.
-> 
-> Yes, and there are new users of page pinning as well soon (see PEBS
-> threads on kvm-devel).
-> 
-> Was thinking of notifiers scheme. Perhaps:
-> 
-> ->begin_page_unpin(struct page *page)
-> 	- Remove any possible access to page.
-> 
-> ->end_page_unpin(struct page *page)
-> 	- Reinstantiate any possible access to page.
-> 
-> For KVM:
-> 
-> ->begin_page_unpin()
-> 	- Remove APIC-access page address from VMCS.
-> 	  or
-> 	- Remove spte translation to pinned page.
-> 	
-> 	- Put vcpu in state where no VM-entries are allowed.
-> 
-> ->end_page_unpin()
-> 	- Setup APIC-access page, ...
-> 	- Allow vcpu to VM-entry.
-> 
-I believe that to handle identity page and APIC access page we do not
-need any of those. We can use mmu notifiers to track when page begins
-to be moved and we can find new page location on EPT violation.
+Fixes the following sparse warnings:
 
-> 
-> Because allocating APIC access page from distant NUMA node can
-> be a performance problem, i believe.
-I do not think this is the case. APIC access page is never written to,
-and in fact SDM advice to share it between all vcpus.
+  crystalhd/crystalhd_lnx.c:227:61: warning: incorrect type in argument 3 (different base types)
+  crystalhd/crystalhd_lnx.c:227:61:    expected unsigned long [unsigned] ua
+  crystalhd/crystalhd_lnx.c:227:61:    got void [noderef] <asn:1>*ua
+  crystalhd/crystalhd_lnx.c:229:65: warning: incorrect type in argument 4 (different base types)
+  crystalhd/crystalhd_lnx.c:229:65:    expected unsigned long [unsigned] ua
+  crystalhd/crystalhd_lnx.c:229:65:    got void [noderef] <asn:1>*ua
 
---
-			Gleb.
+Done for the Eudyptula challenge.
+
+Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+---
+ drivers/staging/crystalhd/crystalhd_lnx.c | 24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/staging/crystalhd/crystalhd_lnx.c b/drivers/staging/crystalhd/crystalhd_lnx.c
+index e6fb331..b2d3ec6 100644
+--- a/drivers/staging/crystalhd/crystalhd_lnx.c
++++ b/drivers/staging/crystalhd/crystalhd_lnx.c
+@@ -136,9 +136,9 @@ static inline int crystalhd_user_data(void __user *ud, void *dr,
+ 
+ static int chd_dec_fetch_cdata(struct crystalhd_adp *adp,
+ 			       struct crystalhd_ioctl_data *io, uint32_t m_sz,
+-			       unsigned long ua)
++			       void __user *ua)
+ {
+-	unsigned long ua_off;
++	void __user *ua_off;
+ 	int rc = 0;
+ 
+ 	if (!adp || !io || !ua || !m_sz) {
+@@ -157,8 +157,8 @@ static int chd_dec_fetch_cdata(struct crystalhd_adp *adp,
+ 	rc = crystalhd_user_data((void __user *)ua_off, io->add_cdata,
+ 				 io->add_cdata_sz, 0);
+ 	if (rc) {
+-		BCMLOG_ERR("failed to pull add_cdata sz:%x ua_off:%x\n",
+-			   io->add_cdata_sz, (unsigned int)ua_off);
++		BCMLOG_ERR("failed to pull add_cdata sz:%x ua_off:%p\n",
++			   io->add_cdata_sz, ua_off);
+ 		vfree(io->add_cdata);
+ 		io->add_cdata = NULL;
+ 		return -ENODATA;
+@@ -169,9 +169,9 @@ static int chd_dec_fetch_cdata(struct crystalhd_adp *adp,
+ 
+ static int chd_dec_release_cdata(struct crystalhd_adp *adp,
+ 				 struct crystalhd_ioctl_data *io,
+-				 unsigned long ua)
++				 void __user *ua)
+ {
+-	unsigned long ua_off;
++	void __user *ua_off;
+ 	int rc;
+ 
+ 	if (!adp || !io || !ua) {
+@@ -185,8 +185,8 @@ static int chd_dec_release_cdata(struct crystalhd_adp *adp,
+ 					 io->add_cdata_sz, 1);
+ 		if (rc) {
+ 			BCMLOG_ERR(
+-				"failed to push add_cdata sz:%x ua_off:%x\n",
+-				 io->add_cdata_sz, (unsigned int)ua_off);
++				"failed to push add_cdata sz:%x ua_off:%p\n",
++				 io->add_cdata_sz, ua_off);
+ 			return -ENODATA;
+ 		}
+ 	}
+@@ -201,7 +201,7 @@ static int chd_dec_release_cdata(struct crystalhd_adp *adp,
+ 
+ static int chd_dec_proc_user_data(struct crystalhd_adp *adp,
+ 				  struct crystalhd_ioctl_data *io,
+-				  unsigned long ua, int set)
++				  void __user *ua, int set)
+ {
+ 	int rc;
+ 	uint32_t m_sz = 0;
+@@ -235,7 +235,7 @@ static int chd_dec_proc_user_data(struct crystalhd_adp *adp,
+ 	return rc;
+ }
+ 
+-static int chd_dec_api_cmd(struct crystalhd_adp *adp, unsigned long ua,
++static int chd_dec_api_cmd(struct crystalhd_adp *adp, void __user *ua,
+ 			   uint32_t uid, uint32_t cmd, crystalhd_cmd_proc func)
+ {
+ 	int rc;
+@@ -266,12 +266,14 @@ static int chd_dec_api_cmd(struct crystalhd_adp *adp, unsigned long ua,
+ }
+ 
+ /* API interfaces */
+-static long chd_dec_ioctl(struct file *fd, unsigned int cmd, unsigned long ua)
++static long chd_dec_ioctl(struct file *fd, unsigned int cmd,
++			  unsigned long __ua)
+ {
+ 	struct crystalhd_adp *adp = chd_get_adp();
+ 	crystalhd_cmd_proc cproc;
+ 	struct crystalhd_user *uc;
+ 	int ret;
++	void __user *ua = (void __user *)__ua;
+ 
+ 	if (!adp || !fd) {
+ 		BCMLOG_ERR("Invalid adp\n");
+-- 
+1.8.3.1
+
