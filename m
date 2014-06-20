@@ -1,139 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811AbaFTOnO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 10:43:14 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:46330 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751437AbaFTOnN (ORCPT
+	id S1753810AbaFTOoe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 10:44:34 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:58837 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753696AbaFTOoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 10:43:13 -0400
-Date: Fri, 20 Jun 2014 10:43:11 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Allen Yu <alleny@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] PM / Runtime: let rpm_resume fail if rpm disabled
- and device suspended.
-In-Reply-To: <2531875.1yYGe4dtjp@vostro.rjw.lan>
-Message-ID: <Pine.LNX.4.44L0.1406201000470.1160-100000@iolanthe.rowland.org>
+	Fri, 20 Jun 2014 10:44:30 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1403272331-3790755-1-git-send-email-arnd@arndb.de>
+References: <1403272331-3790755-1-git-send-email-arnd@arndb.de>
+From: Andreas Noever <andreas.noever@gmail.com>
+Date: Fri, 20 Jun 2014 16:44:05 +0200
+Message-ID: <CAMxnaaUThGenvkYkcx062tjwYgBnBDsXNsUzeFtrUa7AV8Pk-A@mail.gmail.com>
+Subject: Re: [PATCH 1/3] thunderbolt: add PCI dependency
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jun 2014, Rafael J. Wysocki wrote:
+Thanks for the series.
 
-> On Thursday, June 19, 2014 10:34:01 AM Alan Stern wrote:
-> > On Thu, 19 Jun 2014, Rafael J. Wysocki wrote:
-> > 
-> > > Well, we used to have the notion that runtime_status is not meaningful for
-> > > devices with dev->power.disable_depth greater than 0 (except for the special
-> > > case in the suspend code path where we know why it is greater than 0).  I think
-> > > it was useful. :-)
-> > 
-> > Did we really have that notion?  My memory is a little cloudy, but I 
-> > thought we decided that runtime_status would not be meaningful when 
-> > dev->power.runtime_error was set -- not when dev->power.disable_depth 
-> > was greater than 0.  Am I mixed up?
-> 
-> Well, we clearly did, because we added things like
-> 
-> pm_runtime_set_active()
-> pm_runtime_set_suspended()
-> 
-> which allow the status to be changed without doing anything to the device
-> while power.disable_depth is greater than 0.
+Patch 2 is equivalent to patches 1 and 2 from Sachin Kamat's series.
 
-Yes.  I'm not sure that was thought out as carefully as it could have
-been.
+@Greg: This series together with Sachin's patches should fix all build
+errors. I'll send patches for the remaining warnings later.
 
-Even with that restriction, it's not possible to guarantee that drivers
-won't make mistakes.  For example, suppose runtime_status is RPM_ACTIVE
-but the device really is powered down.  Before pm_runtime_disable() is
-called, pm_runtime_resume() will succeed.  The driver will think it can
-use the device, even though it can't.
+Andreas
 
-This demonstrates that changing the runtime status can't be done
-properly unless the subsystem and driver take some of the
-responsibility.  Since that is true, perhaps we ought to allow drivers
-to call pm_runtime_set_active/suspended() whenever they want, and rely
-on them not to mess things up.
-
-As far as I know, there are only two major use cases for 
-_set_active/_set_suspended: when the device is being initialized during 
-probe, and during system resume.  During probe it's pretty safe to 
-assume there won't be any runtime PM calls, and much the same is true 
-during system resume (especially during the resume_irq and resume_early 
-phases).  Therefore relying on drivers shouldn't make their jobs any 
-harder.
-
-> > In any case, I think it is reasonable to regard runtime_status as 
-> > meaningful when disable_depth > 0.
-> 
-> So we need to remove the above helpers and modify all code using them.
-
-We don't have to remove the helpers.  And practically none of the code 
-using them would need to be modified.  A certain amount of auditing 
-would be a good idea, though.
-
-> > The PM core isn't allowed to invoke the runtime callbacks at such times,
-> > that's all.  This makes perfect sense for a device that doesn't support
-> > power management and hence must always be at full power.  Or when a driver
-> > knows that runtime_status is out of agreement with the device's actual
-> > power state and wants to update runtime_status directly.
-> 
-> That's what it is supposed to use the above helpers for, isn't it?
-> 
-> Devices that don't support power management, but that we want to use
-> drivers supporting power management with are clearly a special case, so
-
-Are they?  I'm not so sure.  But never mind...
-
-> perhaps we should treat them as such instead of trying to modity the core
-> to silently cover this case too automatically?
-
-How would you treat them specially?  Add a "runtime_pm_not_supported" 
-flag?
-
-> > > > So pm_runtime_resume() and pm_request_resume() would still fail, but 
-> > > > pm_runtime_get() and pm_runtime_get_sync() would work?  I'm not sure 
-> > > > about the reason for this distinction.
-> > > 
-> > > The meaning of pm_runtime_get()/pm_runtime_get_sync() is "prevent the
-> > > device from being suspended from now on and resume it if necessary" while
-> > > "runtime PM disabled and runtime_status == RPM_ACTIVE" may be interpreted
-> > > as "not necessary to resume", so it is reasonable to special case this
-> > > particular situation for these particular routines IMHO.
-> > 
-> > By the same reasoning, the meaning of pm_runtime_resume() is "resume 
-> > the device now if necsesary".  Since "runtime PM disabled and 
-> > runtime_status == RPM_ACTIVE" means "not necessary to resume", isn't it 
-> > logical for pm_runtime_resume() also to succeed under that condition?
-> 
-> My point really is that pm_runtime_get()/pm_runtime_get_sync() actually carry
-> out two operations, (1) incrementing the usage counter and (2) resuming the
-> device if need be.  It is not particularly clear if/when the result of (2)
-> should determine the return value of (1) and (2) together, so there is some
-> freedom in that area which we can use to cover special cases.  That's all.
-
-Oh.  Well, currently those routines are documented as returning the 
-value from their internal pm_request_resume()/pm_runtime_resume() call.
-
-> I'm perfectly fine with leaving the code as is, though.  You wanted to change it. :-)
-
-I'd be equally happy with a "runtime_pm_not_supported" flag, or 
-something equivalent.  Implementing it wouldn't be hard: Setting the 
-flag could call pm_runtime_forbid() and make the power/control sysfs 
-attribute return -EPERM for any attempted write.  Perhaps also make 
-power/runtime_status show "unsupported" rather than "on".
-
-(Hmmm, now that I look at rtpm_status_show(), I see that it already 
-shows "unsupported" whenever disable_depth > 0.  Another indication of 
-how confused the situation is?)
-
-Alan Stern
-
+On Fri, Jun 20, 2014 at 3:52 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> The thunderbolt drivers cannot be built if CONFIG_PCI is disabled,
+> better add an explicit Kconfig dependency.
+> The "default no" line is redundant and can be removed at the same
+> time.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  drivers/thunderbolt/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/thunderbolt/Kconfig b/drivers/thunderbolt/Kconfig
+> index 3a25529..5aab79b 100644
+> --- a/drivers/thunderbolt/Kconfig
+> +++ b/drivers/thunderbolt/Kconfig
+> @@ -1,6 +1,6 @@
+>  menuconfig THUNDERBOLT
+>         tristate "Thunderbolt support for Apple devices"
+> -       default no
+> +       depends on PCI
+>         help
+>           Cactus Ridge Thunderbolt Controller driver
+>           This driver is required if you want to hotplug Thunderbolt devices on
+> --
+> 1.8.3.2
+>
