@@ -1,121 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455AbaFTOfb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 10:35:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56844 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751903AbaFTOfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 10:35:30 -0400
-Date: Fri, 20 Jun 2014 16:35:26 +0200
-From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Anderson <anderson@redhat.com>
-Subject: Re: [RFC][PATCH 0/3] x86/nmi: Print all cpu stacks from NMI safely
-Message-ID: <20140620143525.GB8769@pathway.suse.cz>
-References: <20140619213329.478113470@goodmis.org>
- <alpine.LNX.2.00.1406192349400.15014@pobox.suse.cz>
- <20140619185810.4137e14b@gandalf.local.home>
- <alpine.LNX.2.00.1406200100520.15014@pobox.suse.cz>
- <20140619191923.1365850a@gandalf.local.home>
- <alpine.LNX.2.00.1406200123220.15014@pobox.suse.cz>
- <20140619193635.1949b469@gandalf.local.home>
- <alpine.LNX.2.00.1406200137310.15014@pobox.suse.cz>
+	id S1752894AbaFTOho (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 10:37:44 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:46094 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568AbaFTOhm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 10:37:42 -0400
+Date: Fri, 20 Jun 2014 16:36:51 +0200
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org, andrew.cooper3@citrix.com,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        eshelton@pobox.com, hpa@zytor.com, ian.campbell@citrix.com,
+        jbeulich@suse.com, jeremy@goop.org, konrad.wilk@oracle.com,
+        matt.fleming@intel.com, mingo@redhat.com, mjg59@srcf.ucam.org,
+        stefano.stabellini@eu.citrix.com, tglx@linutronix.de
+Subject: Re: [PATCH v5 2/7] efi: Introduce EFI_NO_DIRECT flag
+Message-ID: <20140620143651.GE28489@olila.local.net-space.pl>
+References: <1402678823-24589-1-git-send-email-daniel.kiper@oracle.com>
+ <1402678823-24589-3-git-send-email-daniel.kiper@oracle.com>
+ <20140618135229.GH24049@console-pimps.org>
+ <20140618164835.GD28489@olila.local.net-space.pl>
+ <20140619144112.GT24049@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1406200137310.15014@pobox.suse.cz>
+In-Reply-To: <20140619144112.GT24049@console-pimps.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2014-06-20 01:38:59, Jiri Kosina wrote:
-> On Thu, 19 Jun 2014, Steven Rostedt wrote:
-> 
-> > > I don't think there is a need for a global stop_machine()-like 
-> > > synchronization here. The printing CPU will be sending IPI to the CPU N+1 
-> > > only after it has finished printing CPU N stacktrace.
-> > 
-> > So you plan on sending an IPI to a CPU then wait for it to acknowledge
-> > that it is spinning, and then print out the data and then tell the CPU
-> > it can stop spinning?
-> 
-> Yes, that was exactly my idea. You have to be synchronized with the CPU 
-> receiving the NMI anyway in case you'd like to get its pt_regs and dump 
-> those as part of the dump.
+On Thu, Jun 19, 2014 at 03:41:12PM +0100, Matt Fleming wrote:
+> On Wed, 18 Jun, at 06:48:35PM, Daniel Kiper wrote:
+> > >
+> > > Why don't you want to export efi.fw_vendor, etc? Rationale please.
+> >
+> > I am exporting real addresses (machine addresses) of things which
+> > I am able to get. Stuff which was created artificially and lives
+> > in dom0 address space or does not exist are not exported.
+>
+> So, wouldn't it be easier to just leave those fields as
+> EFI_INVALID_TABLE_ADDR? If they're not usable why fill out an address?
 
-This approach did not work after all. There was still the same
-race. If we stop a CPU in the middle of printk(), it does not help
-to move the printing task to another CPU ;-) We would need to
-make a copy of regs and all the stacks to unblock the CPU.
+It looks that EFI_PARAVIRT check is needed for efi.fw_vendor only.
+Probably I prepared this chunk of code before filling
+efi_systab_xen.runtime with EFI_INVALID_TABLE_ADDR. efi.fw_vendor
+contains pointer to vendor name which lives in dom0 memory and it
+is a copy of name living in EFI memory data. So, this pointer is useless
+for potential user of /sys/firmware/efi/fw_vendor. efi.fw_vendor is
+used in init code only. Hence, I was thinking once about wiping this
+pointer with EFI_INVALID_TABLE_ADDR. However, it requires some changes
+in arch/x86/platform/efi/efi.c (wipe it if EFI_PARAVIRT is set) and
+it is a hack for me. I prefer to live with current solution.
 
-Hmm, in general, if we want a consistent snapshot, we need to temporary store
-the information in NMI context and put it into the main ring buffer
-in normal context. We either need to copy stacks or copy the printed text.
+> > Hmmm... I do not know what is wrong with this minimal shuffling. We are
+> > playing here with internal stuff which is not visible outside of any
+> > given kernel. Additionally, as I saw in a few places arch bits are
+> > defined in following way:
+> >
+> > #define ARCH_1 10
+> >
+> > #define A_ARCH_CONST ARCH_1
+> > #define B_ARCH_CONST (ARCH_1 + 1)
+> > #define C_ARCH_CONST (ARCH_1 + 2)
+> > ...
+> >
+> > So I think addition is more natural here than subtraction.
+>
+> No, because we hit the same problem if we need more non-arch bits after
+> bit 9, it moves the problem, it doesn't fix it. Though admittedly, using
 
+10 is just an example. It could be an arbitrary value. However, you
+are right. This just moves the problem.
 
-I start to like Steven's solution with the trace_seq buffer. I see the
-following advantages:
+> this level of indirection (going through ARCH_1) instead of using
+> constants does reduce the problem.
+>
+> Yes, these bits are internal, and yes the shuffling is minimal, but we
+> can do better.
 
-    + the snapshot is pretty good;
-	+ we still send NMI to all CPUs at the "same" time
+As always, it is a place for an improvement. However, I am not sure
+it is worth fighting with that so hard.
 
-    + only minimal time is spent in NMI context;
-	+ CPUs are not blocked by each other to get sequential output
+> I'm not suggesting you need to modify your patch. I'm really just
+> thinking out loud. I'll take care of fixing this up later.
 
-    + minimum of new code
-	+ trace_seq buffer is already implemented and used
-	+ it might be even better after getting attention from new users
+OK. Thanks.
 
-
-Of course, it has also some disadvantages:
-
-   + needs quite big per-CPU buffer;
-	+ but we would need some extra space to copy the data anyway
-
-   + trace might be shrunken;
-	+ but 1 page should be enough in most cases;
-	+ we could make it configurable
-
-   + delay until the message appears in the ringbuffer and console
-	+ better than freezing
-	+ still saved in core file
-	+ crash tool could get improved to find the traces
-
-
-Note that the above solution solves only printing of the stack.
-There are still other locations when printk is called in NMI
-context. IMHO, some of them are helpful:
-
-    ./arch/x86/kernel/nmi.c:                        WARN(in_nmi(),
-    ./arch/x86/mm/kmemcheck/kmemcheck.c:    WARN_ON_ONCE(in_nmi());
-    ./arch/x86/mm/fault.c:  WARN_ON_ONCE(in_nmi());
-    ./arch/x86/mm/fault.c:  WARN_ON_ONCE(in_nmi());
-
-    ./mm/vmalloc.c: BUG_ON(in_nmi());
-    ./lib/genalloc.c:       BUG_ON(in_nmi());
-    ./lib/genalloc.c:       BUG_ON(in_nmi());
-    ./include/linux/hardirq.h:              BUG_ON(in_nmi());
-
-And some are probably less important:
-
-    ./arch/x86/platform/uv/uv_nmi.c   several locations here
-    ./arch/m68k/mac/macints.c-              printk("... pausing, press NMI to resume ...");
-
-
-Well, there are only few. Maybe, we could share the trace_seq buffer
-here.
-
-Of course, there is still the possibility to implement a lockless
-buffer. But it will be much more complicated than the current one.
-I am not sure that we really want it.
-
-
-Best Regards,
-Petr
+Daniel
