@@ -1,81 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967108AbaFTKxI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 06:53:08 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44946 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966558AbaFTKxG (ORCPT
+	id S967116AbaFTKyA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 06:54:00 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:55347 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965650AbaFTKx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 06:53:06 -0400
-Date: Fri, 20 Jun 2014 11:52:17 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Matthias Brugger <matthias.bgg@gmail.com>
-Subject: Re: [PATCH 1/2] clocksource: arm_arch_timer: remove static from
- arch_timer_init
-Message-ID: <20140620105217.GI30188@leverpostej>
-References: <70167479.zcs3JF0luJ@diego>
- <3602534.r5eJA8RqrN@diego>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3602534.r5eJA8RqrN@diego>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 20 Jun 2014 06:53:59 -0400
+From: Pramod Gurav <pramod.gurav.etc@gmail.com>
+To: linux-kernel@vger.kernel.org, inux-pm@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Pramod Gurav <pramod.gurav.etc@gmail.com>
+Subject: [PATCH] cpuidle: Fix Coding style reported by checkpatch.pl
+Date: Fri, 20 Jun 2014 16:27:45 +0530
+Message-Id: <1403261865-7472-1-git-send-email-pramod.gurav.etc@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 11:44:11AM +0100, Heiko Stübner wrote:
-> There exist SoCs that need some special setup procedure for their architected-timer
-> to work. Therefore allow arch_timer_init to be called from such specialized
-> clocksources.
-> 
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> ---
->  drivers/clocksource/arm_arch_timer.c | 2 +-
->  drivers/clocksource/arm_arch_timer.h | 7 +++++++
->  2 files changed, 8 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/clocksource/arm_arch_timer.h
-> 
-> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-> index 5163ec1..55116d6 100644
-> --- a/drivers/clocksource/arm_arch_timer.c
-> +++ b/drivers/clocksource/arm_arch_timer.c
-> @@ -635,7 +635,7 @@ static void __init arch_timer_common_init(void)
->  	arch_timer_arch_init();
->  }
->  
-> -static void __init arch_timer_init(struct device_node *np)
-> +void __init arch_timer_init(struct device_node *np)
->  {
->  	int i;
->  
-> diff --git a/drivers/clocksource/arm_arch_timer.h b/drivers/clocksource/arm_arch_timer.h
-> new file mode 100644
-> index 0000000..af3974d
-> --- /dev/null
-> +++ b/drivers/clocksource/arm_arch_timer.h
-> @@ -0,0 +1,7 @@
-> +/*
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +void __init arch_timer_init(struct device_node *np);
+Fixed: ERROR: do not use assignment in if condition
+Fixed: WARNING: EXPORT_SYMBOL should immediately follow its function
+Fixed: WARNING: line over 80 characters in a comment
 
-If we _really_ need this (which I hope we don't), we already have
-include/clocksource/arm_arch_timer.h.
+CC: Rafael J. Wysocki <rjw@rjwysocki.net>
+CC: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-Mark.
+Signed-off-by: Pramod Gurav <pramod.gurav.etc@gmail.com>
+---
+ drivers/cpuidle/cpuidle.c |   18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 8236746..2c8752e 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -179,7 +179,9 @@ void cpuidle_reflect(struct cpuidle_device *dev, int index)
+ void cpuidle_install_idle_handler(void)
+ {
+ 	if (enabled_devices) {
+-		/* Make sure all changes finished before we switch to new idle */
++		/*
++		 * Make sure all changes finished before we switch to new idle
++		 */
+ 		smp_wmb();
+ 		initialized = 1;
+ 	}
+@@ -204,7 +206,6 @@ void cpuidle_pause_and_lock(void)
+ 	mutex_lock(&cpuidle_lock);
+ 	cpuidle_uninstall_idle_handler();
+ }
+-
+ EXPORT_SYMBOL_GPL(cpuidle_pause_and_lock);
+ 
+ /**
+@@ -215,7 +216,6 @@ void cpuidle_resume_and_unlock(void)
+ 	cpuidle_install_idle_handler();
+ 	mutex_unlock(&cpuidle_lock);
+ }
+-
+ EXPORT_SYMBOL_GPL(cpuidle_resume_and_unlock);
+ 
+ /* Currently used in suspend/resume path to suspend cpuidle */
+@@ -267,9 +267,11 @@ int cpuidle_enable_device(struct cpuidle_device *dev)
+ 	if (ret)
+ 		return ret;
+ 
+-	if (cpuidle_curr_governor->enable &&
+-	    (ret = cpuidle_curr_governor->enable(drv, dev)))
+-		goto fail_sysfs;
++	if (cpuidle_curr_governor->enable) {
++		ret = cpuidle_curr_governor->enable(drv, dev);
++		if (ret)
++			goto fail_sysfs;
++	}
+ 
+ 	smp_wmb();
+ 
+@@ -283,7 +285,6 @@ fail_sysfs:
+ 
+ 	return ret;
+ }
+-
+ EXPORT_SYMBOL_GPL(cpuidle_enable_device);
+ 
+ /**
+@@ -311,7 +312,6 @@ void cpuidle_disable_device(struct cpuidle_device *dev)
+ 	cpuidle_remove_device_sysfs(dev);
+ 	enabled_devices--;
+ }
+-
+ EXPORT_SYMBOL_GPL(cpuidle_disable_device);
+ 
+ static void __cpuidle_unregister_device(struct cpuidle_device *dev)
+@@ -399,7 +399,6 @@ out_unregister:
+ 	__cpuidle_unregister_device(dev);
+ 	goto out_unlock;
+ }
+-
+ EXPORT_SYMBOL_GPL(cpuidle_register_device);
+ 
+ /**
+@@ -423,7 +422,6 @@ void cpuidle_unregister_device(struct cpuidle_device *dev)
+ 
+ 	cpuidle_resume_and_unlock();
+ }
+-
+ EXPORT_SYMBOL_GPL(cpuidle_unregister_device);
+ 
+ /**
+-- 
+1.7.9.5
+
