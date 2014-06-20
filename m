@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966649AbaFTUMR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:12:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41915 "EHLO mx1.redhat.com"
+	id S966513AbaFTUMP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:12:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23243 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755033AbaFTUML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753892AbaFTUML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Jun 2014 16:12:11 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
@@ -13,54 +13,65 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         linux-kernel@vger.kernel.org,
         Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: [PATCH v3 08/13] numa_maps: fix typo in gather_hugetbl_stats
-Date: Fri, 20 Jun 2014 16:11:34 -0400
-Message-Id: <1403295099-6407-9-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH v3 03/13] pagewalk: add walk_page_vma()
+Date: Fri, 20 Jun 2014 16:11:29 -0400
+Message-Id: <1403295099-6407-4-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1403295099-6407-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1403295099-6407-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just doing s/gather_hugetbl_stats/gather_hugetlb_stats/g, this makes code
-grep-friendly.
+Introduces walk_page_vma(), which is useful for the callers which want to
+walk over a given vma.  It's used by later patches.
+
+ChangeLog:
+- check walk_page_test's return value instead of walk->skip
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- fs/proc/task_mmu.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ include/linux/mm.h |  1 +
+ mm/pagewalk.c      | 18 ++++++++++++++++++
+ 2 files changed, 19 insertions(+)
 
-diff --git v3.16-rc1.orig/fs/proc/task_mmu.c v3.16-rc1/fs/proc/task_mmu.c
-index b4459c006d50..ac50a829320a 100644
---- v3.16-rc1.orig/fs/proc/task_mmu.c
-+++ v3.16-rc1/fs/proc/task_mmu.c
-@@ -1347,7 +1347,7 @@ static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
- 	return 0;
- }
- #ifdef CONFIG_HUGETLB_PAGE
--static int gather_hugetbl_stats(pte_t *pte, unsigned long hmask,
-+static int gather_hugetlb_stats(pte_t *pte, unsigned long hmask,
- 		unsigned long addr, unsigned long end, struct mm_walk *walk)
- {
- 	struct numa_maps *md;
-@@ -1366,7 +1366,7 @@ static int gather_hugetbl_stats(pte_t *pte, unsigned long hmask,
- }
+diff --git v3.16-rc1.orig/include/linux/mm.h v3.16-rc1/include/linux/mm.h
+index 489a63a06a4a..7e9287750866 100644
+--- v3.16-rc1.orig/include/linux/mm.h
++++ v3.16-rc1/include/linux/mm.h
+@@ -1137,6 +1137,7 @@ struct mm_walk {
  
- #else
--static int gather_hugetbl_stats(pte_t *pte, unsigned long hmask,
-+static int gather_hugetlb_stats(pte_t *pte, unsigned long hmask,
- 		unsigned long addr, unsigned long end, struct mm_walk *walk)
- {
- 	return 0;
-@@ -1396,7 +1396,7 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
- 	/* Ensure we start with an empty set of numa_maps statistics. */
- 	memset(md, 0, sizeof(*md));
- 
--	walk.hugetlb_entry = gather_hugetbl_stats;
-+	walk.hugetlb_entry = gather_hugetlb_stats;
- 	walk.pmd_entry = gather_pte_stats;
- 	walk.private = md;
- 	walk.mm = mm;
+ int walk_page_range(unsigned long addr, unsigned long end,
+ 		struct mm_walk *walk);
++int walk_page_vma(struct vm_area_struct *vma, struct mm_walk *walk);
+ void free_pgd_range(struct mmu_gather *tlb, unsigned long addr,
+ 		unsigned long end, unsigned long floor, unsigned long ceiling);
+ int copy_page_range(struct mm_struct *dst, struct mm_struct *src,
+diff --git v3.16-rc1.orig/mm/pagewalk.c v3.16-rc1/mm/pagewalk.c
+index 86d811202374..16865e5029f6 100644
+--- v3.16-rc1.orig/mm/pagewalk.c
++++ v3.16-rc1/mm/pagewalk.c
+@@ -271,3 +271,21 @@ int walk_page_range(unsigned long start, unsigned long end,
+ 	} while (start = next, start < end);
+ 	return err;
+ }
++
++int walk_page_vma(struct vm_area_struct *vma, struct mm_walk *walk)
++{
++	int err;
++
++	if (!walk->mm)
++		return -EINVAL;
++
++	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
++	VM_BUG_ON(!vma);
++	walk->vma = vma;
++	err = walk_page_test(vma->vm_start, vma->vm_end, walk);
++	if (err > 0)
++		return 0;
++	if (err < 0)
++		return err;
++	return __walk_page_range(vma->vm_start, vma->vm_end, walk);
++}
 -- 
 1.9.3
 
