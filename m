@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965754AbaFTHwj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 03:52:39 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57253 "EHLO
+	id S965974AbaFTHxV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 03:53:21 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57259 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794AbaFTHwi (ORCPT
+	with ESMTP id S1752970AbaFTHxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 03:52:38 -0400
-Date: Fri, 20 Jun 2014 09:52:33 +0200 (CEST)
+	Fri, 20 Jun 2014 03:53:20 -0400
+Date: Fri, 20 Jun 2014 09:53:18 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
 To: Viresh Kumar <viresh.kumar@linaro.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        devicetree@vger.kernel.org, spear-devel <spear-devel@list.st.com>
-Subject: Re: [patch 2/2] dts: spear: Add missing i2c1 interrupt
-In-Reply-To: <CAOh2x==eh=k-LWK89QY_B0f9e7ctZE035NQm_vumayBYf3Mtnw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1406200951400.5170@nanos>
-References: <20140619215347.139324048@linutronix.de> <20140619215557.875556819@linutronix.de> <CAOh2x==eh=k-LWK89QY_B0f9e7ctZE035NQm_vumayBYf3Mtnw@mail.gmail.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        spear-devel <spear-devel@list.st.com>
+Subject: Re: [patch 2/2] clk: spear3xx: Set proper clock parent of uart1/2
+In-Reply-To: <CAOh2x=niR4_jtWL2VRvZJ8LKkmW4fyNXB9+UzUKeRSagdm1xFw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.10.1406200952580.5170@nanos>
+References: <20140619214858.755664030@linutronix.de> <20140619215140.348974921@linutronix.de> <CAOh2x=niR4_jtWL2VRvZJ8LKkmW4fyNXB9+UzUKeRSagdm1xFw@mail.gmail.com>
 User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -28,40 +29,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, 20 Jun 2014, Viresh Kumar wrote:
 
-> On Fri, Jun 20, 2014 at 3:26 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> > ---
-> >  arch/arm/boot/dts/spear320.dtsi |    5 +++++
-> >  1 file changed, 5 insertions(+)
+> On Fri, Jun 20, 2014 at 3:22 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > The uarts only work when the parent is ras_ahb_clk. The stale 3.5
+> > based ST tree does this in the board file.
 > >
-> > Index: linux/arch/arm/boot/dts/spear320.dtsi
-> > ===================================================================
-> > --- linux.orig/arch/arm/boot/dts/spear320.dtsi
-> > +++ linux/arch/arm/boot/dts/spear320.dtsi
-> > @@ -123,6 +123,11 @@
-> >                                 status = "disabled";
-> >                         };
-> >
-> > +                       i2c1: i2c@a7000000 {
-> > +                               interrupts = <21>;
-> > +                               interrupt-parent = <&shirq>;
-> > +                       };
+> > Add it to the clk init function. Not pretty, but the mess there is
+> > amazing anyway.
 > 
-> Isn't this already available ?
+> I still feel that board file is the right place to do it. Similar stuff might be
+> required for some other peripheral clocks later and this solution
+> wouldn't be scalable then.
 > 
->                         i2c1: i2c@a7000000 {
->                                 #address-cells = <1>;
->                                 #size-cells = <0>;
->                                 compatible = "snps,designware-i2c";
->                                 reg = <0xa7000000 0x1000>;
->                                 interrupts = <21>;
->                                 interrupt-parent = <&shirq>;
->                                 status = "disabled";
->                         };
+> But if you insist on doing it this way:
 
-Oops yes, did this against an older tree and did not notice the
-duplicate. So nothing to do here.
-
-Thanks,
-
-	tglx
+I really do not care much as long as it works.
+ 
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> 
