@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934663AbaFTF1V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 01:27:21 -0400
-Received: from ozlabs.org ([103.22.144.67]:37833 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934263AbaFTF1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 01:27:18 -0400
-Date: Fri, 20 Jun 2014 15:27:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: linux-next: build failure after merge of the akpm-current tree
-Message-ID: <20140620152715.24baa4ce@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/8lsjlsECMLJ6Dfdz2Jqs3yc"; protocol="application/pgp-signature"
+	id S934681AbaFTF1i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 01:27:38 -0400
+Received: from barracuda.fsl.cs.sunysb.edu ([130.245.126.20]:60104 "EHLO
+	barracuda.fsl.cs.sunysb.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934263AbaFTF1f convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 01:27:35 -0400
+X-ASG-Debug-ID: 1403240975-0769c427b18bab0001-xx1T2L
+X-Barracuda-Envelope-From: lezk@fsl.cs.sunysb.edu
+X-Barracuda-RBL-Trusted-Forwarder: 130.245.126.16
+Subject: Re: new mailing list for union/overlay filesystems?
+X-Barracuda-BWL-IP: 192.168.1.196
+X-Barracuda-RBL-IP: 192.168.1.196
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+X-ASG-Orig-Subj: Re: new mailing list for union/overlay filesystems?
+Content-Type: text/plain; charset=windows-1252
+From: Erez Local Zadok <lezk@fsl.cs.sunysb.edu>
+In-Reply-To: <CAJfpegshQmihBb3xGQOcz3ua_b0v1ce=Xknmg7HzF=HqBe8i5Q@mail.gmail.com>
+Date: Fri, 20 Jun 2014 01:09:34 -0400
+Cc: "David S. Miller" <davem@davemloft.net>,
+        David Howells <dhowells@redhat.com>, J Okajima <hooanon05g@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <98B6F15E-21E5-4BA1-B0CF-3C6AE9F39333@fsl.cs.sunysb.edu>
+References: <CAJfpegshQmihBb3xGQOcz3ua_b0v1ce=Xknmg7HzF=HqBe8i5Q@mail.gmail.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+X-Mailer: Apple Mail (2.1878.2)
+X-Barracuda-Connect: avatar.fsl.cs.sunysb.edu[130.245.126.16]
+X-Barracuda-Start-Time: 1403240975
+X-Barracuda-URL: http://barracuda.fsl.cs.sunysb.edu:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.6794
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/8lsjlsECMLJ6Dfdz2Jqs3yc
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+BTW, unionfs isn’t inactive (http://unionfs.filesystems.org, http://git.fsl.cs.sunysb.edu/?o=age).
 
-Hi Andrew,
-
-After merging the akpm-current tree, today's linux-next build (arm
-defconfig) failed like this:
-
-In file included from /scratch/sfr/next/arch/arm/mm/dma-mapping.c:29:0:
-/scratch/sfr/next/include/linux/cma.h:8:28: error: 'CONFIG_CMA_AREAS' undec=
-lared here (not in a function)
- #define MAX_CMA_AREAS (1 + CONFIG_CMA_AREAS)
-                            ^
-/scratch/sfr/next/arch/arm/mm/dma-mapping.c:434:54: note: in expansion of m=
-acro 'MAX_CMA_AREAS'
- static struct dma_contig_early_reserve dma_mmu_remap[MAX_CMA_AREAS] __init=
-data;
-                                                      ^
-
-Caused by commit f495d267b2e0 ("CMA: generalize CMA reserved area
-management functionality").
-
-I have reverted that commit and these commits that depend on it
-
-57d551e70a38 ("mm, CMA: clean-up log message")
-d75ab106aef5 ("mm, CMA: change cma_declare_contiguous() to obey coding conv=
-ention")
-f693a5424631 ("mm, CMA: clean-up CMA allocation error path")
-e58e263e5254 ("PPC, KVM, CMA: use general CMA reserved area management fram=
-ework")
-
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Erez.
 
---Sig_/8lsjlsECMLJ6Dfdz2Jqs3yc
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+On Jun 19, 2014, at 8:36 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTo8YzAAoJEMDTa8Ir7ZwVTwgP/0W1S9fW4rmaAlY0LCwR80uo
-JW4EdSlf/iVrsVGe4p449z3ugJnlUeZjMJ5IgiMlvw2moWTSw/5Hg3b41dv7LMKj
-PiV3wH0bHfW0meDs/uFHvoLDYStWPSs6Jb3XYbdjnjxAuddqoqhTPxorlQv81xTK
-n+1SdeXyauded4Va6aflNXAWytbIY7+HO+Sd+HArC+h6gVbMXywJXWvRzoG1PHSv
-BZNwTV0FZNZBHpkh7OjB5fXuDvdHBVS//oBs9yI8B2A6IirLsZJnjb6KUmP6iJht
-3o5qgkYE2FaevRq6ebeHCkJO2p0XXZgSdDYRgE/S8D+YYMnNJulGUienSq0lYNHx
-vOVk9PVXpJc4B/L+d/Vc/UkOgjBFnq1M48e4QpPqetQlyuwg8Akvnegm1/yIUt9W
-EP8YX1OBXbxWhGdMOI+WGlb6+TieNDmT8ffBHfOQiIapsfRpsK5z2BQSsJjLeecp
-p948n6zytkl8ShjyNZtTYr9UdOkFikIP3qbT5lk7cUAxJJ8UaQvC5iHAQQOCYgl8
-xvSOCSoIalQMWBR/uqKZYS/OsJB4xpFv0TVoya6TuBugb6da6Ol4FRqrbVoGmvrR
-ZABdeEhU2ldT/416NQdtJSQ5F3mJUltlebRhRKBzHBkcg4myNebWZadoT9jdXwl+
-2MkVdFBMWql0vOlRPcXx
-=8aDG
------END PGP SIGNATURE-----
-
---Sig_/8lsjlsECMLJ6Dfdz2Jqs3yc--
+> Hi Dave,
+> 
+> There's interest in having a mailing list specifically for "union
+> filesystem" like solutions (currently active projects are aufs,
+> union-mounts and overlayfs).
+> 
+> Would it be possible to create one on vger for this purpose?
+> 
+> Thanks,
+> Miklos
