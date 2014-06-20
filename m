@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751431AbaFTUMG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:12:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753755AbaFTUME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 16:12:04 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: [PATCH v3 00/13] pagewalk: improve vma handling, apply to new users
-Date: Fri, 20 Jun 2014 16:11:26 -0400
-Message-Id: <1403295099-6407-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S966013AbaFTUTA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:19:00 -0400
+Received: from smtprelay0201.hostedemail.com ([216.40.44.201]:46636 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753696AbaFTUS7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 16:18:59 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2898:3138:3139:3140:3141:3142:3352:3622:3868:3873:4321:4605:5007:7652:7903:10004:10400:10848:11232:11658:11914:12517:12519:12555:12740:13019:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: nail87_4e35ed5fee52a
+X-Filterd-Recvd-Size: 1770
+Message-ID: <1403295536.4076.8.camel@joe-AO725>
+Subject: Re: [PATCH] checkpatch.pl: Also suggest 'else if' when if follows
+ brace
+From: Joe Perches <joe@perches.com>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Date: Fri, 20 Jun 2014 13:18:56 -0700
+In-Reply-To: <1403294665-18344-1-git-send-email-linux@rasmusvillemoes.dk>
+References: <1403294665-18344-1-git-send-email-linux@rasmusvillemoes.dk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is ver.3 of page table walker patchset.
-In previous discussion I got an objection of moving pte handling code to
-->pte_entry() callback, so in this version I've dropped all of such code.
+On Fri, 2014-06-20 at 22:04 +0200, Rasmus Villemoes wrote:
+> This might help a kernel hacker think twice before blindly adding a
+> newline.
 
-The patchset mainly does fixing vma handling and applying page walker to
-2 new users. Here is a brief overview:
-  patch 1: clean up
-  patch 2: fix bug-prone vma handling code
-  patch 3: add another interface of page walker
-  patch 4-10: clean up each of existing user
-  patch 11: apply page walker to new user queue_pages_range()
-  patch 12: allow clear_refs_pte_range() to handle thp (from Kirill)
-  patch 13: apply page walker to new user do_mincore()
+Sure, fine by me.
 
-Thanks,
-Naoya Horiguchi
+> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+> ---
+>  scripts/checkpatch.pl | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 010b18e..e1924eb 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -3601,7 +3601,7 @@ sub process {
+>  # if should not continue a brace
+>  		if ($line =~ /}\s*if\b/) {
+>  			ERROR("TRAILING_STATEMENTS",
+> -			      "trailing statements should be on next line\n" .
+> +			      "trailing statements should be on next line (or did you mean 'else if'?)\n" .
+>  				$herecurr);
+>  		}
+>  # case and default should not have general statements after them
 
-Tree: git@github.com:Naoya-Horiguchi/linux.git
-Branch: v3.16-rc1/page_table_walker.ver3
----
-Summary:
 
-Kirill A. Shutemov (1):
-      mm: /proc/pid/clear_refs: avoid split_huge_page()
 
-Naoya Horiguchi (12):
-      mm/pagewalk: remove pgd_entry() and pud_entry()
-      pagewalk: improve vma handling
-      pagewalk: add walk_page_vma()
-      smaps: remove mem_size_stats->vma and use walk_page_vma()
-      clear_refs: remove clear_refs_private->vma and introduce clear_refs_test_walk()
-      pagemap: use walk->vma instead of calling find_vma()
-      numa_maps: remove numa_maps->vma
-      numa_maps: fix typo in gather_hugetbl_stats
-      memcg: apply walk_page_vma()
-      arch/powerpc/mm/subpage-prot.c: use walk->vma and walk_page_vma()
-      mempolicy: apply page table walker on queue_pages_range()
-      mincore: apply page table walker on do_mincore()
-
- arch/powerpc/mm/subpage-prot.c |   6 +-
- fs/proc/task_mmu.c             | 143 ++++++++++++++++----------
- include/linux/mm.h             |  22 ++--
- mm/huge_memory.c               |  20 ----
- mm/memcontrol.c                |  36 +++----
- mm/mempolicy.c                 | 228 +++++++++++++++++------------------------
- mm/mincore.c                   | 174 ++++++++++++-------------------
- mm/pagewalk.c                  | 223 ++++++++++++++++++++++++----------------
- 8 files changed, 406 insertions(+), 446 deletions(-)
