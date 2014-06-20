@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932361AbaFTP3I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 11:29:08 -0400
-Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:39977 "EHLO
-	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753854AbaFTP3H (ORCPT
+	id S932674AbaFTPaG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 11:30:06 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:40618 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932389AbaFTPaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 11:29:07 -0400
-Date: Fri, 20 Jun 2014 10:29:04 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Tejun Heo <tj@kernel.org>, David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
- accessors and operations
-In-Reply-To: <20140619205137.GK4904@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.11.1406201024070.10810@gentwo.org>
-References: <20140612135630.GA23606@htj.dyndns.org> <alpine.DEB.2.11.1406171401350.22064@gentwo.org> <20140617194017.GO4669@linux.vnet.ibm.com> <alpine.DEB.2.11.1406191540240.4002@gentwo.org> <20140619205137.GK4904@linux.vnet.ibm.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 20 Jun 2014 11:30:03 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-api@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH v1 0/2] block: virtio-blk: support multi vq per virtio-blk
+Date: Fri, 20 Jun 2014 23:29:38 +0800
+Message-Id: <1403278181-28455-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Jun 2014, Paul E. McKenney wrote:
+Hi,
 
-> Or just keep doing what I am doing.  What exactly is the problem with it?
-> (Other than probably needing to clean up the cache alignment of some
-> of the per-CPU structures?)
+These patches try to support multi virtual queues(multi-vq) in one
+virtio-blk device, and maps each virtual queue(vq) to blk-mq's
+hardware queue.
 
-Writing to a cacheline of another processor can impact performance of that
-other processor since the cacheline (which may contain other performance
-critical data) is evicted from that processors cache.
+With this approach, both scalability and performance on virtio-blk
+device can get improved.
 
-The mechanisms for handling percpu data are not designed with the
-consideration of writes into foreign percpu data areas in mind. Surprises
-may result from such use.
+For verifying the improvement, I implements virtio-blk multi-vq over
+qemu's dataplane feature, and both handling host notification
+from each vq and processing host I/O are still kept in the per-device
+iothread context, the change is based on qemu v2.0.0 release, and
+can be accessed from below tree:
 
-In particular I see a danger in understanding what "atomic" percpu
-operations are. These are not to be confused with regular atomic ops.
-Percpu atomics are atomic for accesses that occur in a single specific
-hardware thread. Percpu "atomics" are atomic vs. interrupts or preemption
-occuring on that specific processor. No serialization is supported for
-accesses may it be read or write from foreign processors.
+        git://kernel.ubuntu.com/ming/qemu.git #v2.0.0-virtblk-mq.1
+
+For enabling the multi-vq feature, 'num_queues=N' need to be added into
+'-device virtio-blk-pci ...' of qemu command line, and suggest to pass
+'vectors=N+1' to keep one MSI irq vector per each vq, and the feature
+depends on x-data-plane.
+
+Fio(libaio, randread, iodepth=64, bs=4K, jobs=N) is run inside VM to
+verify the improvement.
+
+I just create a small quadcore VM and run fio inside the VM, and
+num_queues of the virtio-blk device is set as 2, but looks the
+improvement is still obvious.
+
+1), about scalability
+- without mutli-vq feature
+        -- jobs=2, thoughput: 145K iops
+        -- jobs=4, thoughput: 100K iops
+- with mutli-vq feature
+        -- jobs=2, thoughput: 186K iops
+        -- jobs=4, thoughput: 199K iops
+
+2), about thoughput
+- without mutli-vq feature
+        -- top thoughput: 145K iops
+- with mutli-vq feature
+		-- top thoughput: 199K iops
+
+So in my test, even for a quad-core VM, if the virtqueue number
+is increased from 1 to 2, both scalability and performance can
+get improved a lot.
+
+V1:
+	- remove RFC since no one objects
+	- add '__u8 unused' for pending as suggested by Rusty
+	- use virtio_cread_feature() directly, suggested by Rusty
+
+
+Thanks,
+--
+Ming Lei
 
 
