@@ -1,156 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934534AbaFTGwi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 02:52:38 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:44002 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933600AbaFTGwg (ORCPT
+	id S934639AbaFTHFE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 03:05:04 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:62164 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934353AbaFTHFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 02:52:36 -0400
+	Fri, 20 Jun 2014 03:05:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAKnSG-aSwcGN6fX2vkmh0VOqprHNTjOv7t9Rtqg_3FibB-8MtA@mail.gmail.com>
-References: <CAKnSG-aSwcGN6fX2vkmh0VOqprHNTjOv7t9Rtqg_3FibB-8MtA@mail.gmail.com>
-Date: Fri, 20 Jun 2014 12:22:34 +0530
-Message-ID: <CAKnSG-Y59120iFY34_KBih8COYVBGBsj8qMZ-WDXD6aLmVyn8Q@mail.gmail.com>
-Subject: Re: Arm Target System hangs on uart_open/uart_write
-From: Abhijit Lamsoge <abhijitelinux@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20140619212713.570396433@linutronix.de>
+References: <20140619212606.431750473@linutronix.de>
+	<20140619212713.570396433@linutronix.de>
+Date: Fri, 20 Jun 2014 12:35:00 +0530
+X-Google-Sender-Auth: nZUOigIVTFYl_2vQtq21tA428Co
+Message-ID: <CAOh2x==nhq6OHkd9U17L3r-_7qnnjYLyiqiKYpGdMuSVEj07=g@mail.gmail.com>
+Subject: Re: [patch 09/13] irqchip: spear_shirq: Kill the clear_reg nonsense
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Shiraz Hashim <shiraz.linux.kernel@gmail.com>,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
-This problem is fixed.
-By modifying driver code for setting driver->ports correctly, to the
-one allocated for uart port in uart_register_function.
-If this is not done, then once an FD for uart file is received, the
-cleanup, work is put into BH for processing, and then it does not know
-for which port it has to do the BH cleanup, which is done by system
-workqueue under kernel thread.
-So due to this the kernel hits a WARN_ON in workqueue.c at 1300~ and
-system hangs and that's why the above trace.
+On Fri, Jun 20, 2014 at 3:04 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> None of the chips has a ACK register.
 
-Abhijit
+I need to recheck on this after looking at datasheets. Arranging for
+them, will revert by tomorrow.
 
+> The code brainlessly fiddles
+> with the enable register, so it might even reenable a disabled
+> interrupt at least on spear300.
 
-On Fri, Jun 6, 2014 at 6:29 PM, Abhijit Lamsoge <abhijitelinux@gmail.com> wrote:
-> Hi All,
-> I've ported my driver to Linux Kernel 3.8.13.
-> Earlier it was working fine for 3.5.x Kernels.
-> I register a uart device file for data transfer like "/dev/xyz"
-> All the tty_ops for this UART driver are initialized to my own tty
-> uart_open/read/write/close functions.
-> Which are respectively called, when a sys_open comes on the above device file.
->
-> However,
-> the captured dmesg from "cat /proc/kmsg" shows all the correct prints
-> from the driver, and data is also transferred.
-> But the system "HANGS" giving the following message.
-> ---------------------------------------------XX------------------------------------------------------------------------
-> 181.350280] WARNING: at kernel/workqueue.c:1300 __queue_work+0x2c8/0x36c()
-> <4>[  181.353851] Modules linked in:
-> <4>[  181.355468] [<c001b3d0>] (unwind_backtrace+0x0/0xf0) from
-> [<c0042830>] (warn_slowpath_common+0x4c/0x64)
-> <4>[  181.360412] [<c0042830>] (warn_slowpath_common+0x4c/0x64) from
-> [<c0042864>] (warn_slowpath_null+0x1c/0x24)
-> <4>[  181.365447] [<c0042864>] (warn_slowpath_null+0x1c/0x24) from
-> [<c00587ac>] (__queue_work+0x2c8/0x36c)
-> <4>[  181.370178] [<c00587ac>] (__queue_work+0x2c8/0x36c) from
-> [<c00588b0>] (queue_work_on+0x40/0x4c)
-> <4>[  181.374694] [<c00588b0>] (queue_work_on+0x40/0x4c) from
-> [<c025a5e8>] (n_tty_open+0xa4/0x124)
-> <4>[  181.379028] [<c025a5e8>] (n_tty_open+0xa4/0x124) from
-> [<c025c8d8>] (tty_ldisc_open+0x50/0x74)
-> <4>[  181.383453] [<c025c8d8>] (tty_ldisc_open+0x50/0x74) from
-> [<c025d02c>] (tty_ldisc_setup+0x18/0x68)
-> <4>[  181.388092] [<c025d02c>] (tty_ldisc_setup+0x18/0x68) from
-> [<c02567bc>] (tty_init_dev+0xe0/0x17c)
-> <4>[  181.392639] [<c02567bc>] (tty_init_dev+0xe0/0x17c) from
-> [<c0256fe0>] (tty_open+0x2b0/0x518)
-> <4>[  181.396942] [<c0256fe0>] (tty_open+0x2b0/0x518) from
-> [<c00d45b0>] (chrdev_open+0x100/0x17c)
-> <4>[  181.401245] [<c00d45b0>] (chrdev_open+0x100/0x17c) from
-> [<c00cee7c>] (do_dentry_open+0x1d4/0x284)
-> <4>[  181.405853] [<c00cee7c>] (do_dentry_open+0x1d4/0x284) from
-> [<c00cef64>] (finish_open+0x38/0x4c)
-> <4>[  181.410400] [<c00cef64>] (finish_open+0x38/0x4c) from
-> [<c00dd1f0>] (do_last.isra.19+0x974/0xb98)
-> <4>[  181.414916] [<c00dd1f0>] (do_last.isra.19+0x974/0xb98) from
-> [<c00dd4bc>] (path_openat+0xa8/0x47c)
-> <4>[  181.419464] [<c00dd4bc>] (path_openat+0xa8/0x47c) from
-> [<c00ddb4c>] (do_filp_open+0x2c/0x78)
-> <4>[  181.423797] [<c00ddb4c>] (do_filp_open+0x2c/0x78) from
-> [<c00cffd4>] (do_sys_open+0xe4/0x174)
-> <4>[  181.428131] [<c00cffd4>] (do_sys_open+0xe4/0x174) from
-> [<c0013e00>] (ret_fast_syscall+0x0/0x30)
-> <4>[  181.432586] ---[ end trace d39416ed62ef112f ]---
->
->
-> ------------------More stuff------------------------------
->
-> [  218.371063] INFO: rcu_preempt detected stalls on CPUs/tasks: { 0}
-> (detected by 1, t=2690 jiffies, g=1881, c=1880, q=87)
-> [  218.376617] Backtrace for cpu 1 (current):
-> [  218.378753] [<c001b3d0>] (unwind_backtrace+0x0/0xf0) from
-> [<c0019304>] (smp_send_all_cpu_backtrace+0x58/0xcc)
-> [  218.383850] [<c0019304>] (smp_send_all_cpu_backtrace+0x58/0xcc)
-> from [<c0094fac>] (rcu_check_callbacks+0x574/0x730)
-> [  218.389190] [<c0094fac>] (rcu_check_callbacks+0x574/0x730) from
-> [<c004f12c>] (update_process_times+0x3c/0x6c)
-> [  218.394287] [<c004f12c>] (update_process_times+0x3c/0x6c) from
-> [<c007eabc>] (tick_sched_timer+0x58/0x8c)
-> [  218.399139] [<c007eabc>] (tick_sched_timer+0x58/0x8c) from
-> [<c00620c8>] (__run_hrtimer.isra.16+0x50/0xd0)
-> [  218.404052] [<c00620c8>] (__run_hrtimer.isra.16+0x50/0xd0) from
-> [<c0062a68>] (hrtimer_interrupt+0x140/0x2a0)
-> [  218.409088] [<c0062a68>] (hrtimer_interrupt+0x140/0x2a0) from
-> [<c0019e34>] (arch_timer_handler_phys+0x2c/0x3c)
-> [  218.414215] [<c0019e34>] (arch_timer_handler_phys+0x2c/0x3c) from
-> [<c008f984>] (handle_percpu_devid_irq+0x80/0xa0)
-> [  218.419525] [<c008f984>] (handle_percpu_devid_irq+0x80/0xa0) from
-> [<c008c448>] (generic_handle_irq+0x20/0x30)
-> [  218.424621] [<c008c448>] (generic_handle_irq+0x20/0x30) from
-> [<c0014d5c>] (handle_IRQ+0x7c/0xac)
-> [  218.429138] [<c0014d5c>] (handle_IRQ+0x7c/0xac) from [<c000849c>]
-> (gic_handle_irq+0x3c/0x5c)
-> [  218.433441] [<c000849c>] (gic_handle_irq+0x3c/0x5c) from
-> [<c0013980>] (__irq_svc+0x40/0x74)
-> [  218.437744] Exception stack(0xeab87dd0 to 0xeab87e18)
-> [  218.440338] 7dc0:                                     00000002
-> 00000002 00000000 00000001
-> [  218.444519] 7de0: eab87e3c c1395b80 c1395b80 c1395b88 00c8f000
-> 00000001 00000000 00000000
-> [  218.448699] 7e00: 00000001 eab87e18 c0025458 c0082e68 20000113 ffffffff
-> [  218.452117] [<c0013980>] (__irq_svc+0x40/0x74) from [<c0082e68>]
-> (generic_exec_single+0x7c/0x94)
-> [  218.456634] [<c0082e68>] (generic_exec_single+0x7c/0x94) from
-> [<c0082fd4>] (smp_call_function_single+0x154/0x1d8)
-> [  218.461883] [<c0082fd4>] (smp_call_function_single+0x154/0x1d8)
-> from [<c0083480>] (smp_call_function+0x34/0x64)
-> [  218.467041] [<c0083480>] (smp_call_function+0x34/0x64) from
-> [<c0019ba4>] (flush_tlb_kernel_range+0x50/0x60)
-> [  218.472045] [<c0019ba4>] (flush_tlb_kernel_range+0x50/0x60) from
-> [<c0393f9c>] (binder_deferred_func+0x4ac/0x5f8)
-> [  218.477294] [<c0393f9c>] (binder_deferred_func+0x4ac/0x5f8) from
-> [<c00577f8>] (process_one_work+0x260/0x408)
-> [  218.482330] [<c00577f8>] (process_one_work+0x260/0x408) from
-> [<c0058050>] (worker_thread+0x2c8/0x428)
-> [  218.487060] [<c0058050>] (worker_thread+0x2c8/0x428) from
-> [<c005e418>] (kthread+0xa0/0xac)
-> [  218.491302] [<c005e418>] (kthread+0xa0/0xac) from [<c0013e98>]
-> (ret_from_fork+0x14/0x3c)
-> [  218.495452]
-> [  218.495452] sending IPI to all other CPUs:
->
-> ----------------------Ends here-------------------------------
->
-> I am not sure, whether it's a problem of hardware, as when the kthread
-> schedules the work on CPU #1 for ARM.
-> There is no "unable to handle" message.
-> I am not am expert on how kernel internally handles workqueues and
-> schedules/puts them on the processor.
->
-> Any pointers in this regard are welcome.
->
-> -- Abhijit
+Ack/Clear register is only configured for SPEAr320, how will it
+make a difference to SPEAr300 ?
+
+And for SPEAr320 as well, the offset mentioned in code for clear
+register is different then ENABLE register.
+
+> Index: linux/drivers/irqchip/spear-shirq.c
+> ===================================================================
+> --- linux.orig/drivers/irqchip/spear-shirq.c
+> +++ linux/drivers/irqchip/spear-shirq.c
+> @@ -33,15 +33,11 @@
+>   * reset_to_enb: val 1 indicates, we need to clear bit for enabling interrupt
+>   * status_reg: status register offset
+>   * status_reg_mask: status register valid mask
+> - * clear_reg: clear register offset
+> - * reset_to_clear: val 1 indicates, we need to clear bit for clearing interrupt
+>   */
+>  struct shirq_regs {
+>         u32 enb_reg;
+>         u32 reset_to_enb;
+>         u32 status_reg;
+> -       u32 clear_reg;
+
+> -       u32 reset_to_clear;
+
+AFAIR, there was a revision for SPEAr320 which was actually using
+reset_to_clear and so was present in code. But later revisions got rid
+of it and code never got updated.
+
+> @@ -150,13 +141,6 @@ static struct spear_shirq spear320_shirq
+>         .nr_irqs        = 7,
+>         .mask           = ((0x1 << 7) - 1) << 0,
+>         .disabled       = 1,
+> -       .regs = {
+> -               .enb_reg = SPEAR320_INT_ENB_MASK_REG,
+> -               .reset_to_enb = 1,
+> -               .status_reg = SPEAR320_INT_STS_MASK_REG,
+> -               .clear_reg = SPEAR320_INT_CLR_MASK_REG,
+> -               .reset_to_clear = 1,
+> -       },
+
+Was removing .regs completely intentional?
+
+I don't see these registers getting added again in later patches.
