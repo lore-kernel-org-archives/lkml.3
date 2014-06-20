@@ -1,200 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934923AbaFTPuu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 11:50:50 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:60129 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934908AbaFTPur (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 11:50:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <53A44D73.6080200@ti.com>
-References: <1401981720-6946-1-git-send-email-santosh.shilimkar@ti.com>
- <CAOMZO5Ceg9RpC8Lgt0BwGTuaz-Z2614Die2PrbtT_j4QYjL_sA@mail.gmail.com>
- <5395BDA7.3060507@ti.com> <53A44D73.6080200@ti.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Fri, 20 Jun 2014 10:50:25 -0500
-Message-ID: <CAL_JsqJAtWnHKPVpDsdOOzT_X=npc3hroLNTGqULM2SJr=1OEg@mail.gmail.com>
-Subject: Re: [PATCH] dt/documentation: add specification of dma bus information
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Fabio Estevam <festevam@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Shawn Guo <shawn.guo@freescale.com>, Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	id S934852AbaFTPuS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 11:50:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58809 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933147AbaFTPuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 11:50:10 -0400
+From: Vlastimil Babka <vbabka@suse.cz>
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+Cc: Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>
+Subject: [PATCH v3 00/13] compaction: balancing overhead and success rates
+Date: Fri, 20 Jun 2014 17:49:30 +0200
+Message-Id: <1403279383-5862-1-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 10:04 AM, Santosh Shilimkar
-<santosh.shilimkar@ti.com> wrote:
-> On Monday 09 June 2014 09:59 AM, Santosh Shilimkar wrote:
->> On Sunday 08 June 2014 10:13 PM, Fabio Estevam wrote:
->>> On Thu, Jun 5, 2014 at 12:22 PM, Santosh Shilimkar
->>> <santosh.shilimkar@ti.com> wrote:
->>>> Recently we introduced the generic device tree infrastructure for couple of DMA
->>>> bus parameter, dma-ranges and dma-coherent. Update the documentation so that
->>>> its useful for future users.
->>>>
->>>> The "dma-ranges" property is intended to be used for describing the
->>>> configuration of DMA bus RAM addresses and its offset w.r.t CPU addresses.
->>>>
->>>> The "dma-coherent" property is intended to be used for identifying devices
->>>> supported coherent DMA operations.
->>>>
->>>> Cc: Arnd Bergmann <arnd@arndb.de>
->>>> Cc: Grant Likely <grant.likely@linaro.org>
->>>> Cc: Rob Herring <robh+dt@kernel.org>
->>>> Cc: Pawel Moll <pawel.moll@arm.com>
->>>> Cc: Mark Rutland <mark.rutland@arm.com>
->>>> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
->>>> Cc: Shawn Guo <shawn.guo@freescale.com>
->>>> Cc: Kumar Gala <galak@codeaurora.org>
->>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->>>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>>> ---
->>>>  Documentation/devicetree/booting-without-of.txt |   60 +++++++++++++++++++++++
->>>>  1 file changed, 60 insertions(+)
->>>>
->>>> diff --git a/Documentation/devicetree/booting-without-of.txt b/Documentation/devicetree/booting-without-of.txt
->>>> index 1f013bd..f0120c1 100644
->>>> --- a/Documentation/devicetree/booting-without-of.txt
->>>> +++ b/Documentation/devicetree/booting-without-of.txt
->>>> @@ -51,6 +51,8 @@ Table of Contents
->>>>
->>>>    VIII - Specifying device power management information (sleep property)
->>>>
->>>> +  VIV - Specifying dma bus information
->>>
->>> "9" in Roman numeral is "IX"
->>>
->> Yeah.. Not sure what I was thinking...
->>
-> Updated patch end of the email with the typo fixed.
->
-> Rob,
-> Can you please pick this up if you are ok with the it.
->
-> Regards,
-> Santosh
->
-> From b72e949a194d766fe029fe6bb5939467f2fbe9b9 Mon Sep 17 00:00:00 2001
-> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Date: Fri, 20 Jun 2014 11:01:54 -0400
-> Subject: [PATCH] dt/documentation: add specification of dma bus information
->
-> Recently we introduced the generic device tree infrastructure for couple of DMA
-> bus parameter, dma-ranges and dma-coherent. Update the documentation so that
-> its useful for future users.
->
-> The "dma-ranges" property is intended to be used for describing the
-> configuration of DMA bus RAM addresses and its offset w.r.t CPU addresses.
->
-> The "dma-coherent" property is intended to be used for identifying devices
-> supported coherent DMA operations.
->
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Acked-by: Shawn Guo <shawn.guo@freescale.com>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> ---
->  Documentation/devicetree/booting-without-of.txt |   60 +++++++++++++++++++++++
->  1 file changed, 60 insertions(+)
->
-> diff --git a/Documentation/devicetree/booting-without-of.txt b/Documentation/devicetree/booting-without-of.txt
-> index 1f013bd..0b0928c 100644
-> --- a/Documentation/devicetree/booting-without-of.txt
-> +++ b/Documentation/devicetree/booting-without-of.txt
-> @@ -51,6 +51,8 @@ Table of Contents
->
->    VIII - Specifying device power management information (sleep property)
->
-> +  IX - Specifying dma bus information
-> +
->    Appendix A - Sample SOC node for MPC8540
->
->
-> @@ -1332,6 +1334,64 @@ reasonably grouped in this manner, then create a virtual sleep controller
->  (similar to an interrupt nexus, except that defining a standardized
->  sleep-map should wait until its necessity is demonstrated).
->
-> +IX - Specifying dma bus information
-> +
-> +Some devices may have DMA memory range shifted relatively to the beginning of
-> +RAM, or even placed outside of kernel RAM. For example, the Keystone 2 SoC
-> +worked in LPAE mode with 4G memory has:
-> +- RAM range: [0x8 0000 0000, 0x8 FFFF FFFF]
-> +- DMA range: [  0x8000 0000,   0xFFFF FFFF]
-> +and DMA range is aliased into first 2G of RAM in HW.
-> +
-> +In such cases, DMA addresses translation should be performed between CPU phys
-> +and DMA addresses. The "dma-ranges" property is intended to be used
-> +for describing the configuration of such system in DT.
-> +
-> +In addition, each DMA master device on the DMA bus may or may not support
-> +coherent DMA operations. The "dma-coherent" property is intended to be used
-> +for identifying devices supported coherent DMA operations in DT.
-> +
-> +* DMA Bus master
-> +Optional property:
-> +- dma-ranges: <prop-encoded-array> encoded as arbitrary number of triplets of
-> +       (child-bus-address, parent-bus-address, length). Each triplet specified
-> +       describes a contiguous DMA address range.
-> +       The dma-ranges property is used to describe the direct memory access (DMA)
-> +       structure of a memory-mapped bus whose device tree parent can be accessed
-> +       from DMA operations originating from the bus. It provides a means of
-> +       defining a mapping or translation between the physical address space of
-> +       the bus and the physical address space of the parent of the bus.
-> +       (for more information see ePAPR specification)
-> +
-> +* DMA Bus child
-> +Optional property:
-> +- dma-ranges: <empty> value. if present - It means that DMA addresses
-> +       translation has to be enabled for this device.
-> +- dma-coherent: Present if dma operations are coherent
-> +
-> +Example:
-> +soc {
-> +               compatible = "ti,keystone","simple-bus";
-> +               ranges = <0x0 0x0 0x0 0xc0000000>;
-> +               dma-ranges = <0x80000000 0x8 0x00000000 0x80000000>;
-> +
-> +               [...]
-> +
-> +               usb: usb@2680000 {
-> +                       compatible = "ti,keystone-dwc3";
-> +
-> +                       [...]
-> +
-> +                       dma-coherent;
-> +                       dma-ranges;
-> +
-> +                       dwc3@2690000 {
-> +                               compatible = "synopsys,dwc3";
-> +                               [...]
-> +                       };
+Based on next-20140620.
 
-This example is a bit strange. I don't understand the relationship
-between keystone-dwc3 and synopsys,dwc3, nor do I want to. I'd prefer
-to see a simple example here.
+This is a v3 of a series (first with proper cover letter) that tries to work
+simultaneously towards two mutually exclusive goals in memory compaction -
+reducing overhead and improving success rates. It includes some cleanups and
+more or less trivial (micro-)optimizations, hopefully more intelligent lock
+contention management, and some preparation patches that finally result in
+last two patches that should improve success rates and minimize work that
+is not likely to result on successful allocation for a THP page fault.
+There are 3 new patches since last posting, and many have been reworked.
 
-dma-ranges is a property of the parent which you show, but
-dma-coherent originally was a property of the bus master itself. While
-we need to support that, are we changing that? We need to be clear on
-where the property belongs even if the kernel is more lax.
+Patch 1: a simple change that will make khugepaged not hold uselessly mmap_sem
+(new)    during potentially long sync compaction. I saw more opportunities for
+         improvement there, but that will be for another series. This is rather
+         trivial but still can reduce latencies for m(un)map heavy workloads.
 
-Rob
+Patch 2: fine-grained per-zone deferred compaction management, which should
+(new)    result in more accurate decisions when to compact a particular zone
+
+Patch 3: A cleanup/micro-optimization. No change since v2.
+
+Patch 4: Another cleanup/optimization. Surprisingly there's still low hanging
+(new)    fruit in functionality that was changed quite recently. Anything that
+         simplifies isolate_migratepages_range() is a good thing...
+
+Patch 5: First step towards not relying on need_resched() to limit amount of
+         work done by async compaction. Incorporated feedback since v2 and
+         reworked how lock contention is reported when multiple zones are
+         compacted, so that it's no longer accidental.
+
+Patch 6: Prevent running for long time with IRQs disabled, and improve lock
+         contention detection. Incorporated feedback from David.
+
+Patch 7: Microoptimization made possible by patch 6. No changes since v2.
+
+Patch 8: Reduce some useless rescanning in the free scanner. I made quite major
+         changes based on feedback, so I rather not keep Reviewed-by (thanks
+         Minchan and Zhang though).
+
+Patch 9: Reduce some iterations in the migration scanner, and make Patch 13
+         possible. Based on discussions with David, I made page_order_unsafe()
+         a #define so there will be no doubts about inlining behavior.
+
+Patch 10: Cleanup, from David, no changes.
+
+Patch 11: Prerequisity for Patch 13, from David, no changes.
+
+Patch 12: Improve compaction success rates by grabbing page freed by migration
+          ASAP. Since v2, I've removed the impact on allocation fast paths per
+          Minchan's feedback and changed the rules for when capture is allowed.
+
+Patch 13: Minimize work done in page fault direct compaction (i.e. THP) that
+(RFC)     would not lead to successful allocation. Move on to next cc->order
+          aligned block of pages as soon as the scanner encounters a page that
+          is not free and cannot be isolated for migration.
+          Only change since v2 is some cleanup moved to Patch 4 where it fits
+          better. Still a RFC because I see this patch making a difference
+          in stress-highalloc setting that doesn't use __GFP_NO_KSWAPD so it
+          shouldn't be affected. So there is either a bug or unforeseen
+          side-effect.
+
+The only thorough evaluation was done when based on pre-3.16-rc1 kernel,
+with mmtests stress-highalloc benchmark allocating order-9 pages which did
+not use __GFP_NO_KSWAPD. Patches 1,2,4 were not yet in the series. This is not
+a benchmark where microoptimizations would be visible, and the settings mean
+it uses sync compaction and should not benefit from Patch 13 (but it did which
+is weird). It has however shown improvements in vmstat figures in patches 8, 9
+and 12, as documented in the commit messages. I hope David can test if it fixes
+his issues. Patch 1 was tested separately on another machine, as documented.
+I'll run further tests with stress-highalloc settings that would mimic THP
+page faults (i.e. __GFP_NO_KSWAPD).
+
+David Rientjes (2):
+  mm: rename allocflags_to_migratetype for clarity
+  mm, compaction: pass gfp mask to compact_control
+
+Vlastimil Babka (11):
+  mm, THP: don't hold mmap_sem in khugepaged when allocating THP
+  mm, compaction: defer each zone individually instead of preferred zone
+  mm, compaction: do not recheck suitable_migration_target under lock
+  mm, compaction: move pageblock checks up from
+    isolate_migratepages_range()
+  mm, compaction: report compaction as contended only due to lock
+    contention
+  mm, compaction: periodically drop lock and restore IRQs in scanners
+  mm, compaction: skip rechecks when lock was already held
+  mm, compaction: remember position within pageblock in free pages
+    scanner
+  mm, compaction: skip buddy pages by their order in the migrate scanner
+  mm, compaction: try to capture the just-created high-order freepage
+  mm, compaction: do not migrate pages when that cannot satisfy page
+    fault allocation
+
+ include/linux/compaction.h |  10 +-
+ include/linux/gfp.h        |   2 +-
+ mm/compaction.c            | 569 +++++++++++++++++++++++++++++++++------------
+ mm/huge_memory.c           |  20 +-
+ mm/internal.h              |  38 ++-
+ mm/page_alloc.c            | 122 +++++++---
+ 6 files changed, 554 insertions(+), 207 deletions(-)
+
+-- 
+1.8.4.5
+
