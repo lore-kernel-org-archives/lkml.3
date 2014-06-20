@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934786AbaFTIER (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 04:04:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27982 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756845AbaFTIEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 04:04:06 -0400
-Date: Fri, 20 Jun 2014 10:03:51 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 5/5] perf tools: Add report.show-headers config file
- option
-Message-ID: <20140620080351.GD1218@krava.brq.redhat.com>
-References: <1403178076-14072-1-git-send-email-jolsa@kernel.org>
- <1403178076-14072-6-git-send-email-jolsa@kernel.org>
- <1403182604.1670.26.camel@leonhard>
- <20140619152843.GB20252@kernel.org>
- <20140619165815.GC31520@krava.brq.redhat.com>
- <87mwd8798t.fsf@sejong.aot.lge.com>
+	id S934798AbaFTIFZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 04:05:25 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57344 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933971AbaFTIFU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 04:05:20 -0400
+Date: Fri, 20 Jun 2014 10:05:16 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+cc: LKML <linux-kernel@vger.kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Shiraz Hashim <shiraz.linux.kernel@gmail.com>,
+        spear-devel <spear-devel@list.st.com>
+Subject: Re: [patch 13/13] irqchip: spear_shirq: Simplify register access
+ code
+In-Reply-To: <CAOh2x==7awAgx0idqjauYJZk9-aoBEvDWneMksbyYH38c6+OSg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.10.1406201000441.5170@nanos>
+References: <20140619212606.431750473@linutronix.de> <20140619212713.923306179@linutronix.de> <CAOh2x==7awAgx0idqjauYJZk9-aoBEvDWneMksbyYH38c6+OSg@mail.gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87mwd8798t.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 08:46:58AM +0900, Namhyung Kim wrote:
-> On Thu, 19 Jun 2014 18:58:15 +0200, Jiri Olsa wrote:
-> > On Thu, Jun 19, 2014 at 12:28:43PM -0300, Arnaldo Carvalho de Melo wrote:
-> >> Em Thu, Jun 19, 2014 at 09:56:44PM +0900, Namhyung Kim escreveu:
-> >> > 2014-06-19 (목), 13:41 +0200, Jiri Olsa:
-> >> > > Adding report.show-headers config file option to setup
-> >> > > the appearance of the columns headers.
-> >> > > 
-> >> > > Currently columns headers are displayed by default, following
-> >> > > lines in ~/.perfconfig file will disable that:
-> >> > > 
-> >> > >   [report]
-> >> > >         show-headers = true
-> >> > 
-> >> > This also applies to perf top, right?  And it's TUI-specific.  So how
-> >> > about calling it something like "tui.show-headers"?
-> >> 
-> >> Why should it be TUI specific? You either show the headers or you don't,
-> >> in all UIs.
-> >> 
-> >> And also in all tools, I think, so I suggest putting it in some global,
-> >> for all tools, section in the config file, i.e. something like
-> >> all.show-headers.
-> >
-> > seems like so far we have 'core.' and 'hist.' as non-command specific
-> > config sections (note '.core' does not hold any options yet)
-> >
-> > I can add another 'all.' section
+On Fri, 20 Jun 2014, Viresh Kumar wrote:
+> On Fri, Jun 20, 2014 at 3:04 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
 > 
-> I don't think it's a better name - it's too general.  If we really want
-> to control all UI behavior I'd rather suggest 'ui.' section name.
-
-I'm fine with 'ui'
-
+> > Index: linux/drivers/irqchip/spear-shirq.c
+> > -struct shirq_regs {
+> > -       u32 enb_reg;
+> > -       u32 reset_to_enb;
 > 
-> Oh, I found that it'd somewhat clash with existing --header(-only)
-> option in perf report. :-/
+> I don't see something similar to 'reset_to_enb' is added again.
+> AFAICT, this field is being used by two blocks:
+> 
+> spear300_shirq_ras1: writes 0 to this. i.e. we need to write 0 to
+> mask the interrupt
+> 
+> and
+> 
+> spear320_shirq_ras3: writes 1 to this. i.e. we need to write 1 to
+> mask the interrupt.
 
-right, so how about:
-   show-columns-headers
-   show-columns-headings
-   show-headings
+AGAIN: spear320_shirq_ras3 is never instantiated as a chained irq. So
+the chip for these interrupts is never set.
 
-jirka
+And if it ever is, you need a separate irq chip for it and not some
+conditional hackery.
+
+> And so the new code you have added breaks it for SPEAr300 ?
+
++static void shirq_irq_mask(struct irq_data *d)
++{
++	struct spear_shirq *shirq = irq_data_get_irq_chip_data(d);
++	u32 val, shift = d->irq - shirq->virq_base + shirq->offset;
++	u32 __iomem *reg = shirq->base + shirq->regs.enb_reg;
++
++	raw_spin_lock(&shirq_lock);
++	val = readl(reg) & ~(0x1 << shift);
++	writel(val, reg);
++	raw_spin_unlock(&shirq_lock);
++}
+
+That's the mask function for 300 and it clears the bit, right?
+
+Thanks,
+
+	tglx
