@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966848AbaFTLK4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 07:10:56 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:57342 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966703AbaFTLKz (ORCPT
+	id S966952AbaFTLLF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 07:11:05 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:51855 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966703AbaFTLLA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 07:10:55 -0400
-From: Wang Nan <wangnan0@huawei.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Jiang Liu <liuj97@gmail.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        Wang Nan <wangnan0@huawei.com>, Li Zefan <lizefan@huawei.com>
-Subject: [PATCH] mem-hotplug: improve zone_movable_is_highmem logic
-Date: Fri, 20 Jun 2014 18:54:14 +0800
-Message-ID: <1403261654-11259-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
+	Fri, 20 Jun 2014 07:11:00 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Vincent =?ISO-8859-1?Q?Stehl=E9?= <vincent.stehle@laposte.net>
+Cc: linux-sh@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: Re: [PATCH linux-next] ARM: shmobile: rcar-gen2: update call to dma_contiguous_reserve_area
+Date: Fri, 20 Jun 2014 13:11:42 +0200
+Message-ID: <5123262.2QjNse2sTm@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.12.21-gentoo-r1; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1403170270-17877-1-git-send-email-vincent.stehle@laposte.net>
+References: <1403170270-17877-1-git-send-email-vincent.stehle@laposte.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In original code, zone_movable_is_highmem() assumes ZONE_MOVABLE not
-highmem if CONFIG_HAVE_MEMBLOCK_NODE_MAP is not set. In online_pages, it
-extracts pages from the previous zone before ZONE_MOVABLE. Which is
-logically inconsistent:
+Hi Vincent,
 
-If HAVE_MEMBLOCK_NODE_MAP is turned off but HIGHMEM is on,
-zone_movable_is_highmem() makes movable zone not highmem, but
-online_pages() extracts pages from ZONE_HIGHMEM.
+Thank you for the patch.
 
-This inconsistency doesn't cause real problem currently, because all
-architectures support online_pages also have HAVE_MEMBLOCK_NODE_MAP.
-However, fixing it makes code clear, and also helps futher coding.
+On Thursday 19 June 2014 11:31:10 Vincent Stehlé wrote:
+> Commit 5ea3b1b2f8ad 'cma: add placement specifier for "cma=" kernel
+> parameter' adds a new 'fixed' parameter to dma_contiguous_reserve_area().
+> Update rcar_gen2_reserve() accordingly.
+> 
+> This fixes the following compilation error:
+> 
+>   arch/arm/mach-shmobile/setup-rcar-gen2.c: In function ‘rcar_gen2_reserve’:
+> arch/arm/mach-shmobile/setup-rcar-gen2.c:182:10: error: too few arguments
+> to function ‘dma_contiguous_reserve_area’
+> 
+> Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
+> Cc: Simon Horman <horms@verge.net.au>
+> Cc: Magnus Damm <magnus.damm@gmail.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Geert Uytterhoeven <geert+renesas@glider.be>
 
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
-Cc: Zhang Zhen <zhangzhen@huawei.com>
----
- include/linux/mmzone.h | 2 ++
- 1 file changed, 2 insertions(+)
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 6cbd1b6..559e659 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -872,6 +872,8 @@ static inline int zone_movable_is_highmem(void)
- {
- #if defined(CONFIG_HIGHMEM) && defined(CONFIG_HAVE_MEMBLOCK_NODE_MAP)
- 	return movable_zone == ZONE_HIGHMEM;
-+#elif defined(CONFIG_HIGHMEM)
-+	return (ZONE_MOVABLE - 1) == ZONE_HIGHMEM;
- #else
- 	return 0;
- #endif
+> ---
+> 
+> Hi,
+> 
+> This can be seen with linux next-20140619 and e.g. arm allmodconfig.
+> 
+> Best regards,
+> 
+> V.
+> 
+>  arch/arm/mach-shmobile/setup-rcar-gen2.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-shmobile/setup-rcar-gen2.c
+> b/arch/arm/mach-shmobile/setup-rcar-gen2.c index 73fb2a6..42d5b43 100644
+> --- a/arch/arm/mach-shmobile/setup-rcar-gen2.c
+> +++ b/arch/arm/mach-shmobile/setup-rcar-gen2.c
+> @@ -179,6 +179,6 @@ void __init rcar_gen2_reserve(void)
+>  #ifdef CONFIG_DMA_CMA
+>  	if (mrc.size)
+>  		dma_contiguous_reserve_area(mrc.size, mrc.base, 0,
+> -					    &rcar_gen2_dma_contiguous);
+> +					    &rcar_gen2_dma_contiguous, true);
+>  #endif
+>  }
+
 -- 
-1.8.4
+Regards,
+
+Laurent Pinchart
 
