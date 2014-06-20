@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757471AbaFTITj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 04:19:39 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:47400 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932189AbaFTITg (ORCPT
+	id S934841AbaFTIW0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 04:22:26 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:50318 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932189AbaFTIWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 04:19:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.10.1406201005400.5170@nanos>
-References: <20140619212606.431750473@linutronix.de>
-	<20140619212713.496614337@linutronix.de>
-	<CAOh2x==trCJcQnzekEdcFoBb2i1Mc7hMsJq94iu2dzrZ=Xkeow@mail.gmail.com>
-	<alpine.DEB.2.10.1406201005400.5170@nanos>
-Date: Fri, 20 Jun 2014 13:49:36 +0530
-Message-ID: <CAKohpom76zu0ec0rgcVH8J5hmAypS9WJ+i_bB43P3aFYzDW2Mw@mail.gmail.com>
-Subject: Re: [patch 08/13] irqchip: spear_shirq: Precalculate status mask
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Shiraz Hashim <shiraz.linux.kernel@gmail.com>,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 20 Jun 2014 04:22:23 -0400
+Message-ID: <1403252540.22857.20.camel@x220>
+Subject: Re: [PATCH v3 01/05] staging: emxx_udc: Add Emma Mobile USB Gadget
+ driver
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-sh@vger.kernel.org, gregkh@linuxfoundation.org,
+        horms@verge.net.au, geert@linux-m68k.org,
+        laurent.pinchart@ideasonboard.com, olof@lixom.net,
+        dan.carpenter@oracle.com
+Date: Fri, 20 Jun 2014 10:22:20 +0200
+In-Reply-To: <20140606104417.4423.38999.sendpatchset@w520>
+References: <20140606104408.4423.36098.sendpatchset@w520>
+	 <20140606104417.4423.38999.sendpatchset@w520>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Jun 2014 08:22:21.0555 (UTC) FILETIME=[C1F08C30:01CF8C60]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 June 2014 13:36, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Fri, 20 Jun 2014, Viresh Kumar wrote:
->> On Fri, Jun 20, 2014 at 3:04 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
->> > @@ -176,6 +186,7 @@ static struct spear_shirq spear320_shirq
->> >  static struct spear_shirq spear320_shirq_intrcomm_ras = {
->> >         .offset         = 11,
->> >         .nr_irqs        = 11,
->> > +       .mask           = ((0x1 << 11) - 1) << 11,
->> >         .regs = {
->> >                 .enb_reg = -1,
->> >                 .status_reg = SPEAR320_INT_STS_MASK_REG,
->>
->> If you like, maybe this instead of above diff:
->
-> What's wrong with letting the compiler fill it in?
+Magnus,
 
->> +               shirq_blocks[i]->mask = ((0x1 << shirq_blocks[i]->nr_irqs) - 1)
->> +                                       << shirq_blocks[i]->offset;
+On Fri, 2014-06-06 at 19:44 +0900, Magnus Damm wrote:
+> From: Magnus Damm <damm+renesas@opensource.se>
+> 
+> Add the emxx_udc driver to staging based on an old linux-2.6.35.7 
+> android tree. The driver has been brushed up slightly to complile
+> but it is still in great need of cleanup.
+> 
+> At this point DT bindings are clearly lacking and I doubt that the
+> driver even can run with multiple instances (global variables, hurray!).
+> 
+> Signed-off-by: Magnus Damm <damm+renesas@opensource.se>
+> ---
 
-Just for better readability as it doesn't have magic numbers in it
-and the performance impact wouldn't be much as its done just
-once on boot.
+This patch appeared in linux-next (ie, next-20140620).
+
+>[...]
+> --- /dev/null
+> +++ work/drivers/staging/emxx_udc/emxx_udc.h	2014-05-22 12:21:03.000000000 +0900
+> @@ -0,0 +1,662 @@
+>[...]
+> +/*------- (0x1010) EPCTR Register */
+> +#define DIRPD				BIT12		/* RW */
+> +
+> +#define VBUS_LEVEL			BIT08		/* R */
+> +
+> +#define PLL_RESUME			BIT05		/* RW */
+> +#define PLL_LOCK			BIT04		/* R */
+> +
+> +#ifdef CONFIG_MACH_EMGR
+> +#define PLL_RST				BIT02		/* RW */
+> +#endif
+
+There's no Kconfig symbol MACH_EMGR. There's also no preprocessor define
+of CONFIG_MACH_EMGR. Even web searches didn't tell me what MACH_EMGR
+could be. Anyhow, this check always evaluates to false. Should I draft a
+trivial patch to remove it?
+
+But PLL_RST is unused too. Would you like to keep it?
+
+(I didn't catch this when I first received this patch. One needs to
+parse the entire tree to find stuff like this, and there are way too
+many patchsets flying by to do treewide searches for all of them. So I
+just try to keep up with linux-next, to at least catch things before
+they enter mainline.)
+
+
+Paul Bolle
+
