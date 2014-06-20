@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966934AbaFTLeV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 07:34:21 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:43820 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966619AbaFTLeU (ORCPT
+	id S967129AbaFTLfa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 07:35:30 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:54732 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966619AbaFTLf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 07:34:20 -0400
-Date: Fri, 20 Jun 2014 14:34:26 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Lubomir Rintel <lkundrak@v3.sk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: crystalhd: Do not mix integers and user pointers
-Message-ID: <20140620113426.GU5500@mwanda>
-References: <1403262977-26100-1-git-send-email-lkundrak@v3.sk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403262977-26100-1-git-send-email-lkundrak@v3.sk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Fri, 20 Jun 2014 07:35:28 -0400
+From: Maxime COQUELIN <maxime.coquelin@st.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Cc: kernel@stlinux.com, patrice.chotard@st.com, maxime.coquelin@st.com
+Subject: [PATCH] pinctrl: st: Fix irqmux handler
+Date: Fri, 20 Jun 2014 13:34:54 +0200
+Message-Id: <1403264094-16140-1-git-send-email-maxime.coquelin@st.com>
+X-Mailer: git-send-email 1.9.1
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-20_04:2014-06-20,2014-06-20,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 01:16:17PM +0200, Lubomir Rintel wrote:
-> Fixes the following sparse warnings:
-> 
->   crystalhd/crystalhd_lnx.c:227:61: warning: incorrect type in argument 3 (different base types)
->   crystalhd/crystalhd_lnx.c:227:61:    expected unsigned long [unsigned] ua
->   crystalhd/crystalhd_lnx.c:227:61:    got void [noderef] <asn:1>*ua
->   crystalhd/crystalhd_lnx.c:229:65: warning: incorrect type in argument 4 (different base types)
->   crystalhd/crystalhd_lnx.c:229:65:    expected unsigned long [unsigned] ua
->   crystalhd/crystalhd_lnx.c:229:65:    got void [noderef] <asn:1>*ua
-> 
-> Done for the Eudyptula challenge.
-> 
+st_gpio_irqmux_handler() reads the status register to find out
+which banks inside the controller have pending IRQs.
+For each banks having pending IRQs, it calls the corresponding handler.
 
-This patch is nice and fixes a bunch of warnings.
+Problem is that current code restricts the number of possible banks inside the
+controller to ST_GPIO_PINS_PER_BANK. This define represents the number of pins
+inside a bank, so it shouldn't be used here.
 
-Normally, I would might you to redo it and remove the no longer needed
-casts for ua_off as well...
+On STiH407, PIO_FRONT0 controller has 10 banks, so IRQs pending in the two
+last banks (PIO18 & PIO19) aren't handled.
 
-	crystalhd_user_data((void __user *)ua_off, io->add_cdata,
-                            ^^^^^^^^^^^^^^^
-But we are going to delete this entire driver soon.  We may as well
-apply yours as is and then delete it or just delete the driver without
-applying this cleanup.
+This patch replace ST_GPIO_PINS_PER_BANK by the number of banks inside the
+controller.
 
-regards,
-dan carpenter
+Cc: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: <stable@vger.kernel.org> #v3.15+
+Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+---
+ drivers/pinctrl/pinctrl-st.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
+index 1bd6363bc9..9f43916 100644
+--- a/drivers/pinctrl/pinctrl-st.c
++++ b/drivers/pinctrl/pinctrl-st.c
+@@ -1431,7 +1431,7 @@ static void st_gpio_irqmux_handler(unsigned irq, struct irq_desc *desc)
+ 
+ 	status = readl(info->irqmux_base);
+ 
+-	for_each_set_bit(n, &status, ST_GPIO_PINS_PER_BANK)
++	for_each_set_bit(n, &status, info->nbanks)
+ 		__gpio_irq_handler(&info->banks[n]);
+ 
+ 	chained_irq_exit(chip, desc);
+-- 
+1.9.1
 
