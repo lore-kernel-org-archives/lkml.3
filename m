@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935213AbaFTS1P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 14:27:15 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:64868 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754339AbaFTS1O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 14:27:14 -0400
+	id S966071AbaFTSaI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 14:30:08 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:40764 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934914AbaFTSaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 14:30:05 -0400
+Date: Fri, 20 Jun 2014 20:29:51 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Arvind R <arvino55@gmail.com>
+Cc: linux-edac <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3.15.1] i82975x_edac: fix dram layout inits and style
+Message-ID: <20140620182951.GH11391@pd.tnic>
+References: <CAA_L+UPtA9ahtF4oeGCeR27e-q=tCtoKfXqDhrJR_UgVGu9Aaw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAGVrzcZmakEpNW=vGtsb+OmzU_J4hJNoM1sUAoYNsaju_YzGwQ@mail.gmail.com>
-References: <1402337102-19428-1-git-send-email-f.fainelli@gmail.com> <CAGVrzcZmakEpNW=vGtsb+OmzU_J4hJNoM1sUAoYNsaju_YzGwQ@mail.gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Fri, 20 Jun 2014 11:26:33 -0700
-Message-ID: <CAGVrzcbpS0tJtkH5vkGRSteV5NU2CzNNkQ43_26XySFqJMAK5A@mail.gmail.com>
-Subject: Re: [PATCH] irqchip: brcmstb-l2: Level-2 interrupts are edge sensitive
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Florian Fainelli <f.fainelli@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAA_L+UPtA9ahtF4oeGCeR27e-q=tCtoKfXqDhrJR_UgVGu9Aaw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-06-12 12:13 GMT-07:00 Florian Fainelli <f.fainelli@gmail.com>:
-> 2014-06-09 11:05 GMT-07:00 Florian Fainelli <f.fainelli@gmail.com>:
->> The driver was configuring the interrupt handler for the Level-2
->> interrupts to be "level" triggered while they are in fact "edge"
->> triggered. Fix this by using the correct handler.
->>
->> Reported-by: Brian Norris <computersforpeace@gmail.com>
->> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
->
-> Jason, Thomas, this driver just got merged into 3.16-rc0, can you
-> carry this fix such that it gets into a future 3.16-rc? Thanks!
+On Fri, Jun 20, 2014 at 09:26:27PM +0530, Arvind R wrote:
+> Subject: [PATCH 3.15.1] i82975x_edac: fix dram layout inits and style
+> 
+> rewrite dram layout initialisation differently based on symmetry
+> of organisation. And a long pending cleanup.
 
-Ping! I want to make sure this gets into a next 3.16-rc pull request.
-Andrew, can you take that one if neither Thomas nor Andrew respond in
-a timely manner?
+Yeah, this patch is trying to do a lot of things at once and could use some
+splitting into single logical changes with proper explanations in their
+respective commit messages *why* the changes are needed.
 
-Thanks!
+Also, do you test those changes on real hardware?
 
->
->> ---
->>  drivers/irqchip/irq-brcmstb-l2.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/irqchip/irq-brcmstb-l2.c b/drivers/irqchip/irq-brcmstb-l2.c
->> index 8ee2a36d5840..c15c840987d2 100644
->> --- a/drivers/irqchip/irq-brcmstb-l2.c
->> +++ b/drivers/irqchip/irq-brcmstb-l2.c
->> @@ -150,7 +150,7 @@ int __init brcmstb_l2_intc_of_init(struct device_node *np,
->>
->>         /* Allocate a single Generic IRQ chip for this node */
->>         ret = irq_alloc_domain_generic_chips(data->domain, 32, 1,
->> -                               np->full_name, handle_level_irq, clr, 0, 0);
->> +                               np->full_name, handle_edge_irq, clr, 0, 0);
->>         if (ret) {
->>                 pr_err("failed to allocate generic irq chip\n");
->>                 goto out_free_domain;
->> --
->> 1.9.1
->>
->
->
->
-> --
-> Florian
+Also, you have some strange coding style like
 
++#define^II82975X_NR_CSROWS_PER_CHANNEL
 
+ (there's a tab between the "define" and the name)
+
++^I^Iif (is_symmetric)^I{$
+
+ (tab between closing bracket and opening curly brace)
+
+and so on. Please use single spaces like the rest of the kernel code.
+
+Use Documentation/CodingStyle as a guide.
+
+Thanks.
 
 -- 
-Florian
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
