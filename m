@@ -1,79 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966869AbaFTKrf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 06:47:35 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:32205 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966748AbaFTKrc (ORCPT
+	id S966782AbaFTKrN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 06:47:13 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:51742 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S966374AbaFTKrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 06:47:32 -0400
-Message-ID: <53A41125.4080802@huawei.com>
-Date: Fri, 20 Jun 2014 18:47:01 +0800
-From: Liu hua <sdu.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Fri, 20 Jun 2014 06:47:12 -0400
+Message-Id: <20140620104711.140660296@goodmis.org>
+User-Agent: quilt/0.63-1
+Date: Fri, 20 Jun 2014 06:45:19 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [for-next][PATCH v2 1/3] tracing: Fix syscall_*regfunc() vs copy_process() race
+References: <20140620104518.722157733@goodmis.org>
 MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>, "anton@enomsg.org" <anton@enomsg.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Wang Nan <wangnan0@huawei.com>,
-        "peifeiyue@huawei.com" <peifeiyue@huawei.com>
-Subject: Re: Should Pstore(ramoops) records customized information?
-References: <539E6D4D.5000802@huawei.com> <53A164DB.1020305@huawei.com> <3908561D78D1C84285E8C5FCA982C28F32838E10@ORSMSX114.amr.corp.intel.com> <53A2D5BB.5040500@huawei.com> <3908561D78D1C84285E8C5FCA982C28F3283A5E3@ORSMSX114.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3283A5E3@ORSMSX114.amr.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.58.238]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020204.53A41132.0012,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: e02cf0e5456ad60c3f7efe63ff012d29
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0001-tracing-Fix-syscall_-regfunc-vs-copy_process-race.patch
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/6/20 7:42, Luck, Tony wrote:
+From: Oleg Nesterov <oleg@redhat.com>
 
->> BTW, I note that "extern struct pstore_info *psinfo" locates in
->> fs/pstore/internal.h. So users out of directory "fs/pstore/" can not use pstore to
->> record messages. We do not want other kernel users to use pstore, right?  And can we
->> break this?
-> 
-> Yes we can make some interface visible to the rest of the kernel ... probably
-> not the raw "*psinfo" though. Perhaps the pstore_alloc_ring_buffer() and
-> pstore_write_ring_buffer() functions should be the ones exported to the
-> rest of the kernel.
-> 
->> ditoo.. Since other backends like efi and erst may can not privide such ring buffer.
->> So pstore_alloc_ring_buffer should be a funciton pointer of pstore_info struct.
-> 
-> Yes - that allows less capable backend like ERST and efivars to not provide the
-> service.  Since it becomes internal, you can drop the "pstore_" prefix.  E.g.
-> something like:
-> 
-> int pstore_alloc_ring_buffer(char *name, int size)
-> {
-> 	return psinfo->alloc_ring_buffer(name, size);
-> }
-> EXPORT_SYMBOL_GPL(pstore_alloc_ring_buffer);
-> 
-> ... and you have to find/make some global header for the "extern" declaration.
+syscall_regfunc() and syscall_unregfunc() should set/clear
+TIF_SYSCALL_TRACEPOINT system-wide, but do_each_thread() can race
+with copy_process() and miss the new child which was not added to
+the process/thread lists yet.
 
-I will make these RFC patch series according to our discussion. Thanks you very to
-valuable advice.
+Change copy_process() to update the child's TIF_SYSCALL_TRACEPOINT
+under tasklist.
 
-Thanks,
-Liu Hua
+Link: http://lkml.kernel.org/p/20140413185854.GB20668@redhat.com
 
+Cc: stable@vger.kernel.org # 2.6.33
+Fixes: a871bd33a6c0 "tracing: Add syscall tracepoints"
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/trace/syscall.h | 15 +++++++++++++++
+ kernel/fork.c           |  2 ++
+ 2 files changed, 17 insertions(+)
 
-
-
-> 
-> -Tony
-> 
-> 
+diff --git a/include/trace/syscall.h b/include/trace/syscall.h
+index fed853f3d7aa..9674145e2f6a 100644
+--- a/include/trace/syscall.h
++++ b/include/trace/syscall.h
+@@ -4,6 +4,7 @@
+ #include <linux/tracepoint.h>
+ #include <linux/unistd.h>
+ #include <linux/ftrace_event.h>
++#include <linux/thread_info.h>
+ 
+ #include <asm/ptrace.h>
+ 
+@@ -32,4 +33,18 @@ struct syscall_metadata {
+ 	struct ftrace_event_call *exit_event;
+ };
+ 
++#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_HAVE_SYSCALL_TRACEPOINTS)
++static inline void syscall_tracepoint_update(struct task_struct *p)
++{
++	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
++		set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
++	else
++		clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
++}
++#else
++static inline void syscall_tracepoint_update(struct task_struct *p)
++{
++}
++#endif
++
+ #endif /* _TRACE_SYSCALL_H */
+diff --git a/kernel/fork.c b/kernel/fork.c
+index d2799d1fc952..6a13c46cd87d 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1487,7 +1487,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 
+ 	total_forks++;
+ 	spin_unlock(&current->sighand->siglock);
++	syscall_tracepoint_update(p);
+ 	write_unlock_irq(&tasklist_lock);
++
+ 	proc_fork_connector(p);
+ 	cgroup_post_fork(p);
+ 	if (clone_flags & CLONE_THREAD)
+-- 
+2.0.0
 
 
