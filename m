@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966126AbaFTJtV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 05:49:21 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:7724 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964815AbaFTJtT (ORCPT
+	id S966195AbaFTJyb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 05:54:31 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:24548 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964815AbaFTJya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 05:49:19 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 20 Jun 2014 02:43:31 -0700
-Message-ID: <53A4039B.7000504@nvidia.com>
-Date: Fri, 20 Jun 2014 18:49:15 +0900
-From: Alexandre Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 20 Jun 2014 05:54:30 -0400
+Message-ID: <53A404D2.3030303@imgtec.com>
+Date: Fri, 20 Jun 2014 10:54:26 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Stephen Warren <swarren@wwwdotorg.org>, Keerthy <j-keerthy@ti.com>,
-        Nishanth Menon <nm@ti.com>, Thierry Reding <thierry.reding@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: tegra: TN7: relax some regulators
-References: <1403164154-1362-1-git-send-email-acourbot@nvidia.com> <53A308C8.2070004@wwwdotorg.org> <20140619175643.GR5099@sirena.org.uk> <53A3C613.8030207@nvidia.com> <53A3D85E.7030704@nvidia.com> <20140620094119.GT5099@sirena.org.uk>
-In-Reply-To: <20140620094119.GT5099@sirena.org.uk>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Sorin Dumitru <sdumitru@ixiacom.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mips@linux-mips.org>
+CC: <ralf@linux-mips.org>
+Subject: Re: [PATCH] mips: n32: use compat getsockopt syscall
+References: <1403250786-9763-1-git-send-email-sdumitru@ixiacom.com>
+In-Reply-To: <1403250786-9763-1-git-send-email-sdumitru@ixiacom.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.101]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2014 06:41 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Fri, Jun 20, 2014 at 03:44:46PM +0900, Alexandre Courbot wrote:
->
->> dbabd624d
->> regulator: palmas: Reemove open coded functions with helper functions
->
->> Keerthy, Nishanth, could it be that there is still something wrong with the
->> REGULATOR_LINEAR_RANGE() definitions?
->
->> This seems to be the cause for our trouble, but the other questions might
->> still stand, in case there is interest in discussing them.
->
-> There was a bug fix to the Palmas driver which just went to Linus the
-> other day, are you sure this isn't fixed in mainline (or -next, it's
-> been in -next for a week or something)?
+On 20/06/14 08:53, Sorin Dumitru wrote:
+> Signed-off-by: Sorin Dumitru <sdumitru@ixiacom.com>
 
-If you are talking about
+A little more commit message wouldn't hurt. Did it break a particular
+program?
 
-6b7f2d82d5
-regulator: palmas: Fix SMPS list for 0V
+It's consistent with compat_sys_socketcall(), include/uapi/asm/unistd.h,
+and commit 515c7af85ed9 (which does same thing for x32) though so it
+looks good to me.
 
-then it is in my tree. There is actually no difference on 
-palmas-regulator.c between my tree and the current -next (or Linus' tree 
-for that instance).
+Reviewed-by: James Hogan <james.hogan@imgtec.com>
 
-So it seems to be something else we are dealing with here.
+Cheers
+James
+
+> ---
+>  arch/mips/kernel/scall64-n32.S | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/mips/kernel/scall64-n32.S b/arch/mips/kernel/scall64-n32.S
+> index c1dbcda..e543861 100644
+> --- a/arch/mips/kernel/scall64-n32.S
+> +++ b/arch/mips/kernel/scall64-n32.S
+> @@ -162,7 +162,7 @@ EXPORT(sysn32_call_table)
+>  	PTR	sys_getpeername
+>  	PTR	sys_socketpair
+>  	PTR	compat_sys_setsockopt
+> -	PTR	sys_getsockopt
+> +	PTR	compat_sys_getsockopt
+>  	PTR	__sys_clone			/* 6055 */
+>  	PTR	__sys_fork
+>  	PTR	compat_sys_execve
+> 
