@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934884AbaFTIei (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 04:34:38 -0400
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:34326 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934779AbaFTIe2 (ORCPT
+	id S934806AbaFTIij (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 04:38:39 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:46271 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932937AbaFTIih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 04:34:28 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: Will Deacon <will.deacon@arm.com>
-CC: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 20 Jun 2014 01:33:59 -0700
-Subject: RE: [PATCH] arm64: add the ability to hook the fault code
-Thread-Topic: [PATCH] arm64: add the ability to hook the fault code
-Thread-Index: Ac+MYVD6nISa5JzcSseRLR2Gt7e/RgAAN5pw
-Message-ID: <9034CBD80F070943B59700D7F8149ED90182148D02@SC-VEXCH4.marvell.com>
-References: <1403175296-25181-1-git-send-email-zhangwm@marvell.com>
- <20140620082556.GD25104@arm.com>
-In-Reply-To: <20140620082556.GD25104@arm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
+	Fri, 20 Jun 2014 04:38:37 -0400
+Message-ID: <53A3F305.9070903@codethink.co.uk>
+Date: Fri, 20 Jun 2014 09:38:29 +0100
+From: Rob Jones <rob.jones@codethink.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-20_03:2014-06-20,2014-06-20,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1406200098
+To: Mark Brown <broonie@kernel.org>
+CC: linus.walleij@linaro.org, gnurou@gmail.com, lgirdwood@gmail.com,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-kernel@codethink.co.uk, ian.molton@codethink.co.uk,
+        ben.dooks@codethink.co.uk, heiko@sntech.de
+Subject: Re: Change gpio-reulator-probe() to use managed resources.
+References: <1403192765-3258-1-git-send-email-rob.jones@codethink.co.uk> <20140619175745.GS5099@sirena.org.uk>
+In-Reply-To: <20140619175745.GS5099@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5K8Yjkv032168
 
 
-> -----Original Message-----
-> From: Will Deacon [mailto:will.deacon@arm.com]
-> Sent: 2014Äê6ÔÂ20ÈÕ 16:26
-> To: Neil Zhang
-> Cc: Catalin Marinas; linux-arm-kernel@lists.infradead.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] arm64: add the ability to hook the fault code
-> 
-> On Thu, Jun 19, 2014 at 11:54:56AM +0100, Neil Zhang wrote:
-> > Add the ability to hook the fault code for future use.
-> 
-> Do you have a user for this in the kernel tree? I'd rather add the hook with
-> the first user, if it doesn't exist already.
-> 
+On 19/06/14 18:57, Mark Brown wrote:
+> On Thu, Jun 19, 2014 at 04:46:01PM +0100, Rob Jones wrote:
+>> Add new managed resource functions as needed to achieve this.
+>>
+>> Amend the following functions:
+> You appear to have omitted the actual patch, I'm quoting the entire
+> mail here.  Please see Documentation/SubmittingPatches for some tips
+> on how to do things.
 
-Marvell Soc has a feature to use the external abort.
-I didn't submit it since it's a private feature.
+I omitted to put "[Patch 0/4][v2]" on the front of the subject line.The 
+actual patches followed.
 
-> Will
+It was a consequence of lack of familiarity with the tools; I'm 
+learning, so it shouldn't happen again. Would you like me to resubmit?
 
-Best Regards,
-Neil Zhang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>
+>> devm_kstrdup()
+>> gpio_regulator_probe()
+>>
+>> Add the following functions:
+>>
+>> devm_kmemdup()
+>> devm_gpio_request_array()
+>> devm_gpio_free_array()
+>>
+>> Remove the following functions:
+>>
+>> gpio_regulator_remove()
+>>
+>>
+>>  From Rob Jones <rob.jones@codethink.co.uk> # This line is ignored.
+>> From: Rob Jones <rob.jones@codethink.co.uk>
+>> Subject:
+>> In-Reply-To:
+>>
+>>
+
+-- 
+Rob Jones
+Project Manager
+Codethink Ltd
+mailto:rob.jones@codethink.co.uk
+tel:+44 161 236 5575
+
