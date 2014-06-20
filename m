@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965515AbaFTS46 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 14:56:58 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:62070 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752560AbaFTS44 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 14:56:56 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Fabio Estevam <festevam@gmail.com>,
-        Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [PATCH] dt/documentation: add specification of dma bus information
-Date: Fri, 20 Jun 2014 20:56:49 +0200
-Message-ID: <4193075.zZSpRTFEYz@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53A46CB7.1030109@ti.com>
-References: <1401981720-6946-1-git-send-email-santosh.shilimkar@ti.com> <CAL_JsqJAtWnHKPVpDsdOOzT_X=npc3hroLNTGqULM2SJr=1OEg@mail.gmail.com> <53A46CB7.1030109@ti.com>
+	id S965992AbaFTS5l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 14:57:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48075 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965171AbaFTS5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 14:57:40 -0400
+Message-ID: <53A48411.6080602@zytor.com>
+Date: Fri, 20 Jun 2014 11:57:21 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:7RUR7hOGm342S+qaxCZYimpovZVMZFB531oUbNXDxSs
- VNhltcifAL+88JGGCmgccI5a7dHGd2xVFPvK2Di4gfpx8KT1NZ
- +fQFvWU67BTZZxW54Zzn+iZFhPnm4MEPi1ImUBNOr4Yi939QvB
- hz9ag+4XP+uCrNXlePF7GWLifxKZf1xMBVeiKlf37XNuDtro2Y
- Kqoqdmfr6cDS3tEoApAEgg2hqCzBn3k5Fds4u0bP0cpCsfAIsa
- KF4okkgKNHShM9TEUZ2c2iqedmoK9OqkyZ3X3wDIL9Jdun0k3s
- Totb60RqLsvliuAuywBgrfW4ERqlJP5x4WP4WUhlR0mFbatjH8
- 5A1Tn2av1FgX+pffQXEM=
+To: Borislav Petkov <bp@alien8.de>
+CC: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [RFC][PATCH 3/3] x86: make MP  a required-feature on 64-bit
+References: <20140620161736.D6AC16FD@viggo.jf.intel.com> <20140620161740.BFB00798@viggo.jf.intel.com> <53A46008.5060509@zytor.com> <53A4619C.8020100@sr71.net> <53A46365.6090101@zytor.com> <20140620174345.GD11391@pd.tnic> <53A47461.4050409@zytor.com> <20140620181518.GG11391@pd.tnic>
+In-Reply-To: <20140620181518.GG11391@pd.tnic>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 20 June 2014 13:17:43 Santosh Shilimkar wrote:
-> >> +                       dma-coherent;
-> >> +                       dma-ranges;
-> >> +
-> >> +                       dwc3@2690000 {
-> >> +                               compatible = "synopsys,dwc3";
-> >> +                               [...]
-> >> +                       };
-> > 
-> > This example is a bit strange. I don't understand the relationship
-> > between keystone-dwc3 and synopsys,dwc3, nor do I want to. I'd prefer
-> > to see a simple example here.
+On 06/20/2014 11:15 AM, Borislav Petkov wrote:
+> On Fri, Jun 20, 2014 at 10:50:25AM -0700, H. Peter Anvin wrote:
+>> Looking at the AMD init code, there is a whole bunch of other 32/64-bit
+>> differences that are clearly bogus.  I also see that amd_k7_smp_check()
+>> doesn't even *exist* on 64 bits, and that init_amd_k7() which calls
+>> amd_k7_smp_check() only is ever called for family == 6, despite having
+>> tests for family 7 and above in it.
+> 
+> No, K7 is family 6. The tests are for c->x86_model, or am I looking at
+> the wrong place?
+> 
+> OTOH, init_amd() could probably use a cleanup of moving the per-family
+> code into init_amd_<fam>() functions and extending the switch-case.
+> 
+> I'll take a look.
+> 
 
+Ah, yes, you're right.
 
-> > dma-ranges is a property of the parent which you show, but
-> > dma-coherent originally was a property of the bus master itself. While
-> > we need to support that, are we changing that? We need to be clear on
-> > where the property belongs even if the kernel is more lax.
-> > 
-> I don't think we are changing it fundamentally but may be I missing
-> your point. The dma-coherent as is now a per-device property.
-> USB is one of the bus master supports coherency and hence showed
-> up in above example.
+This code is clearly not applicable to any 64-bit CPU, so cpu_has_mp is
+simply a noop on 64 bits... so no need for Dave H. to worry about it at
+all; we should get rid of it and replace it with cpu_has() in the AMD code.
 
-I think it's enough if you just drop the "synopsys,dwc3" node and the
-intermediate dma-ranges property from the example, leaving the
-dma-coherent property in the "ti,keystone-dwc3" node.
+I actually have Linus' old dual-processor K7 sitting in my garage, but
+$DEITY knows if it actually runs.
 
-	Arnd
+	-hpa
+
