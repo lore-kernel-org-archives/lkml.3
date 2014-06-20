@@ -1,184 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967480AbaFTN6d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 09:58:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32603 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965921AbaFTN6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 09:58:32 -0400
-Date: Fri, 20 Jun 2014 09:58:15 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Jan Kara <jack@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>
-Subject: Re: [RFC][PATCH 3/3] x86/nmi: Perform a safe NMI stack trace on all
- CPUs
-Message-ID: <20140620135815.GG7959@redhat.com>
-References: <20140619213329.478113470@goodmis.org>
- <20140619213952.360076309@goodmis.org>
+	id S967487AbaFTOB1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 10:01:27 -0400
+Received: from server721-han.de-nserver.de ([85.158.180.102]:49052 "EHLO
+	server721-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966332AbaFTOB0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 10:01:26 -0400
+X-Greylist: delayed 324 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Jun 2014 10:01:25 EDT
+X-Fcrdns: Yes
+Message-ID: <53A43D66.9070005@kristov.de>
+Date: Fri, 20 Jun 2014 15:55:50 +0200
+From: Christoph Schulz <develop@kristov.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140619213952.360076309@goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: paulus@samba.org
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] net: ppp: make PPP pass and active filters work again
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-User-Auth: Auth by mail@kristov.de through 89.182.48.140
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 05:33:32PM -0400, Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> When trigger_all_cpu_backtrace() is called on x86, it will trigger an
-> NMI on each CPU and call show_regs(). But this can lead to a hard lock
-> up if the NMI comes in on another printk().
-> 
-> In order to avoid this, when the NMI triggers, it switches the printk
-> routine for that CPU to call a NMI safe printk function that records the
-> printk in a per_cpu trace_seq descriptor. After all NMIs have finished
-> recording its data, the trace_seqs are printed in a safe context.
+From: Christoph Schulz <develop@kristov.de>
 
-Ah, if there is other places that need to call a printk from an NMI
-context, do we have to copy and paste this code there too?  That would
-seem a little much. :-)  I guess my only concern really is the seq_init
-and seq print stuff.  The handler seems relatively simple.
+Commit 568f194e8bd16c353ad50f9ab95d98b20578a39d ("net: ppp: use
+sk_unattached_filter api") contains two glitches. The first one is that
+sk_chk_filter() is called from within get_filter(). However, sk_chk_filter()
+is not idempotent as it sometimes replaces filter codes. So running it a second
+time over the same filter does not work and yields EINVAL. But sk_chk_filter()
+_is_ run a second time, namely through the call chain:
 
-Can we isolate this to a pr_nmi() routine or something?  Or maybe a
-pr_nmi_queue and pr_nmi_dump or something?
+  ppp_ioctl() --> sk_unattached_filter_create()
+              --> __sk_prepare_filter()
+              --> sk_chk_filter()
 
-Cheers,
-Don
+This results in sk_unattached_filter_create() always returning EINVAL,
+regardless whether the filter was sane or not. So this patch simply removes
+the call to sk_chk_filter() from within get_filter().
 
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  arch/x86/kernel/apic/hw_nmi.c | 66 ++++++++++++++++++++++++++++++++++++++++---
->  1 file changed, 62 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-> index c3fcb5de5083..6731604bb1cd 100644
-> --- a/arch/x86/kernel/apic/hw_nmi.c
-> +++ b/arch/x86/kernel/apic/hw_nmi.c
-> @@ -18,6 +18,7 @@
->  #include <linux/nmi.h>
->  #include <linux/module.h>
->  #include <linux/delay.h>
-> +#include <linux/trace_seq.h>
->  
->  #ifdef CONFIG_HARDLOCKUP_DETECTOR
->  u64 hw_nmi_get_sample_period(int watchdog_thresh)
-> @@ -30,11 +31,30 @@ u64 hw_nmi_get_sample_period(int watchdog_thresh)
->  /* For reliability, we're prepared to waste bits here. */
->  static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
->  
-> +/* Safe printing in NMI context */
-> +static DEFINE_PER_CPU(struct trace_seq, nmi_print_seq);
-> +
->  /* "in progress" flag of arch_trigger_all_cpu_backtrace */
->  static unsigned long backtrace_flag;
->  
-> +static void print_seq_line(struct trace_seq *s, int last, int pos)
-> +{
-> +	const char *buf = s->buffer + last;
-> +
-> +	/* Chop off the saved log level and update the length */
-> +	if (printk_get_level(buf)) {
-> +		buf += 2;
-> +		last += 2;
-> +	}
-> +
-> +	pr_emerg("%.*s", (pos - last) + 1, buf);
-> +}
-> +
->  void arch_trigger_all_cpu_backtrace(void)
->  {
-> +	struct trace_seq *s;
-> +	int len;
-> +	int cpu;
->  	int i;
->  
->  	if (test_and_set_bit(0, &backtrace_flag))
-> @@ -44,6 +64,11 @@ void arch_trigger_all_cpu_backtrace(void)
->  		 */
->  		return;
->  
-> +	for_each_possible_cpu(i) {
-> +		s = &per_cpu(nmi_print_seq, i);
-> +		trace_seq_init(s);
-> +	}
-> +
->  	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
->  
->  	printk(KERN_INFO "sending NMI to all CPUs:\n");
-> @@ -56,8 +81,39 @@ void arch_trigger_all_cpu_backtrace(void)
->  		mdelay(1);
->  	}
->  
-> +	for_each_possible_cpu(cpu) {
-> +		int last_i = 0;
-> +
-> +		s = &per_cpu(nmi_print_seq, cpu);
-> +		len = s->len;
-> +		if (!len)
-> +			continue;
-> +
-> +		/* Print line by line. */
-> +		for (i = 0; i < len; i++) {
-> +			if (s->buffer[i] == '\n') {
-> +				print_seq_line(s, last_i, i);
-> +				last_i = i + 1;
-> +			}
-> +		}
-> +		if (last_i < i - 1) {
-> +			print_seq_line(s, last_i, i);
-> +			pr_cont("\n");
-> +		}
-> +	}
-> +
->  	clear_bit(0, &backtrace_flag);
->  	smp_mb__after_atomic();
-> +	return true;
-> +}
-> +
-> +static int nmi_vprintk(const char *fmt, va_list args)
-> +{
-> +	struct trace_seq *s = this_cpu_ptr(&nmi_print_seq);
-> +	int len = s->len;
-> +
-> +	trace_seq_vprintf(s, fmt, args);
-> +	return s->len - len;
->  }
->  
->  static int
-> @@ -68,12 +124,14 @@ arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
->  	cpu = smp_processor_id();
->  
->  	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
-> -		static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
-> +		printk_func_t printk_func_save = this_cpu_read(printk_func);
->  
-> -		arch_spin_lock(&lock);
-> -		printk(KERN_WARNING "NMI backtrace for cpu %d\n", cpu);
-> +		/* Replace printk to write into the NMI seq */
-> +		this_cpu_write(printk_func, nmi_vprintk);
-> +		printk("NMI backtrace for cpu %d\n", cpu);
->  		show_regs(regs);
-> -		arch_spin_unlock(&lock);
-> +		this_cpu_write(printk_func, printk_func_save);
-> +
->  		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
->  		return NMI_HANDLED;
->  	}
-> -- 
-> 2.0.0.rc2
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+The second problem is that the original ppp_ioctl() code handling PPPIOCSPASS
+and PPPIOCSACTIVE allowed to remove a pass/active filter previously set by
+using a filter of length zero. However, with the new code this is not possible
+anymore as this case is not explicitly checked for, which leads to passing NULL
+as a filter to sk_unattached_filter_create(). This also results in returning
+EINVAL to the caller. Additionally, ppp->pass_filter and ppp->active_filter
+are not reset by sk_unattached_filter_create() in this EINVAL case, so dangling
+pointers may be left behind. This patch corrects both problems by checking
+whether the filter passed is empty or not, and so prevents
+sk_unattached_filter_create() from being called for empty filters.
+
+This patch applies to 3.15.1.
+
+Signed-off-by: Christoph Schulz <develop@kristov.de>
+---
+This is my first Linux kernel patch. If I made something wrong, please tell
+me ;-)
+
+I know about the 80-characters-per-line limit, but I wanted to let the original
+code as unmodified as possible. If you think the long lines have to be broken
+somehow, I'll try.
+
+The patch actually consists of two changes (I described them above), but
+because these changes are both needed to fix the problem, I refrained from
+splitting this patch into two. If you do think this has to be done, I will do
+it. (In this case, I would like to know whether the second patch should be
+created on top of the first one or independent of it?)
+
+Best regards,
+
+Christoph Schulz
+
+diff -uprN linux-3.15.1.orig/drivers/net/ppp/ppp_generic.c linux-3.15.1/drivers/net/ppp/ppp_generic.c
+--- linux-3.15.1.orig/drivers/net/ppp/ppp_generic.c	2014-06-08 20:19:54.000000000 +0200
++++ linux-3.15.1/drivers/net/ppp/ppp_generic.c	2014-06-19 08:19:57.000000000 +0200
+@@ -554,12 +554,6 @@ static int get_filter(void __user *arg,
+ 	if (IS_ERR(code))
+ 		return PTR_ERR(code);
+ 
+-	err = sk_chk_filter(code, uprog.len);
+-	if (err) {
+-		kfree(code);
+-		return err;
+-	}
+-
+ 	*p = code;
+ 	return uprog.len;
+ }
+@@ -763,10 +757,15 @@ static long ppp_ioctl(struct file *file,
+ 			};
+ 
+ 			ppp_lock(ppp);
+-			if (ppp->pass_filter)
++			if (ppp->pass_filter) {
+ 				sk_unattached_filter_destroy(ppp->pass_filter);
+-			err = sk_unattached_filter_create(&ppp->pass_filter,
+-							  &fprog);
++				ppp->pass_filter = NULL;
++			}
++			if (fprog.filter != NULL)
++				err = sk_unattached_filter_create(&ppp->pass_filter,
++								  &fprog);
++			else
++				err = 0;
+ 			kfree(code);
+ 			ppp_unlock(ppp);
+ 		}
+@@ -784,10 +783,15 @@ static long ppp_ioctl(struct file *file,
+ 			};
+ 
+ 			ppp_lock(ppp);
+-			if (ppp->active_filter)
++			if (ppp->active_filter) {
+ 				sk_unattached_filter_destroy(ppp->active_filter);
+-			err = sk_unattached_filter_create(&ppp->active_filter,
+-							  &fprog);
++				ppp->active_filter = NULL;
++			}
++			if (fprog.filter != NULL)
++				err = sk_unattached_filter_create(&ppp->active_filter,
++								  &fprog);
++			else
++				err = 0;
+ 			kfree(code);
+ 			ppp_unlock(ppp);
+ 		}
