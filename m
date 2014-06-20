@@ -1,239 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756755AbaFTPzX (ORCPT <rfc822;w@1wt.eu>);
+	id S934900AbaFTPzq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 11:55:46 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:33450 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756679AbaFTPzX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Jun 2014 11:55:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58857 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934502AbaFTPuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 11:50:12 -0400
-From: Vlastimil Babka <vbabka@suse.cz>
-To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>
-Cc: Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>
-Subject: [PATCH v3 05/13] mm, compaction: report compaction as contended only due to lock contention
-Date: Fri, 20 Jun 2014 17:49:35 +0200
-Message-Id: <1403279383-5862-6-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1403279383-5862-1-git-send-email-vbabka@suse.cz>
-References: <1403279383-5862-1-git-send-email-vbabka@suse.cz>
+MIME-Version: 1.0
+In-Reply-To: <20140616154228.GB179@brightrain.aerifal.cx>
+References: <21405.44257.742122.786960@gargle.gargle.HOWL> <20140615143500.GP179@brightrain.aerifal.cx>
+ <539DD26B.3060709@zytor.com> <CALCETrXTpkto2gJBiFC4CR5D=Lqf2YfP5BBH02f8hFW+TUGqeA@mail.gmail.com>
+ <539DDE9C.3010903@zytor.com> <CALCETrWLBCNiJArMRPuHbfhj6=ytnx_YqykzgCgZ+DYu34M1Mg@mail.gmail.com>
+ <20140616023604.GI5714@two.firstfloor.org> <CAKOQZ8wwKcDAXq0BnHwvL01LQNFeOGwgA9x8kCLWeFaP6USF4A@mail.gmail.com>
+ <20140616143801.GJ5714@two.firstfloor.org> <CAKOQZ8zk8KfkObSZg8fmhZXm9nXQSneOywvV-NBj=N-tNWjNPg@mail.gmail.com>
+ <20140616154228.GB179@brightrain.aerifal.cx>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 20 Jun 2014 08:55:01 -0700
+Message-ID: <CALCETrWnQyCk5vhDj-yAhRdAFOtFKSU6H-E_=LBC+FbA2REhrg@mail.gmail.com>
+Subject: Re: [RFC 0/2] __vdso_findsym
+To: Rich Felker <dalias@libc.org>
+Cc: Ian Lance Taylor <iant@golang.org>, Andi Kleen <andi@firstfloor.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Mikael Pettersson <mikpelinux@gmail.com>, Russ Cox <rsc@golang.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Async compaction aborts when it detects zone lock contention or need_resched()
-is true. David Rientjes has reported that in practice, most direct async
-compactions for THP allocation abort due to need_resched(). This means that a
-second direct compaction is never attempted, which might be OK for a page
-fault, but khugepaged is intended to attempt a sync compaction in such case and
-in these cases it won't.
+On Mon, Jun 16, 2014 at 8:42 AM, Rich Felker <dalias@libc.org> wrote:
+> On Mon, Jun 16, 2014 at 08:31:39AM -0700, Ian Lance Taylor wrote:
+>> On Mon, Jun 16, 2014 at 7:38 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>> >> I think this issue started when some of the Go developers questioned
+>> >> why the kernel needed to provide a very complex interface--parsing an
+>> >> ELF shared shared library--for very simple functionality--looking up
+>> >> the address of a magic function.  This approach has required special
+>> >> support not just in Go, but also in the dynamic linker and gdb, and
+>> >> does not work well for statically linked binaries.  The support in gdb
+>> >> is perhaps a good idea, but elsewhere it does not make sense.
+>> >>
+>> >> So why not provide a simple interface?
+>> >
+>> > What good would it do now that everyone already supports it?
+>>
+>> Do statically linked binaries use the vDSO calls?
+>
+> Under glibc, I believe so (not checked). Under musl, yes, and even in
+> the dynamic-linked case we use the same code that's used for static
+> linking rather than trying to get the dynamic linker to do them
+> correctly. I still have some cruft lying around from where (in the
+> past) we tried to do it via the dynamic linker, but I'm probably going
+> to remove that and make the vdso behave as RTLD_LOCAL so that there's
+> no risk of weird symbols it exports interfering with the application
+> (applications could still make it global via an explicit dlopen). The
+> only reason for keeping it around at all in the dynamic linker is for
+> the sake of gdb.
+>
 
-This patch replaces "bool contended" in compact_control with an enum that
-distinguieshes between aborting due to need_resched() and aborting due to lock
-contention. This allows propagating the abort through all compaction functions
-as before, but declaring the direct compaction as contended only when lock
-contention has been detected.
+What about backtrace_symbols, dl_addr, and the unwinder (e.g.
+siglongjmp)?  It would be nice to wean the vdso off of frame pointers
+some day.
 
-A second problem is that try_to_compact_pages() did not act upon the reported
-contention (both need_resched() or lock contention) and could proceed with
-another zone from the zonelist. When need_resched() is true, that means
-initializing another zone compaction, only to check again need_resched() in
-isolate_migratepages() and aborting. For zone lock contention, the unintended
-consequence is that the contended status reported back to the allocator
-is decided from the last zone where compaction was attempted, which is rather
-arbitrary.
-
-This patch fixes the problem in the following way:
-- need_resched() being true after async compaction returned from a zone means
-  that further zones should not be tried. We do a cond_resched() so that we
-  do not hog the CPU, and abort. "contended" is reported as false, since we
-  did not fail due to lock contention.
-- aborting zone compaction due to lock contention means we can still try
-  another zone, since it has different locks. We report back "contended" as
-  true only if *all* zones where compaction was attempted, it aborted due to
-  lock contention.
-
-As a result of these fixes, khugepaged will proceed with second sync compaction
-as intended, when the preceding async compaction aborted due to need_resched().
-Page fault compactions aborting due to need_resched() will spare some cycles
-previously wasted by initializing another zone compaction only to abort again.
-Lock contention will be reported only when compaction in all zones aborted due
-to lock contention, and therefore it's not a good idea to try again after
-reclaim.
-
-Reported-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
----
- mm/compaction.c | 48 +++++++++++++++++++++++++++++++++++++++---------
- mm/internal.h   | 15 +++++++++++----
- 2 files changed, 50 insertions(+), 13 deletions(-)
-
-diff --git a/mm/compaction.c b/mm/compaction.c
-index ebe30c9..e8cfac9 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -180,9 +180,14 @@ static void update_pageblock_skip(struct compact_control *cc,
- }
- #endif /* CONFIG_COMPACTION */
- 
--static inline bool should_release_lock(spinlock_t *lock)
-+enum compact_contended should_release_lock(spinlock_t *lock)
- {
--	return need_resched() || spin_is_contended(lock);
-+	if (spin_is_contended(lock))
-+		return COMPACT_CONTENDED_LOCK;
-+	else if (need_resched())
-+		return COMPACT_CONTENDED_SCHED;
-+	else
-+		return COMPACT_CONTENDED_NONE;
- }
- 
- /*
-@@ -197,7 +202,9 @@ static inline bool should_release_lock(spinlock_t *lock)
- static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
- 				      bool locked, struct compact_control *cc)
- {
--	if (should_release_lock(lock)) {
-+	enum compact_contended contended = should_release_lock(lock);
-+
-+	if (contended) {
- 		if (locked) {
- 			spin_unlock_irqrestore(lock, *flags);
- 			locked = false;
-@@ -205,7 +212,7 @@ static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
- 
- 		/* async aborts if taking too long or contended */
- 		if (cc->mode == MIGRATE_ASYNC) {
--			cc->contended = true;
-+			cc->contended = contended;
- 			return false;
- 		}
- 
-@@ -231,7 +238,7 @@ static inline bool compact_should_abort(struct compact_control *cc)
- 	/* async compaction aborts if contended */
- 	if (need_resched()) {
- 		if (cc->mode == MIGRATE_ASYNC) {
--			cc->contended = true;
-+			cc->contended = COMPACT_CONTENDED_SCHED;
- 			return true;
- 		}
- 
-@@ -1101,7 +1108,8 @@ static unsigned long compact_zone_order(struct zone *zone, int order,
- 	VM_BUG_ON(!list_empty(&cc.freepages));
- 	VM_BUG_ON(!list_empty(&cc.migratepages));
- 
--	*contended = cc.contended;
-+	/* We only signal lock contention back to the allocator */
-+	*contended = cc.contended == COMPACT_CONTENDED_LOCK;
- 	return ret;
- }
- 
-@@ -1132,6 +1140,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 	struct zone *zone;
- 	int rc = COMPACT_SKIPPED;
- 	int alloc_flags = 0;
-+	bool all_zones_contended = true;
- 
- 	/* Check if the GFP flags allow compaction */
- 	if (!order || !may_enter_fs || !may_perform_io)
-@@ -1146,6 +1155,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
- 								nodemask) {
- 		int status;
-+		bool zone_contended;
- 
- 		if (compaction_deferred(zone, order))
- 			continue;
-@@ -1153,8 +1163,9 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 		*deferred = false;
- 
- 		status = compact_zone_order(zone, order, gfp_mask, mode,
--						contended);
-+							&zone_contended);
- 		rc = max(status, rc);
-+		all_zones_contended &= zone_contended;
- 
- 		/* If a normal allocation would succeed, stop compacting */
- 		if (zone_watermark_ok(zone, order, low_wmark_pages(zone), 0,
-@@ -1168,12 +1179,31 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 			 * succeeding after all, it will be reset.
- 			 */
- 			defer_compaction(zone, order);
-+			/*
-+			 * If we stopped compacting due to need_resched(), do
-+			 * not try further zones and yield the CPU.
-+			 */
-+			if (need_resched()) {
-+				/*
-+				 * We might not have tried all the zones, so
-+				 * be conservative and assume they are not
-+				 * all lock contended.
-+				 */
-+				all_zones_contended = false;
-+				cond_resched();
-+				break;
-+			}
- 		}
- 	}
- 
--	/* If at least one zone wasn't deferred, we count a compaction stall */
--	if (!*deferred)
-+	/*
-+	 * If at least one zone wasn't deferred, we count a compaction stall
-+	 * and we report if all zones that were tried were contended.
-+	 */
-+	if (!*deferred) {
- 		count_compact_event(COMPACTSTALL);
-+		*contended = all_zones_contended;
-+	}
- 
- 	return rc;
- }
-diff --git a/mm/internal.h b/mm/internal.h
-index a1b651b..2c187d2 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -117,6 +117,13 @@ extern int user_min_free_kbytes;
- 
- #if defined CONFIG_COMPACTION || defined CONFIG_CMA
- 
-+/* Used to signal whether compaction detected need_sched() or lock contention */
-+enum compact_contended {
-+	COMPACT_CONTENDED_NONE = 0, /* no contention detected */
-+	COMPACT_CONTENDED_SCHED,    /* need_sched() was true */
-+	COMPACT_CONTENDED_LOCK,     /* zone lock or lru_lock was contended */
-+};
-+
- /*
-  * in mm/compaction.c
-  */
-@@ -144,10 +151,10 @@ struct compact_control {
- 	int order;			/* order a direct compactor needs */
- 	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
- 	struct zone *zone;
--	bool contended;			/* True if a lock was contended, or
--					 * need_resched() true during async
--					 * compaction
--					 */
-+	enum compact_contended contended; /* Signal need_sched() or lock
-+					   * contention detected during
-+					   * compaction
-+					   */
- };
- 
- unsigned long
--- 
-1.8.4.5
-
+--Andy
