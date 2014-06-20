@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934711AbaFTHiw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 03:38:52 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:56100 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934161AbaFTHiv (ORCPT
+	id S934745AbaFTHjF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 03:39:05 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:64539 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934161AbaFTHjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 03:38:51 -0400
-Date: Fri, 20 Jun 2014 11:38:38 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <oleg@redhat.com>, <rientjes@google.com>, <cl@linux.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] fork: reset mm->pinned_vm
-Message-ID: <20140620073838.GA5387@esperanza>
-References: <fa98629155872c1b97ba4dcd00d509a1e467c1c3.1403168346.git.vdavydov@parallels.com>
- <63d594c88850aa64729fceec769681f9d1d6fa68.1403168346.git.vdavydov@parallels.com>
- <20140619135820.57c4934dd613c5e723f9ca82@linux-foundation.org>
+	Fri, 20 Jun 2014 03:39:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140619135820.57c4934dd613c5e723f9ca82@linux-foundation.org>
+In-Reply-To: <20140618122438.GR19730@lukather>
+References: <1403016777-15121-1-git-send-email-wens@csie.org>
+ <1403016777-15121-17-git-send-email-wens@csie.org> <20140618082953.GO21030@lee--X1>
+ <20140618122438.GR19730@lukather>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Fri, 20 Jun 2014 15:38:38 +0800
+X-Google-Sender-Auth: 30zBVTeV0WyE_6xlZuwC0FidAKU
+Message-ID: <CAGb2v67M1FV8UPrg8bK9HDz6v72pL8-G97b-PHtOtCFurPjyrw@mail.gmail.com>
+Subject: Re: [PATCH v2 16/20] mfd: sun6i-prcm: Add support for Allwinner A23 PRCM
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Rob Herring <robh+dt@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Luc Verhaegen <libv@skynet.be>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 01:58:20PM -0700, Andrew Morton wrote:
-> On Thu, 19 Jun 2014 13:07:47 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
-> 
-> > mm->pinned_vm counts pages of mm's address space that were permanently
-> > pinned in memory by increasing their reference counter. The counter was
-> > introduced by commit bc3e53f682d9 ("mm: distinguish between mlocked and
-> > pinned pages"), while before it locked_vm had been used for such pages.
-> > 
-> > Obviously, we should reset the counter on fork if !CLONE_VM, just like
-> > we do with locked_vm, but currently we don't. Let's fix it.
-> > 
-> > ...
-> >
-> > --- a/kernel/fork.c
-> > +++ b/kernel/fork.c
-> > @@ -534,6 +534,7 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
-> >  	atomic_long_set(&mm->nr_ptes, 0);
-> >  	mm->map_count = 0;
-> >  	mm->locked_vm = 0;
-> > +	mm->pinned_vm = 0;
-> >  	memset(&mm->rss_stat, 0, sizeof(mm->rss_stat));
-> >  	spin_lock_init(&mm->page_table_lock);
-> >  	mm_init_cpumask(mm);
-> 
-> What are the runtime effects of this?  I think it is only
-> "/proc/pid/status:VmPin is screwed up", because we don't use vm_pinned
-> in rlimit checks.  Yes?
+On Wed, Jun 18, 2014 at 8:24 PM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> On Wed, Jun 18, 2014 at 09:29:53AM +0100, Lee Jones wrote:
+>> > The Allwinner A23 SoC has a PRCM unit like the previous A31 SoC.
+>> > The differences are the AR100 clock can no longer be modified,
+>> > the APB0 clock has different divisors, and some clock gates are
+>> > gone.
+>> >
+>> > This patch adds a compatible with a modified subdevice list for
+>> > the A23.
+>> >
+>> > Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+>> > ---
+>> >  .../devicetree/bindings/mfd/sun6i-prcm.txt         |  2 +-
+>> >  drivers/mfd/sun6i-prcm.c                           | 30 ++++++++++++++++++++++
+>> >  2 files changed, 31 insertions(+), 1 deletion(-)
+>>
+>> The patch looks fine to me, but I'm concerned about the size of the
+>> patch set and the amount of subsystems it touches.
+>>
+>> I am guessing that this patch can just be taken independently though.
+>> Please correct me if I'm wrong.
+>
+> I have a bit of the same concern. We have several comments on the
+> previous patches, so I'm not even sure this patch can go as is.
+>
+> It would be much easier if you (ChenYu) could introduce first a very
+> basic with just the UART support, and then, as separate series,
+> clocks, PRCM, MMC, and so on.
 
-Hmm, ib_umem_get[infiniband] and perf_mmap still check pinned_vm against
-RLIMIT_MEMLOCK. It's left from the times when pinned pages were
-accounted under locked_vm, but today it looks wrong. It isn't clear to
-me how we should deal with it.
+OK. I will do that. I'll also try to send some of the independent
+fixes separately.
 
-And BTW, we still have some drivers accounting pinned pages under
-mm->locked_vm - this is what commit bc3e53f682d9 was fighting against.
-It's infiniband/usnic and vfio.
 
-Thanks.
+ChenYu
