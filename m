@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966312AbaFTUIG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:08:06 -0400
-Received: from smtprelay0227.hostedemail.com ([216.40.44.227]:45964 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757585AbaFTUIF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 16:08:05 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3872:3873:3874:4321:5007:7652:7904:10004:10400:10848:11026:11232:11658:11914:12043:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: coal30_805b9112e0a25
-X-Filterd-Recvd-Size: 1882
-Message-ID: <1403294880.4076.7.camel@joe-AO725>
-Subject: Re: [PATCH] staging:rtl8821ae: rewrite legacy wifi check in
- halbcoutsrc
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Nicholas Krause <xerofoify@gmail.com>, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, pebolle@tiscali.nl, himangi774@gmail.com,
-        bergo.torino@gmail.com, linux-kernel@vger.kernel.org
-Date: Fri, 20 Jun 2014 13:08:00 -0700
-In-Reply-To: <20140620195926.GY5500@mwanda>
-References: <1403283410-7022-1-git-send-email-xerofoify@gmail.com>
-	 <20140620195926.GY5500@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S934391AbaFTUMJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:12:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33775 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754805AbaFTUMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 16:12:05 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: [PATCH v3 04/13] smaps: remove mem_size_stats->vma and use walk_page_vma()
+Date: Fri, 20 Jun 2014 16:11:30 -0400
+Message-Id: <1403295099-6407-5-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1403295099-6407-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1403295099-6407-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-20 at 22:59 +0300, Dan Carpenter wrote:
-> On Fri, Jun 20, 2014 at 12:56:50PM -0400, Nicholas Krause wrote:
-> > Rewrites the wireless check for legacy checking in function
-> > halbtc_legacy to check for both Mode A and B.
-> 
-> You're just guessing that A and B were intended but it could have been
-> something B and G...
-> 
-> Don't do this.  Just leave the static checker warning there so someone
-> can fix it properly instead of introducing a second new bug and hiding
-> the warning so it's impossible to find.
-> 
+pagewalk.c can handle vma in itself, so we don't have to pass vma via
+walk->private. And show_smap() walks pages on vma basis, so using
+walk_page_vma() is preferable.
 
-It's most likely G anyway:
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ fs/proc/task_mmu.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-drivers/staging/rtl8192ee/btcoexist/halbtcoutsrc.c:     if ((mac->mode == WIRELESS_MODE_B) || (mac->mode == WIRELESS_MODE_G))
-drivers/staging/rtl8821ae/btcoexist/halbtcoutsrc.c:     if ((mac->mode == WIRELESS_MODE_B) || (mac->mode == WIRELESS_MODE_B))
-
-Larry probably has a better idea.
+diff --git v3.16-rc1.orig/fs/proc/task_mmu.c v3.16-rc1/fs/proc/task_mmu.c
+index cfa63ee92c96..9b6c7d4fd3f4 100644
+--- v3.16-rc1.orig/fs/proc/task_mmu.c
++++ v3.16-rc1/fs/proc/task_mmu.c
+@@ -430,7 +430,6 @@ const struct file_operations proc_tid_maps_operations = {
+ 
+ #ifdef CONFIG_PROC_PAGE_MONITOR
+ struct mem_size_stats {
+-	struct vm_area_struct *vma;
+ 	unsigned long resident;
+ 	unsigned long shared_clean;
+ 	unsigned long shared_dirty;
+@@ -449,7 +448,7 @@ static void smaps_pte_entry(pte_t ptent, unsigned long addr,
+ 		unsigned long ptent_size, struct mm_walk *walk)
+ {
+ 	struct mem_size_stats *mss = walk->private;
+-	struct vm_area_struct *vma = mss->vma;
++	struct vm_area_struct *vma = walk->vma;
+ 	pgoff_t pgoff = linear_page_index(vma, addr);
+ 	struct page *page = NULL;
+ 	int mapcount;
+@@ -501,7 +500,7 @@ static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 			   struct mm_walk *walk)
+ {
+ 	struct mem_size_stats *mss = walk->private;
+-	struct vm_area_struct *vma = mss->vma;
++	struct vm_area_struct *vma = walk->vma;
+ 	pte_t *pte;
+ 	spinlock_t *ptl;
+ 
+@@ -590,14 +589,13 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
+ 	struct mm_walk smaps_walk = {
+ 		.pmd_entry = smaps_pte_range,
+ 		.mm = vma->vm_mm,
++		.vma = vma,
+ 		.private = &mss,
+ 	};
+ 
+ 	memset(&mss, 0, sizeof mss);
+-	mss.vma = vma;
+ 	/* mmap_sem is held in m_start */
+-	if (vma->vm_mm && !is_vm_hugetlb_page(vma))
+-		walk_page_range(vma->vm_start, vma->vm_end, &smaps_walk);
++	walk_page_vma(vma, &smaps_walk);
+ 
+ 	show_map_vma(m, vma, is_pid);
+ 
+-- 
+1.9.3
 
