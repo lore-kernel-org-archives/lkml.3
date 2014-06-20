@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967269AbaFTLtm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 07:49:42 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:37336 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967174AbaFTLt0 (ORCPT
+	id S967221AbaFTLtX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 07:49:23 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:52827 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967174AbaFTLtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 07:49:26 -0400
+	Fri, 20 Jun 2014 07:49:20 -0400
 From: Matthias Brugger <matthias.bgg@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -22,55 +22,96 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         maxime.ripard@free-electrons.com, soren.brinkmann@xilinx.com,
         shawn.guo@freescale.com, anders.berg@lsi.com, linus.walleij@linaro.org,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v9 3/3] dt-bindings: add mtk-timer bindings
-Date: Fri, 20 Jun 2014 13:48:49 +0200
-Message-Id: <1403264929-21325-4-git-send-email-matthias.bgg@gmail.com>
+        linux-arm-kernel@lists.infradead.org,
+        Matthias Brugger <matthias.brugger@bq.com>
+Subject: [PATCH v9 1/3] of: Provide function to request and map memory
+Date: Fri, 20 Jun 2014 13:48:47 +0200
+Message-Id: <1403264929-21325-2-git-send-email-matthias.bgg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1403264929-21325-1-git-send-email-matthias.bgg@gmail.com>
 References: <1403264929-21325-1-git-send-email-matthias.bgg@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add binding documentation for the General Porpose Timer driver of
-the Mediatek SoCs.
+From: Matthias Brugger <matthias.brugger@bq.com>
+
+A call to of_iomap does not request the memory region.
+This patch adds the function of_io_request_and_map which requests
+the memory region before mapping it.
 
 Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
-Acked-by: Sören Brinkmann <soren.brinkmann@xilinx.com>
-Acked-by: Rob Herring <robh@kernel.org>
+Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+Suggested-by: Rob Herring <robh@kernel.org>
+Acked-by: Grant Likely <grant.likely@linaro.org>
 ---
- .../bindings/timer/mediatek,mtk-timer.txt          |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
+ drivers/of/address.c       |   29 +++++++++++++++++++++++++++++
+ include/linux/of_address.h |    8 ++++++++
+ 2 files changed, 37 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt b/Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
-new file mode 100644
-index 0000000..10b7e09
---- /dev/null
-+++ b/Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
-@@ -0,0 +1,18 @@
-+Mediatek MT6577, MT6572 and MT6589 Timers
-+---------------------------------------
+diff --git a/drivers/of/address.c b/drivers/of/address.c
+index cb4242a..09074ba 100644
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -721,3 +721,32 @@ void __iomem *of_iomap(struct device_node *np, int index)
+ 	return ioremap(res.start, resource_size(&res));
+ }
+ EXPORT_SYMBOL(of_iomap);
 +
-+Required properties:
-+- compatible: Should be "mediatek,mt6577-timer"
-+- reg: Should contain location and length for timers register.
-+- clocks: Clocks driving the timer hardware. This list should include two
-+	clocks. The order is system clock and as second clock the RTC clock.
++/*
++ * of_io_request_and_map - Requests a resource and maps the memory mapped IO
++ *			   for a given device_node
++ * @device:	the device whose io range will be mapped
++ * @index:	index of the io range
++ * @name:	name of the resource
++ *
++ * Returns a pointer to the requested and mapped memory
++ */
++void __iomem *of_io_request_and_map(struct device_node *np, int index,
++					char *name)
++{
++	struct resource res;
++	void __iomem *mem;
 +
-+Examples:
++	if (of_address_to_resource(np, index, &res))
++		return NULL;
 +
-+	timer@10008000 {
-+		compatible = "mediatek,mt6577-timer";
-+		reg = <0x10008000 0x80>;
-+		interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>;
-+		clocks = <&system_clk>, <&rtc_clk>;
-+		clock-names = "system-clk", "rtc-clk";
-+	};
++	if (!request_mem_region(res.start, resource_size(&res), name))
++		return NULL;
++
++	mem = ioremap(res.start, resource_size(&res));
++	if (!mem)
++		release_mem_region(res.start, resource_size(&res));
++
++	return mem;
++}
++EXPORT_SYMBOL(of_io_request_and_map);
+diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+index 5f6ed6b..725b875 100644
+--- a/include/linux/of_address.h
++++ b/include/linux/of_address.h
+@@ -96,6 +96,8 @@ static inline struct of_pci_range *of_pci_range_parser_one(
+ extern int of_address_to_resource(struct device_node *dev, int index,
+ 				  struct resource *r);
+ void __iomem *of_iomap(struct device_node *node, int index);
++void __iomem *of_io_request_and_map(struct device_node *device,
++					int index, char *name);
+ #else
+ static inline int of_address_to_resource(struct device_node *dev, int index,
+ 					 struct resource *r)
+@@ -107,6 +109,12 @@ static inline void __iomem *of_iomap(struct device_node *device, int index)
+ {
+ 	return NULL;
+ }
++
++static inline void __iomem *of_io_request_and_map(struct device_node *device,
++					int index, char *name)
++{
++	return NULL;
++}
+ #endif
+ 
+ #if defined(CONFIG_OF_ADDRESS) && defined(CONFIG_PCI)
 -- 
 1.7.9.5
 
