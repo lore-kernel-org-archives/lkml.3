@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757098AbaFTUEJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:04:09 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50706 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753090AbaFTUEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 16:04:07 -0400
-Date: Fri, 20 Jun 2014 22:03:58 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: tony.luck@intel.com, linux-kernel@vger.kernel.org,
-        linux-edac@vger.kernel.org, mattieu.souchaud@free.fr
-Subject: Re: [PATCH] x86/mce: Don't unregister CPU hotplug notifier in error
- path
-Message-ID: <20140620200358.GK11391@pd.tnic>
-References: <1403274493-1371-1-git-send-email-boris.ostrovsky@oracle.com>
- <20140620152312.GB11391@pd.tnic>
- <53A45627.6090306@oracle.com>
- <20140620155845.GC11391@pd.tnic>
- <53A45E67.7070000@oracle.com>
- <20140620175240.GE11391@pd.tnic>
- <53A48DF6.9020503@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <53A48DF6.9020503@oracle.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1757390AbaFTUEx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:04:53 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:41512 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753632AbaFTUEw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 16:04:52 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Subject: [PATCH] checkpatch.pl: Also suggest 'else if' when if follows brace
+Date: Fri, 20 Jun 2014 22:04:25 +0200
+Message-Id: <1403294665-18344-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 03:39:34PM -0400, Boris Ostrovsky wrote:
-> What about mce_device_add()?
+This might help a kernel hacker think twice before blindly adding a
+newline.
 
-What is a mce_device_add()? There's no such function.
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+ scripts/checkpatch.pl | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 010b18e..e1924eb 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3601,7 +3601,7 @@ sub process {
+ # if should not continue a brace
+ 		if ($line =~ /}\s*if\b/) {
+ 			ERROR("TRAILING_STATEMENTS",
+-			      "trailing statements should be on next line\n" .
++			      "trailing statements should be on next line (or did you mean 'else if'?)\n" .
+ 				$herecurr);
+ 		}
+ # case and default should not have general statements after them
 -- 
-Regards/Gruss,
-    Boris.
+1.9.2
 
-Sent from a fat crate under my desk. Formatting is fine.
---
