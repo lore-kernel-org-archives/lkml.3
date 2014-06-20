@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933426AbaFTPCg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 11:02:36 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:38894 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932095AbaFTPCd (ORCPT
+	id S1755846AbaFTPCs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 11:02:48 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:39774 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932095AbaFTPCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 11:02:33 -0400
+	Fri, 20 Jun 2014 11:02:45 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 16/41] staging: rtl8188eu: Remove function Hal_EfuseReadEFuse88E()
-Date: Fri, 20 Jun 2014 20:29:22 +0530
-Message-Id: <1403276387-11841-17-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 17/41] staging: rtl8188eu: Rename function ReadEFuseByIC() to efuse_ReadEFuse()
+Date: Fri, 20 Jun 2014 20:29:23 +0530
+Message-Id: <1403276387-11841-18-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1403276387-11841-1-git-send-email-navin.patidar@gmail.com>
 References: <1403276387-11841-1-git-send-email-navin.patidar@gmail.com>
@@ -21,168 +21,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hal_EfuseReadEFuse88E() is called in ReadEFuseByIC(), when bPseudoTest is true
-but it's always false.
+Rename ReadEFuseByIC() to efuse_ReadEFuse() and remove original
+efuse_ReadEFuse() function, so that driver can call ReadEFuseByIC()
+directly without going through efuse_ReadEFuse().
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c |  136 ---------------------
- 1 file changed, 136 deletions(-)
+ drivers/staging/rtl8188eu/core/rtw_efuse.c        |   21 ---------------------
+ drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c |    3 +--
+ drivers/staging/rtl8188eu/include/hal_intf.h      |    2 --
+ drivers/staging/rtl8188eu/include/rtw_efuse.h     |    2 ++
+ 4 files changed, 3 insertions(+), 25 deletions(-)
 
+diff --git a/drivers/staging/rtl8188eu/core/rtw_efuse.c b/drivers/staging/rtl8188eu/core/rtw_efuse.c
+index f2d374d..ac77184 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_efuse.c
++++ b/drivers/staging/rtl8188eu/core/rtw_efuse.c
+@@ -144,27 +144,6 @@ ReadEFuseByte(
+ 	*pbuf = (u8)(value32 & 0xff);
+ }
+ 
+-/* Description:
+- *	1. Execute E-Fuse read byte operation according as map offset and
+- *	save to E-Fuse table.
+- *	2. Referred from SD1 Richard.
+- * Assumption:
+- *	1. Boot from E-Fuse and successfully auto-load.
+- *	2. PASSIVE_LEVEL (USB interface)
+- *	Created by Roger, 2008.10.21.
+- * 2008/12/12 MH
+- *	1. Reorganize code flow and reserve bytes. and add description.
+- *	2. Add efuse utilization collect.
+- * 2008/12/22 MH
+- *	Read Efuse must check if we write section 1 data again!!!
+- *	Sec1 write addr must be after sec5.
+- */
+-
+-static void efuse_ReadEFuse(struct adapter *Adapter, u8 efuseType, u16 _offset, u16 _size_byte, u8 *pbuf, bool pseudo)
+-{
+-	Adapter->HalFunc.ReadEFuse(Adapter, efuseType, _offset, _size_byte, pbuf, pseudo);
+-}
+-
+ /*-----------------------------------------------------------------------------
+  * Function:	EFUSE_Read1Byte
+  *
 diff --git a/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c b/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
-index 8e93d48..abf66e7 100644
+index abf66e7..7515102 100644
 --- a/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
 +++ b/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
-@@ -807,141 +807,6 @@ void Efuse_PowerSwitch(
+@@ -807,7 +807,7 @@ void Efuse_PowerSwitch(
  	}
  }
  
--static void Hal_EfuseReadEFuse88E(struct adapter *Adapter,
--	u16			_offset,
--	u16			_size_byte,
--	u8 *pbuf,
--		bool bPseudoTest
--	)
--{
--	u8 *efuseTbl = NULL;
--	u8 rtemp8[1];
--	u16	eFuse_Addr = 0;
--	u8 offset, wren;
--	u16	i, j;
--	u16	**eFuseWord = NULL;
--	u16	efuse_utilized = 0;
--	u8 u1temp = 0;
--
--	/*  */
--	/*  Do NOT excess total size of EFuse table. Added by Roger, 2008.11.10. */
--	/*  */
--	if ((_offset + _size_byte) > EFUSE_MAP_LEN_88E) {/*  total E-Fuse table is 512bytes */
--		DBG_88E("Hal_EfuseReadEFuse88E(): Invalid offset(%#x) with read bytes(%#x)!!\n", _offset, _size_byte);
--		goto exit;
--	}
--
--	efuseTbl = (u8 *)rtw_zmalloc(EFUSE_MAP_LEN_88E);
--	if (efuseTbl == NULL) {
--		DBG_88E("%s: alloc efuseTbl fail!\n", __func__);
--		goto exit;
--	}
--
--	eFuseWord = (u16 **)rtw_malloc2d(EFUSE_MAX_SECTION_88E, EFUSE_MAX_WORD_UNIT, sizeof(u16));
--	if (eFuseWord == NULL) {
--		DBG_88E("%s: alloc eFuseWord fail!\n", __func__);
--		goto exit;
--	}
--
--	/*  0. Refresh efuse init map as all oxFF. */
--	for (i = 0; i < EFUSE_MAX_SECTION_88E; i++)
--		for (j = 0; j < EFUSE_MAX_WORD_UNIT; j++)
--			eFuseWord[i][j] = 0xFFFF;
--
--	/*  */
--	/*  1. Read the first byte to check if efuse is empty!!! */
--	/*  */
--	/*  */
--	ReadEFuseByte(Adapter, eFuse_Addr, rtemp8, bPseudoTest);
--	if (*rtemp8 != 0xFF) {
--		efuse_utilized++;
--		eFuse_Addr++;
--	} else {
--		DBG_88E("EFUSE is empty efuse_Addr-%d efuse_data =%x\n", eFuse_Addr, *rtemp8);
--		goto exit;
--	}
--
--	/*  */
--	/*  2. Read real efuse content. Filter PG header and every section data. */
--	/*  */
--	while ((*rtemp8 != 0xFF) && (eFuse_Addr < EFUSE_REAL_CONTENT_LEN_88E)) {
--		/*  Check PG header for section num. */
--		if ((*rtemp8 & 0x1F) == 0x0F) {		/* extended header */
--			u1temp = ((*rtemp8 & 0xE0) >> 5);
--
--			ReadEFuseByte(Adapter, eFuse_Addr, rtemp8, bPseudoTest);
--
--			if ((*rtemp8 & 0x0F) == 0x0F) {
--				eFuse_Addr++;
--				ReadEFuseByte(Adapter, eFuse_Addr, rtemp8, bPseudoTest);
--
--				if (*rtemp8 != 0xFF && (eFuse_Addr < EFUSE_REAL_CONTENT_LEN_88E))
--					eFuse_Addr++;
--				continue;
--			} else {
--				offset = ((*rtemp8 & 0xF0) >> 1) | u1temp;
--				wren = (*rtemp8 & 0x0F);
--				eFuse_Addr++;
--			}
--		} else {
--			offset = ((*rtemp8 >> 4) & 0x0f);
--			wren = (*rtemp8 & 0x0f);
--		}
--
--		if (offset < EFUSE_MAX_SECTION_88E) {
--			/*  Get word enable value from PG header */
--
--			for (i = 0; i < EFUSE_MAX_WORD_UNIT; i++) {
--				/*  Check word enable condition in the section */
--				if (!(wren & 0x01)) {
--					ReadEFuseByte(Adapter, eFuse_Addr, rtemp8, bPseudoTest);
--					eFuse_Addr++;
--					efuse_utilized++;
--					eFuseWord[offset][i] = (*rtemp8 & 0xff);
--					if (eFuse_Addr >= EFUSE_REAL_CONTENT_LEN_88E)
--						break;
--					ReadEFuseByte(Adapter, eFuse_Addr, rtemp8, bPseudoTest);
--					eFuse_Addr++;
--					efuse_utilized++;
--					eFuseWord[offset][i] |= (((u16)*rtemp8 << 8) & 0xff00);
--					if (eFuse_Addr >= EFUSE_REAL_CONTENT_LEN_88E)
--						break;
--				}
--				wren >>= 1;
--			}
--		}
--
--		/*  Read next PG header */
--		ReadEFuseByte(Adapter, eFuse_Addr, rtemp8, bPseudoTest);
--
--		if (*rtemp8 != 0xFF && (eFuse_Addr < EFUSE_REAL_CONTENT_LEN_88E)) {
--			efuse_utilized++;
--			eFuse_Addr++;
--		}
--	}
--
--	/*  3. Collect 16 sections and 4 word unit into Efuse map. */
--	for (i = 0; i < EFUSE_MAX_SECTION_88E; i++) {
--		for (j = 0; j < EFUSE_MAX_WORD_UNIT; j++) {
--			efuseTbl[(i*8)+(j*2)] = (eFuseWord[i][j] & 0xff);
--			efuseTbl[(i*8)+((j*2)+1)] = ((eFuseWord[i][j] >> 8) & 0xff);
--		}
--	}
--
--	/*  4. Copy from Efuse map to output pointer memory!!! */
--	for (i = 0; i < _size_byte; i++)
--		pbuf[i] = efuseTbl[_offset+i];
--
--	/*  5. Calculate Efuse utilization. */
--	rtw_hal_set_hwreg(Adapter, HW_VAR_EFUSE_BYTES, (u8 *)&eFuse_Addr);
--
--exit:
--	kfree(efuseTbl);
--
--	if (eFuseWord)
--		rtw_mfree2d((void *)eFuseWord, EFUSE_MAX_SECTION_88E, EFUSE_MAX_WORD_UNIT, sizeof(u16));
--}
--
- static void ReadEFuseByIC(struct adapter *Adapter, u8 efuseType, u16 _offset, u16 _size_byte, u8 *pbuf, bool bPseudoTest)
+-static void ReadEFuseByIC(struct adapter *Adapter, u8 efuseType, u16 _offset, u16 _size_byte, u8 *pbuf, bool bPseudoTest)
++void efuse_ReadEFuse(struct adapter *Adapter, u8 efuseType, u16 _offset, u16 _size_byte, u8 *pbuf, bool bPseudoTest)
  {
  	if (!bPseudoTest) {
-@@ -957,7 +822,6 @@ static void ReadEFuseByIC(struct adapter *Adapter, u8 efuseType, u16 _offset, u1
- 				goto exit;
- 		}
- 	}
--	Hal_EfuseReadEFuse88E(Adapter, _offset, _size_byte, pbuf, bPseudoTest);
+ 		int ret = _FAIL;
+@@ -1542,7 +1542,6 @@ void rtl8188e_set_hal_ops(struct hal_ops *pHalFunc)
+ 	pHalFunc->write_rfreg = &rtl8188e_PHY_SetRFReg;
  
- exit:
- 	return;
+ 	/*  Efuse related function */
+-	pHalFunc->ReadEFuse = &ReadEFuseByIC;
+ 	pHalFunc->Efuse_PgPacketRead = &hal_EfusePgPacketRead_8188e;
+ 	pHalFunc->Efuse_PgPacketWrite = &hal_EfusePgPacketWrite_8188e;
+ 
+diff --git a/drivers/staging/rtl8188eu/include/hal_intf.h b/drivers/staging/rtl8188eu/include/hal_intf.h
+index a7cad6f..5e64df7 100644
+--- a/drivers/staging/rtl8188eu/include/hal_intf.h
++++ b/drivers/staging/rtl8188eu/include/hal_intf.h
+@@ -233,8 +233,6 @@ struct hal_ops {
+ 			       enum rf_radio_path eRFPath, u32 RegAddr,
+ 			       u32 BitMask, u32 Data);
+ 
+-	void (*ReadEFuse)(struct adapter *padapter, u8 efuseType, u16 _offset,
+-			  u16 _size_byte, u8 *pbuf, bool bPseudoTest);
+ 	int	(*Efuse_PgPacketRead)(struct adapter *adapter, u8 offset,
+ 				      u8 *data, bool bPseudoTest);
+ 	bool	(*Efuse_PgPacketWrite)(struct adapter *padapter, u8 offset,
+diff --git a/drivers/staging/rtl8188eu/include/rtw_efuse.h b/drivers/staging/rtl8188eu/include/rtw_efuse.h
+index 7d1f28f..63a6c6e 100644
+--- a/drivers/staging/rtl8188eu/include/rtw_efuse.h
++++ b/drivers/staging/rtl8188eu/include/rtw_efuse.h
+@@ -135,6 +135,8 @@ void EFUSE_GetEfuseDefinition(struct adapter *adapt, u8 type, u8 type1,
+ u8 efuse_OneByteRead(struct adapter *adapter, u16 addr, u8 *data, bool test);
+ u8 efuse_OneByteWrite(struct adapter *adapter, u16 addr, u8 data, bool	test);
+ 
++void efuse_ReadEFuse(struct adapter *Adapter, u8 efuseType, u16 _offset,
++		u16 _size_byte, u8 *pbuf, bool bPseudoTest);
+ void Efuse_PowerSwitch(struct adapter *adapt, u8 bWrite, u8  PwrState);
+ int Efuse_PgPacketRead(struct adapter *adapt, u8 offset, u8 *data, bool test);
+ int Efuse_PgPacketWrite(struct adapter *adapter, u8 offset, u8 word, u8 *data,
 -- 
 1.7.10.4
 
