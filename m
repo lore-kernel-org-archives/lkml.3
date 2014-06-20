@@ -1,98 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934412AbaFTSzc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 14:55:32 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:51414 "EHLO
+	id S934884AbaFTSzh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 14:55:37 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:57228 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932472AbaFTSza (ORCPT
+	with ESMTP id S932472AbaFTSze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 14:55:30 -0400
+	Fri, 20 Jun 2014 14:55:34 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marek Vasut <marex@denx.de>, Tony Lindgren <tony@atomide.com>,
-        Mohit Kumar <mohit.kumar@st.com>, Jingoo Han <jg1.han@samsung.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH v2 04/18] PCI: designware: use untranslated address while programming ATU
-Date: Fri, 20 Jun 2014 20:54:39 +0200
-Message-ID: <4516730.Mn8ZI8EqE1@wuerfel>
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Dave P Martin <Dave.Martin@arm.com>, Hiroshi Doyu <hdoyu@nvidia.com>
+Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
+Date: Fri, 20 Jun 2014 20:55:23 +0200
+Message-ID: <63766434.z4MqtGKoIA@wuerfel>
 User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAL_JsqJxppWOOWoX1MYF26OWXW7BdMZP1BQpq8cSgJ3n1QF5PA@mail.gmail.com>
-References: <1401345500-20188-1-git-send-email-kishon@ti.com> <1401345500-20188-5-git-send-email-kishon@ti.com> <CAL_JsqJxppWOOWoX1MYF26OWXW7BdMZP1BQpq8cSgJ3n1QF5PA@mail.gmail.com>
+In-Reply-To: <20140620175051.GE30656@arm.com>
+References: <1400877395-4235-1-git-send-email-thierry.reding@gmail.com> <39682213.otHMo6zoRf@wuerfel> <20140620175051.GE30656@arm.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:+rJ6jQAYY3N9l90AybJENMJozqD3zyp6NBKX2WMLEqw
- /M1eeXfJQpd2uNyoV2dEELqo8L5bx7t4KSoj1Q9mrTlV8EYawL
- Q9d0f12pKAXXciB37xF9GBO3LRgA6SVxKwTx1E0/C3UBAkAwmp
- mcLhOrvN3Xlt4h64boOkhfnBxAA29MXLpWKLOnkLmPmeTvWIui
- AgEeb6tqDmPZvIK33HCpmTuIQP/G4pge4CmC10ToIi6JJjPLEI
- Lrad3DEqKefGyNQEgbs12LASAuLoYtN3fFdatDYfYIJwW7zE+g
- xzfmo1oE3js5iCHlAtvroAJq6GvMB+X4RM+SOZFVCxiWfeaISZ
- ZdhUf4PWwmoXvPuIk+1w=
+X-Provags-ID: V02:K0:cVPeB92NDagK8CCPwUvcPS+1LkKxOc64Q12R8TxyI/B
+ RXYY3NOa4h6hAjcsQaH53YDrIoP0PUgCvixOW0zjr2Vfj8tuYg
+ gTc5RZvlpzYCHnIF+61smYgGotOMkzA2MY00h1xttjxl8WSYRE
+ CkxNO442dwSG73Z6t+kTgukGFMmbeF+SZ+bOWTlxxUWfdi1WaE
+ I26PbA5wV56XRchOcCekuNtlzI54ZpMq/myml5SBSFlfXQ21q0
+ 1Jesc/aVVHDuG5B3kA/gwCic6ZcfMAZHxRw43yydJsarymLNm4
+ bgZw1pSZqJoGEppzS6N367RbJ2d8em5fRiqoeNsTc2XVzOVCdx
+ 8cQE6tOGKha+4l24B1G0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 20 June 2014 12:45:46 Rob Herring wrote:
-> On Thu, May 29, 2014 at 1:38 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
-> > In DRA7, the cpu sees 32bit address, but the pcie controller can see only 28bit
-> > address. So whenever the cpu issues a read/write request, the 4 most
-> > significant bits are used by L3 to determine the target controller.
-> > For example, the cpu reserves 0x2000_0000 - 0x2FFF_FFFF for PCIe controller but
-> > the PCIe controller will see only (0x000_0000 - 0xFFF_FFF). So for programming
-> > the outbound translation window the *base* should be programmed as 0x000_0000.
-> > Whenever we try to write to say 0x2000_0000, it will be translated to whatever
-> > we have programmed in the translation window with base as 0x000_0000.
-> >
-> > This is needed when the dt node is modelled something like below
-> > axi {
-> >         compatible = "simple-bus";
-> >         #size-cells = <1>;
-> >         #address-cells = <1>;
-> >         ranges = <0x0        0x20000000 0x10000000 // 28-bit bus
-> >                   0x51000000 0x51000000 0x3000>;
-> >         pcie@51000000 {
-> >                 reg = <0x1000 0x2000>, <0x51002000 0x14c>, <0x51000000 0x2000>;
-> >                 reg-names = "config", "ti_conf", "rc_dbics";
-> >                 #address-cells = >;
-> >                 #size-cells = <2>;
-> >                 ranges = <0x81000000 0 0          0x03000 0 0x00010000
-> >                           0x82000000 0 0x20013000 0x13000 0 0xffed000>;
-> >         };
-> > };
-> >
-> > Here the CPU address for configuration space is 0x20013000 and the controller
-> > address for configuration space is 0x13000. The controller address should be
-> > used while programming the ATU (in order for translation to happen properly in
-> > DRA7xx).
+On Friday 20 June 2014 18:50:51 Will Deacon wrote:
+> On Fri, Jun 20, 2014 at 04:53:08PM +0100, Arnd Bergmann wrote:
+> > On Wednesday 18 June 2014 11:14:39 Will Deacon wrote:
+> > > On Wed, Jun 18, 2014 at 12:37:16AM +0100, Thierry Reding wrote:
+> > >   - Each master has a set of fixed StreamIDs
+> > >   - StreamIDs can be remastered by adding a constant offset (this could also
+> > >     be used to describe RequesterID -> StreamID mapping)
+> > > 
+> > > I'd hope this would be sufficient for most people. Dynamic ID assignment can
+> > > be worked out later (I'm not even sure it belongs in this binding) and any
+> > > mappings other than `add a constant offset' can be treated on a case-by-case
+> > > basis. We don't want to throw the kitchen sink at a language for describing
+> > > arbitrary transformations!
+> > > 
+> > > > We've had similar discussions before (power sequences anyone?) where we
+> > > > tried to come up with a generic way to describe something in device tree
+> > > > that just didn't work out too well. Some things are better done in code,
+> > > > so I think we should at least consider that possibility rather than
+> > > > blindly try and force everything into device tree.
+> > > 
+> > > If we can support 90% of SoCs with a simple DT-based description, we can
+> > > address the corner cases as they arise. I'm not ruling our hardcoding
+> > > topology if we have no choice, but I don't think that's a healthy place to
+> > > start from.
+> > 
+> > So we could use the "arm,gicv3" comaptible string for all those that
+> > have a relatively simple mapping, and describe that mapping entirely
+> > in DT properties, but use a different compatible string for those
+> > SoCs that have a mapping which we can't easily describe, and then
+> > put that into code?
 > 
-> This talks about config space, but the ranges field is PCI memory
-> space. Also, does this actually work because I though Linux expects
-> memory BARs to be 1MB aligned.
+> That doesn't sound unreasonable, but I don't think we should commit to
+> putting things into code until they come along and we can't describe them.
 
-Good point about the alignment.
-
-Actually both the config space and memory space are set up through the
-intermediate ranges of the parent bus.
-
-> Getting the controller offset should work whether you specify the
-> address as 0x13000 with translation or the absolute address
-> 0x20013000. In other words, the driver should know how many bits to
-> mask off to get the offset.
-
-That's what the first version of the patch did, and I didn't like that
-because the masking is not actually a property of the controller, but
-it's based on how the controller is connected to the parent bus, in this
-case by using a narrower connection. We can describe the connection just
-fine using standard DT properties and I think we should.
+Yes, that makes sense. But it's good to know that we have the option so
+we don't have to cover all corner cases with the binding.
 
 	Arnd
