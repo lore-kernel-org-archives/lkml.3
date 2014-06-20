@@ -1,116 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758226AbaFTXTM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 19:19:12 -0400
-Received: from exprod5og116.obsmtp.com ([64.18.0.147]:36932 "HELO
-	exprod5og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S934094AbaFTXSK (ORCPT
+	id S1752788AbaFTXam (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 19:30:42 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:56864 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752103AbaFTXak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 19:18:10 -0400
-From: Iyappan Subramanian <isubramanian@apm.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, devicetree@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
-        Iyappan Subramanian <isubramanian@apm.com>,
-        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
-Subject: [PATCH v8 2/4] Documentation: dts: Add bindings for APM X-Gene SoC ethernet driver
-Date: Fri, 20 Jun 2014 16:18:14 -0700
-Message-Id: <1403306296-26198-3-git-send-email-isubramanian@apm.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1403306296-26198-1-git-send-email-isubramanian@apm.com>
-References: <1403306296-26198-1-git-send-email-isubramanian@apm.com>
+	Fri, 20 Jun 2014 19:30:40 -0400
+Date: Fri, 20 Jun 2014 16:30:33 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: josh@joshtriplett.org
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 0/5] Fix for cond_resched performance
+ regression
+Message-ID: <20140620233033.GE4615@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140620183249.GA6325@linux.vnet.ibm.com>
+ <20140620191236.GA10340@linux.vnet.ibm.com>
+ <20140620212423.GA22886@cloud>
+ <20140620221120.GD4615@linux.vnet.ibm.com>
+ <20140620223951.GA23677@cloud>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140620223951.GA23677@cloud>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062023-6688-0000-0000-000002B67C81
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds documentation for APM X-Gene SoC ethernet DTS binding.
+On Fri, Jun 20, 2014 at 03:39:51PM -0700, josh@joshtriplett.org wrote:
+> On Fri, Jun 20, 2014 at 03:11:20PM -0700, Paul E. McKenney wrote:
+> > On Fri, Jun 20, 2014 at 02:24:23PM -0700, josh@joshtriplett.org wrote:
+> > > On Fri, Jun 20, 2014 at 12:12:36PM -0700, Paul E. McKenney wrote:
+> > > > o	Make cond_resched() a no-op for PREEMPT=y.  This might well turn
+> > > > 	out to be a good thing, but it doesn't help give RCU the quiescent
+> > > > 	states that it needs.
+> > > 
+> > > What about doing this, together with letting the fqs logic poke
+> > > un-quiesced kernel code as needed?  That way, rather than having
+> > > cond_resched do any work, you have the fqs logic recognize that a
+> > > particular CPU has gone too long without quiescing, without disturbing
+> > > that CPU at all if it hasn't gone too long.
+> > 
+> > My next stop is to post the previous series, but with a couple of
+> > exports and one bug fix uncovered by testing thus far, but after
+> > another round of testing.  Then I am going to take a close look at
+> > this one:
+> > 
+> > o	Push the checks further into cond_resched(), so that the
+> > 	fastpath does the same sequence of instructions that the original
+> > 	did.  This might work well, but requires IPIs, which are not so
+> > 	good for latencies on the remote CPU.  It nevertheless might be a
+> > 	decent long-term solution given that if your CPU is spending many
+> > 	jiffies looping in the kernel, you aren't getting good latencies
+> > 	anyway.  It also has the benefit of allowing RCU to take advantage
+> > 	of the implicit quiescent states of all cond_resched() calls,
+> > 	and of eliminating the need for a separate cond_resched_rcu_qs()
+> > 	and for RCU_COND_RESCHED_QS.
+> > 
+> > The one you call out is of course interesting as well.  But there are
+> > a couple of questions:
+> > 
+> > 1.	Why wasn't cond_resched() a no-op in CONFIG_PREEMPT to start
+> > 	with?  It just seems to obvious a thing to do for it to possibly
+> > 	be an oversight.  (What, me paranoid?)
+> > 
+> > 2.	When RCU recognizes that a particular CPU has gone too long,
+> > 	exactly what are you suggesting that RCU do about it?  When
+> > 	formulating your answer, please give due consideration to the
+> > 	implications of that CPU being a NO_HZ_FULL CPU.  ;-)
+> 
+> Send it an IPI that either causes it to flag a quiescent state
+> immediately if currently quiesced or causes it to quiesce at the next
+> opportunity if not.
 
-Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
-Signed-off-by: Ravi Patel <rapatel@apm.com>
-Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
----
- .../devicetree/bindings/net/apm-xgene-enet.txt     | 72 ++++++++++++++++++++++
- 1 file changed, 72 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/net/apm-xgene-enet.txt
+OK.  But if we are in a !PREEMPT kernel, we have to assume that any point
+in the kernel is not a quiescent state, at least for the rcu_read_lock()
+flavor of RCU.  So in that case, what constitutes the set of next
+opportunities, and what is the time bound on when the next opportunity
+will arrive?
 
-diff --git a/Documentation/devicetree/bindings/net/apm-xgene-enet.txt b/Documentation/devicetree/bindings/net/apm-xgene-enet.txt
-new file mode 100644
-index 0000000..3e2a295
---- /dev/null
-+++ b/Documentation/devicetree/bindings/net/apm-xgene-enet.txt
-@@ -0,0 +1,72 @@
-+APM X-Gene SoC Ethernet nodes
-+
-+Ethernet nodes are defined to describe on-chip ethernet interfaces in
-+APM X-Gene SoC.
-+
-+Required properties:
-+- compatible:		Should be "apm,xgene-enet"
-+- reg: Address and length of the register set for the device. It contains the
-+       information of registers in the same order as described by reg-names
-+- reg-names: Should contain the register set names
-+  "enet_csr":		Ethernet control and status register address space
-+  "ring_csr":		Descriptor ring control and status register address space
-+  "ring_cmd":		Descriptor ring command register address space
-+- interrupts:		Ethernet main interrupt
-+- clocks:		Reference to the clock entry.
-+- local-mac-address:	MAC address assigned to this device
-+- phy-connection-type:	Interface type between ethernet device and PHY device
-+- phy-handle:		Reference to a PHY node connected to this device
-+
-+- mdio: 		Device tree subnode with the following required
-+			properties:
-+
-+	- compatible: Must be "apm,xgene-mdio".
-+	- #address-cells: Must be <1>.
-+	- #size-cells: Must be <0>.
-+
-+	For the phy on the mdio bus, there must be a node with the following
-+	fields:
-+
-+	- compatible: PHY identifier.  Please refer ./phy.txt for the format.
-+	- reg: The ID number for the phy.
-+
-+Optional properties:
-+- status		: Should be "ok" or "disabled" for enabled/disabled.
-+			  Default is "ok".
-+
-+
-+Example:
-+	menetclk: menetclk {
-+		compatible = "apm,xgene-device-clock";
-+		clock-output-names = "menetclk";
-+		status = "ok";
-+	};
-+
-+	menet: ethernet@17020000 {
-+		compatible = "apm,xgene-enet";
-+		status = "disabled";
-+		reg = <0x0 0x17020000 0x0 0xd100>,
-+		      <0x0 0X17030000 0x0 0X400>,
-+		      <0x0 0X10000000 0x0 0X200>;
-+		reg-names = "enet_csr", "ring_csr", "ring_cmd";
-+		interrupts = <0x0 0x3c 0x4>;
-+		clocks = <&menetclk 0>;
-+		local-mac-address = [00 01 73 00 00 01];
-+		phy-connection-type = "rgmii";
-+		phy-handle = <&menetphy>;
-+		mdio {
-+			compatible = "apm,xgene-mdio";
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			menetphy: menetphy@3 {
-+				compatible = "ethernet-phy-id001c.c915";
-+				reg = <0x3>;
-+			};
-+
-+		};
-+	};
-+
-+/* Board-specific peripheral configurations */
-+&menet {
-+        status = "ok";
-+};
--- 
-1.9.1
+							Thanx, Paul
 
