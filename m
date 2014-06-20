@@ -1,102 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967241AbaFTWGA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 18:06:00 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:50060 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966070AbaFTWF5 (ORCPT
+	id S967150AbaFTWJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 18:09:59 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34324 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966137AbaFTWJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 18:05:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <7hwqcbs166.fsf@paris.lan>
-References: <1403155273-1057-1-git-send-email-dianders@chromium.org>
-	<7h8uosyc3k.fsf@paris.lan>
-	<CAD=FV=XxNVmF+N5HF4SnZoJRJvkSUkpEx6ct4v2gtmAQ9n28-Q@mail.gmail.com>
-	<7hwqcbs166.fsf@paris.lan>
-Date: Fri, 20 Jun 2014 15:05:56 -0700
-X-Google-Sender-Auth: vZO3VVVEjTdUV7jKJFa-phNmR8o
-Message-ID: <CAD=FV=Uz9O0i2gmuk2+BHa-Tksvyxv0+MTi2UEjVREAMNCK7Ug@mail.gmail.com>
-Subject: Re: [PATCH] i2c: exynos5: Properly use the "noirq" variants of suspend/resume
-From: Doug Anderson <dianders@chromium.org>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Kukjin Kim <kgene.kim@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        naveen krishna <ch.naveen@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>, Jean Delvare <jdelvare@suse.de>,
-        Simon Glass <sjg@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>, standby24x7@gmail.com,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+	Fri, 20 Jun 2014 18:09:58 -0400
+Date: Sat, 21 Jun 2014 00:09:55 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Florian Fainelli <f.fainelli@gmail.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [PATCH] irqchip: brcmstb-l2: Level-2 interrupts are edge
+ sensitive
+In-Reply-To: <CAGVrzcbpS0tJtkH5vkGRSteV5NU2CzNNkQ43_26XySFqJMAK5A@mail.gmail.com>
+Message-ID: <alpine.DEB.2.10.1406202357280.5170@nanos>
+References: <1402337102-19428-1-git-send-email-f.fainelli@gmail.com> <CAGVrzcZmakEpNW=vGtsb+OmzU_J4hJNoM1sUAoYNsaju_YzGwQ@mail.gmail.com> <CAGVrzcbpS0tJtkH5vkGRSteV5NU2CzNNkQ43_26XySFqJMAK5A@mail.gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kevin,
+On Fri, 20 Jun 2014, Florian Fainelli wrote:
+> 2014-06-12 12:13 GMT-07:00 Florian Fainelli <f.fainelli@gmail.com>:
+> > 2014-06-09 11:05 GMT-07:00 Florian Fainelli <f.fainelli@gmail.com>:
+> >> The driver was configuring the interrupt handler for the Level-2
+> >> interrupts to be "level" triggered while they are in fact "edge"
+> >> triggered. Fix this by using the correct handler.
+> >>
+> >> Reported-by: Brian Norris <computersforpeace@gmail.com>
+> >> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+> >
+> > Jason, Thomas, this driver just got merged into 3.16-rc0, can you
+> > carry this fix such that it gets into a future 3.16-rc? Thanks!
+> 
+> Ping! I want to make sure this gets into a next 3.16-rc pull request.
+> Andrew, can you take that one if neither Thomas nor Andrew respond in
+> a timely manner?
 
-On Fri, Jun 20, 2014 at 2:48 PM, Kevin Hilman <khilman@linaro.org> wrote:
-> Hi Doug,
->
-> Doug Anderson <dianders@chromium.org> writes:
->
->> On Thu, Jun 19, 2014 at 11:43 AM, Kevin Hilman <khilman@linaro.org> wrote:
->>> Doug Anderson <dianders@chromium.org> writes:
->>>
->>>> The original code for the exynos i2c controller registered for the
->>>> "noirq" variants.  However during review feedback it was moved to
->>>> SIMPLE_DEV_PM_OPS without anyone noticing that it meant we were no
->>>> longer actually "noirq" (despite functions named
->>>> exynos5_i2c_suspend_noirq and exynos5_i2c_resume_noirq).
->>>>
->>>> i2c controllers that might have wakeup sources on them seem to need to
->>>> resume at noirq time so that the individual drivers can actually read
->>>> the i2c bus to handle their wakeup.
->>>
->>> I suspect usage of the noirq variants pre-dates the existence of the
->>> late/early callbacks in the PM core, but based on the description above,
->>> I suspect what you actually want is the late/early callbacks.
->>
->> I think it actually really needs noirq.  ;)
->
-> Yes, it appears it does.   Objection withdrawn.
->
-> I just wanted to be sure because since the introduction of late/early,
-> the need for noirq should be pretty rare, but there certainly are needs.
->
-> <tangent>
-> In this case though, the need for it has more to do with the
-> lack of a way for us to describe non parent-child device dependencies
-> than whether or not IRQs are enabled or not.
-> </tangent>
+So Andrew should take it if neither Thomas nor Andrew respond. I'm
+curious how that works out.
 
-Actually, I'm not sure that's true, but I'll talk through it and you
-can point to where I'm wrong (I often am!)
+Dude, keep calm. Timely manner?
 
-If you're a wakeup device then you need to be ready to handle
-interrupts as soon as the "noirq" phase of resume is done, right?
-Said another way: you need to be ready to handle interrupts _before_
-the normal resume code is called and be ready to handle interrupts
-even _before_ the early resume code is called.
+For something you brought yourself into the merge window and does not
+bring the world to a grinding halt like a nasty NULL pointer
+dereference in the scheduler?
 
-That means if you are implementing a bus that's needed by any devices
-with wakeup interrupts then it's your responsibility to also be
-prepared to run this early.
+I have no problem with a polite reminder as stuff falls down the
+cracks occassionaly, but please keep the proportions right. The only
+user of the code YOU wreckaged has a bugfix already, so what's the
+problem whether this hits rc2 or rc3?
 
-In this particular case the max77686 driver doesn't need to do
-anything at all to be ready to handle interrupts.  It's suspend and
-resume code is just boilerplate "enable wakeups / disable wakeups" and
-it has no "noirq" code.  The max77686 driver doesn't have any "noirq"
-wake call because it would just be empty.
+Thanks,
 
-Said another way: the problem isn't that the max77686 wakeup gets
-called before the i2c wakeup.  The problem is that i2c is needed ASAP
-once IRQs are enabled and thus needs to be run noirq.
+	tglx
 
-Does that sound semi-correct?
-
--Doug
