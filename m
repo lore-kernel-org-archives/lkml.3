@@ -1,161 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967088AbaFTKwU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 06:52:20 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44923 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966558AbaFTKwR (ORCPT
+	id S966967AbaFTKvU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 06:51:20 -0400
+Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:39640 "EHLO
+	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966685AbaFTKuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 06:52:17 -0400
-Date: Fri, 20 Jun 2014 11:51:23 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Matthias Brugger <matthias.bgg@gmail.com>
-Subject: Re: [PATCH 2/2] clocksource: add rockchip-specific armv7-timer setup
-Message-ID: <20140620105123.GH30188@leverpostej>
-References: <70167479.zcs3JF0luJ@diego>
- <3807304.rhf3VZXZNa@diego>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3807304.rhf3VZXZNa@diego>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 20 Jun 2014 06:50:20 -0400
+X-Yandex-Uniq: 24f386a6-4848-48b5-9a8b-33a8bc26f2b1
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@kernel.org, dsahern@gmail.com, stfomichev@yandex-team.ru,
+        jolsa@redhat.com, xiaoguangrong@linux.vnet.ibm.com,
+        yangds.fnst@cn.fujitsu.com, adrian.hunter@intel.com,
+        namhyung@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 7/7] perf trace: add events cache
+Date: Fri, 20 Jun 2014 14:49:49 +0400
+Message-Id: <1403261389-13423-8-git-send-email-stfomichev@yandex-team.ru>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1403261389-13423-1-git-send-email-stfomichev@yandex-team.ru>
+References: <1403261389-13423-1-git-send-email-stfomichev@yandex-team.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 11:44:49AM +0100, Heiko Stübner wrote:
-> The armv7-timer on Rockchip RK3288 SoCs needs an underlying timer to run.
-> Therefore the special rockchip,rk3288-armv7-timer does this setup and
-> then initializes the architected timer using the new locally exposed
-> arch_timer_init.
-> 
-> Suggested-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> ---
->  .../bindings/arm/rockchip/armv7-timer.txt          | 22 +++++++++
->  drivers/clocksource/Makefile                       |  1 +
->  drivers/clocksource/rockchip_timer.c               | 57 ++++++++++++++++++++++
->  3 files changed, 80 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/arm/rockchip/armv7-timer.txt
->  create mode 100644 drivers/clocksource/rockchip_timer.c
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/rockchip/armv7-timer.txt b/Documentation/devicetree/bindings/arm/rockchip/armv7-timer.txt
-> new file mode 100644
-> index 0000000..4c1950a
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/rockchip/armv7-timer.txt
-> @@ -0,0 +1,22 @@
-> +Rockchip armv7-timer:
-> +---------------------
-> +
-> +The architected timer on rk3288 SoCs has special setup requirements, as
-> +the cpu-timer block needs to supply the architected timer.
-> +
-> +Required node properties:
-> +- compatible value : = "rockchip,rk3288-armv7-timer";
-> +- reg : physical base address and the size of the registers window
-> +        of the supplying timer block
-> +- CP15 Timer node properties as described in bindings/arm/arch_timer.txt
-> +
-> +Example:
-> +
-> +architected-timer {
-> +	compatible = "rockchip,rk3288-armv7-timer";
-> +	reg = <0xff810020 0x20>;
-> +	interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>,
-> +		     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>,
-> +		     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>;
-> +	clock-frequency = <24000000>;
-> +};
-> diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-> index 800b130..cbad225 100644
-> --- a/drivers/clocksource/Makefile
-> +++ b/drivers/clocksource/Makefile
-> @@ -20,6 +20,7 @@ obj-$(CONFIG_ARCH_MARCO)	+= timer-marco.o
->  obj-$(CONFIG_ARCH_MOXART)	+= moxart_timer.o
->  obj-$(CONFIG_ARCH_MXS)		+= mxs_timer.o
->  obj-$(CONFIG_ARCH_PRIMA2)	+= timer-prima2.o
-> +obj-$(CONFIG_ARCH_ROCKCHIP)	+= rockchip_timer.o
->  obj-$(CONFIG_ARCH_U300)		+= timer-u300.o
->  obj-$(CONFIG_SUN4I_TIMER)	+= sun4i_timer.o
->  obj-$(CONFIG_SUN5I_HSTIMER)	+= timer-sun5i.o
-> diff --git a/drivers/clocksource/rockchip_timer.c b/drivers/clocksource/rockchip_timer.c
-> new file mode 100644
-> index 0000000..46c2146
-> --- /dev/null
-> +++ b/drivers/clocksource/rockchip_timer.c
-> @@ -0,0 +1,57 @@
-> +/*
-> + * Copyright (c) 2014 MundoReader S.L.
-> + * Author: Heiko Stuebner <heiko@sntech.de>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/init.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/clockchips.h>
-> +#include "arm_arch_timer.h"
-> +
-> +#define TIMER_LOAD_COUNT0		0x00
-> +#define TIMER_LOAD_COUNT1		0x04
-> +#define TIMER_CURRENT_VALUE0		0x08
-> +#define TIMER_CURRENT_VALUE1		0x0c
-> +#define TIMER_CONTROL_REG		0x10
-> +#define TIMER_INT_STATUS		0x18
-> +
-> +#define TIMER_DISABLE			(0 << 0)
-> +#define TIMER_ENABLE			(1 << 0)
-> +#define TIMER_MODE_FREE_RUNNING		(0 << 1)
-> +#define TIMER_MODE_USER_DEFINED_COUNT	(1 << 1)
-> +#define TIMER_INT_MASK			(0 << 2)
-> +#define TIMER_INT_UNMASK		(1 << 2)
-> +
-> +static __init void rk3288_arch_timer_init(struct device_node *np)
-> +{
-> +	void __iomem *reg_base;
-> +
-> +	reg_base = of_io_request_and_map(np, 0, "rk3288-armv7-timer");
-> +	if (!reg_base) {
-> +		pr_warn("%s: Can't get resource\n", __func__);
-> +		return;
-> +	}
-> +
-> +	writel(TIMER_DISABLE, reg_base + TIMER_CONTROL_REG);
-> +
-> +	writel(0xffffffff, reg_base + TIMER_LOAD_COUNT0);
-> +	writel(0xffffffff, reg_base + TIMER_LOAD_COUNT1);
-> +
-> +	writel(TIMER_ENABLE | TIMER_MODE_FREE_RUNNING,
-> +	       reg_base + TIMER_CONTROL_REG);
+Use session to cache and order events from all CPUs so we get
+correct ordering of comms/mmaps and faults.
 
-Given that this is unconditionally set up in this way, could this not be
-done in the fimrware/bootloader?
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+---
+ tools/perf/builtin-trace.c | 117 ++++++++++++++++++---------------------------
+ 1 file changed, 46 insertions(+), 71 deletions(-)
 
-That way you could also setup CNTFREQ correctly, and virtualisation can
-just work out of the box.
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 3cce721f8b06..e163998547ef 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -20,6 +20,11 @@
+ #include <sys/mman.h>
+ #include <linux/futex.h>
+ 
++/* keeping the max events to a modest level to keep
++ * the processing of samples per mmap smooth.
++ */
++#define PERF_TRACE__MAX_EVENTS_PER_MMAP  25
++
+ /* For older distros: */
+ #ifndef MAP_STACK
+ # define MAP_STACK		0x20000
+@@ -2001,10 +2006,12 @@ static int perf_evlist__add_pgfault(struct perf_evlist *evlist,
+ 
+ static int trace__run(struct trace *trace, int argc, const char **argv)
+ {
++	struct perf_data_file file = {
++		.mode = PERF_DATA_MODE_WRITE,
++	};
++	struct perf_session *session;
+ 	struct perf_evlist *evlist = perf_evlist__new();
+-	struct perf_evsel *evsel;
+-	int err = -1, i;
+-	unsigned long before;
++	int err = -1;
+ 	const bool forks = argc > 0;
+ 
+ 	trace->live = true;
+@@ -2049,6 +2056,18 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
+ 
+ 	perf_evlist__config(evlist, &trace->opts);
+ 
++	session = perf_session__new(&file, false, &trace->tool);
++	if (session == NULL) {
++		err = -ENOMEM;
++		goto out_delete_evlist;
++	}
++	session->evlist = evlist;
++	perf_session__set_id_hdr_size(session);
++	machine__synthesize_threads(&session->machines.host,
++				    &trace->opts.target,
++				    evlist->threads, false);
++	trace->host = &session->machines.host;
++
+ 	signal(SIGCHLD, sig_handler);
+ 	signal(SIGINT, sig_handler);
+ 
+@@ -2068,7 +2087,7 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
+ 	err = perf_evlist__mmap(evlist, trace->opts.mmap_pages, false);
+ 	if (err < 0) {
+ 		fprintf(trace->output, "Couldn't mmap the events: %s\n", strerror(errno));
+-		goto out_delete_evlist;
++		goto out_delete_session;
+ 	}
+ 
+ 	perf_evlist__enable(evlist);
+@@ -2077,67 +2096,19 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
+ 		perf_evlist__start_workload(evlist);
+ 
+ 	trace->multiple_threads = evlist->threads->map[0] == -1 || evlist->threads->nr > 1;
+-again:
+-	before = trace->nr_events;
+-
+-	for (i = 0; i < evlist->nr_mmaps; i++) {
+-		union perf_event *event;
+-
+-		while ((event = perf_evlist__mmap_read(evlist, i)) != NULL) {
+-			const u32 type = event->header.type;
+-			tracepoint_handler handler;
+-			struct perf_sample sample;
+-
+-			++trace->nr_events;
+ 
+-			err = perf_evlist__parse_sample(evlist, event, &sample);
+-			if (err) {
+-				fprintf(trace->output, "Can't parse sample, err = %d, skipping...\n", err);
+-				goto next_event;
+-			}
+-
+-			if (!trace->full_time && trace->base_time == 0)
+-				trace->base_time = sample.time;
+-
+-			if (type != PERF_RECORD_SAMPLE) {
+-				trace__process_event(trace, trace->host, event, &sample);
+-				continue;
+-			}
+-
+-			evsel = perf_evlist__id2evsel(evlist, sample.id);
+-			if (evsel == NULL) {
+-				fprintf(trace->output, "Unknown tp ID %" PRIu64 ", skipping...\n", sample.id);
+-				goto next_event;
+-			}
+-
+-			if (evsel->attr.type == PERF_TYPE_TRACEPOINT &&
+-			    sample.raw_data == NULL) {
+-				fprintf(trace->output, "%s sample with no payload for tid: %d, cpu %d, raw_size=%d, skipping...\n",
+-				       perf_evsel__name(evsel), sample.tid,
+-				       sample.cpu, sample.raw_size);
+-				goto next_event;
+-			}
+-
+-			handler = evsel->handler;
+-			handler(trace, evsel, event, &sample);
+-next_event:
+-			perf_evlist__mmap_consume(evlist, i);
+-
+-			if (interrupted)
+-				goto out_disable;
+-		}
+-	}
++	while (!done) {
++		int rc;
+ 
+-	if (trace->nr_events == before) {
+-		int timeout = done ? 100 : -1;
++		rc = perf_session__mmap_read(&trace->tool, session, evlist,
++					     PERF_TRACE__MAX_EVENTS_PER_MMAP);
++		if (rc < 0)
++			break;
+ 
+-		if (poll(evlist->pollfd, evlist->nr_fds, timeout) > 0)
+-			goto again;
+-	} else {
+-		goto again;
++		if (!rc && !done)
++			err = poll(evlist->pollfd, evlist->nr_fds, 100);
+ 	}
+ 
+-out_disable:
+ 	perf_evlist__disable(evlist);
+ 
+ 	if (!err) {
+@@ -2153,6 +2124,8 @@ out_disable:
+ 		}
+ 	}
+ 
++out_delete_session:
++	perf_session__delete(session);
+ out_delete_evlist:
+ 	perf_evlist__delete(evlist);
+ out:
+@@ -2187,17 +2160,6 @@ static int trace__replay(struct trace *trace)
+ 	struct perf_evsel *evsel;
+ 	int err = -1;
+ 
+-	trace->tool.sample	  = trace__process_sample;
+-	trace->tool.mmap	  = perf_event__process_mmap;
+-	trace->tool.mmap2	  = perf_event__process_mmap2;
+-	trace->tool.comm	  = perf_event__process_comm;
+-	trace->tool.exit	  = perf_event__process_exit;
+-	trace->tool.fork	  = perf_event__process_fork;
+-	trace->tool.attr	  = perf_event__process_attr;
+-	trace->tool.tracing_data = perf_event__process_tracing_data;
+-	trace->tool.build_id	  = perf_event__process_build_id;
+-
+-	trace->tool.ordered_samples = true;
+ 	trace->tool.ordering_requires_timestamps = true;
+ 
+ 	/* add tid to output */
+@@ -2547,6 +2509,19 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (!argc && target__none(&trace.opts.target))
+ 		trace.opts.target.system_wide = true;
+ 
++	trace.tool.sample	  = trace__process_sample;
++	trace.tool.mmap	  = perf_event__process_mmap;
++	trace.tool.mmap2	  = perf_event__process_mmap2;
++	trace.tool.comm	  = perf_event__process_comm;
++	trace.tool.exit	  = perf_event__process_exit;
++	trace.tool.fork	  = perf_event__process_fork;
++	trace.tool.attr	  = perf_event__process_attr;
++	trace.tool.tracing_data = perf_event__process_tracing_data;
++	trace.tool.build_id	  = perf_event__process_build_id;
++
++	trace.tool.ordered_samples = true;
++	perf_tool__fill_defaults(&trace.tool);
++
+ 	if (input_name)
+ 		err = trace__replay(&trace);
+ 	else
+-- 
+1.8.3.2
 
-This looks like a clock driver in disguise...
-
-Mark.
