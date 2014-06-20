@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934806AbaFTIij (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 04:38:39 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:46271 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932937AbaFTIih (ORCPT
+	id S965702AbaFTIkR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 04:40:17 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42722 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934822AbaFTIkP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 04:38:37 -0400
-Message-ID: <53A3F305.9070903@codethink.co.uk>
-Date: Fri, 20 Jun 2014 09:38:29 +0100
-From: Rob Jones <rob.jones@codethink.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Fri, 20 Jun 2014 04:40:15 -0400
+Date: Fri, 20 Jun 2014 09:39:47 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Neil Zhang <zhangwm@marvell.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm64: add the ability to hook the fault code
+Message-ID: <20140620083946.GF25104@arm.com>
+References: <1403175296-25181-1-git-send-email-zhangwm@marvell.com>
+ <20140620082556.GD25104@arm.com>
+ <9034CBD80F070943B59700D7F8149ED90182148D02@SC-VEXCH4.marvell.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: linus.walleij@linaro.org, gnurou@gmail.com, lgirdwood@gmail.com,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-kernel@codethink.co.uk, ian.molton@codethink.co.uk,
-        ben.dooks@codethink.co.uk, heiko@sntech.de
-Subject: Re: Change gpio-reulator-probe() to use managed resources.
-References: <1403192765-3258-1-git-send-email-rob.jones@codethink.co.uk> <20140619175745.GS5099@sirena.org.uk>
-In-Reply-To: <20140619175745.GS5099@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <9034CBD80F070943B59700D7F8149ED90182148D02@SC-VEXCH4.marvell.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 20, 2014 at 09:33:59AM +0100, Neil Zhang wrote:
+> 
+> > -----Original Message-----
+> > From: Will Deacon [mailto:will.deacon@arm.com]
+> > Sent: 2014年6月20日 16:26
+> > To: Neil Zhang
+> > Cc: Catalin Marinas; linux-arm-kernel@lists.infradead.org;
+> > linux-kernel@vger.kernel.org
+> > Subject: Re: [PATCH] arm64: add the ability to hook the fault code
+> > 
+> > On Thu, Jun 19, 2014 at 11:54:56AM +0100, Neil Zhang wrote:
+> > > Add the ability to hook the fault code for future use.
+> > 
+> > Do you have a user for this in the kernel tree? I'd rather add the hook with
+> > the first user, if it doesn't exist already.
+> > 
+> 
+> Marvell Soc has a feature to use the external abort.
+> I didn't submit it since it's a private feature.
 
-On 19/06/14 18:57, Mark Brown wrote:
-> On Thu, Jun 19, 2014 at 04:46:01PM +0100, Rob Jones wrote:
->> Add new managed resource functions as needed to achieve this.
->>
->> Amend the following functions:
-> You appear to have omitted the actual patch, I'm quoting the entire
-> mail here.  Please see Documentation/SubmittingPatches for some tips
-> on how to do things.
+In which case, let's wait until we have a user of this in the mainline tree.
 
-I omitted to put "[Patch 0/4][v2]" on the front of the subject line.The 
-actual patches followed.
-
-It was a consequence of lack of familiarity with the tools; I'm 
-learning, so it shouldn't happen again. Would you like me to resubmit?
-
->
->> devm_kstrdup()
->> gpio_regulator_probe()
->>
->> Add the following functions:
->>
->> devm_kmemdup()
->> devm_gpio_request_array()
->> devm_gpio_free_array()
->>
->> Remove the following functions:
->>
->> gpio_regulator_remove()
->>
->>
->>  From Rob Jones <rob.jones@codethink.co.uk> # This line is ignored.
->> From: Rob Jones <rob.jones@codethink.co.uk>
->> Subject:
->> In-Reply-To:
->>
->>
-
--- 
-Rob Jones
-Project Manager
-Codethink Ltd
-mailto:rob.jones@codethink.co.uk
-tel:+44 161 236 5575
-
+Will
