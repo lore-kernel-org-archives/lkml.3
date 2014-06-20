@@ -1,126 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757149AbaFTRYd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 13:24:33 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50006 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756856AbaFTRYb (ORCPT
+	id S935105AbaFTRYc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 13:24:32 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:46862 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756865AbaFTRYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Jun 2014 13:24:31 -0400
-Date: Fri, 20 Jun 2014 18:23:30 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Austin <Jonathan.Austin@arm.com>,
-        =?iso-8859-1?Q?Andr=E9?= Hentschel <nerv@dawncrow.de>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ricky Zhou <rickyz@google.com>
-Subject: Re: [PATCH] arm: ptrace: fix syscall modification under
- PTRACE_O_TRACESECCOMP
-Message-ID: <20140620172330.GA30656@arm.com>
-References: <20140618202748.GA9022@www.outflux.net>
- <20140620102258.GA26626@arm.com>
- <CAGXu5jKJ07bXw_K+7uSAf=H_SDoeoaWPxS4rwuonbR71Svwwmw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jKJ07bXw_K+7uSAf=H_SDoeoaWPxS4rwuonbR71Svwwmw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Greylist: delayed 561 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Jun 2014 13:24:30 EDT
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, pv-drivers@vmware.com,
+        Dmitry Torokhov <dtor@vmware.com>
+Subject: [PATCH v2] MAINTAINERS: add entry for VMware Balloon driver
+Date: Fri, 20 Jun 2014 10:14:58 -0700
+Message-Id: <1403284498-31144-1-git-send-email-dtor@vmware.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 05:44:52PM +0100, Kees Cook wrote:
-> On Fri, Jun 20, 2014 at 3:22 AM, Will Deacon <will.deacon@arm.com> wrote:
-> > I'm struggling to see the bug in the current code, so apologies if my
-> > questions aren't helpful.
-> >
-> > On Wed, Jun 18, 2014 at 09:27:48PM +0100, Kees Cook wrote:
-> >> An x86 tracer wanting to change the syscall uses PTRACE_SETREGS
-> >> (stored to regs->orig_ax), and an ARM tracer uses PTRACE_SET_SYSCALL
-> >> (stored to current_thread_info()->syscall). When this happens, the
-> >> syscall can change across the call to secure_computing(), since it may
-> >> block on tracer notification, and the tracer can then make changes
-> >> to the process, before we return from secure_computing(). This
-> >> means the code must respect the changed syscall after the
-> >> secure_computing() call in syscall_trace_enter(). The same is true
-> >> for tracehook_report_syscall_entry() which may also block and change
-> >> the syscall.
-> >
-> > I don't think I understand what you mean by `the code must respect the
-> > changed syscall'. The current code does indeed issue the new syscall, so are
-> > you more concerned with secure_computing changing ->syscall, then the
-> > debugger can't see the new syscall when it sees the trap from tracehook?
-> > Are these even supposed to inter-operate?
-> 
-> The problem is the use of "scno" in the call -- it results in ignoring
-> the value that may be set up in ->syscall by a tracer:
-> 
-> syscall_trace_enter(regs, scno):
->     current_thread_info()->syscall = scno;
->     secure_computing(scno):
->         [block on ptrace]
->         [ptracer changes current_thread_info()->syscall vis PTRACE_SET_SYSCALL]
->     ...
->     return scno;
-> 
-> This means the tracer's changed syscall value will be ignored
-> (syscall_trace_enter returns original "scno" instead of actual
-> current_thread_info()->syscall). In the original code, failure cases
-> were propagated correctly, but not tracer-induced changes.
-> 
-> Is that more clear? It's not an obvious state (due to the external
-> modification of process state during the ptrace blocking). I've also
-> got tests for this, if that's useful to further illustrate:
-> 
-> https://github.com/kees/seccomp/commit/bd24e174593f79784b97178b583f17e0ea9d2aa7
+Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
+---
 
-Right, gotcha. Thanks for the explanation. I was confused, because
-tracehook_report_syscall does the right thing (returns
-current_thread_info()->syscall), but if we don't have TIF_SYSCALL_TRACE set,
-then updates during the secure_computing callback will be ignored.
+Greg,
 
-However, my fix to this is significantly smaller than your patch, so I fear
-I'm still missing something.
+I've added Xavier and Philip as official maintainers of the driver, but I've
+also kept pv-drivers internal alias as there usually more people watching it.
 
-Will
+Thanks,
+Dmitry
 
---->8
+ MAINTAINERS                |    8 ++++++++
+ drivers/misc/vmw_balloon.c |    3 ++-
+ 2 files changed, 10 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
-index 0dd3b79b15c3..0c27ed6f3f23 100644
---- a/arch/arm/kernel/ptrace.c
-+++ b/arch/arm/kernel/ptrace.c
-@@ -908,7 +908,7 @@ enum ptrace_syscall_dir {
-        PTRACE_SYSCALL_EXIT,
- };
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 6c484ac..d7abd46 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -9645,6 +9645,14 @@ L:	virtualization@lists.linux-foundation.org
+ S:	Supported
+ F:	arch/x86/kernel/cpu/vmware.c
  
--static int tracehook_report_syscall(struct pt_regs *regs,
-+static void tracehook_report_syscall(struct pt_regs *regs,
-                                    enum ptrace_syscall_dir dir)
- {
-        unsigned long ip;
-@@ -926,7 +926,6 @@ static int tracehook_report_syscall(struct pt_regs *regs,
-                current_thread_info()->syscall = -1;
- 
-        regs->ARM_ip = ip;
--       return current_thread_info()->syscall;
- }
- 
- asmlinkage int syscall_trace_enter(struct pt_regs *regs, int scno)
-@@ -938,7 +937,9 @@ asmlinkage int syscall_trace_enter(struct pt_regs *regs, int scno)
-                return -1;
- 
-        if (test_thread_flag(TIF_SYSCALL_TRACE))
--               scno = tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
-+               tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
++VMWARE BALLOON DRIVER
++M:	Xavier Deguillard <xdeguillard@vmware.com>
++M:	Philip Moltmann <moltmann@vmware.com>
++M:	"VMware, Inc." <pv-drivers@vmware.com>
++L:	linux-kernel@vger.kernel.org
++S:	Maintained
++F:	drivers/misc/vmw_balloon.c
 +
-+       scno = current_thread_info()->syscall;
+ VMWARE VMXNET3 ETHERNET DRIVER
+ M:	Shreyas Bhatewara <sbhatewara@vmware.com>
+ M:	"VMware, Inc." <pv-drivers@vmware.com>
+diff --git a/drivers/misc/vmw_balloon.c b/drivers/misc/vmw_balloon.c
+index 2421835..1916174 100644
+--- a/drivers/misc/vmw_balloon.c
++++ b/drivers/misc/vmw_balloon.c
+@@ -17,7 +17,8 @@
+  * along with this program; if not, write to the Free Software
+  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  *
+- * Maintained by: Dmitry Torokhov <dtor@vmware.com>
++ * Maintained by:	Xavier Deguillard <xdeguillard@vmware.com>
++ *			Philip Moltmann <moltmann@vmware.com>
+  */
  
-        if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
-                trace_sys_enter(regs, scno);
+ /*
+-- 
+1.7.4.1
+
