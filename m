@@ -1,76 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934686AbaFTJUK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 05:20:10 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:47514 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934595AbaFTJUI (ORCPT
+	id S965784AbaFTJWx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 05:22:53 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:64887 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965010AbaFTJWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 05:20:08 -0400
-Message-ID: <53A3FCC0.6050705@codethink.co.uk>
-Date: Fri, 20 Jun 2014 10:20:00 +0100
-From: Rob Jones <rob.jones@codethink.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Fri, 20 Jun 2014 05:22:51 -0400
+Date: Fri, 20 Jun 2014 18:21:50 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
+Cc: markh@compro.net, dan.carpenter@oracle.com,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH V2] staging: dgap: make dgap_found_board() return a brd
+ pointer
+Message-ID: <20140620092150.GA23842@devel.8.8.4.4>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: linus.walleij@linaro.org, gnurou@gmail.com, lgirdwood@gmail.com,
-        broonie@kernel.org, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-kernel@codethink.co.uk,
-        ian.molton@codethink.co.uk, ben.dooks@codethink.co.uk, heiko@sntech.de
-Subject: Re: [PATCH 3/4] drivers/base: devres.c: use devm_kmemdup() from with
- devm_kstrdup()
-References: <1403192765-3258-1-git-send-email-rob.jones@codethink.co.uk>	 <1403192765-3258-4-git-send-email-rob.jones@codethink.co.uk> <1403193567.7875.4.camel@joe-AO725>
-In-Reply-To: <1403193567.7875.4.camel@joe-AO725>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Make dgap_found_board() return a brd pointer and that brd pointer
+assign to dgap_board[] in the end of the dgap_init_one().
 
-On 19/06/14 16:59, Joe Perches wrote:
-> On Thu, 2014-06-19 at 16:46 +0100, Rob Jones wrote:
->> Avoid code duplication by using devm_kmemdup() to copy data instead
->> of having a separate loop within devm_kstrdup().
->>
->> Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
->> Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
-> []
->> diff --git a/drivers/base/devres.c b/drivers/base/devres.c
-> []
->> @@ -802,17 +802,10 @@ EXPORT_SYMBOL_GPL(devm_kmalloc);
->>    */
->>   char *devm_kstrdup(struct device *dev, const char *s, gfp_t gfp)
->>   {
-> []
->> +	return devm_kmemdup(dev, s, (strlen(s) + 1), gfp);
->>   }
->>   EXPORT_SYMBOL_GPL(devm_kstrdup);
-> Making this static inline in the header and dropping
-> EXPORT_SYMBOL_GPL might be smaller code.
->
-> static inline
-> char *devm_kstrdup(struct device *dev, const char *s, gfp_t gfp)
-> {
-> 	return devm_kmemdup(dev, s, strlen(s) + 1, gfp);
-> }
->
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+V2: change return value properly.
+    update error handling, if one of functions in dgap_init_one() is
+    failed, do not need to set dgap_board[] to NULL.
 
-Is it wise not to check for (s == NULL)? Surely the behaviour of 
-strlen(NULL) is undefined.
+ drivers/staging/dgap/dgap.c |   26 +++++++++++++-------------
+ 1 files changed, 13 insertions(+), 13 deletions(-)
 
-Consequently, I am, on balance, against making the function static 
-inline. Given that inline is only a recommendation to the compiler, it 
-may well not inline it anyway if the NULL test is present, in which case 
-we would end up with a copy of the code in each module that uses it 
-rather than a single, global, copy. If it didn't need the NULL test, I 
-would agree that it would be best as a static inline but I think it does 
-need it.
-
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index 5c8e622..d4f80af 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -70,7 +70,8 @@ MODULE_SUPPORTED_DEVICE("dgap");
+ 
+ static int dgap_start(void);
+ static void dgap_init_globals(void);
+-static int dgap_found_board(struct pci_dev *pdev, int id, int boardnum);
++static struct board_t *dgap_found_board(struct pci_dev *pdev, int id,
++					int boardnum);
+ static void dgap_cleanup_board(struct board_t *brd);
+ static void dgap_poll_handler(ulong dummy);
+ static int dgap_init_pci(void);
+@@ -582,11 +583,10 @@ static int dgap_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	if (rc)
+ 		return -EIO;
+ 
+-	rc = dgap_found_board(pdev, ent->driver_data, dgap_numboards);
+-	if (rc)
+-		return rc;
++	brd = dgap_found_board(pdev, ent->driver_data, dgap_numboards);
++	if (IS_ERR(brd))
++		return PTR_ERR(brd);
+ 
+-	brd = dgap_board[dgap_numboards++];
+ 	rc = dgap_firmware_load(pdev, ent->driver_data, brd);
+ 	if (rc)
+ 		goto cleanup_brd;
+@@ -617,6 +617,8 @@ static int dgap_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	brd->state = BOARD_READY;
+ 	brd->dpastatus = BD_RUNNING;
+ 
++	dgap_board[dgap_numboards++] = brd;
++
+ 	return 0;
+ 
+ tty_free:
+@@ -630,7 +632,7 @@ free_flipbuf:
+ cleanup_brd:
+ 	dgap_release_remap(brd);
+ 	kfree(brd);
+-	dgap_board[--dgap_numboards] = NULL;
++
+ 	return rc;
+ }
+ 
+@@ -717,7 +719,8 @@ static void dgap_cleanup_board(struct board_t *brd)
+  *
+  * A board has been found, init it.
+  */
+-static int dgap_found_board(struct pci_dev *pdev, int id, int boardnum)
++static struct board_t *dgap_found_board(struct pci_dev *pdev, int id,
++					int boardnum)
+ {
+ 	struct board_t *brd;
+ 	unsigned int pci_irq;
+@@ -727,9 +730,7 @@ static int dgap_found_board(struct pci_dev *pdev, int id, int boardnum)
+ 	/* get the board structure and prep it */
+ 	brd = kzalloc(sizeof(struct board_t), GFP_KERNEL);
+ 	if (!brd)
+-		return -ENOMEM;
+-
+-	dgap_board[boardnum] = brd;
++		return ERR_PTR(-ENOMEM);
+ 
+ 	/* store the info for the board we've found */
+ 	brd->magic = DGAP_BOARD_MAGIC;
+@@ -828,13 +829,12 @@ static int dgap_found_board(struct pci_dev *pdev, int id, int boardnum)
+ 	pr_info("dgap: board %d: %s (rev %d), irq %ld\n",
+ 		boardnum, brd->name, brd->rev, brd->irq);
+ 
+-	return 0;
++	return brd;
+ 
+ free_brd:
+ 	kfree(brd);
+-	dgap_board[boardnum] = NULL;
+ 
+-	return ret;
++	return ERR_PTR(ret);
+ }
+ 
+ 
 -- 
-Rob Jones
-Project Manager
-Codethink Ltd
-mailto:rob.jones@codethink.co.uk
-tel:+44 161 236 5575
+1.7.1
 
