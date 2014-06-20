@@ -1,164 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964946AbaFTXNR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 19:13:17 -0400
-Received: from gate.crashing.org ([63.228.1.57]:59762 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752850AbaFTXNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 19:13:16 -0400
-Message-ID: <1403305961.4587.66.camel@pasglop>
-Subject: Re: [PATCH] vfio: Fix endianness handling for emulated BARs
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexander Graf <agraf@suse.de>,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-Date: Sat, 21 Jun 2014 09:12:41 +1000
-In-Reply-To: <1403234514.3707.278.camel@ul30vt.home>
-References: <1403091391-31780-1-git-send-email-aik@ozlabs.ru>
-	 <1403116512.3707.175.camel@ul30vt.home> <53A233E9.6030006@ozlabs.ru>
-	 <53A241F6.9010307@ozlabs.ru> <53A25D74.5000804@ozlabs.ru>
-	 <1403234514.3707.278.camel@ul30vt.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S965150AbaFTXOF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 19:14:05 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:62822 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754240AbaFTXOC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 19:14:02 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        naveen krishna <ch.naveen@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>, Jean Delvare <jdelvare@suse.de>,
+        Simon Glass <sjg@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, standby24x7@gmail.com,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        "linux-i2c\@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c: exynos5: Properly use the "noirq" variants of suspend/resume
+References: <1403155273-1057-1-git-send-email-dianders@chromium.org>
+	<7h8uosyc3k.fsf@paris.lan>
+	<CAD=FV=XxNVmF+N5HF4SnZoJRJvkSUkpEx6ct4v2gtmAQ9n28-Q@mail.gmail.com>
+	<7hwqcbs166.fsf@paris.lan>
+	<CAD=FV=Uz9O0i2gmuk2+BHa-Tksvyxv0+MTi2UEjVREAMNCK7Ug@mail.gmail.com>
+Date: Fri, 20 Jun 2014 16:13:59 -0700
+In-Reply-To: <CAD=FV=Uz9O0i2gmuk2+BHa-Tksvyxv0+MTi2UEjVREAMNCK7Ug@mail.gmail.com>
+	(Doug Anderson's message of "Fri, 20 Jun 2014 15:05:56 -0700")
+Message-ID: <7h7g4brx6w.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-19 at 21:21 -0600, Alex Williamson wrote:
+Doug Anderson <dianders@chromium.org> writes:
 
-> Working on big endian being an accident may be a matter of perspective
+> Kevin,
+>
+> On Fri, Jun 20, 2014 at 2:48 PM, Kevin Hilman <khilman@linaro.org> wrote:
+>> Hi Doug,
+>>
+>> Doug Anderson <dianders@chromium.org> writes:
+>>
+>>> On Thu, Jun 19, 2014 at 11:43 AM, Kevin Hilman <khilman@linaro.org> wrote:
+>>>> Doug Anderson <dianders@chromium.org> writes:
+>>>>
+>>>>> The original code for the exynos i2c controller registered for the
+>>>>> "noirq" variants.  However during review feedback it was moved to
+>>>>> SIMPLE_DEV_PM_OPS without anyone noticing that it meant we were no
+>>>>> longer actually "noirq" (despite functions named
+>>>>> exynos5_i2c_suspend_noirq and exynos5_i2c_resume_noirq).
+>>>>>
+>>>>> i2c controllers that might have wakeup sources on them seem to need to
+>>>>> resume at noirq time so that the individual drivers can actually read
+>>>>> the i2c bus to handle their wakeup.
+>>>>
+>>>> I suspect usage of the noirq variants pre-dates the existence of the
+>>>> late/early callbacks in the PM core, but based on the description above,
+>>>> I suspect what you actually want is the late/early callbacks.
+>>>
+>>> I think it actually really needs noirq.  ;)
+>>
+>> Yes, it appears it does.   Objection withdrawn.
+>>
+>> I just wanted to be sure because since the introduction of late/early,
+>> the need for noirq should be pretty rare, but there certainly are needs.
+>>
+>> <tangent>
+>> In this case though, the need for it has more to do with the
+>> lack of a way for us to describe non parent-child device dependencies
+>> than whether or not IRQs are enabled or not.
+>> </tangent>
+>
+> Actually, I'm not sure that's true, but I'll talk through it and you
+> can point to where I'm wrong (I often am!)
+>
+> If you're a wakeup device then you need to be ready to handle
+> interrupts as soon as the "noirq" phase of resume is done, right?
 
- :-)
+As soon as the noirq phase of your own driver is done, correct.
 
-> The comment remains that this patch doesn't actually fix anything except
-> the overhead on big endian systems doing redundant byte swapping and
-> maybe the philosophy that vfio regions are little endian.
+> Said another way: you need to be ready to handle interrupts _before_
+> the normal resume code is called and be ready to handle interrupts
+> even _before_ the early resume code is called.
 
-Yes, that works by accident because technically VFIO is a transport and
-thus shouldn't perform any endian swapping of any sort, which remains
-the responsibility of the end driver which is the only one to know
-whether a given BAR location is a a register or some streaming data
-and in the former case whether it's LE or BE (some PCI devices are BE
-even ! :-)
+Correct.
 
-But yes, in the end, it works with the dual "cancelling" swaps and the
-overhead of those swaps is probably drowned in the noise of the syscall
-overhead.
+> That means if you are implementing a bus that's needed by any devices
+> with wakeup interrupts then it's your responsibility to also be
+> prepared to run this early.
+>
+> In this particular case the max77686 driver doesn't need to do
+> anything at all to be ready to handle interrupts.  It's suspend and
+> resume code is just boilerplate "enable wakeups / disable wakeups" and
+> it has no "noirq" code.  The max77686 driver doesn't have any "noirq"
+> wake call because it would just be empty.
+>
+> Said another way: the problem isn't that the max77686 wakeup gets
+> called before the i2c wakeup.  The problem is that i2c is needed ASAP
+> once IRQs are enabled and thus needs to be run noirq.
+>
+> Does that sound semi-correct?
 
-> I'm still not a fan of iowrite vs iowritebe, there must be something we
-> can use that doesn't have an implicit swap.
+Yes that's correct.
 
-Sadly there isn't ... In the old day we didn't even have the "be"
-variant and readl/writel style accessors still don't have them either
-for all archs.
+My point above was (trying to be) that ultimately this is an ordering
+issue.  e.g. the bus device needs to be "ready" before wakeup devices on
+that bus can handle wakeup interrupts etc.  The way we're handling that
+ordering is by the implied ordering of noirq, late/early and "normal"
+callbacks.  That's convenient, but not exactly obvious.   
 
-There is __raw_readl/writel but here the semantics are much more than
-just "don't swap", they also don't have memory barriers (which means
-they are essentially useless to most drivers unless those are platform
-specific drivers which know exactly what they are doing, or in the rare
-cases such as accessing a framebuffer which we know never have side
-effects). 
+It works because we dont' typically need too many layers here, but it
+would be much more understandable if we could describe this kind of
+dependency in a way that the suspend/resume code would suspend/resume
+things in the right order rather than by tinkering with callback levels
+(since otherwise suspend/resume ordering just depends on probe order.)
 
->  Calling it iowrite*_native is also an abuse of the namespace.
+This issue then usually gets me headed down my usual rant path about how
+I think runtime PM is much better suited for handling ordering and
+dependencies becuase it automatically handles parent/child dependencies
+and non parent/child dependencies can be handled by taking advantage of
+the get/put APIs which are refcounted, ect etc. but that's another can
+worms.
+
+Kevin
 
 
->  Next thing we know some common code
-> will legitimately use that name. 
 
-I might make sense to those definitions into a common header. There have
-been a handful of cases in the past that wanted that sort of "native
-byte order" MMIOs iirc (though don't ask me for examples, I can't really
-remember).
 
->  If we do need to define an alias
-> (which I'd like to avoid) it should be something like vfio_iowrite32.
-> Thanks,
 
-Cheers,
-Ben.
-
-> Alex
-> 
-> > > ===
-> > > 
-> > > any better?
-> > > 
-> > > 
-> > > 
-> > > 
-> > >>>> Suggested-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > >>>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-> > >>>> ---
-> > >>>>  drivers/vfio/pci/vfio_pci_rdwr.c | 20 ++++++++++++++++----
-> > >>>>  1 file changed, 16 insertions(+), 4 deletions(-)
-> > >>>>
-> > >>>> diff --git a/drivers/vfio/pci/vfio_pci_rdwr.c b/drivers/vfio/pci/vfio_pci_rdwr.c
-> > >>>> index 210db24..f363b5a 100644
-> > >>>> --- a/drivers/vfio/pci/vfio_pci_rdwr.c
-> > >>>> +++ b/drivers/vfio/pci/vfio_pci_rdwr.c
-> > >>>> @@ -21,6 +21,18 @@
-> > >>>>  
-> > >>>>  #include "vfio_pci_private.h"
-> > >>>>  
-> > >>>> +#ifdef __BIG_ENDIAN__
-> > >>>> +#define ioread16_native		ioread16be
-> > >>>> +#define ioread32_native		ioread32be
-> > >>>> +#define iowrite16_native	iowrite16be
-> > >>>> +#define iowrite32_native	iowrite32be
-> > >>>> +#else
-> > >>>> +#define ioread16_native		ioread16
-> > >>>> +#define ioread32_native		ioread32
-> > >>>> +#define iowrite16_native	iowrite16
-> > >>>> +#define iowrite32_native	iowrite32
-> > >>>> +#endif
-> > >>>> +
-> > >>>>  /*
-> > >>>>   * Read or write from an __iomem region (MMIO or I/O port) with an excluded
-> > >>>>   * range which is inaccessible.  The excluded range drops writes and fills
-> > >>>> @@ -50,9 +62,9 @@ static ssize_t do_io_rw(void __iomem *io, char __user *buf,
-> > >>>>  				if (copy_from_user(&val, buf, 4))
-> > >>>>  					return -EFAULT;
-> > >>>>  
-> > >>>> -				iowrite32(le32_to_cpu(val), io + off);
-> > >>>> +				iowrite32_native(val, io + off);
-> > >>>>  			} else {
-> > >>>> -				val = cpu_to_le32(ioread32(io + off));
-> > >>>> +				val = ioread32_native(io + off);
-> > >>>>  
-> > >>>>  				if (copy_to_user(buf, &val, 4))
-> > >>>>  					return -EFAULT;
-> > >>>> @@ -66,9 +78,9 @@ static ssize_t do_io_rw(void __iomem *io, char __user *buf,
-> > >>>>  				if (copy_from_user(&val, buf, 2))
-> > >>>>  					return -EFAULT;
-> > >>>>  
-> > >>>> -				iowrite16(le16_to_cpu(val), io + off);
-> > >>>> +				iowrite16_native(val, io + off);
-> > >>>>  			} else {
-> > >>>> -				val = cpu_to_le16(ioread16(io + off));
-> > >>>> +				val = ioread16_native(io + off);
-> > >>>>  
-> > >>>>  				if (copy_to_user(buf, &val, 2))
-> > >>>>  					return -EFAULT;
-> > >>>
-> > >>>
-> > >>>
-> > >>
-> > >>
-> > > 
-> > > 
-> > 
-> > 
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
 
 
