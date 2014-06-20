@@ -1,43 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935210AbaFTR1n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 13:27:43 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36246 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756777AbaFTR1l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 13:27:41 -0400
-Message-ID: <53A46F09.1050505@ti.com>
-Date: Fri, 20 Jun 2014 12:27:37 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Alexandre Courbot <gnurou@gmail.com>
-CC: Alexandre Courbot <acourbot@nvidia.com>, Mark Brown <broonie@kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, Keerthy <j-keerthy@ti.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: Palmas regulator broken (was Re: [PATCH] ARM: tegra: TN7: relax
- some regulators)
-References: <1403164154-1362-1-git-send-email-acourbot@nvidia.com> <53A308C8.2070004@wwwdotorg.org> <20140619175643.GR5099@sirena.org.uk> <53A3C613.8030207@nvidia.com> <53A3D85E.7030704@nvidia.com> <20140620094119.GT5099@sirena.org.uk> <53A4039B.7000504@nvidia.com> <20140620132310.GA11936@kahuna> <20140620135454.GA10566@kahuna> <CAAVeFuJ=JTNkwDKBvuoyL=ARQs_UJb_MHzL9S8gOc8EU98znPg@mail.gmail.com>
-In-Reply-To: <CAAVeFuJ=JTNkwDKBvuoyL=ARQs_UJb_MHzL9S8gOc8EU98znPg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S935223AbaFTR22 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 13:28:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62793 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756777AbaFTR21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 13:28:27 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Oren Twaig <oren@scalemp.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Borislav Petkov <bp@suse.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Dave Jones <davej@redhat.com>,
+        Torsten Kaiser <just.for.lkml@googlemail.com>,
+        Jan Beulich <JBeulich@suse.com>, Jan Kiszka <jan.kiszka@siemens.com>,
+        Toshi Kani <toshi.kani@hp.com>, Andrew Jones <drjones@redhat.com>
+Subject: [PATCH 2/2] x86, disable ht flag when hyperthreading is disabled
+Date: Fri, 20 Jun 2014 13:27:33 -0400
+Message-Id: <1403285253-25547-3-git-send-email-prarit@redhat.com>
+In-Reply-To: <1403285253-25547-1-git-send-email-prarit@redhat.com>
+References: <1403285253-25547-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2014 09:14 AM, Alexandre Courbot wrote:
-[...]
-> Tried this v2 and it seems to do the trick! My panel switches on as expected.
+The ht flag indicates that a processor is capable of having sibling threads.
+This has long been confusing for users who confuse the ht flag as
+indicating that hyperthreading is enabled on their systems even though
+it may have been disabled in BIOS.
 
-Thanks. I posted a formal patch
-https://patchwork.kernel.org/patch/4391271/ -> might want to add
-tested/reviewed/ack on that thread. I hope I got your email ID correct
-as well there..
+This patch removes the hyperthreading flag when no cpu thread siblings are
+found, ie) smp_num_siblings == 1.
 
+Cc: Oren Twaig <oren@scalemp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Torsten Kaiser <just.for.lkml@googlemail.com>
+Cc: Jan Beulich <JBeulich@suse.com>
+Cc: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Toshi Kani <toshi.kani@hp.com>
+Cc: Andrew Jones <drjones@redhat.com>
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+---
+ arch/x86/kernel/smpboot.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index e5ab30b..2eaadf0 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -371,6 +371,7 @@ void set_cpu_sibling_map(int cpu)
+ 		cpumask_set_cpu(cpu, cpu_core_mask(cpu));
+ 		c->booted_cores = 1;
+ 		smp_num_siblings = 1;
++		clear_cpu_cap(c, X86_FEATURE_HT);
+ 		return;
+ 	}
+ 
+@@ -419,6 +420,9 @@ void set_cpu_sibling_map(int cpu)
+ 	/* Only need to check this on the boot cpu, o/w it is disabled */
+ 	if (cpu == 0)
+ 		smp_num_siblings = cpumask_weight(cpu_sibling_mask(cpu));
++
++	if (cpu_has_ht && smp_num_siblings == 1)
++		clear_cpu_cap(c, X86_FEATURE_HT);
+ }
+ 
+ /* maps the cpu to the sched domain representing multi-core */
 -- 
-Regards,
-Nishanth Menon
+1.7.9.3
+
