@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966952AbaFTUkR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:40:17 -0400
-Received: from www.sr71.net ([198.145.64.142]:56355 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753832AbaFTUkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 16:40:15 -0400
-Message-ID: <53A49C2C.6030303@sr71.net>
-Date: Fri, 20 Jun 2014 13:40:12 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
+	id S1030207AbaFTUl5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:41:57 -0400
+Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:20355 "EHLO
+	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755942AbaFTUl4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 16:41:56 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsHADWbpFNXQzOZ/2dsb2JhbABZgw2rRwUBAQEBAQEFAZkqgQ4XdYQxLyOBAhg3iC4DFQHDVQ2GSxeFYoZxgiMdhC0EmEuBeYswgiiGAoNEOw
+From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
-CC: bp@alien8.de, x86@kernel.org, hpa@zytor.com
-Subject: Re: [RFC][PATCH 1/3] x86: introduce disabled-features
-References: <20140620161736.D6AC16FD@viggo.jf.intel.com>
-In-Reply-To: <20140620161736.D6AC16FD@viggo.jf.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Cc: Fabian Frederick <fabf@skynet.be>, "David S. Miller" <davem@davemloft.net>,
+        Emil Goode <emilgoode@gmail.com>, linux-usb@vger.kernel.org
+Subject: [PATCH 1/2] drivers/net/usb/asix_devices.c: remove null test before kfree
+Date: Fri, 20 Jun 2014 22:40:39 +0200
+Message-Id: <1403296839-6321-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2014 09:17 AM, Dave Hansen wrote:
-> +/* These features, although they might be available in a CPU
-> + * will not be used because the compile options to support
-> + * them are not present.
-> + *
-> + * This code allows them to be checked and disabled at
-> + * compile time withut an explicit #ifdef.  Simply call
-> + * cpu_has() or this_cpu_has().
-> + * */
-> +
-> +#ifdef CONFIG_X86_INTEL_MPX
-> +# define HAVE_MPX	(1<<(X86_FEATURE_MPX & 31))
-> +#else
-> +# define HAVE_MPX	0
-> +#endif
+Fix checkpatch warning:
+WARNING: kfree(NULL) is safe this check is probably not required
 
-Urg.  arch/x86/kvm/vmx.c has:
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Emil Goode <emilgoode@gmail.com>
+Cc: linux-usb@vger.kernel.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/net/usb/asix_devices.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-        if (boot_cpu_has(X86_FEATURE_MPX))
-                rdmsrl(MSR_IA32_BNDCFGS, vmx->host_state.msr_host_...
+diff --git a/drivers/net/usb/asix_devices.c b/drivers/net/usb/asix_devices.c
+index 5d19409..8a7582b 100644
+--- a/drivers/net/usb/asix_devices.c
++++ b/drivers/net/usb/asix_devices.c
+@@ -499,8 +499,7 @@ static int ax88772_bind(struct usbnet *dev, struct usb_interface *intf)
+ 
+ static void ax88772_unbind(struct usbnet *dev, struct usb_interface *intf)
+ {
+-	if (dev->driver_priv)
+-		kfree(dev->driver_priv);
++	kfree(dev->driver_priv);
+ }
+ 
+ static const struct ethtool_ops ax88178_ethtool_ops = {
+-- 
+1.8.4.5
 
-And in that case we really _do_ want to test the actual CPU bit, despite
-how we've configured MPX in the host kernel.  We can call test_cpu_cap()
-directly, I guess.  But, all these interfaces are getting confusing. :(
