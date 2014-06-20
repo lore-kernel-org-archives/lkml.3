@@ -1,201 +1,458 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757508AbaFTUFY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:05:24 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:40511 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756995AbaFTUFW (ORCPT
+	id S1757163AbaFTUHE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:07:04 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:63124 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753111AbaFTUHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 16:05:22 -0400
-Date: Fri, 20 Jun 2014 13:03:58 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: Christoph Lameter <cl@gentwo.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: kernel BUG at /src/linux-dev/mm/mempolicy.c:1738! on v3.16-rc1
-In-Reply-To: <20140620194639.GA30729@nhori.bos.redhat.com>
-Message-ID: <alpine.LSU.2.11.1406201257370.8123@eggly.anvils>
-References: <20140619215641.GA9792@nhori.bos.redhat.com> <alpine.DEB.2.11.1406200923220.10271@gentwo.org> <20140620194639.GA30729@nhori.bos.redhat.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 20 Jun 2014 16:07:00 -0400
+From: Jeff Layton <jlayton@primarydata.com>
+To: libc-alpha@sourceware.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Rich Felker <dalias@libc.org>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        samba-technical@lists.samba.org,
+        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
+        "Carlos O'Donell" <carlos@redhat.com>,
+        Stefan Metzmacher <metze@samba.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Boaz Harrosh <bharrosh@panasas.com>, "Alfred M. Szmidt" <ams@gnu.org>,
+        =?UTF-8?q?Ond=C5=99ej=20B=C3=ADlka?= <neleai@seznam.cz>
+Subject: [PATCH resend #3] fcntl-linux.h: add new definitions and manual updates for open file description locks
+Date: Fri, 20 Jun 2014 16:06:30 -0400
+Message-Id: <1403294790-18539-1-git-send-email-jlayton@primarydata.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jun 2014, Naoya Horiguchi wrote:
-> On Fri, Jun 20, 2014 at 09:24:36AM -0500, Christoph Lameter wrote:
-> > On Thu, 19 Jun 2014, Naoya Horiguchi wrote:
-> >
-> > > I'm suspecting that mbind_range() do something wrong around vma handling,
-> > > but I don't have enough luck yet. Anyone has an idea?
-> >
-> > Well memory policy data corrupted. This looks like you were trying to do
-> > page migration via mbind()?
-> 
-> Right.
-> 
-> > Could we get some more details as to what is
-> > going on here? Specifically the parameters passed to mbind would be
-> > interesting.
-> 
-> My view about the kernel behavior was in another email a few hours ago.
-> And as for what userspace did, I attach the reproducer below. It's simply
-> doing mbind(mode=MPOL_BIND, flags=MPOL_MF_MOVE_ALL) on random address/length/node.
+From: Jeff Layton <jlayton@poochiereds.net>
 
-Thanks for the additional information earlier.  ext4, so no shmem
-shared mempolicy involved: that cuts down the bugspace considerably.
+Open file description locks have been merged into the Linux kernel for
+v3.15.  Add the appropriate command-value definitions and an update to
+the manual that describes their usage.
 
-I agree from what you said that it looked like corrupt vm_area_struct
-and hence corrupt policy.
+ChangeLog:
 
-Here's an obvious patch to try, entirely untested - thanks for the
-reproducer, but I'd rather leave the testing to you.  Sounds like
-you have a useful fuzzer there: good catch.
+2014-04-24  Jeff Layton  <jlayton@poochiereds.net>
 
+	[BZ#16839]
+	* manual/llio.texi: add section about open file description locks
 
-[PATCH] mm: fix crashes from mbind() merging vmas
+	* manual/examples/ofdlocks.c:
+	  example of open file description lock usage
 
-v2.6.34's 9d8cebd4bcd7 ("mm: fix mbind vma merge problem") introduced
-vma merging to mbind(), but it should have also changed the convention
-of passing start vma from queue_pages_range() (formerly check_range())
-to new_vma_page(): vma merging may have already freed that structure,
-resulting in BUG at mm/mempolicy.c:1738 and probably worse crashes.
-
-Fixes: 9d8cebd4bcd7 ("mm: fix mbind vma merge problem")
-Reported-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: stable@vger.kernel.org # 2.6.34+
+	* sysdeps/unix/sysv/linux/bits/fcntl-linux.h:
+	  (F_OFD_GETLK, F_OFD_SETLK, F_OFD_SETLKW): New macros.
 ---
+ manual/examples/ofdlocks.c                 |  77 +++++++++
+ manual/llio.texi                           | 241 ++++++++++++++++++++++++++++-
+ sysdeps/unix/sysv/linux/bits/fcntl-linux.h |  17 ++
+ 3 files changed, 332 insertions(+), 3 deletions(-)
+ create mode 100644 manual/examples/ofdlocks.c
 
- mm/mempolicy.c |   46 ++++++++++++++++++++--------------------------
- 1 file changed, 20 insertions(+), 26 deletions(-)
+diff --git a/manual/examples/ofdlocks.c b/manual/examples/ofdlocks.c
+new file mode 100644
+index 000000000000..85e193cdabe6
+--- /dev/null
++++ b/manual/examples/ofdlocks.c
+@@ -0,0 +1,77 @@
++/* Open File Description Locks Usage Example
++   Copyright (C) 1991-2014 Free Software Foundation, Inc.
++
++   This program is free software; you can redistribute it and/or
++   modify it under the terms of the GNU General Public License
++   as published by the Free Software Foundation; either version 2
++   of the License, or (at your option) any later version.
++
++   This program is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU General Public License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with this program; if not, see <http://www.gnu.org/licenses/>.
++*/
++
++#define _GNU_SOURCE
++#include <stdio.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <unistd.h>
++#include <fcntl.h>
++#include <pthread.h>
++
++#define FILENAME	"/tmp/foo"
++#define NUM_THREADS	3
++#define ITERATIONS	5
++
++void *
++thread_start (void *arg)
++{
++  int i, fd, len;
++  long tid = (long) arg;
++  char buf[256];
++  struct flock lck = {
++    .l_whence = SEEK_SET,
++    .l_start = 0,
++    .l_len = 1,
++  };
++
++  fd = open ("/tmp/foo", O_RDWR | O_CREAT, 0666);
++
++  for (i = 0; i < ITERATIONS; i++)
++    {
++      lck.l_type = F_WRLCK;
++      fcntl (fd, F_OFD_SETLKW, &lck);
++
++      len = sprintf (buf, "%d: tid=%ld fd=%d\n", i, tid, fd);
++
++      lseek (fd, 0, SEEK_END);
++      write (fd, buf, len);
++      fsync (fd);
++
++      lck.l_type = F_UNLCK;
++      fcntl (fd, F_OFD_SETLK, &lck);
++
++      /* sleep to ensure lock is yielded to another thread */
++      usleep (1);
++    }
++  pthread_exit (NULL);
++}
++
++int
++main (int argc, char **argv)
++{
++  long i;
++  pthread_t threads[NUM_THREADS];
++
++  truncate (FILENAME, 0);
++
++  for (i = 0; i < NUM_THREADS; i++)
++    pthread_create (&threads[i], NULL, thread_start, (void *) i);
++
++  pthread_exit (NULL);
++  return 0;
++}
+diff --git a/manual/llio.texi b/manual/llio.texi
+index 6f8adfc607d7..864060dc7140 100644
+--- a/manual/llio.texi
++++ b/manual/llio.texi
+@@ -57,6 +57,10 @@ directly.)
+                                          flags associated with open files.
+ * File Locks::                          Fcntl commands for implementing
+                                          file locking.
++* Open File Description Locks::         Fcntl commands for implementing
++                                         open file description locking.
++* Open File Description Locks Example:: An example of open file description lock
++                                         usage
+ * Interrupt Input::                     Getting an asynchronous signal when
+                                          input arrives.
+ * IOCTLs::                              Generic I/O Control operations.
+@@ -2890,7 +2894,7 @@ Get flags associated with the open file.  @xref{File Status Flags}.
+ Set flags associated with the open file.  @xref{File Status Flags}.
+ 
+ @item F_GETLK
+-Get a file lock.  @xref{File Locks}.
++Test a file lock.  @xref{File Locks}.
+ 
+ @item F_SETLK
+ Set or clear a file lock.  @xref{File Locks}.
+@@ -2898,6 +2902,18 @@ Set or clear a file lock.  @xref{File Locks}.
+ @item F_SETLKW
+ Like @code{F_SETLK}, but wait for completion.  @xref{File Locks}.
+ 
++@item F_OFD_GETLK
++Test an open file description lock.  @xref{Open File Description Locks}.
++Specific to Linux.
++
++@item F_OFD_SETLK
++Set or clear an open file description lock.  @xref{Open File Description Locks}.
++Specific to Linux.
++
++@item F_OFD_SETLKW
++Like @code{F_OFD_SETLK}, but block until lock is acquired.
++@xref{Open File Description Locks}.  Specific to Linux.
++
+ @item F_GETOWN
+ Get process or process group ID to receive @code{SIGIO} signals.
+ @xref{Interrupt Input}.
+@@ -3576,6 +3592,10 @@ set_nonblock_flag (int desc, int value)
+ 
+ @cindex file locks
+ @cindex record locking
++This section describes record locks that are associated with the process.
++There is also a different type of record lock that is associated with the
++open file description instead of the process.  @xref{Open File Description Locks}.
++
+ The remaining @code{fcntl} commands are used to support @dfn{record
+ locking}, which permits multiple cooperating programs to prevent each
+ other from simultaneously accessing parts of a file in error-prone
+@@ -3641,7 +3661,10 @@ the file.
+ @item pid_t l_pid
+ This field is the process ID (@pxref{Process Creation Concepts}) of the
+ process holding the lock.  It is filled in by calling @code{fcntl} with
+-the @code{F_GETLK} command, but is ignored when making a lock.
++the @code{F_GETLK} command, but is ignored when making a lock.  If the
++conflicting lock is an open file description lock
++(@pxref{Open File Description Locks}), then this field will be set to
++@math{-1}.
+ @end table
+ @end deftp
+ 
+@@ -3813,10 +3836,222 @@ that part of the file for writing.
+ 
+ @c ??? This section could use an example program.
+ 
+-Remember that file locks are only a @emph{voluntary} protocol for
++Remember that file locks are only an @emph{advisory} protocol for
+ controlling access to a file.  There is still potential for access to
+ the file by programs that don't use the lock protocol.
+ 
++@node Open File Description Locks
++@section Open File Description Locks
++
++In contrast to process-associated record locks (@pxref{File Locks}),
++open file description record locks are associated with an open file
++description rather than a process.
++
++Using @code{fcntl} to apply an open file description lock on a region that
++already has an existing open file description lock that was created via the
++same file descriptor will never cause a lock conflict.
++
++Open file description locks are also inherited by child processes across
++@code{fork}, or @code{clone} with @code{CLONE_FILES} set
++(@pxref{Creating a Process}), along with the file descriptor.
++
++It is important to distinguish between the open file @emph{description} (an
++instance of an open file, usually created by a call to @code{open}) and
++an open file @emph{descriptor}, which is a numeric value that refers to the
++open file description.  The locks described here are associated with the
++open file @emph{description} and not the open file @emph{descriptor}.
++
++Using @code{dup} (@pxref{Duplicating Descriptors}) to copy a file
++descriptor does not give you a new open file description, but rather copies a
++reference to an existing open file description and assigns it to a new
++file descriptor.  Thus, open file description locks set on a file
++descriptor cloned by @code{dup} will never conflict with open file
++description locks set on the original descriptor since they refer to the
++same open file description.  Depending on the range and type of lock
++involved, the original lock may be modified by a @code{F_OFD_SETLK} or
++@code{F_OFD_SETLKW} command in this situation however.
++
++Open file description locks always conflict with process-associated locks,
++even if acquired by the same process or on the same open file
++descriptor.
++
++Open file description locks use the same @code{struct flock} as
++process-associated locks as an argument (@pxref{File Locks}) and the
++macros for the @code{command} values are also declared in the header file
++@file{fcntl.h}. To use them, the macro @code{_GNU_SOURCE} must be
++defined prior to including any header file.
++
++In contrast to process-associated locks, any @code{struct flock} used as
++an argument to open file description lock commands must have the @code{l_pid}
++value set to @math{0}.  Also, when returning information about an
++open file description lock in a @code{F_GETLK} or @code{F_OFD_GETLK} request,
++the @code{l_pid} field in @code{struct flock} will be set to @math{-1}
++to indicate that the lock is not associated with a process.
++
++When the same @code{struct flock} is reused as an argument to a
++@code{F_OFD_SETLK} or @code{F_OFD_SETLKW} request after being used for an
++@code{F_OFD_GETLK} request, it is necessary to inspect and reset the
++@code{l_pid} field to @math{0}.
++
++@pindex fcntl.h.
++
++@deftypevr Macro int F_OFD_GETLK
++This macro is used as the @var{command} argument to @code{fcntl}, to
++specify that it should get information about a lock.  This command
++requires a third argument of type @w{@code{struct flock *}} to be passed
++to @code{fcntl}, so that the form of the call is:
++
++@smallexample
++fcntl (@var{filedes}, F_OFD_GETLK, @var{lockp})
++@end smallexample
++
++If there is a lock already in place that would block the lock described
++by the @var{lockp} argument, information about that lock is written to
++@code{*@var{lockp}}.  Existing locks are not reported if they are
++compatible with making a new lock as specified.  Thus, you should
++specify a lock type of @code{F_WRLCK} if you want to find out about both
++read and write locks, or @code{F_RDLCK} if you want to find out about
++write locks only.
++
++There might be more than one lock affecting the region specified by the
++@var{lockp} argument, but @code{fcntl} only returns information about
++one of them. Which lock is returned in this situation is undefined.
++
++The @code{l_whence} member of the @var{lockp} structure are set to
++@code{SEEK_SET} and the @code{l_start} and @code{l_len} fields are set
++to identify the locked region.
++
++If no conflicting lock exists, the only change to the @var{lockp} structure
++is to update the @code{l_type} field to the value @code{F_UNLCK}.
++
++The normal return value from @code{fcntl} with this command is either @math{0}
++on success or @math{-1}, which indicates an error. The following @code{errno}
++error conditions are defined for this command:
++
++@table @code
++@item EBADF
++The @var{filedes} argument is invalid.
++
++@item EINVAL
++Either the @var{lockp} argument doesn't specify valid lock information,
++the operating system kernel doesn't support open file description locks, or the file
++associated with @var{filedes} doesn't support locks.
++@end table
++@end deftypevr
++
++@comment fcntl.h
++@comment POSIX.1
++@deftypevr Macro int F_OFD_SETLK
++This macro is used as the @var{command} argument to @code{fcntl}, to
++specify that it should set or clear a lock.  This command requires a
++third argument of type @w{@code{struct flock *}} to be passed to
++@code{fcntl}, so that the form of the call is:
++
++@smallexample
++fcntl (@var{filedes}, F_OFD_SETLK, @var{lockp})
++@end smallexample
++
++If the open file already has a lock on any part of the
++region, the old lock on that part is replaced with the new lock.  You
++can remove a lock by specifying a lock type of @code{F_UNLCK}.
++
++If the lock cannot be set, @code{fcntl} returns immediately with a value
++of @math{-1}.  This command does not wait for other tasks
++to release locks.  If @code{fcntl} succeeds, it returns @math{0}.
++
++The following @code{errno} error conditions are defined for this
++command:
++
++@table @code
++@item EAGAIN
++The lock cannot be set because it is blocked by an existing lock on the
++file.
++
++@item EBADF
++Either: the @var{filedes} argument is invalid; you requested a read lock
++but the @var{filedes} is not open for read access; or, you requested a
++write lock but the @var{filedes} is not open for write access.
++
++@item EINVAL
++Either the @var{lockp} argument doesn't specify valid lock information,
++the operating system kernel doesn't support open file description locks, or the
++file associated with @var{filedes} doesn't support locks.
++
++@item ENOLCK
++The system has run out of file lock resources; there are already too
++many file locks in place.
++
++Well-designed file systems never report this error, because they have no
++limitation on the number of locks.  However, you must still take account
++of the possibility of this error, as it could result from network access
++to a file system on another machine.
++@end table
++@end deftypevr
++
++@comment fcntl.h
++@comment POSIX.1
++@deftypevr Macro int F_OFD_SETLKW
++This macro is used as the @var{command} argument to @code{fcntl}, to
++specify that it should set or clear a lock.  It is just like the
++@code{F_OFD_SETLK} command, but causes the process to wait until the request
++can be completed.
++
++This command requires a third argument of type @code{struct flock *}, as
++for the @code{F_OFD_SETLK} command.
++
++The @code{fcntl} return values and errors are the same as for the
++@code{F_OFD_SETLK} command, but these additional @code{errno} error conditions
++are defined for this command:
++
++@table @code
++@item EINTR
++The function was interrupted by a signal while it was waiting.
++@xref{Interrupted Primitives}.
++
++@end table
++@end deftypevr
++
++Open file description locks are useful in the same sorts of situations as
++process-associated locks. They can also be used to synchronize file
++access between threads within the same process by having each thread perform
++its own @code{open} of the file, to obtain its own open file description.
++
++Because open file description locks are automatically freed only upon
++closing the last file descriptor that refers to the open file
++description, this locking mechanism avoids the possibility that locks
++are inadvertently released due to a library routine opening and closing
++a file without the application being aware.
++
++As with process-associated locks, open file description locks are advisory.
++
++@node Open File Description Locks Example
++@section Open File Description Locks Example
++
++Here is an example of using open file description locks in a threaded
++program. If this program used process-associated locks, then it would be
++subject to data corruption because process-associated locks are shared
++by the threads inside a process, and thus cannot be used by one thread
++to lock out another thread in the same process.
++
++Proper error handling has been omitted in the following program for
++brevity.
++
++@smallexample
++@include ofdlocks.c.texi
++@end smallexample
++
++This example creates three threads each of which loops five times,
++appending to the file.  Access to the file is serialized via open file
++description locks. If we compile and run the above program, we'll end up
++with /tmp/foo that has 15 lines in it.
++
++If we, however, were to replace the @code{F_OFD_SETLK} and
++@code{F_OFD_SETLKW} commands with their process-associated lock
++equivalents, the locking essentially becomes a noop since it is all done
++within the context of the same process. That leads to data corruption
++(typically manifested as missing lines) as some threads race in and
++overwrite the data written by others.
++
+ @node Interrupt Input
+ @section Interrupt-Driven Input
+ 
+diff --git a/sysdeps/unix/sysv/linux/bits/fcntl-linux.h b/sysdeps/unix/sysv/linux/bits/fcntl-linux.h
+index 915eb3ede560..455389cd2c2a 100644
+--- a/sysdeps/unix/sysv/linux/bits/fcntl-linux.h
++++ b/sysdeps/unix/sysv/linux/bits/fcntl-linux.h
+@@ -117,6 +117,23 @@
+ # define F_SETLKW64	14	/* Set record locking info (blocking).	*/
+ #endif
+ 
++/* open file description locks.
++
++   Usually record locks held by a process are released on *any* close and are
++   not inherited across a fork.
++
++   These cmd values will set locks that conflict with process-associated record
++   locks, but are "owned" by the opened file description, not the process.
++   This means that they are inherited across fork or clone with CLONE_FILES
++   like BSD (flock) locks, and they are only released automatically when the
++   last reference to the the file description against which they were acquired
++   is put. */
++#if __USE_GNU
++# define F_OFD_GETLK	36
++# define F_OFD_SETLK	37
++# define F_OFD_SETLKW	38
++#endif
++
+ #ifdef __USE_LARGEFILE64
+ # define O_LARGEFILE __O_LARGEFILE
+ #endif
+-- 
+1.9.3
 
---- 3.16-rc1/mm/mempolicy.c	2014-06-16 00:28:55.116076530 -0700
-+++ linux/mm/mempolicy.c	2014-06-20 12:40:00.000204558 -0700
-@@ -656,19 +656,18 @@ static unsigned long change_prot_numa(st
-  * @nodes and @flags,) it's isolated and queued to the pagelist which is
-  * passed via @private.)
-  */
--static struct vm_area_struct *
-+static int
- queue_pages_range(struct mm_struct *mm, unsigned long start, unsigned long end,
- 		const nodemask_t *nodes, unsigned long flags, void *private)
- {
--	int err;
--	struct vm_area_struct *first, *vma, *prev;
--
-+	int err = 0;
-+	struct vm_area_struct *vma, *prev;
- 
--	first = find_vma(mm, start);
--	if (!first)
--		return ERR_PTR(-EFAULT);
-+	vma = find_vma(mm, start);
-+	if (!vma)
-+		return -EFAULT;
- 	prev = NULL;
--	for (vma = first; vma && vma->vm_start < end; vma = vma->vm_next) {
-+	for (; vma && vma->vm_start < end; vma = vma->vm_next) {
- 		unsigned long endvma = vma->vm_end;
- 
- 		if (endvma > end)
-@@ -678,9 +677,9 @@ queue_pages_range(struct mm_struct *mm,
- 
- 		if (!(flags & MPOL_MF_DISCONTIG_OK)) {
- 			if (!vma->vm_next && vma->vm_end < end)
--				return ERR_PTR(-EFAULT);
-+				return -EFAULT;
- 			if (prev && prev->vm_end < vma->vm_start)
--				return ERR_PTR(-EFAULT);
-+				return -EFAULT;
- 		}
- 
- 		if (flags & MPOL_MF_LAZY) {
-@@ -694,15 +693,13 @@ queue_pages_range(struct mm_struct *mm,
- 
- 			err = queue_pages_pgd_range(vma, start, endvma, nodes,
- 						flags, private);
--			if (err) {
--				first = ERR_PTR(err);
-+			if (err)
- 				break;
--			}
- 		}
- next:
- 		prev = vma;
- 	}
--	return first;
-+	return err;
- }
- 
- /*
-@@ -1156,16 +1153,17 @@ out:
- 
- /*
-  * Allocate a new page for page migration based on vma policy.
-- * Start assuming that page is mapped by vma pointed to by @private.
-+ * Start by assuming the page is mapped by the same vma as contains @start.
-  * Search forward from there, if not.  N.B., this assumes that the
-  * list of pages handed to migrate_pages()--which is how we get here--
-  * is in virtual address order.
-  */
--static struct page *new_vma_page(struct page *page, unsigned long private, int **x)
-+static struct page *new_page(struct page *page, unsigned long start, int **x)
- {
--	struct vm_area_struct *vma = (struct vm_area_struct *)private;
-+	struct vm_area_struct *vma;
- 	unsigned long uninitialized_var(address);
- 
-+	vma = find_vma(current->mm, start);
- 	while (vma) {
- 		address = page_address_in_vma(page, vma);
- 		if (address != -EFAULT)
-@@ -1195,7 +1193,7 @@ int do_migrate_pages(struct mm_struct *m
- 	return -ENOSYS;
- }
- 
--static struct page *new_vma_page(struct page *page, unsigned long private, int **x)
-+static struct page *new_page(struct page *page, unsigned long start, int **x)
- {
- 	return NULL;
- }
-@@ -1205,7 +1203,6 @@ static long do_mbind(unsigned long start
- 		     unsigned short mode, unsigned short mode_flags,
- 		     nodemask_t *nmask, unsigned long flags)
- {
--	struct vm_area_struct *vma;
- 	struct mm_struct *mm = current->mm;
- 	struct mempolicy *new;
- 	unsigned long end;
-@@ -1271,11 +1268,9 @@ static long do_mbind(unsigned long start
- 	if (err)
- 		goto mpol_out;
- 
--	vma = queue_pages_range(mm, start, end, nmask,
-+	err = queue_pages_range(mm, start, end, nmask,
- 			  flags | MPOL_MF_INVERT, &pagelist);
--
--	err = PTR_ERR(vma);	/* maybe ... */
--	if (!IS_ERR(vma))
-+	if (!err)
- 		err = mbind_range(mm, start, end, new);
- 
- 	if (!err) {
-@@ -1283,9 +1278,8 @@ static long do_mbind(unsigned long start
- 
- 		if (!list_empty(&pagelist)) {
- 			WARN_ON_ONCE(flags & MPOL_MF_LAZY);
--			nr_failed = migrate_pages(&pagelist, new_vma_page,
--					NULL, (unsigned long)vma,
--					MIGRATE_SYNC, MR_MEMPOLICY_MBIND);
-+			nr_failed = migrate_pages(&pagelist, new_page, NULL,
-+				start, MIGRATE_SYNC, MR_MEMPOLICY_MBIND);
- 			if (nr_failed)
- 				putback_movable_pages(&pagelist);
- 		}
