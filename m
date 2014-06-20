@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030200AbaFTVbJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 17:31:09 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:33640 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966407AbaFTVbE (ORCPT
+	id S1030224AbaFTVb2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 17:31:28 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:21338 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966407AbaFTVbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 17:31:04 -0400
+	Fri, 20 Jun 2014 17:31:25 -0400
 From: Daniel Kiper <daniel.kiper@oracle.com>
 To: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         xen-devel@lists.xenproject.org
@@ -16,91 +16,43 @@ Cc: andrew.cooper3@citrix.com, boris.ostrovsky@oracle.com,
         konrad.wilk@oracle.com, matt.fleming@intel.com, mingo@redhat.com,
         mjg59@srcf.ucam.org, stefano.stabellini@eu.citrix.com,
         tglx@linutronix.de
-Subject: [PATCH v6 9/9] arch/x86: Remove efi_set_rtc_mmss()
-Date: Fri, 20 Jun 2014 23:29:28 +0200
-Message-Id: <1403299768-9955-10-git-send-email-daniel.kiper@oracle.com>
+Subject: [PATCH v6 2/9] arch/x86: Do not access EFI memory map if it is not available
+Date: Fri, 20 Jun 2014 23:29:21 +0200
+Message-Id: <1403299768-9955-3-git-send-email-daniel.kiper@oracle.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1403299768-9955-1-git-send-email-daniel.kiper@oracle.com>
 References: <1403299768-9955-1-git-send-email-daniel.kiper@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-efi_set_rtc_mmss() is never used to set RTC due to bugs found
-on many EFI platforms. It is set directly by mach_set_rtc_mmss().
-Hence, remove unused efi_set_rtc_mmss() function.
+Do not access EFI memory map if it is not available. At least
+Xen dom0 EFI implementation does not have an access to it.
 
 Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
 ---
 v6 - suggestions/fixes:
-   - remove efi_set_rtc_mmss() instead of commenting out it
-     (suggested by Stefano Stabellini, Juergen Gross,
-     H. Peter Anvin and Matt Fleming).
+   - create this separate patch from main EFI_PARAVIRT patch
+     (suggested by Matt Fleming).
 ---
- arch/x86/platform/efi/efi.c |   36 ------------------------------------
- include/linux/efi.h         |    1 -
- 2 files changed, 37 deletions(-)
+ arch/x86/platform/efi/efi.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index da15df9..d569eea 100644
+index 0ee1f46..d2d3c41 100644
 --- a/arch/x86/platform/efi/efi.c
 +++ b/arch/x86/platform/efi/efi.c
-@@ -244,42 +244,6 @@ static efi_status_t __init phys_efi_set_virtual_address_map(
- 	return status;
- }
+@@ -1220,6 +1220,9 @@ u64 efi_mem_attributes(unsigned long phys_addr)
+ 	efi_memory_desc_t *md;
+ 	void *p;
  
--int efi_set_rtc_mmss(const struct timespec *now)
--{
--	unsigned long nowtime = now->tv_sec;
--	efi_status_t	status;
--	efi_time_t	eft;
--	efi_time_cap_t	cap;
--	struct rtc_time	tm;
--
--	status = efi.get_time(&eft, &cap);
--	if (status != EFI_SUCCESS) {
--		pr_err("Oops: efitime: can't read time!\n");
--		return -1;
--	}
--
--	rtc_time_to_tm(nowtime, &tm);
--	if (!rtc_valid_tm(&tm)) {
--		eft.year = tm.tm_year + 1900;
--		eft.month = tm.tm_mon + 1;
--		eft.day = tm.tm_mday;
--		eft.minute = tm.tm_min;
--		eft.second = tm.tm_sec;
--		eft.nanosecond = 0;
--	} else {
--		pr_err("%s: Invalid EFI RTC value: write of %lx to EFI RTC failed\n",
--		       __func__, nowtime);
--		return -1;
--	}
--
--	status = efi.set_time(&eft);
--	if (status != EFI_SUCCESS) {
--		pr_err("Oops: efitime: can't write time!\n");
--		return -1;
--	}
--	return 0;
--}
--
- void efi_get_time(struct timespec *now)
- {
- 	efi_status_t status;
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 713a4f1..322366b 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -870,7 +870,6 @@ extern int __init efi_uart_console_only (void);
- extern void efi_initialize_iomem_resources(struct resource *code_resource,
- 		struct resource *data_resource, struct resource *bss_resource);
- extern void efi_get_time(struct timespec *now);
--extern int efi_set_rtc_mmss(const struct timespec *now);
- extern void efi_reserve_boot_services(void);
- extern int efi_get_fdt_params(struct efi_fdt_params *params, int verbose);
- extern struct efi_memory_map memmap;
++	if (!efi_enabled(EFI_MEMMAP))
++		return 0;
++
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		md = p;
+ 		if ((md->phys_addr <= phys_addr) &&
 -- 
 1.7.10.4
 
