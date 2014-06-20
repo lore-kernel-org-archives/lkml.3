@@ -1,242 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934652AbaFTPmV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 11:42:21 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:38205 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756163AbaFTPmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 11:42:19 -0400
-Date: Fri, 20 Jun 2014 11:42:10 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
-        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
-        cgroups@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [memcontrol] WARNING: CPU: 0 PID: 1 at kernel/res_counter.c:28
- res_counter_uncharge_locked()
-Message-ID: <20140620154209.GI7331@cmpxchg.org>
-References: <20140620102704.GA8912@localhost>
+	id S934657AbaFTPoD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 11:44:03 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:52387 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833AbaFTPoA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 11:44:00 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Ulf Hansson <ulf.hansson@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Chris Ball <chris@printf.net>, Rob Herring <robh+dt@kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Chen-Yu Tsai <wens@csie.org>, Mark Brown <broonie@kernel.org>,
+        Arend van Spriel <arend@broadcom.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: [RFC 1/2] pwrseq: Add subsystem to handle complex power sequences
+Date: Fri, 20 Jun 2014 17:42:19 +0200
+Message-ID: <4224745.HqdT4QrZdr@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1403183091-27876-2-git-send-email-ulf.hansson@linaro.org>
+References: <1403183091-27876-1-git-send-email-ulf.hansson@linaro.org> <1403183091-27876-2-git-send-email-ulf.hansson@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140620102704.GA8912@localhost>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:gBnfVbgqCmDqlqIykdx3W6OUikH+QmS4N3sew0fW52r
+ 8YfUfeSC5blfr6vM4B9ERyHr3mMffD/q5xbkvmPRGbSN1KYReI
+ ddefvjHuD8qIsXE/XkHetP3KGYwRljsPtAgHXxiCYd7OUW4oa/
+ 94mEbtjIKNWHLCkI6tFZccuqsbXWzx2ivozg3HAbyYUVTkjRDn
+ mW6SuGzW25Q678E3JGY1SyUtU18Muf2Dy+QdAi/StrAyHR3iR7
+ fLWaSCRFsipzBAfqBojIR6SadJfkdBpRweQJhD0feEI+JuyboH
+ mSgTXWxf9BSvwcbj83YDxB/zS4qweB1H47rXmdkAvjtQeieIjQ
+ zDzRhwAC6974eV5mgcMU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 06:27:04PM +0800, Fengguang Wu wrote:
-> Greetings,
-> 
-> 0day kernel testing robot got the below dmesg and the first bad commit is
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
+On Thursday 19 June 2014 15:04:50 Ulf Hansson wrote:
+> +Power sequence DT bindings
+> +
+> +Each power sequence method has a corresponding "power-method" property string.
+> +This property shall be set in a subnode for a device. That subnode should also
+> +describe resourses which are specific to that power method.
+> +
+> +Do note, power sequences as such isn't encoded through DT. Instead those are
+> +implemented by each power method.
+> +
+> +Required subnode properties:
+> +- power-method: should contain the string for the power method to bind.
+> +
+> +       Supported power methods: None.
+> +
+> +Example:
+> +
+> +Note, the "clock" power method in this example isn't actually supported, but
+> +used to visualize how a childnode could be described.
 
-Thanks for the bisect.
+I'm not too thrilled about adding another top-level concept for these.
+This seems to duplicate some things that pm-domains do, but does them
+in a somewhata different way. Would it be possible to instead integrate
+it into the pm-domain code?
 
-> commit ddc5bfec501f4be3f9e89084c2db270c0c45d1d6
-> Author:     Johannes Weiner <hannes@cmpxchg.org>
-> AuthorDate: Fri Jun 20 10:27:58 2014 +1000
-> Commit:     Stephen Rothwell <sfr@canb.auug.org.au>
-> CommitDate: Fri Jun 20 10:27:58 2014 +1000
-> 
->     mm: memcontrol: rewrite uncharge API
->     
->     The memcg uncharging code that is involved towards the end of a page's
->     lifetime - truncation, reclaim, swapout, migration - is impressively
->     complicated and fragile.
->     
->     Because anonymous and file pages were always charged before they had their
->     page->mapping established, uncharges had to happen when the page type
->     could still be known from the context; as in unmap for anonymous, page
->     cache removal for file and shmem pages, and swap cache truncation for swap
->     pages.  However, these operations happen well before the page is actually
->     freed, and so a lot of synchronization is necessary:
->     
->     - Charging, uncharging, page migration, and charge migration all need
->       to take a per-page bit spinlock as they could race with uncharging.
->     
->     - Swap cache truncation happens during both swap-in and swap-out, and
->       possibly repeatedly before the page is actually freed.  This means
->       that the memcg swapout code is called from many contexts that make
->       no sense and it has to figure out the direction from page state to
->       make sure memory and memory+swap are always correctly charged.
->     
->     - On page migration, the old page might be unmapped but then reused,
->       so memcg code has to prevent untimely uncharging in that case.
->       Because this code - which should be a simple charge transfer - is so
->       special-cased, it is not reusable for replace_page_cache().
->     
->     But now that charged pages always have a page->mapping, introduce
->     mem_cgroup_uncharge(), which is called after the final put_page(), when we
->     know for sure that nobody is looking at the page anymore.
->     
->     For page migration, introduce mem_cgroup_migrate(), which is called after
->     the migration is successful and the new page is fully rmapped.  Because
->     the old page is no longer uncharged after migration, prevent double
->     charges by decoupling the page's memcg association (PCG_USED and
->     pc->mem_cgroup) from the page holding an actual charge.  The new bits
->     PCG_MEM and PCG_MEMSW represent the respective charges and are transferred
->     to the new page during migration.
->     
->     mem_cgroup_migrate() is suitable for replace_page_cache() as well, which
->     gets rid of mem_cgroup_replace_page_cache().
->     
->     Swap accounting is massively simplified: because the page is no longer
->     uncharged as early as swap cache deletion, a new mem_cgroup_swapout() can
->     transfer the page's memory+swap charge (PCG_MEMSW) to the swap entry
->     before the final put_page() in page reclaim.
->     
->     Finally, page_cgroup changes are now protected by whatever protection the
->     page itself offers: anonymous pages are charged under the page table lock,
->     whereas page cache insertions, swapin, and migration hold the page lock.
->     Uncharging happens under full exclusion with no outstanding references.
->     Charging and uncharging also ensure that the page is off-LRU, which
->     serializes against charge migration.  Remove the very costly page_cgroup
->     lock and set pc->flags non-atomically.
->     
->     Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
->     Cc: Michal Hocko <mhocko@suse.cz>
->     Cc: Hugh Dickins <hughd@google.com>
->     Cc: Tejun Heo <tj@kernel.org>
->     Cc: Vladimir Davydov <vdavydov@parallels.com>
->     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> 
-> +-----------------------------------------------------------------------+------------+------------+---------------+
-> |                                                                       | 5b647620c6 | ddc5bfec50 | next-20140620 |
-> +-----------------------------------------------------------------------+------------+------------+---------------+
-> | boot_successes                                                        | 60         | 0          | 0             |
-> | boot_failures                                                         | 0          | 20         | 13            |
-> | WARNING:CPU:PID:at_kernel/res_counter.c:res_counter_uncharge_locked() | 0          | 20         | 13            |
-> | backtrace:vm_munmap                                                   | 0          | 20         | 13            |
-> | backtrace:SyS_munmap                                                  | 0          | 20         | 13            |
-> | backtrace:do_sys_open                                                 | 0          | 20         | 13            |
-> | backtrace:SyS_open                                                    | 0          | 20         | 13            |
-> | backtrace:do_execve                                                   | 0          | 20         | 13            |
-> | backtrace:SyS_execve                                                  | 0          | 20         | 13            |
-> | backtrace:do_group_exit                                               | 0          | 20         | 13            |
-> | backtrace:SyS_exit_group                                              | 0          | 20         | 13            |
-> | backtrace:SYSC_renameat2                                              | 0          | 11         | 8             |
-> | backtrace:SyS_rename                                                  | 0          | 11         | 8             |
-> | backtrace:do_munmap                                                   | 0          | 11         | 8             |
-> | backtrace:SyS_brk                                                     | 0          | 11         | 8             |
-> | Out_of_memory:Kill_process                                            | 0          | 1          |               |
-> | backtrace:do_unlinkat                                                 | 0          | 9          | 5             |
-> | backtrace:SyS_unlink                                                  | 0          | 9          | 5             |
-> | backtrace:SYSC_umount                                                 | 0          | 9          |               |
-> | backtrace:SyS_umount                                                  | 0          | 9          |               |
-> | backtrace:cleanup_mnt_work                                            | 0          | 0          | 5             |
-> +-----------------------------------------------------------------------+------------+------------+---------------+
-> 
-> [    2.747397] debug: unmapping init [mem 0xffff880001a3a000-0xffff880001bfffff]
-> [    2.748630] debug: unmapping init [mem 0xffff8800021ad000-0xffff8800021fffff]
-> [    2.752857] ------------[ cut here ]------------
-> [    2.753355] WARNING: CPU: 0 PID: 1 at kernel/res_counter.c:28 res_counter_uncharge_locked+0x48/0x74()
-> [    2.753355] CPU: 0 PID: 1 Comm: init Not tainted 3.16.0-rc1-00238-gddc5bfe #1
-> [    2.753355] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [    2.753355]  0000000000000000 ffff880012073c50 ffffffff81a23b9d ffff880012073c88
-> [    2.753355]  ffffffff810bc765 ffffffff8111fac8 0000000000001000 ffff88001200fa50
-> [    2.753355]  0000000000000001 ffff88001200fa01 ffff880012073c98 ffffffff810bc84b
-> [    2.753355] Call Trace:
-> [    2.753355]  [<ffffffff81a23b9d>] dump_stack+0x19/0x1b
-> [    2.753355]  [<ffffffff810bc765>] warn_slowpath_common+0x73/0x8c
-> [    2.753355]  [<ffffffff8111fac8>] ? res_counter_uncharge_locked+0x48/0x74
-> [    2.753355]  [<ffffffff810bc84b>] warn_slowpath_null+0x1a/0x1c
-> [    2.753355]  [<ffffffff8111fac8>] res_counter_uncharge_locked+0x48/0x74
-> [    2.753355]  [<ffffffff8111fd02>] res_counter_uncharge_until+0x4e/0xa9
-> [    2.753355]  [<ffffffff8111fd70>] res_counter_uncharge+0x13/0x15
-> [    2.753355]  [<ffffffff8119499c>] mem_cgroup_uncharge_end+0x73/0x8d
-> [    2.753355]  [<ffffffff8115735e>] release_pages+0x1f2/0x20d
-> [    2.753355]  [<ffffffff8116cc3a>] tlb_flush_mmu_free+0x28/0x43
-> [    2.753355]  [<ffffffff8116d5e5>] tlb_flush_mmu+0x20/0x23
-> [    2.753355]  [<ffffffff8116d5fc>] tlb_finish_mmu+0x14/0x39
-> [    2.753355]  [<ffffffff811730c1>] unmap_region+0xcd/0xdf
-> [    2.753355]  [<ffffffff81172b0e>] ? vma_gap_callbacks_propagate+0x18/0x33
-> [    2.753355]  [<ffffffff81174bf1>] do_munmap+0x252/0x2e0
-> [    2.753355]  [<ffffffff81174cc3>] vm_munmap+0x44/0x5c
-> [    2.753355]  [<ffffffff81174cfe>] SyS_munmap+0x23/0x29
-> [    2.753355]  [<ffffffff81a31567>] system_call_fastpath+0x16/0x1b
-> [    2.753355] ---[ end trace cfeb07101f6fbdfb ]---
-> [    2.780913] ------------[ cut here ]------------
+I also agree with Olof that having a standalone child device node is
+not the best representation. If you want to represent an SDIO device
+device that has some references to clocks, regulators, etc, then put
+that device into the tree and give it those properties.
+That would also let you worry about the sequencing in driver code rather
+than trying to come up with a completely generic model for it.
 
-This is an underflow that happens with memcg enabled but memcg-swap
-disabled - the memsw counter is not accounted, but then unaccounted.
-
-Andrew, can you please put this in to fix the uncharge rewrite patch
-mentioned above?
-
----
-
->From 29bcfcf54494467008aaf9d4e37771d3b2e2c2c7 Mon Sep 17 00:00:00 2001
-From: Johannes Weiner <hannes@cmpxchg.org>
-Date: Fri, 20 Jun 2014 11:09:14 -0400
-Subject: [patch] mm: memcontrol: rewrite uncharge API fix
-
-It's not entirely clear whether do_swap_account or PCG_MEMSW is the
-authoritative answer to whether a page is swap-accounted or not.  This
-currently leads to the following memsw counter underflow when swap
-accounting is disabled:
-
-[    2.753355] WARNING: CPU: 0 PID: 1 at kernel/res_counter.c:28 res_counter_uncharge_locked+0x48/0x74()
-[    2.753355] CPU: 0 PID: 1 Comm: init Not tainted 3.16.0-rc1-00238-gddc5bfe #1
-[    2.753355] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[    2.753355]  0000000000000000 ffff880012073c50 ffffffff81a23b9d ffff880012073c88
-[    2.753355]  ffffffff810bc765 ffffffff8111fac8 0000000000001000 ffff88001200fa50
-[    2.753355]  0000000000000001 ffff88001200fa01 ffff880012073c98 ffffffff810bc84b
-[    2.753355] Call Trace:
-[    2.753355]  [<ffffffff81a23b9d>] dump_stack+0x19/0x1b
-[    2.753355]  [<ffffffff810bc765>] warn_slowpath_common+0x73/0x8c
-[    2.753355]  [<ffffffff8111fac8>] ? res_counter_uncharge_locked+0x48/0x74
-[    2.753355]  [<ffffffff810bc84b>] warn_slowpath_null+0x1a/0x1c
-[    2.753355]  [<ffffffff8111fac8>] res_counter_uncharge_locked+0x48/0x74
-[    2.753355]  [<ffffffff8111fd02>] res_counter_uncharge_until+0x4e/0xa9
-[    2.753355]  [<ffffffff8111fd70>] res_counter_uncharge+0x13/0x15
-[    2.753355]  [<ffffffff8119499c>] mem_cgroup_uncharge_end+0x73/0x8d
-[    2.753355]  [<ffffffff8115735e>] release_pages+0x1f2/0x20d
-[    2.753355]  [<ffffffff8116cc3a>] tlb_flush_mmu_free+0x28/0x43
-[    2.753355]  [<ffffffff8116d5e5>] tlb_flush_mmu+0x20/0x23
-[    2.753355]  [<ffffffff8116d5fc>] tlb_finish_mmu+0x14/0x39
-[    2.753355]  [<ffffffff811730c1>] unmap_region+0xcd/0xdf
-[    2.753355]  [<ffffffff81172b0e>] ? vma_gap_callbacks_propagate+0x18/0x33
-[    2.753355]  [<ffffffff81174bf1>] do_munmap+0x252/0x2e0
-[    2.753355]  [<ffffffff81174cc3>] vm_munmap+0x44/0x5c
-[    2.753355]  [<ffffffff81174cfe>] SyS_munmap+0x23/0x29
-[    2.753355]  [<ffffffff81a31567>] system_call_fastpath+0x16/0x1b
-[    2.753355] ---[ end trace cfeb07101f6fbdfb ]---
-
-Don't set PCG_MEMSW when swap accounting is disabled, so that
-uncharging only has to look at this per-page flag.
-
-mem_cgroup_swapout() could also fully rely on this flag, but as it can
-bail out before even looking up the page_cgroup, check do_swap_account
-as a performance optimization and only sanity test for PCG_MEMSW.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 94d7c40b9f26..d6a20935f9c4 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2740,7 +2740,7 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
- 	 *   have the page locked
- 	 */
- 	pc->mem_cgroup = memcg;
--	pc->flags = PCG_USED | PCG_MEM | PCG_MEMSW;
-+	pc->flags = PCG_USED | PCG_MEM | (do_swap_account ? PCG_MEMSW : 0);
- 
- 	if (lrucare) {
- 		if (was_on_lru) {
-@@ -6598,7 +6598,7 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
- 		return;
- 
- 	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), oldpage);
--	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEMSW), oldpage);
-+	VM_BUG_ON_PAGE(do_swap_account && !(pc->flags & PCG_MEMSW), oldpage);
- 	pc->flags &= ~(PCG_MEM | PCG_MEMSW);
- 
- 	if (PageTransHuge(oldpage)) {
--- 
-2.0.0
+	Arnd
