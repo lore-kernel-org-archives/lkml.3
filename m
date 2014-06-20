@@ -1,200 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933905AbaFTD4V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 23:56:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54475 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932480AbaFTD4U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 23:56:20 -0400
-Date: Thu, 19 Jun 2014 20:53:57 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Chen Yucong <slaoub@gmail.com>, mgorman@suse.de, hannes@cmpxchg.org,
-        mhocko@suse.cz, riel@redhat.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: Write down design and intentions in English for
- proportial scan
-Message-Id: <20140619205357.e171e174.akpm@linux-foundation.org>
-In-Reply-To: <20140620030002.GA14884@bbox>
-References: <20140620030002.GA14884@bbox>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S934263AbaFTD7V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 23:59:21 -0400
+Received: from ozlabs.org ([103.22.144.67]:48781 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932480AbaFTD7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 23:59:20 -0400
+Date: Fri, 20 Jun 2014 13:59:12 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Paul Moore <paul@paul-moore.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>
+Subject: Re: linux-next: the selinux tree needs cleaning up
+Message-ID: <20140620135912.48ee1dff@canb.auug.org.au>
+In-Reply-To: <20140620034356.GB20601@mail.hallyn.com>
+References: <20140618084046.1bce12cc@canb.auug.org.au>
+	<1446656.4HCLD295vV@sifl>
+	<20140620010837.692e5472@canb.auug.org.au>
+	<3494783.s5KPIUO972@sifl>
+	<20140620085931.6427678d@canb.auug.org.au>
+	<20140620034356.GB20601@mail.hallyn.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/v7GFN_S9u6LCFG4FFv827D4"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jun 2014 12:00:02 +0900 Minchan Kim <minchan@kernel.org> wrote:
+--Sig_/v7GFN_S9u6LCFG4FFv827D4
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> By suggestion from Andrew, first of all, I try to add only comment
-> but I believe we could make it more clear by some change like this.
-> https://lkml.org/lkml/2014/6/16/750
-> 
-> Anyway, push this patch firstly.
+Hi Serge,
 
-Thanks.
+On Fri, 20 Jun 2014 05:43:56 +0200 "Serge E. Hallyn" <serge@hallyn.com> wro=
+te:
+>
+> The duplicates were the result of several misunderstandings and general
+> naivity all on my part.  I'm actually still not clear on what usually
+> happens with the selinux tree - it feeds into linux-next, then gets
+> 'pull'ed by James into security-next for a pull request?  Do you usually
+> send a request to James when ready, he pulls, then he sends pull request
+> to Linus?  (Or am I wrong, and you usually send your own requests to
+> Linus?)
 
-> ================= &< =================
-> 
-> >From b1fd007097064db34a211ffeacfe4da9fb22d49e Mon Sep 17 00:00:00 2001
-> From: Minchan Kim <minchan@kernel.org>
-> Date: Fri, 20 Jun 2014 11:37:52 +0900
-> Subject: [PATCH] mm: Write down design and intentions in English for
->  proportial scan
-> 
-> Quote from Andrew
-> "
-> That code is absolutely awful :( It's terribly difficult to work out
-> what the design is - what the code is actually setting out to achieve.
-> One is reduced to trying to reverse-engineer the intent from the
-> implementation and that becomes near impossible when the
-> implementation has bugs!
-> 
-> <snip>
-> 
-> The only way we're going to fix all this up is to stop looking at the
-> code altogether.  Write down the design and the intentions in English.
-> Review that.  Then implement that design in C
-> "
-> 
-> One thing I know it might not be English Andrew expected but other
-> thing I know is there are lots of native people in here so one of them
-> will spend his time to make this horrible English smooth.
-> 
-> I alreday spent my time to try to fix this situation so it's your
-> turn. It's good time balance between non-native and native people
-> so open source community is fair for all of us.
-> 
+If "you" is Paul, then I am pretty sure he asks James to pull and then
+James in turn asks Linus to pull.
 
-I can do that ;)  But not yet.
+If "you" is me, then no :-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> ---
->  mm/vmscan.c | 37 +++++++++++++++++++++++++++++++------
->  1 file changed, 31 insertions(+), 6 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 521f7eab1798..3a9862895a64 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2071,6 +2071,22 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
->  
->  	get_scan_count(lruvec, sc, nr);
->  
-> +	/*
-> +	 * Basically, VM scans file/anon LRU list proportionally
+--Sig_/v7GFN_S9u6LCFG4FFv827D4
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-OK
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-> depending
-> +	 * on the value of vm.swappiness
+iQIcBAEBCAAGBQJTo7GVAAoJEMDTa8Ir7ZwVEc0P/AzS0UmvVo+hOfZYWflQH5Kc
+VuSQ/OC5oRInuMBdbYEIv/lrh/6lenBmmVlZzCOWVw2SoAL0sq0Ish+tCU7zYuEW
+xFTJ8mdJAtvsFlCfT3OOkrefB/FSvugTUc2YpY2atl+RAoBMPZrhccXa4MguvO0o
+DyZ7R1bsMcZ6qW5/ZJ/9/ZAnlfOb+44YacCwPL4JZTkBfMc0Zr5G6Sw9C4wIeJsE
+Zo+L9zmad7RGuiJyp2YwN+yp9IDpKkwA7GjkA5lYbGUq9K+uQsdYio9lb16KFXLO
+PRJ6hSNZhTcLUd6riZMJ0dtrUr5geuIkGPmmzBKPiheu7PQ4mT1FJrePiMvZRpjM
+2pygzxvkX7Gns+Aa16SsVQSpN6wXIZv0Ti0E5gfU9G3mmbKe6DhYUKgSRcBWZsvf
+owvyI5LJ84bFCw86JPZGPRkq5PnXoGRtL0Jyq6wQ05HQeaHQxANuITHzGHdx/Wfn
+V2ov8ua96RdzujVCQiZzm5cIdKfZLGdWng56mKnn5UAMdDMyhNYwytjPPvZD7cul
+m7WlV5XTIEbcPSlNQL+pMj48TYuJP9MMrBdXjQAsoOQBIlOmHcNJ4BqRkNuC2T9F
+1MdEdBEC5I0fRHIs0QJCnOdNKngencMiFbrtiwmlK2Xen/TkeSTAYEybsrqi3QSk
+TSakyIrEeUtG1oRu/adH
+=7Cae
+-----END PGP SIGNATURE-----
 
-"depending" in what fashion?  Higher swappiness leads to lengthier
-scans.  But there's this:
-
-	/*
-	 * With swappiness at 100, anonymous and file have the same priority.
-	 * This scanning priority is essentially the inverse of IO cost.
-	 */
-	anon_prio = sc->swappiness;
-	file_prio = 200 - anon_prio;
-
-
-> but doesn't want to reclaim
-> +	 * excessive pages. So, it might be better to stop scan as soon as
-> +	 * we meet nr_to_reclaim
-
-"scanning" does not equal "reclaiming", as not all scanned pages are
-reclaimed.  I guess we mean "stop scanning when nr_reclaimed pages have
-been reclaimed".
-
-> but it breaks aging balance between LRU lists
-
-Why does it do this?
-
-> +	 * To keep the balance, what we do is as follows.
-> +	 *
-> +	 * If we reclaim pages requested, we stop scanning first and
-> +	 * investigate which LRU should be scanned more depending on
-> +	 * remained lru size(ie, nr[xxx]). We will scan bigger one more
-> +	 * so, final goal is
-> +	 *
-> +	 * scanned[xxx] = targets[xxx] - nr[xxx]
-> +	 * targets[anon] : targets[file] = scanned[anon] : scanned[file]
-> +	 */
-
-hm, what's going on here.  Something like this?
-
-"after having scanned sufficient pages to reclaim nr_to_reclaim pages,
-the LRUs will now be out of balance if many more pages were reclaimed
-from one LRU than from the others.  We now bring the LRUs back into
-balance by ...".  
-
-I'm not sure this really makes sense from a *design* aspect.  Is the
-amount of scanning which we do here sufficiently large to have a
-significant impact on the LRU sizes?  I suppose yes, in rare cases.
-
-How do we define "balance" anyway?  Can we make some statement explaining
-how the LRUs will appear when they are in a "balanced" state?
-
->  	/* Record the original scan target for proportional adjustments later */
->  	memcpy(targets, nr, sizeof(nr));
->  
-> @@ -2091,8 +2107,14 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
->  	blk_start_plug(&plug);
->  	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
->  					nr[LRU_INACTIVE_FILE]) {
-> -		unsigned long nr_anon, nr_file, percentage;
-> +		unsigned long nr_anon, nr_file;
->  		unsigned long nr_scanned;
-> +		/*
-> +		 * How many pages we should scan to meet target
-> +		 * calculated by get_scan_count. It means that
-> +		 * (100 - percentage) = already scanned ratio
-> +		 */
-> +		unsigned percentage;
-
-Well, "percentage" is a ratio.  So maybe "what proportion of the LRUs
-we should scan to..."?
-
-
->  		for_each_evictable_lru(lru) {
->  			if (nr[lru]) {
-> @@ -2108,11 +2130,10 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
->  			continue;
->  
->  		/*
-> -		 * For kswapd and memcg, reclaim at least the number of pages
-> -		 * requested. Ensure that the anon and file LRUs are scanned
-> -		 * proportionally what was requested by get_scan_count(). We
-> -		 * stop reclaiming one LRU and reduce the amount scanning
-> -		 * proportional to the original scan target.
-> +		 * Here, we reclaimed at least the number of pages requested.
-> +		 * Then, what we should do is the ensure that the anon and
-> +		 * file LRUs are scanned proportionally what was requested
-> +		 * by get_scan_count().
->  		 */
-
-OK.
-
->  		nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
->  		nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
-> @@ -2126,6 +2147,10 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
->  		if (!nr_file || !nr_anon)
->  			break;
->  
-> +		/*
-> +		 * Scan the bigger of the LRU more while stop scanning
-> +		 * the smaller of the LRU to keep aging balance between LRUs
-> +		 */
-
-OK.
-
->  		if (nr_file > nr_anon) {
->  			unsigned long scan_target = targets[LRU_INACTIVE_ANON] +
->  						targets[LRU_ACTIVE_ANON] + 1;
-
-I think I can work with all that.  Please have a think about the few
-issues above and I'll try to sit down tomorrow and correlate this with
-the implementation.
+--Sig_/v7GFN_S9u6LCFG4FFv827D4--
