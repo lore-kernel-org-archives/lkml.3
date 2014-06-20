@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965376AbaFTGsZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 02:48:25 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57743 "EHLO
+	id S965631AbaFTGsq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 02:48:46 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57719 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934623AbaFTGr7 (ORCPT
+	with ESMTP id S934620AbaFTGr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 02:47:59 -0400
+	Fri, 20 Jun 2014 02:47:58 -0400
 X-Original-SENDERIP: 10.177.220.169
 X-Original-MAILFROM: minchan@kernel.org
 From: Minchan Kim <minchan@kernel.org>
@@ -14,176 +14,169 @@ To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
         Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Minchan Kim <minchan@kernel.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        linux-nfs@vger.kernel.org
-Subject: [RFCv2 2/3] mm: Introduce atomic_remove_mapping
-Date: Fri, 20 Jun 2014 15:48:31 +0900
-Message-Id: <1403246912-18237-3-git-send-email-minchan@kernel.org>
+        Hugh Dickins <hughd@google.com>, Minchan Kim <minchan@kernel.org>
+Subject: [RFCv2 0/3] free reclaimed pages by paging out instantly
+Date: Fri, 20 Jun 2014 15:48:29 +0900
+Message-Id: <1403246912-18237-1-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1403246912-18237-1-git-send-email-minchan@kernel.org>
-References: <1403246912-18237-1-git-send-email-minchan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For release page from atomic context(ie, softirq), locks
-related to the work should be aware of that.
+Normally, I/O completed pages for reclaim would be rotated into
+inactive LRU tail without freeing. The why it works is we can't free
+page from atomic context(ie, end_page_writeback) due to vaious locks
+isn't aware of atomic context.
 
-There are two locks.
+So for reclaiming the I/O completed pages, we need one more iteration
+of reclaim and it could make unnecessary aging as well as CPU overhead.
 
-One is mapping->tree_lock and the other is swap_info_struct->lock.
-The mapping->tree_lock is alreay aware of irq so it's no problem
-but swap_info_struct->lock isn't so atomic_remove_mapping uses just
-try_spinlock and if it fails to hold a lock, it just depends on
-a fallback plan which moves the page into LRU's tail and expect page
-freeing in next.
+Long time ago, at the first trial, most concern was memcg locking
+but recently, Johnannes tried amazing effort to make memcg lock simple[1]
+so I coded up this again based on his patchset.(Kudos to Johannes)
 
-A change I know is mapping->a_ops->free is called on atomic context
-by this patch. Only user is nfs_readdir_clear_array which is no
-problem when I look at.
+[1] mm: memcontrol: naturalize charge lifetime v3
+    https://lkml.org/lkml/2014/6/18/631
 
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: linux-nfs@vger.kernel.org
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
+So, this patchset should go after [1] but not bad timing to prove
+that how [1] make mm simple so that we can go further like this.
+
+On 1G, 12 CPU kvm guest, build kernel 5 times and result.
+
+Most of field isn't changed too much but one thing I can notice is
+allocstall and pgrotated.
+We could save direct reclaim 50% and page rotation 96%.
+Yay!
+
+Welcome testing, review and any feedback!
+
+git clone -b mm/mm/asap_reclaim-v1r3 --single-branch git://git.kernel.org/pub/scm/linux/kernel/git/minchan/linux.git
+
+
+TITLE                                      OLD             NEW            DIFF (RATIO)
+nr_free_pages                          -79,600         -85,018          -5,418 (106.81)
+nr_alloc_batch                            -532              64             596 (-12.24)
+nr_inactive_anon                         1,601           1,913             312 (119.48)
+nr_active_anon                         -66,021         -64,913           1,108 (98.32)
+nr_inactive_file                        25,921          29,974           4,053 (115.64)
+nr_active_file                         112,575         112,604              29 (100.03)
+nr_unevictable                               0               0               0 (100.00)
+nr_mlock                                     0               0               0 (100.00)
+nr_anon_pages                          -63,698         -62,601           1,097 (98.28)
+nr_mapped                              -31,818         -32,657            -839 (102.64)
+nr_file_pages                          139,336         143,684           4,348 (103.12)
+nr_dirty                                 9,741           9,332            -409 (95.80)
+nr_writeback                                 0               0               0 (100.00)
+nr_slab_reclaimable                      3,453           2,969            -484 (85.99)
+nr_slab_unreclaimable                    1,348           1,503             155 (111.49)
+nr_page_table_pages                        303             169            -134 (55.92)
+nr_kernel_stack                              5              18              13 (316.67)
+nr_unstable                                  0               0               0 (100.00)
+nr_bounce                                    0               0               0 (100.00)
+nr_vmscan_write                      2,347,178       2,475,802         128,624 (105.48)
+nr_vmscan_immediate_reclaim             21,292          18,863          -2,429 (88.59)
+nr_writeback_temp                            0               0               0 (100.00)
+nr_isolated_anon                             0               0               0 (100.00)
+nr_isolated_file                             0               0               0 (100.00)
+nr_shmem                                  -940            -940               0 (100.00)
+nr_dirtied                           9,059,820       9,055,880          -3,940 (99.96)
+nr_written                          10,721,761      10,875,384         153,623 (101.43)
+numa_hit                           667,598,890     667,289,491        -309,399 (99.95)
+numa_miss                                    0               0               0 (100.00)
+numa_foreign                                 0               0               0 (100.00)
+numa_interleave                              0               0               0 (100.00)
+numa_local                         667,598,890     667,289,491        -309,399 (99.95)
+numa_other                                   0               0               0 (100.00)
+workingset_refault                   6,843,535       6,953,675         110,140 (101.61)
+workingset_activate                    500,648         462,529         -38,119 (92.39)
+workingset_nodereclaim                  13,696          12,420          -1,276 (90.68)
+nr_anon_transparent_hugepages                0               0               0 (100.00)
+nr_free_cma                                  0               0               0 (100.00)
+nr_dirty_threshold                       5,890           5,756            -134 (97.73)
+nr_dirty_background_threshold            2,945           2,878             -67 (97.73)
+pgpgin                              40,253,436      40,048,188        -205,248 (99.49)
+pgpgout                             43,348,244      43,949,700         601,456 (101.39)
+pswpin                               1,341,538       1,341,174            -364 (99.97)
+pswpout                              2,238,838       2,401,758         162,920 (107.28)
+pgalloc_dma                          8,107,785       8,658,979         551,194 (106.80)
+pgalloc_dma32                      662,079,225     661,199,629        -879,596 (99.87)
+pgalloc_normal                               0               0               0 (100.00)
+pgalloc_movable                              0               0               0 (100.00)
+pgfree                             670,107,583     669,774,227        -333,356 (99.95)
+pgactivate                           6,644,334       6,643,232          -1,102 (99.98)
+pgdeactivate                        12,717,804      12,591,803        -126,001 (99.01)
+pgfault                            720,714,051     720,522,028        -192,023 (99.97)
+pgmajfault                             293,791         300,790           6,999 (102.38)
+pgrefill_dma                           339,536         357,065          17,529 (105.16)
+pgrefill_dma32                      13,042,608      12,882,276        -160,332 (98.77)
+pgrefill_normal                              0               0               0 (100.00)
+pgrefill_movable                             0               0               0 (100.00)
+pgsteal_kswapd_dma                     176,437         182,289           5,852 (103.32)
+pgsteal_kswapd_dma32                17,820,059      15,877,438      -1,942,621 (89.10)
+pgsteal_kswapd_normal                        0               0               0 (100.00)
+pgsteal_kswapd_movable                       0               0               0 (100.00)
+pgsteal_direct_dma                          30              63              33 (206.45)
+pgsteal_direct_dma32                   388,468         208,411        -180,057 (53.65)
+pgsteal_direct_normal                        0               0               0 (100.00)
+pgsteal_direct_movable                       0               0               0 (100.00)
+pgscan_kswapd_dma                      190,486         199,076           8,590 (104.51)
+pgscan_kswapd_dma32                 22,002,203      20,034,956      -1,967,247 (91.06)
+pgscan_kswapd_normal                         0               0               0 (100.00)
+pgscan_kswapd_movable                        0               0               0 (100.00)
+pgscan_direct_dma                           45             175             130 (382.61)
+pgscan_direct_dma32                    722,765         714,866          -7,899 (98.91)
+pgscan_direct_normal                         0               0               0 (100.00)
+pgscan_direct_movable                        0               0               0 (100.00)
+pgscan_direct_throttle                       0               0               0 (100.00)
+zone_reclaim_failed                          0               0               0 (100.00)
+pginodesteal                                 0               0               0 (100.00)
+slabs_scanned                        3,537,255       3,580,408          43,153 (101.22)
+kswapd_inodesteal                          374               0            -374 (0.27)
+kswapd_low_wmark_hit_quickly             2,485           2,528              43 (101.73)
+kswapd_high_wmark_hit_quickly            1,078             728            -350 (67.56)
+pageoutrun                               4,652           4,346            -306 (93.42)
+allocstall                               8,312           4,524          -3,788 (54.43)
+pgrotated                            2,205,712          86,860      -2,118,852 (3.94)
+drop_pagecache                               0               0               0 (100.00)
+drop_slab                                    0               0               0 (100.00)
+pgmigrate_success                            0               0               0 (100.00)
+pgmigrate_fail                               0               0               0 (100.00)
+compact_migrate_scanned                      0               0               0 (100.00)
+compact_free_scanned                         0               0               0 (100.00)
+compact_isolated                             0               0               0 (100.00)
+compact_stall                                7               6              -1 (87.50)
+compact_fail                                 7               6              -1 (87.50)
+compact_success                              0               0               0 (100.00)
+htlb_buddy_alloc_success                     0               0               0 (100.00)
+htlb_buddy_alloc_fail                        0               0               0 (100.00)
+unevictable_pgs_culled                       0               0               0 (100.00)
+unevictable_pgs_scanned                      0               0               0 (100.00)
+unevictable_pgs_rescued                      0               0               0 (100.00)
+unevictable_pgs_mlocked                      0               0               0 (100.00)
+unevictable_pgs_munlocked                    0               0               0 (100.00)
+unevictable_pgs_cleared                      0               0               0 (100.00)
+unevictable_pgs_stranded                     0               0               0 (100.00)
+thp_fault_alloc                              0               0               0 (100.00)
+thp_fault_fallback                           0               0               0 (100.00)
+thp_collapse_alloc                           0               0               0 (100.00)
+thp_collapse_alloc_failed                    0               0               0 (100.00)
+thp_split                                    0               0               0 (100.00)
+thp_zero_page_alloc                          0               0               0 (100.00)
+thp_zero_page_alloc_failed                   0               0               0 (100.00)
+
+
+Minchan Kim (3):
+  mm: Don't hide spin_lock in swap_info_get internal
+  mm: Introduce atomic_remove_mapping
+  mm: Free reclaimed pages indepdent of next reclaim
+
  include/linux/swap.h |  4 ++++
- mm/swapfile.c        | 11 ++++++++-
+ mm/filemap.c         | 17 +++++++++-----
+ mm/swap.c            | 21 ++++++++++++++++++
+ mm/swapfile.c        | 17 ++++++++++++--
  mm/vmscan.c          | 63 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 77 insertions(+), 1 deletion(-)
+ 5 files changed, 114 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 94fd0b23f3f9..5df540205bda 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -336,6 +336,8 @@ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 						unsigned long *nr_scanned);
- extern unsigned long shrink_all_memory(unsigned long nr_pages);
- extern int vm_swappiness;
-+extern int atomic_remove_mapping(struct address_space *mapping,
-+					struct page *page);
- extern int remove_mapping(struct address_space *mapping, struct page *page);
- extern unsigned long vm_total_pages;
- 
-@@ -441,6 +443,7 @@ static inline long get_nr_swap_pages(void)
- }
- 
- extern void si_swapinfo(struct sysinfo *);
-+extern struct swap_info_struct *swap_info_get(swp_entry_t entry);
- extern swp_entry_t get_swap_page(void);
- extern swp_entry_t get_swap_page_of_type(int);
- extern int add_swap_count_continuation(swp_entry_t, gfp_t);
-@@ -449,6 +452,7 @@ extern int swap_duplicate(swp_entry_t);
- extern int swapcache_prepare(swp_entry_t);
- extern void swap_free(swp_entry_t);
- extern void swapcache_free(swp_entry_t);
-+extern void __swapcache_free(swp_entry_t);
- extern int free_swap_and_cache(swp_entry_t);
- extern int swap_type_of(dev_t, sector_t, struct block_device **);
- extern unsigned int count_swap_pages(int, int);
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index ec2ce926ea5f..d76496a8a104 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -722,7 +722,7 @@ swp_entry_t get_swap_page_of_type(int type)
- 	return (swp_entry_t) {0};
- }
- 
--static struct swap_info_struct *swap_info_get(swp_entry_t entry)
-+struct swap_info_struct *swap_info_get(swp_entry_t entry)
- {
- 	struct swap_info_struct *p;
- 	unsigned long offset, type;
-@@ -855,6 +855,15 @@ void swapcache_free(swp_entry_t entry)
- 	}
- }
- 
-+void __swapcache_free(swp_entry_t entry)
-+{
-+	struct swap_info_struct *p;
-+
-+	p = swap_info_get(entry);
-+	if (p)
-+		swap_entry_free(p, entry, SWAP_HAS_CACHE);
-+}
-+
- /*
-  * How many references to page are currently swapped out?
-  * This does not give an exact answer when swap count is continued,
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 521f7eab1798..a7efddc571f4 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -526,6 +526,69 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
- }
- 
- /*
-+ * Attempt to detach a locked page from its ->mapping in atomic context.
-+ * If it is dirty or if someone else has a ref on the page or couldn't
-+ * get necessary locks, abort and return 0.
-+ * If it was successfully detached, return 1.
-+ * Assumes the caller has a single ref on this page.
-+ */
-+int atomic_remove_mapping(struct address_space *mapping,
-+				struct page *page)
-+{
-+	BUG_ON(!PageLocked(page));
-+	BUG_ON(mapping != page_mapping(page));
-+	BUG_ON(!irqs_disabled());
-+
-+	spin_lock(&mapping->tree_lock);
-+
-+	/* Look at comment in __remove_mapping */
-+	if (!page_freeze_refs(page, 2))
-+		goto cannot_free;
-+	/* note: atomic_cmpxchg in page_freeze_refs provides the smp_rmb */
-+	if (unlikely(PageDirty(page))) {
-+		page_unfreeze_refs(page, 2);
-+		goto cannot_free;
-+	}
-+
-+	if (PageSwapCache(page)) {
-+		swp_entry_t swap = { .val = page_private(page) };
-+		struct swap_info_struct *p = swap_info_get(swap);
-+
-+		if (!p || !spin_trylock(&p->lock)) {
-+			page_unfreeze_refs(page, 2);
-+			goto cannot_free;
-+		}
-+
-+		mem_cgroup_swapout(page, swap);
-+		__delete_from_swap_cache(page);
-+		spin_unlock(&mapping->tree_lock);
-+		__swapcache_free(swap);
-+		spin_unlock(&p->lock);
-+	} else {
-+		void (*freepage)(struct page *);
-+
-+		freepage = mapping->a_ops->freepage;
-+		__delete_from_page_cache(page, NULL);
-+		spin_unlock(&mapping->tree_lock);
-+
-+		if (freepage != NULL)
-+			freepage(page);
-+	}
-+
-+	/*
-+	 * Unfreezing the refcount with 1 rather than 2 effectively
-+	 * drops the pagecache ref for us without requiring another
-+	 * atomic operation.
-+	 */
-+	page_unfreeze_refs(page, 1);
-+	return 1;
-+
-+cannot_free:
-+	spin_unlock(&mapping->tree_lock);
-+	return 0;
-+}
-+
-+/*
-  * Same as remove_mapping, but if the page is removed from the mapping, it
-  * gets returned with a refcount of 0.
-  */
 -- 
 2.0.0
 
