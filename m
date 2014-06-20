@@ -1,60 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934941AbaFTQeB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 12:34:01 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:38227 "EHLO zene.cmpxchg.org"
+	id S935082AbaFTQeG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 12:34:06 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:38234 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754228AbaFTQeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 12:34:00 -0400
+	id S1754233AbaFTQeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 12:34:03 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
         Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [patch 1/4] mm: vmscan: remove remains of kswapd-managed zone->all_unreclaimable
-Date: Fri, 20 Jun 2014 12:33:47 -0400
-Message-Id: <1403282030-29915-1-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 3/4] mm: vmscan: remove all_unreclaimable()
+Date: Fri, 20 Jun 2014 12:33:49 -0400
+Message-Id: <1403282030-29915-3-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1403282030-29915-1-git-send-email-hannes@cmpxchg.org>
+References: <1403282030-29915-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-shrink_zones() has a special branch to skip the all_unreclaimable()
-check during hibernation, because a frozen kswapd can't mark a zone
-unreclaimable.
+Direct reclaim currently calls shrink_zones() to reclaim all members
+of a zonelist, and if that wasn't successful it does another pass
+through the same zonelist to check overall reclaimability.
 
-But ever since 6e543d5780e3 ("mm: vmscan: fix do_try_to_free_pages()
-livelock"), determining a zone to be unreclaimable is done by directly
-looking at its scan history and no longer relies on kswapd setting the
-per-zone flag.
-
-Remove this branch and let shrink_zones() check the reclaimability of
-the target zones regardless of hibernation state.
+Just check reclaimability in shrink_zones() directly and propagate the
+result through the return value.  Then remove all_unreclaimable().
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- mm/vmscan.c | 8 --------
- 1 file changed, 8 deletions(-)
+ mm/vmscan.c | 48 +++++++++++++++++++++++-------------------------
+ 1 file changed, 23 insertions(+), 25 deletions(-)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 0f16ffe8eb67..19b5b8016209 100644
+index ed1efb84c542..d0bc1a209746 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2534,14 +2534,6 @@ out:
- 	if (sc->nr_reclaimed)
- 		return sc->nr_reclaimed;
+@@ -2244,9 +2244,10 @@ static inline bool should_continue_reclaim(struct zone *zone,
+ 	}
+ }
  
--	/*
--	 * As hibernation is going on, kswapd is freezed so that it can't mark
--	 * the zone into all_unreclaimable. Thus bypassing all_unreclaimable
--	 * check.
--	 */
--	if (oom_killer_disabled)
--		return 0;
+-static void shrink_zone(struct zone *zone, struct scan_control *sc)
++static unsigned long shrink_zone(struct zone *zone, struct scan_control *sc)
+ {
+ 	unsigned long nr_reclaimed, nr_scanned;
++	unsigned long zone_reclaimed = 0;
+ 
+ 	do {
+ 		struct mem_cgroup *root = sc->target_mem_cgroup;
+@@ -2290,8 +2291,12 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
+ 			   sc->nr_scanned - nr_scanned,
+ 			   sc->nr_reclaimed - nr_reclaimed);
+ 
++		zone_reclaimed += sc->nr_reclaimed - nr_reclaimed;
++
+ 	} while (should_continue_reclaim(zone, sc->nr_reclaimed - nr_reclaimed,
+ 					 sc->nr_scanned - nr_scanned, sc));
++
++	return zone_reclaimed;
+ }
+ 
+ /* Returns true if compaction should go ahead for a high-order request */
+@@ -2340,8 +2345,10 @@ static inline bool compaction_ready(struct zone *zone, int order)
+  *
+  * If a zone is deemed to be full of pinned pages then just give it a light
+  * scan then give up on it.
++ *
++ * Returns whether the zones overall are reclaimable or not.
+  */
+-static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
++static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+ {
+ 	struct zoneref *z;
+ 	struct zone *zone;
+@@ -2354,6 +2361,7 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+ 		.gfp_mask = sc->gfp_mask,
+ 	};
+ 	enum zone_type requested_highidx = gfp_zone(sc->gfp_mask);
++	bool all_unreclaimable = true;
+ 
+ 	/*
+ 	 * If the number of buffer_heads in the machine exceeds the maximum
+@@ -2368,6 +2376,8 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+ 
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 					gfp_zone(sc->gfp_mask), sc->nodemask) {
++		unsigned long zone_reclaimed = 0;
++
+ 		if (!populated_zone(zone))
+ 			continue;
+ 		/*
+@@ -2414,10 +2424,15 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+ 						&nr_soft_scanned);
+ 			sc->nr_reclaimed += nr_soft_reclaimed;
+ 			sc->nr_scanned += nr_soft_scanned;
++			zone_reclaimed += nr_soft_reclaimed;
+ 			/* need some check for avoid more shrink_zone() */
+ 		}
+ 
+-		shrink_zone(zone, sc);
++		zone_reclaimed += shrink_zone(zone, sc);
++
++		if (zone_reclaimed ||
++		    (global_reclaim(sc) && zone_reclaimable(zone)))
++			all_unreclaimable = false;
+ 	}
+ 
+ 	/*
+@@ -2439,26 +2454,8 @@ static void shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
+ 	 * promoted it to __GFP_HIGHMEM.
+ 	 */
+ 	sc->gfp_mask = orig_mask;
+-}
+ 
+-/* All zones in zonelist are unreclaimable? */
+-static bool all_unreclaimable(struct zonelist *zonelist,
+-		struct scan_control *sc)
+-{
+-	struct zoneref *z;
+-	struct zone *zone;
 -
- 	/* Aborted reclaim to try compaction? don't OOM, then */
- 	if (aborted_reclaim)
+-	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+-			gfp_zone(sc->gfp_mask), sc->nodemask) {
+-		if (!populated_zone(zone))
+-			continue;
+-		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+-			continue;
+-		if (zone_reclaimable(zone))
+-			return false;
+-	}
+-
+-	return true;
++	return !all_unreclaimable;
+ }
+ 
+ /*
+@@ -2482,6 +2479,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ {
+ 	unsigned long total_scanned = 0;
+ 	unsigned long writeback_threshold;
++	bool zones_reclaimable;
+ 
+ 	delayacct_freepages_start();
+ 
+@@ -2492,7 +2490,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 		vmpressure_prio(sc->gfp_mask, sc->target_mem_cgroup,
+ 				sc->priority);
+ 		sc->nr_scanned = 0;
+-		shrink_zones(zonelist, sc);
++		zones_reclaimable = shrink_zones(zonelist, sc);
+ 
+ 		total_scanned += sc->nr_scanned;
+ 		if (sc->nr_reclaimed >= sc->nr_to_reclaim)
+@@ -2533,8 +2531,8 @@ out:
+ 	if (sc->compaction_ready)
  		return 1;
+ 
+-	/* top priority shrink_zones still had more to do? don't OOM, then */
+-	if (global_reclaim(sc) && !all_unreclaimable(zonelist, sc))
++	/* Any of the zones still reclaimable?  Don't OOM. */
++	if (zones_reclaimable)
+ 		return 1;
+ 
+ 	return 0;
 -- 
 2.0.0
 
