@@ -1,57 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757390AbaFTSFd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 14:05:33 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53813 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757091AbaFTSFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 14:05:31 -0400
-Date: Fri, 20 Jun 2014 20:05:23 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Dave Jones <davej@redhat.com>
-Subject: Re: [RFC][PATCH 3/3] x86: make MP  a required-feature on 64-bit
-Message-ID: <20140620180523.GF11391@pd.tnic>
-References: <20140620161736.D6AC16FD@viggo.jf.intel.com>
- <20140620161740.BFB00798@viggo.jf.intel.com>
- <53A46008.5060509@zytor.com>
- <53A4619C.8020100@sr71.net>
- <53A46365.6090101@zytor.com>
- <20140620174345.GD11391@pd.tnic>
- <53A473AA.7050301@zytor.com>
+	id S933944AbaFTSKt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 14:10:49 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:59554 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752163AbaFTSKr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 14:10:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <53A473AA.7050301@zytor.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAGXu5jKg0didhwZTUq8AbMnwD=RV=EaWiZWBWuar625JXGnL6w@mail.gmail.com>
+References: <20140618202748.GA9022@www.outflux.net>
+	<20140620102258.GA26626@arm.com>
+	<CAGXu5jKJ07bXw_K+7uSAf=H_SDoeoaWPxS4rwuonbR71Svwwmw@mail.gmail.com>
+	<20140620172330.GA30656@arm.com>
+	<CAGXu5jKg0didhwZTUq8AbMnwD=RV=EaWiZWBWuar625JXGnL6w@mail.gmail.com>
+Date: Fri, 20 Jun 2014 11:10:46 -0700
+X-Google-Sender-Auth: z6zXisBflo58SQe4IlUqXi42rt4
+Message-ID: <CAGXu5j+bk3g0Dude8jfKM3dXxX8LE_46CMmcBCGdVMNX_Hu-6w@mail.gmail.com>
+Subject: Re: [PATCH] arm: ptrace: fix syscall modification under PTRACE_O_TRACESECCOMP
+From: Kees Cook <keescook@chromium.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jonathan Austin <Jonathan.Austin@arm.com>,
+        =?UTF-8?Q?Andr=C3=A9_Hentschel?= <nerv@dawncrow.de>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ricky Zhou <rickyz@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 10:47:22AM -0700, H. Peter Anvin wrote:
-> This is run before static_cpu_has().
+On Fri, Jun 20, 2014 at 10:36 AM, Kees Cook <keescook@chromium.org> wrote:
+> On Fri, Jun 20, 2014 at 10:23 AM, Will Deacon <will.deacon@arm.com> wrote:
+>> On Fri, Jun 20, 2014 at 05:44:52PM +0100, Kees Cook wrote:
+>>> On Fri, Jun 20, 2014 at 3:22 AM, Will Deacon <will.deacon@arm.com> wrote:
+>>> > I'm struggling to see the bug in the current code, so apologies if my
+>>> > questions aren't helpful.
+>>> >
+>>> > On Wed, Jun 18, 2014 at 09:27:48PM +0100, Kees Cook wrote:
+>>> >> An x86 tracer wanting to change the syscall uses PTRACE_SETREGS
+>>> >> (stored to regs->orig_ax), and an ARM tracer uses PTRACE_SET_SYSCALL
+>>> >> (stored to current_thread_info()->syscall). When this happens, the
+>>> >> syscall can change across the call to secure_computing(), since it may
+>>> >> block on tracer notification, and the tracer can then make changes
+>>> >> to the process, before we return from secure_computing(). This
+>>> >> means the code must respect the changed syscall after the
+>>> >> secure_computing() call in syscall_trace_enter(). The same is true
+>>> >> for tracehook_report_syscall_entry() which may also block and change
+>>> >> the syscall.
+>>> >
+>>> > I don't think I understand what you mean by `the code must respect the
+>>> > changed syscall'. The current code does indeed issue the new syscall, so are
+>>> > you more concerned with secure_computing changing ->syscall, then the
+>>> > debugger can't see the new syscall when it sees the trap from tracehook?
+>>> > Are these even supposed to inter-operate?
+>>>
+>>> The problem is the use of "scno" in the call -- it results in ignoring
+>>> the value that may be set up in ->syscall by a tracer:
+>>>
+>>> syscall_trace_enter(regs, scno):
+>>>     current_thread_info()->syscall = scno;
+>>>     secure_computing(scno):
+>>>         [block on ptrace]
+>>>         [ptracer changes current_thread_info()->syscall vis PTRACE_SET_SYSCALL]
+>>>     ...
+>>>     return scno;
+>>>
+>>> This means the tracer's changed syscall value will be ignored
+>>> (syscall_trace_enter returns original "scno" instead of actual
+>>> current_thread_info()->syscall). In the original code, failure cases
+>>> were propagated correctly, but not tracer-induced changes.
+>>>
+>>> Is that more clear? It's not an obvious state (due to the external
+>>> modification of process state during the ptrace blocking). I've also
+>>> got tests for this, if that's useful to further illustrate:
+>>>
+>>> https://github.com/kees/seccomp/commit/bd24e174593f79784b97178b583f17e0ea9d2aa7
+>>
+>> Right, gotcha. Thanks for the explanation. I was confused, because
+>> tracehook_report_syscall does the right thing (returns
+>> current_thread_info()->syscall), but if we don't have TIF_SYSCALL_TRACE set,
+>> then updates during the secure_computing callback will be ignored.
+>>
+>> However, my fix to this is significantly smaller than your patch, so I fear
+>> I'm still missing something.
+>
+> Oh, yes, that's much smaller. Nice! I will test this and report back.
 
-static_cpu_has_safe() then - I didn't do it for no reason :-)
+Yup, I can confirm this works. Thanks!
 
-> The point, though, was that we "enforce" (taint) on 32 bits but not on
-> 64 bits, which is clearly wrong.
+Tested-by: Kees Cook <keescook@chromium.org>
 
-Yeah, K7 is 32-bit only.
-
-> My inclination is to completely kill amd_k7_smp_check() entirely,
-> since noone seems to know when it actually matters and it is clearly
-> historic.
-
-I think DaveJ should know something about it - he gave that impression
-last time when we were discussing 8c90487cdc64 ("Rename TAINT_UNSAFE_SMP
-to TAINT_CPU_OUT_OF_SPEC").
-
-CCed.
+-Kees
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Kees Cook
+Chrome OS Security
