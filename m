@@ -1,96 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935089AbaFTQoz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 12:44:55 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:58566 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935017AbaFTQow (ORCPT
+	id S1757020AbaFTQtC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 12:49:02 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:40120 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754169AbaFTQs7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 12:44:52 -0400
+	Fri, 20 Jun 2014 12:48:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140620102258.GA26626@arm.com>
-References: <20140618202748.GA9022@www.outflux.net>
-	<20140620102258.GA26626@arm.com>
-Date: Fri, 20 Jun 2014 09:44:52 -0700
-X-Google-Sender-Auth: 7D1cRK8oFdcMn9qEyZWLq_gUfQM
-Message-ID: <CAGXu5jKJ07bXw_K+7uSAf=H_SDoeoaWPxS4rwuonbR71Svwwmw@mail.gmail.com>
-Subject: Re: [PATCH] arm: ptrace: fix syscall modification under PTRACE_O_TRACESECCOMP
+In-Reply-To: <53A40948.5020201@redhat.com>
+References: <20140618223457.GA31568@www.outflux.net>
+	<CAMEtUuzbPExM5dT+xDqbHtV5LZ3+E2Q0eq4xdmKWzLOZbTmuUQ@mail.gmail.com>
+	<CAGXu5jLYZ0jrFhd54aUhooLBWBUT28TQTLb41G107s=4U7ZxqA@mail.gmail.com>
+	<CAMEtUuwPug7Bbgi2ccOx4jxd2Q80AnVoiHeeBW2av=_sQMiSfg@mail.gmail.com>
+	<CAGXu5j+ZW9f8gW71_r5gRsEZoO_2fC3F4YXh_J1CwxRY6Vfx1Q@mail.gmail.com>
+	<53A40948.5020201@redhat.com>
+Date: Fri, 20 Jun 2014 09:48:59 -0700
+X-Google-Sender-Auth: 886msYNQCa25CqGK8t444_HdoCA
+Message-ID: <CAGXu5jLk_LDZ1-ou0iPNvAb2QHJdX-xhGRtyov-YZsmUOVo0GA@mail.gmail.com>
+Subject: Re: [PATCH] net: filter: fix upper BPF instruction limit
 From: Kees Cook <keescook@chromium.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Austin <Jonathan.Austin@arm.com>,
-        =?UTF-8?Q?Andr=C3=A9_Hentschel?= <nerv@dawncrow.de>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ricky Zhou <rickyz@google.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: Alexei Starovoitov <ast@plumgrid.com>, LKML <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>, Chema Gonzalez <chema@google.com>,
+        Network Development <netdev@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 3:22 AM, Will Deacon <will.deacon@arm.com> wrote:
+On Fri, Jun 20, 2014 at 3:13 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
 > Hi Kees,
 >
-> I'm struggling to see the bug in the current code, so apologies if my
-> questions aren't helpful.
 >
-> On Wed, Jun 18, 2014 at 09:27:48PM +0100, Kees Cook wrote:
->> An x86 tracer wanting to change the syscall uses PTRACE_SETREGS
->> (stored to regs->orig_ax), and an ARM tracer uses PTRACE_SET_SYSCALL
->> (stored to current_thread_info()->syscall). When this happens, the
->> syscall can change across the call to secure_computing(), since it may
->> block on tracer notification, and the tracer can then make changes
->> to the process, before we return from secure_computing(). This
->> means the code must respect the changed syscall after the
->> secure_computing() call in syscall_trace_enter(). The same is true
->> for tracehook_report_syscall_entry() which may also block and change
->> the syscall.
+> On 06/19/2014 01:28 AM, Kees Cook wrote:
+>>
+>> On Wed, Jun 18, 2014 at 4:19 PM, Alexei Starovoitov <ast@plumgrid.com>
+>> wrote:
+>>>
+>>> On Wed, Jun 18, 2014 at 3:55 PM, Kees Cook <keescook@chromium.org> wrote:
+>>>>
+>>>> On Wed, Jun 18, 2014 at 3:48 PM, Alexei Starovoitov <ast@plumgrid.com>
+>>>> wrote:
+>>>>>
+>>>>> On Wed, Jun 18, 2014 at 3:34 PM, Kees Cook <keescook@chromium.org>
+>>>>> wrote:
 >
-> I don't think I understand what you mean by `the code must respect the
-> changed syscall'. The current code does indeed issue the new syscall, so are
-> you more concerned with secure_computing changing ->syscall, then the
-> debugger can't see the new syscall when it sees the trap from tracehook?
-> Are these even supposed to inter-operate?
-
-The problem is the use of "scno" in the call -- it results in ignoring
-the value that may be set up in ->syscall by a tracer:
-
-syscall_trace_enter(regs, scno):
-    current_thread_info()->syscall = scno;
-    secure_computing(scno):
-        [block on ptrace]
-        [ptracer changes current_thread_info()->syscall vis PTRACE_SET_SYSCALL]
-    ...
-    return scno;
-
-This means the tracer's changed syscall value will be ignored
-(syscall_trace_enter returns original "scno" instead of actual
-current_thread_info()->syscall). In the original code, failure cases
-were propagated correctly, but not tracer-induced changes.
-
-Is that more clear? It's not an obvious state (due to the external
-modification of process state during the ptrace blocking). I've also
-got tests for this, if that's useful to further illustrate:
-
-https://github.com/kees/seccomp/commit/bd24e174593f79784b97178b583f17e0ea9d2aa7
-
+> ...
 >
->> The x86 code handles this (it expects orig_ax to always be the
->> desired syscall). In the ARM case, this means we should not be touching
->> current_thread_info()->syscall after its initial assignment. All failures
->> should result in a -1 syscall, though.
+>>>>> I wonder how did you catch this? :)
+>>>>> Just code inspection or seccomp actually generating such programs?
+>>>>
+>>>>
+>>>> In the process of merging my seccomp thread-sync series back with
+>>>> mainline, I got uncomfortable that I was moving filter size validation
+>>>> around without actually testing it. When I added it, I was happy that
+>>>> my series was correctly checking size limits, but then discovered my
+>>>> newly added check actually failed on an earlier kernel (3.2). Tracking
+>>>> it down found the corner case under 3.15.
+>>>>
+>>>> Here's the test I added to the seccomp regression tests, if you're
+>>>> interested:
+>>>>
+>>>> https://github.com/kees/seccomp/commit/794d54a340cde70a3bdf7fe0ade1f95d160b2883
+>>>
+>>>
+>>> Nice. I'm assuming https://github.com/redpig/seccomp is still the main
+>>> tree
+>>> for seccomp testsuite…
+>>
+>>
+>> Yes. Will hasn't pulled this most recent set of changes.
 >
-> The only time we explicitly touch ->syscall is when we're aborting the call
-> (i.e. writing -1), which I think is fine.
+>
+> We were actually thinking about extending lib/test_bpf module with seccomp
+> tests, which is possible to a limited extend, but seccomp is also a bit
+> more than just running a BPF program and making sure results fit.
+>
+> Are there any plans to put and extend test cases from [1] via user space
+> side into the kernel self-test directory, i.e. into something like
+> tools/testing/selftests/seccomp/ so that in future new tests can be added
+> or run from there? Might be worth to consider.
 
-That was the error path, which was okay. This rearranges things to
-both handle error conditions and tracer changes.
+Yeah, I have this on my TODO list, but we need to juggle relicensing
+the test suite (it is currently BSD, not GPLv2). I'll keep chasing
+this.
 
 -Kees
+
+>
+> Thanks,
+>
+> Daniel
+>
+>  [1] https://github.com/redpig/seccomp
+
+
 
 -- 
 Kees Cook
