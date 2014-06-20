@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965974AbaFTHxV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 03:53:21 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57259 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970AbaFTHxU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 03:53:20 -0400
-Date: Fri, 20 Jun 2014 09:53:18 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        spear-devel <spear-devel@list.st.com>
-Subject: Re: [patch 2/2] clk: spear3xx: Set proper clock parent of uart1/2
-In-Reply-To: <CAOh2x=niR4_jtWL2VRvZJ8LKkmW4fyNXB9+UzUKeRSagdm1xFw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1406200952580.5170@nanos>
-References: <20140619214858.755664030@linutronix.de> <20140619215140.348974921@linutronix.de> <CAOh2x=niR4_jtWL2VRvZJ8LKkmW4fyNXB9+UzUKeRSagdm1xFw@mail.gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1756215AbaFTHxj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 03:53:39 -0400
+Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:58854
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752358AbaFTHxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 03:53:38 -0400
+From: Sorin Dumitru <sdumitru@ixiacom.com>
+To: <linux-kernel@vger.kernel.org>, <linux-mips@linux-mips.org>
+CC: <ralf@linux-mips.org>, <sdumitru@ixiacom.com>
+Subject: [PATCH] mips: n32: use compat getsockopt syscall
+Date: Fri, 20 Jun 2014 10:53:06 +0300
+Message-ID: <1403250786-9763-1-git-send-email-sdumitru@ixiacom.com>
+X-Mailer: git-send-email 2.0.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain
+X-Originating-IP: [205.168.23.154]
+X-ClientProxiedBy: CO2PR05CA030.namprd05.prod.outlook.com (10.141.241.158) To
+ BLUPR0601MB0946.namprd06.prod.outlook.com (25.160.35.22)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 024847EE92
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(428001)(189002)(199002)(81156003)(95666004)(93916002)(86362001)(33646001)(77096002)(50986999)(21056001)(101416001)(85306003)(46102001)(92726001)(76482001)(69596002)(19580395003)(19580405001)(83322001)(62966002)(77982001)(64706001)(79102001)(66066001)(106356001)(81542001)(80022001)(81342001)(47776003)(20776003)(42186005)(53416004)(87286001)(105586002)(4396001)(104166001)(99396002)(74662001)(50226001)(50466002)(87976001)(88136002)(48376002)(36756003)(83072002)(85852003)(77156001)(89996001)(102836001)(74502001)(2101003);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR0601MB0946;H:ixro-sdumitru.ixiacom.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Authentication-Results: spf=none (sender IP is )
+ smtp.mailfrom=sdumitru@ixiacom.com; 
+X-MS-Exchange-CrossPremises-OriginalClientIPAddress: 205.168.23.154
+X-MS-Exchange-CrossPremises-AuthSource: BLUPR0601MB0946.namprd06.prod.outlook.com
+X-MS-Exchange-CrossPremises-AuthAs: Internal
+X-MS-Exchange-CrossPremises-AuthMechanism: 06
+X-MS-Exchange-CrossPremises-AVStamp-Service: 1.0
+X-MS-Exchange-CrossPremises-SCL: 1
+X-MS-Exchange-CrossPremises-Antispam-ScanContext: DIR:Originating;SFV:NSPM;SKIP:0;
+X-MS-Exchange-CrossPremises-Processed-By-Journaling: Journal Agent
+X-OrganizationHeadersPreserved: BLUPR0601MB0946.namprd06.prod.outlook.com
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-OriginatorOrg: ixiacom.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jun 2014, Viresh Kumar wrote:
+Signed-off-by: Sorin Dumitru <sdumitru@ixiacom.com>
+---
+ arch/mips/kernel/scall64-n32.S | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> On Fri, Jun 20, 2014 at 3:22 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > The uarts only work when the parent is ras_ahb_clk. The stale 3.5
-> > based ST tree does this in the board file.
-> >
-> > Add it to the clk init function. Not pretty, but the mess there is
-> > amazing anyway.
-> 
-> I still feel that board file is the right place to do it. Similar stuff might be
-> required for some other peripheral clocks later and this solution
-> wouldn't be scalable then.
-> 
-> But if you insist on doing it this way:
+diff --git a/arch/mips/kernel/scall64-n32.S b/arch/mips/kernel/scall64-n32.S
+index c1dbcda..e543861 100644
+--- a/arch/mips/kernel/scall64-n32.S
++++ b/arch/mips/kernel/scall64-n32.S
+@@ -162,7 +162,7 @@ EXPORT(sysn32_call_table)
+ 	PTR	sys_getpeername
+ 	PTR	sys_socketpair
+ 	PTR	compat_sys_setsockopt
+-	PTR	sys_getsockopt
++	PTR	compat_sys_getsockopt
+ 	PTR	__sys_clone			/* 6055 */
+ 	PTR	__sys_fork
+ 	PTR	compat_sys_execve
+-- 
+2.0.0
 
-I really do not care much as long as it works.
- 
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> 
