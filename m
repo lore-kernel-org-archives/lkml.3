@@ -1,138 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966328AbaFTRsk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 13:48:40 -0400
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:34268 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757414AbaFTRsB (ORCPT
+	id S1757166AbaFTRt6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 13:49:58 -0400
+Received: from emvm-gh1-uea09.nsa.gov ([63.239.67.10]:51601 "EHLO
+	emvm-gh1-uea09.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752274AbaFTRt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 13:48:01 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        Chirantan Ekbote <chirantan@chromium.org>,
-        David Riley <davidriley@chromium.org>, olof@lixom.net,
-        linux-samsung-soc@vger.kernel.org,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        javier.martinez@collabora.co.uk, Doug Anderson <dianders@chromium.org>,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3 2/3] clocksource: exynos_mct: __raw_readl/__raw_writel => readl_relaxed/writel_relaxed
-Date: Fri, 20 Jun 2014 10:47:51 -0700
-Message-Id: <1403286472-6817-3-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <1403286472-6817-1-git-send-email-dianders@chromium.org>
-References: <1403286472-6817-1-git-send-email-dianders@chromium.org>
+	Fri, 20 Jun 2014 13:49:57 -0400
+X-TM-IMSS-Message-ID: <12f8a3f400176fb6@nsa.gov>
+Message-ID: <53A4742E.1090909@tycho.nsa.gov>
+Date: Fri, 20 Jun 2014 13:49:34 -0400
+From: Stephen Smalley <sds@tycho.nsa.gov>
+Organization: National Security Agency
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Waiman Long <Waiman.Long@hp.com>, Paul Moore <paul@paul-moore.com>,
+        Eric Paris <eparis@parisplace.org>,
+        James Morris <james.l.morris@oracle.com>
+CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH] selinux: no recursive read_lock of policy_rwlock in security_genfs_sid()
+References: <1403286324-34421-1-git-send-email-Waiman.Long@hp.com>
+In-Reply-To: <1403286324-34421-1-git-send-email-Waiman.Long@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the __raw functions is discouraged.  Update the file to
-consistently use the proper functions.
+On 06/20/2014 01:45 PM, Waiman Long wrote:
+> With introduction of fair queued rwlock, recursive read_lock() may hang
+> the offending process if there is a write_lock() somewhere in between.
+> 
+> With recursive read_lock checking enabled, the following error was
+> reported:
+> 
+> =============================================
+> [ INFO: possible recursive locking detected ]
+> 3.16.0-rc1 #2 Tainted: G            E
+> ---------------------------------------------
+> load_policy/708 is trying to acquire lock:
+>  (policy_rwlock){.+.+..}, at: [<ffffffff8125b32a>] security_genfs_sid+0x3a/0x170
+> 
+> but task is already holding lock:
+>  (policy_rwlock){.+.+..}, at: [<ffffffff8125b48c>] security_fs_use+0x2c/0x110
+> 
+> other info that might help us debug this:
+>  Possible unsafe locking scenario:
+> 
+>        CPU0
+>        ----
+>   lock(policy_rwlock);
+>   lock(policy_rwlock);
+> 
+> This patch fixes the occurrence of recursive read_lock() of
+> policy_rwlock in security_genfs_sid() by adding a 5th argument to
+> indicate if the rwlock has been taken.
+> 
+> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-Changes in v3:
-- __raw_readl / __raw_writel patch new for version 3
+Thanks, but I'd prefer to instead create a static helper function in
+services.c that does not take the lock at all, use that function from
+security_fs_use, and leave the extern function unmodified.
 
- drivers/clocksource/exynos_mct.c | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
-index ab51bf20a..2df03e2 100644
---- a/drivers/clocksource/exynos_mct.c
-+++ b/drivers/clocksource/exynos_mct.c
-@@ -94,7 +94,7 @@ static void exynos4_mct_write(unsigned int value, unsigned long offset)
- 	u32 mask;
- 	u32 i;
- 
--	__raw_writel(value, reg_base + offset);
-+	writel_relaxed(value, reg_base + offset);
- 
- 	if (likely(offset >= EXYNOS4_MCT_L_BASE(0))) {
- 		stat_addr = (offset & ~EXYNOS4_MCT_L_MASK) + MCT_L_WSTAT_OFFSET;
-@@ -144,8 +144,8 @@ static void exynos4_mct_write(unsigned int value, unsigned long offset)
- 
- 	/* Wait maximum 1 ms until written values are applied */
- 	for (i = 0; i < loops_per_jiffy / 1000 * HZ; i++)
--		if (__raw_readl(reg_base + stat_addr) & mask) {
--			__raw_writel(mask, reg_base + stat_addr);
-+		if (readl_relaxed(reg_base + stat_addr) & mask) {
-+			writel_relaxed(mask, reg_base + stat_addr);
- 			return;
- 		}
- 
-@@ -157,7 +157,7 @@ static void exynos4_mct_frc_start(void)
- {
- 	u32 reg;
- 
--	reg = __raw_readl(reg_base + EXYNOS4_MCT_G_TCON);
-+	reg = readl_relaxed(reg_base + EXYNOS4_MCT_G_TCON);
- 	reg |= MCT_G_TCON_START;
- 	exynos4_mct_write(reg, EXYNOS4_MCT_G_TCON);
- }
-@@ -165,12 +165,12 @@ static void exynos4_mct_frc_start(void)
- static cycle_t notrace _exynos4_frc_read(void)
- {
- 	unsigned int lo, hi;
--	u32 hi2 = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_U);
-+	u32 hi2 = readl_relaxed(reg_base + EXYNOS4_MCT_G_CNT_U);
- 
- 	do {
- 		hi = hi2;
--		lo = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
--		hi2 = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_U);
-+		lo = readl_relaxed(reg_base + EXYNOS4_MCT_G_CNT_L);
-+		hi2 = readl_relaxed(reg_base + EXYNOS4_MCT_G_CNT_U);
- 	} while (hi != hi2);
- 
- 	return ((cycle_t)hi << 32) | lo;
-@@ -225,7 +225,7 @@ static void exynos4_mct_comp0_stop(void)
- {
- 	unsigned int tcon;
- 
--	tcon = __raw_readl(reg_base + EXYNOS4_MCT_G_TCON);
-+	tcon = readl_relaxed(reg_base + EXYNOS4_MCT_G_TCON);
- 	tcon &= ~(MCT_G_TCON_COMP0_ENABLE | MCT_G_TCON_COMP0_AUTO_INC);
- 
- 	exynos4_mct_write(tcon, EXYNOS4_MCT_G_TCON);
-@@ -238,7 +238,7 @@ static void exynos4_mct_comp0_start(enum clock_event_mode mode,
- 	unsigned int tcon;
- 	cycle_t comp_cycle;
- 
--	tcon = __raw_readl(reg_base + EXYNOS4_MCT_G_TCON);
-+	tcon = readl_relaxed(reg_base + EXYNOS4_MCT_G_TCON);
- 
- 	if (mode == CLOCK_EVT_MODE_PERIODIC) {
- 		tcon |= MCT_G_TCON_COMP0_AUTO_INC;
-@@ -327,7 +327,7 @@ static void exynos4_mct_tick_stop(struct mct_clock_event_device *mevt)
- 	unsigned long mask = MCT_L_TCON_INT_START | MCT_L_TCON_TIMER_START;
- 	unsigned long offset = mevt->base + MCT_L_TCON_OFFSET;
- 
--	tmp = __raw_readl(reg_base + offset);
-+	tmp = readl_relaxed(reg_base + offset);
- 	if (tmp & mask) {
- 		tmp &= ~mask;
- 		exynos4_mct_write(tmp, offset);
-@@ -349,7 +349,7 @@ static void exynos4_mct_tick_start(unsigned long cycles,
- 	/* enable MCT tick interrupt */
- 	exynos4_mct_write(0x1, mevt->base + MCT_L_INT_ENB_OFFSET);
- 
--	tmp = __raw_readl(reg_base + mevt->base + MCT_L_TCON_OFFSET);
-+	tmp = readl_relaxed(reg_base + mevt->base + MCT_L_TCON_OFFSET);
- 	tmp |= MCT_L_TCON_INT_START | MCT_L_TCON_TIMER_START |
- 	       MCT_L_TCON_INTERVAL_MODE;
- 	exynos4_mct_write(tmp, mevt->base + MCT_L_TCON_OFFSET);
-@@ -401,7 +401,7 @@ static int exynos4_mct_tick_clear(struct mct_clock_event_device *mevt)
- 		exynos4_mct_tick_stop(mevt);
- 
- 	/* Clear the MCT tick interrupt */
--	if (__raw_readl(reg_base + mevt->base + MCT_L_INT_CSTAT_OFFSET) & 1) {
-+	if (readl_relaxed(reg_base + mevt->base + MCT_L_INT_CSTAT_OFFSET) & 1) {
- 		exynos4_mct_write(0x1, mevt->base + MCT_L_INT_CSTAT_OFFSET);
- 		return 1;
- 	} else {
--- 
-2.0.0.526.g5318336
+> ---
+>  security/selinux/hooks.c            |    2 +-
+>  security/selinux/include/security.h |    2 +-
+>  security/selinux/selinuxfs.c        |    3 ++-
+>  security/selinux/ss/services.c      |   13 +++++++++----
+>  4 files changed, 13 insertions(+), 7 deletions(-)
+> 
+> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+> index 83d06db..430035a 100644
+> --- a/security/selinux/hooks.c
+> +++ b/security/selinux/hooks.c
+> @@ -1248,7 +1248,7 @@ static int selinux_proc_get_sid(struct dentry *dentry,
+>  			path[1] = '/';
+>  			path++;
+>  		}
+> -		rc = security_genfs_sid("proc", path, tclass, sid);
+> +		rc = security_genfs_sid("proc", path, tclass, sid, false);
+>  	}
+>  	free_page((unsigned long)buffer);
+>  	return rc;
+> diff --git a/security/selinux/include/security.h b/security/selinux/include/security.h
+> index ce7852c..6bc5b2f 100644
+> --- a/security/selinux/include/security.h
+> +++ b/security/selinux/include/security.h
+> @@ -180,7 +180,7 @@ int security_get_allow_unknown(void);
+>  int security_fs_use(struct super_block *sb);
+>  
+>  int security_genfs_sid(const char *fstype, char *name, u16 sclass,
+> -	u32 *sid);
+> +	u32 *sid, int locked);
+>  
+>  #ifdef CONFIG_NETLABEL
+>  int security_netlbl_secattr_to_sid(struct netlbl_lsm_secattr *secattr,
+> diff --git a/security/selinux/selinuxfs.c b/security/selinux/selinuxfs.c
+> index c71737f..405799e 100644
+> --- a/security/selinux/selinuxfs.c
+> +++ b/security/selinux/selinuxfs.c
+> @@ -1273,7 +1273,8 @@ static int sel_make_bools(void)
+>  			goto out;
+>  
+>  		isec = (struct inode_security_struct *)inode->i_security;
+> -		ret = security_genfs_sid("selinuxfs", page, SECCLASS_FILE, &sid);
+> +		ret = security_genfs_sid("selinuxfs", page, SECCLASS_FILE,
+> +					&sid, false);
+>  		if (ret)
+>  			goto out;
+>  
+> diff --git a/security/selinux/ss/services.c b/security/selinux/ss/services.c
+> index 4bca494..2b23c2c 100644
+> --- a/security/selinux/ss/services.c
+> +++ b/security/selinux/ss/services.c
+> @@ -2282,6 +2282,7 @@ out:
+>   * @path: path from root of mount
+>   * @sclass: file security class
+>   * @sid: SID for path
+> + * @locked: true if policy_rwlock taken
+>   *
+>   * Obtain a SID to use for a file in a filesystem that
+>   * cannot support xattr or use a fixed labeling behavior like
+> @@ -2290,7 +2291,8 @@ out:
+>  int security_genfs_sid(const char *fstype,
+>  		       char *path,
+>  		       u16 orig_sclass,
+> -		       u32 *sid)
+> +		       u32 *sid,
+> +		       int locked)
+>  {
+>  	int len;
+>  	u16 sclass;
+> @@ -2301,7 +2303,8 @@ int security_genfs_sid(const char *fstype,
+>  	while (path[0] == '/' && path[1] == '/')
+>  		path++;
+>  
+> -	read_lock(&policy_rwlock);
+> +	if (!locked)
+> +		read_lock(&policy_rwlock);
+>  
+>  	sclass = unmap_class(orig_sclass);
+>  	*sid = SECINITSID_UNLABELED;
+> @@ -2336,7 +2339,8 @@ int security_genfs_sid(const char *fstype,
+>  	*sid = c->sid[0];
+>  	rc = 0;
+>  out:
+> -	read_unlock(&policy_rwlock);
+> +	if (!locked)
+> +		read_unlock(&policy_rwlock);
+>  	return rc;
+>  }
+>  
+> @@ -2370,7 +2374,8 @@ int security_fs_use(struct super_block *sb)
+>  		}
+>  		sbsec->sid = c->sid[0];
+>  	} else {
+> -		rc = security_genfs_sid(fstype, "/", SECCLASS_DIR, &sbsec->sid);
+> +		rc = security_genfs_sid(fstype, "/", SECCLASS_DIR, &sbsec->sid,
+> +					true);
+>  		if (rc) {
+>  			sbsec->behavior = SECURITY_FS_USE_NONE;
+>  			rc = 0;
+> 
 
