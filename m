@@ -1,89 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755832AbaFTX7Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 19:59:25 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34765 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751386AbaFTX7Y (ORCPT
+	id S1756833AbaFTX7s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 19:59:48 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:44517 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755074AbaFTX7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 19:59:24 -0400
-Date: Sat, 21 Jun 2014 01:59:15 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Nick Krause <xerofoify@gmail.com>
-cc: Dan Carpenter <dan.carpenter@oracle.com>, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, fabf@skynet.be,
-        kirill.shutemov@linux.intel.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Check for Null return of function of affs_bread in
- function affs_truncate
-In-Reply-To: <CAPDOMVgwT2=iWAHOhgHSBY1B+KoWHQgCdK4idD2miwB=_eMs5Q@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1406210143030.5170@nanos>
-References: <1403129285-5038-1-git-send-email-xerofoify@gmail.com> <20140619052128.GV5015@mwanda> <CAPDOMVgwT2=iWAHOhgHSBY1B+KoWHQgCdK4idD2miwB=_eMs5Q@mail.gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 20 Jun 2014 19:59:46 -0400
+Message-ID: <53A4CADA.4030002@gmail.com>
+Date: Sat, 21 Jun 2014 01:59:22 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Doug Anderson <dianders@chromium.org>, Kevin Hilman <khilman@linaro.org>
+CC: Wolfram Sang <wsa@the-dreams.de>, Kukjin Kim <kgene.kim@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        naveen krishna <ch.naveen@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>, Jean Delvare <jdelvare@suse.de>,
+        Simon Glass <sjg@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Masanari Iida <standby24x7@gmail.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c: exynos5: Properly use the "noirq" variants of suspend/resume
+References: <1403155273-1057-1-git-send-email-dianders@chromium.org>	<7h8uosyc3k.fsf@paris.lan>	<CAD=FV=XxNVmF+N5HF4SnZoJRJvkSUkpEx6ct4v2gtmAQ9n28-Q@mail.gmail.com>	<7hwqcbs166.fsf@paris.lan>	<CAD=FV=Uz9O0i2gmuk2+BHa-Tksvyxv0+MTi2UEjVREAMNCK7Ug@mail.gmail.com>	<7h7g4brx6w.fsf@paris.lan> <CAD=FV=VmPMf6tCNmKJ1o5J7PyAXoU8fb6+s+Fkv18FH2WaQp7A@mail.gmail.com>
+In-Reply-To: <CAD=FV=VmPMf6tCNmKJ1o5J7PyAXoU8fb6+s+Fkv18FH2WaQp7A@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jun 2014, Nick Krause wrote:
-
-> Ok that's fine I would return as if it's a NULL the other parts of the
-> function can't continue.
-> Nick
+On 21.06.2014 01:53, Doug Anderson wrote:
+> Kevin,
 > 
-> On Thu, Jun 19, 2014 at 1:21 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> > On Wed, Jun 18, 2014 at 06:08:05PM -0400, Nicholas Krause wrote:
-> >> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> >> ---
-> >>  fs/affs/file.c | 2 ++
-> >>  1 file changed, 2 insertions(+)
-> >>
-> >> diff --git a/fs/affs/file.c b/fs/affs/file.c
-> >> index a7fe57d..f26482d 100644
-> >> --- a/fs/affs/file.c
-> >> +++ b/fs/affs/file.c
-> >> @@ -923,6 +923,8 @@ affs_truncate(struct inode *inode)
-> >>
-> >>       while (ext_key) {
-> >>               ext_bh = affs_bread(sb, ext_key);
-> >> +             if (!ext_bh)
-> >> +                     return;
-> >
-> > The problem is that we don't know if we should return here or break
-> > here.  If you don't understand the code, then it's best to just leave it
-> > alone.
+> On Fri, Jun 20, 2014 at 4:13 PM, Kevin Hilman <khilman@linaro.org> wrote:
+>> Doug Anderson <dianders@chromium.org> writes:
+>>
+>>> Kevin,
+>>>
+>>> On Fri, Jun 20, 2014 at 2:48 PM, Kevin Hilman <khilman@linaro.org> wrote:
+>>>> Hi Doug,
+>>>>
+>>>> Doug Anderson <dianders@chromium.org> writes:
+>>>>
+>>>>> On Thu, Jun 19, 2014 at 11:43 AM, Kevin Hilman <khilman@linaro.org> wrote:
+>>>>>> Doug Anderson <dianders@chromium.org> writes:
+>>>>>>
+>>>>>>> The original code for the exynos i2c controller registered for the
+>>>>>>> "noirq" variants.  However during review feedback it was moved to
+>>>>>>> SIMPLE_DEV_PM_OPS without anyone noticing that it meant we were no
+>>>>>>> longer actually "noirq" (despite functions named
+>>>>>>> exynos5_i2c_suspend_noirq and exynos5_i2c_resume_noirq).
+>>>>>>>
+>>>>>>> i2c controllers that might have wakeup sources on them seem to need to
+>>>>>>> resume at noirq time so that the individual drivers can actually read
+>>>>>>> the i2c bus to handle their wakeup.
+>>>>>>
+>>>>>> I suspect usage of the noirq variants pre-dates the existence of the
+>>>>>> late/early callbacks in the PM core, but based on the description above,
+>>>>>> I suspect what you actually want is the late/early callbacks.
+>>>>>
+>>>>> I think it actually really needs noirq.  ;)
+>>>>
+>>>> Yes, it appears it does.   Objection withdrawn.
+>>>>
+>>>> I just wanted to be sure because since the introduction of late/early,
+>>>> the need for noirq should be pretty rare, but there certainly are needs.
+>>>>
+>>>> <tangent>
+>>>> In this case though, the need for it has more to do with the
+>>>> lack of a way for us to describe non parent-child device dependencies
+>>>> than whether or not IRQs are enabled or not.
+>>>> </tangent>
+>>>
+>>> Actually, I'm not sure that's true, but I'll talk through it and you
+>>> can point to where I'm wrong (I often am!)
+>>>
+>>> If you're a wakeup device then you need to be ready to handle
+>>> interrupts as soon as the "noirq" phase of resume is done, right?
+>>
+>> As soon as the noirq phase of your own driver is done, correct.
+>>
+>>> Said another way: you need to be ready to handle interrupts _before_
+>>> the normal resume code is called and be ready to handle interrupts
+>>> even _before_ the early resume code is called.
+>>
+>> Correct.
+>>
+>>> That means if you are implementing a bus that's needed by any devices
+>>> with wakeup interrupts then it's your responsibility to also be
+>>> prepared to run this early.
+>>>
+>>> In this particular case the max77686 driver doesn't need to do
+>>> anything at all to be ready to handle interrupts.  It's suspend and
+>>> resume code is just boilerplate "enable wakeups / disable wakeups" and
+>>> it has no "noirq" code.  The max77686 driver doesn't have any "noirq"
+>>> wake call because it would just be empty.
+>>>
+>>> Said another way: the problem isn't that the max77686 wakeup gets
+>>> called before the i2c wakeup.  The problem is that i2c is needed ASAP
+>>> once IRQs are enabled and thus needs to be run noirq.
+>>>
+>>> Does that sound semi-correct?
+>>
+>> Yes that's correct.
+>>
+>> My point above was (trying to be) that ultimately this is an ordering
+>> issue.  e.g. the bus device needs to be "ready" before wakeup devices on
+>> that bus can handle wakeup interrupts etc.  The way we're handling that
+>> ordering is by the implied ordering of noirq, late/early and "normal"
+>> callbacks.  That's convenient, but not exactly obvious.
+>>
+>> It works because we dont' typically need too many layers here, but it
+>> would be much more understandable if we could describe this kind of
+>> dependency in a way that the suspend/resume code would suspend/resume
+>> things in the right order rather than by tinkering with callback levels
+>> (since otherwise suspend/resume ordering just depends on probe order.)
+>>
+>> This issue then usually gets me headed down my usual rant path about how
+>> I think runtime PM is much better suited for handling ordering and
+>> dependencies becuase it automatically handles parent/child dependencies
+>> and non parent/child dependencies can be handled by taking advantage of
+>> the get/put APIs which are refcounted, ect etc. but that's another can
+>> worms.
+> 
+> Ah, I gotcha.  Yes, I'm a fan of having explicit dependency orderings too.
+> 
+> So I guess in this case the truly correct way to handle it is:
+> 
+> 1. i2c controller should have Runtime PM even though (as per the code
+> now) there's nothing you can do to it to save power under normal
+> circumstances.  So the runtime "suspend" code would be a no-op.
+> 
+> 2. When the i2c controller is told to runtime resume, it should
+> double-check if a full SoC poweroff has happened since the last time
+> it checked.  In this case it should reinit its hardware.
+> 
+> 3. If the i2c controller gets a full "resume" callback then it should
+> also reinit the hardware just so it's not sitting in a half-configured
+> state until the first peripheral uses it.
+> 
+> If later someone finds a way to power gate the i2c controller when no
+> active transfers are going (and we actually save non-trivial power
+> doing this) then we've got a nice place to put that code.
+> 
+> NOTE: Unless we can actually save power by power gating the i2c
+> peripheral when there are no active transfers, we would also just have
+> the i2c_xfer() init the hardware if needed.  Maybe that's kinda gross,
+> though.
+> 
+> 
+> -Doug
+> 
+> 
+> P.S. Just to confirm: you're not opposed to landing the noirq code
+> as-is.  This discussion is about how someone could make it better in
+> the future...
+> 
 
-Dan, what kind of attitude is that?
+I'm not sure noirq is going to work correctly, at least not with current
+callbacks. I can see a call to clk_prepare_enable() there which needs to
+acquire a mutex.
 
-Nick certainly found an issue where a possible NULL return from
-affs_bread() can cause havoc.
+Would disabling the irq in suspend callback of your wakeup device and
+reenabling it in resume, while keeping their wakeup capability enabled,
+work for you? Then you could resume i2c in .resume_early callback
+without any issues.
 
-Do YOU understand that code?
-
-If yes, you better explain, WHY Nicks finding is a false positive
-instead of just telling him off in a very inpolite way.
-
-If not, you better refrain from telling a reporter that he does not
-understand the code and should stay away.
-
-You clearly stated that you do not understand it either:
-
-> > The problem is that we don't know if we should return here or break
-> > here.
-
-The problem here is that proceeding with a known NULL pointer is wrong
-to begin with. It does not matter at all whether break or return is
-the proper thing to do. What matters is that proceeding with a NULL
-pointer is wrong to begin with, no matter what.
-
-So either explain why this is a non issue and the NULL pointer return
-cannot happen or shut up and try to find a proper solution for that
-"return" vs. "break" issue.
-
-Thanks,
-
-	tglx
+Best regards,
+Tomasz
