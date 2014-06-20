@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730AbaFTXmV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 19:42:21 -0400
+	id S1757025AbaFTXmm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 19:42:42 -0400
 Received: from mga03.intel.com ([143.182.124.21]:28736 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756009AbaFTXmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752361AbaFTXmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Jun 2014 19:42:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,517,1400050800"; 
-   d="scan'208";a="448149070"
+   d="scan'208";a="448149069"
 From: Andi Kleen <andi@firstfloor.org>
 To: jolsa@redhat.com
 Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 4/9] perf, tools: Only print base source file for srcline
-Date: Fri, 20 Jun 2014 16:41:26 -0700
-Message-Id: <1403307691-30776-5-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 2/9] perf, tools: Add --branch-history option to report v3
+Date: Fri, 20 Jun 2014 16:41:24 -0700
+Message-Id: <1403307691-30776-3-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1403307691-30776-1-git-send-email-andi@firstfloor.org>
 References: <1403307691-30776-1-git-send-email-andi@firstfloor.org>
@@ -25,29 +25,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-For perf report with --sort srcline only print the base source file
-name. This makes the results generally fit much better to the
-screen. The path is usually not that useful anyways because it is
-often from different systems.
+Add a --branch-history option to perf report that changes all
+the settings necessary for using the branches in callstacks.
 
+This is just a short cut to make this nicer to use, it does
+not enable any functionality by itself.
+
+v2: Change sort order. Rename option to --branch-history to
+be less confusing.
+v3: Updates
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/util/srcline.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/Documentation/perf-report.txt |  5 +++++
+ tools/perf/builtin-report.c              | 34 +++++++++++++++++++++++++++-----
+ tools/perf/util/machine.c                | 12 +++++------
+ 3 files changed, 40 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index c6a7cdc..ac877f9 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -274,7 +274,7 @@ char *get_srcline(struct dso *dso, unsigned long addr)
- 	if (!addr2line(dso_name, addr, &file, &line, dso))
- 		goto out;
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 29a21b0..45f73c9 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -255,6 +255,11 @@ OPTIONS
+ 	branch stacks and it will automatically switch to the branch view mode,
+ 	unless --no-branch-stack is used.
  
--	if (asprintf(&srcline, "%s:%u", file, line) < 0) {
-+	if (asprintf(&srcline, "%s:%u", basename(file), line) < 0) {
- 		free(file);
- 		goto out;
++--branch-history::
++	Add the addresses of sampled taken branches to the callstack.
++	This allows to examine the path the program took to each sample.
++	The data collection must have used -b (or -j) and -g.
++
+ --objdump=<path>::
+         Path to objdump binary.
+ 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 4dcb4db..c2dc8f27 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -220,8 +220,9 @@ static int report__setup_sample_type(struct report *rep)
+ 			return -EINVAL;
+ 		}
+ 		if (symbol_conf.use_callchain) {
+-			ui__error("Selected -g but no callchain data. Did "
+-				    "you call 'perf record' without -g?\n");
++			ui__error("Selected -g or --branch-history but no "
++				  "callchain data. Did\n"
++				  "you call 'perf record' without -g?\n");
+ 			return -1;
+ 		}
+ 	} else if (!rep->dont_use_callchains &&
+@@ -544,6 +545,16 @@ parse_branch_mode(const struct option *opt __maybe_unused,
+ }
+ 
+ static int
++parse_branch_call_mode(const struct option *opt __maybe_unused,
++		  const char *str __maybe_unused, int unset)
++{
++	int *branch_mode = opt->value;
++
++	*branch_mode = !unset;
++	return 0;
++}
++
++static int
+ parse_percent_limit(const struct option *opt, const char *str,
+ 		    int unset __maybe_unused)
+ {
+@@ -558,7 +569,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	struct perf_session *session;
+ 	struct stat st;
+ 	bool has_br_stack = false;
+-	int branch_mode = -1;
++	int branch_mode = -1, branch_call_mode = -1;
+ 	int ret = -1;
+ 	char callchain_default_opt[] = "fractal,0.5,callee";
+ 	const char * const report_usage[] = {
+@@ -669,7 +680,11 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "group", &symbol_conf.event_group,
+ 		    "Show event group information together"),
+ 	OPT_CALLBACK_NOOPT('b', "branch-stack", &branch_mode, "",
+-		    "use branch records for histogram filling", parse_branch_mode),
++		    "use branch records for per branch histogram filling",
++		    parse_branch_mode),
++	OPT_CALLBACK_NOOPT(0, "branch-history", &branch_call_mode, "",
++		    "add last branch records to call history",
++		    parse_branch_call_mode),
+ 	OPT_STRING(0, "objdump", &objdump_path, "path",
+ 		   "objdump binary to use for disassembly and annotations"),
+ 	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
+@@ -719,10 +734,19 @@ repeat:
+ 	has_br_stack = perf_header__has_feat(&session->header,
+ 					     HEADER_BRANCH_STACK);
+ 
+-	if (branch_mode == -1 && has_br_stack) {
++	if (branch_mode == -1 && has_br_stack && branch_call_mode == -1) {
+ 		sort__mode = SORT_MODE__BRANCH;
+ 		symbol_conf.cumulate_callchain = false;
  	}
++	if (branch_call_mode != -1) {
++		callchain_param.branch_callstack = 1;
++		callchain_param.key = CCKEY_ADDRESS;
++		symbol_conf.use_callchain = true;
++		callchain_register_param(&callchain_param);
++		if (sort_order == default_sort_order)
++			sort_order = "srcline,symbol,dso";
++		branch_mode = 0;
++	}
+ 
+ 	if (report.mem_mode) {
+ 		if (sort__mode == SORT_MODE__BRANCH) {
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index dee1695..ab04045 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1379,15 +1379,15 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+ 	 * - No annotations (should annotate somehow)
+ 	 */
+ 
+-	if (branch->nr > PERF_MAX_BRANCH_DEPTH) {
+-		pr_warning("corrupted branch chain. skipping...\n");
+-		return 0;
+-	}
+-
+-	if (callchain_param.branch_callstack) {
++	if (branch && callchain_param.branch_callstack) {
+ 		int nr = min(max_stack, (int)branch->nr);
+ 		struct branch_entry be[nr];
+ 
++		if (branch->nr > PERF_MAX_BRANCH_DEPTH) {
++			pr_warning("corrupted branch chain. skipping...\n");
++			return 0;
++		}
++
+ 		for (i = 0; i < nr; i++) {
+ 			if (callchain_param.order == ORDER_CALLEE) {
+ 				be[i] = branch->entries[i];
 -- 
 1.9.3
 
