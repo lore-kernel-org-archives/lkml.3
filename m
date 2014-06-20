@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934852AbaFTPuS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 11:50:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58809 "EHLO mx2.suse.de"
+	id S934821AbaFTPuR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 11:50:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58806 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933147AbaFTPuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934200AbaFTPuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Jun 2014 11:50:10 -0400
 From: Vlastimil Babka <vbabka@suse.cz>
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
@@ -16,115 +16,79 @@ Cc: Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
         Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
         Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
         linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>
-Subject: [PATCH v3 00/13] compaction: balancing overhead and success rates
-Date: Fri, 20 Jun 2014 17:49:30 +0200
-Message-Id: <1403279383-5862-1-git-send-email-vbabka@suse.cz>
+Subject: [PATCH v3 01/13] mm, THP: don't hold mmap_sem in khugepaged when allocating THP
+Date: Fri, 20 Jun 2014 17:49:31 +0200
+Message-Id: <1403279383-5862-2-git-send-email-vbabka@suse.cz>
 X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1403279383-5862-1-git-send-email-vbabka@suse.cz>
+References: <1403279383-5862-1-git-send-email-vbabka@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on next-20140620.
+When allocating huge page for collapsing, khugepaged currently holds mmap_sem
+for reading on the mm where collapsing occurs. Afterwards the read lock is
+dropped before write lock is taken on the same mmap_sem.
 
-This is a v3 of a series (first with proper cover letter) that tries to work
-simultaneously towards two mutually exclusive goals in memory compaction -
-reducing overhead and improving success rates. It includes some cleanups and
-more or less trivial (micro-)optimizations, hopefully more intelligent lock
-contention management, and some preparation patches that finally result in
-last two patches that should improve success rates and minimize work that
-is not likely to result on successful allocation for a THP page fault.
-There are 3 new patches since last posting, and many have been reworked.
+Holding mmap_sem during whole huge page allocation is therefore useless, the
+vma needs to be rechecked after taking the write lock anyway. Furthemore, huge
+page allocation might involve a rather long sync compaction, and thus block
+any mmap_sem writers and i.e. affect workloads that perform frequent m(un)map
+or mprotect oterations.
 
-Patch 1: a simple change that will make khugepaged not hold uselessly mmap_sem
-(new)    during potentially long sync compaction. I saw more opportunities for
-         improvement there, but that will be for another series. This is rather
-         trivial but still can reduce latencies for m(un)map heavy workloads.
+This patch simply releases the read lock before allocating a huge page. It
+also deletes an outdated comment that assumed vma must be stable, as it was
+using alloc_hugepage_vma(). This is no longer true since commit 9f1b868a13
+("mm: thp: khugepaged: add policy for finding target node").
 
-Patch 2: fine-grained per-zone deferred compaction management, which should
-(new)    result in more accurate decisions when to compact a particular zone
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: David Rientjes <rientjes@google.com>
+---
+ mm/huge_memory.c | 20 +++++++-------------
+ 1 file changed, 7 insertions(+), 13 deletions(-)
 
-Patch 3: A cleanup/micro-optimization. No change since v2.
-
-Patch 4: Another cleanup/optimization. Surprisingly there's still low hanging
-(new)    fruit in functionality that was changed quite recently. Anything that
-         simplifies isolate_migratepages_range() is a good thing...
-
-Patch 5: First step towards not relying on need_resched() to limit amount of
-         work done by async compaction. Incorporated feedback since v2 and
-         reworked how lock contention is reported when multiple zones are
-         compacted, so that it's no longer accidental.
-
-Patch 6: Prevent running for long time with IRQs disabled, and improve lock
-         contention detection. Incorporated feedback from David.
-
-Patch 7: Microoptimization made possible by patch 6. No changes since v2.
-
-Patch 8: Reduce some useless rescanning in the free scanner. I made quite major
-         changes based on feedback, so I rather not keep Reviewed-by (thanks
-         Minchan and Zhang though).
-
-Patch 9: Reduce some iterations in the migration scanner, and make Patch 13
-         possible. Based on discussions with David, I made page_order_unsafe()
-         a #define so there will be no doubts about inlining behavior.
-
-Patch 10: Cleanup, from David, no changes.
-
-Patch 11: Prerequisity for Patch 13, from David, no changes.
-
-Patch 12: Improve compaction success rates by grabbing page freed by migration
-          ASAP. Since v2, I've removed the impact on allocation fast paths per
-          Minchan's feedback and changed the rules for when capture is allowed.
-
-Patch 13: Minimize work done in page fault direct compaction (i.e. THP) that
-(RFC)     would not lead to successful allocation. Move on to next cc->order
-          aligned block of pages as soon as the scanner encounters a page that
-          is not free and cannot be isolated for migration.
-          Only change since v2 is some cleanup moved to Patch 4 where it fits
-          better. Still a RFC because I see this patch making a difference
-          in stress-highalloc setting that doesn't use __GFP_NO_KSWAPD so it
-          shouldn't be affected. So there is either a bug or unforeseen
-          side-effect.
-
-The only thorough evaluation was done when based on pre-3.16-rc1 kernel,
-with mmtests stress-highalloc benchmark allocating order-9 pages which did
-not use __GFP_NO_KSWAPD. Patches 1,2,4 were not yet in the series. This is not
-a benchmark where microoptimizations would be visible, and the settings mean
-it uses sync compaction and should not benefit from Patch 13 (but it did which
-is weird). It has however shown improvements in vmstat figures in patches 8, 9
-and 12, as documented in the commit messages. I hope David can test if it fixes
-his issues. Patch 1 was tested separately on another machine, as documented.
-I'll run further tests with stress-highalloc settings that would mimic THP
-page faults (i.e. __GFP_NO_KSWAPD).
-
-David Rientjes (2):
-  mm: rename allocflags_to_migratetype for clarity
-  mm, compaction: pass gfp mask to compact_control
-
-Vlastimil Babka (11):
-  mm, THP: don't hold mmap_sem in khugepaged when allocating THP
-  mm, compaction: defer each zone individually instead of preferred zone
-  mm, compaction: do not recheck suitable_migration_target under lock
-  mm, compaction: move pageblock checks up from
-    isolate_migratepages_range()
-  mm, compaction: report compaction as contended only due to lock
-    contention
-  mm, compaction: periodically drop lock and restore IRQs in scanners
-  mm, compaction: skip rechecks when lock was already held
-  mm, compaction: remember position within pageblock in free pages
-    scanner
-  mm, compaction: skip buddy pages by their order in the migrate scanner
-  mm, compaction: try to capture the just-created high-order freepage
-  mm, compaction: do not migrate pages when that cannot satisfy page
-    fault allocation
-
- include/linux/compaction.h |  10 +-
- include/linux/gfp.h        |   2 +-
- mm/compaction.c            | 569 +++++++++++++++++++++++++++++++++------------
- mm/huge_memory.c           |  20 +-
- mm/internal.h              |  38 ++-
- mm/page_alloc.c            | 122 +++++++---
- 6 files changed, 554 insertions(+), 207 deletions(-)
-
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 5d562a9..59ddc61 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -2295,23 +2295,17 @@ static struct page
+ 		       int node)
+ {
+ 	VM_BUG_ON_PAGE(*hpage, *hpage);
++
+ 	/*
+-	 * Allocate the page while the vma is still valid and under
+-	 * the mmap_sem read mode so there is no memory allocation
+-	 * later when we take the mmap_sem in write mode. This is more
+-	 * friendly behavior (OTOH it may actually hide bugs) to
+-	 * filesystems in userland with daemons allocating memory in
+-	 * the userland I/O paths.  Allocating memory with the
+-	 * mmap_sem in read mode is good idea also to allow greater
+-	 * scalability.
++	 * Before allocating the hugepage, release the mmap_sem read lock.
++	 * The allocation can take potentially a long time if it involves
++	 * sync compaction, and we do not need to hold the mmap_sem during
++	 * that. We will recheck the vma after taking it again in write mode.
+ 	 */
++	up_read(&mm->mmap_sem);
++
+ 	*hpage = alloc_pages_exact_node(node, alloc_hugepage_gfpmask(
+ 		khugepaged_defrag(), __GFP_OTHER_NODE), HPAGE_PMD_ORDER);
+-	/*
+-	 * After allocating the hugepage, release the mmap_sem read lock in
+-	 * preparation for taking it in write mode.
+-	 */
+-	up_read(&mm->mmap_sem);
+ 	if (unlikely(!*hpage)) {
+ 		count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
+ 		*hpage = ERR_PTR(-ENOMEM);
 -- 
 1.8.4.5
 
