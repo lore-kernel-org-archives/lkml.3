@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966171AbaFTSjV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 14:39:21 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:40890 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757042AbaFTSjU (ORCPT
+	id S966624AbaFTSlA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 14:41:00 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:51606 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966182AbaFTSk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 14:39:20 -0400
-Message-ID: <1403289003.25108.3.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 2/2] x86,mem-hotplug: modify PGD entry when removing
- memory
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: akpm@linux-foundation.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, tangchen@cn.fujitsu.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, x86@kernel.org, guz.fnst@cn.fujitsu.com,
-        zhangyanfei@cn.fujitsu.com
-Date: Fri, 20 Jun 2014 12:30:03 -0600
-In-Reply-To: <53A133ED.2090005@jp.fujitsu.com>
-References: <53A132E2.9000605@jp.fujitsu.com>
-	 <53A133ED.2090005@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Jun 2014 14:40:58 -0400
+Date: Sat, 21 Jun 2014 02:40:54 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Seth Jennings <sjennings@variantweb.net>
+Subject: Re: [PATCH] crypto: lzo: try kmalloc() before vmalloc()
+Message-ID: <20140620184053.GC3169@gondor.apana.org.au>
+References: <1401211735.5367.254.camel@edumazet-glaptop2.roam.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401211735.5367.254.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-18 at 15:38 +0900, Yasuaki Ishimatsu wrote:
- :
-> @@ -186,7 +186,12 @@ void sync_global_pgds(unsigned long start, unsigned long end)
->  		const pgd_t *pgd_ref = pgd_offset_k(address);
->  		struct page *page;
+On Tue, May 27, 2014 at 10:28:55AM -0700, Eric Dumazet wrote:
+> From: Eric Dumazet <edumazet@google.com>
 > 
-> -		if (pgd_none(*pgd_ref))
-> +		/*
-> +		 * When it is called after memory hot remove, pgd_none()
-> +		 * returns true. In this case (removed == 1), we must clear
-> +		 * the PGD entries in the local PGD level page.
-> +		 */
-> +		if (pgd_none(*pgd_ref) && !removed)
->  			continue;
+> zswap allocates one LZO context per online cpu.
 > 
->  		spin_lock(&pgd_lock);
-> @@ -199,12 +204,18 @@ void sync_global_pgds(unsigned long start, unsigned long end)
->  			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
->  			spin_lock(pgt_lock);
+> Using vmalloc() for small (16KB) memory areas has drawback of slowing
+> down /proc/vmallocinfo and /proc/meminfo reads, TLB pressure and poor
+> NUMA locality, as default NUMA policy at boot time is to interleave
+> pages :
 > 
-> -			if (pgd_none(*pgd))
-> -				set_pgd(pgd, *pgd_ref);
-> -			else
-> +			if (!pgd_none(*pgd_ref) && !pgd_none(*pgd))
->  				BUG_ON(pgd_page_vaddr(*pgd)
->  				       != pgd_page_vaddr(*pgd_ref));
+> edumazet:~# grep lzo /proc/vmallocinfo | head -4
+> 0xffffc90006062000-0xffffc90006067000   20480 lzo_init+0x1b/0x30 pages=4 vmalloc N0=2 N1=2
+> 0xffffc90006067000-0xffffc9000606c000   20480 lzo_init+0x1b/0x30 pages=4 vmalloc N0=2 N1=2
+> 0xffffc9000606c000-0xffffc90006071000   20480 lzo_init+0x1b/0x30 pages=4 vmalloc N0=2 N1=2
+> 0xffffc90006071000-0xffffc90006076000   20480 lzo_init+0x1b/0x30 pages=4 vmalloc N0=2 N1=2
 > 
-> +			if (removed) {
+> This patch tries a regular kmalloc() and fallback to vmalloc in case
+> memory is too fragmented.
+> 
+> Signed-off-by: Eric Dumazet <edumazet@google.com>
 
-Shouldn't this condition be "else if"?
-
-Thanks,
--Toshi
-
-> +				if (pgd_none(*pgd_ref) && !pgd_none(*pgd))
-> +					pgd_clear(pgd);
-> +			} else {
-> +				if (pgd_none(*pgd))
-> +					set_pgd(pgd, *pgd_ref);
-> +			}
-> +
->  			spin_unlock(pgt_lock);
->  		}
-
-
+Patch applied.
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
