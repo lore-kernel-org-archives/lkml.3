@@ -1,94 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284AbaFTSFY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 14:05:24 -0400
-Received: from shell.v3.sk ([195.168.3.45]:38538 "EHLO shell.v3.sk"
+	id S1757390AbaFTSFd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 14:05:33 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53813 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754161AbaFTSFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 14:05:23 -0400
-Message-ID: <1403287516.7614.9.camel@odvarok.lan>
-Subject: Re: [PATCHv7 2/5] mailbox: Introduce framework for mailbox
-From: Lubomir Rintel <lkundrak@v3.sk>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 20 Jun 2014 20:05:16 +0200
-In-Reply-To: <1402592479-7244-1-git-send-email-jaswinder.singh@linaro.org>
-References: <1402592317-7043-1-git-send-email-jaswinder.singh@linaro.org>
-	 <1402592479-7244-1-git-send-email-jaswinder.singh@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757091AbaFTSFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 14:05:31 -0400
+Date: Fri, 20 Jun 2014 20:05:23 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Dave Jones <davej@redhat.com>
+Subject: Re: [RFC][PATCH 3/3] x86: make MP  a required-feature on 64-bit
+Message-ID: <20140620180523.GF11391@pd.tnic>
+References: <20140620161736.D6AC16FD@viggo.jf.intel.com>
+ <20140620161740.BFB00798@viggo.jf.intel.com>
+ <53A46008.5060509@zytor.com>
+ <53A4619C.8020100@sr71.net>
+ <53A46365.6090101@zytor.com>
+ <20140620174345.GD11391@pd.tnic>
+ <53A473AA.7050301@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <53A473AA.7050301@zytor.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-12 at 22:31 +0530, Jassi Brar wrote:
-> Introduce common framework for client/protocol drivers and
-> controller drivers of Inter-Processor-Communication (IPC).
-> 
-> Client driver developers should have a look at
->  include/linux/mailbox_client.h to understand the part of
-> the API exposed to client drivers.
-> Similarly controller driver developers should have a look
-> at include/linux/mailbox_controller.h
->
-> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
+On Fri, Jun 20, 2014 at 10:47:22AM -0700, H. Peter Anvin wrote:
+> This is run before static_cpu_has().
 
-> +/**
-> + * mbox_chan_received_data - A way for controller driver to push data
-> + *				received from remote to the upper layer.
-> + * @chan: Pointer to the mailbox channel on which RX happened.
-> + * @data: Client specific message typecasted as void *
+static_cpu_has_safe() then - I didn't do it for no reason :-)
 
-It's "mssg", not "data".
+> The point, though, was that we "enforce" (taint) on 32 bits but not on
+> 64 bits, which is clearly wrong.
 
-> +static struct mbox_chan *
-> +of_mbox_index_xlate(struct mbox_controller *mbox,
-> +				const struct of_phandle_args *sp)
+Yeah, K7 is 32-bit only.
 
-The line break here is inconsistent with how the rest of the file is
-formatted.
+> My inclination is to completely kill amd_k7_smp_check() entirely,
+> since noone seems to know when it actually matters and it is clearly
+> historic.
 
-> +/**
-> + * struct mbox_controller - Controller of a class of communication chans
-> + * @dev:		Device backing this controller
-> + * @controller_name:	Literal name of the controller.
-> + * @ops:		Operators that work on each communication chan
-> + * @chans:		Null terminated array of chans.
+I think DaveJ should know something about it - he gave that impression
+last time when we were discussing 8c90487cdc64 ("Rename TAINT_UNSAFE_SMP
+to TAINT_CPU_OUT_OF_SPEC").
 
-This needs to be updated for current API. It's neither not NULL
-terminated nor and array and num_chans documentation is missing.
+CCed.
 
-> + * @txdone_irq:		Indicates if the controller can report to API when
-> + *			the last transmitted data was read by the remote.
-> + *			Eg, if it has some TX ACK irq.
-> + * @txdone_poll:	If the controller can read but not report the TX
-> + *			done. Ex, some register shows the TX status but
-> + *			no interrupt rises. Ignored if 'txdone_irq' is set.
-> + * @txpoll_period:	If 'txdone_poll' is in effect, the API polls for
-> + *			last TX's status after these many millisecs
-> + */
-> +struct mbox_controller {
-> +	struct device *dev;
-> +	struct mbox_chan_ops *ops;
-> +	struct mbox_chan *chans;
-> +	int num_chans;
-> +	bool txdone_irq;
-> +	bool txdone_poll;
-> +	unsigned txpoll_period;
-> +	struct mbox_chan *(*of_xlate)(struct mbox_controller *mbox,
-> +					const struct of_phandle_args *sp);
-> +	/*
-> +	 * If the controller supports only TXDONE_BY_POLL,
-> +	 * this timer polls all the links for txdone.
-> +	 */
-> +	struct timer_list poll;
-> +	unsigned period;
-> +	/* Hook to add to the global controller list */
-> +	struct list_head node;
-> +};
+-- 
+Regards/Gruss,
+    Boris.
 
-Thank you,
-Lubo
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
