@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966824AbaFTKdk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 06:33:40 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:48589 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965650AbaFTKdg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 06:33:36 -0400
-Message-ID: <53A40DE9.4030100@gmail.com>
-Date: Fri, 20 Jun 2014 12:33:13 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
+	id S966589AbaFTKlC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 06:41:02 -0400
+Received: from mail-by2lp0244.outbound.protection.outlook.com ([207.46.163.244]:33121
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S966233AbaFTKlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 06:41:00 -0400
+Message-ID: <53A40FB0.2020503@ixiacom.com>
+Date: Fri, 20 Jun 2014 13:40:48 +0300
+From: Sorin Dumitru <sdumitru@ixiacom.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Daniel Drake <drake@endlessm.com>, Tomasz Figa <t.figa@samsung.com>
-CC: Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
-        Tushar Behera <tushar.behera@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Add support for Exynos clock output configuration
-References: <CAD8Lp46pFGWSA6c1r-xGUbNDkcACyZZkru+m7+xH+BQRr7ULPg@mail.gmail.com>
-In-Reply-To: <CAD8Lp46pFGWSA6c1r-xGUbNDkcACyZZkru+m7+xH+BQRr7ULPg@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+To: James Hogan <james.hogan@imgtec.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mips@linux-mips.org>
+CC: <ralf@linux-mips.org>
+Subject: Re: [PATCH] mips: n32: use compat getsockopt syscall
+References: <1403250786-9763-1-git-send-email-sdumitru@ixiacom.com> <53A404D2.3030303@imgtec.com>
+In-Reply-To: <53A404D2.3030303@imgtec.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [205.168.23.154]
+X-ClientProxiedBy: BY2PR07CA057.namprd07.prod.outlook.com (10.141.251.32) To
+ BLUPR0601MB0946.namprd06.prod.outlook.com (25.160.35.22)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 024847EE92
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(6049001)(428001)(51704005)(479174003)(199002)(189002)(24454002)(164054003)(83506001)(83072002)(85852003)(87976001)(36756003)(102836001)(74502001)(31966008)(105586002)(33656002)(4396001)(50466002)(74662001)(99396002)(21056001)(101416001)(2201001)(50986999)(46102001)(54356999)(92726001)(92566001)(76176999)(87266999)(85306003)(95666004)(86362001)(65816999)(77096002)(64126003)(47776003)(81342001)(23756003)(42186005)(20776003)(19580395003)(80316001)(83322001)(19580405001)(76482001)(65806001)(66066001)(106356001)(80022001)(77982001)(81542001)(64706001)(79102001)(59896001)(2101003);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR0601MB0946;H:[10.205.20.44];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Authentication-Results: spf=none (sender IP is )
+ smtp.mailfrom=sdumitru@ixiacom.com; 
+X-MS-Exchange-CrossPremises-OriginalClientIPAddress: 205.168.23.154
+X-MS-Exchange-CrossPremises-AuthSource: BLUPR0601MB0946.namprd06.prod.outlook.com
+X-MS-Exchange-CrossPremises-AuthAs: Internal
+X-MS-Exchange-CrossPremises-AuthMechanism: 06
+X-MS-Exchange-CrossPremises-AVStamp-Service: 1.0
+X-MS-Exchange-CrossPremises-SCL: 1
+X-MS-Exchange-CrossPremises-Antispam-ScanContext: DIR:Originating;SFV:NSPM;SKIP:0;
+X-MS-Exchange-CrossPremises-Processed-By-Journaling: Journal Agent
+X-OrganizationHeadersPreserved: BLUPR0601MB0946.namprd06.prod.outlook.com
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-OriginatorOrg: ixiacom.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
 
-On 18.06.2014 18:17, Daniel Drake wrote:
-> Hi Tomasz,
-> 
-> On Tue, May 20, 2014 at 5:43 PM, Tomasz Figa <t.figa@samsung.com> wrote:
->> Since the block responsible for handling the pin is PMU, not CMU,
->> a separate driver, that binds to PMU node is required and acquires
->> all input clocks by standard DT clock look-up. This way we don't need
->> any cross-IP block drivers and cross-driver register sharing or
->> nodes for fake devices.
->>
->> To represent the PMU mux/gate clock, generic composite clock is registered.
->>
->> Tested on Odroid U3, with HSIC/USB hub using CLKOUT as reference clock,
->> with some additional patches.
->>
->> Depends on:
->> [PATCHv5 0/4] Enable usbphy and hsotg for exynos4
->> (No link, sorry, I could not find it in any archive yet...)
->> for Exynos4210/4x12 PMU binding and DT nodes.
-> 
-> This isn't working for me.
-> Testing linus master e99cfa2d0634881b8a41d56c48b5956b9a3ba162 plus:
->     ARM: dts: exynos4: add port sub-nodes to exynos usb host modules
->     ARM: dts: exynos4412-odroidx: enable common hardware blocks
->     ARM: dts: exynos4412-odroidx: add support for USB (phy, host, device)
->     ARM: dts: refactor Odroid DTS file and add support for Odroid X2 and U2/U3
-> 
-> Testing on ODROID-U2.
-> 
-> I apply the first patch here (clk: samsung: exynos4: Add missing
-> CPU/DMC clock hierarchy) and things continue to work. Now when I add
-> the second patch "clk: samsung: exynos4: Add CLKOUT clock hierarchy"
-> boot hangs at:
-> 
-> [    4.753740] s3c-rtc 10070000.rtc: setting system clock to
-> 2000-01-01 02:43:30 UTC (946694610)
-> [    4.753809] ### dt-test ### No testcase data in device tree; not
-> running tests
-> [    4.791155] gps-power-domain: Power-off latency e
-> 
-> Any ideas?
 
-Thanks for testing.
+On 06/20/14 12:54, James Hogan wrote:
+> On 20/06/14 08:53, Sorin Dumitru wrote:
+>> Signed-off-by: Sorin Dumitru <sdumitru@ixiacom.com>
+>
+> A little more commit message wouldn't hurt. Did it break a particular
+> program?
 
-It's most likely an issue with ISP power domain. Certain clock
-controller registers are located there and there is no proper handling
-of this in the clock driver yet. You can test things by skipping patch 3
-and this should give you a working clkout, just limited to clocks not
-going through clkout hierarchies of clock domains, e.g. xxti and xusbxti.
+Yes, it was found by an internal program trying to get IP_PKTOPTIONS on 
+a cavium octeon board.
 
-I'm aware of the problem and will fix it in next version.
+Should I resubmit stating what was broken in the commit message?
 
-Best regards,
-Tomasz
+Thanks,
+Sorin
