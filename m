@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966052AbaFTP5Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 11:57:25 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:33862 "EHLO
+	id S965756AbaFTP5Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 11:57:24 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:33868 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754834AbaFTPru (ORCPT
+	by vger.kernel.org with ESMTP id S1754882AbaFTPru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Jun 2014 11:47:50 -0400
 From: Martin Gumbrecht <martin.gumbrecht@googlemail.com>
@@ -13,9 +13,9 @@ Cc: christian.bay@studium.fau.de, linux-kernel@i4.cs.fau.de,
         lisa@xenapiadmin.com, daeseok.youn@gmail.com, luiorpe1@gmail.com,
         veeableful@gmail.com, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, martin.gumbrecht@googlemail.com
-Subject: [PATCH v2 6/7] Staging: bcm: Qos.c: fix checkpatch errors: comments
-Date: Fri, 20 Jun 2014 17:38:03 +0200
-Message-Id: <1403278684-10891-7-git-send-email-martin.gumbrecht@googlemail.com>
+Subject: [PATCH v2 1/7] Staging: bcm: Prototypes.h: fix checkpatch errors: blank lines
+Date: Fri, 20 Jun 2014 17:37:58 +0200
+Message-Id: <1403278684-10891-2-git-send-email-martin.gumbrecht@googlemail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1403278684-10891-1-git-send-email-martin.gumbrecht@googlemail.com>
 References: <1403278684-10891-1-git-send-email-martin.gumbrecht@googlemail.com>
@@ -23,259 +23,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch improves coding style in Qos.c
-Comments according to the coding guideline
+This patch improves coding style in Prototypes.h:
+Exactly one blank line after each declaration
 
 Signed-off-by: Martin Gumbrecht <martin.gumbrecht@googlemail.com>
 Signed-off-by: Christian Bay <christian.bay@studium.fau.de>
 ---
- drivers/staging/bcm/Qos.c | 88 +++++++++++++++++++++++++++--------------------
- 1 file changed, 51 insertions(+), 37 deletions(-)
+ drivers/staging/bcm/Prototypes.h | 37 ++++++++++++++++---------------------
+ 1 file changed, 16 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/staging/bcm/Qos.c b/drivers/staging/bcm/Qos.c
-index 0c742da..f9c57ee 100644
---- a/drivers/staging/bcm/Qos.c
-+++ b/drivers/staging/bcm/Qos.c
-@@ -1,6 +1,6 @@
- /**
--@file Qos.C
--This file contains the routines related to Quality of Service.
-+ * @file Qos.C
-+ * This file contains the routines related to Quality of Service.
- */
- #include "headers.h"
+diff --git a/drivers/staging/bcm/Prototypes.h b/drivers/staging/bcm/Prototypes.h
+index fb53a00..a8ddc6a 100644
+--- a/drivers/staging/bcm/Prototypes.h
++++ b/drivers/staging/bcm/Prototypes.h
+@@ -34,9 +34,10 @@ INT SearchSfid(struct bcm_mini_adapter *Adapter,UINT uiSfid);
+ USHORT ClassifyPacket(struct bcm_mini_adapter *Adapter,struct sk_buff* skb);
  
-@@ -191,9 +191,9 @@ bool MatchDestPort(struct bcm_classifier_rule *pstClassifierRule, USHORT ushDest
- 	return false;
- }
- /**
--@ingroup tx_functions
--Compares IPV4 Ip address and port number
--@return Queue Index.
-+ * @ingroup tx_functions
-+ * Compares IPV4 Ip address and port number
-+ * @return Queue Index.
- */
- static USHORT	IpVersion4(struct bcm_mini_adapter *Adapter,
- 			   struct iphdr *iphd,
-@@ -211,7 +211,7 @@ static USHORT	IpVersion4(struct bcm_mini_adapter *Adapter,
- 			pstClassifierRule->ucDirection,
- 			pstClassifierRule->usVCID_Value);
+ bool MatchSrcPort(struct bcm_classifier_rule *pstClassifierRule,USHORT ushSrcPort);
++
+ bool MatchDestPort(struct bcm_classifier_rule *pstClassifierRule,USHORT ushSrcPort);
+-bool MatchProtocol(struct bcm_classifier_rule *pstClassifierRule,UCHAR ucProtocol);
  
--		//Checking classifier validity
-+		/* Checking classifier validity */
- 		if (!pstClassifierRule->bUsed || pstClassifierRule->ucDirection == DOWNLINK_DIR)
- 			break;
++bool MatchProtocol(struct bcm_classifier_rule *pstClassifierRule,UCHAR ucProtocol);
  
-@@ -219,7 +219,7 @@ static USHORT	IpVersion4(struct bcm_mini_adapter *Adapter,
- 		if (pstClassifierRule->bIpv6Protocol)
- 			break;
+ INT SetupNextSend(struct bcm_mini_adapter *Adapter, /**<Logical Adapter*/
+ 					struct sk_buff *Packet, /**<data buffer*/
+@@ -50,8 +51,8 @@ INT SendControlPacket(struct bcm_mini_adapter *Adapter, /**<Logical Adapter*/
+ 							char *pControlPacket/**<Control Packet*/
+ 							);
  
--		//**************Checking IP header parameter**************************//
-+		/* Checking IP header parameter */
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Trying to match Source IP Address");
- 		if (!MatchSrcIpAddress(pstClassifierRule, iphd->saddr))
- 			break;
-@@ -239,12 +239,15 @@ static USHORT	IpVersion4(struct bcm_mini_adapter *Adapter,
- 			break;
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Protocol Matched");
- 
--		//if protocol is not TCP or UDP then no need of comparing source port and destination port
-+		/*
-+		 * if protocol is not TCP or UDP then no
-+		 * need of comparing source port and destination port
-+		 */
- 		if (iphd->protocol != TCP && iphd->protocol != UDP) {
- 			bClassificationSucceed = TRUE;
- 			break;
- 		}
--		//******************Checking Transport Layer Header field if present *****************//
-+		/* Checking Transport Layer Header field if present */
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Source Port %04x",
- 			(iphd->protocol == UDP) ? xprt_hdr->uhdr.source : xprt_hdr->thdr.source);
- 
-@@ -292,12 +295,12 @@ VOID PruneQueueAllSF(struct bcm_mini_adapter *Adapter)
- 
- 
- /**
--@ingroup tx_functions
--This function checks if the max queue size for a queue
--is less than number of bytes in the queue. If so -
--drops packets from the Head till the number of bytes is
--less than or equal to max queue size for the queue.
--*/
-+ * @ingroup tx_functions
-+ * This function checks if the max queue size for a queue
-+ * is less than number of bytes in the queue. If so -
-+ * drops packets from the Head till the number of bytes is
-+ * less than or equal to max queue size for the queue.
-+ */
- static VOID PruneQueue(struct bcm_mini_adapter *Adapter, INT iIndex)
- {
- 	struct sk_buff* PacketToDrop = NULL;
-@@ -341,11 +344,11 @@ static VOID PruneQueue(struct bcm_mini_adapter *Adapter, INT iIndex)
- 
- 			DEQUEUEPACKET(Adapter->PackInfo[iIndex].FirstTxQueue,
- 						Adapter->PackInfo[iIndex].LastTxQueue);
--			/// update current bytes and packets count
-+			/* update current bytes and packets count */
- 			Adapter->PackInfo[iIndex].uiCurrentBytesOnHost -=
- 				PacketToDrop->len;
- 			Adapter->PackInfo[iIndex].uiCurrentPacketsOnHost--;
--			/// update dropped bytes and packets counts
-+			/* update dropped bytes and packets counts */
- 			Adapter->PackInfo[iIndex].uiDroppedCountBytes += PacketToDrop->len;
- 			Adapter->PackInfo[iIndex].uiDroppedCountPackets++;
- 			dev_kfree_skb(PacketToDrop);
-@@ -393,11 +396,11 @@ VOID flush_all_queues(struct bcm_mini_adapter *Adapter)
- 			/* Free the skb */
- 			dev_kfree_skb(PacketToDrop);
- 
--			/// update current bytes and packets count
-+			/* update current bytes and packets count */
- 			Adapter->PackInfo[iQIndex].uiCurrentBytesOnHost -= uiTotalPacketLength;
- 			Adapter->PackInfo[iQIndex].uiCurrentPacketsOnHost--;
- 
--			/// update dropped bytes and packets counts
-+			/* update dropped bytes and packets counts */
- 			Adapter->PackInfo[iQIndex].uiDroppedCountBytes += uiTotalPacketLength;
- 			Adapter->PackInfo[iQIndex].uiDroppedCountPackets++;
- 
-@@ -461,14 +464,14 @@ USHORT ClassifyPacket(struct bcm_mini_adapter *Adapter, struct sk_buff* skb)
- 			bFragmentedPkt = TRUE;
- 
- 		if (bFragmentedPkt) {
--				//Fragmented  Packet. Get Frag Classifier Entry.
-+			/* Fragmented  Packet. Get Frag Classifier Entry. */
- 			pstClassifierRule = GetFragIPClsEntry(Adapter, pIpHeader->id, pIpHeader->saddr);
- 			if (pstClassifierRule) {
- 					BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "It is next Fragmented pkt");
- 					bClassificationSucceed = TRUE;
- 			}
- 			if (!(ntohs(pIpHeader->frag_off) & IP_MF)) {
--				//Fragmented Last packet . Remove Frag Classifier Entry
-+				/* Fragmented Last packet . Remove Frag Classifier Entry */
- 				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "This is the last fragmented Pkt");
- 				DelFragIPClsEntry(Adapter, pIpHeader->id, pIpHeader->saddr);
- 			}
-@@ -478,8 +481,10 @@ USHORT ClassifyPacket(struct bcm_mini_adapter *Adapter, struct sk_buff* skb)
- 	for (uiLoopIndex = MAX_CLASSIFIERS - 1; uiLoopIndex >= 0; uiLoopIndex--) {
- 		if (bClassificationSucceed)
- 			break;
--		//Iterate through all classifiers which are already in order of priority
--		//to classify the packet until match found
-+		/*
-+		 * Iterate through all classifiers which are already in order of priority
-+		 * to classify the packet until match found
-+		 */
- 		do {
- 			if (false == Adapter->astClassifierTable[uiLoopIndex].bUsed) {
- 				bClassificationSucceed = false;
-@@ -488,8 +493,8 @@ USHORT ClassifyPacket(struct bcm_mini_adapter *Adapter, struct sk_buff* skb)
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL,  "Adapter->PackInfo[%d].bvalid=True\n", uiLoopIndex);
- 
- 			if (0 == Adapter->astClassifierTable[uiLoopIndex].ucDirection) {
--				bClassificationSucceed = false;//cannot be processed for classification.
--				break;						// it is a down link connection
-+				bClassificationSucceed = false; /* cannot be processed for classification. */
-+				break;	/* it is a down link connection */
- 			}
- 
- 			pstClassifierRule = &Adapter->astClassifierTable[uiLoopIndex];
-@@ -517,7 +522,7 @@ USHORT ClassifyPacket(struct bcm_mini_adapter *Adapter, struct sk_buff* skb)
- 					BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL,  "ClassifyPacket : Ethernet CS Classification Failed\n");
- 					break;
- 				}
--			} else {	// No ETH Supported on this SF
-+			} else { /* No ETH Supported on this SF */
- 				if (eEthOtherFrame != stEthCsPktInfo.eNwpktEthFrameType) {
- 					BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, " ClassifyPacket : Packet Not a 802.3 Ethernet Frame... hence not allowed over non-ETH CS SF\n");
- 					bClassificationSucceed = false;
-@@ -549,7 +554,7 @@ USHORT ClassifyPacket(struct bcm_mini_adapter *Adapter, struct sk_buff* skb)
- 	if (bClassificationSucceed == TRUE) {
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "CF id : %d, SF ID is =%lu", pstClassifierRule->uiClassifierRuleIndex, pstClassifierRule->ulSFID);
- 
--		//Store The matched Classifier in SKB
-+		/* Store The matched Classifier in SKB */
- 		*((UINT32*)(skb->cb)+SKB_CB_CLASSIFICATION_OFFSET) = pstClassifierRule->uiClassifierRuleIndex;
- 		if ((TCP == pIpHeader->protocol) && !bFragmentedPkt && (ETH_AND_IP_HEADER_LEN + TCP_HEADER_LEN <= skb->len)) {
- 			 IpHeaderLength   = pIpHeader->ihl;
-@@ -564,9 +569,16 @@ USHORT ClassifyPacket(struct bcm_mini_adapter *Adapter, struct sk_buff* skb)
- 		usIndex = SearchSfid(Adapter, pstClassifierRule->ulSFID);
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "index is	=%d", usIndex);
- 
--		//If this is the first fragment of a Fragmented pkt, add this CF. Only This CF should be used for all other fragment of this Pkt.
-+		/*
-+		 * If this is the first fragment of a Fragmented pkt,
-+		 * add this CF. Only This CF should be used for all other
-+		 * fragment of this Pkt.
-+		 */
- 		if (bFragmentedPkt && (usCurrFragment == 0)) {
--			//First Fragment of Fragmented Packet. Create Frag CLS Entry
-+			/*
-+			 * First Fragment of Fragmented Packet.
-+			 * Create Frag CLS Entry
-+			 */
- 			struct bcm_fragmented_packet_info stFragPktInfo;
- 			stFragPktInfo.bUsed = TRUE;
- 			stFragPktInfo.ulSrcIpAddress = pIpHeader->saddr;
-@@ -659,7 +671,10 @@ static bool EthCSMatchVLANRules(struct bcm_classifier_rule *pstClassifierRule, s
- 
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL,  "%s  CLS UserPrio:%x CLS VLANID:%x\n", __func__, ntohs(*((USHORT *)pstClassifierRule->usUserPriority)), pstClassifierRule->usVLANID);
- 
--	/* In case FW didn't receive the TLV, the priority field should be ignored */
-+	/*
-+	 * In case FW didn't receive the TLV,
-+	 * the priority field should be ignored
-+	 */
- 	if (pstClassifierRule->usValidityBitMap & (1<<PKT_CLASSIFICATION_USER_PRIORITY_VALID)) {
- 		if (pstEthCsPktInfo->eNwpktEthFrameType != eEth802QVLANFrame)
- 				return false;
-@@ -714,15 +729,14 @@ static bool EThCSClassifyPkt(struct bcm_mini_adapter *Adapter, struct sk_buff* s
- 		return false;
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL,  "ETH CS DestMAC Matched\n");
- 
--	//classify on ETHType/802.2SAP TLV
-+	/* classify on ETHType/802.2SAP TLV */
- 	bClassificationSucceed = EthCSMatchEThTypeSAP(pstClassifierRule, skb, pstEthCsPktInfo);
- 	if (!bClassificationSucceed)
- 		return false;
- 
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL,  "ETH CS EthType/802.2SAP Matched\n");
- 
--	//classify on 802.1VLAN Header Parameters
 -
-+	/* classify on 802.1VLAN Header Parameters */
- 	bClassificationSucceed = EthCSMatchVLANRules(pstClassifierRule, skb, pstEthCsPktInfo);
- 	if (!bClassificationSucceed)
- 		return false;
-@@ -739,9 +753,9 @@ static void EThCSGetPktInfo(struct bcm_mini_adapter *Adapter, PVOID pvEthPayload
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL,  "EthCSGetPktInfo : Eth Hdr Type : %X\n", u16Etype);
- 	if (u16Etype > 0x5dc) {
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "EthCSGetPktInfo : ETH2 Frame\n");
--		//ETH2 Frame
-+		/* ETH2 Frame */
- 		if (u16Etype == ETHERNET_FRAMETYPE_802QVLAN) {
--			//802.1Q VLAN Header
-+			/* 802.1Q VLAN Header */
- 			pstEthCsPktInfo->eNwpktEthFrameType = eEth802QVLANFrame;
- 			u16Etype = ((struct bcm_eth_q_frame *)pvEthPayload)->EthType;
- 			//((ETH_CS_802_Q_FRAME*)pvEthPayload)->UserPriority
-@@ -750,12 +764,12 @@ static void EThCSGetPktInfo(struct bcm_mini_adapter *Adapter, PVOID pvEthPayload
- 			u16Etype = ntohs(u16Etype);
- 		}
- 	} else {
--		//802.2 LLC
-+		/* 802.2 LLC */
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "802.2 LLC Frame\n");
- 		pstEthCsPktInfo->eNwpktEthFrameType = eEth802LLCFrame;
- 		pstEthCsPktInfo->ucDSAP = ((struct bcm_eth_llc_frame *)pvEthPayload)->DSAP;
- 		if (pstEthCsPktInfo->ucDSAP == 0xAA && ((struct bcm_eth_llc_frame *)pvEthPayload)->SSAP == 0xAA) {
--			//SNAP Frame
-+			/* SNAP Frame */
- 			pstEthCsPktInfo->eNwpktEthFrameType = eEth802LLCSNAPFrame;
- 			u16Etype = ((struct bcm_eth_llc_snap_frame *)pvEthPayload)->usEtherType;
- 		}
+ int register_networkdev(struct bcm_mini_adapter *Adapter);
++
+ void unregister_networkdev(struct bcm_mini_adapter *Adapter);
+ 
+ INT AllocAdapterDsxBuffer(struct bcm_mini_adapter *Adapter);
+@@ -68,7 +69,6 @@ int run_card_proc(struct bcm_mini_adapter *Adapter );
+ 
+ int InitCardAndDownloadFirmware(struct bcm_mini_adapter *ps_adapter);
+ 
+-
+ INT ReadMacAddressFromNVM(struct bcm_mini_adapter *Adapter);
+ 
+ int register_control_device_interface(struct bcm_mini_adapter *ps_adapter);
+@@ -87,9 +87,10 @@ int get_dsx_sf_data_to_application(struct bcm_mini_adapter *Adapter, UINT uiSFId
+ 
+ void SendIdleModeResponse(struct bcm_mini_adapter *Adapter);
+ 
+-
+ int  ProcessGetHostMibs(struct bcm_mini_adapter *Adapter, struct bcm_host_stats_mibs *buf);
++
+ void GetDroppedAppCntrlPktMibs(struct bcm_host_stats_mibs *ioBuffer, struct bcm_tarang_data *pTarang);
++
+ void beceem_parse_target_struct(struct bcm_mini_adapter *Adapter);
+ 
+ int bcm_ioctl_fw_download(struct bcm_mini_adapter *Adapter, struct bcm_firmware_info *psFwInfo);
+@@ -113,26 +114,20 @@ void update_per_sf_desc_cnts( struct bcm_mini_adapter *Adapter);
+ 
+ void ClearTargetDSXBuffer(struct bcm_mini_adapter *Adapter,B_UINT16 TID,bool bFreeAll);
+ 
+-
+ void flush_queue(struct bcm_mini_adapter *Adapter, UINT iQIndex);
+ 
+-
+ INT flushAllAppQ(VOID);
+ 
+-
+ INT BeceemEEPROMBulkRead(
+ 	struct bcm_mini_adapter *Adapter,
+ 	PUINT pBuffer,
+ 	UINT uiOffset,
+ 	UINT uiNumBytes);
+ 
+-
+-
+ INT WriteBeceemEEPROM(struct bcm_mini_adapter *Adapter,UINT uiEEPROMOffset, UINT uiData);
+ 
+ INT PropagateCalParamsFromFlashToMemory(struct bcm_mini_adapter *Adapter);
+ 
+-
+ INT BeceemEEPROMBulkWrite(
+ 	struct bcm_mini_adapter *Adapter,
+ 	PUCHAR pBuffer,
+@@ -140,10 +135,8 @@ INT BeceemEEPROMBulkWrite(
+ 	UINT uiNumBytes,
+ 	bool bVerify);
+ 
+-
+ INT ReadBeceemEEPROM(struct bcm_mini_adapter *Adapter,UINT dwAddress, UINT *pdwData);
+ 
+-
+ INT BeceemNVMRead(
+ 	struct bcm_mini_adapter *Adapter,
+ 	PUINT pBuffer,
+@@ -157,10 +150,10 @@ INT BeceemNVMWrite(
+ 	UINT uiNumBytes,
+ 	bool bVerify);
+ 
+-
+ INT BcmInitNVM(struct bcm_mini_adapter *Adapter);
+ 
+ INT BcmUpdateSectorSize(struct bcm_mini_adapter *Adapter,UINT uiSectorSize);
++
+ bool IsSectionExistInFlash(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_section_val section);
+ 
+ INT BcmGetFlash2xSectionalBitMap(struct bcm_mini_adapter *Adapter, struct bcm_flash2x_bitmap *psFlash2xBitMap);
+@@ -183,40 +176,42 @@ INT BcmFlash2xBulkRead(
+ INT BcmGetSectionValStartOffset(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_section_val eFlashSectionVal);
+ 
+ INT BcmSetActiveSection(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_section_val eFlash2xSectVal);
++
+ INT BcmAllocFlashCSStructure(struct bcm_mini_adapter *psAdapter);
++
+ INT BcmDeAllocFlashCSStructure(struct bcm_mini_adapter *psAdapter);
+ 
+ INT BcmCopyISO(struct bcm_mini_adapter *Adapter, struct bcm_flash2x_copy_section sCopySectStrut);
++
+ INT BcmFlash2xCorruptSig(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_section_val eFlash2xSectionVal);
++
+ INT BcmFlash2xWriteSig(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_section_val eFlashSectionVal);
++
+ INT	validateFlash2xReadWrite(struct bcm_mini_adapter *Adapter, struct bcm_flash2x_readwrite *psFlash2xReadWrite);
++
+ INT IsFlash2x(struct bcm_mini_adapter *Adapter);
++
+ INT	BcmCopySection(struct bcm_mini_adapter *Adapter,
+ 						enum bcm_flash2x_section_val SrcSection,
+ 						enum bcm_flash2x_section_val DstSection,
+ 						UINT offset,
+ 						UINT numOfBytes);
+ 
+-
+ bool IsNonCDLessDevice(struct bcm_mini_adapter *Adapter);
+ 
+-
+ VOID OverrideServiceFlowParams(struct bcm_mini_adapter *Adapter,PUINT puiBuffer);
+ 
+ int wrmaltWithLock (struct bcm_mini_adapter *Adapter, UINT uiAddress, unsigned int *pucBuff, size_t sSize);
++
+ int rdmaltWithLock (struct bcm_mini_adapter *Adapter, UINT uiAddress, unsigned int *pucBuff, size_t sSize);
+ 
+ int wrmWithLock(struct bcm_mini_adapter *Adapter, UINT uiAddress, PCHAR pucBuff, size_t size);
++
+ INT buffDnldVerify(struct bcm_mini_adapter *Adapter, unsigned char *mappedbuffer, unsigned int u32FirmwareLength,
+ 		unsigned long u32StartingAddress);
+ 
+-
+ VOID putUsbSuspend(struct work_struct *work);
+-bool IsReqGpioIsLedInNVM(struct bcm_mini_adapter *Adapter, UINT gpios);
+ 
++bool IsReqGpioIsLedInNVM(struct bcm_mini_adapter *Adapter, UINT gpios);
+ 
+ #endif
+-
+-
+-
+-
 -- 
 1.9.1
 
