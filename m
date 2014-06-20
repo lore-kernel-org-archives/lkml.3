@@ -1,110 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934477AbaFTF0t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 01:26:49 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:8556 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217AbaFTF0r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 01:26:47 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 19 Jun 2014 22:21:00 -0700
-Message-ID: <53A3C613.8030207@nvidia.com>
-Date: Fri, 20 Jun 2014 14:26:43 +0900
-From: Alexandre Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S934637AbaFTF1O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 01:27:14 -0400
+Received: from ozlabs.org ([103.22.144.67]:52073 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934263AbaFTF1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 01:27:12 -0400
+Date: Fri, 20 Jun 2014 15:27:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: linux-next: build warning after merge of the akpm-current tree
+Message-ID: <20140620152703.157a66fd@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>, Stephen Warren <swarren@wwwdotorg.org>
-CC: Thierry Reding <thierry.reding@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: tegra: TN7: relax some regulators
-References: <1403164154-1362-1-git-send-email-acourbot@nvidia.com> <53A308C8.2070004@wwwdotorg.org> <20140619175643.GR5099@sirena.org.uk>
-In-Reply-To: <20140619175643.GR5099@sirena.org.uk>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/G4V=vahUxKDw9mie/dQs9Ph"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2014 02:56 AM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Thu, Jun 19, 2014 at 09:59:04AM -0600, Stephen Warren wrote:
->> On 06/19/2014 01:49 AM, Alexandre Courbot wrote:
->
->>> Remove the regulator-always-on property from some regulators that do not
->>> need it. On recent kernels fixed regulators which supply is always on
->>> fail registration.
->
->> That sounds like a bug in the regulator core, which should be fixed there.
->
-> Please actually describe the problem you believe you are seeing - I've
-> seen no reports and I can't tell anything from what you've described,
-> nor can I see any obvious way that a regulator being fixed would have
-> any effect on its supply.
+--Sig_/G4V=vahUxKDw9mie/dQs9Ph
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Here is some more information about what happens.
+Hi Andrew,
 
-We have a fixed regulator defined as follows:
+After merging the akpm-current tree, today's linux-next build (x86_64
+allmodconfig) produced this warning:
 
-vdd_lcd: regulator@2 {
-         compatible = "regulator-fixed";
-         reg = <2>;
-         regulator-name = "VD_LCD_1V8";
-         regulator-min-microvolt = <1800000>;
-         regulator-max-microvolt = <1800000>;
-         gpio = <&palmas_gpio 4 GPIO_ACTIVE_HIGH>;
-         enable-active-high;
-         vin-supply = <&vdd_1v8>;
-         regulator-boot-on;
-};
+In file included from include/linux/printk.h:257:0,
+                 from include/linux/kernel.h:13,
+                 from arch/x86/include/asm/percpu.h:44,
+                 from arch/x86/include/asm/preempt.h:5,
+                 from include/linux/preempt.h:18,
+                 from include/linux/spinlock.h:50,
+                 from include/linux/seqlock.h:35,
+                 from include/linux/time.h:5,
+                 from include/linux/stat.h:18,
+                 from include/linux/module.h:10,
+                 from crypto/zlib.c:26:
+crypto/zlib.c: In function 'zlib_compress_update':
+include/linux/dynamic_debug.h:64:16: warning: format '%u' expects argument =
+of type 'unsigned int', but argument 4 has type 'uLong' [-Wformat=3D]
+  static struct _ddebug  __aligned(8)   \
+                ^
+include/linux/dynamic_debug.h:76:2: note: in expansion of macro 'DEFINE_DYN=
+AMIC_DEBUG_METADATA'
+  DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);  \
+  ^
+include/linux/printk.h:263:2: note: in expansion of macro 'dynamic_pr_debug'
+  dynamic_pr_debug(fmt, ##__VA_ARGS__)
+  ^
+crypto/zlib.c:171:2: note: in expansion of macro 'pr_debug'
+  pr_debug("avail_in %u, avail_out %u (consumed %u, produced %u)\n",
+  ^
+include/linux/dynamic_debug.h:64:16: warning: format '%u' expects argument =
+of type 'unsigned int', but argument 5 has type 'uLong' [-Wformat=3D]
+  static struct _ddebug  __aligned(8)   \
+                ^
+include/linux/dynamic_debug.h:76:2: note: in expansion of macro 'DEFINE_DYN=
+AMIC_DEBUG_METADATA'
+  DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);  \
+  ^
+include/linux/printk.h:263:2: note: in expansion of macro 'dynamic_pr_debug'
+  dynamic_pr_debug(fmt, ##__VA_ARGS__)
+  ^
+crypto/zlib.c:171:2: note: in expansion of macro 'pr_debug'
+  pr_debug("avail_in %u, avail_out %u (consumed %u, produced %u)\n",
+  ^
+include/linux/dynamic_debug.h:64:16: warning: format '%u' expects argument =
+of type 'unsigned int', but argument 6 has type 'uLong' [-Wformat=3D]
+  static struct _ddebug  __aligned(8)   \
+                ^
+include/linux/dynamic_debug.h:76:2: note: in expansion of macro 'DEFINE_DYN=
+AMIC_DEBUG_METADATA'
+  DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);  \
+  ^
+include/linux/printk.h:263:2: note: in expansion of macro 'dynamic_pr_debug'
+  dynamic_pr_debug(fmt, ##__VA_ARGS__)
+  ^
+crypto/zlib.c:171:2: note: in expansion of macro 'pr_debug'
+  pr_debug("avail_in %u, avail_out %u (consumed %u, produced %u)\n",
+  ^
+crypto/zlib.c: In function 'zlib_compress_final':
+include/linux/dynamic_debug.h:64:16: warning: format '%u' expects argument =
+of type 'unsigned int', but argument 4 has type 'uLong' [-Wformat=3D]
+  static struct _ddebug  __aligned(8)   \
+                ^
+include/linux/dynamic_debug.h:76:2: note: in expansion of macro 'DEFINE_DYN=
+AMIC_DEBUG_METADATA'
+  DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);  \
+  ^
+include/linux/printk.h:263:2: note: in expansion of macro 'dynamic_pr_debug'
+  dynamic_pr_debug(fmt, ##__VA_ARGS__)
+  ^
+crypto/zlib.c:201:2: note: in expansion of macro 'pr_debug'
+  pr_debug("avail_in %u, avail_out %u (consumed %u, produced %u)\n",
+  ^
+include/linux/dynamic_debug.h:64:16: warning: format '%u' expects argument =
+of type 'unsigned int', but argument 5 has type 'uLong' [-Wformat=3D]
+  static struct _ddebug  __aligned(8)   \
+                ^
+include/linux/dynamic_debug.h:76:2: note: in expansion of macro 'DEFINE_DYN=
+AMIC_DEBUG_METADATA'
+  DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);  \
+  ^
+include/linux/printk.h:263:2: note: in expansion of macro 'dynamic_pr_debug'
+  dynamic_pr_debug(fmt, ##__VA_ARGS__)
+  ^
+crypto/zlib.c:201:2: note: in expansion of macro 'pr_debug'
+  pr_debug("avail_in %u, avail_out %u (consumed %u, produced %u)\n",
+  ^
+include/linux/dynamic_debug.h:64:16: warning: format '%u' expects argument =
+of type 'unsigned int', but argument 6 has type 'uLong' [-Wformat=3D]
+  static struct _ddebug  __aligned(8)   \
+                ^
+include/linux/dynamic_debug.h:76:2: note: in expansion of macro 'DEFINE_DYN=
+AMIC_DEBUG_METADATA'
+  DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);  \
+  ^
+include/linux/printk.h:263:2: note: in expansion of macro 'dynamic_pr_debug'
+  dynamic_pr_debug(fmt, ##__VA_ARGS__)
+  ^
+crypto/zlib.c:201:2: note: in expansion of macro 'pr_debug'
+  pr_debug("avail_in %u, avail_out %u (consumed %u, produced %u)\n",
+  ^
+crypto/zlib.c: In function 'zlib_decompress_update':
+include/linux/dynamic_debug.h:64:16: warning: format '%u' expects argument =
+of type 'unsigned int', but argument 4 has type 'uLong' [-Wformat=3D]
+  static struct _ddebug  __aligned(8)   \
+                ^
+include/linux/dynamic_debug.h:76:2: note: in expansion of macro 'DEFINE_DYN=
+AMIC_DEBUG_METADATA'
+  DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);  \
+  ^
+include/linux/printk.h:263:2: note: in expansion of macro 'dynamic_pr_debug'
+  dynamic_pr_debug(fmt, ##__VA_ARGS__)
+  ^
+crypto/zlib.c:286:2: note: in expansion of macro 'pr_debug'
+  pr_debug("avail_in %u, avail_out %u (consumed %u, produced %u)\n",
+  ^
+include/linux/dynamic_debug.h:64:16: warning: format '%u' expects argument =
+of type 'unsigned int', but argument 5 has type 'uLong' [-Wformat=3D]
+  static struct _ddebug  __aligned(8)   \
+                ^
+include/linux/dynamic_debug.h:76:2: note: in expansion of macro 'DEFINE_DYN=
+AMIC_DEBUG_METADATA'
+  DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);  \
+  ^
+include/linux/printk.h:263:2: note: in expansion of macro 'dynamic_pr_debug'
+  dynamic_pr_debug(fmt, ##__VA_ARGS__)
+  ^
+crypto/zlib.c:286:2: note: in expansion of macro 'pr_debug'
+  pr_debug("avail_in %u, avail_out %u (consumed %u, produced %u)\n",
+  ^
+include/linux/dynamic_debug.h:64:16: warning: format '%u' expects argument =
+of type 'unsigned int', but argument 6 has type 'uLong' [-Wformat=3D]
+  static struct _ddebug  __aligned(8)   \
+                ^
+include/linux/dynamic_debug.h:76:2: note: in expansion of macro 'DEFINE_DYN=
+AMIC_DEBUG_METADATA'
+  DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);  \
+  ^
+include/linux/printk.h:263:2: note: in expansion of macro 'dynamic_pr_debug'
+  dynamic_pr_debug(fmt, ##__VA_ARGS__)
+  ^
+crypto/zlib.c:286:2: note: in expansion of macro 'pr_debug'
+  pr_debug("avail_in %u, avail_out %u (consumed %u, produced %u)\n",
+  ^
+crypto/zlib.c: In function 'zlib_decompress_final':
+include/linux/dynamic_debug.h:64:16: warning: format '%u' expects argument =
+of type 'unsigned int', but argument 4 has type 'uLong' [-Wformat=3D]
+  static struct _ddebug  __aligned(8)   \
+                ^
+include/linux/dynamic_debug.h:76:2: note: in expansion of macro 'DEFINE_DYN=
+AMIC_DEBUG_METADATA'
+  DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);  \
+  ^
+include/linux/printk.h:263:2: note: in expansion of macro 'dynamic_pr_debug'
+  dynamic_pr_debug(fmt, ##__VA_ARGS__)
+  ^
+crypto/zlib.c:334:2: note: in expansion of macro 'pr_debug'
+  pr_debug("avail_in %u, avail_out %u (consumed %u, produced %u)\n",
+  ^
+include/linux/dynamic_debug.h:64:16: warning: format '%u' expects argument =
+of type 'unsigned int', but argument 5 has type 'uLong' [-Wformat=3D]
+  static struct _ddebug  __aligned(8)   \
+                ^
+include/linux/dynamic_debug.h:76:2: note: in expansion of macro 'DEFINE_DYN=
+AMIC_DEBUG_METADATA'
+  DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);  \
+  ^
+include/linux/printk.h:263:2: note: in expansion of macro 'dynamic_pr_debug'
+  dynamic_pr_debug(fmt, ##__VA_ARGS__)
+  ^
+crypto/zlib.c:334:2: note: in expansion of macro 'pr_debug'
+  pr_debug("avail_in %u, avail_out %u (consumed %u, produced %u)\n",
+  ^
+include/linux/dynamic_debug.h:64:16: warning: format '%u' expects argument =
+of type 'unsigned int', but argument 6 has type 'uLong' [-Wformat=3D]
+  static struct _ddebug  __aligned(8)   \
+                ^
+include/linux/dynamic_debug.h:76:2: note: in expansion of macro 'DEFINE_DYN=
+AMIC_DEBUG_METADATA'
+  DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);  \
+  ^
+include/linux/printk.h:263:2: note: in expansion of macro 'dynamic_pr_debug'
+  dynamic_pr_debug(fmt, ##__VA_ARGS__)
+  ^
+crypto/zlib.c:334:2: note: in expansion of macro 'pr_debug'
+  pr_debug("avail_in %u, avail_out %u (consumed %u, produced %u)\n",
+  ^
 
-Its vin-supply is part of the palmas device:
 
-vdd_1v8: smps8 {
-         regulator-name = "vs-pmu-1v8";
-         regulator-min-microvolt = <1800000>;
-         regulator-max-microvolt = <1800000>;
-         regulator-always-on;
-         regulator-boot-on;
-};
+Introduced by commit 8d9dfa4b0125 ("initramfs: support initramfs that
+is more than 2G").  Grep is your friend :-(
 
-When vdd_lcd is registered, set_supply() is called, which creates a new 
-regulator for vdd_1v8. In create_regulator(), 
-_regulator_can_change_status() returns false (as it should since the 
-regulator is always_on) and _regulator_is_enabled() *also* returns 
-false, so as a result regulator->always_on remains false for vdd_1v8.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Later in regulator_register(), we try to enable the supply. Since 
-regulator->always_on is false, _regulator_enable() is called on vdd_1v8, 
-and the pair _regulator_is_enabled() / _regulator_can_change_status() is 
-called again with the same result, which causes _regulator_enable() to 
-return -EPERM. This prevents vdd_lcd from being registered.
+--Sig_/G4V=vahUxKDw9mie/dQs9Ph
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-So I can see three questions here:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-1) Why does _regulator_enable() on vdd_1v8 return 0 while everything 
-suggests that it is enabled (this regulator powers lot of devices, like 
-eMMC, which are working fine). This may be an issue with the palmas driver.
+iQIcBAEBCAAGBQJTo8YsAAoJEMDTa8Ir7ZwV4MUQAJLeBGxvsAjvTFQk8Rc9MxZT
+nga/NoUQxmljWz1IbRxqabSkB/taxmgHXTLj2IKVm9Qz+tH24IaEA9FEYNw+XcZs
++wKVy2gRSvSIhNOrkJXN/JpOmiEhmPp2KrXl7vqnX/FrpF1kirQYlfdgfh0ytaaK
+5sxVLBgVGX8yfQq4upPWyIjQ4HlUBeJnbSQs/a4790kEp6rd3DdENWPkLy1lLcRe
+yYGEi3oPPEVZZerWbx7eEm00oZm/WzHiixMNcwuR/pRo55Lj43AVY0/zK23M7IRv
+c/ZENt0L6araydKk3y4aM79ayPDPgwf1mJQmWW64U5QS19aWodcV+hLQK9CUZ/n0
+HwXPNfLVxb3puA5rscc47UYNhjPqcN747j5r0XQ1N41gBKpS3slgWni60CivHABZ
+OCprUjG2udNcyxLvFsu5GZkyeK5ixkJjFiAi/9Rx0DLEC4jgyaPWfao7Z9mDpgeN
+XQDIav2SvD/itCl63IzXF2YCeEUv9kKXu6z7+5SlnOBUOkGZYdSVwgaJZwUW4CSR
+WmgEEXqAoSKgZL4vR01zLTvs/8fF/U3VmGUB4AxzPeTVoRoB6GMhKXJa1GqRRExs
+CTBWiDLmwEBQR+jgiTUUyji2eXx7rhD8OndQpaR1d4AEexaM9ZrvMBbne3EKyugr
+OD3/oYk9chU+6nMGSll5
+=6Hx7
+-----END PGP SIGNATURE-----
 
-2) When an always-on regulator that is not yet enabled is registered, 
-shouldn't it be switched on by the regulator framework?
-
-3) When a boot-on regulator is registered and _regulator_is_enabled() 
-returns contradictory information, what should be done?
-
-Note that whether the regulator-boot-on property is present or not does 
-not change anything.
-
-I tried to find a recent patch that could have introduced a change of 
-behavior, but could not find anything so far. Bisecting is made harder 
-by the fact this happens on a newly-introduced board which requires a 
-bunch of patches of its own, but it we need more information I can try 
-to do it anyway.
-
-Thanks,
-Alex.
-
+--Sig_/G4V=vahUxKDw9mie/dQs9Ph--
