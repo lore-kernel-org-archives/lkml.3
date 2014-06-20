@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789AbaFTPYD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 11:24:03 -0400
-Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:46209 "EHLO
-	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753239AbaFTPYC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 11:24:02 -0400
-Date: Fri, 20 Jun 2014 10:23:57 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Tejun Heo <tj@kernel.org>
-cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] percpu: add data dependency barrier in percpu
- accessors and operations
-In-Reply-To: <20140619211543.GD9814@mtj.dyndns.org>
-Message-ID: <alpine.DEB.2.11.1406201022300.10810@gentwo.org>
-References: <20140612135630.GA23606@htj.dyndns.org> <alpine.DEB.2.11.1406171401350.22064@gentwo.org> <20140617194017.GO4669@linux.vnet.ibm.com> <alpine.DEB.2.11.1406191540240.4002@gentwo.org> <20140619204634.GB9814@mtj.dyndns.org> <alpine.DEB.2.11.1406191608290.5484@gentwo.org>
- <20140619211543.GD9814@mtj.dyndns.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755193AbaFTPZp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 11:25:45 -0400
+Received: from mail.kernel.org ([198.145.19.201]:41087 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753183AbaFTPZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 11:25:44 -0400
+Date: Fri, 20 Jun 2014 12:25:40 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        dsahern@gmail.com, jolsa@redhat.com, xiaoguangrong@linux.vnet.ibm.com,
+        yangds.fnst@cn.fujitsu.com, adrian.hunter@intel.com,
+        namhyung@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/7] perf kvm: move perf_kvm__mmap_read into session utils
+Message-ID: <20140620152540.GI31524@kernel.org>
+References: <1403261389-13423-1-git-send-email-stfomichev@yandex-team.ru>
+ <1403261389-13423-7-git-send-email-stfomichev@yandex-team.ru>
+ <20140620144427.GF31524@kernel.org>
+ <20140620150702.GL15620@stfomichev-desktop.yandex.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140620150702.GL15620@stfomichev-desktop.yandex.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Jun 2014, Tejun Heo wrote:
+Em Fri, Jun 20, 2014 at 07:07:02PM +0400, Stanislav Fomichev escreveu:
+> > I.e. what we need from perf_session is just the ordered_samples bits,
+> > perhaps in its current form, perhaps rewritten, see (renewed) discussion
+> > involving David Ahern and Jiri Olsa.
+> Do you mean you want to pull (at some point) Jiri's patches and want to use
+> just event ordering part in perf trace, not a full blown perf_session?
 
-> Again, data dependency barrier is noop in all in-use archs.
+Right.
 
-A barrier limits what the compiler can do.
+> I'll try to have a look how I can use these patches for ordered trace.
 
-> > Remote write events are contrary to that design and are exceedingly rare.
-> > An IPI is justifiable for such a rare event. At least in my use cases I
-> > have always found that to be sufficient. Well, I designed the data
-> > structures in a way that made this possible because of the design criteria
-> > that did not allow me remote write access to other processors per cpu
-> > data.
->
-> You're repeatedly getting wayside in the discussion.  What are you
-> suggesting?  Sending IPIs on each percpu allocation?
+Thanks, reviewing his work is the logical next step for you since you're
+working on this, great move!
 
-No this is about sending an IPI if you want to modify the percpu data of
-another process. There was a mentionig of code that modifies the per cpu
-data of another processor?
-
-> Again, I'm leaning towards just clarifying the init write ownership to
-> the allocating CPU as that seems the most straight forward way to deal
-> with it, but please stop brining up the raw performance thing.  Nobody
-> is doing anything to that.  It's not relevant in the discussion.
-
-Ok sounds good.
-
+- Arnaldo
