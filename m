@@ -1,195 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967619AbaFTNzA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 09:55:00 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54829 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966958AbaFTNy6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 09:54:58 -0400
-Date: Fri, 20 Jun 2014 08:54:54 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Mark Brown <broonie@kernel.org>, Stephen Warren <swarren@wwwdotorg.org>,
-        Keerthy <j-keerthy@ti.com>, Thierry Reding <thierry.reding@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: Palmas regulator broken (was Re: [PATCH] ARM: tegra: TN7: relax
- some regulators)
-Message-ID: <20140620135454.GA10566@kahuna>
-References: <1403164154-1362-1-git-send-email-acourbot@nvidia.com>
- <53A308C8.2070004@wwwdotorg.org>
- <20140619175643.GR5099@sirena.org.uk>
- <53A3C613.8030207@nvidia.com>
- <53A3D85E.7030704@nvidia.com>
- <20140620094119.GT5099@sirena.org.uk>
- <53A4039B.7000504@nvidia.com>
- <20140620132310.GA11936@kahuna>
+	id S967480AbaFTN6d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 09:58:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32603 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965921AbaFTN6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 09:58:32 -0400
+Date: Fri, 20 Jun 2014 09:58:15 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Jan Kara <jack@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>
+Subject: Re: [RFC][PATCH 3/3] x86/nmi: Perform a safe NMI stack trace on all
+ CPUs
+Message-ID: <20140620135815.GG7959@redhat.com>
+References: <20140619213329.478113470@goodmis.org>
+ <20140619213952.360076309@goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140620132310.GA11936@kahuna>
+In-Reply-To: <20140619213952.360076309@goodmis.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08:23-20140620, Nishanth Menon wrote:
-> + l-o,
-> 	http://marc.info/?t=140316427500004&r=1&w=2 full thread
+On Thu, Jun 19, 2014 at 05:33:32PM -0400, Steven Rostedt wrote:
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 > 
-> Minor change in subject to indicate palmas regulator fail
+> When trigger_all_cpu_backtrace() is called on x86, it will trigger an
+> NMI on each CPU and call show_regs(). But this can lead to a hard lock
+> up if the NMI comes in on another printk().
 > 
-> On 18:49-20140620, Alexandre Courbot wrote:
-> > On 06/20/2014 06:41 PM, Mark Brown wrote:
-> > >* PGP Signed by an unknown key
-> > >
-> > >On Fri, Jun 20, 2014 at 03:44:46PM +0900, Alexandre Courbot wrote:
-> > >
-> > >>dbabd624d
-> > >>regulator: palmas: Reemove open coded functions with helper functions
-> > >
-> > >>Keerthy, Nishanth, could it be that there is still something wrong with the
-> > >>REGULATOR_LINEAR_RANGE() definitions?
-> > >
-> > >>This seems to be the cause for our trouble, but the other questions might
-> > >>still stand, in case there is interest in discussing them.
-> > >
-> > >There was a bug fix to the Palmas driver which just went to Linus the
-> > >other day, are you sure this isn't fixed in mainline (or -next, it's
-> > >been in -next for a week or something)?
-> > 
-> > If you are talking about
-> > 
-> > 6b7f2d82d5
-> > regulator: palmas: Fix SMPS list for 0V
-> > 
-> > then it is in my tree. There is actually no difference on
-> > palmas-regulator.c between my tree and the current -next (or Linus'
-> > tree for that instance).
-> > 
-> > So it seems to be something else we are dealing with here.
+> In order to avoid this, when the NMI triggers, it switches the printk
+> routine for that CPU to call a NMI safe printk function that records the
+> printk in a per_cpu trace_seq descriptor. After all NMIs have finished
+> recording its data, the trace_seqs are printed in a safe context.
+
+Ah, if there is other places that need to call a printk from an NMI
+context, do we have to copy and paste this code there too?  That would
+seem a little much. :-)  I guess my only concern really is the seq_init
+and seq print stuff.  The handler seems relatively simple.
+
+Can we isolate this to a pr_nmi() routine or something?  Or maybe a
+pr_nmi_queue and pr_nmi_dump or something?
+
+Cheers,
+Don
+
 > 
-> Your quote earlier in the thread
-> "
-> _regulator_is_enabled() *also* returns false
-> "
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  arch/x86/kernel/apic/hw_nmi.c | 66 ++++++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 62 insertions(+), 4 deletions(-)
 > 
-> Got me curious. Looking at the patch:
-> dbabd624d4eec50b623bab070d1e39a854b2d65c (regulator: palmas: Reemove
-> open coded functions with helper functions)
-> I noticed the following change
-> palmas_is_enabled_smps -> regulator_is_enabled_regmap
-> 
-> So I decided to search for enable_reg in palmas-regulator.c and I think
-> it needs valid enable_reg, mask, value for regulator_is_enabled_regmap to work
-> :).
-> 
-> Maybe to be sure, we could print the following:
-> PALMAS_SMPS8_VOLTAGE, PALMAS_SMPS8_CTRL, PALMAS_SMPS8_TSTEP,
-> 
-> Anyways, I quickly boot tested the following on DRA7evm (which also uses Palmas):
-> [    1.933939] palmas-pmic 48070000.i2c:tps659038@58:tps659038_pmic: enable_reg = 0x00, mask =0x00
-> [    1.944210] smps123: 850 <--> 1250 mV at 1060 mV 
-> [    1.950717] palmas-pmic 48070000.i2c:tps659038@58:tps659038_pmic: enable_reg = 0x00, mask =0x00
-> [    1.960754] smps45: 850 <--> 1150 mV at 1060 mV 
-> [    1.967048] palmas-pmic 48070000.i2c:tps659038@58:tps659038_pmic: enable_reg = 0x00, mask =0x00
-> [    1.977072] smps6: 850 <--> 1650 mV at 1060 mV 
-> [    1.983077] palmas-pmic 48070000.i2c:tps659038@58:tps659038_pmic: enable_reg = 0x00, mask =0x00
-> [    1.992994] smps7: 850 <--> 1030 mV at 1030 mV 
-> [    1.999238] palmas-pmic 48070000.i2c:tps659038@58:tps659038_pmic: enable_reg = 0x00, mask =0x00
-> [    2.009161] smps8: 850 <--> 1250 mV at 1060 mV 
-> [    2.015304] palmas-pmic 48070000.i2c:tps659038@58:tps659038_pmic: enable_reg = 0x00, mask =0x00
-> 
-> It does seem to me that either set_mode also should use core functions
-> OR you still need a palmas specific is_enable, enable/disable functions
-> (contrary to the claim of the patch in question - which I think
->  introduced regressions).
-> 
-> Otherwise, completely untested diff below - can you  give this a shot?
-> 
-> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-> index b982f0f..bbfe22f 100644
-> --- a/drivers/regulator/palmas-regulator.c
-> +++ b/drivers/regulator/palmas-regulator.c
-> @@ -964,6 +964,20 @@ static int palmas_regulators_probe(struct platform_device *pdev)
->  				return ret;
->  			pmic->current_reg_mode[id] = reg &
->  					PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
-> +
-> +			dev_err(&pdev->dev, "enable_reg = 0x%02x, mask =0x%02x\n",
-> +				pmic->desc[id].enable_reg,
-> +				pmic->desc[id].enable_mask);
-> +			pmic->desc[id].enable_reg =
-> +					PALMAS_BASE_TO_REG(PALMAS_LDO_BASE,
-> +						palmas_regs_info[id].ctrl_addr);
-> +			pmic->desc[id].enable_mask =
-> +					PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
-> +			/*
-> +			 * The following completely ignores
-> +			 * pmic->current_reg_mode[id] (set_mode)
-> +			 */
-> +			pmic->desc[id].enable_val = SMPS_CTRL_MODE_ON;
->  		}
+> diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+> index c3fcb5de5083..6731604bb1cd 100644
+> --- a/arch/x86/kernel/apic/hw_nmi.c
+> +++ b/arch/x86/kernel/apic/hw_nmi.c
+> @@ -18,6 +18,7 @@
+>  #include <linux/nmi.h>
+>  #include <linux/module.h>
+>  #include <linux/delay.h>
+> +#include <linux/trace_seq.h>
 >  
->  		pmic->desc[id].type = REGULATOR_VOLTAGE;
-
-rev 2 of the diff - this does depened on the fact that regulator_desc is
-not memdup-ed by regulator code - that lets us do a bit of a trickery ;)
-- and I dropped the prints.. Unrelated: This makes me wonder why
-palmas_is_enabled_ldo at all?
-
-Keerthy, Mark,
-what do you think of the following (esp the flip of desc value):
-diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-index b982f0f..f01d9c5 100644
---- a/drivers/regulator/palmas-regulator.c
-+++ b/drivers/regulator/palmas-regulator.c
-@@ -299,7 +299,7 @@ static int palmas_set_mode_smps(struct regulator_dev *dev, unsigned int mode)
- 	struct palmas_pmic *pmic = rdev_get_drvdata(dev);
- 	int id = rdev_get_id(dev);
- 	unsigned int reg;
--	bool rail_enable = true;
-+	bool rail_enable = true, enable_val = true;
- 
- 	palmas_smps_read(pmic->palmas, palmas_regs_info[id].ctrl_addr, &reg);
- 	reg &= ~PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
-@@ -318,6 +318,7 @@ static int palmas_set_mode_smps(struct regulator_dev *dev, unsigned int mode)
- 		reg |= SMPS_CTRL_MODE_PWM;
- 		break;
- 	default:
-+		enable_val = false;
- 		return -EINVAL;
- 	}
- 
-@@ -325,6 +326,11 @@ static int palmas_set_mode_smps(struct regulator_dev *dev, unsigned int mode)
- 	if (rail_enable)
- 		palmas_smps_write(pmic->palmas,
- 			palmas_regs_info[id].ctrl_addr, reg);
-+
-+	/* Switch the enable value to ensure this is used for enable */
-+	if (enable_val)
-+		pmic->desc[id].enable_val = pmic->current_reg_mode[id];
-+
- 	return 0;
- }
- 
-@@ -964,6 +970,14 @@ static int palmas_regulators_probe(struct platform_device *pdev)
- 				return ret;
- 			pmic->current_reg_mode[id] = reg &
- 					PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
-+
-+			pmic->desc[id].enable_reg =
-+					PALMAS_BASE_TO_REG(PALMAS_LDO_BASE,
-+						palmas_regs_info[id].ctrl_addr);
-+			pmic->desc[id].enable_mask =
-+					PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
-+			/* set_mode overrides this value */
-+			pmic->desc[id].enable_val = SMPS_CTRL_MODE_ON;
- 		}
- 
- 		pmic->desc[id].type = REGULATOR_VOLTAGE;
--- 
-Regards,
-Nishanth Menon
+>  #ifdef CONFIG_HARDLOCKUP_DETECTOR
+>  u64 hw_nmi_get_sample_period(int watchdog_thresh)
+> @@ -30,11 +31,30 @@ u64 hw_nmi_get_sample_period(int watchdog_thresh)
+>  /* For reliability, we're prepared to waste bits here. */
+>  static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
+>  
+> +/* Safe printing in NMI context */
+> +static DEFINE_PER_CPU(struct trace_seq, nmi_print_seq);
+> +
+>  /* "in progress" flag of arch_trigger_all_cpu_backtrace */
+>  static unsigned long backtrace_flag;
+>  
+> +static void print_seq_line(struct trace_seq *s, int last, int pos)
+> +{
+> +	const char *buf = s->buffer + last;
+> +
+> +	/* Chop off the saved log level and update the length */
+> +	if (printk_get_level(buf)) {
+> +		buf += 2;
+> +		last += 2;
+> +	}
+> +
+> +	pr_emerg("%.*s", (pos - last) + 1, buf);
+> +}
+> +
+>  void arch_trigger_all_cpu_backtrace(void)
+>  {
+> +	struct trace_seq *s;
+> +	int len;
+> +	int cpu;
+>  	int i;
+>  
+>  	if (test_and_set_bit(0, &backtrace_flag))
+> @@ -44,6 +64,11 @@ void arch_trigger_all_cpu_backtrace(void)
+>  		 */
+>  		return;
+>  
+> +	for_each_possible_cpu(i) {
+> +		s = &per_cpu(nmi_print_seq, i);
+> +		trace_seq_init(s);
+> +	}
+> +
+>  	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
+>  
+>  	printk(KERN_INFO "sending NMI to all CPUs:\n");
+> @@ -56,8 +81,39 @@ void arch_trigger_all_cpu_backtrace(void)
+>  		mdelay(1);
+>  	}
+>  
+> +	for_each_possible_cpu(cpu) {
+> +		int last_i = 0;
+> +
+> +		s = &per_cpu(nmi_print_seq, cpu);
+> +		len = s->len;
+> +		if (!len)
+> +			continue;
+> +
+> +		/* Print line by line. */
+> +		for (i = 0; i < len; i++) {
+> +			if (s->buffer[i] == '\n') {
+> +				print_seq_line(s, last_i, i);
+> +				last_i = i + 1;
+> +			}
+> +		}
+> +		if (last_i < i - 1) {
+> +			print_seq_line(s, last_i, i);
+> +			pr_cont("\n");
+> +		}
+> +	}
+> +
+>  	clear_bit(0, &backtrace_flag);
+>  	smp_mb__after_atomic();
+> +	return true;
+> +}
+> +
+> +static int nmi_vprintk(const char *fmt, va_list args)
+> +{
+> +	struct trace_seq *s = this_cpu_ptr(&nmi_print_seq);
+> +	int len = s->len;
+> +
+> +	trace_seq_vprintf(s, fmt, args);
+> +	return s->len - len;
+>  }
+>  
+>  static int
+> @@ -68,12 +124,14 @@ arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
+>  	cpu = smp_processor_id();
+>  
+>  	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
+> -		static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
+> +		printk_func_t printk_func_save = this_cpu_read(printk_func);
+>  
+> -		arch_spin_lock(&lock);
+> -		printk(KERN_WARNING "NMI backtrace for cpu %d\n", cpu);
+> +		/* Replace printk to write into the NMI seq */
+> +		this_cpu_write(printk_func, nmi_vprintk);
+> +		printk("NMI backtrace for cpu %d\n", cpu);
+>  		show_regs(regs);
+> -		arch_spin_unlock(&lock);
+> +		this_cpu_write(printk_func, printk_func_save);
+> +
+>  		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
+>  		return NMI_HANDLED;
+>  	}
+> -- 
+> 2.0.0.rc2
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
