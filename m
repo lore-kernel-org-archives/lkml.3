@@ -1,62 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967513AbaFTMFm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 08:05:42 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:49757 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967160AbaFTMFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 08:05:40 -0400
-Message-ID: <53A4238E.7040505@mev.co.uk>
-Date: Fri, 20 Jun 2014 13:05:34 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S967525AbaFTMP3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 08:15:29 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:63296 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966858AbaFTMP1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 08:15:27 -0400
 MIME-Version: 1.0
-To: <driverdev-devel@linuxdriverproject.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        <linux-kernel@vger.kernel.org>,
-        Fred Brooks <frederick.brooks@microchip.com>
-Subject: Re: [PATCH 2/2 v3] staging: comedi: ni_daq_700: add AI range and
- input mode switching
-References: <20140618213801.GA11436@kroah.com> <1403265195-32693-1-git-send-email-abbotti@mev.co.uk>
-In-Reply-To: <1403265195-32693-1-git-send-email-abbotti@mev.co.uk>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
- (10.0.0.4)
+In-Reply-To: <20140620025938.2e80efa0@i7>
+References: <1396603322-13585-1-git-send-email-djkurtz@chromium.org> <20140620025938.2e80efa0@i7>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Fri, 20 Jun 2014 20:15:06 +0800
+X-Google-Sender-Auth: XU7bQ92_zMfX7HLVA1lyBLteLrM
+Message-ID: <CAGS+omCT6u6rBz0QKTju3d=_+G29RD515M5BeX_KEbvWyANg9Q@mail.gmail.com>
+Subject: Re: [PATCH 1/2] drm/exynos/fbdev: don't set fix.smem/mmio_{start,len}
+To: Siarhei Siamashka <siarhei.siamashka@gmail.com>
+Cc: Inki Dae <inki.dae@samsung.com>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-20 12:53, Ian Abbott wrote:
-> From: Fred Brooks <frederick.brooks@microchip.com>
+On Fri, Jun 20, 2014 at 7:59 AM, Siarhei Siamashka
+<siarhei.siamashka@gmail.com> wrote:
 >
-> Add support for switching the input range and the single-ended/
-> differential input mode for the AI subdevice.  We needed to clear the
-> FIFO of data before the conversion to handle card mode switching
-> glitches.
+> On Fri,  4 Apr 2014 17:22:01 +0800
+> Daniel Kurtz <djkurtz@chromium.org> wrote:
 >
-> [ Minor whitespace fixes and driver comment reformatting.  - Ian ]
+> > Kernel access to the eyxnos fbdev framebuffer is via its gem object's
+> > kernel mapping (kvaddr, stored in info->screen_base).
+> >
+> > User space access is provided by mmap(), read() and write() of /dev/fb/fb0.
+> > These functions also only use screen_base/screen_size().
+> >
+> > Therefore, it is not necessary to set fix->smem_{start,len} or
+> > fix->mmio_{start,len} fields.
+> >
+> > This avoids leaking kernel, physical and dma mapped addresses to user
+> > space via the ioctls FBIOGET_VSCREENINFO and FBIOGET_FSCREENINFO.
+> >
+> > Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> > ---
+> >  drivers/gpu/drm/exynos/exynos_drm_fbdev.c | 7 -------
+> >  1 file changed, 7 deletions(-)
+> >
+> > diff --git a/drivers/gpu/drm/exynos/exynos_drm_fbdev.c b/drivers/gpu/drm/exynos/exynos_drm_fbdev.c
+> > index 5fa342e..2dcc589 100644
+> > --- a/drivers/gpu/drm/exynos/exynos_drm_fbdev.c
+> > +++ b/drivers/gpu/drm/exynos/exynos_drm_fbdev.c
+> > @@ -123,14 +123,7 @@ static int exynos_drm_fbdev_update(struct drm_fb_helper *helper,
+> >
+> >       dev->mode_config.fb_base = (resource_size_t)buffer->dma_addr;
+> >       fbi->screen_base = buffer->kvaddr + offset;
+> > -     if (is_drm_iommu_supported(dev))
+> > -             fbi->fix.smem_start = (unsigned long)
+> > -                     (page_to_phys(sg_page(buffer->sgt->sgl)) + offset);
+> > -     else
+> > -             fbi->fix.smem_start = (unsigned long)buffer->dma_addr;
+> > -
+> >       fbi->screen_size = size;
+> > -     fbi->fix.smem_len = size;
 >
-> Signed-off-by: Fred Brooks <frederick.brooks@microchip.com>
-> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-> ---
-> v2: Set authorship to Fred Brooks and updated patch description as
-> suggested by Dan Carpenter.
-> v3: Rebased to fix merge conflict with "staging: comedi: ni_daq_700: add
-> mux settling delay" patch.  The channel number ('chan') doesn't need
-> ANDing with 0xf as it will be less than 16.
+> Can we keep proper initialization of 'smem_len'? Some userland
+> applications use it for calculating the size for mmap:
+>
+>     http://cgit.freedesktop.org/xorg/xserver/tree/hw/xfree86/fbdevhw/fbdevhw.c?id=xorg-server-1.15.99.903#n571
+>
+> >
+> >       return 0;
+> >  }
+>
+> Basically, this patch breaks the xf86-video-fbdev ddx and some users
+> are already unhappy.
 
-I forgot to add:
 
-Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+I'm so sorry this patch broke things for some users.
+Can you upload a patch to correct it?
+I'll happily review it.
 
-from his reply to the v2 patch.
+-djk
 
-I'll strip out the the module version information in a subsequent patch. 
-  I don't think the minor code formatting niggles matter enough to worry 
-about.
-
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+>
+>
+> --
+> Best regards,
+> Siarhei Siamashka
