@@ -1,108 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510AbaFTX6I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 19:58:08 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:11938 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752500AbaFTX6G (ORCPT
+	id S1755832AbaFTX7Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 19:59:25 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34765 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386AbaFTX7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 19:58:06 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX181LlQkUJ1snY6qTKLnJ9JluFMKd7tikk8=
-X-DKIM: OpenDKIM Filter v2.0.1 titan B5A79594BD3
-Date: Fri, 20 Jun 2014 19:57:53 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] ARM: mvebu: Fix missing binding documentation for
- Armada 38x
-Message-ID: <20140620235753.GS21711@titan.lakedaemon.net>
-References: <1403196043-6317-1-git-send-email-gregory.clement@free-electrons.com>
- <20140620185241.GC21711@titan.lakedaemon.net>
- <CAL_JsqKinUvcJ+OOoD70zD6CH393cgZWC+4gRO=8XORyE6fVKA@mail.gmail.com>
+	Fri, 20 Jun 2014 19:59:24 -0400
+Date: Sat, 21 Jun 2014 01:59:15 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Nick Krause <xerofoify@gmail.com>
+cc: Dan Carpenter <dan.carpenter@oracle.com>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, fabf@skynet.be,
+        kirill.shutemov@linux.intel.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Check for Null return of function of affs_bread in
+ function affs_truncate
+In-Reply-To: <CAPDOMVgwT2=iWAHOhgHSBY1B+KoWHQgCdK4idD2miwB=_eMs5Q@mail.gmail.com>
+Message-ID: <alpine.DEB.2.10.1406210143030.5170@nanos>
+References: <1403129285-5038-1-git-send-email-xerofoify@gmail.com> <20140619052128.GV5015@mwanda> <CAPDOMVgwT2=iWAHOhgHSBY1B+KoWHQgCdK4idD2miwB=_eMs5Q@mail.gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL_JsqKinUvcJ+OOoD70zD6CH393cgZWC+4gRO=8XORyE6fVKA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 05:33:06PM -0500, Rob Herring wrote:
-> On Fri, Jun 20, 2014 at 1:52 PM, Jason Cooper <jason@lakedaemon.net> wrote:
-> > On Thu, Jun 19, 2014 at 06:40:43PM +0200, Gregory CLEMENT wrote:
-> >> For the Armada 380 and Armada 385 SoCs, the common bindings for those
-> >> 2 SoCs, was forgotten. This patch add the documentation for the
-> >> marvell,aramda38x property.
-> >>
-> >> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> >> --
-> >> Hi,
-> >>
-> >> This fix should be merged in 3.16. For 3.15 I am not sure as it is not
-> >> a regression.
-> >>
-> >> Changelog:
-> >> v1->v2
-> >>
-> >> - Reformulate to make clear that we will need marvell,armada38x _and_ a
-> >> SoC specific string. For consistency I duplicated what we have done in
-> >> armada-370-xp.txt
-> >>
-> >>
-> >> Thanks,
-> >> Gregory
-> >>
-> >>
-> >>  Documentation/devicetree/bindings/arm/armada-38x.txt | 17 +++++++++++++++--
-> >>  1 file changed, 15 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/arm/armada-38x.txt b/Documentation/devicetree/bindings/arm/armada-38x.txt
-> >> index 11f2330a6554..fa08760046df 100644
-> >> --- a/Documentation/devicetree/bindings/arm/armada-38x.txt
-> >> +++ b/Documentation/devicetree/bindings/arm/armada-38x.txt
-> >> @@ -6,5 +6,18 @@ following property:
-> >>
-> >>  Required root node property:
-> >>
-> >> - - compatible: must contain either "marvell,armada380" or
-> >> -   "marvell,armada385" depending on the variant of the SoC being used.
-> >> +compatible: must contain "marvell,armada38x"
-> >
-> > I agree with Sergei on this one.  We generally avoid wildcards in
-> > compatible strings.  Is there a use case where specifying one of the
-> > below wouldn't be sufficient?
+On Fri, 20 Jun 2014, Nick Krause wrote:
+
+> Ok that's fine I would return as if it's a NULL the other parts of the
+> function can't continue.
+> Nick
 > 
-> Isn't this a case of just documenting what is already in use?
+> On Thu, Jun 19, 2014 at 1:21 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> > On Wed, Jun 18, 2014 at 06:08:05PM -0400, Nicholas Krause wrote:
+> >> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> >> ---
+> >>  fs/affs/file.c | 2 ++
+> >>  1 file changed, 2 insertions(+)
+> >>
+> >> diff --git a/fs/affs/file.c b/fs/affs/file.c
+> >> index a7fe57d..f26482d 100644
+> >> --- a/fs/affs/file.c
+> >> +++ b/fs/affs/file.c
+> >> @@ -923,6 +923,8 @@ affs_truncate(struct inode *inode)
+> >>
+> >>       while (ext_key) {
+> >>               ext_bh = affs_bread(sb, ext_key);
+> >> +             if (!ext_bh)
+> >> +                     return;
+> >
+> > The problem is that we don't know if we should return here or break
+> > here.  If you don't understand the code, then it's best to just leave it
+> > alone.
 
-Technically, yes.  However, there are no products shipping with this SoC
-yet.  So there aren't any _real_ users other than the developers
-bringing in mainline support.
+Dan, what kind of attitude is that?
 
-> I agree wildcards alone are not good, but along with a specific
-> compatible is okay. But also there should be some need to have the
-> common property.
+Nick certainly found an issue where a possible NULL return from
+affs_bread() can cause havoc.
 
-I'm curious what you would consider to be a sufficient need?  This can
-be easily handled by a match table, but a match table could also be
-considered rather heavy for this task.
+Do YOU understand that code?
 
-I think any implementation-based justification is prone to opening a can
-of worms.  And I'm struggling to see a DT-only justification...
+If yes, you better explain, WHY Nicks finding is a false positive
+instead of just telling him off in a very inpolite way.
 
-thx,
+If not, you better refrain from telling a reporter that he does not
+understand the code and should stay away.
 
-Jason.
+You clearly stated that you do not understand it either:
+
+> > The problem is that we don't know if we should return here or break
+> > here.
+
+The problem here is that proceeding with a known NULL pointer is wrong
+to begin with. It does not matter at all whether break or return is
+the proper thing to do. What matters is that proceeding with a NULL
+pointer is wrong to begin with, no matter what.
+
+So either explain why this is a non issue and the NULL pointer return
+cannot happen or shut up and try to find a proper solution for that
+"return" vs. "break" issue.
+
+Thanks,
+
+	tglx
