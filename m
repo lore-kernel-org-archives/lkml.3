@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934995AbaFTPxz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 11:53:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58863 "EHLO mx2.suse.de"
+	id S934980AbaFTPxy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 11:53:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58874 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934541AbaFTPuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934585AbaFTPuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Jun 2014 11:50:12 -0400
 From: Vlastimil Babka <vbabka@suse.cz>
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
@@ -16,9 +16,9 @@ Cc: Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
         Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
         Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
         linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>
-Subject: [PATCH v3 08/13] mm, compaction: remember position within pageblock in free pages scanner
-Date: Fri, 20 Jun 2014 17:49:38 +0200
-Message-Id: <1403279383-5862-9-git-send-email-vbabka@suse.cz>
+Subject: [PATCH v3 09/13] mm, compaction: skip buddy pages by their order in the migrate scanner
+Date: Fri, 20 Jun 2014 17:49:39 +0200
+Message-Id: <1403279383-5862-10-git-send-email-vbabka@suse.cz>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1403279383-5862-1-git-send-email-vbabka@suse.cz>
 References: <1403279383-5862-1-git-send-email-vbabka@suse.cz>
@@ -26,23 +26,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlike the migration scanner, the free scanner remembers the beginning of the
-last scanned pageblock in cc->free_pfn. It might be therefore rescanning pages
-uselessly when called several times during single compaction. This might have
-been useful when pages were returned to the buddy allocator after a failed
-migration, but this is no longer the case.
+The migration scanner skips PageBuddy pages, but does not consider their order
+as checking page_order() is generally unsafe without holding the zone->lock,
+and acquiring the lock just for the check wouldn't be a good tradeoff.
 
-This patch changes the meaning of cc->free_pfn so that if it points to a
-middle of a pageblock, that pageblock is scanned only from cc->free_pfn to the
-end. isolate_freepages_block() will record the pfn of the last page it looked
-at, which is then used to update cc->free_pfn.
+Still, this could avoid some iterations over the rest of the buddy page, and
+if we are careful, the race window between PageBuddy() check and page_order()
+is small, and the worst thing that can happen is that we skip too much and miss
+some isolation candidates. This is not that bad, as compaction can already fail
+for many other reasons like parallel allocations, and those have much larger
+race window.
 
-In the mmtests stress-highalloc benchmark, this has resulted in lowering the
-ratio between pages scanned by both scanners, from 2.5 free pages per migrate
-page, to 2.25 free pages per migrate page, without affecting success rates.
+This patch therefore makes the migration scanner obtain the buddy page order
+and use it to skip the whole buddy page, if the order appears to be in the
+valid range.
+
+It's important that the page_order() is read only once, so that the value used
+in the checks and in the pfn calculation is the same. But in theory the
+compiler can replace the local variable by multiple inlines of page_order().
+Therefore, the patch introduces page_order_unsafe() that uses ACCESS_ONCE to
+prevent this.
+
+Testing with stress-highalloc from mmtests shows a 15% reduction in number of
+pages scanned by migration scanner. This change is also a prerequisite for a
+later patch which is detecting when a cc->order block of pages contains
+non-buddy pages that cannot be isolated, and the scanner should thus skip to
+the next block immediately.
 
 Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Acked-by: David Rientjes <rientjes@google.com>
 Cc: Minchan Kim <minchan@kernel.org>
 Cc: Mel Gorman <mgorman@suse.de>
 Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
@@ -50,128 +61,109 @@ Cc: Michal Nazarewicz <mina86@mina86.com>
 Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Cc: Christoph Lameter <cl@linux.com>
 Cc: Rik van Riel <riel@redhat.com>
-Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
 ---
- mm/compaction.c | 40 +++++++++++++++++++++++++++++++---------
- 1 file changed, 31 insertions(+), 9 deletions(-)
+ mm/compaction.c | 36 +++++++++++++++++++++++++++++++-----
+ mm/internal.h   | 16 +++++++++++++++-
+ 2 files changed, 46 insertions(+), 6 deletions(-)
 
 diff --git a/mm/compaction.c b/mm/compaction.c
-index 9f6e857..41c7005 100644
+index 41c7005..df0961b 100644
 --- a/mm/compaction.c
 +++ b/mm/compaction.c
-@@ -287,7 +287,7 @@ static bool suitable_migration_target(struct page *page)
-  * (even though it may still end up isolating some pages).
-  */
- static unsigned long isolate_freepages_block(struct compact_control *cc,
--				unsigned long blockpfn,
-+				unsigned long *start_pfn,
- 				unsigned long end_pfn,
- 				struct list_head *freelist,
- 				bool strict)
-@@ -296,6 +296,7 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 	struct page *cursor, *valid_page = NULL;
- 	unsigned long flags;
- 	bool locked = false;
-+	unsigned long blockpfn = *start_pfn;
+@@ -270,8 +270,15 @@ static inline bool compact_should_abort(struct compact_control *cc)
+ static bool suitable_migration_target(struct page *page)
+ {
+ 	/* If the page is a large free page, then disallow migration */
+-	if (PageBuddy(page) && page_order(page) >= pageblock_order)
+-		return false;
++	if (PageBuddy(page)) {
++		/*
++		 * We are checking page_order without zone->lock taken. But
++		 * the only small danger is that we skip a potentially suitable
++		 * pageblock, so it's not worth to check order for valid range.
++		 */
++		if (page_order_unsafe(page) >= pageblock_order)
++			return false;
++	}
  
- 	cursor = pfn_to_page(blockpfn);
+ 	/* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
+ 	if (migrate_async_suitable(get_pageblock_migratetype(page)))
+@@ -591,11 +598,23 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 			valid_page = page;
  
-@@ -369,6 +370,9 @@ isolate_fail:
- 			break;
+ 		/*
+-		 * Skip if free. page_order cannot be used without zone->lock
+-		 * as nothing prevents parallel allocations or buddy merging.
++		 * Skip if free. We read page order here without zone lock
++		 * which is generally unsafe, but the race window is small and
++		 * the worst thing that can happen is that we skip some
++		 * potential isolation targets.
+ 		 */
+-		if (PageBuddy(page))
++		if (PageBuddy(page)) {
++			unsigned long freepage_order = page_order_unsafe(page);
++
++			/*
++			 * Without lock, we cannot be sure that what we got is
++			 * a valid page order. Consider only values in the
++			 * valid order range to prevent low_pfn overflow.
++			 */
++			if (freepage_order > 0 && freepage_order < MAX_ORDER)
++				low_pfn += (1UL << freepage_order) - 1;
+ 			continue;
++		}
+ 
+ 		/*
+ 		 * Check may be lockless but that's ok as we recheck later.
+@@ -683,6 +702,13 @@ next_pageblock:
+ 		low_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages) - 1;
  	}
  
-+	/* Record how far we have got within the block */
-+	*start_pfn = blockpfn;
++	/*
++	 * The PageBuddy() check could have potentially brought us outside
++	 * the range to be scanned.
++	 */
++	if (unlikely(low_pfn > end_pfn))
++		low_pfn = end_pfn;
 +
- 	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
+ 	acct_isolated(zone, locked, cc);
  
- 	/*
-@@ -413,6 +417,9 @@ isolate_freepages_range(struct compact_control *cc,
- 	LIST_HEAD(freelist);
- 
- 	for (pfn = start_pfn; pfn < end_pfn; pfn += isolated) {
-+		/* Protect pfn from changing by isolate_freepages_block */
-+		unsigned long isolate_start_pfn = pfn;
-+
- 		if (!pfn_valid(pfn) || cc->zone != page_zone(pfn_to_page(pfn)))
- 			break;
- 
-@@ -423,8 +430,8 @@ isolate_freepages_range(struct compact_control *cc,
- 		block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
- 		block_end_pfn = min(block_end_pfn, end_pfn);
- 
--		isolated = isolate_freepages_block(cc, pfn, block_end_pfn,
--						   &freelist, true);
-+		isolated = isolate_freepages_block(cc, &isolate_start_pfn,
-+						block_end_pfn, &freelist, true);
- 
- 		/*
- 		 * In strict mode, isolate_freepages_block() returns 0 if
-@@ -708,6 +715,7 @@ static void isolate_freepages(struct zone *zone,
+ 	if (locked)
+diff --git a/mm/internal.h b/mm/internal.h
+index 2c187d2..584cd69 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -171,7 +171,8 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+  * general, page_zone(page)->lock must be held by the caller to prevent the
+  * page from being allocated in parallel and returning garbage as the order.
+  * If a caller does not hold page_zone(page)->lock, it must guarantee that the
+- * page cannot be allocated or merged in parallel.
++ * page cannot be allocated or merged in parallel. Alternatively, it must
++ * handle invalid values gracefully, and use page_order_unsafe() below.
+  */
+ static inline unsigned long page_order(struct page *page)
  {
- 	struct page *page;
- 	unsigned long block_start_pfn;	/* start of current pageblock */
-+	unsigned long isolate_start_pfn; /* exact pfn we start at */
- 	unsigned long block_end_pfn;	/* end of current pageblock */
- 	unsigned long low_pfn;	     /* lowest pfn scanner is able to scan */
- 	int nr_freepages = cc->nr_freepages;
-@@ -716,14 +724,15 @@ static void isolate_freepages(struct zone *zone,
- 	/*
- 	 * Initialise the free scanner. The starting point is where we last
- 	 * successfully isolated from, zone-cached value, or the end of the
--	 * zone when isolating for the first time. We need this aligned to
--	 * the pageblock boundary, because we do
-+	 * zone when isolating for the first time. For looping we also need
-+	 * this pfn aligned down to the pageblock boundary, because we do
- 	 * block_start_pfn -= pageblock_nr_pages in the for loop.
- 	 * For ending point, take care when isolating in last pageblock of a
- 	 * a zone which ends in the middle of a pageblock.
- 	 * The low boundary is the end of the pageblock the migration scanner
- 	 * is using.
- 	 */
-+	isolate_start_pfn = cc->free_pfn;
- 	block_start_pfn = cc->free_pfn & ~(pageblock_nr_pages-1);
- 	block_end_pfn = min(block_start_pfn + pageblock_nr_pages,
- 						zone_end_pfn(zone));
-@@ -736,7 +745,8 @@ static void isolate_freepages(struct zone *zone,
- 	 */
- 	for (; block_start_pfn >= low_pfn && cc->nr_migratepages > nr_freepages;
- 				block_end_pfn = block_start_pfn,
--				block_start_pfn -= pageblock_nr_pages) {
-+				block_start_pfn -= pageblock_nr_pages,
-+				isolate_start_pfn = block_start_pfn) {
- 		unsigned long isolated;
+@@ -179,6 +180,19 @@ static inline unsigned long page_order(struct page *page)
+ 	return page_private(page);
+ }
  
- 		/*
-@@ -770,13 +780,25 @@ static void isolate_freepages(struct zone *zone,
- 		if (!isolation_suitable(cc, page))
- 			continue;
- 
--		/* Found a block suitable for isolating free pages from */
--		cc->free_pfn = block_start_pfn;
--		isolated = isolate_freepages_block(cc, block_start_pfn,
-+		/* Found a block suitable for isolating free pages from. */
-+		isolated = isolate_freepages_block(cc, &isolate_start_pfn,
- 					block_end_pfn, freelist, false);
- 		nr_freepages += isolated;
- 
- 		/*
-+		 * Remember where the free scanner should restart next time,
-+		 * which is where isolate_freepages_block() left off.
-+		 * But if it scanned the whole pageblock, isolate_start_pfn
-+		 * now points at block_end_pfn, which is the start of the next
-+		 * pageblock.
-+		 * In that case we will however want to restart at the start
-+		 * of the previous pageblock.
-+		 */
-+		cc->free_pfn = (isolate_start_pfn < block_end_pfn) ?
-+				isolate_start_pfn :
-+				block_start_pfn - pageblock_nr_pages;
++/*
++ * Like page_order(), but for callers who cannot afford to hold the zone lock.
++ * PageBuddy() should be checked first by the caller to minimize race window,
++ * and invalid values must be handled gracefully.
++ *
++ * ACCESS_ONCE is used so that if the caller assigns the result into a local
++ * variable and e.g. tests it for valid range before using, the compiler cannot
++ * decide to remove the variable and inline the page_private(page) multiple
++ * times, potentially observing different values in the tests and the actual
++ * use of the result.
++ */
++#define page_order_unsafe(page)		ACCESS_ONCE(page_private(page))
 +
-+		/*
- 		 * Set a flag that we successfully isolated in this pageblock.
- 		 * In the next loop iteration, zone->compact_cached_free_pfn
- 		 * will not be updated and thus it will effectively contain the
+ static inline bool is_cow_mapping(vm_flags_t flags)
+ {
+ 	return (flags & (VM_SHARED | VM_MAYWRITE)) == VM_MAYWRITE;
 -- 
 1.8.4.5
 
