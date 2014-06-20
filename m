@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967563AbaFTNwi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 09:52:38 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:62975 "EHLO
+	id S967304AbaFTNw3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 09:52:29 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:65122 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967461AbaFTNwe (ORCPT
+	with ESMTP id S965694AbaFTNw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 09:52:34 -0400
+	Fri, 20 Jun 2014 09:52:28 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Andreas Noever <andreas.noever@gmail.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 1/3] thunderbolt: add PCI dependency
-Date: Fri, 20 Jun 2014 15:52:09 +0200
-Message-Id: <1403272331-3790755-1-git-send-email-arnd@arndb.de>
+Subject: [PATCH 3/3] thunderbolt: fix format string for size_t
+Date: Fri, 20 Jun 2014 15:52:11 +0200
+Message-Id: <1403272331-3790755-3-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.3.2
-X-Provags-ID: V02:K0:jVlsahH24k/3TJPVI1MdcaaGAsJP8TbZckGMo3kdRCl
- wnva8GF1ZKPSjK/DHV5CXrBlbG0zn71Di0E8UnGVy1I/mgG8mK
- J5qw6vRzc1vMmVaeKkrxsZSq1y55pgKSNbuRVSk5bWwEufuH5U
- C5Joevpg0CjrPjlF/eqoT4Q9Oz1qV3+nbFlu5rBC37AHHUKTAZ
- ydY2pLGakFyVjygthmH3h7BFcqukztLh0Nnjm0RhfAeKJ+aelV
- 2s92Ttt7QmdUaU3bT7FXTIrFZr2zFSE0cZZYvsQPQaA+fQ/UlR
- S5UuqKKgjgTlGyyHgEviwe//UcNdBBcNZGOHNW6VQw3/LDAv+6
- eJYCyMFyvfqttoic/7QHBMK9Zsq+ceM4YNi0cEiPj
+In-Reply-To: <1403272331-3790755-1-git-send-email-arnd@arndb.de>
+References: <1403272331-3790755-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:IrU+fBYu2kBshyBozmxQBFtL53UQoU0Rl03IqW/Ug8k
+ OsgOeQ1PWsNB9pvUp/yS3mtX64g3z0eZEq6GviftRyloZRbvLk
+ eV540UeiSXG2lkjFbSmNm+NLiYPBKW3QBXVozQVHvgGCc9xyAB
+ tUypxRddMRdyyS+8GL+7QPiN8HcxMi+p+J1YLJ2akwNcPQu4BK
+ yG4cEoEFLneK5NeLRWjqYfvHb1TYT9CN0AqP1SbziIPXmQBOBO
+ fL9ykdDHcKZn0JAV5VU+rgQia3ReK8EHhJf5cN3W3zAJEombHH
+ uBZNdvrmG3BMRv03czs7rGQiiJERzsIp6KhtYjjh3PEjQtHoQm
+ 1TS1wi+nv3w5as84MYWVwuOoEoQXb7VvKT8cfI938
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The thunderbolt drivers cannot be built if CONFIG_PCI is disabled,
-better add an explicit Kconfig dependency.
-The "default no" line is redundant and can be removed at the same
-time.
+The result of "sizeof(struct tb_drom_entry_port)" is a size_t, which
+is not necessarily the same as 'long', so we should use the appropriate
+%z format string instead of %l.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/thunderbolt/Kconfig | 2 +-
+ drivers/thunderbolt/eeprom.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/thunderbolt/Kconfig b/drivers/thunderbolt/Kconfig
-index 3a25529..5aab79b 100644
---- a/drivers/thunderbolt/Kconfig
-+++ b/drivers/thunderbolt/Kconfig
-@@ -1,6 +1,6 @@
- menuconfig THUNDERBOLT
- 	tristate "Thunderbolt support for Apple devices"
--	default no
-+	depends on PCI
- 	help
- 	  Cactus Ridge Thunderbolt Controller driver
- 	  This driver is required if you want to hotplug Thunderbolt devices on
+diff --git a/drivers/thunderbolt/eeprom.c b/drivers/thunderbolt/eeprom.c
+index bc0449f..b133f3f 100644
+--- a/drivers/thunderbolt/eeprom.c
++++ b/drivers/thunderbolt/eeprom.c
+@@ -323,7 +323,7 @@ static int tb_drom_parse_entry(struct tb_switch *sw,
+ 		struct tb_drom_entry_port *entry = (void *) header;
+ 		if (header->len != sizeof(*entry)) {
+ 			tb_sw_warn(sw,
+-				"port entry has size %#x (expected %#lx)\n",
++				"port entry has size %#x (expected %#zx)\n",
+ 				header->len, sizeof(struct tb_drom_entry_port));
+ 			return -EIO;
+ 		}
 -- 
 1.8.3.2
 
