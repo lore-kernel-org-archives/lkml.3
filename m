@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932434AbaFTPAw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 11:00:52 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:48006 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932254AbaFTPAt (ORCPT
+	id S932499AbaFTPA5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 11:00:57 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:46335 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753637AbaFTPAz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 11:00:49 -0400
+	Fri, 20 Jun 2014 11:00:55 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 05/41] staging: rtl8188eu: Remove unused function Hal_EfuseGetCurrentSize_Pseudo()
-Date: Fri, 20 Jun 2014 20:29:11 +0530
-Message-Id: <1403276387-11841-6-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 06/41] staging: rtl8188eu: Remove function Hal_EFUSEGetEfuseDefinition_Pseudo88E()
+Date: Fri, 20 Jun 2014 20:29:12 +0530
+Message-Id: <1403276387-11841-7-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1403276387-11841-1-git-send-email-navin.patidar@gmail.com>
 References: <1403276387-11841-1-git-send-email-navin.patidar@gmail.com>
@@ -21,31 +21,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Definition of Hal_EFUSEGetEfuseDefinition_Pseudo88E() is identical
+to Hal_EFUSEGetEfuseDefinition88E().
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c |    8 --------
- 1 file changed, 8 deletions(-)
+ drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c |   65 ---------------------
+ 1 file changed, 65 deletions(-)
 
 diff --git a/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c b/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
-index 84393aa..8bd7205 100644
+index 8bd7205..9dda5f6 100644
 --- a/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
 +++ b/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
-@@ -1207,14 +1207,6 @@ static u16 hal_EfuseGetCurrentSize_8188e(struct adapter *pAdapter, bool bPseudoT
- 	return efuse_addr;
+@@ -1019,73 +1019,8 @@ static void Hal_EFUSEGetEfuseDefinition88E(struct adapter *pAdapter, u8 efuseTyp
+ 	}
  }
  
--static u16 Hal_EfuseGetCurrentSize_Pseudo(struct adapter *pAdapter, bool bPseudoTest)
+-static void Hal_EFUSEGetEfuseDefinition_Pseudo88E(struct adapter *pAdapter, u8 efuseType, u8 type, void *pOut)
 -{
--	u16	ret = 0;
--
--	ret = hal_EfuseGetCurrentSize_8188e(pAdapter, bPseudoTest);
--	return ret;
+-	switch (type) {
+-	case TYPE_EFUSE_MAX_SECTION:
+-		{
+-			u8 *pMax_section;
+-			pMax_section = (u8 *)pOut;
+-			*pMax_section = EFUSE_MAX_SECTION_88E;
+-		}
+-		break;
+-	case TYPE_EFUSE_REAL_CONTENT_LEN:
+-		{
+-			u16 *pu2Tmp;
+-			pu2Tmp = (u16 *)pOut;
+-			*pu2Tmp = EFUSE_REAL_CONTENT_LEN_88E;
+-		}
+-		break;
+-	case TYPE_EFUSE_CONTENT_LEN_BANK:
+-		{
+-			u16 *pu2Tmp;
+-			pu2Tmp = (u16 *)pOut;
+-			*pu2Tmp = EFUSE_REAL_CONTENT_LEN_88E;
+-		}
+-		break;
+-	case TYPE_AVAILABLE_EFUSE_BYTES_BANK:
+-		{
+-			u16 *pu2Tmp;
+-			pu2Tmp = (u16 *)pOut;
+-			*pu2Tmp = (u16)(EFUSE_REAL_CONTENT_LEN_88E-EFUSE_OOB_PROTECT_BYTES_88E);
+-		}
+-		break;
+-	case TYPE_AVAILABLE_EFUSE_BYTES_TOTAL:
+-		{
+-			u16 *pu2Tmp;
+-			pu2Tmp = (u16 *)pOut;
+-			*pu2Tmp = (u16)(EFUSE_REAL_CONTENT_LEN_88E-EFUSE_OOB_PROTECT_BYTES_88E);
+-		}
+-		break;
+-	case TYPE_EFUSE_MAP_LEN:
+-		{
+-			u16 *pu2Tmp;
+-			pu2Tmp = (u16 *)pOut;
+-			*pu2Tmp = (u16)EFUSE_MAP_LEN_88E;
+-		}
+-		break;
+-	case TYPE_EFUSE_PROTECT_BYTES_BANK:
+-		{
+-			u8 *pu1Tmp;
+-			pu1Tmp = (u8 *)pOut;
+-			*pu1Tmp = (u8)(EFUSE_OOB_PROTECT_BYTES_88E);
+-		}
+-		break;
+-	default:
+-		{
+-			u8 *pu1Tmp;
+-			pu1Tmp = (u8 *)pOut;
+-			*pu1Tmp = 0;
+-		}
+-		break;
+-	}
 -}
 -
- static int hal_EfusePgPacketRead_8188e(struct adapter *pAdapter, u8 offset, u8 *data, bool bPseudoTest)
+ static void rtl8188e_EFUSE_GetEfuseDefinition(struct adapter *pAdapter, u8 efuseType, u8 type, void *pOut, bool bPseudoTest)
  {
- 	u8 ReadState = PG_STATE_HEADER;
+-	if (bPseudoTest)
+-		Hal_EFUSEGetEfuseDefinition_Pseudo88E(pAdapter, efuseType, type, pOut);
+-	else
+ 		Hal_EFUSEGetEfuseDefinition88E(pAdapter, efuseType, type, pOut);
+ }
+ 
 -- 
 1.7.10.4
 
