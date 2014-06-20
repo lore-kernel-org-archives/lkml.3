@@ -1,87 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934440AbaFTFRn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 01:17:43 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:59488 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217AbaFTFRl (ORCPT
+	id S934534AbaFTFU7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 01:20:59 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:54857 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217AbaFTFU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 01:17:41 -0400
+	Fri, 20 Jun 2014 01:20:58 -0400
+Date: Fri, 20 Jun 2014 14:19:58 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
+Cc: markh@compro.net, driverdev-devel@linuxdriverproject.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: dgap: make dgap_found_board() return a brd pointer
+Message-ID: <20140620051958.GA17076@devel.8.8.4.4>
 MIME-Version: 1.0
-In-Reply-To: <7hegym6uca.fsf@paris.lan>
-References: <1402944372-31901-1-git-send-email-bjorn.andersson@sonymobile.com>
-	<7hvbrzbh1u.fsf@paris.lan>
-	<CAJAp7OhHr4Cgcp9pvQ3=MAie_zSnFJxG28Vf37qJ98BK7P1jaQ@mail.gmail.com>
-	<7hzjha8b97.fsf@paris.lan>
-	<842A7147-A2CC-42BD-9947-CBADF738DC92@codeaurora.org>
-	<7hegym6uca.fsf@paris.lan>
-Date: Thu, 19 Jun 2014 22:17:40 -0700
-Message-ID: <CAJAp7Ogw967gbBGmiifhtNTsZ57g8MMy4mUR1YwvpWVSZnmOjA@mail.gmail.com>
-Subject: Re: [PATCH v3 0/3] Qualcomm Resource Power Manager driver
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Kumar Gala <galak@codeaurora.org>, Lee Jones <lee.jones@linaro.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        Paul Walmsley <paul@pwsan.com>,
-        Jaswinder Singh <jaswinder.singh@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 9:44 AM, Kevin Hilman <khilman@linaro.org> wrote:
-[...]
-> Thinking more about what this RPM driver actually does, and since you
-> mentioned patterns across SoCs, it seems to me the RPM driver bascially
-> just doing the IPC.
->
+Make dgap_found_board() return a brd pointer and that brd pointer
+assign to dgap_board[] in the end of the dgap_init_one().
 
-Yes, technically this is IPC. But it's all exposed in memory as if it
-was hardware, so there's no messages or packets to be interpreted by
-the other side.
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+ drivers/staging/dgap/dgap.c |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
 
-> So, rather than MFD or drivers/soc, it seems to me that it should be
-> implmented as a controller in the new common mailbox framwork[1] being
-> worked on by Jassi Brar (added to Cc.)
->
-> IIUC, RPM is actually only doing one-way IPC (it only exposes a write()
-> interface to clients) so it seems like a rather simple implementation of
-> a mailbox controller.
->
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index 5c8e622..55c9761 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -70,7 +70,8 @@ MODULE_SUPPORTED_DEVICE("dgap");
+ 
+ static int dgap_start(void);
+ static void dgap_init_globals(void);
+-static int dgap_found_board(struct pci_dev *pdev, int id, int boardnum);
++static struct board_t *dgap_found_board(struct pci_dev *pdev, int id,
++					int boardnum);
+ static void dgap_cleanup_board(struct board_t *brd);
+ static void dgap_poll_handler(ulong dummy);
+ static int dgap_init_pci(void);
+@@ -582,11 +583,10 @@ static int dgap_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	if (rc)
+ 		return -EIO;
+ 
+-	rc = dgap_found_board(pdev, ent->driver_data, dgap_numboards);
+-	if (rc)
++	brd = dgap_found_board(pdev, ent->driver_data, dgap_numboards);
++	if (IS_ERR(brd))
+ 		return rc;
+ 
+-	brd = dgap_board[dgap_numboards++];
+ 	rc = dgap_firmware_load(pdev, ent->driver_data, brd);
+ 	if (rc)
+ 		goto cleanup_brd;
+@@ -617,6 +617,8 @@ static int dgap_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	brd->state = BOARD_READY;
+ 	brd->dpastatus = BD_RUNNING;
+ 
++	dgap_board[dgap_numboards++] = brd;
++
+ 	return 0;
+ 
+ tty_free:
+@@ -717,7 +719,8 @@ static void dgap_cleanup_board(struct board_t *brd)
+  *
+  * A board has been found, init it.
+  */
+-static int dgap_found_board(struct pci_dev *pdev, int id, int boardnum)
++static struct board_t *dgap_found_board(struct pci_dev *pdev, int id,
++					int boardnum)
+ {
+ 	struct board_t *brd;
+ 	unsigned int pci_irq;
+@@ -727,9 +730,7 @@ static int dgap_found_board(struct pci_dev *pdev, int id, int boardnum)
+ 	/* get the board structure and prep it */
+ 	brd = kzalloc(sizeof(struct board_t), GFP_KERNEL);
+ 	if (!brd)
+-		return -ENOMEM;
+-
+-	dgap_board[boardnum] = brd;
++		return ERR_PTR(-ENOMEM);
+ 
+ 	/* store the info for the board we've found */
+ 	brd->magic = DGAP_BOARD_MAGIC;
+@@ -828,13 +829,12 @@ static int dgap_found_board(struct pci_dev *pdev, int id, int boardnum)
+ 	pr_info("dgap: board %d: %s (rev %d), irq %ld\n",
+ 		boardnum, brd->name, brd->rev, brd->irq);
+ 
+-	return 0;
++	return brd;
+ 
+ free_brd:
+ 	kfree(brd);
+-	dgap_board[boardnum] = NULL;
+ 
+-	return ret;
++	return ERR_PTR(ret);
+ }
+ 
+ 
+-- 
+1.7.1
 
-What I think you miss here is the detail of that what the regulator
-writes is not what is passed over the IPC, but rather is just an
-interface to abstract away how things are spread our in the register
-space.
-
-So the only place where we do have a "mailbox" here is the actual
-function call between the regulator and the rpm drivers; not between
-the rpm driver and the rpm.
-
-> I believe Bjorn is already on the list of folks Cc'd on the common
-> mailbox framework, so it would be good to hear from him why RPM wouldn't
-> fit under that framework.
->
-
-In a separate group of Qualcomm platforms the communication with the
-RPM is done by passing messages over a shared memory channel; as this
-requires a completely different implementation of the rpm driver, I
-have started to look at Jassi's patch series.
-
-Unfortunately at this point it does not look like the proposed mailbox
-framework would reduce the complexity of the implementation nor
-provide any additional benefits when it comes to being able to
-exchange the underlaying communication methods.
-
-But I will continue to follow the development of the mailbox framework.
-
-Regards,
-Bjorn
