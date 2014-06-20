@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932618AbaFTPBH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 11:01:07 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:34295 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753637AbaFTPBD (ORCPT
+	id S1755355AbaFTPBN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 11:01:13 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:53491 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753270AbaFTPBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 11:01:03 -0400
+	Fri, 20 Jun 2014 11:01:08 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 07/41] staging: rtl8188eu: Rename Hal_EFUSEGetEfuseDefinition88E()
-Date: Fri, 20 Jun 2014 20:29:13 +0530
-Message-Id: <1403276387-11841-8-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 08/41] staging: rtl8188eu: assign hal_EfusePgPacketRead_8188e() to ->Efuse_PgPacketRead
+Date: Fri, 20 Jun 2014 20:29:14 +0530
+Message-Id: <1403276387-11841-9-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1403276387-11841-1-git-send-email-navin.patidar@gmail.com>
 References: <1403276387-11841-1-git-send-email-navin.patidar@gmail.com>
@@ -21,69 +21,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename Hal_EFUSEGetEfuseDefinition88E() to rtl8188e_EFUSE_GetEfuseDefinition()
-and remove original rtl8188e_EFUSE_GetEfuseDefinition(), so that driver can call
-Hal_EFUSEGetEfuseDefinition88E() directly without going through
-rtl8188e_EFUSE_GetEfuseDefinition().
+assign hal_EfusePgPacketRead_8188e() to ->Efuse_PgPacketRead directly
+instead of going through many functions.
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_efuse.c        |    2 +-
- drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c |    7 +------
- drivers/staging/rtl8188eu/include/hal_intf.h      |    2 +-
- 3 files changed, 3 insertions(+), 8 deletions(-)
+ drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c |   29 +--------------------
+ 1 file changed, 1 insertion(+), 28 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_efuse.c b/drivers/staging/rtl8188eu/core/rtw_efuse.c
-index b450458..7752efd 100644
---- a/drivers/staging/rtl8188eu/core/rtw_efuse.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_efuse.c
-@@ -229,7 +229,7 @@ static void efuse_ReadEFuse(struct adapter *Adapter, u8 efuseType, u16 _offset,
- void EFUSE_GetEfuseDefinition(struct adapter *pAdapter, u8 efuseType, u8 type, void *pOut, bool pseudo
- 	)
- {
--	pAdapter->HalFunc.EFUSEGetEfuseDefinition(pAdapter, efuseType, type, pOut, pseudo);
-+	pAdapter->HalFunc.EFUSEGetEfuseDefinition(pAdapter, efuseType, type, pOut);
- }
- 
- /*-----------------------------------------------------------------------------
 diff --git a/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c b/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
-index 9dda5f6..7c05bbe 100644
+index 7c05bbe..c5bbb08 100644
 --- a/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
 +++ b/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
-@@ -957,7 +957,7 @@ exit:
+@@ -1223,33 +1223,6 @@ static int hal_EfusePgPacketRead_8188e(struct adapter *pAdapter, u8 offset, u8 *
+ 		return true;
  }
  
- /* Do not support BT */
--static void Hal_EFUSEGetEfuseDefinition88E(struct adapter *pAdapter, u8 efuseType, u8 type, void *pOut)
-+static void rtl8188e_EFUSE_GetEfuseDefinition(struct adapter *pAdapter, u8 efuseType, u8 type, void *pOut)
- {
- 	switch (type) {
- 	case TYPE_EFUSE_MAX_SECTION:
-@@ -1019,11 +1019,6 @@ static void Hal_EFUSEGetEfuseDefinition88E(struct adapter *pAdapter, u8 efuseTyp
- 	}
- }
- 
--static void rtl8188e_EFUSE_GetEfuseDefinition(struct adapter *pAdapter, u8 efuseType, u8 type, void *pOut, bool bPseudoTest)
+-static int Hal_EfusePgPacketRead(struct adapter *pAdapter, u8 offset, u8 *data, bool bPseudoTest)
 -{
--		Hal_EFUSEGetEfuseDefinition88E(pAdapter, efuseType, type, pOut);
+-	int	ret;
+-
+-	ret = hal_EfusePgPacketRead_8188e(pAdapter, offset, data, bPseudoTest);
+-	return ret;
 -}
 -
- static u8 Hal_EfuseWordEnableDataWrite(struct adapter *pAdapter, u16 efuse_addr, u8 word_en, u8 *data, bool bPseudoTest)
+-static int Hal_EfusePgPacketRead_Pseudo(struct adapter *pAdapter, u8 offset, u8 *data, bool bPseudoTest)
+-{
+-	int	ret;
+-
+-	ret = hal_EfusePgPacketRead_8188e(pAdapter, offset, data, bPseudoTest);
+-	return ret;
+-}
+-
+-static int rtl8188e_Efuse_PgPacketRead(struct adapter *pAdapter, u8 offset, u8 *data, bool bPseudoTest)
+-{
+-	int	ret;
+-
+-	if (bPseudoTest)
+-		ret = Hal_EfusePgPacketRead_Pseudo (pAdapter, offset, data, bPseudoTest);
+-	else
+-		ret = Hal_EfusePgPacketRead(pAdapter, offset, data, bPseudoTest);
+-	return ret;
+-}
+-
+ static bool hal_EfuseFixHeaderProcess(struct adapter *pAdapter, u8 efuseType, struct pgpkt *pFixPkt, u16 *pAddr, bool bPseudoTest)
  {
- 	u16	tmpaddr = 0;
-diff --git a/drivers/staging/rtl8188eu/include/hal_intf.h b/drivers/staging/rtl8188eu/include/hal_intf.h
-index ecc92a6..d971e6e 100644
---- a/drivers/staging/rtl8188eu/include/hal_intf.h
-+++ b/drivers/staging/rtl8188eu/include/hal_intf.h
-@@ -238,7 +238,7 @@ struct hal_ops {
- 	void (*ReadEFuse)(struct adapter *padapter, u8 efuseType, u16 _offset,
- 			  u16 _size_byte, u8 *pbuf, bool bPseudoTest);
- 	void (*EFUSEGetEfuseDefinition)(struct adapter *padapter, u8 efuseType,
--					u8 type, void *pOut, bool bPseudoTest);
-+					u8 type, void *pOut);
- 	u16	(*EfuseGetCurrentSize)(struct adapter *padapter,
- 				       bool bPseudoTest);
- 	int	(*Efuse_PgPacketRead)(struct adapter *adapter, u8 offset,
+ 	u8 originaldata[8], badworden = 0;
+@@ -1748,7 +1721,7 @@ void rtl8188e_set_hal_ops(struct hal_ops *pHalFunc)
+ 	pHalFunc->ReadEFuse = &ReadEFuseByIC;
+ 	pHalFunc->EFUSEGetEfuseDefinition = &rtl8188e_EFUSE_GetEfuseDefinition;
+ 	pHalFunc->EfuseGetCurrentSize = &hal_EfuseGetCurrentSize_8188e;
+-	pHalFunc->Efuse_PgPacketRead = &rtl8188e_Efuse_PgPacketRead;
++	pHalFunc->Efuse_PgPacketRead = &hal_EfusePgPacketRead_8188e;
+ 	pHalFunc->Efuse_PgPacketWrite = &rtl8188e_Efuse_PgPacketWrite;
+ 	pHalFunc->Efuse_WordEnableDataWrite = &rtl8188e_Efuse_WordEnableDataWrite;
+ 
 -- 
 1.7.10.4
 
