@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933055AbaFTPCP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 11:02:15 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:44348 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932095AbaFTPCL (ORCPT
+	id S933267AbaFTPC3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 11:02:29 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:37300 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932095AbaFTPCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 11:02:11 -0400
+	Fri, 20 Jun 2014 11:02:24 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 14/41] staging: rtl8188eu: Rename rtl8188e_EfusePowerSwitch() to Efuse_PowerSwitch()
-Date: Fri, 20 Jun 2014 20:29:20 +0530
-Message-Id: <1403276387-11841-15-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 15/41] staging: rtl8188eu: Rename function Hal_EfuseWordEnableDataWrite()
+Date: Fri, 20 Jun 2014 20:29:21 +0530
+Message-Id: <1403276387-11841-16-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1403276387-11841-1-git-send-email-navin.patidar@gmail.com>
 References: <1403276387-11841-1-git-send-email-navin.patidar@gmail.com>
@@ -21,99 +21,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename rtl8188e_EfusePowerSwitch() to Efuse_PowerSwitch()
-and remove original Efuse_PowerSwitch() function,
-so that driver can call rtl8188e_EfusePowerSwitch() directly
-without going through Efuse_PowerSwitch().
+Rename Hal_EfuseWordEnableDataWrite() to Efuse_WordEnableDataWrite()
+and remove original EFUSE_GetEfuseDefinition() function,
+so that driver can call Hal_EfuseWordEnableDataWrite() directly
+without going through Efuse_WordEnableDataWrite().
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_efuse.c        |   27 ---------------------
- drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c |   12 ++++++---
- drivers/staging/rtl8188eu/include/hal_intf.h      |    2 --
- 3 files changed, 9 insertions(+), 32 deletions(-)
+ drivers/staging/rtl8188eu/core/rtw_efuse.c        |    9 ---------
+ drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c |    3 +--
+ drivers/staging/rtl8188eu/include/hal_intf.h      |    3 ---
+ 3 files changed, 1 insertion(+), 14 deletions(-)
 
 diff --git a/drivers/staging/rtl8188eu/core/rtw_efuse.c b/drivers/staging/rtl8188eu/core/rtw_efuse.c
-index 5cf5a30..7adb7b4 100644
+index 7adb7b4..f2d374d 100644
 --- a/drivers/staging/rtl8188eu/core/rtw_efuse.c
 +++ b/drivers/staging/rtl8188eu/core/rtw_efuse.c
-@@ -76,33 +76,6 @@ Efuse_Write1ByteToFakeContent(
- 	return true;
+@@ -350,15 +350,6 @@ void efuse_WordEnableDataRead(u8 word_en, u8 *sourdata, u8 *targetdata)
+ 	}
  }
  
--/*-----------------------------------------------------------------------------
-- * Function:	Efuse_PowerSwitch
-- *
-- * Overview:	When we want to enable write operation, we should change to
-- *				pwr on state. When we stop write, we should switch to 500k mode
-- *				and disable LDO 2.5V.
-- *
-- * Input:       NONE
-- *
-- * Output:      NONE
-- *
-- * Return:      NONE
-- *
-- * Revised History:
-- * When			Who		Remark
-- * 11/17/2008	MHC		Create Version 0.
-- *
-- *---------------------------------------------------------------------------*/
--void
--Efuse_PowerSwitch(
--		struct adapter *pAdapter,
--		u8 write,
--		u8 PwrState)
+-u8 Efuse_WordEnableDataWrite(struct adapter *pAdapter, u16 efuse_addr, u8 word_en, u8 *data, bool pseudo)
 -{
--	pAdapter->HalFunc.EfusePowerSwitch(pAdapter, write, PwrState);
+-	u8 ret = 0;
+-
+-	ret =  pAdapter->HalFunc.Efuse_WordEnableDataWrite(pAdapter, efuse_addr, word_en, data, pseudo);
+-
+-	return ret;
 -}
 -
- /*  11/16/2008 MH Add description. Get current efuse area enabled word!!. */
- u8
- Efuse_CalculateWordCnts(u8 word_en)
+ static u8 efuse_read8(struct adapter *padapter, u16 address, u8 *value)
+ {
+ 	return efuse_OneByteRead(padapter, address, value, false);
 diff --git a/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c b/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
-index 507e62b..525973f 100644
+index 525973f..8e93d48 100644
 --- a/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
 +++ b/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
-@@ -750,8 +750,15 @@ hal_EfusePgPacketWriteData(
- 		struct pgpkt *pTargetPkt,
- 		bool bPseudoTest);
+@@ -1026,7 +1026,7 @@ void EFUSE_GetEfuseDefinition(struct adapter *pAdapter, u8 efuseType, u8 type, v
+ 	}
+ }
  
--static void
--rtl8188e_EfusePowerSwitch(
-+/*
-+ * Function:	Efuse_PowerSwitch
-+ *
-+ * Overview:	When we want to enable write operation, we should change to
-+ *				pwr on state. When we stop write, we should switch to 500k mode
-+ *				and disable LDO 2.5V.
-+ */
-+
-+void Efuse_PowerSwitch(
- 		struct adapter *pAdapter,
- 		u8 bWrite,
- 		u8 PwrState)
-@@ -1671,7 +1678,6 @@ void rtl8188e_set_hal_ops(struct hal_ops *pHalFunc)
- 	pHalFunc->write_rfreg = &rtl8188e_PHY_SetRFReg;
- 
- 	/*  Efuse related function */
--	pHalFunc->EfusePowerSwitch = &rtl8188e_EfusePowerSwitch;
+-static u8 Hal_EfuseWordEnableDataWrite(struct adapter *pAdapter, u16 efuse_addr, u8 word_en, u8 *data, bool bPseudoTest)
++u8 Efuse_WordEnableDataWrite(struct adapter *pAdapter, u16 efuse_addr, u8 word_en, u8 *data, bool bPseudoTest)
+ {
+ 	u16	tmpaddr = 0;
+ 	u16	start_addr = efuse_addr;
+@@ -1681,7 +1681,6 @@ void rtl8188e_set_hal_ops(struct hal_ops *pHalFunc)
  	pHalFunc->ReadEFuse = &ReadEFuseByIC;
  	pHalFunc->Efuse_PgPacketRead = &hal_EfusePgPacketRead_8188e;
  	pHalFunc->Efuse_PgPacketWrite = &hal_EfusePgPacketWrite_8188e;
+-	pHalFunc->Efuse_WordEnableDataWrite = &Hal_EfuseWordEnableDataWrite;
+ 
+ 	pHalFunc->sreset_init_value = &sreset_init_value;
+ 	pHalFunc->sreset_get_wifi_status  = &sreset_get_wifi_status;
 diff --git a/drivers/staging/rtl8188eu/include/hal_intf.h b/drivers/staging/rtl8188eu/include/hal_intf.h
-index adf3847..38285d6 100644
+index 38285d6..a7cad6f 100644
 --- a/drivers/staging/rtl8188eu/include/hal_intf.h
 +++ b/drivers/staging/rtl8188eu/include/hal_intf.h
-@@ -233,8 +233,6 @@ struct hal_ops {
- 			       enum rf_radio_path eRFPath, u32 RegAddr,
- 			       u32 BitMask, u32 Data);
+@@ -239,9 +239,6 @@ struct hal_ops {
+ 				      u8 *data, bool bPseudoTest);
+ 	bool	(*Efuse_PgPacketWrite)(struct adapter *padapter, u8 offset,
+ 				       u8 word_en, u8 *data, bool bPseudoTest);
+-	u8	(*Efuse_WordEnableDataWrite)(struct adapter *padapter,
+-					     u16 efuse_addr, u8 word_en,
+-					     u8 *data, bool bPseudoTest);
+ 	bool	(*Efuse_PgPacketWrite_BT)(struct adapter *padapter, u8 offset,
+ 					  u8 word_en, u8 *data, bool test);
  
--	void (*EfusePowerSwitch)(struct adapter *padapter, u8 bWrite,
--				 u8 PwrState);
- 	void (*ReadEFuse)(struct adapter *padapter, u8 efuseType, u16 _offset,
- 			  u16 _size_byte, u8 *pbuf, bool bPseudoTest);
- 	int	(*Efuse_PgPacketRead)(struct adapter *adapter, u8 offset,
 -- 
 1.7.10.4
 
