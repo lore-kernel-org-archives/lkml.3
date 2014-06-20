@@ -1,77 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805AbaFTBNZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 21:13:25 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:63877 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754277AbaFTBNX (ORCPT
+	id S932441AbaFTCIG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 22:08:06 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:51154 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754611AbaFTCIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 21:13:23 -0400
-X-AuditID: cbfee68f-b7fef6d000003970-0f-53a38ab07b56
-Message-id: <53A38AB0.3010606@samsung.com>
-Date: Fri, 20 Jun 2014 10:13:20 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'MyungJoo Ham'" <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org,
-        "'Charles Keepax'" <ckeepax@opensource.wolfsonmicro.com>,
-        "'Krzysztof Kozlowski'" <k.kozlowski@samsung.com>
-Subject: Re: [PATCH] extcon: Remove unnecessary OOM messages
-References: <000401cf8ab6$6613d350$323b79f0$%han@samsung.com>
-In-reply-to: <000401cf8ab6$6613d350$323b79f0$%han@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsWyRsSkRHdD1+Jgg4+bDSz+TbnBbnF54SVW
-	i9cvDC0u75rDZnG7cQWbA6vHy4m/2Tz6tqxi9Pi8SS6AOYrLJiU1J7MstUjfLoEr49efLqaC
-	bywVx15vYmpg/MbcxcjJISFgInHm8RImCFtM4sK99WwgtpDAUkaJL23cMDUbHy9k6WLkAopP
-	Z5SYs2EWE4TzmlFi8aLZYN28AloSWz9+YwWxWQRUJf7smskIYrMBxfe/uAE2VVQgTGLl9Css
-	EPWCEj8m3wOzRQRUJD6vP84GMpRZYAejxK5J98EGCQvYSGz5doId4iRbif/b5oAN5RSwk7i8
-	cheYzSygI7G/dRobhC0vsXnNW2aQQRIC29gl3iz6A3WRgMS3yYeAtnEAJWQlNh2Ael9S4uCK
-	GywTGMVmIblpFpKxs5CMXcDIvIpRNLUguaA4Kb3IWK84Mbe4NC9dLzk/dxMjMJ5O/3vWv4Px
-	7gHrQ4zJQCsnMkuJJucD4zGvJN7Q2MzIwtTE1NjI3NKMNGElcd77D5OChATSE0tSs1NTC1KL
-	4otKc1KLDzEycXBKNTAuiZ1q9+vwbw7Vly7ph0vWLmoSkF6TumLt9Y2ZMV7PuFee6m7J1Jh1
-	1WC9DfsD64yYhK2N+iblwa0ln9OyKo+6xK/ePZ3x646AC6JTFbZUeeT+yxD5aFXR8+xLe0ni
-	FCaZpX3C/udzpv2ceGwCU3Zcn35XgNmmxvX3xffl5XHK9F70Z6l6mKbEUpyRaKjFXFScCABj
-	7iO7vQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgleLIzCtJLcpLzFFi42I5/e+xoO6GrsXBBj2/NCz+TbnBbnF54SVW
-	i9cvDC0u75rDZnG7cQWbA6vHy4m/2Tz6tqxi9Pi8SS6AOaqB0SYjNTEltUghNS85PyUzL91W
-	yTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaKWSQlliTilQKCCxuFhJ3w7ThNAQN10L
-	mMYIXd+QILgeIwM0kLCGMePXny6mgm8sFcdeb2JqYPzG3MXIySEhYCKx8fFCFghbTOLCvfVs
-	XYxcHEIC0xkl5myYxQThvGaUWLxoNhNIFa+AlsTWj99YQWwWAVWJP7tmMoLYbEDx/S9usIHY
-	ogJhEiunX2GBqBeU+DH5HpgtIqAi8Xn9cbANzAI7GCV2TboPNkhYwEZiy7cT7CC2kICtxP9t
-	c8CGcgrYSVxeuQvMZhbQkdjfOo0NwpaX2LzmLfMERoFZSHbMQlI2C0nZAkbmVYyiqQXJBcVJ
-	6blGesWJucWleel6yfm5mxjB8fpMegfjqgaLQ4wCHIxKPLwdpouDhVgTy4orcw8xSnAwK4nw
-	nm4HCvGmJFZWpRblxxeV5qQWH2JMBgbBRGYp0eR8YCrJK4k3NDYxM7I0Mje0MDI2J01YSZz3
-	YKt1oJBAemJJanZqakFqEcwWJg5OqQZG1uWnCmdJHddleXgyZNehFvm3fcvsS6//Orrw763F
-	5vJq+6LN1qS99VoeoyPaE/PHS15z34HrhzZ8j1smqGpVFzH73Kctn7evaBb6vFDz18E5gvnT
-	Soy57m6ZFZBtnyGpdnjKoUSPSbt2Rx+ZtvW6yCeDC/vt1h5tyDJiW/+su3zVx8YvG/h7Dimx
-	FGckGmoxFxUnAgBQjOgwGwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 19 Jun 2014 22:08:04 -0400
+Date: Thu, 19 Jun 2014 22:08:00 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Subject: Re: [PATCH -tip v2 1/3] ftrace: Simplify ftrace_hash_disable/enable
+ path in ftrace_hash_move
+Message-ID: <20140619220800.5d4b790c@gandalf.local.home>
+In-Reply-To: <20140617110442.15167.81076.stgit@kbuild-fedora.novalocal>
+References: <20140617110436.15167.7179.stgit@kbuild-fedora.novalocal>
+	<20140617110442.15167.81076.stgit@kbuild-fedora.novalocal>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2014 02:30 PM, Jingoo Han wrote:
-> The site-specific OOM messages are unnecessary, because they
-> duplicate the MM subsystem generic OOM message. The following
-> checkpatch warning is also removed.
+On Tue, 17 Jun 2014 11:04:42 +0000
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+
+> Simplify ftrace_hash_disable/enable path in ftrace_hash_move
+> for hardening the process if the memory allocation failed.
 > 
->   WARNING: Possible unnecessary 'out of memory' message
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+
+Regardless of what we do with IPMODIFY, I pulled this into my 3.17
+queue. You don't need to resend it with any new versions of the patches.
+
+-- Steve
+
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Josh Poimboeuf <jpoimboe@redhat.com>
+> Cc: Namhyung Kim <namhyung@kernel.org>
 > ---
->  drivers/extcon/extcon-arizona.c  |    4 +---
->  drivers/extcon/extcon-max14577.c |    5 ++---
->  drivers/extcon/extcon-max77693.c |    5 ++---
->  drivers/extcon/extcon-max8997.c  |    4 +---
->  4 files changed, 6 insertions(+), 12 deletions(-)
-
-Applied it.
-
-Thanks,
-Chanwoo Choi
+>  kernel/trace/ftrace.c |   33 +++++++++++----------------------
+>  1 file changed, 11 insertions(+), 22 deletions(-)
+> 
+> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> index 5b372e3..d65719d 100644
+> --- a/kernel/trace/ftrace.c
+> +++ b/kernel/trace/ftrace.c
+> @@ -1304,25 +1304,15 @@ ftrace_hash_move(struct ftrace_ops *ops, int enable,
+>  	struct ftrace_hash *new_hash;
+>  	int size = src->count;
+>  	int bits = 0;
+> -	int ret;
+>  	int i;
+>  
+>  	/*
+> -	 * Remove the current set, update the hash and add
+> -	 * them back.
+> -	 */
+> -	ftrace_hash_rec_disable(ops, enable);
+> -
+> -	/*
+>  	 * If the new source is empty, just free dst and assign it
+>  	 * the empty_hash.
+>  	 */
+>  	if (!src->count) {
+> -		free_ftrace_hash_rcu(*dst);
+> -		rcu_assign_pointer(*dst, EMPTY_HASH);
+> -		/* still need to update the function records */
+> -		ret = 0;
+> -		goto out;
+> +		new_hash = EMPTY_HASH;
+> +		goto update;
+>  	}
+>  
+>  	/*
+> @@ -1335,10 +1325,9 @@ ftrace_hash_move(struct ftrace_ops *ops, int enable,
+>  	if (bits > FTRACE_HASH_MAX_BITS)
+>  		bits = FTRACE_HASH_MAX_BITS;
+>  
+> -	ret = -ENOMEM;
+>  	new_hash = alloc_ftrace_hash(bits);
+>  	if (!new_hash)
+> -		goto out;
+> +		return -ENOMEM;
+>  
+>  	size = 1 << src->size_bits;
+>  	for (i = 0; i < size; i++) {
+> @@ -1349,20 +1338,20 @@ ftrace_hash_move(struct ftrace_ops *ops, int enable,
+>  		}
+>  	}
+>  
+> +update:
+> +	/*
+> +	 * Remove the current set, update the hash and add
+> +	 * them back.
+> +	 */
+> +	ftrace_hash_rec_disable(ops, enable);
+> +
+>  	old_hash = *dst;
+>  	rcu_assign_pointer(*dst, new_hash);
+>  	free_ftrace_hash_rcu(old_hash);
+>  
+> -	ret = 0;
+> - out:
+> -	/*
+> -	 * Enable regardless of ret:
+> -	 *  On success, we enable the new hash.
+> -	 *  On failure, we re-enable the original hash.
+> -	 */
+>  	ftrace_hash_rec_enable(ops, enable);
+>  
+> -	return ret;
+> +	return 0;
+>  }
+>  
+>  /*
+> 
 
