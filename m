@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751904AbaFTOTg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 10:19:36 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:58009 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114AbaFTOTe (ORCPT
+	id S1752240AbaFTOVr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 10:21:47 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:61244 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751349AbaFTOVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 10:19:34 -0400
-Date: Fri, 20 Jun 2014 15:19:28 +0100
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] EFI urgent fix
-Message-ID: <20140620141927.GL4179@bivouac.eciton.net>
-References: <20140620090008.GU24049@console-pimps.org>
- <20140620092848.GC23939@arm.com>
- <20140620133919.GK4179@bivouac.eciton.net>
- <20140620134938.GY24049@console-pimps.org>
+	Fri, 20 Jun 2014 10:21:46 -0400
+Date: Fri, 20 Jun 2014 10:21:42 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Jan Kara <jack@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>
+Subject: Re: [RFC][PATCH 3/3] x86/nmi: Perform a safe NMI stack trace on all
+ CPUs
+Message-ID: <20140620102142.223ff42f@gandalf.local.home>
+In-Reply-To: <20140620135815.GG7959@redhat.com>
+References: <20140619213329.478113470@goodmis.org>
+	<20140619213952.360076309@goodmis.org>
+	<20140620135815.GG7959@redhat.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140620134938.GY24049@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 02:49:38PM +0100, Matt Fleming wrote:
-> On Fri, 20 Jun, at 02:39:19PM, Leif Lindholm wrote:
+On Fri, 20 Jun 2014 09:58:15 -0400
+Don Zickus <dzickus@redhat.com> wrote:
+
+> On Thu, Jun 19, 2014 at 05:33:32PM -0400, Steven Rostedt wrote:
+> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 > > 
-> > I did post an alternative patch for one half of this a week before
-> > anyone else, but that one seems to have been ignored, even by gmane:
-> > http://www.spinics.net/lists/linux-efi/msg03924.html
->  
-> Sorry Leif, I don't know why I didn't pick that one up. I do see it in
-> my mail archive. Chalk it up to human error.
-
-Well, it seemed to manage to trick at least one computer too...
-
-> > That form will still be required for the 32-bit arm support, since
-> > strncmp is not available in the zImage.
+> > When trigger_all_cpu_backtrace() is called on x86, it will trigger an
+> > NMI on each CPU and call show_regs(). But this can lead to a hard lock
+> > up if the NMI comes in on another printk().
+> > 
+> > In order to avoid this, when the NMI triggers, it switches the printk
+> > routine for that CPU to call a NMI safe printk function that records the
+> > printk in a per_cpu trace_seq descriptor. After all NMIs have finished
+> > recording its data, the trace_seqs are printed in a safe context.
 > 
-> Are you planning on incorporating this fix into the 32-bit arm support
-> patch series
+> Ah, if there is other places that need to call a printk from an NMI
+> context, do we have to copy and paste this code there too?  That would
+> seem a little much. :-)  I guess my only concern really is the seq_init
+> and seq print stuff.  The handler seems relatively simple.
 
-Yeah, I'll do that.
-Just as soon as I get back off holiday :)
+This is a special case for printing from NMI. As you can trigger it
+with sysrq-l. But any other prints from NMI should only be in the BUG()
+case, where we should just force the output and override any locks in
+printk.
 
-/
-    Leif
+> 
+> Can we isolate this to a pr_nmi() routine or something?  Or maybe a
+> pr_nmi_queue and pr_nmi_dump or something?
+> 
+
+We'll have to see how traction this gets. It's just an RFC.
+
+-- Steve
