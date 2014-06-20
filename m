@@ -1,84 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172AbaFTUca (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:32:30 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:62312 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747AbaFTUc2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 16:32:28 -0400
+	id S1757248AbaFTUcf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:32:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27457 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750747AbaFTUcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 16:32:31 -0400
+Date: Fri, 20 Jun 2014 17:31:46 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Gleb Natapov <gleb@kernel.org>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, pbonzini@redhat.com,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, mgorman@suse.de,
+        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, laijs@cn.fujitsu.com, kvm@vger.kernel.org,
+        linux-mm@kvack.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        Avi Kivity <avi.kivity@gmail.com>
+Subject: Re: [RFC PATCH 1/1] Move two pinned pages to non-movable node in kvm.
+Message-ID: <20140620203146.GA6580@amt.cnet>
+References: <1403070600-6083-1-git-send-email-tangchen@cn.fujitsu.com>
+ <20140618061230.GA10948@minantech.com>
+ <53A136C4.5070206@cn.fujitsu.com>
+ <20140619092031.GA429@minantech.com>
+ <20140619190024.GA3887@amt.cnet>
+ <20140620111509.GE20764@minantech.com>
+ <20140620125326.GA22283@amt.cnet>
+ <20140620142622.GA28698@minantech.com>
 MIME-Version: 1.0
-In-Reply-To: <1403251396-17487-1-git-send-email-tushar.b@samsung.com>
-References: <1403251396-17487-1-git-send-email-tushar.b@samsung.com>
-Date: Fri, 20 Jun 2014 13:32:26 -0700
-X-Google-Sender-Auth: PKVcKCvkBntWVJ9Dj50zvuSQ0nY
-Message-ID: <CAD=FV=XX1XAX-jZTJaQYTHbeXkHu2uX_6==vHYbSnVpjJe6+tQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ASoC: max98090: Add max98091 compatible string
-From: Doug Anderson <dianders@chromium.org>
-To: Tushar Behera <tushar.b@samsung.com>
-Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        alsa-devel@alsa-project.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, tiwai@suse.de,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Tushar Behera <trblinux@gmail.com>,
-        Wonjoon Lee <woojoo.lee@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140620142622.GA28698@minantech.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tushar,
+On Fri, Jun 20, 2014 at 05:26:22PM +0300, Gleb Natapov wrote:
+> On Fri, Jun 20, 2014 at 09:53:26AM -0300, Marcelo Tosatti wrote:
+> > On Fri, Jun 20, 2014 at 02:15:10PM +0300, Gleb Natapov wrote:
+> > > On Thu, Jun 19, 2014 at 04:00:24PM -0300, Marcelo Tosatti wrote:
+> > > > On Thu, Jun 19, 2014 at 12:20:32PM +0300, Gleb Natapov wrote:
+> > > > > CCing Marcelo,
+> > > > > 
+> > > > > On Wed, Jun 18, 2014 at 02:50:44PM +0800, Tang Chen wrote:
+> > > > > > Hi Gleb,
+> > > > > > 
+> > > > > > Thanks for the quick reply. Please see below.
+> > > > > > 
+> > > > > > On 06/18/2014 02:12 PM, Gleb Natapov wrote:
+> > > > > > >On Wed, Jun 18, 2014 at 01:50:00PM +0800, Tang Chen wrote:
+> > > > > > >>[Questions]
+> > > > > > >>And by the way, would you guys please answer the following questions for me ?
+> > > > > > >>
+> > > > > > >>1. What's the ept identity pagetable for ?  Only one page is enough ?
+> > > > > > >>
+> > > > > > >>2. Is the ept identity pagetable only used in realmode ?
+> > > > > > >>    Can we free it once the guest is up (vcpu in protect mode)?
+> > > > > > >>
+> > > > > > >>3. Now, ept identity pagetable is allocated in qemu userspace.
+> > > > > > >>    Can we allocate it in kernel space ?
+> > > > > > >What would be the benefit?
+> > > > > > 
+> > > > > > I think the benefit is we can hot-remove the host memory a kvm guest
+> > > > > > is using.
+> > > > > > 
+> > > > > > For now, only memory in ZONE_MOVABLE can be migrated/hot-removed. And the
+> > > > > > kernel
+> > > > > > will never use ZONE_MOVABLE memory. So if we can allocate these two pages in
+> > > > > > kernel space, we can pin them without any trouble. When doing memory
+> > > > > > hot-remove,
+> > > > > > the kernel will not try to migrate these two pages.
+> > > > > But we can do that by other means, no? The patch you've sent for instance.
+> > > > > 
+> > > > > > 
+> > > > > > >
+> > > > > > >>
+> > > > > > >>4. If I want to migrate these two pages, what do you think is the best way ?
+> > > > > > >>
+> > > > > > >I answered most of those here: http://www.mail-archive.com/kvm@vger.kernel.org/msg103718.html
+> > > > > > 
+> > > > > > I'm sorry I must missed this email.
+> > > > > > 
+> > > > > > Seeing your advice, we can unpin these two pages and repin them in the next
+> > > > > > EPT violation.
+> > > > > > So about this problem, which solution would you prefer, allocate these two
+> > > > > > pages in kernel
+> > > > > > space, or migrate them before memory hot-remove ?
+> > > > > > 
+> > > > > > I think the first solution is simpler. But I'm not quite sure if there is
+> > > > > > any other pages
+> > > > > > pinned in memory. If we have the same problem with other kvm pages, I think
+> > > > > > it is better to
+> > > > > > solve it in the second way.
+> > > > > > 
+> > > > > > What do you think ?
+> > > > > Remove pinning is preferable. In fact looks like for identity pagetable
+> > > > > it should be trivial, just don't pin. APIC access page is a little bit
+> > > > > more complicated since its physical address needs to be tracked to be
+> > > > > updated in VMCS.
+> > > > 
+> > > > Yes, and there are new users of page pinning as well soon (see PEBS
+> > > > threads on kvm-devel).
+> > > > 
+> > > > Was thinking of notifiers scheme. Perhaps:
+> > > > 
+> > > > ->begin_page_unpin(struct page *page)
+> > > > 	- Remove any possible access to page.
+> > > > 
+> > > > ->end_page_unpin(struct page *page)
+> > > > 	- Reinstantiate any possible access to page.
+> > > > 
+> > > > For KVM:
+> > > > 
+> > > > ->begin_page_unpin()
+> > > > 	- Remove APIC-access page address from VMCS.
+> > > > 	  or
+> > > > 	- Remove spte translation to pinned page.
+> > > > 	
+> > > > 	- Put vcpu in state where no VM-entries are allowed.
+> > > > 
+> > > > ->end_page_unpin()
+> > > > 	- Setup APIC-access page, ...
+> > > > 	- Allow vcpu to VM-entry.
+> > > > 
+> > > I believe that to handle identity page and APIC access page we do not
+> > > need any of those. 
+> > > We can use mmu notifiers to track when page begins
+> > > to be moved and we can find new page location on EPT violation.
+> > 
+> > Does page migration hook via mmu notifiers? I don't think so. 
+> > 
+> Both identity page and APIC access page are userspace pages which will
+> have to be unmap from process address space during migration. At this point
+> mmu notifiers will be called.
 
-On Fri, Jun 20, 2014 at 1:03 AM, Tushar Behera <tushar.b@samsung.com> wrote:
-> From: Wonjoon Lee <woojoo.lee@samsung.com>
->
-> The MAX98091 CODEC is the same as MAX98090 CODEC, but with an extra
-> microphone. Existing driver for MAX98090 CODEC already has support
-> for MAX98091 CODEC. Adding proper compatible string so that MAX98091
-> CODEC can be specified from device tree.
->
-> Signed-off-by: Wonjoon Lee <woojoo.lee@samsung.com>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Signed-off-by: Tushar Behera <tushar.b@samsung.com>
-> ---
->
-> Picked from https://chromium-review.googlesource.com/#/c/184091/
->
->  .../devicetree/bindings/sound/max98090.txt         |    2 +-
->  sound/soc/codecs/max98090.c                        |    2 ++
->  2 files changed, 3 insertions(+), 1 deletion(-)
->
-> diff --git a/Documentation/devicetree/bindings/sound/max98090.txt b/Documentation/devicetree/bindings/sound/max98090.txt
-> index a5e63fa..c454e67 100644
-> --- a/Documentation/devicetree/bindings/sound/max98090.txt
-> +++ b/Documentation/devicetree/bindings/sound/max98090.txt
-> @@ -4,7 +4,7 @@ This device supports I2C only.
->
->  Required properties:
->
-> -- compatible : "maxim,max98090".
-> +- compatible : "maxim,max98090" or "maxim,max98091".
->
->  - reg : The I2C address of the device.
->
-> diff --git a/sound/soc/codecs/max98090.c b/sound/soc/codecs/max98090.c
-> index f5fccc7..4f5534d 100644
-> --- a/sound/soc/codecs/max98090.c
-> +++ b/sound/soc/codecs/max98090.c
-> @@ -2460,12 +2460,14 @@ static const struct dev_pm_ops max98090_pm = {
->
->  static const struct i2c_device_id max98090_i2c_id[] = {
->         { "max98090", MAX98090 },
-> +       { "max98091", MAX98091 },
+Right.
 
-optional: This would allow you to add some extra error checking in
-max98090_probe() to make sure that the device-tree specified device
-matched the device that was detected.  That could be in a future
-patch, though.
+> > It won't even attempt page migration because the page count is
+> > increased (would have to confirm though). Tang?
+> > 
+> Of course, we should not pin.
+>  
+> > The problem with identity page is this: its location is written into the
+> > guest CR3. So you cannot allow it (the page which the guest CR3 points
+> > to) to be reused before you remove the reference.
+> > 
+> > Where is the guarantee there will be an EPT violation, allowing a vcpu
+> > to execute with guest CR3 pointing to page with random data?
+> > 
+> A guest's physical address is written into CR3 (0xfffbc000 usually),
+> not a physical address of an identity page directly. When a guest will
+> try to use CR3 KVM will get EPT violation and shadow page code will find
+> a page that backs guest's address 0xfffbc000 and will map it into EPT
+> table. This is what happens on a first vmentry after vcpu creation.
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
+Right.
+
+> > Same with the APIC access page.
+> APIC page is always mapped into guest's APIC base address 0xfee00000.
+> The way it works is that when vCPU accesses page at 0xfee00000 the access
+> is translated to APIC access page physical address. CPU sees that access
+> is for APIC page and generates APIC access exit instead of memory access.
+> If address 0xfee00000 is not mapped by EPT then EPT violation exit will
+> be generated instead, EPT mapping will be instantiated, access retired
+> by a guest and this time will generate APIC access exit.
+
+Right, confused with the other APIC page which the CPU writes (the vAPIC page) 
+to.
+
+> > > > Because allocating APIC access page from distant NUMA node can
+> > > > be a performance problem, i believe.
+> > > I do not think this is the case. APIC access page is never written to,
+> > > and in fact SDM advice to share it between all vcpus.
+> > 
+> > Right. 
+> > 
+> > But the point is not so much relevant as this should be handled for
+> > PEBS pages which would be interesting to force to non-movable zones.
+> >
+> IIRC your shadow page pinning patch series support flushing of ptes
+> by mmu notifier by forcing MMU reload and, as a result, faulting in of
+> pinned pages during next entry.  Your patch series does not pin pages
+> by elevating their page count.
+
+No but PEBS series does and its required to stop swap-out
+of the page.
+
