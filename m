@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934681AbaFTF1i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 01:27:38 -0400
-Received: from barracuda.fsl.cs.sunysb.edu ([130.245.126.20]:60104 "EHLO
-	barracuda.fsl.cs.sunysb.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934263AbaFTF1f convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 01:27:35 -0400
-X-ASG-Debug-ID: 1403240975-0769c427b18bab0001-xx1T2L
-X-Barracuda-Envelope-From: lezk@fsl.cs.sunysb.edu
-X-Barracuda-RBL-Trusted-Forwarder: 130.245.126.16
-Subject: Re: new mailing list for union/overlay filesystems?
-X-Barracuda-BWL-IP: 192.168.1.196
-X-Barracuda-RBL-IP: 192.168.1.196
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
-X-ASG-Orig-Subj: Re: new mailing list for union/overlay filesystems?
-Content-Type: text/plain; charset=windows-1252
-From: Erez Local Zadok <lezk@fsl.cs.sunysb.edu>
-In-Reply-To: <CAJfpegshQmihBb3xGQOcz3ua_b0v1ce=Xknmg7HzF=HqBe8i5Q@mail.gmail.com>
-Date: Fri, 20 Jun 2014 01:09:34 -0400
-Cc: "David S. Miller" <davem@davemloft.net>,
-        David Howells <dhowells@redhat.com>, J Okajima <hooanon05g@gmail.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <98B6F15E-21E5-4BA1-B0CF-3C6AE9F39333@fsl.cs.sunysb.edu>
-References: <CAJfpegshQmihBb3xGQOcz3ua_b0v1ce=Xknmg7HzF=HqBe8i5Q@mail.gmail.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-X-Mailer: Apple Mail (2.1878.2)
-X-Barracuda-Connect: avatar.fsl.cs.sunysb.edu[130.245.126.16]
-X-Barracuda-Start-Time: 1403240975
-X-Barracuda-URL: http://barracuda.fsl.cs.sunysb.edu:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.6794
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S934692AbaFTF3w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 01:29:52 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:41249 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934263AbaFTF3u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 01:29:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140620152703.157a66fd@canb.auug.org.au>
+References: <20140620152703.157a66fd@canb.auug.org.au>
+Date: Thu, 19 Jun 2014 22:29:49 -0700
+X-Google-Sender-Auth: OB_yCw9FpsOWuTYbKV4WbiNXNfs
+Message-ID: <CAE9FiQVN1BcZmdwjaKF5-K=acC11jP=mWoFT67udH-b7iVjqHw@mail.gmail.com>
+Subject: Re: linux-next: build warning after merge of the akpm-current tree
+From: Yinghai Lu <yinghai@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=047d7b10ca0140aed004fc3dc87e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BTW, unionfs isn’t inactive (http://unionfs.filesystems.org, http://git.fsl.cs.sunysb.edu/?o=age).
+--047d7b10ca0140aed004fc3dc87e
+Content-Type: text/plain; charset=UTF-8
 
-Cheers,
-Erez.
+On Thu, Jun 19, 2014 at 10:27 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Andrew,
+>
+> After merging the akpm-current tree, today's linux-next build (x86_64
+> allmodconfig) produced this warning:
+>
+> Introduced by commit 8d9dfa4b0125 ("initramfs: support initramfs that
+> is more than 2G").  Grep is your friend :-(
 
-On Jun 19, 2014, at 8:36 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+Please check if attached patch fix the problem.
 
-> Hi Dave,
-> 
-> There's interest in having a mailing list specifically for "union
-> filesystem" like solutions (currently active projects are aufs,
-> union-mounts and overlayfs).
-> 
-> Would it be possible to create one on vger for this purpose?
-> 
-> Thanks,
-> Miklos
+Yinghai
+
+--047d7b10ca0140aed004fc3dc87e
+Content-Type: text/x-patch; charset=US-ASCII; name="fix_uLong_print.patch"
+Content-Disposition: attachment; filename="fix_uLong_print.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hwn247jz1
+
+ZGlmZiAtLWdpdCBhL2NyeXB0by96bGliLmMgYi9jcnlwdG8vemxpYi5jCmluZGV4IDA2YjYyZTUu
+LmM5ZWU2ODEgMTAwNjQ0Ci0tLSBhL2NyeXB0by96bGliLmMKKysrIGIvY3J5cHRvL3psaWIuYwpA
+QCAtMTY4LDcgKzE2OCw3IEBAIHN0YXRpYyBpbnQgemxpYl9jb21wcmVzc191cGRhdGUoc3RydWN0
+IGNyeXB0b19wY29tcCAqdGZtLAogCX0KIAogCXJldCA9IHJlcS0+YXZhaWxfb3V0IC0gc3RyZWFt
+LT5hdmFpbF9vdXQ7Ci0JcHJfZGVidWcoImF2YWlsX2luICV1LCBhdmFpbF9vdXQgJXUgKGNvbnN1
+bWVkICV1LCBwcm9kdWNlZCAldSlcbiIsCisJcHJfZGVidWcoImF2YWlsX2luICVsdSwgYXZhaWxf
+b3V0ICVsdSAoY29uc3VtZWQgJWx1LCBwcm9kdWNlZCAldSlcbiIsCiAJCSBzdHJlYW0tPmF2YWls
+X2luLCBzdHJlYW0tPmF2YWlsX291dCwKIAkJIHJlcS0+YXZhaWxfaW4gLSBzdHJlYW0tPmF2YWls
+X2luLCByZXQpOwogCXJlcS0+bmV4dF9pbiA9IHN0cmVhbS0+bmV4dF9pbjsKQEAgLTE5OCw3ICsx
+OTgsNyBAQCBzdGF0aWMgaW50IHpsaWJfY29tcHJlc3NfZmluYWwoc3RydWN0IGNyeXB0b19wY29t
+cCAqdGZtLAogCX0KIAogCXJldCA9IHJlcS0+YXZhaWxfb3V0IC0gc3RyZWFtLT5hdmFpbF9vdXQ7
+Ci0JcHJfZGVidWcoImF2YWlsX2luICV1LCBhdmFpbF9vdXQgJXUgKGNvbnN1bWVkICV1LCBwcm9k
+dWNlZCAldSlcbiIsCisJcHJfZGVidWcoImF2YWlsX2luICVsdSwgYXZhaWxfb3V0ICVsdSAoY29u
+c3VtZWQgJWx1LCBwcm9kdWNlZCAldSlcbiIsCiAJCSBzdHJlYW0tPmF2YWlsX2luLCBzdHJlYW0t
+PmF2YWlsX291dCwKIAkJIHJlcS0+YXZhaWxfaW4gLSBzdHJlYW0tPmF2YWlsX2luLCByZXQpOwog
+CXJlcS0+bmV4dF9pbiA9IHN0cmVhbS0+bmV4dF9pbjsKQEAgLTI4Myw3ICsyODMsNyBAQCBzdGF0
+aWMgaW50IHpsaWJfZGVjb21wcmVzc191cGRhdGUoc3RydWN0IGNyeXB0b19wY29tcCAqdGZtLAog
+CX0KIAogCXJldCA9IHJlcS0+YXZhaWxfb3V0IC0gc3RyZWFtLT5hdmFpbF9vdXQ7Ci0JcHJfZGVi
+dWcoImF2YWlsX2luICV1LCBhdmFpbF9vdXQgJXUgKGNvbnN1bWVkICV1LCBwcm9kdWNlZCAldSlc
+biIsCisJcHJfZGVidWcoImF2YWlsX2luICVsdSwgYXZhaWxfb3V0ICVsdSAoY29uc3VtZWQgJWx1
+LCBwcm9kdWNlZCAldSlcbiIsCiAJCSBzdHJlYW0tPmF2YWlsX2luLCBzdHJlYW0tPmF2YWlsX291
+dCwKIAkJIHJlcS0+YXZhaWxfaW4gLSBzdHJlYW0tPmF2YWlsX2luLCByZXQpOwogCXJlcS0+bmV4
+dF9pbiA9IHN0cmVhbS0+bmV4dF9pbjsKQEAgLTMzMSw3ICszMzEsNyBAQCBzdGF0aWMgaW50IHps
+aWJfZGVjb21wcmVzc19maW5hbChzdHJ1Y3QgY3J5cHRvX3Bjb21wICp0Zm0sCiAJfQogCiAJcmV0
+ID0gcmVxLT5hdmFpbF9vdXQgLSBzdHJlYW0tPmF2YWlsX291dDsKLQlwcl9kZWJ1ZygiYXZhaWxf
+aW4gJXUsIGF2YWlsX291dCAldSAoY29uc3VtZWQgJXUsIHByb2R1Y2VkICV1KVxuIiwKKwlwcl9k
+ZWJ1ZygiYXZhaWxfaW4gJWx1LCBhdmFpbF9vdXQgJWx1IChjb25zdW1lZCAlbHUsIHByb2R1Y2Vk
+ICV1KVxuIiwKIAkJIHN0cmVhbS0+YXZhaWxfaW4sIHN0cmVhbS0+YXZhaWxfb3V0LAogCQkgcmVx
+LT5hdmFpbF9pbiAtIHN0cmVhbS0+YXZhaWxfaW4sIHJldCk7CiAJcmVxLT5uZXh0X2luID0gc3Ry
+ZWFtLT5uZXh0X2luOwpkaWZmIC0tZ2l0IGEvZnMvamZmczIvY29tcHJfemxpYi5jIGIvZnMvamZm
+czIvY29tcHJfemxpYi5jCmluZGV4IDBiOWExZTQuLjExZWExZWUgMTAwNjQ0Ci0tLSBhL2ZzL2pm
+ZnMyL2NvbXByX3psaWIuYworKysgYi9mcy9qZmZzMi9jb21wcl96bGliLmMKQEAgLTk0LDExICs5
+NCwxMSBAQCBzdGF0aWMgaW50IGpmZnMyX3psaWJfY29tcHJlc3ModW5zaWduZWQgY2hhciAqZGF0
+YV9pbiwKIAogCXdoaWxlIChkZWZfc3RybS50b3RhbF9vdXQgPCAqZHN0bGVuIC0gU1RSRUFNX0VO
+RF9TUEFDRSAmJiBkZWZfc3RybS50b3RhbF9pbiA8ICpzb3VyY2VsZW4pIHsKIAkJZGVmX3N0cm0u
+YXZhaWxfb3V0ID0gKmRzdGxlbiAtIChkZWZfc3RybS50b3RhbF9vdXQgKyBTVFJFQU1fRU5EX1NQ
+QUNFKTsKLQkJZGVmX3N0cm0uYXZhaWxfaW4gPSBtaW4oKHVuc2lnbmVkKSgqc291cmNlbGVuLWRl
+Zl9zdHJtLnRvdGFsX2luKSwgZGVmX3N0cm0uYXZhaWxfb3V0KTsKLQkJamZmczJfZGJnKDEsICJj
+YWxsaW5nIGRlZmxhdGUgd2l0aCBhdmFpbF9pbiAlZCwgYXZhaWxfb3V0ICVkXG4iLAorCQlkZWZf
+c3RybS5hdmFpbF9pbiA9IG1pbigodW5zaWduZWQgbG9uZykoKnNvdXJjZWxlbi1kZWZfc3RybS50
+b3RhbF9pbiksIGRlZl9zdHJtLmF2YWlsX291dCk7CisJCWpmZnMyX2RiZygxLCAiY2FsbGluZyBk
+ZWZsYXRlIHdpdGggYXZhaWxfaW4gJWxkLCBhdmFpbF9vdXQgJWxkXG4iLAogCQkJICBkZWZfc3Ry
+bS5hdmFpbF9pbiwgZGVmX3N0cm0uYXZhaWxfb3V0KTsKIAkJcmV0ID0gemxpYl9kZWZsYXRlKCZk
+ZWZfc3RybSwgWl9QQVJUSUFMX0ZMVVNIKTsKLQkJamZmczJfZGJnKDEsICJkZWZsYXRlIHJldHVy
+bmVkIHdpdGggYXZhaWxfaW4gJWQsIGF2YWlsX291dCAlZCwgdG90YWxfaW4gJWxkLCB0b3RhbF9v
+dXQgJWxkXG4iLAorCQlqZmZzMl9kYmcoMSwgImRlZmxhdGUgcmV0dXJuZWQgd2l0aCBhdmFpbF9p
+biAlbGQsIGF2YWlsX291dCAlbGQsIHRvdGFsX2luICVsZCwgdG90YWxfb3V0ICVsZFxuIiwKIAkJ
+CSAgZGVmX3N0cm0uYXZhaWxfaW4sIGRlZl9zdHJtLmF2YWlsX291dCwKIAkJCSAgZGVmX3N0cm0u
+dG90YWxfaW4sIGRlZl9zdHJtLnRvdGFsX291dCk7CiAJCWlmIChyZXQgIT0gWl9PSykgewo=
+--047d7b10ca0140aed004fc3dc87e--
