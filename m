@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953AbaFTXhY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 19:37:24 -0400
-Received: from g2t2354.austin.hp.com ([15.217.128.53]:29014 "EHLO
-	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751386AbaFTXhW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 19:37:22 -0400
-Message-ID: <53A4C5AE.9020209@hp.com>
-Date: Fri, 20 Jun 2014 19:37:18 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Stephen Smalley <sds@tycho.nsa.gov>
-CC: Paul Moore <paul@paul-moore.com>, Eric Paris <eparis@parisplace.org>,
-        James Morris <james.l.morris@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH] selinux: no recursive read_lock of policy_rwlock in security_genfs_sid()
-References: <1403286324-34421-1-git-send-email-Waiman.Long@hp.com> <53A4742E.1090909@tycho.nsa.gov>
-In-Reply-To: <53A4742E.1090909@tycho.nsa.gov>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754834AbaFTXlh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 19:41:37 -0400
+Received: from mga02.intel.com ([134.134.136.20]:14504 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752069AbaFTXle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 19:41:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,517,1400050800"; 
+   d="scan'208";a="560971542"
+From: Andi Kleen <andi@firstfloor.org>
+To: jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 8/9] tools, perf: Make srcline output address with -v
+Date: Fri, 20 Jun 2014 16:41:30 -0700
+Message-Id: <1403307691-30776-9-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1403307691-30776-1-git-send-email-andi@firstfloor.org>
+References: <1403307691-30776-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2014 01:49 PM, Stephen Smalley wrote:
-> On 06/20/2014 01:45 PM, Waiman Long wrote:
->> With introduction of fair queued rwlock, recursive read_lock() may hang
->> the offending process if there is a write_lock() somewhere in between.
->>
->> With recursive read_lock checking enabled, the following error was
->> reported:
->>
->> =============================================
->> [ INFO: possible recursive locking detected ]
->> 3.16.0-rc1 #2 Tainted: G            E
->> ---------------------------------------------
->> load_policy/708 is trying to acquire lock:
->>   (policy_rwlock){.+.+..}, at: [<ffffffff8125b32a>] security_genfs_sid+0x3a/0x170
->>
->> but task is already holding lock:
->>   (policy_rwlock){.+.+..}, at: [<ffffffff8125b48c>] security_fs_use+0x2c/0x110
->>
->> other info that might help us debug this:
->>   Possible unsafe locking scenario:
->>
->>         CPU0
->>         ----
->>    lock(policy_rwlock);
->>    lock(policy_rwlock);
->>
->> This patch fixes the occurrence of recursive read_lock() of
->> policy_rwlock in security_genfs_sid() by adding a 5th argument to
->> indicate if the rwlock has been taken.
->>
->> Signed-off-by: Waiman Long<Waiman.Long@hp.com>
-> Thanks, but I'd prefer to instead create a static helper function in
-> services.c that does not take the lock at all, use that function from
-> security_fs_use, and leave the extern function unmodified.
+From: Andi Kleen <ak@linux.intel.com>
 
-On second thought, this is exactly what I want to change the patch. I 
-will send out a new one later today.
+When -v is specified always print the hex address for the srcline.
 
--Longman
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/util/srcline.c | 18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
+
+diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
+index 36a7aff..a22be7c 100644
+--- a/tools/perf/util/srcline.c
++++ b/tools/perf/util/srcline.c
+@@ -258,6 +258,12 @@ char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
+ 	unsigned line = 0;
+ 	char *srcline;
+ 	const char *dso_name;
++	char astr[50];
++
++	if (verbose)
++		snprintf(astr, sizeof astr, " %#lx", addr);
++	else
++		astr[0] = 0;
+ 
+ 	if (!dso->has_srcline)
+ 		goto out;
+@@ -276,7 +282,12 @@ char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
+ 	if (!addr2line(dso_name, addr, &file, &line, dso))
+ 		goto out;
+ 
+-	if (asprintf(&srcline, "%s:%u", basename(file), line) < 0) {
++	if (line == 0) {
++		free(file);
++		goto fallback;
++	}
++
++	if (asprintf(&srcline, "%s:%u%s", basename(file), line, astr) < 0) {
+ 		free(file);
+ 		goto out;
+ 	}
+@@ -291,9 +302,10 @@ out:
+ 		dso->has_srcline = 0;
+ 		dso__free_a2l(dso);
+ 	}
++fallback:
+ 	if (sym) {
+-		if (asprintf(&srcline, "%s+%ld", show_sym ? sym->name : "",
+-					addr - sym->start) < 0)
++		if (asprintf(&srcline, "%s+%ld%s", show_sym ? sym->name : "",
++					addr - sym->start, astr) < 0)
+ 			return SRCLINE_UNKNOWN;
+ 	} else if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
+ 		return SRCLINE_UNKNOWN;
+-- 
+1.9.3
+
