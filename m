@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966782AbaFTKrN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 06:47:13 -0400
+	id S966890AbaFTKsF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 06:48:05 -0400
 Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:51742 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S966374AbaFTKrM (ORCPT
+	by vger.kernel.org with ESMTP id S966643AbaFTKrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 06:47:12 -0400
-Message-Id: <20140620104711.140660296@goodmis.org>
+	Fri, 20 Jun 2014 06:47:13 -0400
+Message-Id: <20140620104711.360115202@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Fri, 20 Jun 2014 06:45:19 -0400
+Date: Fri, 20 Jun 2014 06:45:20 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [for-next][PATCH v2 1/3] tracing: Fix syscall_*regfunc() vs copy_process() race
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [for-next][PATCH v2 2/3] tracing: Change syscall_*regfunc() to check PF_KTHREAD and use
+ for_each_process_thread()
 References: <20140620104518.722157733@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0001-tracing-Fix-syscall_-regfunc-vs-copy_process-race.patch
+Content-Disposition: inline; filename=0002-tracing-Change-syscall_-regfunc-to-check-PF_KTHREAD-.patch
 X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,71 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Oleg Nesterov <oleg@redhat.com>
 
-syscall_regfunc() and syscall_unregfunc() should set/clear
-TIF_SYSCALL_TRACEPOINT system-wide, but do_each_thread() can race
-with copy_process() and miss the new child which was not added to
-the process/thread lists yet.
+1. Remove _irqsafe from syscall_regfunc/syscall_unregfunc,
+   read_lock(tasklist) doesn't need to disable irqs.
 
-Change copy_process() to update the child's TIF_SYSCALL_TRACEPOINT
-under tasklist.
+2. Change this code to avoid the deprecated do_each_thread()
+   and use for_each_process_thread() (stolen from the patch
+   from Frederic).
 
-Link: http://lkml.kernel.org/p/20140413185854.GB20668@redhat.com
+3. Change syscall_regfunc() to check PF_KTHREAD to skip
+   the kernel threads, ->mm != NULL is the common mistake.
 
-Cc: stable@vger.kernel.org # 2.6.33
-Fixes: a871bd33a6c0 "tracing: Add syscall tracepoints"
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+   Note: probably this check should be simply removed, needs
+   another patch.
+
+[fweisbec@gmail.com: s/do_each_thread/for_each_process_thread/]
+Link: http://lkml.kernel.org/p/20140413185918.GC20668@redhat.com
+
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/trace/syscall.h | 15 +++++++++++++++
- kernel/fork.c           |  2 ++
- 2 files changed, 17 insertions(+)
+ kernel/tracepoint.c | 24 +++++++++++-------------
+ 1 file changed, 11 insertions(+), 13 deletions(-)
 
-diff --git a/include/trace/syscall.h b/include/trace/syscall.h
-index fed853f3d7aa..9674145e2f6a 100644
---- a/include/trace/syscall.h
-+++ b/include/trace/syscall.h
-@@ -4,6 +4,7 @@
- #include <linux/tracepoint.h>
- #include <linux/unistd.h>
- #include <linux/ftrace_event.h>
-+#include <linux/thread_info.h>
+diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+index 33cbd8c203f8..9cf12640de5a 100644
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -492,33 +492,31 @@ static int sys_tracepoint_refcount;
  
- #include <asm/ptrace.h>
+ void syscall_regfunc(void)
+ {
+-	unsigned long flags;
+-	struct task_struct *g, *t;
++	struct task_struct *p, *t;
  
-@@ -32,4 +33,18 @@ struct syscall_metadata {
- 	struct ftrace_event_call *exit_event;
- };
+ 	if (!sys_tracepoint_refcount) {
+-		read_lock_irqsave(&tasklist_lock, flags);
+-		do_each_thread(g, t) {
++		read_lock(&tasklist_lock);
++		for_each_process_thread(p, t) {
+ 			/* Skip kernel threads. */
+-			if (t->mm)
++			if (!(t->flags & PF_KTHREAD))
+ 				set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
+-		} while_each_thread(g, t);
+-		read_unlock_irqrestore(&tasklist_lock, flags);
++		}
++		read_unlock(&tasklist_lock);
+ 	}
+ 	sys_tracepoint_refcount++;
+ }
  
-+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_HAVE_SYSCALL_TRACEPOINTS)
-+static inline void syscall_tracepoint_update(struct task_struct *p)
-+{
-+	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
-+		set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-+	else
-+		clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-+}
-+#else
-+static inline void syscall_tracepoint_update(struct task_struct *p)
-+{
-+}
-+#endif
-+
- #endif /* _TRACE_SYSCALL_H */
-diff --git a/kernel/fork.c b/kernel/fork.c
-index d2799d1fc952..6a13c46cd87d 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1487,7 +1487,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ void syscall_unregfunc(void)
+ {
+-	unsigned long flags;
+-	struct task_struct *g, *t;
++	struct task_struct *p, *t;
  
- 	total_forks++;
- 	spin_unlock(&current->sighand->siglock);
-+	syscall_tracepoint_update(p);
- 	write_unlock_irq(&tasklist_lock);
-+
- 	proc_fork_connector(p);
- 	cgroup_post_fork(p);
- 	if (clone_flags & CLONE_THREAD)
+ 	sys_tracepoint_refcount--;
+ 	if (!sys_tracepoint_refcount) {
+-		read_lock_irqsave(&tasklist_lock, flags);
+-		do_each_thread(g, t) {
++		read_lock(&tasklist_lock);
++		for_each_process_thread(p, t) {
+ 			clear_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
+-		} while_each_thread(g, t);
+-		read_unlock_irqrestore(&tasklist_lock, flags);
++		}
++		read_unlock(&tasklist_lock);
+ 	}
+ }
+ #endif
 -- 
 2.0.0
 
