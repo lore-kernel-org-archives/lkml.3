@@ -1,47 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966074AbaFTIkh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 04:40:37 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:46567 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965748AbaFTIke (ORCPT
+	id S966240AbaFTImH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 04:42:07 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:38136 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965748AbaFTImC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 04:40:34 -0400
-From: pramod.gurav.etc@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav.etc@gmail.com>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Brian Swetland <swetland@google.com>
-Subject: [PATCH] staging: alarm-dev: Set the license to GPL
-Date: Fri, 20 Jun 2014 14:13:59 +0530
-Message-Id: <1403253839-30923-1-git-send-email-pramod.gurav.etc@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 20 Jun 2014 04:42:02 -0400
+Date: Fri, 20 Jun 2014 11:41:58 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, olaf@aepfle.de,
+        jasowang@redhat.com, driverdev-devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next] hyperv: Add handler for
+ RNDIS_STATUS_NETWORK_CHANGE event
+Message-ID: <20140620084158.GR5500@mwanda>
+References: <1403228076-7596-1-git-send-email-haiyangz@microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403228076-7596-1-git-send-email-haiyangz@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pramod Gurav <pramod.gurav.etc@gmail.com>
+On Thu, Jun 19, 2014 at 06:34:36PM -0700, Haiyang Zhang wrote:
+> @@ -589,7 +590,19 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
+>  	net_device = hv_get_drvdata(device_obj);
+>  	rdev = net_device->extension;
+>  
+> -	rdev->link_state = status != 1;
+> +	switch (indicate->status) {
+> +	case RNDIS_STATUS_MEDIA_CONNECT:
+> +		rdev->link_state = false;
 
-Adding "GPL" license to fix a warning while compiling as
-module.
+link_state false means that we want to connect?
 
-CC: Greg Kroah-Hartman <greg@kroah.com>
-CC: Brian Swetland <swetland@google.com>
-Signed-off-by: Pramod Gurav <pramod.gurav.etc@gmail.com>
----
- drivers/staging/android/alarm-dev.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> +		break;
+> +	case RNDIS_STATUS_MEDIA_DISCONNECT:
+> +		rdev->link_state = true;
 
-diff --git a/drivers/staging/android/alarm-dev.c b/drivers/staging/android/alarm-dev.c
-index 2fc7cdd..309aafe 100644
---- a/drivers/staging/android/alarm-dev.c
-+++ b/drivers/staging/android/alarm-dev.c
-@@ -442,4 +442,4 @@ static void  __exit alarm_dev_exit(void)
- 
- module_init(alarm_dev_init);
- module_exit(alarm_dev_exit);
--
-+MODULE_LICENSE("GPL");
--- 
-1.7.9.5
+link_state true means that we are disconnecting.
 
+> +		break;
+> +	case RNDIS_STATUS_NETWORK_CHANGE:
+> +		rdev->link_change = true;
+> +		break;
+> +	default:
+> +		return;
+> +	}
+>  
+>  	net = net_device->ndev;
+>  
+> @@ -597,7 +610,7 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
+
+> @@ -782,10 +797,17 @@ static void netvsc_link_change(struct work_struct *w)
+>  	} else {
+>  		netif_carrier_on(net);
+>  		notify = true;
+> +		if (rdev->link_change) {
+> +			rdev->link_change = false;
+> +			refresh = true;
+> +		}
+
+How do we know that we received a RNDIS_STATUS_MEDIA_CONNECT before we
+received the RNDIS_STATUS_NETWORK_CHANGE?  In other words, why does
+RNDIS_STATUS_NETWORK_CHANGE imply that the link_state is false?
+
+>  	}
+>  
+>  	rtnl_unlock();
+>  
+> +	if (refresh)
+> +		call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
+
+You may as well use UMH_NO_WAIT since there is no error handling if
+/etc/init.d/network is not found.
+
+regards,
+dan carpenter
