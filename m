@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934591AbaFTF5T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 01:57:19 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:61397 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933667AbaFTF5Q (ORCPT
+	id S934657AbaFTF7b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 01:59:31 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:33314 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752058AbaFTF73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 01:57:16 -0400
+	Fri, 20 Jun 2014 01:59:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140618122646.GS19730@lukather>
+In-Reply-To: <CAGb2v67zkwvspdDr-rKv=5uT5mvP4e1ZyzHSSOXmvaiOxA+7OA@mail.gmail.com>
 References: <1403016777-15121-1-git-send-email-wens@csie.org>
  <1403016777-15121-18-git-send-email-wens@csie.org> <20140618122646.GS19730@lukather>
+ <CAGb2v67zkwvspdDr-rKv=5uT5mvP4e1ZyzHSSOXmvaiOxA+7OA@mail.gmail.com>
 From: Chen-Yu Tsai <wens@csie.org>
-Date: Fri, 20 Jun 2014 13:56:54 +0800
-X-Google-Sender-Auth: XMp0cFRr7PFS0E7gIpM_ZUyzhLs
-Message-ID: <CAGb2v67zkwvspdDr-rKv=5uT5mvP4e1ZyzHSSOXmvaiOxA+7OA@mail.gmail.com>
-Subject: Re: [linux-sunxi] Re: [PATCH v2 17/20] ARM: sunxi: Introduce
+Date: Fri, 20 Jun 2014 13:59:07 +0800
+X-Google-Sender-Auth: dE0FYyON7GWynFn1lfgI6RkNF10
+Message-ID: <CAGb2v65VMBLBf787UmUkmTqhXAZZxSqmFUMwDAWTFtSi7s0yqQ@mail.gmail.com>
+Subject: Fwd: [linux-sunxi] Re: [PATCH v2 17/20] ARM: sunxi: Introduce
  Allwinner A23 support
-To: linux-sunxi <linux-sunxi@googlegroups.com>
+To: "maxime.ripard" <maxime.ripard@free-electrons.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Rob Herring <robh+dt@kernel.org>,
@@ -28,7 +29,8 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         devicetree <devicetree@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Luc Verhaegen <libv@skynet.be>
+        Luc Verhaegen <libv@skynet.be>,
+        linux-sunxi <linux-sunxi@googlegroups.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -82,6 +84,8 @@ On Wed, Jun 18, 2014 at 8:26 PM, Maxime Ripard
 >
 > I haven't seen anything in your code that needed to use this
 > function. Am I missing something?
+
+(Adding Maxime back to recipients...)
 
 My mistake. From the log I thought all timers needed the reset
 controller. Turns out only the high speed timer does.
