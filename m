@@ -1,106 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966357AbaFTJkq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 05:40:46 -0400
-Received: from mga02.intel.com ([134.134.136.20]:2261 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966096AbaFTJkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 05:40:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,513,1400050800"; 
-   d="scan'208";a="560630561"
-Message-ID: <53A40198.6020007@intel.com>
-Date: Fri, 20 Jun 2014 17:40:40 +0800
-From: "Chen, Tiejun" <tiejun.chen@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S966450AbaFTJly (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 05:41:54 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50337 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965376AbaFTJlw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 05:41:52 -0400
+Date: Fri, 20 Jun 2014 10:41:19 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Keerthy <j-keerthy@ti.com>,
+        Nishanth Menon <nm@ti.com>, Thierry Reding <thierry.reding@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20140620094119.GT5099@sirena.org.uk>
+References: <1403164154-1362-1-git-send-email-acourbot@nvidia.com>
+ <53A308C8.2070004@wwwdotorg.org>
+ <20140619175643.GR5099@sirena.org.uk>
+ <53A3C613.8030207@nvidia.com>
+ <53A3D85E.7030704@nvidia.com>
 MIME-Version: 1.0
-To: daniel.vetter@ffwll.ch, jani.nikula@linux.intel.com, airlied@linux.ie
-CC: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        qemu-devel@nongnu.org
-Subject: Re: [RFC][PATCH] gpu:drm:i915:intel_detect_pch: back to check devfn
- instead of check class type
-References: <1403171631-3452-1-git-send-email-tiejun.chen@intel.com>
-In-Reply-To: <1403171631-3452-1-git-send-email-tiejun.chen@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="X+WXP0omYNJFGow2"
+Content-Disposition: inline
+In-Reply-To: <53A3D85E.7030704@nvidia.com>
+X-Cookie: Ditat Deus.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ARM: tegra: TN7: relax some regulators
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just ping, any comments?
 
-Thanks
-Tiejun
+--X+WXP0omYNJFGow2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On 2014/6/19 17:53, Tiejun Chen wrote:
-> Originally the reason to probe ISA bridge instead of Dev31:Fun0
-> is to make graphics device passthrough work easy for VMM, that
-> only need to expose ISA bridge to let driver know the real
-> hardware underneath. This is a requirement from virtualization
-> team. Especially in that virtualized environments, XEN, there
-> is irrelevant ISA bridge in the system with that legacy qemu
-> version specific to xen, qemu-xen-traditional. So to work
-> reliably, we should scan through all the ISA bridge devices
-> and check for the first match, instead of only checking the
-> first one.
->
-> But actually, qemu-xen-traditional, is always enumerated with
-> Dev31:Fun0, 00:1f.0 as follows:
->
-> hw/pt-graphics.c:
->
-> intel_pch_init()
->      |
->      + pci_isa_bridge_init(bus, PCI_DEVFN(0x1f, 0), ...);
->
-> so this mean that isa bridge is still represented with Dev31:Func0
-> like the native OS. Furthermore, currently we're pushing VGA
-> passthrough support into qemu upstream, and with some discussion,
-> we wouldn't set the bridge class type and just expose this devfn.
->
-> So we just go back to check devfn to make life normal.
->
-> Signed-off-by: Tiejun Chen <tiejun.chen@intel.com>
-> ---
->   drivers/gpu/drm/i915/i915_drv.c | 19 +++----------------
->   1 file changed, 3 insertions(+), 16 deletions(-)
->
-> diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
-> index 651e65e..cb2526e 100644
-> --- a/drivers/gpu/drm/i915/i915_drv.c
-> +++ b/drivers/gpu/drm/i915/i915_drv.c
-> @@ -417,18 +417,8 @@ void intel_detect_pch(struct drm_device *dev)
->   		return;
->   	}
->
-> -	/*
-> -	 * The reason to probe ISA bridge instead of Dev31:Fun0 is to
-> -	 * make graphics device passthrough work easy for VMM, that only
-> -	 * need to expose ISA bridge to let driver know the real hardware
-> -	 * underneath. This is a requirement from virtualization team.
-> -	 *
-> -	 * In some virtualized environments (e.g. XEN), there is irrelevant
-> -	 * ISA bridge in the system. To work reliably, we should scan trhough
-> -	 * all the ISA bridge devices and check for the first match, instead
-> -	 * of only checking the first one.
-> -	 */
-> -	while ((pch = pci_get_class(PCI_CLASS_BRIDGE_ISA << 8, pch))) {
-> +	pch = pci_get_bus_and_slot(0, PCI_DEVFN(0x1f, 0));
-> +	if (pch) {
->   		if (pch->vendor == PCI_VENDOR_ID_INTEL) {
->   			unsigned short id = pch->device & INTEL_PCH_DEVICE_ID_MASK;
->   			dev_priv->pch_id = id;
-> @@ -462,10 +452,7 @@ void intel_detect_pch(struct drm_device *dev)
->   				DRM_DEBUG_KMS("Found LynxPoint LP PCH\n");
->   				WARN_ON(!IS_HASWELL(dev));
->   				WARN_ON(!IS_ULT(dev));
-> -			} else
-> -				continue;
-> -
-> -			break;
-> +			}
->   		}
->   	}
->   	if (!pch)
->
+On Fri, Jun 20, 2014 at 03:44:46PM +0900, Alexandre Courbot wrote:
+
+> dbabd624d
+> regulator: palmas: Reemove open coded functions with helper functions
+
+> Keerthy, Nishanth, could it be that there is still something wrong with the
+> REGULATOR_LINEAR_RANGE() definitions?
+
+> This seems to be the cause for our trouble, but the other questions might
+> still stand, in case there is interest in discussing them.
+
+There was a bug fix to the Palmas driver which just went to Linus the
+other day, are you sure this isn't fixed in mainline (or -next, it's
+been in -next for a week or something)?
+
+--X+WXP0omYNJFGow2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTpAG8AAoJELSic+t+oim9qI8P/A6FbVvulfg+tXMAxEoPfqBB
+/BY3oOOjxQFRWGW5StUc8ZR31itnbsYmenzaJ5HTYrOpTUahPJ8wGXtjja+BAsyF
+FHXQ7k/xcd3iAGq7JBQMTsnjUkiyo7h9CQeE5hJTvx2vpNccXsSFOkc9JhB3+vmR
+ncD+aVgOR3l+c83pnhjnSPTH3xGkJjia/U/YOIlORFYmfWkqUjpzmja0JNzkwbD2
+H8b9UdZidl8/2upnyxI0pDJjftLhK47u3nR0jY0YVMhhFZtAynUEZbeDR9L3NHf5
+NrklCkJ4q+uQkk9wF0dWVVLuC/UbuM59keMzjUTffoKCDRw/ePmS5V0L6KKi24AV
+fJauDN0k3OERbhCyk6N0+Lz2+CVPOgL9YRudQr+EFvPPs061zyRuLtIjdb48jfI+
++vObsTtpcAi1EqBSYtTKzsIRwsqEKv83IRIyCR6VuRM2OHmb9W9EioEpRs/fQ+3c
+i2YcBWapnjKT12i6bh6sBEY7UfePQQHtnP8MuJc5Nd4741R8vfKZOk/WlGoBhOC7
+9m8HTZ3ZKgcpKG8/p41JZndjQx7e5ftHiCEJOrWWwBLK/rIE64tiEJBS6cPavwfZ
+RNco9SscDH+0rxdkp9RypKrxmLH6M6WiXUMTPaZ3XJ+TKfonE+bXsH/AT/WYZLip
+RXWRJ4nG3hN5kPW8dwnK
+=i2F6
+-----END PGP SIGNATURE-----
+
+--X+WXP0omYNJFGow2--
