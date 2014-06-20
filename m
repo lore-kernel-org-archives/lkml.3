@@ -1,125 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967177AbaFTMAS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 08:00:18 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:58308 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966555AbaFTMAP (ORCPT
+	id S967209AbaFTMDN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 08:03:13 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:65530 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966555AbaFTMDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 08:00:15 -0400
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-X-Google-Original-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com
-To: linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH] can: c_can: convert to use devm * api
-Date: Fri, 20 Jun 2014 12:59:34 +0100
-Message-Id: <1403265574-12923-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 20 Jun 2014 08:03:12 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: wsa@the-dreams.de, grant.likely@linaro.org, linux-i2c@vger.kernel.org,
+        devicetree@vger.kernel.org, linus.walleij@linaro.org
+Subject: [PATCH v3 0/7] i2c: Relax mandatory I2C ID table passing
+Date: Fri, 20 Jun 2014 13:02:23 +0100
+Message-Id: <1403265753-25851-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Hi Wolfram,
+ 
+As previously discussed I believe it should be okay for an I2C device
+driver _not_ supply an I2C ID table to match to.  The I2C subsystem
+should be able to match via other means, such as via OF tables.  The
+blocking factor during our previous conversation was to keep
+registering via sysfs up and running.  This set does that.
 
-this patch uses devm_* APIs as they are device managed
-and make code simpler.
+After thinking more deeply about the problem, it occurred to me that
+any I2C device driver which uses the sysfs method and issues an
+of_match_device() would also fail their probe().  Bolted on to this
+set is a new, more generic way for these devices to match against
+either of the I2C/OF tables.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- Note: This patch is compile tested only.
- 
- drivers/net/can/c_can/c_can_platform.c | 41 ++++++++--------------------------
- 1 file changed, 9 insertions(+), 32 deletions(-)
+I hope this ticks all of your boxes.
 
-diff --git a/drivers/net/can/c_can/c_can_platform.c b/drivers/net/can/c_can/c_can_platform.c
-index 1df0b32..e0dcbcf 100644
---- a/drivers/net/can/c_can/c_can_platform.c
-+++ b/drivers/net/can/c_can/c_can_platform.c
-@@ -157,40 +157,31 @@ static int c_can_plat_probe(struct platform_device *pdev)
- 	}
- 
- 	/* get the appropriate clk */
--	clk = clk_get(&pdev->dev, NULL);
-+	clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(clk)) {
--		dev_err(&pdev->dev, "no clock defined\n");
--		ret = -ENODEV;
-+		ret = PTR_ERR(clk);
- 		goto exit;
- 	}
- 
- 	/* get the platform data */
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	irq = platform_get_irq(pdev, 0);
--	if (!mem || irq <= 0) {
--		ret = -ENODEV;
--		goto exit_free_clk;
--	}
--
--	if (!request_mem_region(mem->start, resource_size(mem),
--				KBUILD_MODNAME)) {
--		dev_err(&pdev->dev, "resource unavailable\n");
-+	if (irq <= 0) {
- 		ret = -ENODEV;
--		goto exit_free_clk;
-+		goto exit;
- 	}
- 
--	addr = ioremap(mem->start, resource_size(mem));
--	if (!addr) {
--		dev_err(&pdev->dev, "failed to map can port\n");
--		ret = -ENOMEM;
--		goto exit_release_mem;
-+	addr = devm_ioremap_resource(&pdev->dev, mem);
-+	if (IS_ERR(addr)) {
-+		ret =  PTR_ERR(addr);
-+		goto exit;
- 	}
- 
- 	/* allocate the c_can device */
- 	dev = alloc_c_can_dev();
- 	if (!dev) {
- 		ret = -ENOMEM;
--		goto exit_iounmap;
-+		goto exit;
- 	}
- 
- 	priv = netdev_priv(dev);
-@@ -255,12 +246,6 @@ static int c_can_plat_probe(struct platform_device *pdev)
- 
- exit_free_device:
- 	free_c_can_dev(dev);
--exit_iounmap:
--	iounmap(addr);
--exit_release_mem:
--	release_mem_region(mem->start, resource_size(mem));
--exit_free_clk:
--	clk_put(clk);
- exit:
- 	dev_err(&pdev->dev, "probe failed\n");
- 
-@@ -270,18 +255,10 @@ exit:
- static int c_can_plat_remove(struct platform_device *pdev)
- {
- 	struct net_device *dev = platform_get_drvdata(pdev);
--	struct c_can_priv *priv = netdev_priv(dev);
--	struct resource *mem;
- 
- 	unregister_c_can_dev(dev);
- 
- 	free_c_can_dev(dev);
--	iounmap(priv->base);
--
--	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	release_mem_region(mem->start, resource_size(mem));
--
--	clk_put(priv->priv);
- 
- 	return 0;
- }
--- 
-1.9.1
+v3:
+  - Insist on passing 'struct i2c_client' instead of 'struct device'
+  - Remove hook from of_match_device()
+
+v2:
+  - Removal of ACPI support (this is really an OF issue).
+  - Add a new .probe2( with will seamlessly replace
+  - Supply a warning on devices matching via OF without a suitable compatible
+  - Remove unified match_device() - bad idea as it subverts type-safe behaviour
+  - Provide examples of the kind of clean-up possible after this set.
+    - I already have the full support from the maintainer of these drivers =;-)
+
+Kind regards,
+Lee
+
+ arch/arm/configs/multi_v7_defconfig |  1 +
+ drivers/i2c/i2c-core.c              | 72 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++---------
+ drivers/mfd/88pm860x-core.c         |  5 ++---
+ drivers/mfd/as3722.c                | 12 ++----------
+ include/linux/i2c.h                 | 22 +++++++++++++++++++++-
+ 5 files changed, 89 insertions(+), 23 deletions(-)
 
