@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965893AbaFTUHk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:07:40 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:61458 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757540AbaFTUHj (ORCPT
+	id S966312AbaFTUIG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:08:06 -0400
+Received: from smtprelay0227.hostedemail.com ([216.40.44.227]:45964 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757585AbaFTUIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 16:07:39 -0400
-Message-ID: <53A49488.6050902@gmail.com>
-Date: Fri, 20 Jun 2014 13:07:36 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>, linux-mips <linux-mips@linux-mips.org>
-CC: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH 19/31] MIPS: Replace __get_cpu_var uses in FPU emulator.
-References: <20140620193115.547427118@linux.com> <20140620193127.123705312@linux.com>
-In-Reply-To: <20140620193127.123705312@linux.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Fri, 20 Jun 2014 16:08:05 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3872:3873:3874:4321:5007:7652:7904:10004:10400:10848:11026:11232:11658:11914:12043:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: coal30_805b9112e0a25
+X-Filterd-Recvd-Size: 1882
+Message-ID: <1403294880.4076.7.camel@joe-AO725>
+Subject: Re: [PATCH] staging:rtl8821ae: rewrite legacy wifi check in
+ halbcoutsrc
+From: Joe Perches <joe@perches.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Nicholas Krause <xerofoify@gmail.com>, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, pebolle@tiscali.nl, himangi774@gmail.com,
+        bergo.torino@gmail.com, linux-kernel@vger.kernel.org
+Date: Fri, 20 Jun 2014 13:08:00 -0700
+In-Reply-To: <20140620195926.GY5500@mwanda>
+References: <1403283410-7022-1-git-send-email-xerofoify@gmail.com>
+	 <20140620195926.GY5500@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ linux-mips@linux-mips.org, as that is the main MIPS patch reviewing list.
+On Fri, 2014-06-20 at 22:59 +0300, Dan Carpenter wrote:
+> On Fri, Jun 20, 2014 at 12:56:50PM -0400, Nicholas Krause wrote:
+> > Rewrites the wireless check for legacy checking in function
+> > halbtc_legacy to check for both Mode A and B.
+> 
+> You're just guessing that A and B were intended but it could have been
+> something B and G...
+> 
+> Don't do this.  Just leave the static checker warning there so someone
+> can fix it properly instead of introducing a second new bug and hiding
+> the warning so it's impossible to find.
+> 
 
-On 06/20/2014 12:31 PM, Christoph Lameter wrote:
-> From: David Daney<david.daney@cavium.com>
->
-> The use of __this_cpu_inc() requires a fundamental integer type, so
-> change the type of all the counters to unsigned long, which is the
-> same width they were before, but not wrapped in local_t.
->
-> Signed-off-by: David Daney<david.daney@cavium.com>
-> Signed-off-by: Christoph Lameter<cl@linux.com>
-> ---
->   arch/mips/include/asm/fpu_emulator.h | 14 +++++++-------
->   arch/mips/math-emu/cp1emu.c          |  6 +++---
->   2 files changed, 10 insertions(+), 10 deletions(-)
->
-> Index: linux/arch/mips/include/asm/fpu_emulator.h
-> ===================================================================
-> --- linux.orig/arch/mips/include/asm/fpu_emulator.h	2014-06-16 09:15:42.199326017 -0500
-> +++ linux/arch/mips/include/asm/fpu_emulator.h	2014-06-16 09:17:42.776959733 -0500
-> @@ -33,17 +33,17 @@
->   #ifdef CONFIG_DEBUG_FS
->
->   struct mips_fpu_emulator_stats {
-> -	local_t emulated;
-> -	local_t loads;
-> -	local_t stores;
-> -	local_t cp1ops;
-> -	local_t cp1xops;
-> -	local_t errors;
-> -	local_t ieee754_inexact;
-> -	local_t ieee754_underflow;
-> -	local_t ieee754_overflow;
-> -	local_t ieee754_zerodiv;
-> -	local_t ieee754_invalidop;
-> +	unsigned long emulated;
-> +	unsigned long loads;
-> +	unsigned long stores;
-> +	unsigned long cp1ops;
-> +	unsigned long cp1xops;
-> +	unsigned long errors;
-> +	unsigned long ieee754_inexact;
-> +	unsigned long ieee754_underflow;
-> +	unsigned long ieee754_overflow;
-> +	unsigned long ieee754_zerodiv;
-> +	unsigned long ieee754_invalidop;
->   };
->
->   DECLARE_PER_CPU(struct mips_fpu_emulator_stats, fpuemustats);
-> @@ -51,7 +51,7 @@
->   #define MIPS_FPU_EMU_INC_STATS(M)					\
->   do {									\
->   	preempt_disable();						\
-> -	__local_inc(&__get_cpu_var(fpuemustats).M);			\
-> +	__this_cpu_inc(fpuemustats.M);					\
->   	preempt_enable();						\
->   } while (0)
->
->
+It's most likely G anyway:
+
+drivers/staging/rtl8192ee/btcoexist/halbtcoutsrc.c:     if ((mac->mode == WIRELESS_MODE_B) || (mac->mode == WIRELESS_MODE_G))
+drivers/staging/rtl8821ae/btcoexist/halbtcoutsrc.c:     if ((mac->mode == WIRELESS_MODE_B) || (mac->mode == WIRELESS_MODE_B))
+
+Larry probably has a better idea.
 
