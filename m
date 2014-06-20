@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934575AbaFTJSE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 05:18:04 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:37398 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933271AbaFTJSC (ORCPT
+	id S965480AbaFTJTo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 05:19:44 -0400
+Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:36294 "EHLO
+	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933271AbaFTJTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 05:18:02 -0400
-From: Sachin Kamat <sachin.kamat@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: broonie@kernel.org, lgirdwood@gmail.com, spk.linux@gmail.com
-Subject: [PATCH Resend 1/1] regulator: ltc3589: Staticize ltc3589_reg_defaults
-Date: Fri, 20 Jun 2014 14:44:52 +0530
-Message-Id: <1403255692-31102-1-git-send-email-sachin.kamat@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 20 Jun 2014 05:19:43 -0400
+X-Yandex-Uniq: 826b74e1-ebbf-489a-ac74-396b058dfdef
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Date: Fri, 20 Jun 2014 13:19:34 +0400
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@kernel.org, artagnon@gmail.com, jolsa@redhat.com,
+        rusty@rustcorp.com.au, bp@suse.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] perf timechart: implement IO mode
+Message-ID: <20140620091934.GJ15620@stfomichev-desktop.yandex.net>
+References: <1403180583-12309-1-git-send-email-stfomichev@yandex-team.ru>
+ <1403180583-12309-2-git-send-email-stfomichev@yandex-team.ru>
+ <87egyk75nu.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87egyk75nu.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'ltc3589_reg_defaults' is local to this file. Make it static.
+> It (and others below) should be 'rec_argc -= 4' - i.e. I still see the
+> segfault. :)
+Damn, stupid me.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
----
- drivers/regulator/ltc3589.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> Looks like this change should be applied to the exsting (for cpu and
+> power events) boxes too.  Care to send it as a separate fix?
+Yes, will add it as a first patch to the series, so it can be pulled
+without the whole series if it still has some bugs.
 
-diff --git a/drivers/regulator/ltc3589.c b/drivers/regulator/ltc3589.c
-index c8105182b8b8..c756955bfcc5 100644
---- a/drivers/regulator/ltc3589.c
-+++ b/drivers/regulator/ltc3589.c
-@@ -377,7 +377,7 @@ static bool ltc3589_volatile_reg(struct device *dev, unsigned int reg)
- 	return false;
- }
- 
--struct reg_default ltc3589_reg_defaults[] = {
-+static struct reg_default ltc3589_reg_defaults[] = {
- 	{ LTC3589_SCR1,   0x00 },
- 	{ LTC3589_OVEN,   0x00 },
- 	{ LTC3589_SCR2,   0x00 },
--- 
-1.7.9.5
-
+> It seems you missed the change above (s/4.8f/.8f/g). :)
+Thanks, will do it in the context of a distinct patch.
