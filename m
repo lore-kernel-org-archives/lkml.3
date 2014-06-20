@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757382AbaFTRru (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 13:47:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47498 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752153AbaFTRrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 13:47:49 -0400
-Message-ID: <53A473AA.7050301@zytor.com>
-Date: Fri, 20 Jun 2014 10:47:22 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [RFC][PATCH 3/3] x86: make MP  a required-feature on 64-bit
-References: <20140620161736.D6AC16FD@viggo.jf.intel.com> <20140620161740.BFB00798@viggo.jf.intel.com> <53A46008.5060509@zytor.com> <53A4619C.8020100@sr71.net> <53A46365.6090101@zytor.com> <20140620174345.GD11391@pd.tnic>
-In-Reply-To: <20140620174345.GD11391@pd.tnic>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S966204AbaFTRsG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 13:48:06 -0400
+Received: from mail-oa0-f73.google.com ([209.85.219.73]:36919 "EHLO
+	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757402AbaFTRsA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 13:48:00 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        Chirantan Ekbote <chirantan@chromium.org>,
+        David Riley <davidriley@chromium.org>, olof@lixom.net,
+        linux-samsung-soc@vger.kernel.org,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        javier.martinez@collabora.co.uk, Doug Anderson <dianders@chromium.org>,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3 1/3] clocksource: exynos_mct: Register the timer for stable udelay
+Date: Fri, 20 Jun 2014 10:47:50 -0700
+Message-Id: <1403286472-6817-2-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <1403286472-6817-1-git-send-email-dianders@chromium.org>
+References: <1403286472-6817-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2014 10:43 AM, Borislav Petkov wrote:
-> On Fri, Jun 20, 2014 at 09:37:57AM -0700, H. Peter Anvin wrote:
->> We probably should just the cpu_has_mp macro entirely.  All it is used
->> for is printing a warning in amd_k7_smp_check().
->>
->> Andi, Borislav -- as far as I can tell, we have *never* enforced this on
->> the 64-bit kernel, although we have enforced it on 64-bit processors
->> running the 32-bit kernel.  We should either enforce it on both or just
->> drop it.  What is your opinion?
-> 
-> Well, my AMD CPUID guide says CPUID Fn8000_0001_EDX[19] is reserved,
-> i.e. that X86_FEATURE_MP bit will be probably cleared.
-> 
-> And so it is, on my F15h AMD it is not set:
-> 
-> eax in: 0x80000001, eax = 00600f20 ebx = 10000000 ecx = 01ebbfff edx = 2fd3fbff
-> 									  ^
-> 								----------|
-> 
-> So I don't think we should enforce it on 64-bit.
-> 
-> I guess we can leave the check in amd_k7_smp_check() though but remove that
-> nasty cpu_has_mp macro and do static_cpu_has() instead.
-> 
-> My 2¢ only.
-> 
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
 
-This is run before static_cpu_has().
+This patch registers the exynos mct clocksource as the current timer
+as it has constant clock rate. This will generate correct udelay for
+the exynos platform and avoid using unnecessary calibrated
+jiffies. This change has been tested on exynos5420 based board and
+udelay is very close to expected.
 
-The point, though, was that we "enforce" (taint) on 32 bits but not on
-64 bits, which is clearly wrong.
+Without this patch udelay() on exynos5400 / exynos5800 is wildly
+inaccurate due to big.LITTLE not adjusting loops_per_jiffy correctly.
+Also without this patch udelay() on exynos5250 can be innacruate
+during transitions between frequencies < 800 MHz (you'll go 200 MHz ->
+800 MHz -> 300 MHz and will run at 800 MHz for a time with the wrong
+loops_per_jiffy).
 
-My inclination is to completely kill amd_k7_smp_check() entirely, since
-noone seems to know when it actually matters and it is clearly historic.
+[dianders: reworked and created version 3]
 
-	-hpa
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+Changes in v3:
+- Back to exynos_frc_read for now until 32/64 is resolved.
+- Now returns cycles_t which matches arch/arm/include/asm/timex.h.
+- Rebased.
+- Moved registration to its own function.
+
+Changes in v2:
+- Added #defines for ARM and ARM64 as pointed by Doug Anderson.
+
+ drivers/clocksource/exynos_mct.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
+index 5ce99c0..ab51bf20a 100644
+--- a/drivers/clocksource/exynos_mct.c
++++ b/drivers/clocksource/exynos_mct.c
+@@ -200,10 +200,21 @@ static u64 notrace exynos4_read_sched_clock(void)
+ 	return _exynos4_frc_read();
+ }
+ 
++static struct delay_timer exynos4_delay_timer;
++
++static cycles_t exynos4_read_current_timer(void)
++{
++	return _exynos4_frc_read();
++}
++
+ static void __init exynos4_clocksource_init(void)
+ {
+ 	exynos4_mct_frc_start();
+ 
++	exynos4_delay_timer.read_current_timer = &exynos4_read_current_timer;
++	exynos4_delay_timer.freq = clk_rate;
++	register_current_timer_delay(&exynos4_delay_timer);
++
+ 	if (clocksource_register_hz(&mct_frc, clk_rate))
+ 		panic("%s: can't register clocksource\n", mct_frc.name);
+ 
+-- 
+2.0.0.526.g5318336
 
