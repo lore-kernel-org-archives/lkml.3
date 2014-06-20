@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756917AbaFTQnK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 12:43:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59449 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496AbaFTQnI (ORCPT
+	id S934989AbaFTQnn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 12:43:43 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:25784 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756923AbaFTQnk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 12:43:08 -0400
-Date: Fri, 20 Jun 2014 09:47:09 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jim Davis <jim.epost@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+	Fri, 20 Jun 2014 12:43:40 -0400
+X-IronPort-AV: E=McAfee;i="5600,1067,7475"; a="44458920"
+X-IronPort-AV: E=Sophos;i="5.01,514,1400050800"; 
+   d="scan'208";a="753268457"
+From: "Kondratiev, Vladimir" <vkondrat@qti.qualcomm.com>
+To: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
         linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, andreas.noever@gmail.com
-Subject: Re: randconfig build error with next-20140620, in
- drivers/thunderbolt/nhi.c
-Message-ID: <20140620164709.GA5043@kroah.com>
-References: <CA+r1ZhjD7qvOKedKAUGMmoVL1BPHW545O1QdxBCqQkvZNt9Npg@mail.gmail.com>
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        qca_vkondrat <qca_vkondrat@qca.qualcomm.com>,
+        "linville@tuxdriver.com" <linville@tuxdriver.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        wil6210 <wil6210@qca.qualcomm.com>, netdev <netdev@vger.kernel.org>
+Subject: RE: randconfig build error with next-20140604, in
+ drivers/net/wireless/ath/wil6210/debugfs.c
+Thread-Topic: randconfig build error with next-20140604, in
+ drivers/net/wireless/ath/wil6210/debugfs.c
+Thread-Index: AQHPjKRmAxX0MRjPrEqpQcVECbGk8Zt6NAtW
+Date: Fri, 20 Jun 2014 16:43:38 +0000
+Message-ID: <A5CA08B46412E243958C77F3825F4395270AB72A@NASANEXD02E.na.qualcomm.com>
+References: <CA+r1ZhiT6hHwA2urc-DXUxucvJYaYdq-dZZSAFrgd3du_DDrww@mail.gmail.com>
+In-Reply-To: <CA+r1ZhiT6hHwA2urc-DXUxucvJYaYdq-dZZSAFrgd3du_DDrww@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [199.106.115.192]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+r1ZhjD7qvOKedKAUGMmoVL1BPHW545O1QdxBCqQkvZNt9Npg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 07:03:44AM -0700, Jim Davis wrote:
-> Building with the attached random configuration file,
-> 
-> drivers/thunderbolt/nhi.c: In function ‘nhi_probe’:
-> drivers/thunderbolt/nhi.c:541:2: error: implicit declaration of
-> function ‘pcim_enable_device’ [-Werror=implicit-function-declaration]
->   res = pcim_enable_device(pdev);
->   ^
-> drivers/thunderbolt/nhi.c:547:2: error: implicit declaration of
-> function ‘pci_enable_msi’ [-Werror=implicit-function-declaration]
->   res = pci_enable_msi(pdev);
->   ^
-> cc1: some warnings being treated as errors
-> make[2]: *** [drivers/thunderbolt/nhi.o] Error 1
+Building with the attached random configuration file,
 
-A patch was just sent to fix this, will be in the next linux-next
-release, thanks.
+drivers/built-in.o: In function `wil_vring_debugfs_show':
+debugfs.c:(.text+0x3a331c): undefined reference to `__udivdi3'
+make: *** [vmlinux] Error 1
 
-greg k-h
+Patch already sent.
+
+Thanks, Vladimir
