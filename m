@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758095AbaFTUhF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:37:05 -0400
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:22710 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754556AbaFTUhB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 16:37:01 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsHAMGapFNXQzOZ/2dsb2JhbABZgw2rRwUBAQEBAQEFAZkqgQ4XdYQxLyOBGjeIRgHKLReFYogpax2ELQSaRIswiCqDRDs
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Wensong Zhang <wensong@linux-vs.org>,
-        Simon Horman <horms@verge.net.au>, netdev@vger.kernel.org
-Subject: [PATCH 1/1] net/netfilter/ipvs/ip_vs_sync.c: remove null test before kfree
-Date: Fri, 20 Jun 2014 22:35:42 +0200
-Message-Id: <1403296542-5992-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	id S965500AbaFTUiD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:38:03 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:60497 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757216AbaFTUiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 16:38:00 -0400
+Date: Fri, 20 Jun 2014 22:37:52 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [RFC][PATCH 3/3] x86: make MP  a required-feature on 64-bit
+Message-ID: <20140620203752.GN11391@pd.tnic>
+References: <20140620161736.D6AC16FD@viggo.jf.intel.com>
+ <20140620161740.BFB00798@viggo.jf.intel.com>
+ <53A46008.5060509@zytor.com>
+ <53A4619C.8020100@sr71.net>
+ <53A46365.6090101@zytor.com>
+ <20140620174345.GD11391@pd.tnic>
+ <53A47461.4050409@zytor.com>
+ <20140620181518.GG11391@pd.tnic>
+ <53A48411.6080602@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <53A48411.6080602@zytor.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch warning:
-WARNING: kfree(NULL) is safe this check is probably not required
+On Fri, Jun 20, 2014 at 11:57:21AM -0700, H. Peter Anvin wrote:
+> I actually have Linus' old dual-processor K7 sitting in my garage, but
+> $DEITY knows if it actually runs.
 
-Cc: Wensong Zhang <wensong@linux-vs.org>
-Cc: Simon Horman <horms@verge.net.au>
-Cc: netdev@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- net/netfilter/ipvs/ip_vs_sync.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Bah, bring it to the scrap yard so that you can free up some space.
+People have that computing power now in their pockets. :-)
 
-diff --git a/net/netfilter/ipvs/ip_vs_sync.c b/net/netfilter/ipvs/ip_vs_sync.c
-index db80126..eadffb2 100644
---- a/net/netfilter/ipvs/ip_vs_sync.c
-+++ b/net/netfilter/ipvs/ip_vs_sync.c
-@@ -886,8 +886,7 @@ static void ip_vs_proc_conn(struct net *net, struct ip_vs_conn_param *param,
- 		cp = ip_vs_conn_new(param, daddr, dport, flags, dest, fwmark);
- 		rcu_read_unlock();
- 		if (!cp) {
--			if (param->pe_data)
--				kfree(param->pe_data);
-+			kfree(param->pe_data);
- 			IP_VS_DBG(2, "BACKUP, add new conn. failed\n");
- 			return;
- 		}
 -- 
-1.8.4.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
