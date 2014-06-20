@@ -1,94 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138AbaFTTcN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 15:32:13 -0400
-Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:51977 "EHLO
-	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754662AbaFTTcJ (ORCPT
+	id S1757411AbaFTTgb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 15:36:31 -0400
+Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:33485 "EHLO
+	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754812AbaFTTcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 15:32:09 -0400
-Message-Id: <20140620193127.002883469@linux.com>
-Date: Fri, 20 Jun 2014 14:31:33 -0500
+	Fri, 20 Jun 2014 15:32:11 -0400
+Message-Id: <20140620193127.123705312@linux.com>
+Date: Fri, 20 Jun 2014 14:31:34 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 18/31] arm: Replace __this_cpu_ptr with raw_cpu_ptr
+        David Daney <david.daney@cavium.com>
+Subject: [PATCH 19/31] MIPS: Replace __get_cpu_var uses in FPU emulator.
 References: <20140620193115.547427118@linux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=this_arm
+Content-Disposition: inline; filename=0001-MIPS-Replace-__get_cpu_var-uses-in-FPU-emulator.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__this_cpu_ptr is being phased out. So replace with raw_cpu_ptr.
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-CC: Will Deacon <will.deacon@arm.com>
+From: David Daney <david.daney@cavium.com>
+
+The use of __this_cpu_inc() requires a fundamental integer type, so
+change the type of all the counters to unsigned long, which is the
+same width they were before, but not wrapped in local_t.
+
+Signed-off-by: David Daney <david.daney@cavium.com>
 Signed-off-by: Christoph Lameter <cl@linux.com>
+---
+ arch/mips/include/asm/fpu_emulator.h | 14 +++++++-------
+ arch/mips/math-emu/cp1emu.c          |  6 +++---
+ 2 files changed, 10 insertions(+), 10 deletions(-)
 
-Index: linux/arch/arm/kernel/smp_twd.c
+Index: linux/arch/mips/include/asm/fpu_emulator.h
 ===================================================================
---- linux.orig/arch/arm/kernel/smp_twd.c	2014-04-14 13:33:53.858921317 -0500
-+++ linux/arch/arm/kernel/smp_twd.c	2014-04-14 13:33:53.854921395 -0500
-@@ -92,7 +92,7 @@
+--- linux.orig/arch/mips/include/asm/fpu_emulator.h	2014-06-16 09:15:42.199326017 -0500
++++ linux/arch/mips/include/asm/fpu_emulator.h	2014-06-16 09:17:42.776959733 -0500
+@@ -33,17 +33,17 @@
+ #ifdef CONFIG_DEBUG_FS
  
- static void twd_timer_stop(void)
- {
--	struct clock_event_device *clk = __this_cpu_ptr(twd_evt);
-+	struct clock_event_device *clk = raw_cpu_ptr(twd_evt);
+ struct mips_fpu_emulator_stats {
+-	local_t emulated;
+-	local_t loads;
+-	local_t stores;
+-	local_t cp1ops;
+-	local_t cp1xops;
+-	local_t errors;
+-	local_t ieee754_inexact;
+-	local_t ieee754_underflow;
+-	local_t ieee754_overflow;
+-	local_t ieee754_zerodiv;
+-	local_t ieee754_invalidop;
++	unsigned long emulated;
++	unsigned long loads;
++	unsigned long stores;
++	unsigned long cp1ops;
++	unsigned long cp1xops;
++	unsigned long errors;
++	unsigned long ieee754_inexact;
++	unsigned long ieee754_underflow;
++	unsigned long ieee754_overflow;
++	unsigned long ieee754_zerodiv;
++	unsigned long ieee754_invalidop;
+ };
  
- 	twd_set_mode(CLOCK_EVT_MODE_UNUSED, clk);
- 	disable_percpu_irq(clk->irq);
-@@ -108,7 +108,7 @@
- {
- 	twd_timer_rate = *((unsigned long *) new_rate);
+ DECLARE_PER_CPU(struct mips_fpu_emulator_stats, fpuemustats);
+@@ -51,7 +51,7 @@
+ #define MIPS_FPU_EMU_INC_STATS(M)					\
+ do {									\
+ 	preempt_disable();						\
+-	__local_inc(&__get_cpu_var(fpuemustats).M);			\
++	__this_cpu_inc(fpuemustats.M);					\
+ 	preempt_enable();						\
+ } while (0)
  
--	clockevents_update_freq(__this_cpu_ptr(twd_evt), twd_timer_rate);
-+	clockevents_update_freq(raw_cpu_ptr(twd_evt), twd_timer_rate);
- }
- 
- static int twd_rate_change(struct notifier_block *nb,
-@@ -134,7 +134,7 @@
- 
- static int twd_clk_init(void)
- {
--	if (twd_evt && __this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
-+	if (twd_evt && raw_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
- 		return clk_notifier_register(twd_clk, &twd_clk_nb);
- 
- 	return 0;
-@@ -153,7 +153,7 @@
- {
- 	twd_timer_rate = clk_get_rate(twd_clk);
- 
--	clockevents_update_freq(__this_cpu_ptr(twd_evt), twd_timer_rate);
-+	clockevents_update_freq(raw_cpu_ptr(twd_evt), twd_timer_rate);
- }
- 
- static int twd_cpufreq_transition(struct notifier_block *nb,
-@@ -179,7 +179,7 @@
- 
- static int twd_cpufreq_init(void)
- {
--	if (twd_evt && __this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
-+	if (twd_evt && raw_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
- 		return cpufreq_register_notifier(&twd_cpufreq_nb,
- 			CPUFREQ_TRANSITION_NOTIFIER);
- 
-@@ -269,7 +269,7 @@
-  */
- static void twd_timer_setup(void)
- {
--	struct clock_event_device *clk = __this_cpu_ptr(twd_evt);
-+	struct clock_event_device *clk = raw_cpu_ptr(twd_evt);
- 	int cpu = smp_processor_id();
- 
- 	/*
 
