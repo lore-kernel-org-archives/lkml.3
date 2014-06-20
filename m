@@ -1,157 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965175AbaFTHTp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 03:19:45 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:49751 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934032AbaFTHTn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 03:19:43 -0400
+	id S934692AbaFTH2c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 03:28:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3569 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934032AbaFTH2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 03:28:30 -0400
+Message-ID: <53A3E256.8090307@redhat.com>
+Date: Fri, 20 Jun 2014 09:27:18 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140619212713.496614337@linutronix.de>
-References: <20140619212606.431750473@linutronix.de>
-	<20140619212713.496614337@linutronix.de>
-Date: Fri, 20 Jun 2014 12:49:43 +0530
-X-Google-Sender-Auth: HWGw9HZhSvsc714fbc06HQcXuEs
-Message-ID: <CAOh2x==trCJcQnzekEdcFoBb2i1Mc7hMsJq94iu2dzrZ=Xkeow@mail.gmail.com>
-Subject: Re: [patch 08/13] irqchip: spear_shirq: Precalculate status mask
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Shiraz Hashim <shiraz.linux.kernel@gmail.com>,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Olof Johansson <olof@lixom.net>, Ulf Hansson <ulf.hansson@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        linux-pm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Chris Ball <chris@printf.net>,
+        Chen-Yu Tsai <wens@csie.org>, Russell King <linux@arm.linux.org.uk>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [RFC 1/2] pwrseq: Add subsystem to handle complex power sequences
+References: <1403183091-27876-1-git-send-email-ulf.hansson@linaro.org>	<1403183091-27876-2-git-send-email-ulf.hansson@linaro.org> <CAOesGMj6xp_cXZRuqL5HOPX4AeDuCkj69E32xuPVgGk4xABLbQ@mail.gmail.com>
+In-Reply-To: <CAOesGMj6xp_cXZRuqL5HOPX4AeDuCkj69E32xuPVgGk4xABLbQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 3:04 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Calculate the status mask at compile time, not at runtime.
->
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  drivers/irqchip/spear-shirq.c |   13 ++++++++++++-
->  1 file changed, 12 insertions(+), 1 deletion(-)
->
-> Index: linux/drivers/irqchip/spear-shirq.c
-> ===================================================================
-> --- linux.orig/drivers/irqchip/spear-shirq.c
-> +++ linux/drivers/irqchip/spear-shirq.c
-> @@ -49,6 +49,7 @@ struct shirq_regs {
->   *
->   * base:       Base register address
->   * regs:       Register configuration for shared irq block
-> + * mask:       Mask to apply to the status register
->   * virq_base:  Base virtual interrupt number
->   * nr_irqs:    Number of interrupts handled by this block
->   * offset:     Bit offset of the first interrupt
-> @@ -57,6 +58,7 @@ struct shirq_regs {
->  struct spear_shirq {
->         void __iomem            *base;
->         struct shirq_regs       regs;
-> +       u32                     mask;
->         u32                     virq_base;
->         u32                     nr_irqs;
->         u32                     offset;
-> @@ -72,6 +74,7 @@ static DEFINE_SPINLOCK(lock);
->  static struct spear_shirq spear300_shirq_ras1 = {
->         .offset         = 0,
->         .nr_irqs        = 9,
-> +       .mask           = ((0x1 << 9) - 1) << 0,
->         .regs = {
->                 .enb_reg = SPEAR300_INT_ENB_MASK_REG,
->                 .status_reg = SPEAR300_INT_STS_MASK_REG,
-> @@ -89,6 +92,7 @@ static struct spear_shirq *spear300_shir
->  static struct spear_shirq spear310_shirq_ras1 = {
->         .offset         = 0,
->         .nr_irqs        = 8,
-> +       .mask           = ((0x1 << 8) - 1) << 0,
->         .regs = {
->                 .enb_reg = -1,
->                 .status_reg = SPEAR310_INT_STS_MASK_REG,
-> @@ -99,6 +103,7 @@ static struct spear_shirq spear310_shirq
->  static struct spear_shirq spear310_shirq_ras2 = {
->         .offset         = 8,
->         .nr_irqs        = 5,
-> +       .mask           = ((0x1 << 5) - 1) << 8,
->         .regs = {
->                 .enb_reg = -1,
->                 .status_reg = SPEAR310_INT_STS_MASK_REG,
-> @@ -109,6 +114,7 @@ static struct spear_shirq spear310_shirq
->  static struct spear_shirq spear310_shirq_ras3 = {
->         .offset         = 13,
->         .nr_irqs        = 1,
-> +       .mask           = ((0x1 << 1) - 1) << 13,
->         .regs = {
->                 .enb_reg = -1,
->                 .status_reg = SPEAR310_INT_STS_MASK_REG,
-> @@ -119,6 +125,7 @@ static struct spear_shirq spear310_shirq
->  static struct spear_shirq spear310_shirq_intrcomm_ras = {
->         .offset         = 14,
->         .nr_irqs        = 3,
-> +       .mask           = ((0x1 << 3) - 1) << 14,
->         .regs = {
->                 .enb_reg = -1,
->                 .status_reg = SPEAR310_INT_STS_MASK_REG,
-> @@ -141,6 +148,7 @@ static struct spear_shirq *spear310_shir
->  static struct spear_shirq spear320_shirq_ras3 = {
->         .offset         = 0,
->         .nr_irqs        = 7,
-> +       .mask           = ((0x1 << 7) - 1) << 0,
->         .disabled       = 1,
->         .regs = {
->                 .enb_reg = SPEAR320_INT_ENB_MASK_REG,
-> @@ -154,6 +162,7 @@ static struct spear_shirq spear320_shirq
->  static struct spear_shirq spear320_shirq_ras1 = {
->         .offset         = 7,
->         .nr_irqs        = 3,
-> +       .mask           = ((0x1 << 3) - 1) << 7,
->         .regs = {
->                 .enb_reg = -1,
->                 .status_reg = SPEAR320_INT_STS_MASK_REG,
-> @@ -165,6 +174,7 @@ static struct spear_shirq spear320_shirq
->  static struct spear_shirq spear320_shirq_ras2 = {
->         .offset         = 10,
->         .nr_irqs        = 1,
-> +       .mask           = ((0x1 << 1) - 1) << 10,
->         .regs = {
->                 .enb_reg = -1,
->                 .status_reg = SPEAR320_INT_STS_MASK_REG,
-> @@ -176,6 +186,7 @@ static struct spear_shirq spear320_shirq
->  static struct spear_shirq spear320_shirq_intrcomm_ras = {
->         .offset         = 11,
->         .nr_irqs        = 11,
-> +       .mask           = ((0x1 << 11) - 1) << 11,
->         .regs = {
->                 .enb_reg = -1,
->                 .status_reg = SPEAR320_INT_STS_MASK_REG,
+Hi,
 
-If you like, maybe this instead of above diff:
+On 06/19/2014 07:18 PM, Olof Johansson wrote:
+> Hi,
+> 
+> 
+> 
+> On Thu, Jun 19, 2014 at 6:04 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+>> The pwrseq subsystem handles complex power sequences, typically useful
+>> for subsystems that makes use of discoverable buses, like for example
+>> MMC and I2C.
+>>
+>> The pwrseq subsystem is dependant on CONFIG_OF to be able to parse a DT
+>> childnode to find out what power sequence method to bind for a device.
+>>
+>> From the DT childnode, the pwrseq DT parser tries to locate a
+>> "power-method" property, which string is matched towards the list of
+>> supported pwrseq methods.
+>>
+>> Each pwrseq method implements it's own power sequence and interfaces
+>> the pwrseq core through a few callback functions.
+>>
+>> To instantiate a pwrseq method, clients shall use the devm_pwrseq_get()
+>> API. If needed, clients can explicity drop the references to a pwrseq
+>> method using devm_pwrseq_put() API.
+>>
+>> Besides instantiation, the pwrseq API provides clients opportunity to
+>> select a certain power state. In this intial version, PWRSEQ_POWER_ON
+>> and PWRSEQ_POWER_OFF are supported. Those are also mandatory for each
+>> pwrseq method to support.
+>>
+>> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+>> ---
+>>  .../devicetree/bindings/pwrseq/pwrseq.txt          |   48 ++++++
+>>  drivers/Makefile                                   |    2 +-
+>>  drivers/pwrseq/Makefile                            |    2 +
+>>  drivers/pwrseq/core.c                              |  175 ++++++++++++++++++++
+>>  drivers/pwrseq/core.h                              |   37 +++++
+>>  drivers/pwrseq/method.c                            |   38 +++++
+>>  include/linux/pwrseq.h                             |   50 ++++++
+>>  7 files changed, 351 insertions(+), 1 deletion(-)
+>>  create mode 100644 Documentation/devicetree/bindings/pwrseq/pwrseq.txt
+>>  create mode 100644 drivers/pwrseq/Makefile
+>>  create mode 100644 drivers/pwrseq/core.c
+>>  create mode 100644 drivers/pwrseq/core.h
+>>  create mode 100644 drivers/pwrseq/method.c
+>>  create mode 100644 include/linux/pwrseq.h
+>>
+>> diff --git a/Documentation/devicetree/bindings/pwrseq/pwrseq.txt b/Documentation/devicetree/bindings/pwrseq/pwrseq.txt
+>> new file mode 100644
+>> index 0000000..80848ae
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/pwrseq/pwrseq.txt
+>> @@ -0,0 +1,48 @@
+>> +Power sequence DT bindings
+>> +
+>> +Each power sequence method has a corresponding "power-method" property string.
+>> +This property shall be set in a subnode for a device. That subnode should also
+>> +describe resourses which are specific to that power method.
+>> +
+>> +Do note, power sequences as such isn't encoded through DT. Instead those are
+>> +implemented by each power method.
+>> +
+>> +Required subnode properties:
+>> +- power-method: should contain the string for the power method to bind.
+>> +
+>> +       Supported power methods: None.
+>> +
+>> +Example:
+>> +
+>> +Note, the "clock" power method in this example isn't actually supported, but
+>> +used to visualize how a childnode could be described.
+>> +
+>> +// WLAN SDIO channel
+>> +sdi1_per2@80118000 {
+>> +       compatible = "arm,pl18x", "arm,primecell";
+>> +       reg = <0x80118000 0x1000>;
+>> +       interrupts = <0 50 IRQ_TYPE_LEVEL_HIGH>;
+>> +
+>> +       dmas = <&dma 32 0 0x2>, /* Logical - DevToMem */
+>> +              <&dma 32 0 0x0>; /* Logical - MemToDev */
+>> +       dma-names = "rx", "tx";
+>> +
+>> +       clocks = <&prcc_kclk 2 4>, <&prcc_pclk 2 6>;
+>> +       clock-names = "sdi", "apb_pclk";
+>> +
+>> +       arm,primecell-periphid = <0x10480180>;
+>> +       max-frequency = <100000000>;
+>> +       bus-width = <4>;
+>> +       non-removable;
+>> +       pinctrl-names = "default", "sleep";
+>> +       pinctrl-0 = <&sdi1_default_mode>;
+>> +       pinctrl-1 = <&sdi1_sleep_mode>;
+>> +
+>> +       status = "okay";
+>> +
+>> +       pwrseq: pwrseq1 {
+>> +               power-method = "clock";
+>> +               clocks = <&someclk 1 2>, <&someclk 3 4>;
+>> +               clock-names = "pwrseq1", "pwrseq2";
+>> +       };
+> 
+> I am strongly against the subnode approach as a general framework. We
+> don't have a subnode for interrupts, nor for clocks or pinctrl. So why
+> should we have it for the power sequencing?
+> 
+> Sure, that fits the linux driver model better, but that's irrelevant
+> w.r.t. describing the hardware.
 
-diff --git a/drivers/irqchip/spear-shirq.c b/drivers/irqchip/spear-shirq.c
-index 3fdda3a..40c5c1b 100644
---- a/drivers/irqchip/spear-shirq.c
-+++ b/drivers/irqchip/spear-shirq.c
-@@ -281,6 +281,8 @@ static int __init shirq_init(struct spear_shirq
-**shirq_blocks, int block_nr,
-                shirq_blocks[i]->base = base;
-                shirq_blocks[i]->irq_base = irq_find_mapping(shirq_domain,
-                                hwirq);
-+               shirq_blocks[i]->mask = ((0x1 << shirq_blocks[i]->nr_irqs) - 1)
-+                                       << shirq_blocks[i]->offset;
-                shirq_blocks[i]->irq = irq_of_parse_and_map(np, i);
+Actually this is about describing the hardware, when you have e.g. an
+mmc device which needs pwrseq, there will be 2 sets of certain
+resources, ie clocks for the host controller and clocks going directly
+to the mmc device. I think putting those both in the same subnode is
+a BAD idea, so we really do need a subnode to group the pwrseq resources
+together.
 
-                spear_shirq_register(shirq_blocks[i]);
+Regards,
 
-
-> @@ -239,7 +250,7 @@ static void shirq_handler(unsigned irq,
->
->         chip->irq_ack(idata);
->
-> -       mask = ((0x1 << shirq->nr_irqs) - 1) << shirq->offset;
-> +       mask = shirq->mask;
->         while ((val = readl(shirq->base + shirq->regs.status_reg) &
->                                 mask)) {
->
->
->
+Hans
