@@ -1,127 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441AbaFTCIG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 22:08:06 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:51154 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754611AbaFTCIE (ORCPT
+	id S1756505AbaFTCML (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 22:12:11 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:59391 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754201AbaFTCMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 22:08:04 -0400
-Date: Thu, 19 Jun 2014 22:08:00 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: [PATCH -tip v2 1/3] ftrace: Simplify ftrace_hash_disable/enable
- path in ftrace_hash_move
-Message-ID: <20140619220800.5d4b790c@gandalf.local.home>
-In-Reply-To: <20140617110442.15167.81076.stgit@kbuild-fedora.novalocal>
-References: <20140617110436.15167.7179.stgit@kbuild-fedora.novalocal>
-	<20140617110442.15167.81076.stgit@kbuild-fedora.novalocal>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 19 Jun 2014 22:12:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+In-Reply-To: <1403212685-2427-1-git-send-email-xerofoify@gmail.com>
+References: <1403212685-2427-1-git-send-email-xerofoify@gmail.com>
+Date: Thu, 19 Jun 2014 22:12:09 -0400
+Message-ID: <CAPDOMVhUf=X8Fp1stntiLstJw1sF80G=ZJhO7xNUP=jT4oagLA@mail.gmail.com>
+Subject: Re: [PATCH] staging: rtl8192 Check for Null return from dev_skb_alloc
+From: Nick Krause <xerofoify@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: lisa@xenapiadmin.com, Valentina Manea <valentina.manea.m@gmail.com>,
+        ben@decadent.org.uk, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jun 2014 11:04:42 +0000
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+If anyone able to check this patch it would be great.
+Thanks Nick
 
-> Simplify ftrace_hash_disable/enable path in ftrace_hash_move
-> for hardening the process if the memory allocation failed.
-> 
-
-Regardless of what we do with IPMODIFY, I pulled this into my 3.17
-queue. You don't need to resend it with any new versions of the patches.
-
--- Steve
-
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Josh Poimboeuf <jpoimboe@redhat.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
+On Thu, Jun 19, 2014 at 5:18 PM, Nicholas Krause <xerofoify@gmail.com> wrote:
+> Checks for Null return from dev_skb_alloc if it returns Null,
+> fw_download returns false. Otherwise it returns true.Also
+> removed rt_status due to returning true of false directly.
+>
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
 > ---
->  kernel/trace/ftrace.c |   33 +++++++++++----------------------
->  1 file changed, 11 insertions(+), 22 deletions(-)
-> 
-> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> index 5b372e3..d65719d 100644
-> --- a/kernel/trace/ftrace.c
-> +++ b/kernel/trace/ftrace.c
-> @@ -1304,25 +1304,15 @@ ftrace_hash_move(struct ftrace_ops *ops, int enable,
->  	struct ftrace_hash *new_hash;
->  	int size = src->count;
->  	int bits = 0;
-> -	int ret;
->  	int i;
->  
->  	/*
-> -	 * Remove the current set, update the hash and add
-> -	 * them back.
-> -	 */
-> -	ftrace_hash_rec_disable(ops, enable);
-> -
-> -	/*
->  	 * If the new source is empty, just free dst and assign it
->  	 * the empty_hash.
->  	 */
->  	if (!src->count) {
-> -		free_ftrace_hash_rcu(*dst);
-> -		rcu_assign_pointer(*dst, EMPTY_HASH);
-> -		/* still need to update the function records */
-> -		ret = 0;
-> -		goto out;
-> +		new_hash = EMPTY_HASH;
-> +		goto update;
->  	}
->  
->  	/*
-> @@ -1335,10 +1325,9 @@ ftrace_hash_move(struct ftrace_ops *ops, int enable,
->  	if (bits > FTRACE_HASH_MAX_BITS)
->  		bits = FTRACE_HASH_MAX_BITS;
->  
-> -	ret = -ENOMEM;
->  	new_hash = alloc_ftrace_hash(bits);
->  	if (!new_hash)
-> -		goto out;
-> +		return -ENOMEM;
->  
->  	size = 1 << src->size_bits;
->  	for (i = 0; i < size; i++) {
-> @@ -1349,20 +1338,20 @@ ftrace_hash_move(struct ftrace_ops *ops, int enable,
->  		}
->  	}
->  
-> +update:
-> +	/*
-> +	 * Remove the current set, update the hash and add
-> +	 * them back.
-> +	 */
-> +	ftrace_hash_rec_disable(ops, enable);
-> +
->  	old_hash = *dst;
->  	rcu_assign_pointer(*dst, new_hash);
->  	free_ftrace_hash_rcu(old_hash);
->  
-> -	ret = 0;
-> - out:
-> -	/*
-> -	 * Enable regardless of ret:
-> -	 *  On success, we enable the new hash.
-> -	 *  On failure, we re-enable the original hash.
-> -	 */
->  	ftrace_hash_rec_enable(ops, enable);
->  
-> -	return ret;
-> +	return 0;
+>  drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+> index 1a95d1f..affa89a 100644
+> --- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+> +++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+> @@ -36,7 +36,6 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+>                              u32 buffer_len)
+>  {
+>         struct r8192_priv *priv = rtllib_priv(dev);
+> -       bool                rt_status = true;
+>         u16                 frag_threshold;
+>         u16                 frag_length, frag_offset = 0;
+>         int                 i;
+> @@ -59,7 +58,9 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+>                         bLastIniPkt = 1;
+>
+>                 }
+>        skb  = dev_alloc_skb(frag_length + 4);
+> +               if (!skb)
+> +                       return false;
+>                 memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
+>                 tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
+> @@ -99,7 +100,7 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+>
+>         write_nic_byte(dev, TPPoll, TPPoll_CQ);
+>
+> -       return rt_status;
+> +       return true;
 >  }
->  
->  /*
-> 
-
+>
+>  static bool CPUcheck_maincodeok_turnonCPU(struct net_device *dev)
+> --
+> 1.9.1
+>
