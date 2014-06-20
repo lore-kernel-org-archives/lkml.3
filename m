@@ -1,272 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776AbaFTPAD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 11:00:03 -0400
-Received: from mail.kernel.org ([198.145.19.201]:39006 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752377AbaFTPAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 11:00:01 -0400
-Date: Fri, 20 Jun 2014 11:59:55 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        dsahern@gmail.com, jolsa@redhat.com, xiaoguangrong@linux.vnet.ibm.com,
-        yangds.fnst@cn.fujitsu.com, adrian.hunter@intel.com,
-        namhyung@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/7] perf trace: add support for pagefault tracing
-Message-ID: <20140620145955.GG31524@kernel.org>
-References: <1403261389-13423-1-git-send-email-stfomichev@yandex-team.ru>
- <1403261389-13423-3-git-send-email-stfomichev@yandex-team.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403261389-13423-3-git-send-email-stfomichev@yandex-team.ru>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754856AbaFTPAR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 11:00:17 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:38443 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753160AbaFTPAM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 11:00:12 -0400
+From: navin patidar <navin.patidar@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
+Subject: [PATCH 00/41] Cleanup and consolidate efuse related code.
+Date: Fri, 20 Jun 2014 20:29:06 +0530
+Message-Id: <1403276387-11841-1-git-send-email-navin.patidar@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Jun 20, 2014 at 02:49:44PM +0400, Stanislav Fomichev escreveu:
-> This patch adds optional pagefault tracing support to 'perf trace'.
-> Using -F/--pf option user can specify whether he wants minor, major or
-> all pagefault events to be traced. This patch adds only live mode,
-> record and replace will come in a separate patch.
-> 
-> Example output:
-> 1756272.905 ( 0.000 ms): curl/5937 majfault [0x7fa7261978b6] => /usr/lib/x86_64-linux-gnu/libkrb5.so.26.0.0+0x85288 (d.)
 
-Things like the above may be better expressed using dso@symbol+offset,
-even more when the symbol is not resolved within a DSO, due to
-insufficient expressivity in the available symtab, i.e. perhaps the user
-needs to install a debuginfo package.
+navin patidar (41):
+  staging: rtl8188eu: Rename hal_EfusePowerSwitch_RTL8188E()
+  staging: rtl8188eu: Remove rtl8188e_ReadEFuse()
+  staging: rtl8188eu: Remove unused function ReadEFuse_Pseudo()
+  staging: rtl8188eu: Remove rtl8188e_EfuseGetCurrentSize()
+  staging: rtl8188eu: Remove unused function
+    Hal_EfuseGetCurrentSize_Pseudo()
+  staging: rtl8188eu: Remove function
+    Hal_EFUSEGetEfuseDefinition_Pseudo88E()
+  staging: rtl8188eu: Rename Hal_EFUSEGetEfuseDefinition88E()
+  staging: rtl8188eu: assign hal_EfusePgPacketRead_8188e() to
+    ->Efuse_PgPacketRead
+  staging:rtl8188eu:assign hal_EfusePgPacketWrite_8188e() to
+    ->Efuse_PgPacketWrite
+  staging:rtl8188eu: Assign rtl8188e_Efuse_WordEnableDataWrite() to
+    ->Efuse_WordEnableDataWrite
+  staging: rtl8188eu: rtw_efuse.c: Remove unnecessary function
+    declaration
+  staging: rtl8188eu: Rename rtl8188e_EFUSE_GetEfuseDefinition()
+  staging: rtl8188eu: Rename hal_EfuseGetCurrentSize_8188e()
+  staging: rtl8188eu: Rename rtl8188e_EfusePowerSwitch() to
+    Efuse_PowerSwitch()
+  staging: rtl8188eu: Rename function Hal_EfuseWordEnableDataWrite()
+  staging: rtl8188eu: Remove function Hal_EfuseReadEFuse88E()
+  staging: rtl8188eu: Rename function ReadEFuseByIC() to
+    efuse_ReadEFuse()
+  staging: rtl8188eu: Rename hal_EfusePgPacketRead_8188e() to
+    Efuse_PgPacketRead()
+  staging: rtl8188eu: Rename hal_EfusePgPacketWrite_8188e()
+  staging: rtl8188eu: Remove function Efuse_Write1ByteToFakeContent()
+  staging: rtl8188eu: Remove function Efuse_Read1ByteFromFakeContent()
+  staging: rtl8188eu: Remove function rtw_BT_efuse_map_write()
+  staging: rtl8188eu: Remove unused function Efuse_PgPacketWrite_BT()
+  staging: rtl8188eu: Remove function rtw_BT_efuse_map_read()
+  staging: rtl8188eu: Remove unused function ReadEFuseByte()
+  staging: rtl8188eu: Remove unused function EFUSE_Read1Byte()
+  staging: rtl8188eu: efuse_OneByteRead():Remove unused parameter bool
+    test
+  staging: rtl8188eu: efuse_OneByteWrite(): Remove unused parameter
+    bool test
+  staging: rtl8188eu: efuse_ReadEFuse(): Remove parameter bool
+    bPseudoTest
+  staging: rtl8188eu: Efuse_GetCurrentSize(): Remove parameter bool
+    test
+  staging: rtl8188eu: Efuse_ReadAllMap(): Remove unused parameter bool
+    test
+  staging: rtl8188eu: EFUSE_ShadowMapUpdate():Remove unused parameter
+    bool test
+  staging: rtl8188eu: Efuse_WordEnableDataWrite(): Remove unused
+    parameter test
+  staging: rtl8188eu: hal_EfuseCheckIfDatafollowed(): Remove unused
+    parameter
+  staging: rtl8188eu: Remove bool bPseudoTest parameter from efuse
+    functions
+  staging: rtl8188eu: rtl8188e_hal_init.c: Remove forward declarations
+  staging: rtl8188eu: hal_EfusePartialWriteCheck(): Remove bluetooth
+    specific code
+  staging: rtl8188eu: rtw_efuse.c: Remove unused global variables
+  staging: rtl8188eu: rtw_efuse.c: Remove unused local variables
+  staging: rtl8188eu: rtw_efuse.c: Remove unnecessary comments
+  staging: rtl8188eu: Move all efuse related code to rtw_efuse.c
 
-> 1862866.036 ( 0.000 ms): wget/8460 majfault [__clear_user+0x3f] => 0x659cb4 (?k)
+ drivers/staging/rtl8188eu/core/rtw_efuse.c        | 1392 +++++++++++++--------
+ drivers/staging/rtl8188eu/core/rtw_mp_ioctl.c     |   10 +-
+ drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c | 1253 +------------------
+ drivers/staging/rtl8188eu/include/hal_intf.h      |   18 -
+ drivers/staging/rtl8188eu/include/rtl8188e_hal.h  |    2 +
+ drivers/staging/rtl8188eu/include/rtw_efuse.h     |   43 +-
+ drivers/staging/rtl8188eu/os_dep/ioctl_linux.c    |  108 +-
+ 7 files changed, 920 insertions(+), 1906 deletions(-)
 
-And here, where is this __clear_user symbol from? The kernel? Probaly
-that 'k' there means that? If so, probably that deserves an entry in the
-documentation.
+--
+1.7.10.4
 
-WRT documentation, please consider sending followup patches providing
-examples in the documentation, talking about the possible need of
-installing debuginfo packages as well.
-
-But its shaping up nicely, good work!
-
-- Arnaldo
-
- 
-> Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
-> ---
->  tools/perf/Documentation/perf-trace.txt |  12 ++++
->  tools/perf/builtin-trace.c              | 116 +++++++++++++++++++++++++++++++-
->  2 files changed, 127 insertions(+), 1 deletion(-)
-> 
-> diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
-> index fae38d9a44a4..8e5f710aa45d 100644
-> --- a/tools/perf/Documentation/perf-trace.txt
-> +++ b/tools/perf/Documentation/perf-trace.txt
-> @@ -107,6 +107,18 @@ the thread executes on the designated CPUs. Default is to monitor all CPUs.
->  	Show tool stats such as number of times fd->pathname was discovered thru
->  	hooking the open syscall return + vfs_getname or via reading /proc/pid/fd, etc.
->  
-> +-F=[all|min|maj]::
-> +--pf=[all|min|maj]::
-> +	Trace pagefaults. Optionally, you can specify whether you want minor,
-> +	major or all pagefaults. Default value is maj.
-> +
-> +EXAMPLES
-> +--------
-> +
-> +Trace syscalls, major and minor pagefaults:
-> +
-> + $ perf trace -F all
-> +
->  SEE ALSO
->  --------
->  linkperf:perf-record[1], linkperf:perf-script[1]
-> diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-> index a9b542918da0..a80aae2bba40 100644
-> --- a/tools/perf/builtin-trace.c
-> +++ b/tools/perf/builtin-trace.c
-> @@ -1177,6 +1177,9 @@ fail:
->  	return NULL;
->  }
->  
-> +#define TRACE_PFMAJ		(1 << 0)
-> +#define TRACE_PFMIN		(1 << 1)
-> +
->  struct trace {
->  	struct perf_tool	tool;
->  	struct {
-> @@ -1211,6 +1214,7 @@ struct trace {
->  	bool			summary_only;
->  	bool			show_comm;
->  	bool			show_tool_stats;
-> +	int			trace_pgfaults;
->  };
->  
->  static int trace__set_fd_pathname(struct thread *thread, int fd, const char *pathname)
-> @@ -1773,6 +1777,59 @@ out_dump:
->  	return 0;
->  }
->  
-> +static int trace__pgfault(struct trace *trace,
-> +			  struct perf_evsel *evsel,
-> +			  union perf_event *event,
-> +			  struct perf_sample *sample)
-> +{
-> +	struct thread *thread;
-> +	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
-> +	struct addr_location al;
-> +	char map_type = 'd';
-> +
-> +	thread = machine__findnew_thread(trace->host, sample->pid, sample->tid);
-> +
-> +	thread__find_addr_location(thread, trace->host, cpumode, MAP__FUNCTION,
-> +			      sample->ip, &al);
-> +
-> +	trace__fprintf_entry_head(trace, thread, 0, sample->time, trace->output);
-> +
-> +	fprintf(trace->output, "%sfault ",
-> +		evsel->attr.config == PERF_COUNT_SW_PAGE_FAULTS_MAJ ?
-> +		"maj" : "min");
-> +
-> +	if (al.sym)
-> +		fprintf(trace->output, "[%s+0x%lx]",
-> +			al.sym->name, al.addr - al.sym->start);
-> +	else
-> +		fprintf(trace->output, "[0x%lx]", sample->ip);
-> +
-> +	fprintf(trace->output, " => ");
-> +
-> +	thread__find_addr_map(thread, trace->host, cpumode, MAP__VARIABLE,
-> +			      sample->addr, &al);
-> +
-> +	if (!al.map) {
-> +		thread__find_addr_map(thread, trace->host, cpumode,
-> +				      MAP__FUNCTION, sample->addr, &al);
-> +
-> +		if (al.map)
-> +			map_type = 'x';
-> +	}
-> +
-> +	if (al.map) {
-> +		fprintf(trace->output, "%s+0x%lx",
-> +			al.map->dso->long_name, al.addr);
-> +	} else {
-> +		map_type = '?';
-> +		fprintf(trace->output, "0x%lx", sample->addr);
-> +	}
-> +
-> +	fprintf(trace->output, " (%c%c)\n", map_type, al.level);
-> +
-> +	return 0;
-> +}
-> +
->  static bool skip_sample(struct trace *trace, struct perf_sample *sample)
->  {
->  	if ((trace->pid_list && intlist__find(trace->pid_list, sample->pid)) ||
-> @@ -1887,6 +1944,30 @@ static void perf_evlist__add_vfs_getname(struct perf_evlist *evlist)
->  	perf_evlist__add(evlist, evsel);
->  }
->  
-> +static int perf_evlist__add_pgfault(struct perf_evlist *evlist,
-> +				    u64 config)
-> +{
-> +	struct perf_evsel *evsel;
-> +	struct perf_event_attr attr = {
-> +		.type = PERF_TYPE_SOFTWARE,
-> +		.mmap_data = 1,
-> +		.sample_period = 1,
-> +	};
-> +
-> +	attr.config = config;
-> +
-> +	event_attr_init(&attr);
-> +
-> +	evsel = perf_evsel__new(&attr);
-> +	if (!evsel)
-> +		return -ENOMEM;
-> +
-> +	evsel->handler = trace__pgfault;
-> +	perf_evlist__add(evlist, evsel);
-> +
-> +	return 0;
-> +}
-> +
->  static int trace__run(struct trace *trace, int argc, const char **argv)
->  {
->  	struct perf_evlist *evlist = perf_evlist__new();
-> @@ -1907,6 +1988,14 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
->  
->  	perf_evlist__add_vfs_getname(evlist);
->  
-> +	if ((trace->trace_pgfaults & TRACE_PFMAJ) &&
-> +	    perf_evlist__add_pgfault(evlist, PERF_COUNT_SW_PAGE_FAULTS_MAJ))
-> +		goto out_error_tp;
-> +
-> +	if ((trace->trace_pgfaults & TRACE_PFMIN) &&
-> +	    perf_evlist__add_pgfault(evlist, PERF_COUNT_SW_PAGE_FAULTS_MIN))
-> +		goto out_error_tp;
-> +
->  	if (trace->sched &&
->  		perf_evlist__add_newtp(evlist, "sched", "sched_stat_runtime",
->  				trace__sched_stat_runtime))
-> @@ -1987,7 +2076,8 @@ again:
->  				goto next_event;
->  			}
->  
-> -			if (sample.raw_data == NULL) {
-> +			if (evsel->attr.type == PERF_TYPE_TRACEPOINT &&
-> +			    sample.raw_data == NULL) {
->  				fprintf(trace->output, "%s sample with no payload for tid: %d, cpu %d, raw_size=%d, skipping...\n",
->  				       perf_evsel__name(evsel), sample.tid,
->  				       sample.cpu, sample.raw_size);
-> @@ -2269,6 +2359,23 @@ static int trace__open_output(struct trace *trace, const char *filename)
->  	return trace->output == NULL ? -errno : 0;
->  }
->  
-> +static int parse_pagefaults(const struct option *opt, const char *str,
-> +			    int unset __maybe_unused)
-> +{
-> +	int *trace_pgfaults = opt->value;
-> +
-> +	if (strcmp(str, "all") == 0)
-> +		*trace_pgfaults |= TRACE_PFMAJ | TRACE_PFMIN;
-> +	else if (strcmp(str, "maj") == 0)
-> +		*trace_pgfaults |= TRACE_PFMAJ;
-> +	else if (strcmp(str, "min") == 0)
-> +		*trace_pgfaults |= TRACE_PFMIN;
-> +	else
-> +		return -1;
-> +
-> +	return 0;
-> +}
-> +
->  int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
->  {
->  	const char * const trace_usage[] = {
-> @@ -2335,6 +2442,8 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
->  		    "Show only syscall summary with statistics"),
->  	OPT_BOOLEAN('S', "with-summary", &trace.summary,
->  		    "Show all syscalls and summary with statistics"),
-> +	OPT_CALLBACK_DEFAULT('F', "pf", &trace.trace_pgfaults, "all|maj|min",
-> +		     "Trace pagefaults", parse_pagefaults, "maj"),
->  	OPT_END()
->  	};
->  	int err;
-> @@ -2349,6 +2458,11 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
->  	if (trace.summary_only)
->  		trace.summary = trace.summary_only;
->  
-> +	if (trace.trace_pgfaults) {
-> +		trace.opts.sample_address = true;
-> +		trace.opts.sample_time = true;
-> +	}
-> +
->  	if (output_name != NULL) {
->  		err = trace__open_output(&trace, output_name);
->  		if (err < 0) {
-> -- 
-> 1.8.3.2
