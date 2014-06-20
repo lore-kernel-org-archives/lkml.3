@@ -1,57 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966862AbaFTK7D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 06:59:03 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:30656 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965650AbaFTK7B (ORCPT
+	id S966896AbaFTK7P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 06:59:15 -0400
+Received: from fep20.mx.upcmail.net ([62.179.121.40]:37301 "EHLO
+	fep20.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965650AbaFTK7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 06:59:01 -0400
-Date: Fri, 20 Jun 2014 13:59:03 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: devel@driverdev.osuosl.org,
-        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Cort <linuxgeek@gmail.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [PATCH] staging: rtl8712: rtl871x_ioctl_linux.c: Cleaning up
- useless if statement
-Message-ID: <20140620105903.GT5500@mwanda>
-References: <1402852858-1352-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <20140616090525.GG5500@mwanda>
- <CAFo99gY+UQQdTiRzF8Ca9tYzcty90yHQ3paR9-67tYHcr_JZhQ@mail.gmail.com>
+	Fri, 20 Jun 2014 06:59:11 -0400
+X-SourceIP: 77.56.27.120
+X-Authenticated-Sender: odi.ch@hispeed.ch
+Message-ID: <53A413FB.9050602@odi.ch>
+Date: Fri, 20 Jun 2014 12:59:07 +0200
+From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFo99gY+UQQdTiRzF8Ca9tYzcty90yHQ3paR9-67tYHcr_JZhQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: BUG at mm/memory.c
+References: <53A3102E.2030602@odi.ch> <20140619165205.GA26761@node.dhcp.inet.fi>
+In-Reply-To: <20140619165205.GA26761@node.dhcp.inet.fi>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 12:46:33PM +0200, Rickard Strandqvist wrote:
-> Hi
-> 
-> It's a bit confusing with this, I have received a lot of complaints
-> that I have not had a cover letter.
-> When should I include it? In an obvious patching. But where there's a
-> need to explain anything further should have a cover letter.
+On 06/19/2014 06:52 PM, Kirill A. Shutemov wrote:
+> http://marc.info/?l=linux-kernel&m=140319579508104&w=2
 
-Cover letters are for if you have a series of patches and they follow a
-theme.  "Add support for XXX feature in a series of 8 patches".  "What
-is in my pull request for the new kernel."  It's just a shorter summary.
-This is just one patch not a series.
+Yes, those symptoms look very familiar. The patch should really go in stable 3.15.y.
 
-I have never sent a cover letter in my life.  I don't know who is
-complaining to you...
+Thanks.
 
-In this case the changelog would have been better and more complete if
-all the cover letter information were in the permanent commit log.
-
-regards,
-dan carpenter
+Ortwin
