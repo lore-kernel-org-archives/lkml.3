@@ -1,78 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934300AbaFTDqW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 23:46:22 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:32818 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753775AbaFTDqV (ORCPT
+	id S933905AbaFTD4V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 23:56:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54475 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932480AbaFTD4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 23:46:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPDOMVhUf=X8Fp1stntiLstJw1sF80G=ZJhO7xNUP=jT4oagLA@mail.gmail.com>
-References: <1403212685-2427-1-git-send-email-xerofoify@gmail.com>
-	<CAPDOMVhUf=X8Fp1stntiLstJw1sF80G=ZJhO7xNUP=jT4oagLA@mail.gmail.com>
-Date: Thu, 19 Jun 2014 23:46:20 -0400
-Message-ID: <CAPDOMViFK01Y=WYCnSzdtcXZVDutd09_nn=1KkvBAdc+t4uTRg@mail.gmail.com>
-Subject: Re: [PATCH] staging: rtl8192 Check for Null return from dev_skb_alloc
-From: Nick Krause <xerofoify@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: lisa@xenapiadmin.com, Valentina Manea <valentina.manea.m@gmail.com>,
-        ben@decadent.org.uk, devel@driverdev.osuosl.org,
+	Thu, 19 Jun 2014 23:56:20 -0400
+Date: Thu, 19 Jun 2014 20:53:57 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Chen Yucong <slaoub@gmail.com>, mgorman@suse.de, hannes@cmpxchg.org,
+        mhocko@suse.cz, riel@redhat.com, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH] mm: Write down design and intentions in English for
+ proportial scan
+Message-Id: <20140619205357.e171e174.akpm@linux-foundation.org>
+In-Reply-To: <20140620030002.GA14884@bbox>
+References: <20140620030002.GA14884@bbox>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Our you Guys just removing me from your emails I have checked this patch
-and it seems right. If you don't want to accept it , the less you can
-do is give me a reply.
-Nick
+On Fri, 20 Jun 2014 12:00:02 +0900 Minchan Kim <minchan@kernel.org> wrote:
 
-On Thu, Jun 19, 2014 at 10:12 PM, Nick Krause <xerofoify@gmail.com> wrote:
-> If anyone able to check this patch it would be great.
-> Thanks Nick
->
-> On Thu, Jun 19, 2014 at 5:18 PM, Nicholas Krause <xerofoify@gmail.com> wrote:
->> Checks for Null return from dev_skb_alloc if it returns Null,
->> fw_download returns false. Otherwise it returns true.Also
->> removed rt_status due to returning true of false directly.
->>
->> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->> ---
->>  drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 7 ++++---
->>  1 file changed, 4 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
->> index 1a95d1f..affa89a 100644
->> --- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
->> +++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
->> @@ -36,7 +36,6 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
->>                              u32 buffer_len)
->>  {
->>         struct r8192_priv *priv = rtllib_priv(dev);
->> -       bool                rt_status = true;
->>         u16                 frag_threshold;
->>         u16                 frag_length, frag_offset = 0;
->>         int                 i;
->> @@ -59,7 +58,9 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
->>                         bLastIniPkt = 1;
->>
->>                 }
->>        skb  = dev_alloc_skb(frag_length + 4);
->> +               if (!skb)
->> +                       return false;
->>                 memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
->>                 tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
->> @@ -99,7 +100,7 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
->>
->>         write_nic_byte(dev, TPPoll, TPPoll_CQ);
->>
->> -       return rt_status;
->> +       return true;
->>  }
->>
->>  static bool CPUcheck_maincodeok_turnonCPU(struct net_device *dev)
->> --
->> 1.9.1
->>
+> By suggestion from Andrew, first of all, I try to add only comment
+> but I believe we could make it more clear by some change like this.
+> https://lkml.org/lkml/2014/6/16/750
+> 
+> Anyway, push this patch firstly.
+
+Thanks.
+
+> ================= &< =================
+> 
+> >From b1fd007097064db34a211ffeacfe4da9fb22d49e Mon Sep 17 00:00:00 2001
+> From: Minchan Kim <minchan@kernel.org>
+> Date: Fri, 20 Jun 2014 11:37:52 +0900
+> Subject: [PATCH] mm: Write down design and intentions in English for
+>  proportial scan
+> 
+> Quote from Andrew
+> "
+> That code is absolutely awful :( It's terribly difficult to work out
+> what the design is - what the code is actually setting out to achieve.
+> One is reduced to trying to reverse-engineer the intent from the
+> implementation and that becomes near impossible when the
+> implementation has bugs!
+> 
+> <snip>
+> 
+> The only way we're going to fix all this up is to stop looking at the
+> code altogether.  Write down the design and the intentions in English.
+> Review that.  Then implement that design in C
+> "
+> 
+> One thing I know it might not be English Andrew expected but other
+> thing I know is there are lots of native people in here so one of them
+> will spend his time to make this horrible English smooth.
+> 
+> I alreday spent my time to try to fix this situation so it's your
+> turn. It's good time balance between non-native and native people
+> so open source community is fair for all of us.
+> 
+
+I can do that ;)  But not yet.
+
+> ---
+>  mm/vmscan.c | 37 +++++++++++++++++++++++++++++++------
+>  1 file changed, 31 insertions(+), 6 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 521f7eab1798..3a9862895a64 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2071,6 +2071,22 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+>  
+>  	get_scan_count(lruvec, sc, nr);
+>  
+> +	/*
+> +	 * Basically, VM scans file/anon LRU list proportionally
+
+OK
+
+> depending
+> +	 * on the value of vm.swappiness
+
+"depending" in what fashion?  Higher swappiness leads to lengthier
+scans.  But there's this:
+
+	/*
+	 * With swappiness at 100, anonymous and file have the same priority.
+	 * This scanning priority is essentially the inverse of IO cost.
+	 */
+	anon_prio = sc->swappiness;
+	file_prio = 200 - anon_prio;
+
+
+> but doesn't want to reclaim
+> +	 * excessive pages. So, it might be better to stop scan as soon as
+> +	 * we meet nr_to_reclaim
+
+"scanning" does not equal "reclaiming", as not all scanned pages are
+reclaimed.  I guess we mean "stop scanning when nr_reclaimed pages have
+been reclaimed".
+
+> but it breaks aging balance between LRU lists
+
+Why does it do this?
+
+> +	 * To keep the balance, what we do is as follows.
+> +	 *
+> +	 * If we reclaim pages requested, we stop scanning first and
+> +	 * investigate which LRU should be scanned more depending on
+> +	 * remained lru size(ie, nr[xxx]). We will scan bigger one more
+> +	 * so, final goal is
+> +	 *
+> +	 * scanned[xxx] = targets[xxx] - nr[xxx]
+> +	 * targets[anon] : targets[file] = scanned[anon] : scanned[file]
+> +	 */
+
+hm, what's going on here.  Something like this?
+
+"after having scanned sufficient pages to reclaim nr_to_reclaim pages,
+the LRUs will now be out of balance if many more pages were reclaimed
+from one LRU than from the others.  We now bring the LRUs back into
+balance by ...".  
+
+I'm not sure this really makes sense from a *design* aspect.  Is the
+amount of scanning which we do here sufficiently large to have a
+significant impact on the LRU sizes?  I suppose yes, in rare cases.
+
+How do we define "balance" anyway?  Can we make some statement explaining
+how the LRUs will appear when they are in a "balanced" state?
+
+>  	/* Record the original scan target for proportional adjustments later */
+>  	memcpy(targets, nr, sizeof(nr));
+>  
+> @@ -2091,8 +2107,14 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+>  	blk_start_plug(&plug);
+>  	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
+>  					nr[LRU_INACTIVE_FILE]) {
+> -		unsigned long nr_anon, nr_file, percentage;
+> +		unsigned long nr_anon, nr_file;
+>  		unsigned long nr_scanned;
+> +		/*
+> +		 * How many pages we should scan to meet target
+> +		 * calculated by get_scan_count. It means that
+> +		 * (100 - percentage) = already scanned ratio
+> +		 */
+> +		unsigned percentage;
+
+Well, "percentage" is a ratio.  So maybe "what proportion of the LRUs
+we should scan to..."?
+
+
+>  		for_each_evictable_lru(lru) {
+>  			if (nr[lru]) {
+> @@ -2108,11 +2130,10 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+>  			continue;
+>  
+>  		/*
+> -		 * For kswapd and memcg, reclaim at least the number of pages
+> -		 * requested. Ensure that the anon and file LRUs are scanned
+> -		 * proportionally what was requested by get_scan_count(). We
+> -		 * stop reclaiming one LRU and reduce the amount scanning
+> -		 * proportional to the original scan target.
+> +		 * Here, we reclaimed at least the number of pages requested.
+> +		 * Then, what we should do is the ensure that the anon and
+> +		 * file LRUs are scanned proportionally what was requested
+> +		 * by get_scan_count().
+>  		 */
+
+OK.
+
+>  		nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
+>  		nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
+> @@ -2126,6 +2147,10 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+>  		if (!nr_file || !nr_anon)
+>  			break;
+>  
+> +		/*
+> +		 * Scan the bigger of the LRU more while stop scanning
+> +		 * the smaller of the LRU to keep aging balance between LRUs
+> +		 */
+
+OK.
+
+>  		if (nr_file > nr_anon) {
+>  			unsigned long scan_target = targets[LRU_INACTIVE_ANON] +
+>  						targets[LRU_ACTIVE_ANON] + 1;
+
+I think I can work with all that.  Please have a think about the few
+issues above and I'll try to sit down tomorrow and correlate this with
+the implementation.
