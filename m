@@ -1,61 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411AbaFTTEz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 15:04:55 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:34232 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754090AbaFTTEm (ORCPT
+	id S1754805AbaFTTHF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 15:07:05 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:64035 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060AbaFTTHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 15:04:42 -0400
-Date: Fri, 20 Jun 2014 12:04:34 -0700
-From: josh@joshtriplett.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 0/5] Fix for cond_resched performance
- regression
-Message-ID: <20140620190434.GA22178@cloud>
-References: <20140620183249.GA6325@linux.vnet.ibm.com>
+	Fri, 20 Jun 2014 15:07:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Murali Karicheri <m-karicheri2@ti.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Marek Vasut <marex@denx.de>, Russell King <linux@arm.linux.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Jingoo Han <jg1.han@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ABRAHAM, KISHON VIJAY" <kishon@ti.com>,
+        Richard Zhu <r65037@freescale.com>, Rob Herring <robh+dt@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Mohit Kumar <mohit.kumar@st.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH v2 0/8] Add Keystone PCIe controller driver
+Date: Fri, 20 Jun 2014 21:05:30 +0200
+Message-ID: <14956334.eDhb2zObBc@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53A46B49.3040009@ti.com>
+References: <1402426287-31157-1-git-send-email-m-karicheri2@ti.com> <53A453D1.4040308@ti.com> <53A46B49.3040009@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140620183249.GA6325@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:P+LPZQDwXQLRq6nWR21gBh3qJ9xRfIGbCkGPKmllJX1
+ FDTkB7Ub9ym7qMmz6DqF9IMHRQEFVOe+sge5G8kT7UL+f1W8ky
+ SPi1AZHcRjX0VPQqM29I4EMFGHefxXQ/eG73Si1tTWQVtsInbq
+ r+RHbJz8jv18BeAtX7PgXw9phWzHp4t0iWec3bp2HERBStr2pw
+ FslubzTc7LOrLwhVQpPIYktEV9DR+jqGHorf9Z3q3Io9K6A9gp
+ WwLklEEFzVQY89BIfcSmhg/GJrujKzSe36q3QRUe/r9/FlKdEC
+ CBDW6+zQhE4thd7HkEtdqdHg8CwjQ0ux0mNQUi4asezl+AR1c/
+ gopXmyFlCfwWEnYZ+G44=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 11:32:49AM -0700, Paul E. McKenney wrote:
-> Hello!
+On Friday 20 June 2014 13:11:37 Santosh Shilimkar wrote:
+> > 
+> > Unfortunately I lost Jingoo's email from my Inbox. So I cut-n-paste the comment from
+> > internet and respond.
+> > 
+> > Jingoo Han wrote:-
+> > =============================================================================
+> > I think so, too.
+> > 
+> > DT maintainers and arch maintainers should review the following
+> > dt bindings.
+> >   .../devicetree/bindings/pci/designware-pcie.txt    |   42 ++
+> >   .../devicetree/bindings/pci/pci-keystone.txt       |   56 +++
+> > Generic PHY maintainer (Kishon Vijay Abraham I) should review the
+> > following phy driver.
+> >   drivers/phy/phy-keystone-serdes.c
+> > 
+> >>
+> >> I'm looking for acks from Mohit and/or Jingoo for the pci/host
+> >> changes, and from Arnd for the devicetree/bindings changes.
+> >>
+> >> Adding these "-dw-3_64" files is sort of ugly.  If that code is only
+> >> used by keystone, maybe it could just be moved to pci-keystone.c?  But
+> >> I'll defer to Mohit and Jingoo on that and the way you modify
+> >> pcie-designware.c.
+> > 
+> > I agree with Bjorn Helgaas's opinion. These three "-dw-3_64" files
+> > look terrible! I don't have a good way to handle this; however,
+> > moving this code to pci-keystone.c looks better.
+> > ======================================================================
+> > 
+> > The original RFC I had submitted had all of the application space register
+> > handling code as part of the Keystone PCI driver. As per Arnd's comment (See
+> > my change log against v1), the code was moved to a separate file so that
+> > the next driver that has same version of the DW hw could re-use this code.
+> > I agree with Arnd and moved the code to v_3_65 specific files.  What is
+> > your proposal?  Do you have objection to the file name? or it's content?
+> > 
+> > If objection is on the file name,  please suggest alternate names. If you
+> > are okay with the file name, and doesn't like the code, it will be helpful
+> > to review the code and provide specific comments against the patch itself
+> > so that I can address the same.
+> > 
+> Arnd suggestion was to have the version 3.65 code in generic place since
+> its IP specific and just in case some other vendor using the same version
+> can leverage the code.
 > 
-> This series contains changes to address the performance regressions
-> introduced by commit ac1bea85781e (Make cond_resched() report RCU
-> quiescent states), which was in turn fixing a problem where tasks looping
-> in the kernel could delay RCU grace periods.  The changes in this series
-> are as follows:
-> 
-> 1.	Reduce the overhead of checking added to cond_resched() and friends.
-> 
-> 2.	Add a new cond_resched_rcu_qs() to provide RCU quiescent states
-> 	even if cond_resched() should stop doing so.
-> 
-> 3.	Add a new RCU_COND_RESCHED_QS to prevent cond_resched() from
-> 	reporting RCU quiescent states.
-> 
-> 4.	Prevent rcutorture testing from reporting spurious RCU CPU stall
-> 	warnings, and also to test RCU_COND_RESCHED_QS.
-> 
-> 5.	Provides a boot/sysfs rcutree.jiffies_till_cond_resched_qs
-> 	parameter to replace the magic "7".
+> Concern here seems toe really those name of the files. I can't think of
+> any other appropriate name. 
 
-For all five patches:
+We should definitely keep the version in the DT "compatible" strings
+wherever we know it. Regarding a better file name, I have no idea.
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-
-Glad to see this doesn't add any overhead to rcutiny.
-
-- Josh Triplett
+	Arnd
