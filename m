@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934900AbaFTPzq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 11:55:46 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:33450 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756679AbaFTPzX (ORCPT
+	id S1756243AbaFTPrw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 11:47:52 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:33855 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754336AbaFTPrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 11:55:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140616154228.GB179@brightrain.aerifal.cx>
-References: <21405.44257.742122.786960@gargle.gargle.HOWL> <20140615143500.GP179@brightrain.aerifal.cx>
- <539DD26B.3060709@zytor.com> <CALCETrXTpkto2gJBiFC4CR5D=Lqf2YfP5BBH02f8hFW+TUGqeA@mail.gmail.com>
- <539DDE9C.3010903@zytor.com> <CALCETrWLBCNiJArMRPuHbfhj6=ytnx_YqykzgCgZ+DYu34M1Mg@mail.gmail.com>
- <20140616023604.GI5714@two.firstfloor.org> <CAKOQZ8wwKcDAXq0BnHwvL01LQNFeOGwgA9x8kCLWeFaP6USF4A@mail.gmail.com>
- <20140616143801.GJ5714@two.firstfloor.org> <CAKOQZ8zk8KfkObSZg8fmhZXm9nXQSneOywvV-NBj=N-tNWjNPg@mail.gmail.com>
- <20140616154228.GB179@brightrain.aerifal.cx>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 20 Jun 2014 08:55:01 -0700
-Message-ID: <CALCETrWnQyCk5vhDj-yAhRdAFOtFKSU6H-E_=LBC+FbA2REhrg@mail.gmail.com>
-Subject: Re: [RFC 0/2] __vdso_findsym
-To: Rich Felker <dalias@libc.org>
-Cc: Ian Lance Taylor <iant@golang.org>, Andi Kleen <andi@firstfloor.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Mikael Pettersson <mikpelinux@gmail.com>, Russ Cox <rsc@golang.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 20 Jun 2014 11:47:49 -0400
+X-Greylist: delayed 593 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Jun 2014 11:47:49 EDT
+From: Martin Gumbrecht <martin.gumbrecht@googlemail.com>
+To: gregkh@linuxfoundation.org
+Cc: christian.bay@studium.fau.de, linux-kernel@i4.cs.fau.de,
+        lisa@xenapiadmin.com, daeseok.youn@gmail.com, luiorpe1@gmail.com,
+        veeableful@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, martin.gumbrecht@googlemail.com
+Subject: [PATCH v2 5/7] Staging: bcm: Queue.h: fix checkpatch errors: whitespaces
+Date: Fri, 20 Jun 2014 17:38:02 +0200
+Message-Id: <1403278684-10891-6-git-send-email-martin.gumbrecht@googlemail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403278684-10891-1-git-send-email-martin.gumbrecht@googlemail.com>
+References: <1403278684-10891-1-git-send-email-martin.gumbrecht@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 8:42 AM, Rich Felker <dalias@libc.org> wrote:
-> On Mon, Jun 16, 2014 at 08:31:39AM -0700, Ian Lance Taylor wrote:
->> On Mon, Jun 16, 2014 at 7:38 AM, Andi Kleen <andi@firstfloor.org> wrote:
->> >> I think this issue started when some of the Go developers questioned
->> >> why the kernel needed to provide a very complex interface--parsing an
->> >> ELF shared shared library--for very simple functionality--looking up
->> >> the address of a magic function.  This approach has required special
->> >> support not just in Go, but also in the dynamic linker and gdb, and
->> >> does not work well for statically linked binaries.  The support in gdb
->> >> is perhaps a good idea, but elsewhere it does not make sense.
->> >>
->> >> So why not provide a simple interface?
->> >
->> > What good would it do now that everyone already supports it?
->>
->> Do statically linked binaries use the vDSO calls?
->
-> Under glibc, I believe so (not checked). Under musl, yes, and even in
-> the dynamic-linked case we use the same code that's used for static
-> linking rather than trying to get the dynamic linker to do them
-> correctly. I still have some cruft lying around from where (in the
-> past) we tried to do it via the dynamic linker, but I'm probably going
-> to remove that and make the vdso behave as RTLD_LOCAL so that there's
-> no risk of weird symbols it exports interfering with the application
-> (applications could still make it global via an explicit dlopen). The
-> only reason for keeping it around at all in the dynamic linker is for
-> the sake of gdb.
->
+This patch improves coding style in Queue.h
+Whitespaces according to the coding guideline
 
-What about backtrace_symbols, dl_addr, and the unwinder (e.g.
-siglongjmp)?  It would be nice to wean the vdso off of frame pointers
-some day.
+Signed-off-by: Martin Gumbrecht <martin.gumbrecht@googlemail.com>
+Signed-off-by: Christian Bay <christian.bay@studium.fau.de>
+---
+ drivers/staging/bcm/Queue.h | 32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
---Andy
+diff --git a/drivers/staging/bcm/Queue.h b/drivers/staging/bcm/Queue.h
+index b6f8468e..460c0ae 100644
+--- a/drivers/staging/bcm/Queue.h
++++ b/drivers/staging/bcm/Queue.h
+@@ -6,24 +6,24 @@
+ 
+ 
+ 
+-#define ENQUEUEPACKET(_Head, _Tail,_Packet)	\
++#define ENQUEUEPACKET(_Head, _Tail, _Packet)	\
+ do {						\
+-    if (!_Head) {                           \
+-        	_Head = _Packet;                \
+-	} 					\
+-	else {                                  \
+-        	(_Tail)->next = _Packet; 	\
+-        }                                       \
+-   	(_Packet)->next = NULL;  		\
+-    _Tail = _Packet;                        \
+-}while(0)
+-#define DEQUEUEPACKET(Head, Tail )            	\
++	if (!_Head) {				\
++		_Head = _Packet;		\
++	}					\
++	else {					\
++		(_Tail)->next = _Packet;	\
++	}					\
++	(_Packet)->next = NULL;			\
++	_Tail = _Packet;			\
++} while (0)
++#define DEQUEUEPACKET(Head, Tail)		\
+ do {						\
+ 	if (Head) {				\
+-        if (!Head->next) {                      \
+-        	Tail = NULL;                    \
+-        }                                       \
+-        Head = Head->next;                      \
+-	}                \
++		if (!Head->next) {		\
++			Tail = NULL;		\
++		}				\
++		Head = Head->next;		\
++	}					\
+ } while (0)
+ #endif /* __QUEUE_H__ */
+-- 
+1.9.1
+
