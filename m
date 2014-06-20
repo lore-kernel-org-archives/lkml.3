@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934858AbaFTIpP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 04:45:15 -0400
-Received: from sauhun.de ([89.238.76.85]:42436 "EHLO pokefinder.org"
+	id S934826AbaFTIrM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 04:47:12 -0400
+Received: from smtp2.macqel.be ([109.135.2.61]:58263 "EHLO smtp2.macqel.be"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933833AbaFTIpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 04:45:12 -0400
-Date: Fri, 20 Jun 2014 10:45:06 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
-Cc: Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH 0/3] Remove devm_request_and_ioremap()
-Message-ID: <20140620084506.GA2762@katana>
-References: <1403203741-5113-1-git-send-email-wsa@the-dreams.de>
- <000c01cf8c30$613759d0$23a60d70$%han@samsung.com>
- <20140620025957.GA27387@kroah.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MGYHOYXEY6WxJCY8"
-Content-Disposition: inline
-In-Reply-To: <20140620025957.GA27387@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S934598AbaFTIrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 04:47:10 -0400
+X-Greylist: delayed 423 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Jun 2014 04:47:09 EDT
+From: Philippe De Muyter <phdm@macqel.be>
+To: linux-kernel@vger.kernel.org
+Cc: Philippe De Muyter <phdm@macqel.be>, Al Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH] VFS: mount must return EACCES, not EROFS
+Date: Fri, 20 Jun 2014 10:39:22 +0200
+Message-Id: <1403253562-29248-1-git-send-email-phdm@macqel.be>
+X-Mailer: git-send-email 1.7.5.3
+In-Reply-To: <20140619230924.GO4453@dastard>
+References: <20140619230924.GO4453@dastard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+mount must return EACCES, not EROFS, when one attempts to mount a
+read-only filesystem in read-write mode, but the file-system layer
+only transmits the error given by the block layer, and many block
+drivers return EROFS in that case, so let's fix it in do_mount.
 
---MGYHOYXEY6WxJCY8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Actually it is only a small problem for a user using the mount(1)
+command, because EROFS is actually a more explicit answer than
+EACCES, but init/do_mounts.c checks only for EACCES, not EROFS,
+to decide to retry to mount the root file-system in read-only mode,
+and so we are left with an unbootable kernel, and with a cryptic
+error message (*) if the root partition happens to be read-only
 
-On Thu, Jun 19, 2014 at 07:59:57PM -0700, 'Greg Kroah-Hartman' wrote:
-> On Fri, Jun 20, 2014 at 11:36:03AM +0900, Jingoo Han wrote:
-> > On Friday, June 20, 2014 3:49 AM, Wolfram Sang wrote:
-> > >=20
-> > > Pretty much a year ago, Tushar cleaned up a lot of deprecated uses of
-> > > devm_request_and_ioremap, yet some remains are still left. Remove the=
- last two
-> > > users, and let the function rest in peace. I'd suggest that this seri=
-es is
-> > > picked up as a whole to have that case finally closed. Greg? Are you =
-interested
-> > > in picking it up?
-> >=20
-> > (+cc Greg Kroah-Hartman)
-> >=20
-> > I already sent the same patch as one single patch to Greg Kroah-Hartman=
-=2E [1]
-> > Also, it was accepted by Greg Kroah-Hartman. [2] Thank you.
-> >=20
-> > [1] https://lkml.org/lkml/2014/6/11/26
-> > [2] https://lkml.org/lkml/2014/6/11/649
->=20
-> Yeah, I'll go apply that right now while I'm remembering it :)
+(*): VFS: Cannot open root device "mmcblk0p2" or unknown-block(179,2):
+error -30
 
-For the patch above:
+Signed-off-by: Philippe De Muyter <phdm@macqel.be>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org
+---
+ fs/namespace.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Reviewed-by: Wolfram Sang <wsa@the-dreams.de>
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 182bc41..6291a3f 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -2411,6 +2411,8 @@ long do_mount(const char *dev_name, const char *dir_name,
+ 
+ 	retval = security_sb_mount(dev_name, &path,
+ 				   type_page, flags, data_page);
++	if (retval == -EROFS)
++		retval = -EACCES;
+ 	if (!retval && !may_mount())
+ 		retval = -EPERM;
+ 	if (retval)
+-- 
+1.7.5.3
 
-
---MGYHOYXEY6WxJCY8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTo/SRAAoJEBQN5MwUoCm2Zk8P/A9k2dZa75Kwblws4jxjBp0R
-l5RiqgVOAZuoYC+GjgBJHzaoiSs8OWWm1Jt3Qnq2Nvy62qqBzm+bGp2/v1vshkBP
-ebXfcwCgD3vBinFw/Pn5IiBm13hhVsN1/HfFJN0Yc20A07ygdMo6FniIMLGpjbKg
-S8CJ137iRVbuvS06eE3kxgfiCQVlwiu20MTYvUphlOVbrHbk4qt7R6qZrS7WBqBv
-PfFXmSwYPunzYTF3zuswDw0QxDjKufXDoc4O1aCERepYj5Q5kxFKA7DKG7WQZxGp
-bKl8zMm/hJbcjNI5371kU3pAglVUldAinfhW9TQluC+Uq2k6Des+acpAw2tTFKvm
-LUZPev2zDXrO1zMFJOaKPcto75/TR4gBWsxrBglD76rdu860a9NS3dJImBsM1eVs
-sVMCnlfAQd3Rt4p9nz8y0QKoarr5EwKvMlv1Gbk92ZLsD/hHycPkLGMiuhVoJmPC
-QnBWuzdJ3TRYULAYNVM3FfRzrXhSYEzSUCPJnuJng3lMR5i+A9oTnJ/W2LKvP9Y3
-lVDV9wifXtvUf2Q/kVSuz9n/XhGcwcQRrX4Ftt+3PUH74O8Jexy/lWz+nT291wua
-ZYQpoJSzqg1Xq3biMhUYeCnoQLD59rEo0ztKpB68BJViXGosNAvkq0C93CyjO+7b
-gqgj/rIlT0s2mZvyTE+m
-=VohK
------END PGP SIGNATURE-----
-
---MGYHOYXEY6WxJCY8--
