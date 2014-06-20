@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934563AbaFTIAb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 04:00:31 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57288 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932189AbaFTIAa (ORCPT
+	id S934742AbaFTIAo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 04:00:44 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:40649 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932189AbaFTIAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 04:00:30 -0400
-Date: Fri, 20 Jun 2014 10:00:27 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Shiraz Hashim <shiraz.linux.kernel@gmail.com>,
-        spear-devel <spear-devel@list.st.com>
-Subject: Re: [patch 09/13] irqchip: spear_shirq: Kill the clear_reg
- nonsense
-In-Reply-To: <CAOh2x==nhq6OHkd9U17L3r-_7qnnjYLyiqiKYpGdMuSVEj07=g@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1406200954440.5170@nanos>
-References: <20140619212606.431750473@linutronix.de> <20140619212713.570396433@linutronix.de> <CAOh2x==nhq6OHkd9U17L3r-_7qnnjYLyiqiKYpGdMuSVEj07=g@mail.gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 20 Jun 2014 04:00:41 -0400
+Message-ID: <53A3EA25.2020400@suse.cz>
+Date: Fri, 20 Jun 2014 10:00:37 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Joseph Salisbury <joseph.salisbury@canonical.com>,
+        kamal.mostafa@canonical.com
+CC: clm@fb.com, jbacik@fb.com, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [3.13.y][SRU][PATCH 0/1] btrfs: fix defrag 32-bit integer overflow
+References: <cover.1403107937.git.joseph.salisbury@canonical.com>
+In-Reply-To: <cover.1403107937.git.joseph.salisbury@canonical.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jun 2014, Viresh Kumar wrote:
-
-> On Fri, Jun 20, 2014 at 3:04 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > None of the chips has a ACK register.
+On 06/18/2014 07:23 PM, Joseph Salisbury wrote:
+> BugLink: http://bugs.launchpad.net/bugs/1324953
 > 
-> I need to recheck on this after looking at datasheets. Arranging for
-> them, will revert by tomorrow.
 > 
-> > The code brainlessly fiddles
-> > with the enable register, so it might even reenable a disabled
-> > interrupt at least on spear300.
+> Hello,
 > 
-> Ack/Clear register is only configured for SPEAr320, how will it
-> make a difference to SPEAr300 ?
-
-Sorry, my bad. misread the code. So this wants a different
-changelog.
-
-> And for SPEAr320 as well, the offset mentioned in code for clear
-> register is different then ENABLE register.
-
-I still don't see why you'd write something into the status register
-on 320, which is RO according to documentation.
-
-> > @@ -150,13 +141,6 @@ static struct spear_shirq spear320_shirq
-> >         .nr_irqs        = 7,
-> >         .mask           = ((0x1 << 7) - 1) << 0,
-> >         .disabled       = 1,
-> > -       .regs = {
-> > -               .enb_reg = SPEAR320_INT_ENB_MASK_REG,
-> > -               .reset_to_enb = 1,
-> > -               .status_reg = SPEAR320_INT_STS_MASK_REG,
-> > -               .clear_reg = SPEAR320_INT_CLR_MASK_REG,
-> > -               .reset_to_clear = 1,
-> > -       },
+> Please consider including upstream commit c41570c9 in the next v3.13.y release.  It was included upstream as of v3.14-rc2.  It has been tested and confirmed to resolve http://bugs.launchpad.net/bugs/1324953 .
 > 
-> Was removing .regs completely intentional?
+> commit c41570c9d29764f797fa35490d72b7395a0105c3
+> Author: Justin Maggard <jmaggard10@gmail.com>
+> Date:   Tue Jan 21 11:18:29 2014 -0800
 > 
-> I don't see these registers getting added again in later patches.
+>     btrfs: fix defrag 32-bit integer overflow
 
-Yes, because that block is NEVER used because disabled = 1
+Now in 3.12.
 
-Thanks,
+Thanks.
 
-	tglx
-
+-- 
+js
+suse labs
