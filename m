@@ -1,178 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301AbaFTO0d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 10:26:33 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:39094 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388AbaFTO0b (ORCPT
+	id S1752653AbaFTO3S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 10:29:18 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:53424 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264AbaFTO3R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 10:26:31 -0400
-Date: Fri, 20 Jun 2014 17:26:22 +0300
-From: Gleb Natapov <gleb@kernel.org>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, pbonzini@redhat.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, mgorman@suse.de,
-        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, laijs@cn.fujitsu.com, kvm@vger.kernel.org,
-        linux-mm@kvack.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        Avi Kivity <avi.kivity@gmail.com>
-Subject: Re: [RFC PATCH 1/1] Move two pinned pages to non-movable node in kvm.
-Message-ID: <20140620142622.GA28698@minantech.com>
-References: <1403070600-6083-1-git-send-email-tangchen@cn.fujitsu.com>
- <20140618061230.GA10948@minantech.com>
- <53A136C4.5070206@cn.fujitsu.com>
- <20140619092031.GA429@minantech.com>
- <20140619190024.GA3887@amt.cnet>
- <20140620111509.GE20764@minantech.com>
- <20140620125326.GA22283@amt.cnet>
+	Fri, 20 Jun 2014 10:29:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140620125326.GA22283@amt.cnet>
+In-Reply-To: <1403254954-14429-1-git-send-email-sachin.kamat@samsung.com>
+References: <1403254954-14429-1-git-send-email-sachin.kamat@samsung.com>
+From: Andreas Noever <andreas.noever@gmail.com>
+Date: Fri, 20 Jun 2014 16:28:53 +0200
+Message-ID: <CAMxnaaV0PEphsdy0D8aptF8a0OHBDy4i=iOBiCdfBatNpQfSqw@mail.gmail.com>
+Subject: Re: [PATCH 1/6] thunderbolt: Fix build error in eeprom.c
+To: Sachin Kamat <sachin.kamat@samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, spk.linux@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 09:53:26AM -0300, Marcelo Tosatti wrote:
-> On Fri, Jun 20, 2014 at 02:15:10PM +0300, Gleb Natapov wrote:
-> > On Thu, Jun 19, 2014 at 04:00:24PM -0300, Marcelo Tosatti wrote:
-> > > On Thu, Jun 19, 2014 at 12:20:32PM +0300, Gleb Natapov wrote:
-> > > > CCing Marcelo,
-> > > > 
-> > > > On Wed, Jun 18, 2014 at 02:50:44PM +0800, Tang Chen wrote:
-> > > > > Hi Gleb,
-> > > > > 
-> > > > > Thanks for the quick reply. Please see below.
-> > > > > 
-> > > > > On 06/18/2014 02:12 PM, Gleb Natapov wrote:
-> > > > > >On Wed, Jun 18, 2014 at 01:50:00PM +0800, Tang Chen wrote:
-> > > > > >>[Questions]
-> > > > > >>And by the way, would you guys please answer the following questions for me ?
-> > > > > >>
-> > > > > >>1. What's the ept identity pagetable for ?  Only one page is enough ?
-> > > > > >>
-> > > > > >>2. Is the ept identity pagetable only used in realmode ?
-> > > > > >>    Can we free it once the guest is up (vcpu in protect mode)?
-> > > > > >>
-> > > > > >>3. Now, ept identity pagetable is allocated in qemu userspace.
-> > > > > >>    Can we allocate it in kernel space ?
-> > > > > >What would be the benefit?
-> > > > > 
-> > > > > I think the benefit is we can hot-remove the host memory a kvm guest
-> > > > > is using.
-> > > > > 
-> > > > > For now, only memory in ZONE_MOVABLE can be migrated/hot-removed. And the
-> > > > > kernel
-> > > > > will never use ZONE_MOVABLE memory. So if we can allocate these two pages in
-> > > > > kernel space, we can pin them without any trouble. When doing memory
-> > > > > hot-remove,
-> > > > > the kernel will not try to migrate these two pages.
-> > > > But we can do that by other means, no? The patch you've sent for instance.
-> > > > 
-> > > > > 
-> > > > > >
-> > > > > >>
-> > > > > >>4. If I want to migrate these two pages, what do you think is the best way ?
-> > > > > >>
-> > > > > >I answered most of those here: http://www.mail-archive.com/kvm@vger.kernel.org/msg103718.html
-> > > > > 
-> > > > > I'm sorry I must missed this email.
-> > > > > 
-> > > > > Seeing your advice, we can unpin these two pages and repin them in the next
-> > > > > EPT violation.
-> > > > > So about this problem, which solution would you prefer, allocate these two
-> > > > > pages in kernel
-> > > > > space, or migrate them before memory hot-remove ?
-> > > > > 
-> > > > > I think the first solution is simpler. But I'm not quite sure if there is
-> > > > > any other pages
-> > > > > pinned in memory. If we have the same problem with other kvm pages, I think
-> > > > > it is better to
-> > > > > solve it in the second way.
-> > > > > 
-> > > > > What do you think ?
-> > > > Remove pinning is preferable. In fact looks like for identity pagetable
-> > > > it should be trivial, just don't pin. APIC access page is a little bit
-> > > > more complicated since its physical address needs to be tracked to be
-> > > > updated in VMCS.
-> > > 
-> > > Yes, and there are new users of page pinning as well soon (see PEBS
-> > > threads on kvm-devel).
-> > > 
-> > > Was thinking of notifiers scheme. Perhaps:
-> > > 
-> > > ->begin_page_unpin(struct page *page)
-> > > 	- Remove any possible access to page.
-> > > 
-> > > ->end_page_unpin(struct page *page)
-> > > 	- Reinstantiate any possible access to page.
-> > > 
-> > > For KVM:
-> > > 
-> > > ->begin_page_unpin()
-> > > 	- Remove APIC-access page address from VMCS.
-> > > 	  or
-> > > 	- Remove spte translation to pinned page.
-> > > 	
-> > > 	- Put vcpu in state where no VM-entries are allowed.
-> > > 
-> > > ->end_page_unpin()
-> > > 	- Setup APIC-access page, ...
-> > > 	- Allow vcpu to VM-entry.
-> > > 
-> > I believe that to handle identity page and APIC access page we do not
-> > need any of those. 
-> > We can use mmu notifiers to track when page begins
-> > to be moved and we can find new page location on EPT violation.
-> 
-> Does page migration hook via mmu notifiers? I don't think so. 
-> 
-Both identity page and APIC access page are userspace pages which will
-have to be unmap from process address space during migration. At this point
-mmu notifiers will be called.
+The series looks good. Thanks a lot for fixing these.
 
-> It won't even attempt page migration because the page count is
-> increased (would have to confirm though). Tang?
-> 
-Of course, we should not pin.
- 
-> The problem with identity page is this: its location is written into the
-> guest CR3. So you cannot allow it (the page which the guest CR3 points
-> to) to be reused before you remove the reference.
-> 
-> Where is the guarantee there will be an EPT violation, allowing a vcpu
-> to execute with guest CR3 pointing to page with random data?
-> 
-A guest's physical address is written into CR3 (0xfffbc000 usually),
-not a physical address of an identity page directly. When a guest will
-try to use CR3 KVM will get EPT violation and shadow page code will find
-a page that backs guest's address 0xfffbc000 and will map it into EPT
-table. This is what happens on a first vmentry after vcpu creation.
-
-> Same with the APIC access page.
-APIC page is always mapped into guest's APIC base address 0xfee00000.
-The way it works is that when vCPU accesses page at 0xfee00000 the access
-is translated to APIC access page physical address. CPU sees that access
-is for APIC page and generates APIC access exit instead of memory access.
-If address 0xfee00000 is not mapped by EPT then EPT violation exit will
-be generated instead, EPT mapping will be instantiated, access retired
-by a guest and this time will generate APIC access exit.
-
-> 
-> > > Because allocating APIC access page from distant NUMA node can
-> > > be a performance problem, i believe.
-> > I do not think this is the case. APIC access page is never written to,
-> > and in fact SDM advice to share it between all vcpus.
-> 
-> Right. 
-> 
-> But the point is not so much relevant as this should be handled for
-> PEBS pages which would be interesting to force to non-movable zones.
+On Fri, Jun 20, 2014 at 11:02 AM, Sachin Kamat <sachin.kamat@samsung.com> wrote:
+> Fixes the below error:
+> drivers/thunderbolt/eeprom.c:407:2: error: implicit declaration of function ‘kzalloc’ [-Werror=implicit-function-declaration]
+> drivers/thunderbolt/eeprom.c:444:2: error: implicit declaration of function ‘kfree’ [-Werror=implicit-function-declaration]
 >
-IIRC your shadow page pinning patch series support flushing of ptes
-by mmu notifier by forcing MMU reload and, as a result, faulting in of
-pinned pages during next entry.  Your patch series does not pin pages
-by elevating their page count.
-
---
-			Gleb.
+> Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
+> ---
+>  drivers/thunderbolt/eeprom.c |    1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/thunderbolt/eeprom.c b/drivers/thunderbolt/eeprom.c
+> index 0d5a80b2d07a..bc0449f581c2 100644
+> --- a/drivers/thunderbolt/eeprom.c
+> +++ b/drivers/thunderbolt/eeprom.c
+> @@ -5,6 +5,7 @@
+>   */
+>
+>  #include <linux/crc32.h>
+> +#include <linux/slab.h>
+>  #include "tb.h"
+>
+>  /**
+> --
+> 1.7.9.5
+>
