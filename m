@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934812AbaFTIGP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 04:06:15 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57353 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933893AbaFTIGL (ORCPT
+	id S934826AbaFTIGr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 04:06:47 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:54002 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757338AbaFTIGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 04:06:11 -0400
-Date: Fri, 20 Jun 2014 10:06:08 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Shiraz Hashim <shiraz.linux.kernel@gmail.com>,
-        spear-devel <spear-devel@list.st.com>
-Subject: Re: [patch 08/13] irqchip: spear_shirq: Precalculate status mask
-In-Reply-To: <CAOh2x==trCJcQnzekEdcFoBb2i1Mc7hMsJq94iu2dzrZ=Xkeow@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1406201005400.5170@nanos>
-References: <20140619212606.431750473@linutronix.de> <20140619212713.496614337@linutronix.de> <CAOh2x==trCJcQnzekEdcFoBb2i1Mc7hMsJq94iu2dzrZ=Xkeow@mail.gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 20 Jun 2014 04:06:41 -0400
+From: Tushar Behera <tushar.b@samsung.com>
+To: linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Cc: dianders@chromium.org, kgene.kim@samsung.com, tiwai@suse.de,
+        broonie@kernel.org, lgirdwood@gmail.com, galak@codeaurora.org,
+        ijc+devicetree@hellion.org.uk, mark.rutland@arm.com,
+        pawel.moll@arm.com, robh+dt@kernel.org, trblinux@gmail.com
+Subject: [PATCH 2/2] ASoC: samsung: Extend snow driver to support MAX98091
+Date: Fri, 20 Jun 2014 13:33:16 +0530
+Message-Id: <1403251396-17487-2-git-send-email-tushar.b@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1403251396-17487-1-git-send-email-tushar.b@samsung.com>
+References: <1403251396-17487-1-git-send-email-tushar.b@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jun 2014, Viresh Kumar wrote:
-> On Fri, Jun 20, 2014 at 3:04 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > @@ -176,6 +186,7 @@ static struct spear_shirq spear320_shirq
-> >  static struct spear_shirq spear320_shirq_intrcomm_ras = {
-> >         .offset         = 11,
-> >         .nr_irqs        = 11,
-> > +       .mask           = ((0x1 << 11) - 1) << 11,
-> >         .regs = {
-> >                 .enb_reg = -1,
-> >                 .status_reg = SPEAR320_INT_STS_MASK_REG,
-> 
-> If you like, maybe this instead of above diff:
+Peach-pi board has MAX98091 CODEC. Extend snow machine driver to support
+this board.
 
-What's wrong with letting the compiler fill it in?
+Signed-off-by: Tushar Behera <tushar.b@samsung.com>
+---
+ Documentation/devicetree/bindings/sound/snow.txt |    1 +
+ sound/soc/samsung/snow.c                         |    1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/sound/snow.txt b/Documentation/devicetree/bindings/sound/snow.txt
+index 678b191..e0b7a82 100644
+--- a/Documentation/devicetree/bindings/sound/snow.txt
++++ b/Documentation/devicetree/bindings/sound/snow.txt
+@@ -3,6 +3,7 @@ Audio Binding for Snow boards
+ Required properties:
+ - compatible : Can be one of the following,
+ 			"google,snow-audio-max98090" or
++			"google,snow-audio-max98091" or
+ 			"google,snow-audio-max98095"
+ - samsung,i2s-controller: The phandle of the Samsung I2S controller
+ - samsung,audio-codec: The phandle of the audio codec
+diff --git a/sound/soc/samsung/snow.c b/sound/soc/samsung/snow.c
+index 014c177..8bbd348 100644
+--- a/sound/soc/samsung/snow.c
++++ b/sound/soc/samsung/snow.c
+@@ -103,6 +103,7 @@ static int snow_probe(struct platform_device *pdev)
  
-> diff --git a/drivers/irqchip/spear-shirq.c b/drivers/irqchip/spear-shirq.c
-> index 3fdda3a..40c5c1b 100644
-> --- a/drivers/irqchip/spear-shirq.c
-> +++ b/drivers/irqchip/spear-shirq.c
-> @@ -281,6 +281,8 @@ static int __init shirq_init(struct spear_shirq
-> **shirq_blocks, int block_nr,
->                 shirq_blocks[i]->base = base;
->                 shirq_blocks[i]->irq_base = irq_find_mapping(shirq_domain,
->                                 hwirq);
-> +               shirq_blocks[i]->mask = ((0x1 << shirq_blocks[i]->nr_irqs) - 1)
-> +                                       << shirq_blocks[i]->offset;
->                 shirq_blocks[i]->irq = irq_of_parse_and_map(np, i);
-> 
->                 spear_shirq_register(shirq_blocks[i]);
-> 
-> 
-> > @@ -239,7 +250,7 @@ static void shirq_handler(unsigned irq,
-> >
-> >         chip->irq_ack(idata);
-> >
-> > -       mask = ((0x1 << shirq->nr_irqs) - 1) << shirq->offset;
-> > +       mask = shirq->mask;
-> >         while ((val = readl(shirq->base + shirq->regs.status_reg) &
-> >                                 mask)) {
-> >
-> >
-> >
-> 
+ static const struct of_device_id snow_of_match[] = {
+ 	{ .compatible = "google,snow-audio-max98090", },
++	{ .compatible = "google,snow-audio-max98091", },
+ 	{ .compatible = "google,snow-audio-max98095", },
+ 	{},
+ };
+-- 
+1.7.9.5
+
