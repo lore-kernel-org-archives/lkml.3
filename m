@@ -1,163 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486AbaFTTVf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 15:21:35 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:63030 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932828AbaFTTVE (ORCPT
+	id S1754961AbaFTTXF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 15:23:05 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:1424 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752432AbaFTTXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 15:21:04 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: Josh Boyer <jwboyer@fedoraproject.org>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v2 4/5] x86,vdso: Remove some redundant in-memory section headers
-Date: Fri, 20 Jun 2014 12:20:43 -0700
-Message-Id: <2e96d0c49016ea6d026a614ae645e93edd325961.1403291930.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1403291930.git.luto@amacapital.net>
-References: <cover.1403291930.git.luto@amacapital.net>
-In-Reply-To: <cover.1403291930.git.luto@amacapital.net>
-References: <cover.1403291930.git.luto@amacapital.net>
+	Fri, 20 Jun 2014 15:23:03 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Scott J Norton <scott.norton@hp.com>,
+        Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH v3] lockdep: restrict the use of recursive read_lock with qrwlock
+Date: Fri, 20 Jun 2014 15:22:46 -0400
+Message-Id: <1403292166-35530-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-.data doesn't need to be separate from .rodata: they're both readonly.
+v2->v3:
+ - Add a new read mode (3) for rwlock (used in
+   lock_acquire_shared_cond_recursive()) to avoid conflict with other
+   use cases of lock_acquire_shared_recursive().
 
-.altinstructions and .altinstr_replacement aren't needed by anything
-except vdso2c; strip them from the final image.
+v1->v2:
+ - Use less conditional & make it easier to read
 
-While we're at it, rather than aligning the actual executable text,
-just shove some unused-at-runtime data in between real data and
-text.
+Unlike the original unfair rwlock implementation, queued rwlock
+will grant lock according to the chronological sequence of the lock
+requests except when the lock requester is in the interrupt context.
+As a result, recursive read_lock calls will hang the process if there
+is a write_lock call somewhere in between the read_lock calls.
 
-My vdso image is still above 4k, but I'm disinclined to try to
-trim it harder for 3.16.  For future trimming, I suspect that these
-sections could be moved to later in the file and dropped from
-the in-memory image:
+This patch updates the lockdep implementation to look for recursive
+read_lock calls when queued rwlock is being used.
 
-.gnu.version and .gnu.version_d   (this may lose versions in gdb)
-.eh_frame                         (should be harmless)
-.eh_frame_hdr                     (I'm not really sure)
-.hash                             (AFAIK nothing needs this section header)
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- arch/x86/vdso/vdso-fakesections.c |  3 ---
- arch/x86/vdso/vdso-layout.lds.S   | 43 +++++++++++++++++++++------------------
- arch/x86/vdso/vdso2c.h            |  4 +++-
- 3 files changed, 26 insertions(+), 24 deletions(-)
+ include/linux/lockdep.h  |    4 +++-
+ kernel/locking/lockdep.c |   16 ++++++++++++++++
+ 2 files changed, 19 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/vdso/vdso-fakesections.c b/arch/x86/vdso/vdso-fakesections.c
-index 56927a7..aa5fbfa 100644
---- a/arch/x86/vdso/vdso-fakesections.c
-+++ b/arch/x86/vdso/vdso-fakesections.c
-@@ -16,9 +16,6 @@ const char fake_shstrtab[] __attribute__((section(".fake_shstrtab"))) =
- 	".rodata\0"
- 	".fake_shstrtab\0"  /* Yay, self-referential code. */
- 	".note\0"
--	".data\0"
--	".altinstructions\0"
--	".altinstr_replacement\0"
- 	".eh_frame_hdr\0"
- 	".eh_frame\0"
- 	".text";
-diff --git a/arch/x86/vdso/vdso-layout.lds.S b/arch/x86/vdso/vdso-layout.lds.S
-index e4cbc21..9197544 100644
---- a/arch/x86/vdso/vdso-layout.lds.S
-+++ b/arch/x86/vdso/vdso-layout.lds.S
-@@ -14,7 +14,7 @@
- # error unknown VDSO target
+diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
+index 008388f..0a53d88 100644
+--- a/include/linux/lockdep.h
++++ b/include/linux/lockdep.h
+@@ -481,13 +481,15 @@ static inline void print_irqtrace_events(struct task_struct *curr)
+ #define lock_acquire_exclusive(l, s, t, n, i)		lock_acquire(l, s, t, 0, 1, n, i)
+ #define lock_acquire_shared(l, s, t, n, i)		lock_acquire(l, s, t, 1, 1, n, i)
+ #define lock_acquire_shared_recursive(l, s, t, n, i)	lock_acquire(l, s, t, 2, 1, n, i)
++#define lock_acquire_shared_cond_recursive(l, s, t, n, i)	\
++	lock_acquire(l, s, t, 3, 1, n, i)
+ 
+ #define spin_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
+ #define spin_acquire_nest(l, s, t, n, i)	lock_acquire_exclusive(l, s, t, n, i)
+ #define spin_release(l, n, i)			lock_release(l, n, i)
+ 
+ #define rwlock_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
+-#define rwlock_acquire_read(l, s, t, i)		lock_acquire_shared_recursive(l, s, t, NULL, i)
++#define rwlock_acquire_read(l, s, t, i)		lock_acquire_shared_cond_recursive(l, s, t, NULL, i)
+ #define rwlock_release(l, n, i)			lock_release(l, n, i)
+ 
+ #define seqcount_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
+diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
+index d24e433..7d90ebc 100644
+--- a/kernel/locking/lockdep.c
++++ b/kernel/locking/lockdep.c
+@@ -67,6 +67,16 @@ module_param(lock_stat, int, 0644);
+ #define lock_stat 0
  #endif
  
--#define NUM_FAKE_SHDRS 16
-+#define NUM_FAKE_SHDRS 13
- 
- SECTIONS
- {
-@@ -28,15 +28,17 @@ SECTIONS
- 	.gnu.version_d	: { *(.gnu.version_d) }
- 	.gnu.version_r	: { *(.gnu.version_r) }
- 
--	.note		: { *(.note.*) }		:text	:note
--
--	.eh_frame_hdr	: { *(.eh_frame_hdr) }		:text	:eh_frame_hdr
--	.eh_frame	: { KEEP (*(.eh_frame)) }	:text
--
- 	.dynamic	: { *(.dynamic) }		:text	:dynamic
- 
- 	.rodata		: {
- 		*(.rodata*)
-+		*(.data*)
-+		*(.sdata*)
-+		*(.got.plt) *(.got)
-+		*(.gnu.linkonce.d.*)
-+		*(.bss*)
-+		*(.dynbss*)
-+		*(.gnu.linkonce.b.*)
++#ifdef CONFIG_QUEUE_RWLOCK
++/*
++* Queue rwlock only allows read-after-read recursion of the same lock class
++* when the latter read is in an interrupt context.
++*/
++#define allow_recursive_read	in_interrupt()
++#else
++#define allow_recursive_read	true
++#endif
++
+ /*
+  * lockdep_lock: protects the lockdep graph, the hashes and the
+  *               class/list/hash allocators.
+@@ -1774,6 +1784,12 @@ check_deadlock(struct task_struct *curr, struct held_lock *next,
+ 			return 2;
  
  		/*
- 		 * Ideally this would live in a C file, but that won't
-@@ -50,28 +52,29 @@ SECTIONS
- 
- 	.fake_shstrtab	: { *(.fake_shstrtab) }		:text
- 
--	.data		: {
--		*(.data*)
--		*(.sdata*)
--		*(.got.plt) *(.got)
--		*(.gnu.linkonce.d.*)
--		*(.bss*)
--		*(.dynbss*)
--		*(.gnu.linkonce.b.*)
--	}
- 
--	.altinstructions	: { *(.altinstructions) }
--	.altinstr_replacement	: { *(.altinstr_replacement) }
-+	.note		: { *(.note.*) }		:text	:note
++		 * Conditionally recursive read-lock check
++		 */
++		if ((read == 3) && prev->read && allow_recursive_read)
++			return 2;
 +
-+	.eh_frame_hdr	: { *(.eh_frame_hdr) }		:text	:eh_frame_hdr
-+	.eh_frame	: { KEEP (*(.eh_frame)) }	:text
-+
- 
- 	/*
--	 * Align the actual code well away from the non-instruction data.
--	 * This is the best thing for the I-cache.
-+	 * Text is well-separated from actual data: there's plenty of
-+	 * stuff that isn't used at runtime in between.
- 	 */
--	. = ALIGN(0x100);
- 
- 	.text		: { *(.text*) }			:text	=0x90909090,
- 
- 	/*
-+	 * At the end so that eu-elflint stays happy when vdso2c strips
-+	 * these.  A better implementation would avoid allocating space
-+	 * for these.
-+	 */
-+	.altinstructions	: { *(.altinstructions) }	:text
-+	.altinstr_replacement	: { *(.altinstr_replacement) }	:text
-+
-+	/*
- 	 * The remainder of the vDSO consists of special pages that are
- 	 * shared between the kernel and userspace.  It needs to be at the
- 	 * end so that it doesn't overlap the mapping of the actual
-diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
-index f01ed4b..f42e2dd 100644
---- a/arch/x86/vdso/vdso2c.h
-+++ b/arch/x86/vdso/vdso2c.h
-@@ -92,7 +92,9 @@ static void BITSFUNC(copy_section)(struct BITSFUNC(fake_sections) *out,
- {
- 	uint64_t flags = GET_LE(&in->sh_flags);
- 
--	bool copy = flags & SHF_ALLOC;
-+	bool copy = flags & SHF_ALLOC &&
-+		strcmp(name, ".altinstructions") &&
-+		strcmp(name, ".altinstr_replacement");
- 
- 	if (!copy)
- 		return;
++		/*
+ 		 * We're holding the nest_lock, which serializes this lock's
+ 		 * nesting behaviour.
+ 		 */
 -- 
-1.9.3
+1.7.1
 
