@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757109AbaFTSLm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 14:11:42 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:45428 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754028AbaFTSLl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 14:11:41 -0400
-Message-ID: <1403287898.30764.17.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH] iovec: move memcpy_from/toiovecend to lib/iovec.c
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: David Miller <davem@davemloft.net>
-Cc: mst@redhat.com, linux-kernel@vger.kernel.org, rdunlap@infradead.org,
-        sfr@canb.auug.org.au, hjk@hansjkoch.de, gregkh@linuxfoundation.org,
-        stephen@networkplumber.org, sean.hefty@intel.com, fx.lebail@yahoo.com,
-        jasowang@redhat.com, hannes@stressinduktion.org,
-        wuzhy@linux.vnet.ibm.com, netdev@vger.kernel.org
-Date: Fri, 20 Jun 2014 11:11:38 -0700
-In-Reply-To: <20140619.210637.1702701955085552032.davem@davemloft.net>
-References: <1403201568-22828-1-git-send-email-mst@redhat.com>
-	 <20140619.210637.1702701955085552032.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757244AbaFTSP1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 14:15:27 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:48886 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753970AbaFTSP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 14:15:26 -0400
+Date: Fri, 20 Jun 2014 20:15:18 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [RFC][PATCH 3/3] x86: make MP  a required-feature on 64-bit
+Message-ID: <20140620181518.GG11391@pd.tnic>
+References: <20140620161736.D6AC16FD@viggo.jf.intel.com>
+ <20140620161740.BFB00798@viggo.jf.intel.com>
+ <53A46008.5060509@zytor.com>
+ <53A4619C.8020100@sr71.net>
+ <53A46365.6090101@zytor.com>
+ <20140620174345.GD11391@pd.tnic>
+ <53A47461.4050409@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <53A47461.4050409@zytor.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-19 at 21:06 -0700, David Miller wrote:
-> From: "Michael S. Tsirkin" <mst@redhat.com>
-> Date: Thu, 19 Jun 2014 21:22:56 +0300
-> 
-> > ERROR: "memcpy_fromiovecend" [drivers/vhost/vhost_scsi.ko] undefined!
-> > 
-> > commit 9f977ef7b671f6169eca78bf40f230fe84b7c7e5
-> >     vhost-scsi: Include prot_bytes into expected data transfer length
-> > in target-pending makes drivers/vhost/scsi.c call memcpy_fromiovecend().
-> > This function is not available when CONFIG_NET is not enabled.
-> > 
-> > socket.h already includes uio.h, so no callers need updating.
-> > 
-> > Reported-by: Randy Dunlap <rdunlap@infradead.org>
-> > Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> > Cc: "David S. Miller" <davem@davemloft.net>
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> > 
-> > David, could you please ack merging this through
-> > target-pending to avoid dependency issues?
-> 
-> Yep, this looks fine:
-> 
-> Signed-off-by: David S. Miller <davem@davemloft.net>
+On Fri, Jun 20, 2014 at 10:50:25AM -0700, H. Peter Anvin wrote:
+> Looking at the AMD init code, there is a whole bunch of other 32/64-bit
+> differences that are clearly bogus.  I also see that amd_k7_smp_check()
+> doesn't even *exist* on 64 bits, and that init_amd_k7() which calls
+> amd_k7_smp_check() only is ever called for family == 6, despite having
+> tests for family 7 and above in it.
 
-Applied to target-pending/queue, and will include in the next PULL
-request.
+No, K7 is family 6. The tests are for c->x86_model, or am I looking at
+the wrong place?
 
-Thanks folks.
+OTOH, init_amd() could probably use a cleanup of moving the per-family
+code into init_amd_<fam>() functions and extending the switch-case.
 
---nab
+I'll take a look.
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
