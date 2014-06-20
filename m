@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030282AbaFTWaQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 18:30:16 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:42343 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030220AbaFTWaN (ORCPT
+	id S967196AbaFTWd3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 18:33:29 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:50020 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756196AbaFTWd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 18:30:13 -0400
-Message-ID: <1403303515.589.361.camel@xylophone>
-Subject: Re: [Linux-kernel] [PATCH 2/4] drivers/base: devres.c: Add block
- copy func. for managed devices
-From: Ben Hutchings <ben.hutchings@codethink.co.uk>
-To: Rob Jones <rob.jones@codethink.co.uk>
-Cc: linus.walleij@linaro.org, gnurou@gmail.com, heiko@sntech.de,
-        linux-kernel@codethink.co.uk, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        broonie@kernel.org
-Date: Fri, 20 Jun 2014 23:31:55 +0100
-In-Reply-To: <1403192765-3258-3-git-send-email-rob.jones@codethink.co.uk>
-References: <1403192765-3258-1-git-send-email-rob.jones@codethink.co.uk>
-	 <1403192765-3258-3-git-send-email-rob.jones@codethink.co.uk>
-Organization: Codethink Ltd.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Jun 2014 18:33:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140620185241.GC21711@titan.lakedaemon.net>
+References: <1403196043-6317-1-git-send-email-gregory.clement@free-electrons.com>
+ <20140620185241.GC21711@titan.lakedaemon.net>
+From: Rob Herring <robherring2@gmail.com>
+Date: Fri, 20 Jun 2014 17:33:06 -0500
+Message-ID: <CAL_JsqKinUvcJ+OOoD70zD6CH393cgZWC+4gRO=8XORyE6fVKA@mail.gmail.com>
+Subject: Re: [PATCH v2] ARM: mvebu: Fix missing binding documentation for
+ Armada 38x
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-06-19 at 16:46 +0100, Rob Jones wrote:
-[...]
-> --- a/drivers/base/devres.c
-> +++ b/drivers/base/devres.c
-> @@ -793,7 +793,7 @@ EXPORT_SYMBOL_GPL(devm_kmalloc);
->  /**
->   * devm_kstrdup - Allocate resource managed space and
->   *                copy an existing string into that.
-> - * @dev: Device to allocate memory for
-> + * @dev:Device to allocate memory for
+On Fri, Jun 20, 2014 at 1:52 PM, Jason Cooper <jason@lakedaemon.net> wrote:
+> On Thu, Jun 19, 2014 at 06:40:43PM +0200, Gregory CLEMENT wrote:
+>> For the Armada 380 and Armada 385 SoCs, the common bindings for those
+>> 2 SoCs, was forgotten. This patch add the documentation for the
+>> marvell,aramda38x property.
+>>
+>> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+>> --
+>> Hi,
+>>
+>> This fix should be merged in 3.16. For 3.15 I am not sure as it is not
+>> a regression.
+>>
+>> Changelog:
+>> v1->v2
+>>
+>> - Reformulate to make clear that we will need marvell,armada38x _and_ a
+>> SoC specific string. For consistency I duplicated what we have done in
+>> armada-370-xp.txt
+>>
+>>
+>> Thanks,
+>> Gregory
+>>
+>>
+>>  Documentation/devicetree/bindings/arm/armada-38x.txt | 17 +++++++++++++++--
+>>  1 file changed, 15 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/arm/armada-38x.txt b/Documentation/devicetree/bindings/arm/armada-38x.txt
+>> index 11f2330a6554..fa08760046df 100644
+>> --- a/Documentation/devicetree/bindings/arm/armada-38x.txt
+>> +++ b/Documentation/devicetree/bindings/arm/armada-38x.txt
+>> @@ -6,5 +6,18 @@ following property:
+>>
+>>  Required root node property:
+>>
+>> - - compatible: must contain either "marvell,armada380" or
+>> -   "marvell,armada385" depending on the variant of the SoC being used.
+>> +compatible: must contain "marvell,armada38x"
+>
+> I agree with Sergei on this one.  We generally avoid wildcards in
+> compatible strings.  Is there a use case where specifying one of the
+> below wouldn't be sufficient?
 
-You shouldn't be changing this comment...
+Isn't this a case of just documenting what is already in use?
 
-Ben.
+I agree wildcards alone are not good, but along with a specific
+compatible is okay. But also there should be some need to have the
+common property.
 
->   * @s: the string to duplicate
->   * @gfp: the GFP mask used in the devm_kmalloc() call when
->   *       allocating memory
-[...]
-
-
+Rob
