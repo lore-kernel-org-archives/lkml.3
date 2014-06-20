@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967475AbaFTMEp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 08:04:45 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:60695 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967347AbaFTMDd (ORCPT
+	id S967496AbaFTMFT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 08:05:19 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:62404 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967301AbaFTMDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 08:03:33 -0400
+	Fri, 20 Jun 2014 08:03:23 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: wsa@the-dreams.de, grant.likely@linaro.org, linux-i2c@vger.kernel.org,
         devicetree@vger.kernel.org, linus.walleij@linaro.org,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 7/9] i2c: Provide a temporary .probe2() call-back type
-Date: Fri, 20 Jun 2014 13:02:31 +0100
-Message-Id: <1403265753-25851-9-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 3/9] i2c: Add the ability to match device to compatible string without an of_node
+Date: Fri, 20 Jun 2014 13:02:27 +0100
+Message-Id: <1403265753-25851-5-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1403265753-25851-1-git-send-email-lee.jones@linaro.org>
 References: <1403265753-25851-1-git-send-email-lee.jones@linaro.org>
@@ -22,77 +22,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will aid the seamless removal of the current probe()'s, more
-commonly unused than used second parameter.  Most I2C drivers can
-simply switch over to the new interface, others which have DT
-support can use its own matching instead and others can call
-i2c_match_id() themselves.  This brings I2C's device probe method
-into line with other similar interfaces in the kernel and prevents
-the requirement to pass an i2c_device_id table.
+A great deal of I2C devices are currently matched via DT node name, and
+as such the compatible naming convention of '<vendor>,<device>' has gone
+somewhat awry - some nodes don't supply one, some supply an arbitrary
+string and others the correct device name with an arbitrary vendor prefix.
 
-Suggested-by: Grant Likely <grant.likely@linaro.org>
+In an effort to correct this problem we have to supply a mechanism to
+match a device by compatible string AND by simple device name.  This
+function strips off the '<vendor>,' part of a supplied compatible string
+and attempts to match without it.
+
+The plan is to remove this function once all of the compatible strings
+for each device have been brought into line.
+
+Acked-by: Grant Likely <grant.likely@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/i2c/i2c-core.c | 12 +++++++++---
- include/linux/i2c.h    |  8 +++++++-
- 2 files changed, 16 insertions(+), 4 deletions(-)
+ drivers/i2c/i2c-core.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
 diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index b8962e4..d8daf24 100644
+index d3802dc..8a37745 100644
 --- a/drivers/i2c/i2c-core.c
 +++ b/drivers/i2c/i2c-core.c
-@@ -269,8 +269,6 @@ static int i2c_device_probe(struct device *dev)
- 		return 0;
- 
- 	driver = to_i2c_driver(dev->driver);
--	if (!driver->probe)
--		return -EINVAL;
- 
- 	/*
- 	 * An I2C ID table is not mandatory, if and only if, a suitable Device
-@@ -286,7 +284,15 @@ static int i2c_device_probe(struct device *dev)
- 	dev_dbg(dev, "probe\n");
- 
- 	acpi_dev_pm_attach(&client->dev, true);
--	status = driver->probe(client, i2c_match_id(driver->id_table, client));
+@@ -1090,6 +1090,27 @@ struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node)
+ 	return i2c_verify_adapter(dev);
+ }
+ EXPORT_SYMBOL(of_find_i2c_adapter_by_node);
 +
-+	/* When there are no more users of probe(), rename probe2 to probe. */
-+	if (driver->probe2)
-+		status = driver->probe2(client);
-+	else if (driver->probe)
-+		status = driver->probe(client,
-+				       i2c_match_id(driver->id_table, client));
-+	else
-+		return -EINVAL;
- 	if (status)
- 		acpi_dev_pm_detach(&client->dev, true);
- 
-diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-index 370905d..9414b16 100644
---- a/include/linux/i2c.h
-+++ b/include/linux/i2c.h
-@@ -125,7 +125,8 @@ extern s32 i2c_smbus_write_i2c_block_data(const struct i2c_client *client,
-  * struct i2c_driver - represent an I2C device driver
-  * @class: What kind of i2c device we instantiate (for detect)
-  * @attach_adapter: Callback for bus addition (deprecated)
-- * @probe: Callback for device binding
-+ * @probe: Callback for device binding - soon to be deprecated
-+ * @probe2: New callback for device binding
-  * @remove: Callback for device unbinding
-  * @shutdown: Callback for device shutdown
-  * @suspend: Callback for device suspend
-@@ -170,6 +171,11 @@ struct i2c_driver {
- 	int (*probe)(struct i2c_client *, const struct i2c_device_id *);
- 	int (*remove)(struct i2c_client *);
- 
-+	/* New driver model interface to aid the seamless removal of the
-+	 * current probe()'s, more commonly unused than used second parameter.
-+	 */
-+	int (*probe2)(struct i2c_client *);
++static const struct of_device_id*
++i2c_of_match_device_strip_vendor(const struct of_device_id *matches,
++				  struct i2c_client *client)
++{
++	const char *name;
 +
- 	/* driver model interfaces that don't relate to enumeration  */
- 	void (*shutdown)(struct i2c_client *);
- 	int (*suspend)(struct i2c_client *, pm_message_t mesg);
++	for (; matches->compatible[0]; matches++) {
++		name = strchr(matches->compatible, ',');
++		if (!name)
++			name = matches->compatible;
++		else
++			name++;
++
++		if (!strnicmp(client->name, name, strlen(client->name)))
++			return matches;
++	}
++
++	return NULL;
++}
++
+ #else
+ static void of_i2c_register_devices(struct i2c_adapter *adap) { }
+ #endif /* CONFIG_OF */
 -- 
 1.8.3.2
 
