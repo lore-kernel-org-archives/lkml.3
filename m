@@ -1,279 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751731AbaFTOO5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 10:14:57 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:42655 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060AbaFTOOz (ORCPT
+	id S1752241AbaFTOPO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 10:15:14 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:50842 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984AbaFTOPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 10:14:55 -0400
-Message-ID: <53A441D3.8010602@ozlabs.ru>
-Date: Sat, 21 Jun 2014 00:14:43 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 20 Jun 2014 10:15:12 -0400
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alexander Graf <agraf@suse.de>,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-Subject: Re: [PATCH] vfio: Fix endianness handling for emulated BARs
-References: <1403091391-31780-1-git-send-email-aik@ozlabs.ru>	 <1403116512.3707.175.camel@ul30vt.home> <53A233E9.6030006@ozlabs.ru>	 <53A241F6.9010307@ozlabs.ru> <53A25D74.5000804@ozlabs.ru> <1403234514.3707.278.camel@ul30vt.home>
-In-Reply-To: <1403234514.3707.278.camel@ul30vt.home>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140620135454.GA10566@kahuna>
+References: <1403164154-1362-1-git-send-email-acourbot@nvidia.com>
+ <53A308C8.2070004@wwwdotorg.org> <20140619175643.GR5099@sirena.org.uk>
+ <53A3C613.8030207@nvidia.com> <53A3D85E.7030704@nvidia.com>
+ <20140620094119.GT5099@sirena.org.uk> <53A4039B.7000504@nvidia.com>
+ <20140620132310.GA11936@kahuna> <20140620135454.GA10566@kahuna>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Fri, 20 Jun 2014 23:14:51 +0900
+Message-ID: <CAAVeFuJ=JTNkwDKBvuoyL=ARQs_UJb_MHzL9S8gOc8EU98znPg@mail.gmail.com>
+Subject: Re: Palmas regulator broken (was Re: [PATCH] ARM: tegra: TN7: relax
+ some regulators)
+To: Nishanth Menon <nm@ti.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>, Mark Brown <broonie@kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, Keerthy <j-keerthy@ti.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2014 01:21 PM, Alex Williamson wrote:
-> On Thu, 2014-06-19 at 13:48 +1000, Alexey Kardashevskiy wrote:
->> On 06/19/2014 11:50 AM, Alexey Kardashevskiy wrote:
->>> On 06/19/2014 10:50 AM, Alexey Kardashevskiy wrote:
->>>> On 06/19/2014 04:35 AM, Alex Williamson wrote:
->>>>> On Wed, 2014-06-18 at 21:36 +1000, Alexey Kardashevskiy wrote:
->>>>>> VFIO exposes BARs to user space as a byte stream so userspace can
->>>>>> read it using pread()/pwrite(). Since this is a byte stream, VFIO should
->>>>>> not do byte swapping and simply return values as it gets them from
->>>>>> PCI device.
->>>>>>
->>>>>> Instead, the existing code assumes that byte stream in read/write is
->>>>>> little-endian and it fixes endianness for values which it passes to
->>>>>> ioreadXX/iowriteXX helpers. This works for little-endian as PCI is
->>>>>> little endian and le32_to_cpu/... are stubs.
->>>>>
->>>>> vfio read32:
->>>>>
->>>>> val = cpu_to_le32(ioread32(io + off));
->>>>>
->>>>> Where the typical x86 case, ioread32 is:
->>>>>
->>>>> #define ioread32(addr)          readl(addr)
->>>>>
->>>>> and readl is:
->>>>>
->>>>> __le32_to_cpu(__raw_readl(addr));
->>>>>
->>>>> So we do canceling byte swaps, which are both nops on x86, and end up
->>>>> returning device endian, which we assume is little endian.
->>>>>
->>>>> vfio write32 is similar:
->>>>>
->>>>> iowrite32(le32_to_cpu(val), io + off);
->>>>>
->>>>> The implicit cpu_to_le32 of iowrite32() and our explicit swap cancel
->>>>> out, so input data is device endian, which is assumed little.
->>>>>
->>>>>> This also works for big endian but rather by an accident: it reads 4 bytes
->>>>>> from the stream (@val is big endian), converts to CPU format (which should
->>>>>> be big endian) as it was little endian (@val becomes actually little
->>>>>> endian) and calls iowrite32() which does not do swapping on big endian
->>>>>> system.
->>>>>
->>>>> Really?
->>>>>
->>>>> In arch/powerpc/kernel/iomap.c iowrite32() is just a wrapper around
->>>>> writel(), which seems to use the generic implementation, which does
->>>>> include a cpu_to_le32.
->>>>
->>>>
->>>> Ouch, wrong comment. iowrite32() does swapping. My bad.
->>>>
->>>>
->>>>>
->>>>> I also see other big endian archs like parisc doing cpu_to_le32 on
->>>>> iowrite32, so I don't think this statement is true.  I imagine it's
->>>>> probably working for you because the swap cancel.
->>>>>
->>>>>> This removes byte swapping and makes use ioread32be/iowrite32be
->>>>>> (and 16bit versions) on big-endian systems. The "be" helpers take
->>>>>> native endian values and do swapping at the moment of writing to a PCI
->>>>>> register using one of "store byte-reversed" instructions.
->>>>>
->>>>> So now you want iowrite32() on little endian and iowrite32be() on big
->>>>> endian, the former does a cpu_to_le32 (which is a nop on little endian)
->>>>> and the latter does a cpu_to_be32 (which is a nop on big endian)...
->>>>> should we just be using __raw_writel() on both?
->>>>
->>>>
->>>> We can do that too. The beauty of iowrite32be on ppc64 is that it does not
->>>> swap and write separately, it is implemented via the "Store Word
->>>> Byte-Reverse Indexed X-form" single instruction.
->>>>
->>>> And some archs (do not know which ones) may add memory barriers in their
->>>> implementations of ioread/iowrite. __raw_writel is too raw :)
->>>>
->>>>>  There doesn't actually
->>>>> seem to be any change in behavior here, it just eliminates back-to-back
->>>>> byte swaps, which are a nop on x86, but not power, right?
->>>>
->>>> Exactly. No dependency for QEMU.
->>>
->>> How about that:
->>> ===
->>>
->>> VFIO exposes BARs to user space as a byte stream so userspace can
->>> read it using pread()/pwrite(). Since this is a byte stream, VFIO should
->>> not do byte swapping and simply return values as it gets them from
->>> PCI device.
->>>
->>> Instead, the existing code assumes that byte stream in read/write is
->>> little-endian and it fixes endianness for values which it passes to
->>> ioreadXX/iowriteXX helpers in native format. The IO helpers do swapping
->>> again. Since both byte swaps are nops on little-endian host, this works.
->>>
->>> This also works for big endian but rather by an accident: it reads 4 bytes
->>> from the stream (@val is big endian), converts to CPU format (which should
->>> be big endian) as it was little endian (and @val becomes actually little
->>> endian) and calls iowrite32() which does swapping on big endian
->>> system again. So byte swap gets cancelled, __raw_writel() receives
->>> a native value and then
->>> *(volatile unsigned int __force *)PCI_FIX_ADDR(addr) = v;
->>> just does the right thing.
+On Fri, Jun 20, 2014 at 10:54 PM, Nishanth Menon <nm@ti.com> wrote:
+> On 08:23-20140620, Nishanth Menon wrote:
+>> + l-o,
+>>       http://marc.info/?t=140316427500004&r=1&w=2 full thread
 >>
->> I am wrong here, sorry. This is what happens when you watch soccer between
->> 2am and 4am :)
+>> Minor change in subject to indicate palmas regulator fail
 >>
+>> On 18:49-20140620, Alexandre Courbot wrote:
+>> > On 06/20/2014 06:41 PM, Mark Brown wrote:
+>> > >* PGP Signed by an unknown key
+>> > >
+>> > >On Fri, Jun 20, 2014 at 03:44:46PM +0900, Alexandre Courbot wrote:
+>> > >
+>> > >>dbabd624d
+>> > >>regulator: palmas: Reemove open coded functions with helper functions
+>> > >
+>> > >>Keerthy, Nishanth, could it be that there is still something wrong with the
+>> > >>REGULATOR_LINEAR_RANGE() definitions?
+>> > >
+>> > >>This seems to be the cause for our trouble, but the other questions might
+>> > >>still stand, in case there is interest in discussing them.
+>> > >
+>> > >There was a bug fix to the Palmas driver which just went to Linus the
+>> > >other day, are you sure this isn't fixed in mainline (or -next, it's
+>> > >been in -next for a week or something)?
+>> >
+>> > If you are talking about
+>> >
+>> > 6b7f2d82d5
+>> > regulator: palmas: Fix SMPS list for 0V
+>> >
+>> > then it is in my tree. There is actually no difference on
+>> > palmas-regulator.c between my tree and the current -next (or Linus'
+>> > tree for that instance).
+>> >
+>> > So it seems to be something else we are dealing with here.
 >>
->>>
->>> This removes byte swaps and makes use of ioread32be/iowrite32be
->>> (and 16bit versions) which do explicit byte swapping at the moment
->>> of write to a PCI register. PPC64 uses a special "Store Word
->>> Byte-Reverse Indexed X-form" instruction which does swap and store.
+>> Your quote earlier in the thread
+>> "
+>> _regulator_is_enabled() *also* returns false
+>> "
 >>
->> No swapping is done here if we use ioread32be as it calls in_be32 and that
->> animal does "lwz" which is simple load from memory.
+>> Got me curious. Looking at the patch:
+>> dbabd624d4eec50b623bab070d1e39a854b2d65c (regulator: palmas: Reemove
+>> open coded functions with helper functions)
+>> I noticed the following change
+>> palmas_is_enabled_smps -> regulator_is_enabled_regmap
 >>
->> So @val (16/32 bit variable on stack) will have different values on LE and
->> BE but since we do not handle it the host and just memcpy it to the buffer,
->> nothing breaks here.
+>> So I decided to search for enable_reg in palmas-regulator.c and I think
+>> it needs valid enable_reg, mask, value for regulator_is_enabled_regmap to work
+>> :).
 >>
+>> Maybe to be sure, we could print the following:
+>> PALMAS_SMPS8_VOLTAGE, PALMAS_SMPS8_CTRL, PALMAS_SMPS8_TSTEP,
 >>
->> So it should be like this:
->> ===
->> VFIO exposes BARs to user space as a byte stream so userspace can
->> read it using pread()/pwrite(). Since this is a byte stream, VFIO should
->> not do byte swapping and simply return values as it gets them from
->> PCI device and copy_to_user will save bytes in the correct
->> same true for writes.
+>> Anyways, I quickly boot tested the following on DRA7evm (which also uses Palmas):
+>> [    1.933939] palmas-pmic 48070000.i2c:tps659038@58:tps659038_pmic: enable_reg = 0x00, mask =0x00
+>> [    1.944210] smps123: 850 <--> 1250 mV at 1060 mV
+>> [    1.950717] palmas-pmic 48070000.i2c:tps659038@58:tps659038_pmic: enable_reg = 0x00, mask =0x00
+>> [    1.960754] smps45: 850 <--> 1150 mV at 1060 mV
+>> [    1.967048] palmas-pmic 48070000.i2c:tps659038@58:tps659038_pmic: enable_reg = 0x00, mask =0x00
+>> [    1.977072] smps6: 850 <--> 1650 mV at 1060 mV
+>> [    1.983077] palmas-pmic 48070000.i2c:tps659038@58:tps659038_pmic: enable_reg = 0x00, mask =0x00
+>> [    1.992994] smps7: 850 <--> 1030 mV at 1030 mV
+>> [    1.999238] palmas-pmic 48070000.i2c:tps659038@58:tps659038_pmic: enable_reg = 0x00, mask =0x00
+>> [    2.009161] smps8: 850 <--> 1250 mV at 1060 mV
+>> [    2.015304] palmas-pmic 48070000.i2c:tps659038@58:tps659038_pmic: enable_reg = 0x00, mask =0x00
 >>
->> Instead, the existing code assumes that byte stream in read/write is
->> little-endian and it fixes endianness for values which it passes to
->> ioreadXX/iowriteXX helpers in native format. The IO helpers do swapping
->> again. Since both byte swaps are nops on little-endian host, this works.
+>> It does seem to me that either set_mode also should use core functions
+>> OR you still need a palmas specific is_enable, enable/disable functions
+>> (contrary to the claim of the patch in question - which I think
+>>  introduced regressions).
 >>
->> This also works for big endian but rather by an accident: it reads 4 bytes
->> from the stream (@val is big endian), converts to CPU format (which should
->> be big endian) as it was little endian (and @val becomes actually little
->> endian) and calls iowrite32() which does swapping on big endian
->> system again. So byte swap in the host gets cancelled and __raw_writel()
->> writes the value which was swapped originally by the guest.
+>> Otherwise, completely untested diff below - can you  give this a shot?
 >>
->> This removes byte swaps and makes use of ioread32be/iowrite32be
->> (and 16bit versions) which do not do byte swap on BE hosts.
->> For LE hosts, ioread32/iowrite32 are still used.
+>> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+>> index b982f0f..bbfe22f 100644
+>> --- a/drivers/regulator/palmas-regulator.c
+>> +++ b/drivers/regulator/palmas-regulator.c
+>> @@ -964,6 +964,20 @@ static int palmas_regulators_probe(struct platform_device *pdev)
+>>                               return ret;
+>>                       pmic->current_reg_mode[id] = reg &
+>>                                       PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
+>> +
+>> +                     dev_err(&pdev->dev, "enable_reg = 0x%02x, mask =0x%02x\n",
+>> +                             pmic->desc[id].enable_reg,
+>> +                             pmic->desc[id].enable_mask);
+>> +                     pmic->desc[id].enable_reg =
+>> +                                     PALMAS_BASE_TO_REG(PALMAS_LDO_BASE,
+>> +                                             palmas_regs_info[id].ctrl_addr);
+>> +                     pmic->desc[id].enable_mask =
+>> +                                     PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
+>> +                     /*
+>> +                      * The following completely ignores
+>> +                      * pmic->current_reg_mode[id] (set_mode)
+>> +                      */
+>> +                     pmic->desc[id].enable_val = SMPS_CTRL_MODE_ON;
+>>               }
 >>
->> ===
-> 
-> Working on big endian being an accident may be a matter of perspective.
-> The comment remains that this patch doesn't actually fix anything except
-> the overhead on big endian systems doing redundant byte swapping and
-> maybe the philosophy that vfio regions are little endian.
+>>               pmic->desc[id].type = REGULATOR_VOLTAGE;
+>
+> rev 2 of the diff - this does depened on the fact that regulator_desc is
+> not memdup-ed by regulator code - that lets us do a bit of a trickery ;)
+> - and I dropped the prints.. Unrelated: This makes me wonder why
+> palmas_is_enabled_ldo at all?
+>
+> Keerthy, Mark,
+> what do you think of the following (esp the flip of desc value):
+> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+> index b982f0f..f01d9c5 100644
+> --- a/drivers/regulator/palmas-regulator.c
+> +++ b/drivers/regulator/palmas-regulator.c
+> @@ -299,7 +299,7 @@ static int palmas_set_mode_smps(struct regulator_dev *dev, unsigned int mode)
+>         struct palmas_pmic *pmic = rdev_get_drvdata(dev);
+>         int id = rdev_get_id(dev);
+>         unsigned int reg;
+> -       bool rail_enable = true;
+> +       bool rail_enable = true, enable_val = true;
+>
+>         palmas_smps_read(pmic->palmas, palmas_regs_info[id].ctrl_addr, &reg);
+>         reg &= ~PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
+> @@ -318,6 +318,7 @@ static int palmas_set_mode_smps(struct regulator_dev *dev, unsigned int mode)
+>                 reg |= SMPS_CTRL_MODE_PWM;
+>                 break;
+>         default:
+> +               enable_val = false;
+>                 return -EINVAL;
+>         }
+>
+> @@ -325,6 +326,11 @@ static int palmas_set_mode_smps(struct regulator_dev *dev, unsigned int mode)
+>         if (rail_enable)
+>                 palmas_smps_write(pmic->palmas,
+>                         palmas_regs_info[id].ctrl_addr, reg);
+> +
+> +       /* Switch the enable value to ensure this is used for enable */
+> +       if (enable_val)
+> +               pmic->desc[id].enable_val = pmic->current_reg_mode[id];
+> +
+>         return 0;
+>  }
+>
+> @@ -964,6 +970,14 @@ static int palmas_regulators_probe(struct platform_device *pdev)
+>                                 return ret;
+>                         pmic->current_reg_mode[id] = reg &
+>                                         PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
+> +
+> +                       pmic->desc[id].enable_reg =
+> +                                       PALMAS_BASE_TO_REG(PALMAS_LDO_BASE,
+> +                                               palmas_regs_info[id].ctrl_addr);
+> +                       pmic->desc[id].enable_mask =
+> +                                       PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
+> +                       /* set_mode overrides this value */
+> +                       pmic->desc[id].enable_val = SMPS_CTRL_MODE_ON;
+>                 }
+>
+>                 pmic->desc[id].type = REGULATOR_VOLTAGE;
 
+Tried this v2 and it seems to do the trick! My panel switches on as expected.
 
-They are little-endian only between ioread32() and copy_to_user() calls,
-besides that it is a bytes stream which does not have endianness so I do
-not understand the comment about philosophy...
-
-
-> I'm still not a fan of iowrite vs iowritebe, there must be something we
-> can use that doesn't have an implicit swap.  Calling it iowrite*_native
-> is also an abuse of the namespace.  Next thing we know some common code
-> will legitimately use that name.  If we do need to define an alias
-> (which I'd like to avoid) it should be something like vfio_iowrite32.
-
-
-We can still use __raw_writel&co, would that be ok?
-
-
-
-> Thanks,
-> 
-> Alex
-> 
->>> ===
->>>
->>> any better?
->>>
->>>
->>>
->>>
->>>>>> Suggested-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->>>>>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->>>>>> ---
->>>>>>  drivers/vfio/pci/vfio_pci_rdwr.c | 20 ++++++++++++++++----
->>>>>>  1 file changed, 16 insertions(+), 4 deletions(-)
->>>>>>
->>>>>> diff --git a/drivers/vfio/pci/vfio_pci_rdwr.c b/drivers/vfio/pci/vfio_pci_rdwr.c
->>>>>> index 210db24..f363b5a 100644
->>>>>> --- a/drivers/vfio/pci/vfio_pci_rdwr.c
->>>>>> +++ b/drivers/vfio/pci/vfio_pci_rdwr.c
->>>>>> @@ -21,6 +21,18 @@
->>>>>>  
->>>>>>  #include "vfio_pci_private.h"
->>>>>>  
->>>>>> +#ifdef __BIG_ENDIAN__
->>>>>> +#define ioread16_native		ioread16be
->>>>>> +#define ioread32_native		ioread32be
->>>>>> +#define iowrite16_native	iowrite16be
->>>>>> +#define iowrite32_native	iowrite32be
->>>>>> +#else
->>>>>> +#define ioread16_native		ioread16
->>>>>> +#define ioread32_native		ioread32
->>>>>> +#define iowrite16_native	iowrite16
->>>>>> +#define iowrite32_native	iowrite32
->>>>>> +#endif
->>>>>> +
->>>>>>  /*
->>>>>>   * Read or write from an __iomem region (MMIO or I/O port) with an excluded
->>>>>>   * range which is inaccessible.  The excluded range drops writes and fills
->>>>>> @@ -50,9 +62,9 @@ static ssize_t do_io_rw(void __iomem *io, char __user *buf,
->>>>>>  				if (copy_from_user(&val, buf, 4))
->>>>>>  					return -EFAULT;
->>>>>>  
->>>>>> -				iowrite32(le32_to_cpu(val), io + off);
->>>>>> +				iowrite32_native(val, io + off);
->>>>>>  			} else {
->>>>>> -				val = cpu_to_le32(ioread32(io + off));
->>>>>> +				val = ioread32_native(io + off);
->>>>>>  
->>>>>>  				if (copy_to_user(buf, &val, 4))
->>>>>>  					return -EFAULT;
->>>>>> @@ -66,9 +78,9 @@ static ssize_t do_io_rw(void __iomem *io, char __user *buf,
->>>>>>  				if (copy_from_user(&val, buf, 2))
->>>>>>  					return -EFAULT;
->>>>>>  
->>>>>> -				iowrite16(le16_to_cpu(val), io + off);
->>>>>> +				iowrite16_native(val, io + off);
->>>>>>  			} else {
->>>>>> -				val = cpu_to_le16(ioread16(io + off));
->>>>>> +				val = ioread16_native(io + off);
->>>>>>  
->>>>>>  				if (copy_to_user(buf, &val, 2))
->>>>>>  					return -EFAULT;
->>>>>
->>>>>
->>>>>
->>>>
->>>>
->>>
->>>
->>
->>
-> 
-> 
-> 
-
-
--- 
-Alexey
+Thanks,
+Alex.
