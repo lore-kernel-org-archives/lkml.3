@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756791AbaFTQiR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 12:38:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46868 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754882AbaFTQiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 12:38:16 -0400
-Message-ID: <53A46365.6090101@zytor.com>
-Date: Fri, 20 Jun 2014 09:37:57 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S935103AbaFTQjr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 12:39:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59411 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932155AbaFTQjq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 12:39:46 -0400
+Date: Fri, 20 Jun 2014 09:43:47 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Vincent Heuken <me@vincentheuken.com>
+Cc: thomas_75@safe-mail.net, himangi774@gmail.com,
+        paul.gortmaker@windriver.com, aybuke.147@gmail.com, arnd@arndb.de,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: serqt_usb2: fixed frivolous else statement
+ warnings
+Message-ID: <20140620164347.GA23197@kroah.com>
+References: <1403281888-12873-1-git-send-email-me@vincentheuken.com>
 MIME-Version: 1.0
-To: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org
-CC: bp@alien8.de, x86@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [RFC][PATCH 3/3] x86: make MP  a required-feature on 64-bit
-References: <20140620161736.D6AC16FD@viggo.jf.intel.com> <20140620161740.BFB00798@viggo.jf.intel.com> <53A46008.5060509@zytor.com> <53A4619C.8020100@sr71.net>
-In-Reply-To: <53A4619C.8020100@sr71.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403281888-12873-1-git-send-email-me@vincentheuken.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2014 09:30 AM, Dave Hansen wrote:
-> On 06/20/2014 09:23 AM, H. Peter Anvin wrote:
->> On 06/20/2014 09:17 AM, Dave Hansen wrote:
->>>> Today, we assume that all 64-bit cpus have X86_FEATURE_MP.  It
->>>> should be in the REQUIRED_MASK so that we do not need the #undef
->>>> trick for it.
->> I don't think we enforce that the MP bit is set in CPUID, though.
->> Non-AMD processors will typically not set this bit at all, so the
->> feature validation code would have to be modified to know to not require
->> this bit.
+On Fri, Jun 20, 2014 at 09:31:28AM -0700, Vincent Heuken wrote:
+> This is a patch to the serqt_usb2.c file that fixes two instances
+> of the following checkpatch.pl warning:
+> WARNING: else is not generally useful after a break or return
 > 
-> Ahh, OK.  I'll drop this.
+> Signed-off-by: Vincent Heuken <me@vincentheuken.com>
+> ---
+>  drivers/staging/serqt_usb2/serqt_usb2.c | 47 +++++++++++++++++----------------
+>  1 file changed, 24 insertions(+), 23 deletions(-)
 > 
+> diff --git a/drivers/staging/serqt_usb2/serqt_usb2.c b/drivers/staging/serqt_usb2/serqt_usb2.c
+> index 998c384..98e9736 100644
+> --- a/drivers/staging/serqt_usb2/serqt_usb2.c
+> +++ b/drivers/staging/serqt_usb2/serqt_usb2.c
+> @@ -981,9 +981,8 @@ static void qt_block_until_empty(struct tty_struct *tty,
+>  		if (wait == 0) {
+>  			dev_dbg(&qt_port->port->dev, "%s - TIMEOUT", __func__);
+>  			return;
+> -		} else {
+> -			wait = 30;
+>  		}
+> +		wait = 30;
+>  	}
+>  }
+>  
+> @@ -1130,27 +1129,29 @@ static int qt_ioctl(struct tty_struct *tty,
+>  			/* this never wakes up */
+>  			interruptible_sleep_on(&qt_port->msr_wait);
+>  #endif
+> +
+> +			char diff;
 
-We probably should just the cpu_has_mp macro entirely.  All it is used
-for is printing a warning in amd_k7_smp_check().
+A variable definition should be at the beginning of the function, not in
+the middle.
 
-Andi, Borislav -- as far as I can tell, we have *never* enforced this on
-the 64-bit kernel, although we have enforced it on 64-bit processors
-running the 32-bit kernel.  We should either enforce it on both or just
-drop it.  What is your opinion?
+thanks,
 
-	-hpa
-
-
+greg k-h
