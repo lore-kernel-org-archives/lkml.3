@@ -1,97 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757158AbaFTRlg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 13:41:36 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:38868 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757085AbaFTRle (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 13:41:34 -0400
-Date: Fri, 20 Jun 2014 23:11:23 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] usb: host: xhci-plat: use devm_functions
-Message-ID: <20140620174123.GA6973@himangi-Dell>
+	id S1757213AbaFTRnz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 13:43:55 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37791 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751649AbaFTRnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 13:43:53 -0400
+Date: Fri, 20 Jun 2014 19:43:45 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [RFC][PATCH 3/3] x86: make MP  a required-feature on 64-bit
+Message-ID: <20140620174345.GD11391@pd.tnic>
+References: <20140620161736.D6AC16FD@viggo.jf.intel.com>
+ <20140620161740.BFB00798@viggo.jf.intel.com>
+ <53A46008.5060509@zytor.com>
+ <53A4619C.8020100@sr71.net>
+ <53A46365.6090101@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53A46365.6090101@zytor.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the use of managed interface devm_ioremap_resource
-for ioremap_nocache and request_mem_region and removes the corresponding
-free functions in the probe and remove functions.
+On Fri, Jun 20, 2014 at 09:37:57AM -0700, H. Peter Anvin wrote:
+> We probably should just the cpu_has_mp macro entirely.  All it is used
+> for is printing a warning in amd_k7_smp_check().
+> 
+> Andi, Borislav -- as far as I can tell, we have *never* enforced this on
+> the 64-bit kernel, although we have enforced it on 64-bit processors
+> running the 32-bit kernel.  We should either enforce it on both or just
+> drop it.  What is your opinion?
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- drivers/usb/host/xhci-plat.c | 24 ++++--------------------
- 1 file changed, 4 insertions(+), 20 deletions(-)
+Well, my AMD CPUID guide says CPUID Fn8000_0001_EDX[19] is reserved,
+i.e. that X86_FEATURE_MP bit will be probably cleared.
 
-diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
-index 29d8adb..23eeb15 100644
---- a/drivers/usb/host/xhci-plat.c
-+++ b/drivers/usb/host/xhci-plat.c
-@@ -140,20 +140,12 @@ static int xhci_plat_probe(struct platform_device *pdev)
- 	hcd->rsrc_start = res->start;
- 	hcd->rsrc_len = resource_size(res);
- 
--	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
--				driver->description)) {
--		dev_dbg(&pdev->dev, "controller already in use\n");
--		ret = -EBUSY;
-+	hcd->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(hcd->regs)) {
-+		ret = PTR_ERR(hcd->regs);
- 		goto put_hcd;
- 	}
- 
--	hcd->regs = ioremap_nocache(hcd->rsrc_start, hcd->rsrc_len);
--	if (!hcd->regs) {
--		dev_dbg(&pdev->dev, "error mapping memory\n");
--		ret = -EFAULT;
--		goto release_mem_region;
--	}
--
- 	/*
- 	 * Not all platforms have a clk so it is not an error if the
- 	 * clock does not exists.
-@@ -162,7 +154,7 @@ static int xhci_plat_probe(struct platform_device *pdev)
- 	if (!IS_ERR(clk)) {
- 		ret = clk_prepare_enable(clk);
- 		if (ret)
--			goto unmap_registers;
-+			goto put_hcd;
- 	}
- 
- 	ret = usb_add_hcd(hcd, irq, IRQF_SHARED);
-@@ -207,12 +199,6 @@ disable_clk:
- 	if (!IS_ERR(clk))
- 		clk_disable_unprepare(clk);
- 
--unmap_registers:
--	iounmap(hcd->regs);
--
--release_mem_region:
--	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
--
- put_hcd:
- 	usb_put_hcd(hcd);
- 
-@@ -231,8 +217,6 @@ static int xhci_plat_remove(struct platform_device *dev)
- 	usb_remove_hcd(hcd);
- 	if (!IS_ERR(clk))
- 		clk_disable_unprepare(clk);
--	iounmap(hcd->regs);
--	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
- 	usb_put_hcd(hcd);
- 	kfree(xhci);
- 
+And so it is, on my F15h AMD it is not set:
+
+eax in: 0x80000001, eax = 00600f20 ebx = 10000000 ecx = 01ebbfff edx = 2fd3fbff
+									  ^
+								----------|
+
+So I don't think we should enforce it on 64-bit.
+
+I guess we can leave the check in amd_k7_smp_check() though but remove that
+nasty cpu_has_mp macro and do static_cpu_has() instead.
+
+My 2¢ only.
+
 -- 
-1.9.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
