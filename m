@@ -1,238 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804AbaFTCUp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 22:20:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63994 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755340AbaFTCUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 22:20:44 -0400
-Date: Thu, 19 Jun 2014 22:20:19 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        yinghai@kernel.org, riel@redhat.com, andi@firstfloor.org,
-        akpm@linux-foundation.org, rientjes@google.com
-Subject: [PATCH] x86: numa: setup_node_data(): drop dead code and rename
- function
-Message-ID: <20140619222019.3db6ad7e@redhat.com>
-Organization: Red Hat
+	id S1757207AbaFTCXV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 22:23:21 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:37165 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754455AbaFTCXT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jun 2014 22:23:19 -0400
+Subject: [PATCH v4] [BUGFIX] kprobes: Fix "Failed to find blacklist" error
+ on ia64 and ppc64
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-tip-commits@vger.kernel.org,
+        Michael Ellerman <mpe@ellerman.id.au>, akataria@vmware.com,
+        anil.s.keshavamurthy@intel.com,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Fri, 20 Jun 2014 02:23:07 +0000
+Message-ID: <20140620022307.23075.55858.stgit@kbuild-fedora.novalocal>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The setup_node_data() function allocates a pg_data_t object, inserts it
-into the node_data[] array and initializes the following fields:
-node_id, node_start_pfn and node_spanned_pages.
+On ia64 and ppc64, the function pointer does not point the
+entry address of the function, but the address of function
+discriptor (which contains the entry address and misc
+data.) Since the kprobes passes the function pointer stored
+by NOKPROBE_SYMBOL() to kallsyms_lookup_size_offset() for
+initalizing its blacklist, it fails and reports many errors
+as below.
 
-However, a few function calls later during the kernel boot,
-free_area_init_node() re-initializes those fields, possibly with
-different values. This means that the initialization done by
-setup_node_data() is not used.
+  Failed to find blacklist 0001013168300000
+  Failed to find blacklist 0001013000f0a000
+  Failed to find blacklist 000101315f70a000
+  Failed to find blacklist 000101324c80a000
+  Failed to find blacklist 0001013063f0a000
+  Failed to find blacklist 000101327800a000
+  Failed to find blacklist 0001013277f0a000
+  Failed to find blacklist 000101315a70a000
+  Failed to find blacklist 0001013277e0a000
+  Failed to find blacklist 000101305a20a000
+  Failed to find blacklist 0001013277d0a000
+  Failed to find blacklist 00010130bdc0a000
+  Failed to find blacklist 00010130dc20a000
+  Failed to find blacklist 000101309a00a000
+  Failed to find blacklist 0001013277c0a000
+  Failed to find blacklist 0001013277b0a000
+  Failed to find blacklist 0001013277a0a000
+  Failed to find blacklist 000101327790a000
+  Failed to find blacklist 000101303140a000
+  Failed to find blacklist 0001013a3280a000
 
-This causes a small glitch when running Linux as a hyperv numa guest:
+To fix this bug, this introduces function_entry() macro to
+retrieve the entry address from the given function pointer,
+and uses for kallsyms_lookup_size_offset() while initializing
+blacklist.
 
-[    0.000000] SRAT: PXM 0 -> APIC 0x00 -> Node 0
-[    0.000000] SRAT: PXM 0 -> APIC 0x01 -> Node 0
-[    0.000000] SRAT: PXM 1 -> APIC 0x02 -> Node 1
-[    0.000000] SRAT: PXM 1 -> APIC 0x03 -> Node 1
-[    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
-[    0.000000] SRAT: Node 1 PXM 1 [mem 0x80200000-0xf7ffffff]
-[    0.000000] SRAT: Node 1 PXM 1 [mem 0x100000000-0x1081fffff]
-[    0.000000] NUMA: Node 1 [mem 0x80200000-0xf7ffffff] + [mem 0x100000000-0x1081fffff] -> [mem 0x80200000-0x1081fffff]
-[    0.000000] Initmem setup node 0 [mem 0x00000000-0x7fffffff]
-[    0.000000]   NODE_DATA [mem 0x7ffec000-0x7ffeffff]
-[    0.000000] Initmem setup node 1 [mem 0x80800000-0x1081fffff]
-[    0.000000]   NODE_DATA [mem 0x1081fa000-0x1081fdfff]
-[    0.000000] crashkernel: memory value expected
-[    0.000000]  [ffffea0000000000-ffffea0001ffffff] PMD -> [ffff88007de00000-ffff88007fdfffff] on node 0
-[    0.000000]  [ffffea0002000000-ffffea00043fffff] PMD -> [ffff880105600000-ffff8801077fffff] on node 1
-[    0.000000] Zone ranges:
-[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-[    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
-[    0.000000]   Normal   [mem 0x100000000-0x1081fffff]
-[    0.000000] Movable zone start for each node
-[    0.000000] Early memory node ranges
-[    0.000000]   node   0: [mem 0x00001000-0x0009efff]
-[    0.000000]   node   0: [mem 0x00100000-0x7ffeffff]
-[    0.000000]   node   1: [mem 0x80200000-0xf7ffffff]
-[    0.000000]   node   1: [mem 0x100000000-0x1081fffff]
-[    0.000000] On node 0 totalpages: 524174
-[    0.000000]   DMA zone: 64 pages used for memmap
-[    0.000000]   DMA zone: 21 pages reserved
-[    0.000000]   DMA zone: 3998 pages, LIFO batch:0
-[    0.000000]   DMA32 zone: 8128 pages used for memmap
-[    0.000000]   DMA32 zone: 520176 pages, LIFO batch:31
-[    0.000000] On node 1 totalpages: 524288
-[    0.000000]   DMA32 zone: 7672 pages used for memmap
-[    0.000000]   DMA32 zone: 491008 pages, LIFO batch:31
-[    0.000000]   Normal zone: 520 pages used for memmap
-[    0.000000]   Normal zone: 33280 pages, LIFO batch:7
+Changes in v4:
+ - Add kernel_text_address() check for verifying the address.
+ - Moved on the latest linus tree.
 
-In this dmesg, the SRAT table reports that the memory range for node 1
-starts at 0x80200000. However, the line starting with "Initmem" reports
-that node 1 memory range starts at 0x80800000. The "Initmem" line is
-reported by setup_node_data() and is wrong, because the kernel ends up
-using the range as reported in the SRAT table.
+Changes in v3:
+ - Fix a bug to get blacklist address based on function entry
+   instead of function descriptor. (Suzuki's work, Thanks!)
 
-This commit drops all that dead code from setup_node_data(), renames it
-to alloc_node_data() and adds a printk() to free_area_init_node() so
-that we report a node's memory range accurately.
+Changes in V2:
+ - Use function_entry() macro when lookin up symbols instead
+   of storing it.
+ - Update for the latest -next.
 
-Here's the same dmesg section with this patch applied:
-
-[    0.000000] SRAT: PXM 0 -> APIC 0x00 -> Node 0
-[    0.000000] SRAT: PXM 0 -> APIC 0x01 -> Node 0
-[    0.000000] SRAT: PXM 1 -> APIC 0x02 -> Node 1
-[    0.000000] SRAT: PXM 1 -> APIC 0x03 -> Node 1
-[    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
-[    0.000000] SRAT: Node 1 PXM 1 [mem 0x80200000-0xf7ffffff]
-[    0.000000] SRAT: Node 1 PXM 1 [mem 0x100000000-0x1081fffff]
-[    0.000000] NUMA: Node 1 [mem 0x80200000-0xf7ffffff] + [mem 0x100000000-0x1081fffff] -> [mem 0x80200000-0x1081fffff]
-[    0.000000] NODE_DATA(0) allocated [mem 0x7ffec000-0x7ffeffff]
-[    0.000000] NODE_DATA(1) allocated [mem 0x1081fa000-0x1081fdfff]
-[    0.000000] crashkernel: memory value expected
-[    0.000000]  [ffffea0000000000-ffffea0001ffffff] PMD -> [ffff88007de00000-ffff88007fdfffff] on node 0
-[    0.000000]  [ffffea0002000000-ffffea00043fffff] PMD -> [ffff880105600000-ffff8801077fffff] on node 1
-[    0.000000] Zone ranges:
-[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-[    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
-[    0.000000]   Normal   [mem 0x100000000-0x1081fffff]
-[    0.000000] Movable zone start for each node
-[    0.000000] Early memory node ranges
-[    0.000000]   node   0: [mem 0x00001000-0x0009efff]
-[    0.000000]   node   0: [mem 0x00100000-0x7ffeffff]
-[    0.000000]   node   1: [mem 0x80200000-0xf7ffffff]
-[    0.000000]   node   1: [mem 0x100000000-0x1081fffff]
-[    0.000000] Node 0 memory range 0x00001000-0x7ffeffff
-[    0.000000] On node 0 totalpages: 524174
-[    0.000000]   DMA zone: 64 pages used for memmap
-[    0.000000]   DMA zone: 21 pages reserved
-[    0.000000]   DMA zone: 3998 pages, LIFO batch:0
-[    0.000000]   DMA32 zone: 8128 pages used for memmap
-[    0.000000]   DMA32 zone: 520176 pages, LIFO batch:31
-[    0.000000] Node 1 memory range 0x80200000-0x1081fffff
-[    0.000000] On node 1 totalpages: 524288
-[    0.000000]   DMA32 zone: 7672 pages used for memmap
-[    0.000000]   DMA32 zone: 491008 pages, LIFO batch:31
-[    0.000000]   Normal zone: 520 pages used for memmap
-[    0.000000]   Normal zone: 33280 pages, LIFO batch:7
-
-This commit was tested on a two node bare-metal NUMA machine and Linux
-as a numa guest on hyperv and qemu/kvm.
-
-PS: The wrong memory range reported by setup_node_data() seems to be
-    harmless in the current kernel because it's just not used. However,
-    that bad range is used in kernel 2.6.32 to initialize the old boot
-    memory allocator, which causes a crash during boot.
-
-Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Reported-by: Tony Luck <tony.luck@gmail.com>
+Tested-by: Tony Luck <tony.luck@intel.com>
+Cc: Michael Ellerman <mpe@ellerman.id.au>
+Cc: Suzuki K. Poulose <suzuki@in.ibm.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Kevin Hao <haokexin@gmail.com>
+Cc: linux-ia64@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linuxppc-dev@lists.ozlabs.org
 ---
- arch/x86/include/asm/numa.h |  1 -
- arch/x86/mm/numa.c          | 34 ++++++++++++++--------------------
- mm/page_alloc.c             |  2 ++
- 3 files changed, 16 insertions(+), 21 deletions(-)
+ arch/ia64/include/asm/types.h    |    2 ++
+ arch/powerpc/include/asm/types.h |   11 +++++++++++
+ include/linux/types.h            |    4 ++++
+ kernel/kprobes.c                 |   15 ++++++++++-----
+ 4 files changed, 27 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
-index 4064aca..01b493e 100644
---- a/arch/x86/include/asm/numa.h
-+++ b/arch/x86/include/asm/numa.h
-@@ -9,7 +9,6 @@
- #ifdef CONFIG_NUMA
+diff --git a/arch/ia64/include/asm/types.h b/arch/ia64/include/asm/types.h
+index 4c351b1..95279dd 100644
+--- a/arch/ia64/include/asm/types.h
++++ b/arch/ia64/include/asm/types.h
+@@ -27,5 +27,7 @@ struct fnptr {
+ 	unsigned long gp;
+ };
  
- #define NR_NODE_MEMBLKS		(MAX_NUMNODES*2)
--#define ZONE_ALIGN (1UL << (MAX_ORDER+PAGE_SHIFT))
++#define function_entry(fn) (((struct fnptr *)(fn))->ip)
++
+ #endif /* !__ASSEMBLY__ */
+ #endif /* _ASM_IA64_TYPES_H */
+diff --git a/arch/powerpc/include/asm/types.h b/arch/powerpc/include/asm/types.h
+index bfb6ded..8b89d65 100644
+--- a/arch/powerpc/include/asm/types.h
++++ b/arch/powerpc/include/asm/types.h
+@@ -25,6 +25,17 @@ typedef struct {
+ 	unsigned long env;
+ } func_descr_t;
  
- /*
-  * Too small node sizes may confuse the VM badly. Usually they
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index a32b706..d221374 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -185,8 +185,8 @@ int __init numa_add_memblk(int nid, u64 start, u64 end)
- 	return numa_add_memblk_to(nid, start, end, &numa_meminfo);
- }
++#if defined(CONFIG_PPC64) && (!defined(_CALL_ELF) || _CALL_ELF == 1)
++/*
++ * On PPC64 ABIv1 the function pointer actually points to the
++ * function's descriptor. The first entry in the descriptor is the
++ * address of the function text.
++ */
++#define function_entry(fn)	(((func_descr_t *)(fn))->entry)
++#else
++#define function_entry(fn)	((unsigned long)(fn))
++#endif
++
+ #endif /* __ASSEMBLY__ */
  
--/* Initialize NODE_DATA for a node on the local memory */
--static void __init setup_node_data(int nid, u64 start, u64 end)
-+/* Allocate NODE_DATA for a node on the local memory */
-+static void __init alloc_node_data(int nid)
+ #endif /* _ASM_POWERPC_TYPES_H */
+diff --git a/include/linux/types.h b/include/linux/types.h
+index a0bb704..3b95369 100644
+--- a/include/linux/types.h
++++ b/include/linux/types.h
+@@ -213,5 +213,9 @@ struct callback_head {
+ };
+ #define rcu_head callback_head
+ 
++#ifndef function_entry
++#define function_entry(fn)	((unsigned long)(fn))
++#endif
++
+ #endif /*  __ASSEMBLY__ */
+ #endif /* _LINUX_TYPES_H */
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 3214289..7412535 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -32,6 +32,7 @@
+  *		<prasanna@in.ibm.com> added function-return probes.
+  */
+ #include <linux/kprobes.h>
++#include <linux/types.h>
+ #include <linux/hash.h>
+ #include <linux/init.h>
+ #include <linux/slab.h>
+@@ -2037,19 +2038,23 @@ static int __init populate_kprobe_blacklist(unsigned long *start,
  {
- 	const size_t nd_size = roundup(sizeof(pg_data_t), PAGE_SIZE);
- 	u64 nd_pa;
-@@ -194,18 +194,6 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
- 	int tnid;
+ 	unsigned long *iter;
+ 	struct kprobe_blacklist_entry *ent;
+-	unsigned long offset = 0, size = 0;
++	unsigned long entry, offset = 0, size = 0;
  
- 	/*
--	 * Don't confuse VM with a node that doesn't have the
--	 * minimum amount of memory:
--	 */
--	if (end && (end - start) < NODE_MIN_SIZE)
--		return;
--
--	start = roundup(start, ZONE_ALIGN);
--
--	printk(KERN_INFO "Initmem setup node %d [mem %#010Lx-%#010Lx]\n",
--	       nid, start, end - 1);
--
--	/*
- 	 * Allocate node data.  Try node-local memory and then any node.
- 	 * Never allocate in DMA zone.
- 	 */
-@@ -222,7 +210,7 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
- 	nd = __va(nd_pa);
- 
- 	/* report and initialize */
--	printk(KERN_INFO "  NODE_DATA [mem %#010Lx-%#010Lx]\n",
-+	printk(KERN_INFO "NODE_DATA(%d) allocated [mem %#010Lx-%#010Lx]\n", nid,
- 	       nd_pa, nd_pa + nd_size - 1);
- 	tnid = early_pfn_to_nid(nd_pa >> PAGE_SHIFT);
- 	if (tnid != nid)
-@@ -230,9 +218,6 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
- 
- 	node_data[nid] = nd;
- 	memset(NODE_DATA(nid), 0, sizeof(pg_data_t));
--	NODE_DATA(nid)->node_id = nid;
--	NODE_DATA(nid)->node_start_pfn = start >> PAGE_SHIFT;
--	NODE_DATA(nid)->node_spanned_pages = (end - start) >> PAGE_SHIFT;
- 
- 	node_set_online(nid);
- }
-@@ -523,8 +508,17 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- 			end = max(mi->blk[i].end, end);
+ 	for (iter = start; iter < end; iter++) {
+-		if (!kallsyms_lookup_size_offset(*iter, &size, &offset)) {
+-			pr_err("Failed to find blacklist %p\n", (void *)*iter);
++		entry = function_entry(*iter);
++
++		if (!kernel_text_address(entry) ||
++		    !kallsyms_lookup_size_offset(entry, &size, &offset)) {
++			pr_err("Failed to find blacklist at %p\n",
++				(void *)entry);
+ 			continue;
  		}
  
--		if (start < end)
--			setup_node_data(nid, start, end);
-+		if (start >= end)
-+			continue;
-+
-+		/*
-+		 * Don't confuse VM with a node that doesn't have the
-+		 * minimum amount of memory:
-+		 */
-+		if (end && (end - start) < NODE_MIN_SIZE)
-+			continue;
-+
-+		alloc_node_data(nid);
+ 		ent = kmalloc(sizeof(*ent), GFP_KERNEL);
+ 		if (!ent)
+ 			return -ENOMEM;
+-		ent->start_addr = *iter;
+-		ent->end_addr = *iter + size;
++		ent->start_addr = entry;
++		ent->end_addr = entry + size;
+ 		INIT_LIST_HEAD(&ent->list);
+ 		list_add_tail(&ent->list, &kprobe_blacklist);
  	}
- 
- 	/* Dump memblock with node info and return. */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4f59fa2..e57b7d3 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4956,6 +4956,8 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
- 	pgdat->node_start_pfn = node_start_pfn;
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
- 	get_pfn_range_for_nid(nid, &start_pfn, &end_pfn);
-+	printk(KERN_INFO "Node %d memory range %#010Lx-%#010Lx\n", nid,
-+			(u64) start_pfn << PAGE_SHIFT, (u64) (end_pfn << PAGE_SHIFT) - 1);
- #endif
- 	calculate_node_totalpages(pgdat, start_pfn, end_pfn,
- 				  zones_size, zholes_size);
--- 
-1.9.3
+
 
