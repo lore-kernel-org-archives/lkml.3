@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966802AbaFTVnu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 17:43:50 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:60727 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932361AbaFTVnt (ORCPT
+	id S1756995AbaFTVsH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 17:48:07 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:44966 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754357AbaFTVsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 17:43:49 -0400
-Date: Fri, 20 Jun 2014 14:42:25 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: Hugh Dickins <hughd@google.com>, Christoph Lameter <cl@gentwo.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: kernel BUG at /src/linux-dev/mm/mempolicy.c:1738! on v3.16-rc1
-In-Reply-To: <20140620211253.GC15620@nhori.bos.redhat.com>
-Message-ID: <alpine.LSU.2.11.1406201438590.8689@eggly.anvils>
-References: <20140619215641.GA9792@nhori.bos.redhat.com> <alpine.DEB.2.11.1406200923220.10271@gentwo.org> <20140620194639.GA30729@nhori.bos.redhat.com> <alpine.LSU.2.11.1406201257370.8123@eggly.anvils> <20140620211253.GC15620@nhori.bos.redhat.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Fri, 20 Jun 2014 17:48:05 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        naveen krishna <ch.naveen@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>, Jean Delvare <jdelvare@suse.de>,
+        Simon Glass <sjg@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, standby24x7@gmail.com,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        "linux-i2c\@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c: exynos5: Properly use the "noirq" variants of suspend/resume
+References: <1403155273-1057-1-git-send-email-dianders@chromium.org>
+	<7h8uosyc3k.fsf@paris.lan>
+	<CAD=FV=XxNVmF+N5HF4SnZoJRJvkSUkpEx6ct4v2gtmAQ9n28-Q@mail.gmail.com>
+Date: Fri, 20 Jun 2014 14:48:01 -0700
+In-Reply-To: <CAD=FV=XxNVmF+N5HF4SnZoJRJvkSUkpEx6ct4v2gtmAQ9n28-Q@mail.gmail.com>
+	(Doug Anderson's message of "Thu, 19 Jun 2014 15:43:48 -0700")
+Message-ID: <7hwqcbs166.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jun 2014, Naoya Horiguchi wrote:
-> On Fri, Jun 20, 2014 at 01:03:58PM -0700, Hugh Dickins wrote:
-> > On Fri, 20 Jun 2014, Naoya Horiguchi wrote:
-> > > On Fri, Jun 20, 2014 at 09:24:36AM -0500, Christoph Lameter wrote:
-> > > > On Thu, 19 Jun 2014, Naoya Horiguchi wrote:
-> > > >
-> > > > > I'm suspecting that mbind_range() do something wrong around vma handling,
-> > > > > but I don't have enough luck yet. Anyone has an idea?
-> > > >
-> > > > Well memory policy data corrupted. This looks like you were trying to do
-> > > > page migration via mbind()?
-> > > 
-> > > Right.
-> > > 
-> > > > Could we get some more details as to what is
-> > > > going on here? Specifically the parameters passed to mbind would be
-> > > > interesting.
-> > > 
-> > > My view about the kernel behavior was in another email a few hours ago.
-> > > And as for what userspace did, I attach the reproducer below. It's simply
-> > > doing mbind(mode=MPOL_BIND, flags=MPOL_MF_MOVE_ALL) on random address/length/node.
-> > 
-> > Thanks for the additional information earlier.  ext4, so no shmem
-> > shared mempolicy involved: that cuts down the bugspace considerably.
-> > 
-> > I agree from what you said that it looked like corrupt vm_area_struct
-> > and hence corrupt policy.
-> > 
-> > Here's an obvious patch to try, entirely untested - thanks for the
-> > reproducer, but I'd rather leave the testing to you.  Sounds like
-> > you have a useful fuzzer there: good catch.
-> > 
-> > 
-> > [PATCH] mm: fix crashes from mbind() merging vmas
-> > 
-> > v2.6.34's 9d8cebd4bcd7 ("mm: fix mbind vma merge problem") introduced
-> > vma merging to mbind(), but it should have also changed the convention
-> > of passing start vma from queue_pages_range() (formerly check_range())
-> > to new_vma_page(): vma merging may have already freed that structure,
-> > resulting in BUG at mm/mempolicy.c:1738 and probably worse crashes.
-> > 
-> > Fixes: 9d8cebd4bcd7 ("mm: fix mbind vma merge problem")
-> > Reported-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > Signed-off-by: Hugh Dickins <hughd@google.com>
-> > Cc: stable@vger.kernel.org # 2.6.34+
-> 
-> With your patch, the bug doesn't reproduce in one hour testing. I think
-> it's long enough because it took only a few minutes until the reproducer
-> triggered the bug without your patch.
-> So I think the problem was gone, thank you very much!
-> 
-> Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-& Acked-by: Christoph Lameter <cl@linux.com>
+Hi Doug,
 
-Great, thank you both.  I was afraid you might hit something else
-immediately.  I'll send the patch to Andrew later - unless it
-magically appears in his tree before.
+Doug Anderson <dianders@chromium.org> writes:
 
-Hugh
+> On Thu, Jun 19, 2014 at 11:43 AM, Kevin Hilman <khilman@linaro.org> wrote:
+>> Doug Anderson <dianders@chromium.org> writes:
+>>
+>>> The original code for the exynos i2c controller registered for the
+>>> "noirq" variants.  However during review feedback it was moved to
+>>> SIMPLE_DEV_PM_OPS without anyone noticing that it meant we were no
+>>> longer actually "noirq" (despite functions named
+>>> exynos5_i2c_suspend_noirq and exynos5_i2c_resume_noirq).
+>>>
+>>> i2c controllers that might have wakeup sources on them seem to need to
+>>> resume at noirq time so that the individual drivers can actually read
+>>> the i2c bus to handle their wakeup.
+>>
+>> I suspect usage of the noirq variants pre-dates the existence of the
+>> late/early callbacks in the PM core, but based on the description above,
+>> I suspect what you actually want is the late/early callbacks.
+>
+> I think it actually really needs noirq.  ;)
+
+Yes, it appears it does.   Objection withdrawn.
+
+I just wanted to be sure because since the introduction of late/early,
+the need for noirq should be pretty rare, but there certainly are needs.
+
+<tangent> 
+In this case though, the need for it has more to do with the
+lack of a way for us to describe non parent-child device dependencies
+than whether or not IRQs are enabled or not.
+</tangent>
+
+Kevin
