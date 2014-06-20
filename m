@@ -1,123 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661AbaFTO6m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 10:58:42 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50415 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752786AbaFTO6k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 10:58:40 -0400
-Message-ID: <80c371cd397e930a85530b374e342e76.squirrel@www.codeaurora.org>
-In-Reply-To: <1403276012-21832-1-git-send-email-hali@codeaurora.org>
-References: <1403124927-21514-1-git-send-email-hali@codeaurora.org>
-    <1403276012-21832-1-git-send-email-hali@codeaurora.org>
-Date: Fri, 20 Jun 2014 14:58:39 -0000
-Subject: Re: [PATCH] drm/msm: Implement msm drm fb_mmap callback function
-From: hali@codeaurora.org
-To: "Hai Li" <hali@codeaurora.org>
-Cc: dri-devel@lists.freedesktop.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robdclark@gmail.com,
-        "Hai Li" <hali@codeaurora.org>, "Stephane Viau" <sviau@codeaurora.org>
-User-Agent: SquirrelMail/1.4.22-4.el6
+	id S1754776AbaFTPAD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 11:00:03 -0400
+Received: from mail.kernel.org ([198.145.19.201]:39006 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752377AbaFTPAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 11:00:01 -0400
+Date: Fri, 20 Jun 2014 11:59:55 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        dsahern@gmail.com, jolsa@redhat.com, xiaoguangrong@linux.vnet.ibm.com,
+        yangds.fnst@cn.fujitsu.com, adrian.hunter@intel.com,
+        namhyung@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7] perf trace: add support for pagefault tracing
+Message-ID: <20140620145955.GG31524@kernel.org>
+References: <1403261389-13423-1-git-send-email-stfomichev@yandex-team.ru>
+ <1403261389-13423-3-git-send-email-stfomichev@yandex-team.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403261389-13423-3-git-send-email-stfomichev@yandex-team.ru>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Re-send the patch to remove the unnecessary initialization and the comment
+Em Fri, Jun 20, 2014 at 02:49:44PM +0400, Stanislav Fomichev escreveu:
+> This patch adds optional pagefault tracing support to 'perf trace'.
+> Using -F/--pf option user can specify whether he wants minor, major or
+> all pagefault events to be traced. This patch adds only live mode,
+> record and replace will come in a separate patch.
+> 
+> Example output:
+> 1756272.905 ( 0.000 ms): curl/5937 majfault [0x7fa7261978b6] => /usr/lib/x86_64-linux-gnu/libkrb5.so.26.0.0+0x85288 (d.)
 
-> This change implements msm drm specific fb_mmap function for fb device
-> to properly map the fb address to userspace.
->
-> Signed-off-by: Hai Li <hali@codeaurora.org>
-> Signed-off-by: Stephane Viau <sviau@codeaurora.org>
+Things like the above may be better expressed using dso@symbol+offset,
+even more when the symbol is not resolved within a DSO, due to
+insufficient expressivity in the available symtab, i.e. perhaps the user
+needs to install a debuginfo package.
+
+> 1862866.036 ( 0.000 ms): wget/8460 majfault [__clear_user+0x3f] => 0x659cb4 (?k)
+
+And here, where is this __clear_user symbol from? The kernel? Probaly
+that 'k' there means that? If so, probably that deserves an entry in the
+documentation.
+
+WRT documentation, please consider sending followup patches providing
+examples in the documentation, talking about the possible need of
+installing debuginfo packages as well.
+
+But its shaping up nicely, good work!
+
+- Arnaldo
+
+ 
+> Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
 > ---
->  drivers/gpu/drm/msm/msm_fbdev.c | 38
-> ++++++++++++++++++++++++++++++++++++--
->  1 file changed, 36 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/gpu/drm/msm/msm_fbdev.c
-> b/drivers/gpu/drm/msm/msm_fbdev.c
-> index a752ab8..2694e90 100644
-> --- a/drivers/gpu/drm/msm/msm_fbdev.c
-> +++ b/drivers/gpu/drm/msm/msm_fbdev.c
-> @@ -19,6 +19,11 @@
->
->  #include "drm_crtc.h"
->  #include "drm_fb_helper.h"
-> +#include "msm_gem.h"
+>  tools/perf/Documentation/perf-trace.txt |  12 ++++
+>  tools/perf/builtin-trace.c              | 116 +++++++++++++++++++++++++++++++-
+>  2 files changed, 127 insertions(+), 1 deletion(-)
+> 
+> diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
+> index fae38d9a44a4..8e5f710aa45d 100644
+> --- a/tools/perf/Documentation/perf-trace.txt
+> +++ b/tools/perf/Documentation/perf-trace.txt
+> @@ -107,6 +107,18 @@ the thread executes on the designated CPUs. Default is to monitor all CPUs.
+>  	Show tool stats such as number of times fd->pathname was discovered thru
+>  	hooking the open syscall return + vfs_getname or via reading /proc/pid/fd, etc.
+>  
+> +-F=[all|min|maj]::
+> +--pf=[all|min|maj]::
+> +	Trace pagefaults. Optionally, you can specify whether you want minor,
+> +	major or all pagefaults. Default value is maj.
 > +
-> +extern int msm_gem_mmap_obj(struct drm_gem_object *obj,
-> +					struct vm_area_struct *vma);
-> +static int msm_fbdev_mmap(struct fb_info *info, struct vm_area_struct
-> *vma);
->
->  /*
->   * fbdev funcs, to implement legacy fbdev interface on top of drm driver
-> @@ -43,6 +48,7 @@ static struct fb_ops msm_fb_ops = {
->  	.fb_fillrect = sys_fillrect,
->  	.fb_copyarea = sys_copyarea,
->  	.fb_imageblit = sys_imageblit,
-> +	.fb_mmap = msm_fbdev_mmap,
->
->  	.fb_check_var = drm_fb_helper_check_var,
->  	.fb_set_par = drm_fb_helper_set_par,
-> @@ -51,6 +57,31 @@ static struct fb_ops msm_fb_ops = {
->  	.fb_setcmap = drm_fb_helper_setcmap,
+> +EXAMPLES
+> +--------
+> +
+> +Trace syscalls, major and minor pagefaults:
+> +
+> + $ perf trace -F all
+> +
+>  SEE ALSO
+>  --------
+>  linkperf:perf-record[1], linkperf:perf-script[1]
+> diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+> index a9b542918da0..a80aae2bba40 100644
+> --- a/tools/perf/builtin-trace.c
+> +++ b/tools/perf/builtin-trace.c
+> @@ -1177,6 +1177,9 @@ fail:
+>  	return NULL;
+>  }
+>  
+> +#define TRACE_PFMAJ		(1 << 0)
+> +#define TRACE_PFMIN		(1 << 1)
+> +
+>  struct trace {
+>  	struct perf_tool	tool;
+>  	struct {
+> @@ -1211,6 +1214,7 @@ struct trace {
+>  	bool			summary_only;
+>  	bool			show_comm;
+>  	bool			show_tool_stats;
+> +	int			trace_pgfaults;
 >  };
->
-> +static int msm_fbdev_mmap(struct fb_info *info, struct vm_area_struct
-> *vma)
+>  
+>  static int trace__set_fd_pathname(struct thread *thread, int fd, const char *pathname)
+> @@ -1773,6 +1777,59 @@ out_dump:
+>  	return 0;
+>  }
+>  
+> +static int trace__pgfault(struct trace *trace,
+> +			  struct perf_evsel *evsel,
+> +			  union perf_event *event,
+> +			  struct perf_sample *sample)
 > +{
-> +	struct drm_fb_helper *helper = (struct drm_fb_helper *)info->par;
-> +	struct msm_fbdev *fbdev = to_msm_fbdev(helper);
-> +	struct drm_gem_object *drm_obj = fbdev->bo;
-> +	struct drm_device *dev = helper->dev;
-> +	int ret;
+> +	struct thread *thread;
+> +	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+> +	struct addr_location al;
+> +	char map_type = 'd';
 > +
-> +	if (drm_device_is_unplugged(dev))
-> +		return -ENODEV;
+> +	thread = machine__findnew_thread(trace->host, sample->pid, sample->tid);
 > +
-> +	mutex_lock(&dev->struct_mutex);
+> +	thread__find_addr_location(thread, trace->host, cpumode, MAP__FUNCTION,
+> +			      sample->ip, &al);
 > +
-> +	ret = drm_gem_mmap_obj(drm_obj, drm_obj->size, vma);
+> +	trace__fprintf_entry_head(trace, thread, 0, sample->time, trace->output);
 > +
-> +	mutex_unlock(&dev->struct_mutex);
+> +	fprintf(trace->output, "%sfault ",
+> +		evsel->attr.config == PERF_COUNT_SW_PAGE_FAULTS_MAJ ?
+> +		"maj" : "min");
 > +
-> +	if (ret) {
-> +		pr_err("%s:drm_gem_mmap_obj fail\n", __func__);
-> +		return ret;
+> +	if (al.sym)
+> +		fprintf(trace->output, "[%s+0x%lx]",
+> +			al.sym->name, al.addr - al.sym->start);
+> +	else
+> +		fprintf(trace->output, "[0x%lx]", sample->ip);
+> +
+> +	fprintf(trace->output, " => ");
+> +
+> +	thread__find_addr_map(thread, trace->host, cpumode, MAP__VARIABLE,
+> +			      sample->addr, &al);
+> +
+> +	if (!al.map) {
+> +		thread__find_addr_map(thread, trace->host, cpumode,
+> +				      MAP__FUNCTION, sample->addr, &al);
+> +
+> +		if (al.map)
+> +			map_type = 'x';
 > +	}
 > +
-> +	return msm_gem_mmap_obj(drm_obj, vma);
+> +	if (al.map) {
+> +		fprintf(trace->output, "%s+0x%lx",
+> +			al.map->dso->long_name, al.addr);
+> +	} else {
+> +		map_type = '?';
+> +		fprintf(trace->output, "0x%lx", sample->addr);
+> +	}
+> +
+> +	fprintf(trace->output, " (%c%c)\n", map_type, al.level);
+> +
+> +	return 0;
 > +}
 > +
->  static int msm_fbdev_create(struct drm_fb_helper *helper,
->  		struct drm_fb_helper_surface_size *sizes)
+>  static bool skip_sample(struct trace *trace, struct perf_sample *sample)
 >  {
-> @@ -104,8 +135,11 @@ static int msm_fbdev_create(struct drm_fb_helper
-> *helper,
->
->  	mutex_lock(&dev->struct_mutex);
->
-> -	/* TODO implement our own fb_mmap so we don't need this: */
-> -	msm_gem_get_iova_locked(fbdev->bo, 0, &paddr);
-> +	ret = msm_gem_get_iova_locked(fbdev->bo, 0, &paddr);
-> +	if (ret) {
-> +		dev_err(dev->dev, "failed to get buffer obj iova: %d\n", ret);
-> +		goto fail;
+>  	if ((trace->pid_list && intlist__find(trace->pid_list, sample->pid)) ||
+> @@ -1887,6 +1944,30 @@ static void perf_evlist__add_vfs_getname(struct perf_evlist *evlist)
+>  	perf_evlist__add(evlist, evsel);
+>  }
+>  
+> +static int perf_evlist__add_pgfault(struct perf_evlist *evlist,
+> +				    u64 config)
+> +{
+> +	struct perf_evsel *evsel;
+> +	struct perf_event_attr attr = {
+> +		.type = PERF_TYPE_SOFTWARE,
+> +		.mmap_data = 1,
+> +		.sample_period = 1,
+> +	};
+> +
+> +	attr.config = config;
+> +
+> +	event_attr_init(&attr);
+> +
+> +	evsel = perf_evsel__new(&attr);
+> +	if (!evsel)
+> +		return -ENOMEM;
+> +
+> +	evsel->handler = trace__pgfault;
+> +	perf_evlist__add(evlist, evsel);
+> +
+> +	return 0;
+> +}
+> +
+>  static int trace__run(struct trace *trace, int argc, const char **argv)
+>  {
+>  	struct perf_evlist *evlist = perf_evlist__new();
+> @@ -1907,6 +1988,14 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
+>  
+>  	perf_evlist__add_vfs_getname(evlist);
+>  
+> +	if ((trace->trace_pgfaults & TRACE_PFMAJ) &&
+> +	    perf_evlist__add_pgfault(evlist, PERF_COUNT_SW_PAGE_FAULTS_MAJ))
+> +		goto out_error_tp;
+> +
+> +	if ((trace->trace_pgfaults & TRACE_PFMIN) &&
+> +	    perf_evlist__add_pgfault(evlist, PERF_COUNT_SW_PAGE_FAULTS_MIN))
+> +		goto out_error_tp;
+> +
+>  	if (trace->sched &&
+>  		perf_evlist__add_newtp(evlist, "sched", "sched_stat_runtime",
+>  				trace__sched_stat_runtime))
+> @@ -1987,7 +2076,8 @@ again:
+>  				goto next_event;
+>  			}
+>  
+> -			if (sample.raw_data == NULL) {
+> +			if (evsel->attr.type == PERF_TYPE_TRACEPOINT &&
+> +			    sample.raw_data == NULL) {
+>  				fprintf(trace->output, "%s sample with no payload for tid: %d, cpu %d, raw_size=%d, skipping...\n",
+>  				       perf_evsel__name(evsel), sample.tid,
+>  				       sample.cpu, sample.raw_size);
+> @@ -2269,6 +2359,23 @@ static int trace__open_output(struct trace *trace, const char *filename)
+>  	return trace->output == NULL ? -errno : 0;
+>  }
+>  
+> +static int parse_pagefaults(const struct option *opt, const char *str,
+> +			    int unset __maybe_unused)
+> +{
+> +	int *trace_pgfaults = opt->value;
+> +
+> +	if (strcmp(str, "all") == 0)
+> +		*trace_pgfaults |= TRACE_PFMAJ | TRACE_PFMIN;
+> +	else if (strcmp(str, "maj") == 0)
+> +		*trace_pgfaults |= TRACE_PFMAJ;
+> +	else if (strcmp(str, "min") == 0)
+> +		*trace_pgfaults |= TRACE_PFMIN;
+> +	else
+> +		return -1;
+> +
+> +	return 0;
+> +}
+> +
+>  int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+>  {
+>  	const char * const trace_usage[] = {
+> @@ -2335,6 +2442,8 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+>  		    "Show only syscall summary with statistics"),
+>  	OPT_BOOLEAN('S', "with-summary", &trace.summary,
+>  		    "Show all syscalls and summary with statistics"),
+> +	OPT_CALLBACK_DEFAULT('F', "pf", &trace.trace_pgfaults, "all|maj|min",
+> +		     "Trace pagefaults", parse_pagefaults, "maj"),
+>  	OPT_END()
+>  	};
+>  	int err;
+> @@ -2349,6 +2458,11 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+>  	if (trace.summary_only)
+>  		trace.summary = trace.summary_only;
+>  
+> +	if (trace.trace_pgfaults) {
+> +		trace.opts.sample_address = true;
+> +		trace.opts.sample_time = true;
 > +	}
->
->  	fbi = framebuffer_alloc(0, dev->dev);
->  	if (!fbi) {
-> --
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
->
->
-
-
+> +
+>  	if (output_name != NULL) {
+>  		err = trace__open_output(&trace, output_name);
+>  		if (err < 0) {
+> -- 
+> 1.8.3.2
