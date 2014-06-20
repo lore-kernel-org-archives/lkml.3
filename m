@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757820AbaFTTj6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 15:39:58 -0400
-Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:37679 "EHLO
-	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932674AbaFTTbg (ORCPT
+	id S1755529AbaFTTmx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 15:42:53 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:55485 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568AbaFTTmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 15:31:36 -0400
-Message-Id: <20140620193125.325765953@linux.com>
-Date: Fri, 20 Jun 2014 14:31:19 -0500
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 04/31] block: Replace __this_cpu_ptr with raw_cpu_ptr
-References: <20140620193115.547427118@linux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=this_block
+	Fri, 20 Jun 2014 15:42:52 -0400
+From: Andreas Noever <andreas.noever@gmail.com>
+To: linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
+Cc: Andreas Noever <andreas.noever@gmail.com>
+Subject: [PATCH 1/4] thunderbolt: Add casts to prevent endianness warnings
+Date: Fri, 20 Jun 2014 21:42:22 +0200
+Message-Id: <1403293345-20772-1-git-send-email-andreas.noever@gmail.com>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__this_cpu_ptr is being phased out use raw_cpu_ptr instead which was
-introduced in 3.15-rc1.
+Thunderbolt packets are big endian. Cast pkg->buffer to __be32* when
+accessing the checksum.
 
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Christoph Lameter <cl@linux.com>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
+---
+ drivers/thunderbolt/ctl.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Index: linux/fs/ext4/mballoc.c
-===================================================================
---- linux.orig/fs/ext4/mballoc.c	2014-05-21 22:47:11.772163618 -0500
-+++ linux/fs/ext4/mballoc.c	2014-05-21 22:47:11.768163700 -0500
-@@ -4101,7 +4101,7 @@
- 	 * per cpu locality group is to reduce the contention between block
- 	 * request from multiple CPUs.
- 	 */
--	ac->ac_lg = __this_cpu_ptr(sbi->s_locality_groups);
-+	ac->ac_lg = raw_cpu_ptr(sbi->s_locality_groups);
+diff --git a/drivers/thunderbolt/ctl.c b/drivers/thunderbolt/ctl.c
+index 4c6da92..799634b 100644
+--- a/drivers/thunderbolt/ctl.c
++++ b/drivers/thunderbolt/ctl.c
+@@ -355,7 +355,7 @@ static int tb_ctl_tx(struct tb_ctl *ctl, void *data, size_t len,
+ 	pkg->frame.sof = type;
+ 	pkg->frame.eof = type;
+ 	cpu_to_be32_array(pkg->buffer, data, len / 4);
+-	*(u32 *) (pkg->buffer + len) = tb_crc(pkg->buffer, len);
++	*(__be32 *) (pkg->buffer + len) = tb_crc(pkg->buffer, len);
  
- 	/* we're going to use group allocation */
- 	ac->ac_flags |= EXT4_MB_HINT_GROUP_ALLOC;
+ 	res = ring_tx(ctl->tx, &pkg->frame);
+ 	if (res) /* ring is stopped */
+@@ -412,7 +412,7 @@ static void tb_ctl_rx_callback(struct tb_ring *ring, struct ring_frame *frame,
+ 	}
+ 
+ 	frame->size -= 4; /* remove checksum */
+-	if (*(u32 *) (pkg->buffer + frame->size)
++	if (*(__be32 *) (pkg->buffer + frame->size)
+ 			!= tb_crc(pkg->buffer, frame->size)) {
+ 		tb_ctl_err(pkg->ctl,
+ 			   "RX: checksum mismatch, dropping packet\n");
+-- 
+2.0.0
 
