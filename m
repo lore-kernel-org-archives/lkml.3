@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967325AbaFTMDZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 08:03:25 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:34625 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967280AbaFTMDV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S967296AbaFTMDV (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 20 Jun 2014 08:03:21 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:45176 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967259AbaFTMDS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 08:03:18 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: wsa@the-dreams.de, grant.likely@linaro.org, linux-i2c@vger.kernel.org,
         devicetree@vger.kernel.org, linus.walleij@linaro.org,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 2/9] i2c: Add pointer dereference protection to i2c_match_id()
-Date: Fri, 20 Jun 2014 13:02:26 +0100
-Message-Id: <1403265753-25851-4-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH] gpio: crystalcove: Fix implicit declaration of function 'seq_printf' error
+Date: Fri, 20 Jun 2014 13:02:25 +0100
+Message-Id: <1403265753-25851-3-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1403265753-25851-1-git-send-email-lee.jones@linaro.org>
 References: <1403265753-25851-1-git-send-email-lee.jones@linaro.org>
@@ -22,54 +22,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here we're providing dereference protection for i2c_match_id(), which
-saves us having to do it each time it's called.  We're also stripping
-out the (now) needless checks in i2c_device_match().  This patch paves
-the way for other, similar code trimming.
+drivers/gpio/gpio-crystalcove.c: In function 'crystalcove_gpio_dbg_show':
+drivers/gpio/gpio-crystalcove.c:286:3: error: implicit declaration of function 'seq_printf'
+   seq_printf(s, " gpio-%-2d %s %s %s %s ctlo=%2x,%s %s %s\n",
 
-Acked-by: Grant Likely <grant.likely@linaro.org>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/i2c/i2c-core.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/gpio/gpio-crystalcove.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 7c7f4b8..d3802dc 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -82,6 +82,9 @@ void i2c_transfer_trace_unreg(void)
- static const struct i2c_device_id *i2c_match_id(const struct i2c_device_id *id,
- 						const struct i2c_client *client)
- {
-+	if (!(id && client))
-+		return NULL;
-+
- 	while (id->name[0]) {
- 		if (strcmp(client->name, id->name) == 0)
- 			return id;
-@@ -95,8 +98,6 @@ static int i2c_device_match(struct device *dev, struct device_driver *drv)
- 	struct i2c_client	*client = i2c_verify_client(dev);
- 	struct i2c_driver	*driver;
- 
--	if (!client)
--		return 0;
- 
- 	/* Attempt an OF style match */
- 	if (of_driver_match_device(dev, drv))
-@@ -107,9 +108,10 @@ static int i2c_device_match(struct device *dev, struct device_driver *drv)
- 		return 1;
- 
- 	driver = to_i2c_driver(drv);
--	/* match on an id table if there is one */
--	if (driver->id_table)
--		return i2c_match_id(driver->id_table, client) != NULL;
-+
-+	/* Finally an I2C match */
-+	if (i2c_match_id(driver->id_table, client))
-+		return 1;
- 
- 	return 0;
- }
+diff --git a/drivers/gpio/gpio-crystalcove.c b/drivers/gpio/gpio-crystalcove.c
+index 5a98499..934462f 100644
+--- a/drivers/gpio/gpio-crystalcove.c
++++ b/drivers/gpio/gpio-crystalcove.c
+@@ -18,6 +18,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/platform_device.h>
+ #include <linux/gpio.h>
++#include <linux/seq_file.h>
+ #include <linux/bitops.h>
+ #include <linux/regmap.h>
+ #include <linux/mfd/intel_soc_pmic.h>
 -- 
 1.8.3.2
 
