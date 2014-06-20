@@ -1,41 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333AbaFTP0M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 11:26:12 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:65340 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756043AbaFTP0K (ORCPT
+	id S1754985AbaFTP16 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 11:27:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58583 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753294AbaFTP16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 11:26:10 -0400
-From: rbasukala <basukalaramesh@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        rbasukala <basukalaramesh@gmail.com>
-Subject: [PATCH] fix coding style issue
-Date: Fri, 20 Jun 2014 11:25:58 -0400
-Message-Id: <1403277958-32684-1-git-send-email-basukalaramesh@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Fri, 20 Jun 2014 11:27:58 -0400
+Date: Fri, 20 Jun 2014 08:31:59 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Vincent Heuken <me@vincentheuken.com>
+Cc: thomas_75@safe-mail.net, paul.gortmaker@windriver.com,
+        himangi774@gmail.com, arnd@arndb.de, aybuke.147@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: serqt_usb2: fixed frivolous else statement
+ warnings
+Message-ID: <20140620153159.GA26048@kroah.com>
+References: <1403270597-21694-1-git-send-email-me@vincentheuken.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403270597-21694-1-git-send-email-me@vincentheuken.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: rbasukala <basukalaramesh@gmail.com>
----
- drivers/staging/netlogic/xlr_net.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+On Fri, Jun 20, 2014 at 06:23:17AM -0700, Vincent Heuken wrote:
+> This is a patch to the serqt_usb2.c file that fixes two instances
+> of the following checkpatch.pl warning:
+> WARNING: else is not generally useful after a break or return
+> 
+> Signed-off-by: Vincent Heuken <me@vincentheuken.com>
+> ---
+>  drivers/staging/serqt_usb2/serqt_usb2.c | 44 ++++++++++++++++-----------------
+>  1 file changed, 21 insertions(+), 23 deletions(-)
+> 
+> diff --git a/drivers/staging/serqt_usb2/serqt_usb2.c b/drivers/staging/serqt_usb2/serqt_usb2.c
+> index 998c384..c356542 100644
+> --- a/drivers/staging/serqt_usb2/serqt_usb2.c
+> +++ b/drivers/staging/serqt_usb2/serqt_usb2.c
+> @@ -981,9 +981,8 @@ static void qt_block_until_empty(struct tty_struct *tty,
+>  		if (wait == 0) {
+>  			dev_dbg(&qt_port->port->dev, "%s - TIMEOUT", __func__);
+>  			return;
+> -		} else {
+> -			wait = 30;
+>  		}
+> +		wait = 30;
+>  	}
+>  }
+>  
+> @@ -1132,25 +1131,24 @@ static int qt_ioctl(struct tty_struct *tty,
+>  #endif
+>  			if (signal_pending(current))
+>  				return -ERESTARTSYS;
+> -			else {
+> -				char diff = qt_port->diff_status;
+> -
+> -				if (diff == 0)
+> -					return -EIO;	/* no change => error */
+> -
+> -				/* Consume all events */
+> -				qt_port->diff_status = 0;
+> -
+> -				if (((arg & TIOCM_RNG)
+> -				     && (diff & SERIAL_MSR_RI))
+> -				    || ((arg & TIOCM_DSR)
+> -					&& (diff & SERIAL_MSR_DSR))
+> -				    || ((arg & TIOCM_CD)
+> -					&& (diff & SERIAL_MSR_CD))
+> -				    || ((arg & TIOCM_CTS)
+> -					&& (diff & SERIAL_MSR_CTS))) {
+> -					return 0;
+> -				}
+> +
+> +			char diff = qt_port->diff_status;
 
-diff --git a/drivers/staging/netlogic/xlr_net.c b/drivers/staging/netlogic/xlr_net.c
-index e320d6b..3ad48a0 100644
---- a/drivers/staging/netlogic/xlr_net.c
-+++ b/drivers/staging/netlogic/xlr_net.c
-@@ -1105,6 +1105,7 @@ err_gmac:
- static int xlr_net_remove(struct platform_device *pdev)
- {
- 	struct xlr_net_priv *priv = platform_get_drvdata(pdev);
-+
- 	unregister_netdev(priv->ndev);
- 	mdiobus_unregister(priv->mii_bus);
- 	mdiobus_free(priv->mii_bus);
--- 
-1.7.1
+This change causes a compiler warning, please be more careful in your
+patches.  Can you fix this up and resend?
 
+thanks,
+
+greg k-h
