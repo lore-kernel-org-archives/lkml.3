@@ -1,149 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967300AbaFTMyJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 08:54:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37779 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751125AbaFTMyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 08:54:07 -0400
-Date: Fri, 20 Jun 2014 09:53:26 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@minantech.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, pbonzini@redhat.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, mgorman@suse.de,
-        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, laijs@cn.fujitsu.com, kvm@vger.kernel.org,
-        linux-mm@kvack.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        Avi Kivity <avi.kivity@gmail.com>
-Subject: Re: [RFC PATCH 1/1] Move two pinned pages to non-movable node in kvm.
-Message-ID: <20140620125326.GA22283@amt.cnet>
-References: <1403070600-6083-1-git-send-email-tangchen@cn.fujitsu.com>
- <20140618061230.GA10948@minantech.com>
- <53A136C4.5070206@cn.fujitsu.com>
- <20140619092031.GA429@minantech.com>
- <20140619190024.GA3887@amt.cnet>
- <20140620111509.GE20764@minantech.com>
+	id S967527AbaFTNC4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 09:02:56 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:56761 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S967467AbaFTNCy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 09:02:54 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Kevin Hilman <khilman@linaro.org>, Allen Yu <alleny@nvidia.com>,
+        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] PM / Runtime: let rpm_resume fail if rpm disabled and device suspended.
+Date: Fri, 20 Jun 2014 15:20:31 +0200
+Message-ID: <17793417.Syoi52bq6K@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1406191552330.1247-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1406191552330.1247-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140620111509.GE20764@minantech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 02:15:10PM +0300, Gleb Natapov wrote:
-> On Thu, Jun 19, 2014 at 04:00:24PM -0300, Marcelo Tosatti wrote:
-> > On Thu, Jun 19, 2014 at 12:20:32PM +0300, Gleb Natapov wrote:
-> > > CCing Marcelo,
-> > > 
-> > > On Wed, Jun 18, 2014 at 02:50:44PM +0800, Tang Chen wrote:
-> > > > Hi Gleb,
-> > > > 
-> > > > Thanks for the quick reply. Please see below.
-> > > > 
-> > > > On 06/18/2014 02:12 PM, Gleb Natapov wrote:
-> > > > >On Wed, Jun 18, 2014 at 01:50:00PM +0800, Tang Chen wrote:
-> > > > >>[Questions]
-> > > > >>And by the way, would you guys please answer the following questions for me ?
-> > > > >>
-> > > > >>1. What's the ept identity pagetable for ?  Only one page is enough ?
-> > > > >>
-> > > > >>2. Is the ept identity pagetable only used in realmode ?
-> > > > >>    Can we free it once the guest is up (vcpu in protect mode)?
-> > > > >>
-> > > > >>3. Now, ept identity pagetable is allocated in qemu userspace.
-> > > > >>    Can we allocate it in kernel space ?
-> > > > >What would be the benefit?
-> > > > 
-> > > > I think the benefit is we can hot-remove the host memory a kvm guest
-> > > > is using.
-> > > > 
-> > > > For now, only memory in ZONE_MOVABLE can be migrated/hot-removed. And the
-> > > > kernel
-> > > > will never use ZONE_MOVABLE memory. So if we can allocate these two pages in
-> > > > kernel space, we can pin them without any trouble. When doing memory
-> > > > hot-remove,
-> > > > the kernel will not try to migrate these two pages.
-> > > But we can do that by other means, no? The patch you've sent for instance.
-> > > 
-> > > > 
-> > > > >
-> > > > >>
-> > > > >>4. If I want to migrate these two pages, what do you think is the best way ?
-> > > > >>
-> > > > >I answered most of those here: http://www.mail-archive.com/kvm@vger.kernel.org/msg103718.html
-> > > > 
-> > > > I'm sorry I must missed this email.
-> > > > 
-> > > > Seeing your advice, we can unpin these two pages and repin them in the next
-> > > > EPT violation.
-> > > > So about this problem, which solution would you prefer, allocate these two
-> > > > pages in kernel
-> > > > space, or migrate them before memory hot-remove ?
-> > > > 
-> > > > I think the first solution is simpler. But I'm not quite sure if there is
-> > > > any other pages
-> > > > pinned in memory. If we have the same problem with other kvm pages, I think
-> > > > it is better to
-> > > > solve it in the second way.
-> > > > 
-> > > > What do you think ?
-> > > Remove pinning is preferable. In fact looks like for identity pagetable
-> > > it should be trivial, just don't pin. APIC access page is a little bit
-> > > more complicated since its physical address needs to be tracked to be
-> > > updated in VMCS.
+On Thursday, June 19, 2014 04:13:07 PM Alan Stern wrote:
+> On Thu, 19 Jun 2014, Kevin Hilman wrote:
+> 
+> > Alan Stern <stern@rowland.harvard.edu> writes:
 > > 
-> > Yes, and there are new users of page pinning as well soon (see PEBS
-> > threads on kvm-devel).
+> > > On Thu, 19 Jun 2014, Allen Yu wrote:
+> > >
+> > >> So what's the exact state of device if dev->power.is_suspended flag
+> > >> is set and runtime_status is RPM_ACTIVE? Is it a state like
+> > >> "suspended but still can be accessed"?
+> > >> 
+> > >> I'm just afraid the existing code would cause a device hang if we
+> > >> allow it to be accessed even though it's suspended (at this point
+> > >> RPM_ACTIVE could be meaningless). I don't understand the original
+> > >> motivation of these code. If it's a valid case, most likely it should
+> > >> be handled in the specific device driver instead of the PM core.
+> > >
+> > > You should read the Changelog for commit 6f3c77b040f (PM / Runtime:  
+> > > let rpm_resume() succeed if RPM_ACTIVE, even when disabled, v2).  It
+> > > explains why the code looks the way it does.
+> > >
+> > > However, I'm starting to think the reasoning in that commit may not be
+> > > valid.  While perhaps it is okay for some I2C devices (mentioned in the
+> > > commit log), it probably isn't okay in general.
 > > 
-> > Was thinking of notifiers scheme. Perhaps:
+> > Why not?
+> 
+> See below.
+> 
+> > > Kevin, do have any comments on this matter?  What do you think about 
+> > > making the following change to rpm_resume():
+> > >
+> > >  repeat:
+> > > 	if (dev->power.runtime_error)
+> > > 		retval = -EINVAL;
+> > > -	else if (dev->power.disable_depth == 1 && dev->power.is_suspended
+> > > +	else if (dev->power.disable_depth > 0
+> > > 	    && dev->power.runtime_status == RPM_ACTIVE)
+> > > 		retval = 1;
+> > > 	else if (dev->power.disable_depth > 0)
+> > >
+> > > Or even:
+> > >
+> > > +	else if (dev->power.disable_depth > 0 && !dev->power.is_suspended
+> > >
+> > > although this would require the I2C driver you mentioned in your commit 
+> > > to change.
 > > 
-> > ->begin_page_unpin(struct page *page)
-> > 	- Remove any possible access to page.
-> > 
-> > ->end_page_unpin(struct page *page)
-> > 	- Reinstantiate any possible access to page.
-> > 
-> > For KVM:
-> > 
-> > ->begin_page_unpin()
-> > 	- Remove APIC-access page address from VMCS.
-> > 	  or
-> > 	- Remove spte translation to pinned page.
-> > 	
-> > 	- Put vcpu in state where no VM-entries are allowed.
-> > 
-> > ->end_page_unpin()
-> > 	- Setup APIC-access page, ...
-> > 	- Allow vcpu to VM-entry.
-> > 
-> I believe that to handle identity page and APIC access page we do not
-> need any of those. 
-> We can use mmu notifiers to track when page begins
-> to be moved and we can find new page location on EPT violation.
+> > My change was introduced to catch a very specific case.  Namely, when we
+> > know that the core has successfully asked the device to do a system suspend
+> > (dev->power.is_suspended == true) *and* we know that runtime PM was
+> > disabled *only* by the PM core (disable_depth == 0) while the device was
+> > still active (runtime_status == RPM_ACTIVE.)
+> 
+> For a general device, the fact that dev->power.is_suspended is set
+> means the device _has_ been powered down.  Even though the
+> runtime_status may not have changed, the PM core has to assume the
+> device is not available for use.
 
-Does page migration hook via mmu notifiers? I don't think so. 
+This seems to go a bit too far.  What power.is_suspended actually means is
+that __device_suspend() has run for the device successfully.  What the
+implications of that are depends on the bus type (or subsystem in general)
+and device driver.
 
-It won't even attempt page migration because the page count is
-increased (would have to confirm though). Tang?
+> While your I2C devices may be useable even after the ->suspend callback
+> returns, for most devices this isn't true.  So we shouldn't allow
+> rpm_resume() to return imediately when is_suspended is set.
 
-The problem with identity page is this: its location is written into the
-guest CR3. So you cannot allow it (the page which the guest CR3 points
-to) to be reused before you remove the reference.
+I can agree with that.
 
-Where is the guarantee there will be an EPT violation, allowing a vcpu
-to execute with guest CR3 pointing to page with random data?
+> > In your first idea above, it would allow a _get() to succeed even if
+> > someone other than the core (including the driver itself) had called
+> > pm_runtime_disable().  I don't think we want that.
+> 
+> Why not?  The fact that the device is disabled for runtime PM means
+> that the PM core mustn't try to change its power state.  But if the
+> runtime status is RPM_ACTIVE then the device should already be powered
+> up, so there's no harm in letting runtime_resume() succeed.
+> 
+> To put it another way, disabled_depth > 0 means that the PM core isn't
+> allowed to invoke any of the runtime PM callbacks.  But when
+> runtime_status == RPM_ACTIVE, runtime_resume() can run successfully
+> without invoking any callbacks.
 
-Same with the APIC access page.
+Theoretically.  That is, unless someone changes the status from RPM_SUSPENDED
+to RPM_ACTIVE while runtime PM is disabled for the device, which is documented
+as a *valid* thing to do.
 
-> > Because allocating APIC access page from distant NUMA node can
-> > be a performance problem, i believe.
-> I do not think this is the case. APIC access page is never written to,
-> and in fact SDM advice to share it between all vcpus.
+So really, perhaps we should go back to thinking that runtime_status is
+meaningless while runtime PM is disabled, which really is the case?
 
-Right. 
-
-But the point is not so much relevant as this should be handled for
-PEBS pages which would be interesting to force to non-movable zones.
+Rafael
 
