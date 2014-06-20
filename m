@@ -1,115 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935180AbaFTSWH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 14:22:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48108 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754211AbaFTSWF (ORCPT
+	id S935213AbaFTS1P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 14:27:15 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:64868 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754339AbaFTS1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 14:22:05 -0400
-Message-ID: <53A47BC4.8040406@canonical.com>
-Date: Fri, 20 Jun 2014 14:21:56 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 20 Jun 2014 14:27:14 -0400
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: greg@kroah.com, kamal.mostafa@canonical.com, luis.henriques@canonical.com,
-        jslaby@suse.cz, clm@fb.com, jbacik@fb.com, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [v3.10.y][v3.11.y][v3.12.y][v3.13.y][v3.14.y][PATCH 1/1][V2]
- ALSA: usb-audio: Prevent printk ratelimiting from spamming kernel log while
- DEBUG not defined
-References: <cover.1403113867.git.joseph.salisbury@canonical.com>	 <a377cdb51b1a98e9fa6bffaa124502fc15c47903.1403113867.git.joseph.salisbury@canonical.com> <1403142759.23472.28.camel@deadeye.wl.decadent.org.uk> <53A4515C.8090103@canonical.com>
-In-Reply-To: <53A4515C.8090103@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAGVrzcZmakEpNW=vGtsb+OmzU_J4hJNoM1sUAoYNsaju_YzGwQ@mail.gmail.com>
+References: <1402337102-19428-1-git-send-email-f.fainelli@gmail.com> <CAGVrzcZmakEpNW=vGtsb+OmzU_J4hJNoM1sUAoYNsaju_YzGwQ@mail.gmail.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Fri, 20 Jun 2014 11:26:33 -0700
+Message-ID: <CAGVrzcbpS0tJtkH5vkGRSteV5NU2CzNNkQ43_26XySFqJMAK5A@mail.gmail.com>
+Subject: Re: [PATCH] irqchip: brcmstb-l2: Level-2 interrupts are edge sensitive
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Florian Fainelli <f.fainelli@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2014 11:21 AM, Joseph Salisbury wrote:
-> On 06/18/2014 09:52 PM, Ben Hutchings wrote:
->> On Wed, 2014-06-18 at 14:32 -0400, Joseph Salisbury wrote:
->>> From: Sander Eikelenboom <linux@eikelenboom.it>
->>>
->>> BugLink: http://bugs.launchpad.net/bugs/1319457
->>>
->>> This (widely used) construction:
->>>
->>> if(printk_ratelimit())
->>> 	dev_dbg()
->>>
->>> Causes the ratelimiting to spam the kernel log with the "callbacks suppressed"
->>> message below, even while the dev_dbg it is supposed to rate limit wouldn't
->>> print anything because DEBUG is not defined for this device.
->>>
->>> [  533.803964] retire_playback_urb: 852 callbacks suppressed
->>> [  538.807930] retire_playback_urb: 852 callbacks suppressed
->>> [  543.811897] retire_playback_urb: 852 callbacks suppressed
->>> [  548.815745] retire_playback_urb: 852 callbacks suppressed
->>> [  553.819826] retire_playback_urb: 852 callbacks suppressed
->>>
->>> So use dev_dbg_ratelimited() instead of this construction.
->>>
->>> Signed-off-by: Sander Eikelenboom <linux@eikelenboom.it>
->>> Signed-off-by: Takashi Iwai <tiwai@suse.de>
->>> (backported from commit b7a7723513dc89f83d6df13206df55d4dc26e825)
->>> Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
->> It looks like you have combined the commit identified here with the
->> preceding:
+2014-06-12 12:13 GMT-07:00 Florian Fainelli <f.fainelli@gmail.com>:
+> 2014-06-09 11:05 GMT-07:00 Florian Fainelli <f.fainelli@gmail.com>:
+>> The driver was configuring the interrupt handler for the Level-2
+>> interrupts to be "level" triggered while they are in fact "edge"
+>> triggered. Fix this by using the correct handler.
 >>
->> commit a5065eb6da55b226661456e6a7435f605df98111
->> Author: Tim Gardner <tim.gardner@canonical.com>
->> Date:   Wed Apr 9 11:30:44 2014 -0600
->>
->>     ALSA: usb-audio: Suppress repetitive debug messages from retire_playback_urb()
->>
->> They should not be squashed together like this.
->>
->> Ben.
->>
->>> ---
->>>  sound/usb/pcm.c | 3 ++-
->>>  1 file changed, 2 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/sound/usb/pcm.c b/sound/usb/pcm.c
->>> index ca3256d..ede4b92 100644
->>> --- a/sound/usb/pcm.c
->>> +++ b/sound/usb/pcm.c
->>> @@ -1488,7 +1488,8 @@ static void retire_playback_urb(struct snd_usb_substream *subs,
->>>  	 * on two reads of a counter updated every ms.
->>>  	 */
->>>  	if (abs(est_delay - subs->last_delay) * 1000 > runtime->rate * 2)
->>> -		snd_printk(KERN_DEBUG "delay: estimated %d, actual %d\n",
->>> +		dev_dbg_ratelimited(&subs->dev->dev,
->>> +			"delay: estimated %d, actual %d\n",
->>>  			est_delay, subs->last_delay);
->>>  
->>>  	if (!subs->running) {
-> Hi Ben,
+>> Reported-by: Brian Norris <computersforpeace@gmail.com>
+>> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
 >
-> Thanks for the feedback.  Do you think it's best to cherry-pick these
-> two commits?  If so, I'll do that and test.  If it all works, I can send
-> a request to stable to cherry pick the commits and revert my backport.
+> Jason, Thomas, this driver just got merged into 3.16-rc0, can you
+> carry this fix such that it gets into a future 3.16-rc? Thanks!
+
+Ping! I want to make sure this gets into a next 3.16-rc pull request.
+Andrew, can you take that one if neither Thomas nor Andrew respond in
+a timely manner?
+
+Thanks!
+
 >
-> Thanks,
+>> ---
+>>  drivers/irqchip/irq-brcmstb-l2.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/irqchip/irq-brcmstb-l2.c b/drivers/irqchip/irq-brcmstb-l2.c
+>> index 8ee2a36d5840..c15c840987d2 100644
+>> --- a/drivers/irqchip/irq-brcmstb-l2.c
+>> +++ b/drivers/irqchip/irq-brcmstb-l2.c
+>> @@ -150,7 +150,7 @@ int __init brcmstb_l2_intc_of_init(struct device_node *np,
+>>
+>>         /* Allocate a single Generic IRQ chip for this node */
+>>         ret = irq_alloc_domain_generic_chips(data->domain, 32, 1,
+>> -                               np->full_name, handle_level_irq, clr, 0, 0);
+>> +                               np->full_name, handle_edge_irq, clr, 0, 0);
+>>         if (ret) {
+>>                 pr_err("failed to allocate generic irq chip\n");
+>>                 goto out_free_domain;
+>> --
+>> 1.9.1
+>>
 >
-> Joe
 >
+>
+> --
+> Florian
 
-Hi Ben,
 
-I looked at this some more.   It seems like my v2 backport may be the
-most suitable for the releases mentioned in the subject line, but I'd
-like to get additional feedback.
 
-The lines added by commit a5065eb just get removed by commit b7a77235. 
-Also, if I apply commit a5065eb, it will also require a backport to pull
-in just a piece of code(Remove snd_printk() and add dev_dbg()) from
-another prior commit(0ba41d9).  No backport would be needed at all if I
-cherry-pick 0ba41d9, but that commit seems to have too may changes for a
-stable release.
-
-Thanks,
-
-Joe
+-- 
+Florian
