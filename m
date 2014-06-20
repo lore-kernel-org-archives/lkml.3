@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934673AbaFTGsA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 02:48:00 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57726 "EHLO
+	id S965022AbaFTGsC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 02:48:02 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57765 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934610AbaFTGr6 (ORCPT
+	with ESMTP id S934650AbaFTGsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 02:47:58 -0400
+	Fri, 20 Jun 2014 02:48:00 -0400
 X-Original-SENDERIP: 10.177.220.169
 X-Original-MAILFROM: minchan@kernel.org
 From: Minchan Kim <minchan@kernel.org>
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
         Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
         Hugh Dickins <hughd@google.com>, Minchan Kim <minchan@kernel.org>
-Subject: [RFCv2 1/3] mm: Don't hide spin_lock in swap_info_get internal
-Date: Fri, 20 Jun 2014 15:48:30 +0900
-Message-Id: <1403246912-18237-2-git-send-email-minchan@kernel.org>
+Subject: [RFCv2 3/3] mm: Free reclaimed pages indepdent of next reclaim
+Date: Fri, 20 Jun 2014 15:48:32 +0900
+Message-Id: <1403246912-18237-4-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1403246912-18237-1-git-send-email-minchan@kernel.org>
 References: <1403246912-18237-1-git-send-email-minchan@kernel.org>
@@ -25,68 +25,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, swap_info_get hides lock holding by doing it internally
-but releasing the lock so caller should release the lock.
-Normally, it's not a good pattern and I need to handle lock
-from caller in next patchset.
+Invalidate dirty/writeback page and file/swap I/O for reclaiming
+are asynchronous so that when page writeback is completed,
+it will be rotated back into LRU tail for freeing in next reclaim.
+
+But it would make unnecessary CPU overhead and more aging
+with higher priority of reclaim than necessary thing.
+
+This patch makes such pages instant release when I/O complete
+without LRU movement so that we could reduce reclaim events.
+
+This patch wakes up one waiting PG_writeback and then clear
+PG_reclaim bit because the page could be released during
+rotating so it makes slighly race with Readahead logic but
+the chance would be small and no huge side-effect even though
+that happens, I belive.
 
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- mm/swapfile.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ mm/filemap.c | 17 +++++++++++------
+ mm/swap.c    | 21 +++++++++++++++++++++
+ 2 files changed, 32 insertions(+), 6 deletions(-)
 
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 8798b2e0ac59..ec2ce926ea5f 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -740,7 +740,6 @@ static struct swap_info_struct *swap_info_get(swp_entry_t entry)
- 		goto bad_offset;
- 	if (!p->swap_map[offset])
- 		goto bad_free;
--	spin_lock(&p->lock);
- 	return p;
- 
- bad_free:
-@@ -835,6 +834,7 @@ void swap_free(swp_entry_t entry)
- 
- 	p = swap_info_get(entry);
- 	if (p) {
-+		spin_lock(&p->lock);
- 		swap_entry_free(p, entry, 1);
- 		spin_unlock(&p->lock);
+diff --git a/mm/filemap.c b/mm/filemap.c
+index c2f30ed8e95f..6e09de6cf510 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -752,23 +752,28 @@ EXPORT_SYMBOL(unlock_page);
+  */
+ void end_page_writeback(struct page *page)
+ {
++	if (!test_clear_page_writeback(page))
++		BUG();
++
++	smp_mb__after_atomic();
++	wake_up_page(page, PG_writeback);
++
+ 	/*
+ 	 * TestClearPageReclaim could be used here but it is an atomic
+ 	 * operation and overkill in this particular case. Failing to
+ 	 * shuffle a page marked for immediate reclaim is too mild to
+ 	 * justify taking an atomic operation penalty at the end of
+ 	 * ever page writeback.
++	 *
++	 * Clearing PG_reclaim after waking up waiter is slightly racy.
++	 * Readahead might see PageReclaim as PageReadahead marker
++	 * so readahead logic might be broken temporally but it isn't
++	 * matter enough to care.
+ 	 */
+ 	if (PageReclaim(page)) {
+ 		ClearPageReclaim(page);
+ 		rotate_reclaimable_page(page);
  	}
-@@ -849,6 +849,7 @@ void swapcache_free(swp_entry_t entry)
+-
+-	if (!test_clear_page_writeback(page))
+-		BUG();
+-
+-	smp_mb__after_atomic();
+-	wake_up_page(page, PG_writeback);
+ }
+ EXPORT_SYMBOL(end_page_writeback);
  
- 	p = swap_info_get(entry);
- 	if (p) {
-+		spin_lock(&p->lock);
- 		swap_entry_free(p, entry, SWAP_HAS_CACHE);
- 		spin_unlock(&p->lock);
+diff --git a/mm/swap.c b/mm/swap.c
+index 3074210f245d..d61b8783ccc3 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -443,6 +443,27 @@ static void pagevec_move_tail_fn(struct page *page, struct lruvec *lruvec,
+ 
+ 	if (PageLRU(page) && !PageActive(page) && !PageUnevictable(page)) {
+ 		enum lru_list lru = page_lru_base_type(page);
++		struct address_space *mapping;
++
++		if (!trylock_page(page))
++			goto move_tail;
++
++		mapping = page_mapping(page);
++		if (!mapping)
++			goto unlock;
++
++		/*
++		 * If it is successful, aotmic_remove_mapping
++		 * makes page->count one so the page will be
++		 * released when caller release his refcount.
++		 */
++		if (atomic_remove_mapping(mapping, page)) {
++			unlock_page(page);
++			return;
++		}
++unlock:
++		unlock_page(page);
++move_tail:
+ 		list_move_tail(&page->lru, &lruvec->lists[lru]);
+ 		(*pgmoved)++;
  	}
-@@ -868,6 +869,7 @@ int page_swapcount(struct page *page)
- 	entry.val = page_private(page);
- 	p = swap_info_get(entry);
- 	if (p) {
-+		spin_lock(&p->lock);
- 		count = swap_count(p->swap_map[swp_offset(entry)]);
- 		spin_unlock(&p->lock);
- 	}
-@@ -950,6 +952,7 @@ int free_swap_and_cache(swp_entry_t entry)
- 
- 	p = swap_info_get(entry);
- 	if (p) {
-+		spin_lock(&p->lock);
- 		if (swap_entry_free(p, entry, 1) == SWAP_HAS_CACHE) {
- 			page = find_get_page(swap_address_space(entry),
- 						entry.val);
-@@ -2763,6 +2766,7 @@ int add_swap_count_continuation(swp_entry_t entry, gfp_t gfp_mask)
- 		goto outer;
- 	}
- 
-+	spin_lock(&si->lock);
- 	offset = swp_offset(entry);
- 	count = si->swap_map[offset] & ~SWAP_HAS_CACHE;
- 
 -- 
 2.0.0
 
