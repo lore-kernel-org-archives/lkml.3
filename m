@@ -1,209 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037AbaFTOjQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 10:39:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40465 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751114AbaFTOjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 10:39:14 -0400
-Date: Fri, 20 Jun 2014 10:39:01 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Joe Lawrence <joe.lawrence@stratus.com>,
-        linux-kernel@vger.kernel.org, Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH block/for-linus] blkcg: fix use-after-free in
- __blkg_release_rcu() by making blkcg_gq refcnt an atomic_t
-Message-ID: <20140620143901.GC7354@redhat.com>
-References: <alpine.DEB.2.02.1406081816540.17948@jlaw-desktop.mno.stratus.com>
- <20140609174708.GA31499@redhat.com>
- <20140609182728.GB31499@redhat.com>
- <20140610143906.0d2f35d0@jlaw-desktop.mno.stratus.com>
- <20140611163229.GA12974@redhat.com>
- <20140619202640.GA9814@mtj.dyndns.org>
- <20140619214257.GE9814@mtj.dyndns.org>
+	id S1752811AbaFTOnO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 10:43:14 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:46330 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751437AbaFTOnN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 10:43:13 -0400
+Date: Fri, 20 Jun 2014 10:43:11 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Allen Yu <alleny@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] PM / Runtime: let rpm_resume fail if rpm disabled
+ and device suspended.
+In-Reply-To: <2531875.1yYGe4dtjp@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1406201000470.1160-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140619214257.GE9814@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 05:42:57PM -0400, Tejun Heo wrote:
-> Hello,
-> 
-> So, this patch should do.  Joe, Vivek, can one of you guys please
-> verify that the oops goes away with this patch?
+On Fri, 20 Jun 2014, Rafael J. Wysocki wrote:
 
-Hi Tejun,
+> On Thursday, June 19, 2014 10:34:01 AM Alan Stern wrote:
+> > On Thu, 19 Jun 2014, Rafael J. Wysocki wrote:
+> > 
+> > > Well, we used to have the notion that runtime_status is not meaningful for
+> > > devices with dev->power.disable_depth greater than 0 (except for the special
+> > > case in the suspend code path where we know why it is greater than 0).  I think
+> > > it was useful. :-)
+> > 
+> > Did we really have that notion?  My memory is a little cloudy, but I 
+> > thought we decided that runtime_status would not be meaningful when 
+> > dev->power.runtime_error was set -- not when dev->power.disable_depth 
+> > was greater than 0.  Am I mixed up?
+> 
+> Well, we clearly did, because we added things like
+> 
+> pm_runtime_set_active()
+> pm_runtime_set_suspended()
+> 
+> which allow the status to be changed without doing anything to the device
+> while power.disable_depth is greater than 0.
 
-This patch seems to fix the issue for me. Tried 10 times and no crash.
+Yes.  I'm not sure that was thought out as carefully as it could have
+been.
 
-So now one need to hold queue lock for getting refernce on the group
-only if caller does not already have a reference and if group has been
-looked up from some tree/queue etc. I guess only such usage seems to
-be in blkg_create() where we take a reference on parent after looking
-it up.
+Even with that restriction, it's not possible to guarantee that drivers
+won't make mistakes.  For example, suppose runtime_status is RPM_ACTIVE
+but the device really is powered down.  Before pm_runtime_disable() is
+called, pm_runtime_resume() will succeed.  The driver will think it can
+use the device, even though it can't.
 
-This patch looks good to me.
+This demonstrates that changing the runtime status can't be done
+properly unless the subsystem and driver take some of the
+responsibility.  Since that is true, perhaps we ought to allow drivers
+to call pm_runtime_set_active/suspended() whenever they want, and rely
+on them not to mess things up.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+As far as I know, there are only two major use cases for 
+_set_active/_set_suspended: when the device is being initialized during 
+probe, and during system resume.  During probe it's pretty safe to 
+assume there won't be any runtime PM calls, and much the same is true 
+during system resume (especially during the resume_irq and resume_early 
+phases).  Therefore relying on drivers shouldn't make their jobs any 
+harder.
 
-Thanks
-Vivek
+> > In any case, I think it is reasonable to regard runtime_status as 
+> > meaningful when disable_depth > 0.
+> 
+> So we need to remove the above helpers and modify all code using them.
 
+We don't have to remove the helpers.  And practically none of the code 
+using them would need to be modified.  A certain amount of auditing 
+would be a good idea, though.
+
+> > The PM core isn't allowed to invoke the runtime callbacks at such times,
+> > that's all.  This makes perfect sense for a device that doesn't support
+> > power management and hence must always be at full power.  Or when a driver
+> > knows that runtime_status is out of agreement with the device's actual
+> > power state and wants to update runtime_status directly.
 > 
-> Jens, the original thread can be read at
+> That's what it is supposed to use the above helpers for, isn't it?
 > 
->   http://thread.gmane.org/gmane.linux.kernel/1720729
+> Devices that don't support power management, but that we want to use
+> drivers supporting power management with are clearly a special case, so
+
+Are they?  I'm not so sure.  But never mind...
+
+> perhaps we should treat them as such instead of trying to modity the core
+> to silently cover this case too automatically?
+
+How would you treat them specially?  Add a "runtime_pm_not_supported" 
+flag?
+
+> > > > So pm_runtime_resume() and pm_request_resume() would still fail, but 
+> > > > pm_runtime_get() and pm_runtime_get_sync() would work?  I'm not sure 
+> > > > about the reason for this distinction.
+> > > 
+> > > The meaning of pm_runtime_get()/pm_runtime_get_sync() is "prevent the
+> > > device from being suspended from now on and resume it if necessary" while
+> > > "runtime PM disabled and runtime_status == RPM_ACTIVE" may be interpreted
+> > > as "not necessary to resume", so it is reasonable to special case this
+> > > particular situation for these particular routines IMHO.
+> > 
+> > By the same reasoning, the meaning of pm_runtime_resume() is "resume 
+> > the device now if necsesary".  Since "runtime PM disabled and 
+> > runtime_status == RPM_ACTIVE" means "not necessary to resume", isn't it 
+> > logical for pm_runtime_resume() also to succeed under that condition?
 > 
-> The fix converts blkg->refcnt from int to atomic_t.  It does some
-> overhead but it should be minute compared to everything else which is
-> going on and the involved cacheline bouncing, so I think it's highly
-> unlikely to cause any noticeable difference.  Also, the refcnt in
-> question should be converted to a perpcu_ref for blk-mq anyway, so the
-> atomic_t is likely to go away pretty soon anyway.
-> 
-> Thanks.
-> 
-> ------- 8< -------
-> __blkg_release_rcu() may be invoked after the associated request_queue
-> is released with a RCU grace period inbetween.  As such, the function
-> and callbacks invoked from it must not dereference the associated
-> request_queue.  This is clearly indicated in the comment above the
-> function.
-> 
-> Unfortunately, while trying to fix a different issue, 2a4fd070ee85
-> ("blkcg: move bulk of blkcg_gq release operations to the RCU
-> callback") ignored this and added [un]locking of @blkg->q->queue_lock
-> to __blkg_release_rcu().  This of course can cause oops as the
-> request_queue may be long gone by the time this code gets executed.
-> 
->   general protection fault: 0000 [#1] SMP
->   CPU: 21 PID: 30 Comm: rcuos/21 Not tainted 3.15.0 #1
->   Hardware name: Stratus ftServer 6400/G7LAZ, BIOS BIOS Version 6.3:57 12/25/2013
->   task: ffff880854021de0 ti: ffff88085403c000 task.ti: ffff88085403c000
->   RIP: 0010:[<ffffffff8162e9e5>]  [<ffffffff8162e9e5>] _raw_spin_lock_irq+0x15/0x60
->   RSP: 0018:ffff88085403fdf0  EFLAGS: 00010086
->   RAX: 0000000000020000 RBX: 0000000000000010 RCX: 0000000000000000
->   RDX: 000060ef80008248 RSI: 0000000000000286 RDI: 6b6b6b6b6b6b6b6b
->   RBP: ffff88085403fdf0 R08: 0000000000000286 R09: 0000000000009f39
->   R10: 0000000000020001 R11: 0000000000020001 R12: ffff88103c17a130
->   R13: ffff88103c17a080 R14: 0000000000000000 R15: 0000000000000000
->   FS:  0000000000000000(0000) GS:ffff88107fca0000(0000) knlGS:0000000000000000
->   CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->   CR2: 00000000006e5ab8 CR3: 000000000193d000 CR4: 00000000000407e0
->   Stack:
->    ffff88085403fe18 ffffffff812cbfc2 ffff88103c17a130 0000000000000000
->    ffff88103c17a130 ffff88085403fec0 ffffffff810d1d28 ffff880854021de0
->    ffff880854021de0 ffff88107fcaec58 ffff88085403fe80 ffff88107fcaec30
->   Call Trace:
->    [<ffffffff812cbfc2>] __blkg_release_rcu+0x72/0x150
->    [<ffffffff810d1d28>] rcu_nocb_kthread+0x1e8/0x300
->    [<ffffffff81091d81>] kthread+0xe1/0x100
->    [<ffffffff8163813c>] ret_from_fork+0x7c/0xb0
->   Code: ff 47 04 48 8b 7d 08 be 00 02 00 00 e8 55 48 a4 ff 5d c3 0f 1f 00 66 66 66 66 90 55 48 89 e5
->   +fa 66 66 90 66 66 90 b8 00 00 02 00 <f0> 0f c1 07 89 c2 c1 ea 10 66 39 c2 75 02 5d c3 83 e2 fe 0f
->   +b7
->   RIP  [<ffffffff8162e9e5>] _raw_spin_lock_irq+0x15/0x60
->    RSP <ffff88085403fdf0>
-> 
-> The request_queue locking was added because blkcg_gq->refcnt is an int
-> protected with the queue lock and __blkg_release_rcu() needs to put
-> the parent.  Let's fix it by making blkcg_gq->refcnt an atomic_t and
-> dropping queue locking in the function.
-> 
-> Given the general heavy weight of the current request_queue and blkcg
-> operations, this is unlikely to cause any noticeable overhead.
-> Moreover, blkcg_gq->refcnt is likely to be converted to percpu_ref in
-> the near future, so whatever (most likely negligible) overhead it may
-> add is temporary.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Joe Lawrence <joe.lawrence@stratus.com>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> Link: http://lkml.kernel.org/g/alpine.DEB.2.02.1406081816540.17948@jlaw-desktop.mno.stratus.com
-> Cc: stable@vger.kernel.org
-> ---
->  block/blk-cgroup.c |    7 ++-----
->  block/blk-cgroup.h |   17 +++++++----------
->  2 files changed, 9 insertions(+), 15 deletions(-)
-> 
-> --- a/block/blk-cgroup.c
-> +++ b/block/blk-cgroup.c
-> @@ -80,7 +80,7 @@ static struct blkcg_gq *blkg_alloc(struc
->  	blkg->q = q;
->  	INIT_LIST_HEAD(&blkg->q_node);
->  	blkg->blkcg = blkcg;
-> -	blkg->refcnt = 1;
-> +	atomic_set(&blkg->refcnt, 1);
->  
->  	/* root blkg uses @q->root_rl, init rl only for !root blkgs */
->  	if (blkcg != &blkcg_root) {
-> @@ -399,11 +399,8 @@ void __blkg_release_rcu(struct rcu_head
->  
->  	/* release the blkcg and parent blkg refs this blkg has been holding */
->  	css_put(&blkg->blkcg->css);
-> -	if (blkg->parent) {
-> -		spin_lock_irq(blkg->q->queue_lock);
-> +	if (blkg->parent)
->  		blkg_put(blkg->parent);
-> -		spin_unlock_irq(blkg->q->queue_lock);
-> -	}
->  
->  	blkg_free(blkg);
->  }
-> --- a/block/blk-cgroup.h
-> +++ b/block/blk-cgroup.h
-> @@ -18,6 +18,7 @@
->  #include <linux/seq_file.h>
->  #include <linux/radix-tree.h>
->  #include <linux/blkdev.h>
-> +#include <linux/atomic.h>
->  
->  /* Max limits for throttle policy */
->  #define THROTL_IOPS_MAX		UINT_MAX
-> @@ -104,7 +105,7 @@ struct blkcg_gq {
->  	struct request_list		rl;
->  
->  	/* reference count */
-> -	int				refcnt;
-> +	atomic_t			refcnt;
->  
->  	/* is this blkg online? protected by both blkcg and q locks */
->  	bool				online;
-> @@ -257,13 +258,12 @@ static inline int blkg_path(struct blkcg
->   * blkg_get - get a blkg reference
->   * @blkg: blkg to get
->   *
-> - * The caller should be holding queue_lock and an existing reference.
-> + * The caller should be holding an existing reference.
->   */
->  static inline void blkg_get(struct blkcg_gq *blkg)
->  {
-> -	lockdep_assert_held(blkg->q->queue_lock);
-> -	WARN_ON_ONCE(!blkg->refcnt);
-> -	blkg->refcnt++;
-> +	WARN_ON_ONCE(atomic_read(&blkg->refcnt) <= 0);
-> +	atomic_inc(&blkg->refcnt);
->  }
->  
->  void __blkg_release_rcu(struct rcu_head *rcu);
-> @@ -271,14 +271,11 @@ void __blkg_release_rcu(struct rcu_head
->  /**
->   * blkg_put - put a blkg reference
->   * @blkg: blkg to put
-> - *
-> - * The caller should be holding queue_lock.
->   */
->  static inline void blkg_put(struct blkcg_gq *blkg)
->  {
-> -	lockdep_assert_held(blkg->q->queue_lock);
-> -	WARN_ON_ONCE(blkg->refcnt <= 0);
-> -	if (!--blkg->refcnt)
-> +	WARN_ON_ONCE(atomic_read(&blkg->refcnt) <= 0);
-> +	if (atomic_dec_and_test(&blkg->refcnt))
->  		call_rcu(&blkg->rcu_head, __blkg_release_rcu);
->  }
->  
+> My point really is that pm_runtime_get()/pm_runtime_get_sync() actually carry
+> out two operations, (1) incrementing the usage counter and (2) resuming the
+> device if need be.  It is not particularly clear if/when the result of (2)
+> should determine the return value of (1) and (2) together, so there is some
+> freedom in that area which we can use to cover special cases.  That's all.
+
+Oh.  Well, currently those routines are documented as returning the 
+value from their internal pm_request_resume()/pm_runtime_resume() call.
+
+> I'm perfectly fine with leaving the code as is, though.  You wanted to change it. :-)
+
+I'd be equally happy with a "runtime_pm_not_supported" flag, or 
+something equivalent.  Implementing it wouldn't be hard: Setting the 
+flag could call pm_runtime_forbid() and make the power/control sysfs 
+attribute return -EPERM for any attempted write.  Perhaps also make 
+power/runtime_status show "unsupported" rather than "on".
+
+(Hmmm, now that I look at rtpm_status_show(), I see that it already 
+shows "unsupported" whenever disable_depth > 0.  Another indication of 
+how confused the situation is?)
+
+Alan Stern
+
