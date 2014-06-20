@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030259AbaFTUml (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:42:41 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:38321 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030238AbaFTUmh (ORCPT
+	id S1757856AbaFTUnC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:43:02 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:51299 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966254AbaFTUm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 16:42:37 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Jiri Kosina <trivial@kernel.org>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH] drivers/staging/rtl8821ae/rtl8821ae: Remove dead code
-Date: Fri, 20 Jun 2014 22:42:22 +0200
-Message-Id: <1403296942-18717-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 20 Jun 2014 16:42:59 -0400
+Message-ID: <1403296977.16903.10.camel@x41>
+Subject: Re: [PATCH] ARM: mvebu: rename ARM_ERRATA_753970
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Fri, 20 Jun 2014 22:42:57 +0200
+In-Reply-To: <20140620202100.GG21711@titan.lakedaemon.net>
+References: <201404052101.19381.arnd@arndb.de>
+	 <201404052104.11363.arnd@arndb.de> <1396777049.30640.9.camel@x220>
+	 <53418889.2050002@free-electrons.com> <1396805315.7723.8.camel@x220>
+	 <1401094871.25902.20.camel@x220>
+	 <20140620202100.GG21711@titan.lakedaemon.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Jun 2014 20:42:58.0284 (UTC) FILETIME=[384B4AC0:01CF8CC8]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is all #if 0'ed out, and it contains some rather weird stuff
-(post-increment of a bool, for example). Nuke it.
+Jason Cooper schreef op vr 20-06-2014 om 16:21 [-0400]:
+> It looks like rmk just added a patch to fixing the selection of the
+> erratas.  Could you please take a look and either rebase or drop this
+> patch?
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
- drivers/staging/rtl8821ae/rtl8821ae/hal_btc.c | 14 --------------
- 1 file changed, 14 deletions(-)
+Sure, no problem. What tree should I check?
 
-diff --git a/drivers/staging/rtl8821ae/rtl8821ae/hal_btc.c b/drivers/staging/rtl8821ae/rtl8821ae/hal_btc.c
-index 7b1d113..25e751b 100644
---- a/drivers/staging/rtl8821ae/rtl8821ae/hal_btc.c
-+++ b/drivers/staging/rtl8821ae/rtl8821ae/hal_btc.c
-@@ -1706,20 +1706,6 @@ void rtl8821ae_dm_bt_inq_page_monitor(struct ieee80211_hw *hw)
- 			rtlpcipriv->btcoexist.current_state &=~ BT_COEX_STATE_BT_INQ_PAGE;
- 		}
- 	}
--
--#if 0
--	if (hal_coex_8821ae.b_c2h_bt_inquiry_page) {
--		hal_coex_8821ae.b_c2h_bt_inquiry_page++;
--		// bt inquiry or page is started.
--	} if(hal_coex_8821ae.b_c2h_bt_inquiry_page) {
--		rtlpcipriv->btcoexist.current_state |= BT_COEX_STATE_BT_INQ_PAGE;
--		if(hal_coex_8821ae.bt_inquiry_page_cnt >= 4)
--			hal_coex_8821ae.bt_inquiry_page_cnt = 0;
--		hal_coex_8821ae.bt_inquiry_page_cnt++;
--	} else {
--		rtlpcipriv->btcoexist.current_state &=~ BT_COEX_STATE_BT_INQ_PAGE;
--	}
--#endif
- }
- 
- void rtl8821ae_dm_bt_reset_action_profile_state(struct ieee80211_hw *hw)
--- 
-1.9.2
+
+Paul Bolle
 
