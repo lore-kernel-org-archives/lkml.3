@@ -1,192 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967553AbaFTMPp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 08:15:45 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46281 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S967529AbaFTMPn (ORCPT
+	id S967382AbaFTMSF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 08:18:05 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:57848 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966858AbaFTMSC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 08:15:43 -0400
-Date: Fri, 20 Jun 2014 13:14:50 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Matthias Brugger <matthias.bgg@gmail.com>
-Subject: Re: [PATCH 2/2] clocksource: add rockchip-specific armv7-timer setup
-Message-ID: <20140620121450.GJ30188@leverpostej>
-References: <70167479.zcs3JF0luJ@diego>
- <3807304.rhf3VZXZNa@diego>
- <20140620105123.GH30188@leverpostej>
- <1653387.oFu7qPFqm3@diego>
+	Fri, 20 Jun 2014 08:18:02 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: syscon: Make it possible to mark syscon as read only
+Date: Fri, 20 Jun 2014 14:17:58 +0200
+Message-ID: <8049148.CC5WjPCMxf@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1403210626-4845-1-git-send-email-bjorn.andersson@sonymobile.com>
+References: <1403210626-4845-1-git-send-email-bjorn.andersson@sonymobile.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1653387.oFu7qPFqm3@diego>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:1WtYEX37PWj6K7knDx9euS5CrGiPpeo9Eyk5Yv27yB/
+ vRBC1ZI9A6emDJULVjrLVGrgoqGex/b4MaMohR8LyZ+OM89iti
+ sOLvsET1iG60cvqDdfNPL0h/2QRaaxjXjRzybukjY0bR6eD41m
+ R0qV9LVNKf8Q3mLWkz7POs84tFGRoT99/M1j8nBFoCtbJ/ZmZN
+ WPP3RpCfjoAPk9Zj8n3RMTS2PxBiOifq+wNHNO9FEu6Ad3TMXJ
+ T5H1qJpahRZhmyHF/wZjbC+qUxt8wWqIcIqdrx58VRbjmYib0c
+ HW+R8RxZSinXViaMkq7aWjC0KvIfJEj2Zh87NBtN8hRd+ABMPU
+ pYZrFxpYK0MNzJYZDGQo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 12:27:26PM +0100, Heiko Stübner wrote:
-> Am Freitag, 20. Juni 2014, 11:51:23 schrieb Mark Rutland:
-> > On Fri, Jun 20, 2014 at 11:44:49AM +0100, Heiko Stübner wrote:
-> > > The armv7-timer on Rockchip RK3288 SoCs needs an underlying timer to run.
-> > > Therefore the special rockchip,rk3288-armv7-timer does this setup and
-> > > then initializes the architected timer using the new locally exposed
-> > > arch_timer_init.
-> > > 
-> > > Suggested-by: Arnd Bergmann <arnd@arndb.de>
-> > > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> > > ---
-> > > 
-> > >  .../bindings/arm/rockchip/armv7-timer.txt          | 22 +++++++++
-> > >  drivers/clocksource/Makefile                       |  1 +
-> > >  drivers/clocksource/rockchip_timer.c               | 57
-> > >  ++++++++++++++++++++++ 3 files changed, 80 insertions(+)
-> > >  create mode 100644
-> > >  Documentation/devicetree/bindings/arm/rockchip/armv7-timer.txt create
-> > >  mode 100644 drivers/clocksource/rockchip_timer.c
-> > > 
-> > > diff --git
-> > > a/Documentation/devicetree/bindings/arm/rockchip/armv7-timer.txt
-> > > b/Documentation/devicetree/bindings/arm/rockchip/armv7-timer.txt new file
-> > > mode 100644
-> > > index 0000000..4c1950a
-> > > --- /dev/null
-> > > +++ b/Documentation/devicetree/bindings/arm/rockchip/armv7-timer.txt
-> > > @@ -0,0 +1,22 @@
-> > > +Rockchip armv7-timer:
-> > > +---------------------
-> > > +
-> > > +The architected timer on rk3288 SoCs has special setup requirements, as
-> > > +the cpu-timer block needs to supply the architected timer.
-> > > +
-> > > +Required node properties:
-> > > +- compatible value : = "rockchip,rk3288-armv7-timer";
-> > > +- reg : physical base address and the size of the registers window
-> > > +        of the supplying timer block
-> > > +- CP15 Timer node properties as described in bindings/arm/arch_timer.txt
-> > > +
-> > > +Example:
-> > > +
-> > > +architected-timer {
-> > > +	compatible = "rockchip,rk3288-armv7-timer";
-> > > +	reg = <0xff810020 0x20>;
-> > > +	interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) |
-> > > IRQ_TYPE_LEVEL_HIGH)>,
-> > > +		     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(4) | 
-> IRQ_TYPE_LEVEL_HIGH)>,
-> > > +		     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | 
-> IRQ_TYPE_LEVEL_HIGH)>;
-> > > +	clock-frequency = <24000000>;
-> > > +};
-> > > diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-> > > index 800b130..cbad225 100644
-> > > --- a/drivers/clocksource/Makefile
-> > > +++ b/drivers/clocksource/Makefile
-> > > @@ -20,6 +20,7 @@ obj-$(CONFIG_ARCH_MARCO)	+= timer-marco.o
-> > > 
-> > >  obj-$(CONFIG_ARCH_MOXART)	+= moxart_timer.o
-> > >  obj-$(CONFIG_ARCH_MXS)		+= mxs_timer.o
-> > >  obj-$(CONFIG_ARCH_PRIMA2)	+= timer-prima2.o
-> > > 
-> > > +obj-$(CONFIG_ARCH_ROCKCHIP)	+= rockchip_timer.o
-> > > 
-> > >  obj-$(CONFIG_ARCH_U300)		+= timer-u300.o
-> > >  obj-$(CONFIG_SUN4I_TIMER)	+= sun4i_timer.o
-> > >  obj-$(CONFIG_SUN5I_HSTIMER)	+= timer-sun5i.o
-> > > 
-> > > diff --git a/drivers/clocksource/rockchip_timer.c
-> > > b/drivers/clocksource/rockchip_timer.c new file mode 100644
-> > > index 0000000..46c2146
-> > > --- /dev/null
-> > > +++ b/drivers/clocksource/rockchip_timer.c
-> > > @@ -0,0 +1,57 @@
-> > > +/*
-> > > + * Copyright (c) 2014 MundoReader S.L.
-> > > + * Author: Heiko Stuebner <heiko@sntech.de>
-> > > + *
-> > > + * This program is free software; you can redistribute it and/or modify
-> > > + * it under the terms of the GNU General Public License as published by
-> > > + * the Free Software Foundation; either version 2 of the License, or
-> > > + * (at your option) any later version.
-> > > + *
-> > > + * This program is distributed in the hope that it will be useful,
-> > > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> > > + * GNU General Public License for more details.
-> > > + */
-> > > +
-> > > +#include <linux/init.h>
-> > > +#include <linux/of.h>
-> > > +#include <linux/of_address.h>
-> > > +#include <linux/clockchips.h>
-> > > +#include "arm_arch_timer.h"
-> > > +
-> > > +#define TIMER_LOAD_COUNT0		0x00
-> > > +#define TIMER_LOAD_COUNT1		0x04
-> > > +#define TIMER_CURRENT_VALUE0		0x08
-> > > +#define TIMER_CURRENT_VALUE1		0x0c
-> > > +#define TIMER_CONTROL_REG		0x10
-> > > +#define TIMER_INT_STATUS		0x18
-> > > +
-> > > +#define TIMER_DISABLE			(0 << 0)
-> > > +#define TIMER_ENABLE			(1 << 0)
-> > > +#define TIMER_MODE_FREE_RUNNING		(0 << 1)
-> > > +#define TIMER_MODE_USER_DEFINED_COUNT	(1 << 1)
-> > > +#define TIMER_INT_MASK			(0 << 2)
-> > > +#define TIMER_INT_UNMASK		(1 << 2)
-> > > +
-> > > +static __init void rk3288_arch_timer_init(struct device_node *np)
-> > > +{
-> > > +	void __iomem *reg_base;
-> > > +
-> > > +	reg_base = of_io_request_and_map(np, 0, "rk3288-armv7-timer");
-> > > +	if (!reg_base) {
-> > > +		pr_warn("%s: Can't get resource\n", __func__);
-> > > +		return;
-> > > +	}
-> > > +
-> > > +	writel(TIMER_DISABLE, reg_base + TIMER_CONTROL_REG);
-> > > +
-> > > +	writel(0xffffffff, reg_base + TIMER_LOAD_COUNT0);
-> > > +	writel(0xffffffff, reg_base + TIMER_LOAD_COUNT1);
-> > > +
-> > > +	writel(TIMER_ENABLE | TIMER_MODE_FREE_RUNNING,
-> > > +	       reg_base + TIMER_CONTROL_REG);
-> > 
-> > Given that this is unconditionally set up in this way, could this not be
-> > done in the fimrware/bootloader?
-> > 
-> > That way you could also setup CNTFREQ correctly, and virtualisation can
-> > just work out of the box.
-> 
-> It always comes back to this :-) . And as always the counter-argument would be 
-> that I cannot influence the current bootloader, there are already devices 
-> shipping in this constellation. And of course quite some more SoCs using this 
-> pattern.
+On Thursday 19 June 2014 13:43:46 Bjorn Andersson wrote:
+> diff --git a/Documentation/devicetree/bindings/mfd/syscon.txt b/Documentation/devicetree/bindings/mfd/syscon.txt
+> index fe8150b..163325af0 100644
+> --- a/Documentation/devicetree/bindings/mfd/syscon.txt
+> +++ b/Documentation/devicetree/bindings/mfd/syscon.txt
+> @@ -13,6 +13,9 @@ Required properties:
+>  - compatible: Should contain "syscon".
+>  - reg: the register region can be accessed from syscon
+>  
+> +Optional properties:
+> +- read-only: the register region is read only
+> +
 
-Sure, but we aren't yet supporting the architected timer on those
-systems. :)
+We've been discussing devices that are simultaneously a
+syscon and a more specific device. I'd suggest naming the
+new property "syscon,read-only" here, so it becomes clearer
+that this is a generic syscon property in that case.
 
-This isn't so much a pattern as an unholy tapestry of braindead.
-
-> > This looks like a clock driver in disguise...
-> 
-> Yeah, that was my other idea - doing this as a clock. So would you be ok, with 
-> the arch-timer getting the possibility to handle an optional clock?
-
-I would very much not like to do this, but it is better than a driver
-whose sole purpose is to not be a clock driver.
-
-Mark.
+	Arnd
