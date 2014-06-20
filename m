@@ -1,85 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308AbaFTTDe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 15:03:34 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:40337 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060AbaFTTDb (ORCPT
+	id S1752953AbaFTTDr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 15:03:47 -0400
+Received: from p01c12o144.mxlogic.net ([208.65.145.67]:60684 "EHLO
+	p01c12o144.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431AbaFTTDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 15:03:31 -0400
-Message-ID: <53A48553.2080504@ti.com>
-Date: Fri, 20 Jun 2014 15:02:43 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 20 Jun 2014 15:03:32 -0400
+X-MXL-Hash: 53a485842b16f378-6962e4973c10a2656fca3e00595cffeb4d5a8c61
+X-MXL-Hash: 53a4825e7245506f-abcce0ca83d27e5771bc7d84e7323d706a2829d3
+Date: Fri, 20 Jun 2014 14:50:02 -0400
+From: Joe Lawrence <joe.lawrence@stratus.com>
+To: Tejun Heo <tj@kernel.org>
+CC: Jens Axboe <axboe@kernel.dk>, <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH block/for-linus] blkcg: fix use-after-free in
+ __blkg_release_rcu() by making blkcg_gq refcnt an atomic_t
+Message-ID: <20140620145002.1d5d2b78@jlaw-desktop.mno.stratus.com>
+In-Reply-To: <20140619214257.GE9814@mtj.dyndns.org>
+References: <alpine.DEB.2.02.1406081816540.17948@jlaw-desktop.mno.stratus.com>
+	<20140609174708.GA31499@redhat.com>
+	<20140609182728.GB31499@redhat.com>
+	<20140610143906.0d2f35d0@jlaw-desktop.mno.stratus.com>
+	<20140611163229.GA12974@redhat.com>
+	<20140619202640.GA9814@mtj.dyndns.org>
+	<20140619214257.GE9814@mtj.dyndns.org>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Rob Herring <robherring2@gmail.com>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Fabio Estevam <festevam@gmail.com>,
-        Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [PATCH] dt/documentation: add specification of dma bus information
-References: <1401981720-6946-1-git-send-email-santosh.shilimkar@ti.com> <CAL_JsqJAtWnHKPVpDsdOOzT_X=npc3hroLNTGqULM2SJr=1OEg@mail.gmail.com> <53A46CB7.1030109@ti.com> <4193075.zZSpRTFEYz@wuerfel>
-In-Reply-To: <4193075.zZSpRTFEYz@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-AnalysisOut: [v=2.1 cv=NZJo1gz4 c=1 sm=1 tr=0 a=VNTQBUOG7PJoPU2GWtE7Ww==]
+X-AnalysisOut: [:117 a=VNTQBUOG7PJoPU2GWtE7Ww==:17 a=DmgiUpPYWgwA:10 a=_KQ]
+X-AnalysisOut: [qW7t0BisA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=uelBKuK]
+X-AnalysisOut: [pAAAA:8 a=YlVTAMxIAAAA:8 a=VwQbUJbxAAAA:8 a=TSbVqHtbAAAA:8]
+X-AnalysisOut: [ a=20KFwNOVAAAA:8 a=RSb8c_SqUQ44_A2gmfgA:9 a=CjuIK1q_8ugA:]
+X-AnalysisOut: [10 a=LI9Vle30uBYA:10 a=kSViFEBMy1sA:10 a=jEp0ucaQiEUA:10]
+X-Spam: [F=0.5000000000; CM=0.500; MH=0.500(2014062017); S=0.200(2014051901)]
+X-MAIL-FROM: <joe.lawrence@stratus.com>
+X-SOURCE-IP: [134.111.1.17]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 20 June 2014 02:56 PM, Arnd Bergmann wrote:
-> On Friday 20 June 2014 13:17:43 Santosh Shilimkar wrote:
->>>> +                       dma-coherent;
->>>> +                       dma-ranges;
->>>> +
->>>> +                       dwc3@2690000 {
->>>> +                               compatible = "synopsys,dwc3";
->>>> +                               [...]
->>>> +                       };
->>>
->>> This example is a bit strange. I don't understand the relationship
->>> between keystone-dwc3 and synopsys,dwc3, nor do I want to. I'd prefer
->>> to see a simple example here.
+On Thu, 19 Jun 2014 17:42:57 -0400
+Tejun Heo <tj@kernel.org> wrote:
+
+> Hello,
 > 
+> So, this patch should do.  Joe, Vivek, can one of you guys please
+> verify that the oops goes away with this patch?
+
+Tejun -- thanks for fixing!  Looks good here, no issues running w/slub
+debug enabled.
+
+-- Joe
+
+
+> Jens, the original thread can be read at
 > 
->>> dma-ranges is a property of the parent which you show, but
->>> dma-coherent originally was a property of the bus master itself. While
->>> we need to support that, are we changing that? We need to be clear on
->>> where the property belongs even if the kernel is more lax.
->>>
->> I don't think we are changing it fundamentally but may be I missing
->> your point. The dma-coherent as is now a per-device property.
->> USB is one of the bus master supports coherency and hence showed
->> up in above example.
+>   http://thread.gmane.org/gmane.linux.kernel/1720729
 > 
-> I think it's enough if you just drop the "synopsys,dwc3" node and the
-> intermediate dma-ranges property from the example, leaving the
-> dma-coherent property in the "ti,keystone-dwc3" node.
+> The fix converts blkg->refcnt from int to atomic_t.  It does some
+> overhead but it should be minute compared to everything else which is
+> going on and the involved cacheline bouncing, so I think it's highly
+> unlikely to cause any noticeable difference.  Also, the refcnt in
+> question should be converted to a perpcu_ref for blk-mq anyway, so the
+> atomic_t is likely to go away pretty soon anyway.
 > 
-Thanks Arnd. That should avoid the confusion. Just to see if Rob is
-fine by it, the example will look like below.
+> Thanks.
+> 
+> ------- 8< -------
+> __blkg_release_rcu() may be invoked after the associated request_queue
+> is released with a RCU grace period inbetween.  As such, the function
+> and callbacks invoked from it must not dereference the associated
+> request_queue.  This is clearly indicated in the comment above the
+> function.
+> 
+> Unfortunately, while trying to fix a different issue, 2a4fd070ee85
+> ("blkcg: move bulk of blkcg_gq release operations to the RCU
+> callback") ignored this and added [un]locking of @blkg->q->queue_lock
+> to __blkg_release_rcu().  This of course can cause oops as the
+> request_queue may be long gone by the time this code gets executed.
+> 
+>   general protection fault: 0000 [#1] SMP
+>   CPU: 21 PID: 30 Comm: rcuos/21 Not tainted 3.15.0 #1
+>   Hardware name: Stratus ftServer 6400/G7LAZ, BIOS BIOS Version 6.3:57 12/25/2013
+>   task: ffff880854021de0 ti: ffff88085403c000 task.ti: ffff88085403c000
+>   RIP: 0010:[<ffffffff8162e9e5>]  [<ffffffff8162e9e5>] _raw_spin_lock_irq+0x15/0x60
+>   RSP: 0018:ffff88085403fdf0  EFLAGS: 00010086
+>   RAX: 0000000000020000 RBX: 0000000000000010 RCX: 0000000000000000
+>   RDX: 000060ef80008248 RSI: 0000000000000286 RDI: 6b6b6b6b6b6b6b6b
+>   RBP: ffff88085403fdf0 R08: 0000000000000286 R09: 0000000000009f39
+>   R10: 0000000000020001 R11: 0000000000020001 R12: ffff88103c17a130
+>   R13: ffff88103c17a080 R14: 0000000000000000 R15: 0000000000000000
+>   FS:  0000000000000000(0000) GS:ffff88107fca0000(0000) knlGS:0000000000000000
+>   CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>   CR2: 00000000006e5ab8 CR3: 000000000193d000 CR4: 00000000000407e0
+>   Stack:
+>    ffff88085403fe18 ffffffff812cbfc2 ffff88103c17a130 0000000000000000
+>    ffff88103c17a130 ffff88085403fec0 ffffffff810d1d28 ffff880854021de0
+>    ffff880854021de0 ffff88107fcaec58 ffff88085403fe80 ffff88107fcaec30
+>   Call Trace:
+>    [<ffffffff812cbfc2>] __blkg_release_rcu+0x72/0x150
+>    [<ffffffff810d1d28>] rcu_nocb_kthread+0x1e8/0x300
+>    [<ffffffff81091d81>] kthread+0xe1/0x100
+>    [<ffffffff8163813c>] ret_from_fork+0x7c/0xb0
+>   Code: ff 47 04 48 8b 7d 08 be 00 02 00 00 e8 55 48 a4 ff 5d c3 0f 1f 00 66 66 66 66 90 55 48 89 e5
+>   +fa 66 66 90 66 66 90 b8 00 00 02 00 <f0> 0f c1 07 89 c2 c1 ea 10 66 39 c2 75 02 5d c3 83 e2 fe 0f
+>   +b7
+>   RIP  [<ffffffff8162e9e5>] _raw_spin_lock_irq+0x15/0x60
+>    RSP <ffff88085403fdf0>
+> 
+> The request_queue locking was added because blkcg_gq->refcnt is an int
+> protected with the queue lock and __blkg_release_rcu() needs to put
+> the parent.  Let's fix it by making blkcg_gq->refcnt an atomic_t and
+> dropping queue locking in the function.
+> 
+> Given the general heavy weight of the current request_queue and blkcg
+> operations, this is unlikely to cause any noticeable overhead.
+> Moreover, blkcg_gq->refcnt is likely to be converted to percpu_ref in
+> the near future, so whatever (most likely negligible) overhead it may
+> add is temporary.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Joe Lawrence <joe.lawrence@stratus.com>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> Link: http://lkml.kernel.org/g/alpine.DEB.2.02.1406081816540.17948@jlaw-desktop.mno.stratus.com
+> Cc: stable@vger.kernel.org
+> ---
+>  block/blk-cgroup.c |    7 ++-----
+>  block/blk-cgroup.h |   17 +++++++----------
+>  2 files changed, 9 insertions(+), 15 deletions(-)
+> 
+> --- a/block/blk-cgroup.c
+> +++ b/block/blk-cgroup.c
+> @@ -80,7 +80,7 @@ static struct blkcg_gq *blkg_alloc(struc
+>  	blkg->q = q;
+>  	INIT_LIST_HEAD(&blkg->q_node);
+>  	blkg->blkcg = blkcg;
+> -	blkg->refcnt = 1;
+> +	atomic_set(&blkg->refcnt, 1);
+>  
+>  	/* root blkg uses @q->root_rl, init rl only for !root blkgs */
+>  	if (blkcg != &blkcg_root) {
+> @@ -399,11 +399,8 @@ void __blkg_release_rcu(struct rcu_head
+>  
+>  	/* release the blkcg and parent blkg refs this blkg has been holding */
+>  	css_put(&blkg->blkcg->css);
+> -	if (blkg->parent) {
+> -		spin_lock_irq(blkg->q->queue_lock);
+> +	if (blkg->parent)
+>  		blkg_put(blkg->parent);
+> -		spin_unlock_irq(blkg->q->queue_lock);
+> -	}
+>  
+>  	blkg_free(blkg);
+>  }
+> --- a/block/blk-cgroup.h
+> +++ b/block/blk-cgroup.h
+> @@ -18,6 +18,7 @@
+>  #include <linux/seq_file.h>
+>  #include <linux/radix-tree.h>
+>  #include <linux/blkdev.h>
+> +#include <linux/atomic.h>
+>  
+>  /* Max limits for throttle policy */
+>  #define THROTL_IOPS_MAX		UINT_MAX
+> @@ -104,7 +105,7 @@ struct blkcg_gq {
+>  	struct request_list		rl;
+>  
+>  	/* reference count */
+> -	int				refcnt;
+> +	atomic_t			refcnt;
+>  
+>  	/* is this blkg online? protected by both blkcg and q locks */
+>  	bool				online;
+> @@ -257,13 +258,12 @@ static inline int blkg_path(struct blkcg
+>   * blkg_get - get a blkg reference
+>   * @blkg: blkg to get
+>   *
+> - * The caller should be holding queue_lock and an existing reference.
+> + * The caller should be holding an existing reference.
+>   */
+>  static inline void blkg_get(struct blkcg_gq *blkg)
+>  {
+> -	lockdep_assert_held(blkg->q->queue_lock);
+> -	WARN_ON_ONCE(!blkg->refcnt);
+> -	blkg->refcnt++;
+> +	WARN_ON_ONCE(atomic_read(&blkg->refcnt) <= 0);
+> +	atomic_inc(&blkg->refcnt);
+>  }
+>  
+>  void __blkg_release_rcu(struct rcu_head *rcu);
+> @@ -271,14 +271,11 @@ void __blkg_release_rcu(struct rcu_head
+>  /**
+>   * blkg_put - put a blkg reference
+>   * @blkg: blkg to put
+> - *
+> - * The caller should be holding queue_lock.
+>   */
+>  static inline void blkg_put(struct blkcg_gq *blkg)
+>  {
+> -	lockdep_assert_held(blkg->q->queue_lock);
+> -	WARN_ON_ONCE(blkg->refcnt <= 0);
+> -	if (!--blkg->refcnt)
+> +	WARN_ON_ONCE(atomic_read(&blkg->refcnt) <= 0);
+> +	if (atomic_dec_and_test(&blkg->refcnt))
+>  		call_rcu(&blkg->rcu_head, __blkg_release_rcu);
+>  }
+>  
 
-Example:
-soc {
-		compatible = "ti,keystone","simple-bus";
-		ranges = <0x0 0x0 0x0 0xc0000000>;
-		dma-ranges = <0x80000000 0x8 0x00000000 0x80000000>;
-
-		[...]
-
-		usb: usb@2680000 {
-			compatible = "ti,keystone-dwc3";
-
-			[...]
-			dma-coherent;
-		};
-};
-
-Regards,
-Santosh
