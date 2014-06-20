@@ -1,76 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934835AbaFTQW4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 12:22:56 -0400
-Received: from g2t2354.austin.hp.com ([15.217.128.53]:57718 "EHLO
-	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934758AbaFTQWz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 12:22:55 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Scott J Norton <scott.norton@hp.com>,
-        Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH] lockdep: restrict the use of recursive read_lock with qrwlock
-Date: Fri, 20 Jun 2014 12:22:43 -0400
-Message-Id: <1403281363-33403-1-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
+	id S934867AbaFTQX4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 12:23:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46727 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753631AbaFTQXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 12:23:55 -0400
+Message-ID: <53A46008.5060509@zytor.com>
+Date: Fri, 20 Jun 2014 09:23:36 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org
+CC: bp@alien8.de, x86@kernel.org
+Subject: Re: [RFC][PATCH 3/3] x86: make MP  a required-feature on 64-bit
+References: <20140620161736.D6AC16FD@viggo.jf.intel.com> <20140620161740.BFB00798@viggo.jf.intel.com>
+In-Reply-To: <20140620161740.BFB00798@viggo.jf.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlike the original unfair rwlock implementation, queued rwlock
-will grant lock according to the chronological sequence of the lock
-requests except when the lock requester is in the interrupt context.
-As a result, recursive read_lock calls will hang the process if there
-is a write_lock call somewhere in between the read_lock calls.
+On 06/20/2014 09:17 AM, Dave Hansen wrote:
+> Today, we assume that all 64-bit cpus have X86_FEATURE_MP.  It
+> should be in the REQUIRED_MASK so that we do not need the #undef
+> trick for it.
 
-This patch updates the lockdep implementation to look for recursive
-read_lock calls when queued rwlock is being used.
+I don't think we enforce that the MP bit is set in CPUID, though.
+Non-AMD processors will typically not set this bit at all, so the
+feature validation code would have to be modified to know to not require
+this bit.
 
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
----
- kernel/locking/lockdep.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+	-hpa
 
-diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
-index d24e433..b6c9f2e 100644
---- a/kernel/locking/lockdep.c
-+++ b/kernel/locking/lockdep.c
-@@ -1766,12 +1766,22 @@ check_deadlock(struct task_struct *curr, struct held_lock *next,
- 		if (hlock_class(prev) != hlock_class(next))
- 			continue;
- 
-+#ifdef CONFIG_QUEUE_RWLOCK
-+		/*
-+		 * Queue rwlock only allows read-after-read recursion of the
-+		 * same lock class when the latter read is in an interrupt
-+		 * context.
-+		 */
-+		if ((read == 2) && prev->read && in_interrupt())
-+			return 2;
-+#else
- 		/*
- 		 * Allow read-after-read recursion of the same
- 		 * lock class (i.e. read_lock(lock)+read_lock(lock)):
- 		 */
- 		if ((read == 2) && prev->read)
- 			return 2;
-+#endif
- 
- 		/*
- 		 * We're holding the nest_lock, which serializes this lock's
-@@ -1852,8 +1862,10 @@ check_prev_add(struct task_struct *curr, struct held_lock *prev,
- 	 * write-lock never takes any other locks, then the reads are
- 	 * equivalent to a NOP.
- 	 */
-+#ifndef CONFIG_QUEUE_RWLOCK
- 	if (next->read == 2 || prev->read == 2)
- 		return 1;
-+#endif
- 	/*
- 	 * Is the <prev> -> <next> dependency already present?
- 	 *
--- 
-1.7.1
+>  
+> -#define REQUIRED_MASK1	(NEED_LM|NEED_3DNOW)
+> +#define REQUIRED_MASK1	(NEED_LM|NEED_3DNOW|NEED_MP)
+>  
 
