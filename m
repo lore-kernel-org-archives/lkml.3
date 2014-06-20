@@ -1,38 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016AbaFTQHR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 12:07:17 -0400
-Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:37532 "EHLO
-	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933940AbaFTQHP (ORCPT
+	id S934436AbaFTQId (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 12:08:33 -0400
+Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:57914 "EHLO
+	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753434AbaFTQIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 12:07:15 -0400
-Date: Fri, 20 Jun 2014 11:07:13 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: josh@joshtriplett.org, Andi Kleen <ak@linux.intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-Subject: Re: [bisected] pre-3.16 regression on open() scalability
-In-Reply-To: <20140620153839.GB4904@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.11.1406201106010.11238@gentwo.org>
-References: <20140619014200.GO8178@tassilo.jf.intel.com> <alpine.DEB.2.11.1406190941180.2785@gentwo.org> <20140619180916.GE4904@linux.vnet.ibm.com> <alpine.DEB.2.11.1406191531020.4002@gentwo.org> <20140619204220.GJ4904@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1406191612000.5484@gentwo.org> <alpine.DEB.2.11.1406191614270.5484@gentwo.org> <20140619213203.GA16747@cloud> <20140619230732.GX4904@linux.vnet.ibm.com> <alpine.DEB.2.11.1406201019430.10810@gentwo.org>
- <20140620153839.GB4904@linux.vnet.ibm.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 20 Jun 2014 12:08:31 -0400
+Date: Fri, 20 Jun 2014 12:07:08 -0400
+From: Rich Felker <dalias@libc.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Ian Lance Taylor <iant@golang.org>, Andi Kleen <andi@firstfloor.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Mikael Pettersson <mikpelinux@gmail.com>, Russ Cox <rsc@golang.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>
+Subject: Re: [RFC 0/2] __vdso_findsym
+Message-ID: <20140620160708.GY179@brightrain.aerifal.cx>
+References: <539DD26B.3060709@zytor.com>
+ <CALCETrXTpkto2gJBiFC4CR5D=Lqf2YfP5BBH02f8hFW+TUGqeA@mail.gmail.com>
+ <539DDE9C.3010903@zytor.com>
+ <CALCETrWLBCNiJArMRPuHbfhj6=ytnx_YqykzgCgZ+DYu34M1Mg@mail.gmail.com>
+ <20140616023604.GI5714@two.firstfloor.org>
+ <CAKOQZ8wwKcDAXq0BnHwvL01LQNFeOGwgA9x8kCLWeFaP6USF4A@mail.gmail.com>
+ <20140616143801.GJ5714@two.firstfloor.org>
+ <CAKOQZ8zk8KfkObSZg8fmhZXm9nXQSneOywvV-NBj=N-tNWjNPg@mail.gmail.com>
+ <20140616154228.GB179@brightrain.aerifal.cx>
+ <CALCETrWnQyCk5vhDj-yAhRdAFOtFKSU6H-E_=LBC+FbA2REhrg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrWnQyCk5vhDj-yAhRdAFOtFKSU6H-E_=LBC+FbA2REhrg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jun 2014, Paul E. McKenney wrote:
+On Fri, Jun 20, 2014 at 08:55:01AM -0700, Andy Lutomirski wrote:
+> On Mon, Jun 16, 2014 at 8:42 AM, Rich Felker <dalias@libc.org> wrote:
+> > On Mon, Jun 16, 2014 at 08:31:39AM -0700, Ian Lance Taylor wrote:
+> >> On Mon, Jun 16, 2014 at 7:38 AM, Andi Kleen <andi@firstfloor.org> wrote:
+> >> >> I think this issue started when some of the Go developers questioned
+> >> >> why the kernel needed to provide a very complex interface--parsing an
+> >> >> ELF shared shared library--for very simple functionality--looking up
+> >> >> the address of a magic function.  This approach has required special
+> >> >> support not just in Go, but also in the dynamic linker and gdb, and
+> >> >> does not work well for statically linked binaries.  The support in gdb
+> >> >> is perhaps a good idea, but elsewhere it does not make sense.
+> >> >>
+> >> >> So why not provide a simple interface?
+> >> >
+> >> > What good would it do now that everyone already supports it?
+> >>
+> >> Do statically linked binaries use the vDSO calls?
+> >
+> > Under glibc, I believe so (not checked). Under musl, yes, and even in
+> > the dynamic-linked case we use the same code that's used for static
+> > linking rather than trying to get the dynamic linker to do them
+> > correctly. I still have some cruft lying around from where (in the
+> > past) we tried to do it via the dynamic linker, but I'm probably going
+> > to remove that and make the vdso behave as RTLD_LOCAL so that there's
+> > no risk of weird symbols it exports interfering with the application
+> > (applications could still make it global via an explicit dlopen). The
+> > only reason for keeping it around at all in the dynamic linker is for
+> > the sake of gdb.
+> 
+> What about backtrace_symbols, dl_addr, and the unwinder (e.g.
+> siglongjmp)?  It would be nice to wean the vdso off of frame pointers
+> some day.
 
-> And the fraction of the small systems that care that much about latency
-> is also quite small.
+My comments were in the context of musl, which doesn't use unwinding
+internally whatsoever, but if you're asking about the usefulness of
+being able to see the vdso's elf/dwarf2/etc. stuff for various
+outside-of-libc purposes, then yes. My statement "for the sake of gdb"
+was just a poor substitute for this concept (debugging/introspective
+use in general).
 
-This also impacts general performance of course not only latency.
-
-> Of course, if you have performance results that show otherwise, please
-> share them.
-
-We are discussing a performance problem right here.
+Rich
