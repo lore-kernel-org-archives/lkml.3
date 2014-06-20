@@ -1,43 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966627AbaFTVAk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 17:00:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14948 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756143AbaFTVAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 17:00:39 -0400
-Message-ID: <53A4A0EE.30804@redhat.com>
-Date: Fri, 20 Jun 2014 23:00:30 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1757973AbaFTVBn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 17:01:43 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:52930 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752202AbaFTVBl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 17:01:41 -0400
+Date: Fri, 20 Jun 2014 17:01:37 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: David Rientjes <rientjes@google.com>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Cgroups <cgroups@vger.kernel.org>, stable@vger.kernel.org
+Subject: Re: [PATCH] mm/mempolicy: fix sleeping function called from invalid
+ context
+Message-ID: <20140620210137.GA2059@mtj.dyndns.org>
+References: <53902A44.50005@cn.fujitsu.com>
+ <20140605132339.ddf6df4a0cf5c14d17eb8691@linux-foundation.org>
+ <539192F1.7050308@cn.fujitsu.com>
+ <alpine.DEB.2.02.1406081539140.21744@chino.kir.corp.google.com>
+ <539574F1.2060701@cn.fujitsu.com>
+ <alpine.DEB.2.02.1406090209460.24247@chino.kir.corp.google.com>
+ <53967465.7070908@huawei.com>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: Alexei Starovoitov <ast@plumgrid.com>, LKML <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>, Chema Gonzalez <chema@google.com>,
-        Network Development <netdev@vger.kernel.org>
-Subject: Re: [PATCH] net: filter: fix upper BPF instruction limit
-References: <20140618223457.GA31568@www.outflux.net> <CAMEtUuzbPExM5dT+xDqbHtV5LZ3+E2Q0eq4xdmKWzLOZbTmuUQ@mail.gmail.com> <CAGXu5jLYZ0jrFhd54aUhooLBWBUT28TQTLb41G107s=4U7ZxqA@mail.gmail.com> <CAMEtUuwPug7Bbgi2ccOx4jxd2Q80AnVoiHeeBW2av=_sQMiSfg@mail.gmail.com> <CAGXu5j+ZW9f8gW71_r5gRsEZoO_2fC3F4YXh_J1CwxRY6Vfx1Q@mail.gmail.com> <53A40948.5020201@redhat.com> <CAGXu5jLk_LDZ1-ou0iPNvAb2QHJdX-xhGRtyov-YZsmUOVo0GA@mail.gmail.com>
-In-Reply-To: <CAGXu5jLk_LDZ1-ou0iPNvAb2QHJdX-xhGRtyov-YZsmUOVo0GA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53967465.7070908@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2014 06:48 PM, Kees Cook wrote:
-...
->> Are there any plans to put and extend test cases from [1] via user space
->> side into the kernel self-test directory, i.e. into something like
->> tools/testing/selftests/seccomp/ so that in future new tests can be added
->> or run from there? Might be worth to consider.
->
-> Yeah, I have this on my TODO list, but we need to juggle relicensing
-> the test suite (it is currently BSD, not GPLv2). I'll keep chasing
-> this.
+Hello, Li.
 
-Sounds good, please keep us in the loop.
+Sorry about the long delay.
 
-Thanks,
+On Tue, Jun 10, 2014 at 10:58:45AM +0800, Li Zefan wrote:
+> Yes, this is a long-standing issue. Besides the race you described, the child
+> task's mems_allowed can be wrong if the cpuset's nodemask changes before the
+> child has been added to the cgroup's tasklist.
+> 
+> I remember Tejun once said he wanted to disallow task migration between
+> cgroups during fork, and that should fix this problem.
 
-Daniel
+I'm having trouble remembering but yeah enforcing stricter behavior
+across fork could be beneficial.  Hmmm... the problem with making
+forks exclusive against migrations is that we'll end up adding more
+locking to the fork path which isn't too nice.
+
+Hmmm... other controllers (cgroup_freezer) can reliably synchronize
+the child's state to the cgroup it belongs to.  Why can't cpuset?  Is
+there something fundamentally missing in the cgroup API?
+
+> > It needs to be slightly rewritten to work properly without negatively 
+> > impacting the latency of fork().  Do you have the cycles to do it?
+> > 
+> 
+> Sounds you have other idea?
+
+I don't think the suggested patch breaks anything more than it was
+broken before and we should probably apply it for the time being.  Li?
+
+Thanks.
+
+-- 
+tejun
