@@ -1,153 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966723AbaFTKSS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 06:18:18 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:16803 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965546AbaFTKSP (ORCPT
+	id S966547AbaFTKU6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 06:20:58 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50385 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966224AbaFTKU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 06:18:15 -0400
-X-IronPort-AV: E=Sophos;i="5.00,744,1396972800"; 
-   d="scan'208";a="32195994"
-From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
-To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        David Howells <dhowells@redhat.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segooon@gmail.com>,
-        Gotou Yasunori <y-goto@jp.fujitsu.com>, <linux-api@vger.kernel.org>
-Subject: [PATCH v2] ns: introduce getnspid syscall
-Date: Fri, 20 Jun 2014 18:18:32 +0800
-Message-ID: <1403259512-10510-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-X-Mailer: git-send-email 1.9.0
+	Fri, 20 Jun 2014 06:20:57 -0400
+Date: Fri, 20 Jun 2014 11:20:37 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Rob Jones <rob.jones@codethink.co.uk>
+Cc: linus.walleij@linaro.org, gnurou@gmail.com, lgirdwood@gmail.com,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-kernel@codethink.co.uk, ian.molton@codethink.co.uk,
+        ben.dooks@codethink.co.uk, heiko@sntech.de
+Message-ID: <20140620102037.GV5099@sirena.org.uk>
+References: <1403192765-3258-1-git-send-email-rob.jones@codethink.co.uk>
+ <20140619175745.GS5099@sirena.org.uk>
+ <53A3F305.9070903@codethink.co.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.237]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PfYdSB/Wheep+9ho"
+Content-Disposition: inline
+In-Reply-To: <53A3F305.9070903@codethink.co.uk>
+X-Cookie: Ditat Deus.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: Change gpio-reulator-probe() to use managed resources.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need a direct method of getting the pid inside containers.
-If some issues occurred inside container guest, host user
-could not know which process is in trouble just by guest pid:
-the users of container guest only knew the pid inside containers.
-This will bring obstacle for trouble shooting.
 
-int getnspid(pid_t pid, int fd1, int fd2);
+--PfYdSB/Wheep+9ho
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-pid: the pid number need to be translated.
+On Fri, Jun 20, 2014 at 09:38:29AM +0100, Rob Jones wrote:
 
-fd: a file descriptor referring to one of
-    the namespace entries in a /proc/[pid]/ns/pid.
-    fd1 for destination ns(ns1), where the pid came from.
-    fd2 for reference ns(ns2), while fd2 = -2 means for current ns.
+> I omitted to put "[Patch 0/4][v2]" on the front of the subject line.The
+> actual patches followed.
 
-return value:
-    >0 : translated pid in ns1(fd1) seen from ns2(fd2).
-    <=0: on failure.
+Oh, so this is associated with a patch series?
 
-Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
----
-v2: drop pidtype
-    check ns_ops before getting pid_namespace structure
+> It was a consequence of lack of familiarity with the tools; I'm learning, so
+> it shouldn't happen again. Would you like me to resubmit?
 
- arch/x86/syscalls/syscall_32.tbl |  1 +
- arch/x86/syscalls/syscall_64.tbl |  1 +
- include/linux/syscalls.h         |  1 +
- kernel/nsproxy.c                 | 45 ++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 48 insertions(+)
+I do see another patch from you for the regulator subsystem which is
+part of a series so I guess no need.
 
-diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
-index d6b8679..9de0b32 100644
---- a/arch/x86/syscalls/syscall_32.tbl
-+++ b/arch/x86/syscalls/syscall_32.tbl
-@@ -360,3 +360,4 @@
- 351	i386	sched_setattr		sys_sched_setattr
- 352	i386	sched_getattr		sys_sched_getattr
- 353	i386	renameat2		sys_renameat2
-+354	i386	getnspid		sys_getnspid
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index ec255a1..1630a8a 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -323,6 +323,7 @@
- 314	common	sched_setattr		sys_sched_setattr
- 315	common	sched_getattr		sys_sched_getattr
- 316	common	renameat2		sys_renameat2
-+317	common	getnspid		sys_getnspid
- 
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index b0881a0..53dd0e8 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -866,4 +866,5 @@ asmlinkage long sys_process_vm_writev(pid_t pid,
- asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
- 			 unsigned long idx1, unsigned long idx2);
- asmlinkage long sys_finit_module(int fd, const char __user *uargs, int flags);
-+asmlinkage long sys_getpidns(pid_t pid, int fd1, int fd2);
- #endif
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index 8e78110..9701ade 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -261,6 +261,51 @@ out:
- 	return err;
- }
- 
-+SYSCALL_DEFINE3(getnspid, pid_t, pid, int, fd1, int, fd2)
-+{
-+	struct file *file1 = NULL, *file2 = NULL;
-+	struct pid *pid_struct;
-+	struct pid_namespace *ns1, *ns2;
-+	struct proc_ns *ei;
-+	int ret = -EINVAL;
-+
-+	file1 = proc_ns_fget(fd1);
-+	if (IS_ERR(file1))
-+		return PTR_ERR(file1);
-+	ei = get_proc_ns(file_inode(file1));
-+	if (ei->ns_ops != &pidns_operations)
-+		goto out;
-+	ns1 = (struct pid_namespace *)ei->ns;
-+
-+	/* fd == -2 for current pid ns */
-+	if (fd2 == -2) {
-+		ns2 = task_active_pid_ns(current);
-+	} else {
-+		file2 = proc_ns_fget(fd2);
-+		if (IS_ERR(file2)) {
-+			fput(file1);
-+			return PTR_ERR(file2);
-+		}
-+		ei = get_proc_ns(file_inode(file2));
-+		if (ei->ns_ops != &pidns_operations)
-+			goto out;
-+		ns2 = (struct pid_namespace *)ei->ns;
-+	}
-+
-+	pid_struct = find_pid_ns(pid, ns1);
-+	if (!pid_struct) {
-+		ret = -ESRCH;
-+		goto out;
-+	}
-+
-+	ret = pid_nr_ns(pid_struct, ns2);
-+out:
-+	fput(file1);
-+	if (file2)
-+		fput(file2);
-+	return ret;
-+}
-+
- int __init nsproxy_cache_init(void)
- {
- 	nsproxy_cachep = KMEM_CACHE(nsproxy, SLAB_PANIC);
--- 
-1.9.0
+Please, if you are resubmitting try to use a changelog style consistent
+with the code you're submitting against - you've got subject lines with
+"drivers/" which the kernel doesn't do.
 
+--PfYdSB/Wheep+9ho
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTpAryAAoJELSic+t+oim9MuMQAJWSKMrOwfgwNzh5z8zrZhn/
+x/DfvT58n7Pp50TX0CCOV57Y/72yq8H/mbgnzcNcnGP4wNEfR9jyqi0jOU86RJLu
+Izjbu+Pn3bZq1uRNO0wHIA/KTVJAGfrp8FOJkXC1w5pNHuYQ88XTVKwf9ajJ1oBW
+Oj+VXlTCXhD+QXNp0cb7oM6xJHz49vy5vNeQXvZKvkfcje+vg79dPrVIMASrqJwB
+tj535YqDf3Kk8Wz1CcKRl6rmrc75sArdTauFpVjdJyWyfAeHwAJeekTV9StMqQTc
+OoMZeAT2/8Fb6jsqNGxyUcZQ2NfiwHZCGY9jOnY/zcSfCSfcIH94EtWd+DfoB/s4
+W+3LM9+pVu8gtwljBgLYYirjKSHiTHj77pTCDs/OsoF5RF9qcP62eR2PlMJBMMZl
+FSpjMhsp0wXxON965/7E306HaBy1raDozqpeeht77S/Z/4vMcihxs1MBliRi42Yq
+LXxJxBHVp8Qk8toewcOTqaFVG642uz2bECyA6n92POyo7aRF23hZmAhng5HxpOct
+eu1usVIzdDhM9OAZdBuSjiPQRAPdLf3lyYasw+caHvntsszvZuOX6c8Wu0EKLNh2
+GDaBEYX5Y2wv+brTowQ9IJ4UHZG85puzctM7gfqsSp4ay+DCvR/thYjBcXpqyZTB
+s8gmWztLACn4Wj3Y8zKZ
+=rTsz
+-----END PGP SIGNATURE-----
+
+--PfYdSB/Wheep+9ho--
