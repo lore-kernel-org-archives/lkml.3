@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967150AbaFTWJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 18:09:59 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34324 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966137AbaFTWJ6 (ORCPT
+	id S967280AbaFTWL2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 18:11:28 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:46372 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965269AbaFTWL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 18:09:58 -0400
-Date: Sat, 21 Jun 2014 00:09:55 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Florian Fainelli <f.fainelli@gmail.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: Re: [PATCH] irqchip: brcmstb-l2: Level-2 interrupts are edge
- sensitive
-In-Reply-To: <CAGVrzcbpS0tJtkH5vkGRSteV5NU2CzNNkQ43_26XySFqJMAK5A@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1406202357280.5170@nanos>
-References: <1402337102-19428-1-git-send-email-f.fainelli@gmail.com> <CAGVrzcZmakEpNW=vGtsb+OmzU_J4hJNoM1sUAoYNsaju_YzGwQ@mail.gmail.com> <CAGVrzcbpS0tJtkH5vkGRSteV5NU2CzNNkQ43_26XySFqJMAK5A@mail.gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 20 Jun 2014 18:11:27 -0400
+Date: Fri, 20 Jun 2014 15:11:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: josh@joshtriplett.org
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 0/5] Fix for cond_resched performance
+ regression
+Message-ID: <20140620221120.GD4615@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140620183249.GA6325@linux.vnet.ibm.com>
+ <20140620191236.GA10340@linux.vnet.ibm.com>
+ <20140620212423.GA22886@cloud>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140620212423.GA22886@cloud>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062022-9332-0000-0000-000001282F21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jun 2014, Florian Fainelli wrote:
-> 2014-06-12 12:13 GMT-07:00 Florian Fainelli <f.fainelli@gmail.com>:
-> > 2014-06-09 11:05 GMT-07:00 Florian Fainelli <f.fainelli@gmail.com>:
-> >> The driver was configuring the interrupt handler for the Level-2
-> >> interrupts to be "level" triggered while they are in fact "edge"
-> >> triggered. Fix this by using the correct handler.
-> >>
-> >> Reported-by: Brian Norris <computersforpeace@gmail.com>
-> >> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
-> >
-> > Jason, Thomas, this driver just got merged into 3.16-rc0, can you
-> > carry this fix such that it gets into a future 3.16-rc? Thanks!
+On Fri, Jun 20, 2014 at 02:24:23PM -0700, josh@joshtriplett.org wrote:
+> On Fri, Jun 20, 2014 at 12:12:36PM -0700, Paul E. McKenney wrote:
+> > o	Make cond_resched() a no-op for PREEMPT=y.  This might well turn
+> > 	out to be a good thing, but it doesn't help give RCU the quiescent
+> > 	states that it needs.
 > 
-> Ping! I want to make sure this gets into a next 3.16-rc pull request.
-> Andrew, can you take that one if neither Thomas nor Andrew respond in
-> a timely manner?
+> What about doing this, together with letting the fqs logic poke
+> un-quiesced kernel code as needed?  That way, rather than having
+> cond_resched do any work, you have the fqs logic recognize that a
+> particular CPU has gone too long without quiescing, without disturbing
+> that CPU at all if it hasn't gone too long.
 
-So Andrew should take it if neither Thomas nor Andrew respond. I'm
-curious how that works out.
+My next stop is to post the previous series, but with a couple of
+exports and one bug fix uncovered by testing thus far, but after
+another round of testing.  Then I am going to take a close look at
+this one:
 
-Dude, keep calm. Timely manner?
+o	Push the checks further into cond_resched(), so that the
+	fastpath does the same sequence of instructions that the original
+	did.  This might work well, but requires IPIs, which are not so
+	good for latencies on the remote CPU.  It nevertheless might be a
+	decent long-term solution given that if your CPU is spending many
+	jiffies looping in the kernel, you aren't getting good latencies
+	anyway.  It also has the benefit of allowing RCU to take advantage
+	of the implicit quiescent states of all cond_resched() calls,
+	and of eliminating the need for a separate cond_resched_rcu_qs()
+	and for RCU_COND_RESCHED_QS.
 
-For something you brought yourself into the merge window and does not
-bring the world to a grinding halt like a nasty NULL pointer
-dereference in the scheduler?
+The one you call out is of course interesting as well.  But there are
+a couple of questions:
 
-I have no problem with a polite reminder as stuff falls down the
-cracks occassionaly, but please keep the proportions right. The only
-user of the code YOU wreckaged has a bugfix already, so what's the
-problem whether this hits rc2 or rc3?
+1.	Why wasn't cond_resched() a no-op in CONFIG_PREEMPT to start
+	with?  It just seems to obvious a thing to do for it to possibly
+	be an oversight.  (What, me paranoid?)
 
-Thanks,
+2.	When RCU recognizes that a particular CPU has gone too long,
+	exactly what are you suggesting that RCU do about it?  When
+	formulating your answer, please give due consideration to the
+	implications of that CPU being a NO_HZ_FULL CPU.  ;-)
 
-	tglx
+Probably other questions as well, but those are the ones that come to
+mind immediately.
+
+							Thanx, Paul
 
