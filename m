@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967005AbaFTSlq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 14:41:46 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:54028 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966855AbaFTSlp (ORCPT
+	id S967128AbaFTSmi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 14:42:38 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:36987 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966270AbaFTSmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 14:41:45 -0400
-Date: Sat, 21 Jun 2014 02:41:37 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        aquini@redhat.com, joe@perches.com, pwalten@au1.ibm.com,
-        jeremy.wayne.powell@gmail.com, clemens@ladisch.de
-Subject: Re: [PATCH v9 0/6] SP800-90A Deterministic Random Bit Generator
-Message-ID: <20140620184136.GF3169@gondor.apana.org.au>
-References: <22272963.fKEMicLVWl@myon.chronox.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <22272963.fKEMicLVWl@myon.chronox.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 20 Jun 2014 14:42:37 -0400
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Seth Forshee <seth.forshee@canonical.com>
+Subject: [PATCH] trace-cmd: Add missing mode to open() call
+Date: Fri, 20 Jun 2014 13:42:29 -0500
+Message-Id: <1403289749-1631-1-git-send-email-seth.forshee@canonical.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 31, 2014 at 03:43:37PM +0200, Stephan Mueller wrote:
-> Hi,
-> 
-> the following set of patches implements the deterministic random bit generator
-> (DRBG) specified by SP800-90A.
-> 
-> The DRBG implementation offers the following:
-> 
-> 	* All three DRBG types are implemented with a derivation function.
-> 	* All DRBG types are available with and without prediction resistance.
-> 	* All SHA types of SHA-1, SHA-256, SHA-384, SHA-512 are available
-> 	  for the HMAC and Hash DRBGs.
-> 	* All AES types of AES-128, AES-192 and AES-256 are available for the
-> 	  CTR DRBG.
-> 	* A self test is implemented with drbg_healthcheck().
-> 	* The FIPS 140-2 continuous self test is implemented.
-> 	* Additional cipher primitives, such as Serpent or Twofish, can be
-> 	  added to the DRBG without changing the implementation. The only
-> 	  change necessary is to the DRBG definition given in the cores[]
-> 	  array.
-> 
-> As defined in SP800-131A, the ANSI X9.31 DRNG is to be sunset by the end of
-> this year for official uses, including FIPS 140-2 compliance.
-> 
-> Additional tests including the CAVS test framework are available at [1].
+touch_file() calls open(2) with O_CREAT but omits the required
+mode argument. Fix this omission.
 
-All applied.
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+---
+ trace-record.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/trace-record.c b/trace-record.c
+index d3dd0c5..8438388 100644
+--- a/trace-record.c
++++ b/trace-record.c
+@@ -1995,7 +1995,7 @@ static void touch_file(const char *file)
+ {
+ 	int fd;
+ 
+-	fd = open(file, O_WRONLY | O_CREAT | O_TRUNC);
++	fd = open(file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+ 	if (fd < 0)
+ 		die("could not create file %s\n", file);
+ 	close(fd);
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.9.1
+
