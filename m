@@ -1,94 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894AbaFTOho (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 10:37:44 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:46094 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568AbaFTOhm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 10:37:42 -0400
-Date: Fri, 20 Jun 2014 16:36:51 +0200
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, andrew.cooper3@citrix.com,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        eshelton@pobox.com, hpa@zytor.com, ian.campbell@citrix.com,
-        jbeulich@suse.com, jeremy@goop.org, konrad.wilk@oracle.com,
-        matt.fleming@intel.com, mingo@redhat.com, mjg59@srcf.ucam.org,
-        stefano.stabellini@eu.citrix.com, tglx@linutronix.de
-Subject: Re: [PATCH v5 2/7] efi: Introduce EFI_NO_DIRECT flag
-Message-ID: <20140620143651.GE28489@olila.local.net-space.pl>
-References: <1402678823-24589-1-git-send-email-daniel.kiper@oracle.com>
- <1402678823-24589-3-git-send-email-daniel.kiper@oracle.com>
- <20140618135229.GH24049@console-pimps.org>
- <20140618164835.GD28489@olila.local.net-space.pl>
- <20140619144112.GT24049@console-pimps.org>
+	id S1753037AbaFTOjQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 10:39:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40465 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751114AbaFTOjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 10:39:14 -0400
+Date: Fri, 20 Jun 2014 10:39:01 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Joe Lawrence <joe.lawrence@stratus.com>,
+        linux-kernel@vger.kernel.org, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH block/for-linus] blkcg: fix use-after-free in
+ __blkg_release_rcu() by making blkcg_gq refcnt an atomic_t
+Message-ID: <20140620143901.GC7354@redhat.com>
+References: <alpine.DEB.2.02.1406081816540.17948@jlaw-desktop.mno.stratus.com>
+ <20140609174708.GA31499@redhat.com>
+ <20140609182728.GB31499@redhat.com>
+ <20140610143906.0d2f35d0@jlaw-desktop.mno.stratus.com>
+ <20140611163229.GA12974@redhat.com>
+ <20140619202640.GA9814@mtj.dyndns.org>
+ <20140619214257.GE9814@mtj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140619144112.GT24049@console-pimps.org>
+In-Reply-To: <20140619214257.GE9814@mtj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 03:41:12PM +0100, Matt Fleming wrote:
-> On Wed, 18 Jun, at 06:48:35PM, Daniel Kiper wrote:
-> > >
-> > > Why don't you want to export efi.fw_vendor, etc? Rationale please.
-> >
-> > I am exporting real addresses (machine addresses) of things which
-> > I am able to get. Stuff which was created artificially and lives
-> > in dom0 address space or does not exist are not exported.
->
-> So, wouldn't it be easier to just leave those fields as
-> EFI_INVALID_TABLE_ADDR? If they're not usable why fill out an address?
+On Thu, Jun 19, 2014 at 05:42:57PM -0400, Tejun Heo wrote:
+> Hello,
+> 
+> So, this patch should do.  Joe, Vivek, can one of you guys please
+> verify that the oops goes away with this patch?
 
-It looks that EFI_PARAVIRT check is needed for efi.fw_vendor only.
-Probably I prepared this chunk of code before filling
-efi_systab_xen.runtime with EFI_INVALID_TABLE_ADDR. efi.fw_vendor
-contains pointer to vendor name which lives in dom0 memory and it
-is a copy of name living in EFI memory data. So, this pointer is useless
-for potential user of /sys/firmware/efi/fw_vendor. efi.fw_vendor is
-used in init code only. Hence, I was thinking once about wiping this
-pointer with EFI_INVALID_TABLE_ADDR. However, it requires some changes
-in arch/x86/platform/efi/efi.c (wipe it if EFI_PARAVIRT is set) and
-it is a hack for me. I prefer to live with current solution.
+Hi Tejun,
 
-> > Hmmm... I do not know what is wrong with this minimal shuffling. We are
-> > playing here with internal stuff which is not visible outside of any
-> > given kernel. Additionally, as I saw in a few places arch bits are
-> > defined in following way:
-> >
-> > #define ARCH_1 10
-> >
-> > #define A_ARCH_CONST ARCH_1
-> > #define B_ARCH_CONST (ARCH_1 + 1)
-> > #define C_ARCH_CONST (ARCH_1 + 2)
-> > ...
-> >
-> > So I think addition is more natural here than subtraction.
->
-> No, because we hit the same problem if we need more non-arch bits after
-> bit 9, it moves the problem, it doesn't fix it. Though admittedly, using
+This patch seems to fix the issue for me. Tried 10 times and no crash.
 
-10 is just an example. It could be an arbitrary value. However, you
-are right. This just moves the problem.
+So now one need to hold queue lock for getting refernce on the group
+only if caller does not already have a reference and if group has been
+looked up from some tree/queue etc. I guess only such usage seems to
+be in blkg_create() where we take a reference on parent after looking
+it up.
 
-> this level of indirection (going through ARCH_1) instead of using
-> constants does reduce the problem.
->
-> Yes, these bits are internal, and yes the shuffling is minimal, but we
-> can do better.
+This patch looks good to me.
 
-As always, it is a place for an improvement. However, I am not sure
-it is worth fighting with that so hard.
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-> I'm not suggesting you need to modify your patch. I'm really just
-> thinking out loud. I'll take care of fixing this up later.
+Thanks
+Vivek
 
-OK. Thanks.
-
-Daniel
+> 
+> Jens, the original thread can be read at
+> 
+>   http://thread.gmane.org/gmane.linux.kernel/1720729
+> 
+> The fix converts blkg->refcnt from int to atomic_t.  It does some
+> overhead but it should be minute compared to everything else which is
+> going on and the involved cacheline bouncing, so I think it's highly
+> unlikely to cause any noticeable difference.  Also, the refcnt in
+> question should be converted to a perpcu_ref for blk-mq anyway, so the
+> atomic_t is likely to go away pretty soon anyway.
+> 
+> Thanks.
+> 
+> ------- 8< -------
+> __blkg_release_rcu() may be invoked after the associated request_queue
+> is released with a RCU grace period inbetween.  As such, the function
+> and callbacks invoked from it must not dereference the associated
+> request_queue.  This is clearly indicated in the comment above the
+> function.
+> 
+> Unfortunately, while trying to fix a different issue, 2a4fd070ee85
+> ("blkcg: move bulk of blkcg_gq release operations to the RCU
+> callback") ignored this and added [un]locking of @blkg->q->queue_lock
+> to __blkg_release_rcu().  This of course can cause oops as the
+> request_queue may be long gone by the time this code gets executed.
+> 
+>   general protection fault: 0000 [#1] SMP
+>   CPU: 21 PID: 30 Comm: rcuos/21 Not tainted 3.15.0 #1
+>   Hardware name: Stratus ftServer 6400/G7LAZ, BIOS BIOS Version 6.3:57 12/25/2013
+>   task: ffff880854021de0 ti: ffff88085403c000 task.ti: ffff88085403c000
+>   RIP: 0010:[<ffffffff8162e9e5>]  [<ffffffff8162e9e5>] _raw_spin_lock_irq+0x15/0x60
+>   RSP: 0018:ffff88085403fdf0  EFLAGS: 00010086
+>   RAX: 0000000000020000 RBX: 0000000000000010 RCX: 0000000000000000
+>   RDX: 000060ef80008248 RSI: 0000000000000286 RDI: 6b6b6b6b6b6b6b6b
+>   RBP: ffff88085403fdf0 R08: 0000000000000286 R09: 0000000000009f39
+>   R10: 0000000000020001 R11: 0000000000020001 R12: ffff88103c17a130
+>   R13: ffff88103c17a080 R14: 0000000000000000 R15: 0000000000000000
+>   FS:  0000000000000000(0000) GS:ffff88107fca0000(0000) knlGS:0000000000000000
+>   CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>   CR2: 00000000006e5ab8 CR3: 000000000193d000 CR4: 00000000000407e0
+>   Stack:
+>    ffff88085403fe18 ffffffff812cbfc2 ffff88103c17a130 0000000000000000
+>    ffff88103c17a130 ffff88085403fec0 ffffffff810d1d28 ffff880854021de0
+>    ffff880854021de0 ffff88107fcaec58 ffff88085403fe80 ffff88107fcaec30
+>   Call Trace:
+>    [<ffffffff812cbfc2>] __blkg_release_rcu+0x72/0x150
+>    [<ffffffff810d1d28>] rcu_nocb_kthread+0x1e8/0x300
+>    [<ffffffff81091d81>] kthread+0xe1/0x100
+>    [<ffffffff8163813c>] ret_from_fork+0x7c/0xb0
+>   Code: ff 47 04 48 8b 7d 08 be 00 02 00 00 e8 55 48 a4 ff 5d c3 0f 1f 00 66 66 66 66 90 55 48 89 e5
+>   +fa 66 66 90 66 66 90 b8 00 00 02 00 <f0> 0f c1 07 89 c2 c1 ea 10 66 39 c2 75 02 5d c3 83 e2 fe 0f
+>   +b7
+>   RIP  [<ffffffff8162e9e5>] _raw_spin_lock_irq+0x15/0x60
+>    RSP <ffff88085403fdf0>
+> 
+> The request_queue locking was added because blkcg_gq->refcnt is an int
+> protected with the queue lock and __blkg_release_rcu() needs to put
+> the parent.  Let's fix it by making blkcg_gq->refcnt an atomic_t and
+> dropping queue locking in the function.
+> 
+> Given the general heavy weight of the current request_queue and blkcg
+> operations, this is unlikely to cause any noticeable overhead.
+> Moreover, blkcg_gq->refcnt is likely to be converted to percpu_ref in
+> the near future, so whatever (most likely negligible) overhead it may
+> add is temporary.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Joe Lawrence <joe.lawrence@stratus.com>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> Link: http://lkml.kernel.org/g/alpine.DEB.2.02.1406081816540.17948@jlaw-desktop.mno.stratus.com
+> Cc: stable@vger.kernel.org
+> ---
+>  block/blk-cgroup.c |    7 ++-----
+>  block/blk-cgroup.h |   17 +++++++----------
+>  2 files changed, 9 insertions(+), 15 deletions(-)
+> 
+> --- a/block/blk-cgroup.c
+> +++ b/block/blk-cgroup.c
+> @@ -80,7 +80,7 @@ static struct blkcg_gq *blkg_alloc(struc
+>  	blkg->q = q;
+>  	INIT_LIST_HEAD(&blkg->q_node);
+>  	blkg->blkcg = blkcg;
+> -	blkg->refcnt = 1;
+> +	atomic_set(&blkg->refcnt, 1);
+>  
+>  	/* root blkg uses @q->root_rl, init rl only for !root blkgs */
+>  	if (blkcg != &blkcg_root) {
+> @@ -399,11 +399,8 @@ void __blkg_release_rcu(struct rcu_head
+>  
+>  	/* release the blkcg and parent blkg refs this blkg has been holding */
+>  	css_put(&blkg->blkcg->css);
+> -	if (blkg->parent) {
+> -		spin_lock_irq(blkg->q->queue_lock);
+> +	if (blkg->parent)
+>  		blkg_put(blkg->parent);
+> -		spin_unlock_irq(blkg->q->queue_lock);
+> -	}
+>  
+>  	blkg_free(blkg);
+>  }
+> --- a/block/blk-cgroup.h
+> +++ b/block/blk-cgroup.h
+> @@ -18,6 +18,7 @@
+>  #include <linux/seq_file.h>
+>  #include <linux/radix-tree.h>
+>  #include <linux/blkdev.h>
+> +#include <linux/atomic.h>
+>  
+>  /* Max limits for throttle policy */
+>  #define THROTL_IOPS_MAX		UINT_MAX
+> @@ -104,7 +105,7 @@ struct blkcg_gq {
+>  	struct request_list		rl;
+>  
+>  	/* reference count */
+> -	int				refcnt;
+> +	atomic_t			refcnt;
+>  
+>  	/* is this blkg online? protected by both blkcg and q locks */
+>  	bool				online;
+> @@ -257,13 +258,12 @@ static inline int blkg_path(struct blkcg
+>   * blkg_get - get a blkg reference
+>   * @blkg: blkg to get
+>   *
+> - * The caller should be holding queue_lock and an existing reference.
+> + * The caller should be holding an existing reference.
+>   */
+>  static inline void blkg_get(struct blkcg_gq *blkg)
+>  {
+> -	lockdep_assert_held(blkg->q->queue_lock);
+> -	WARN_ON_ONCE(!blkg->refcnt);
+> -	blkg->refcnt++;
+> +	WARN_ON_ONCE(atomic_read(&blkg->refcnt) <= 0);
+> +	atomic_inc(&blkg->refcnt);
+>  }
+>  
+>  void __blkg_release_rcu(struct rcu_head *rcu);
+> @@ -271,14 +271,11 @@ void __blkg_release_rcu(struct rcu_head
+>  /**
+>   * blkg_put - put a blkg reference
+>   * @blkg: blkg to put
+> - *
+> - * The caller should be holding queue_lock.
+>   */
+>  static inline void blkg_put(struct blkcg_gq *blkg)
+>  {
+> -	lockdep_assert_held(blkg->q->queue_lock);
+> -	WARN_ON_ONCE(blkg->refcnt <= 0);
+> -	if (!--blkg->refcnt)
+> +	WARN_ON_ONCE(atomic_read(&blkg->refcnt) <= 0);
+> +	if (atomic_dec_and_test(&blkg->refcnt))
+>  		call_rcu(&blkg->rcu_head, __blkg_release_rcu);
+>  }
+>  
