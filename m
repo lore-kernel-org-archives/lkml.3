@@ -1,89 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220AbaFTEfZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 00:35:25 -0400
-Received: from ozlabs.org ([103.22.144.67]:54673 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751431AbaFTEfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 00:35:23 -0400
-Date: Fri, 20 Jun 2014 14:35:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: linux-next: build warning after merge of the tip tree
-Message-ID: <20140620143516.4f5eedf1@canb.auug.org.au>
-In-Reply-To: <53A3B8F9.1080005@zytor.com>
-References: <20140616115709.3fce3a2a@canb.auug.org.au>
-	<20140620142436.385e1c10@canb.auug.org.au>
-	<53A3B8F9.1080005@zytor.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S934161AbaFTEhP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 00:37:15 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:34222 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933085AbaFTEhM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 00:37:12 -0400
+Date: Thu, 19 Jun 2014 21:35:48 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Christoph Lameter <cl@linux.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: kernel BUG at /src/linux-dev/mm/mempolicy.c:1738! on v3.16-rc1
+In-Reply-To: <20140619215641.GA9792@nhori.bos.redhat.com>
+Message-ID: <alpine.LSU.2.11.1406192121470.988@eggly.anvils>
+References: <20140619215641.GA9792@nhori.bos.redhat.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/4X4JDfxaTARHuDpTAI4LvIj"; protocol="application/pgp-signature"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/4X4JDfxaTARHuDpTAI4LvIj
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thu, 19 Jun 2014, Naoya Horiguchi wrote:
+> Hi,
+> 
+> I triggered the following bug on v3.16-rc1 when I did mbind() testing
+> where multiple processes repeat calling mbind() for a shared mapped file
+> (causing pingpong of page migration.)
 
-Hi Peter,
+The shared mapped file on shmem/tmpfs?  So involving shared policy stuff?
 
-On Thu, 19 Jun 2014 21:30:49 -0700 "H. Peter Anvin" <hpa@zytor.com> wrote:
->
-> On 06/19/2014 09:24 PM, Stephen Rothwell wrote:
-> >=20
-> > On Mon, 16 Jun 2014 11:57:09 +1000 Stephen Rothwell=20
-> > <sfr@canb.auug.org.au> wrote:
-> >>=20
-> >> After merging the tip tree, today's linux-next build (x86_64=20
-> >> allmodconfig) produced this warning:
-> >>=20
-> >> In file included from=20
-> >> arch/x86/crypto/camellia_aesni_avx_glue.c:23:0:=20
-> >> arch/x86/include/asm/xsave.h:73:12: warning:=20
-> >> 'xsave_state_booting' defined but not used [-Wunused-function]=20
-> >> static int xsave_state_booting(struct xsave_struct *fx, u64 mask)
-> >> ^
-> >>=20
-> >> Lots of these ...
-> >>=20
-> >> Introduced by commit adb9d526e982 ("x86/xsaves: Add xsaves and=20
-> >> xrstors support for booting time").  Forgotten "inline" :-(
-> >=20
-> > Ping?
->=20
-> I already applied an equivalent patch from Borislav.
+> 
+> In my investigation, it seems that some vma accidentally has vma->vm_start
+> = 0, which makes new_vma_page() choose a wrong vma and results in breaking
+> the assumption that the address passed to alloc_pages_vma() should be
+> inside a given vma.
 
-Thanks.  I look forward to it filtering out :-)
+I've not heard of that before.  What evidence led you there?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> I'm suspecting that mbind_range() do something wrong around vma handling,
+> but I don't have enough luck yet. Anyone has an idea?
 
---Sig_/4X4JDfxaTARHuDpTAI4LvIj
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+No idea at present.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Please send disassembly (objdump -d, or objdump -ld if you had DEBUG_INFO)
+of policy_zonelist() - the Code line isn't enough to go on, since it just
+shows where the BUG jumped to out-of-line, with no clue as to what might
+be in the registers - thanks.
 
-iQIbBAEBCAAGBQJTo7oJAAoJEMDTa8Ir7ZwVXpsP+KbAxHNMEFxxVLkoSwPcjRIZ
-+Max4pNfG50XXTpesnEgh9ba6R/vou/3UxEh2QKYLsHQ1R5Xj+YRlf1nbFr1DJp4
-ArshNHhV9al06ABKzEc9rxFul8buU0ckOesdJpAl/t1EsXbVJA4etiAkpap6DRBi
-lcPJlmFbUNUmlcDgAlRp7Gr3GLbk2yX9JNIPJgI4wNLlpYCgUsTnwaHaDBHpivkh
-tcvcwJjjdLDRirSiHyWbuqS7MG+5E/d4AY+VdJivhtv6AI3dLL2wYe8eQEHTViGB
-HcTi6oMBbB0Gbzg2/vLRu7V8ntL5no1U1zpz083NhGg4YVBblylQXKGc/6K9hGCg
-RzuHbL5YhVm9xzERKV6q14lTSlRKsUE1g3Lb38QzhJ+ehwMgB8PnYJu0a8W0cM9e
-9HA6GJ8sfVmlYs9acF3iRVAGqB4P3jA+WQQmdjVzqG1eFRKscKWJkffjns6GN4FR
-leGvgjw3l16ix25xCyY4iHW6Xp/yK2dKGylibwgeHTPwt13iy2G+W8tCWdsfh9o6
-R4+bzhsQ6qVCQy3kSlmQ1dJjhmtQRvxuJ4BJP/QqKDQa6RSHHz1vuO6rmIW0LXOO
-su5l0TJIgoELsDEuLEOFLkdGDfWaK/6ZAPIkhjj561TPsDhvvMhVg42297LNXeZ+
-3snFEvMNJjYigdKbhTY=
-=q/Zt
------END PGP SIGNATURE-----
+Hugh
 
---Sig_/4X4JDfxaTARHuDpTAI4LvIj--
+> 
+> Thanks,
+> Naoya Horiguchi
+> 
+> [  339.133960] ------------[ cut here ]------------
+> [  339.134893] kernel BUG at /src/linux-dev/mm/mempolicy.c:1738!
+> [  339.134893] invalid opcode: 0000 [#1] SMP
+> [  339.134893] Modules linked in: stap_2acbad8c3ba47062dbdc6f227d00f8f4__1958(O) bnep bluetooth cfg80211 rfkill ip6t_rpfilter ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables ip6table_mangle ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle iptable_security iptable_raw ppdev microcode i2c_piix4 pcspkr i2c_core virtio_balloon parport_pc parport serio_raw nfsd auth_rpcgss oid_registry nfs_acl lockd sunrpc virtio_blk virtio_net floppy ata_generic pata_acpi
+> [  339.134893] CPU: 2 PID: 2840 Comm: mbind_fuzz Tainted: G           O  3.16.0-rc1-140619-1205-00003-g80aa6b64a44e #157
+> [  339.134893] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [  339.134893] task: ffff88007c133b60 ti: ffff88007dd28000 task.ti: ffff88007dd28000
+> [  339.134893] RIP: 0010:[<ffffffff811ebfe0>]  [<ffffffff811ebfe0>] policy_zonelist+0x50/0xb0
+> [  339.134893] RSP: 0000:ffff88007dd2bcf8  EFLAGS: 00010293
+> [  339.134893] RAX: 0000000000000000 RBX: ffff88007c133b60 RCX: 0000000000000000
+> [  339.134893] RDX: 0000000000000002 RSI: ffff88011bd3fad0 RDI: 00000000000200da
+> [  339.134893] RBP: ffff88007dd2bd00 R08: 0000000000000002 R09: 0000000000000002
+> [  339.134893] R10: ffff88007d8f3958 R11: 0000000000000001 R12: 00000000000200da
+> [  339.134893] R13: 0000000000000000 R14: ffff88011bd3fad0 R15: 0000000000000000
+> [  339.134893] FS:  00007f457cf90740(0000) GS:ffff8800bec00000(0000) knlGS:0000000000000000
+> [  339.134893] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [  339.134893] CR2: 0000700000184000 CR3: 000000007959b000 CR4: 00000000000006e0
+> [  339.134893] Stack:
+> [  339.134893]  ffff88007c133b60 ffff88007dd2bd68 ffffffff811eeac8 ffff88007c133b60
+> [  339.134893]  ffff88007c133b60 0000000000000000 000000020000000c 0000000000000000
+> [  339.134893]  ffff88007c387e60 ffff88007c387e60 ffffea0000e19340 ffff88007d8f3958
+> [  339.134893] Call Trace:
+> [  339.134893]  [<ffffffff811eeac8>] alloc_pages_vma+0x88/0x1a0
+> [  339.134893]  [<ffffffff811eec7b>] new_vma_page+0x9b/0xb0
+> [  339.134893]  [<ffffffff811fee4d>] unmap_and_move+0x3d/0x200
+> [  339.134893]  [<ffffffff811ff235>] migrate_pages+0xe5/0x1e0
+> [  339.134893]  [<ffffffff811eebe0>] ? alloc_pages_vma+0x1a0/0x1a0
+> [  339.134893]  [<ffffffff811ef3c2>] do_mbind+0x1f2/0x3a0
+> [  339.134893]  [<ffffffff811ef60b>] SyS_mbind+0x9b/0xb0
+> [  339.134893]  [<ffffffff8174798b>] tracesys+0xdd/0xe2
+> [  339.134893] Code: 63 d2 31 c0 85 db 48 8b 14 d5 00 2d d6 81 0f 95 c0 48 69 c0 20 22 01 00 5b 5d 48 8d 84 02 00 1d 00 00 c3 0f 1f 84 00 00 00 00 00 <0f> 0b 66 0f 1f 44 00 00 f6 46 06 02 75 12 89 fb 48 0f bf 56 08
+> [  339.134893] RIP  [<ffffffff811ebfe0>] policy_zonelist+0x50/0xb0
+> [  339.134893]  RSP <ffff88007dd2bcf8>
+> [  339.178924] ---[ end trace 37c12438b6936769 ]---
