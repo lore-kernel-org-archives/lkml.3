@@ -1,103 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933944AbaFTSKt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 14:10:49 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:59554 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163AbaFTSKr (ORCPT
+	id S1757109AbaFTSLm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 14:11:42 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:45428 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754028AbaFTSLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 14:10:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGXu5jKg0didhwZTUq8AbMnwD=RV=EaWiZWBWuar625JXGnL6w@mail.gmail.com>
-References: <20140618202748.GA9022@www.outflux.net>
-	<20140620102258.GA26626@arm.com>
-	<CAGXu5jKJ07bXw_K+7uSAf=H_SDoeoaWPxS4rwuonbR71Svwwmw@mail.gmail.com>
-	<20140620172330.GA30656@arm.com>
-	<CAGXu5jKg0didhwZTUq8AbMnwD=RV=EaWiZWBWuar625JXGnL6w@mail.gmail.com>
-Date: Fri, 20 Jun 2014 11:10:46 -0700
-X-Google-Sender-Auth: z6zXisBflo58SQe4IlUqXi42rt4
-Message-ID: <CAGXu5j+bk3g0Dude8jfKM3dXxX8LE_46CMmcBCGdVMNX_Hu-6w@mail.gmail.com>
-Subject: Re: [PATCH] arm: ptrace: fix syscall modification under PTRACE_O_TRACESECCOMP
-From: Kees Cook <keescook@chromium.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Austin <Jonathan.Austin@arm.com>,
-        =?UTF-8?Q?Andr=C3=A9_Hentschel?= <nerv@dawncrow.de>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ricky Zhou <rickyz@google.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 20 Jun 2014 14:11:41 -0400
+Message-ID: <1403287898.30764.17.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH] iovec: move memcpy_from/toiovecend to lib/iovec.c
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: David Miller <davem@davemloft.net>
+Cc: mst@redhat.com, linux-kernel@vger.kernel.org, rdunlap@infradead.org,
+        sfr@canb.auug.org.au, hjk@hansjkoch.de, gregkh@linuxfoundation.org,
+        stephen@networkplumber.org, sean.hefty@intel.com, fx.lebail@yahoo.com,
+        jasowang@redhat.com, hannes@stressinduktion.org,
+        wuzhy@linux.vnet.ibm.com, netdev@vger.kernel.org
+Date: Fri, 20 Jun 2014 11:11:38 -0700
+In-Reply-To: <20140619.210637.1702701955085552032.davem@davemloft.net>
+References: <1403201568-22828-1-git-send-email-mst@redhat.com>
+	 <20140619.210637.1702701955085552032.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 10:36 AM, Kees Cook <keescook@chromium.org> wrote:
-> On Fri, Jun 20, 2014 at 10:23 AM, Will Deacon <will.deacon@arm.com> wrote:
->> On Fri, Jun 20, 2014 at 05:44:52PM +0100, Kees Cook wrote:
->>> On Fri, Jun 20, 2014 at 3:22 AM, Will Deacon <will.deacon@arm.com> wrote:
->>> > I'm struggling to see the bug in the current code, so apologies if my
->>> > questions aren't helpful.
->>> >
->>> > On Wed, Jun 18, 2014 at 09:27:48PM +0100, Kees Cook wrote:
->>> >> An x86 tracer wanting to change the syscall uses PTRACE_SETREGS
->>> >> (stored to regs->orig_ax), and an ARM tracer uses PTRACE_SET_SYSCALL
->>> >> (stored to current_thread_info()->syscall). When this happens, the
->>> >> syscall can change across the call to secure_computing(), since it may
->>> >> block on tracer notification, and the tracer can then make changes
->>> >> to the process, before we return from secure_computing(). This
->>> >> means the code must respect the changed syscall after the
->>> >> secure_computing() call in syscall_trace_enter(). The same is true
->>> >> for tracehook_report_syscall_entry() which may also block and change
->>> >> the syscall.
->>> >
->>> > I don't think I understand what you mean by `the code must respect the
->>> > changed syscall'. The current code does indeed issue the new syscall, so are
->>> > you more concerned with secure_computing changing ->syscall, then the
->>> > debugger can't see the new syscall when it sees the trap from tracehook?
->>> > Are these even supposed to inter-operate?
->>>
->>> The problem is the use of "scno" in the call -- it results in ignoring
->>> the value that may be set up in ->syscall by a tracer:
->>>
->>> syscall_trace_enter(regs, scno):
->>>     current_thread_info()->syscall = scno;
->>>     secure_computing(scno):
->>>         [block on ptrace]
->>>         [ptracer changes current_thread_info()->syscall vis PTRACE_SET_SYSCALL]
->>>     ...
->>>     return scno;
->>>
->>> This means the tracer's changed syscall value will be ignored
->>> (syscall_trace_enter returns original "scno" instead of actual
->>> current_thread_info()->syscall). In the original code, failure cases
->>> were propagated correctly, but not tracer-induced changes.
->>>
->>> Is that more clear? It's not an obvious state (due to the external
->>> modification of process state during the ptrace blocking). I've also
->>> got tests for this, if that's useful to further illustrate:
->>>
->>> https://github.com/kees/seccomp/commit/bd24e174593f79784b97178b583f17e0ea9d2aa7
->>
->> Right, gotcha. Thanks for the explanation. I was confused, because
->> tracehook_report_syscall does the right thing (returns
->> current_thread_info()->syscall), but if we don't have TIF_SYSCALL_TRACE set,
->> then updates during the secure_computing callback will be ignored.
->>
->> However, my fix to this is significantly smaller than your patch, so I fear
->> I'm still missing something.
->
-> Oh, yes, that's much smaller. Nice! I will test this and report back.
+On Thu, 2014-06-19 at 21:06 -0700, David Miller wrote:
+> From: "Michael S. Tsirkin" <mst@redhat.com>
+> Date: Thu, 19 Jun 2014 21:22:56 +0300
+> 
+> > ERROR: "memcpy_fromiovecend" [drivers/vhost/vhost_scsi.ko] undefined!
+> > 
+> > commit 9f977ef7b671f6169eca78bf40f230fe84b7c7e5
+> >     vhost-scsi: Include prot_bytes into expected data transfer length
+> > in target-pending makes drivers/vhost/scsi.c call memcpy_fromiovecend().
+> > This function is not available when CONFIG_NET is not enabled.
+> > 
+> > socket.h already includes uio.h, so no callers need updating.
+> > 
+> > Reported-by: Randy Dunlap <rdunlap@infradead.org>
+> > Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Cc: "David S. Miller" <davem@davemloft.net>
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> > 
+> > David, could you please ack merging this through
+> > target-pending to avoid dependency issues?
+> 
+> Yep, this looks fine:
+> 
+> Signed-off-by: David S. Miller <davem@davemloft.net>
 
-Yup, I can confirm this works. Thanks!
+Applied to target-pending/queue, and will include in the next PULL
+request.
 
-Tested-by: Kees Cook <keescook@chromium.org>
+Thanks folks.
 
--Kees
+--nab
 
--- 
-Kees Cook
-Chrome OS Security
