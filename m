@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966758AbaFTLHn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 07:07:43 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:41315 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965650AbaFTLHl (ORCPT
+	id S966848AbaFTLK4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 07:10:56 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:57342 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966703AbaFTLKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 07:07:41 -0400
+	Fri, 20 Jun 2014 07:10:55 -0400
+From: Wang Nan <wangnan0@huawei.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Jiang Liu <liuj97@gmail.com>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        Wang Nan <wangnan0@huawei.com>, Li Zefan <lizefan@huawei.com>
+Subject: [PATCH] mem-hotplug: improve zone_movable_is_highmem logic
+Date: Fri, 20 Jun 2014 18:54:14 +0800
+Message-ID: <1403261654-11259-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
 MIME-Version: 1.0
-Date: Fri, 20 Jun 2014 13:07:39 +0200
-X-Google-Sender-Auth: IVzQYhbqmTOHv_3T6TYVGyNITTk
-Message-ID: <CAMuHMdVhU6JZFzuPkx=wtLcPYc7wwaMFwCrZu=zG7PmCYssy-g@mail.gmail.com>
-Subject: [-next] comedi I/O accessor name clashes
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ian Abbott <abbotti@mev.co.uk>, Greg KH <gregkh@linuxfoundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        Linux-Next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 9c340ac934dbbfd46e776465b08391baac32d486
-Author: H Hartley Sweeten <hsweeten@visionengravers.com>
-Date:   Thu May 29 10:56:32 2014 -0700
+In original code, zone_movable_is_highmem() assumes ZONE_MOVABLE not
+highmem if CONFIG_HAVE_MEMBLOCK_NODE_MAP is not set. In online_pages, it
+extracts pages from the previous zone before ZONE_MOVABLE. Which is
+logically inconsistent:
 
-    staging: comedi: ni_stc.h: add read/write callbacks to struct ni_private
+If HAVE_MEMBLOCK_NODE_MAP is turned off but HIGHMEM is on,
+zone_movable_is_highmem() makes movable zone not highmem, but
+online_pages() extracts pages from ZONE_HIGHMEM.
 
---- a/drivers/staging/comedi/drivers/ni_stc.h
-+++ b/drivers/staging/comedi/drivers/ni_stc.h
-@@ -1421,6 +1421,13 @@ struct ni_board_struct {
- #define NUM_GPCT       2
+This inconsistency doesn't cause real problem currently, because all
+architectures support online_pages also have HAVE_MEMBLOCK_NODE_MAP.
+However, fixing it makes code clear, and also helps futher coding.
 
- struct ni_private {
-+       uint8_t (*readb)(struct comedi_device *, int reg);
-+       uint16_t (*readw)(struct comedi_device *, int reg);
-+       uint32_t (*readl)(struct comedi_device *, int reg);
-+       void (*writeb)(struct comedi_device *, uint8_t value, int reg);
-+       void (*writew)(struct comedi_device *, uint16_t value, int reg);
-+       void (*writel)(struct comedi_device *, uint32_t value, int reg);
-+
-        uint16_t (*stc_readw)(struct comedi_device *, int reg);
-        uint32_t (*stc_readl)(struct comedi_device *, int reg);
-        void (*stc_writew)(struct comedi_device *, uint16_t value, int reg);
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+Cc: Zhang Zhen <zhangzhen@huawei.com>
+---
+ include/linux/mmzone.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-However, on several architectures, writel() and friends are macros, causing:
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 6cbd1b6..559e659 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -872,6 +872,8 @@ static inline int zone_movable_is_highmem(void)
+ {
+ #if defined(CONFIG_HIGHMEM) && defined(CONFIG_HAVE_MEMBLOCK_NODE_MAP)
+ 	return movable_zone == ZONE_HIGHMEM;
++#elif defined(CONFIG_HIGHMEM)
++	return (ZONE_MOVABLE - 1) == ZONE_HIGHMEM;
+ #else
+ 	return 0;
+ #endif
+-- 
+1.8.4
 
-drivers/staging/comedi/drivers/ni_atmio.c:318:38: error: macro
-"writew" passed 3 arguments, but takes just 2
-
-m68k http://kisskb.ellerman.id.au/kisskb/buildresult/11346953/
-s390 kisskb.ellerman.id.au/kisskb/buildresult/11347163/
-sparc64 kisskb.ellerman.id.au/kisskb/buildresult/11347152/
-xtensa http://kisskb.ellerman.id.au/kisskb/buildresult/11346651/
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
