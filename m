@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966554AbaFTAJh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 20:09:37 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:11372 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966097AbaFTAJf (ORCPT
+	id S966584AbaFTAK1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 20:10:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53279 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966530AbaFTAK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 20:09:35 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqQGADR7o1Ol5H4J/2dsb2JhbABZiVS+NAGBIXWEAwEBBTo/EAsYCRUQD0gZiELNIReOEmQHFoQtBK4bg1QrgTE
-From: Alistair Popple <alistair@popple.id.au>
-To: benh@kernel.crashing.org
-Cc: Paul Bolle <pebolle@tiscali.nl>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH] IBM Akebono: Remove obsolete config select
-Date: Fri, 20 Jun 2014 10:10 +1000
-Message-ID: <1774195.a1B25gz7RT@mexican>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-17-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1402660592.28881.22.camel@x220>
-References: <1398998002.2925.15.camel@pasglop> <1399018005-23136-1-git-send-email-alistair@popple.id.au> <1402660592.28881.22.camel@x220>
+	Thu, 19 Jun 2014 20:10:26 -0400
+Date: Thu, 19 Jun 2014 17:14:26 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: =?iso-8859-1?Q?L=2E_Alberto_Gim=E9nez?= <agimenez@sysvalve.es>
+Cc: devel@driverdev.osuosl.org, open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: rtl8172u: Make ieee80211_crypto_init static
+Message-ID: <20140620001426.GA1351@kroah.com>
+References: <1402594851-16941-1-git-send-email-agimenez@sysvalve.es>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1402594851-16941-1-git-send-email-agimenez@sysvalve.es>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
-
-It looks like we may have missed this trivial fix? Can you please apply it to 
-your tree?
-
-Regards,
-
-Alistair
-
-On Fri, 13 Jun 2014 13:56:32 Paul Bolle wrote:
-> On Fri, 2014-05-02 at 18:06 +1000, Alistair Popple wrote:
-> > The original implementation of MMC support for Akebono introduced a
-> > new configuration symbol (MMC_SDHCI_OF_476GTR). This symbol has been
-> > dropped in favour of using the generic platform driver however the
-> > select for this symbol was mistakenly left in the platform
-> > configuration.
-> > 
-> > This patch removes the obsolete symbol selection.
-> > 
-> > Signed-off-by: Alistair Popple <alistair@popple.id.au>
+On Thu, Jun 12, 2014 at 07:40:49PM +0200, L. Alberto Giménez wrote:
+> Fix sparse warning.
 > 
-> This patch hasn't yet entered linux-next nor Linus' tree. Is it queued
-> somewhere? If not, would a
->     Acked-by: Paul Bolle <pebolle@tiscali.nl>
+> Signed-off-by: L. Alberto Giménez <agimenez@sysvalve.es>
+> ---
+>  drivers/staging/rtl8192u/ieee80211/ieee80211_crypt.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> help to get this trivial patch queued for either of those trees?
-> 
-> 
-> Paul Bolle
-> 
-> > ---
-> > 
-> >  arch/powerpc/platforms/44x/Kconfig | 1 -
-> >  1 file changed, 1 deletion(-)
-> > 
-> > diff --git a/arch/powerpc/platforms/44x/Kconfig
-> > b/arch/powerpc/platforms/44x/Kconfig index 8beec7d..908bf11 100644
-> > --- a/arch/powerpc/platforms/44x/Kconfig
-> > +++ b/arch/powerpc/platforms/44x/Kconfig
-> > @@ -220,7 +220,6 @@ config AKEBONO
-> > 
-> >  	select USB_EHCI_HCD_PLATFORM
-> >  	select MMC_SDHCI
-> >  	select MMC_SDHCI_PLTFM
-> > 
-> > -	select MMC_SDHCI_OF_476GTR
-> > 
-> >  	select ATA
-> >  	select SATA_AHCI_PLATFORM
-> >  	help
+> diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_crypt.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_crypt.c
+> index 5533221..3be690d 100644
+> --- a/drivers/staging/rtl8192u/ieee80211/ieee80211_crypt.c
+> +++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_crypt.c
+> @@ -200,7 +200,7 @@ static struct ieee80211_crypto_ops ieee80211_crypt_null = {
+>  	.owner			= THIS_MODULE,
+>  };
+>  
+> -int __init ieee80211_crypto_init(void)
+> +static int __init ieee80211_crypto_init(void)
+>  {
+>  	int ret = -ENOMEM;
 
+You obviously did not compile this change :(
+
+greg k-h
