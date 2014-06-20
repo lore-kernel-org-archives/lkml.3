@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965876AbaFTTxg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 15:53:36 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:30533 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932438AbaFTTxe (ORCPT
+	id S932361AbaFTTwL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 15:52:11 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:43329 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752748AbaFTTwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 15:53:34 -0400
-Date: Fri, 20 Jun 2014 22:53:34 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        lisa@xenapiadmin.com, ben@decadent.org.uk, valentina.manea.m@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8192 Check for Null return from dev_skb_alloc
-Message-ID: <20140620195334.GX5500@mwanda>
-References: <1403282995-6688-1-git-send-email-xerofoify@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403282995-6688-1-git-send-email-xerofoify@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Fri, 20 Jun 2014 15:52:09 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        Jiri Kosina <trivial@kernel.org>
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Subject: [PATCH] trivial: fs/btrfs/tree-log.c: Fix closing brace followed by if
+Date: Fri, 20 Jun 2014 21:51:43 +0200
+Message-Id: <1403293903-17696-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 12:49:55PM -0400, Nicholas Krause wrote:
-> Checks for Null return from dev_skb_alloc if it returns Null,
-> fw_download returns false. Otherwise it returns true.Also
-> removed rt_status due to returning true of false directly.
-> 
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
+Maybe "else if" was meant, but because of the goto out_unlock, it
+doesn't make a difference. Anyway, I chose the "only whitespace" fix.
 
-What is this?  This patch is really bad and also doesn't apply.  Greg
-already told you not to send any more patches until next week so it's
-just going to be ignored...
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+ fs/btrfs/tree-log.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Please slow down and don't send this again until it is correct.
-
-regards,
-dan carpenter
+diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
+index 9e1f2cd..50af2b9 100644
+--- a/fs/btrfs/tree-log.c
++++ b/fs/btrfs/tree-log.c
+@@ -3980,7 +3980,8 @@ again:
+ 		if (ret < 0) {
+ 			err = ret;
+ 			goto out_unlock;
+-		} if (ret) {
++		}
++		if (ret) {
+ 			ins_nr = 0;
+ 			btrfs_release_path(path);
+ 			continue;
+-- 
+1.9.2
 
