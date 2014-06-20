@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934458AbaFTPEZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 11:04:25 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:33942 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756404AbaFTPEW (ORCPT
+	id S964828AbaFTPEd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 11:04:33 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:61812 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934461AbaFTPE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 11:04:22 -0400
+	Fri, 20 Jun 2014 11:04:28 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 32/41] staging: rtl8188eu: EFUSE_ShadowMapUpdate():Remove unused parameter bool test
-Date: Fri, 20 Jun 2014 20:29:38 +0530
-Message-Id: <1403276387-11841-33-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 33/41] staging: rtl8188eu: Efuse_WordEnableDataWrite(): Remove unused parameter test
+Date: Fri, 20 Jun 2014 20:29:39 +0530
+Message-Id: <1403276387-11841-34-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1403276387-11841-1-git-send-email-navin.patidar@gmail.com>
 References: <1403276387-11841-1-git-send-email-navin.patidar@gmail.com>
@@ -24,58 +24,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_efuse.c        |    3 +--
- drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c |    4 ++--
+ drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c |    8 ++++----
  drivers/staging/rtl8188eu/include/rtw_efuse.h     |    2 +-
- 3 files changed, 4 insertions(+), 5 deletions(-)
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_efuse.c b/drivers/staging/rtl8188eu/core/rtw_efuse.c
-index c7ea214..bfa6588 100644
---- a/drivers/staging/rtl8188eu/core/rtw_efuse.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_efuse.c
-@@ -438,8 +438,7 @@ static void Efuse_ReadAllMap(struct adapter *pAdapter, u8 efuseType, u8 *Efuse)
-  *---------------------------------------------------------------------------*/
- void EFUSE_ShadowMapUpdate(
- 	struct adapter *pAdapter,
--	u8 efuseType,
--	bool pseudo)
-+	u8 efuseType)
- {
- 	struct eeprom_priv *pEEPROM = GET_EEPROM_EFUSE_PRIV(pAdapter);
- 	u16 mapLen = 0;
 diff --git a/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c b/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
-index 61bff1a..b895d36 100644
+index b895d36..1945099 100644
 --- a/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
 +++ b/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
-@@ -1629,13 +1629,13 @@ Hal_InitPGData88E(struct adapter *padapter)
- 	if (!pEEPROM->bautoload_fail_flag) { /*  autoload OK. */
- 		if (!is_boot_from_eeprom(padapter)) {
- 			/*  Read EFUSE real map to shadow. */
--			EFUSE_ShadowMapUpdate(padapter, EFUSE_WIFI, false);
-+			EFUSE_ShadowMapUpdate(padapter, EFUSE_WIFI);
- 		}
- 	} else {/* autoload fail */
- 		RT_TRACE(_module_hci_hal_init_c_, _drv_notice_, ("AutoLoad Fail reported from CR9346!!\n"));
- 		/* update to default value 0xFF */
- 		if (!is_boot_from_eeprom(padapter))
--			EFUSE_ShadowMapUpdate(padapter, EFUSE_WIFI, false);
-+			EFUSE_ShadowMapUpdate(padapter, EFUSE_WIFI);
+@@ -882,7 +882,7 @@ void EFUSE_GetEfuseDefinition(struct adapter *pAdapter, u8 efuseType, u8 type, v
  	}
  }
  
+-u8 Efuse_WordEnableDataWrite(struct adapter *pAdapter, u16 efuse_addr, u8 word_en, u8 *data, bool bPseudoTest)
++u8 Efuse_WordEnableDataWrite(struct adapter *pAdapter, u16 efuse_addr, u8 word_en, u8 *data)
+ {
+ 	u16	tmpaddr = 0;
+ 	u16	start_addr = efuse_addr;
+@@ -1071,7 +1071,7 @@ static bool hal_EfuseFixHeaderProcess(struct adapter *pAdapter, u8 efuseType, st
+ 
+ 	if (Efuse_PgPacketRead(pAdapter, pFixPkt->offset, originaldata, bPseudoTest)) {
+ 		/* check if data exist */
+-		badworden = Efuse_WordEnableDataWrite(pAdapter, efuse_addr+1, pFixPkt->word_en, originaldata, bPseudoTest);
++		badworden = Efuse_WordEnableDataWrite(pAdapter, efuse_addr+1, pFixPkt->word_en, originaldata);
+ 
+ 		if (badworden != 0xf) {	/*  write fail */
+ 			PgWriteSuccess = Efuse_PgPacketWrite(pAdapter, pFixPkt->offset, badworden, originaldata, bPseudoTest);
+@@ -1198,7 +1198,7 @@ static bool hal_EfusePgPacketWriteData(struct adapter *pAdapter, u8 efuseType, u
+ 	u32	PgWriteSuccess = 0;
+ 
+ 	badworden = 0x0f;
+-	badworden = Efuse_WordEnableDataWrite(pAdapter, efuse_addr+1, pTargetPkt->word_en, pTargetPkt->data, bPseudoTest);
++	badworden = Efuse_WordEnableDataWrite(pAdapter, efuse_addr+1, pTargetPkt->word_en, pTargetPkt->data);
+ 	if (badworden == 0x0F) {
+ 		/*  write ok */
+ 		return true;
+@@ -1325,7 +1325,7 @@ static bool hal_EfusePartialWriteCheck(struct adapter *pAdapter, u8 efuseType, u
+ 			    (!hal_EfuseCheckIfDatafollowed(pAdapter, curPkt.word_cnts, startAddr+1, bPseudoTest)) &&
+ 			    wordEnMatched(pTargetPkt, &curPkt, &matched_wden)) {
+ 				/*  Here to write partial data */
+-				badworden = Efuse_WordEnableDataWrite(pAdapter, startAddr+1, matched_wden, pTargetPkt->data, bPseudoTest);
++				badworden = Efuse_WordEnableDataWrite(pAdapter, startAddr+1, matched_wden, pTargetPkt->data);
+ 				if (badworden != 0x0F) {
+ 					u32	PgWriteSuccess = 0;
+ 					/*  if write fail on some words, write these bad words again */
 diff --git a/drivers/staging/rtl8188eu/include/rtw_efuse.h b/drivers/staging/rtl8188eu/include/rtw_efuse.h
-index 23a0168..1de6fa7 100644
+index 1de6fa7..f8737a4 100644
 --- a/drivers/staging/rtl8188eu/include/rtw_efuse.h
 +++ b/drivers/staging/rtl8188eu/include/rtw_efuse.h
-@@ -140,7 +140,7 @@ void efuse_WordEnableDataRead(u8 word_en, u8 *sourdata, u8 *targetdata);
+@@ -138,7 +138,7 @@ bool Efuse_PgPacketWrite(struct adapter *adapter, u8 offset, u8 word, u8 *data,
+ 			bool test);
+ void efuse_WordEnableDataRead(u8 word_en, u8 *sourdata, u8 *targetdata);
  u8 Efuse_WordEnableDataWrite(struct adapter *adapter, u16 efuse_addr,
- 			     u8 word_en, u8 *data, bool test);
+-			     u8 word_en, u8 *data, bool test);
++			     u8 word_en, u8 *data);
  
--void EFUSE_ShadowMapUpdate(struct adapter *adapter, u8 efusetype, bool test);
-+void EFUSE_ShadowMapUpdate(struct adapter *adapter, u8 efusetype);
+ void EFUSE_ShadowMapUpdate(struct adapter *adapter, u8 efusetype);
  void EFUSE_ShadowRead(struct adapter *adapt, u8 type, u16 offset, u32 *val);
- 
- #endif
 -- 
 1.7.10.4
 
