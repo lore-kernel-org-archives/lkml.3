@@ -1,99 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754537AbaFTBEb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jun 2014 21:04:31 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:58405 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753688AbaFTBEa (ORCPT
+	id S1755473AbaFTBII (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jun 2014 21:08:08 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:23343 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754083AbaFTBIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jun 2014 21:04:30 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@kernel.org, artagnon@gmail.com, jolsa@redhat.com,
-        rusty@rustcorp.com.au, bp@suse.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] perf timechart: implement IO mode
-References: <1403180583-12309-1-git-send-email-stfomichev@yandex-team.ru>
-	<1403180583-12309-2-git-send-email-stfomichev@yandex-team.ru>
-Date: Fri, 20 Jun 2014 10:04:21 +0900
-In-Reply-To: <1403180583-12309-2-git-send-email-stfomichev@yandex-team.ru>
-	(Stanislav Fomichev's message of "Thu, 19 Jun 2014 16:23:01 +0400")
-Message-ID: <87egyk75nu.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 19 Jun 2014 21:08:06 -0400
+X-AuditID: cbfee68e-b7fb96d000004bfc-89-53a389745dc6
+Message-id: <53A38974.90903@samsung.com>
+Date: Fri, 20 Jun 2014 10:08:04 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'MyungJoo Ham'" <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org,
+        "'Graeme Gregory'" <gg@slimlogic.co.uk>,
+        "'Kishon Vijay Abraham I'" <kishon@ti.com>
+Subject: Re: [PATCH] extcon: palmas: Make of_device_id array const
+References: <000301cf8ab6$02ebea10$08c3be30$%han@samsung.com>
+In-reply-to: <000301cf8ab6$02ebea10$08c3be30$%han@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsWyRsSkULekc3GwwYoGSYv+LS4WlxdeYrW4
+	8LSHzeLyrjlsFrcbV7A5sHr0bVnF6DF1yl9Gj+M3tjN5fN4kF8ASxWWTkpqTWZZapG+XwJVx
+	qms1Y8FX9oqmt29ZGxgPs3UxcnJICJhIrDhylR3CFpO4cG89UJyLQ0hgKaPEoTltrDBFG+5/
+	YAGxhQQWMUrMvVkLUfSaUeLq3TdMXYwcHLwCGhLnNqaB1LAIqEqs6j8KNpRNQEti/4sbYMtE
+	BcIkVk6/AjaHV0BQ4sfke2C2iICKxOf1x8EWMwvMY5Q403MaLCEs4CTx/dxXJojFthIXH78F
+	i3MK2En83jwfLM4soCOxv3UaG4QtL7F5zVtmkEESArvYJc4vfcAKcZGAxLfJh1hADpUQkJXY
+	dIAZ4jFJiYMrbrBMYBSbheSmWUjGzkIydgEj8ypG0dSC5ILipPQiI73ixNzi0rx0veT83E2M
+	wLg6/e9Z3w7GmwesDzEmA62cyCwlmpwPjMu8knhDYzMjC1MTU2Mjc0sz0oSVxHkXPUwKEhJI
+	TyxJzU5NLUgtii8qzUktPsTIxMEp1cC4sn2VafQvzl2GW/cXFC8oCDjuc5qlWZRRRk5Fe8O0
+	7P+fX4hKKE0KTjyReiyon2XK54jnJ1LvZHD/b0xP403JPhVW//Vfz4wc1y86oUsn6/hKLi0W
+	5VHfFp98a8fCkLtza8K+tIkHppdP5zm0Mej2F9XZ4tGTOr+4rXzNb3MsmlWg7+2C+RFKLMUZ
+	iYZazEXFiQAAeS8ZwQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xgG5J5+Jgg9P/BC36t7hYXF54idXi
+	wtMeNovLu+awWdxuXMHmwOrRt2UVo8fUKX8ZPY7f2M7k8XmTXABLVAOjTUZqYkpqkUJqXnJ+
+	SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QXiWFssScUqBQQGJxsZK+HaYJ
+	oSFuuhYwjRG6viFBcD1GBmggYQ1jxqmu1YwFX9krmt6+ZW1gPMzWxcjJISFgIrHh/gcWCFtM
+	4sK99WBxIYFFjBJzb9Z2MXIB2a8ZJa7efcPUxcjBwSugIXFuYxpIDYuAqsSq/qPsIDabgJbE
+	/hc3wHpFBcIkVk6/AjaTV0BQ4sfke2C2iICKxOf1x9lAZjILzGOUONNzGiwhLOAk8f3cVyaI
+	xbYSFx+/BYtzCthJ/N48HyzOLKAjsb91GhuELS+xec1b5gmMArOQ7JiFpGwWkrIFjMyrGEVT
+	C5ILipPScw31ihNzi0vz0vWS83M3MYKj9pnUDsaVDRaHGAU4GJV4eDtMFwcLsSaWFVfmHmKU
+	4GBWEuE93Q4U4k1JrKxKLcqPLyrNSS0+xJgMDIKJzFKiyfnAhJJXEm9obGJmZGlkbmhhZGxO
+	mrCSOO+BVutAIYH0xJLU7NTUgtQimC1MHJxSDYzzRSwm+rgxV4lbqXm8Lrk+IeaBednZJXmC
+	aV32j866B0/p3/JfQcTCbbPiu17uOSXuhxw046cl3eTo/1I6V87wr5HkkssX7t1y/C85f1OC
+	S5Zp0/7MZUv//Hv81PHz7nf+3ywLXxrJB/dYSR/K9S/Zzd7zdJtjQXZ09/3p8bU7f336sSnE
+	464SS3FGoqEWc1FxIgAwuIX+HgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stanislav,
+Hi Jingoo,
 
-On Thu, 19 Jun 2014 16:23:01 +0400, Stanislav Fomichev wrote:
-> In IO mode timechart shows any disk/network activity.
-> +	for (i = 0; i < disk_events_nr; i++) {
-> +		if (!is_valid_tracepoint(disk_events[i])) {
-> +			rec_argc--;
-
-It (and others below) should be 'rec_argc -= 4' - i.e. I still see the
-segfault. :)
-
-
-> +			continue;
-> +		}
-> +
-> +		*p++ = "-e";
-> +		*p++ = strdup(disk_events[i]);
-> +		*p++ = "--filter";
-> +		*p++ = filter;
-> +	}
-
-
-[SNIP]
-> +void svg_ubox(int Yslot, u64 start, u64 end, double height, const char *type, int fd, int err, int merges)
-> +{
-> +	double w = time2pixels(end) - time2pixels(start);
-> +	height = normalize_height(height);
-> +
-> +	if (!svgfile)
-> +		return;
-> +
-> +	fprintf(svgfile, "<g>\n");
-> +	fprintf(svgfile, "<title>fd=%d error=%d merges=%d</title>\n", fd, err, merges);
-> +	fprintf(svgfile, "<rect x=\"%.8f\" width=\"%.8f\" y=\"%.1f\" height=\"%.1f\" class=\"%s\"/>\n",
-
-Looks like this change should be applied to the exsting (for cpu and
-power events) boxes too.  Care to send it as a separate fix?
-
-
-> +		time2pixels(start),
-> +		w,
-> +		Yslot * SLOT_MULT,
-> +		SLOT_HALF * height,
-> +		type);
-> +	fprintf(svgfile, "</g>\n");
-> +}
-
-
-[SNIP]
-> @@ -579,8 +669,10 @@ void svg_time_grid(void)
->  			color = 128;
->  		}
+On 06/18/2014 02:27 PM, Jingoo Han wrote:
+> Make of_device_id array const, because all OF functions handle
+> it as const.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/extcon/extcon-palmas.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palmas.c
+> index 7417ce8..5efa96c 100644
+> --- a/drivers/extcon/extcon-palmas.c
+> +++ b/drivers/extcon/extcon-palmas.c
+> @@ -278,7 +278,7 @@ static int palmas_usb_resume(struct device *dev)
 >  
-> -		fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%" PRIu64 "\" style=\"stroke:rgb(%i,%i,%i);stroke-width:%1.3f\"/>\n",
-> -			time2pixels(i), SLOT_MULT/2, time2pixels(i), total_height, color, color, color, thickness);
-> +		if (thickness >= min_thickness)
-> +			fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%" PRIu64 "\" style=\"stroke:rgb(%i,%i,%i);stroke-width:%1.3f\"/>\n",
+>  static SIMPLE_DEV_PM_OPS(palmas_pm_ops, palmas_usb_suspend, palmas_usb_resume);
+>  
+> -static struct of_device_id of_palmas_match_tbl[] = {
+> +static const struct of_device_id of_palmas_match_tbl[] = {
+>  	{ .compatible = "ti,palmas-usb", },
+>  	{ .compatible = "ti,palmas-usb-vid", },
+>  	{ .compatible = "ti,twl6035-usb", },
+> 
 
-It seems you missed the change above (s/4.8f/.8f/g). :)
+The same patch was applied by Krzysztof Kozlowski on extcon-next branch. 
 
 Thanks,
-Namhyung
-
-
-> +				time2pixels(i), SLOT_MULT/2, time2pixels(i),
-> +				total_height, color, color, color, thickness);
->  
->  		i += 10000000;
->  	}
+Chanwoo Choi
