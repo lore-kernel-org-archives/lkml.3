@@ -1,115 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966572AbaFTUU0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 16:20:26 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:42010 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751731AbaFTUUY (ORCPT
+	id S1756809AbaFTUVY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 16:21:24 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:58573 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753769AbaFTUVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 16:20:24 -0400
-Date: Fri, 20 Jun 2014 16:20:17 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jungseok Lee <jays.lee@samsung.com>
-Cc: linux-kernel@vger.kernel.org, sungjinn.chung@samsung.com,
-        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH] swiotlb: Correct kernel command line handler
-Message-ID: <20140620202017.GB5558@laptop.dumpdata.com>
-References: <011801cf4d4c$f7ba51f0$e72ef5d0$@samsung.com>
- <20140401124606.GA7135@phenom.dumpdata.com>
- <004c01cf4e2d$1d84a1c0$588de540$@samsung.com>
+	Fri, 20 Jun 2014 16:21:23 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/SUWXjz3dV17JfYuwPB3F40bYcVgBpMGE=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 99ED15947F0
+Date: Fri, 20 Jun 2014 16:21:00 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: mvebu: rename ARM_ERRATA_753970
+Message-ID: <20140620202100.GG21711@titan.lakedaemon.net>
+References: <201404052101.19381.arnd@arndb.de>
+ <201404052104.11363.arnd@arndb.de>
+ <1396777049.30640.9.camel@x220>
+ <53418889.2050002@free-electrons.com>
+ <1396805315.7723.8.camel@x220>
+ <1401094871.25902.20.camel@x220>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <004c01cf4e2d$1d84a1c0$588de540$@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1401094871.25902.20.camel@x220>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 01:36:29PM +0900, Jungseok Lee wrote:
-> On Tuesday, April 01, 2014 9:46 PM, Konrad Rzeszutek Wilk wrote:
-> > On Tue, Apr 01, 2014 at 10:51:58AM +0900, Jungseok Lee wrote:
-> > > This patch corrects kernel command line handler when io_tlb_nslabs is
-> > > set to 0.
-> > >
-> > > A current implementation allocates default size memory (64MB) when
-> > > 0 is given to io_tlb_nslabs ("swiotlb=0") by kernel command line.
-> > > In other words, memory is allocated unintentionally.
-> > 
-> > What are the other IOMMUs that end up taking over the DMA ops?
-> 
-> I think that no other IOMMUs take over it on ARM64 system, except Xen.
-> 
-> > Or do you end up with no DMA ops?
-> 
-> I focus on ARM64 system which uses swiotlb as default DMA ops.
-> 
-> If some ARM64 platforms would like to use memory only from
-> __get_free_pages in swiotlb_alloc_coherent function, an
-> interface would be needed to configure reserved memory size.
-> 
-> Thus, I add it to kernel command line handler.
+Paul,
 
-OK. I somehow have lost track of this patch. Is this patch
-still valid?
+Working through my back-log...
 
+On Mon, May 26, 2014 at 11:01:11AM +0200, Paul Bolle wrote:
+> ARM_ERRATA_753970 was renamed to PL310_ERRATA_753970 in v3.2, through
+> commit fa0ce4035d48 ("ARM: 7162/1: errata: tidy up Kconfig options for
+> PL310 errata workarounds"). Two selects were added in v3.15-rc1 that
+> still use the previous name. Rename these.
 > 
-> Best Regards
-> Jungseok Lee
+> Make these statements depend on CACHE_PL310, like all other selects of
+> PL310_ERRATA_753970. That way it will only be selected if its dependency
+> is met.
 > 
-> > >
-> > > Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
-> > > Signed-off-by: Sungjinn Chung <sungjinn.chung@samsung.com>
-> > > ---
-> > >  lib/swiotlb.c |    8 ++++++--
-> > >  1 file changed, 6 insertions(+), 2 deletions(-)
-> > >
-> > > diff --git a/lib/swiotlb.c b/lib/swiotlb.c index b604b83..9fe9f71
-> > > 100644
-> > > --- a/lib/swiotlb.c
-> > > +++ b/lib/swiotlb.c
-> > > @@ -55,6 +55,8 @@
-> > >
-> > >  int swiotlb_force;
-> > >
-> > > +static int swiotlb_no_use;
-> > > +
-> > >  /*
-> > >   * Used to do a quick range check in swiotlb_tbl_unmap_single and
-> > >   * swiotlb_tbl_sync_single_*, to see if the memory was in fact
-> > > allocated by this @@ -102,6 +104,8 @@ setup_io_tlb_npages(char *str)
-> > >  		io_tlb_nslabs = simple_strtoul(str, &str, 0);
-> > >  		/* avoid tail segment of size < IO_TLB_SEGSIZE */
-> > >  		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
-> > > +		if (!io_tlb_nslabs)
-> > > +			swiotlb_no_use = 1;
-> > >  	}
-> > >  	if (*str == ',')
-> > >  		++str;
-> > > @@ -212,7 +216,7 @@ swiotlb_init(int verbose)
-> > >  	unsigned char *vstart;
-> > >  	unsigned long bytes;
-> > >
-> > > -	if (!io_tlb_nslabs) {
-> > > +	if (!swiotlb_no_use && !io_tlb_nslabs) {
-> > >  		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
-> > >  		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
-> > >  	}
-> > > @@ -244,7 +248,7 @@ swiotlb_late_init_with_default_size(size_t default_size)
-> > >  	unsigned int order;
-> > >  	int rc = 0;
-> > >
-> > > -	if (!io_tlb_nslabs) {
-> > > +	if (!swiotlb_no_use && !io_tlb_nslabs) {
-> > >  		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
-> > >  		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
-> > >  	}
-> > > --
-> > > 1.7.10.4
-> > >
-> > >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in the body of a message
-> > to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> I reported this before v3.15-rc1. I don't know whether any fixes are
+> pending. None are in linux-next. 
+
+It looks like rmk just added a patch to fixing the selection of the
+erratas.  Could you please take a look and either rebase or drop this
+patch?
+
+thx,
+
+Jason.
+
+> And ignoring an errata were one
+> apparently could be needed sounds, well, scary. Perhaps it is not.
+> Anyhow, to make sure this gets fixed, hopefully before v3.15, I'm
+> submitting this (untested!) patch.
 > 
+> A related observation. There are three PL310 errata options: one depends
+> on CACHE_PL310, three depend on CACHE_L2X0. The one depending on
+> CACHE_PL310 is selected only if CACHE_PL310 is set.
+> 
+> But the three depending on CACHE_L2X0 are selected a few times if
+> CACHE_L2X0 is set, in other cases if CACHE_PL310 is set, and in some
+> cases always. There may be good reasons for this, but it looks odd. I
+> know nothing about the PL310 cache and its erratas, so I haven't looked
+> into this any further.
+> 
+>  arch/arm/mach-mvebu/Kconfig | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/mach-mvebu/Kconfig b/arch/arm/mach-mvebu/Kconfig
+> index 3f73eecbcfb0..501d0f42e7b2 100644
+> --- a/arch/arm/mach-mvebu/Kconfig
+> +++ b/arch/arm/mach-mvebu/Kconfig
+> @@ -35,7 +35,7 @@ config MACH_ARMADA_370
+>  config MACH_ARMADA_375
+>  	bool "Marvell Armada 375 boards" if ARCH_MULTI_V7
+>  	select ARM_ERRATA_720789
+> -	select ARM_ERRATA_753970
+> +	select PL310_ERRATA_753970 if CACHE_PL310
+>  	select ARM_GIC
+>  	select ARMADA_375_CLK
+>  	select CPU_V7
+> @@ -48,7 +48,7 @@ config MACH_ARMADA_375
+>  config MACH_ARMADA_38X
+>  	bool "Marvell Armada 380/385 boards" if ARCH_MULTI_V7
+>  	select ARM_ERRATA_720789
+> -	select ARM_ERRATA_753970
+> +	select PL310_ERRATA_753970 if CACHE_PL310
+>  	select ARM_GIC
+>  	select ARMADA_38X_CLK
+>  	select CPU_V7
+> -- 
+> 1.9.0
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
