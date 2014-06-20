@@ -1,182 +1,346 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966952AbaFTWBy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 18:01:54 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:49378 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965046AbaFTWBw (ORCPT
+	id S967095AbaFTWEi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 18:04:38 -0400
+Received: from smtprelay0027.hostedemail.com ([216.40.44.27]:56823 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S965269AbaFTWEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 18:01:52 -0400
-Date: Sat, 21 Jun 2014 00:00:36 +0200
-From: Beniamino Galvani <b.galvani@gmail.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Heiko Stuebner <heiko@sntech.de>, linux-pwm@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH 1/3] pwm: add Rockchip SoC PWM support
-Message-ID: <20140620220034.GA927@gmail.com>
-References: <1399504115-16257-1-git-send-email-b.galvani@gmail.com>
- <1399504115-16257-2-git-send-email-b.galvani@gmail.com>
- <20140617214253.GA24743@mithrandir>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140617214253.GA24743@mithrandir>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 20 Jun 2014 18:04:36 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:1:41:69:355:379:541:599:960:966:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1461:1515:1516:1518:1593:1594:1605:1730:1747:1777:1792:1963:2194:2196:2199:2200:2393:2553:2559:2562:2636:2691:2693:2741:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:4385:4605:5007:6119:6120:7652:7903:8531:8603:8660:8957:9010:9036:9040:9592:10848:11026:11232:11473:11658:11914:12043:12198:12291:12296:12438:12517:12519:12555:12663:12683:12740:13148:13230:14093:14097,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
+X-HE-Tag: slope68_7f0cdffcf0a63
+X-Filterd-Recvd-Size: 11935
+Message-ID: <1403301871.4076.23.camel@joe-AO725>
+Subject: Re: [RFC PATCH] use snprintf instead of sprintf in
+ rcu_torture_printk
+From: Joe Perches <joe@perches.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Pranith Kumar <bobby.prani@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        romanov.arya@gmail.com, Josh Triplett <josh@joshtriplett.org>
+Date: Fri, 20 Jun 2014 15:04:31 -0700
+In-Reply-To: <20140620045445.GA4904@linux.vnet.ibm.com>
+References: <20140611074704.GS5015@mwanda>
+	 <1402502500.6169.5.camel@joe-AO725>
+	 <alpine.DEB.2.02.1406140937370.2003@localhost6.localdomain6>
+	 <alpine.DEB.2.02.1406141151170.2045@localhost6.localdomain6>
+	 <20140618193345.GR4669@linux.vnet.ibm.com>
+	 <1403120982.3839.25.camel@joe-AO725>
+	 <20140619210031.GN4904@linux.vnet.ibm.com> <53A37140.3020003@gmail.com>
+	 <20140619234922.GY4904@linux.vnet.ibm.com> <53A37CA2.9030200@gmail.com>
+	 <20140620045445.GA4904@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 11:42:58PM +0200, Thierry Reding wrote:
-> On Thu, May 08, 2014 at 01:08:33AM +0200, Beniamino Galvani wrote:
-> > This commit adds a driver for the PWM controller found on Rockchip
-> > RK29, RK30 and RK31 SoCs.
+On Thu, 2014-06-19 at 21:54 -0700, Paul E. McKenney wrote:
+> On Thu, Jun 19, 2014 at 08:13:22PM -0400, Pranith Kumar wrote:
+> > On 06/19/2014 07:49 PM, Paul E. McKenney wrote:
+> > > On Thu, Jun 19, 2014 at 07:24:48PM -0400, Pranith Kumar wrote:
+> > >> (dropping some CCs)
+> > >>
+> > >> On 06/19/2014 05:00 PM, Paul E. McKenney wrote:
+> > >>> On Wed, Jun 18, 2014 at 12:49:42PM -0700, Joe Perches wrote:
+> > >>>>
+> > >>>> I believe the function doesn't work well.
+> > >>>>
+> > >>>> static void
+> > >>>> rcu_torture_stats_print(void)
+> > >>>> {
+> > >>>> 	int size = nr_cpu_ids * 200 + 8192;
+> > >>>> 	char *buf;
+> > >>>>
+> > >>>> 	buf = kmalloc(size, GFP_KERNEL);
+> > >>>> 	if (!buf) {
+> > >>>> 		pr_err("rcu-torture: Out of memory, need: %d\n", size);
+> > >>>> 		return;
+> > >>>> 	}
+> > >>>> 	rcu_torture_printk(buf);
+> > >>>> 	pr_alert("%s", buf);
+> > >>>> 	kfree(buf);
+> > >>>> }
+> > >>>>
+> > >>>> rcu_torture_printk simply fills buf
+> > >>>>
+> > >>>> btw: I believe the arguments should pass size and
+> > >>>>      rcu_torture_printk should use snprintf/size
+> > >>>>
+> > >>>> but all printks are limited to a maximum of 1024
+> > >>>> bytes so the large allocation is senseless and
+> > >>>> would even if it worked, would likely need to be
+> > >>>> vmalloc/vfree
+> > >>>
+> > >>> Fair point!
+> > >>>
+> > >>> Pranith, Romanov, if you would like part of RCU that is less touchy
+> > >>> about random hacking, this would be a good place to start.  Scripts in
+> > >>> tools/testing/selftests/rcutorture/bin do care about some of the format,
+> > >>> but the variable-length portion generated by cur_ops->stats() is as far
+> > >>> as I know only parsed by human eyes.
+> > >>>
+> > >>
+> > >> Here is a first run of the change. Please let me know if I am totally off. RFC. :)
+> > > 
+> > > Thank you for taking this on!
 > > 
-> > Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
-> > ---
-> >  drivers/pwm/Kconfig        |    8 ++
-> >  drivers/pwm/Makefile       |    1 +
-> >  drivers/pwm/pwm-rockchip.c |  180 ++++++++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 189 insertions(+)
-> >  create mode 100644 drivers/pwm/pwm-rockchip.c
+> > You are most welcome :)
 > > 
-> > diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-> > index 5b34ff2..2e92245 100644
-> > --- a/drivers/pwm/Kconfig
-> > +++ b/drivers/pwm/Kconfig
-> > @@ -197,6 +197,14 @@ config PWM_RENESAS_TPU
-> >  	  To compile this driver as a module, choose M here: the module
-> >  	  will be called pwm-renesas-tpu.
-> >  
-> > +config PWM_ROCKCHIP
-> > +	tristate "Rockchip PWM support"
-> > +	depends on ARCH_ROCKCHIP
-> > +	depends on OF
+> > > 
+> > >> Three things on Todo list:
+> > >>
+> > >> * We need to check that we are using less than the allocated size of the buffer (used > size). (we are allocating a big buffer, so not sure if necessary)
+> > >> * Need to check with the scripts if they are working.
+> > >> * I used a loop for pr_alert(). I am not sure this is right, there should be a better way for printing large buffers
+> > >>
+> > >> If the overall structure is ok I will go ahead and check how the scripts are handling these changes. 
+> > > 
+> > > One other thing...  Convince this function (and a few others that it
+> > > calls) that the system really has 4096 CPUs, run this code, and see wshat
+> > > actually happens both before and after.  Just to get a bit of practice
+> > > mixed in with the theory.  ;-)
+> > > 
+> > 
+> > OK. I think to do this I need to use 4096 instead of nr_cpu_ids. I will try this and see how it goes :)
 > 
-> It seems like ARCH_ROCKCHIP depends on OF already (via ARCH_MULTI_V7 and
-> ARCH_MULTIPLATFORM), so having the dependency explicitly here seems
-> redundant.
+> That's the spirit!  You will probably have to adjust a few other things
+> as well.
 
-Right, I will remove the dependency.
+Perhaps this should not use the allocation / page buffer
+and instead call pr_alert and pr_cont directly like this:
 
-> 
-> > diff --git a/drivers/pwm/pwm-rockchip.c b/drivers/pwm/pwm-rockchip.c
-> [...]
-> > +#define PRESCALER		2
-> > +#define NSECS_PER_SEC		1000000000
-> 
-> You should use NSEC_PER_SEC from include/linux/time.h.
+ include/linux/torture.h |   2 +-
+ kernel/rcu/rcutorture.c | 110 +++++++++++++++++++++++-------------------------
+ kernel/torture.c        |  16 +++----
+ 3 files changed, 60 insertions(+), 68 deletions(-)
 
-Ok.
+diff --git a/include/linux/torture.h b/include/linux/torture.h
+index 5ca58fc..fec46f8 100644
+--- a/include/linux/torture.h
++++ b/include/linux/torture.h
+@@ -51,7 +51,7 @@
+ 
+ /* Definitions for online/offline exerciser. */
+ int torture_onoff_init(long ooholdoff, long oointerval);
+-char *torture_onoff_stats(char *page);
++void torture_onoff_stats(void);
+ bool torture_onoff_failures(void);
+ 
+ /* Low-rider random number generator. */
+diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+index 7fa34f8..bb6db08 100644
+--- a/kernel/rcu/rcutorture.c
++++ b/kernel/rcu/rcutorture.c
+@@ -242,7 +242,7 @@ struct rcu_torture_ops {
+ 	void (*call)(struct rcu_head *head, void (*func)(struct rcu_head *rcu));
+ 	void (*cb_barrier)(void);
+ 	void (*fqs)(void);
+-	void (*stats)(char *page);
++	void (*stats)(void);
+ 	int irq_capable;
+ 	int can_boost;
+ 	const char *name;
+@@ -525,21 +525,21 @@ static void srcu_torture_barrier(void)
+ 	srcu_barrier(&srcu_ctl);
+ }
+ 
+-static void srcu_torture_stats(char *page)
++static void srcu_torture_stats(void)
+ {
+ 	int cpu;
+ 	int idx = srcu_ctl.completed & 0x1;
+ 
+-	page += sprintf(page, "%s%s per-CPU(idx=%d):",
+-		       torture_type, TORTURE_FLAG, idx);
++	pr_alert("%s%s per-CPU(idx=%d):",
++		 torture_type, TORTURE_FLAG, idx);
+ 	for_each_possible_cpu(cpu) {
+ 		long c0, c1;
+ 
+ 		c0 = (long)per_cpu_ptr(srcu_ctl.per_cpu_ref, cpu)->c[!idx];
+ 		c1 = (long)per_cpu_ptr(srcu_ctl.per_cpu_ref, cpu)->c[idx];
+-		page += sprintf(page, " %d(%ld,%ld)", cpu, c0, c1);
++		pr_cont(" %d(%ld,%ld)", cpu, c0, c1);
+ 	}
+-	sprintf(page, "\n");
++	pr_cont("\n");
+ }
+ 
+ static void srcu_torture_synchronize_expedited(void)
+@@ -1031,10 +1031,10 @@ rcu_torture_reader(void *arg)
+ }
+ 
+ /*
+- * Create an RCU-torture statistics message in the specified buffer.
++ * Print RCU-torture statistics
+  */
+ static void
+-rcu_torture_printk(char *page)
++rcu_torture_printk(void)
+ {
+ 	int cpu;
+ 	int i;
+@@ -1052,55 +1052,60 @@ rcu_torture_printk(char *page)
+ 		if (pipesummary[i] != 0)
+ 			break;
+ 	}
+-	page += sprintf(page, "%s%s ", torture_type, TORTURE_FLAG);
+-	page += sprintf(page,
+-		       "rtc: %p ver: %lu tfle: %d rta: %d rtaf: %d rtf: %d ",
+-		       rcu_torture_current,
+-		       rcu_torture_current_version,
+-		       list_empty(&rcu_torture_freelist),
+-		       atomic_read(&n_rcu_torture_alloc),
+-		       atomic_read(&n_rcu_torture_alloc_fail),
+-		       atomic_read(&n_rcu_torture_free));
+-	page += sprintf(page, "rtmbe: %d rtbke: %ld rtbre: %ld ",
+-		       atomic_read(&n_rcu_torture_mberror),
+-		       n_rcu_torture_boost_ktrerror,
+-		       n_rcu_torture_boost_rterror);
+-	page += sprintf(page, "rtbf: %ld rtb: %ld nt: %ld ",
+-		       n_rcu_torture_boost_failure,
+-		       n_rcu_torture_boosts,
+-		       n_rcu_torture_timers);
+-	page = torture_onoff_stats(page);
+-	page += sprintf(page, "barrier: %ld/%ld:%ld",
+-		       n_barrier_successes,
+-		       n_barrier_attempts,
+-		       n_rcu_torture_barrier_error);
+-	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
++
++	pr_alert("%s%s ", torture_type, TORTURE_FLAG);
++	pr_cont("rtc: %p ver: %lu tfle: %d rta: %d rtaf: %d rtf: %d ",
++		rcu_torture_current,
++		rcu_torture_current_version,
++		list_empty(&rcu_torture_freelist),
++		atomic_read(&n_rcu_torture_alloc),
++		atomic_read(&n_rcu_torture_alloc_fail),
++		atomic_read(&n_rcu_torture_free));
++	pr_cont("rtmbe: %d rtbke: %ld rtbre: %ld ",
++		atomic_read(&n_rcu_torture_mberror),
++		n_rcu_torture_boost_ktrerror,
++		n_rcu_torture_boost_rterror);
++	pr_cont("rtbf: %ld rtb: %ld nt: %ld ",
++		n_rcu_torture_boost_failure,
++		n_rcu_torture_boosts,
++		n_rcu_torture_timers);
++	torture_onoff_stats();
++	pr_cont("barrier: %ld/%ld:%ld\n",
++		n_barrier_successes,
++		n_barrier_attempts,
++		n_rcu_torture_barrier_error);
++
++	pr_alert("%s%s ", torture_type, TORTURE_FLAG);
+ 	if (atomic_read(&n_rcu_torture_mberror) != 0 ||
+ 	    n_rcu_torture_barrier_error != 0 ||
+ 	    n_rcu_torture_boost_ktrerror != 0 ||
+ 	    n_rcu_torture_boost_rterror != 0 ||
+ 	    n_rcu_torture_boost_failure != 0 ||
+ 	    i > 1) {
+-		page += sprintf(page, "!!! ");
++		pr_cont("%s", "!!! ");
+ 		atomic_inc(&n_rcu_torture_error);
+ 		WARN_ON_ONCE(1);
+ 	}
+-	page += sprintf(page, "Reader Pipe: ");
++	pr_cont("Reader Pipe: ");
+ 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++)
+-		page += sprintf(page, " %ld", pipesummary[i]);
+-	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
+-	page += sprintf(page, "Reader Batch: ");
++		pr_cont(" %ld", pipesummary[i]);
++	pr_cont("\n");
++
++	pr_alert("%s%s ", torture_type, TORTURE_FLAG);
++	pr_cont("Reader Batch: ");
+ 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++)
+-		page += sprintf(page, " %ld", batchsummary[i]);
+-	page += sprintf(page, "\n%s%s ", torture_type, TORTURE_FLAG);
+-	page += sprintf(page, "Free-Block Circulation: ");
++		pr_cont(" %ld", batchsummary[i]);
++	pr_cont("\n");
++
++	pr_alert("%s%s ", torture_type, TORTURE_FLAG);
++	pr_cont("Free-Block Circulation: ");
+ 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++) {
+-		page += sprintf(page, " %d",
+-			       atomic_read(&rcu_torture_wcount[i]));
++		pr_cont(" %d", atomic_read(&rcu_torture_wcount[i]));
+ 	}
+-	page += sprintf(page, "\n");
++	pr_cont("\n");
++
+ 	if (cur_ops->stats)
+-		cur_ops->stats(page);
++		cur_ops->stats();
+ 	if (rtcv_snap == rcu_torture_current_version &&
+ 	    rcu_torture_current != NULL) {
+ 		int __maybe_unused flags;
+@@ -1109,10 +1114,9 @@ rcu_torture_printk(char *page)
+ 
+ 		rcutorture_get_gp_data(cur_ops->ttype,
+ 				       &flags, &gpnum, &completed);
+-		page += sprintf(page,
+-				"??? Writer stall state %d g%lu c%lu f%#x\n",
+-				rcu_torture_writer_state,
+-				gpnum, completed, flags);
++		pr_alert("??? Writer stall state %d g%lu c%lu f%#x\n",
++			 rcu_torture_writer_state,
++			 gpnum, completed, flags);
+ 		show_rcu_gp_kthreads();
+ 		rcutorture_trace_dump();
+ 	}
+@@ -1130,17 +1134,7 @@ rcu_torture_printk(char *page)
+ static void
+ rcu_torture_stats_print(void)
+ {
+-	int size = nr_cpu_ids * 200 + 8192;
+-	char *buf;
+-
+-	buf = kmalloc(size, GFP_KERNEL);
+-	if (!buf) {
+-		pr_err("rcu-torture: Out of memory, need: %d", size);
+-		return;
+-	}
+-	rcu_torture_printk(buf);
+-	pr_alert("%s", buf);
+-	kfree(buf);
++	rcu_torture_printk();
+ }
+ 
+ /*
+diff --git a/kernel/torture.c b/kernel/torture.c
+index 40bb511..a98d3c1 100644
+--- a/kernel/torture.c
++++ b/kernel/torture.c
+@@ -211,18 +211,16 @@ EXPORT_SYMBOL_GPL(torture_onoff_cleanup);
+ /*
+  * Print online/offline testing statistics.
+  */
+-char *torture_onoff_stats(char *page)
++void torture_onoff_stats(void)
+ {
+ #ifdef CONFIG_HOTPLUG_CPU
+-	page += sprintf(page,
+-		       "onoff: %ld/%ld:%ld/%ld %d,%d:%d,%d %lu:%lu (HZ=%d) ",
+-		       n_online_successes, n_online_attempts,
+-		       n_offline_successes, n_offline_attempts,
+-		       min_online, max_online,
+-		       min_offline, max_offline,
+-		       sum_online, sum_offline, HZ);
++	pr_cont("onoff: %ld/%ld:%ld/%ld %d,%d:%d,%d %lu:%lu (HZ=%d) ",
++		n_online_successes, n_online_attempts,
++		n_offline_successes, n_offline_attempts,
++		min_online, max_online,
++		min_offline, max_offline,
++		sum_online, sum_offline, HZ);
+ #endif /* #ifdef CONFIG_HOTPLUG_CPU */
+-	return page;
+ }
+ EXPORT_SYMBOL_GPL(torture_onoff_stats);
+ 
 
-> 
-> > +struct rockchip_pwm_chip {
-> > +	struct pwm_chip	chip;
-> > +	struct clk	*clk;
-> > +	void __iomem	*base;
-> > +};
-> 
-> I prefer no artificial padding within structure definitions.
-> 
-> > +static int rockchip_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
-> > +			       int duty_ns, int period_ns)
-> > +{
-> > +	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
-> > +	unsigned long clk_rate, period, duty;
-> > +	u64 div;
-> > +	int ret;
-> > +
-> > +	clk_rate = clk_get_rate(pc->clk);
-> > +
-> > +	/*
-> > +	 * Since period and duty cycle registers have a width of 32
-> > +	 * bits, every possible input period can be obtained using the
-> > +	 * default prescaler value for all practical clock rate values.
-> > +	 */
-> > +	div = clk_rate;
-> > +	div *= period_ns;
-> 
-> Perhaps shorten this to "div = clk_rate * period_ns;"?
 
-I will change this, adding a cast to avoid the truncation of the
-result to 32 bits: "div = (u64)clk_rate * period_ns;"
-
-> 
-> > +	do_div(div, PRESCALER * NSECS_PER_SEC);
-> > +	period = div;
-> > +
-> > +	div = clk_rate;
-> > +	div *= duty_ns;
-> 
-> And this to "div = clk_rate * duty_ns;"?
-
-Ditto.
-
-> 
-> > +	do_div(div, PRESCALER * NSECS_PER_SEC);
-> > +	duty = div;
-> > +
-> > +	ret = clk_enable(pc->clk);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	writel(period, pc->base + PWM_LRC);
-> > +	writel(duty, pc->base + PWM_HRC);
-> > +	writel(0, pc->base + PWM_CNTR);
-> > +
-> > +	clk_disable(pc->clk);
-> > +
-> > +	return 0;
-> > +}
-> [...]
-> > +static struct pwm_ops rockchip_pwm_ops = {
-> 
-> static const please.
-> 
-> > +	.config	= rockchip_pwm_config,
-> 
-> There's a tab between .config and = above. It should be a space.
-> 
-> > +static const struct of_device_id rockchip_pwm_dt_ids[] = {
-> > +	{ .compatible = "rockchip,rk2928-pwm" },
-> > +	{ /* sentinel */ }
-> > +};
-> > +MODULE_DEVICE_TABLE(of, rockchip_pwm_id_ids);
-> 
-> The name in the MODULE_DEVICE_TABLE doesn't match the array name above.
-> Does this even build?
-
-Sorry, I didn't test the driver as a module, which indeed doesn't
-compile.
-
-> 
-> > +static struct platform_driver rockchip_pwm_driver = {
-> > +	.driver = {
-> > +		.name = "rockchip-pwm",
-> > +		.owner = THIS_MODULE,
-> 
-> You no longer need to initialize this explicitly, module_platform_driver
-> does it for you.
-> 
-> > +		.of_match_table = rockchip_pwm_dt_ids,
-> > +	},
-> > +	.probe	= rockchip_pwm_probe,
-> 
-> There's another tab instead of space here.
-> 
-> > +	.remove = rockchip_pwm_remove,
-> > +};
-> > +module_platform_driver(rockchip_pwm_driver);
-> > +
-> > +MODULE_AUTHOR("Beniamino Galvani <b.galvani@gmail.com>");
-> > +MODULE_DESCRIPTION("Rockchip PWM driver");
-> 
-> Perhaps "Rockchip SoC PWM driver"?
-
-Seems reasonable; I will fix this and the other issues in v2, thanks.
-
-Beniamino
