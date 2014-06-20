@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965170AbaFTXQz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 19:16:55 -0400
-Received: from gate.crashing.org ([63.228.1.57]:59778 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756783AbaFTXQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 19:16:35 -0400
-Message-ID: <1403306175.4587.68.camel@pasglop>
-Subject: Re: [PATCH] vfio: Fix endianness handling for emulated BARs
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        linuxppc-dev@lists.ozlabs.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alexander Graf <agraf@suse.de>,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-Date: Sat, 21 Jun 2014 09:16:15 +1000
-In-Reply-To: <53A441D3.8010602@ozlabs.ru>
-References: <1403091391-31780-1-git-send-email-aik@ozlabs.ru>
-	 <1403116512.3707.175.camel@ul30vt.home> <53A233E9.6030006@ozlabs.ru>
-	 <53A241F6.9010307@ozlabs.ru> <53A25D74.5000804@ozlabs.ru>
-	 <1403234514.3707.278.camel@ul30vt.home> <53A441D3.8010602@ozlabs.ru>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S934306AbaFTXSM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 19:18:12 -0400
+Received: from exprod5og112.obsmtp.com ([64.18.0.24]:37384 "HELO
+	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756652AbaFTXSI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 19:18:08 -0400
+From: Iyappan Subramanian <isubramanian@apm.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, devicetree@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
+        Iyappan Subramanian <isubramanian@apm.com>,
+        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
+Subject: [PATCH v8 1/4] MAINTAINERS: Add entry for APM X-Gene SoC ethernet driver
+Date: Fri, 20 Jun 2014 16:18:13 -0700
+Message-Id: <1403306296-26198-2-git-send-email-isubramanian@apm.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1403306296-26198-1-git-send-email-isubramanian@apm.com>
+References: <1403306296-26198-1-git-send-email-isubramanian@apm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-06-21 at 00:14 +1000, Alexey Kardashevskiy wrote:
+This patch adds a MAINTAINERS entry for APM X-Gene SoC
+ethernet driver.
 
-> We can still use __raw_writel&co, would that be ok?
+Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
+Signed-off-by: Ravi Patel <rapatel@apm.com>
+Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
+---
+ MAINTAINERS | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-No unless you understand precisely what kind of memory barriers each
-platform require for these.
-
-Cheers,
-Ben.
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 134483f..d65a3be 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -700,6 +700,14 @@ S:	Maintained
+ F:	drivers/net/appletalk/
+ F:	net/appletalk/
+ 
++APPLIED MICRO (APM) X-GENE SOC ETHERNET DRIVER
++M:	Iyappan Subramanian <isubramanian@apm.com>
++M:	Keyur Chudgar <kchudgar@apm.com>
++M:	Ravi Patel <rapatel@apm.com>
++S:	Supported
++F:	drivers/net/ethernet/apm/xgene/
++F:	Documentation/devicetree/bindings/net/apm-xgene-enet.txt
++
+ APTINA CAMERA SENSOR PLL
+ M:	Laurent Pinchart <Laurent.pinchart@ideasonboard.com>
+ L:	linux-media@vger.kernel.org
+-- 
+1.9.1
 
