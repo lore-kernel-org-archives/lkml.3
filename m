@@ -1,141 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052AbaFUJvI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 05:51:08 -0400
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:39594 "EHLO
-	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754753AbaFUJvG (ORCPT
+	id S934346AbaFUJxm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 05:53:42 -0400
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:44371 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758167AbaFUJxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 05:51:06 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AswQAFBVpVNXQwKa/2dsb2JhbABYgw2DSKgFAQEBAQEBBQGZJgICAYEIF3WEAwEBBAE6HCMFCwgDRiEYHgYTiC4DCQwBwlcNhksXhWKGcYIjB4RDAQOYS4F4AY1YhgKDRDs
-Date: Sat, 21 Jun 2014 11:51:19 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: Damien Wyart <damien.wyart@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: BUG when trying to use deadline iosched in 3.16-rc1
-Message-Id: <20140621115119.8d303c1ada5685c8eb9a1c27@skynet.be>
-In-Reply-To: <CADJQGJeBH8RkR2KZpfJX8zxseuFjgpHhV1CiduaCPprz+ncwSQ@mail.gmail.com>
-References: <CADJQGJeBH8RkR2KZpfJX8zxseuFjgpHhV1CiduaCPprz+ncwSQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 21 Jun 2014 05:53:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAD=FV=UJFnDj_fuehfTUjMEzS52dWxVUjHSFxPS9oj63pNKT4A@mail.gmail.com>
+References: <1403167145-5267-1-git-send-email-amit.daniel@samsung.com>
+	<53A2B9C3.1050906@gmail.com>
+	<CAD=FV=VmC-p4_R1GV3U3bg1JojTzNYKyFTa8o8QMJ=3m=WuRYA@mail.gmail.com>
+	<53A30D08.6070107@gmail.com>
+	<CAD=FV=UjFJ9utR9i=Xu4DRQ7gdULCtXQXgsQ8gUYm6-V5U4GaQ@mail.gmail.com>
+	<53A31291.9000007@gmail.com>
+	<20140620081509.GA25104@arm.com>
+	<CADGdYn6ZCvnfod3smE_mdJhK-BdkHMtno2GCH8jzX=BRWDCRPQ@mail.gmail.com>
+	<CAD=FV=UJFnDj_fuehfTUjMEzS52dWxVUjHSFxPS9oj63pNKT4A@mail.gmail.com>
+Date: Sat, 21 Jun 2014 15:23:39 +0530
+X-Google-Sender-Auth: ynVqhK6XZnFvDh_NUaBY2_SIEE4
+Message-ID: <CADGdYn6O+njzhYx+P4s3KENc5tot+Cdm8JEY5-128wu-3Gc++Q@mail.gmail.com>
+Subject: Re: [PATCH v2] clocksource: exynos-mct: Register the timer for stable udelay
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Will Deacon <will.deacon@arm.com>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        David Riley <davidriley@chromium.org>,
+        Jonathan Austin <Jonathan.Austin@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 21 Jun 2014 11:37:47 +0200
-Damien Wyart <damien.wyart@gmail.com> wrote:
-
+On Fri, Jun 20, 2014 at 11:17 PM, Doug Anderson <dianders@chromium.org> wrote:
 > Hi,
-> 
-> While testing 3.16-rc1, I got this error:
-> 
-> Jun 21 11:19:03 brouette kernel: kernel tried to execute NX-protected
-> page - exploit attempt? (uid: 0)
-> Jun 21 11:19:03 brouette kernel: BUG: unable to handle kernel paging
-> request at ffffffff8171a1f8
-> Jun 21 11:19:03 brouette kernel: IP: [<ffffffff8171a1f8>] elv_register+0x0/0x197
-> Jun 21 11:19:03 brouette kernel: PGD 163d067 PUD 163e063 PMD 1b887f063
-> PTE 800000000171a163
-> Jun 21 11:19:03 brouette kernel: Oops: 0011 [#1] PREEMPT SMP
-> Jun 21 11:19:03 brouette kernel: Modules linked in: deadline_iosched(+)
-> binfmt_misc hid_roccat_konepure hid_roccat hid_roccat_common hid_generic
-> snd_usb_audio snd_usbmidi_lib usbhid snd_hwdep snd_hda_codec_realtek
-> snd_hda_codec_generic nouveau wmi snd_ca0106 video snd_ac97_codec
-> i2c_algo_bit ttm snd_seq_dummy ac97_bus snd_seq_midi drm_kms_helper
-> snd_seq_oss drm snd_seq_midi_event i2c_core snd_seq pcspkr sr_mod
-> backlight snd_hda_intel snd_rawmidi snd_hda_controller cdrom
-> snd_hda_codec snd_seq_device snd_pcm_oss snd_mixer_oss uhci_hcd ehci_pci
-> snd_pcm ehci_hcd nvidiafb snd_timer usbcore vgastate usb_common evdev
-> acpi_cpufreq loop fuse autofs4
-> Jun 21 11:19:03 brouette kernel: CPU: 1 PID: 2410 Comm: modprobe
-> Tainted: P           O  3.16.0-rc1 #1
-> Jun 21 11:19:03 brouette kernel: Hardware name: System manufacturer
-> System Product Name/P6T SE, BIOS 0808    03/08/2010
-> Jun 21 11:19:03 brouette kernel: task: ffff8801b7c25b00 ti:
-> ffff8801b4224000 task.ti: ffff8801b4224000
-> Jun 21 11:19:03 brouette kernel: RIP: 0010:[<ffffffff8171a1f8>]
-> [<ffffffff8171a1f8>] elv_register+0x0/0x197
-> Jun 21 11:19:03 brouette kernel: RSP: 0018:ffff8801b4227d60  EFLAGS: 00010246
-> Jun 21 11:19:03 brouette kernel: RAX: ffff8801b55a2101 RBX:
-> ffffffff81641040 RCX: 0000000003be0001
-> Jun 21 11:19:03 brouette kernel: RDX: 0000000003bde001 RSI:
-> ffffffff815a9f0d RDI: ffffffffa103b880
-> Jun 21 11:19:03 brouette kernel: RBP: ffff8801b4227d68 R08:
-> 00000000000148e0 R09: 000000000000ffff
-> Jun 21 11:19:03 brouette kernel: R10: 0000000000000012 R11:
-> 0000000000011c00 R12: ffff8801b55a2980
-> Jun 21 11:19:03 brouette kernel: R13: 0000000000000000 R14:
-> ffffffffa103d000 R15: ffffffffa103ba40
-> Jun 21 11:19:03 brouette kernel: FS:  00007f50c9669700(0000)
-> GS:ffff8801bfc20000(0000) knlGS:0000000000000000
-> Jun 21 11:19:03 brouette kernel: CS:  0010 DS: 0000 ES: 0000 CR0:
-> 000000008005003b
-> Jun 21 11:19:03 brouette kernel: CR2: ffffffff8171a1f8 CR3:
-> 00000001b7b1c000 CR4: 00000000000007e0
-> Jun 21 11:19:03 brouette kernel: Stack:
-> Jun 21 11:19:03 brouette kernel: ffffffffa103d010 ffff8801b4227dd8
-> ffffffff810002c4 0000000000000001
-> Jun 21 11:19:03 brouette kernel: 0000000000000001 ffffffffa103ba40
-> ffff8801b4227db8 ffffffff810ed74a
-> Jun 21 11:19:03 brouette kernel: ffff8801b4227ef8 ffffffffa103ba58
-> ffffffffa103ba90 ffff8801b4227ef8
-> Jun 21 11:19:03 brouette kernel: Call Trace:
-> Jun 21 11:19:03 brouette kernel: [<ffffffffa103d010>] ?
-> deadline_init+0x10/0x12 [deadline_iosched]
-> Jun 21 11:19:03 brouette kernel: [<ffffffff810002c4>] do_one_initcall+0x84/0x1c0
-> Jun 21 11:19:03 brouette kernel: [<ffffffff810ed74a>] ? __vunmap+0x9a/0x100
-> Jun 21 11:19:03 brouette kernel: [<ffffffff810a23ac>] load_module+0x19bc/0x2160
-> Jun 21 11:19:03 brouette kernel: [<ffffffff8109fb90>] ?
-> symbol_put_addr+0x40/0x40
-> Jun 21 11:19:03 brouette kernel: [<ffffffff810a2c86>] SyS_finit_module+0x76/0x80
-> Jun 21 11:19:03 brouette kernel: [<ffffffff814a8692>]
-> system_call_fastpath+0x16/0x1b
-> Jun 21 11:19:03 brouette kernel: Code: 00 00 00 00 00 00 00 00 00 00 00
-> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 00 00 00 00 00 00 00 00 <00> 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 00 00 00 00 00 00
-> Jun 21 11:19:03 brouette kernel: RIP  [<ffffffff8171a1f8>]
-> elv_register+0x0/0x197
-> Jun 21 11:19:03 brouette kernel: RSP <ffff8801b4227d60>
-> Jun 21 11:19:03 brouette kernel: CR2: ffffffff8171a1f8
-> Jun 21 11:19:03 brouette kernel: ---[ end trace 5bbf40f5ac5f66e3 ]---
-> Jun 21 11:19:03 brouette kernel: elevator: type deadline not found
-> Jun 21 11:19:03 brouette kernel: elevator: switch to deadline
-> 
-> My startup scripts do this:
-> 
->     echo "noop" > /sys/block/sda/queue/scheduler
->     echo "deadline" > /sys/block/sdb/queue/scheduler
->     echo "noop" > /sys/block/sdc/queue/scheduler
->     echo "deadline" > /sys/block/sdd/queue/scheduler
-> 
-> And the relevant part of my .config:
-> 
-> CONFIG_IOSCHED_NOOP=y
-> CONFIG_IOSCHED_DEADLINE=m
-> CONFIG_IOSCHED_CFQ=y
-> CONFIG_CFQ_GROUP_IOSCHED=y
-> CONFIG_DEFAULT_IOSCHED="cfq"
-> 
-> 
-> Maybe related to b5097e956a ?
-> 
-> No problem with 3.15.
-
-It seems you're right. I didn't know that parameter could be updated dynamically.
-In that case, adding __init to elv_register was a bad idea because it's no more
-reliable. Could you revert that patch Jens ?
- 
-Thanks,
-Fabian
-
-
-> 
-> Thanks,
+>
+> On Fri, Jun 20, 2014 at 4:19 AM, amit daniel kachhap
+> <amit.daniel@samsung.com> wrote:
+>> On Fri, Jun 20, 2014 at 1:45 PM, Will Deacon <will.deacon@arm.com> wrote:
+>>> On Thu, Jun 19, 2014 at 05:40:49PM +0100, Tomasz Figa wrote:
+>>>> On 19.06.2014 18:31, Doug Anderson wrote:
+>>>> >>> My personal vote would be to submit a patch to change "cycles_t" to
+>>>> >>> always be 32-bits.  Given that 32-bits was fine for udelay() for ARM
+>>>> >>> that seems sane and simple.  If someone later comes up with a super
+>>>> >>> compelling reason why we need 64-bit timers for udelay (really??) then
+>>>> >>> they can later add all the complexity needed.
+>>>> >>
+>>>> >> Yes, this could work. I'm not sure what else cycles_t is used for, though.
+>>>> >
+>>>> > True, it is a bit questionable to change this since it's a type that's
+>>>> > not obviously just for udelay().  Perhaps a better option would be to
+>>>> > make a new typedef for the result of read_current_timer().  ...or just
+>>>> > change it to return a u32?
+>>>> >
+>>>>
+>>>> Sounds good to me, but let's hear other opinions. I'm adding Will and
+>>>> Jonathan as they wrote the ARM delay timer code.
+>>>
+>>> I think cycles_t is only used for small interval calculations at the moment,
+>>> but I remember Ted mentioning something about using it (or something
+>>> similar) as a source of early entropy, in which case the more bits the
+>>> better.
+>>>
+>> Will,
+>> Thanks for the clarification that cycles_t is used for short
+>> intervals. So it is safe to return lower 32 bit
+>> counter for read_current_timer.
+>
+> As I looked at it more, I realized that we have two types in Linux.
+> There's cycle_t and cycles_t.  Whoa, confusing!
+>
+> I'd perhaps advocate a wholesale rename of cycles_t to avoid the
+> confusion.  I don't have a good name for it, though.  cycle32_t?  Or
+> we could just use u32 for the function...  :-/
+or cycles_t can be renamed as short_cycle_t
+>
+>
+>> Tomasz, Doug,
+>> As of now let me send a minimal implementation of this read delay
+>> timer to fix the broken udelay for exynos platforms so that it goes to
+>> upstream in rc releases. I will also prepare a fix for all
+>> raw_readl/writel in mct to relaxed version to make it consistent.
+>
+> I'm reworking my 32-bit conversion patches right now and it's getting
+> messy to intermingle this with yours.  I'm going to pick up your patch
+> and include it in my series.  I hope that's OK.
+its fine and thanks for posting the series.
+>
+> My plan is:
+>
+> 1. For 3.16 I think it's important to fix the udelay() problems and
+> trying to rework cycle_t there doesn't seem like it makes sense.  I'll
+> just use Amit's original code that uses exynos_frc_read().  It might
+> not be quite as optimal but it's good as a safe bugfix.
+>
+> 2. I'll post the cleanup patch moving away from the __raw_readl / __raw_writel
+>
+> 3. I'll post a patch moving to 32-bit, including moving Amit's code to
+> 32-bit but with a compile time warning for now.  I'll add a KConfig
+> depends to keep it from compiling on ARM64.  We can improve this once
+> we change the delay timer to always request 32-bits.
+>
+> -Doug
 > --
-> Damien Wyart
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
