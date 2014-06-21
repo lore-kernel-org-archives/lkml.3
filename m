@@ -1,88 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911AbaFUSSu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 14:18:50 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:47917 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753456AbaFUSSs (ORCPT
+	id S1754486AbaFUSXB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 14:23:01 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:46277 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694AbaFUSXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 14:18:48 -0400
+	Sat, 21 Jun 2014 14:23:00 -0400
 MIME-Version: 1.0
-X-Originating-IP: [67.83.169.196]
-In-Reply-To: <20140606071345.6788.23744.stgit@kbuild-fedora.novalocal>
-References: <20140606071338.6788.799.stgit@kbuild-fedora.novalocal>
-	<20140606071345.6788.23744.stgit@kbuild-fedora.novalocal>
-Date: Sat, 21 Jun 2014 14:18:48 -0400
-Message-ID: <CA+C-WL8PUOOVZCToS+ExtALKUjsHRrnG7zZCFnJWmnLk7n2+4A@mail.gmail.com>
-Subject: Re: [PATCH -tip 1/4] perf/probe: Improve error message for unknown
- member of data structure
-From: Patrick Palka <patrick@parcs.ath.cx>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Jiri Olsa <jolsa@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>
+In-Reply-To: <20140621180201.GA4621@amd.pavel.ucw.cz>
+References: <20140621180201.GA4621@amd.pavel.ucw.cz>
+Date: Sat, 21 Jun 2014 14:22:59 -0400
+X-Google-Sender-Auth: 1KUL-gFwwY3UwTrQXJsh60KEiYQ
+Message-ID: <CAKb7UvhOCiBHcsB6a0qKBNsC3c9pmb=Wc7zucbBuP6vt-tx2eA@mail.gmail.com>
+Subject: Re: unparseable, undocumented /sys/class/drm/.../pstate
+From: Ilia Mirkin <imirkin@alum.mit.edu>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: kernel list <linux-kernel@vger.kernel.org>,
+        Ben Skeggs <bskeggs@redhat.com>, Greg KH <greg@kroah.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        David Airlie <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 6, 2014 at 3:13 AM, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
-> Improve the error message if we can not find given member in
-> the given structure. Currently perf probe shows a wrong error
-> message as below.
+On Sat, Jun 21, 2014 at 2:02 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
 >
->   -----
->   # perf probe getname_flags:65 "result->BOGUS"
->   result(type:filename) has no member BOGUS.
->   Failed to find 'result' in this function.
->     Error: Failed to add events. (-22)
->   -----
+> AFAICT, pstate file will contain something like
 >
-> The first message is correct, but the second one is not, since
-> we didn't fail to find a variable but fails to find the member
-> of given variable.
+> 07: core 100 MHz memory 123 MHz *
+> 08: core 100-200 MHz memory 123 MHz
 >
->   -----
->   # perf probe getname_flags:65 "result->BOGUS"
->   result(type:filename) has no member BOGUS.
->     Error: Failed to add events. (-22)
->   -----
+> ...which does not look exactly like one-value-per-file, and I'm pretty
+> sure userspace will get it wrong if it tries to parse it. Plus, I
+> don't see required documentation in Documentation/ABI.
 >
-> With this patch, the error message shows only the first one.
-> And if we really failed to find given variable, it tells us so.
+> Should we disable it for now, so that userspace does not start
+> depending on it and we'll not have to maintain it forever?
 >
->   -----
->   # perf probe getname_flags:65 "BOGUS"
->   Failed to find 'BOGUS' in this function.
->     Error: Failed to add events. (-2)
->   -----
+> I guess better interface would be something like
 >
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Reported-by: Arnaldo Carvalho de Melo <acme@kernel.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> ---
->  tools/perf/util/probe-finder.c |    5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
+> pstate/07/core_clock_min
+>           core_clock_max
+>           memory_clock_min
+>           memory_clock_max
 >
-> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-> index 9d8eb26..ce8faf4 100644
-> --- a/tools/perf/util/probe-finder.c
-> +++ b/tools/perf/util/probe-finder.c
-> @@ -573,14 +573,13 @@ static int find_variable(Dwarf_Die *sc_die, struct probe_finder *pf)
->         if (!die_find_variable_at(sc_die, pf->pvar->var, pf->addr, &vr_die)) {
->                 /* Search again in global variables */
->                 if (!die_find_variable_at(&pf->cu_die, pf->pvar->var, 0, &vr_die))
-> +                       pr_warning("Failed to find '%s' in this function.\n",
-> +                                  pf->pvar->var);
->                         ret = -ENOENT;
+> and then pstate/active containing just the number of active state?
+>
+> Thanks,
+>                                                                 Pavel
+>
+> PS: I have no nvidia, got the news at
+>
+> http://www.phoronix.com/scan.php?page=article&item=nouveau_try_linux316&num=2
 
-It looks like you're missing a pair of braces here.
+FTR, this file has been in place since 3.13, and there was a different
+file before it (performance_levels), with a comparable format since
+much earlier (definitely 3.8, probably earlier). I think it's meant a
+lot more for people looking at it and echo'ing stuff to it to modify
+the levels (where supported), than for programs parsing it. Perhaps
+sysfs is the wrong place for this -- what is the right place? debugfs?
+
+  -ilia
