@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102AbaFUUiM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 16:38:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35091 "EHLO
+	id S1756066AbaFUUiX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 16:38:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35102 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755301AbaFUUiH (ORCPT
+	with ESMTP id S1755085AbaFUUiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 16:38:07 -0400
-Date: Sat, 21 Jun 2014 13:37:25 -0700
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-889235ce2b26cdd231c7a1d6005928ec42f11637@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, hpa@zytor.com,
-        mingo@kernel.org, stefanr@s5r6.in-berlin.de, peterz@infradead.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, john.stultz@linaro.org,
-        linux-kernel@vger.kernel.org, stefanr@s5r6.in-berlin.de,
-        peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <20140611234607.351283464@linutronix.de>
-References: <20140611234607.351283464@linutronix.de>
+	Sat, 21 Jun 2014 16:38:19 -0400
+Date: Sat, 21 Jun 2014 13:38:06 -0700
+From: tip-bot for Jean Delvare <tipbot@zytor.com>
+Message-ID: <tip-58394271c610e9c65dd0165a1c1f6dec75dc5f3e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jdelvare@suse.de, tglx@linutronix.de, daniel.lezcano@linaro.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, jdelvare@suse.de, daniel.lezcano@linaro.org
+In-Reply-To: <20140616114845.343e9960@endymion.delvare>
+References: <20140616114845.343e9960@endymion.delvare>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] firewire: Use ktime_get_ts()
-Git-Commit-ID: 889235ce2b26cdd231c7a1d6005928ec42f11637
+Subject: [tip:timers/core] clocksource: Add a Kconfig menu
+Git-Commit-ID: 58394271c610e9c65dd0165a1c1f6dec75dc5f3e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,42 +31,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  889235ce2b26cdd231c7a1d6005928ec42f11637
-Gitweb:     http://git.kernel.org/tip/889235ce2b26cdd231c7a1d6005928ec42f11637
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Wed, 11 Jun 2014 23:59:16 +0000
+Commit-ID:  58394271c610e9c65dd0165a1c1f6dec75dc5f3e
+Gitweb:     http://git.kernel.org/tip/58394271c610e9c65dd0165a1c1f6dec75dc5f3e
+Author:     Jean Delvare <jdelvare@suse.de>
+AuthorDate: Mon, 16 Jun 2014 11:48:45 +0200
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 12 Jun 2014 16:18:45 +0200
+CommitDate: Sat, 21 Jun 2014 22:32:42 +0200
 
-firewire: Use ktime_get_ts()
+clocksource: Add a Kconfig menu
 
-do_posix_clock_monotonic_gettime() is a leftover from the initial
-posix timer implementation which maps to ktime_get_ts()
+Move the clocksource Kconfig entries into their own menu, so that they
+don't pollute the main device driver menu.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Link: http://lkml.kernel.org/r/20140611234607.351283464@linutronix.de
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Link: http://lkml.kernel.org/r/20140616114845.343e9960@endymion.delvare
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/firewire/core-cdev.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/clocksource/Kconfig | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/firewire/core-cdev.c b/drivers/firewire/core-cdev.c
-index d7d5c8a..5d997a3 100644
---- a/drivers/firewire/core-cdev.c
-+++ b/drivers/firewire/core-cdev.c
-@@ -1214,9 +1214,9 @@ static int ioctl_get_cycle_timer2(struct client *client, union ioctl_arg *arg)
- 	cycle_time = card->driver->read_csr(card, CSR_CYCLE_TIME);
+diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+index 065131c..6a11518 100644
+--- a/drivers/clocksource/Kconfig
++++ b/drivers/clocksource/Kconfig
+@@ -1,3 +1,5 @@
++menu "Clock Source drivers"
++
+ config CLKSRC_OF
+ 	bool
  
- 	switch (a->clk_id) {
--	case CLOCK_REALTIME:      getnstimeofday(&ts);                   break;
--	case CLOCK_MONOTONIC:     do_posix_clock_monotonic_gettime(&ts); break;
--	case CLOCK_MONOTONIC_RAW: getrawmonotonic(&ts);                  break;
-+	case CLOCK_REALTIME:      getnstimeofday(&ts);	break;
-+	case CLOCK_MONOTONIC:     ktime_get_ts(&ts);	break;
-+	case CLOCK_MONOTONIC_RAW: getrawmonotonic(&ts);	break;
- 	default:
- 		ret = -EINVAL;
- 	}
+@@ -207,3 +209,5 @@ config CLKSRC_VERSATILE
+ 	  counter available in the "System Registers" block of
+ 	  ARM Versatile, RealView and Versatile Express reference
+ 	  platforms.
++
++endmenu
