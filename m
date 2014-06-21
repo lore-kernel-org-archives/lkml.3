@@ -1,109 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569AbaFUUfM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 16:35:12 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47677 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755295AbaFUUfI (ORCPT
+	id S1755630AbaFUUfT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 16:35:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34905 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755295AbaFUUfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 16:35:08 -0400
-Date: Sat, 21 Jun 2014 22:35:06 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Subject: Re: 3.16, i915: less colors in X?
-Message-ID: <20140621203506.GA4756@amd.pavel.ucw.cz>
-References: <20140514155759.GB9723@amd.pavel.ucw.cz>
- <20140514182046.GA13342@amd.pavel.ucw.cz>
- <alpine.LNX.2.00.1405151727380.16459@pobox.suse.cz>
- <CAKMK7uFEjDGSpdB0xDPL09GZ8N7aFrNA530HbRLyfTPx5SkLQw@mail.gmail.com>
- <20140607120614.GB5309@amd.pavel.ucw.cz>
- <20140607231124.GA3611@amd.pavel.ucw.cz>
- <CAKMK7uEALofLiEA3m-QKjygC=YZNjaEtUMfbpbXinMoim1ygkw@mail.gmail.com>
- <20140609102328.GA25332@amd.pavel.ucw.cz>
- <alpine.LNX.2.00.1406091302560.20782@pobox.suse.cz>
- <20140621202901.GA3840@amd.pavel.ucw.cz>
+	Sat, 21 Jun 2014 16:35:14 -0400
+Date: Sat, 21 Jun 2014 13:34:11 -0700
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-af54d6a1c3ad474bbc9893c9905022646be6092c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        darren@dvhart.com, peterz@infradead.org, kees@outflux.net,
+        tglx@linutronix.de, davidlohr@hp.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, darren@dvhart.com, kees@outflux.net,
+        tglx@linutronix.de, davidlohr@hp.com
+In-Reply-To: <alpine.DEB.2.10.1406131137020.5170@nanos>
+References: <alpine.DEB.2.10.1406131137020.5170@nanos>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:locking/core] futex: Simplify futex_lock_pi_atomic()
+  and make it more robust
+Git-Commit-ID: af54d6a1c3ad474bbc9893c9905022646be6092c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140621202901.GA3840@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2014-06-21 22:29:01, Pavel Machek wrote:
-> Hi!
-> 
-> I just test-booted 3.16-rc1, and background in X looked just wrong --
-> very noticeable bands on the background gradient. I thought that maybe
-> it is just my eyes, but I went back to older kernel, and background is
-> ok now.
-> 
-> I'm trying to figure out how to ask X what color depth it is using...?
-> 
-> This is thinkpad x60 with Debian 6.0.9.
-> 
-> Any ideas?
+Commit-ID:  af54d6a1c3ad474bbc9893c9905022646be6092c
+Gitweb:     http://git.kernel.org/tip/af54d6a1c3ad474bbc9893c9905022646be6092c
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Wed, 11 Jun 2014 20:45:41 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Sat, 21 Jun 2014 22:26:24 +0200
 
-Xorg.log does not show anything too suspicious:
+futex: Simplify futex_lock_pi_atomic() and make it more robust
 
-diff -u /var/log/Xorg.0.log{,.old} > /tmp/delme
+futex_lock_pi_atomic() is a maze of retry hoops and loops.
 
-									Pavel
+Reduce it to simple and understandable states:
 
---- /var/log/Xorg.0.log	2014-06-21 22:24:15.005229099 +0200
-+++ /var/log/Xorg.0.log.old	2014-06-21 22:22:38.275847726 +0200
-@@ -3,8 +3,8 @@
- Release Date: 2010-05-04
- X Protocol Version 11, Revision 0
- Build Operating System: Linux 3.2.0-4-amd64 i686 Debian
--Current Operating System: Linux duo 3.10.0+ #293 SMP Sun Jul 14 22:44:49 CEST 2013 i686
--Kernel command line: BOOT_IMAGE=(hd0,3)/boot/vmlinuz-3.10 root=/dev/sda3 resume=/dev/sda1 psmouse.psmouse_proto=imps psmouse_proto=imps psmouse.proto=imps acpi_sleep=s3_bios,s3_mode no_console_suspend i915.modeset=1 video=inteldrmfb:mode=1024x768 fbcon=scrollback:64k
-+Current Operating System: Linux duo 3.16.0-rc1+ #373 SMP Sat Jun 21 20:46:47 CEST 2014 i686
-+Kernel command line: BOOT_IMAGE=(hd0,2)/l/linux-good/arch/x86/boot/bzImage root=/dev/sda3 resume=/dev/sda1 psmouse.psmouse_proto=imps psmouse_proto=imps psmouse.proto=imps acpi_sleep=s3_bios,s3_mode no_console_suspend i915.modeset=1 video=inteldrmfb:mode=1024x768 fbcon=scrollback:64k
- Build Date: 17 December 2013  08:26:59PM
- xorg-server 2:1.7.7-18 (Julien Cristau <jcristau@debian.org>) 
- Current version of pixman: 0.16.4
-@@ -13,7 +13,7 @@
- Markers: (--) probed, (**) from config file, (==) default setting,
- 	(++) from command line, (!!) notice, (II) informational,
- 	(WW) warning, (EE) error, (NI) not implemented, (??) unknown.
--(==) Log file: "/var/log/Xorg.0.log", Time: Sat Jun 21 22:23:28 2014
-+(==) Log file: "/var/log/Xorg.0.log", Time: Sat Jun 21 21:04:49 2014
- (==) Using system config directory "/usr/share/X11/xorg.conf.d"
- (==) No Layout section.  Using the first Screen section.
- (==) No screen section available. Using defaults.
-@@ -402,10 +402,17 @@
- (II) intel(0): Modeline "800x600"x0.0   40.00  800 840 968 1056  600 601 605 628 +hsync +vsync (37.9 kHz)
- (II) intel(0): Modeline "640x480"x0.0   25.18  640 656 752 800  480 490 492 525 -hsync -vsync (31.5 kHz)
- (II) intel(0): Modeline "1024x768"x0.0   65.00  1024 1048 1184 1344  768 771 777 806 -hsync -vsync (48.4 kHz)
--(II) intel(0): EDID vendor "LEN", prod id 16384
--(II) intel(0): Printing DDC gathered Modelines:
--(II) intel(0): Modeline "1024x768"x0.0   54.16  1024 1048 1184 1344  768 771 777 806 -hsync -vsync (40.3 kHz)
--(II) intel(0): Modeline "1024x768"x0.0   43.33  1024 1048 1184 1344  768 771 777 806 -hsync -vsync (32.2 kHz)
--(II) intel(0): Modeline "800x600"x0.0   40.00  800 840 968 1056  600 601 605 628 +hsync +vsync (37.9 kHz)
--(II) intel(0): Modeline "640x480"x0.0   25.18  640 656 752 800  480 490 492 525 -hsync -vsync (31.5 kHz)
--(II) intel(0): Modeline "1024x768"x0.0   65.00  1024 1048 1184 1344  768 771 777 806 -hsync -vsync (48.4 kHz)
-+(II) Power Button: Close
-+(II) UnloadModule: "evdev"
-+(II) Video Bus: Close
-+(II) UnloadModule: "evdev"
-+(II) Sleep Button: Close
-+(II) UnloadModule: "evdev"
-+(II) AT Translated Set 2 keyboard: Close
-+(II) UnloadModule: "evdev"
-+(II) PS/2 Generic Mouse: Close
-+(II) UnloadModule: "evdev"
-+(II) ThinkPad Extra Buttons: Close
-+(II) UnloadModule: "evdev"
-+(II) ACPI Virtual Keyboard Device: Close
-+(II) UnloadModule: "evdev"
+First step is to lookup existing waiters (state) in the kernel.
 
+If there is an existing waiter, validate it and attach to it.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+If there is no existing waiter, check the user space value
+
+If the TID encoded in the user space value is 0, take over the futex
+preserving the owner died bit.
+
+If the TID encoded in the user space value is != 0, lookup the owner
+task, validate it and attach to it.
+
+Reduces text size by 128 bytes on x8664.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Kees Cook <kees@outflux.net>
+Cc: wad@chromium.org
+Cc: Darren Hart <darren@dvhart.com>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1406131137020.5170@nanos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/futex.c | 148 ++++++++++++++++++++++++---------------------------------
+ 1 file changed, 61 insertions(+), 87 deletions(-)
+
+diff --git a/kernel/futex.c b/kernel/futex.c
+index e65b686..d3a9d94 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -956,6 +956,17 @@ static int lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+ 	return attach_to_pi_owner(uval, key, ps);
+ }
+ 
++static int lock_pi_update_atomic(u32 __user *uaddr, u32 uval, u32 newval)
++{
++	u32 uninitialized_var(curval);
++
++	if (unlikely(cmpxchg_futex_value_locked(&curval, uaddr, uval, newval)))
++		return -EFAULT;
++
++	/*If user space value changed, let the caller retry */
++	return curval != uval ? -EAGAIN : 0;
++}
++
+ /**
+  * futex_lock_pi_atomic() - Atomic work required to acquire a pi aware futex
+  * @uaddr:		the pi futex user address
+@@ -979,113 +990,69 @@ static int futex_lock_pi_atomic(u32 __user *uaddr, struct futex_hash_bucket *hb,
+ 				struct futex_pi_state **ps,
+ 				struct task_struct *task, int set_waiters)
+ {
+-	int lock_taken, ret, force_take = 0;
+-	u32 uval, newval, curval, vpid = task_pid_vnr(task);
+-
+-retry:
+-	ret = lock_taken = 0;
++	u32 uval, newval, vpid = task_pid_vnr(task);
++	struct futex_q *match;
++	int ret;
+ 
+ 	/*
+-	 * To avoid races, we attempt to take the lock here again
+-	 * (by doing a 0 -> TID atomic cmpxchg), while holding all
+-	 * the locks. It will most likely not succeed.
++	 * Read the user space value first so we can validate a few
++	 * things before proceeding further.
+ 	 */
+-	newval = vpid;
+-	if (set_waiters)
+-		newval |= FUTEX_WAITERS;
+-
+-	if (unlikely(cmpxchg_futex_value_locked(&curval, uaddr, 0, newval)))
++	if (get_futex_value_locked(&uval, uaddr))
+ 		return -EFAULT;
+ 
+ 	/*
+ 	 * Detect deadlocks.
+ 	 */
+-	if ((unlikely((curval & FUTEX_TID_MASK) == vpid)))
++	if ((unlikely((uval & FUTEX_TID_MASK) == vpid)))
+ 		return -EDEADLK;
+ 
+ 	/*
+-	 * Surprise - we got the lock, but we do not trust user space at all.
++	 * Lookup existing state first. If it exists, try to attach to
++	 * its pi_state.
+ 	 */
+-	if (unlikely(!curval)) {
+-		/*
+-		 * We verify whether there is kernel state for this
+-		 * futex. If not, we can safely assume, that the 0 ->
+-		 * TID transition is correct. If state exists, we do
+-		 * not bother to fixup the user space state as it was
+-		 * corrupted already.
+-		 */
+-		return futex_top_waiter(hb, key) ? -EINVAL : 1;
+-	}
+-
+-	uval = curval;
+-
+-	/*
+-	 * Set the FUTEX_WAITERS flag, so the owner will know it has someone
+-	 * to wake at the next unlock.
+-	 */
+-	newval = curval | FUTEX_WAITERS;
++	match = futex_top_waiter(hb, key);
++	if (match)
++		return attach_to_pi_state(uval, match->pi_state, ps);
+ 
+ 	/*
+-	 * Should we force take the futex? See below.
++	 * No waiter and user TID is 0. We are here because the
++	 * waiters or the owner died bit is set or called from
++	 * requeue_cmp_pi or for whatever reason something took the
++	 * syscall.
+ 	 */
+-	if (unlikely(force_take)) {
++	if (!(uval & FUTEX_TID_MASK)) {
+ 		/*
+-		 * Keep the OWNER_DIED and the WAITERS bit and set the
+-		 * new TID value.
++		 * We take over the futex. No other waiters and the user space
++		 * TID is 0. We preserve the owner died bit.
+ 		 */
+-		newval = (curval & ~FUTEX_TID_MASK) | vpid;
+-		force_take = 0;
+-		lock_taken = 1;
+-	}
++		newval = uval & FUTEX_OWNER_DIED;
++		newval |= vpid;
+ 
+-	if (unlikely(cmpxchg_futex_value_locked(&curval, uaddr, uval, newval)))
+-		return -EFAULT;
+-	if (unlikely(curval != uval))
+-		goto retry;
++		/* The futex requeue_pi code can enforce the waiters bit */
++		if (set_waiters)
++			newval |= FUTEX_WAITERS;
++
++		ret = lock_pi_update_atomic(uaddr, uval, newval);
++		/* If the take over worked, return 1 */
++		return ret < 0 ? ret : 1;
++	}
+ 
+ 	/*
+-	 * We took the lock due to forced take over.
++	 * First waiter. Set the waiters bit before attaching ourself to
++	 * the owner. If owner tries to unlock, it will be forced into
++	 * the kernel and blocked on hb->lock.
+ 	 */
+-	if (unlikely(lock_taken))
+-		return 1;
+-
++	newval = uval | FUTEX_WAITERS;
++	ret = lock_pi_update_atomic(uaddr, uval, newval);
++	if (ret)
++		return ret;
+ 	/*
+-	 * We dont have the lock. Look up the PI state (or create it if
+-	 * we are the first waiter):
++	 * If the update of the user space value succeeded, we try to
++	 * attach to the owner. If that fails, no harm done, we only
++	 * set the FUTEX_WAITERS bit in the user space variable.
+ 	 */
+-	ret = lookup_pi_state(uval, hb, key, ps);
+-
+-	if (unlikely(ret)) {
+-		switch (ret) {
+-		case -ESRCH:
+-			/*
+-			 * We failed to find an owner for this
+-			 * futex. So we have no pi_state to block
+-			 * on. This can happen in two cases:
+-			 *
+-			 * 1) The owner died
+-			 * 2) A stale FUTEX_WAITERS bit
+-			 *
+-			 * Re-read the futex value.
+-			 */
+-			if (get_futex_value_locked(&curval, uaddr))
+-				return -EFAULT;
+-
+-			/*
+-			 * If the owner died or we have a stale
+-			 * WAITERS bit the owner TID in the user space
+-			 * futex is 0.
+-			 */
+-			if (!(curval & FUTEX_TID_MASK)) {
+-				force_take = 1;
+-				goto retry;
+-			}
+-		default:
+-			break;
+-		}
+-	}
+-
+-	return ret;
++	return attach_to_pi_owner(uval, key, ps);
+ }
+ 
+ /**
+@@ -1659,7 +1626,12 @@ retry_private:
+ 				goto retry;
+ 			goto out;
+ 		case -EAGAIN:
+-			/* The owner was exiting, try again. */
++			/*
++			 * Two reasons for this:
++			 * - Owner is exiting and we just wait for the
++			 *   exit to complete.
++			 * - The user space value changed.
++			 */
+ 			double_unlock_hb(hb1, hb2);
+ 			hb_waiters_dec(hb2);
+ 			put_futex_key(&key2);
+@@ -2316,8 +2288,10 @@ retry_private:
+ 			goto uaddr_faulted;
+ 		case -EAGAIN:
+ 			/*
+-			 * Task is exiting and we just wait for the
+-			 * exit to complete.
++			 * Two reasons for this:
++			 * - Task is exiting and we just wait for the
++			 *   exit to complete.
++			 * - The user space value changed.
+ 			 */
+ 			queue_unlock(hb);
+ 			put_futex_key(&q.key);
