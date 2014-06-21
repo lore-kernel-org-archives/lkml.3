@@ -1,152 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757149AbaFUAfQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 20:35:16 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:40939 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377AbaFUAfO (ORCPT
+	id S1757508AbaFUAgl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 20:36:41 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:42563 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754068AbaFUAgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 20:35:14 -0400
-Message-ID: <53A4D323.5080808@oracle.com>
-Date: Fri, 20 Jun 2014 20:34:43 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 20 Jun 2014 20:36:39 -0400
+Date: Fri, 20 Jun 2014 17:36:32 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: josh@joshtriplett.org
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 0/5] Fix for cond_resched performance
+ regression
+Message-ID: <20140621003632.GA27808@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140620183249.GA6325@linux.vnet.ibm.com>
+ <20140620191236.GA10340@linux.vnet.ibm.com>
+ <20140620212423.GA22886@cloud>
+ <20140620221120.GD4615@linux.vnet.ibm.com>
+ <20140620223951.GA23677@cloud>
+ <20140620233033.GE4615@linux.vnet.ibm.com>
+ <20140620235215.GA24026@cloud>
+ <20140621001418.GF4615@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
-References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org> <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
-In-Reply-To: <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140621001418.GF4615@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062100-0928-0000-0000-000002CD0779
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2014 04:40 PM, Johannes Weiner wrote:
-> The memcg uncharging code that is involved towards the end of a page's
-> lifetime - truncation, reclaim, swapout, migration - is impressively
-> complicated and fragile.
+On Fri, Jun 20, 2014 at 05:14:18PM -0700, Paul E. McKenney wrote:
+> On Fri, Jun 20, 2014 at 04:52:15PM -0700, josh@joshtriplett.org wrote:
+> > On Fri, Jun 20, 2014 at 04:30:33PM -0700, Paul E. McKenney wrote:
+> > > On Fri, Jun 20, 2014 at 03:39:51PM -0700, josh@joshtriplett.org wrote:
+> > > > On Fri, Jun 20, 2014 at 03:11:20PM -0700, Paul E. McKenney wrote:
+> > > > > On Fri, Jun 20, 2014 at 02:24:23PM -0700, josh@joshtriplett.org wrote:
+> > > > > > On Fri, Jun 20, 2014 at 12:12:36PM -0700, Paul E. McKenney wrote:
+> > > > > > > o	Make cond_resched() a no-op for PREEMPT=y.  This might well turn
+> > > > > > > 	out to be a good thing, but it doesn't help give RCU the quiescent
+> > > > > > > 	states that it needs.
+> > > > > > 
+> > > > > > What about doing this, together with letting the fqs logic poke
+> > > > > > un-quiesced kernel code as needed?  That way, rather than having
+> > > > > > cond_resched do any work, you have the fqs logic recognize that a
+> > > > > > particular CPU has gone too long without quiescing, without disturbing
+> > > > > > that CPU at all if it hasn't gone too long.
+> > > > > 
+> > > > > My next stop is to post the previous series, but with a couple of
+> > > > > exports and one bug fix uncovered by testing thus far, but after
+> > > > > another round of testing.  Then I am going to take a close look at
+> > > > > this one:
+> > > > > 
+> > > > > o	Push the checks further into cond_resched(), so that the
+> > > > > 	fastpath does the same sequence of instructions that the original
+> > > > > 	did.  This might work well, but requires IPIs, which are not so
+> > > > > 	good for latencies on the remote CPU.  It nevertheless might be a
+> > > > > 	decent long-term solution given that if your CPU is spending many
+> > > > > 	jiffies looping in the kernel, you aren't getting good latencies
+> > > > > 	anyway.  It also has the benefit of allowing RCU to take advantage
+> > > > > 	of the implicit quiescent states of all cond_resched() calls,
+> > > > > 	and of eliminating the need for a separate cond_resched_rcu_qs()
+> > > > > 	and for RCU_COND_RESCHED_QS.
+> > > > > 
+> > > > > The one you call out is of course interesting as well.  But there are
+> > > > > a couple of questions:
+> > > > > 
+> > > > > 1.	Why wasn't cond_resched() a no-op in CONFIG_PREEMPT to start
+> > > > > 	with?  It just seems to obvious a thing to do for it to possibly
+> > > > > 	be an oversight.  (What, me paranoid?)
+> > > > > 
+> > > > > 2.	When RCU recognizes that a particular CPU has gone too long,
+> > > > > 	exactly what are you suggesting that RCU do about it?  When
+> > > > > 	formulating your answer, please give due consideration to the
+> > > > > 	implications of that CPU being a NO_HZ_FULL CPU.  ;-)
+> > > > 
+> > > > Send it an IPI that either causes it to flag a quiescent state
+> > > > immediately if currently quiesced or causes it to quiesce at the next
+> > > > opportunity if not.
+> > > 
+> > > OK.  But if we are in a !PREEMPT kernel,
+> > 
+> > That's not the case I was suggesting.
 > 
-> Because anonymous and file pages were always charged before they had
-> their page->mapping established, uncharges had to happen when the page
-> type could still be known from the context; as in unmap for anonymous,
-> page cache removal for file and shmem pages, and swap cache truncation
-> for swap pages.  However, these operations happen well before the page
-> is actually freed, and so a lot of synchronization is necessary:
+> Fair enough, but we still need to support !PREEMPT kernels.
 > 
-> - Charging, uncharging, page migration, and charge migration all need
->   to take a per-page bit spinlock as they could race with uncharging.
+> >                                        *If* the kernel is fully
+> > preemptible, then it makes little sense to put any code in cond_resched,
+> > when instead another thread can simply cause a preemption if it needs a
+> > quiescent state.  That has the advantage of not imposing any unnecessary
+> > polling on code running in the kernel.
 > 
-> - Swap cache truncation happens during both swap-in and swap-out, and
->   possibly repeatedly before the page is actually freed.  This means
->   that the memcg swapout code is called from many contexts that make
->   no sense and it has to figure out the direction from page state to
->   make sure memory and memory+swap are always correctly charged.
+> OK.  Exactly which thread are you suggesting should cause the preemption?
 > 
-> - On page migration, the old page might be unmapped but then reused,
->   so memcg code has to prevent untimely uncharging in that case.
->   Because this code - which should be a simple charge transfer - is so
->   special-cased, it is not reusable for replace_page_cache().
+> > In a !PREEMPT kernel, it makes a bit more sense to have cond_resched as
+> > a voluntary preemption point.  But voluntary preemption points don't
+> > make as much sense in a kernel prepared to preempt a thread anywhere.
 > 
-> But now that charged pages always have a page->mapping, introduce
-> mem_cgroup_uncharge(), which is called after the final put_page(),
-> when we know for sure that nobody is looking at the page anymore.
-> 
-> For page migration, introduce mem_cgroup_migrate(), which is called
-> after the migration is successful and the new page is fully rmapped.
-> Because the old page is no longer uncharged after migration, prevent
-> double charges by decoupling the page's memcg association (PCG_USED
-> and pc->mem_cgroup) from the page holding an actual charge.  The new
-> bits PCG_MEM and PCG_MEMSW represent the respective charges and are
-> transferred to the new page during migration.
-> 
-> mem_cgroup_migrate() is suitable for replace_page_cache() as well,
-> which gets rid of mem_cgroup_replace_page_cache().
-> 
-> Swap accounting is massively simplified: because the page is no longer
-> uncharged as early as swap cache deletion, a new mem_cgroup_swapout()
-> can transfer the page's memory+swap charge (PCG_MEMSW) to the swap
-> entry before the final put_page() in page reclaim.
-> 
-> Finally, page_cgroup changes are now protected by whatever protection
-> the page itself offers: anonymous pages are charged under the page
-> table lock, whereas page cache insertions, swapin, and migration hold
-> the page lock.  Uncharging happens under full exclusion with no
-> outstanding references.  Charging and uncharging also ensure that the
-> page is off-LRU, which serializes against charge migration.  Remove
-> the very costly page_cgroup lock and set pc->flags non-atomically.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> That does sound intuitive, but I am not yet prepared to believe that
+> the scheduler guys missed this trick.  There might well be some good
+> reason for cond_resched() doing something, though I cannot think what it
+> might be (something to do with preempt_enable_no_resched(), perhaps?).
+> We should at least ask them, although if you want to do some testing
+> before asking them, I of course have no objection to your doing so.
 
-Hi Johannes,
+Oh, and it turns out to be possible to drive RCU's need-a-qs check much
+farther down the cond_resched() rabbit hole than I expected.  Looks like
+it can be driven all the way down to rcu_note_context_switch().
 
-I'm seeing the following when booting a VM, bisection pointed me to this
-patch.
+							Thanx, Paul
 
-[   32.830823] BUG: using __this_cpu_add() in preemptible [00000000] code: mkdir/8677
-[   32.831522] caller is __this_cpu_preempt_check+0x13/0x20
-[   32.832079] CPU: 35 PID: 8677 Comm: mkdir Not tainted 3.16.0-rc1-next-20140620-sasha-00023-g8fc12ed #700
-[   32.832898]  ffffffffb27ea69d ffff8800cb91b618 ffffffffb151820b 0000000000000002
-[   32.833607]  0000000000000023 ffff8800cb91b648 ffffffffaeb4c799 ffff88006efa5b60
-[   32.834318]  ffffea0007cff9c0 0000000000000001 0000000000000001 ffff8800cb91b658
-[   32.835030] Call Trace:
-[   32.835257] dump_stack (lib/dump_stack.c:52)
-[   32.835755] check_preemption_disabled (./arch/x86/include/asm/preempt.h:80 lib/smp_processor_id.c:49)
-[   32.836336] __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-[   32.836991] mem_cgroup_charge_statistics.isra.23 (mm/memcontrol.c:930)
-[   32.837682] commit_charge (mm/memcontrol.c:2761)
-[   32.838187] ? _raw_spin_unlock_irq (./arch/x86/include/asm/paravirt.h:819 include/linux/spinlock_api_smp.h:168 kernel/locking/spinlock.c:199)
-[   32.838735] ? get_parent_ip (kernel/sched/core.c:2546)
-[   32.839230] mem_cgroup_commit_charge (mm/memcontrol.c:6519)
-[   32.839807] __add_to_page_cache_locked (mm/filemap.c:588 include/linux/jump_label.h:115 include/trace/events/filemap.h:50 mm/filemap.c:589)
-[   32.840479] add_to_page_cache_lru (mm/filemap.c:627)
-[   32.841048] read_cache_pages (mm/readahead.c:92)
-[   32.841560] ? v9fs_cache_session_get_key (fs/9p/cache.c:306)
-[   32.842145] ? v9fs_write_begin (fs/9p/vfs_addr.c:99)
-[   32.842694] v9fs_vfs_readpages (fs/9p/vfs_addr.c:127)
-[   32.843251] __do_page_cache_readahead (mm/readahead.c:123 mm/readahead.c:200)
-[   32.843848] ? __do_page_cache_readahead (include/linux/rcupdate.h:877 mm/readahead.c:178)
-[   32.844435] ? __const_udelay (arch/x86/lib/delay.c:126)
-[   32.844944] filemap_fault (include/linux/memcontrol.h:141 include/linux/memcontrol.h:198 mm/filemap.c:1869)
-[   32.845465] ? __rcu_read_unlock (kernel/rcu/update.c:97)
-[   32.845999] __do_fault (mm/memory.c:2705)
-[   32.846472] ? mem_cgroup_try_charge (include/linux/cgroup.h:158 mm/memcontrol.c:6467)
-[   32.847048] do_cow_fault (mm/memory.c:2936)
-[   32.847561] __handle_mm_fault (mm/memory.c:3078 mm/memory.c:3205 mm/memory.c:3322)
-[   32.848092] ? __const_udelay (arch/x86/lib/delay.c:126)
-[   32.848596] ? __rcu_read_unlock (kernel/rcu/update.c:97)
-[   32.849157] handle_mm_fault (mm/memory.c:3345)
-[   32.849665] __do_page_fault (arch/x86/mm/fault.c:1230)
-[   32.850239] ? kvm_clock_read (./arch/x86/include/asm/preempt.h:90 arch/x86/kernel/kvmclock.c:86)
-[   32.850963] ? sched_clock (./arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305)
-[   32.851442] ? sched_clock_local (kernel/sched/clock.c:214)
-[   32.852034] ? context_tracking_user_exit (kernel/context_tracking.c:184)
-[   32.852669] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-[   32.853243] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2638 (discriminator 2))
-[   32.853854] trace_do_page_fault (arch/x86/mm/fault.c:1313 include/linux/jump_label.h:115 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1314)
-[   32.854393] do_async_page_fault (arch/x86/kernel/kvm.c:264)
-[   32.854924] async_page_fault (arch/x86/kernel/entry_64.S:1322)
-[   32.855507] ? __clear_user (arch/x86/lib/usercopy_64.c:22)
-[   32.855999] ? __clear_user (arch/x86/lib/usercopy_64.c:18 arch/x86/lib/usercopy_64.c:21)
-[   32.856488] clear_user (arch/x86/lib/usercopy_64.c:54)
-[   32.856997] padzero (fs/binfmt_elf.c:122)
-[   32.857440] load_elf_binary (fs/binfmt_elf.c:909 (discriminator 1))
-[   32.857949] ? search_binary_handler (fs/exec.c:1374)
-[   32.858550] ? preempt_count_sub (kernel/sched/core.c:2602)
-[   32.859089] search_binary_handler (fs/exec.c:1375)
-[   32.859654] do_execve_common.isra.19 (fs/exec.c:1412 fs/exec.c:1508)
-[   32.860319] ? do_execve_common.isra.19 (./arch/x86/include/asm/current.h:14 fs/exec.c:1406 fs/exec.c:1508)
-[   32.860949] do_execve (fs/exec.c:1551)
-[   32.861390] SyS_execve (fs/exec.c:1602)
-[   32.861848] stub_execve (arch/x86/kernel/entry_64.S:662)
-
-
-Thanks,
-Sasha
