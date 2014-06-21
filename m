@@ -1,45 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756488AbaFUEoe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 00:44:34 -0400
-Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:10946
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751518AbaFUEob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 00:44:31 -0400
-Date: Sat, 21 Jun 2014 12:44:20 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Nicolin Chen <nicoleotsuka@gmail.com>
-CC: <vinod.koul@intel.com>, <s.hauer@pengutronix.de>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rdunlap@infradead.org>, <dan.j.williams@intel.com>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <dmaengine@vger.kernel.org>
-Subject: Re: [PATCH] dma: imx-sdma: Add a new DMATYPE for Shared Peripheral
- ASRC
-Message-ID: <20140621044418.GB6818@dragon>
-References: <1402889465-23797-1-git-send-email-nicoleotsuka@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1402889465-23797-1-git-send-email-nicoleotsuka@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Matching-Connectors: 130477994677765818;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(24454002)(189002)(51704005)(76176999)(76482001)(19580405001)(21056001)(83322001)(46102001)(85852003)(1411001)(68736004)(44976005)(81542001)(50466002)(31966008)(64706001)(69596002)(92566001)(33716001)(84676001)(50986999)(86362001)(47776003)(20776003)(106466001)(83072002)(19580395003)(77982001)(81342001)(81156004)(102836001)(26826002)(97736001)(74502001)(74662001)(97756001)(33656002)(80022001)(104016002)(105596002)(6806004)(99396002)(85306003)(46406003)(558084003)(57986006)(87936001)(4396001)(54356999)(79102001)(83506001)(92726001)(95666004)(23726002);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB350;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-X-Forefront-PRVS: 0249EFCB0B
-Authentication-Results: spf=softfail (sender IP is 192.88.158.2)
- smtp.mailfrom=shawn.guo@linaro.org; 
+	id S1754631AbaFUEyz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 00:54:55 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37695 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751518AbaFUEyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jun 2014 00:54:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,519,1400050800"; 
+   d="scan'208";a="531877074"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "Ingo Molnar" <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Bernd Kuhls" <berndkuhls@hotmail.com>, "Len Brown" <lenb@kernel.org>,
+        "Rui Zhang" <rui.zhang@intel.com>,
+        "Glenn Williamson" <glenn.p.williamson@intel.com>
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>,
+        "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH][BUGFIX] x86/reboot: Disable scheduler before disabling IO APIC
+Date: Fri, 20 Jun 2014 21:57:36 -0700
+Message-Id: <1403326656-48521-1-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.8.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 11:31:05AM +0800, Nicolin Chen wrote:
-> Shared Peripheral ASRC, running on SPBA, needs to use shp sciprts for
-> DMA transfer. So this patch just adds a new DMATYPE for it.
-> 
-> Signed-off-by: Nicolin Chen <nicoleotsuka@gmail.com>
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+During reboot, in the middle of disabling IO APIC, the scheduler may be
+triggered by per cpu timer to do load blance. But since the kernel is
+already in the process of shutting down and can not execute scheduler's
+load balance at this point, it triggers invalid TSS exception and hangs
+during reboot.
+
+This happens on some boards (e.g. AsRock ZT87 Extreme4 BIOS 2.70) in 32-bit
+kernel reported in Bugzilla 76661 at
+https://bugzilla.kernel.org/show_bug.cgi?id=76661
+
+To fix the issue, we disable local irq including per cpu timer before
+disabling IO APIC. By doing this, the scheduler will not disturb
+disable_IO_APIC().
+
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Tested-by: berndkuhls@hotmail.com
+---
+ arch/x86/kernel/reboot.c | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 52b1157..16111c6 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -574,6 +574,15 @@ static void native_machine_emergency_restart(void)
+ void native_machine_shutdown(void)
+ {
+ 	/* Stop the cpus and apics */
++
++#ifdef CONFIG_SMP
++	/*
++	 * Disable the local irq to not receive the per-cpu timer interrupt
++	 * which may trigger scheduler's load balance.
++	 */
++	local_irq_disable();
++#endif
++
+ #ifdef CONFIG_X86_IO_APIC
+ 	/*
+ 	 * Disabling IO APIC before local APIC is a workaround for
+@@ -591,11 +600,8 @@ void native_machine_shutdown(void)
+ 
+ #ifdef CONFIG_SMP
+ 	/*
+-	 * Stop all of the others. Also disable the local irq to
+-	 * not receive the per-cpu timer interrupt which may trigger
+-	 * scheduler's load balance.
++	 * Stop all of the others.
+ 	 */
+-	local_irq_disable();
+ 	stop_other_cpus();
+ #endif
+ 
+-- 
+1.8.1.2
+
