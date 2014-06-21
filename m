@@ -1,59 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934469AbaFUKwv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 06:52:51 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:48906 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755089AbaFUKwt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 06:52:49 -0400
-Date: Sat, 21 Jun 2014 12:52:05 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-Cc: cocci@systeme.lip6.fr, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: SmPL for automatic request_firmware_nowait() conversion
-Message-ID: <20140621105205.GA31611@electric-eye.fr.zoreil.com>
-References: <20140621015714.GX4841@wotan.suse.de>
+	id S934560AbaFUKzJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 06:55:09 -0400
+Received: from mail.kernel.org ([198.145.19.201]:43323 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932120AbaFUKzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jun 2014 06:55:07 -0400
+Message-ID: <53A56503.4000803@kernel.org>
+Date: Sat, 21 Jun 2014 11:57:07 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140621015714.GX4841@wotan.suse.de>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Reyad Attiyat <reyad.attiyat@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, srinivas.pandruvada@linux.intel.com
+Subject: Re: [PATCH v3 1/3] iio: documentation: Added documentation for rotation
+ from north usage attributes
+References: <1402957803-5154-1-git-send-email-reyad.attiyat@gmail.com> <1402957803-5154-2-git-send-email-reyad.attiyat@gmail.com>
+In-Reply-To: <1402957803-5154-2-git-send-email-reyad.attiyat@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Luis R. Rodriguez <mcgrof@suse.com> :
-> I was just porting over an ethernet driver [0] to use request_firmware_nowait()
-> since firmware loading seems can take over a minute on one device, while
-> at it I noticed no other ethernet drivers yet use this API so figure
-> this may be a trend coming if devices are getting as complex as cxgb4.
-> The cxgb4 driver happens to even use the firmware API 3 times!
+On 16/06/14 23:30, Reyad Attiyat wrote:
+> Added documentation for the sysfs attributes added by the rotation from north
+> usage attributes.
+>
+> Signed-off-by: Reyad Attiyat <reyad.attiyat@gmail.com>
+Nearly there, but I'd prefer a slight reorganization of the docs. See below.
+> ---
+>   Documentation/ABI/testing/sysfs-bus-iio | 79 ++++++++++++++++++++++++++++++++-
+>   1 file changed, 78 insertions(+), 1 deletion(-)
+>
+> diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
+> index a9757dc..2837fd9 100644
+> --- a/Documentation/ABI/testing/sysfs-bus-iio
+> +++ b/Documentation/ABI/testing/sysfs-bus-iio
+> @@ -260,6 +260,10 @@ What:		/sys/bus/iio/devices/iio:deviceX/in_magn_scale
+>   What:		/sys/bus/iio/devices/iio:deviceX/in_magn_x_scale
+>   What:		/sys/bus/iio/devices/iio:deviceX/in_magn_y_scale
+>   What:		/sys/bus/iio/devices/iio:deviceX/in_magn_z_scale
+> +What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_magnetic_scale
+> +What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_true_scale
+> +What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_magnetic_tilt_comp_scale
+> +What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_true_tilt_comp_scale
+>   What:		/sys/bus/iio/devices/iio:deviceX/in_pressureY_scale
+>   What:		/sys/bus/iio/devices/iio:deviceX/in_pressure_scale
+>   KernelVersion:	2.6.35
+> @@ -447,6 +451,14 @@ What:		/sys/.../iio:deviceX/events/in_magn_y_thresh_rising_en
+>   What:		/sys/.../iio:deviceX/events/in_magn_y_thresh_falling_en
+>   What:		/sys/.../iio:deviceX/events/in_magn_z_thresh_rising_en
+>   What:		/sys/.../iio:deviceX/events/in_magn_z_thresh_falling_en
+> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_thresh_rising_en
+> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_thresh_falling_en
+> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_thresh_rising_en
+> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_thresh_falling_en
+> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_tilt_comp_thresh_rising_en
+> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_tilt_comp_thresh_falling_en
+> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_tilt_comp_thresh_rising_en
+> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_tilt_comp_thresh_falling_en
+>   What:		/sys/.../iio:deviceX/events/in_voltageY_supply_thresh_rising_en
+>   What:		/sys/.../iio:deviceX/events/in_voltageY_supply_thresh_falling_en
+>   What:		/sys/.../iio:deviceX/events/in_voltageY_thresh_rising_en
+> @@ -492,6 +504,14 @@ What:		/sys/.../iio:deviceX/events/in_magn_y_roc_rising_en
+>   What:		/sys/.../iio:deviceX/events/in_magn_y_roc_falling_en
+>   What:		/sys/.../iio:deviceX/events/in_magn_z_roc_rising_en
+>   What:		/sys/.../iio:deviceX/events/in_magn_z_roc_falling_en
+> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_roc_rising_en
+> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_roc_falling_en
+> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_roc_rising_en
+> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_roc_falling_en
+> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_tilt_comp_roc_rising_en
+> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_tilt_comp_roc_falling_en
+> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_tilt_comp_roc_rising_en
+> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_tilt_comp_roc_falling_en
+>   What:		/sys/.../iio:deviceX/events/in_voltageY_supply_roc_rising_en
+>   What:		/sys/.../iio:deviceX/events/in_voltageY_supply_roc_falling_en
+>   What:		/sys/.../iio:deviceX/events/in_voltageY_roc_rising_en
+> @@ -538,6 +558,14 @@ What:		/sys/.../events/in_magn_y_raw_thresh_rising_value
+>   What:		/sys/.../events/in_magn_y_raw_thresh_falling_value
+>   What:		/sys/.../events/in_magn_z_raw_thresh_rising_value
+>   What:		/sys/.../events/in_magn_z_raw_thresh_falling_value
+> +What:		/sys/.../events/in_rot_from_north_magnetic_raw_thresh_rising_value
+> +What:		/sys/.../events/in_rot_from_north_magnetic_raw_thresh_falling_value
+> +What:		/sys/.../events/in_rot_from_north_true_raw_thresh_rising_value
+> +What:		/sys/.../events/in_rot_from_north_true_raw_thresh_falling_value
+> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_raw_thresh_rising_value
+> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_raw_thresh_falling_value
+> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_raw_thresh_rising_value
+> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_raw_thresh_falling_value
+>   What:		/sys/.../events/in_voltageY_supply_raw_thresh_rising_value
+>   What:		/sys/.../events/in_voltageY_supply_raw_thresh_falling_value
+>   What:		/sys/.../events/in_voltageY_raw_thresh_rising_value
+> @@ -588,6 +616,18 @@ What:		/sys/.../events/in_magn_y_thresh_either_hysteresis
+>   What:		/sys/.../events/in_magn_z_thresh_rising_hysteresis
+>   What:		/sys/.../events/in_magn_z_thresh_falling_hysteresis
+>   What:		/sys/.../events/in_magn_z_thresh_either_hysteresis
+> +What:		/sys/.../events/in_rot_from_north_magnetic_thresh_rising_hysteresis
+> +What:		/sys/.../events/in_rot_from_north_magnetic_thresh_falling_hysteresis
+> +What:		/sys/.../events/in_rot_from_north_magnetic_thresh_either_hysteresis
+> +What:		/sys/.../events/in_rot_from_north_true_thresh_rising_hysteresis
+> +What:		/sys/.../events/in_rot_from_north_true_thresh_falling_hysteresis
+> +What:		/sys/.../events/in_rot_from_north_true_thresh_either_hysteresis
+> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_rising_hysteresis
+> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_falling_hysteresis
+> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_either_hysteresis
+> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_rising_hysteresis
+> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_falling_hysteresis
+> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_either_hysteresis
+>   What:		/sys/.../events/in_voltageY_thresh_rising_hysteresis
+>   What:		/sys/.../events/in_voltageY_thresh_falling_hysteresis
+>   What:		/sys/.../events/in_voltageY_thresh_either_hysteresis
+> @@ -635,6 +675,14 @@ What:		/sys/.../events/in_magn_y_raw_roc_rising_value
+>   What:		/sys/.../events/in_magn_y_raw_roc_falling_value
+>   What:		/sys/.../events/in_magn_z_raw_roc_rising_value
+>   What:		/sys/.../events/in_magn_z_raw_roc_falling_value
+> +What:		/sys/.../events/in_rot_from_north_magnetic_raw_roc_rising_value
+> +What:		/sys/.../events/in_rot_from_north_magnetic_raw_roc_falling_value
+> +What:		/sys/.../events/in_rot_from_north_true_raw_roc_rising_value
+> +What:		/sys/.../events/in_rot_from_north_true_raw_roc_falling_value
+> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_raw_roc_rising_value
+> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_raw_roc_falling_value
+> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_raw_roc_rising_value
+> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_raw_roc_falling_value
+>   What:		/sys/.../events/in_voltageY_supply_raw_roc_rising_value
+>   What:		/sys/.../events/in_voltageY_supply_raw_roc_falling_value
+>   What:		/sys/.../events/in_voltageY_raw_roc_rising_value
+> @@ -690,6 +738,22 @@ What:		/sys/.../events/in_magn_z_thresh_rising_period
+>   What:		/sys/.../events/in_magn_z_thresh_falling_period
+>   What:		/sys/.../events/in_magn_z_roc_rising_period
+>   What:		/sys/.../events/in_magn_z_roc_falling_period
+> +What:		/sys/.../events/in_rot_from_north_magnetic_thresh_rising_period
+> +What:		/sys/.../events/in_rot_from_north_magnetic_thresh_falling_period
+> +What:		/sys/.../events/in_rot_from_north_magnetic_roc_rising_period
+> +What:		/sys/.../events/in_rot_from_north_magnetic_roc_falling_period
+> +What:		/sys/.../events/in_rot_from_north_true_thresh_rising_period
+> +What:		/sys/.../events/in_rot_from_north_true_thresh_falling_period
+> +What:		/sys/.../events/in_rot_from_north_true_roc_rising_period
+> +What:		/sys/.../events/in_rot_from_north_true_roc_falling_period
+> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_rising_period
+> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_falling_period
+> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_roc_rising_period
+> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_roc_falling_period
+> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_rising_period
+> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_falling_period
+> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_roc_rising_period
+> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_roc_falling_period
+>   What:		/sys/.../events/in_voltageY_supply_thresh_rising_period
+>   What:		/sys/.../events/in_voltageY_supply_thresh_falling_period
+>   What:		/sys/.../events/in_voltageY_supply_roc_rising_period
+> @@ -787,6 +851,10 @@ What:		/sys/.../iio:deviceX/scan_elements/in_anglvel_z_en
+>   What:		/sys/.../iio:deviceX/scan_elements/in_magn_x_en
+>   What:		/sys/.../iio:deviceX/scan_elements/in_magn_y_en
+>   What:		/sys/.../iio:deviceX/scan_elements/in_magn_z_en
+> +What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_magnetic_en
+> +What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_true_en
+> +What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_magnetic_tilt_comp_en
+> +What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_true_tilt_comp_en
+>   What:		/sys/.../iio:deviceX/scan_elements/in_timestamp_en
+>   What:		/sys/.../iio:deviceX/scan_elements/in_voltageY_supply_en
+>   What:		/sys/.../iio:deviceX/scan_elements/in_voltageY_en
+> @@ -853,6 +921,10 @@ What:		/sys/.../iio:deviceX/scan_elements/in_anglvel_z_index
+>   What:		/sys/.../iio:deviceX/scan_elements/in_magn_x_index
+>   What:		/sys/.../iio:deviceX/scan_elements/in_magn_y_index
+>   What:		/sys/.../iio:deviceX/scan_elements/in_magn_z_index
+> +What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_magnetic_index
+> +What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_true_index
+> +What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_magnetic_tilt_comp_index
+> +What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_true_tilt_comp_index
+>   What:		/sys/.../iio:deviceX/scan_elements/in_incli_x_index
+>   What:		/sys/.../iio:deviceX/scan_elements/in_incli_y_index
+>   What:		/sys/.../iio:deviceX/scan_elements/in_timestamp_index
+> @@ -926,10 +998,15 @@ Description:
+>   		seconds.
+>
+>   What:		/sys/bus/iio/devices/iio:deviceX/in_rot_quaternion_raw
+> +What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_magnetic_raw
+> +What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_true_raw
+> +What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_magnetic_tilt_comp_raw
+> +What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_true_tilt_comp_raw
+>   KernelVersion:	3.15
+>   Contact:	linux-iio@vger.kernel.org
+>   Description:
+>   		Raw value of quaternion components using a format
+>   		x y z w. Here x, y, and z component represents the axis about
+>   		which a rotation will occur and w component represents the
+> -		amount of rotation.
+> +		amount of rotation. Raw value of rotation from true/magnetic
+> +		north measured with or without compensation from tilt sensors
+>
+Don't combine it with the quaternion description.  It just adds confusion. Please give these
+_raw entries their own section in the docs.
 
-There should be no problem for the firmware requests issued through
-ethtool in cxgb4.
-
-[...]
-> netdev: how worthy is this effort?
-
-Biased comment below :o)
-
-I'm wondering the benefit of automatic API changes when it could be argued
-that the symptoms call for driver dependant code rework.
-
-The 60 seconds delay is kind of a pavlovian signal: one can bet that the
-driver includes a request_firmware in its probe method. So does cxgb4.
-
-I still believe in the old school "request firmware from net_device_ops.open".
-I've been happy with it since f1e02ed109df5f99abf942b8ccc99960cb09dd38.
-This kind of rework may not be trivial for cxgb4. Please get code tested on
-real hardware (modular/monolithic build, with/without firmware, etc.) as I
-won't argue against your crusade for cxgb4.
-
-Asynchronous firmware loading provides a rather nice high level API but
-it's imho not the essence of network devices firmware loading problems.
-
--- 
-Ueimor
