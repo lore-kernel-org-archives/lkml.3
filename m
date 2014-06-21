@@ -1,195 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934560AbaFUKzJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 06:55:09 -0400
-Received: from mail.kernel.org ([198.145.19.201]:43323 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932120AbaFUKzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 06:55:07 -0400
-Message-ID: <53A56503.4000803@kernel.org>
-Date: Sat, 21 Jun 2014 11:57:07 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Reyad Attiyat <reyad.attiyat@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, srinivas.pandruvada@linux.intel.com
-Subject: Re: [PATCH v3 1/3] iio: documentation: Added documentation for rotation
- from north usage attributes
-References: <1402957803-5154-1-git-send-email-reyad.attiyat@gmail.com> <1402957803-5154-2-git-send-email-reyad.attiyat@gmail.com>
-In-Reply-To: <1402957803-5154-2-git-send-email-reyad.attiyat@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S934502AbaFULEb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 07:04:31 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:46492 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755192AbaFULE2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jun 2014 07:04:28 -0400
+From: Alexander Bersenev <bay@hackerdom.ru>
+To: linux-sunxi@googlegroups.com, david@hardeman.nu,
+        devicetree@vger.kernel.org, galak@codeaurora.org,
+        grant.likely@linaro.org, ijc+devicetree@hellion.org.uk,
+        james.hogan@imgtec.com, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, m.chehab@samsung.com, mark.rutland@arm.com,
+        maxime.ripard@free-electrons.com, pawel.moll@arm.com,
+        rdunlap@infradead.org, robh+dt@kernel.org, sean@mess.org,
+        srinivas.kandagatla@st.com, wingrime@linux-sunxi.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Cc: Alexander Bersenev <bay@hackerdom.ru>
+Subject: [PATCH v10 0/5] ARM: sunxi: Add support for consumer infrared devices
+Date: Sat, 21 Jun 2014 17:04:01 +0600
+Message-Id: <1403348646-31091-1-git-send-email-bay@hackerdom.ru>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/06/14 23:30, Reyad Attiyat wrote:
-> Added documentation for the sysfs attributes added by the rotation from north
-> usage attributes.
->
-> Signed-off-by: Reyad Attiyat <reyad.attiyat@gmail.com>
-Nearly there, but I'd prefer a slight reorganization of the docs. See below.
-> ---
->   Documentation/ABI/testing/sysfs-bus-iio | 79 ++++++++++++++++++++++++++++++++-
->   1 file changed, 78 insertions(+), 1 deletion(-)
->
-> diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
-> index a9757dc..2837fd9 100644
-> --- a/Documentation/ABI/testing/sysfs-bus-iio
-> +++ b/Documentation/ABI/testing/sysfs-bus-iio
-> @@ -260,6 +260,10 @@ What:		/sys/bus/iio/devices/iio:deviceX/in_magn_scale
->   What:		/sys/bus/iio/devices/iio:deviceX/in_magn_x_scale
->   What:		/sys/bus/iio/devices/iio:deviceX/in_magn_y_scale
->   What:		/sys/bus/iio/devices/iio:deviceX/in_magn_z_scale
-> +What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_magnetic_scale
-> +What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_true_scale
-> +What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_magnetic_tilt_comp_scale
-> +What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_true_tilt_comp_scale
->   What:		/sys/bus/iio/devices/iio:deviceX/in_pressureY_scale
->   What:		/sys/bus/iio/devices/iio:deviceX/in_pressure_scale
->   KernelVersion:	2.6.35
-> @@ -447,6 +451,14 @@ What:		/sys/.../iio:deviceX/events/in_magn_y_thresh_rising_en
->   What:		/sys/.../iio:deviceX/events/in_magn_y_thresh_falling_en
->   What:		/sys/.../iio:deviceX/events/in_magn_z_thresh_rising_en
->   What:		/sys/.../iio:deviceX/events/in_magn_z_thresh_falling_en
-> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_thresh_rising_en
-> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_thresh_falling_en
-> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_thresh_rising_en
-> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_thresh_falling_en
-> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_tilt_comp_thresh_rising_en
-> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_tilt_comp_thresh_falling_en
-> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_tilt_comp_thresh_rising_en
-> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_tilt_comp_thresh_falling_en
->   What:		/sys/.../iio:deviceX/events/in_voltageY_supply_thresh_rising_en
->   What:		/sys/.../iio:deviceX/events/in_voltageY_supply_thresh_falling_en
->   What:		/sys/.../iio:deviceX/events/in_voltageY_thresh_rising_en
-> @@ -492,6 +504,14 @@ What:		/sys/.../iio:deviceX/events/in_magn_y_roc_rising_en
->   What:		/sys/.../iio:deviceX/events/in_magn_y_roc_falling_en
->   What:		/sys/.../iio:deviceX/events/in_magn_z_roc_rising_en
->   What:		/sys/.../iio:deviceX/events/in_magn_z_roc_falling_en
-> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_roc_rising_en
-> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_roc_falling_en
-> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_roc_rising_en
-> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_roc_falling_en
-> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_tilt_comp_roc_rising_en
-> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_magnetic_tilt_comp_roc_falling_en
-> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_tilt_comp_roc_rising_en
-> +What:		/sys/.../iio:deviceX/events/in_rot_from_north_true_tilt_comp_roc_falling_en
->   What:		/sys/.../iio:deviceX/events/in_voltageY_supply_roc_rising_en
->   What:		/sys/.../iio:deviceX/events/in_voltageY_supply_roc_falling_en
->   What:		/sys/.../iio:deviceX/events/in_voltageY_roc_rising_en
-> @@ -538,6 +558,14 @@ What:		/sys/.../events/in_magn_y_raw_thresh_rising_value
->   What:		/sys/.../events/in_magn_y_raw_thresh_falling_value
->   What:		/sys/.../events/in_magn_z_raw_thresh_rising_value
->   What:		/sys/.../events/in_magn_z_raw_thresh_falling_value
-> +What:		/sys/.../events/in_rot_from_north_magnetic_raw_thresh_rising_value
-> +What:		/sys/.../events/in_rot_from_north_magnetic_raw_thresh_falling_value
-> +What:		/sys/.../events/in_rot_from_north_true_raw_thresh_rising_value
-> +What:		/sys/.../events/in_rot_from_north_true_raw_thresh_falling_value
-> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_raw_thresh_rising_value
-> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_raw_thresh_falling_value
-> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_raw_thresh_rising_value
-> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_raw_thresh_falling_value
->   What:		/sys/.../events/in_voltageY_supply_raw_thresh_rising_value
->   What:		/sys/.../events/in_voltageY_supply_raw_thresh_falling_value
->   What:		/sys/.../events/in_voltageY_raw_thresh_rising_value
-> @@ -588,6 +616,18 @@ What:		/sys/.../events/in_magn_y_thresh_either_hysteresis
->   What:		/sys/.../events/in_magn_z_thresh_rising_hysteresis
->   What:		/sys/.../events/in_magn_z_thresh_falling_hysteresis
->   What:		/sys/.../events/in_magn_z_thresh_either_hysteresis
-> +What:		/sys/.../events/in_rot_from_north_magnetic_thresh_rising_hysteresis
-> +What:		/sys/.../events/in_rot_from_north_magnetic_thresh_falling_hysteresis
-> +What:		/sys/.../events/in_rot_from_north_magnetic_thresh_either_hysteresis
-> +What:		/sys/.../events/in_rot_from_north_true_thresh_rising_hysteresis
-> +What:		/sys/.../events/in_rot_from_north_true_thresh_falling_hysteresis
-> +What:		/sys/.../events/in_rot_from_north_true_thresh_either_hysteresis
-> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_rising_hysteresis
-> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_falling_hysteresis
-> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_either_hysteresis
-> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_rising_hysteresis
-> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_falling_hysteresis
-> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_either_hysteresis
->   What:		/sys/.../events/in_voltageY_thresh_rising_hysteresis
->   What:		/sys/.../events/in_voltageY_thresh_falling_hysteresis
->   What:		/sys/.../events/in_voltageY_thresh_either_hysteresis
-> @@ -635,6 +675,14 @@ What:		/sys/.../events/in_magn_y_raw_roc_rising_value
->   What:		/sys/.../events/in_magn_y_raw_roc_falling_value
->   What:		/sys/.../events/in_magn_z_raw_roc_rising_value
->   What:		/sys/.../events/in_magn_z_raw_roc_falling_value
-> +What:		/sys/.../events/in_rot_from_north_magnetic_raw_roc_rising_value
-> +What:		/sys/.../events/in_rot_from_north_magnetic_raw_roc_falling_value
-> +What:		/sys/.../events/in_rot_from_north_true_raw_roc_rising_value
-> +What:		/sys/.../events/in_rot_from_north_true_raw_roc_falling_value
-> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_raw_roc_rising_value
-> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_raw_roc_falling_value
-> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_raw_roc_rising_value
-> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_raw_roc_falling_value
->   What:		/sys/.../events/in_voltageY_supply_raw_roc_rising_value
->   What:		/sys/.../events/in_voltageY_supply_raw_roc_falling_value
->   What:		/sys/.../events/in_voltageY_raw_roc_rising_value
-> @@ -690,6 +738,22 @@ What:		/sys/.../events/in_magn_z_thresh_rising_period
->   What:		/sys/.../events/in_magn_z_thresh_falling_period
->   What:		/sys/.../events/in_magn_z_roc_rising_period
->   What:		/sys/.../events/in_magn_z_roc_falling_period
-> +What:		/sys/.../events/in_rot_from_north_magnetic_thresh_rising_period
-> +What:		/sys/.../events/in_rot_from_north_magnetic_thresh_falling_period
-> +What:		/sys/.../events/in_rot_from_north_magnetic_roc_rising_period
-> +What:		/sys/.../events/in_rot_from_north_magnetic_roc_falling_period
-> +What:		/sys/.../events/in_rot_from_north_true_thresh_rising_period
-> +What:		/sys/.../events/in_rot_from_north_true_thresh_falling_period
-> +What:		/sys/.../events/in_rot_from_north_true_roc_rising_period
-> +What:		/sys/.../events/in_rot_from_north_true_roc_falling_period
-> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_rising_period
-> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_thresh_falling_period
-> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_roc_rising_period
-> +What:		/sys/.../events/in_rot_from_north_magnetic_tilt_comp_roc_falling_period
-> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_rising_period
-> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_thresh_falling_period
-> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_roc_rising_period
-> +What:		/sys/.../events/in_rot_from_north_true_tilt_comp_roc_falling_period
->   What:		/sys/.../events/in_voltageY_supply_thresh_rising_period
->   What:		/sys/.../events/in_voltageY_supply_thresh_falling_period
->   What:		/sys/.../events/in_voltageY_supply_roc_rising_period
-> @@ -787,6 +851,10 @@ What:		/sys/.../iio:deviceX/scan_elements/in_anglvel_z_en
->   What:		/sys/.../iio:deviceX/scan_elements/in_magn_x_en
->   What:		/sys/.../iio:deviceX/scan_elements/in_magn_y_en
->   What:		/sys/.../iio:deviceX/scan_elements/in_magn_z_en
-> +What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_magnetic_en
-> +What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_true_en
-> +What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_magnetic_tilt_comp_en
-> +What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_true_tilt_comp_en
->   What:		/sys/.../iio:deviceX/scan_elements/in_timestamp_en
->   What:		/sys/.../iio:deviceX/scan_elements/in_voltageY_supply_en
->   What:		/sys/.../iio:deviceX/scan_elements/in_voltageY_en
-> @@ -853,6 +921,10 @@ What:		/sys/.../iio:deviceX/scan_elements/in_anglvel_z_index
->   What:		/sys/.../iio:deviceX/scan_elements/in_magn_x_index
->   What:		/sys/.../iio:deviceX/scan_elements/in_magn_y_index
->   What:		/sys/.../iio:deviceX/scan_elements/in_magn_z_index
-> +What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_magnetic_index
-> +What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_true_index
-> +What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_magnetic_tilt_comp_index
-> +What:		/sys/.../iio:deviceX/scan_elements/in_rot_from_north_true_tilt_comp_index
->   What:		/sys/.../iio:deviceX/scan_elements/in_incli_x_index
->   What:		/sys/.../iio:deviceX/scan_elements/in_incli_y_index
->   What:		/sys/.../iio:deviceX/scan_elements/in_timestamp_index
-> @@ -926,10 +998,15 @@ Description:
->   		seconds.
->
->   What:		/sys/bus/iio/devices/iio:deviceX/in_rot_quaternion_raw
-> +What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_magnetic_raw
-> +What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_true_raw
-> +What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_magnetic_tilt_comp_raw
-> +What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_true_tilt_comp_raw
->   KernelVersion:	3.15
->   Contact:	linux-iio@vger.kernel.org
->   Description:
->   		Raw value of quaternion components using a format
->   		x y z w. Here x, y, and z component represents the axis about
->   		which a rotation will occur and w component represents the
-> -		amount of rotation.
-> +		amount of rotation. Raw value of rotation from true/magnetic
-> +		north measured with or without compensation from tilt sensors
->
-Don't combine it with the quaternion description.  It just adds confusion. Please give these
-_raw entries their own section in the docs.
+This patch introduces Consumer IR(CIR) support for sunxi boards.
+
+This is based on Alexsey Shestacov's work based on the original driver 
+supplied by Allwinner.
+
+Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
+Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
+
+---
+Changes since version 1: 
+ - Fix timer memory leaks 
+ - Fix race condition when driver unloads while interrupt handler is active
+ - Support Cubieboard 2(need testing)
+
+Changes since version 2:
+- More reliable keydown events
+- Documentation fixes
+- Rename registers accurding to A20 user manual
+- Remove some includes, order includes alphabetically
+- Use BIT macro
+- Typo fixes
+
+Changes since version 3:
+- Split the patch on smaller parts
+- More documentation fixes
+- Add clock-names in DT
+- Use devm_clk_get function to get the clocks
+- Removed gpios property from ir's DT
+- Changed compatible from allwinner,sunxi-ir to allwinner,sun7i-a20-ir in DT
+- Use spin_lock_irq instead spin_lock_irqsave in interrupt handler
+- Add myself in the copyright ;)
+- Coding style and indentation fixes
+
+Changes since version 4:
+- Try to fix indentation errors by sending patches with git send-mail
+
+Changes since version 5:
+- More indentation fixes
+- Make patches pass checkpatch with --strict option
+- Replaced magic numbers with defines(patch by Priit Laes)
+- Fixed oops on loading(patch by Hans de Goede)
+
+Changes since version 6:
+- Removed constants from code
+- Better errrors handling on loading
+- Renamed sunxi-ir.c to sunxi-cir.c
+- Changed description of second commit
+- Order entries in dts and dtsi by register address
+- Code style fixes
+
+Changes since version 7:
+- Removed a couple of blank lines in code
+- Delay interrupts init until we are ready to handle them
+- Increased the reported duration of each pulse by one
+- Refactored defines
+
+Changes since version 8:
+- Split the DT patch to three
+- Code style fixes
+
+Changes since version 9:
+- Rebase patches on 3.16-rc1
+
+Alexander Bersenev (5):
+  ARM: sunxi: Add documentation for sunxi consumer infrared devices
+  [media] rc: add sunxi-ir driver
+  ARM: sunxi: Add pins for IR controller on A20 to dtsi
+  ARM: sunxi: Add IR controllers on A20 to dtsi
+  ARM: sunxi: Enable IR controller on cubieboard 2 and cubietruck in
+    dts
+
+ .../devicetree/bindings/media/sunxi-ir.txt         |   23 ++
+ arch/arm/boot/dts/sun7i-a20-cubieboard2.dts        |    6 +
+ arch/arm/boot/dts/sun7i-a20-cubietruck.dts         |    6 +
+ arch/arm/boot/dts/sun7i-a20.dtsi                   |   32 ++
+ drivers/media/rc/Kconfig                           |   10 +
+ drivers/media/rc/Makefile                          |    1 +
+ drivers/media/rc/sunxi-cir.c                       |  318 ++++++++++++++++++++
+ 7 files changed, 396 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/media/sunxi-ir.txt
+ create mode 100644 drivers/media/rc/sunxi-cir.c
 
