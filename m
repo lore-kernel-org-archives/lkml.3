@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934175AbaFUDzA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 23:55:00 -0400
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:47041 "EHLO dev.rtsoft.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932402AbaFUDy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 23:54:59 -0400
-Message-ID: <53A50218.6020506@dev.rtsoft.ru>
-Date: Sat, 21 Jun 2014 07:55:04 +0400
-From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-Organization: RTSoft Software Development Center
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: linux-rt-users@vger.kernel.org
-CC: "'Alexey Lugovskoy'" <lugovskoy@dev.rtsoft.ru>,
-        Konstantin Kholopov <kkholopov@dev.rtsoft.ru>,
+	id S934214AbaFUD7c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 23:59:32 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:56413 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932402AbaFUD7b convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 23:59:31 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18ip9qhZOdbBVTEXrLV+vNYErII3DYSr20=
+X-DKIM: OpenDKIM Filter v2.0.1 titan BEBAB5951B1
+From: Jason Cooper <jason@lakedaemon.net>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [v3.10-rt / v3.12-rt] scheduling while atomic in cgroup code
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH] direct-io: squelch maybe-uninitialized warning in do_direct_IO()
+Date: Sat, 21 Jun 2014 03:58:59 +0000
+Message-Id: <1403323139-12858-1-git-send-email-jason@lakedaemon.net>
+X-Mailer: git-send-email 2.0.0
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+The following warnings:
 
-Call Trace:
-[e22d5a90] [c0007ea8] show_stack+0x4c/0x168 (unreliable)
-[e22d5ad0] [c0618c04] __schedule_bug+0x94/0xb0
-[e22d5ae0] [c060b9ec] __schedule+0x530/0x550
-[e22d5bf0] [c060bacc] schedule+0x30/0xbc
-[e22d5c00] [c060ca24] rt_spin_lock_slowlock+0x180/0x27c
-[e22d5c70] [c00b39dc] res_counter_uncharge_until+0x40/0xc4
-[e22d5ca0] [c013ca88] drain_stock.isra.20+0x54/0x98
-[e22d5cc0] [c01402ac] __mem_cgroup_try_charge+0x2e8/0xbac
-[e22d5d70] [c01410d4] mem_cgroup_charge_common+0x3c/0x70
-[e22d5d90] [c0117284] __do_fault+0x38c/0x510
-[e22d5df0] [c011a5f4] handle_pte_fault+0x98/0x858
-[e22d5e50] [c060ed08] do_page_fault+0x42c/0x6fc
-[e22d5f40] [c000f5b4] handle_page_fault+0xc/0x80
+  fs/direct-io.c: In function ‘__blockdev_direct_IO’:
+  fs/direct-io.c:1011:12: warning: ‘to’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+  fs/direct-io.c:913:16: note: ‘to’ was declared here
+  fs/direct-io.c:1011:12: warning: ‘from’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+  fs/direct-io.c:913:10: note: ‘from’ was declared here
 
-What happens:
+are not necessary because dio_get_page() either fails, or sets both
+'from' and 'to'.
 
-- refill_stock() calls get_cpu_var() and thus disables preemption until
-matching put_cpu_var() is called,
+Make the compiler happy so we can more easily detect legitimate
+warnings.
 
-- then it calls drain_stock() -> res_counter_uncharge() ->
-res_counter_uncharge_until()
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+---
+ fs/direct-io.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-- and here we have spin_lock(), which under RT can sleep. Thus we have 
-sleeping with preemption disabled.
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index 98040ba388ac..c0a9854d2bc7 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -910,7 +910,8 @@ static int do_direct_IO(struct dio *dio, struct dio_submit *sdio,
+ 
+ 	while (sdio->block_in_file < sdio->final_block_in_request) {
+ 		struct page *page;
+-		size_t from, to;
++		size_t from = 0;
++		size_t to = 0;
+ 		page = dio_get_page(dio, sdio, &from, &to);
+ 		if (IS_ERR(page)) {
+ 			ret = PTR_ERR(page);
+-- 
+2.0.0
 
-
-Any ideas how to fix?
