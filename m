@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182AbaFUMEM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 08:04:12 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:37726 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803AbaFUMEK (ORCPT
+	id S1755465AbaFUMEb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 08:04:31 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:38566 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755252AbaFUME2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 08:04:10 -0400
-Date: Sat, 21 Jun 2014 13:04:06 +0100
+	Sat, 21 Jun 2014 08:04:28 -0400
+Date: Sat, 21 Jun 2014 13:04:25 +0100
 From: Daniel Walter <dwalter@google.com>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH v3 0/9] replace obsolete strict_strto* calls
-Message-ID: <20140621120406.GA4181@google.com>
+To: linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>
+Cc: linux-omap@vger.kernel.org
+Subject: [PATCH 1/9] [arch/arm/omap2] replace strict_strto* with kstrto*
+Message-ID: <20140621120425.GA5169@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -20,53 +21,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes since v2:
- Removed merged patches
+Replace obsolete strict_strto call with kstrto calls.
+Simplify copy_from_user/strict_strto by using kstrto_from_user
 
-Changes since v1:
- Removed [arch/tile] (was merged to tile tree)
-  Added Acked-by
-
-  Replace all calls to strict_strto* functions with appropriate
-  calls to kstrto*.
-  Remove definition of strict_strto* functions
-
-  All patches apply against current linux git tree
-
-Daniel Walter (9):
-  [arch/arm/omap2] replace strict_strto* with kstrto*
-  [arch/arm/mach-pxa] replace strict_strto call with kstrto
-  [arch/arm/mach-s3c24xx] replace strict_strto* with kstrto*
-  [arch/arm/mach-w90x900] replace obsolete strict_strto
-  [arch/powerpc] replace obsolete strict_strto* calls
-  [arch/x86] replace strict_strto calls
-  [drivers/scsi] replace strict_strto calls
-  [net/sunrpc] replace strict_strto calls
-  [include/linux] remove strict_strto* definitions
-
+Signed-off-by: Daniel Walter <dwalter@google.com>
+---
  arch/arm/mach-omap2/board-omap3touchbook.c |  2 +-
  arch/arm/mach-omap2/mux.c                  | 22 ++++++----------------
- arch/arm/mach-pxa/balloon3.c               |  2 +-
- arch/arm/mach-pxa/viper.c                  |  2 +-
- arch/arm/mach-s3c24xx/mach-jive.c          |  2 +-
- arch/arm/mach-w90x900/cpu.c                |  3 ++-
- arch/powerpc/kernel/setup_64.c             |  6 +++---
- arch/powerpc/kernel/vio.c                  |  2 +-
- arch/powerpc/platforms/pseries/dlpar.c     |  4 ++--
- arch/powerpc/platforms/pseries/mobility.c  |  2 +-
- arch/x86/kernel/cpu/intel_cacheinfo.c      |  4 ++--
- arch/x86/kernel/cpu/mcheck/mce.c           |  6 +++---
- arch/x86/kernel/cpu/mcheck/mce_amd.c       |  4 ++--
- arch/x86/kvm/mmu_audit.c                   |  2 +-
- arch/x86/platform/uv/tlb_uv.c              |  2 +-
- drivers/scsi/pmcraid.c                     |  4 ++--
- drivers/scsi/scsi_sysfs.c                  |  4 ++--
- include/linux/kernel.h                     |  4 ----
- net/sunrpc/addr.c                          | 16 ++++++----------
- net/sunrpc/auth.c                          |  2 +-
- net/sunrpc/xprtsock.c                      |  4 ++--
- 21 files changed, 41 insertions(+), 58 deletions(-)
+ 2 files changed, 7 insertions(+), 17 deletions(-)
 
+diff --git a/arch/arm/mach-omap2/board-omap3touchbook.c b/arch/arm/mach-omap2/board-omap3touchbook.c
+index 7da48bc..70b904c 100644
+--- a/arch/arm/mach-omap2/board-omap3touchbook.c
++++ b/arch/arm/mach-omap2/board-omap3touchbook.c
+@@ -336,7 +336,7 @@ static int __init early_touchbook_revision(char *p)
+ 	if (!p)
+ 		return 0;
+ 
+-	return strict_strtoul(p, 10, &touchbook_revision);
++	return kstrtoul(p, 10, &touchbook_revision);
+ }
+ early_param("tbr", early_touchbook_revision);
+ 
+diff --git a/arch/arm/mach-omap2/mux.c b/arch/arm/mach-omap2/mux.c
+index fd88ede..9e1b610 100644
+--- a/arch/arm/mach-omap2/mux.c
++++ b/arch/arm/mach-omap2/mux.c
+@@ -679,29 +679,19 @@ static ssize_t omap_mux_dbg_signal_write(struct file *file,
+ 					 const char __user *user_buf,
+ 					 size_t count, loff_t *ppos)
+ {
+-	char buf[OMAP_MUX_MAX_ARG_CHAR];
+ 	struct seq_file *seqf;
+ 	struct omap_mux *m;
+-	unsigned long val;
+-	int buf_size, ret;
++	u16 val;
++	int ret;
+ 	struct omap_mux_partition *partition;
+ 
+ 	if (count > OMAP_MUX_MAX_ARG_CHAR)
+ 		return -EINVAL;
+ 
+-	memset(buf, 0, sizeof(buf));
+-	buf_size = min(count, sizeof(buf) - 1);
+-
+-	if (copy_from_user(buf, user_buf, buf_size))
+-		return -EFAULT;
+-
+-	ret = strict_strtoul(buf, 0x10, &val);
++	ret = kstrtou16_from_user(user_buf, count, 0x10, &val);
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	if (val > 0xffff)
+-		return -EINVAL;
+-
+ 	seqf = file->private_data;
+ 	m = seqf->private;
+ 
+@@ -709,7 +699,7 @@ static ssize_t omap_mux_dbg_signal_write(struct file *file,
+ 	if (!partition)
+ 		return -ENODEV;
+ 
+-	omap_mux_write(partition, (u16)val, m->reg_offset);
++	omap_mux_write(partition, val, m->reg_offset);
+ 	*ppos += count;
+ 
+ 	return count;
+@@ -915,14 +905,14 @@ static void __init omap_mux_set_cmdline_signals(void)
+ 
+ 	while ((token = strsep(&next_opt, ",")) != NULL) {
+ 		char *keyval, *name;
+-		unsigned long val;
++		u16 val;
+ 
+ 		keyval = token;
+ 		name = strsep(&keyval, "=");
+ 		if (name) {
+ 			int res;
+ 
+-			res = strict_strtoul(keyval, 0x10, &val);
++			res = kstrtou16(keyval, 0x10, &val);
+ 			if (res < 0)
+ 				continue;
+ 
 -- 
 2.0.0.526.g5318336
 
