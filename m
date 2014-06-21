@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758156AbaFUCIW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 22:08:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51172 "EHLO
+	id S1758183AbaFUCIf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 22:08:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51181 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755956AbaFUCIS (ORCPT
+	with ESMTP id S1755956AbaFUCIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 22:08:18 -0400
-Date: Fri, 20 Jun 2014 19:08:06 -0700
+	Fri, 20 Jun 2014 22:08:31 -0400
+Date: Fri, 20 Jun 2014 19:08:20 -0700
 From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
-Message-ID: <tip-0e3727a8839c988a3c56170bc8da76d55a16acad@git.kernel.org>
+Message-ID: <tip-dda1e95cee38b416b23f751cac65421d781e3c10@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
         mingo@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
         linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <2e96d0c49016ea6d026a614ae645e93edd325961.1403129369.git.luto@amacapital.net>
-References: <2e96d0c49016ea6d026a614ae645e93edd325961.1403129369.git.luto@amacapital.net>
+In-Reply-To: <a424b189ce3ced85fe1e82d032a20e765e0fe0d3.1403291930.git.luto@amacapital.net>
+References: <a424b189ce3ced85fe1e82d032a20e765e0fe0d3.1403291930.git.luto@amacapital.net>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:x86/urgent] x86/vdso:
-  Remove some redundant in-memory section headers
-Git-Commit-ID: 0e3727a8839c988a3c56170bc8da76d55a16acad
+  Create .build-id links for unstripped vdso files
+Git-Commit-ID: dda1e95cee38b416b23f751cac65421d781e3c10
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,149 +32,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0e3727a8839c988a3c56170bc8da76d55a16acad
-Gitweb:     http://git.kernel.org/tip/0e3727a8839c988a3c56170bc8da76d55a16acad
+Commit-ID:  dda1e95cee38b416b23f751cac65421d781e3c10
+Gitweb:     http://git.kernel.org/tip/dda1e95cee38b416b23f751cac65421d781e3c10
 Author:     Andy Lutomirski <luto@amacapital.net>
-AuthorDate: Wed, 18 Jun 2014 15:59:49 -0700
+AuthorDate: Fri, 20 Jun 2014 12:20:44 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 19 Jun 2014 15:45:26 -0700
+CommitDate: Fri, 20 Jun 2014 13:18:49 -0700
 
-x86/vdso: Remove some redundant in-memory section headers
+x86/vdso: Create .build-id links for unstripped vdso files
 
-.data doesn't need to be separate from .rodata: they're both readonly.
+With this change, doing 'make vdso_install' and telling gdb:
 
-.altinstructions and .altinstr_replacement aren't needed by anything
-except vdso2c; strip them from the final image.
+set debug-file-directory /lib/modules/KVER/vdso
 
-While we're at it, rather than aligning the actual executable text,
-just shove some unused-at-runtime data in between real data and
-text.
+will enable vdso debugging with symbols.  This is useful for
+testing, but kernel RPM builds will probably want to manually delete
+these symlinks or otherwise do something sensible when they strip
+the vdso/*.so files.
 
-My vdso image is still above 4k, but I'm disinclined to try to
-trim it harder for 3.16.  For future trimming, I suspect that these
-sections could be moved to later in the file and dropped from
-the in-memory image:
+If ld does not support --build-id, then the symlinks will not be
+created.
 
-.gnu.version and .gnu.version_d   (this may lose versions in gdb)
-.eh_frame                         (should be harmless)
-.eh_frame_hdr                     (I'm not really sure)
-.hash                             (AFAIK nothing needs this section header)
+Note that kernel packagers that use vdso_install may need to adjust
+their packaging scripts to accomdate this change.  For example,
+Fedora's scripts create build-id symlinks themselves in a different
+location, so the spec should probably be updated to remove the
+symlinks created by make vdso_install.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/2e96d0c49016ea6d026a614ae645e93edd325961.1403129369.git.luto@amacapital.net
+Link: http://lkml.kernel.org/r/a424b189ce3ced85fe1e82d032a20e765e0fe0d3.1403291930.git.luto@amacapital.net
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/vdso/vdso-fakesections.c |  3 ---
- arch/x86/vdso/vdso-layout.lds.S   | 43 +++++++++++++++++++++------------------
- arch/x86/vdso/vdso2c.h            |  4 +++-
- 3 files changed, 26 insertions(+), 24 deletions(-)
+ arch/x86/vdso/Makefile | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/vdso/vdso-fakesections.c b/arch/x86/vdso/vdso-fakesections.c
-index 56927a7..aa5fbfa 100644
---- a/arch/x86/vdso/vdso-fakesections.c
-+++ b/arch/x86/vdso/vdso-fakesections.c
-@@ -16,9 +16,6 @@ const char fake_shstrtab[] __attribute__((section(".fake_shstrtab"))) =
- 	".rodata\0"
- 	".fake_shstrtab\0"  /* Yay, self-referential code. */
- 	".note\0"
--	".data\0"
--	".altinstructions\0"
--	".altinstr_replacement\0"
- 	".eh_frame_hdr\0"
- 	".eh_frame\0"
- 	".text";
-diff --git a/arch/x86/vdso/vdso-layout.lds.S b/arch/x86/vdso/vdso-layout.lds.S
-index e4cbc21..9197544 100644
---- a/arch/x86/vdso/vdso-layout.lds.S
-+++ b/arch/x86/vdso/vdso-layout.lds.S
-@@ -14,7 +14,7 @@
- # error unknown VDSO target
- #endif
+diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
+index 2c1ca98..68a15c4 100644
+--- a/arch/x86/vdso/Makefile
++++ b/arch/x86/vdso/Makefile
+@@ -169,14 +169,24 @@ quiet_cmd_vdso = VDSO    $@
+ 		 sh $(srctree)/$(src)/checkundef.sh '$(NM)' '$@'
  
--#define NUM_FAKE_SHDRS 16
-+#define NUM_FAKE_SHDRS 13
+ VDSO_LDFLAGS = -fPIC -shared $(call cc-ldoption, -Wl$(comma)--hash-style=sysv) \
+-	-Wl,-Bsymbolic $(LTO_CFLAGS)
++	$(call cc-ldoption, -Wl$(comma)--build-id) -Wl,-Bsymbolic $(LTO_CFLAGS)
+ GCOV_PROFILE := n
  
- SECTIONS
- {
-@@ -28,15 +28,17 @@ SECTIONS
- 	.gnu.version_d	: { *(.gnu.version_d) }
- 	.gnu.version_r	: { *(.gnu.version_r) }
+ #
+-# Install the unstripped copies of vdso*.so.
++# Install the unstripped copies of vdso*.so.  If our toolchain supports
++# build-id, install .build-id links as well.
+ #
+ quiet_cmd_vdso_install = INSTALL $(@:install_%=%)
+-      cmd_vdso_install = cp $< $(MODLIB)/vdso/$(@:install_%=%)
++define cmd_vdso_install
++	cp $< "$(MODLIB)/vdso/$(@:install_%=%)"; \
++	if readelf -n $< |grep -q 'Build ID'; then \
++	  buildid=`readelf -n $< |grep 'Build ID' |sed -e 's/^.*Build ID: \(.*\)$$/\1/'`; \
++	  first=`echo $$buildid | cut -b-2`; \
++	  last=`echo $$buildid | cut -b3-`; \
++	  mkdir -p "$(MODLIB)/vdso/.build-id/$$first"; \
++	  ln -sf "../../$(@:install_%=%)" "$(MODLIB)/vdso/.build-id/$$first/$$last.debug"; \
++	fi
++endef
  
--	.note		: { *(.note.*) }		:text	:note
--
--	.eh_frame_hdr	: { *(.eh_frame_hdr) }		:text	:eh_frame_hdr
--	.eh_frame	: { KEEP (*(.eh_frame)) }	:text
--
- 	.dynamic	: { *(.dynamic) }		:text	:dynamic
+ vdso_img_insttargets := $(vdso_img_sodbg:%.dbg=install_%)
  
- 	.rodata		: {
- 		*(.rodata*)
-+		*(.data*)
-+		*(.sdata*)
-+		*(.got.plt) *(.got)
-+		*(.gnu.linkonce.d.*)
-+		*(.bss*)
-+		*(.dynbss*)
-+		*(.gnu.linkonce.b.*)
- 
- 		/*
- 		 * Ideally this would live in a C file, but that won't
-@@ -50,28 +52,29 @@ SECTIONS
- 
- 	.fake_shstrtab	: { *(.fake_shstrtab) }		:text
- 
--	.data		: {
--		*(.data*)
--		*(.sdata*)
--		*(.got.plt) *(.got)
--		*(.gnu.linkonce.d.*)
--		*(.bss*)
--		*(.dynbss*)
--		*(.gnu.linkonce.b.*)
--	}
- 
--	.altinstructions	: { *(.altinstructions) }
--	.altinstr_replacement	: { *(.altinstr_replacement) }
-+	.note		: { *(.note.*) }		:text	:note
-+
-+	.eh_frame_hdr	: { *(.eh_frame_hdr) }		:text	:eh_frame_hdr
-+	.eh_frame	: { KEEP (*(.eh_frame)) }	:text
-+
- 
- 	/*
--	 * Align the actual code well away from the non-instruction data.
--	 * This is the best thing for the I-cache.
-+	 * Text is well-separated from actual data: there's plenty of
-+	 * stuff that isn't used at runtime in between.
- 	 */
--	. = ALIGN(0x100);
- 
- 	.text		: { *(.text*) }			:text	=0x90909090,
- 
- 	/*
-+	 * At the end so that eu-elflint stays happy when vdso2c strips
-+	 * these.  A better implementation would avoid allocating space
-+	 * for these.
-+	 */
-+	.altinstructions	: { *(.altinstructions) }	:text
-+	.altinstr_replacement	: { *(.altinstr_replacement) }	:text
-+
-+	/*
- 	 * The remainder of the vDSO consists of special pages that are
- 	 * shared between the kernel and userspace.  It needs to be at the
- 	 * end so that it doesn't overlap the mapping of the actual
-diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
-index f01ed4b..f42e2dd 100644
---- a/arch/x86/vdso/vdso2c.h
-+++ b/arch/x86/vdso/vdso2c.h
-@@ -92,7 +92,9 @@ static void BITSFUNC(copy_section)(struct BITSFUNC(fake_sections) *out,
- {
- 	uint64_t flags = GET_LE(&in->sh_flags);
- 
--	bool copy = flags & SHF_ALLOC;
-+	bool copy = flags & SHF_ALLOC &&
-+		strcmp(name, ".altinstructions") &&
-+		strcmp(name, ".altinstr_replacement");
- 
- 	if (!copy)
- 		return;
