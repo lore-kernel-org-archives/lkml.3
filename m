@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132AbaFUWMt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 18:12:49 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:25692 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753825AbaFUWMr convert rfc822-to-8bit (ORCPT
+	id S1753163AbaFUWYa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 18:24:30 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:38643 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752410AbaFUWY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 18:12:47 -0400
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Christoph Hellwig <hch@lst.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Jens Axboe <axboe@kernel.dk>, Bart Van Assche <bvanassche@fusionio.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 10/14] scsi: only maintain target_blocked if the driver
- has a target queue limit
-Thread-Topic: [PATCH 10/14] scsi: only maintain target_blocked if the driver
- has a target queue limit
-Thread-Index: AQHPhkTR5T+6X58thUmOwerbDqjM3Zt8LfNw
-Date: Sat, 21 Jun 2014 22:10:14 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958B42223@G9W0745.americas.hpqcorp.net>
-References: <1402580946-11470-1-git-send-email-hch@lst.de>
- <1402580946-11470-11-git-send-email-hch@lst.de>
-In-Reply-To: <1402580946-11470-11-git-send-email-hch@lst.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.37]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Sat, 21 Jun 2014 18:24:29 -0400
+From: Chase Southwood <chase.southwood@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Chase Southwood <chase.southwood@gmail.com>
+Subject: [PATCH v3 0/5] staging: comedi: addi_apci_1564: fix Change-of-State interrupt functionality
+Date: Sat, 21 Jun 2014 17:23:49 -0500
+Message-Id: <1403389429-19793-1-git-send-email-chase.southwood@gmail.com>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patchset introduces a new private data struct for this driver, adds
+all of the code required to support Change-of-State interrupts for the
+digital input subdevice, and finally fixes
+apci1564_interrupt() to service this type of interrupt correctly.
 
+CHANGES FROM v1:
+*leave the send_sig() calls in for now, until the proper replacement can
+be implemented.
+*removed unused static globals, removed the remaining one into the private
+data struct.
+*private data struct moved into addi_apci_1564.c.
+*patches 4/6 and 5/6 from v1 have been merged into patch 4/5 here.
+*(*cancel) for the interrupt subdevice has been reduced to just disable DI
+interrupts rather than using the board's reset function.
+*support for all interrupts issued by the board has been kept in
+apci1564_interrupt(), rather than stripping everything out except for DI
+interrupt support.  However, DI interrupt support has still been fixed.
 
-> -----Original Message-----
-> From: Christoph Hellwig [mailto:hch@lst.de]
-> Sent: Thursday, 12 June, 2014 8:49 AM
-> To: James Bottomley
-> Cc: Jens Axboe; Bart Van Assche; Elliott, Robert (Server Storage); linux-
-> scsi@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: [PATCH 10/14] scsi: only maintain target_blocked if the driver has a
-> target queue limit
-> 
-> This saves us an atomic operation for each I/O submission and completion
-> for the usual case where the driver doesn't set a per-target can_queue
-> value.  Only a few iscsi hardware offload drivers set the per-target
-> can_queue value at the moment.
-> 
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
-> ---
->  drivers/scsi/scsi_lib.c |   17 ++++++++++++-----
->  1 file changed, 12 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-> index 0e33dee..763b3c9 100644
-> --- a/drivers/scsi/scsi_lib.c
-> +++ b/drivers/scsi/scsi_lib.c
-...
+CHANGES FROM v2:
+*Just refreshed set against staging-next.  Otherwise everything is
+exactly the same, and should apply now.
 
-> @@ -1642,7 +1648,8 @@ static void scsi_request_fn(struct request_queue *q)
->  	return;
-> 
->   host_not_ready:
-> -	atomic_dec(&scsi_target(sdev)->target_busy);
-> +	if (&scsi_target(sdev)->can_queue > 0)
-> +		atomic_dec(&scsi_target(sdev)->target_busy);
->   not_ready:
->  	/*
->  	 * lock q, handle tag, requeue req, and decrement device_busy. We
+Chase Southwood (5):
+  staging: comedi: addi_apci_1564: remove use of
+    devpriv->b_OutputMemoryStatus
+  staging: comedi: addi_apci_1564: remove unused static variables
+  staging: comedi: addi_apci_1564: introduce apci1564_private struct
+  staging: comedi: addi_apci_1564: add Change-of-State interrupt
+    subdevice and required functions
+  staging: comedi: addi_apci_1564: move apci1564_interrupt() into
+    addi_apci_1564.c
 
-There's an extra & in that if statement.
+ .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 304 +++------------
+ drivers/staging/comedi/drivers/addi_apci_1564.c    | 433 +++++++++++++++++++--
+ 2 files changed, 454 insertions(+), 283 deletions(-)
 
----
-Rob Elliott    HP Server Storage
-
-
+-- 
+1.9.3
 
