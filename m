@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797AbaFUMTY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 08:19:24 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:41531 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbaFUMTX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 08:19:23 -0400
-Message-ID: <53A57848.8010203@gmail.com>
-Date: Sat, 21 Jun 2014 20:19:20 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1755127AbaFUM10 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 08:27:26 -0400
+Received: from mail.eperm.de ([89.247.134.16]:33349 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752396AbaFUM1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jun 2014 08:27:25 -0400
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: kbuild test robot <fengguang.wu@intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Cc: kbuild@01.org, Dan Carpenter <dan.carpenter@oracle.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Potential NULL pointer deference in drbg_ctr_df
+Date: Sat, 21 Jun 2014 14:26:29 +0200
+Message-ID: <4892293.kf6KiPx6BS@myon.chronox.de>
+User-Agent: KMail/4.12.5 (Linux/3.14.8-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <20140620202418.GZ5015@mwanda>
+References: <20140620202418.GZ5015@mwanda>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: mingo@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] include/trace/syscall.h: Use HAVE_SYSCALL_TRACEPOINTS
- instead of TRACEPOINTS
-References: <53A4EEC5.7090801@gmail.com> <20140620234308.25a57690@gandalf.local.home>
-In-Reply-To: <20140620234308.25a57690@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2014 11:43 AM, Steven Rostedt wrote:
-> On Sat, 21 Jun 2014 10:32:37 +0800
-> Chen Gang <gang.chen.5i5j@gmail.com> wrote:
->  
->> diff --git a/include/trace/syscall.h b/include/trace/syscall.h
->> index 291c282..a709cbd 100644
->> --- a/include/trace/syscall.h
->> +++ b/include/trace/syscall.h
->> @@ -33,7 +33,7 @@ struct syscall_metadata {
->>  	struct ftrace_event_call *exit_event;
->>  };
->>  
->> -#ifdef CONFIG_TRACEPOINTS
->> +#ifdef CONFIG_HAVE_SYSCALL_TRACEPOINTS
->>  static inline void syscall_tracepoint_update(struct task_struct *p)
->>  {
->>  	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
-> 
-> This has already been fixed and is in my for-next branch getting ready
-> to be pushed.
-> 
+The handling of additional input data / personalization string data may
+be subject to a NULL pointer deference for the CTR DRBG. The
+caller-provided data may be NULL which must be caught by the DRBG.
 
-OK, thank you for replying in time.
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
+---
+ crypto/drbg.c | 23 +++++++++++++----------
+ 1 file changed, 13 insertions(+), 10 deletions(-)
 
-
-Thanks.
+diff --git a/crypto/drbg.c b/crypto/drbg.c
+index faaa2ce..8e7c302 100644
+--- a/crypto/drbg.c
++++ b/crypto/drbg.c
+@@ -513,17 +513,20 @@ static int drbg_ctr_df(struct drbg_state *drbg,
+ 	drbg_string_fill(&S2, L_N, sizeof(L_N));
+ 	drbg_string_fill(&S4, pad, padlen);
+ 	S1.next = &S2;
+-	S2.next = addtl;
+ 
+-	/*
+-	 * splice in addtl between S2 and S4 -- we place S4 at the end of the
+-	 * input data chain
+-	 */
+-	tempstr = addtl;
+-	for (; NULL != tempstr; tempstr = tempstr->next)
+-		if (NULL == tempstr->next)
+-			break;
+-	tempstr->next = &S4;
++	if (NULL == addtl) {
++		S2.next = &S4;
++	} else {
++		/*
++		 * splice in addtl between S2 and S4 -- we place S4 at the end
++		 * of the input data chain
++		 */
++		S2.next = addtl;
++		tempstr = addtl;
++		while (tempstr->next)
++			tempstr = tempstr->next;
++		tempstr->next = &S4;
++	}
+ 
+ 	/* 10.4.2 step 9 */
+ 	while (templen < (drbg_keylen(drbg) + (drbg_blocklen(drbg)))) {
 -- 
-Open share and attitude like air warter and life which God blessed
+1.9.3
+
+
