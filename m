@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399AbaFUOKM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 10:10:12 -0400
-Received: from smtprelay0019.hostedemail.com ([216.40.44.19]:58252 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752173AbaFUOKK (ORCPT
+	id S1753377AbaFUOXo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 10:23:44 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:43495 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752371AbaFUOXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 10:10:10 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:965:966:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2196:2199:2200:2393:2553:2559:2562:2828:2895:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3870:3871:3872:3873:3874:4321:4385:4390:4395:5007:6119:7652:8531:10004:10400:10848:10967:11232:11658:11914:12517:12519:12663:12740:13069:13095:13141:13230:13311:13357:13894,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: vein21_758bf7567ac4c
-X-Filterd-Recvd-Size: 2373
-Message-ID: <1403359806.4076.50.camel@joe-AO725>
-Subject: Re: [PATCH 1/1] net/dsa/dsa.c: remove null test before kfree
-From: Joe Perches <joe@perches.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Grant Likely <grant.likely@linaro.org>, netdev@vger.kernel.org
-Date: Sat, 21 Jun 2014 07:10:06 -0700
-In-Reply-To: <20140621113653.6b2dd148b35a6ecfb7c08cce@skynet.be>
-References: <1403296607-6065-1-git-send-email-fabf@skynet.be>
-	 <b991e868-c253-4b1a-8c95-56106c36d512@email.android.com>
-	 <20140621113653.6b2dd148b35a6ecfb7c08cce@skynet.be>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Sat, 21 Jun 2014 10:23:42 -0400
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Heiko Stuebner <heiko@sntech.de>, linux-pwm@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Beniamino Galvani <b.galvani@gmail.com>
+Subject: [PATCH v2 0/3] Add Rockchip Soc PWM driver
+Date: Sat, 21 Jun 2014 16:22:05 +0200
+Message-Id: <1403360528-12757-1-git-send-email-b.galvani@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-06-21 at 11:36 +0200, Fabian Frederick wrote:
-> On Sat, 21 Jun 2014 10:37:24 +0200 Bjørn Mork <bjorn@mork.no> wrote:
-> > On 20 June 2014 22:36:47 CEST, Fabian Frederick <fabf@skynet.be> wrote:
-> > > Fix checkpatch warning:
-> > > WARNING: kfree(NULL) is safe this check is probably not required
-> > 
-> > "probably not" implies that there are cases where the check *is*
-> > required.  That means that your commit message should explain why
-> > this particular check is redundant.
-> > 
-> > I haven't analyzed your changes here, so they could be fine for all
-> > I know. My point is that such analysis is your job when submitting
-> > cleanups like this one.
-> AFAIK, any
-> 
-> if(foo)
-> 	kfree(foo)
-> 	
-> can be updated to kfree(foo) but
-> 
-> if (foo){
-> 	kfree(foo)
-> 	do something else
-> }
-> 
-> has to be evaluated ; reason for the "probably" in warning message.
-> If I'm wrong maybe we could be more verbose in checkpatch :)
+This series adds support for the PWM controller found on Rockchip
+RK29, RK30 and RK31 SoCs. It is based on the documentation publicly
+available [0] and kernel sources from Rockchip [1] and has been tested
+on RK3188.
 
-I think Bjørn is correct here.
+The last patch, which adds device tree nodes in the dts, depends on
+the clocks introduced by Heiko in his recent submission of a new clk
+driver for Rockchip RK3188.
 
-Just because checkpatch bleats some message or another,
-it's still the submitter's job to validate the code.
+[0] http://dl.radxa.com/rock/docs/hw/ds/Rockchip%20RK30xx%20TRM%20V2.0.pdf
+[1] https://github.com/rkchrome/kernel
 
-In this case, it seems the simple substitution of
-"unnecessary null" to the subject would have been
-enough validation.
+Changes in v2:
+  * address comments from Thierry Reding:
+    - remove dependency on OF
+    - use NSEC_PER_SEC from time.h
+    - fix MODULE_DEVICE_TABLE name
+    - make pwm_ops struct const
+    - indentation and cosmetics
 
-I don't think checkpatch needs updating for this, but
-maybe you could propose better language.
+Beniamino Galvani (3):
+  pwm: add Rockchip SoC PWM support
+  pwm: rockchip: document device tree bindings
+  ARM: dts: rk3xxx: add PWM nodes
+
+ .../devicetree/bindings/pwm/pwm-rockchip.txt       |   17 ++
+ arch/arm/boot/dts/rk3188.dtsi                      |   40 +++++
+ arch/arm/boot/dts/rk3xxx.dtsi                      |   32 ++++
+ drivers/pwm/Kconfig                                |    7 +
+ drivers/pwm/Makefile                               |    1 +
+ drivers/pwm/pwm-rockchip.c                         |  177 ++++++++++++++++++++
+ 6 files changed, 274 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
+ create mode 100644 drivers/pwm/pwm-rockchip.c
+
+-- 
+1.7.10.4
 
