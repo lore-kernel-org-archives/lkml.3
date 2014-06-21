@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934759AbaFUMFm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 08:05:42 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:60291 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934339AbaFUMFk (ORCPT
+	id S934822AbaFUMF5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 08:05:57 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:34267 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934339AbaFUMFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 08:05:40 -0400
-Date: Sat, 21 Jun 2014 13:05:36 +0100
+	Sat, 21 Jun 2014 08:05:55 -0400
+Date: Sat, 21 Jun 2014 13:05:51 +0100
 From: Daniel Walter <dwalter@google.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH 5/9] [arch/powerpc] replace obsolete strict_strto* calls
-Message-ID: <20140621120536.GA7372@google.com>
+To: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH 6/9] [arch/x86] replace strict_strto calls
+Message-ID: <20140621120551.GA7806@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,80 +20,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace strict_strto calls with more appropriate kstrto calls
+Replace obsolete strict_strto calls with appropriate kstrto calls
 
 Signed-off-by: Daniel Walter <dwalter@google.com>
+Acked-by: Borislav Petkov <bp@suse.de>
 ---
- arch/powerpc/kernel/setup_64.c            | 6 +++---
- arch/powerpc/kernel/vio.c                 | 2 +-
- arch/powerpc/platforms/pseries/dlpar.c    | 4 ++--
- arch/powerpc/platforms/pseries/mobility.c | 2 +-
- 4 files changed, 7 insertions(+), 7 deletions(-)
+ arch/x86/kernel/cpu/intel_cacheinfo.c | 4 ++--
+ arch/x86/kernel/cpu/mcheck/mce.c      | 6 +++---
+ arch/x86/kernel/cpu/mcheck/mce_amd.c  | 4 ++--
+ arch/x86/kvm/mmu_audit.c              | 2 +-
+ arch/x86/platform/uv/tlb_uv.c         | 2 +-
+ 5 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/arch/powerpc/kernel/setup_64.c b/arch/powerpc/kernel/setup_64.c
-index ee082d7..5257166 100644
---- a/arch/powerpc/kernel/setup_64.c
-+++ b/arch/powerpc/kernel/setup_64.c
-@@ -149,13 +149,13 @@ static void check_smt_enabled(void)
- 		else if (!strcmp(smt_enabled_cmdline, "off"))
- 			smt_enabled_at_boot = 0;
- 		else {
--			long smt;
-+			int smt;
- 			int rc;
+diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
+index a952e9c..4ff210a 100644
+--- a/arch/x86/kernel/cpu/intel_cacheinfo.c
++++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+@@ -461,7 +461,7 @@ static ssize_t store_cache_disable(struct _cpuid4_info *this_leaf,
  
--			rc = strict_strtol(smt_enabled_cmdline, 10, &smt);
-+			rc = kstrtoint(smt_enabled_cmdline, 10, &smt);
- 			if (!rc)
- 				smt_enabled_at_boot =
--					min(threads_per_core, (int)smt);
-+					min(threads_per_core, smt);
- 		}
- 	} else {
- 		dn = of_find_node_by_path("/options");
-diff --git a/arch/powerpc/kernel/vio.c b/arch/powerpc/kernel/vio.c
-index 904c661..5bfdab9 100644
---- a/arch/powerpc/kernel/vio.c
-+++ b/arch/powerpc/kernel/vio.c
-@@ -977,7 +977,7 @@ static ssize_t viodev_cmo_desired_set(struct device *dev,
- 	size_t new_desired;
- 	int ret;
+ 	cpu = cpumask_first(to_cpumask(this_leaf->shared_cpu_map));
  
--	ret = strict_strtoul(buf, 10, &new_desired);
-+	ret = kstrtoul(buf, 10, &new_desired);
- 	if (ret)
- 		return ret;
- 
-diff --git a/arch/powerpc/platforms/pseries/dlpar.c b/arch/powerpc/platforms/pseries/dlpar.c
-index 022b38e..abc6892 100644
---- a/arch/powerpc/platforms/pseries/dlpar.c
-+++ b/arch/powerpc/platforms/pseries/dlpar.c
-@@ -399,10 +399,10 @@ out:
- static ssize_t dlpar_cpu_probe(const char *buf, size_t count)
- {
- 	struct device_node *dn, *parent;
--	unsigned long drc_index;
-+	u32 drc_index;
- 	int rc;
- 
--	rc = strict_strtoul(buf, 0, &drc_index);
-+	rc = kstrtou32(buf, 0, &drc_index);
- 	if (rc)
+-	if (strict_strtoul(buf, 10, &val) < 0)
++	if (kstrtoul(buf, 10, &val) < 0)
  		return -EINVAL;
  
-diff --git a/arch/powerpc/platforms/pseries/mobility.c b/arch/powerpc/platforms/pseries/mobility.c
-index bde7eba..0694ac6 100644
---- a/arch/powerpc/platforms/pseries/mobility.c
-+++ b/arch/powerpc/platforms/pseries/mobility.c
-@@ -319,7 +319,7 @@ static ssize_t migrate_store(struct class *class, struct class_attribute *attr,
- 	u64 streamid;
- 	int rc;
+ 	err = amd_set_l3_disable_slot(this_leaf->base.nb, cpu, slot, val);
+@@ -511,7 +511,7 @@ store_subcaches(struct _cpuid4_info *this_leaf, const char *buf, size_t count,
+ 	if (!this_leaf->base.nb || !amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
+ 		return -EINVAL;
  
--	rc = strict_strtoull(buf, 0, &streamid);
-+	rc = kstrtou64(buf, 0, &streamid);
- 	if (rc)
- 		return rc;
+-	if (strict_strtoul(buf, 16, &val) < 0)
++	if (kstrtoul(buf, 16, &val) < 0)
+ 		return -EINVAL;
  
+ 	if (amd_set_subcaches(cpu, val))
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index bb92f38..a801a35 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -2136,7 +2136,7 @@ static ssize_t set_bank(struct device *s, struct device_attribute *attr,
+ {
+ 	u64 new;
+ 
+-	if (strict_strtoull(buf, 0, &new) < 0)
++	if (kstrtou64(buf, 0, &new) < 0)
+ 		return -EINVAL;
+ 
+ 	attr_to_bank(attr)->ctl = new;
+@@ -2174,7 +2174,7 @@ static ssize_t set_ignore_ce(struct device *s,
+ {
+ 	u64 new;
+ 
+-	if (strict_strtoull(buf, 0, &new) < 0)
++	if (kstrtou64(buf, 0, &new) < 0)
+ 		return -EINVAL;
+ 
+ 	if (mca_cfg.ignore_ce ^ !!new) {
+@@ -2198,7 +2198,7 @@ static ssize_t set_cmci_disabled(struct device *s,
+ {
+ 	u64 new;
+ 
+-	if (strict_strtoull(buf, 0, &new) < 0)
++	if (kstrtou64(buf, 0, &new) < 0)
+ 		return -EINVAL;
+ 
+ 	if (mca_cfg.cmci_disabled ^ !!new) {
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+index 603df4f..1e49f8f 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+@@ -353,7 +353,7 @@ store_interrupt_enable(struct threshold_block *b, const char *buf, size_t size)
+ 	if (!b->interrupt_capable)
+ 		return -EINVAL;
+ 
+-	if (strict_strtoul(buf, 0, &new) < 0)
++	if (kstrtoul(buf, 0, &new) < 0)
+ 		return -EINVAL;
+ 
+ 	b->interrupt_enable = !!new;
+@@ -372,7 +372,7 @@ store_threshold_limit(struct threshold_block *b, const char *buf, size_t size)
+ 	struct thresh_restart tr;
+ 	unsigned long new;
+ 
+-	if (strict_strtoul(buf, 0, &new) < 0)
++	if (kstrtoul(buf, 0, &new) < 0)
+ 		return -EINVAL;
+ 
+ 	if (new > THRESHOLD_MAX)
+diff --git a/arch/x86/kvm/mmu_audit.c b/arch/x86/kvm/mmu_audit.c
+index 1185fe7..9ade5cf 100644
+--- a/arch/x86/kvm/mmu_audit.c
++++ b/arch/x86/kvm/mmu_audit.c
+@@ -273,7 +273,7 @@ static int mmu_audit_set(const char *val, const struct kernel_param *kp)
+ 	int ret;
+ 	unsigned long enable;
+ 
+-	ret = strict_strtoul(val, 10, &enable);
++	ret = kstrtoul(val, 10, &enable);
+ 	if (ret < 0)
+ 		return -EINVAL;
+ 
+diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
+index dfe605a..ccc3210 100644
+--- a/arch/x86/platform/uv/tlb_uv.c
++++ b/arch/x86/platform/uv/tlb_uv.c
+@@ -1476,7 +1476,7 @@ static ssize_t ptc_proc_write(struct file *file, const char __user *user,
+ 		return count;
+ 	}
+ 
+-	if (strict_strtol(optstr, 10, &input_arg) < 0) {
++	if (kstrtol(optstr, 10, &input_arg) < 0) {
+ 		printk(KERN_DEBUG "%s is invalid\n", optstr);
+ 		return -EINVAL;
+ 	}
 -- 
 2.0.0.526.g5318336
 
