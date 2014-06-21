@@ -1,122 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757508AbaFUAgl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 20:36:41 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:42563 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754068AbaFUAgj (ORCPT
+	id S1757639AbaFUAjN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 20:39:13 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:21705 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753810AbaFUAjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 20:36:39 -0400
-Date: Fri, 20 Jun 2014 17:36:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: josh@joshtriplett.org
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 0/5] Fix for cond_resched performance
- regression
-Message-ID: <20140621003632.GA27808@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140620183249.GA6325@linux.vnet.ibm.com>
- <20140620191236.GA10340@linux.vnet.ibm.com>
- <20140620212423.GA22886@cloud>
- <20140620221120.GD4615@linux.vnet.ibm.com>
- <20140620223951.GA23677@cloud>
- <20140620233033.GE4615@linux.vnet.ibm.com>
- <20140620235215.GA24026@cloud>
- <20140621001418.GF4615@linux.vnet.ibm.com>
+	Fri, 20 Jun 2014 20:39:11 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArU/AMfSpFN5LC2vPGdsb2JhbABZgw2DSIUIonwBAQEBAQEGmSoBgQwXBAEBAQE4NYQDAQEFOhwjEAgDDgoJJQ8FJQMHGhOIQco+FxaFTINghGtJB4RDBJpDizGLfiuBMg
+Date: Sat, 21 Jun 2014 10:39:06 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Jeff Moyer <jmoyer@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 1/4] cfq: Increase default value of target_latency
+Message-ID: <20140621003906.GW9508@dastard>
+References: <1403079807-24690-1-git-send-email-mgorman@suse.de>
+ <1403079807-24690-2-git-send-email-mgorman@suse.de>
+ <x49y4wslp6z.fsf@segfault.boston.devel.redhat.com>
+ <20140619214214.GM4453@dastard>
+ <20140620113025.GG10819@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140621001418.GF4615@linux.vnet.ibm.com>
+In-Reply-To: <20140620113025.GG10819@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14062100-0928-0000-0000-000002CD0779
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 05:14:18PM -0700, Paul E. McKenney wrote:
-> On Fri, Jun 20, 2014 at 04:52:15PM -0700, josh@joshtriplett.org wrote:
-> > On Fri, Jun 20, 2014 at 04:30:33PM -0700, Paul E. McKenney wrote:
-> > > On Fri, Jun 20, 2014 at 03:39:51PM -0700, josh@joshtriplett.org wrote:
-> > > > On Fri, Jun 20, 2014 at 03:11:20PM -0700, Paul E. McKenney wrote:
-> > > > > On Fri, Jun 20, 2014 at 02:24:23PM -0700, josh@joshtriplett.org wrote:
-> > > > > > On Fri, Jun 20, 2014 at 12:12:36PM -0700, Paul E. McKenney wrote:
-> > > > > > > o	Make cond_resched() a no-op for PREEMPT=y.  This might well turn
-> > > > > > > 	out to be a good thing, but it doesn't help give RCU the quiescent
-> > > > > > > 	states that it needs.
-> > > > > > 
-> > > > > > What about doing this, together with letting the fqs logic poke
-> > > > > > un-quiesced kernel code as needed?  That way, rather than having
-> > > > > > cond_resched do any work, you have the fqs logic recognize that a
-> > > > > > particular CPU has gone too long without quiescing, without disturbing
-> > > > > > that CPU at all if it hasn't gone too long.
-> > > > > 
-> > > > > My next stop is to post the previous series, but with a couple of
-> > > > > exports and one bug fix uncovered by testing thus far, but after
-> > > > > another round of testing.  Then I am going to take a close look at
-> > > > > this one:
-> > > > > 
-> > > > > o	Push the checks further into cond_resched(), so that the
-> > > > > 	fastpath does the same sequence of instructions that the original
-> > > > > 	did.  This might work well, but requires IPIs, which are not so
-> > > > > 	good for latencies on the remote CPU.  It nevertheless might be a
-> > > > > 	decent long-term solution given that if your CPU is spending many
-> > > > > 	jiffies looping in the kernel, you aren't getting good latencies
-> > > > > 	anyway.  It also has the benefit of allowing RCU to take advantage
-> > > > > 	of the implicit quiescent states of all cond_resched() calls,
-> > > > > 	and of eliminating the need for a separate cond_resched_rcu_qs()
-> > > > > 	and for RCU_COND_RESCHED_QS.
-> > > > > 
-> > > > > The one you call out is of course interesting as well.  But there are
-> > > > > a couple of questions:
-> > > > > 
-> > > > > 1.	Why wasn't cond_resched() a no-op in CONFIG_PREEMPT to start
-> > > > > 	with?  It just seems to obvious a thing to do for it to possibly
-> > > > > 	be an oversight.  (What, me paranoid?)
-> > > > > 
-> > > > > 2.	When RCU recognizes that a particular CPU has gone too long,
-> > > > > 	exactly what are you suggesting that RCU do about it?  When
-> > > > > 	formulating your answer, please give due consideration to the
-> > > > > 	implications of that CPU being a NO_HZ_FULL CPU.  ;-)
-> > > > 
-> > > > Send it an IPI that either causes it to flag a quiescent state
-> > > > immediately if currently quiesced or causes it to quiesce at the next
-> > > > opportunity if not.
+On Fri, Jun 20, 2014 at 12:30:25PM +0100, Mel Gorman wrote:
+> On Fri, Jun 20, 2014 at 07:42:14AM +1000, Dave Chinner wrote:
+> > On Thu, Jun 19, 2014 at 02:38:44PM -0400, Jeff Moyer wrote:
+> > > Mel Gorman <mgorman@suse.de> writes:
 > > > 
-> > > OK.  But if we are in a !PREEMPT kernel,
+> > > > The existing CFQ default target_latency results in very poor performance
+> > > > for larger numbers of threads doing sequential reads.  While this can be
+> > > > easily described as a tuning problem for users, it is one that is tricky
+> > > > to detect. This patch the default on the assumption that people with access
+> > > > to expensive fast storage also know how to tune their IO scheduler.
+> > > >
+> > > > The following is from tiobench run on a mid-range desktop with a single
+> > > > spinning disk.
+> > > >
+> > > >                                       3.16.0-rc1            3.16.0-rc1                 3.0.0
+> > > >                                          vanilla          cfq600                     vanilla
+> > > > Mean   SeqRead-MB/sec-1         121.88 (  0.00%)      121.60 ( -0.23%)      134.59 ( 10.42%)
+> > > > Mean   SeqRead-MB/sec-2         101.99 (  0.00%)      102.35 (  0.36%)      122.59 ( 20.20%)
+> > > > Mean   SeqRead-MB/sec-4          97.42 (  0.00%)       99.71 (  2.35%)      114.78 ( 17.82%)
+> > > > Mean   SeqRead-MB/sec-8          83.39 (  0.00%)       90.39 (  8.39%)      100.14 ( 20.09%)
+> > > > Mean   SeqRead-MB/sec-16         68.90 (  0.00%)       77.29 ( 12.18%)       81.64 ( 18.50%)
+> > > 
+> > > Did you test any workloads other than this?  Also, what normal workload
+> > > has 8 or more threads doing sequential reads?  (That's an honest
+> > > question.)
 > > 
-> > That's not the case I was suggesting.
+> > I'd also suggest that making changes basd on the assumption that
+> > people affected by the change know how to tune CFQ is a bad idea.
+> > When CFQ misbehaves, most people just switch to deadline or no-op
+> > because they don't understand how CFQ works, nor what what all the
+> > nobs do or which ones to tweak to solve their problem....
 > 
-> Fair enough, but we still need to support !PREEMPT kernels.
-> 
-> >                                        *If* the kernel is fully
-> > preemptible, then it makes little sense to put any code in cond_resched,
-> > when instead another thread can simply cause a preemption if it needs a
-> > quiescent state.  That has the advantage of not imposing any unnecessary
-> > polling on code running in the kernel.
-> 
-> OK.  Exactly which thread are you suggesting should cause the preemption?
-> 
-> > In a !PREEMPT kernel, it makes a bit more sense to have cond_resched as
-> > a voluntary preemption point.  But voluntary preemption points don't
-> > make as much sense in a kernel prepared to preempt a thread anywhere.
-> 
-> That does sound intuitive, but I am not yet prepared to believe that
-> the scheduler guys missed this trick.  There might well be some good
-> reason for cond_resched() doing something, though I cannot think what it
-> might be (something to do with preempt_enable_no_resched(), perhaps?).
-> We should at least ask them, although if you want to do some testing
-> before asking them, I of course have no objection to your doing so.
+> Ok, that's fair enough. Tuning CFQ is tricky but as it is, the default
+> performance is not great in comparison to older kernels and it's something
+> that has varied considerably over time. I'm surprised there have not been
+> more complaints but maybe I just missed them on the lists.
 
-Oh, and it turns out to be possible to drive RCU's need-a-qs check much
-farther down the cond_resched() rabbit hole than I expected.  Looks like
-it can be driven all the way down to rcu_note_context_switch().
+That's because there are widespread recommendations not to use CFQ
+if you have any sort of significant storage or IO workload. We
+specifically recommend that you don't use CFQ with XFS
+because it does not play nicely with correlated multi-process
+IO. This is something that happens a lot, even with single threaded
+workloads.
 
-							Thanx, Paul
+e.g. a single fsync can issue dependent IOs from multiple
+process contexts - the syscall process for data IO, the allocation
+workqueue kworker for btree blocks, the xfsaild to push metadata to
+disk to make space available for the allocation transaction, and
+then the journal IO from the xfs log workqueue kworker.
 
+There's 4 IOs, all from different process contexts, all of which
+need to be dispatched and completed with the minimum of latency.
+With CFQ adding scheduling and idling delays in the middle of this,
+it tends to leave disks idle when they really should be doing work.
+
+We also don't recommend using CFQ when you have hardware raid with
+caches, because the HW RAID does a much, much better job of
+optimising and prioritising IO through it's cache. Idling is
+wrong if the cache has hardware readahead, because most subsequent
+read IOs will hit the hardware cache. Hence you could be dispatching
+other IO instead of idling, yet still get minimal IO latency  across
+multiple streams of different read workloads.
+
+Hence people search on CFQ problems, see the "use deadline"
+recommendations, change to deadline and see there IO workload going
+faster. So they shrug their shoulders, set deadline as the
+default, and move on to the next problem...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
