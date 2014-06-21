@@ -1,186 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856AbaFUL2A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 07:28:00 -0400
-Received: from mail.kernel.org ([198.145.19.201]:43968 "EHLO mail.kernel.org"
+	id S1758213AbaFULa1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 07:30:27 -0400
+Received: from mail.kernel.org ([198.145.19.201]:44014 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751486AbaFUL15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 07:27:57 -0400
-Message-ID: <53A56CB3.3030207@kernel.org>
-Date: Sat, 21 Jun 2014 12:29:55 +0100
+	id S1751486AbaFULaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jun 2014 07:30:25 -0400
+Message-ID: <53A56D48.5040500@kernel.org>
+Date: Sat, 21 Jun 2014 12:32:24 +0100
 From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>,
+To: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>,
         Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        linux-iio@vger.kernel.org,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         David Woodhouse <dwmw2@infradead.org>,
         Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Support Opensource <Support.Opensource@diasemi.com>
-Subject: Re: [PATCH 4/8] iio: Add support for DA9150 GPADC
-References: <cover.1402484954.git.Adam.Thomson.Opensource@diasemi.com> <3c1a7551c7deaeccdca731fa95f4349c57e04249.1402484954.git.Adam.Thomson.Opensource@diasemi.com> <539DFFC8.3080406@kernel.org> <2E89032DDAA8B9408CB92943514A0337AB4FD9C7@SW-EX-MBX01.diasemi.com>
-In-Reply-To: <2E89032DDAA8B9408CB92943514A0337AB4FD9C7@SW-EX-MBX01.diasemi.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, support.opensource@diasemi.com
+Subject: Re: [PATCH 3/8] iio: of_iio_channel_get_by_name() returns non-null
+ pointers for error legs
+References: <cover.1402484954.git.Adam.Thomson.Opensource@diasemi.com> <0e7c03b0467ae1eace9dafebe6946d01d48e72f2.1402484954.git.Adam.Thomson.Opensource@diasemi.com> <539E0001.60005@kernel.org>
+In-Reply-To: <539E0001.60005@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/06/14 16:58, Opensource [Adam Thomson] wrote:
-> On June 15, 2014 21:19, Jonathon Cameron wrote:
->
->> Hi Adam
+On 15/06/14 21:20, Jonathan Cameron wrote:
+> On 11/06/14 12:11, Adam Thomson wrote:
+>> Currently in the inkern.c code for IIO framework, the function
+>> of_iio_channel_get_by_name() will return a non-NULL pointer when
+>> it cannot find a channel using of_iio_channel_get() and when it
+>> tries to search for 'io-channel-ranges' property and fails. This
+>> is incorrect behaviour as the function which calls this expects
+>> a NULL pointer for failure. This patch rectifies the issue.
 >>
->> Reasonably clean code, but the _ channels stuff doesn't comply with the ABI
->> and is rather confusing.
+>> Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+> Hi Adam,
 >
-> To be honest I did debate this in my head for a while. The reason I went with
-> the current approach was to make the driver channel layout match that of the
-> datasheet for the device. Sounds like it wasn't the correct direction though.
->
->> If it really does make sense to allow reading these channels at different
->> ranges (presumably to enhance the effective adc resolution) then we need
->> to control this via existing ABIs. Controlling it via scale with a
->> range attribute if required (read only but changes with whatever the
->> scale attribute it set to).
->
-> Yes, with smaller range then you get a better degree of accuracy. Ok, will have
-> a look at this and see if I can improve things based on your comments.
->
->> Often, for slow parts at least it makes little sense to have provide
->> software support for variable input ranges.
->>
->> Looking at what is covered, is it the case that only one option will make
->> sense for a given hardware setup? (cover the required range and nothing more).
->>
->> If so, perhaps this wants to go into the device tree or similar?
->
-> Possibly. Having read your comments further on though, and given that
-> it seems reasonable to use the range/scale attribute to choose the resolution,
-> I'd prefer to opt for that approach (seems more flexible).
-Perhaps, but if the reason for these differing ranges is that they tend
-to be wired to lines that have well defined voltage ranges, then I'd move
-it into setup data.  Leads to a cleaner driver.  Flexibility is good, but
-only if actually helps anyone!
->
->> Please get rid of excess white space and comments that just tell you
->> something obvious about the code following them.
->
-> Preferably I'd like to keep it this way as I think it makes the code
-> easier to read, but if you're dead against it then I'll remove them.
-The issue here is about making kernel review as easy as possible.  That often
-involves making code (and particularly comments) conform to somewhat arbitrary
-rules and conventions.  Just makes the reviewer/maintainers life somewhat easier.
-You'll also probably get follow up patches removing all this stuff on the basis
-of kernel style soon after we merge the driver anyway and those just get
-irritating ;)
->
->> Linear in the coeeficients, so fine for raw output with a scale and offset.
->
-> Ok will have a look at re-working this as per your comment.
->
->> Ah, so here is your reasoning behind the 'interesting' underscore channels.
->> This is just doing different range checks on the channel?  If so allow one
->> at a time and provide a writable scale info_mask element to control which
->> is used..
->>
->> Looks like there are only thes two channels doing this, so shouldn't be
->> too hard to support it via more conventional means.
->
-> The GPIO, VBUS and VSYS related channels provide different ranges. I guess they
-> should all follow the same approach for implementing this alternate range. So I
-> will assume that for the 'repeat' channels where the same raw value is provided
-> on both the _ and non _ channels only one channel should be provided.
-Definitely.
->
->> Don't use the |=, just = and you can't avoid assigning reg above.
->> Actually, it's not complex enough that you couldn't just do it directly into
->> the write function and skip this local variable.
->
-> Ok fine. Will update to tidy up.
->
->> Unlock first, then check for error.
->
-> Yep. Makes sense. Will update.
->
->> The mixture of having defs here for the shift.
->>> +	/* MSBs - 8 bits */
->>> +	result |= result_regs[0] << 2;
->> and not here is inconsistent.  I honestly don't mind which way, but
->> just use one style.
->>
->> You could just use an endian conversion and shift the combined 16bit result
->
-> Fair point. Will make this cleaner.
->
->> It very rarely makes sense to provide both raw and processed interfaces.
->> If the transform is nasty and non linear then userspace won't have the info
->> to do anything with it.  If the transform is linear, then provide scale
->> and offset and let userspace perform the computation.
->
-> The charger module uses certain channels for its readings, and to me it makes
-> more sense for that calculation to be done by the GPADC. However having looked
-> at the inkern.c framework code it looks like if you request a processed channel
-> and it's doesn't provide that feature, then the code drops to linear scaling if
-> possible to provide the processed value. I take it this is the preferred
-> approach then?
-Yup.  Saves on replicating code.  Mostly the raw access stuff is there for consistency
-with buffered access (where speed matters and we may or may not want to convert to
-real units).  So you should provide the information to do the scaling anyway, so
-just let the core code handle it for you.
-> Just thought it was more consistent to see the calculation using
-> dedicated functions (processed channel approach).
->
->> Get rid of this comment and any other ones that don't add any
->> actual information.  Also this is single line comment, please
->> check the comment syntax.
->
-> As per previous comment on this topic.
->
->> Why a blank line here.
->
-> Accidental. Will remove it.
->
->> The device register call is the one that exposes userspace interfaces. As
->> a general rule it wants to be the last thing in probe as everything
->> else should be setup first.
->
-> Ok, that's something I missed. Will make the change.
->
->>> +#include <linux/iio/machine.h>
->> This isn't used in the header, so should be included in the c file, not here.
->
-> Yes, is something I meant to remove during development increments. Consider it
-> gone.
->
->>> +#include <linux/mfd/da9150/core.h>
->> Having moved the struct definition into the c file
->> this header include will not want to be here.
->
-> I personally would prefer a separate header for the definitions as I believe
-> this is tidier. Have never really liked struct definitions in c files.
-Again, kernel coding style. Have everything as local as you can.
-Makes it obvious nothing else uses the structure and also ever so slightly
-cuts down on compile time (all helps!)
+> Good find.  I've only recently sent a pull request for fixes upstream,
+> so I'll pick this up in a day or so once that has gone.
+Applied to the fixes-togreg branch of iio.git and cc'd to stable.
 
-Anyhow, please bring them into the c code.   Have only stuff that is genuinely
-shared between different c files in headers.  If those c files are in the same
-directory then have the header within the directory as well.
-> I could
-> move this header to the same directory as the source file, if that is preferred.
-> As it stands this header is only related to DA9150 in its current location, so
-> is this a big issue? If not then I'd rather keep it as is.
+Thanks,
+
+Jonathan
 >
->>> +/* Private data */
->> Why is this in the header?  Should be defined directly in the c file
->> as nothing outside the driver should be touching it.
+> J
+>> ---
+>>   drivers/iio/inkern.c | 6 ++++--
+>>   1 file changed, 4 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
+>> index 0cf5f8e..1e8e94d 100644
+>> --- a/drivers/iio/inkern.c
+>> +++ b/drivers/iio/inkern.c
+>> @@ -183,7 +183,7 @@ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
+>>           else if (name && index >= 0) {
+>>               pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
+>>                   np->full_name, name ? name : "", index);
+>> -            return chan;
+>> +            return NULL;
+>>           }
+>>
+>>           /*
+>> @@ -193,8 +193,9 @@ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
+>>            */
+>>           np = np->parent;
+>>           if (np && !of_get_property(np, "io-channel-ranges", NULL))
+>> -            break;
+>> +            return NULL;
+>>       }
+>> +
+>>       return chan;
+>>   }
+>>
+>> @@ -317,6 +318,7 @@ struct iio_channel *iio_channel_get(struct device *dev,
+>>           if (channel != NULL)
+>>               return channel;
+>>       }
+>> +
+>>       return iio_channel_get_sys(name, channel_name);
+>>   }
+>>   EXPORT_SYMBOL_GPL(iio_channel_get);
+>> --
+>> 1.9.3
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
 >
-> As per previous comment.
->
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
