@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758273AbaFUMGo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 08:06:44 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:57356 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758236AbaFUMGm (ORCPT
+	id S964946AbaFUMHF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 08:07:05 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:57378 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758236AbaFUMHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 08:06:42 -0400
-Date: Sat, 21 Jun 2014 13:06:38 +0100
+	Sat, 21 Jun 2014 08:07:02 -0400
+Date: Sat, 21 Jun 2014 13:06:58 +0100
 From: Daniel Walter <dwalter@google.com>
-To: Trond Myklebust <trond.myklebust@primarydata.com>,
-        linux-kernel@vger.kernel.org
-Cc: linux-nfs@vger.kernel.org
-Subject: [PATCH 8/9] [net/sunrpc] replace strict_strto calls
-Message-ID: <20140621120638.GA8908@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 9/9] [include/linux] remove strict_strto* definitions
+Message-ID: <20140621120658.GA9253@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,108 +21,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace obsolete strict_strto calls with appropriate kstrto calls
+Remove obsolete and unused strict_strto* functions
 
 Signed-off-by: Daniel Walter <dwalter@google.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- net/sunrpc/addr.c     | 16 ++++++----------
- net/sunrpc/auth.c     |  2 +-
- net/sunrpc/xprtsock.c |  4 ++--
- 3 files changed, 9 insertions(+), 13 deletions(-)
+ include/linux/kernel.h | 4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/net/sunrpc/addr.c b/net/sunrpc/addr.c
-index a622ad6..2e0a6f9 100644
---- a/net/sunrpc/addr.c
-+++ b/net/sunrpc/addr.c
-@@ -176,7 +176,7 @@ static int rpc_parse_scope_id(struct net *net, const char *buf,
- 	len = (buf + buflen) - delim - 1;
- 	p = kstrndup(delim + 1, len, GFP_KERNEL);
- 	if (p) {
--		unsigned long scope_id = 0;
-+		u32 scope_id = 0;
- 		struct net_device *dev;
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 4c52907..a39043c 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -376,10 +376,6 @@ extern unsigned long simple_strtoul(const char *,char **,unsigned int);
+ extern long simple_strtol(const char *,char **,unsigned int);
+ extern unsigned long long simple_strtoull(const char *,char **,unsigned int);
+ extern long long simple_strtoll(const char *,char **,unsigned int);
+-#define strict_strtoul	kstrtoul
+-#define strict_strtol	kstrtol
+-#define strict_strtoull	kstrtoull
+-#define strict_strtoll	kstrtoll
  
- 		dev = dev_get_by_name(net, p);
-@@ -184,7 +184,7 @@ static int rpc_parse_scope_id(struct net *net, const char *buf,
- 			scope_id = dev->ifindex;
- 			dev_put(dev);
- 		} else {
--			if (strict_strtoul(p, 10, &scope_id) == 0) {
-+			if (kstrtou32(p, 10, &scope_id) == 0) {
- 				kfree(p);
- 				return 0;
- 			}
-@@ -304,7 +304,7 @@ char *rpc_sockaddr2uaddr(const struct sockaddr *sap, gfp_t gfp_flags)
-  * @sap: buffer into which to plant socket address
-  * @salen: size of buffer
-  *
-- * @uaddr does not have to be '\0'-terminated, but strict_strtoul() and
-+ * @uaddr does not have to be '\0'-terminated, but kstrtou8() and
-  * rpc_pton() require proper string termination to be successful.
-  *
-  * Returns the size of the socket address if successful; otherwise
-@@ -315,7 +315,7 @@ size_t rpc_uaddr2sockaddr(struct net *net, const char *uaddr,
- 			  const size_t salen)
- {
- 	char *c, buf[RPCBIND_MAXUADDRLEN + sizeof('\0')];
--	unsigned long portlo, porthi;
-+	u8 portlo, porthi;
- 	unsigned short port;
+ extern int num_to_str(char *buf, int size, unsigned long long num);
  
- 	if (uaddr_len > RPCBIND_MAXUADDRLEN)
-@@ -327,18 +327,14 @@ size_t rpc_uaddr2sockaddr(struct net *net, const char *uaddr,
- 	c = strrchr(buf, '.');
- 	if (unlikely(c == NULL))
- 		return 0;
--	if (unlikely(strict_strtoul(c + 1, 10, &portlo) != 0))
--		return 0;
--	if (unlikely(portlo > 255))
-+	if (unlikely(kstrtou8(c + 1, 10, &portlo) != 0))
- 		return 0;
- 
- 	*c = '\0';
- 	c = strrchr(buf, '.');
- 	if (unlikely(c == NULL))
- 		return 0;
--	if (unlikely(strict_strtoul(c + 1, 10, &porthi) != 0))
--		return 0;
--	if (unlikely(porthi > 255))
-+	if (unlikely(kstrtou8(c + 1, 10, &porthi) != 0))
- 		return 0;
- 
- 	port = (unsigned short)((porthi << 8) | portlo);
-diff --git a/net/sunrpc/auth.c b/net/sunrpc/auth.c
-index 247e973..7e9e4bb 100644
---- a/net/sunrpc/auth.c
-+++ b/net/sunrpc/auth.c
-@@ -48,7 +48,7 @@ static int param_set_hashtbl_sz(const char *val, const struct kernel_param *kp)
- 
- 	if (!val)
- 		goto out_inval;
--	ret = strict_strtoul(val, 0, &num);
-+	ret = kstrtoul(val, 0, &num);
- 	if (ret == -EINVAL)
- 		goto out_inval;
- 	nbits = fls(num);
-diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-index be8bbd5..1f2baac 100644
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -3054,12 +3054,12 @@ static int param_set_uint_minmax(const char *val,
- 		const struct kernel_param *kp,
- 		unsigned int min, unsigned int max)
- {
--	unsigned long num;
-+	unsigned int num;
- 	int ret;
- 
- 	if (!val)
- 		return -EINVAL;
--	ret = strict_strtoul(val, 0, &num);
-+	ret = kstrtouint(val, 0, &num);
- 	if (ret == -EINVAL || num < min || num > max)
- 		return -EINVAL;
- 	*((unsigned int *)kp->arg) = num;
 -- 
 2.0.0.526.g5318336
 
