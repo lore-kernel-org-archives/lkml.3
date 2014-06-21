@@ -1,33 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757984AbaFUVTA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 17:19:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36191 "EHLO
+	id S1758766AbaFUVTL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 17:19:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36209 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757085AbaFUVS6 (ORCPT
+	with ESMTP id S1756706AbaFUVTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 17:18:58 -0400
-Date: Sat, 21 Jun 2014 14:15:49 -0700
+	Sat, 21 Jun 2014 17:19:08 -0400
+Date: Sat, 21 Jun 2014 14:18:03 -0700
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-d7b830013f59cf586c1cec3caa1ce7156da59a13@git.kernel.org>
+Message-ID: <tip-00f49c29b3298806c74589a4ed016a2afb359e98@git.kernel.org>
 Cc: mingo@kernel.org, konrad.wilk@oracle.com, rdunlap@infradead.org,
-        tony.luck@intel.com, gregkh@linuxfoundation.org, tglx@linutronix.de,
-        len.brown@intel.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        tony.luck@intel.com, gregkh@linuxfoundation.org, monstr@monstr.eu,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org, hpa@zytor.com,
         jiang.liu@linux.intel.com, grant.likely@linaro.org, yinghai@kernel.org,
-        joro@8bytes.org, pavel@ucw.cz, benh@kernel.crashing.org,
-        bhelgaas@google.com, rjw@rjwysocki.net, paul.gortmaker@windriver.com
+        joro@8bytes.org, tony@atomide.com, rob.herring@calxeda.com,
+        benh@kernel.crashing.org, bhelgaas@google.com, rjw@rjwysocki.net,
+        paul.gortmaker@windriver.com
 Reply-To: mingo@kernel.org, konrad.wilk@oracle.com, rdunlap@infradead.org,
-        tony.luck@intel.com, gregkh@linuxfoundation.org, tglx@linutronix.de,
-        len.brown@intel.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        tony.luck@intel.com, gregkh@linuxfoundation.org, monstr@monstr.eu,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org, hpa@zytor.com,
         jiang.liu@linux.intel.com, grant.likely@linaro.org, yinghai@kernel.org,
-        joro@8bytes.org, pavel@ucw.cz, benh@kernel.crashing.org,
-        bhelgaas@google.com, rjw@rjwysocki.net, paul.gortmaker@windriver.com
-In-Reply-To: <1402302011-23642-31-git-send-email-jiang.liu@linux.intel.com>
-References: <1402302011-23642-31-git-send-email-jiang.liu@linux.intel.com>
+        joro@8bytes.org, tony@atomide.com, rob.herring@calxeda.com,
+        bhelgaas@google.com, benh@kernel.crashing.org, rjw@rjwysocki.net,
+        paul.gortmaker@windriver.com
+In-Reply-To: <1402302011-23642-42-git-send-email-jiang.liu@linux.intel.com>
+References: <1402302011-23642-42-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq, ACPI:
-  Use common irqdomain map interface to program IOAPIC pins
-Git-Commit-ID: d7b830013f59cf586c1cec3caa1ce7156da59a13
+Subject: [tip:x86/apic] x86, irq, devicetree:
+  Release IOAPIC pin when PCI device is disabled
+Git-Commit-ID: 00f49c29b3298806c74589a4ed016a2afb359e98
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -40,17 +42,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d7b830013f59cf586c1cec3caa1ce7156da59a13
-Gitweb:     http://git.kernel.org/tip/d7b830013f59cf586c1cec3caa1ce7156da59a13
+Commit-ID:  00f49c29b3298806c74589a4ed016a2afb359e98
+Gitweb:     http://git.kernel.org/tip/00f49c29b3298806c74589a4ed016a2afb359e98
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 9 Jun 2014 16:19:59 +0800
+AuthorDate: Mon, 9 Jun 2014 16:20:10 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sat, 21 Jun 2014 23:05:43 +0200
+CommitDate: Sat, 21 Jun 2014 23:05:44 +0200
 
-x86, irq, ACPI: Use common irqdomain map interface to program IOAPIC pins
+x86, irq, devicetree: Release IOAPIC pin when PCI device is disabled
 
-Refine ACPI to use common irqdomain map interface to program IOAPIC pins,
-so we can unify the callsite to progam IOAPIC pins.
+Release IOAPIC pin associated with PCI device when the PCI device
+is disabled.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -64,90 +66,24 @@ Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
 Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Pavel Machek <pavel@ucw.cz>
-Link: http://lkml.kernel.org/r/1402302011-23642-31-git-send-email-jiang.liu@linux.intel.com
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Michal Simek <monstr@monstr.eu>
+Cc: Tony Lindgren <tony@atomide.com>
+Link: http://lkml.kernel.org/r/1402302011-23642-42-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/kernel/acpi/boot.c | 44 ++++++++++++--------------------------------
- 1 file changed, 12 insertions(+), 32 deletions(-)
+ arch/x86/kernel/devicetree.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 8d9aee1..9add76f 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -405,11 +405,7 @@ static int mp_config_acpi_gsi(struct device *dev, u32 gsi, int trigger,
- static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 			   int polarity)
- {
--	int irq;
--	int ioapic;
--	int ioapic_pin;
--	struct io_apic_irq_attr irq_attr;
--	int ret;
-+	int irq, node;
+diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
+index f33bb43..3d35033 100644
+--- a/arch/x86/kernel/devicetree.c
++++ b/arch/x86/kernel/devicetree.c
+@@ -226,6 +226,7 @@ static int ioapic_xlate(struct irq_domain *domain,
  
- 	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
- 		return gsi;
-@@ -418,39 +414,27 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 	if (acpi_gbl_FADT.sci_interrupt == gsi)
- 		return gsi;
+ const struct irq_domain_ops ioapic_irq_domain_ops = {
+ 	.map = mp_irqdomain_map,
++	.unmap = mp_irqdomain_unmap,
+ 	.xlate = ioapic_xlate,
+ };
  
-+	trigger = trigger == ACPI_EDGE_SENSITIVE ? 0 : 1;
-+	polarity = polarity == ACPI_ACTIVE_HIGH ? 0 : 1;
-+	node = dev ? dev_to_node(dev) : NUMA_NO_NODE;
-+	if (mp_set_gsi_attr(gsi, trigger, polarity, node)) {
-+		pr_warn("Failed to set pin attr for GSI%d\n", gsi);
-+		return -1;
-+	}
-+
- 	irq = map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC);
- 	if (irq < 0)
- 		return irq;
- 
--	ioapic = mp_find_ioapic(gsi);
--	if (ioapic < 0) {
--		printk(KERN_WARNING "No IOAPIC for GSI %u\n", gsi);
--		return gsi;
--	}
--
--	ioapic_pin = mp_find_ioapic_pin(ioapic, gsi);
--
--	if (ioapic_pin > MP_MAX_IOAPIC_PIN) {
--		printk(KERN_ERR "Invalid reference to IOAPIC pin "
--		       "%d-%d\n", mpc_ioapic_id(ioapic),
--		       ioapic_pin);
--		return gsi;
--	}
--
- 	if (enable_update_mptable)
- 		mp_config_acpi_gsi(dev, gsi, trigger, polarity);
- 
--	set_io_apic_irq_attr(&irq_attr, ioapic, ioapic_pin,
--			     trigger == ACPI_EDGE_SENSITIVE ? 0 : 1,
--			     polarity == ACPI_ACTIVE_HIGH ? 0 : 1);
--	ret = io_apic_set_pci_routing(dev, irq, &irq_attr);
--	if (ret < 0)
--		irq = -1;
--
- 	return irq;
- }
- 
--static struct irq_domain_ops acpi_irqdomain_ops;
-+static struct irq_domain_ops acpi_irqdomain_ops = {
-+	.map = mp_irqdomain_map,
-+};
- 
- static int __init
- acpi_parse_ioapic(struct acpi_subtable_header * header, const unsigned long end)
-@@ -622,10 +606,6 @@ int acpi_gsi_to_irq(u32 gsi, unsigned int *irqp)
- 	int irq = map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
- 
- 	if (irq >= 0) {
--#ifdef CONFIG_X86_IO_APIC
--		if (acpi_irq_model == ACPI_IRQ_MODEL_IOAPIC)
--			setup_IO_APIC_irq_extra(gsi);
--#endif
- 		*irqp = irq;
- 		return 0;
- 	}
