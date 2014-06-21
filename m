@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755465AbaFUMEb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 08:04:31 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:38566 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755252AbaFUME2 (ORCPT
+	id S1758203AbaFUMEq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 08:04:46 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:44852 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755499AbaFUMEp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 08:04:28 -0400
-Date: Sat, 21 Jun 2014 13:04:25 +0100
+	Sat, 21 Jun 2014 08:04:45 -0400
+Date: Sat, 21 Jun 2014 13:04:41 +0100
 From: Daniel Walter <dwalter@google.com>
-To: linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>
-Cc: linux-omap@vger.kernel.org
-Subject: [PATCH 1/9] [arch/arm/omap2] replace strict_strto* with kstrto*
-Message-ID: <20140621120425.GA5169@google.com>
+To: Eric Miao <eric.y.miao@gmail.com>, linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 2/9] [arch/arm/mach-pxa] replace strict_strto call with kstrto
+Message-ID: <20140621120441.GA5712@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -21,91 +21,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace obsolete strict_strto call with kstrto calls.
-Simplify copy_from_user/strict_strto by using kstrto_from_user
+ Replace obsolete call to strict_strto with kstrto
 
 Signed-off-by: Daniel Walter <dwalter@google.com>
 ---
- arch/arm/mach-omap2/board-omap3touchbook.c |  2 +-
- arch/arm/mach-omap2/mux.c                  | 22 ++++++----------------
- 2 files changed, 7 insertions(+), 17 deletions(-)
+ arch/arm/mach-pxa/balloon3.c | 2 +-
+ arch/arm/mach-pxa/viper.c    | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-omap3touchbook.c b/arch/arm/mach-omap2/board-omap3touchbook.c
-index 7da48bc..70b904c 100644
---- a/arch/arm/mach-omap2/board-omap3touchbook.c
-+++ b/arch/arm/mach-omap2/board-omap3touchbook.c
-@@ -336,7 +336,7 @@ static int __init early_touchbook_revision(char *p)
- 	if (!p)
+diff --git a/arch/arm/mach-pxa/balloon3.c b/arch/arm/mach-pxa/balloon3.c
+index 43596e0..d897292 100644
+--- a/arch/arm/mach-pxa/balloon3.c
++++ b/arch/arm/mach-pxa/balloon3.c
+@@ -90,7 +90,7 @@ int __init parse_balloon3_features(char *arg)
+ 	if (!arg)
  		return 0;
  
--	return strict_strtoul(p, 10, &touchbook_revision);
-+	return kstrtoul(p, 10, &touchbook_revision);
+-	return strict_strtoul(arg, 0, &balloon3_features_present);
++	return kstrtoul(arg, 0, &balloon3_features_present);
  }
- early_param("tbr", early_touchbook_revision);
+ early_param("balloon3_features", parse_balloon3_features);
  
-diff --git a/arch/arm/mach-omap2/mux.c b/arch/arm/mach-omap2/mux.c
-index fd88ede..9e1b610 100644
---- a/arch/arm/mach-omap2/mux.c
-+++ b/arch/arm/mach-omap2/mux.c
-@@ -679,29 +679,19 @@ static ssize_t omap_mux_dbg_signal_write(struct file *file,
- 					 const char __user *user_buf,
- 					 size_t count, loff_t *ppos)
+diff --git a/arch/arm/mach-pxa/viper.c b/arch/arm/mach-pxa/viper.c
+index 41f27f6..de3b080 100644
+--- a/arch/arm/mach-pxa/viper.c
++++ b/arch/arm/mach-pxa/viper.c
+@@ -769,7 +769,7 @@ static unsigned long viper_tpm;
+ 
+ static int __init viper_tpm_setup(char *str)
  {
--	char buf[OMAP_MUX_MAX_ARG_CHAR];
- 	struct seq_file *seqf;
- 	struct omap_mux *m;
--	unsigned long val;
--	int buf_size, ret;
-+	u16 val;
-+	int ret;
- 	struct omap_mux_partition *partition;
+-	return strict_strtoul(str, 10, &viper_tpm) >= 0;
++	return kstrtoul(str, 10, &viper_tpm) >= 0;
+ }
  
- 	if (count > OMAP_MUX_MAX_ARG_CHAR)
- 		return -EINVAL;
- 
--	memset(buf, 0, sizeof(buf));
--	buf_size = min(count, sizeof(buf) - 1);
--
--	if (copy_from_user(buf, user_buf, buf_size))
--		return -EFAULT;
--
--	ret = strict_strtoul(buf, 0x10, &val);
-+	ret = kstrtou16_from_user(user_buf, count, 0x10, &val);
- 	if (ret < 0)
- 		return ret;
- 
--	if (val > 0xffff)
--		return -EINVAL;
--
- 	seqf = file->private_data;
- 	m = seqf->private;
- 
-@@ -709,7 +699,7 @@ static ssize_t omap_mux_dbg_signal_write(struct file *file,
- 	if (!partition)
- 		return -ENODEV;
- 
--	omap_mux_write(partition, (u16)val, m->reg_offset);
-+	omap_mux_write(partition, val, m->reg_offset);
- 	*ppos += count;
- 
- 	return count;
-@@ -915,14 +905,14 @@ static void __init omap_mux_set_cmdline_signals(void)
- 
- 	while ((token = strsep(&next_opt, ",")) != NULL) {
- 		char *keyval, *name;
--		unsigned long val;
-+		u16 val;
- 
- 		keyval = token;
- 		name = strsep(&keyval, "=");
- 		if (name) {
- 			int res;
- 
--			res = strict_strtoul(keyval, 0x10, &val);
-+			res = kstrtou16(keyval, 0x10, &val);
- 			if (res < 0)
- 				continue;
- 
+ __setup("tpm=", viper_tpm_setup);
 -- 
 2.0.0.526.g5318336
 
