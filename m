@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772AbaFUUQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 16:16:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38818 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753974AbaFUUQ6 (ORCPT
+	id S1754657AbaFUU3G (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 16:29:06 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47593 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754007AbaFUU3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 16:16:58 -0400
-Date: Sat, 21 Jun 2014 13:16:46 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: =?iso-8859-1?Q?L=2E_Alberto_Gim=E9nez?= <agimenez@sysvalve.es>
-Cc: devel@driverdev.osuosl.org, open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: rtl8172u: Make ieee80211_crypto_init static
-Message-ID: <20140621201646.GB20432@kroah.com>
-References: <1402594851-16941-1-git-send-email-agimenez@sysvalve.es>
- <20140620001426.GA1351@kroah.com>
- <20140621100444.GA31059@bart.evergreen.loc>
+	Sat, 21 Jun 2014 16:29:04 -0400
+Date: Sat, 21 Jun 2014 22:29:01 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: pavel@ucw.cz
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Subject: 3.16, i915: less colors in X?
+Message-ID: <20140621202901.GA3840@amd.pavel.ucw.cz>
+References: <alpine.LRH.2.00.1405141435510.30793@twin.jikos.cz>
+ <20140514155759.GB9723@amd.pavel.ucw.cz>
+ <20140514182046.GA13342@amd.pavel.ucw.cz>
+ <alpine.LNX.2.00.1405151727380.16459@pobox.suse.cz>
+ <CAKMK7uFEjDGSpdB0xDPL09GZ8N7aFrNA530HbRLyfTPx5SkLQw@mail.gmail.com>
+ <20140607120614.GB5309@amd.pavel.ucw.cz>
+ <20140607231124.GA3611@amd.pavel.ucw.cz>
+ <CAKMK7uEALofLiEA3m-QKjygC=YZNjaEtUMfbpbXinMoim1ygkw@mail.gmail.com>
+ <20140609102328.GA25332@amd.pavel.ucw.cz>
+ <alpine.LNX.2.00.1406091302560.20782@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140621100444.GA31059@bart.evergreen.loc>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.LNX.2.00.1406091302560.20782@pobox.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 21, 2014 at 12:04:44PM +0200, L. Alberto Giménez wrote:
-> On Thu, Jun 19, 2014 at 05:14:26PM -0700, Greg Kroah-Hartman wrote:
-> > On Thu, Jun 12, 2014 at 07:40:49PM +0200, L. Alberto Giménez wrote:
-> > > Fix sparse warning.
-> > > 
-> > > Signed-off-by: L. Alberto Giménez <agimenez@sysvalve.es>
-> > > ---
-> > >  drivers/staging/rtl8192u/ieee80211/ieee80211_crypt.c | 2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_crypt.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_crypt.c
-> > > index 5533221..3be690d 100644
-> > > --- a/drivers/staging/rtl8192u/ieee80211/ieee80211_crypt.c
-> > > +++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_crypt.c
-> > > @@ -200,7 +200,7 @@ static struct ieee80211_crypto_ops ieee80211_crypt_null = {
-> > >  	.owner			= THIS_MODULE,
-> > >  };
-> > >  
-> > > -int __init ieee80211_crypto_init(void)
-> > > +static int __init ieee80211_crypto_init(void)
-> > >  {
-> > >  	int ret = -ENOMEM;
-> > 
-> > You obviously did not compile this change :(
-> > 
-> > greg k-h
-> 
-> Hi Greg,
-> 
-> I'm very sorry for that, I swear I compiled it, but clearly I'm missing something
-> here.
-> 
-> My patch compiles with a warning, but tag v3.15 (tag where my branch is based) does
-> not issue this warning:
-> 
-> drivers/staging/rtl8192u/ieee80211/ieee80211_crypt.c:203:19: warning:
-> ‘ieee80211_crypto_init’ defined but not used [-Wunused-function]
->  static int __init ieee80211_crypto_init(void)
->                    ^
-> 
-> I thought that __init functions could be static, is there any problem with that? Care
-> to shed some light here?
+Hi!
 
-That function is called by a different file, it can not be static, I
-don't know how you were able to successfully build the driver with your
-change...
+I just test-booted 3.16-rc1, and background in X looked just wrong --
+very noticeable bands on the background gradient. I thought that maybe
+it is just my eyes, but I went back to older kernel, and background is
+ok now.
+
+I'm trying to figure out how to ask X what color depth it is using...?
+
+This is thinkpad x60 with Debian 6.0.9.
+
+Any ideas?
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
