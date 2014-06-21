@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253AbaFUMs3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 08:48:29 -0400
-Received: from e24smtp02.br.ibm.com ([32.104.18.86]:60991 "EHLO
-	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716AbaFUMs2 (ORCPT
+	id S1758052AbaFUMuH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 08:50:07 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:39396 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452AbaFUMuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 08:48:28 -0400
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: netdev@vger.kernel.org
-Cc: hariprasad@chelsio.com, linux-kernel@vger.kernel.org,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Subject: [PATCH] cxgb4: use dev_port to identify ports
-Date: Sat, 21 Jun 2014 09:48:08 -0300
-Message-Id: <1403354888-15600-1-git-send-email-cascardo@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14062112-2194-0000-0000-0000092B1A79
+	Sat, 21 Jun 2014 08:50:05 -0400
+From: navin patidar <navin.patidar@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
+Subject: [PATCH 0/7] staging: rtl8188eu: Consolidate usb operation code.
+Date: Sat, 21 Jun 2014 18:19:30 +0530
+Message-Id: <1403354977-23644-1-git-send-email-navin.patidar@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 3f85944fe207d0225ef21a2c0951d4946fc9a95d ("net: Add sysfs file
-for port number") introduce dev_port to network devices. cxgb4 adapters
-have multiple ports on the same PCI function, and used dev_id to
-identify those ports. That use was removed by commit
-8c367fcbe6549195d2eb11e62bea233f811aad41 ("cxgb4: Do not set
-net_device::dev_id to VI index"), since dev_id should be used only when
-devices share the same MAC address.
+navin patidar (7):
+  staging: rtl8188eu: Merge hal/usb_ops_linux.c into
+    os_dep/usb_ops_linux.c
+  staging: rtl8188eu: Remove macros specific to kernel version < 2.6.12
+  staging:rtl8188eu:usb_ops.h:Remove unused enum, macros and function
+    declaration
+  staging: rtl8188eu: usb_ops.h: Remove macro rtw_usb_control_msg()
+  staging: rtl8188eu: Remove inline function
+    rtw_inc_and_chk_continual_urb_error()
+  staging: rtl8188eu: Remove continual_urb_error from struct dvobj_priv
+  staging: rtl8188eu: Merge usb_ops.h into usb_ops_linux.h
 
-Using dev_port for cxgb4 allows different ports on the same PCI function
-to be identified.
+ drivers/staging/rtl8188eu/Makefile                |    1 -
+ drivers/staging/rtl8188eu/core/rtw_ioctl_set.c    |    1 -
+ drivers/staging/rtl8188eu/core/rtw_recv.c         |    1 -
+ drivers/staging/rtl8188eu/core/rtw_xmit.c         |    1 -
+ drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c |    2 -
+ drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c    |    2 +-
+ drivers/staging/rtl8188eu/hal/rtl8188eu_xmit.c    |    2 +-
+ drivers/staging/rtl8188eu/hal/usb_halinit.c       |    1 -
+ drivers/staging/rtl8188eu/hal/usb_ops_linux.c     |  665 ---------------------
+ drivers/staging/rtl8188eu/include/drv_types.h     |    2 -
+ drivers/staging/rtl8188eu/include/usb_ops.h       |  112 ----
+ drivers/staging/rtl8188eu/include/usb_ops_linux.h |   25 +
+ drivers/staging/rtl8188eu/os_dep/ioctl_linux.c    |    1 -
+ drivers/staging/rtl8188eu/os_dep/recv_linux.c     |    2 +-
+ drivers/staging/rtl8188eu/os_dep/usb_intf.c       |    4 +-
+ drivers/staging/rtl8188eu/os_dep/usb_ops_linux.c  |  630 ++++++++++++++++++-
+ 16 files changed, 658 insertions(+), 794 deletions(-)
+ delete mode 100644 drivers/staging/rtl8188eu/hal/usb_ops_linux.c
+ delete mode 100644 drivers/staging/rtl8188eu/include/usb_ops.h
 
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
----
- drivers/net/ethernet/chelsio/cxgb4/t4_hw.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/net/ethernet/chelsio/cxgb4/t4_hw.c b/drivers/net/ethernet/chelsio/cxgb4/t4_hw.c
-index bba6768..931478e 100644
---- a/drivers/net/ethernet/chelsio/cxgb4/t4_hw.c
-+++ b/drivers/net/ethernet/chelsio/cxgb4/t4_hw.c
-@@ -3962,6 +3962,7 @@ int t4_port_init(struct adapter *adap, int mbox, int pf, int vf)
- 		p->lport = j;
- 		p->rss_size = rss_size;
- 		memcpy(adap->port[i]->dev_addr, addr, ETH_ALEN);
-+		adap->port[i]->dev_port = j;
- 
- 		ret = ntohl(c.u.info.lstatus_to_modtype);
- 		p->mdio_addr = (ret & FW_PORT_CMD_MDIOCAP) ?
--- 
-1.7.1
+--
+1.7.10.4
 
