@@ -1,400 +1,613 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966407AbaFULEq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 07:04:46 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:47266 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934578AbaFULEk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 07:04:40 -0400
-From: Alexander Bersenev <bay@hackerdom.ru>
-To: linux-sunxi@googlegroups.com, david@hardeman.nu,
-        devicetree@vger.kernel.org, galak@codeaurora.org,
-        grant.likely@linaro.org, ijc+devicetree@hellion.org.uk,
-        james.hogan@imgtec.com, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, m.chehab@samsung.com, mark.rutland@arm.com,
-        maxime.ripard@free-electrons.com, pawel.moll@arm.com,
-        rdunlap@infradead.org, robh+dt@kernel.org, sean@mess.org,
-        srinivas.kandagatla@st.com, wingrime@linux-sunxi.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-Cc: Alexander Bersenev <bay@hackerdom.ru>
-Subject: [PATCH v10 2/5] [media] rc: add sunxi-ir driver
-Date: Sat, 21 Jun 2014 17:04:03 +0600
-Message-Id: <1403348646-31091-3-git-send-email-bay@hackerdom.ru>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1403348646-31091-1-git-send-email-bay@hackerdom.ru>
-References: <1403348646-31091-1-git-send-email-bay@hackerdom.ru>
+	id S1755365AbaFULR7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 07:17:59 -0400
+Received: from mail.kernel.org ([198.145.19.201]:43802 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755149AbaFULR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jun 2014 07:17:57 -0400
+Message-ID: <53A56A5C.9080703@kernel.org>
+Date: Sat, 21 Jun 2014 12:19:56 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Reyad Attiyat <reyad.attiyat@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, srinivas.pandruvada@linux.intel.com
+Subject: Re: [PATCH v3 3/3] iio: hid-sensor-magn-3d: Add support for rotation
+ from north usage attributes
+References: <1402957803-5154-1-git-send-email-reyad.attiyat@gmail.com> <1402957803-5154-4-git-send-email-reyad.attiyat@gmail.com>
+In-Reply-To: <1402957803-5154-4-git-send-email-reyad.attiyat@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds driver for sunxi IR controller.
-It is based on Alexsey Shestacov's work based on the original driver
-supplied by Allwinner.
+On 16/06/14 23:30, Reyad Attiyat wrote:
+> Added the ability for this driver to scan for a range of hid usage attributes.
+> This allows for dynamic creation of iio channels such as rotation from north
+> and/or magnetic flux axises (X, Y, Z).
+>
+> Signed-off-by: Reyad Attiyat <reyad.attiyat@gmail.com>
+Hi Reyad,
 
-Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
-Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
----
- drivers/media/rc/Kconfig     |   10 ++
- drivers/media/rc/Makefile    |    1 +
- drivers/media/rc/sunxi-cir.c |  318 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 329 insertions(+), 0 deletions(-)
- create mode 100644 drivers/media/rc/sunxi-cir.c
+I'm afraid I hadn't taken as close a look at this as I should for previous
+versions.  There are some nasty bugs introduced by your refactoring.
+The fundamental approach is fine, but you've moved more things than
+make sense in some cases.
 
-diff --git a/drivers/media/rc/Kconfig b/drivers/media/rc/Kconfig
-index 8fbd377..9427fad 100644
---- a/drivers/media/rc/Kconfig
-+++ b/drivers/media/rc/Kconfig
-@@ -343,4 +343,14 @@ config RC_ST
- 
- 	 If you're not sure, select N here.
- 
-+config IR_SUNXI
-+    tristate "SUNXI IR remote control"
-+    depends on RC_CORE
-+    depends on ARCH_SUNXI
-+    ---help---
-+      Say Y if you want to use sunXi internal IR Controller
-+
-+      To compile this driver as a module, choose M here: the module will
-+      be called sunxi-ir.
-+
- endif #RC_DEVICES
-diff --git a/drivers/media/rc/Makefile b/drivers/media/rc/Makefile
-index f8b54ff..9ee9ee7 100644
---- a/drivers/media/rc/Makefile
-+++ b/drivers/media/rc/Makefile
-@@ -32,4 +32,5 @@ obj-$(CONFIG_IR_GPIO_CIR) += gpio-ir-recv.o
- obj-$(CONFIG_IR_IGUANA) += iguanair.o
- obj-$(CONFIG_IR_TTUSBIR) += ttusbir.o
- obj-$(CONFIG_RC_ST) += st_rc.o
-+obj-$(CONFIG_IR_SUNXI) += sunxi-cir.o
- obj-$(CONFIG_IR_IMG) += img-ir/
-diff --git a/drivers/media/rc/sunxi-cir.c b/drivers/media/rc/sunxi-cir.c
-new file mode 100644
-index 0000000..5971b69
---- /dev/null
-+++ b/drivers/media/rc/sunxi-cir.c
-@@ -0,0 +1,318 @@
-+/*
-+ * Driver for Allwinner sunXi IR controller
-+ *
-+ * Copyright (C) 2014 Alexsey Shestacov <wingrime@linux-sunxi.org>
-+ * Copyright (C) 2014 Alexander Bersenev <bay@hackerdom.ru>
-+ *
-+ * Based on sun5i-ir.c:
-+ * Copyright (C) 2007-2012 Daniel Wang
-+ * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of
-+ * the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/of_platform.h>
-+#include <media/rc-core.h>
-+
-+#define SUNXI_IR_DEV "sunxi-ir"
-+
-+/* Registers */
-+/* IR Control */
-+#define SUNXI_IR_CTL_REG      0x00
-+/* Global Enable */
-+#define REG_CTL_GEN			BIT(0)
-+/* RX block enable */
-+#define REG_CTL_RXEN			BIT(1)
-+/* CIR mode */
-+#define REG_CTL_MD			(BIT(4) | BIT(5))
-+
-+/* Rx Config */
-+#define SUNXI_IR_RXCTL_REG    0x10
-+/* Pulse Polarity Invert flag */
-+#define REG_RXCTL_RPPI			BIT(2)
-+
-+/* Rx Data */
-+#define SUNXI_IR_RXFIFO_REG   0x20
-+
-+/* Rx Interrupt Enable */
-+#define SUNXI_IR_RXINT_REG    0x2C
-+/* Rx FIFO Overflow */
-+#define REG_RXINT_ROI_EN		BIT(0)
-+/* Rx Packet End */
-+#define REG_RXINT_RPEI_EN		BIT(1)
-+/* Rx FIFO Data Available */
-+#define REG_RXINT_RAI_EN		BIT(4)
-+
-+/* Rx FIFO available byte level */
-+#define REG_RXINT_RAL(val)    (((val) << 8) & (GENMASK(11, 8)))
-+
-+/* Rx Interrupt Status */
-+#define SUNXI_IR_RXSTA_REG    0x30
-+/* RX FIFO Get Available Counter */
-+#define REG_RXSTA_GET_AC(val) (((val) >> 8) & (GENMASK(5, 0)))
-+/* Clear all interrupt status value */
-+#define REG_RXSTA_CLEARALL    0xff
-+
-+/* IR Sample Config */
-+#define SUNXI_IR_CIR_REG      0x34
-+/* CIR_REG register noise threshold */
-+#define REG_CIR_NTHR(val)    (((val) << 2) & (GENMASK(7, 2)))
-+/* CIR_REG register idle threshold */
-+#define REG_CIR_ITHR(val)    (((val) << 8) & (GENMASK(15, 8)))
-+
-+/* Hardware supported fifo size */
-+#define SUNXI_IR_FIFO_SIZE    16
-+/* How many messages in FIFO trigger IRQ */
-+#define TRIGGER_LEVEL         8
-+/* Required frequency for IR0 or IR1 clock in CIR mode */
-+#define SUNXI_IR_BASE_CLK     8000000
-+/* Frequency after IR internal divider  */
-+#define SUNXI_IR_CLK          (SUNXI_IR_BASE_CLK / 64)
-+/* Sample period in ns */
-+#define SUNXI_IR_SAMPLE       (1000000000ul / SUNXI_IR_CLK)
-+/* Noise threshold in samples  */
-+#define SUNXI_IR_RXNOISE      1
-+/* Idle Threshold in samples */
-+#define SUNXI_IR_RXIDLE       20
-+/* Time after which device stops sending data in ms */
-+#define SUNXI_IR_TIMEOUT      120
-+
-+struct sunxi_ir {
-+	spinlock_t      ir_lock;
-+	struct rc_dev   *rc;
-+	void __iomem    *base;
-+	int             irq;
-+	struct clk      *clk;
-+	struct clk      *apb_clk;
-+	const char      *map_name;
-+};
-+
-+static irqreturn_t sunxi_ir_irq(int irqno, void *dev_id)
-+{
-+	unsigned long status;
-+	unsigned char dt;
-+	unsigned int cnt, rc;
-+	struct sunxi_ir *ir = dev_id;
-+	DEFINE_IR_RAW_EVENT(rawir);
-+
-+	spin_lock(&ir->ir_lock);
-+
-+	status = readl(ir->base + SUNXI_IR_RXSTA_REG);
-+
-+	/* clean all pending statuses */
-+	writel(status | REG_RXSTA_CLEARALL, ir->base + SUNXI_IR_RXSTA_REG);
-+
-+	if (status & REG_RXINT_RAI_EN) {
-+		/* How many messages in fifo */
-+		rc  = REG_RXSTA_GET_AC(status);
-+		/* Sanity check */
-+		rc = rc > SUNXI_IR_FIFO_SIZE ? SUNXI_IR_FIFO_SIZE : rc;
-+		/* If we have data */
-+		for (cnt = 0; cnt < rc; cnt++) {
-+			/* for each bit in fifo */
-+			dt = readb(ir->base + SUNXI_IR_RXFIFO_REG);
-+			rawir.pulse = (dt & 0x80) != 0;
-+			rawir.duration = ((dt & 0x7f) + 1) * SUNXI_IR_SAMPLE;
-+			ir_raw_event_store_with_filter(ir->rc, &rawir);
-+		}
-+	}
-+
-+	if (status & REG_RXINT_ROI_EN) {
-+		ir_raw_event_reset(ir->rc);
-+	} else if (status & REG_RXINT_RPEI_EN) {
-+		ir_raw_event_set_idle(ir->rc, true);
-+		ir_raw_event_handle(ir->rc);
-+	}
-+
-+	spin_unlock(&ir->ir_lock);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int sunxi_ir_probe(struct platform_device *pdev)
-+{
-+	int ret = 0;
-+	unsigned long tmp = 0;
-+
-+	struct device *dev = &pdev->dev;
-+	struct device_node *dn = dev->of_node;
-+	struct resource *res;
-+	struct sunxi_ir *ir;
-+
-+	ir = devm_kzalloc(dev, sizeof(struct sunxi_ir), GFP_KERNEL);
-+	if (!ir)
-+		return -ENOMEM;
-+
-+	/* Clock */
-+	ir->apb_clk = devm_clk_get(dev, "apb");
-+	if (IS_ERR(ir->apb_clk)) {
-+		dev_err(dev, "failed to get a apb clock.\n");
-+		return PTR_ERR(ir->apb_clk);
-+	}
-+	ir->clk = devm_clk_get(dev, "ir");
-+	if (IS_ERR(ir->clk)) {
-+		dev_err(dev, "failed to get a ir clock.\n");
-+		return PTR_ERR(ir->clk);
-+	}
-+
-+	ret = clk_set_rate(ir->clk, SUNXI_IR_BASE_CLK);
-+	if (ret) {
-+		dev_err(dev, "set ir base clock failed!\n");
-+		return ret;
-+	}
-+
-+	if (clk_prepare_enable(ir->apb_clk)) {
-+		dev_err(dev, "try to enable apb_ir_clk failed\n");
-+		return -EINVAL;
-+	}
-+
-+	if (clk_prepare_enable(ir->clk)) {
-+		dev_err(dev, "try to enable ir_clk failed\n");
-+		ret = -EINVAL;
-+		goto exit_clkdisable_apb_clk;
-+	}
-+
-+	/* IO */
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	ir->base = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(ir->base)) {
-+		dev_err(dev, "failed to map registers\n");
-+		ret = PTR_ERR(ir->base);
-+		goto exit_clkdisable_clk;
-+	}
-+
-+	ir->rc = rc_allocate_device();
-+	if (!ir->rc) {
-+		dev_err(dev, "failed to allocate device\n");
-+		ret = -ENOMEM;
-+		goto exit_clkdisable_clk;
-+	}
-+
-+	ir->rc->priv = ir;
-+	ir->rc->input_name = SUNXI_IR_DEV;
-+	ir->rc->input_phys = "sunxi-ir/input0";
-+	ir->rc->input_id.bustype = BUS_HOST;
-+	ir->rc->input_id.vendor = 0x0001;
-+	ir->rc->input_id.product = 0x0001;
-+	ir->rc->input_id.version = 0x0100;
-+	ir->map_name = of_get_property(dn, "linux,rc-map-name", NULL);
-+	ir->rc->map_name = ir->map_name ?: RC_MAP_EMPTY;
-+	ir->rc->dev.parent = dev;
-+	ir->rc->driver_type = RC_DRIVER_IR_RAW;
-+	rc_set_allowed_protocols(ir->rc, RC_BIT_ALL);
-+	ir->rc->rx_resolution = SUNXI_IR_SAMPLE;
-+	ir->rc->timeout = MS_TO_NS(SUNXI_IR_TIMEOUT);
-+	ir->rc->driver_name = SUNXI_IR_DEV;
-+
-+	ret = rc_register_device(ir->rc);
-+	if (ret) {
-+		dev_err(dev, "failed to register rc device\n");
-+		goto exit_free_dev;
-+	}
-+
-+	platform_set_drvdata(pdev, ir);
-+
-+	/* IRQ */
-+	ir->irq = platform_get_irq(pdev, 0);
-+	if (ir->irq < 0) {
-+		dev_err(dev, "no irq resource\n");
-+		ret = ir->irq;
-+		goto exit_free_dev;
-+	}
-+
-+	ret = devm_request_irq(dev, ir->irq, sunxi_ir_irq, 0, SUNXI_IR_DEV, ir);
-+	if (ret) {
-+		dev_err(dev, "failed request irq\n");
-+		goto exit_free_dev;
-+	}
-+
-+	/* Enable CIR Mode */
-+	writel(REG_CTL_MD, ir->base+SUNXI_IR_CTL_REG);
-+
-+	/* Set noise threshold and idle threshold */
-+	writel(REG_CIR_NTHR(SUNXI_IR_RXNOISE)|REG_CIR_ITHR(SUNXI_IR_RXIDLE),
-+	       ir->base + SUNXI_IR_CIR_REG);
-+
-+	/* Invert Input Signal */
-+	writel(REG_RXCTL_RPPI, ir->base + SUNXI_IR_RXCTL_REG);
-+
-+	/* Clear All Rx Interrupt Status */
-+	writel(REG_RXSTA_CLEARALL, ir->base + SUNXI_IR_RXSTA_REG);
-+
-+	/*
-+	 * Enable IRQ on overflow, packet end, FIFO available with trigger
-+	 * level
-+	 */
-+	writel(REG_RXINT_ROI_EN | REG_RXINT_RPEI_EN |
-+	       REG_RXINT_RAI_EN | REG_RXINT_RAL(TRIGGER_LEVEL - 1),
-+	       ir->base + SUNXI_IR_RXINT_REG);
-+
-+	/* Enable IR Module */
-+	tmp = readl(ir->base + SUNXI_IR_CTL_REG);
-+	writel(tmp | REG_CTL_GEN | REG_CTL_RXEN, ir->base + SUNXI_IR_CTL_REG);
-+
-+	dev_info(dev, "initialized sunXi IR driver\n");
-+	return 0;
-+
-+exit_free_dev:
-+	rc_free_device(ir->rc);
-+exit_clkdisable_clk:
-+	clk_disable_unprepare(ir->clk);
-+exit_clkdisable_apb_clk:
-+	clk_disable_unprepare(ir->apb_clk);
-+
-+	return ret;
-+}
-+
-+static int sunxi_ir_remove(struct platform_device *pdev)
-+{
-+	unsigned long flags;
-+	struct sunxi_ir *ir = platform_get_drvdata(pdev);
-+
-+	clk_disable_unprepare(ir->clk);
-+	clk_disable_unprepare(ir->apb_clk);
-+
-+	spin_lock_irqsave(&ir->ir_lock, flags);
-+	/* disable IR IRQ */
-+	writel(0, ir->base + SUNXI_IR_RXINT_REG);
-+	/* clear All Rx Interrupt Status */
-+	writel(REG_RXSTA_CLEARALL, ir->base + SUNXI_IR_RXSTA_REG);
-+	/* disable IR */
-+	writel(0, ir->base + SUNXI_IR_CTL_REG);
-+	spin_unlock_irqrestore(&ir->ir_lock, flags);
-+
-+	rc_unregister_device(ir->rc);
-+	return 0;
-+}
-+
-+static const struct of_device_id sunxi_ir_match[] = {
-+	{ .compatible = "allwinner,sun7i-a20-ir", },
-+	{},
-+};
-+
-+static struct platform_driver sunxi_ir_driver = {
-+	.probe          = sunxi_ir_probe,
-+	.remove         = sunxi_ir_remove,
-+	.driver = {
-+		.name = SUNXI_IR_DEV,
-+		.owner = THIS_MODULE,
-+		.of_match_table = sunxi_ir_match,
-+	},
-+};
-+
-+module_platform_driver(sunxi_ir_driver);
-+
-+MODULE_DESCRIPTION("Allwinner sunXi IR controller driver");
-+MODULE_AUTHOR("Alexsey Shestacov <wingrime@linux-sunxi.org>");
-+MODULE_LICENSE("GPL");
--- 
-1.7.1
+With hind sight perhaps it would have been possible to break this patch
+up into a series of small easily reviewed steps.
+
+Anyhow, take a hard look at the error paths in the code as someone of them
+are thorougly broken.  The channel setup function does an awful lot more
+than setup the channels and it should not do so.  Moving other stuff in
+there makes the code harder to follow and is responsible for at least
+a few bugs that otherwise would not have occured.
+
+Thanks,
+
+Jonathan
+> ---
+>   drivers/iio/magnetometer/hid-sensor-magn-3d.c | 394 +++++++++++++++++---------
+>   1 file changed, 266 insertions(+), 128 deletions(-)
+>
+> diff --git a/drivers/iio/magnetometer/hid-sensor-magn-3d.c b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
+> index 41cf29e..73e1272 100644
+> --- a/drivers/iio/magnetometer/hid-sensor-magn-3d.c
+> +++ b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
+> @@ -35,6 +35,10 @@ enum magn_3d_channel {
+>   	CHANNEL_SCAN_INDEX_X,
+>   	CHANNEL_SCAN_INDEX_Y,
+>   	CHANNEL_SCAN_INDEX_Z,
+> +	CHANNEL_SCAN_INDEX_NORTH_MAGN,
+> +	CHANNEL_SCAN_INDEX_NORTH_TRUE,
+> +	CHANNEL_SCAN_INDEX_NORTH_MAGN_TILT_COMP,
+> +	CHANNEL_SCAN_INDEX_NORTH_TRUE_TILT_COMP,
+>   	MAGN_3D_CHANNEL_MAX,
+>   };
+>
+> @@ -42,63 +46,47 @@ struct magn_3d_state {
+>   	struct hid_sensor_hub_callbacks callbacks;
+>   	struct hid_sensor_common common_attributes;
+>   	struct hid_sensor_hub_attribute_info magn[MAGN_3D_CHANNEL_MAX];
+> -	u32 magn_val[MAGN_3D_CHANNEL_MAX];
+> +	u32 *magn_val_addr[MAGN_3D_CHANNEL_MAX];
+> +	u32 *iio_val;
+>   	int scale_pre_decml;
+>   	int scale_post_decml;
+>   	int scale_precision;
+>   	int value_offset;
+>   };
+>
+> -static const u32 magn_3d_addresses[MAGN_3D_CHANNEL_MAX] = {
+> -	HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS,
+> -	HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Y_AXIS,
+> -	HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Z_AXIS
+> -};
+>
+> -/* Channel definitions */
+> -static const struct iio_chan_spec magn_3d_channels[] = {
+> -	{
+> -		.type = IIO_MAGN,
+> -		.modified = 1,
+> -		.channel2 = IIO_MOD_X,
+> -		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+> -		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
+> -		BIT(IIO_CHAN_INFO_SCALE) |
+> -		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
+> -		BIT(IIO_CHAN_INFO_HYSTERESIS),
+> -		.scan_index = CHANNEL_SCAN_INDEX_X,
+> -	}, {
+> -		.type = IIO_MAGN,
+> -		.modified = 1,
+> -		.channel2 = IIO_MOD_Y,
+> -		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+> -		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
+> -		BIT(IIO_CHAN_INFO_SCALE) |
+> -		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
+> -		BIT(IIO_CHAN_INFO_HYSTERESIS),
+> -		.scan_index = CHANNEL_SCAN_INDEX_Y,
+> -	}, {
+> -		.type = IIO_MAGN,
+> -		.modified = 1,
+> -		.channel2 = IIO_MOD_Z,
+> -		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+> -		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
+> -		BIT(IIO_CHAN_INFO_SCALE) |
+> -		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
+> -		BIT(IIO_CHAN_INFO_HYSTERESIS),
+> -		.scan_index = CHANNEL_SCAN_INDEX_Z,
+> +/* Find index into magn_3d_state magn[] and magn_val_addr[] from HID Usage  */
+> +static int magn_3d_usage_id_to_chan_index(unsigned usage_id){
+> +	int offset;
+> +
+> +	switch (usage_id) {
+> +	case HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS:
+> +		offset = CHANNEL_SCAN_INDEX_X;
+> +		break;
+> +	case HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Y_AXIS:
+> +		offset = CHANNEL_SCAN_INDEX_Y;
+> +		break;
+> +	case HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Z_AXIS:
+> +		offset = CHANNEL_SCAN_INDEX_Z;
+> +		break;
+> +	case HID_USAGE_SENSOR_ORIENT_COMP_MAGN_NORTH:
+> +		offset = CHANNEL_SCAN_INDEX_NORTH_MAGN_TILT_COMP;
+> +		break;
+> +	case HID_USAGE_SENSOR_ORIENT_COMP_TRUE_NORTH:
+> +		offset = CHANNEL_SCAN_INDEX_NORTH_TRUE_TILT_COMP;
+> +		break;
+> +	case HID_USAGE_SENSOR_ORIENT_MAGN_NORTH:
+> +		offset = CHANNEL_SCAN_INDEX_NORTH_MAGN;
+> +		break;
+> +	case HID_USAGE_SENSOR_ORIENT_TRUE_NORTH:
+> +		offset = CHANNEL_SCAN_INDEX_NORTH_TRUE;
+> +		break;
+> +	default:
+> +		offset = -EINVAL;
+> +		break;
+>   	}
+> -};
+>
+> -/* Adjust channel real bits based on report descriptor */
+> -static void magn_3d_adjust_channel_bit_mask(struct iio_chan_spec *channels,
+> -						int channel, int size)
+> -{
+> -	channels[channel].scan_type.sign = 's';
+> -	/* Real storage bits will change based on the report desc. */
+> -	channels[channel].scan_type.realbits = size * 8;
+> -	/* Maximum size of a sample to capture is u32 */
+> -	channels[channel].scan_type.storagebits = sizeof(u32) * 8;
+> +	return offset;
+>   }
+>
+>   /* Channel read_raw handler */
+> @@ -109,11 +97,14 @@ static int magn_3d_read_raw(struct iio_dev *indio_dev,
+>   {
+>   	struct magn_3d_state *magn_state = iio_priv(indio_dev);
+>   	int report_id = -1;
+> -	u32 address;
+> +	unsigned usage_id;
+> +	int chan_index = -1;
+>   	int ret;
+>   	int ret_type;
+>   	s32 poll_value;
+>
+> +	dev_dbg(&indio_dev->dev, "magn_3d_read_raw\n");
+> +
+>   	*val = 0;
+>   	*val2 = 0;
+>   	switch (mask) {
+> @@ -126,13 +117,17 @@ static int magn_3d_read_raw(struct iio_dev *indio_dev,
+>   		hid_sensor_power_state(&magn_state->common_attributes, true);
+>   		msleep_interruptible(poll_value * 2);
+>
+> +		usage_id = chan->address;
+> +		chan_index = magn_3d_usage_id_to_chan_index(usage_id);
+> +		if (chan_index < 0)
+> +			return -EINVAL;
+> +
+>   		report_id =
+> -			magn_state->magn[chan->scan_index].report_id;
+> -		address = magn_3d_addresses[chan->scan_index];
+> +			magn_state->magn[chan_index].report_id;
+>   		if (report_id >= 0)
+>   			*val = sensor_hub_input_attr_get_raw_value(
+>   				magn_state->common_attributes.hsdev,
+> -				HID_USAGE_SENSOR_COMPASS_3D, address,
+> +				HID_USAGE_SENSOR_COMPASS_3D, usage_id,
+>   				report_id);
+>   		else {
+>   			*val = 0;
+> @@ -221,12 +216,13 @@ static int magn_3d_proc_event(struct hid_sensor_hub_device *hsdev,
+>   	dev_dbg(&indio_dev->dev, "magn_3d_proc_event\n");
+>   	if (atomic_read(&magn_state->common_attributes.data_ready))
+>   		hid_sensor_push_data(indio_dev,
+> -				magn_state->magn_val,
+> -				sizeof(magn_state->magn_val));
+> +				&(magn_state->iio_val),
+> +				sizeof(magn_state->iio_val));
+>
+>   	return 0;
+>   }
+>
+> +
+>   /* Capture samples in local storage */
+>   static int magn_3d_capture_sample(struct hid_sensor_hub_device *hsdev,
+>   				unsigned usage_id,
+> @@ -236,51 +232,138 @@ static int magn_3d_capture_sample(struct hid_sensor_hub_device *hsdev,
+>   	struct iio_dev *indio_dev = platform_get_drvdata(priv);
+>   	struct magn_3d_state *magn_state = iio_priv(indio_dev);
+>   	int offset;
+> -	int ret = -EINVAL;
+> +	u32 *magn_val;
+> +	int ret = 0;
+>
+> -	switch (usage_id) {
+> +	offset = magn_3d_usage_id_to_chan_index(usage_id);
+> +	if (offset < 0)
+> +		return -EINVAL;
+> +
+> +	magn_val = magn_state->magn_val_addr[offset];
+> +	if (!magn_val)
+> +		return -EINVAL;
+> +
+> +	*(magn_val) =  *(u32 *)raw_data;
+> +
+> +	return ret;
+> +}
+> +
+> +/* Setup the iio_chan_spec for HID Usage ID */
+> +static int magn_3d_setup_iio_chan(unsigned attr_usage_id,
+> +				s32 size,
+> +				struct iio_chan_spec *channel)
+> +{
+> +
+> +	channel->modified = 1;
+> +	channel->address = attr_usage_id;
+> +
+> +	switch (attr_usage_id){
+> +	case HID_USAGE_SENSOR_ORIENT_COMP_MAGN_NORTH:
+> +		channel->type = IIO_ROT;
+> +		channel->channel2 = IIO_MOD_NORTH_MAGN_TILT_COMP;
+> +		break;
+> +	case HID_USAGE_SENSOR_ORIENT_COMP_TRUE_NORTH:
+> +		channel->type = IIO_ROT;
+> +		channel->channel2 = IIO_MOD_NORTH_TRUE_TILT_COMP;
+> +		break;
+> +	case HID_USAGE_SENSOR_ORIENT_MAGN_NORTH:
+> +		channel->type = IIO_ROT;
+> +		channel->channel2 = IIO_MOD_NORTH_MAGN;
+> +		break;
+> +	case HID_USAGE_SENSOR_ORIENT_TRUE_NORTH:
+> +		channel->type = IIO_ROT;
+> +		channel->channel2 = IIO_MOD_NORTH_TRUE;
+> +		break;
+>   	case HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS:
+> +		channel->type = IIO_MAGN;
+> +		channel->channel2 = IIO_MOD_X;
+> +		break;
+>   	case HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Y_AXIS:
+> +		channel->type = IIO_MAGN;
+> +		channel->channel2 = IIO_MOD_Y;
+> +		break;
+>   	case HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Z_AXIS:
+> -		offset = usage_id - HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS;
+> -		magn_state->magn_val[CHANNEL_SCAN_INDEX_X + offset] =
+> -						*(u32 *)raw_data;
+> -		ret = 0;
+> -	break;
+> -	default:
+> +		channel->type = IIO_MAGN;
+> +		channel->channel2 = IIO_MOD_Z;
+>   		break;
+> +	default:
+> +		return -EINVAL;
+>   	}
+>
+> -	return ret;
+> +	channel->info_mask_separate = BIT(IIO_CHAN_INFO_RAW);
+> +	channel->info_mask_shared_by_type =
+> +		BIT(IIO_CHAN_INFO_OFFSET) |
+> +		BIT(IIO_CHAN_INFO_SCALE) |
+> +		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
+> +		BIT(IIO_CHAN_INFO_HYSTERESIS);
+> +
+> +	channel->scan_type.sign = 's';
+> +	/* Real storage bits will change based on the report desc. */
+> +	channel->scan_type.realbits = size  * 8;
+> +	/* Maximum size of a sample to capture is u32 */
+> +	channel->scan_type.storagebits = sizeof(u32) * 8;
+> +
+> +
+One blank line only here please.
+> +	return 0;
+>   }
+>
+> -/* Parse report which is specific to an usage id*/
+> -static int magn_3d_parse_report(struct platform_device *pdev,
+> -				struct hid_sensor_hub_device *hsdev,
+> -				struct iio_chan_spec *channels,
+Please fix the multiline comment syntax.  Even better, use kernel-doc
+formatting.
+> +/* Scan a HID report for a range of attribute usages.
+> + * Returns the count of attribute usages found.
+> + */
+> +static int magn_3d_scan_range_usage_ids(struct hid_sensor_hub_device *hsdev,
+>   				unsigned usage_id,
+> +				unsigned start_id,
+> +				unsigned end_id,
+>   				struct magn_3d_state *st)
+>   {
+> +	int count = 0;
+>   	int ret;
+> -	int i;
+> +	int id;
+>
+> -	for (i = 0; i <= CHANNEL_SCAN_INDEX_Z; ++i) {
+> +	for (id = start_id; id <= end_id; id++) {
+> +		int i;
+> +
+> +		i = magn_3d_usage_id_to_chan_index(id);
+> +		if(i < 0)
+> +			continue;
+> +
+> +		/* Check if usage attribute exists in the sensor hub device */
+>   		ret = sensor_hub_input_get_attribute_info(hsdev,
+>   				HID_INPUT_REPORT,
+>   				usage_id,
+> -				HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS + i,
+> -				&st->magn[CHANNEL_SCAN_INDEX_X + i]);
+> -		if (ret < 0)
+> -			break;
+> -		magn_3d_adjust_channel_bit_mask(channels,
+> -				CHANNEL_SCAN_INDEX_X + i,
+> -				st->magn[CHANNEL_SCAN_INDEX_X + i].size);
+> +				id,
+> +				&(st->magn[i]));
+> +		if (ret == 0)
+> +			count++;
+> +	}
+> +
+> +	return count;
+> +}
+> +
+> +/* Parse the HID report and return number of reports found */
+> +static int magn_3d_parse_report(struct platform_device *pdev,
+> +				struct hid_sensor_hub_device *hsdev,
+> +				unsigned usage_id,
+> +				int* attribute_count,
+> +				struct magn_3d_state *st)
+> +{
+> +	int usage_count = 0;
+> +
+> +	usage_count += magn_3d_scan_range_usage_ids(hsdev, usage_id,
+> +					HID_USAGE_SENSOR_ORIENT_COMP_MAGN_NORTH,
+> +					HID_USAGE_SENSOR_ORIENT_TRUE_NORTH,
+> +					st);
+> +
+> +	usage_count += magn_3d_scan_range_usage_ids(hsdev, usage_id,
+> +					HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS,
+> +					HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Z_AXIS,
+> +					st);
+> +
+> +	if (attribute_count != NULL && usage_count > 0) {
+> +		*attribute_count = usage_count;
+> +	} else {
+> +		return -EINVAL;
+>   	}
+> -	dev_dbg(&pdev->dev, "magn_3d %x:%x, %x:%x, %x:%x\n",
+> -			st->magn[0].index,
+> -			st->magn[0].report_id,
+> -			st->magn[1].index, st->magn[1].report_id,
+> -			st->magn[2].index, st->magn[2].report_id);
+>
+>   	st->scale_precision = hid_sensor_format_scale(
+>   				HID_USAGE_SENSOR_COMPASS_3D,
+> @@ -299,54 +382,60 @@ static int magn_3d_parse_report(struct platform_device *pdev,
+>   			st->common_attributes.sensitivity.report_id);
+>   	}
+>
+> -	return ret;
+> +	dev_dbg(&pdev->dev, "magn_3d_parse_reports found %d attribute usages\n", usage_count);
+> +
+> +	return 0;
+>   }
+>
+> -/* Function to initialize the processing for usage id */
+> -static int hid_magn_3d_probe(struct platform_device *pdev)
+> +/* Setup iio channels */
+
+Keep this function much more foccused on just setting up the channels.
+Right now it's introduced a whole load of bugs into your remove because you
+aren't unwinding what this does in the error paths.
+So this function should fill the channels array and return how many
+there are.  Nothing else.  All the other setups stuff that was previously
+in the probe function should go back there and be correctly unwound on
+any errors (as it previously was).
+
+This is one of those annoying cases where diff is making it hard to
+see what the reorganization was. Oh well.
+
+> +static int magn_3d_setup_iio_channels(struct platform_device *pdev,
+> +				struct iio_dev *indio_dev,
+> +				unsigned usage_id,
+> +				int attr_count,
+> +				struct magn_3d_state *st)
+>   {
+> -	int ret = 0;
+> +	int ret;
+>   	static char *name = "magn_3d";
+> -	struct iio_dev *indio_dev;
+> -	struct magn_3d_state *magn_state;
+> -	struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
+>   	struct iio_chan_spec *channels;
+> +	int chan_count = 0;
+> +	int i;
+>
+> -	indio_dev = devm_iio_device_alloc(&pdev->dev,
+> -					  sizeof(struct magn_3d_state));
+> -	if (indio_dev == NULL)
+> +	/* Allocate IIO channels struct */
+> +	channels = devm_kcalloc(&pdev->dev,
+> +			attr_count,
+> +			sizeof(struct iio_chan_spec),
+> +			GFP_KERNEL);
+> +	if (!channels) {
+> +		dev_err(&pdev->dev, "failed to allocate memory for iio channels\n");
+>   		return -ENOMEM;
+> -
+> -	platform_set_drvdata(pdev, indio_dev);
+> -
+> -	magn_state = iio_priv(indio_dev);
+> -	magn_state->common_attributes.hsdev = hsdev;
+> -	magn_state->common_attributes.pdev = pdev;
+> -
+> -	ret = hid_sensor_parse_common_attributes(hsdev,
+> -				HID_USAGE_SENSOR_COMPASS_3D,
+> -				&magn_state->common_attributes);
+> -	if (ret) {
+> -		dev_err(&pdev->dev, "failed to setup common attributes\n");
+> -		return ret;
+>   	}
+>
+> -	channels = kmemdup(magn_3d_channels, sizeof(magn_3d_channels),
+> -			   GFP_KERNEL);
+> -	if (!channels) {
+> -		dev_err(&pdev->dev, "failed to duplicate channels\n");
+> +	/* Allocate IIO values array */
+> +	st->iio_val = devm_kcalloc(&pdev->dev,
+> +				attr_count,
+> +				sizeof(u32),
+> +				GFP_KERNEL);
+> +	if (!(st->iio_val)) {
+> +		dev_err(&pdev->dev, "failed to allocate memory for iio value\n");
+>   		return -ENOMEM;
+>   	}
+>
+> -	ret = magn_3d_parse_report(pdev, hsdev, channels,
+> -				HID_USAGE_SENSOR_COMPASS_3D, magn_state);
+> -	if (ret) {
+> -		dev_err(&pdev->dev, "failed to setup attributes\n");
+> -		goto error_free_dev_mem;
+> +	/* Setup each IIO channel that is present */
+> +	for (i = 0; i < MAGN_3D_CHANNEL_MAX && chan_count < attr_count; i++){
+> +		u32 attr = st->magn[i].attrib_id;
+> +		s32 size = st->magn[i].size;
+> +
+> +		if (attr != 0 && size > 0) {
+> +			ret = magn_3d_setup_iio_chan(attr, size, &(channels[chan_count]));
+> +			if (ret == 0) {
+> +				chan_count++;
+> +				st->magn_val_addr[i] = &(st->iio_val[chan_count]);
+> +			}
+> +		}
+>   	}
+>
+>   	indio_dev->channels = channels;
+> -	indio_dev->num_channels = ARRAY_SIZE(magn_3d_channels);
+> +	indio_dev->num_channels = chan_count;
+>   	indio_dev->dev.parent = &pdev->dev;
+>   	indio_dev->info = &magn_3d_info;
+>   	indio_dev->name = name;
+> @@ -358,9 +447,9 @@ static int hid_magn_3d_probe(struct platform_device *pdev)
+>   		dev_err(&pdev->dev, "failed to initialize trigger buffer\n");
+>   		goto error_free_dev_mem;
+>   	}
+> -	atomic_set(&magn_state->common_attributes.data_ready, 0);
+> +	atomic_set(&st->common_attributes.data_ready, 0);
+>   	ret = hid_sensor_setup_trigger(indio_dev, name,
+> -					&magn_state->common_attributes);
+> +					&st->common_attributes);
+>   	if (ret < 0) {
+>   		dev_err(&pdev->dev, "trigger setup failed\n");
+>   		goto error_unreg_buffer_funcs;
+> @@ -372,6 +461,65 @@ static int hid_magn_3d_probe(struct platform_device *pdev)
+>   		goto error_remove_trigger;
+>   	}
+>
+> +	return 0;
+> +
+> +error_remove_trigger:
+> +	hid_sensor_remove_trigger(&st->common_attributes);
+> +error_unreg_buffer_funcs:
+> +	iio_triggered_buffer_cleanup(indio_dev);
+> +error_free_dev_mem:
+
+These (as in the remove below) are unneeded.  Please take a look at the
+devm docs if you don't understand why.
+> +	devm_kfree(&pdev->dev, (void*) indio_dev->channels);
+> +	devm_kfree(&pdev->dev, (void*) st->iio_val);
+> +
+> +	return -EINVAL;
+> +}
+> +
+> +/* Function to initialize the processing for usage id */
+> +static int hid_magn_3d_probe(struct platform_device *pdev)
+> +{
+> +	int ret;
+> +	struct iio_dev *indio_dev;
+> +	struct magn_3d_state *magn_state;
+> +	struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
+> +	int report_attr_count = 0;
+> +
+> +	indio_dev = devm_iio_device_alloc(&pdev->dev,
+> +					  sizeof(struct magn_3d_state));
+> +	if (indio_dev == NULL)
+> +		return -ENOMEM;
+> +
+> +	platform_set_drvdata(pdev, indio_dev);
+> +
+> +	magn_state = iio_priv(indio_dev);
+> +	magn_state->common_attributes.hsdev = hsdev;
+> +	magn_state->common_attributes.pdev = pdev;
+> +
+> +	ret = hid_sensor_parse_common_attributes(hsdev,
+> +				HID_USAGE_SENSOR_COMPASS_3D,
+> +				&magn_state->common_attributes);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed to setup common attributes\n");
+> +		return ret;
+> +	}
+> +
+> +	ret = magn_3d_parse_report(pdev, hsdev,
+> +				HID_USAGE_SENSOR_COMPASS_3D,
+> +				&report_attr_count,
+> +				magn_state);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed to setup attributes\n");
+> +		return ret;
+> +	}
+> +
+> +	ret = magn_3d_setup_iio_channels(pdev, indio_dev,
+> +				HID_USAGE_SENSOR_COMPASS_3D,
+> +				report_attr_count,
+> +				magn_state);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed to setup iio channel\n");
+> +		return ret;
+> +	}
+> +
+>   	magn_state->callbacks.send_event = magn_3d_proc_event;
+>   	magn_state->callbacks.capture_sample = magn_3d_capture_sample;
+>   	magn_state->callbacks.pdev = pdev;
+> @@ -379,20 +527,9 @@ static int hid_magn_3d_probe(struct platform_device *pdev)
+>   					&magn_state->callbacks);
+>   	if (ret < 0) {
+>   		dev_err(&pdev->dev, "callback reg failed\n");
+You need to unwind everything in the channel setup code here.  Nothing
+unregisters the device for starters.
+
+> -		goto error_iio_unreg;
+>   	}
+>
+>   	return ret;
+> -
+> -error_iio_unreg:
+> -	iio_device_unregister(indio_dev);
+> -error_remove_trigger:
+> -	hid_sensor_remove_trigger(&magn_state->common_attributes);
+> -error_unreg_buffer_funcs:
+> -	iio_triggered_buffer_cleanup(indio_dev);
+> -error_free_dev_mem:
+> -	kfree(indio_dev->channels);
+> -	return ret;
+>   }
+>
+>   /* Function to deinitialize the processing for usage id */
+> @@ -406,7 +543,8 @@ static int hid_magn_3d_remove(struct platform_device *pdev)
+>   	iio_device_unregister(indio_dev);
+>   	hid_sensor_remove_trigger(&magn_state->common_attributes);
+>   	iio_triggered_buffer_cleanup(indio_dev);
+> -	kfree(indio_dev->channels);
+> +	devm_kfree(&pdev->dev, (void*) magn_state->iio_val);
+> +	devm_kfree(&pdev->dev, (void*) indio_dev->channels);
+You don't need these here.  The whole point about devm resource
+management is that they will get released on remove on the device
+without it needing to be explicitly done.
+>
+>   	return 0;
+>   }
+>
 
