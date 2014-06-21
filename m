@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932543AbaFUVYJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 17:24:09 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:45333 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932331AbaFUVYH (ORCPT
+	id S1755789AbaFUVcp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 17:32:45 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:51701 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754410AbaFUVco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 17:24:07 -0400
-Date: Sat, 21 Jun 2014 22:24:02 +0100
-From: Daniel Walter <dwalter@google.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] [arch/mips] rb532: replace mac_addr parsing
-Message-ID: <20140621212402.GA20842@google.com>
+	Sat, 21 Jun 2014 17:32:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMuHMdVJ=sA7ixyA+4BSffD1fzWOMwGivEQGZ+UN437VTw_xpw@mail.gmail.com>
+References: <1403356646-29443-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<1403359116.4076.44.camel@joe-AO725>
+	<CAMuHMdVJ=sA7ixyA+4BSffD1fzWOMwGivEQGZ+UN437VTw_xpw@mail.gmail.com>
+Date: Sat, 21 Jun 2014 23:32:43 +0200
+Message-ID: <CAFo99gYbiKa50crxEf4YA7voRTe0qj_9aXdTBwvU=J2EjwywaA@mail.gmail.com>
+Subject: Re: [PATCH] video: fbdev: skeletonfb.c: Adding code to managing
+ allocation error
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Joe Perches <joe@perches.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace parse_mac_addr with sscanf.
+Hi
 
-Signed-off-by: Daniel Walter <dwalter@google.com>
----
-Patch applies against current linux-tree
----
- arch/mips/rb532/devices.c | 30 +++++++-----------------------
- 1 file changed, 7 insertions(+), 23 deletions(-)
----
-diff --git a/arch/mips/rb532/devices.c b/arch/mips/rb532/devices.c
-index 3af00b2..6e32819b 100644
---- a/arch/mips/rb532/devices.c
-+++ b/arch/mips/rb532/devices.c
-@@ -250,28 +250,6 @@ static struct platform_device *rb532_devs[] = {
- 	&rb532_wdt
- };
- 
--static void __init parse_mac_addr(char *macstr)
--{
--	int i, h, l;
--
--	for (i = 0; i < 6; i++) {
--		if (i != 5 && *(macstr + 2) != ':')
--			return;
--
--		h = hex_to_bin(*macstr++);
--		if (h == -1)
--			return;
--
--		l = hex_to_bin(*macstr++);
--		if (l == -1)
--			return;
--
--		macstr++;
--		korina_dev0_data.mac[i] = (h << 4) + l;
--	}
--}
--
--
- /* NAND definitions */
- #define NAND_CHIP_DELAY 25
- 
-@@ -333,7 +311,13 @@ static int __init plat_setup_devices(void)
- static int __init setup_kmac(char *s)
- {
- 	printk(KERN_INFO "korina mac = %s\n", s);
--	parse_mac_addr(s);
-+	sscanf(macstr, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
-+			&korina_dev0_data.mac[0],
-+			&korina_dev0_data.mac[1],
-+			&korina_dev0_data.mac[2],
-+			&korina_dev0_data.mac[3],
-+			&korina_dev0_data.mac[4],
-+			&korina_dev0_data.mac[5]);
- 	return 0;
- }
- 
+Sounds like a good idea to have better error handling although it is
+an example, even more important there.
+
+At the first return nothing has been allocated, so it's ok I guess.
+At the second I reflect about adding some deallocation, there are
+comments on some form of goto error part which would appropriately
+handle a deallocation. But all the other places in the code is just do
+a return, that was why I chose to do it at the second return to.
+
+
+Kind regards
+Rickard Strandqvist
+
+
+2014-06-21 22:48 GMT+02:00 Geert Uytterhoeven <geert@linux-m68k.org>:
+> On Sat, Jun 21, 2014 at 3:58 PM, Joe Perches <joe@perches.com> wrote:
+>> (Adding Geert, who probably wrote most of this
+>>  and likely might have forgotten all of it)
+>>
+>> On Sat, 2014-06-21 at 15:17 +0200, Rickard Strandqvist wrote:
+>>> Adding missing code for managing a memory allocation error that may occur.
+>>>
+>>> This was partly found using a static code analysis program called cppcheck.
+>>
+>> skeletonfb.c is not meant to be compiled.
+>> It's a sample driver template.
+>
+> Yep.
+>
+>> Those /* goto error path */ lines are for
+>> driver writers that use this to figure out
+>> what to do.
+>
+> Still, it's nice if a sample driver has correct error handling.
+> Just comments are not good enough as guidance for some people ;-)
+>
+>> The second return is not correct as it would
+>> not free the first alloc'd block.
+>
+> Indeed. Better do it right.
+>
+> Gr{oetje,eeting}s,
+>
+>                         Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
