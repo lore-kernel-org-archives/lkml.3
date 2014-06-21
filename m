@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847AbaFUUhh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 16:37:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35029 "EHLO
+	id S1755939AbaFUUhv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 16:37:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35055 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755762AbaFUUhe (ORCPT
+	with ESMTP id S1754706AbaFUUht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 16:37:34 -0400
-Date: Sat, 21 Jun 2014 13:36:47 -0700
+	Sat, 21 Jun 2014 16:37:49 -0400
+Date: Sat, 21 Jun 2014 13:37:01 -0700
 From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-b5d7682533941edb121f7495bdb2a17abac03ff3@git.kernel.org>
+Message-ID: <tip-4e8c5847d1c55efed896508fb769f78ab07b968a@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, hpa@zytor.com,
         mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, john.stultz@linaro.org,
         linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <20140611234606.931409215@linutronix.de>
-References: <20140611234606.931409215@linutronix.de>
+In-Reply-To: <20140611234606.840900621@linutronix.de>
+References: <20140611234606.840900621@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] delayacct: Use ktime_get_ts()
-Git-Commit-ID: b5d7682533941edb121f7495bdb2a17abac03ff3
+Subject: [tip:timers/core] tsacct: Use ktime_get_ts()
+Git-Commit-ID: 4e8c5847d1c55efed896508fb769f78ab07b968a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,73 +31,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b5d7682533941edb121f7495bdb2a17abac03ff3
-Gitweb:     http://git.kernel.org/tip/b5d7682533941edb121f7495bdb2a17abac03ff3
+Commit-ID:  4e8c5847d1c55efed896508fb769f78ab07b968a
+Gitweb:     http://git.kernel.org/tip/4e8c5847d1c55efed896508fb769f78ab07b968a
 Author:     Thomas Gleixner <tglx@linutronix.de>
 AuthorDate: Wed, 11 Jun 2014 23:59:13 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Thu, 12 Jun 2014 16:18:45 +0200
 
-delayacct: Use ktime_get_ts()
+tsacct: Use ktime_get_ts()
 
 do_posix_clock_monotonic_gettime() is a leftover from the initial
-posix timer implementation which maps to ktime_get_ts(). Remove the
-silly wrapper while at it.
+posix timer implementation which maps to ktime_get_ts()
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: John Stultz <john.stultz@linaro.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140611234606.931409215@linutronix.de
+Link: http://lkml.kernel.org/r/20140611234606.840900621@linutronix.de
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/delayacct.c | 16 +++-------------
- 1 file changed, 3 insertions(+), 13 deletions(-)
+ kernel/tsacct.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/delayacct.c b/kernel/delayacct.c
-index 54996b7..de699f4 100644
---- a/kernel/delayacct.c
-+++ b/kernel/delayacct.c
-@@ -46,16 +46,6 @@ void __delayacct_tsk_init(struct task_struct *tsk)
- }
+diff --git a/kernel/tsacct.c b/kernel/tsacct.c
+index a1dd9a1..ea6d170 100644
+--- a/kernel/tsacct.c
++++ b/kernel/tsacct.c
+@@ -38,7 +38,7 @@ void bacct_add_tsk(struct user_namespace *user_ns,
+ 	BUILD_BUG_ON(TS_COMM_LEN < TASK_COMM_LEN);
  
- /*
-- * Start accounting for a delay statistic using
-- * its starting timestamp (@start)
-- */
--
--static inline void delayacct_start(struct timespec *start)
--{
--	do_posix_clock_monotonic_gettime(start);
--}
--
--/*
-  * Finish delay accounting for a statistic using
-  * its timestamps (@start, @end), accumalator (@total) and @count
-  */
-@@ -67,7 +57,7 @@ static void delayacct_end(struct timespec *start, struct timespec *end,
- 	s64 ns;
- 	unsigned long flags;
- 
--	do_posix_clock_monotonic_gettime(end);
-+	ktime_get_ts(end);
- 	ts = timespec_sub(*end, *start);
- 	ns = timespec_to_ns(&ts);
- 	if (ns < 0)
-@@ -81,7 +71,7 @@ static void delayacct_end(struct timespec *start, struct timespec *end,
- 
- void __delayacct_blkio_start(void)
- {
--	delayacct_start(&current->delays->blkio_start);
-+	ktime_get_ts(&current->delays->blkio_start);
- }
- 
- void __delayacct_blkio_end(void)
-@@ -169,7 +159,7 @@ __u64 __delayacct_blkio_ticks(struct task_struct *tsk)
- 
- void __delayacct_freepages_start(void)
- {
--	delayacct_start(&current->delays->freepages_start);
-+	ktime_get_ts(&current->delays->freepages_start);
- }
- 
- void __delayacct_freepages_end(void)
+ 	/* calculate task elapsed time in timespec */
+-	do_posix_clock_monotonic_gettime(&uptime);
++	ktime_get_ts(&uptime);
+ 	ts = timespec_sub(uptime, tsk->start_time);
+ 	/* rebase elapsed time to usec (should never be negative) */
+ 	ac_etime = timespec_to_ns(&ts);
