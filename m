@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428AbaFUNJD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 09:09:03 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:55310 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754806AbaFUNJB (ORCPT
+	id S932222AbaFUNQa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 09:16:30 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:49023 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752450AbaFUNQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 09:09:01 -0400
-Message-ID: <53A583DC.504@ahsoftware.de>
-Date: Sat, 21 Jun 2014 15:08:44 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>, John Whitmore <arigead@gmail.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: rtc/hctosys.c Problem during kernel boot
-References: <20140611230127.GA28066@griso.site> <CANcMJZDqAmdFLYq2LW60zU_d05Pv8tcYE1Nb=ftZcj5UukxqaA@mail.gmail.com>
-In-Reply-To: <CANcMJZDqAmdFLYq2LW60zU_d05Pv8tcYE1Nb=ftZcj5UukxqaA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 21 Jun 2014 09:16:28 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Joe Perches <joe@perches.com>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] video: fbdev: skeletonfb.c:  Adding code to managing allocation error
+Date: Sat, 21 Jun 2014 15:17:26 +0200
+Message-Id: <1403356646-29443-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 12.06.2014 01:53, schrieb John Stultz:
+Adding missing code for managing a memory allocation error that may occur.
 
-> You can read some of the previous discussion here:
-> https://lkml.org/lkml/2013/6/17/533
->
-> I'd be very interested in patches to resolve this!
+This was partly found using a static code analysis program called cppcheck.
 
-And the silence as response to my repost of my already working patches 
-just proved that isn't true.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/video/fbdev/skeletonfb.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-So (John Whitmore), I suggest to not post patches, Linux kernel 
-maintainers don't really have an interest in getting things done or to 
-fix bugs, they just need fresh meat they can review in order to have job 
-security and prove their status.
-
-I really wonder what's their expectation. Do they really think other 
-people have to incorporate their (often silly) requests, making the 
-maintainers themself not responsible for their requested changes? Do 
-they think other people have fun and time to write and post patches 
-again and again just to make some arbitrary maintainer happy?
-
-If there really would be an interest, a reasonable approach would be to 
-just take my patches and put a patch on top with whatever changes 
-someone thinks are needed. As I don't think there are changes needed, I 
-will not add such changes using my name as author.
-
-And don't try to tell me I'm uncooperative. I've spend time to write 
-these patches and even have written documentation I don't need myself. 
-The uncooperative people which are blocking almost everthing and which 
-do ignore bugs have become these people which are calling themself Linux 
-kernel maintainers which do expect other people have to play remote 
-keyboard and have to take responsibility for changes maintainers don't 
-want to be responsible for themself.
-
-So the above quoted sentence is just another "marketing" verbiage, at 
-least in my point of view.
-
-Alexander Holler
+diff --git a/drivers/video/fbdev/skeletonfb.c b/drivers/video/fbdev/skeletonfb.c
+index fefde7c..ee6dc7e 100644
+--- a/drivers/video/fbdev/skeletonfb.c
++++ b/drivers/video/fbdev/skeletonfb.c
+@@ -692,6 +692,7 @@ static int xxxfb_probe(struct pci_dev *dev, const struct pci_device_id *ent)
+ 
+     if (!info) {
+ 	    /* goto error path */
++	    return -ENOMEM;
+     }
+ 
+     par = info->par;
+@@ -746,6 +747,7 @@ static int xxxfb_probe(struct pci_dev *dev, const struct pci_device_id *ent)
+     info->pixmap.addr = kmalloc(PIXMAP_SIZE, GFP_KERNEL);
+     if (!info->pixmap.addr) {
+ 	    /* goto error */
++	    return -ENOMEM;
+     }
+ 
+     info->pixmap.size = PIXMAP_SIZE;
+-- 
+1.7.10.4
 
