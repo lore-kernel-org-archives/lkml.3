@@ -1,32 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758803AbaFUVUr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 17:20:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36277 "EHLO
+	id S932320AbaFUVUz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 17:20:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36288 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758785AbaFUVUo (ORCPT
+	with ESMTP id S1758088AbaFUVUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 17:20:44 -0400
-Date: Sat, 21 Jun 2014 14:14:42 -0700
+	Sat, 21 Jun 2014 17:20:52 -0400
+Date: Sat, 21 Jun 2014 14:17:51 -0700
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-ca7e28aa4ff34fdd6622d915682b2765453c5ddd@git.kernel.org>
+Message-ID: <tip-8a3e533df17f821a4d25dd2969d2f90d7c168b46@git.kernel.org>
 Cc: mingo@kernel.org, konrad.wilk@oracle.com, rdunlap@infradead.org,
         tony.luck@intel.com, gregkh@linuxfoundation.org, tglx@linutronix.de,
-        len.brown@intel.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        jiang.liu@linux.intel.com, grant.likely@linaro.org, yinghai@kernel.org,
-        joro@8bytes.org, pavel@ucw.cz, benh@kernel.crashing.org,
-        bhelgaas@google.com, rjw@rjwysocki.net, paul.gortmaker@windriver.com
+        hpa@zytor.com, jiang.liu@linux.intel.com, grant.likely@linaro.org,
+        linux-kernel@vger.kernel.org, yinghai@kernel.org, joro@8bytes.org,
+        benh@kernel.crashing.org, bhelgaas@google.com, rjw@rjwysocki.net,
+        paul.gortmaker@windriver.com
 Reply-To: mingo@kernel.org, konrad.wilk@oracle.com, rdunlap@infradead.org,
         tony.luck@intel.com, gregkh@linuxfoundation.org, tglx@linutronix.de,
-        len.brown@intel.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        jiang.liu@linux.intel.com, grant.likely@linaro.org, yinghai@kernel.org,
-        joro@8bytes.org, pavel@ucw.cz, benh@kernel.crashing.org,
-        bhelgaas@google.com, rjw@rjwysocki.net, paul.gortmaker@windriver.com
-In-Reply-To: <1402302011-23642-26-git-send-email-jiang.liu@linux.intel.com>
-References: <1402302011-23642-26-git-send-email-jiang.liu@linux.intel.com>
+        hpa@zytor.com, jiang.liu@linux.intel.com, grant.likely@linaro.org,
+        linux-kernel@vger.kernel.org, yinghai@kernel.org, joro@8bytes.org,
+        benh@kernel.crashing.org, bhelgaas@google.com, rjw@rjwysocki.net,
+        paul.gortmaker@windriver.com
+In-Reply-To: <1402302011-23642-41-git-send-email-jiang.liu@linux.intel.com>
+References: <1402302011-23642-41-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, ACPI, irq: Provide basic irqdomain support
-Git-Commit-ID: ca7e28aa4ff34fdd6622d915682b2765453c5ddd
+Subject: [tip:x86/apic] x86, irq, SFI:
+  Release IOAPIC pin when PCI device is disabled
+Git-Commit-ID: 8a3e533df17f821a4d25dd2969d2f90d7c168b46
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -39,19 +40,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ca7e28aa4ff34fdd6622d915682b2765453c5ddd
-Gitweb:     http://git.kernel.org/tip/ca7e28aa4ff34fdd6622d915682b2765453c5ddd
+Commit-ID:  8a3e533df17f821a4d25dd2969d2f90d7c168b46
+Gitweb:     http://git.kernel.org/tip/8a3e533df17f821a4d25dd2969d2f90d7c168b46
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 9 Jun 2014 16:19:54 +0800
+AuthorDate: Mon, 9 Jun 2014 16:20:09 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sat, 21 Jun 2014 23:05:42 +0200
+CommitDate: Sat, 21 Jun 2014 23:05:44 +0200
 
-x86, ACPI, irq: Provide basic irqdomain support
+x86, irq, SFI: Release IOAPIC pin when PCI device is disabled
 
-Enhance ACPI driver to provide basic irqdomain support for IOAPIC.
-
-We will build identity mapping for IOAPICs hosting legacy IRQs,
-otherwise dynamically allocate IRQ numbers for IOAPIC pins on demand.
+Release IOAPIC pin associated with PCI device when the PCI device
+is disabled.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -65,55 +64,34 @@ Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
 Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Pavel Machek <pavel@ucw.cz>
-Link: http://lkml.kernel.org/r/1402302011-23642-26-git-send-email-jiang.liu@linux.intel.com
+Link: http://lkml.kernel.org/r/1402302011-23642-41-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/kernel/acpi/boot.c | 15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ arch/x86/pci/intel_mid_pci.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index f86b4ba..8d9aee1 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -31,6 +31,7 @@
- #include <linux/module.h>
- #include <linux/dmi.h>
- #include <linux/irq.h>
-+#include <linux/irqdomain.h>
- #include <linux/slab.h>
- #include <linux/bootmem.h>
- #include <linux/ioport.h>
-@@ -449,10 +450,16 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 	return irq;
- }
- 
-+static struct irq_domain_ops acpi_irqdomain_ops;
-+
- static int __init
- acpi_parse_ioapic(struct acpi_subtable_header * header, const unsigned long end)
- {
- 	struct acpi_madt_io_apic *ioapic = NULL;
-+	struct ioapic_domain_cfg cfg = {
-+		.type = IOAPIC_DOMAIN_DYNAMIC,
-+		.ops = &acpi_irqdomain_ops,
-+	};
- 
- 	ioapic = (struct acpi_madt_io_apic *)header;
- 
-@@ -461,8 +468,12 @@ acpi_parse_ioapic(struct acpi_subtable_header * header, const unsigned long end)
- 
- 	acpi_table_print_madt_entry(header);
- 
--	mp_register_ioapic(ioapic->id,
--			   ioapic->address, ioapic->global_irq_base, NULL);
-+	/* Statically assign IRQ numbers for IOAPICs hosting legacy IRQs */
-+	if (ioapic->global_irq_base < nr_legacy_irqs())
-+		cfg.type = IOAPIC_DOMAIN_LEGACY;
-+
-+	mp_register_ioapic(ioapic->id, ioapic->address, ioapic->global_irq_base,
-+			   &cfg);
- 
+diff --git a/arch/x86/pci/intel_mid_pci.c b/arch/x86/pci/intel_mid_pci.c
+index 337d165..09fece3 100644
+--- a/arch/x86/pci/intel_mid_pci.c
++++ b/arch/x86/pci/intel_mid_pci.c
+@@ -227,6 +227,12 @@ static int intel_mid_pci_irq_enable(struct pci_dev *dev)
  	return 0;
  }
+ 
++static void intel_mid_pci_irq_disable(struct pci_dev *dev)
++{
++	if (dev->irq > 0)
++		mp_unmap_irq(dev->irq);
++}
++
+ struct pci_ops intel_mid_pci_ops = {
+ 	.read = pci_read,
+ 	.write = pci_write,
+@@ -243,6 +249,7 @@ int __init intel_mid_pci_init(void)
+ 	pr_info("Intel MID platform detected, using MID PCI ops\n");
+ 	pci_mmcfg_late_init();
+ 	pcibios_enable_irq = intel_mid_pci_irq_enable;
++	pcibios_disable_irq = intel_mid_pci_irq_disable;
+ 	pci_root_ops = intel_mid_pci_ops;
+ 	pci_soc_mode = 1;
+ 	/* Continue with standard init */
