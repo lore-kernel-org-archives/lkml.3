@@ -1,378 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248AbaFUW0l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 18:26:41 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:47759 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755105AbaFUW0j (ORCPT
+	id S1753255AbaFUW43 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 18:56:29 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:45736 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752559AbaFUW41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 18:26:39 -0400
-From: Chase Southwood <chase.southwood@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@gmail.com>
-Subject: [PATCH v3 5/5] staging: comedi: addi_apci_1564: move apci1564_interrupt() into addi_apci_1564.c
-Date: Sat, 21 Jun 2014 17:26:10 -0500
-Message-Id: <1403389570-20681-1-git-send-email-chase.southwood@gmail.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1403389429-19793-1-git-send-email-chase.southwood@gmail.com>
-References: <1403389429-19793-1-git-send-email-chase.southwood@gmail.com>
+	Sat, 21 Jun 2014 18:56:27 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Arend van Spriel <arend@broadcom.com>, Brett Rudley <brudley@broadcom.com>
+Cc: linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Subject: [PATCH v2] net/wireless/brcm80211/brcmfmac: Make return type and name reflect actual semantics
+Date: Sun, 22 Jun 2014 00:55:26 +0200
+Message-Id: <1403391326-28086-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1403299923-21533-1-git-send-email-linux@rasmusvillemoes.dk>
+References: <1403299923-21533-1-git-send-email-linux@rasmusvillemoes.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On moving the function into the driver proper, also check the device is
-asserting the shared interrupt line.
+Applying ++ to a bool is equivalent to setting it true, regardless of
+its initial value (bools are not uint1_t). Hence the function
+wl_get_vif_state_all can only ever return true/false. The only in-tree
+caller uses its return value as a boolean. So update its return type,
+and since the list traversal and bit testing have no side effects,
+just return true immediately. Its return value tells if any vif is up,
+so also rename it to brcmf_get_vif_state_any.
 
-This patch also fixes the interrupt handling for the digital input
-change-of-state interrupts.
-
-Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+Reviewed-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 ---
- .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 146 -------------------
- drivers/staging/comedi/drivers/addi_apci_1564.c    | 157 ++++++++++++++++++++-
- 2 files changed, 153 insertions(+), 150 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
-index 697ee76..ef419b4 100644
---- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
-+++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
-@@ -357,149 +357,3 @@ static int apci1564_do_read(struct comedi_device *dev,
- 	*data = devpriv->do_int_type;
- 	return insn->n;
- }
--
--/*
-- * Interrupt handler for the interruptible digital inputs
-- */
--static void apci1564_interrupt(int irq, void *d)
--{
--	struct comedi_device *dev = d;
--	struct apci1564_private *devpriv = dev->private;
--	unsigned int ui_DO, ui_DI;
--	unsigned int ui_Timer;
--	unsigned int ui_C1, ui_C2, ui_C3, ui_C4;
--	unsigned int ul_Command2 = 0;
--
--	ui_DI = inl(devpriv->amcc_iobase + APCI1564_DI_IRQ_REG) & 0x01;
--	ui_DO = inl(devpriv->amcc_iobase + APCI1564_DO_IRQ_REG) & 0x01;
--	ui_Timer = inl(devpriv->amcc_iobase + APCI1564_TIMER_IRQ_REG) & 0x01;
--	ui_C1 =
--		inl(dev->iobase + APCI1564_TCW_IRQ_REG(APCI1564_COUNTER1)) & 0x1;
--	ui_C2 =
--		inl(dev->iobase + APCI1564_TCW_IRQ_REG(APCI1564_COUNTER2)) & 0x1;
--	ui_C3 =
--		inl(dev->iobase + APCI1564_TCW_IRQ_REG(APCI1564_COUNTER3)) & 0x1;
--	ui_C4 =
--		inl(dev->iobase + APCI1564_TCW_IRQ_REG(APCI1564_COUNTER4)) & 0x1;
--	if (ui_DI == 0 && ui_DO == 0 && ui_Timer == 0 && ui_C1 == 0
--		&& ui_C2 == 0 && ui_C3 == 0 && ui_C4 == 0) {
--		dev_err(dev->class_dev, "Interrupt from unknown source.\n");
--	}
--
--	if (ui_DI == 1) {
--		ui_DI = inl(devpriv->amcc_iobase + APCI1564_DI_IRQ_REG);
--		outl(0x0, devpriv->amcc_iobase + APCI1564_DI_IRQ_REG);
--		/* send signal to the sample */
--		send_sig(SIGIO, devpriv->tsk_current, 0);
--		/* enable the interrupt */
--		outl(ui_DI, devpriv->amcc_iobase + APCI1564_DI_IRQ_REG);
--		return;
--	}
--
--	if (ui_DO == 1) {
--		/* Check for Digital Output interrupt Type */
--		/* 1: VCC interrupt			   */
--		/* 2: CC interrupt			   */
--		devpriv->do_int_type = inl(devpriv->amcc_iobase +
--					  APCI1564_DO_INT_STATUS_REG) & 0x3;
--		/* Disable the  Interrupt */
--		outl(0x0, devpriv->amcc_iobase + APCI1564_DO_INT_CTRL_REG);
--
--		/* Sends signal to user space */
--		send_sig(SIGIO, devpriv->tsk_current, 0);
--	}
--
--	if (ui_Timer == 1) {
--		devpriv->timer_select_mode = ADDIDATA_TIMER;
--		if (devpriv->timer_select_mode) {
--
--			/*  Disable Timer Interrupt */
--			ul_Command2 = inl(devpriv->amcc_iobase + APCI1564_TIMER_CTRL_REG);
--			outl(0x0, devpriv->amcc_iobase + APCI1564_TIMER_CTRL_REG);
--
--			/* Send a signal to from kernel to user space */
--			send_sig(SIGIO, devpriv->tsk_current, 0);
--
--			/*  Enable Timer Interrupt */
--
--			outl(ul_Command2, devpriv->amcc_iobase + APCI1564_TIMER_CTRL_REG);
--		}
--	}
--
--	if (ui_C1 == 1) {
--		devpriv->timer_select_mode = ADDIDATA_COUNTER;
--		if (devpriv->timer_select_mode) {
--
--			/*  Disable Counter Interrupt */
--			ul_Command2 =
--				inl(dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER1));
--			outl(0x0,
--			     dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER1));
--
--			/* Send a signal to from kernel to user space */
--			send_sig(SIGIO, devpriv->tsk_current, 0);
--
--			/*  Enable Counter Interrupt */
--			outl(ul_Command2,
--			     dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER1));
--		}
--	}
--
--	if (ui_C2 == 1) {
--		devpriv->timer_select_mode = ADDIDATA_COUNTER;
--		if (devpriv->timer_select_mode) {
--
--			/*  Disable Counter Interrupt */
--			ul_Command2 =
--				inl(dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER2));
--			outl(0x0,
--			     dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER2));
--
--			/* Send a signal to from kernel to user space */
--			send_sig(SIGIO, devpriv->tsk_current, 0);
--
--			/*  Enable Counter Interrupt */
--			outl(ul_Command2,
--			     dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER2));
--		}
--	}
--
--	if (ui_C3 == 1) {
--		devpriv->timer_select_mode = ADDIDATA_COUNTER;
--		if (devpriv->timer_select_mode) {
--
--			/*  Disable Counter Interrupt */
--			ul_Command2 =
--				inl(dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER3));
--			outl(0x0,
--			     dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER3));
--
--			/* Send a signal to from kernel to user space */
--			send_sig(SIGIO, devpriv->tsk_current, 0);
--
--			/*  Enable Counter Interrupt */
--			outl(ul_Command2,
--			     dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER3));
--		}
--	}
--
--	if (ui_C4 == 1) {
--		devpriv->timer_select_mode = ADDIDATA_COUNTER;
--		if (devpriv->timer_select_mode) {
--
--			/*  Disable Counter Interrupt */
--			ul_Command2 =
--				inl(dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER4));
--			outl(0x0,
--			     dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER4));
--
--			/* Send a signal to from kernel to user space */
--			send_sig(SIGIO, devpriv->tsk_current, 0);
--
--			/*  Enable Counter Interrupt */
--			outl(ul_Command2,
--			     dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER4));
--		}
--	}
--	return;
--}
-diff --git a/drivers/staging/comedi/drivers/addi_apci_1564.c b/drivers/staging/comedi/drivers/addi_apci_1564.c
-index fec478c..f71ee02 100644
---- a/drivers/staging/comedi/drivers/addi_apci_1564.c
-+++ b/drivers/staging/comedi/drivers/addi_apci_1564.c
-@@ -3,6 +3,7 @@
- 
- #include "../comedidev.h"
- #include "comedi_fc.h"
-+#include "amcc_s5933.h"
- 
- #include "addi-data/addi_common.h"
- 
-@@ -51,10 +52,158 @@ static int apci1564_reset(struct comedi_device *dev)
- 	return 0;
+Notes:
+    v2: Rename wl_get_vif_state_all => brcmf_get_vif_state_any as
+        requested by Arend.
+
+ drivers/net/wireless/brcm80211/brcmfmac/p2p.c         | 2 +-
+ drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c | 7 +++----
+ drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.h | 2 +-
+ 3 files changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
+index f3445ac..588fdbd 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
+@@ -708,7 +708,7 @@ static s32 brcmf_p2p_escan(struct brcmf_p2p_info *p2p, u32 num_chans,
+ 		active = P2PAPI_SCAN_SOCIAL_DWELL_TIME_MS;
+ 	else if (num_chans == AF_PEER_SEARCH_CNT)
+ 		active = P2PAPI_SCAN_AF_SEARCH_DWELL_TIME_MS;
+-	else if (wl_get_vif_state_all(p2p->cfg, BRCMF_VIF_STATUS_CONNECTED))
++	else if (brcmf_get_vif_state_any(p2p->cfg, BRCMF_VIF_STATUS_CONNECTED))
+ 		active = -1;
+ 	else
+ 		active = P2PAPI_SCAN_DWELL_TIME_MS;
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+index d8fa276..93b1809 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+@@ -5625,16 +5625,15 @@ enum nl80211_iftype brcmf_cfg80211_get_iftype(struct brcmf_if *ifp)
+ 	return wdev->iftype;
  }
  
--static irqreturn_t v_ADDI_Interrupt(int irq, void *d)
-+static irqreturn_t apci1564_interrupt(int irq, void *d)
+-u32 wl_get_vif_state_all(struct brcmf_cfg80211_info *cfg, unsigned long state)
++bool brcmf_get_vif_state_any(struct brcmf_cfg80211_info *cfg, unsigned long state)
  {
--	apci1564_interrupt(irq, d);
--	return IRQ_RETVAL(1);
-+	struct comedi_device *dev = d;
-+	struct apci1564_private *devpriv = dev->private;
-+	struct comedi_subdevice *s = dev->read_subdev;
-+	unsigned int ui_DO, ui_DI;
-+	unsigned int ui_Timer;
-+	unsigned int ui_C1, ui_C2, ui_C3, ui_C4;
-+	unsigned int ul_Command2 = 0;
-+
-+	/* check interrupt is from this device */
-+	if ((inl(devpriv->amcc_iobase + AMCC_OP_REG_INTCSR) &
-+	     INTCSR_INTR_ASSERTED) == 0)
-+		return IRQ_NONE;
-+
-+	/* check which interrupt was triggered */
-+	ui_DI = inl(devpriv->amcc_iobase + APCI1564_DI_IRQ_REG) &
-+		   APCI1564_DI_INT_ENABLE;
-+	ui_DO = inl(devpriv->amcc_iobase + APCI1564_DO_IRQ_REG) & 0x01;
-+	ui_Timer = inl(devpriv->amcc_iobase + APCI1564_TIMER_IRQ_REG) & 0x01;
-+	ui_C1 =
-+		inl(dev->iobase + APCI1564_TCW_IRQ_REG(APCI1564_COUNTER1)) & 0x1;
-+	ui_C2 =
-+		inl(dev->iobase + APCI1564_TCW_IRQ_REG(APCI1564_COUNTER2)) & 0x1;
-+	ui_C3 =
-+		inl(dev->iobase + APCI1564_TCW_IRQ_REG(APCI1564_COUNTER3)) & 0x1;
-+	ui_C4 =
-+		inl(dev->iobase + APCI1564_TCW_IRQ_REG(APCI1564_COUNTER4)) & 0x1;
-+	if (ui_DI == 0 && ui_DO == 0 && ui_Timer == 0 && ui_C1 == 0
-+		&& ui_C2 == 0 && ui_C3 == 0 && ui_C4 == 0) {
-+		return IRQ_HANDLED;
-+	}
-+
-+	if (ui_DI) {
-+		/* disable the interrupt */
-+		outl(ui_DI & APCI1564_DI_INT_DISABLE, devpriv->amcc_iobase + APCI1564_DI_IRQ_REG);
-+
-+		s->state = inl(dev->iobase + APCI1564_DI_INT_STATUS_REG) & 0xffff;
-+		comedi_buf_put(s, s->state);
-+		s->async->events |= COMEDI_CB_BLOCK | COMEDI_CB_EOS;
-+		comedi_event(dev, s);
-+
-+		/* enable the interrupt */
-+		outl(ui_DI, devpriv->amcc_iobase + APCI1564_DI_IRQ_REG);
-+	}
-+
-+	if (ui_DO == 1) {
-+		/* Check for Digital Output interrupt Type */
-+		/* 1: VCC interrupt			   */
-+		/* 2: CC interrupt			   */
-+		devpriv->do_int_type = inl(devpriv->amcc_iobase +
-+					  APCI1564_DO_INT_STATUS_REG) & 0x3;
-+		/* Disable the  Interrupt */
-+		outl(0x0, devpriv->amcc_iobase + APCI1564_DO_INT_CTRL_REG);
-+
-+		/* Sends signal to user space */
-+		send_sig(SIGIO, devpriv->tsk_current, 0);
-+	}
-+
-+	if (ui_Timer == 1) {
-+		devpriv->timer_select_mode = ADDIDATA_TIMER;
-+		if (devpriv->timer_select_mode) {
-+
-+			/*  Disable Timer Interrupt */
-+			ul_Command2 = inl(devpriv->amcc_iobase + APCI1564_TIMER_CTRL_REG);
-+			outl(0x0, devpriv->amcc_iobase + APCI1564_TIMER_CTRL_REG);
-+
-+			/* Send a signal to from kernel to user space */
-+			send_sig(SIGIO, devpriv->tsk_current, 0);
-+
-+			/*  Enable Timer Interrupt */
-+
-+			outl(ul_Command2, devpriv->amcc_iobase + APCI1564_TIMER_CTRL_REG);
-+		}
-+	}
-+
-+	if (ui_C1 == 1) {
-+		devpriv->timer_select_mode = ADDIDATA_COUNTER;
-+		if (devpriv->timer_select_mode) {
-+
-+			/*  Disable Counter Interrupt */
-+			ul_Command2 =
-+				inl(dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER1));
-+			outl(0x0,
-+			     dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER1));
-+
-+			/* Send a signal to from kernel to user space */
-+			send_sig(SIGIO, devpriv->tsk_current, 0);
-+
-+			/*  Enable Counter Interrupt */
-+			outl(ul_Command2,
-+			     dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER1));
-+		}
-+	}
-+
-+	if (ui_C2 == 1) {
-+		devpriv->timer_select_mode = ADDIDATA_COUNTER;
-+		if (devpriv->timer_select_mode) {
-+
-+			/*  Disable Counter Interrupt */
-+			ul_Command2 =
-+				inl(dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER2));
-+			outl(0x0,
-+			     dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER2));
-+
-+			/* Send a signal to from kernel to user space */
-+			send_sig(SIGIO, devpriv->tsk_current, 0);
-+
-+			/*  Enable Counter Interrupt */
-+			outl(ul_Command2,
-+			     dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER2));
-+		}
-+	}
-+
-+	if (ui_C3 == 1) {
-+		devpriv->timer_select_mode = ADDIDATA_COUNTER;
-+		if (devpriv->timer_select_mode) {
-+
-+			/*  Disable Counter Interrupt */
-+			ul_Command2 =
-+				inl(dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER3));
-+			outl(0x0,
-+			     dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER3));
-+
-+			/* Send a signal to from kernel to user space */
-+			send_sig(SIGIO, devpriv->tsk_current, 0);
-+
-+			/*  Enable Counter Interrupt */
-+			outl(ul_Command2,
-+			     dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER3));
-+		}
-+	}
-+
-+	if (ui_C4 == 1) {
-+		devpriv->timer_select_mode = ADDIDATA_COUNTER;
-+		if (devpriv->timer_select_mode) {
-+
-+			/*  Disable Counter Interrupt */
-+			ul_Command2 =
-+				inl(dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER4));
-+			outl(0x0,
-+			     dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER4));
-+
-+			/* Send a signal to from kernel to user space */
-+			send_sig(SIGIO, devpriv->tsk_current, 0);
-+
-+			/*  Enable Counter Interrupt */
-+			outl(ul_Command2,
-+			     dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER4));
-+		}
-+	}
-+	return IRQ_HANDLED;
+ 	struct brcmf_cfg80211_vif *vif;
+-	bool result = 0;
+ 
+ 	list_for_each_entry(vif, &cfg->vif_list, list) {
+ 		if (test_bit(state, &vif->sme_state))
+-			result++;
++			return true;
+ 	}
+-	return result;
++	return false;
  }
  
- static int apci1564_di_insn_bits(struct comedi_device *dev,
-@@ -295,7 +444,7 @@ static int apci1564_auto_attach(struct comedi_device *dev,
- 	apci1564_reset(dev);
- 
- 	if (pcidev->irq > 0) {
--		ret = request_irq(pcidev->irq, v_ADDI_Interrupt, IRQF_SHARED,
-+		ret = request_irq(pcidev->irq, apci1564_interrupt, IRQF_SHARED,
- 				  dev->board_name, dev);
- 		if (ret == 0)
- 			dev->irq = pcidev->irq;
+ static inline bool vif_event_equals(struct brcmf_cfg80211_vif_event *event,
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.h b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.h
+index 283c525..f9fb109 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.h
++++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.h
+@@ -477,7 +477,7 @@ const struct brcmf_tlv *
+ brcmf_parse_tlvs(const void *buf, int buflen, uint key);
+ u16 channel_to_chanspec(struct brcmu_d11inf *d11inf,
+ 			struct ieee80211_channel *ch);
+-u32 wl_get_vif_state_all(struct brcmf_cfg80211_info *cfg, unsigned long state);
++bool brcmf_get_vif_state_any(struct brcmf_cfg80211_info *cfg, unsigned long state);
+ void brcmf_cfg80211_arm_vif_event(struct brcmf_cfg80211_info *cfg,
+ 				  struct brcmf_cfg80211_vif *vif);
+ bool brcmf_cfg80211_vif_event_armed(struct brcmf_cfg80211_info *cfg);
 -- 
-1.9.3
+1.9.2
 
