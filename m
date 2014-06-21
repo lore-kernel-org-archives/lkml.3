@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476AbaFUTsl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 15:48:41 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34245 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752558AbaFUTsj (ORCPT
+	id S1754583AbaFUTzK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 15:55:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36860 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751751AbaFUTzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 15:48:39 -0400
-X-Sasl-enc: 9G7avVJakkJTwxK7XU4lRdoc0sqnIotZLAouwmdhHxWW 1403380118
-Date: Sat, 21 Jun 2014 12:48:27 -0700
-From: Greg KH <greg@kroah.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
-        kamal.mostafa@canonical.com, luis.henriques@canonical.com,
-        jslaby@suse.cz, clm@fb.com, jbacik@fb.com, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [v3.10.y][v3.11.y][v3.12.y][v3.13.y][v3.14.y][PATCH 1/1][V2]
- ALSA: usb-audio: Prevent printk ratelimiting from spamming kernel log while
- DEBUG not defined
-Message-ID: <20140621194827.GA5128@kroah.com>
-References: <cover.1403113867.git.joseph.salisbury@canonical.com>
- <a377cdb51b1a98e9fa6bffaa124502fc15c47903.1403113867.git.joseph.salisbury@canonical.com>
- <1403142759.23472.28.camel@deadeye.wl.decadent.org.uk>
- <53A4515C.8090103@canonical.com>
- <53A47BC4.8040406@canonical.com>
- <1403352353.23472.67.camel@deadeye.wl.decadent.org.uk>
+	Sat, 21 Jun 2014 15:55:08 -0400
+Date: Sat, 21 Jun 2014 21:54:59 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
+Subject: Re: safety of *mutex_unlock() (Was: [BUG] signal: sighand unprotected
+ when accessed by /proc)
+In-Reply-To: <20140618125307.3994b701@gandalf.local.home>
+Message-ID: <alpine.DEB.2.10.1406212153300.5170@nanos>
+References: <20140611175934.GA28912@redhat.com> <20140611195613.GM4581@linux.vnet.ibm.com> <20140612172844.GA15795@redhat.com> <20140612203518.GZ4581@linux.vnet.ibm.com> <alpine.DEB.2.10.1406122337060.5170@nanos> <20140612222748.GF4581@linux.vnet.ibm.com>
+ <20140612231944.GA30683@linux.vnet.ibm.com> <20140613150830.GB31794@redhat.com> <20140615054058.GJ4581@linux.vnet.ibm.com> <20140617185755.GA8600@linux.vnet.ibm.com> <20140618164359.GA18598@redhat.com> <20140618125307.3994b701@gandalf.local.home>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403352353.23472.67.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 21, 2014 at 01:05:53PM +0100, Ben Hutchings wrote:
-> On Fri, 2014-06-20 at 14:21 -0400, Joseph Salisbury wrote:
-> [...]
-> > I looked at this some more.   It seems like my v2 backport may be the
-> > most suitable for the releases mentioned in the subject line, but I'd
-> > like to get additional feedback.
-> > 
-> > The lines added by commit a5065eb just get removed by commit b7a77235. 
-> > Also, if I apply commit a5065eb, it will also require a backport to pull
-> > in just a piece of code(Remove snd_printk() and add dev_dbg()) from
-> > another prior commit(0ba41d9).  No backport would be needed at all if I
-> > cherry-pick 0ba41d9, but that commit seems to have too may changes for a
-> > stable release.
+On Wed, 18 Jun 2014, Steven Rostedt wrote:
+
+> On Wed, 18 Jun 2014 18:43:59 +0200
+> Oleg Nesterov <oleg@redhat.com> wrote:
 > 
-> Keep the changes squashed together if you like, but do include both
-> commit hashes and commit messages.
+>  
+> > And (contrary to what I said initially) we can rely on this because -rt
+> > converts spinlock_t into rt_mutex ?
+> 
+> Correct. Because if spinlock_t has this behavior, rt_mutex must have it
+> too, otherwise -rt will suffer greatly from that. Who knows, maybe this
+> will fix some strange bug reports that we have had in the past.
 
-No, I don't want to see "squashed together" patches, please keep them as
-close to the original patch as possible.  It saves time in the long run,
-trust me...
+Indeed. I found a few backtraces from Carstens test farm, where stuff
+explodes in the slowpath raw_spin_unlock call. Happens once a year or
+never ...
 
-greg k-h
+Thanks,
+
+	tglx
