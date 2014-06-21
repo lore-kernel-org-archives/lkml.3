@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341AbaFUTp5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 15:45:57 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58711 "EHLO
+	id S1754476AbaFUTsl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 15:48:41 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34245 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752351AbaFUTpz (ORCPT
+	by vger.kernel.org with ESMTP id S1752558AbaFUTsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 15:45:55 -0400
-X-Sasl-enc: YHm9v08nJ6rvMsYy0N3btfsaGA/DpE7fz7a32/jIds5V 1403379954
-Date: Sat, 21 Jun 2014 12:45:38 -0700
+	Sat, 21 Jun 2014 15:48:39 -0400
+X-Sasl-enc: 9G7avVJakkJTwxK7XU4lRdoc0sqnIotZLAouwmdhHxWW 1403380118
+Date: Sat, 21 Jun 2014 12:48:27 -0700
 From: Greg KH <greg@kroah.com>
-To: Ilia Mirkin <imirkin@alum.mit.edu>
-Cc: Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        David Airlie <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Subject: Re: unparseable, undocumented /sys/class/drm/.../pstate
-Message-ID: <20140621194538.GA4903@kroah.com>
-References: <20140621180201.GA4621@amd.pavel.ucw.cz>
- <CAKb7UvhOCiBHcsB6a0qKBNsC3c9pmb=Wc7zucbBuP6vt-tx2eA@mail.gmail.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
+        kamal.mostafa@canonical.com, luis.henriques@canonical.com,
+        jslaby@suse.cz, clm@fb.com, jbacik@fb.com, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [v3.10.y][v3.11.y][v3.12.y][v3.13.y][v3.14.y][PATCH 1/1][V2]
+ ALSA: usb-audio: Prevent printk ratelimiting from spamming kernel log while
+ DEBUG not defined
+Message-ID: <20140621194827.GA5128@kroah.com>
+References: <cover.1403113867.git.joseph.salisbury@canonical.com>
+ <a377cdb51b1a98e9fa6bffaa124502fc15c47903.1403113867.git.joseph.salisbury@canonical.com>
+ <1403142759.23472.28.camel@deadeye.wl.decadent.org.uk>
+ <53A4515C.8090103@canonical.com>
+ <53A47BC4.8040406@canonical.com>
+ <1403352353.23472.67.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKb7UvhOCiBHcsB6a0qKBNsC3c9pmb=Wc7zucbBuP6vt-tx2eA@mail.gmail.com>
+In-Reply-To: <1403352353.23472.67.camel@deadeye.wl.decadent.org.uk>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 21, 2014 at 02:22:59PM -0400, Ilia Mirkin wrote:
-> On Sat, Jun 21, 2014 at 2:02 PM, Pavel Machek <pavel@ucw.cz> wrote:
-> > Hi!
-> >
-> > AFAICT, pstate file will contain something like
-> >
-> > 07: core 100 MHz memory 123 MHz *
-> > 08: core 100-200 MHz memory 123 MHz
-> >
-> > ...which does not look exactly like one-value-per-file, and I'm pretty
-> > sure userspace will get it wrong if it tries to parse it. Plus, I
-> > don't see required documentation in Documentation/ABI.
-> >
-> > Should we disable it for now, so that userspace does not start
-> > depending on it and we'll not have to maintain it forever?
-> >
-> > I guess better interface would be something like
-> >
-> > pstate/07/core_clock_min
-> >           core_clock_max
-> >           memory_clock_min
-> >           memory_clock_max
-> >
-> > and then pstate/active containing just the number of active state?
-> >
-> > Thanks,
-> >                                                                 Pavel
-> >
-> > PS: I have no nvidia, got the news at
-> >
-> > http://www.phoronix.com/scan.php?page=article&item=nouveau_try_linux316&num=2
+On Sat, Jun 21, 2014 at 01:05:53PM +0100, Ben Hutchings wrote:
+> On Fri, 2014-06-20 at 14:21 -0400, Joseph Salisbury wrote:
+> [...]
+> > I looked at this some more.   It seems like my v2 backport may be the
+> > most suitable for the releases mentioned in the subject line, but I'd
+> > like to get additional feedback.
+> > 
+> > The lines added by commit a5065eb just get removed by commit b7a77235. 
+> > Also, if I apply commit a5065eb, it will also require a backport to pull
+> > in just a piece of code(Remove snd_printk() and add dev_dbg()) from
+> > another prior commit(0ba41d9).  No backport would be needed at all if I
+> > cherry-pick 0ba41d9, but that commit seems to have too may changes for a
+> > stable release.
 > 
-> FTR, this file has been in place since 3.13, and there was a different
-> file before it (performance_levels), with a comparable format since
-> much earlier (definitely 3.8, probably earlier). I think it's meant a
-> lot more for people looking at it and echo'ing stuff to it to modify
-> the levels (where supported), than for programs parsing it. Perhaps
-> sysfs is the wrong place for this -- what is the right place? debugfs?
+> Keep the changes squashed together if you like, but do include both
+> commit hashes and commit messages.
 
-Yes, please move it to debugfs.
+No, I don't want to see "squashed together" patches, please keep them as
+close to the original patch as possible.  It saves time in the long run,
+trust me...
 
 greg k-h
