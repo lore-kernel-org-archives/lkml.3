@@ -1,613 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365AbaFULR7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 07:17:59 -0400
-Received: from mail.kernel.org ([198.145.19.201]:43802 "EHLO mail.kernel.org"
+	id S1752856AbaFUL2A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 07:28:00 -0400
+Received: from mail.kernel.org ([198.145.19.201]:43968 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755149AbaFULR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 07:17:57 -0400
-Message-ID: <53A56A5C.9080703@kernel.org>
-Date: Sat, 21 Jun 2014 12:19:56 +0100
+	id S1751486AbaFUL15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jun 2014 07:27:57 -0400
+Message-ID: <53A56CB3.3030207@kernel.org>
+Date: Sat, 21 Jun 2014 12:29:55 +0100
 From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Reyad Attiyat <reyad.attiyat@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, srinivas.pandruvada@linux.intel.com
-Subject: Re: [PATCH v3 3/3] iio: hid-sensor-magn-3d: Add support for rotation
- from north usage attributes
-References: <1402957803-5154-1-git-send-email-reyad.attiyat@gmail.com> <1402957803-5154-4-git-send-email-reyad.attiyat@gmail.com>
-In-Reply-To: <1402957803-5154-4-git-send-email-reyad.attiyat@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Support Opensource <Support.Opensource@diasemi.com>
+Subject: Re: [PATCH 4/8] iio: Add support for DA9150 GPADC
+References: <cover.1402484954.git.Adam.Thomson.Opensource@diasemi.com> <3c1a7551c7deaeccdca731fa95f4349c57e04249.1402484954.git.Adam.Thomson.Opensource@diasemi.com> <539DFFC8.3080406@kernel.org> <2E89032DDAA8B9408CB92943514A0337AB4FD9C7@SW-EX-MBX01.diasemi.com>
+In-Reply-To: <2E89032DDAA8B9408CB92943514A0337AB4FD9C7@SW-EX-MBX01.diasemi.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/06/14 23:30, Reyad Attiyat wrote:
-> Added the ability for this driver to scan for a range of hid usage attributes.
-> This allows for dynamic creation of iio channels such as rotation from north
-> and/or magnetic flux axises (X, Y, Z).
+On 16/06/14 16:58, Opensource [Adam Thomson] wrote:
+> On June 15, 2014 21:19, Jonathon Cameron wrote:
 >
-> Signed-off-by: Reyad Attiyat <reyad.attiyat@gmail.com>
-Hi Reyad,
+>> Hi Adam
+>>
+>> Reasonably clean code, but the _ channels stuff doesn't comply with the ABI
+>> and is rather confusing.
+>
+> To be honest I did debate this in my head for a while. The reason I went with
+> the current approach was to make the driver channel layout match that of the
+> datasheet for the device. Sounds like it wasn't the correct direction though.
+>
+>> If it really does make sense to allow reading these channels at different
+>> ranges (presumably to enhance the effective adc resolution) then we need
+>> to control this via existing ABIs. Controlling it via scale with a
+>> range attribute if required (read only but changes with whatever the
+>> scale attribute it set to).
+>
+> Yes, with smaller range then you get a better degree of accuracy. Ok, will have
+> a look at this and see if I can improve things based on your comments.
+>
+>> Often, for slow parts at least it makes little sense to have provide
+>> software support for variable input ranges.
+>>
+>> Looking at what is covered, is it the case that only one option will make
+>> sense for a given hardware setup? (cover the required range and nothing more).
+>>
+>> If so, perhaps this wants to go into the device tree or similar?
+>
+> Possibly. Having read your comments further on though, and given that
+> it seems reasonable to use the range/scale attribute to choose the resolution,
+> I'd prefer to opt for that approach (seems more flexible).
+Perhaps, but if the reason for these differing ranges is that they tend
+to be wired to lines that have well defined voltage ranges, then I'd move
+it into setup data.  Leads to a cleaner driver.  Flexibility is good, but
+only if actually helps anyone!
+>
+>> Please get rid of excess white space and comments that just tell you
+>> something obvious about the code following them.
+>
+> Preferably I'd like to keep it this way as I think it makes the code
+> easier to read, but if you're dead against it then I'll remove them.
+The issue here is about making kernel review as easy as possible.  That often
+involves making code (and particularly comments) conform to somewhat arbitrary
+rules and conventions.  Just makes the reviewer/maintainers life somewhat easier.
+You'll also probably get follow up patches removing all this stuff on the basis
+of kernel style soon after we merge the driver anyway and those just get
+irritating ;)
+>
+>> Linear in the coeeficients, so fine for raw output with a scale and offset.
+>
+> Ok will have a look at re-working this as per your comment.
+>
+>> Ah, so here is your reasoning behind the 'interesting' underscore channels.
+>> This is just doing different range checks on the channel?  If so allow one
+>> at a time and provide a writable scale info_mask element to control which
+>> is used..
+>>
+>> Looks like there are only thes two channels doing this, so shouldn't be
+>> too hard to support it via more conventional means.
+>
+> The GPIO, VBUS and VSYS related channels provide different ranges. I guess they
+> should all follow the same approach for implementing this alternate range. So I
+> will assume that for the 'repeat' channels where the same raw value is provided
+> on both the _ and non _ channels only one channel should be provided.
+Definitely.
+>
+>> Don't use the |=, just = and you can't avoid assigning reg above.
+>> Actually, it's not complex enough that you couldn't just do it directly into
+>> the write function and skip this local variable.
+>
+> Ok fine. Will update to tidy up.
+>
+>> Unlock first, then check for error.
+>
+> Yep. Makes sense. Will update.
+>
+>> The mixture of having defs here for the shift.
+>>> +	/* MSBs - 8 bits */
+>>> +	result |= result_regs[0] << 2;
+>> and not here is inconsistent.  I honestly don't mind which way, but
+>> just use one style.
+>>
+>> You could just use an endian conversion and shift the combined 16bit result
+>
+> Fair point. Will make this cleaner.
+>
+>> It very rarely makes sense to provide both raw and processed interfaces.
+>> If the transform is nasty and non linear then userspace won't have the info
+>> to do anything with it.  If the transform is linear, then provide scale
+>> and offset and let userspace perform the computation.
+>
+> The charger module uses certain channels for its readings, and to me it makes
+> more sense for that calculation to be done by the GPADC. However having looked
+> at the inkern.c framework code it looks like if you request a processed channel
+> and it's doesn't provide that feature, then the code drops to linear scaling if
+> possible to provide the processed value. I take it this is the preferred
+> approach then?
+Yup.  Saves on replicating code.  Mostly the raw access stuff is there for consistency
+with buffered access (where speed matters and we may or may not want to convert to
+real units).  So you should provide the information to do the scaling anyway, so
+just let the core code handle it for you.
+> Just thought it was more consistent to see the calculation using
+> dedicated functions (processed channel approach).
+>
+>> Get rid of this comment and any other ones that don't add any
+>> actual information.  Also this is single line comment, please
+>> check the comment syntax.
+>
+> As per previous comment on this topic.
+>
+>> Why a blank line here.
+>
+> Accidental. Will remove it.
+>
+>> The device register call is the one that exposes userspace interfaces. As
+>> a general rule it wants to be the last thing in probe as everything
+>> else should be setup first.
+>
+> Ok, that's something I missed. Will make the change.
+>
+>>> +#include <linux/iio/machine.h>
+>> This isn't used in the header, so should be included in the c file, not here.
+>
+> Yes, is something I meant to remove during development increments. Consider it
+> gone.
+>
+>>> +#include <linux/mfd/da9150/core.h>
+>> Having moved the struct definition into the c file
+>> this header include will not want to be here.
+>
+> I personally would prefer a separate header for the definitions as I believe
+> this is tidier. Have never really liked struct definitions in c files.
+Again, kernel coding style. Have everything as local as you can.
+Makes it obvious nothing else uses the structure and also ever so slightly
+cuts down on compile time (all helps!)
 
-I'm afraid I hadn't taken as close a look at this as I should for previous
-versions.  There are some nasty bugs introduced by your refactoring.
-The fundamental approach is fine, but you've moved more things than
-make sense in some cases.
-
-With hind sight perhaps it would have been possible to break this patch
-up into a series of small easily reviewed steps.
-
-Anyhow, take a hard look at the error paths in the code as someone of them
-are thorougly broken.  The channel setup function does an awful lot more
-than setup the channels and it should not do so.  Moving other stuff in
-there makes the code harder to follow and is responsible for at least
-a few bugs that otherwise would not have occured.
-
-Thanks,
-
-Jonathan
-> ---
->   drivers/iio/magnetometer/hid-sensor-magn-3d.c | 394 +++++++++++++++++---------
->   1 file changed, 266 insertions(+), 128 deletions(-)
+Anyhow, please bring them into the c code.   Have only stuff that is genuinely
+shared between different c files in headers.  If those c files are in the same
+directory then have the header within the directory as well.
+> I could
+> move this header to the same directory as the source file, if that is preferred.
+> As it stands this header is only related to DA9150 in its current location, so
+> is this a big issue? If not then I'd rather keep it as is.
 >
-> diff --git a/drivers/iio/magnetometer/hid-sensor-magn-3d.c b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-> index 41cf29e..73e1272 100644
-> --- a/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-> +++ b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-> @@ -35,6 +35,10 @@ enum magn_3d_channel {
->   	CHANNEL_SCAN_INDEX_X,
->   	CHANNEL_SCAN_INDEX_Y,
->   	CHANNEL_SCAN_INDEX_Z,
-> +	CHANNEL_SCAN_INDEX_NORTH_MAGN,
-> +	CHANNEL_SCAN_INDEX_NORTH_TRUE,
-> +	CHANNEL_SCAN_INDEX_NORTH_MAGN_TILT_COMP,
-> +	CHANNEL_SCAN_INDEX_NORTH_TRUE_TILT_COMP,
->   	MAGN_3D_CHANNEL_MAX,
->   };
+>>> +/* Private data */
+>> Why is this in the header?  Should be defined directly in the c file
+>> as nothing outside the driver should be touching it.
 >
-> @@ -42,63 +46,47 @@ struct magn_3d_state {
->   	struct hid_sensor_hub_callbacks callbacks;
->   	struct hid_sensor_common common_attributes;
->   	struct hid_sensor_hub_attribute_info magn[MAGN_3D_CHANNEL_MAX];
-> -	u32 magn_val[MAGN_3D_CHANNEL_MAX];
-> +	u32 *magn_val_addr[MAGN_3D_CHANNEL_MAX];
-> +	u32 *iio_val;
->   	int scale_pre_decml;
->   	int scale_post_decml;
->   	int scale_precision;
->   	int value_offset;
->   };
->
-> -static const u32 magn_3d_addresses[MAGN_3D_CHANNEL_MAX] = {
-> -	HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS,
-> -	HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Y_AXIS,
-> -	HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Z_AXIS
-> -};
->
-> -/* Channel definitions */
-> -static const struct iio_chan_spec magn_3d_channels[] = {
-> -	{
-> -		.type = IIO_MAGN,
-> -		.modified = 1,
-> -		.channel2 = IIO_MOD_X,
-> -		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
-> -		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
-> -		BIT(IIO_CHAN_INFO_SCALE) |
-> -		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
-> -		BIT(IIO_CHAN_INFO_HYSTERESIS),
-> -		.scan_index = CHANNEL_SCAN_INDEX_X,
-> -	}, {
-> -		.type = IIO_MAGN,
-> -		.modified = 1,
-> -		.channel2 = IIO_MOD_Y,
-> -		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
-> -		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
-> -		BIT(IIO_CHAN_INFO_SCALE) |
-> -		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
-> -		BIT(IIO_CHAN_INFO_HYSTERESIS),
-> -		.scan_index = CHANNEL_SCAN_INDEX_Y,
-> -	}, {
-> -		.type = IIO_MAGN,
-> -		.modified = 1,
-> -		.channel2 = IIO_MOD_Z,
-> -		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
-> -		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
-> -		BIT(IIO_CHAN_INFO_SCALE) |
-> -		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
-> -		BIT(IIO_CHAN_INFO_HYSTERESIS),
-> -		.scan_index = CHANNEL_SCAN_INDEX_Z,
-> +/* Find index into magn_3d_state magn[] and magn_val_addr[] from HID Usage  */
-> +static int magn_3d_usage_id_to_chan_index(unsigned usage_id){
-> +	int offset;
-> +
-> +	switch (usage_id) {
-> +	case HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS:
-> +		offset = CHANNEL_SCAN_INDEX_X;
-> +		break;
-> +	case HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Y_AXIS:
-> +		offset = CHANNEL_SCAN_INDEX_Y;
-> +		break;
-> +	case HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Z_AXIS:
-> +		offset = CHANNEL_SCAN_INDEX_Z;
-> +		break;
-> +	case HID_USAGE_SENSOR_ORIENT_COMP_MAGN_NORTH:
-> +		offset = CHANNEL_SCAN_INDEX_NORTH_MAGN_TILT_COMP;
-> +		break;
-> +	case HID_USAGE_SENSOR_ORIENT_COMP_TRUE_NORTH:
-> +		offset = CHANNEL_SCAN_INDEX_NORTH_TRUE_TILT_COMP;
-> +		break;
-> +	case HID_USAGE_SENSOR_ORIENT_MAGN_NORTH:
-> +		offset = CHANNEL_SCAN_INDEX_NORTH_MAGN;
-> +		break;
-> +	case HID_USAGE_SENSOR_ORIENT_TRUE_NORTH:
-> +		offset = CHANNEL_SCAN_INDEX_NORTH_TRUE;
-> +		break;
-> +	default:
-> +		offset = -EINVAL;
-> +		break;
->   	}
-> -};
->
-> -/* Adjust channel real bits based on report descriptor */
-> -static void magn_3d_adjust_channel_bit_mask(struct iio_chan_spec *channels,
-> -						int channel, int size)
-> -{
-> -	channels[channel].scan_type.sign = 's';
-> -	/* Real storage bits will change based on the report desc. */
-> -	channels[channel].scan_type.realbits = size * 8;
-> -	/* Maximum size of a sample to capture is u32 */
-> -	channels[channel].scan_type.storagebits = sizeof(u32) * 8;
-> +	return offset;
->   }
->
->   /* Channel read_raw handler */
-> @@ -109,11 +97,14 @@ static int magn_3d_read_raw(struct iio_dev *indio_dev,
->   {
->   	struct magn_3d_state *magn_state = iio_priv(indio_dev);
->   	int report_id = -1;
-> -	u32 address;
-> +	unsigned usage_id;
-> +	int chan_index = -1;
->   	int ret;
->   	int ret_type;
->   	s32 poll_value;
->
-> +	dev_dbg(&indio_dev->dev, "magn_3d_read_raw\n");
-> +
->   	*val = 0;
->   	*val2 = 0;
->   	switch (mask) {
-> @@ -126,13 +117,17 @@ static int magn_3d_read_raw(struct iio_dev *indio_dev,
->   		hid_sensor_power_state(&magn_state->common_attributes, true);
->   		msleep_interruptible(poll_value * 2);
->
-> +		usage_id = chan->address;
-> +		chan_index = magn_3d_usage_id_to_chan_index(usage_id);
-> +		if (chan_index < 0)
-> +			return -EINVAL;
-> +
->   		report_id =
-> -			magn_state->magn[chan->scan_index].report_id;
-> -		address = magn_3d_addresses[chan->scan_index];
-> +			magn_state->magn[chan_index].report_id;
->   		if (report_id >= 0)
->   			*val = sensor_hub_input_attr_get_raw_value(
->   				magn_state->common_attributes.hsdev,
-> -				HID_USAGE_SENSOR_COMPASS_3D, address,
-> +				HID_USAGE_SENSOR_COMPASS_3D, usage_id,
->   				report_id);
->   		else {
->   			*val = 0;
-> @@ -221,12 +216,13 @@ static int magn_3d_proc_event(struct hid_sensor_hub_device *hsdev,
->   	dev_dbg(&indio_dev->dev, "magn_3d_proc_event\n");
->   	if (atomic_read(&magn_state->common_attributes.data_ready))
->   		hid_sensor_push_data(indio_dev,
-> -				magn_state->magn_val,
-> -				sizeof(magn_state->magn_val));
-> +				&(magn_state->iio_val),
-> +				sizeof(magn_state->iio_val));
->
->   	return 0;
->   }
->
-> +
->   /* Capture samples in local storage */
->   static int magn_3d_capture_sample(struct hid_sensor_hub_device *hsdev,
->   				unsigned usage_id,
-> @@ -236,51 +232,138 @@ static int magn_3d_capture_sample(struct hid_sensor_hub_device *hsdev,
->   	struct iio_dev *indio_dev = platform_get_drvdata(priv);
->   	struct magn_3d_state *magn_state = iio_priv(indio_dev);
->   	int offset;
-> -	int ret = -EINVAL;
-> +	u32 *magn_val;
-> +	int ret = 0;
->
-> -	switch (usage_id) {
-> +	offset = magn_3d_usage_id_to_chan_index(usage_id);
-> +	if (offset < 0)
-> +		return -EINVAL;
-> +
-> +	magn_val = magn_state->magn_val_addr[offset];
-> +	if (!magn_val)
-> +		return -EINVAL;
-> +
-> +	*(magn_val) =  *(u32 *)raw_data;
-> +
-> +	return ret;
-> +}
-> +
-> +/* Setup the iio_chan_spec for HID Usage ID */
-> +static int magn_3d_setup_iio_chan(unsigned attr_usage_id,
-> +				s32 size,
-> +				struct iio_chan_spec *channel)
-> +{
-> +
-> +	channel->modified = 1;
-> +	channel->address = attr_usage_id;
-> +
-> +	switch (attr_usage_id){
-> +	case HID_USAGE_SENSOR_ORIENT_COMP_MAGN_NORTH:
-> +		channel->type = IIO_ROT;
-> +		channel->channel2 = IIO_MOD_NORTH_MAGN_TILT_COMP;
-> +		break;
-> +	case HID_USAGE_SENSOR_ORIENT_COMP_TRUE_NORTH:
-> +		channel->type = IIO_ROT;
-> +		channel->channel2 = IIO_MOD_NORTH_TRUE_TILT_COMP;
-> +		break;
-> +	case HID_USAGE_SENSOR_ORIENT_MAGN_NORTH:
-> +		channel->type = IIO_ROT;
-> +		channel->channel2 = IIO_MOD_NORTH_MAGN;
-> +		break;
-> +	case HID_USAGE_SENSOR_ORIENT_TRUE_NORTH:
-> +		channel->type = IIO_ROT;
-> +		channel->channel2 = IIO_MOD_NORTH_TRUE;
-> +		break;
->   	case HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS:
-> +		channel->type = IIO_MAGN;
-> +		channel->channel2 = IIO_MOD_X;
-> +		break;
->   	case HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Y_AXIS:
-> +		channel->type = IIO_MAGN;
-> +		channel->channel2 = IIO_MOD_Y;
-> +		break;
->   	case HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Z_AXIS:
-> -		offset = usage_id - HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS;
-> -		magn_state->magn_val[CHANNEL_SCAN_INDEX_X + offset] =
-> -						*(u32 *)raw_data;
-> -		ret = 0;
-> -	break;
-> -	default:
-> +		channel->type = IIO_MAGN;
-> +		channel->channel2 = IIO_MOD_Z;
->   		break;
-> +	default:
-> +		return -EINVAL;
->   	}
->
-> -	return ret;
-> +	channel->info_mask_separate = BIT(IIO_CHAN_INFO_RAW);
-> +	channel->info_mask_shared_by_type =
-> +		BIT(IIO_CHAN_INFO_OFFSET) |
-> +		BIT(IIO_CHAN_INFO_SCALE) |
-> +		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
-> +		BIT(IIO_CHAN_INFO_HYSTERESIS);
-> +
-> +	channel->scan_type.sign = 's';
-> +	/* Real storage bits will change based on the report desc. */
-> +	channel->scan_type.realbits = size  * 8;
-> +	/* Maximum size of a sample to capture is u32 */
-> +	channel->scan_type.storagebits = sizeof(u32) * 8;
-> +
-> +
-One blank line only here please.
-> +	return 0;
->   }
->
-> -/* Parse report which is specific to an usage id*/
-> -static int magn_3d_parse_report(struct platform_device *pdev,
-> -				struct hid_sensor_hub_device *hsdev,
-> -				struct iio_chan_spec *channels,
-Please fix the multiline comment syntax.  Even better, use kernel-doc
-formatting.
-> +/* Scan a HID report for a range of attribute usages.
-> + * Returns the count of attribute usages found.
-> + */
-> +static int magn_3d_scan_range_usage_ids(struct hid_sensor_hub_device *hsdev,
->   				unsigned usage_id,
-> +				unsigned start_id,
-> +				unsigned end_id,
->   				struct magn_3d_state *st)
->   {
-> +	int count = 0;
->   	int ret;
-> -	int i;
-> +	int id;
->
-> -	for (i = 0; i <= CHANNEL_SCAN_INDEX_Z; ++i) {
-> +	for (id = start_id; id <= end_id; id++) {
-> +		int i;
-> +
-> +		i = magn_3d_usage_id_to_chan_index(id);
-> +		if(i < 0)
-> +			continue;
-> +
-> +		/* Check if usage attribute exists in the sensor hub device */
->   		ret = sensor_hub_input_get_attribute_info(hsdev,
->   				HID_INPUT_REPORT,
->   				usage_id,
-> -				HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS + i,
-> -				&st->magn[CHANNEL_SCAN_INDEX_X + i]);
-> -		if (ret < 0)
-> -			break;
-> -		magn_3d_adjust_channel_bit_mask(channels,
-> -				CHANNEL_SCAN_INDEX_X + i,
-> -				st->magn[CHANNEL_SCAN_INDEX_X + i].size);
-> +				id,
-> +				&(st->magn[i]));
-> +		if (ret == 0)
-> +			count++;
-> +	}
-> +
-> +	return count;
-> +}
-> +
-> +/* Parse the HID report and return number of reports found */
-> +static int magn_3d_parse_report(struct platform_device *pdev,
-> +				struct hid_sensor_hub_device *hsdev,
-> +				unsigned usage_id,
-> +				int* attribute_count,
-> +				struct magn_3d_state *st)
-> +{
-> +	int usage_count = 0;
-> +
-> +	usage_count += magn_3d_scan_range_usage_ids(hsdev, usage_id,
-> +					HID_USAGE_SENSOR_ORIENT_COMP_MAGN_NORTH,
-> +					HID_USAGE_SENSOR_ORIENT_TRUE_NORTH,
-> +					st);
-> +
-> +	usage_count += magn_3d_scan_range_usage_ids(hsdev, usage_id,
-> +					HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_X_AXIS,
-> +					HID_USAGE_SENSOR_ORIENT_MAGN_FLUX_Z_AXIS,
-> +					st);
-> +
-> +	if (attribute_count != NULL && usage_count > 0) {
-> +		*attribute_count = usage_count;
-> +	} else {
-> +		return -EINVAL;
->   	}
-> -	dev_dbg(&pdev->dev, "magn_3d %x:%x, %x:%x, %x:%x\n",
-> -			st->magn[0].index,
-> -			st->magn[0].report_id,
-> -			st->magn[1].index, st->magn[1].report_id,
-> -			st->magn[2].index, st->magn[2].report_id);
->
->   	st->scale_precision = hid_sensor_format_scale(
->   				HID_USAGE_SENSOR_COMPASS_3D,
-> @@ -299,54 +382,60 @@ static int magn_3d_parse_report(struct platform_device *pdev,
->   			st->common_attributes.sensitivity.report_id);
->   	}
->
-> -	return ret;
-> +	dev_dbg(&pdev->dev, "magn_3d_parse_reports found %d attribute usages\n", usage_count);
-> +
-> +	return 0;
->   }
->
-> -/* Function to initialize the processing for usage id */
-> -static int hid_magn_3d_probe(struct platform_device *pdev)
-> +/* Setup iio channels */
-
-Keep this function much more foccused on just setting up the channels.
-Right now it's introduced a whole load of bugs into your remove because you
-aren't unwinding what this does in the error paths.
-So this function should fill the channels array and return how many
-there are.  Nothing else.  All the other setups stuff that was previously
-in the probe function should go back there and be correctly unwound on
-any errors (as it previously was).
-
-This is one of those annoying cases where diff is making it hard to
-see what the reorganization was. Oh well.
-
-> +static int magn_3d_setup_iio_channels(struct platform_device *pdev,
-> +				struct iio_dev *indio_dev,
-> +				unsigned usage_id,
-> +				int attr_count,
-> +				struct magn_3d_state *st)
->   {
-> -	int ret = 0;
-> +	int ret;
->   	static char *name = "magn_3d";
-> -	struct iio_dev *indio_dev;
-> -	struct magn_3d_state *magn_state;
-> -	struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
->   	struct iio_chan_spec *channels;
-> +	int chan_count = 0;
-> +	int i;
->
-> -	indio_dev = devm_iio_device_alloc(&pdev->dev,
-> -					  sizeof(struct magn_3d_state));
-> -	if (indio_dev == NULL)
-> +	/* Allocate IIO channels struct */
-> +	channels = devm_kcalloc(&pdev->dev,
-> +			attr_count,
-> +			sizeof(struct iio_chan_spec),
-> +			GFP_KERNEL);
-> +	if (!channels) {
-> +		dev_err(&pdev->dev, "failed to allocate memory for iio channels\n");
->   		return -ENOMEM;
-> -
-> -	platform_set_drvdata(pdev, indio_dev);
-> -
-> -	magn_state = iio_priv(indio_dev);
-> -	magn_state->common_attributes.hsdev = hsdev;
-> -	magn_state->common_attributes.pdev = pdev;
-> -
-> -	ret = hid_sensor_parse_common_attributes(hsdev,
-> -				HID_USAGE_SENSOR_COMPASS_3D,
-> -				&magn_state->common_attributes);
-> -	if (ret) {
-> -		dev_err(&pdev->dev, "failed to setup common attributes\n");
-> -		return ret;
->   	}
->
-> -	channels = kmemdup(magn_3d_channels, sizeof(magn_3d_channels),
-> -			   GFP_KERNEL);
-> -	if (!channels) {
-> -		dev_err(&pdev->dev, "failed to duplicate channels\n");
-> +	/* Allocate IIO values array */
-> +	st->iio_val = devm_kcalloc(&pdev->dev,
-> +				attr_count,
-> +				sizeof(u32),
-> +				GFP_KERNEL);
-> +	if (!(st->iio_val)) {
-> +		dev_err(&pdev->dev, "failed to allocate memory for iio value\n");
->   		return -ENOMEM;
->   	}
->
-> -	ret = magn_3d_parse_report(pdev, hsdev, channels,
-> -				HID_USAGE_SENSOR_COMPASS_3D, magn_state);
-> -	if (ret) {
-> -		dev_err(&pdev->dev, "failed to setup attributes\n");
-> -		goto error_free_dev_mem;
-> +	/* Setup each IIO channel that is present */
-> +	for (i = 0; i < MAGN_3D_CHANNEL_MAX && chan_count < attr_count; i++){
-> +		u32 attr = st->magn[i].attrib_id;
-> +		s32 size = st->magn[i].size;
-> +
-> +		if (attr != 0 && size > 0) {
-> +			ret = magn_3d_setup_iio_chan(attr, size, &(channels[chan_count]));
-> +			if (ret == 0) {
-> +				chan_count++;
-> +				st->magn_val_addr[i] = &(st->iio_val[chan_count]);
-> +			}
-> +		}
->   	}
->
->   	indio_dev->channels = channels;
-> -	indio_dev->num_channels = ARRAY_SIZE(magn_3d_channels);
-> +	indio_dev->num_channels = chan_count;
->   	indio_dev->dev.parent = &pdev->dev;
->   	indio_dev->info = &magn_3d_info;
->   	indio_dev->name = name;
-> @@ -358,9 +447,9 @@ static int hid_magn_3d_probe(struct platform_device *pdev)
->   		dev_err(&pdev->dev, "failed to initialize trigger buffer\n");
->   		goto error_free_dev_mem;
->   	}
-> -	atomic_set(&magn_state->common_attributes.data_ready, 0);
-> +	atomic_set(&st->common_attributes.data_ready, 0);
->   	ret = hid_sensor_setup_trigger(indio_dev, name,
-> -					&magn_state->common_attributes);
-> +					&st->common_attributes);
->   	if (ret < 0) {
->   		dev_err(&pdev->dev, "trigger setup failed\n");
->   		goto error_unreg_buffer_funcs;
-> @@ -372,6 +461,65 @@ static int hid_magn_3d_probe(struct platform_device *pdev)
->   		goto error_remove_trigger;
->   	}
->
-> +	return 0;
-> +
-> +error_remove_trigger:
-> +	hid_sensor_remove_trigger(&st->common_attributes);
-> +error_unreg_buffer_funcs:
-> +	iio_triggered_buffer_cleanup(indio_dev);
-> +error_free_dev_mem:
-
-These (as in the remove below) are unneeded.  Please take a look at the
-devm docs if you don't understand why.
-> +	devm_kfree(&pdev->dev, (void*) indio_dev->channels);
-> +	devm_kfree(&pdev->dev, (void*) st->iio_val);
-> +
-> +	return -EINVAL;
-> +}
-> +
-> +/* Function to initialize the processing for usage id */
-> +static int hid_magn_3d_probe(struct platform_device *pdev)
-> +{
-> +	int ret;
-> +	struct iio_dev *indio_dev;
-> +	struct magn_3d_state *magn_state;
-> +	struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
-> +	int report_attr_count = 0;
-> +
-> +	indio_dev = devm_iio_device_alloc(&pdev->dev,
-> +					  sizeof(struct magn_3d_state));
-> +	if (indio_dev == NULL)
-> +		return -ENOMEM;
-> +
-> +	platform_set_drvdata(pdev, indio_dev);
-> +
-> +	magn_state = iio_priv(indio_dev);
-> +	magn_state->common_attributes.hsdev = hsdev;
-> +	magn_state->common_attributes.pdev = pdev;
-> +
-> +	ret = hid_sensor_parse_common_attributes(hsdev,
-> +				HID_USAGE_SENSOR_COMPASS_3D,
-> +				&magn_state->common_attributes);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed to setup common attributes\n");
-> +		return ret;
-> +	}
-> +
-> +	ret = magn_3d_parse_report(pdev, hsdev,
-> +				HID_USAGE_SENSOR_COMPASS_3D,
-> +				&report_attr_count,
-> +				magn_state);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed to setup attributes\n");
-> +		return ret;
-> +	}
-> +
-> +	ret = magn_3d_setup_iio_channels(pdev, indio_dev,
-> +				HID_USAGE_SENSOR_COMPASS_3D,
-> +				report_attr_count,
-> +				magn_state);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed to setup iio channel\n");
-> +		return ret;
-> +	}
-> +
->   	magn_state->callbacks.send_event = magn_3d_proc_event;
->   	magn_state->callbacks.capture_sample = magn_3d_capture_sample;
->   	magn_state->callbacks.pdev = pdev;
-> @@ -379,20 +527,9 @@ static int hid_magn_3d_probe(struct platform_device *pdev)
->   					&magn_state->callbacks);
->   	if (ret < 0) {
->   		dev_err(&pdev->dev, "callback reg failed\n");
-You need to unwind everything in the channel setup code here.  Nothing
-unregisters the device for starters.
-
-> -		goto error_iio_unreg;
->   	}
->
->   	return ret;
-> -
-> -error_iio_unreg:
-> -	iio_device_unregister(indio_dev);
-> -error_remove_trigger:
-> -	hid_sensor_remove_trigger(&magn_state->common_attributes);
-> -error_unreg_buffer_funcs:
-> -	iio_triggered_buffer_cleanup(indio_dev);
-> -error_free_dev_mem:
-> -	kfree(indio_dev->channels);
-> -	return ret;
->   }
->
->   /* Function to deinitialize the processing for usage id */
-> @@ -406,7 +543,8 @@ static int hid_magn_3d_remove(struct platform_device *pdev)
->   	iio_device_unregister(indio_dev);
->   	hid_sensor_remove_trigger(&magn_state->common_attributes);
->   	iio_triggered_buffer_cleanup(indio_dev);
-> -	kfree(indio_dev->channels);
-> +	devm_kfree(&pdev->dev, (void*) magn_state->iio_val);
-> +	devm_kfree(&pdev->dev, (void*) indio_dev->channels);
-You don't need these here.  The whole point about devm resource
-management is that they will get released on remove on the device
-without it needing to be explicitly done.
->
->   	return 0;
->   }
+> As per previous comment.
 >
 
