@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932969AbaFUCwE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 22:52:04 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:62233 "EHLO
+	id S964946AbaFUCzK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 22:55:10 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:56985 "EHLO
 	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755059AbaFUCwD (ORCPT
+	with ESMTP id S1757474AbaFUCzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 22:52:03 -0400
+	Fri, 20 Jun 2014 22:55:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <1403318075.4076.31.camel@joe-AO725>
-References: <1403283410-7022-1-git-send-email-xerofoify@gmail.com>
-	<20140620195926.GY5500@mwanda>
-	<1403294880.4076.7.camel@joe-AO725>
-	<CAPDOMVi2humH7sL8DDkY=WJ3gWnehdeX8QEnNf6d8oTWftHXKA@mail.gmail.com>
-	<1403318075.4076.31.camel@joe-AO725>
-Date: Fri, 20 Jun 2014 22:52:01 -0400
-Message-ID: <CAPDOMVgyttC0AY8CUbWESSBKpkskJYjC3L1AcPw_s0q=QJjLoQ@mail.gmail.com>
-Subject: Re: [PATCH] staging:rtl8821ae: rewrite legacy wifi check in halbcoutsrc
+In-Reply-To: <20140620193819.e379a55b.akpm@linux-foundation.org>
+References: <1403129285-5038-1-git-send-email-xerofoify@gmail.com>
+	<20140619052128.GV5015@mwanda>
+	<CAPDOMVgwT2=iWAHOhgHSBY1B+KoWHQgCdK4idD2miwB=_eMs5Q@mail.gmail.com>
+	<alpine.DEB.2.10.1406210143030.5170@nanos>
+	<CAPDOMVihML8uWwBWRTPGG_abHxrW++xP9_Po7B0_KQZmDfHv-Q@mail.gmail.com>
+	<20140620193819.e379a55b.akpm@linux-foundation.org>
+Date: Fri, 20 Jun 2014 22:55:07 -0400
+Message-ID: <CAPDOMVhr27nDZ8PD3Cw0SUCUMu6Vg3scekX2gAOOi_aP60aXSQ@mail.gmail.com>
+Subject: Re: [PATCH] Check for Null return of function of affs_bread in
+ function affs_truncate
 From: Nick Krause <xerofoify@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
-        pebolle@tiscali.nl, Himangi Saraogi <himangi774@gmail.com>,
-        Konrad Zapalowicz <bergo.torino@gmail.com>,
-        linux-kernel@vger.kernel.org
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>, viro@zeniv.linux.org.uk,
+        fabf@skynet.be, kirill.shutemov@linux.intel.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Is this patch being merged or is this not an issue. I am confused
-did I make a mistake in my patch or is there being a different
-patch being merged.
-Thank Nick
+Fair enough if somebody is running this file system I would be
+happy to have someone test my code in order to fix this.
+Cheers Nick
 
-On Fri, Jun 20, 2014 at 10:34 PM, Joe Perches <joe@perches.com> wrote:
-> On Fri, 2014-06-20 at 22:26 -0400, Nick Krause wrote:
->> Thanks for the feedback I will resend the patch fixed.
+On Fri, Jun 20, 2014 at 10:38 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Fri, 20 Jun 2014 22:25:47 -0400 Nick Krause <xerofoify@gmail.com> wrote:
 >
-> Please do not.
+>> If you have any ideas about what is better
+>> please let me known.
 >
->> Otherwise please use Larry's idea.
+> I think the proposed patch was not a good one - it will cause truncate
+> to silently return, probably leaving the fs in an inconsistent state.
+> Neither the user nor the running application know this happened so they
+> will just keep on modifying the filesystem, possibly mangling it
+> further.
 >
-> It's not Larry's idea.  Larry is the primary
-> contributor for Realtek drivers in staging.
+> The code as it stands at present is better - if bread() fails we'll get
+> a nice solid oops and the current app will be terminated (at least).
+> As we're in truncate it's quite possible that the entire fs will get
+> wedged up due to now-permanently-held i_mutex, which is even better.
+>
+>
+> As for the best fix, umm, hard.  We're pretty screwed if we cannot read
+> that block at this code site.  Perhaps emit loud printks, forcibly turn
+> the fs read-only then return -EIO/-ENOMEM/etc from the truncate.  Such
+> a change would require runtime testing, with some form of developer fault
+> injection.
+>
 >
 >
