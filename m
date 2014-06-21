@@ -1,116 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539AbaFUAO1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 20:14:27 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:56438 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752253AbaFUAOZ (ORCPT
+	id S1756266AbaFUAUf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 20:20:35 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:60094 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752300AbaFUAUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 20:14:25 -0400
-Date: Fri, 20 Jun 2014 17:14:18 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: josh@joshtriplett.org
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 0/5] Fix for cond_resched performance
- regression
-Message-ID: <20140621001418.GF4615@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140620183249.GA6325@linux.vnet.ibm.com>
- <20140620191236.GA10340@linux.vnet.ibm.com>
- <20140620212423.GA22886@cloud>
- <20140620221120.GD4615@linux.vnet.ibm.com>
- <20140620223951.GA23677@cloud>
- <20140620233033.GE4615@linux.vnet.ibm.com>
- <20140620235215.GA24026@cloud>
+	Fri, 20 Jun 2014 20:20:33 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Willy Tarreau <w@1wt.eu>
+Cc: Luis Henriques <luis.henriques@canonical.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Michal Tesar <mtesar@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, tyler.hicks@canonical.com
+References: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
+	<20140512003203.088027167@1wt.eu> <20140611184644.GA5442@hercules>
+	<20140611194657.GU28551@1wt.eu> <87sinanv6u.fsf@canonical.com>
+	<20140614175047.GH15102@1wt.eu> <87simzgrbs.fsf@x220.int.ebiederm.org>
+	<20140620225827.GF9639@1wt.eu>
+Date: Fri, 20 Jun 2014 17:19:15 -0700
+In-Reply-To: <20140620225827.GF9639@1wt.eu> (Willy Tarreau's message of "Sat,
+	21 Jun 2014 00:58:27 +0200")
+Message-ID: <87y4wrf724.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140620235215.GA24026@cloud>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14062100-1344-0000-0000-00000255417A
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18ZDZTStQf170G/gfQws2H3omM5quFS8kE=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.3771]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Willy Tarreau <w@1wt.eu>
+X-Spam-Relay-Country: 
+Subject: Re: [ 059/143] sysctl net: Keep tcp_syn_retries inside the boundary
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 04:52:15PM -0700, josh@joshtriplett.org wrote:
-> On Fri, Jun 20, 2014 at 04:30:33PM -0700, Paul E. McKenney wrote:
-> > On Fri, Jun 20, 2014 at 03:39:51PM -0700, josh@joshtriplett.org wrote:
-> > > On Fri, Jun 20, 2014 at 03:11:20PM -0700, Paul E. McKenney wrote:
-> > > > On Fri, Jun 20, 2014 at 02:24:23PM -0700, josh@joshtriplett.org wrote:
-> > > > > On Fri, Jun 20, 2014 at 12:12:36PM -0700, Paul E. McKenney wrote:
-> > > > > > o	Make cond_resched() a no-op for PREEMPT=y.  This might well turn
-> > > > > > 	out to be a good thing, but it doesn't help give RCU the quiescent
-> > > > > > 	states that it needs.
-> > > > > 
-> > > > > What about doing this, together with letting the fqs logic poke
-> > > > > un-quiesced kernel code as needed?  That way, rather than having
-> > > > > cond_resched do any work, you have the fqs logic recognize that a
-> > > > > particular CPU has gone too long without quiescing, without disturbing
-> > > > > that CPU at all if it hasn't gone too long.
-> > > > 
-> > > > My next stop is to post the previous series, but with a couple of
-> > > > exports and one bug fix uncovered by testing thus far, but after
-> > > > another round of testing.  Then I am going to take a close look at
-> > > > this one:
-> > > > 
-> > > > o	Push the checks further into cond_resched(), so that the
-> > > > 	fastpath does the same sequence of instructions that the original
-> > > > 	did.  This might work well, but requires IPIs, which are not so
-> > > > 	good for latencies on the remote CPU.  It nevertheless might be a
-> > > > 	decent long-term solution given that if your CPU is spending many
-> > > > 	jiffies looping in the kernel, you aren't getting good latencies
-> > > > 	anyway.  It also has the benefit of allowing RCU to take advantage
-> > > > 	of the implicit quiescent states of all cond_resched() calls,
-> > > > 	and of eliminating the need for a separate cond_resched_rcu_qs()
-> > > > 	and for RCU_COND_RESCHED_QS.
-> > > > 
-> > > > The one you call out is of course interesting as well.  But there are
-> > > > a couple of questions:
-> > > > 
-> > > > 1.	Why wasn't cond_resched() a no-op in CONFIG_PREEMPT to start
-> > > > 	with?  It just seems to obvious a thing to do for it to possibly
-> > > > 	be an oversight.  (What, me paranoid?)
-> > > > 
-> > > > 2.	When RCU recognizes that a particular CPU has gone too long,
-> > > > 	exactly what are you suggesting that RCU do about it?  When
-> > > > 	formulating your answer, please give due consideration to the
-> > > > 	implications of that CPU being a NO_HZ_FULL CPU.  ;-)
-> > > 
-> > > Send it an IPI that either causes it to flag a quiescent state
-> > > immediately if currently quiesced or causes it to quiesce at the next
-> > > opportunity if not.
-> > 
-> > OK.  But if we are in a !PREEMPT kernel,
-> 
-> That's not the case I was suggesting.
+Willy Tarreau <w@1wt.eu> writes:
 
-Fair enough, but we still need to support !PREEMPT kernels.
+> Hi Eric,
+>
+> On Fri, Jun 20, 2014 at 03:16:07PM -0700, Eric W. Biederman wrote:
+>> Willy Tarreau <w@1wt.eu> writes:
+>> 
+>> > Hi Luis,
+>> >
+>> > On Thu, Jun 12, 2014 at 01:55:53PM +0100, Luis Henriques wrote:
+>> >> I was finally able to spend some more time with this and tried (a
+>> >> modified) Tyler's patch on top of 2.6.32.62, and it seems to work.
+>> >> Although I haven't done any extended testing, I don't see the two
+>> >> stack traces and the /proc/sys/net/ipv4/ directory seems to be
+>> >> correctly populated.
+>> >> 
+>> >> I'm attaching the patch I've used, based on Tyler's.
+>> >
+>> > Would any of you or Tyler please kindly pass me a signed-off-by with
+>> > a commit message ? That would be great. Alternately I'd do it myself
+>> > and mention you authored them.
+>> 
+>> If my memory serves it is possibe in 2.6.32 to set 
+>> .ctl_name = CTL_UNNEEDED
+>> 
+>> and not need to implement a .strategy routine at all.
+>
+> Ah that's quite interesting, thanks for the tip!
+>
+>> Given the fact that most people got the strategy routines
+>> slightly wrong and that sys_sysctl is effectively unused
+>> a strategy where you don't implement code that no-one
+>> will use in a backport I would be preferable.
+>
+> OK.
+>
+>> Since you have mentioned this has come up a couple of times if something
+>> else this will be something to think about for next time.
+>
+> I'm keeping your e-mail where I manage patches, hoping to recognize
+> this case next time.
+>
+>> I am puzzled why .ctl_name was populated in a backport at all.
+>
+> Oh it's simply because I didn't know it did not have to be there,
+> and among the few reviewers, I guess that it's not common to know
+> what version uses what semantics.
 
->                                        *If* the kernel is fully
-> preemptible, then it makes little sense to put any code in cond_resched,
-> when instead another thread can simply cause a preemption if it needs a
-> quiescent state.  That has the advantage of not imposing any unnecessary
-> polling on code running in the kernel.
+I guess what I meant is that the field .ctl_name does not even exist
+anymore for the same reasons .strategy does not exist anymore.  So I
+was just suprirsed that someone picked a randomish number and stuck
+it in there.
 
-OK.  Exactly which thread are you suggesting should cause the preemption?
+If anyone actually were to use those randomish numbers in the binary
+sys_sysctl call their applications would break when they eventually
+moved to a more recent kernel.
 
-> In a !PREEMPT kernel, it makes a bit more sense to have cond_resched as
-> a voluntary preemption point.  But voluntary preemption points don't
-> make as much sense in a kernel prepared to preempt a thread anywhere.
+Which is one of the motivations it was decided there would be no more
+binary sysctls allocated around the 2.6.32 timeframe.
 
-That does sound intuitive, but I am not yet prepared to believe that
-the scheduler guys missed this trick.  There might well be some good
-reason for cond_resched() doing something, though I cannot think what it
-might be (something to do with preempt_enable_no_resched(), perhaps?).
-We should at least ask them, although if you want to do some testing
-before asking them, I of course have no objection to your doing so.
+> Thank you for the exaplanation, it's really helpful. We're not used
+> to backport sysctl changes but here I got caught a few times and have
+> found some sysctl.conf with bogus values in field a few times, so it
+> was really important to backport this one.
 
-							Thanx, Paul
+Sysctl do have their uses, and at least 2.6.32 has runtime sysctl checks
+to keep the insanity to a dull roar.
 
+Eric
