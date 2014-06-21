@@ -1,29 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934458AbaFUKdz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 06:33:55 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51827 "EHLO
+	id S1755303AbaFUKgi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 06:36:38 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51845 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755129AbaFUKdy (ORCPT
+	with ESMTP id S1755151AbaFUKgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 06:33:54 -0400
-Date: Sat, 21 Jun 2014 11:33:35 +0100
+	Sat, 21 Jun 2014 06:36:37 -0400
+Date: Sat, 21 Jun 2014 11:36:20 +0100
 From: Mark Brown <broonie@kernel.org>
-To: Sachin Kamat <sachin.kamat@samsung.com>
-Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com, spk.linux@gmail.com,
-        p.zabel@pengutronix.de
-Message-ID: <20140621103335.GV5099@sirena.org.uk>
-References: <1402382093-27338-1-git-send-email-sachin.kamat@samsung.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: lgirdwood@gmail.com, grant.likely@linaro.org, robh+dt@kernel.org,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Message-ID: <20140621103620.GY5099@sirena.org.uk>
+References: <1402447283-11356-1-git-send-email-cw00.choi@samsung.com>
+ <539F8E57.4060502@samsung.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UDXac3CCxvoffKng"
+	protocol="application/pgp-signature"; boundary="D+1CPoCc5FXdgAP+"
 Content-Disposition: inline
-In-Reply-To: <1402382093-27338-1-git-send-email-sachin.kamat@samsung.com>
+In-Reply-To: <539F8E57.4060502@samsung.com>
 X-Cookie: Ditat Deus.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 94.175.94.161
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/1] regulator: ltc3589: Staticize ltc3589_reg_defaults
+Subject: Re: [PATCHv2 0/2] regulator: of: Add support for pasing regulator
+ suspend state
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,35 +34,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---UDXac3CCxvoffKng
+--D+1CPoCc5FXdgAP+
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jun 10, 2014 at 12:04:53PM +0530, Sachin Kamat wrote:
-> 'ltc3589_reg_defaults' is local to this file. Make it static.
+On Tue, Jun 17, 2014 at 09:39:51AM +0900, Chanwoo Choi wrote:
+> Hi Mark,
+>=20
+> Could you please review this patchset?
 
-Applied, thanks.
+Please don't send contentless, top posted pings.  It's just more e-mail
+to read.
 
---UDXac3CCxvoffKng
+--D+1CPoCc5FXdgAP+
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBAgAGBQJTpV98AAoJELSic+t+oim9upEP/2iUnbnEKqEIDbxxjPi21xI9
-1xlewpBvhg+bAsKqAEUOOUXrFpdbUgexdZx2L+vTnV+Syh4NLE2R1KLIsMYagRK/
-+ahS2MlwNn3Mhl3tXRzVX8M5hoAxQgLLAycuJEyelDD8otcKxi1/NM80VdLWARFl
-j9iQH2DO97uzY1n4vwKX/5MSX3up/RTVJt+MnWC18JMEVA/tU8WIzPCfTfkUk0Dv
-EQ9JxaRNt077IzU5QDRxHgdh7GbuZN6/Vt/YpeiqFU+0ngMFDZTtJKRyF5hzVRR9
-bhclyaf0GDi6BkMR3760kvN8Y/xb658rq2IbazfsRutKaIBwiuNERoo4/Iykb8W8
-JzJ6JvtwE9uEFFZYxtGZh6aViv8E4VSXwVPAiR9HyjlzEeMZvWYgUWQnl98mriLO
-KLk+Mq1dmRHrNKIcMfPhrljsGS02KyiloEI0uBFcbT38QY/un00rxTvKwK6UXItY
-/Y+1Z4W1FXYMUR5LTNJBz1uE5nhlag+d8TpO5F/ID2J3pKcZlI/E4+U3n4gPIlef
-Bhh1d6rExlYNA3zNwkskHr4qLNa37AQI3UwsnXJ/onIsfOso5xFnjrdNmSFxC5ic
-HULDzk8med2Ji8Axy+VhBVRl3hZ+9isqUC/mzTJX2mV4h1gbTwt3kt4Z2AehG8nb
-nxxpkO/Y7fRa5cSHTbyR
-=X9lG
+iQIcBAEBAgAGBQJTpWAhAAoJELSic+t+oim9cRcP/1kjf1zcKA8AfpSNdqHyDdhv
+0/Xbobwmyr/8eDriXbBaF6BUVfr9YO1nh+QYVaKksO3If+Dd2AtfSG+fM4nwZnNN
+Ks5UU0lS2O2V3ShsAculJOU0X5W18dYyLVMktDjw0ETClN72UJNdOIZwyuayWtH6
+e8XY2sorT+pNWPrbNy642UJi5D67tlEJFF2sVqPGD1utREfG2aI5MSE/c24pQVRq
+jsx+VMvLis+ZLSlq9jTNIaxJrDtGrq0gAb2Lj7O83frsZ29txxtsDWOHIWDJP6yu
++/nnvrTXA8T5osTv8B0AmcG5+oUNxj0Mu7XyzTljVQMayDtxCr1dFxPoxnyuQA1e
+Tghp17JizaiduY6bJZxwTeWGDoZxnXqxQ5/9O+aU0NDnYwVaVnbg3La+Z3g1pU49
+yYJq1HsgzfzDzMZDJTJqVp6oJm0CQppWlRXv2rAY9HM2coxqwY3yX2IY5tcuOkNe
+mVLR8+gIQ73sOdeXvAPcfz2ZAGqtKkAPUC2it2htOTVvulbnadS77zzLfDUEv5JY
+cBFosflZh1fMd3D9/y3SAT3+/vfHgreX1zpXPFlLV26Z3KdHrxjH3Y/fHpd4sMYZ
+G5FEgDnMIm+C7FawBzF9SHVvEGhNxW/spP4QStpDU+eDX1t2+CmxwgkpgZ+I8lvT
+I4x1T2o8ATnLYSrgG6/h
+=YAxB
 -----END PGP SIGNATURE-----
 
---UDXac3CCxvoffKng--
+--D+1CPoCc5FXdgAP+--
