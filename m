@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990AbaFUX3c (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 19:29:32 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:35342 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502AbaFUX3Z (ORCPT
+	id S1753244AbaFUX3o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 19:29:44 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:38461 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624AbaFUX33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 19:29:25 -0400
+	Sat, 21 Jun 2014 19:29:29 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Thomas Gleixner <tglx@linutronix.de>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Viresh Kumar <viresh.kumar@linaro.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 2/5] timer: Kick dynticks targets on mod_timer*() calls
-Date: Sun, 22 Jun 2014 01:29:14 +0200
-Message-Id: <1403393357-2070-3-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 5/5] hrtimer: Remove hrtimer_enqueue_reprogram()
+Date: Sun, 22 Jun 2014 01:29:17 +0200
+Message-Id: <1403393357-2070-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1403393357-2070-1-git-send-email-fweisbec@gmail.com>
 References: <1403393357-2070-1-git-send-email-fweisbec@gmail.com>
@@ -24,88 +24,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Viresh Kumar <viresh.kumar@linaro.org>
 
-When a timer is enqueued or modified on a dynticks target, that CPU
-must re-evaluate the next tick to service that timer.
+We call hrtimer_enqueue_reprogram() only when we are in high resolution
+mode now so we don't need to check that again in hrtimer_enqueue_reprogram().
 
-The tick re-evaluation is performed by an IPI kick on the target.
-Now while we correctly call wake_up_nohz_cpu() from add_timer_on(), the
-mod_timer*() API family doesn't support so well dynticks targets.
-
-The reason for this is likely that __mod_timer() isn't supposed to
-select an idle target for a timer, unless that target is the current
-CPU, in which case a dynticks idle kick isn't actually needed.
-
-But there is a small race window lurking behind that assumption: the
-elected target has all the time to turn dynticks idle between the call
-to get_nohz_timer_target() and the locking of its base. Hence a risk
-that we enqueue a timer on a dynticks idle destination without kicking
-it. As a result, the timer might be serviced too late in the future.
-
-Also a target elected by __mod_timer() can be in full dynticks mode
-and thus require to be kicked as well. And unlike idle dynticks, this
-concern both local and remote targets.
-
-To fix this whole issue, lets centralize the dynticks kick to
-internal_add_timer() so that it is well handled for all sort of timer
-enqueue. Even timer migration is concerned so that a full dynticks target
-is correctly kicked as needed when timers are migrating to it.
+Once the check is removed, hrtimer_enqueue_reprogram() turns to be an
+useless wrapper over hrtimer_reprogram() and can be dropped.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/timer.c | 32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ kernel/hrtimer.c | 23 ++++++++---------------
+ 1 file changed, 8 insertions(+), 15 deletions(-)
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 9e5f4f2..aca5dfe 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -410,6 +410,22 @@ static void internal_add_timer(struct tvec_base *base, struct timer_list *timer)
- 			base->next_timer = timer->expires;
- 	}
- 	base->all_timers++;
-+
-+	/*
-+	 * Check whether the other CPU is in dynticks mode and needs
-+	 * to be triggered to reevaluate the timer wheel.
-+	 * We are protected against the other CPU fiddling
-+	 * with the timer by holding the timer base lock. This also
-+	 * makes sure that a CPU on the way to stop its tick can not
-+	 * evaluate the timer wheel.
-+	 *
-+	 * Spare the IPI for deferrable timers on idle targets though.
-+	 * The next busy ticks will take care of it. Except full dynticks
-+	 * require special care against races with idle_cpu(), lets deal
-+	 * with that later.
-+	 */
-+	if (!tbase_get_deferrable(base) || tick_nohz_full_cpu(base->cpu))
-+		wake_up_nohz_cpu(base->cpu);
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 5f30917..8b3ea17 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -602,6 +602,11 @@ hrtimer_force_reprogram(struct hrtimer_cpu_base *cpu_base, int skip_equal)
+  * timers, we have to check, whether it expires earlier than the timer for
+  * which the clock event device was armed.
+  *
++ * Note, that in case the state has HRTIMER_STATE_CALLBACK set, no reprogramming
++ * and no expiry check happens. The timer gets enqueued into the rbtree. The
++ * reprogramming and expiry check is done in the hrtimer_interrupt or in the
++ * softirq.
++ *
+  * Called with interrupts disabled and base->cpu_base.lock held
+  */
+ static int hrtimer_reprogram(struct hrtimer *timer,
+@@ -662,18 +667,6 @@ static inline void hrtimer_init_hres(struct hrtimer_cpu_base *base)
+ 	base->hres_active = 0;
  }
  
- #ifdef CONFIG_TIMER_STATS
-@@ -949,22 +965,6 @@ void add_timer_on(struct timer_list *timer, int cpu)
- 	timer_set_base(timer, base);
- 	debug_activate(timer, timer->expires);
- 	internal_add_timer(base, timer);
--	/*
--	 * Check whether the other CPU is in dynticks mode and needs
--	 * to be triggered to reevaluate the timer wheel.
--	 * We are protected against the other CPU fiddling
--	 * with the timer by holding the timer base lock. This also
--	 * makes sure that a CPU on the way to stop its tick can not
--	 * evaluate the timer wheel.
--	 *
--	 * Spare the IPI for deferrable timers on idle targets though.
--	 * The next busy ticks will take care of it. Except full dynticks
--	 * require special care against races with idle_cpu(), lets deal
--	 * with that later.
--	 */
--	if (!tbase_get_deferrable(timer->base) || tick_nohz_full_cpu(cpu))
--		wake_up_nohz_cpu(cpu);
+-/*
+- * When High resolution timers are active, try to reprogram. Note, that in case
+- * the state has HRTIMER_STATE_CALLBACK set, no reprogramming and no expiry
+- * check happens. The timer gets enqueued into the rbtree. The reprogramming
+- * and expiry check is done in the hrtimer_interrupt or in the softirq.
+- */
+-static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
+-					    struct hrtimer_clock_base *base)
+-{
+-	return base->cpu_base->hres_active && hrtimer_reprogram(timer, base);
+-}
 -
- 	spin_unlock_irqrestore(&base->lock, flags);
+ static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
+ {
+ 	ktime_t *offs_real = &base->clock_base[HRTIMER_BASE_REALTIME].offset;
+@@ -755,8 +748,8 @@ static inline int hrtimer_is_hres_enabled(void) { return 0; }
+ static inline int hrtimer_switch_to_hres(void) { return 0; }
+ static inline void
+ hrtimer_force_reprogram(struct hrtimer_cpu_base *base, int skip_equal) { }
+-static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
+-					    struct hrtimer_clock_base *base)
++static inline int hrtimer_reprogram(struct hrtimer *timer,
++				    struct hrtimer_clock_base *base)
+ {
+ 	return 0;
  }
- EXPORT_SYMBOL_GPL(add_timer_on);
+@@ -1025,7 +1018,7 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 		 */
+ 		wake_up_nohz_cpu(base->cpu_base->cpu);
+ 	} else if (new_base->cpu_base == &__get_cpu_var(hrtimer_bases) &&
+-			hrtimer_enqueue_reprogram(timer, new_base)) {
++			hrtimer_reprogram(timer, new_base)) {
+ 		/*
+ 		 * Only allow reprogramming if the new base is on this CPU.
+ 		 * (it might still be on another CPU if the timer was pending)
 -- 
 1.8.3.1
 
