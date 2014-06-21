@@ -1,140 +1,453 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965677AbaFUC5i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 22:57:38 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:51495 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757991AbaFUC5g (ORCPT
+	id S966142AbaFUDAI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 23:00:08 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:48401 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756926AbaFUDAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 22:57:36 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19VuTlt6sXsCGiZWZ32Y0dvNS9O1jwXwmk=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 2F6BE59516E
-Date: Fri, 20 Jun 2014 22:57:23 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sricharan R <r.sricharan@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tony@atomide.com, santosh.shilimkar@ti.com, nm@ti.com, rnayak@ti.com,
-        linux@arm.linux.org.uk, tglx@linutronix.de, joe@perches.com
-Subject: Re: [PATCH V3 16/16] irqchip: crossbar: allow for quirky hardware
- with direct hardwiring of GIC
-Message-ID: <20140621025723.GF21711@titan.lakedaemon.net>
-References: <1402917796-31574-1-git-send-email-r.sricharan@ti.com>
- <1402917796-31574-17-git-send-email-r.sricharan@ti.com>
+	Fri, 20 Jun 2014 23:00:06 -0400
+Date: Fri, 20 Jun 2014 19:59:58 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        dave.hansen@intel.com, ak@linux.intel.com, cl@gentwo.org,
+        umgwanakikbuti@gmail.com
+Subject: [PATCH tip/core/rcu] Reduce overhead of cond_resched() checks for RCU
+Message-ID: <20140621025958.GA7185@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1402917796-31574-17-git-send-email-r.sricharan@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062103-7164-0000-0000-00000295FB5E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 04:53:16PM +0530, Sricharan R wrote:
-> From: Nishanth Menon <nm@ti.com>
-> 
-> On certain platforms such as DRA7, SPIs 0, 1, 2, 3, 5, 6, 10, 131,
-> 132, 133 are direct wired to hardware blocks bypassing crossbar.
-> This quirky implementation is *NOT* supposed to be the expectation
-> of crossbar hardware usage. However, these are already marked in our
-> description of the hardware with SKIP and RESERVED where appropriate.
-> 
-> Unfortunately, we need to be able to refer to these hardwired IRQs.
-> So, to request these, crossbar driver can use the existing information
-> from it's table that these SKIP/RESERVED maps are direct wired sources
-> and generic allocation/programming of crossbar should be avoided.
-> 
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> Signed-off-by: Sricharan R <r.sricharan@ti.com>
-> ---
->  .../devicetree/bindings/arm/omap/crossbar.txt      |   12 ++++++++++--
->  drivers/irqchip/irq-crossbar.c                     |   20 ++++++++++++++++++--
->  2 files changed, 28 insertions(+), 4 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/omap/crossbar.txt b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
-> index 8210ea4..438ccab 100644
-> --- a/Documentation/devicetree/bindings/arm/omap/crossbar.txt
-> +++ b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
-> @@ -42,8 +42,10 @@ Documentation/devicetree/bindings/arm/gic.txt for further details.
->  
->  An interrupt consumer on an SoC using crossbar will use:
->  	interrupts = <GIC_SPI request_number interrupt_level>
-> -request number shall be between 0 to that described by
-> -"ti,max-crossbar-sources"
-> +When the request number is between 0 to that described by
-> +"ti,max-crossbar-sources", it is assumed to be a crossbar mapping. If the
-> +request_number is greater than "ti,max-crossbar-sources", then it is mapped as a
-> +quirky hardware mapping direct to GIC.
->  
->  Example:
->  	device_x@0x4a023000 {
-> @@ -51,3 +53,9 @@ Example:
->  		interrupts = <GIC_SPI 8 IRQ_TYPE_LEVEL_HIGH>;
->  		...
->  	};
-> +
-> +	device_y@0x4a033000 {
-> +		/* Direct mapped GIC SPI 1 used */
-> +		interrupts = <GIC_SPI 401 IRQ_TYPE_LEVEL_HIGH>;
+Commit ac1bea85781e (Make cond_resched() report RCU quiescent states)
+fixed a problem where a CPU looping in the kernel with but one runnable
+task would give RCU CPU stall warnings, even if the in-kernel loop
+contained cond_resched() calls.  Unfortunately, in so doing, it introduced
+performance regressions in Anton Blanchard's will-it-scale "open1" test.
+The problem appears to be not so much the increased cond_resched() path
+length as an increase in the rate at which grace periods complete, which
+increased per-update grace-period overhead.
 
-Ideally, I'd like to see a macro here so that it's clear that we crossed
-a magic threshold. eg:
+This commit takes a different approach to fixing this bug, mainly by
+moving the RCU-visible quiescent state from cond_resched() to
+rcu_note_context_switch(), and by further reducing the check to a
+simple non-zero test of a single per-CPU variable.  However, this
+approach requires that the force-quiescent-state processing send
+resched IPIs to the offending CPUs.  These will be sent only once
+the grace period has reached an age specified by the boot/sysfs
+parameter rcutree.jiffies_till_sched_qs, or once the grace period
+reaches an age halfway to the point at which RCU CPU stall warnings
+will be emitted, whichever comes first.
 
-#define MAX_SOURCES     400
-#define DIRECT_IRQ(irq) (MAX_SOURCES + irq)
-...
-		interrupts = <GIC_SPI DIRECT_IRQ(1) IRQ_TYPE_LEVEL_HIGH>;
+Reported-by: Dave Hansen <dave.hansen@intel.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Josh Triplett <josh@joshtriplett.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Christoph Lameter <cl@gentwo.org>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
 
-and, then:
+---
 
-		ti,max-crossbar-sources = <MAX_SOURCES>;
+ b/Documentation/kernel-parameters.txt |    6 +
+ b/include/linux/rcupdate.h            |   36 --------
+ b/kernel/rcu/tree.c                   |  140 +++++++++++++++++++++++++++-------
+ b/kernel/rcu/tree.h                   |    6 +
+ b/kernel/rcu/tree_plugin.h            |    2 
+ b/kernel/rcu/update.c                 |   18 ----
+ b/kernel/sched/core.c                 |    7 -
+ 7 files changed, 125 insertions(+), 90 deletions(-)
 
-> +		...
-> +	};
-> diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
-> index ef613c4..fff6218 100644
-> --- a/drivers/irqchip/irq-crossbar.c
-> +++ b/drivers/irqchip/irq-crossbar.c
-> @@ -86,8 +86,13 @@ static inline int allocate_free_irq(int cb_no)
->  
->  static inline bool needs_crossbar_write(irq_hw_number_t hw)
->  {
-> -	if (hw > GIC_IRQ_START)
-> -		return true;
-> +	int cb_no;
-> +
-> +	if (hw > GIC_IRQ_START) {
-> +		cb_no = cb->irq_map[hw - GIC_IRQ_START];
-> +		if (cb_no != IRQ_RESERVED && cb_no != IRQ_SKIP)
-> +			return true;
-> +	}
->  
->  	return false;
->  }
-> @@ -130,8 +135,19 @@ static int crossbar_domain_xlate(struct irq_domain *d,
->  {
->  	int ret;
->  	int req_num = intspec[1];
-> +	int direct_map_num;
->  
->  	if (req_num >= cb->max_crossbar_sources) {
-> +		direct_map_num = req_num - cb->max_crossbar_sources;
-> +		if (direct_map_num < cb->int_max) {
-> +			ret = cb->irq_map[direct_map_num];
-> +			if (ret == IRQ_RESERVED || ret == IRQ_SKIP) {
-> +				/* We use the interrupt num as h/w irq num */
-> +				ret = direct_map_num;
-> +				goto found;
-> +			}
-> +		}
-> +
->  		pr_err("%s: requested crossbar number %d > max %d\n",
->  		       __func__, req_num, cb->max_crossbar_sources);
->  		return -EINVAL;
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 6eaa9cdb7094..910c3829f81d 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2785,6 +2785,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			leaf rcu_node structure.  Useful for very large
+ 			systems.
+ 
++	rcutree.jiffies_till_sched_qs= [KNL]
++			Set required age in jiffies for a
++			given grace period before RCU starts
++			soliciting quiescent-state help from
++			rcu_note_context_switch().
++
+ 	rcutree.jiffies_till_first_fqs= [KNL]
+ 			Set delay from grace-period initialization to
+ 			first attempt to force quiescent states.
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 5a75d19aa661..243aa4656cb7 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -44,7 +44,6 @@
+ #include <linux/debugobjects.h>
+ #include <linux/bug.h>
+ #include <linux/compiler.h>
+-#include <linux/percpu.h>
+ #include <asm/barrier.h>
+ 
+ extern int rcu_expedited; /* for sysctl */
+@@ -300,41 +299,6 @@ bool __rcu_is_watching(void);
+ #endif /* #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP) */
+ 
+ /*
+- * Hooks for cond_resched() and friends to avoid RCU CPU stall warnings.
+- */
+-
+-#define RCU_COND_RESCHED_LIM 256	/* ms vs. 100s of ms. */
+-DECLARE_PER_CPU(int, rcu_cond_resched_count);
+-void rcu_resched(void);
+-
+-/*
+- * Is it time to report RCU quiescent states?
+- *
+- * Note unsynchronized access to rcu_cond_resched_count.  Yes, we might
+- * increment some random CPU's count, and possibly also load the result from
+- * yet another CPU's count.  We might even clobber some other CPU's attempt
+- * to zero its counter.  This is all OK because the goal is not precision,
+- * but rather reasonable amortization of rcu_note_context_switch() overhead
+- * and extremely high probability of avoiding RCU CPU stall warnings.
+- * Note that this function has to be preempted in just the wrong place,
+- * many thousands of times in a row, for anything bad to happen.
+- */
+-static inline bool rcu_should_resched(void)
+-{
+-	return raw_cpu_inc_return(rcu_cond_resched_count) >=
+-	       RCU_COND_RESCHED_LIM;
+-}
+-
+-/*
+- * Report quiscent states to RCU if it is time to do so.
+- */
+-static inline void rcu_cond_resched(void)
+-{
+-	if (unlikely(rcu_should_resched()))
+-		rcu_resched();
+-}
+-
+-/*
+  * Infrastructure to implement the synchronize_() primitives in
+  * TREE_RCU and rcu_barrier_() primitives in TINY_RCU.
+  */
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index f1ba77363fbb..7d711f9a2e86 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -206,6 +206,70 @@ void rcu_bh_qs(int cpu)
+ 	rdp->passed_quiesce = 1;
+ }
+ 
++static DEFINE_PER_CPU(int, rcu_sched_qs_mask);
++
++static DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
++	.dynticks_nesting = DYNTICK_TASK_EXIT_IDLE,
++	.dynticks = ATOMIC_INIT(1),
++#ifdef CONFIG_NO_HZ_FULL_SYSIDLE
++	.dynticks_idle_nesting = DYNTICK_TASK_NEST_VALUE,
++	.dynticks_idle = ATOMIC_INIT(1),
++#endif /* #ifdef CONFIG_NO_HZ_FULL_SYSIDLE */
++};
++
++/*
++ * Let the RCU core know that this CPU has gone through the scheduler,
++ * which is a quiescent state.  This is called when the need for a
++ * quiescent state is urgent, so we burn an atomic operation and full
++ * memory barriers to let the RCU core know about it, regardless of what
++ * this CPU might (or might not) do in the near future.
++ *
++ * We inform the RCU core by emulating a zero-duration dyntick-idle
++ * period, which we in turn do by incrementing the ->dynticks counter
++ * by two.
++ */
++void rcu_momentary_dyntick_idle(void)
++{
++	unsigned long flags;
++	struct rcu_data *rdp;
++	struct rcu_dynticks *rdtp;
++	int resched_mask;
++	struct rcu_state *rsp;
++
++	local_irq_save(flags);
++
++	/*
++	 * Yes, we can lose flag-setting operations.  This is OK, because
++	 * the flag will be set again after some delay.
++	 */
++	resched_mask = raw_cpu_read(rcu_sched_qs_mask);
++	raw_cpu_write(rcu_sched_qs_mask, 0);
++
++	/* Find the flavor that needs a quiescent state. */
++	for_each_rcu_flavor(rsp) {
++		rdp = raw_cpu_ptr(rsp->rda);
++		if (!(resched_mask & rsp->flavor_mask))
++			continue;
++		smp_mb(); /* ->flavor_mask before ->cond_resched_completed. */
++		if (ACCESS_ONCE(rdp->mynode->completed) !=
++		    ACCESS_ONCE(rdp->cond_resched_completed))
++			continue;
++
++		/*
++		 * Pretend to be momentarily idle for the quiescent state.
++		 * This allows the grace-period kthread to record the
++		 * quiescent state, with no need for this CPU to do anything
++		 * further.
++		 */
++		rdtp = this_cpu_ptr(&rcu_dynticks);
++		smp_mb__before_atomic(); /* Earlier stuff before QS. */
++		atomic_add(2, &rdtp->dynticks);  /* QS. */
++		smp_mb__after_atomic(); /* Later stuff after QS. */
++		break;
++	}
++	local_irq_restore(flags);
++}
++
+ /*
+  * Note a context switch.  This is a quiescent state for RCU-sched,
+  * and requires special handling for preemptible RCU.
+@@ -216,19 +280,12 @@ void rcu_note_context_switch(int cpu)
+ 	trace_rcu_utilization(TPS("Start context switch"));
+ 	rcu_sched_qs(cpu);
+ 	rcu_preempt_note_context_switch(cpu);
++	if (unlikely(raw_cpu_read(rcu_sched_qs_mask)))
++		rcu_momentary_dyntick_idle();
+ 	trace_rcu_utilization(TPS("End context switch"));
+ }
+ EXPORT_SYMBOL_GPL(rcu_note_context_switch);
+ 
+-static DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
+-	.dynticks_nesting = DYNTICK_TASK_EXIT_IDLE,
+-	.dynticks = ATOMIC_INIT(1),
+-#ifdef CONFIG_NO_HZ_FULL_SYSIDLE
+-	.dynticks_idle_nesting = DYNTICK_TASK_NEST_VALUE,
+-	.dynticks_idle = ATOMIC_INIT(1),
+-#endif /* #ifdef CONFIG_NO_HZ_FULL_SYSIDLE */
+-};
+-
+ static long blimit = 10;	/* Maximum callbacks per rcu_do_batch. */
+ static long qhimark = 10000;	/* If this many pending, ignore blimit. */
+ static long qlowmark = 100;	/* Once only this many pending, use blimit. */
+@@ -243,6 +300,13 @@ static ulong jiffies_till_next_fqs = ULONG_MAX;
+ module_param(jiffies_till_first_fqs, ulong, 0644);
+ module_param(jiffies_till_next_fqs, ulong, 0644);
+ 
++/*
++ * How long the grace period must be before we start recruiting
++ * quiescent-state help from rcu_note_context_switch().
++ */
++static ulong jiffies_till_sched_qs = HZ / 20;
++module_param(jiffies_till_sched_qs, ulong, 0644);
++
+ static bool rcu_start_gp_advanced(struct rcu_state *rsp, struct rcu_node *rnp,
+ 				  struct rcu_data *rdp);
+ static void force_qs_rnp(struct rcu_state *rsp,
+@@ -853,6 +917,7 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp,
+ 				    bool *isidle, unsigned long *maxj)
+ {
+ 	unsigned int curr;
++	int *rcrmp;
+ 	unsigned int snap;
+ 
+ 	curr = (unsigned int)atomic_add_return(0, &rdp->dynticks->dynticks);
+@@ -893,27 +958,43 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp,
+ 	}
+ 
+ 	/*
+-	 * There is a possibility that a CPU in adaptive-ticks state
+-	 * might run in the kernel with the scheduling-clock tick disabled
+-	 * for an extended time period.  Invoke rcu_kick_nohz_cpu() to
+-	 * force the CPU to restart the scheduling-clock tick in this
+-	 * CPU is in this state.
+-	 */
+-	rcu_kick_nohz_cpu(rdp->cpu);
+-
+-	/*
+-	 * Alternatively, the CPU might be running in the kernel
+-	 * for an extended period of time without a quiescent state.
+-	 * Attempt to force the CPU through the scheduler to gain the
+-	 * needed quiescent state, but only if the grace period has gone
+-	 * on for an uncommonly long time.  If there are many stuck CPUs,
+-	 * we will beat on the first one until it gets unstuck, then move
+-	 * to the next.  Only do this for the primary flavor of RCU.
++	 * A CPU running for an extended time within the kernel can
++	 * delay RCU grace periods.  When the CPU is in NO_HZ_FULL mode,
++	 * even context-switching back and forth between a pair of
++	 * in-kernel CPU-bound tasks cannot advance grace periods.
++	 * So if the grace period is old enough, make the CPU pay attention.
++	 * Note that the unsynchronized assignments to the per-CPU
++	 * rcu_sched_qs_mask variable are safe.  Yes, setting of
++	 * bits can be lost, but they will be set again on the next
++	 * force-quiescent-state pass.  So lost bit sets do not result
++	 * in incorrect behavior, merely in a grace period lasting
++	 * a few jiffies longer than it might otherwise.  Because
++	 * there are at most four threads involved, and because the
++	 * updates are only once every few jiffies, the probability of
++	 * lossage (and thus of slight grace-period extension) is
++	 * quite low.
++	 *
++	 * Note that if the jiffies_till_sched_qs boot/sysfs parameter
++	 * is set too high, we override with half of the RCU CPU stall
++	 * warning delay.
+ 	 */
+-	if (rdp->rsp == rcu_state_p &&
++	rcrmp = &per_cpu(rcu_sched_qs_mask, rdp->cpu);
++	if (ULONG_CMP_GE(jiffies,
++			 rdp->rsp->gp_start + jiffies_till_sched_qs) ||
+ 	    ULONG_CMP_GE(jiffies, rdp->rsp->jiffies_resched)) {
+-		rdp->rsp->jiffies_resched += 5;
+-		resched_cpu(rdp->cpu);
++		if (!(ACCESS_ONCE(*rcrmp) & rdp->rsp->flavor_mask)) {
++			ACCESS_ONCE(rdp->cond_resched_completed) =
++				ACCESS_ONCE(rdp->mynode->completed);
++			smp_mb(); /* ->cond_resched_completed before *rcrmp. */
++			ACCESS_ONCE(*rcrmp) =
++				ACCESS_ONCE(*rcrmp) + rdp->rsp->flavor_mask;
++			resched_cpu(rdp->cpu);  /* Force CPU into scheduler. */
++			rdp->rsp->jiffies_resched += 5; /* Enable beating. */
++		} else if (ULONG_CMP_GE(jiffies, rdp->rsp->jiffies_resched)) {
++			/* Time to beat on that CPU again! */
++			resched_cpu(rdp->cpu);  /* Force CPU into scheduler. */
++			rdp->rsp->jiffies_resched += 5; /* Re-enable beating. */
++		}
+ 	}
+ 
+ 	return 0;
+@@ -3491,6 +3572,7 @@ static void __init rcu_init_one(struct rcu_state *rsp,
+ 			       "rcu_node_fqs_1",
+ 			       "rcu_node_fqs_2",
+ 			       "rcu_node_fqs_3" };  /* Match MAX_RCU_LVLS */
++	static u8 fl_mask = 0x1;
+ 	int cpustride = 1;
+ 	int i;
+ 	int j;
+@@ -3509,6 +3591,8 @@ static void __init rcu_init_one(struct rcu_state *rsp,
+ 	for (i = 1; i < rcu_num_lvls; i++)
+ 		rsp->level[i] = rsp->level[i - 1] + rsp->levelcnt[i - 1];
+ 	rcu_init_levelspread(rsp);
++	rsp->flavor_mask = fl_mask;
++	fl_mask <<= 1;
+ 
+ 	/* Initialize the elements themselves, starting from the leaves. */
+ 
+diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
+index bf2c1e669691..0f69a79c5b7d 100644
+--- a/kernel/rcu/tree.h
++++ b/kernel/rcu/tree.h
+@@ -307,6 +307,9 @@ struct rcu_data {
+ 	/* 4) reasons this CPU needed to be kicked by force_quiescent_state */
+ 	unsigned long dynticks_fqs;	/* Kicked due to dynticks idle. */
+ 	unsigned long offline_fqs;	/* Kicked due to being offline. */
++	unsigned long cond_resched_completed;
++					/* Grace period that needs help */
++					/*  from cond_resched(). */
+ 
+ 	/* 5) __rcu_pending() statistics. */
+ 	unsigned long n_rcu_pending;	/* rcu_pending() calls since boot. */
+@@ -392,6 +395,7 @@ struct rcu_state {
+ 	struct rcu_node *level[RCU_NUM_LVLS];	/* Hierarchy levels. */
+ 	u32 levelcnt[MAX_RCU_LVLS + 1];		/* # nodes in each level. */
+ 	u8 levelspread[RCU_NUM_LVLS];		/* kids/node in each level. */
++	u8 flavor_mask;				/* bit in flavor mask. */
+ 	struct rcu_data __percpu *rda;		/* pointer of percu rcu_data. */
+ 	void (*call)(struct rcu_head *head,	/* call_rcu() flavor. */
+ 		     void (*func)(struct rcu_head *head));
+@@ -563,7 +567,7 @@ static bool rcu_nocb_need_deferred_wakeup(struct rcu_data *rdp);
+ static void do_nocb_deferred_wakeup(struct rcu_data *rdp);
+ static void rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp);
+ static void rcu_spawn_nocb_kthreads(struct rcu_state *rsp);
+-static void rcu_kick_nohz_cpu(int cpu);
++static void __maybe_unused rcu_kick_nohz_cpu(int cpu);
+ static bool init_nocb_callback_list(struct rcu_data *rdp);
+ static void rcu_sysidle_enter(struct rcu_dynticks *rdtp, int irq);
+ static void rcu_sysidle_exit(struct rcu_dynticks *rdtp, int irq);
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index cbc2c45265e2..02ac0fb186b8 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2404,7 +2404,7 @@ static bool init_nocb_callback_list(struct rcu_data *rdp)
+  * if an adaptive-ticks CPU is failing to respond to the current grace
+  * period and has not be idle from an RCU perspective, kick it.
+  */
+-static void rcu_kick_nohz_cpu(int cpu)
++static void __maybe_unused rcu_kick_nohz_cpu(int cpu)
+ {
+ #ifdef CONFIG_NO_HZ_FULL
+ 	if (tick_nohz_full_cpu(cpu))
+diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+index a2aeb4df0f60..d22309cae9f5 100644
+--- a/kernel/rcu/update.c
++++ b/kernel/rcu/update.c
+@@ -350,21 +350,3 @@ static int __init check_cpu_stall_init(void)
+ early_initcall(check_cpu_stall_init);
+ 
+ #endif /* #ifdef CONFIG_RCU_STALL_COMMON */
+-
+-/*
+- * Hooks for cond_resched() and friends to avoid RCU CPU stall warnings.
+- */
+-
+-DEFINE_PER_CPU(int, rcu_cond_resched_count);
+-
+-/*
+- * Report a set of RCU quiescent states, for use by cond_resched()
+- * and friends.  Out of line due to being called infrequently.
+- */
+-void rcu_resched(void)
+-{
+-	preempt_disable();
+-	__this_cpu_write(rcu_cond_resched_count, 0);
+-	rcu_note_context_switch(smp_processor_id());
+-	preempt_enable();
+-}
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 3bdf01b494fe..bc1638b33449 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4147,7 +4147,6 @@ static void __cond_resched(void)
+ 
+ int __sched _cond_resched(void)
+ {
+-	rcu_cond_resched();
+ 	if (should_resched()) {
+ 		__cond_resched();
+ 		return 1;
+@@ -4166,18 +4165,15 @@ EXPORT_SYMBOL(_cond_resched);
+  */
+ int __cond_resched_lock(spinlock_t *lock)
+ {
+-	bool need_rcu_resched = rcu_should_resched();
+ 	int resched = should_resched();
+ 	int ret = 0;
+ 
+ 	lockdep_assert_held(lock);
+ 
+-	if (spin_needbreak(lock) || resched || need_rcu_resched) {
++	if (spin_needbreak(lock) || resched) {
+ 		spin_unlock(lock);
+ 		if (resched)
+ 			__cond_resched();
+-		else if (unlikely(need_rcu_resched))
+-			rcu_resched();
+ 		else
+ 			cpu_relax();
+ 		ret = 1;
+@@ -4191,7 +4187,6 @@ int __sched __cond_resched_softirq(void)
+ {
+ 	BUG_ON(!in_softirq());
+ 
+-	rcu_cond_resched();  /* BH disabled OK, just recording QSes. */
+ 	if (should_resched()) {
+ 		local_bh_enable();
+ 		__cond_resched();
 
-thx,
-
-Jason.
