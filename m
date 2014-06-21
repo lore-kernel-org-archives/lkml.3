@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555AbaFUR3n (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 13:29:43 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:53900 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752937AbaFUR3m (ORCPT
+	id S1753860AbaFUSCF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 14:02:05 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:44803 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753426AbaFUSCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 13:29:42 -0400
-Date: Sat, 21 Jun 2014 19:29:35 +0200
-From: Pawel Lebioda <pawel.lebioda89@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: cxt1e1: fix sbeCrc function declaration
-Message-ID: <20140621172931.GA13116@ThinkPad>
+	Sat, 21 Jun 2014 14:02:04 -0400
+Date: Sat, 21 Jun 2014 20:02:01 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: kernel list <linux-kernel@vger.kernel.org>, bskeggs@redhat.com,
+        Greg KH <greg@kroah.com>, acourbot@nvidia.com, airlied@linux.ie,
+        dri-devel@lists.freedesktop.org
+Subject: unparseable, undocumented /sys/class/drm/.../pstate
+Message-ID: <20140621180201.GA4621@amd.pavel.ucw.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi!
 
-This patch fixes the following sparse warning:
+AFAICT, pstate file will contain something like
 
-drivers/staging/cxt1e1/sbecrc.c:86:1: warning: symbol 'sbeCrc' was not declared. Should it be static?
+07: core 100 MHz memory 123 MHz *
+08: core 100-200 MHz memory 123 MHz
 
-Furthermore it fixes wring sbeCrc return type in function declaration.
+...which does not look exactly like one-value-per-file, and I'm pretty
+sure userspace will get it wrong if it tries to parse it. Plus, I
+don't see required documentation in Documentation/ABI.
 
-Regards
-Pawel Lebioda
+Should we disable it for now, so that userspace does not start
+depending on it and we'll not have to maintain it forever?
 
-Signed-off-by: Pawel Lebioda <pawel.lebioda89@gmail.com>
----
- drivers/staging/cxt1e1/pmcc4.h         | 2 +-
- drivers/staging/cxt1e1/pmcc4_private.h | 1 +
- drivers/staging/cxt1e1/sbecrc.c        | 1 +
- 3 files changed, 3 insertions(+), 1 deletion(-)
+I guess better interface would be something like
 
-diff --git a/drivers/staging/cxt1e1/pmcc4.h b/drivers/staging/cxt1e1/pmcc4.h
-index b4b5e5a..0220bbf 100644
---- a/drivers/staging/cxt1e1/pmcc4.h
-+++ b/drivers/staging/cxt1e1/pmcc4.h
-@@ -94,7 +94,7 @@ void        sbecom_set_loglevel (int debuglevel);
- char       *sbeid_get_bdname (ci_t *ci);
- void        sbeid_set_bdtype (ci_t *ci);
- void        sbeid_set_hdwbid (ci_t *ci);
--u_int32_t   sbeCrc (u_int8_t *, u_int32_t, u_int32_t, u_int32_t *);
-+void        sbeCrc(u_int8_t *, u_int32_t, u_int32_t, u_int32_t *);
- 
- void        VMETRO_TRIGGER (ci_t *, int);       /* Note: int = 0(default)
-                                                  * thru 15 */
-diff --git a/drivers/staging/cxt1e1/pmcc4_private.h b/drivers/staging/cxt1e1/pmcc4_private.h
-index 451f12f..134ddd6 100644
---- a/drivers/staging/cxt1e1/pmcc4_private.h
-+++ b/drivers/staging/cxt1e1/pmcc4_private.h
-@@ -33,6 +33,7 @@
- #include "musycc.h"
- #include "sbe_promformat.h"
- #include "comet.h"
-+#include "sbecom_inline_linux.h"
- 
- 
- /* driver state */
-diff --git a/drivers/staging/cxt1e1/sbecrc.c b/drivers/staging/cxt1e1/sbecrc.c
-index a51780f..52d3f71 100644
---- a/drivers/staging/cxt1e1/sbecrc.c
-+++ b/drivers/staging/cxt1e1/sbecrc.c
-@@ -16,6 +16,7 @@
-  */
- 
- #include <linux/types.h>
-+#include "pmcc4.h"
- #include "pmcc4_sysdep.h"
- #include "sbecom_inline_linux.h"
- #include "sbe_promformat.h"
+pstate/07/core_clock_min
+          core_clock_max
+	  memory_clock_min
+	  memory_clock_max
+
+and then pstate/active containing just the number of active state?
+
+Thanks,
+								Pavel
+
+PS: I have no nvidia, got the news at
+
+http://www.phoronix.com/scan.php?page=article&item=nouveau_try_linux316&num=2
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
