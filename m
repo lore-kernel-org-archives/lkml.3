@@ -1,146 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544AbaFUAae (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 20:30:34 -0400
-Received: from g5t1627.atlanta.hp.com ([15.192.137.10]:37972 "EHLO
-	g5t1627.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300AbaFUAad (ORCPT
+	id S1757149AbaFUAfQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 20:35:16 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:40939 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377AbaFUAfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 20:30:33 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-To: Paul Moore <paul@paul-moore.com>, Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@parisplace.org>,
-        James Morris <james.l.morris@oracle.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Scott J Norton <scott.norton@hp.com>, Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v2] selinux: no recursive read_lock of policy_rwlock in security_genfs_sid()
-Date: Fri, 20 Jun 2014 20:30:23 -0400
-Message-Id: <1403310623-37002-1-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
+	Fri, 20 Jun 2014 20:35:14 -0400
+Message-ID: <53A4D323.5080808@oracle.com>
+Date: Fri, 20 Jun 2014 20:34:43 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 13/13] mm: memcontrol: rewrite uncharge API
+References: <1403124045-24361-1-git-send-email-hannes@cmpxchg.org> <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <1403124045-24361-14-git-send-email-hannes@cmpxchg.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v1->v2:
- - Add an internal helper to switch on/off lock acquisition instead
-   of modifying the external API.
+On 06/18/2014 04:40 PM, Johannes Weiner wrote:
+> The memcg uncharging code that is involved towards the end of a page's
+> lifetime - truncation, reclaim, swapout, migration - is impressively
+> complicated and fragile.
+> 
+> Because anonymous and file pages were always charged before they had
+> their page->mapping established, uncharges had to happen when the page
+> type could still be known from the context; as in unmap for anonymous,
+> page cache removal for file and shmem pages, and swap cache truncation
+> for swap pages.  However, these operations happen well before the page
+> is actually freed, and so a lot of synchronization is necessary:
+> 
+> - Charging, uncharging, page migration, and charge migration all need
+>   to take a per-page bit spinlock as they could race with uncharging.
+> 
+> - Swap cache truncation happens during both swap-in and swap-out, and
+>   possibly repeatedly before the page is actually freed.  This means
+>   that the memcg swapout code is called from many contexts that make
+>   no sense and it has to figure out the direction from page state to
+>   make sure memory and memory+swap are always correctly charged.
+> 
+> - On page migration, the old page might be unmapped but then reused,
+>   so memcg code has to prevent untimely uncharging in that case.
+>   Because this code - which should be a simple charge transfer - is so
+>   special-cased, it is not reusable for replace_page_cache().
+> 
+> But now that charged pages always have a page->mapping, introduce
+> mem_cgroup_uncharge(), which is called after the final put_page(),
+> when we know for sure that nobody is looking at the page anymore.
+> 
+> For page migration, introduce mem_cgroup_migrate(), which is called
+> after the migration is successful and the new page is fully rmapped.
+> Because the old page is no longer uncharged after migration, prevent
+> double charges by decoupling the page's memcg association (PCG_USED
+> and pc->mem_cgroup) from the page holding an actual charge.  The new
+> bits PCG_MEM and PCG_MEMSW represent the respective charges and are
+> transferred to the new page during migration.
+> 
+> mem_cgroup_migrate() is suitable for replace_page_cache() as well,
+> which gets rid of mem_cgroup_replace_page_cache().
+> 
+> Swap accounting is massively simplified: because the page is no longer
+> uncharged as early as swap cache deletion, a new mem_cgroup_swapout()
+> can transfer the page's memory+swap charge (PCG_MEMSW) to the swap
+> entry before the final put_page() in page reclaim.
+> 
+> Finally, page_cgroup changes are now protected by whatever protection
+> the page itself offers: anonymous pages are charged under the page
+> table lock, whereas page cache insertions, swapin, and migration hold
+> the page lock.  Uncharging happens under full exclusion with no
+> outstanding references.  Charging and uncharging also ensure that the
+> page is off-LRU, which serializes against charge migration.  Remove
+> the very costly page_cgroup lock and set pc->flags non-atomically.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-With introduction of fair queued rwlock, recursive read_lock() may hang
-the offending process if there is a write_lock() somewhere in between.
+Hi Johannes,
 
-With recursive read_lock checking enabled, the following error was
-reported:
+I'm seeing the following when booting a VM, bisection pointed me to this
+patch.
 
-=============================================
-[ INFO: possible recursive locking detected ]
-3.16.0-rc1 #2 Tainted: G            E
----------------------------------------------
-load_policy/708 is trying to acquire lock:
- (policy_rwlock){.+.+..}, at: [<ffffffff8125b32a>]
-security_genfs_sid+0x3a/0x170
+[   32.830823] BUG: using __this_cpu_add() in preemptible [00000000] code: mkdir/8677
+[   32.831522] caller is __this_cpu_preempt_check+0x13/0x20
+[   32.832079] CPU: 35 PID: 8677 Comm: mkdir Not tainted 3.16.0-rc1-next-20140620-sasha-00023-g8fc12ed #700
+[   32.832898]  ffffffffb27ea69d ffff8800cb91b618 ffffffffb151820b 0000000000000002
+[   32.833607]  0000000000000023 ffff8800cb91b648 ffffffffaeb4c799 ffff88006efa5b60
+[   32.834318]  ffffea0007cff9c0 0000000000000001 0000000000000001 ffff8800cb91b658
+[   32.835030] Call Trace:
+[   32.835257] dump_stack (lib/dump_stack.c:52)
+[   32.835755] check_preemption_disabled (./arch/x86/include/asm/preempt.h:80 lib/smp_processor_id.c:49)
+[   32.836336] __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[   32.836991] mem_cgroup_charge_statistics.isra.23 (mm/memcontrol.c:930)
+[   32.837682] commit_charge (mm/memcontrol.c:2761)
+[   32.838187] ? _raw_spin_unlock_irq (./arch/x86/include/asm/paravirt.h:819 include/linux/spinlock_api_smp.h:168 kernel/locking/spinlock.c:199)
+[   32.838735] ? get_parent_ip (kernel/sched/core.c:2546)
+[   32.839230] mem_cgroup_commit_charge (mm/memcontrol.c:6519)
+[   32.839807] __add_to_page_cache_locked (mm/filemap.c:588 include/linux/jump_label.h:115 include/trace/events/filemap.h:50 mm/filemap.c:589)
+[   32.840479] add_to_page_cache_lru (mm/filemap.c:627)
+[   32.841048] read_cache_pages (mm/readahead.c:92)
+[   32.841560] ? v9fs_cache_session_get_key (fs/9p/cache.c:306)
+[   32.842145] ? v9fs_write_begin (fs/9p/vfs_addr.c:99)
+[   32.842694] v9fs_vfs_readpages (fs/9p/vfs_addr.c:127)
+[   32.843251] __do_page_cache_readahead (mm/readahead.c:123 mm/readahead.c:200)
+[   32.843848] ? __do_page_cache_readahead (include/linux/rcupdate.h:877 mm/readahead.c:178)
+[   32.844435] ? __const_udelay (arch/x86/lib/delay.c:126)
+[   32.844944] filemap_fault (include/linux/memcontrol.h:141 include/linux/memcontrol.h:198 mm/filemap.c:1869)
+[   32.845465] ? __rcu_read_unlock (kernel/rcu/update.c:97)
+[   32.845999] __do_fault (mm/memory.c:2705)
+[   32.846472] ? mem_cgroup_try_charge (include/linux/cgroup.h:158 mm/memcontrol.c:6467)
+[   32.847048] do_cow_fault (mm/memory.c:2936)
+[   32.847561] __handle_mm_fault (mm/memory.c:3078 mm/memory.c:3205 mm/memory.c:3322)
+[   32.848092] ? __const_udelay (arch/x86/lib/delay.c:126)
+[   32.848596] ? __rcu_read_unlock (kernel/rcu/update.c:97)
+[   32.849157] handle_mm_fault (mm/memory.c:3345)
+[   32.849665] __do_page_fault (arch/x86/mm/fault.c:1230)
+[   32.850239] ? kvm_clock_read (./arch/x86/include/asm/preempt.h:90 arch/x86/kernel/kvmclock.c:86)
+[   32.850963] ? sched_clock (./arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305)
+[   32.851442] ? sched_clock_local (kernel/sched/clock.c:214)
+[   32.852034] ? context_tracking_user_exit (kernel/context_tracking.c:184)
+[   32.852669] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[   32.853243] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2638 (discriminator 2))
+[   32.853854] trace_do_page_fault (arch/x86/mm/fault.c:1313 include/linux/jump_label.h:115 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1314)
+[   32.854393] do_async_page_fault (arch/x86/kernel/kvm.c:264)
+[   32.854924] async_page_fault (arch/x86/kernel/entry_64.S:1322)
+[   32.855507] ? __clear_user (arch/x86/lib/usercopy_64.c:22)
+[   32.855999] ? __clear_user (arch/x86/lib/usercopy_64.c:18 arch/x86/lib/usercopy_64.c:21)
+[   32.856488] clear_user (arch/x86/lib/usercopy_64.c:54)
+[   32.856997] padzero (fs/binfmt_elf.c:122)
+[   32.857440] load_elf_binary (fs/binfmt_elf.c:909 (discriminator 1))
+[   32.857949] ? search_binary_handler (fs/exec.c:1374)
+[   32.858550] ? preempt_count_sub (kernel/sched/core.c:2602)
+[   32.859089] search_binary_handler (fs/exec.c:1375)
+[   32.859654] do_execve_common.isra.19 (fs/exec.c:1412 fs/exec.c:1508)
+[   32.860319] ? do_execve_common.isra.19 (./arch/x86/include/asm/current.h:14 fs/exec.c:1406 fs/exec.c:1508)
+[   32.860949] do_execve (fs/exec.c:1551)
+[   32.861390] SyS_execve (fs/exec.c:1602)
+[   32.861848] stub_execve (arch/x86/kernel/entry_64.S:662)
 
-but task is already holding lock:
- (policy_rwlock){.+.+..}, at: [<ffffffff8125b48c>]
-security_fs_use+0x2c/0x110
 
-other info that might help us debug this:
- Possible unsafe locking scenario:
-
-       CPU0
-       ----
-  lock(policy_rwlock);
-  lock(policy_rwlock);
-
-This patch fixes the occurrence of recursive read_lock() of
-policy_rwlock in security_genfs_sid() by adding a helper function
-which has a 5th argument to indicate if the rwlock has been taken.
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
----
- security/selinux/ss/services.c |   36 ++++++++++++++++++++++++++++--------
- 1 files changed, 28 insertions(+), 8 deletions(-)
-
-diff --git a/security/selinux/ss/services.c b/security/selinux/ss/services.c
-index 4bca494..5f4c1f3 100644
---- a/security/selinux/ss/services.c
-+++ b/security/selinux/ss/services.c
-@@ -2277,20 +2277,22 @@ out:
- }
- 
- /**
-- * security_genfs_sid - Obtain a SID for a file in a filesystem
-+ * __security_genfs_sid - Helper to obtain a SID for a file in a filesystem
-  * @fstype: filesystem type
-  * @path: path from root of mount
-  * @sclass: file security class
-  * @sid: SID for path
-+ * @locked: true if policy_rwlock taken
-  *
-  * Obtain a SID to use for a file in a filesystem that
-  * cannot support xattr or use a fixed labeling behavior like
-  * transition SIDs or task SIDs.
-  */
--int security_genfs_sid(const char *fstype,
--		       char *path,
--		       u16 orig_sclass,
--		       u32 *sid)
-+static inline int __security_genfs_sid(const char *fstype,
-+				       char *path,
-+				       u16 orig_sclass,
-+				       u32 *sid,
-+				       int locked)
- {
- 	int len;
- 	u16 sclass;
-@@ -2301,7 +2303,8 @@ int security_genfs_sid(const char *fstype,
- 	while (path[0] == '/' && path[1] == '/')
- 		path++;
- 
--	read_lock(&policy_rwlock);
-+	if (!locked)
-+		read_lock(&policy_rwlock);
- 
- 	sclass = unmap_class(orig_sclass);
- 	*sid = SECINITSID_UNLABELED;
-@@ -2336,11 +2339,27 @@ int security_genfs_sid(const char *fstype,
- 	*sid = c->sid[0];
- 	rc = 0;
- out:
--	read_unlock(&policy_rwlock);
-+	if (!locked)
-+		read_unlock(&policy_rwlock);
- 	return rc;
- }
- 
- /**
-+ * security_genfs_sid - Obtain a SID for a file in a filesystem
-+ * @fstype: filesystem type
-+ * @path: path from root of mount
-+ * @sclass: file security class
-+ * @sid: SID for path
-+ */
-+int security_genfs_sid(const char *fstype,
-+		       char *path,
-+		       u16 orig_sclass,
-+		       u32 *sid)
-+{
-+	return __security_genfs_sid(fstype, path, orig_sclass, sid, false);
-+}
-+
-+/**
-  * security_fs_use - Determine how to handle labeling for a filesystem.
-  * @sb: superblock in question
-  */
-@@ -2370,7 +2389,8 @@ int security_fs_use(struct super_block *sb)
- 		}
- 		sbsec->sid = c->sid[0];
- 	} else {
--		rc = security_genfs_sid(fstype, "/", SECCLASS_DIR, &sbsec->sid);
-+		rc = __security_genfs_sid(fstype, "/", SECCLASS_DIR,
-+					  &sbsec->sid, true);
- 		if (rc) {
- 			sbsec->behavior = SECURITY_FS_USE_NONE;
- 			rc = 0;
--- 
-1.7.1
-
+Thanks,
+Sasha
