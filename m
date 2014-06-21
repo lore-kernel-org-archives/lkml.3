@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334AbaFUU7m (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 16:59:42 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:33638 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754420AbaFUU7j (ORCPT
+	id S1755526AbaFUVAB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 17:00:01 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:64300 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754821AbaFUU7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 16:59:39 -0400
+	Sat, 21 Jun 2014 16:59:40 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 To: Larry Finger <Larry.Finger@lwfinger.net>,
         Chaoming Li <chaoming_li@realsil.com.cn>
@@ -16,10 +16,12 @@ Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
         Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>,
         linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2] net: wireless: rtlwifi: rtl8192cu: hw.c:  Cleaning up if statement that always evaluates to false 
-Date: Sat, 21 Jun 2014 23:00:36 +0200
-Message-Id: <1403384437-9615-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH v2] net: wireless: rtlwifi: rtl8192cu: hw.c:  Cleaning up if statement that always evaluates to false
+Date: Sat, 21 Jun 2014 23:00:37 +0200
+Message-Id: <1403384437-9615-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1403384437-9615-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1403384437-9615-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,16 +30,51 @@ I found a logical error in an if statement that always evaluates to false.
 
 This has after same discussion resulted in that we add a macro to handle this.
 
-This was partly found using a static code analysis program called cppcheck.
-
-Rickard Strandqvist (1):
-  net: wireless: rtlwifi: rtl8192cu: hw.c:  Cleaning up if statement that always evaluates to false
-
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
  drivers/net/wireless/rtlwifi/rtl8192ce/hw.c  |    2 +-
  drivers/net/wireless/rtlwifi/rtl8192ce/reg.h |    1 +
  drivers/net/wireless/rtlwifi/rtl8192cu/hw.c  |    2 +-
  3 files changed, 3 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
+index 55adf04..5050938 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
+@@ -1206,7 +1206,7 @@ static int _rtl92ce_set_media_status(struct ieee80211_hw *hw,
+ 
+ 	rtl_write_byte(rtlpriv, (MSR), bt_msr);
+ 	rtlpriv->cfg->ops->led_control(hw, ledaction);
+-	if ((bt_msr & 0xfc) == MSR_AP)
++	if ((bt_msr & MSR_MASK) == MSR_AP)
+ 		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x00);
+ 	else
+ 		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x66);
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/reg.h b/drivers/net/wireless/rtlwifi/rtl8192ce/reg.h
+index ed703a1..dc8460c 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/reg.h
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/reg.h
+@@ -375,6 +375,7 @@
+ #define	MSR_ADHOC				0x01
+ #define	MSR_INFRA				0x02
+ #define	MSR_AP					0x03
++#define	MSR_MASK				0x03
+ 
+ #define	RRSR_RSC_OFFSET				21
+ #define	RRSR_SHORT_OFFSET			23
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
+index 07cb06d..87c0a27 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
+@@ -1360,7 +1360,7 @@ static int _rtl92cu_set_media_status(struct ieee80211_hw *hw,
+ 	}
+ 	rtl_write_byte(rtlpriv, (MSR), bt_msr);
+ 	rtlpriv->cfg->ops->led_control(hw, ledaction);
+-	if ((bt_msr & 0xfc) == MSR_AP)
++	if ((bt_msr & MSR_MASK) == MSR_AP)
+ 		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x00);
+ 	else
+ 		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x66);
 -- 
 1.7.10.4
 
