@@ -1,128 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150AbaFUNeb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 09:34:31 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:56740 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752413AbaFUNe3 (ORCPT
+	id S1753474AbaFUN6m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 09:58:42 -0400
+Received: from smtprelay0183.hostedemail.com ([216.40.44.183]:37199 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752020AbaFUN6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 09:34:29 -0400
-Date: Sat, 21 Jun 2014 09:34:28 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Kevin Hilman <khilman@linaro.org>
-cc: Allen Yu <alleny@nvidia.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] PM / Runtime: let rpm_resume fail if rpm disabled
- and device suspended.
-In-Reply-To: <7h8uortghi.fsf@paris.lan>
-Message-ID: <Pine.LNX.4.44L0.1406210913470.26962-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 21 Jun 2014 09:58:40 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:857:966:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3865:3866:3867:3868:3871:3872:3874:4321:4385:4605:5007:7652:8603:8879:10004:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12740:13069:13161:13229:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: crush57_112fe955daa5a
+X-Filterd-Recvd-Size: 2326
+Message-ID: <1403359116.4076.44.camel@joe-AO725>
+Subject: Re: [PATCH] video: fbdev: skeletonfb.c:  Adding code to managing
+ allocation error
+From: Joe Perches <joe@perches.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sat, 21 Jun 2014 06:58:36 -0700
+In-Reply-To: <1403356646-29443-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1403356646-29443-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jun 2014, Kevin Hilman wrote:
+(Adding Geert, who probably wrote most of this
+ and likely might have forgotten all of it)
 
-> > For a general device, the fact that dev->power.is_suspended is set
-> > means the device _has_ been powered down.  Even though the
-> > runtime_status may not have changed, the PM core has to assume the
-> > device is not available for use.
+On Sat, 2014-06-21 at 15:17 +0200, Rickard Strandqvist wrote:
+> Adding missing code for managing a memory allocation error that may occur.
 > 
-> This is where things get fuzzy because of the overlap between system PM
-> and runtime PM.  It makes sense that from a system PM perspecitve, the
-> core has to assume the device isn't available.  But from a runtime PM
-> perspective, we know that it is, so we allow the *runtime PM* requests
-> to succeed.
+> This was partly found using a static code analysis program called cppcheck.
 
-Well, to be fair, from a runtime PM perspective the core _doesn't_
-know that the device is available.  For example, if we were talking
-about a USB device rather than an I2C device, it _wouldn't_ be
-available.
+skeletonfb.c is not meant to be compiled.
+It's a sample driver template.
 
-The fact is, after ->suspend returns some devices are still available
-and some aren't.  Currently the PM core doesn't know which are which.
+Those /* goto error path */ lines are for
+driver writers that use this to figure out
+what to do.
 
-> > While your I2C devices may be useable even after the ->suspend callback
-> > returns, for most devices this isn't true.  So we shouldn't allow
-> > rpm_resume() to return imediately when is_suspended is set.
+The second return is not correct as it would
+not free the first alloc'd block.
+
+> diff --git a/drivers/video/fbdev/skeletonfb.c b/drivers/video/fbdev/skeletonfb.c
+[]
+> @@ -692,6 +692,7 @@ static int xxxfb_probe(struct pci_dev *dev, const struct pci_device_id *ent)
+>  
+>      if (!info) {
+>  	    /* goto error path */
+> +	    return -ENOMEM;
+>      }
+>  
+>      par = info->par;
+> @@ -746,6 +747,7 @@ static int xxxfb_probe(struct pci_dev *dev, const struct pci_device_id *ent)
+>      info->pixmap.addr = kmalloc(PIXMAP_SIZE, GFP_KERNEL);
+>      if (!info->pixmap.addr) {
+>  	    /* goto error */
+> +	    return -ENOMEM;
+>      }
+>  
+>      info->pixmap.size = PIXMAP_SIZE;
 > 
-> It's not just my I2C devices, those are just a convenient example.  It's
-> true for any device that does a pm_runtime_get*() during its system
-> suspend/resume path.
 
-Yes.  But what if a pm_runtime_get*() happens duing system suspend but
-not on the suspend path?  For example, what if a workqueue routine
-happens to run at that time and completely independently calls
-pm_runtime_get_sync()?  The PM core needs to know whether that call
-should be allowed to succeed.
-
-> > That's the intention.  When is_suspended is set, the PM core assumes
-> > that the device has been powered down in preparation for system
-> > suspend.  We don't want to mess that up by performing a runtime resume.
-> 
-> This is where I disagree.  Some devices really need to be runtime
-> resumed during the suspend/resume process. 
-
-Okay, I believe you.  But do they need to be runtime resumed by a call
-to pm_runtime_get_*, or could pm_runtime_force_resume() be used 
-instead?
-
-> > Yes.  But the core also has to assume that the ->runtime_resume 
-> > callback will undo the effect of ->suspend.  Therefore the core should 
-> > not call ->runtime_resume if is_suspended is set.
-> 
-> I agree with Rafael that it should be up to the bus/subsystem to
-> allow/deny that.
-
-How?  Wouldn't that mean changing every subsystem that wants to
-prevent the callbacks?
-
-> > At what stage do these devices get powered down?  During suspend_late
-> > or suspend_irq?  
-> 
-> Correct.
-> 
-> > At such times the PM core won't invoke the runtime PM callbacks
-> > anyway.
->   
-> The core wont, but the bus/subsystem/pm_domain can.  Also, recently the
-> pm_runtime_force* functions were added so that a bus/subsystem could do
-> this easily.
-
-That's okay; if a subsystem calls one of those functions then we know
-it intends to work around the usual protections.
-
-> > It sounds like what you really want for these devices is to have
-> > dev->power.is_suspended get set at the start of
-> > __device_suspend_late() rather than at the end of __device_suspend().  
-> > Or maybe even not to get set at all.
-> 
-> Well, from my PoV, power.is_suspended doesn't have any meaning for
-> runtime PM.  It's only for system suspend.
-
-If it doesn't have any meaning for runtime PM, it shouldn't be tested
-in runtime.c.
-
-But never mind that; the is_suspended flag is a red herring.  It
-doesn't have clearly defined semantics.
-
-What we really need to figure out is how to tell the PM core which
-devices may safely have their runtime callbacks invoked during system
-suspend.  For those devices, the core can avoid calling
-pm_runtime_disable() during the suspend_late phase.  That would address
-your requirements, right?
-
-Here's another way to think about it.  At some point during system
-suspend, a device needs to powered down for the last time.  Many
-subsystems/drivers do this in their ->suspend callback.  Some during
-->suspend_late or ->suspend_irq.  Some may never do it explicitly.  
-Regardless, the PM core needs to know when it has happened, so that it
-can block ->runtime_resume callbacks from that point onward.
-
-Alan Stern
 
