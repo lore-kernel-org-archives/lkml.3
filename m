@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939AbaFUUhv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 16:37:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35055 "EHLO
+	id S1755989AbaFUUiE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 16:38:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35085 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754706AbaFUUht (ORCPT
+	with ESMTP id S1754037AbaFUUiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 16:37:49 -0400
-Date: Sat, 21 Jun 2014 13:37:01 -0700
+	Sat, 21 Jun 2014 16:38:00 -0400
+Date: Sat, 21 Jun 2014 13:37:12 -0700
 From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-4e8c5847d1c55efed896508fb769f78ab07b968a@git.kernel.org>
+Message-ID: <tip-a9821c741c960a77a7f08491883f9cc4bffd2279@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
+        mingo@kernel.org, jason.wessel@windriver.com, peterz@infradead.org,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, john.stultz@linaro.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <20140611234606.840900621@linutronix.de>
-References: <20140611234606.840900621@linutronix.de>
+        linux-kernel@vger.kernel.org, jason.wessel@windriver.com,
+        peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <20140611234607.261629142@linutronix.de>
+References: <20140611234607.261629142@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] tsacct: Use ktime_get_ts()
-Git-Commit-ID: 4e8c5847d1c55efed896508fb769f78ab07b968a
+Subject: [tip:timers/core] kdb: Use ktime_get_ts()
+Git-Commit-ID: a9821c741c960a77a7f08491883f9cc4bffd2279
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,37 +33,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4e8c5847d1c55efed896508fb769f78ab07b968a
-Gitweb:     http://git.kernel.org/tip/4e8c5847d1c55efed896508fb769f78ab07b968a
+Commit-ID:  a9821c741c960a77a7f08491883f9cc4bffd2279
+Gitweb:     http://git.kernel.org/tip/a9821c741c960a77a7f08491883f9cc4bffd2279
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Wed, 11 Jun 2014 23:59:13 +0000
+AuthorDate: Wed, 11 Jun 2014 23:59:16 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Thu, 12 Jun 2014 16:18:45 +0200
 
-tsacct: Use ktime_get_ts()
+kdb: Use ktime_get_ts()
 
 do_posix_clock_monotonic_gettime() is a leftover from the initial
-posix timer implementation which maps to ktime_get_ts()
+posix timer implementation which maps to ktime_get_ts().
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: John Stultz <john.stultz@linaro.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140611234606.840900621@linutronix.de
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Link: http://lkml.kernel.org/r/20140611234607.261629142@linutronix.de
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/tsacct.c | 2 +-
+ kernel/debug/kdb/kdb_main.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/tsacct.c b/kernel/tsacct.c
-index a1dd9a1..ea6d170 100644
---- a/kernel/tsacct.c
-+++ b/kernel/tsacct.c
-@@ -38,7 +38,7 @@ void bacct_add_tsk(struct user_namespace *user_ns,
- 	BUILD_BUG_ON(TS_COMM_LEN < TASK_COMM_LEN);
- 
- 	/* calculate task elapsed time in timespec */
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index 2f7c760..379650b 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -2472,7 +2472,7 @@ static void kdb_gmtime(struct timespec *tv, struct kdb_tm *tm)
+ static void kdb_sysinfo(struct sysinfo *val)
+ {
+ 	struct timespec uptime;
 -	do_posix_clock_monotonic_gettime(&uptime);
 +	ktime_get_ts(&uptime);
- 	ts = timespec_sub(uptime, tsk->start_time);
- 	/* rebase elapsed time to usec (should never be negative) */
- 	ac_etime = timespec_to_ns(&ts);
+ 	memset(val, 0, sizeof(*val));
+ 	val->uptime = uptime.tv_sec;
+ 	val->loads[0] = avenrun[0];
