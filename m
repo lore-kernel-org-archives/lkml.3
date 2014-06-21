@@ -1,85 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789AbaFUVcp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 17:32:45 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:51701 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754410AbaFUVco (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 17:32:44 -0400
+	id S932362AbaFUVfI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 17:35:08 -0400
+Received: from lekensteyn.nl ([178.21.112.251]:45516 "EHLO lekensteyn.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754566AbaFUVfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jun 2014 17:35:05 -0400
+From: Peter Wu <peter@lekensteyn.nl>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] net: wireless: rtlwifi: rtl8192cu: hw.c:  Cleaning up if statement that always evaluates to false
+Date: Sat, 21 Jun 2014 23:34:41 +0200
+Message-ID: <4791769.OUXNIfgtp2@al>
+User-Agent: KMail/4.13.2 (Linux/3.15.0-rc8-custom-00058-gd2cfd31; KDE/4.13.2; x86_64; ; )
+In-Reply-To: <1403384437-9615-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1403384437-9615-1-git-send-email-rickard_strandqvist@spectrumdigital.se> <1403384437-9615-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdVJ=sA7ixyA+4BSffD1fzWOMwGivEQGZ+UN437VTw_xpw@mail.gmail.com>
-References: <1403356646-29443-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<1403359116.4076.44.camel@joe-AO725>
-	<CAMuHMdVJ=sA7ixyA+4BSffD1fzWOMwGivEQGZ+UN437VTw_xpw@mail.gmail.com>
-Date: Sat, 21 Jun 2014 23:32:43 +0200
-Message-ID: <CAFo99gYbiKa50crxEf4YA7voRTe0qj_9aXdTBwvU=J2EjwywaA@mail.gmail.com>
-Subject: Re: [PATCH] video: fbdev: skeletonfb.c: Adding code to managing
- allocation error
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Joe Perches <joe@perches.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Spam-Score: -0.0 (/)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Saturday 21 June 2014 23:00:37 Rickard Strandqvist wrote:
+> I found a logical error in an if statement that always evaluates to false.
+> 
+> This has after same discussion resulted in that we add a macro to handle this.
 
-Sounds like a good idea to have better error handling although it is
-an example, even more important there.
+The subject is still wrong (it is not a cleanup, but a fix) and the
+commit message could also be improved (no need to mention the
+discussion, just say why it was necessary and what you did to fix it).
 
-At the first return nothing has been allocated, so it's ok I guess.
-At the second I reflect about adding some deallocation, there are
-comments on some form of goto error part which would appropriately
-handle a deallocation. But all the other places in the code is just do
-a return, that was why I chose to do it at the second return to.
+Suggested text:
 
+    rtlwifi/rtl8192c[eu]: fix media status register mask
 
-Kind regards
-Rickard Strandqvist
+    bt_msr & 0xfc will never match 0x3. Fix this by using a mask that
+    actually matches the available types.
 
+With that, you can add my
+Reviewed-by: Peter Wu <peter@lekensteyn.nl>
+(oh, and please mail me at @lekensteyn.nl for patches)
 
-2014-06-21 22:48 GMT+02:00 Geert Uytterhoeven <geert@linux-m68k.org>:
-> On Sat, Jun 21, 2014 at 3:58 PM, Joe Perches <joe@perches.com> wrote:
->> (Adding Geert, who probably wrote most of this
->>  and likely might have forgotten all of it)
->>
->> On Sat, 2014-06-21 at 15:17 +0200, Rickard Strandqvist wrote:
->>> Adding missing code for managing a memory allocation error that may occur.
->>>
->>> This was partly found using a static code analysis program called cppcheck.
->>
->> skeletonfb.c is not meant to be compiled.
->> It's a sample driver template.
->
-> Yep.
->
->> Those /* goto error path */ lines are for
->> driver writers that use this to figure out
->> what to do.
->
-> Still, it's nice if a sample driver has correct error handling.
-> Just comments are not good enough as guidance for some people ;-)
->
->> The second return is not correct as it would
->> not free the first alloc'd block.
->
-> Indeed. Better do it right.
->
-> Gr{oetje,eeting}s,
->
->                         Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
+Also, when using a cover letter, you are supposed to group your changes. Not
+add a single commit to each cover letter. If you made three sequential changes
+for example, then you can generate your patches with:
+
+    mkdir /tmp/patches
+    git format-patch --cover-letter -o /tmp/patches/ HEAD~3
+
+Then review the files in /tmp/patches/ and if you are satisfied:
+
+    git send-email --to linux-wireless@... --cc ... /tmp/patches/*
+
+Kind regards,
+Peter
+
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/net/wireless/rtlwifi/rtl8192ce/hw.c  |    2 +-
+>  drivers/net/wireless/rtlwifi/rtl8192ce/reg.h |    1 +
+>  drivers/net/wireless/rtlwifi/rtl8192cu/hw.c  |    2 +-
+>  3 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
+> index 55adf04..5050938 100644
+> --- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
+> +++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
+> @@ -1206,7 +1206,7 @@ static int _rtl92ce_set_media_status(struct ieee80211_hw *hw,
+>  
+>  	rtl_write_byte(rtlpriv, (MSR), bt_msr);
+>  	rtlpriv->cfg->ops->led_control(hw, ledaction);
+> -	if ((bt_msr & 0xfc) == MSR_AP)
+> +	if ((bt_msr & MSR_MASK) == MSR_AP)
+>  		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x00);
+>  	else
+>  		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x66);
+> diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/reg.h b/drivers/net/wireless/rtlwifi/rtl8192ce/reg.h
+> index ed703a1..dc8460c 100644
+> --- a/drivers/net/wireless/rtlwifi/rtl8192ce/reg.h
+> +++ b/drivers/net/wireless/rtlwifi/rtl8192ce/reg.h
+> @@ -375,6 +375,7 @@
+>  #define	MSR_ADHOC				0x01
+>  #define	MSR_INFRA				0x02
+>  #define	MSR_AP					0x03
+> +#define	MSR_MASK				0x03
+>  
+>  #define	RRSR_RSC_OFFSET				21
+>  #define	RRSR_SHORT_OFFSET			23
+> diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
+> index 07cb06d..87c0a27 100644
+> --- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
+> +++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
+> @@ -1360,7 +1360,7 @@ static int _rtl92cu_set_media_status(struct ieee80211_hw *hw,
+>  	}
+>  	rtl_write_byte(rtlpriv, (MSR), bt_msr);
+>  	rtlpriv->cfg->ops->led_control(hw, ledaction);
+> -	if ((bt_msr & 0xfc) == MSR_AP)
+> +	if ((bt_msr & MSR_MASK) == MSR_AP)
+>  		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x00);
+>  	else
+>  		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x66);
+> 
+
