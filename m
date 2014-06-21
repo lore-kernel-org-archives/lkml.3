@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474AbaFUVHI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 17:07:08 -0400
-Received: from mail.fireflyinternet.com ([87.106.93.118]:63060 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754410AbaFUVHH (ORCPT
+	id S1755885AbaFUVH5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 17:07:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35423 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754134AbaFUVHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 17:07:07 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
-Date: Sat, 21 Jun 2014 22:06:52 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Subject: Re: 3.16, i915: less colors in X?
-Message-ID: <20140621210652.GA14025@nuc-i3427.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Pavel Machek <pavel@ucw.cz>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-	"Rafael J. Wysocki" <rjw@rjwysocki.net>,
-	kernel list <linux-kernel@vger.kernel.org>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>
-References: <20140514155759.GB9723@amd.pavel.ucw.cz>
- <20140514182046.GA13342@amd.pavel.ucw.cz>
- <alpine.LNX.2.00.1405151727380.16459@pobox.suse.cz>
- <CAKMK7uFEjDGSpdB0xDPL09GZ8N7aFrNA530HbRLyfTPx5SkLQw@mail.gmail.com>
- <20140607120614.GB5309@amd.pavel.ucw.cz>
- <20140607231124.GA3611@amd.pavel.ucw.cz>
- <CAKMK7uEALofLiEA3m-QKjygC=YZNjaEtUMfbpbXinMoim1ygkw@mail.gmail.com>
- <20140609102328.GA25332@amd.pavel.ucw.cz>
- <alpine.LNX.2.00.1406091302560.20782@pobox.suse.cz>
- <20140621202901.GA3840@amd.pavel.ucw.cz>
+	Sat, 21 Jun 2014 17:07:55 -0400
+Date: Sat, 21 Jun 2014 14:06:33 -0700
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-43a775916d63d1c822107b39987192ca5ced445c@git.kernel.org>
+Cc: mingo@kernel.org, konrad.wilk@oracle.com, rdunlap@infradead.org,
+        tony.luck@intel.com, gregkh@linuxfoundation.org, tglx@linutronix.de,
+        hpa@zytor.com, jiang.liu@linux.intel.com, grant.likely@linaro.org,
+        linux-kernel@vger.kernel.org, yinghai@kernel.org, joro@8bytes.org,
+        benh@kernel.crashing.org, bhelgaas@google.com, rjw@rjwysocki.net,
+        paul.gortmaker@windriver.com
+Reply-To: mingo@kernel.org, konrad.wilk@oracle.com, rdunlap@infradead.org,
+        tony.luck@intel.com, gregkh@linuxfoundation.org, tglx@linutronix.de,
+        hpa@zytor.com, jiang.liu@linux.intel.com, grant.likely@linaro.org,
+        linux-kernel@vger.kernel.org, yinghai@kernel.org, joro@8bytes.org,
+        benh@kernel.crashing.org, bhelgaas@google.com, rjw@rjwysocki.net,
+        paul.gortmaker@windriver.com
+In-Reply-To: <1402302011-23642-37-git-send-email-jiang.liu@linux.intel.com>
+References: <1402302011-23642-37-git-send-email-jiang.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] genirq: Export irq_domain_disassociate()
+  to architecture interrupt drivers
+Git-Commit-ID: 43a775916d63d1c822107b39987192ca5ced445c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140621202901.GA3840@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 21, 2014 at 10:29:01PM +0200, Pavel Machek wrote:
-> Hi!
-> 
-> I just test-booted 3.16-rc1, and background in X looked just wrong --
-> very noticeable bands on the background gradient. I thought that maybe
-> it is just my eyes, but I went back to older kernel, and background is
-> ok now.
-> 
-> I'm trying to figure out how to ask X what color depth it is using...?
-> 
-> This is thinkpad x60 with Debian 6.0.9.
-> 
-> Any ideas?
+Commit-ID:  43a775916d63d1c822107b39987192ca5ced445c
+Gitweb:     http://git.kernel.org/tip/43a775916d63d1c822107b39987192ca5ced445c
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Mon, 9 Jun 2014 16:20:05 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Sat, 21 Jun 2014 23:03:36 +0200
 
-That suggests that the panel dithering changed. Compare intel_reg_dumper
-output for both kernels, especially PIPE.CONF.
--Chris
+genirq: Export irq_domain_disassociate() to architecture interrupt drivers
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+Export irq_domain_disassociate() to architecture interrupt drivers,
+so it could be used to handle legacy IRQ descriptors on x86.
+
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1402302011-23642-37-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/irqdomain.h | 2 ++
+ kernel/irq/irqdomain.c    | 2 +-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index c983ed1..b0f9d16 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -172,6 +172,8 @@ extern int irq_domain_associate(struct irq_domain *domain, unsigned int irq,
+ extern void irq_domain_associate_many(struct irq_domain *domain,
+ 				      unsigned int irq_base,
+ 				      irq_hw_number_t hwirq_base, int count);
++extern void irq_domain_disassociate(struct irq_domain *domain,
++				    unsigned int irq);
+ 
+ extern unsigned int irq_create_mapping(struct irq_domain *host,
+ 				       irq_hw_number_t hwirq);
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index eb5e10e..6534ff6 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -231,7 +231,7 @@ void irq_set_default_host(struct irq_domain *domain)
+ }
+ EXPORT_SYMBOL_GPL(irq_set_default_host);
+ 
+-static void irq_domain_disassociate(struct irq_domain *domain, unsigned int irq)
++void irq_domain_disassociate(struct irq_domain *domain, unsigned int irq)
+ {
+ 	struct irq_data *irq_data = irq_get_irq_data(irq);
+ 	irq_hw_number_t hwirq;
