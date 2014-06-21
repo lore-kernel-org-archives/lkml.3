@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933343AbaFUCem (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 22:34:42 -0400
-Received: from smtprelay0077.hostedemail.com ([216.40.44.77]:37632 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755934AbaFUCel (ORCPT
+	id S933434AbaFUCiX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 22:38:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34302 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753880AbaFUCiV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 22:34:41 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3622:3865:3870:3871:3872:4321:5007:7652:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: hole62_b3dfe0ff5e0d
-X-Filterd-Recvd-Size: 1463
-Message-ID: <1403318075.4076.31.camel@joe-AO725>
-Subject: Re: [PATCH] staging:rtl8821ae: rewrite legacy wifi check in
- halbcoutsrc
-From: Joe Perches <joe@perches.com>
+	Fri, 20 Jun 2014 22:38:21 -0400
+Date: Fri, 20 Jun 2014 19:38:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
 To: Nick Krause <xerofoify@gmail.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
-        pebolle@tiscali.nl, Himangi Saraogi <himangi774@gmail.com>,
-        Konrad Zapalowicz <bergo.torino@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 20 Jun 2014 19:34:35 -0700
-In-Reply-To: <CAPDOMVi2humH7sL8DDkY=WJ3gWnehdeX8QEnNf6d8oTWftHXKA@mail.gmail.com>
-References: <1403283410-7022-1-git-send-email-xerofoify@gmail.com>
-	 <20140620195926.GY5500@mwanda> <1403294880.4076.7.camel@joe-AO725>
-	 <CAPDOMVi2humH7sL8DDkY=WJ3gWnehdeX8QEnNf6d8oTWftHXKA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>, viro@zeniv.linux.org.uk,
+        fabf@skynet.be, kirill.shutemov@linux.intel.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Check for Null return of function of affs_bread in
+ function affs_truncate
+Message-Id: <20140620193819.e379a55b.akpm@linux-foundation.org>
+In-Reply-To: <CAPDOMVihML8uWwBWRTPGG_abHxrW++xP9_Po7B0_KQZmDfHv-Q@mail.gmail.com>
+References: <1403129285-5038-1-git-send-email-xerofoify@gmail.com>
+	<20140619052128.GV5015@mwanda>
+	<CAPDOMVgwT2=iWAHOhgHSBY1B+KoWHQgCdK4idD2miwB=_eMs5Q@mail.gmail.com>
+	<alpine.DEB.2.10.1406210143030.5170@nanos>
+	<CAPDOMVihML8uWwBWRTPGG_abHxrW++xP9_Po7B0_KQZmDfHv-Q@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-20 at 22:26 -0400, Nick Krause wrote:
-> Thanks for the feedback I will resend the patch fixed.
+On Fri, 20 Jun 2014 22:25:47 -0400 Nick Krause <xerofoify@gmail.com> wrote:
 
-Please do not.
+> If you have any ideas about what is better
+> please let me known.
 
-> Otherwise please use Larry's idea.
+I think the proposed patch was not a good one - it will cause truncate
+to silently return, probably leaving the fs in an inconsistent state. 
+Neither the user nor the running application know this happened so they
+will just keep on modifying the filesystem, possibly mangling it
+further.
 
-It's not Larry's idea.  Larry is the primary
-contributor for Realtek drivers in staging.
+The code as it stands at present is better - if bread() fails we'll get
+a nice solid oops and the current app will be terminated (at least). 
+As we're in truncate it's quite possible that the entire fs will get
+wedged up due to now-permanently-held i_mutex, which is even better.
+
+
+As for the best fix, umm, hard.  We're pretty screwed if we cannot read
+that block at this code site.  Perhaps emit loud printks, forcibly turn
+the fs read-only then return -EIO/-ENOMEM/etc from the truncate.  Such
+a change would require runtime testing, with some form of developer fault
+injection.
+
 
 
