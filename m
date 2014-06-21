@@ -1,158 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337AbaFUXJb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 19:09:31 -0400
-Received: from imap.thunk.org ([74.207.234.97]:51415 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751468AbaFUXJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 19:09:29 -0400
-Date: Sat, 21 Jun 2014 19:09:22 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@fb.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: 32-bit bug in iovec iterator changes
-Message-ID: <20140621230922.GA13188@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Al Viro <viro@ZenIV.linux.org.uk>,
-	Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@fb.com>,
-	linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-References: <20140619153550.GA12836@thunk.org>
- <53A308DE.7080000@fb.com>
- <20140619160801.GB4907@thunk.org>
- <20140619162144.GC4907@thunk.org>
- <20140619223820.GN4453@dastard>
- <20140621035144.GA8526@thunk.org>
- <20140621055306.GP18016@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140621055306.GP18016@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1751543AbaFUX3Z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 19:29:25 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:42190 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750950AbaFUX3X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jun 2014 19:29:23 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 0/5] timer: Fix missing dynticks kick v2
+Date: Sun, 22 Jun 2014 01:29:12 +0200
+Message-Id: <1403393357-2070-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 21, 2014 at 06:53:07AM +0100, Al Viro wrote:
-> 
-> ed include/linux/uio.h <<EOF
-> /iov_iter_truncate/s/size_t/u64/
-> w
-> q
-> EOF
-> 
-> Could you check if that fixes the sucker?
+Hi,
 
-The following patch (attached at the end) appears to fix the problem,
-but looking at uio.h, I'm completely confused about *why* it fixes the
-problem.  In particular, iov_iter_iovec() makes no sense to me at all,
-and I don't understand how the calculation of iov_len makes any sense:
+It's a 2nd set that fixes some missing dyntick kicks in the timer's code.
+This new version also handles missing kicks in the hrtimers subsystem.
 
-		.iov_len = min(iter->count,
-			       iter->iov->iov_len - iter->iov_offset),
+The patches are also available at:
 
-It also looks like uio.h is mostly about offsets to memory pointers,
-and so why this would make a difference when the issue is the block
-device offset goes above 2**30?
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	timers/missing-kick-v2
 
-There must be deep magic going on here, and so I don't know if your
-s/size_t/u64/g substitation also extends to the various functions that
-have size_t in them:
+Thanks,
+	Frederic
+---
 
-unsigned long iov_shorten(struct iovec *iov, unsigned long nr_segs, size_t to);
-size_t iov_iter_copy_from_user_atomic(struct page *page,
-		struct iov_iter *i, unsigned long offset, size_t bytes);
-void iov_iter_advance(struct iov_iter *i, size_t bytes);
-int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes);
-size_t iov_iter_single_seg_count(const struct iov_iter *i);
-size_t copy_page_to_iter(struct page *page, size_t offset, size_t bytes,
-			 struct iov_iter *i);
-size_t copy_page_from_iter(struct page *page, size_t offset, size_t bytes,
-			 struct iov_iter *i);
-unsigned long iov_iter_alignment(const struct iov_iter *i);
-void iov_iter_init(struct iov_iter *i, int direction, const struct iovec *iov,
-			unsigned long nr_segs, size_t count);
-ssize_t iov_iter_get_pages(struct iov_iter *i, struct page **pages,
-			size_t maxsize, size_t *start);
-ssize_t iov_iter_get_pages_alloc(struct iov_iter *i, struct page ***pages,
-			size_t maxsize, size_t *start);
+Viresh Kumar (5):
+      timer: Store cpu-number in 'struct tvec_base'
+      timer: Kick dynticks targets on mod_timer*() calls
+      hrtimer: Store cpu-number in 'struct hrtimer_cpu_base'
+      hrtimer: Kick lowres dynticks targets on timer enqueue
+      hrtimer: Remove hrtimer_enqueue_reprogram()
 
 
-Anyway, this patch does appear to make the problem go away, but given
-that I don't understand what is going on here, please take it with a
-huge grain of salt.  And might I suggest some comments to perhaps give
-some context to someone who is trying to understand
-include/linux/uio.h?
-
-Thanks!!
-
-						- Ted
-
-diff --git a/include/linux/uio.h b/include/linux/uio.h
-index e2231e4..bea7b7d 100644
---- a/include/linux/uio.h
-+++ b/include/linux/uio.h
-@@ -16,7 +16,7 @@ struct page;
- 
- struct kvec {
- 	void *iov_base; /* and that should *never* hold a userland pointer */
--	size_t iov_len;
-+	u64 iov_len;
- };
- 
- enum {
-@@ -27,8 +27,8 @@ enum {
- 
- struct iov_iter {
- 	int type;
--	size_t iov_offset;
--	size_t count;
-+	u64 iov_offset;
-+	u64 count;
- 	union {
- 		const struct iovec *iov;
- 		const struct bio_vec *bvec;
-@@ -41,12 +41,12 @@ struct iov_iter {
-  *
-  * NOTE that it is not safe to use this function until all the iovec's
-  * segment lengths have been validated.  Because the individual lengths can
-- * overflow a size_t when added together.
-+ * overflow a u64 when added together.
-  */
--static inline size_t iov_length(const struct iovec *iov, unsigned long nr_segs)
-+static inline u64 iov_length(const struct iovec *iov, unsigned long nr_segs)
- {
- 	unsigned long seg;
--	size_t ret = 0;
-+	u64 ret = 0;
- 
- 	for (seg = 0; seg < nr_segs; seg++)
- 		ret += iov[seg].iov_len;
-@@ -89,12 +89,12 @@ ssize_t iov_iter_get_pages_alloc(struct iov_iter *i, struct page ***pages,
- 			size_t maxsize, size_t *start);
- int iov_iter_npages(const struct iov_iter *i, int maxpages);
- 
--static inline size_t iov_iter_count(struct iov_iter *i)
-+static inline u64 iov_iter_count(struct iov_iter *i)
- {
- 	return i->count;
- }
- 
--static inline void iov_iter_truncate(struct iov_iter *i, size_t count)
-+static inline void iov_iter_truncate(struct iov_iter *i, u64 count)
- {
- 	if (i->count > count)
- 		i->count = count;
-@@ -104,7 +104,7 @@ static inline void iov_iter_truncate(struct iov_iter *i, size_t count)
-  * reexpand a previously truncated iterator; count must be no more than how much
-  * we had shrunk it.
-  */
--static inline void iov_iter_reexpand(struct iov_iter *i, size_t count)
-+static inline void iov_iter_reexpand(struct iov_iter *i, u64 count)
- {
- 	i->count = count;
- }
-
+ include/linux/hrtimer.h |  2 ++
+ kernel/hrtimer.c        | 49 +++++++++++++++++++++++++++----------------------
+ kernel/timer.c          | 34 ++++++++++++++++++----------------
+ 3 files changed, 47 insertions(+), 38 deletions(-)
