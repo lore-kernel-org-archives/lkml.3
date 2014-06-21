@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758289AbaFUMHf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 08:07:35 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:59846 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753154AbaFUMHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 08:07:32 -0400
-Date: Sat, 21 Jun 2014 14:07:23 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@gmail.com>
-Subject: Re: [for-next][PATCH] tracing: Add __field_struct macro for
- TRACE_EVENT()
-Message-ID: <20140621120723.GC25200@pd.tnic>
-References: <20140621075025.1aadb1f6@gandalf.local.home>
+	id S1753797AbaFUMTY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 08:19:24 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:41531 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282AbaFUMTX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jun 2014 08:19:23 -0400
+Message-ID: <53A57848.8010203@gmail.com>
+Date: Sat, 21 Jun 2014 20:19:20 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140621075025.1aadb1f6@gandalf.local.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] include/trace/syscall.h: Use HAVE_SYSCALL_TRACEPOINTS
+ instead of TRACEPOINTS
+References: <53A4EEC5.7090801@gmail.com> <20140620234308.25a57690@gandalf.local.home>
+In-Reply-To: <20140620234308.25a57690@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 21, 2014 at 07:50:25AM -0400, Steven Rostedt wrote:
+On 06/21/2014 11:43 AM, Steven Rostedt wrote:
+> On Sat, 21 Jun 2014 10:32:37 +0800
+> Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+>  
+>> diff --git a/include/trace/syscall.h b/include/trace/syscall.h
+>> index 291c282..a709cbd 100644
+>> --- a/include/trace/syscall.h
+>> +++ b/include/trace/syscall.h
+>> @@ -33,7 +33,7 @@ struct syscall_metadata {
+>>  	struct ftrace_event_call *exit_event;
+>>  };
+>>  
+>> -#ifdef CONFIG_TRACEPOINTS
+>> +#ifdef CONFIG_HAVE_SYSCALL_TRACEPOINTS
+>>  static inline void syscall_tracepoint_update(struct task_struct *p)
+>>  {
+>>  	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
 > 
-> Updates to the RAS tracepoints found that the __field() macro has a bug
-> in it where you can not use it with structures. It only works with
-> primitives. This is because of an added check to determine if the field
-> is signed or not.
+> This has already been fixed and is in my for-next branch getting ready
+> to be pushed.
 > 
-> A new macro is created called __field_struct() that can be used to save
-> structured data directly in the tracepoint and not have to settle for
-> storing as an array with memcpy.
-> 
-> -- Steve
-> 
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> for-next
-> 
-> Head SHA1: 4d4c9cc839a308be3289a361ccba4447ee140552
-> 
-> 
-> Steven Rostedt (1):
->       tracing: Add __field_struct macro for TRACE_EVENT()
-> 
-> ----
->  include/trace/ftrace.h                     | 33 ++++++++++++++++++++++++++++++
->  samples/trace_events/trace-events-sample.h |  3 ++-
->  2 files changed, 35 insertions(+), 1 deletion(-)
-> ---------------------------
-> commit 4d4c9cc839a308be3289a361ccba4447ee140552
-> Author: Steven Rostedt <rostedt@goodmis.org>
-> Date:   Tue Jun 17 08:59:16 2014 -0400
-> 
->     tracing: Add __field_struct macro for TRACE_EVENT()
->     
->     Currently the __field() macro in TRACE_EVENT is only good for primitive
->     values, such as integers and pointers, but it fails on complex data types
->     such as structures or unions. This is because the __field() macro
->     determines if the variable is signed or not with the test of:
->     
->       (((type)(-1)) < (type)1)
->     
->     Unfortunately, that fails when type is a structure.
->     
->     Since trace events should support structures as fields a new macro
->     is created for such a case called __field_struct() which acts exactly
->     the same as __field() does but it does not do the signed type check
->     and just uses a constant false for that answer.
->     
->     Cc: Tony Luck <tony.luck@gmail.com>
->     Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Acked-by: Borislav Petkov <bp@suse.de>
+OK, thank you for replying in time.
 
+
+Thanks.
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Open share and attitude like air warter and life which God blessed
