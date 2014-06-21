@@ -1,35 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758766AbaFUVTL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 17:19:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36209 "EHLO
+	id S1758780AbaFUVTR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 17:19:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36215 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756706AbaFUVTI (ORCPT
+	with ESMTP id S1756706AbaFUVTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 17:19:08 -0400
-Date: Sat, 21 Jun 2014 14:18:03 -0700
+	Sat, 21 Jun 2014 17:19:14 -0400
+Date: Sat, 21 Jun 2014 14:18:16 -0700
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-00f49c29b3298806c74589a4ed016a2afb359e98@git.kernel.org>
+Message-ID: <tip-b81975eade8c6495f3c4d6746d22bdc95f617777@git.kernel.org>
 Cc: mingo@kernel.org, konrad.wilk@oracle.com, rdunlap@infradead.org,
-        tony.luck@intel.com, gregkh@linuxfoundation.org, monstr@monstr.eu,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        jiang.liu@linux.intel.com, grant.likely@linaro.org, yinghai@kernel.org,
-        joro@8bytes.org, tony@atomide.com, rob.herring@calxeda.com,
+        tony.luck@intel.com, gregkh@linuxfoundation.org, tglx@linutronix.de,
+        hpa@zytor.com, jiang.liu@linux.intel.com, grant.likely@linaro.org,
+        linux-kernel@vger.kernel.org, yinghai@kernel.org, joro@8bytes.org,
         benh@kernel.crashing.org, bhelgaas@google.com, rjw@rjwysocki.net,
         paul.gortmaker@windriver.com
 Reply-To: mingo@kernel.org, konrad.wilk@oracle.com, rdunlap@infradead.org,
-        tony.luck@intel.com, gregkh@linuxfoundation.org, monstr@monstr.eu,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        jiang.liu@linux.intel.com, grant.likely@linaro.org, yinghai@kernel.org,
-        joro@8bytes.org, tony@atomide.com, rob.herring@calxeda.com,
-        bhelgaas@google.com, benh@kernel.crashing.org, rjw@rjwysocki.net,
+        tony.luck@intel.com, gregkh@linuxfoundation.org, tglx@linutronix.de,
+        hpa@zytor.com, jiang.liu@linux.intel.com, grant.likely@linaro.org,
+        linux-kernel@vger.kernel.org, yinghai@kernel.org, joro@8bytes.org,
+        benh@kernel.crashing.org, bhelgaas@google.com, rjw@rjwysocki.net,
         paul.gortmaker@windriver.com
-In-Reply-To: <1402302011-23642-42-git-send-email-jiang.liu@linux.intel.com>
-References: <1402302011-23642-42-git-send-email-jiang.liu@linux.intel.com>
+In-Reply-To: <1402302011-23642-43-git-send-email-jiang.liu@linux.intel.com>
+References: <1402302011-23642-43-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq, devicetree:
-  Release IOAPIC pin when PCI device is disabled
-Git-Commit-ID: 00f49c29b3298806c74589a4ed016a2afb359e98
+Subject: [tip:x86/apic] x86, irq: Clean up irqdomain transition code
+Git-Commit-ID: b81975eade8c6495f3c4d6746d22bdc95f617777
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -42,17 +39,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  00f49c29b3298806c74589a4ed016a2afb359e98
-Gitweb:     http://git.kernel.org/tip/00f49c29b3298806c74589a4ed016a2afb359e98
+Commit-ID:  b81975eade8c6495f3c4d6746d22bdc95f617777
+Gitweb:     http://git.kernel.org/tip/b81975eade8c6495f3c4d6746d22bdc95f617777
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 9 Jun 2014 16:20:10 +0800
+AuthorDate: Mon, 9 Jun 2014 16:20:11 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Sat, 21 Jun 2014 23:05:44 +0200
 
-x86, irq, devicetree: Release IOAPIC pin when PCI device is disabled
+x86, irq: Clean up irqdomain transition code
 
-Release IOAPIC pin associated with PCI device when the PCI device
-is disabled.
+Now we have completely switched to irqdomain, so clean up transition code
+in IOAPIC drivers.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -66,24 +63,76 @@ Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
 Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Michal Simek <monstr@monstr.eu>
-Cc: Tony Lindgren <tony@atomide.com>
-Link: http://lkml.kernel.org/r/1402302011-23642-42-git-send-email-jiang.liu@linux.intel.com
+Link: http://lkml.kernel.org/r/1402302011-23642-43-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/kernel/devicetree.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/apic/io_apic.c | 28 +++++++++++-----------------
+ 1 file changed, 11 insertions(+), 17 deletions(-)
 
-diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
-index f33bb43..3d35033 100644
---- a/arch/x86/kernel/devicetree.c
-+++ b/arch/x86/kernel/devicetree.c
-@@ -226,6 +226,7 @@ static int ioapic_xlate(struct irq_domain *domain,
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 8d80a8f..a44dce8 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -86,6 +86,7 @@ static DEFINE_RAW_SPINLOCK(ioapic_lock);
+ static DEFINE_RAW_SPINLOCK(vector_lock);
+ static DEFINE_MUTEX(ioapic_mutex);
+ static unsigned int ioapic_dynirq_base;
++static int ioapic_initialized;
  
- const struct irq_domain_ops ioapic_irq_domain_ops = {
- 	.map = mp_irqdomain_map,
-+	.unmap = mp_irqdomain_unmap,
- 	.xlate = ioapic_xlate,
- };
+ struct mp_pin_info {
+ 	int trigger;
+@@ -1034,13 +1035,8 @@ static int mp_map_pin_to_irq(u32 gsi, int idx, int ioapic, int pin,
+ 	struct irq_domain *domain = mp_ioapic_irqdomain(ioapic);
+ 	struct mp_pin_info *info = mp_pin_info(ioapic, pin);
+ 
+-	if (!domain) {
+-		/*
+-		 * Provide an identity mapping of gsi == irq except on truly
+-		 * weird platforms that have non isa irqs in the first 16 gsis.
+-		 */
+-		return gsi >= nr_legacy_irqs() ? gsi : gsi_top + gsi;
+-	}
++	if (!domain)
++		return -1;
+ 
+ 	mutex_lock(&ioapic_mutex);
+ 
+@@ -2986,6 +2982,8 @@ void __init setup_IO_APIC(void)
+ 	init_IO_APIC_traps();
+ 	if (nr_legacy_irqs())
+ 		check_timer();
++
++	ioapic_initialized = 1;
+ }
+ 
+ /*
+@@ -3461,12 +3459,11 @@ static int __init io_apic_get_redir_entries(int ioapic)
+ 
+ unsigned int arch_dynirq_lower_bound(unsigned int from)
+ {
+-	unsigned int min = gsi_top + nr_legacy_irqs();
+-
+-	if (ioapic_dynirq_base)
+-		return ioapic_dynirq_base;
+-
+-	return from < min ? min : from;
++	/*
++	 * dmar_alloc_hwirq() may be called before setup_IO_APIC(), so use
++	 * gsi_top if ioapic_dynirq_base hasn't been initialized yet.
++	 */
++	return ioapic_initialized ? ioapic_dynirq_base : gsi_top;
+ }
+ 
+ int __init arch_probe_nr_irqs(void)
+@@ -3841,10 +3838,7 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base,
+ 	ioapics[idx].mp_config.flags = MPC_APIC_USABLE;
+ 	ioapics[idx].mp_config.apicaddr = address;
+ 	ioapics[idx].irqdomain = NULL;
+-	if (cfg)
+-		ioapics[idx].irqdomain_cfg = *cfg;
+-	else
+-		ioapics[idx].irqdomain_cfg.type = IOAPIC_DOMAIN_INVALID;
++	ioapics[idx].irqdomain_cfg = *cfg;
+ 
+ 	set_fixmap_nocache(FIX_IO_APIC_BASE_0 + idx, address);
  
