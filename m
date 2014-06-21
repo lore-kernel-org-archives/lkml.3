@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934214AbaFUD7c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 23:59:32 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:56413 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932402AbaFUD7b convert rfc822-to-8bit (ORCPT
+	id S1752318AbaFUEHQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 00:07:16 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:47593 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892AbaFUEHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 23:59:31 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18ip9qhZOdbBVTEXrLV+vNYErII3DYSr20=
-X-DKIM: OpenDKIM Filter v2.0.1 titan BEBAB5951B1
-From: Jason Cooper <jason@lakedaemon.net>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Jason Cooper <jason@lakedaemon.net>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] direct-io: squelch maybe-uninitialized warning in do_direct_IO()
-Date: Sat, 21 Jun 2014 03:58:59 +0000
-Message-Id: <1403323139-12858-1-git-send-email-jason@lakedaemon.net>
-X-Mailer: git-send-email 2.0.0
+	Sat, 21 Jun 2014 00:07:14 -0400
 MIME-Version: 1.0
+In-Reply-To: <1403285183-15926-1-git-send-email-nm@ti.com>
+References: <1403285183-15926-1-git-send-email-nm@ti.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Sat, 21 Jun 2014 13:06:53 +0900
+Message-ID: <CAAVeFuKhgVEtHMwacr=VoSChU5R2B3aVDhp7R7wRFCkwS=EKSw@mail.gmail.com>
+Subject: Re: [PATCH] regulator: palmas: Fix SMPS enable/disable/is_enabled
+To: Nishanth Menon <nm@ti.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-omap@vger.kernel.org,
+        "acourbot@nvidia.com" <acourbot@nvidia.com>, j-keerthy@ti.com,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following warnings:
+On Sat, Jun 21, 2014 at 2:26 AM, Nishanth Menon <nm@ti.com> wrote:
+> We use regmap regulator ops to enable/disable and check if regulator
+> is enabled for various SMPS. However, these depend on valid
+> enable_reg, enable_mask and enable_value in regulator descriptor.
+>
+> Currently we do not populate these for SMPS other than SMPS10, this
+> results in spurious results as regmap assumes that the values are
+> valid and ends up reading register 0x0 RTC:SECONDS_REG on Palmas
+> variants that do have RTC! To fix this, we update proper parameters
+> for the descriptor fields.
+>
+> Further, we want to ensure the behavior consistent with logic
+> prior to commit dbabd624d4eec50b6, where, once you do a set_mode,
+> enable/disable ensure the logic remains consistent and configures
+> Palmas to the configuration that we set with set_mode (since the
+> configuration register is common). To do this, we can rely on the
+> regulator core's regulator_register behavior where the regulator
+> descriptor pointer provided by the regulator driver is stored. (no
+> reallocation and copy is done). This lets us update the enable_value
+> post registration, to remain consistent with the mode we configure as
+> part of set_mode.
 
-  fs/direct-io.c: In function ‘__blockdev_direct_IO’:
-  fs/direct-io.c:1011:12: warning: ‘to’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-  fs/direct-io.c:913:16: note: ‘to’ was declared here
-  fs/direct-io.c:1011:12: warning: ‘from’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-  fs/direct-io.c:913:10: note: ‘from’ was declared here
+Tested-by: Alexandre Courbot <acourbot@nvidia.com>
 
-are not necessary because dio_get_page() either fails, or sets both
-'from' and 'to'.
-
-Make the compiler happy so we can more easily detect legitimate
-warnings.
-
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
----
- fs/direct-io.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index 98040ba388ac..c0a9854d2bc7 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -910,7 +910,8 @@ static int do_direct_IO(struct dio *dio, struct dio_submit *sdio,
- 
- 	while (sdio->block_in_file < sdio->final_block_in_request) {
- 		struct page *page;
--		size_t from, to;
-+		size_t from = 0;
-+		size_t to = 0;
- 		page = dio_get_page(dio, sdio, &from, &to);
- 		if (IS_ERR(page)) {
- 			ret = PTR_ERR(page);
--- 
-2.0.0
-
+Thanks!
