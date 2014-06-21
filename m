@@ -1,138 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934822AbaFUMF5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 08:05:57 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:34267 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934339AbaFUMFz (ORCPT
+	id S934871AbaFUMGH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 08:06:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53060 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752139AbaFUMGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 08:05:55 -0400
-Date: Sat, 21 Jun 2014 13:05:51 +0100
-From: Daniel Walter <dwalter@google.com>
-To: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH 6/9] [arch/x86] replace strict_strto calls
-Message-ID: <20140621120551.GA7806@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 21 Jun 2014 08:06:03 -0400
+Message-ID: <1403352353.23472.67.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [v3.10.y][v3.11.y][v3.12.y][v3.13.y][v3.14.y][PATCH 1/1][V2]
+ ALSA: usb-audio: Prevent printk ratelimiting from spamming kernel log while
+ DEBUG not defined
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: greg@kroah.com, kamal.mostafa@canonical.com, luis.henriques@canonical.com,
+        jslaby@suse.cz, clm@fb.com, jbacik@fb.com, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Date: Sat, 21 Jun 2014 13:05:53 +0100
+In-Reply-To: <53A47BC4.8040406@canonical.com>
+References: <cover.1403113867.git.joseph.salisbury@canonical.com>
+		 <a377cdb51b1a98e9fa6bffaa124502fc15c47903.1403113867.git.joseph.salisbury@canonical.com>
+	 <1403142759.23472.28.camel@deadeye.wl.decadent.org.uk>
+	 <53A4515C.8090103@canonical.com> <53A47BC4.8040406@canonical.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-km7cYOiT9RrDw2QafFVk"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace obsolete strict_strto calls with appropriate kstrto calls
 
-Signed-off-by: Daniel Walter <dwalter@google.com>
-Acked-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/kernel/cpu/intel_cacheinfo.c | 4 ++--
- arch/x86/kernel/cpu/mcheck/mce.c      | 6 +++---
- arch/x86/kernel/cpu/mcheck/mce_amd.c  | 4 ++--
- arch/x86/kvm/mmu_audit.c              | 2 +-
- arch/x86/platform/uv/tlb_uv.c         | 2 +-
- 5 files changed, 9 insertions(+), 9 deletions(-)
+--=-km7cYOiT9RrDw2QafFVk
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index a952e9c..4ff210a 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -461,7 +461,7 @@ static ssize_t store_cache_disable(struct _cpuid4_info *this_leaf,
- 
- 	cpu = cpumask_first(to_cpumask(this_leaf->shared_cpu_map));
- 
--	if (strict_strtoul(buf, 10, &val) < 0)
-+	if (kstrtoul(buf, 10, &val) < 0)
- 		return -EINVAL;
- 
- 	err = amd_set_l3_disable_slot(this_leaf->base.nb, cpu, slot, val);
-@@ -511,7 +511,7 @@ store_subcaches(struct _cpuid4_info *this_leaf, const char *buf, size_t count,
- 	if (!this_leaf->base.nb || !amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
- 		return -EINVAL;
- 
--	if (strict_strtoul(buf, 16, &val) < 0)
-+	if (kstrtoul(buf, 16, &val) < 0)
- 		return -EINVAL;
- 
- 	if (amd_set_subcaches(cpu, val))
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index bb92f38..a801a35 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -2136,7 +2136,7 @@ static ssize_t set_bank(struct device *s, struct device_attribute *attr,
- {
- 	u64 new;
- 
--	if (strict_strtoull(buf, 0, &new) < 0)
-+	if (kstrtou64(buf, 0, &new) < 0)
- 		return -EINVAL;
- 
- 	attr_to_bank(attr)->ctl = new;
-@@ -2174,7 +2174,7 @@ static ssize_t set_ignore_ce(struct device *s,
- {
- 	u64 new;
- 
--	if (strict_strtoull(buf, 0, &new) < 0)
-+	if (kstrtou64(buf, 0, &new) < 0)
- 		return -EINVAL;
- 
- 	if (mca_cfg.ignore_ce ^ !!new) {
-@@ -2198,7 +2198,7 @@ static ssize_t set_cmci_disabled(struct device *s,
- {
- 	u64 new;
- 
--	if (strict_strtoull(buf, 0, &new) < 0)
-+	if (kstrtou64(buf, 0, &new) < 0)
- 		return -EINVAL;
- 
- 	if (mca_cfg.cmci_disabled ^ !!new) {
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-index 603df4f..1e49f8f 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-@@ -353,7 +353,7 @@ store_interrupt_enable(struct threshold_block *b, const char *buf, size_t size)
- 	if (!b->interrupt_capable)
- 		return -EINVAL;
- 
--	if (strict_strtoul(buf, 0, &new) < 0)
-+	if (kstrtoul(buf, 0, &new) < 0)
- 		return -EINVAL;
- 
- 	b->interrupt_enable = !!new;
-@@ -372,7 +372,7 @@ store_threshold_limit(struct threshold_block *b, const char *buf, size_t size)
- 	struct thresh_restart tr;
- 	unsigned long new;
- 
--	if (strict_strtoul(buf, 0, &new) < 0)
-+	if (kstrtoul(buf, 0, &new) < 0)
- 		return -EINVAL;
- 
- 	if (new > THRESHOLD_MAX)
-diff --git a/arch/x86/kvm/mmu_audit.c b/arch/x86/kvm/mmu_audit.c
-index 1185fe7..9ade5cf 100644
---- a/arch/x86/kvm/mmu_audit.c
-+++ b/arch/x86/kvm/mmu_audit.c
-@@ -273,7 +273,7 @@ static int mmu_audit_set(const char *val, const struct kernel_param *kp)
- 	int ret;
- 	unsigned long enable;
- 
--	ret = strict_strtoul(val, 10, &enable);
-+	ret = kstrtoul(val, 10, &enable);
- 	if (ret < 0)
- 		return -EINVAL;
- 
-diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
-index dfe605a..ccc3210 100644
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -1476,7 +1476,7 @@ static ssize_t ptc_proc_write(struct file *file, const char __user *user,
- 		return count;
- 	}
- 
--	if (strict_strtol(optstr, 10, &input_arg) < 0) {
-+	if (kstrtol(optstr, 10, &input_arg) < 0) {
- 		printk(KERN_DEBUG "%s is invalid\n", optstr);
- 		return -EINVAL;
- 	}
--- 
-2.0.0.526.g5318336
+On Fri, 2014-06-20 at 14:21 -0400, Joseph Salisbury wrote:
+[...]
+> I looked at this some more.   It seems like my v2 backport may be the
+> most suitable for the releases mentioned in the subject line, but I'd
+> like to get additional feedback.
+>=20
+> The lines added by commit a5065eb just get removed by commit b7a77235.=
+=20
+> Also, if I apply commit a5065eb, it will also require a backport to pull
+> in just a piece of code(Remove snd_printk() and add dev_dbg()) from
+> another prior commit(0ba41d9).  No backport would be needed at all if I
+> cherry-pick 0ba41d9, but that commit seems to have too may changes for a
+> stable release.
 
+Keep the changes squashed together if you like, but do include both
+commit hashes and commit messages.
+
+Ben.
+
+--=20
+Ben Hutchings
+Who are all these weirdos? - David Bowie, reading IRC for the first time
+
+--=-km7cYOiT9RrDw2QafFVk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUAU6V1Jue/yOyVhhEJAQqI1xAAvz7yt/S1TZw5QJB/QadDS3B8C6eJ3jh3
+gjhs2AnbU7DwujICfH+j75hrRlXXY13feZz2O4el3JJgnHmINixxgTvT6I8C+qKY
+3Azqi4iJRyk3pobeZz2OUUMrHQRSSKTgJafeWzrBwv9NewtMzC2+BWvfzk3VuivT
+XckHw/qRkAR5XETUHksWRHyMA7aJgXAt4zhlAxveAUvPBoQHJQALShP2GdLPFwCc
+9Yqx93BoQX8f4SAn+TaFgcVedROVCCLCzsG2y5NYP8dZTAgcDJ1dfnJYECZ8pb3L
+5fCjYVyqq1fO7q7v1X6qF6m4l0KYQdJNKZseDq9T6QKDoSYGV6tstxP7+n3H+OS5
+ti45HeiGDDpplMwoCWwSejCCl5UGPtlY47oagoSlDAskN6GTcENlL50S8Ol4lTkA
+he9pg4FNIho1qx+5SmlWS7MYjm4qbj/uTmwtVPSXp0eb3uZ4OZUCaHX/pK/II6YQ
+fHSquQb4zcmbRkQsTrT5PxDsP6oAuI3xne49wHm1vZJEyKqUV2cAxhz2iwSrQr7M
+SOJwfiYNTHUueHSH6T9AhyriwqJDxILXXHDxPfVbyndkPXbzl1+r+558VwYHyqm3
+2beXj9BwbNCZnJL6uJAGfPMnZl77NxMVSBGvjAHYDr7LVFr+ax0YlcGSagbTMbCZ
+R+abg2PZ02c=
+=i7Va
+-----END PGP SIGNATURE-----
+
+--=-km7cYOiT9RrDw2QafFVk--
