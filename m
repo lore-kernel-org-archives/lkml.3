@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805AbaFUPE2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 11:04:28 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:45848 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613AbaFUPE1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 11:04:27 -0400
-Date: Sat, 21 Jun 2014 20:34:09 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Henk de Groot <pe1dnn@amsat.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] staging: wlags49_h2: Fix use of skb after netif_rx
-Message-ID: <20140621150408.GA3340@himangi-Dell>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754901AbaFUPF7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 11:05:59 -0400
+Received: from ns.gsystem.sk ([62.176.172.50]:54731 "EHLO ns.gsystem.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753946AbaFUPF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jun 2014 11:05:57 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Samuel Chessman <chessman@tux.org>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 10/11] tlan: Enable device at resume
+Date: Sat, 21 Jun 2014 16:47:55 +0200
+Message-Id: <1403362076-7777-11-git-send-email-linux@rainbow-software.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1403362076-7777-1-git-send-email-linux@rainbow-software.org>
+References: <1403362076-7777-1-git-send-email-linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves a call to netif_rx(skb) after a subsequent reference to
-skb, because netif_rx may call kfree_skb via enqueue_to_backlog on its
-argument.
+pci_disable_device() is called in _suspend but there's no corresponding
+pci_enable_device() in _resume.
+This causes "disabling already-disabled device" warning on 2nd suspend.
 
-This was found using the following semantic match.
+Add pci_enable_device() call to _resume to fix this problem.
 
-// <smpl>
-@@
-expression skb, e,e1;
-@@
-
-(
- netif_rx(skb);
-|
- netif_rx_ni(skb);
-)
-  ... when != skb = e
-(
-  skb = e1
-|
-* skb
-)
-// </smpl>
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 ---
- drivers/staging/wlags49_h2/wl_netdev.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/ethernet/ti/tlan.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/wlags49_h2/wl_netdev.c b/drivers/staging/wlags49_h2/wl_netdev.c
-index a10d014..60701d43 100644
---- a/drivers/staging/wlags49_h2/wl_netdev.c
-+++ b/drivers/staging/wlags49_h2/wl_netdev.c
-@@ -888,8 +888,6 @@ int wl_rx(struct net_device *dev)
- 				GET_PACKET(skb->dev, skb, pktlen);
+diff --git a/drivers/net/ethernet/ti/tlan.c b/drivers/net/ethernet/ti/tlan.c
+index ef32e5f..3c88ac2 100644
+--- a/drivers/net/ethernet/ti/tlan.c
++++ b/drivers/net/ethernet/ti/tlan.c
+@@ -366,8 +366,10 @@ static int tlan_suspend(struct pci_dev *pdev, pm_message_t state)
+ static int tlan_resume(struct pci_dev *pdev)
+ {
+ 	struct net_device *dev = pci_get_drvdata(pdev);
++	int rc = pci_enable_device(pdev);
  
- 				if (status == HCF_SUCCESS) {
--					netif_rx(skb);
--
- 					if (port == 0) {
- 						lp->stats.rx_packets++;
- 						lp->stats.rx_bytes += pktlen;
-@@ -918,6 +916,7 @@ int wl_rx(struct net_device *dev)
- 					}
- #endif /* WIRELESS_SPY */
- #endif /* WIRELESS_EXT */
-+					netif_rx(skb);
- 				} else {
- 					DBG_ERROR(DbgInfo,
- 						  "Rx request to card FAILED\n");
+-	pci_set_power_state(pdev, PCI_D0);
++	if (rc)
++		return rc;
+ 	pci_restore_state(pdev);
+ 	pci_enable_wake(pdev, PCI_D0, 0);
+ 	netif_device_attach(dev);
 -- 
-1.9.1
+Ondrej Zary
 
