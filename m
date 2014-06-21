@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757025AbaFUCEn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 22:04:43 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:17034 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753880AbaFUCEl (ORCPT
+	id S1757660AbaFUCFJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 22:05:09 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:18819 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757159AbaFUCFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 22:04:41 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18m9ZkRjmQfP8ZU5wMwXVMypoCi/RtVImM=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 7F627594FF8
-Date: Fri, 20 Jun 2014 22:04:30 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-Cc: Jonas Bonn <jonas@southpole.se>, Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux <linux@openrisc.net>, Thomas Gleixner <tglx@linutronix.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4] openrisc: irq: use irqchip framework
-Message-ID: <20140621020430.GA21711@titan.lakedaemon.net>
-References: <1401136302-27654-1-git-send-email-stefan.kristiansson@saunalahti.fi>
- <CAMuHMdUUqaRP2M0hPh5k0nPp1a_t0W98Vc_4zAQMjGYZZOPd8w@mail.gmail.com>
- <53843508.7060007@southpole.se>
- <20140529202806.GA9387@chokladfabriken.org>
+	Fri, 20 Jun 2014 22:05:06 -0400
+Message-ID: <53A4E835.3090907@oracle.com>
+Date: Fri, 20 Jun 2014 22:04:37 -0400
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140529202806.GA9387@chokladfabriken.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Borislav Petkov <bp@alien8.de>
+CC: tony.luck@intel.com, linux-kernel@vger.kernel.org,
+        linux-edac@vger.kernel.org, mattieu.souchaud@free.fr
+Subject: Re: [PATCH] x86/mce: Don't unregister CPU hotplug notifier in error
+ path
+References: <20140620152312.GB11391@pd.tnic> <53A45627.6090306@oracle.com> <20140620155845.GC11391@pd.tnic> <53A45E67.7070000@oracle.com> <20140620175240.GE11391@pd.tnic> <53A48DF6.9020503@oracle.com> <20140620200358.GK11391@pd.tnic> <53A496B2.2090701@oracle.com> <20140620202900.GL11391@pd.tnic> <53A49CF9.3050400@oracle.com> <20140620211115.GO11391@pd.tnic>
+In-Reply-To: <20140620211115.GO11391@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 11:28:08PM +0300, Stefan Kristiansson wrote:
-> On Tue, May 27, 2014 at 08:47:36AM +0200, Jonas Bonn wrote:
-> > On 05/26/2014 10:52 PM, Geert Uytterhoeven wrote:
-> > > CC devicetree for the bindings
-> > > 
-> > > On Mon, May 26, 2014 at 10:31 PM, Stefan Kristiansson
-> > > <stefan.kristiansson@saunalahti.fi> wrote:
-> > >> +++ b/Documentation/devicetree/bindings/interrupt-controller/opencores,or1k-pic.txt
-> > >> @@ -0,0 +1,23 @@
-> > >> +OpenRISC 1000 Programmable Interrupt Controller
-> > >> +
-> > >> +Required properties:
-> > >> +
-> > >> +- compatible : should be "opencores,or1k-pic-level" for variants with
-> > >> +  level triggered interrupt lines, "opencores,or1k-pic-edge" for variants with
-> > >> +  edge triggered interrupt lines or "opencores,or1200-pic" for machines
-> > >> +  with the non-spec compliant or1200 type implementation.
-> > >> +
-> > >> +  "opencores,or1k-pic" is also provided as an alias to "opencores,or1200-pic",
-> > >> +  but this is only for backwards compatibility.
-> > 
-> > I still think this identifier needs to be versioned.  Use the same
-> > version number as we have on the cpu identifier since the OR1200 PIC
-> > hasn't changed since then; i.e. opencores,or1200-pic-rtlsvnXYZ.
-> > 
-> 
-> I can change that if you *really* insist on it...
-> But I don't understand the purpose of the versioning here,
-> there will never be any other or1200-pic version than the one that currently
-> exists, so IMO "or1200" should be enough versioning information.
+On 06/20/2014 05:11 PM, Borislav Petkov wrote:
+> On Fri, Jun 20, 2014 at 04:43:37PM -0400, Boris Ostrovsky wrote:
+>> We are getting CPU_ONLINE notifier for ASPs during boot:
+> Bah, that's craptastic. Hmm, ok, let's try this instead:
 
-I'm horribly unfamiliar with openrisc, but compatible strings are
-compatible strings. ;-)
+I'll try it later but this doesn't look sufficient to me: we might not 
+reach this point if subsys_system_register() or zalloc_cpumask_var() 
+fail.  We could register the notifier as the first thing in this routine 
+(probably after mce_available() succeeds).
 
-Is the *actual* IP block called or1200-pic?  Or is it, eg or1235-pic, and
-you're using or1200-pic as a generic catch-all?
 
-Please use the specific IP name without wildcards.  That compatible
-string will then be used on that IP and future IP that is compatible
-with the original IP.  Once an incompatible change is introduced, then
-we'll create a new compatible string, say or1300-pic, or or1237-pic.
+-boris
 
-When in doubt, be specific.  I don't think the '-rtlsvnXYZ' should be
-necessary, though.
+>
+> --
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index bb92f38153b2..9a79c8dbd8e8 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -2451,6 +2451,12 @@ static __init int mcheck_init_device(void)
+>   	for_each_online_cpu(i) {
+>   		err = mce_device_create(i);
+>   		if (err) {
+> +			/*
+> +			 * Register notifier anyway (and do not unreg it) so
+> +			 * that we don't leave undeleted timers, see notifier
+> +			 * callback above.
+> +			 */
+> +			__register_hotcpu_notifier(&mce_cpu_notifier);
+>   			cpu_notifier_register_done();
+>   			goto err_device_create;
+>   		}
+> @@ -2471,10 +2477,6 @@ static __init int mcheck_init_device(void)
+>   err_register:
+>   	unregister_syscore_ops(&mce_syscore_ops);
+>   
+> -	cpu_notifier_register_begin();
+> -	__unregister_hotcpu_notifier(&mce_cpu_notifier);
+> -	cpu_notifier_register_done();
+> -
+>   err_device_create:
+>   	/*
+>   	 * We didn't keep track of which devices were created above, but
+>
 
-thx,
-
-Jason.
