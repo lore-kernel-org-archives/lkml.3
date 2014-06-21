@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932423AbaFUVgL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 17:36:11 -0400
-Received: from lekensteyn.nl ([178.21.112.251]:51222 "EHLO lekensteyn.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754416AbaFUVgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 17:36:10 -0400
-From: Peter Wu <peter@lekensteyn.nl>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] net: wireless: rtlwifi: rtl8192de: hw.c:  Cleaning up if statement that always evaluates to false
-Date: Sat, 21 Jun 2014 23:35:58 +0200
-Message-ID: <1721891.8jxoA0ODQg@al>
-User-Agent: KMail/4.13.2 (Linux/3.15.0-rc8-custom-00058-gd2cfd31; KDE/4.13.2; x86_64; ; )
-In-Reply-To: <1403384623-9737-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1403384623-9737-1-git-send-email-rickard_strandqvist@spectrumdigital.se> <1403384623-9737-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Spam-Score: -0.0 (/)
+	id S1752645AbaFUWK7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 18:10:59 -0400
+Received: from smtp05.smtpout.orange.fr ([80.12.242.127]:56341 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199AbaFUWK6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jun 2014 18:10:58 -0400
+X-ME-Helo: localhost.localdomain
+X-ME-Date: Sun, 22 Jun 2014 00:10:55 +0200
+X-ME-IP: 109.214.175.13
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Robert Jarzmik <robert.jarzmik@free.fr>
+Subject: [PATCH 1/3] clocksource: move PXA timer to clocksource framework
+Date: Sun, 22 Jun 2014 00:09:46 +0200
+Message-Id: <1403388588-11956-1-git-send-email-robert.jarzmik@free.fr>
+X-Mailer: git-send-email 2.0.0.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 21 June 2014 23:03:42 Rickard Strandqvist wrote:
-> I found a logical error in an if statement that always evaluates to false.
-> 
-> This has after same discussion resulted in that we add a macro to handle this.
+Move time.c from arch/arm/mach-pxa/time.c to
+drivers/clocksource/pxa_timer.c.
 
-See other mail, this subject and commit message still suck. The change itself
-is fine.
+Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+---
+ arch/arm/mach-pxa/Makefile                                  | 2 +-
+ drivers/clocksource/Makefile                                | 1 +
+ arch/arm/mach-pxa/time.c => drivers/clocksource/pxa_timer.c | 0
+ 3 files changed, 2 insertions(+), 1 deletion(-)
+ rename arch/arm/mach-pxa/time.c => drivers/clocksource/pxa_timer.c (100%)
 
-Don't forget those other drivers. You are aware that the *e drivers are for PCI(e)
-devices, and *u for USB right?
-
-Kind regards,
-Peter
-
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/net/wireless/rtlwifi/rtl8192de/hw.c  |    2 +-
->  drivers/net/wireless/rtlwifi/rtl8192de/reg.h |    1 +
->  2 files changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/hw.c b/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
-> index 2b08671..280c3da 100644
-> --- a/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
-> +++ b/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
-> @@ -1128,7 +1128,7 @@ static int _rtl92de_set_media_status(struct ieee80211_hw *hw,
->  	}
->  	rtl_write_byte(rtlpriv, REG_CR + 2, bt_msr);
->  	rtlpriv->cfg->ops->led_control(hw, ledaction);
-> -	if ((bt_msr & 0xfc) == MSR_AP)
-> +	if ((bt_msr & MSR_MASK) == MSR_AP)
->  		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x00);
->  	else
->  		rtl_write_byte(rtlpriv, REG_BCNTCFG + 1, 0x66);
-> diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/reg.h b/drivers/net/wireless/rtlwifi/rtl8192de/reg.h
-> index 7f29b8d..315a298 100644
-> --- a/drivers/net/wireless/rtlwifi/rtl8192de/reg.h
-> +++ b/drivers/net/wireless/rtlwifi/rtl8192de/reg.h
-> @@ -369,6 +369,7 @@
->  #define	MSR_ADHOC			0x01
->  #define	MSR_INFRA			0x02
->  #define	MSR_AP				0x03
-> +#define	MSR_MASK			0x03
->  
->  /* 6. Adaptive Control Registers  (Offset: 0x0160 - 0x01CF) */
->  /* ----------------------------------------------------- */
-> 
+diff --git a/arch/arm/mach-pxa/Makefile b/arch/arm/mach-pxa/Makefile
+index 648867a..2fe1824 100644
+--- a/arch/arm/mach-pxa/Makefile
++++ b/arch/arm/mach-pxa/Makefile
+@@ -4,7 +4,7 @@
+ 
+ # Common support (must be linked before board specific support)
+ obj-y				+= clock.o devices.o generic.o irq.o \
+-				   time.o reset.o
++				   reset.o
+ obj-$(CONFIG_PM)		+= pm.o sleep.o standby.o
+ 
+ # Generic drivers that other drivers may depend upon
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index 98cb6c5..e224125 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -19,6 +19,7 @@ obj-$(CONFIG_ARCH_BCM2835)	+= bcm2835_timer.o
+ obj-$(CONFIG_ARCH_MARCO)	+= timer-marco.o
+ obj-$(CONFIG_ARCH_MOXART)	+= moxart_timer.o
+ obj-$(CONFIG_ARCH_MXS)		+= mxs_timer.o
++obj-$(CONFIG_ARCH_PXA)		+= pxa_timer.o
+ obj-$(CONFIG_ARCH_PRIMA2)	+= timer-prima2.o
+ obj-$(CONFIG_ARCH_U300)		+= timer-u300.o
+ obj-$(CONFIG_SUN4I_TIMER)	+= sun4i_timer.o
+diff --git a/arch/arm/mach-pxa/time.c b/drivers/clocksource/pxa_timer.c
+similarity index 100%
+rename from arch/arm/mach-pxa/time.c
+rename to drivers/clocksource/pxa_timer.c
+-- 
+2.0.0.rc2
 
