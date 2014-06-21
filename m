@@ -1,519 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934AbaFUAJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 20:09:58 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:47205 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755638AbaFUAJz (ORCPT
+	id S1756539AbaFUAO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 20:14:27 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:56438 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253AbaFUAOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 20:09:55 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: linux-arch@vger.kernel.org
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        Chris Metcalf <cmetcalf@tilera.com>, Jeff Dike <jdike@addtoit.com>,
-        Richard Weinberger <richard@nod.at>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-ia64@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net,
-        user-mode-linux-user@lists.sourceforge.net, linux-mm@kvack.org,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH] arm64,ia64,ppc,s390,sh,tile,um,x86,mm: Remove default gate area
-Date: Fri, 20 Jun 2014 17:09:48 -0700
-Message-Id: <5a78777a8fc1325e6f0ed7a802231b18250459c1.1403309371.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
+	Fri, 20 Jun 2014 20:14:25 -0400
+Date: Fri, 20 Jun 2014 17:14:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: josh@joshtriplett.org
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 0/5] Fix for cond_resched performance
+ regression
+Message-ID: <20140621001418.GF4615@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140620183249.GA6325@linux.vnet.ibm.com>
+ <20140620191236.GA10340@linux.vnet.ibm.com>
+ <20140620212423.GA22886@cloud>
+ <20140620221120.GD4615@linux.vnet.ibm.com>
+ <20140620223951.GA23677@cloud>
+ <20140620233033.GE4615@linux.vnet.ibm.com>
+ <20140620235215.GA24026@cloud>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140620235215.GA24026@cloud>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14062100-1344-0000-0000-00000255417A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The core mm code will provide a default gate area based on
-FIXADDR_USER_START and FIXADDR_USER_END if
-!defined(__HAVE_ARCH_GATE_AREA) && defined(AT_SYSINFO_EHDR).
+On Fri, Jun 20, 2014 at 04:52:15PM -0700, josh@joshtriplett.org wrote:
+> On Fri, Jun 20, 2014 at 04:30:33PM -0700, Paul E. McKenney wrote:
+> > On Fri, Jun 20, 2014 at 03:39:51PM -0700, josh@joshtriplett.org wrote:
+> > > On Fri, Jun 20, 2014 at 03:11:20PM -0700, Paul E. McKenney wrote:
+> > > > On Fri, Jun 20, 2014 at 02:24:23PM -0700, josh@joshtriplett.org wrote:
+> > > > > On Fri, Jun 20, 2014 at 12:12:36PM -0700, Paul E. McKenney wrote:
+> > > > > > o	Make cond_resched() a no-op for PREEMPT=y.  This might well turn
+> > > > > > 	out to be a good thing, but it doesn't help give RCU the quiescent
+> > > > > > 	states that it needs.
+> > > > > 
+> > > > > What about doing this, together with letting the fqs logic poke
+> > > > > un-quiesced kernel code as needed?  That way, rather than having
+> > > > > cond_resched do any work, you have the fqs logic recognize that a
+> > > > > particular CPU has gone too long without quiescing, without disturbing
+> > > > > that CPU at all if it hasn't gone too long.
+> > > > 
+> > > > My next stop is to post the previous series, but with a couple of
+> > > > exports and one bug fix uncovered by testing thus far, but after
+> > > > another round of testing.  Then I am going to take a close look at
+> > > > this one:
+> > > > 
+> > > > o	Push the checks further into cond_resched(), so that the
+> > > > 	fastpath does the same sequence of instructions that the original
+> > > > 	did.  This might work well, but requires IPIs, which are not so
+> > > > 	good for latencies on the remote CPU.  It nevertheless might be a
+> > > > 	decent long-term solution given that if your CPU is spending many
+> > > > 	jiffies looping in the kernel, you aren't getting good latencies
+> > > > 	anyway.  It also has the benefit of allowing RCU to take advantage
+> > > > 	of the implicit quiescent states of all cond_resched() calls,
+> > > > 	and of eliminating the need for a separate cond_resched_rcu_qs()
+> > > > 	and for RCU_COND_RESCHED_QS.
+> > > > 
+> > > > The one you call out is of course interesting as well.  But there are
+> > > > a couple of questions:
+> > > > 
+> > > > 1.	Why wasn't cond_resched() a no-op in CONFIG_PREEMPT to start
+> > > > 	with?  It just seems to obvious a thing to do for it to possibly
+> > > > 	be an oversight.  (What, me paranoid?)
+> > > > 
+> > > > 2.	When RCU recognizes that a particular CPU has gone too long,
+> > > > 	exactly what are you suggesting that RCU do about it?  When
+> > > > 	formulating your answer, please give due consideration to the
+> > > > 	implications of that CPU being a NO_HZ_FULL CPU.  ;-)
+> > > 
+> > > Send it an IPI that either causes it to flag a quiescent state
+> > > immediately if currently quiesced or causes it to quiesce at the next
+> > > opportunity if not.
+> > 
+> > OK.  But if we are in a !PREEMPT kernel,
+> 
+> That's not the case I was suggesting.
 
-This default is only useful for ia64.  arm64, ppc, s390, sh, tile,
-64-bit UML, and x86_32 have their own code just to disable it.  arm,
-32-bit UML, and x86_64 have gate areas, but they have their own
-implementations.
+Fair enough, but we still need to support !PREEMPT kernels.
 
-This gets rid of the default and moves the code into ia64.
+>                                        *If* the kernel is fully
+> preemptible, then it makes little sense to put any code in cond_resched,
+> when instead another thread can simply cause a preemption if it needs a
+> quiescent state.  That has the advantage of not imposing any unnecessary
+> polling on code running in the kernel.
 
-This should save some code on architectures without a gate area: it's
-now possible to inline the gate_area functions in the default case.
+OK.  Exactly which thread are you suggesting should cause the preemption?
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/arm64/include/asm/page.h      |  3 ---
- arch/arm64/kernel/vdso.c           | 19 -------------------
- arch/ia64/include/asm/page.h       |  2 ++
- arch/ia64/mm/init.c                | 26 ++++++++++++++++++++++++++
- arch/powerpc/include/asm/page.h    |  3 ---
- arch/powerpc/kernel/vdso.c         | 16 ----------------
- arch/s390/include/asm/page.h       |  2 --
- arch/s390/kernel/vdso.c            | 15 ---------------
- arch/sh/include/asm/page.h         |  5 -----
- arch/sh/kernel/vsyscall/vsyscall.c | 15 ---------------
- arch/tile/include/asm/page.h       |  6 ------
- arch/tile/kernel/vdso.c            | 15 ---------------
- arch/um/include/asm/page.h         |  5 +++++
- arch/x86/include/asm/page.h        |  1 -
- arch/x86/include/asm/page_64.h     |  2 ++
- arch/x86/um/asm/elf.h              |  1 -
- arch/x86/um/mem_64.c               | 15 ---------------
- arch/x86/vdso/vdso32-setup.c       | 19 +------------------
- include/linux/mm.h                 | 17 ++++++++++++-----
- mm/memory.c                        | 38 --------------------------------------
- mm/nommu.c                         |  5 -----
- 21 files changed, 48 insertions(+), 182 deletions(-)
+> In a !PREEMPT kernel, it makes a bit more sense to have cond_resched as
+> a voluntary preemption point.  But voluntary preemption points don't
+> make as much sense in a kernel prepared to preempt a thread anywhere.
 
-diff --git a/arch/arm64/include/asm/page.h b/arch/arm64/include/asm/page.h
-index 46bf666..992710f 100644
---- a/arch/arm64/include/asm/page.h
-+++ b/arch/arm64/include/asm/page.h
-@@ -28,9 +28,6 @@
- #define PAGE_SIZE		(_AC(1,UL) << PAGE_SHIFT)
- #define PAGE_MASK		(~(PAGE_SIZE-1))
- 
--/* We do define AT_SYSINFO_EHDR but don't use the gate mechanism */
--#define __HAVE_ARCH_GATE_AREA		1
--
- #ifndef __ASSEMBLY__
- 
- #ifdef CONFIG_ARM64_64K_PAGES
-diff --git a/arch/arm64/kernel/vdso.c b/arch/arm64/kernel/vdso.c
-index 50384fe..f630626 100644
---- a/arch/arm64/kernel/vdso.c
-+++ b/arch/arm64/kernel/vdso.c
-@@ -187,25 +187,6 @@ const char *arch_vma_name(struct vm_area_struct *vma)
- }
- 
- /*
-- * We define AT_SYSINFO_EHDR, so we need these function stubs to keep
-- * Linux happy.
-- */
--int in_gate_area_no_mm(unsigned long addr)
--{
--	return 0;
--}
--
--int in_gate_area(struct mm_struct *mm, unsigned long addr)
--{
--	return 0;
--}
--
--struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
--{
--	return NULL;
--}
--
--/*
-  * Update the vDSO data page to keep in sync with kernel timekeeping.
-  */
- void update_vsyscall(struct timekeeper *tk)
-diff --git a/arch/ia64/include/asm/page.h b/arch/ia64/include/asm/page.h
-index f1e1b2e..1f1bf14 100644
---- a/arch/ia64/include/asm/page.h
-+++ b/arch/ia64/include/asm/page.h
-@@ -231,4 +231,6 @@ get_order (unsigned long size)
- #define PERCPU_ADDR		(-PERCPU_PAGE_SIZE)
- #define LOAD_OFFSET		(KERNEL_START - KERNEL_TR_PAGE_SIZE)
- 
-+#define __HAVE_ARCH_GATE_AREA	1
-+
- #endif /* _ASM_IA64_PAGE_H */
-diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
-index 25c3502..35efaa3 100644
---- a/arch/ia64/mm/init.c
-+++ b/arch/ia64/mm/init.c
-@@ -278,6 +278,32 @@ setup_gate (void)
- 	ia64_patch_gate();
- }
- 
-+static struct vm_area_struct gate_vma;
-+
-+static int __init gate_vma_init(void)
-+{
-+	gate_vma.vm_mm = NULL;
-+	gate_vma.vm_start = FIXADDR_USER_START;
-+	gate_vma.vm_end = FIXADDR_USER_END;
-+	gate_vma.vm_flags = VM_READ | VM_MAYREAD | VM_EXEC | VM_MAYEXEC;
-+	gate_vma.vm_page_prot = __P101;
-+
-+	return 0;
-+}
-+__initcall(gate_vma_init);
-+
-+struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
-+{
-+	return &gate_vma;
-+}
-+
-+int in_gate_area_no_mm(unsigned long addr)
-+{
-+	if ((addr >= FIXADDR_USER_START) && (addr < FIXADDR_USER_END))
-+		return 1;
-+	return 0;
-+}
-+
- void ia64_mmu_init(void *my_cpu_data)
- {
- 	unsigned long pta, impl_va_bits;
-diff --git a/arch/powerpc/include/asm/page.h b/arch/powerpc/include/asm/page.h
-index 32e4e21..26fe1ae 100644
---- a/arch/powerpc/include/asm/page.h
-+++ b/arch/powerpc/include/asm/page.h
-@@ -48,9 +48,6 @@ extern unsigned int HPAGE_SHIFT;
- #define HUGE_MAX_HSTATE		(MMU_PAGE_COUNT-1)
- #endif
- 
--/* We do define AT_SYSINFO_EHDR but don't use the gate mechanism */
--#define __HAVE_ARCH_GATE_AREA		1
--
- /*
-  * Subtle: (1 << PAGE_SHIFT) is an int, not an unsigned long. So if we
-  * assign PAGE_MASK to a larger type it gets extended the way we want
-diff --git a/arch/powerpc/kernel/vdso.c b/arch/powerpc/kernel/vdso.c
-index ce74c33..f174351 100644
---- a/arch/powerpc/kernel/vdso.c
-+++ b/arch/powerpc/kernel/vdso.c
-@@ -840,19 +840,3 @@ static int __init vdso_init(void)
- 	return 0;
- }
- arch_initcall(vdso_init);
--
--int in_gate_area_no_mm(unsigned long addr)
--{
--	return 0;
--}
--
--int in_gate_area(struct mm_struct *mm, unsigned long addr)
--{
--	return 0;
--}
--
--struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
--{
--	return NULL;
--}
--
-diff --git a/arch/s390/include/asm/page.h b/arch/s390/include/asm/page.h
-index 114258e..7b2ac6e 100644
---- a/arch/s390/include/asm/page.h
-+++ b/arch/s390/include/asm/page.h
-@@ -162,6 +162,4 @@ static inline int devmem_is_allowed(unsigned long pfn)
- #include <asm-generic/memory_model.h>
- #include <asm-generic/getorder.h>
- 
--#define __HAVE_ARCH_GATE_AREA 1
--
- #endif /* _S390_PAGE_H */
-diff --git a/arch/s390/kernel/vdso.c b/arch/s390/kernel/vdso.c
-index 6136490..0bbb7e0 100644
---- a/arch/s390/kernel/vdso.c
-+++ b/arch/s390/kernel/vdso.c
-@@ -316,18 +316,3 @@ static int __init vdso_init(void)
- 	return 0;
- }
- early_initcall(vdso_init);
--
--int in_gate_area_no_mm(unsigned long addr)
--{
--	return 0;
--}
--
--int in_gate_area(struct mm_struct *mm, unsigned long addr)
--{
--	return 0;
--}
--
--struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
--{
--	return NULL;
--}
-diff --git a/arch/sh/include/asm/page.h b/arch/sh/include/asm/page.h
-index 15d9703..fe20d14 100644
---- a/arch/sh/include/asm/page.h
-+++ b/arch/sh/include/asm/page.h
-@@ -186,11 +186,6 @@ typedef struct page *pgtable_t;
- #include <asm-generic/memory_model.h>
- #include <asm-generic/getorder.h>
- 
--/* vDSO support */
--#ifdef CONFIG_VSYSCALL
--#define __HAVE_ARCH_GATE_AREA
--#endif
--
- /*
-  * Some drivers need to perform DMA into kmalloc'ed buffers
-  * and so we have to increase the kmalloc minalign for this.
-diff --git a/arch/sh/kernel/vsyscall/vsyscall.c b/arch/sh/kernel/vsyscall/vsyscall.c
-index 5ca5797..ea2aa13 100644
---- a/arch/sh/kernel/vsyscall/vsyscall.c
-+++ b/arch/sh/kernel/vsyscall/vsyscall.c
-@@ -92,18 +92,3 @@ const char *arch_vma_name(struct vm_area_struct *vma)
- 
- 	return NULL;
- }
--
--struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
--{
--	return NULL;
--}
--
--int in_gate_area(struct mm_struct *mm, unsigned long address)
--{
--	return 0;
--}
--
--int in_gate_area_no_mm(unsigned long address)
--{
--	return 0;
--}
-diff --git a/arch/tile/include/asm/page.h b/arch/tile/include/asm/page.h
-index 6727680..a213a8d 100644
---- a/arch/tile/include/asm/page.h
-+++ b/arch/tile/include/asm/page.h
-@@ -39,12 +39,6 @@
- #define HPAGE_MASK	(~(HPAGE_SIZE - 1))
- 
- /*
-- * We do define AT_SYSINFO_EHDR to support vDSO,
-- * but don't use the gate mechanism.
-- */
--#define __HAVE_ARCH_GATE_AREA		1
--
--/*
-  * If the Kconfig doesn't specify, set a maximum zone order that
-  * is enough so that we can create huge pages from small pages given
-  * the respective sizes of the two page types.  See <linux/mmzone.h>.
-diff --git a/arch/tile/kernel/vdso.c b/arch/tile/kernel/vdso.c
-index 1533af2..5bc51d7 100644
---- a/arch/tile/kernel/vdso.c
-+++ b/arch/tile/kernel/vdso.c
-@@ -121,21 +121,6 @@ const char *arch_vma_name(struct vm_area_struct *vma)
- 	return NULL;
- }
- 
--struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
--{
--	return NULL;
--}
--
--int in_gate_area(struct mm_struct *mm, unsigned long address)
--{
--	return 0;
--}
--
--int in_gate_area_no_mm(unsigned long address)
--{
--	return 0;
--}
--
- int setup_vdso_pages(void)
- {
- 	struct page **pagelist;
-diff --git a/arch/um/include/asm/page.h b/arch/um/include/asm/page.h
-index 5ff53d9..71c5d13 100644
---- a/arch/um/include/asm/page.h
-+++ b/arch/um/include/asm/page.h
-@@ -119,4 +119,9 @@ extern unsigned long uml_physmem;
- #include <asm-generic/getorder.h>
- 
- #endif	/* __ASSEMBLY__ */
-+
-+#ifdef CONFIG_X86_32
-+#define __HAVE_ARCH_GATE_AREA 1
-+#endif
-+
- #endif	/* __UM_PAGE_H */
-diff --git a/arch/x86/include/asm/page.h b/arch/x86/include/asm/page.h
-index 775873d..802dde3 100644
---- a/arch/x86/include/asm/page.h
-+++ b/arch/x86/include/asm/page.h
-@@ -70,7 +70,6 @@ extern bool __virt_addr_valid(unsigned long kaddr);
- #include <asm-generic/memory_model.h>
- #include <asm-generic/getorder.h>
- 
--#define __HAVE_ARCH_GATE_AREA 1
- #define HAVE_ARCH_HUGETLB_UNMAPPED_AREA
- 
- #endif	/* __KERNEL__ */
-diff --git a/arch/x86/include/asm/page_64.h b/arch/x86/include/asm/page_64.h
-index 0f1ddee..f408caf 100644
---- a/arch/x86/include/asm/page_64.h
-+++ b/arch/x86/include/asm/page_64.h
-@@ -39,4 +39,6 @@ void copy_page(void *to, void *from);
- 
- #endif	/* !__ASSEMBLY__ */
- 
-+#define __HAVE_ARCH_GATE_AREA 1
-+
- #endif /* _ASM_X86_PAGE_64_H */
-diff --git a/arch/x86/um/asm/elf.h b/arch/x86/um/asm/elf.h
-index 0feee2f..25a1022 100644
---- a/arch/x86/um/asm/elf.h
-+++ b/arch/x86/um/asm/elf.h
-@@ -216,6 +216,5 @@ extern long elf_aux_hwcap;
- #define ELF_HWCAP (elf_aux_hwcap)
- 
- #define SET_PERSONALITY(ex) do ; while(0)
--#define __HAVE_ARCH_GATE_AREA 1
- 
- #endif
-diff --git a/arch/x86/um/mem_64.c b/arch/x86/um/mem_64.c
-index c6492e7..f8fecad 100644
---- a/arch/x86/um/mem_64.c
-+++ b/arch/x86/um/mem_64.c
-@@ -9,18 +9,3 @@ const char *arch_vma_name(struct vm_area_struct *vma)
- 
- 	return NULL;
- }
--
--struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
--{
--	return NULL;
--}
--
--int in_gate_area(struct mm_struct *mm, unsigned long addr)
--{
--	return 0;
--}
--
--int in_gate_area_no_mm(unsigned long addr)
--{
--	return 0;
--}
-diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-index e4f7781..e904c27 100644
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -115,23 +115,6 @@ static __init int ia32_binfmt_init(void)
- 	return 0;
- }
- __initcall(ia32_binfmt_init);
--#endif
--
--#else  /* CONFIG_X86_32 */
--
--struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
--{
--	return NULL;
--}
--
--int in_gate_area(struct mm_struct *mm, unsigned long addr)
--{
--	return 0;
--}
--
--int in_gate_area_no_mm(unsigned long addr)
--{
--	return 0;
--}
-+#endif /* CONFIG_SYSCTL */
- 
- #endif	/* CONFIG_X86_64 */
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index e03dd29..8981cc8 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -2014,13 +2014,20 @@ static inline bool kernel_page_present(struct page *page) { return true; }
- #endif /* CONFIG_HIBERNATION */
- #endif
- 
-+#ifdef __HAVE_ARCH_GATE_AREA
- extern struct vm_area_struct *get_gate_vma(struct mm_struct *mm);
--#ifdef	__HAVE_ARCH_GATE_AREA
--int in_gate_area_no_mm(unsigned long addr);
--int in_gate_area(struct mm_struct *mm, unsigned long addr);
-+extern int in_gate_area_no_mm(unsigned long addr);
-+extern int in_gate_area(struct mm_struct *mm, unsigned long addr);
- #else
--int in_gate_area_no_mm(unsigned long addr);
--#define in_gate_area(mm, addr) ({(void)mm; in_gate_area_no_mm(addr);})
-+static inline struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
-+{
-+	return NULL;
-+}
-+static inline int in_gate_area_no_mm(unsigned long addr) { return 0; }
-+static inline int in_gate_area(struct mm_struct *mm, unsigned long addr)
-+{
-+	return 0;
-+}
- #endif	/* __HAVE_ARCH_GATE_AREA */
- 
- #ifdef CONFIG_SYSCTL
-diff --git a/mm/memory.c b/mm/memory.c
-index d67fd9f..099d234 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3399,44 +3399,6 @@ int __pmd_alloc(struct mm_struct *mm, pud_t *pud, unsigned long address)
- }
- #endif /* __PAGETABLE_PMD_FOLDED */
- 
--#if !defined(__HAVE_ARCH_GATE_AREA)
--
--#if defined(AT_SYSINFO_EHDR)
--static struct vm_area_struct gate_vma;
--
--static int __init gate_vma_init(void)
--{
--	gate_vma.vm_mm = NULL;
--	gate_vma.vm_start = FIXADDR_USER_START;
--	gate_vma.vm_end = FIXADDR_USER_END;
--	gate_vma.vm_flags = VM_READ | VM_MAYREAD | VM_EXEC | VM_MAYEXEC;
--	gate_vma.vm_page_prot = __P101;
--
--	return 0;
--}
--__initcall(gate_vma_init);
--#endif
--
--struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
--{
--#ifdef AT_SYSINFO_EHDR
--	return &gate_vma;
--#else
--	return NULL;
--#endif
--}
--
--int in_gate_area_no_mm(unsigned long addr)
--{
--#ifdef AT_SYSINFO_EHDR
--	if ((addr >= FIXADDR_USER_START) && (addr < FIXADDR_USER_END))
--		return 1;
--#endif
--	return 0;
--}
--
--#endif	/* __HAVE_ARCH_GATE_AREA */
--
- static int __follow_pte(struct mm_struct *mm, unsigned long address,
- 		pte_t **ptepp, spinlock_t **ptlp)
- {
-diff --git a/mm/nommu.c b/mm/nommu.c
-index b78e3a8..c4ca56b 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -1981,11 +1981,6 @@ error:
- 	return -ENOMEM;
- }
- 
--int in_gate_area_no_mm(unsigned long addr)
--{
--	return 0;
--}
--
- int filemap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- {
- 	BUG();
--- 
-1.9.3
+That does sound intuitive, but I am not yet prepared to believe that
+the scheduler guys missed this trick.  There might well be some good
+reason for cond_resched() doing something, though I cannot think what it
+might be (something to do with preempt_enable_no_resched(), perhaps?).
+We should at least ask them, although if you want to do some testing
+before asking them, I of course have no objection to your doing so.
+
+							Thanx, Paul
 
