@@ -1,54 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342AbaFUB5S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 21:57:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38572 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752953AbaFUB5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 21:57:16 -0400
-Date: Sat, 21 Jun 2014 03:57:14 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: cocci@systeme.lip6.fr
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: SmPL for automatic request_firmware_nowait() conversion
-Message-ID: <20140621015714.GX4841@wotan.suse.de>
+	id S1757025AbaFUCEn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 22:04:43 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:17034 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753880AbaFUCEl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jun 2014 22:04:41 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18m9ZkRjmQfP8ZU5wMwXVMypoCi/RtVImM=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 7F627594FF8
+Date: Fri, 20 Jun 2014 22:04:30 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+Cc: Jonas Bonn <jonas@southpole.se>, Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux <linux@openrisc.net>, Thomas Gleixner <tglx@linutronix.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v4] openrisc: irq: use irqchip framework
+Message-ID: <20140621020430.GA21711@titan.lakedaemon.net>
+References: <1401136302-27654-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+ <CAMuHMdUUqaRP2M0hPh5k0nPp1a_t0W98Vc_4zAQMjGYZZOPd8w@mail.gmail.com>
+ <53843508.7060007@southpole.se>
+ <20140529202806.GA9387@chokladfabriken.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20140529202806.GA9387@chokladfabriken.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was just porting over an ethernet driver [0] to use request_firmware_nowait()
-since firmware loading seems can take over a minute on one device, while
-at it I noticed no other ethernet drivers yet use this API so figure
-this may be a trend coming if devices are getting as complex as cxgb4.
-The cxgb4 driver happens to even use the firmware API 3 times!
+On Thu, May 29, 2014 at 11:28:08PM +0300, Stefan Kristiansson wrote:
+> On Tue, May 27, 2014 at 08:47:36AM +0200, Jonas Bonn wrote:
+> > On 05/26/2014 10:52 PM, Geert Uytterhoeven wrote:
+> > > CC devicetree for the bindings
+> > > 
+> > > On Mon, May 26, 2014 at 10:31 PM, Stefan Kristiansson
+> > > <stefan.kristiansson@saunalahti.fi> wrote:
+> > >> +++ b/Documentation/devicetree/bindings/interrupt-controller/opencores,or1k-pic.txt
+> > >> @@ -0,0 +1,23 @@
+> > >> +OpenRISC 1000 Programmable Interrupt Controller
+> > >> +
+> > >> +Required properties:
+> > >> +
+> > >> +- compatible : should be "opencores,or1k-pic-level" for variants with
+> > >> +  level triggered interrupt lines, "opencores,or1k-pic-edge" for variants with
+> > >> +  edge triggered interrupt lines or "opencores,or1200-pic" for machines
+> > >> +  with the non-spec compliant or1200 type implementation.
+> > >> +
+> > >> +  "opencores,or1k-pic" is also provided as an alias to "opencores,or1200-pic",
+> > >> +  but this is only for backwards compatibility.
+> > 
+> > I still think this identifier needs to be versioned.  Use the same
+> > version number as we have on the cpu identifier since the OR1200 PIC
+> > hasn't changed since then; i.e. opencores,or1200-pic-rtlsvnXYZ.
+> > 
+> 
+> I can change that if you *really* insist on it...
+> But I don't understand the purpose of the versioning here,
+> there will never be any other or1200-pic version than the one that currently
+> exists, so IMO "or1200" should be enough versioning information.
 
-Obviously I considered writing SmPL for this, but one thing which seemed
-hard was that for after the request_firmware_nowait() we tend to tuck
-away into another new call the rest of the code that was in place in the
-original function after the old request_firmware() call. Is there a way
-to dump all that code into the new routine? I think the hardest thing
-would be to also move the right set of variables over. In the third
-patch in this series for example [1] there was a state variable that
-I moved from beign static over to the ethernet private data structure.
-Its hard for me to think of how I can hint to Coccinelle enough information
-about what stuff it needs to move around. I think one hint would be:
+I'm horribly unfamiliar with openrisc, but compatible strings are
+compatible strings. ;-)
 
-  "Hey all that code that is static and is used *before* and *after* request_firmware()
-   stuff it into the private data structure"
+Is the *actual* IP block called or1200-pic?  Or is it, eg or1235-pic, and
+you're using or1200-pic as a generic catch-all?
 
-We'd have to infer the private data structure but that's easy and I already know
-that's possible. Is this possible? The only other challenge I thought
-might be tough would be to come up with are rasonable call for the
-completion call, but I guess we can use the original routine name
-where request_firmware() was being used and postfix _completion or something.
+Please use the specific IP name without wildcards.  That compatible
+string will then be used on that IP and future IP that is compatible
+with the original IP.  Once an incompatible change is introduced, then
+we'll create a new compatible string, say or1300-pic, or or1237-pic.
 
-netdev: how worthy is this effort?
+When in doubt, be specific.  I don't think the '-rtlsvnXYZ' should be
+necessary, though.
 
-[0] https://lkml.org/lkml/2014/6/20/688
-[1] https://lkml.org/lkml/2014/6/20/691
- 
-  Luis
+thx,
+
+Jason.
