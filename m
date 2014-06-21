@@ -1,86 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758433AbaFUPKE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 11:10:04 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:39643 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758403AbaFUPKA (ORCPT
+	id S1753353AbaFUPoI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 11:44:08 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:36014 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114AbaFUPoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 11:10:00 -0400
-Date: Sat, 21 Jun 2014 20:39:51 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] Staging: rtl8192e: adjust error handling
-Message-ID: <20140621150951.GA3418@himangi-Dell>
+	Sat, 21 Jun 2014 11:44:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1eb40ad923acde2e18357ef2832867432e70ac42.1403361010.git.luto@amacapital.net>
+References: <CA+5PVA61wwmnstiBdDemufGvXvSu4RL3WHds3NSstH-rVx7tYg@mail.gmail.com>
+ <1eb40ad923acde2e18357ef2832867432e70ac42.1403361010.git.luto@amacapital.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sat, 21 Jun 2014 08:43:44 -0700
+Message-ID: <CALCETrU=FAXaebS3tJF7e_fx4DZzPK_FM_A9_OaoK-+WZDqPpA@mail.gmail.com>
+Subject: Re: [PATCH] x86_32,signal: Fix vdso rt_sigreturn
+To: Josh Boyer <jwboyer@fedoraproject.org>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes a test in error handling code by adding a return
-path.
+On Sat, Jun 21, 2014 at 7:31 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> This commit:
+>
+>     commit 6f121e548f83674ab4920a4e60afb58d4f61b829
+>     Author: Andy Lutomirski <luto@amacapital.net>
+>     Date:   Mon May 5 12:19:34 2014 -0700
+>
+>         x86, vdso: Reimplement vdso.so preparation in build-time C
+>
+> Contained this obvious typo:
+>
+> -               restorer = VDSO32_SYMBOL(current->mm->context.vdso, rt_sigreturn);
+> +               restorer = current->mm->context.vdso +
+> +                       selected_vdso32->sym___kernel_sigreturn;
+>
+> Note the missing 'rt_' in the new code.  Fix it.
+>
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ---
+>
+> Compile-tested only.  I bet that someone will test it here far more quickly
+> than I can figure out how to test it:
+>
+> https://bugzilla.redhat.com/show_bug.cgi?id=1110968
 
-The Coccinelle semantic match that found the problem is:
+Tested now at the link above.
 
-// <smpl>
-@@
-expression E,E1,E2;
-@@
-
-E = alloc_etherdev(...)
-... when != E = E1
-if (...) { ... free_netdev(E); ... return ...; }
-... when != E = E2
-(
-  if (...)
-   {
-   ... when != free_netdev(E);
-   return dev; }
-|
-* if (...)
-   {
-   ... when != free_netdev(E);
-   return ...; }
-|
-register_netdev(E)
-)
-
-// </smpl>
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- drivers/staging/rtl8192e/rtllib_module.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/staging/rtl8192e/rtllib_module.c b/drivers/staging/rtl8192e/rtllib_module.c
-index 136909e..ba95149 100644
---- a/drivers/staging/rtl8192e/rtllib_module.c
-+++ b/drivers/staging/rtl8192e/rtllib_module.c
-@@ -111,7 +111,7 @@ struct net_device *alloc_rtllib(int sizeof_priv)
- 	dev = alloc_etherdev(sizeof(struct rtllib_device) + sizeof_priv);
- 	if (!dev) {
- 		RTLLIB_ERROR("Unable to network device.\n");
--		goto failed;
-+		return NULL;
- 	}
- 	ieee = (struct rtllib_device *)netdev_priv_rsl(dev);
- 	memset(ieee, 0, sizeof(struct rtllib_device)+sizeof_priv);
-@@ -180,8 +180,7 @@ struct net_device *alloc_rtllib(int sizeof_priv)
- 	return dev;
- 
-  failed:
--	if (dev)
--		free_netdev(dev);
-+	free_netdev(dev);
- 	return NULL;
- }
- EXPORT_SYMBOL(alloc_rtllib);
--- 
-1.9.1
-
+--Andy
