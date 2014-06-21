@@ -1,118 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756266AbaFUAUf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jun 2014 20:20:35 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:60094 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300AbaFUAUd (ORCPT
+	id S1755544AbaFUAae (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jun 2014 20:30:34 -0400
+Received: from g5t1627.atlanta.hp.com ([15.192.137.10]:37972 "EHLO
+	g5t1627.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752300AbaFUAad (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jun 2014 20:20:33 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Willy Tarreau <w@1wt.eu>
-Cc: Luis Henriques <luis.henriques@canonical.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Michal Tesar <mtesar@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, tyler.hicks@canonical.com
-References: <f07e5fe6d87f172fc73580b9c86ba9a2@local>
-	<20140512003203.088027167@1wt.eu> <20140611184644.GA5442@hercules>
-	<20140611194657.GU28551@1wt.eu> <87sinanv6u.fsf@canonical.com>
-	<20140614175047.GH15102@1wt.eu> <87simzgrbs.fsf@x220.int.ebiederm.org>
-	<20140620225827.GF9639@1wt.eu>
-Date: Fri, 20 Jun 2014 17:19:15 -0700
-In-Reply-To: <20140620225827.GF9639@1wt.eu> (Willy Tarreau's message of "Sat,
-	21 Jun 2014 00:58:27 +0200")
-Message-ID: <87y4wrf724.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18ZDZTStQf170G/gfQws2H3omM5quFS8kE=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3771]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Willy Tarreau <w@1wt.eu>
-X-Spam-Relay-Country: 
-Subject: Re: [ 059/143] sysctl net: Keep tcp_syn_retries inside the boundary
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Fri, 20 Jun 2014 20:30:33 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+To: Paul Moore <paul@paul-moore.com>, Stephen Smalley <sds@tycho.nsa.gov>,
+        Eric Paris <eparis@parisplace.org>,
+        James Morris <james.l.morris@oracle.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Scott J Norton <scott.norton@hp.com>, Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH v2] selinux: no recursive read_lock of policy_rwlock in security_genfs_sid()
+Date: Fri, 20 Jun 2014 20:30:23 -0400
+Message-Id: <1403310623-37002-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Willy Tarreau <w@1wt.eu> writes:
+v1->v2:
+ - Add an internal helper to switch on/off lock acquisition instead
+   of modifying the external API.
 
-> Hi Eric,
->
-> On Fri, Jun 20, 2014 at 03:16:07PM -0700, Eric W. Biederman wrote:
->> Willy Tarreau <w@1wt.eu> writes:
->> 
->> > Hi Luis,
->> >
->> > On Thu, Jun 12, 2014 at 01:55:53PM +0100, Luis Henriques wrote:
->> >> I was finally able to spend some more time with this and tried (a
->> >> modified) Tyler's patch on top of 2.6.32.62, and it seems to work.
->> >> Although I haven't done any extended testing, I don't see the two
->> >> stack traces and the /proc/sys/net/ipv4/ directory seems to be
->> >> correctly populated.
->> >> 
->> >> I'm attaching the patch I've used, based on Tyler's.
->> >
->> > Would any of you or Tyler please kindly pass me a signed-off-by with
->> > a commit message ? That would be great. Alternately I'd do it myself
->> > and mention you authored them.
->> 
->> If my memory serves it is possibe in 2.6.32 to set 
->> .ctl_name = CTL_UNNEEDED
->> 
->> and not need to implement a .strategy routine at all.
->
-> Ah that's quite interesting, thanks for the tip!
->
->> Given the fact that most people got the strategy routines
->> slightly wrong and that sys_sysctl is effectively unused
->> a strategy where you don't implement code that no-one
->> will use in a backport I would be preferable.
->
-> OK.
->
->> Since you have mentioned this has come up a couple of times if something
->> else this will be something to think about for next time.
->
-> I'm keeping your e-mail where I manage patches, hoping to recognize
-> this case next time.
->
->> I am puzzled why .ctl_name was populated in a backport at all.
->
-> Oh it's simply because I didn't know it did not have to be there,
-> and among the few reviewers, I guess that it's not common to know
-> what version uses what semantics.
+With introduction of fair queued rwlock, recursive read_lock() may hang
+the offending process if there is a write_lock() somewhere in between.
 
-I guess what I meant is that the field .ctl_name does not even exist
-anymore for the same reasons .strategy does not exist anymore.  So I
-was just suprirsed that someone picked a randomish number and stuck
-it in there.
+With recursive read_lock checking enabled, the following error was
+reported:
 
-If anyone actually were to use those randomish numbers in the binary
-sys_sysctl call their applications would break when they eventually
-moved to a more recent kernel.
+=============================================
+[ INFO: possible recursive locking detected ]
+3.16.0-rc1 #2 Tainted: G            E
+---------------------------------------------
+load_policy/708 is trying to acquire lock:
+ (policy_rwlock){.+.+..}, at: [<ffffffff8125b32a>]
+security_genfs_sid+0x3a/0x170
 
-Which is one of the motivations it was decided there would be no more
-binary sysctls allocated around the 2.6.32 timeframe.
+but task is already holding lock:
+ (policy_rwlock){.+.+..}, at: [<ffffffff8125b48c>]
+security_fs_use+0x2c/0x110
 
-> Thank you for the exaplanation, it's really helpful. We're not used
-> to backport sysctl changes but here I got caught a few times and have
-> found some sysctl.conf with bogus values in field a few times, so it
-> was really important to backport this one.
+other info that might help us debug this:
+ Possible unsafe locking scenario:
 
-Sysctl do have their uses, and at least 2.6.32 has runtime sysctl checks
-to keep the insanity to a dull roar.
+       CPU0
+       ----
+  lock(policy_rwlock);
+  lock(policy_rwlock);
 
-Eric
+This patch fixes the occurrence of recursive read_lock() of
+policy_rwlock in security_genfs_sid() by adding a helper function
+which has a 5th argument to indicate if the rwlock has been taken.
+
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+---
+ security/selinux/ss/services.c |   36 ++++++++++++++++++++++++++++--------
+ 1 files changed, 28 insertions(+), 8 deletions(-)
+
+diff --git a/security/selinux/ss/services.c b/security/selinux/ss/services.c
+index 4bca494..5f4c1f3 100644
+--- a/security/selinux/ss/services.c
++++ b/security/selinux/ss/services.c
+@@ -2277,20 +2277,22 @@ out:
+ }
+ 
+ /**
+- * security_genfs_sid - Obtain a SID for a file in a filesystem
++ * __security_genfs_sid - Helper to obtain a SID for a file in a filesystem
+  * @fstype: filesystem type
+  * @path: path from root of mount
+  * @sclass: file security class
+  * @sid: SID for path
++ * @locked: true if policy_rwlock taken
+  *
+  * Obtain a SID to use for a file in a filesystem that
+  * cannot support xattr or use a fixed labeling behavior like
+  * transition SIDs or task SIDs.
+  */
+-int security_genfs_sid(const char *fstype,
+-		       char *path,
+-		       u16 orig_sclass,
+-		       u32 *sid)
++static inline int __security_genfs_sid(const char *fstype,
++				       char *path,
++				       u16 orig_sclass,
++				       u32 *sid,
++				       int locked)
+ {
+ 	int len;
+ 	u16 sclass;
+@@ -2301,7 +2303,8 @@ int security_genfs_sid(const char *fstype,
+ 	while (path[0] == '/' && path[1] == '/')
+ 		path++;
+ 
+-	read_lock(&policy_rwlock);
++	if (!locked)
++		read_lock(&policy_rwlock);
+ 
+ 	sclass = unmap_class(orig_sclass);
+ 	*sid = SECINITSID_UNLABELED;
+@@ -2336,11 +2339,27 @@ int security_genfs_sid(const char *fstype,
+ 	*sid = c->sid[0];
+ 	rc = 0;
+ out:
+-	read_unlock(&policy_rwlock);
++	if (!locked)
++		read_unlock(&policy_rwlock);
+ 	return rc;
+ }
+ 
+ /**
++ * security_genfs_sid - Obtain a SID for a file in a filesystem
++ * @fstype: filesystem type
++ * @path: path from root of mount
++ * @sclass: file security class
++ * @sid: SID for path
++ */
++int security_genfs_sid(const char *fstype,
++		       char *path,
++		       u16 orig_sclass,
++		       u32 *sid)
++{
++	return __security_genfs_sid(fstype, path, orig_sclass, sid, false);
++}
++
++/**
+  * security_fs_use - Determine how to handle labeling for a filesystem.
+  * @sb: superblock in question
+  */
+@@ -2370,7 +2389,8 @@ int security_fs_use(struct super_block *sb)
+ 		}
+ 		sbsec->sid = c->sid[0];
+ 	} else {
+-		rc = security_genfs_sid(fstype, "/", SECCLASS_DIR, &sbsec->sid);
++		rc = __security_genfs_sid(fstype, "/", SECCLASS_DIR,
++					  &sbsec->sid, true);
+ 		if (rc) {
+ 			sbsec->behavior = SECURITY_FS_USE_NONE;
+ 			rc = 0;
+-- 
+1.7.1
+
