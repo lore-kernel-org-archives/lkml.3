@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965677AbaFULEi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 07:04:38 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:51487 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934526AbaFULEe (ORCPT
+	id S934794AbaFULFB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 07:05:01 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:53026 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934748AbaFULE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 07:04:34 -0400
+	Sat, 21 Jun 2014 07:04:57 -0400
 From: Alexander Bersenev <bay@hackerdom.ru>
 To: linux-sunxi@googlegroups.com, david@hardeman.nu,
         devicetree@vger.kernel.org, galak@codeaurora.org,
@@ -19,9 +19,9 @@ To: linux-sunxi@googlegroups.com, david@hardeman.nu,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-media@vger.kernel.org
 Cc: Alexander Bersenev <bay@hackerdom.ru>
-Subject: [PATCH v10 1/5] ARM: sunxi: Add documentation for sunxi consumer infrared devices
-Date: Sat, 21 Jun 2014 17:04:02 +0600
-Message-Id: <1403348646-31091-2-git-send-email-bay@hackerdom.ru>
+Subject: [PATCH v10 5/5] ARM: sunxi: Enable IR controller on cubieboard 2 and cubietruck in dts
+Date: Sat, 21 Jun 2014 17:04:06 +0600
+Message-Id: <1403348646-31091-6-git-send-email-bay@hackerdom.ru>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1403348646-31091-1-git-send-email-bay@hackerdom.ru>
 References: <1403348646-31091-1-git-send-email-bay@hackerdom.ru>
@@ -29,45 +29,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds documentation for Device-Tree bindings for sunxi IR
-controller.
+This patch enables two IR devices in dts:
+- One IR device physically found on Cubieboard 2
+- One IR device physically found on Cubietruck
 
 Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
 Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
 ---
- .../devicetree/bindings/media/sunxi-ir.txt         |   23 ++++++++++++++++++++
- 1 files changed, 23 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/media/sunxi-ir.txt
+ arch/arm/boot/dts/sun7i-a20-cubieboard2.dts |    6 ++++++
+ arch/arm/boot/dts/sun7i-a20-cubietruck.dts  |    6 ++++++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/media/sunxi-ir.txt b/Documentation/devicetree/bindings/media/sunxi-ir.txt
-new file mode 100644
-index 0000000..014dd8b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/media/sunxi-ir.txt
-@@ -0,0 +1,23 @@
-+Device-Tree bindings for SUNXI IR controller found in sunXi SoC family
+diff --git a/arch/arm/boot/dts/sun7i-a20-cubieboard2.dts b/arch/arm/boot/dts/sun7i-a20-cubieboard2.dts
+index a5ad945..a70f0b4 100644
+--- a/arch/arm/boot/dts/sun7i-a20-cubieboard2.dts
++++ b/arch/arm/boot/dts/sun7i-a20-cubieboard2.dts
+@@ -66,6 +66,12 @@
+ 			};
+ 		};
+ 
++		ir0: ir@01c21800 {
++			pinctrl-names = "default";
++			pinctrl-0 = <&ir0_pins_a>;
++			status = "okay";
++		};
 +
-+Required properties:
-+- compatible	    : should be "allwinner,sun7i-a20-ir";
-+- clocks	    : list of clock specifiers, corresponding to
-+		      entries in clock-names property;
-+- clock-names	    : should contain "apb" and "ir" entries;
-+- interrupts	    : should contain IR IRQ number;
-+- reg		    : should contain IO map address for IR.
+ 		uart0: serial@01c28000 {
+ 			pinctrl-names = "default";
+ 			pinctrl-0 = <&uart0_pins_a>;
+diff --git a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+index b87fea9..96639d5 100644
+--- a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
++++ b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+@@ -100,6 +100,12 @@
+ 			status = "okay";
+ 		};
+ 
++		ir0: ir@01c21800 {
++			pinctrl-names = "default";
++			pinctrl-0 = <&ir0_pins_a>;
++			status = "okay";
++		};
 +
-+Optional properties:
-+- linux,rc-map-name : Remote control map name.
-+
-+Example:
-+
-+ir0: ir@01c21800 {
-+	compatible = "allwinner,sun7i-a20-ir";
-+	clocks = <&apb0_gates 6>, <&ir0_clk>;
-+	clock-names = "apb", "ir";
-+	interrupts = <0 5 1>;
-+	reg = <0x01C21800 0x40>;
-+	linux,rc-map-name = "rc-rc6-mce";
-+};
+ 		uart0: serial@01c28000 {
+ 			pinctrl-names = "default";
+ 			pinctrl-0 = <&uart0_pins_a>;
 -- 
 1.7.1
 
