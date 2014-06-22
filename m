@@ -1,71 +1,361 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936AbaFVOnM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 10:43:12 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33103 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751808AbaFVOnK (ORCPT
+	id S1751808AbaFVOrJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 10:47:09 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38668 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933AbaFVOrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 10:43:10 -0400
-Message-ID: <1403448187.1949.9.camel@jarvis.lan>
-Subject: Re: [RFC] Tux3 for review
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Daniel Phillips <daniel@phunq.net>
-Cc: =?UTF-8?Q?Luk=C3=A1=C5=A1?= Czerner <lczerner@redhat.com>,
-        Pavel Machek <pavel@ucw.cz>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Sun, 22 Jun 2014 07:43:07 -0700
-In-Reply-To: <e475a747-2f33-4c43-b6bd-98df2e57099a@phunq.net>
-References: <5376B273.7000800@partner.samsung.com>
-	 <20140518235555.GC18954@dastard> <537AA802.408@phunq.net>
-	 <20140520031802.GF18954@dastard> <20140613103216.GA4589@amd.pavel.ucw.cz>
-	 <02d3b094-808c-4b17-903d-1280d451704b@phunq.net>
-	 <20140613202039.GA23872@amd.pavel.ucw.cz>
-	 <b67e55e1-af54-4f34-802c-95749771aca4@phunq.net>
-	 <1402932354.2197.61.camel@dabdike.int.hansenpartnership.com>
-	 <20140619082129.GA4309@xo-6d-61-c0.localdomain>
-	 <alpine.LFD.2.00.1406191117240.2182@localhost.localdomain>
-	 <ad0baf8f-091f-45d0-8d9f-f72d78d0d1ff@phunq.net>
-	 <1403378941.2177.24.camel@dabdike.int.hansenpartnership.com>
-	 <e475a747-2f33-4c43-b6bd-98df2e57099a@phunq.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 22 Jun 2014 10:47:07 -0400
+Date: Sun, 22 Jun 2014 16:46:49 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stanislav Fomichev <stfomichev@yandex-team.ru>
+cc: john.stultz@linaro.org, prarit@redhat.com, paul.gortmaker@windriver.com,
+        juri.lelli@gmail.com, ddaney.cavm@gmail.com, mbohan@codeaurora.org,
+        david.vrabel@citrix.com, david.engraf@sysgo.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] hrtimers: calculate expires_next after all timers
+ are executed
+In-Reply-To: <20140319141615.GB11081@stfomichev-desktop.yandex.net>
+Message-ID: <alpine.DEB.2.10.1406221417510.5170@nanos>
+References: <1395067037-20060-1-git-send-email-stfomichev@yandex-team.ru> <alpine.DEB.2.02.1403191149460.18573@ionos.tec.linutronix.de> <20140319141615.GB11081@stfomichev-desktop.yandex.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-06-21 at 20:32 -0700, Daniel Phillips wrote:
-> On Saturday, June 21, 2014 12:29:01 PM PDT, James Bottomley wrote:
-> > On Thu, 2014-06-19 at 14:58 -0700, Daniel Phillips wrote:
-> >> We already removed 450 lines of core kernel workarounds from Tux3 with 
-> an 
-> >> approach that was literally cut and pasted from one of Dave's 
-> >> emails. Then 
-> >> Dave changed his mind. Now the Tux3 team has been assigned a research 
-> >> project to improve core kernel writeback instead of simply adapting the 
-> >> approach that is already proven to work well enough. That is a rather 
-> >> blatant example of "perfect is the enemy of good enough". Please read 
-> the 
-> >> thread.
-> >
-> > That's a bit disingenuous: the concern has always been how page forking
-> > interacted with writeback.  It's not new, it was one of the major things
-> > brought up at LSF 14 months ago, so you weren't just assigned this.
-> 
-> [citation needed]
+On Wed, 19 Mar 2014, Stanislav Fomichev wrote:
 
-Really?  I was there; I remember and it's in my notes of the discussion.
-However, it's also in Jon's at paragraph 6 if you need to refer to
-something to refresh your memory.
++ * @next:              time of the next event on this clock base
 
-However, when it was spotted isn't the issue; how we add tux3 without a
-large maintenance burden on writeback is, as I carefully explained in
-the rest of the email you cut.
+What initializes that? It's 0 to begin with.
 
-James
+> @@ -893,6 +895,10 @@ static int enqueue_hrtimer(struct hrtimer *timer,
+>  	 */
+>  	timer->state |= HRTIMER_STATE_ENQUEUED;
+>  
+> +	expires = ktime_sub(hrtimer_get_expires(timer), base->offset);
 
+This does not work when time gets set and the offset changes. We need
+to store the absolute expiry time and subtract the offset at
+evaluation time.
 
+> @@ -929,8 +935,10 @@ static void __remove_hrtimer(struct hrtimer *timer,
+>  		}
+>  #endif
+>  	}
+> -	if (!timerqueue_getnext(&base->active))
+> +	if (!timerqueue_getnext(&base->active)) {
+>  		base->cpu_base->active_bases &= ~(1 << base->index);
+> +		base->next = ktime_set(KTIME_SEC_MAX, 0);
+> +	}
+
+And what updates base->next if there are timers pending?
+
+> +	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
+> +		ktime_t expires;
+
+So this adds the third incarnation of finding the next expiring timer
+to the code. Not really helpful.
+
+Untested patch which addresses the issues below.
+
+Thanks,
+
+	tglx
+
+-------------------->
+ include/linux/hrtimer.h |    2 
+ kernel/hrtimer.c        |  162 ++++++++++++++++++++++++++----------------------
+ 2 files changed, 90 insertions(+), 74 deletions(-)
+
+Index: linux/include/linux/hrtimer.h
+===================================================================
+--- linux.orig/include/linux/hrtimer.h
++++ linux/include/linux/hrtimer.h
+@@ -141,6 +141,7 @@ struct hrtimer_sleeper {
+  * @get_time:		function to retrieve the current time of the clock
+  * @softirq_time:	the time when running the hrtimer queue in the softirq
+  * @offset:		offset of this clock to the monotonic base
++ * @expires_next:	absolute time of the next event on this clock base
+  */
+ struct hrtimer_clock_base {
+ 	struct hrtimer_cpu_base	*cpu_base;
+@@ -151,6 +152,7 @@ struct hrtimer_clock_base {
+ 	ktime_t			(*get_time)(void);
+ 	ktime_t			softirq_time;
+ 	ktime_t			offset;
++	ktime_t			expires_next;
+ };
+ 
+ enum  hrtimer_base_type {
+Index: linux/kernel/hrtimer.c
+===================================================================
+--- linux.orig/kernel/hrtimer.c
++++ linux/kernel/hrtimer.c
+@@ -494,6 +494,36 @@ static inline void debug_deactivate(stru
+ 	trace_hrtimer_cancel(timer);
+ }
+ 
++/*
++ * Find the next expiring timer and return the expiry in absolute
++ * CLOCK_MONOTONIC time.
++ */
++static ktime_t hrtimer_get_expires_next(struct hrtimer_cpu_base *cpu_base)
++{
++	ktime_t expires, expires_next = { .tv64 = KTIME_MAX };
++	unsigned long idx, active = cpu_base->active_bases;
++	struct hrtimer_clock_base *base;
++
++	while (active) {
++		idx = __ffs(active);
++		active &= ~(1UL << idx);
++
++		base = cpu_base->clock_base + idx;
++		/* Adjust to CLOCK_MONOTONIC */
++		expires = ktime_sub(base->expires_next, base->offset);
++
++		if (expires.tv64 < expires_next.tv64)
++			expires_next = expires;
++	}
++	/*
++	 * If clock_was_set() has changed base->offset the result
++	 * might be negative. Fix it up to prevent a false positive in
++	 * clockevents_program_event()
++	 */
++	expires.tv64 = 0;
++	return expires_next.tv64 < 0 ? expires : expires_next;
++}
++
+ /* High resolution timer related functions */
+ #ifdef CONFIG_HIGH_RES_TIMERS
+ 
+@@ -542,32 +572,7 @@ static inline int hrtimer_hres_active(vo
+ static void
+ hrtimer_force_reprogram(struct hrtimer_cpu_base *cpu_base, int skip_equal)
+ {
+-	int i;
+-	struct hrtimer_clock_base *base = cpu_base->clock_base;
+-	ktime_t expires, expires_next;
+-
+-	expires_next.tv64 = KTIME_MAX;
+-
+-	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
+-		struct hrtimer *timer;
+-		struct timerqueue_node *next;
+-
+-		next = timerqueue_getnext(&base->active);
+-		if (!next)
+-			continue;
+-		timer = container_of(next, struct hrtimer, node);
+-
+-		expires = ktime_sub(hrtimer_get_expires(timer), base->offset);
+-		/*
+-		 * clock_was_set() has changed base->offset so the
+-		 * result might be negative. Fix it up to prevent a
+-		 * false positive in clockevents_program_event()
+-		 */
+-		if (expires.tv64 < 0)
+-			expires.tv64 = 0;
+-		if (expires.tv64 < expires_next.tv64)
+-			expires_next = expires;
+-	}
++	ktime_t expires_next = hrtimer_get_expires_next(cpu_base);
+ 
+ 	if (skip_equal && expires_next.tv64 == cpu_base->expires_next.tv64)
+ 		return;
+@@ -891,6 +896,8 @@ EXPORT_SYMBOL_GPL(hrtimer_forward);
+ static int enqueue_hrtimer(struct hrtimer *timer,
+ 			   struct hrtimer_clock_base *base)
+ {
++	int leftmost;
++
+ 	debug_activate(timer);
+ 
+ 	timerqueue_add(&base->active, &timer->node);
+@@ -902,7 +909,13 @@ static int enqueue_hrtimer(struct hrtime
+ 	 */
+ 	timer->state |= HRTIMER_STATE_ENQUEUED;
+ 
+-	return (&timer->node == base->active.next);
++	leftmost = &timer->node == base->active.next;
++	/*
++	 * If the new timer is the leftmost, update clock_base->expires_next.
++	 */
++	if (leftmost)
++		base->expires_next = hrtimer_get_expires(timer);
++	return leftmost;
+ }
+ 
+ /*
+@@ -919,27 +932,45 @@ static void __remove_hrtimer(struct hrti
+ 			     struct hrtimer_clock_base *base,
+ 			     unsigned long newstate, int reprogram)
+ {
+-	struct timerqueue_node *next_timer;
++	struct timerqueue_node *next;
++	struct hrtimer *next_timer;
++	bool first;
++
+ 	if (!(timer->state & HRTIMER_STATE_ENQUEUED))
+ 		goto out;
+ 
+-	next_timer = timerqueue_getnext(&base->active);
++	/*
++	 * If this is not the first timer of the clock base, we just
++	 * remove it. No updates, no reprogramming.
++	 */
++	first = timerqueue_getnext(&base->active) == &timer->node;
+ 	timerqueue_del(&base->active, &timer->node);
+-	if (&timer->node == next_timer) {
++	if (!first)
++		goto out;
++
++	/*
++	 * Update cpu base and clock base. This needs to be done
++	 * before calling into hrtimer_force_reprogram() as that
++	 * relies on active_bases and expires_next.
++	 */
++	next = timerqueue_getnext(&base->active);
++	if (!next) {
++		base->cpu_base->active_bases &= ~(1 << base->index);
++		base->expires_next.tv64 = KTIME_MAX;
++	} else {
++		next_timer = container_of(next, struct hrtimer, node);
++		base->expires_next = hrtimer_get_expires(next_timer);
++	}
++
+ #ifdef CONFIG_HIGH_RES_TIMERS
+-		/* Reprogram the clock event device. if enabled */
+-		if (reprogram && hrtimer_hres_active()) {
+-			ktime_t expires;
+-
+-			expires = ktime_sub(hrtimer_get_expires(timer),
+-					    base->offset);
+-			if (base->cpu_base->expires_next.tv64 == expires.tv64)
+-				hrtimer_force_reprogram(base->cpu_base, 1);
+-		}
+-#endif
++	if (reprogram && hrtimer_hres_active()) {
++		ktime_t expires;
++
++		expires = ktime_sub(hrtimer_get_expires(timer), base->offset);
++		if (base->cpu_base->expires_next.tv64 == expires.tv64)
++			hrtimer_force_reprogram(base->cpu_base, 1);
+ 	}
+-	if (!timerqueue_getnext(&base->active))
+-		base->cpu_base->active_bases &= ~(1 << base->index);
++#endif
+ out:
+ 	timer->state = newstate;
+ }
+@@ -1154,35 +1185,21 @@ EXPORT_SYMBOL_GPL(hrtimer_get_remaining)
+ ktime_t hrtimer_get_next_event(void)
+ {
+ 	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
+-	struct hrtimer_clock_base *base = cpu_base->clock_base;
+-	ktime_t delta, mindelta = { .tv64 = KTIME_MAX };
++	ktime_t next, delta = { .tv64 = KTIME_MAX };
+ 	unsigned long flags;
+-	int i;
+ 
+ 	raw_spin_lock_irqsave(&cpu_base->lock, flags);
+ 
+ 	if (!hrtimer_hres_active()) {
+-		for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
+-			struct hrtimer *timer;
+-			struct timerqueue_node *next;
+-
+-			next = timerqueue_getnext(&base->active);
+-			if (!next)
+-				continue;
+-
+-			timer = container_of(next, struct hrtimer, node);
+-			delta.tv64 = hrtimer_get_expires_tv64(timer);
+-			delta = ktime_sub(delta, base->get_time());
+-			if (delta.tv64 < mindelta.tv64)
+-				mindelta.tv64 = delta.tv64;
+-		}
++		next = hrtimer_get_expires_next(cpu_base);
++		delta = ktime_sub(next, ktime_get());
++		if (delta.tv64 < 0)
++			delta.tv64 = 0;
+ 	}
+ 
+ 	raw_spin_unlock_irqrestore(&cpu_base->lock, flags);
+ 
+-	if (mindelta.tv64 < 0)
+-		mindelta.tv64 = 0;
+-	return mindelta;
++	return delta;
+ }
+ #endif
+ 
+@@ -1292,6 +1309,7 @@ static void __run_hrtimer(struct hrtimer
+  */
+ void hrtimer_interrupt(struct clock_event_device *dev)
+ {
++	struct hrtimer_clock_base *base;
+ 	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
+ 	ktime_t expires_next, now, entry_time, delta;
+ 	int i, retries = 0;
+@@ -1303,7 +1321,6 @@ void hrtimer_interrupt(struct clock_even
+ 	raw_spin_lock(&cpu_base->lock);
+ 	entry_time = now = hrtimer_update_base(cpu_base);
+ retry:
+-	expires_next.tv64 = KTIME_MAX;
+ 	/*
+ 	 * We set expires_next to KTIME_MAX here with cpu_base->lock
+ 	 * held to prevent that a timer is enqueued in our queue via
+@@ -1314,7 +1331,6 @@ retry:
+ 	cpu_base->expires_next.tv64 = KTIME_MAX;
+ 
+ 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
+-		struct hrtimer_clock_base *base;
+ 		struct timerqueue_node *node;
+ 		ktime_t basenow;
+ 
+@@ -1342,23 +1358,20 @@ retry:
+ 			 * timer will have to trigger a wakeup anyway.
+ 			 */
+ 
+-			if (basenow.tv64 < hrtimer_get_softexpires_tv64(timer)) {
+-				ktime_t expires;
+-
+-				expires = ktime_sub(hrtimer_get_expires(timer),
+-						    base->offset);
+-				if (expires.tv64 < 0)
+-					expires.tv64 = KTIME_MAX;
+-				if (expires.tv64 < expires_next.tv64)
+-					expires_next = expires;
++			if (basenow.tv64 < hrtimer_get_softexpires_tv64(timer))
+ 				break;
+-			}
+ 
+ 			__run_hrtimer(timer, &basenow);
+ 		}
+ 	}
+ 
+ 	/*
++	 * We might have dropped cpu_base->lock and the callbacks
++	 * might have added timers. Find the timer which expires first.
++	 */
++	expires_next = hrtimer_get_expires_next(cpu_base);
++
++	/*
+ 	 * Store the new expiry value so the migration code can verify
+ 	 * against it.
+ 	 */
+@@ -1678,6 +1691,7 @@ static void init_hrtimers_cpu(int cpu)
+ 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
+ 		cpu_base->clock_base[i].cpu_base = cpu_base;
+ 		timerqueue_init_head(&cpu_base->clock_base[i].active);
++		cpu_base->clock_base[i].expires_next.tv64 = KTIME_MAX;
+ 	}
+ 
+ 	hrtimer_init_hres(cpu_base);
