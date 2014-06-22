@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751835AbaFVPdW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 11:33:22 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:54374 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966AbaFVPdU (ORCPT
+	id S1752358AbaFVPdn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 11:33:43 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:46904 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949AbaFVPda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 11:33:20 -0400
+	Sun, 22 Jun 2014 11:33:30 -0400
 From: Beniamino Galvani <b.galvani@gmail.com>
 To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
 Cc: Wenyou Yang <wenyou.yang@atmel.com>, Rob Herring <robh+dt@kernel.org>,
@@ -16,34 +16,169 @@ Cc: Wenyou Yang <wenyou.yang@atmel.com>, Rob Herring <robh+dt@kernel.org>,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Beniamino Galvani <b.galvani@gmail.com>
-Subject: [PATCH 0/5] regulator: act8865: add support for act8846
-Date: Sun, 22 Jun 2014 17:31:40 +0200
-Message-Id: <1403451105-31929-1-git-send-email-b.galvani@gmail.com>
+Subject: [PATCH 4/5] regulator: act8865: add support for act8846
+Date: Sun, 22 Jun 2014 17:31:44 +0200
+Message-Id: <1403451105-31929-5-git-send-email-b.galvani@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1403451105-31929-1-git-send-email-b.galvani@gmail.com>
+References: <1403451105-31929-1-git-send-email-b.galvani@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds support for the Active-Semi act8846 PMU [1] to the
-existing driver for act8865.
+Add device id and definition of registers and regulators to support
+the act8846 PMU.
 
-A dts which enables the act8846 on Radxa Rock is available at [2].
+Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+---
+ drivers/regulator/act8865-regulator.c |   71 +++++++++++++++++++++++++++++++++
+ include/linux/regulator/act8865.h     |   17 ++++++++
+ 2 files changed, 88 insertions(+)
 
-[1] http://www.active-semi.com/products/power-management-units/act88xx/
-[2] https://github.com/bengal/linux/tree/act88xx-regulator
-
-Beniamino Galvani (5):
-  regulator: act8865: fix parsing of platform data
-  regulator: act8865: set correct number of regulators in pdata
-  regulator: act8865: prepare support for other act88xx devices
-  regulator: act8865: add support for act8846
-  regulator: act8865: add act8846 to DT binding documentation
-
- .../bindings/regulator/act8865-regulator.txt       |    7 +-
- drivers/regulator/act8865-regulator.c              |  308 +++++++++++---------
- include/linux/regulator/act8865.h                  |   23 +-
- 3 files changed, 200 insertions(+), 138 deletions(-)
-
+diff --git a/drivers/regulator/act8865-regulator.c b/drivers/regulator/act8865-regulator.c
+index c604b34..1a693a5 100644
+--- a/drivers/regulator/act8865-regulator.c
++++ b/drivers/regulator/act8865-regulator.c
+@@ -29,6 +29,40 @@
+ #include <linux/regmap.h>
+ 
+ /*
++ * ACT8846 Global Register Map.
++ */
++#define	ACT8846_SYS0		0x00
++#define	ACT8846_SYS1		0x01
++#define	ACT8846_REG1_VSET	0x10
++#define	ACT8846_REG1_CTRL	0x12
++#define	ACT8846_REG2_VSET0	0x20
++#define	ACT8846_REG2_VSET1	0x21
++#define	ACT8846_REG2_CTRL	0x22
++#define	ACT8846_REG3_VSET0	0x30
++#define	ACT8846_REG3_VSET1	0x31
++#define	ACT8846_REG3_CTRL	0x32
++#define	ACT8846_REG4_VSET0	0x40
++#define	ACT8846_REG4_VSET1	0x41
++#define	ACT8846_REG4_CTRL	0x42
++#define	ACT8846_REG5_VSET	0x50
++#define	ACT8846_REG5_CTRL	0x51
++#define	ACT8846_REG6_VSET	0x58
++#define	ACT8846_REG6_CTRL	0x59
++#define	ACT8846_REG7_VSET	0x60
++#define	ACT8846_REG7_CTRL	0x61
++#define	ACT8846_REG8_VSET	0x68
++#define	ACT8846_REG8_CTRL	0x69
++#define	ACT8846_REG9_VSET	0x70
++#define	ACT8846_REG9_CTRL	0x71
++#define	ACT8846_REG10_VSET	0x80
++#define	ACT8846_REG10_CTRL	0x81
++#define	ACT8846_REG11_VSET	0x90
++#define	ACT8846_REG11_CTRL	0x91
++#define	ACT8846_REG12_VSET	0xa0
++#define	ACT8846_REG12_CTRL	0xa1
++#define	ACT8846_REG13_CTRL	0xb1
++
++/*
+  * ACT8865 Global Register Map.
+  */
+ #define	ACT8865_SYS_MODE	0x00
+@@ -103,6 +137,21 @@ static struct regulator_ops act8865_ops = {
+ 		.owner			= THIS_MODULE,			\
+ 	}
+ 
++static const struct regulator_desc act8846_regulators[] = {
++	ACT88xx_REG("REG1", ACT8846, REG1, VSET),
++	ACT88xx_REG("REG2", ACT8846, REG2, VSET0),
++	ACT88xx_REG("REG3", ACT8846, REG3, VSET0),
++	ACT88xx_REG("REG4", ACT8846, REG4, VSET0),
++	ACT88xx_REG("REG5", ACT8846, REG5, VSET),
++	ACT88xx_REG("REG6", ACT8846, REG6, VSET),
++	ACT88xx_REG("REG7", ACT8846, REG7, VSET),
++	ACT88xx_REG("REG8", ACT8846, REG8, VSET),
++	ACT88xx_REG("REG9", ACT8846, REG9, VSET),
++	ACT88xx_REG("REG10", ACT8846, REG10, VSET),
++	ACT88xx_REG("REG11", ACT8846, REG11, VSET),
++	ACT88xx_REG("REG12", ACT8846, REG12, VSET),
++};
++
+ static const struct regulator_desc act8865_regulators[] = {
+ 	ACT88xx_REG("DCDC_REG1", ACT8865, DCDC1, VSET1),
+ 	ACT88xx_REG("DCDC_REG2", ACT8865, DCDC2, VSET1),
+@@ -115,11 +164,27 @@ static const struct regulator_desc act8865_regulators[] = {
+ 
+ #ifdef CONFIG_OF
+ static const struct of_device_id act8865_dt_ids[] = {
++	{ .compatible = "active-semi,act8846", .data = (void *)ACT8846 },
+ 	{ .compatible = "active-semi,act8865", .data = (void *)ACT8865 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(of, act8865_dt_ids);
+ 
++static struct of_regulator_match act8846_matches[] = {
++	[ACT8846_ID_REG1]	= { .name = "REG1" },
++	[ACT8846_ID_REG2]	= { .name = "REG2" },
++	[ACT8846_ID_REG3]	= { .name = "REG3" },
++	[ACT8846_ID_REG4]	= { .name = "REG4" },
++	[ACT8846_ID_REG5]	= { .name = "REG5" },
++	[ACT8846_ID_REG6]	= { .name = "REG6" },
++	[ACT8846_ID_REG7]	= { .name = "REG7" },
++	[ACT8846_ID_REG8]	= { .name = "REG8" },
++	[ACT8846_ID_REG9]	= { .name = "REG9" },
++	[ACT8846_ID_REG10]	= { .name = "REG10" },
++	[ACT8846_ID_REG11]	= { .name = "REG11" },
++	[ACT8846_ID_REG12]	= { .name = "REG12" },
++};
++
+ static struct of_regulator_match act8865_matches[] = {
+ 	[ACT8865_ID_DCDC1]	= { .name = "DCDC_REG1"},
+ 	[ACT8865_ID_DCDC2]	= { .name = "DCDC_REG2"},
+@@ -222,6 +287,11 @@ static int act8865_pmic_probe(struct i2c_client *client,
+ 	}
+ 
+ 	switch (type) {
++	case ACT8846:
++		matches = act8846_matches;
++		regulators = act8846_regulators;
++		num_regulators = ARRAY_SIZE(act8846_regulators);
++		break;
+ 	case ACT8865:
+ 		matches = act8865_matches;
+ 		regulators = act8865_regulators;
+@@ -290,6 +360,7 @@ static int act8865_pmic_probe(struct i2c_client *client,
+ }
+ 
+ static const struct i2c_device_id act8865_ids[] = {
++	{ .name = "act8846", .driver_data = ACT8846 },
+ 	{ .name = "act8865", .driver_data = ACT8865 },
+ 	{ },
+ };
+diff --git a/include/linux/regulator/act8865.h b/include/linux/regulator/act8865.h
+index b49be81..b6c4909 100644
+--- a/include/linux/regulator/act8865.h
++++ b/include/linux/regulator/act8865.h
+@@ -30,7 +30,24 @@ enum {
+ };
+ 
+ enum {
++	ACT8846_ID_REG1,
++	ACT8846_ID_REG2,
++	ACT8846_ID_REG3,
++	ACT8846_ID_REG4,
++	ACT8846_ID_REG5,
++	ACT8846_ID_REG6,
++	ACT8846_ID_REG7,
++	ACT8846_ID_REG8,
++	ACT8846_ID_REG9,
++	ACT8846_ID_REG10,
++	ACT8846_ID_REG11,
++	ACT8846_ID_REG12,
++	ACT8846_REG_NUM,
++};
++
++enum {
+ 	ACT8865,
++	ACT8846,
+ };
+ 
+ /**
 -- 
 1.7.10.4
 
