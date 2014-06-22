@@ -1,99 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173AbaFVNg6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 09:36:58 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38572 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715AbaFVNg5 (ORCPT
+	id S1751369AbaFVNoh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 09:44:37 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:56292 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781AbaFVNoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 09:36:57 -0400
-Date: Sun, 22 Jun 2014 15:36:54 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 4/5] hrtimer: Kick lowres dynticks targets on timer
- enqueue
-In-Reply-To: <1403393357-2070-5-git-send-email-fweisbec@gmail.com>
-Message-ID: <alpine.DEB.2.10.1406221533300.5170@nanos>
-References: <1403393357-2070-1-git-send-email-fweisbec@gmail.com> <1403393357-2070-5-git-send-email-fweisbec@gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Sun, 22 Jun 2014 09:44:34 -0400
+X-Auth-Info: 72Q7P9/b697vDu65UMYyE3ymUA7GtCwmHgbg+bUtC9g=
+From: Marek Vasut <marex@denx.de>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v3 1/4] crypto: Add Allwinner Security System crypto accelerator
+Date: Sun, 22 Jun 2014 15:44:29 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
+Cc: Corentin LABBE <clabbe.montjoie@gmail.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, maxime.ripard@free-electrons.com,
+        herbert@gondor.apana.org.au, davem@davemloft.net,
+        grant.likely@linaro.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        linux-sunxi@googlegroups.com
+References: <1402404197-4236-1-git-send-email-clabbe.montjoie@gmail.com> <201406221423.15193.marex@denx.de> <20140622123335.GE32514@n2100.arm.linux.org.uk>
+In-Reply-To: <20140622123335.GE32514@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201406221544.29592.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 22 Jun 2014, Frederic Weisbecker wrote:
-> From: Viresh Kumar <viresh.kumar@linaro.org>
+On Sunday, June 22, 2014 at 02:33:35 PM, Russell King - ARM Linux wrote:
+> On Sun, Jun 22, 2014 at 02:23:15PM +0200, Marek Vasut wrote:
+> > On Sunday, June 22, 2014 at 01:58:08 PM, Corentin LABBE wrote:
+> > [...]
+> > 
+> > > >> + * This program is free software; you can redistribute it and/or
+> > > >> modify + * it under the terms of the GNU General Public License as
+> > > >> published by + * the Free Software Foundation version 2 of the
+> > > >> License
+> > > > 
+> > > > The license text seems incomplete.
+> > > > [...]
+> > > 
+> > > I will replace it with a simplier line "Licensed under the GPL-2."
+> > 
+> > I'd suggest you to use the SPDX license identifiers then, but that's not
+> > something the kernel crowd agreed upon yet IIRC.Therefore , just make the
+> > text complete please.
 > 
-> In lowres mode, hrtimers are serviced by the tick instead of a clock
-> event. It works well as long as the tick stays periodic but we must also
-> make sure that the hrtimers are serviced in dynticks mode targets,
-> pretty much like timer list timers do.
+> Marek,
 > 
-> Note that all dynticks modes are concerned: get_nohz_timer_target()
-> tries not to return remote idle CPUs but there is nothing to prevent
-> the elected target from entering dynticks idle mode until we lock its
-> base. It's also prefectly legal to enqueue hrtimers on full dynticks CPU.
+> The full text of the first paragraph (in COPYING) is:
 > 
-> So there are two requirements to correctly handle dynticks:
+>     This program is free software; you can redistribute it and/or modify
+>     it under the terms of the GNU General Public License as published by
+>     the Free Software Foundation; either version 2 of the License, or
+>     (at your option) any later version.
 > 
-> 1) On target's tick stop time, we must not delay the next tick further
->    the next hrtimer.
+> which is deemed to be entirely sufficient; quoting the full text is
+> discouraged, especially when it includes the FSF address.  It is also
+> acceptable to restrict it to version 2 only, in which case something
+> like this can be used:
 > 
-> 2) On hrtimer queue time. If the tick of the target is stopped, we must
->    wake up that CPU such that it sees the new hrtimer and recalculate
->    the next tick accordingly.
+>    This program is free software; you can redistribute it and/or modify
+>    it under the terms of the GNU General Public License version 2 as
+>    published by the Free Software Foundation.
 > 
-> The point 1 is well handled currently through get_nohz_timer_interrupt() and
-> cmp_next_hrtimer_event().
-> 
-> But the point 2 isn't handled at all.
-> 
-> Fixing this is easy though as we have the necessary API ready for that.
-> All we need is to call wake_up_nohz_cpu() on a target when a newly
-> enqueued hrtimer requires tick rescheduling, like timer list timer do.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  kernel/hrtimer.c | 27 +++++++++++++++++++--------
->  1 file changed, 19 insertions(+), 8 deletions(-)
-> 
-> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-> index 0e32d4e..5f30917 100644
-> --- a/kernel/hrtimer.c
-> +++ b/kernel/hrtimer.c
-> @@ -1013,14 +1013,25 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
->  
->  	leftmost = enqueue_hrtimer(timer, new_base);
->  
-> -	/*
-> -	 * Only allow reprogramming if the new base is on this CPU.
-> -	 * (it might still be on another CPU if the timer was pending)
-> -	 *
-> -	 * XXX send_remote_softirq() ?
-> -	 */
-> -	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)
-> -		&& hrtimer_enqueue_reprogram(timer, new_base)) {
-> +	if (!leftmost) {
-> +		unlock_hrtimer_base(timer, &flags);
-> +		return ret;
-> +	}
-> +
-> +	if (!hrtimer_is_hres_active(timer)) {
-> +		/*
-> +		 * Kick to reschedule the next tick to handle the new timer
-> +		 * on dynticks target.
-> +		 */
-> +		wake_up_nohz_cpu(base->cpu_base->cpu);
+> Of course, it's up to the author to make up their own mind at the end
+> of the day.
 
-The timer is queued on new_base not on base. 
+Ah, I fully agree. Thank you for clarifying this.
 
-Thanks,
+> > Oh, ok, good question -- dear list, shall one use sg_page()+kmap or
+> > sg_virt()?
+> 
+> sg_page() + kmap() is preferred, because sg_virt() fails with highmem.
+> Using sg_virt() means you restrict the driver to non-highmem memory,
+> and if the kernel wants to place the data into a highmem page, it will
+> have to use bounce buffers (so it's inefficient).
 
-	tglx
+Ah, thanks for explaining this!
+
+> What's even better is to use the scatterlist iterator, which will handle
+> this for you.  See the sg_miter_*() functions.
+
+The scatterwalk ( include/crypto/scatterwalk.h ) should work pretty much the 
+same then, right ? But with the added benefit that it's crypto-friendly such 
+that it handles both the input and output scatterlists of the crypto 
+transformation etc.
+
+Please correct me if I'm mistaken.
+
+Best regards,
+Marek Vasut
