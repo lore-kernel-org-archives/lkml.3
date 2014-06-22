@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158AbaFVNPT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 09:15:19 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:38296 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751659AbaFVNPO (ORCPT
+	id S1752297AbaFVNSP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 09:18:15 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:51512 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751659AbaFVNSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 09:15:14 -0400
-Date: Sun, 22 Jun 2014 14:14:52 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: LABBE Corentin <clabbe.montjoie@gmail.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, maxime.ripard@free-electrons.com,
-        herbert@gondor.apana.org.au, davem@davemloft.net,
-        grant.likely@linaro.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCH v3 1/4] crypto: Add Allwinner Security System crypto
-	accelerator
-Message-ID: <20140622131452.GF32514@n2100.arm.linux.org.uk>
-References: <1402404197-4236-1-git-send-email-clabbe.montjoie@gmail.com> <1402404197-4236-2-git-send-email-clabbe.montjoie@gmail.com>
+	Sun, 22 Jun 2014 09:18:14 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Kevin Hilman <khilman@linaro.org>, Allen Yu <alleny@nvidia.com>,
+        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] PM / Runtime: let rpm_resume fail if rpm disabled and device suspended.
+Date: Sun, 22 Jun 2014 15:35:54 +0200
+Message-ID: <2724221.P8uryjLFJe@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1406210913470.26962-100000@netrider.rowland.org>
+References: <Pine.LNX.4.44L0.1406210913470.26962-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1402404197-4236-2-git-send-email-clabbe.montjoie@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 02:43:14PM +0200, LABBE Corentin wrote:
-> +int sunxi_aes_poll(struct ablkcipher_request *areq)
-> +{
-...
-> +	if (areq->src == NULL || areq->dst == NULL) {
-> +		dev_err(ss->dev, "ERROR: Some SGs are NULL %u\n", areq->nbytes);
-> +		return -1;
+On Saturday, June 21, 2014 09:34:28 AM Alan Stern wrote:
+> On Fri, 20 Jun 2014, Kevin Hilman wrote:
+> 
+> > > For a general device, the fact that dev->power.is_suspended is set
+> > > means the device _has_ been powered down.  Even though the
+> > > runtime_status may not have changed, the PM core has to assume the
+> > > device is not available for use.
+> > 
+> > This is where things get fuzzy because of the overlap between system PM
+> > and runtime PM.  It makes sense that from a system PM perspecitve, the
+> > core has to assume the device isn't available.  But from a runtime PM
+> > perspective, we know that it is, so we allow the *runtime PM* requests
+> > to succeed.
+> 
+> Well, to be fair, from a runtime PM perspective the core _doesn't_
+> know that the device is available.  For example, if we were talking
+> about a USB device rather than an I2C device, it _wouldn't_ be
+> available.
+> 
+> The fact is, after ->suspend returns some devices are still available
+> and some aren't.  Currently the PM core doesn't know which are which.
 
-You return -1 from here quite frequently.  Have you verified that there
-is no way for this return value to get to userspace?
+That's correct.  As a result of this, the core should not make any assumptions
+about the device's physical state after ->suspend() has been executed.
 
-Even if it can't get to userspace now, what if someone modifies the code
-so it can be returned?
+Well, the core shouldn't actually make any assumptions about the device's
+physical state at any given time at all, because it never knows what that state
+is.
 
-I detest crap that's written with "return -1" in it because it looks like
-there is no care with the established error handling semantics for the
-kernel (small negative numbers are errno codes.)
+What it can do (and what the runtime PM rules are for) is to refuse to carry
+out operations that generally don't make sense, like calling ->runtime_resume()
+twice in a row, for example.
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+Currently, we have separate rules for runtime PM and for system suspend/resume,
+but it looks like we really need to establish a set of rules that will cover
+*both* runtime PM and system suspend/resume at the same time.  Of course, it
+needs to be compatible with the existing rules as far as reasonably possible.
+
+Rafael
+
