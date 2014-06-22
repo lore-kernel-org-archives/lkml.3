@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246AbaFVK6r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 06:58:47 -0400
-Received: from mail.grouk.net ([92.222.18.81]:34372 "EHLO grouk.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751824AbaFVK6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 06:58:46 -0400
-From: Thomas Vegas <thomas@grouk.net>
-To: gregkh@linuxfoundation.org
-Cc: Thomas Vegas <thomas@grouk.net>, Larry.Finger@lwfinger.net,
-        navin.patidar@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 22 Jun 2014 13:01:50 +0200
-Message-Id: <1403434912-21655-1-git-send-email-thomas@grouk.net>
-X-Mailer: git-send-email 1.8.5.5
-X-SA-Exim-Connect-IP: 86.217.122.199
-X-SA-Exim-Mail-From: thomas@grouk.net
-Subject: [PATCH 1/3] staging: rtl8188eu: core: Remove unnecessary conditionals
+	id S1752372AbaFVK7H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 06:59:07 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53401 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752275AbaFVK7D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jun 2014 06:59:03 -0400
+Date: Sun, 22 Jun 2014 11:58:32 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Message-ID: <20140622105832.GO24291@sirena.org.uk>
+References: <6452477.9e3eS6Cip1@wuerfel>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lCFQJunhLz1tFGpX"
+Content-Disposition: inline
+In-Reply-To: <6452477.9e3eS6Cip1@wuerfel>
+X-Cookie: This is NOT a repeat.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: fsl: refine DMA/FIQ dependencies
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on grouk.net)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The variable 'pxmitbuf' is already set to NULL when entering the
-function. We can remove the first conditional. When _rtw_queue_empty()
-returns false, 'pxmitbuf' if not NULL. We can merge the second and
-third conditional.
 
-Signed-off-by: Thomas Vegas <thomas@grouk.net>
----
- drivers/staging/rtl8188eu/core/rtw_xmit.c | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+--lCFQJunhLz1tFGpX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_xmit.c b/drivers/staging/rtl8188eu/core/rtw_xmit.c
-index a113f0f..bb290a3 100644
---- a/drivers/staging/rtl8188eu/core/rtw_xmit.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_xmit.c
-@@ -1226,9 +1226,7 @@ struct xmit_buf *rtw_alloc_xmitbuf_ext(struct xmit_priv *pxmitpriv)
- 
- 	spin_lock_irqsave(&pfree_queue->lock, irql);
- 
--	if (_rtw_queue_empty(pfree_queue) == true) {
--		pxmitbuf = NULL;
--	} else {
-+	if (_rtw_queue_empty(pfree_queue) == false) {
- 		phead = get_list_head(pfree_queue);
- 
- 		plist = phead->next;
-@@ -1236,9 +1234,6 @@ struct xmit_buf *rtw_alloc_xmitbuf_ext(struct xmit_priv *pxmitpriv)
- 		pxmitbuf = container_of(plist, struct xmit_buf, list);
- 
- 		rtw_list_delete(&(pxmitbuf->list));
--	}
--
--	if (pxmitbuf !=  NULL) {
- 		pxmitpriv->free_xmit_extbuf_cnt--;
- 
- 		pxmitbuf->priv_data = NULL;
--- 
-1.8.5.5
+On Tue, Jun 03, 2014 at 02:11:56PM +0200, Arnd Bergmann wrote:
+> Commit 31ee2bfd724ab ("ASoC: fsl: select SND_SOC_IMX_PCM_DMA
+> where needed") started selecting SND_SOC_IMX_PCM_DMA and
+> SND_SOC_IMX_PCM_FIQ for two drivers when building for i.MX.
+> This has turned out too aggressive, as FIQ is only available
+> for i.mx2 through i.mx5, but not i.mx6 or vybrid.
 
+Applied, thanks.
+
+--lCFQJunhLz1tFGpX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTprbVAAoJELSic+t+oim95K8P/AotDTD9x7gjCH8DzNNzvUm5
+sXnA0UxM7Ysd8HrGVWcjW/55vPynmrbcKMeZY995dn0wt3K7QBH8h92MFRmzEeiY
+EObNZqixOgmXGccsH4+vua6+W6tGeiPg5/8dq6OpwkO18DKsZWIDWtSH9xBDOotZ
+WlzsCoVkBTqDD9QGL97R37E0gTWR4wfhf4BOOklnMSH39oli8utf7G+orgeZGo9P
+GR2lxCpHiZJdGuihHXYqsm1eMn/oSMXpwTCgk5TPT8qRuQScx/MsQLY85VE2XFQK
+fw6RkqNYtQoijkZXx63cfzVWkvul7wMF9pyNWWt09mXX/eIZtHUmGQi/pJSsn4Ja
+eEmtz0xYBOfiSDfxm3+cYy02AlPDqc8Ok4h50laUQLDlNAjHMZ8GvKiX1xGb75Sf
+AytiZW4dUHY0nHof2733E7fqrG/5+7bCtlWALOtcD08IyOgEohWYWQUH8avezYOl
+f3MvFwfkQwGrgs9t5g8zTRAK/oFrrybooubiwlMCtr7nueQr5SdSTmgy0E80MU5W
+tPnpQY5uRnfql1VITRtEddpwrsamcKHIZZ3TYq0hSBFE7xjs9lX04eD7gTg3jwDy
+jSKZshEXRf4qpKI94iNlEWSDG2OgQvzJ3/Lu62pad70fd/stOYg9YL8Y4AGm6TZ8
+Nc+GME8PYH0A1O9GXH6m
+=mOSr
+-----END PGP SIGNATURE-----
+
+--lCFQJunhLz1tFGpX--
