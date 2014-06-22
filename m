@@ -1,87 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233AbaFVQqQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 12:46:16 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50155 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751801AbaFVQqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 12:46:14 -0400
-Date: Sun, 22 Jun 2014 18:46:03 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: x86-ml <x86@kernel.org>
-Cc: Tony Luck <tony.luck@intel.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] RAS fix for 3.17
-Message-ID: <20140622164603.GA3385@pd.tnic>
+	id S1752148AbaFVQ75 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 12:59:57 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:60127 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678AbaFVQ74 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jun 2014 12:59:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140622084754.GA15094@gmail.com>
+References: <2a5bebff42defd8a5e81d96f7dc00f21143c80e8.1403129369.git.luto@amacapital.net>
+ <tip-5f56e7167e6d438324fcba87018255d81e201383@git.kernel.org> <20140622084754.GA15094@gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sun, 22 Jun 2014 09:59:34 -0700
+Message-ID: <CALCETrW_U7z7RC-D5+Ji+PQd73nR-=xQGH5uieb7y3Z7yzYPRw@mail.gmail.com>
+Subject: Re: [tip:x86/urgent] x86/vdso: Discard the __bug_table section
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On Sun, Jun 22, 2014 at 1:47 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * tip-bot for Andy Lutomirski <tipbot@zytor.com> wrote:
+>
+>> Commit-ID:  5f56e7167e6d438324fcba87018255d81e201383
+>> Gitweb:     http://git.kernel.org/tip/5f56e7167e6d438324fcba87018255d81e201383
+>> Author:     Andy Lutomirski <luto@amacapital.net>
+>> AuthorDate: Wed, 18 Jun 2014 15:59:46 -0700
+>> Committer:  H. Peter Anvin <hpa@linux.intel.com>
+>> CommitDate: Thu, 19 Jun 2014 15:44:51 -0700
+>>
+>> x86/vdso: Discard the __bug_table section
+>>
+>> It serves no purpose in user code.
+>>
+>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> Link: http://lkml.kernel.org/r/2a5bebff42defd8a5e81d96f7dc00f21143c80e8.1403129369.git.luto@amacapital.net
+>> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+>> ---
+>>  arch/x86/vdso/vdso-layout.lds.S | 1 +
+>>  1 file changed, 1 insertion(+)
+>
+> One of the recent x86/urgent vdso commits causes this build failure:
+>
+>  Error: too many copied sections (max = 13)
 
-please queue this for 3.17. We had it ready earlier but decided to delay
-it for an extra testing period.
+I can't reproduce this with your config, which suggestes a binutils
+issue, which is annoying.  Can you tell me what version of ld you're
+using and send me the output of:
 
-Thanks.
+for i in arch/x86/vdso/*.so.dbg; do echo $i; eu-readelf -S $i; done
 
---
-The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee:
+To summarize, the issue is that, in 3.16, the vvar area is accessed in
+a PC-relative manner from the vdso code.  So we have:
 
-  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
+vdso page 1 | vdso page 2 | vvar page 1 | vvar page 2  (where the
+number of vdso pages can vary)
 
-are available in the git repository at:
+The difficulty comes from the fact that a decent amount of userspace
+code wants the vdso to have some section headers, and linkers don't
+stick section headers into allocatable sections, since section headers
+were never intended to be memory mapped.  So there's a risk that the
+section headers dangle off the last loadable page in the vdso, at
+which point they overlap the vvar area.  I've seen this happen.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/ras_for_3.17
+The "solution" in tip is to move the section headers into a real
+allocatable area reserved for that purpose.  The error you're seeing
+is that I didn't allocate enough space for all the allocatable section
+headers.
 
-for you to fetch changes up to 38356c1fbd8cd0f44a32ede2c97f0eb639d06613:
+This crap almost makes me want to go back to something closer to
+Stefani's implementation of sticking vvar before the vdso so we can
+safely leave non-allocatable crap dangling off the end of the vdso.  I
+don't really want to play section header whack-a-mole.  We could also
+just give up on space efficiency and allocate space for several extra
+section headers (and their associated names!).
 
-  x86, MCE: Kill CPU_POST_DEAD (2014-06-22 18:36:39 +0200)
-
-----------------------------------------------------------------
-CPU_POST_DEAD is one of thorns in the path to getting CPU hotplug
-seriously cleaned up. Kill its incarnation here in the MCE code.
-
-----------------------------------------------------------------
-Borislav Petkov (1):
-      x86, MCE: Kill CPU_POST_DEAD
-
- arch/x86/kernel/cpu/mcheck/mce.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index bb92f38153b2..8fecdd34f2d2 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -2385,6 +2385,10 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 			threshold_cpu_callback(action, cpu);
- 		mce_device_remove(cpu);
- 		mce_intel_hcpu_update(cpu);
-+
-+		/* intentionally ignoring frozen here */
-+		if (!(action & CPU_TASKS_FROZEN))
-+			cmci_rediscover();
- 		break;
- 	case CPU_DOWN_PREPARE:
- 		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
-@@ -2396,11 +2400,6 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 		break;
- 	}
- 
--	if (action == CPU_POST_DEAD) {
--		/* intentionally ignoring frozen here */
--		cmci_rediscover();
--	}
--
- 	return NOTIFY_OK;
- }
- 
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+--Andy
