@@ -1,84 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048AbaFVMeG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 08:34:06 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:38250 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750977AbaFVMeF (ORCPT
+	id S1751942AbaFVMpA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 08:45:00 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:11858 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977AbaFVMo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 08:34:05 -0400
-Date: Sun, 22 Jun 2014 13:33:35 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Marek Vasut <marex@denx.de>
-Cc: Corentin LABBE <clabbe.montjoie@gmail.com>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, maxime.ripard@free-electrons.com,
-        herbert@gondor.apana.org.au, davem@davemloft.net,
-        grant.likely@linaro.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCH v3 1/4] crypto: Add Allwinner Security System crypto
-	accelerator
-Message-ID: <20140622123335.GE32514@n2100.arm.linux.org.uk>
-References: <1402404197-4236-1-git-send-email-clabbe.montjoie@gmail.com> <201406142101.02747.marex@denx.de> <53A6C4D0.1030102@gmail.com> <201406221423.15193.marex@denx.de>
+	Sun, 22 Jun 2014 08:44:59 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sun, 22 Jun 2014 05:39:02 -0700
+From: Vidya Sagar <vidyas@nvidia.com>
+To: <linux@arm.linux.org.uk>, <bhelgaas@google.com>, <wangyijing@huawei.com>,
+        <thierry.reding@gmail.com>, <jason@lakedaemon.net>,
+        <will.deacon@arm.com>, <swarren@nvidia.com>, <kthota@nvidia.com>,
+        <vidyas@nvidia.com>
+CC: <sagar.tv@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v4] ARM: fix debug prints relevant to PCI devices
+Date: Sun, 22 Jun 2014 18:14:44 +0530
+Message-ID: <1403441084-5643-1-git-send-email-vidyas@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201406221423.15193.marex@denx.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 22, 2014 at 02:23:15PM +0200, Marek Vasut wrote:
-> On Sunday, June 22, 2014 at 01:58:08 PM, Corentin LABBE wrote:
-> [...]
-> > >> + * This program is free software; you can redistribute it and/or modify
-> > >> + * it under the terms of the GNU General Public License as published by
-> > >> + * the Free Software Foundation version 2 of the License
-> > > 
-> > > The license text seems incomplete.
-> > > [...]
-> > 
-> > I will replace it with a simplier line "Licensed under the GPL-2."
-> 
-> I'd suggest you to use the SPDX license identifiers then, but that's not 
-> something the kernel crowd agreed upon yet IIRC.Therefore , just make the text 
-> complete please.
+As per PCIe spec, fast back-to-back transactions feature
+is not applicable to PCIe devices. Hence, do not print
+that fast back-to-back trasactions are disabled when
+there is a PCIe device found on the bus
 
-Marek,
+Signed-off-by: Vidya Sagar <vidyas@nvidia.com>
+---
+v4:
+* initialized 'has_pcie_dev' to 'false'
 
-The full text of the first paragraph (in COPYING) is:
+v3:
+* removed KERN_INFO from pr_info() which was not removed by mistake in previous patch
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+v2:
+* Modified has_pcie_dev type to bool and used pci_is_pcie() instead of pci_pcie_cap()
+* replaced printk with pr_info
 
-which is deemed to be entirely sufficient; quoting the full text is
-discouraged, especially when it includes the FSF address.  It is also
-acceptable to restrict it to version 2 only, in which case something
-like this can be used:
+ arch/arm/kernel/bios32.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
-
-Of course, it's up to the author to make up their own mind at the end
-of the day.
-
-> Oh, ok, good question -- dear list, shall one use sg_page()+kmap or sg_virt()?
-
-sg_page() + kmap() is preferred, because sg_virt() fails with highmem.
-Using sg_virt() means you restrict the driver to non-highmem memory,
-and if the kernel wants to place the data into a highmem page, it will
-have to use bounce buffers (so it's inefficient).
-
-What's even better is to use the scatterlist iterator, which will handle
-this for you.  See the sg_miter_*() functions.
-
+diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+index 17a26c1..749d1a0 100644
+--- a/arch/arm/kernel/bios32.c
++++ b/arch/arm/kernel/bios32.c
+@@ -290,6 +290,7 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ {
+ 	struct pci_dev *dev;
+ 	u16 features = PCI_COMMAND_SERR | PCI_COMMAND_PARITY | PCI_COMMAND_FAST_BACK;
++	bool has_pcie_dev = false;
+ 
+ 	/*
+ 	 * Walk the devices on this bus, working out what we can
+@@ -298,6 +299,8 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ 	list_for_each_entry(dev, &bus->devices, bus_list) {
+ 		u16 status;
+ 
++		if (!has_pcie_dev)
++			has_pcie_dev = pci_is_pcie(dev);
+ 		pci_read_config_word(dev, PCI_STATUS, &status);
+ 
+ 		/*
+@@ -354,9 +357,12 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ 
+ 	/*
+ 	 * Report what we did for this bus
++	 * (only if the bus doesn't have any PCIe devices)
+ 	 */
+-	printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
+-		bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
++	if (!has_pcie_dev)
++		pr_info("PCI: bus%d: Fast back to back transfers %sabled\n",
++			bus->number,
++			(features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
+ }
+ EXPORT_SYMBOL(pcibios_fixup_bus);
+ 
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+1.8.1.5
+
