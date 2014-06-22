@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768AbaFVMQg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 08:16:36 -0400
-Received: from xvm-169-183.ghst.net ([95.142.169.183]:52422 "EHLO
-	photon.sigxcpu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531AbaFVMQf (ORCPT
+	id S1752021AbaFVMXY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 08:23:24 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:50474 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454AbaFVMXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 08:16:35 -0400
-Date: Sun, 22 Jun 2014 14:16:00 +0200
-From: Guido =?iso-8859-1?Q?G=FCnther?= <agx@sigxcpu.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] genksyms: Include scripts/Makefile.lib
-Message-ID: <20140622121600.GA4775@bogon.m.sigxcpu.org>
-References: <20140523131522.GA25950@bogon.m.sigxcpu.org>
- <5396254B.8070907@suse.cz>
+	Sun, 22 Jun 2014 08:23:22 -0400
+X-Auth-Info: tfLeM7WINrnpcBp6OulfNSz1TK7oIStXmZ3e57ITeRw=
+From: Marek Vasut <marex@denx.de>
+To: Corentin LABBE <clabbe.montjoie@gmail.com>
+Subject: Re: [PATCH v3 1/4] crypto: Add Allwinner Security System crypto accelerator
+Date: Sun, 22 Jun 2014 14:23:15 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, maxime.ripard@free-electrons.com,
+        linux@arm.linux.org.uk, herbert@gondor.apana.org.au,
+        davem@davemloft.net, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-sunxi@googlegroups.com
+References: <1402404197-4236-1-git-send-email-clabbe.montjoie@gmail.com> <201406142101.02747.marex@denx.de> <53A6C4D0.1030102@gmail.com>
+In-Reply-To: <53A6C4D0.1030102@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5396254B.8070907@suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201406221423.15193.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 09, 2014 at 11:21:15PM +0200, Michal Marek wrote:
-> Dne 23.5.2014 15:15, Guido Günther napsal(a):
-> > Otherwise when building out of tree like
+On Sunday, June 22, 2014 at 01:58:08 PM, Corentin LABBE wrote:
+[...]
+> >> + * This program is free software; you can redistribute it and/or modify
+> >> + * it under the terms of the GNU General Public License as published by
+> >> + * the Free Software Foundation version 2 of the License
 > > 
-> > make V=1 O=/var/scratch/kernel/
-> > 
-> > it fails like
-> > 
-> > make -f /home/agx/linux/scripts/Makefile.build obj=scripts
-> > make -f /home/agx/linux/scripts/Makefile.build obj=scripts/genksyms
-> > (cat /dev/null; ) > scripts/genksyms/modules.order
-> >   gcc -Wp,-MD,scripts/genksyms/.lex.lex.o.d -Iscripts/genksyms -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer  -I/home/agx/linux/scripts/genksyms -Iscripts/genksyms -c -o scripts/genksyms/lex.lex.o scripts/genksyms/lex.lex.c
-> > scripts/genksyms/lex.lex.c_shipped:567:23: fatal error: parse.tab.h: No such file or directory
-> > compilation terminated.
-> > scripts/Makefile.host:134: recipe for target 'scripts/genksyms/lex.lex.o' failed
-> > make[3]: *** [scripts/genksyms/lex.lex.o] Error 1
-> > /home/agx/linux/scripts/Makefile.build:465: recipe for target 'scripts/genksyms' failed
-> > make[2]: *** [scripts/genksyms] Error 2
-> > /home/agx/linux/Makefile:542: recipe for target 'scripts' failed
-> > 
-> > Signed-off-by: Guido Günther <agx@sigxcpu.org>
-> > ---
-> > 
-> > I'm not sure wether this is the root cause and would be happy any
-> > input on where to dig. GNU make is version 4.0.
-> > 
-> >  scripts/genksyms/Makefile | 1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/scripts/genksyms/Makefile b/scripts/genksyms/Makefile
-> > index aca33b9..1d86d14 100644
-> > --- a/scripts/genksyms/Makefile
-> > +++ b/scripts/genksyms/Makefile
-> > @@ -1,3 +1,4 @@
-> > +include scripts/Makefile.lib
-> >  
-> >  hostprogs-y	:= genksyms
-> >  always		:= $(hostprogs-y)
+> > The license text seems incomplete.
+> > [...]
 > 
-> scripts/Makefile.lib is included by the Makefile that includes
-> scripts/genksyms/Makefile. So this is certainly not the right fix. With
-> which kernel version are you seeing this and what are the exact steps to
-> reproduce? Also please attach the full log leading to the failure.
-> Needless to say, I can't reproduce it.
+> I will replace it with a simplier line "Licensed under the GPL-2."
 
-Hmm....this was v3.15-rc6 but I can't reproduce this either with a
-current Debian sid. In case this pops up again I'll send the full log.
-Thanks,
- -- Guido
+I'd suggest you to use the SPDX license identifiers then, but that's not 
+something the kernel crowd agreed upon yet IIRC.Therefore , just make the text 
+complete please.
+
+[...]
+
+> >> +	src_addr = kmap(sg_page(in_sg)) + in_sg->offset;
+> >> +	if (src_addr == NULL) {
+> >> +		dev_err(ss->dev, "KMAP error for src SG\n");
+> >> +		return -1;
+> >> +	}
+> > 
+> > Why can't you just use dma_map_sg() or somesuch ?
+> 
+> I do not see why I will use a DMA function in a driver without DMA support.
+> Perhaps I do not know some tricks.
+> Can I use writel/readl on address gived by DMA API ?
+
+Oh, ok, good question -- dear list, shall one use sg_page()+kmap or sg_virt()?
+
+btw. I just noticed you're just feeding the hardware FIFO in a loop with data in 
+the scatterlists, do I understand it correctly ? The driver will consume quite a 
+lot of CPU time to do that, can you not implement DMA here ?
+
+[...]
+
+Best regards,
+Marek Vasut
