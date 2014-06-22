@@ -1,48 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515AbaFVOiN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 10:38:13 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:46385 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939AbaFVOiM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 10:38:12 -0400
-From: Seunghun Lee <waydi1@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: alois.schloegl@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Seunghun Lee <waydi1@gmail.com>
-Subject: [PATCH] staging: ced1401: fix sparse warning for ced1401
-Date: Sun, 22 Jun 2014 23:38:04 +0900
-Message-Id: <1403447884-17470-1-git-send-email-waydi1@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751719AbaFVOmV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 10:42:21 -0400
+Received: from mga03.intel.com ([143.182.124.21]:26355 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750781AbaFVOmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jun 2014 10:42:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,524,1400050800"; 
+   d="scan'208";a="448522744"
+Date: Sun, 22 Jun 2014 22:39:46 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Luck, Tony" <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        "Gortmaker, Paul (Wind River)" <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        alek.du@intel.com, mark.gross@intel.com
+Subject: Re: [Patch V4 00/42] use irqdomain to dynamically allocate IRQ for
+ IOAPIC
+Message-ID: <20140622143946.GA20551@feng-snb>
+References: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com>
+ <20140622084227.GA13974@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140622084227.GA13974@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes below warning.
+Hi,
 
-drivers/staging/ced1401/ced_ioc.c:703:30: warning: incorrect type in assignment (different address spaces)
-drivers/staging/ced1401/ced_ioc.c:703:30:    expected void *[usertype] lpvBuff
-drivers/staging/ced1401/ced_ioc.c:703:30:    got char [noderef] <asn:1>*puBuf
+On Sun, Jun 22, 2014 at 04:42:27PM +0800, Ingo Molnar wrote:
+> 
+> JFYI, with these patches applied x86 allyes32config fails with:
+> 
+>   arch/x86/platform/intel-mid/device_libs/platform_wdt.c:45:3: error: implicit declaration of function ‘io_apic_set_pci_routing’ 
 
-Signed-off-by: Seunghun Lee <waydi1@gmail.com>
----
- drivers/staging/ced1401/usb1401.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+In some intel-mid platforms (Medfield/Merrifield etc), the IOAPIC
+may have more than 80 pins, and some devices like a i2c based touch
+screen has its interrupt line directly connected to IOAPIC (this
+platform_wdt.c here should be the same case).
 
-diff --git a/drivers/staging/ced1401/usb1401.h b/drivers/staging/ced1401/usb1401.h
-index ea0fe63..8327e9c 100644
---- a/drivers/staging/ced1401/usb1401.h
-+++ b/drivers/staging/ced1401/usb1401.h
-@@ -101,7 +101,7 @@ typedef struct circBlk {
- /*  A structure holding all of the information about a transfer area - an area of */
- /*   memory set up for use either as a source or destination in DMA transfers. */
- typedef struct transarea {
--	void	*lpvBuff;                /*  User address of xfer area saved for completeness */
-+	void __user *lpvBuff;                /*  User address of xfer area saved for completeness */
- 	UINT        dwBaseOffset;           /*  offset to start of xfer area in first page */
- 	UINT        dwLength;               /*  Length of xfer area, in bytes */
- 	struct page **pPages;               /*  Points at array of locked down pages */
--- 
-1.7.9.5
+Since these devices are not PCI device or ACPI device, they can't
+use the general PCI/ACPI xxx_enable_dev APIs which implicitly set
+up the ioapic entry, but use this "io_apic_set_pci_routing"
+directly.
 
+Thanks,
+Feng
+
+> 
+> Thanks,
+> 
+> 	Ingo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
