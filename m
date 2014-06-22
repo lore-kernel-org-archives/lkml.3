@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752021AbaFVMXY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 08:23:24 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:50474 "EHLO
+	id S1752126AbaFVMZk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 08:25:40 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:44012 "EHLO
 	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454AbaFVMXW (ORCPT
+	with ESMTP id S1751468AbaFVMZi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 08:23:22 -0400
-X-Auth-Info: tfLeM7WINrnpcBp6OulfNSz1TK7oIStXmZ3e57ITeRw=
+	Sun, 22 Jun 2014 08:25:38 -0400
+X-Auth-Info: v59yCk2EjWQaWFq85rlzg54uSiolN+lXgRBcRY13gN4=
 From: Marek Vasut <marex@denx.de>
 To: Corentin LABBE <clabbe.montjoie@gmail.com>
-Subject: Re: [PATCH v3 1/4] crypto: Add Allwinner Security System crypto accelerator
-Date: Sun, 22 Jun 2014 14:23:15 +0200
+Subject: Re: [PATCH v3 2/4] crypto: Update makefile and Kconfig for Security System
+Date: Sun, 22 Jun 2014 14:25:36 +0200
 User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
@@ -21,53 +21,43 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-crypto@vger.kernel.org, linux-sunxi@googlegroups.com
-References: <1402404197-4236-1-git-send-email-clabbe.montjoie@gmail.com> <201406142101.02747.marex@denx.de> <53A6C4D0.1030102@gmail.com>
-In-Reply-To: <53A6C4D0.1030102@gmail.com>
+References: <1402404197-4236-1-git-send-email-clabbe.montjoie@gmail.com> <201406142101.30546.marex@denx.de> <53A6C4EE.2020400@gmail.com>
+In-Reply-To: <53A6C4EE.2020400@gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201406221423.15193.marex@denx.de>
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201406221425.36171.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, June 22, 2014 at 01:58:08 PM, Corentin LABBE wrote:
-[...]
-> >> + * This program is free software; you can redistribute it and/or modify
-> >> + * it under the terms of the GNU General Public License as published by
-> >> + * the Free Software Foundation version 2 of the License
+On Sunday, June 22, 2014 at 01:58:38 PM, Corentin LABBE wrote:
+> Le 14/06/2014 21:01, Marek Vasut a écrit :
+> > On Tuesday, June 10, 2014 at 02:43:15 PM, LABBE Corentin wrote:
+> >> Add necessary changes for configuring and compiling the Security System
+> >> driver.
+> >> 
+> >> Signed-off-by: LABBE Corentin <clabbe.montjoie@gmail.com>
+> >> ---
+> >> 
+> >>  drivers/crypto/Kconfig  | 91
+> >> 
+> >> +++++++++++++++++++++++++++++++++++++++++++++++++
+> >> drivers/crypto/Makefile
+> >> 
+> >> |  1 +
+> >>  
+> >>  2 files changed, 92 insertions(+)
 > > 
-> > The license text seems incomplete.
-> > [...]
+> > This should be part of 1/4, otherwise 1/4 just adds dead code.
 > 
-> I will replace it with a simplier line "Licensed under the GPL-2."
-
-I'd suggest you to use the SPDX license identifiers then, but that's not 
-something the kernel crowd agreed upon yet IIRC.Therefore , just make the text 
-complete please.
-
-[...]
-
-> >> +	src_addr = kmap(sg_page(in_sg)) + in_sg->offset;
-> >> +	if (src_addr == NULL) {
-> >> +		dev_err(ss->dev, "KMAP error for src SG\n");
-> >> +		return -1;
-> >> +	}
-> > 
-> > Why can't you just use dma_map_sg() or somesuch ?
+> If I do that 1/4 add to the makefile a path that do not exists.
 > 
-> I do not see why I will use a DMA function in a driver without DMA support.
-> Perhaps I do not know some tricks.
-> Can I use writel/readl on address gived by DMA API ?
+> But as you like I will change that.
 
-Oh, ok, good question -- dear list, shall one use sg_page()+kmap or sg_virt()?
-
-btw. I just noticed you're just feeding the hardware FIFO in a loop with data in 
-the scatterlists, do I understand it correctly ? The driver will consume quite a 
-lot of CPU time to do that, can you not implement DMA here ?
-
-[...]
+Well, the point is to add stuff which is logically coupled together (code, 
+Makefile entry, Kconfig entry) in a single patch if possible.
 
 Best regards,
 Marek Vasut
