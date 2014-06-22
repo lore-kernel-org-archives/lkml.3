@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752297AbaFVNSP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 09:18:15 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:51512 "HELO
+	id S1752180AbaFVNWj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 09:22:39 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:53321 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751659AbaFVNSO (ORCPT
+	with SMTP id S1751084AbaFVNWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 09:18:14 -0400
+	Sun, 22 Jun 2014 09:22:37 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Kevin Hilman <khilman@linaro.org>, Allen Yu <alleny@nvidia.com>,
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Allen Yu <alleny@nvidia.com>,
         Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH 1/1] PM / Runtime: let rpm_resume fail if rpm disabled and device suspended.
-Date: Sun, 22 Jun 2014 15:35:54 +0200
-Message-ID: <2724221.P8uryjLFJe@vostro.rjw.lan>
+Date: Sun, 22 Jun 2014 15:40:17 +0200
+Message-ID: <1645345.yNjrKp8T0k@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.44L0.1406210913470.26962-100000@netrider.rowland.org>
-References: <Pine.LNX.4.44L0.1406210913470.26962-100000@netrider.rowland.org>
+In-Reply-To: <7h4mzftgdl.fsf@paris.lan>
+References: <Pine.LNX.4.44L0.1406201043420.1160-100000@iolanthe.rowland.org> <7h4mzftgdl.fsf@paris.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -27,43 +27,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, June 21, 2014 09:34:28 AM Alan Stern wrote:
-> On Fri, 20 Jun 2014, Kevin Hilman wrote:
+On Friday, June 20, 2014 02:34:14 PM Kevin Hilman wrote:
+> Alan Stern <stern@rowland.harvard.edu> writes:
 > 
-> > > For a general device, the fact that dev->power.is_suspended is set
-> > > means the device _has_ been powered down.  Even though the
-> > > runtime_status may not have changed, the PM core has to assume the
-> > > device is not available for use.
-> > 
-> > This is where things get fuzzy because of the overlap between system PM
-> > and runtime PM.  It makes sense that from a system PM perspecitve, the
-> > core has to assume the device isn't available.  But from a runtime PM
-> > perspective, we know that it is, so we allow the *runtime PM* requests
-> > to succeed.
+> > On Fri, 20 Jun 2014, Rafael J. Wysocki wrote:
+> >
+> >> > For a general device, the fact that dev->power.is_suspended is set
+> >> > means the device _has_ been powered down.  Even though the
+> >> > runtime_status may not have changed, the PM core has to assume the
+> >> > device is not available for use.
+> >> 
+> >> This seems to go a bit too far.  What power.is_suspended actually means is
+> >> that __device_suspend() has run for the device successfully.  What the
+> >> implications of that are depends on the bus type (or subsystem in general)
+> >> and device driver.
+> >> 
+> >> > While your I2C devices may be useable even after the ->suspend callback
+> >> > returns, for most devices this isn't true.  So we shouldn't allow
+> >> > rpm_resume() to return imediately when is_suspended is set.
+> >> 
+> >> I can agree with that.
+> >
+> > We really do need to decide more precisely how runtime PM and system PM 
+> > will interact.  
 > 
-> Well, to be fair, from a runtime PM perspective the core _doesn't_
-> know that the device is available.  For example, if we were talking
-> about a USB device rather than an I2C device, it _wouldn't_ be
-> available.
+> Yes!
 > 
-> The fact is, after ->suspend returns some devices are still available
-> and some aren't.  Currently the PM core doesn't know which are which.
+> > Should ->runtime_resume callbacks be allowed after ->suspend has
+> > returned?
+> 
+> Abolutely.
+> 
+> > Kevin has stated that some devices do need this ability.  But most
+> > don't.  
+> 
+> Does it matter if most don't?  As long a some do, we need to support
+> this.  It may not be "most" devices, but on the (mostly embedded) SoCs I
+> work on, the devices that do need this tend to be rather crucial core
+> devices that are used during the PM of other devices (e.g. I2C, SPI,
+> GPIOs, etc. etc.)
+> 
+> > The PM core needs to handle these conflicting requirements
+> > somehow.
+> 
+> I agree.  We've gone back and forth a few times on the various
+> interactions between system PM and runtime PM over the years but it
+> seems there are still things to clarify.
 
-That's correct.  As a result of this, the core should not make any assumptions
-about the device's physical state after ->suspend() has been executed.
+Well, we only considered a specific use case every time without looking at
+the big picture, mostly because we didn't really know what the big picture
+was.  I guess today we have enough experience to try to address all of these
+problems together.
 
-Well, the core shouldn't actually make any assumptions about the device's
-physical state at any given time at all, because it never knows what that state
-is.
-
-What it can do (and what the runtime PM rules are for) is to refuse to carry
-out operations that generally don't make sense, like calling ->runtime_resume()
-twice in a row, for example.
-
-Currently, we have separate rules for runtime PM and for system suspend/resume,
-but it looks like we really need to establish a set of rules that will cover
-*both* runtime PM and system suspend/resume at the same time.  Of course, it
-needs to be compatible with the existing rules as far as reasonably possible.
+I guess we need to start with making a list of different types of bus type/driver
+behavior existing today and how the core is supposed to interact with them.
 
 Rafael
 
