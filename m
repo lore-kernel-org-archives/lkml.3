@@ -1,49 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723AbaFVOxo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 10:53:44 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60012 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750933AbaFVOxm (ORCPT
+	id S1751662AbaFVPCQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 11:02:16 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:61150 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364AbaFVPCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 10:53:42 -0400
-X-Sasl-enc: PON2V/xj39Sc2Ll7SKZaK6ASmqXBWhPgkvvAG8WefzJT 1403448821
-Date: Sun, 22 Jun 2014 11:53:29 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>
-Subject: Re: [PATCH] init: Introduce 'noinitramfs' kernel parameter
-Message-ID: <20140622145329.GA19936@khazad-dum.debian.net>
-References: <1403415685-21455-1-git-send-email-ezequiel@vanguardiasur.com.ar>
+	Sun, 22 Jun 2014 11:02:14 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53A6EFEC.1020207@roeck-us.net>
+Date: Sun, 22 Jun 2014 08:02:04 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403415685-21455-1-git-send-email-ezequiel@vanguardiasur.com.ar>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chen Gang <gang.chen.5i5j@gmail.com>, Liqin Chen <liqin.linux@gmail.com>,
+        Lennox Wu <lennox.wu@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch/score/include/uapi/asm/ptrace.h: Add prefix 'SCORE_'
+ for related macros
+References: <53A66000.4010208@gmail.com> <53A6669B.1010701@roeck-us.net> <53A66A92.9040106@gmail.com> <53A6EDF6.2030203@roeck-us.net>
+In-Reply-To: <53A6EDF6.2030203@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 22 Jun 2014, Ezequiel Garcia wrote:
-> This commit adds a new kernel parameter to provide such option, following the
-> naming of the current 'initrd' which serves a similar purpose, for an initial
-> RAM disk.
+On 06/22/2014 07:53 AM, Guenter Roeck wrote:
+> On 06/21/2014 10:33 PM, Chen Gang wrote:
+>
+> [ ... ]
+>
+>>> Any idea where to find a cross-compile toolchain for this architecture ?
+>>>
+>>
+>> I use latest source code of gcc and binutils with git.
+>>
+>>    related source code:
+>>
+>>      git://sourceware.org/git/binutils-gdb.git
+>>      git://gcc.gnu.org/git/gcc.git
+>>
+>> Issues:
+>>
+>>    For binutils, have to use the latest one (I have fixed one segment
+>>    fault issue of gas for score, and integrated into gas main line by
+>>    maintainer in Jun 13, 2014).
+>>
+>>    For gcc (after binutils has installed), when building glibc, may need
+>>    modify the absolute path for score-elf-gas, score-elf-ld ... in
+>>    related auto-generated file.
+>>
+>>    Under ubuntu (but under fedora, it is OK), may need export
+>>    LD_LIBRARY_PATH=/usr/local/lib for searching libmpfr.so.
+>>
+>> My current binary informations:
+>>
+>>    root@gchen:/upstream/toolchain/binutils-gdb# /usr/local/bin/score-elf-ld -v
+>>    GNU ld (GNU Binutils) 2.24.51.20140609
+>>    root@gchen:/upstream/toolchain/binutils-gdb# /usr/local/bin/score-elf-as -v
+>>    GNU assembler version 2.24.51 (score-elf) using BFD version (GNU Binutils) 2.24.51.20140609
+>>    root@gchen:/upstream/toolchain/binutils-gdb# /usr/local/bin/score-elf-gcc -v
+>>    Using built-in specs.
+>>    COLLECT_GCC=/usr/local/bin/score-elf-gcc
+>>    COLLECT_LTO_WRAPPER=/usr/local/libexec/gcc/score-elf/4.10.0/lto-wrapper
+>>    Target: score-elf
+>>    Configured with: ../gcc/configure --without-header --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no target_configargs=enable_vtable_verify=yes --target=score-elf --enable-obsolete
+>>    Thread model: single
+>>    gcc version 4.10.0 20140530 (experimental) (GCC)
+>>
+>
+> I did that, and managed to build gcc.
+>
+> However, when trying to compile score defconfig, I get internal compiler errors in cc1
+> when compiling drivers/tty/tty_mutex.o and block/elevator.o.
+>
+>   CC      block/elevator.o
+> score-elf-gcc: internal compiler error: Segmentation fault (program cc1)
+> 0x40c073 execute
+>      ../../gcc/gcc/gcc.c:2848
+> Please submit a full bug report,
+> with preprocessed source if appropriate.
+> Please include the complete backtrace with any bug report.
+> See <http://gcc.gnu.org/bugs.html> for instructions.
+> make[1]: *** [block/elevator.o] Error 4
+> make: *** [block/elevator.o] Error 2
+>
+> Do you see that as well ?
+>
+> This is with
+>
+> GNU assembler version 2.24.51 (score-elf) using BFD version (GNU Binutils) 2.24.51.20140622
+>
+> and gcc configured with:
+>
+> Configured with: ../gcc/configure --prefix=/opt/kernel/score --program-prefix=score-elf- \
+> --target=score-elf --without-header --disable-nls --enable-languages=c --disable-threads \
+> --disable-shared --enable-werror=no target_configargs=enable_vtable_verify=yes \
+> --enable-obsolete --disable-libssp --disable-libquadmath
+>
+> Tip of gcc source is commit d8686b0aa945a, tip of binutils source is commit d17c74c1d41.
+> Your assembler fix is included in this version of binutils.
+>
 
-How does it interact with the early initramfs?
+Never mind, turns out I get score:defconfig to compile when using the tip of the gcc 4.9 branch.
 
-Maybe we should have the options to ignore both, ignore just the early
-initramfs (to skip microcode updates and ACPI table updates), and ignore
-just the main initramfs?
+Guenter
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
