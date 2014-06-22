@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750930AbaFVEYO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 00:24:14 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:36308 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702AbaFVEYN (ORCPT
+	id S1750984AbaFVEsL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 00:48:11 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:46204 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752AbaFVEsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 00:24:13 -0400
-Message-ID: <1403411049.5115.28.camel@marge.simpson.net>
-Subject: Re: Latency histogram broken after "hrtimer: Set expiry time before
- switch_hrtimer_base()"
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Carsten Emde <C.Emde@osadl.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Date: Sun, 22 Jun 2014 06:24:09 +0200
-In-Reply-To: <1403410224.5115.26.camel@marge.simpson.net>
-References: <1403399065.23472.77.camel@deadeye.wl.decadent.org.uk>
-	 <1403410224.5115.26.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Sun, 22 Jun 2014 00:48:10 -0400
+Message-ID: <53A66000.4010208@gmail.com>
+Date: Sun, 22 Jun 2014 12:48:00 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arch/score/include/uapi/asm/ptrace.h: Add prefix 'SCORE_'
+ for related macros
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(CCs stable -rt maintainer)
+'COUNTER' and other same kind macros are too common to use, and easy to
+get conflict with other modules. So add prefix for them.
 
-On Sun, 2014-06-22 at 06:10 +0200, Mike Galbraith wrote: 
-> On Sun, 2014-06-22 at 02:04 +0100, Ben Hutchings wrote: 
-> > In an rt-kernel with CONFIG_MISSED_TIMER_OFFSETS_HIST enabled,
-> > __hrtimer_start_range_ns() now crashes, as new_base is not assigned
-> > before it is used.
-> 
-> Oh yeah, forgot about this.
-> 
-> > I'm not sure how this should be fixed; is it:
-> 
-> My (3.12-ish tree) merge resolution was the later, but it shouldn't
-> matter which you choose, what's stored where is unchanged pre/post.
-> 
-> > --- a/kernel/hrtimer.c
-> > +++ b/kernel/hrtimer.c
-> > @@ -1108,7 +1108,7 @@ int __hrtimer_start_range_ns(struct hrti
-> >  
-> >  #ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
-> >  	{
-> > -		ktime_t now = new_base->get_time();
-> > +		ktime_t now = base->get_time();
-> >  
-> >  		if (ktime_to_ns(tim) < ktime_to_ns(now))
-> >  			timer->praecox = now;
-> > --- END ---
-> > 
-> > or:
-> > 
-> > --- a/kernel/hrtimer.c
-> > +++ b/kernel/hrtimer.c
-> > @@ -1106,6 +1106,11 @@ int __hrtimer_start_range_ns(struct hrti
-> >  #endif
-> >  	}
-> >  
-> > +	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
-> > +
-> > +	/* Switch the timer base, if necessary: */
-> > +	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
-> > +
-> >  #ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
-> >  	{
-> >  		ktime_t now = new_base->get_time();
-> > @@ -1117,11 +1122,6 @@ int __hrtimer_start_range_ns(struct hrti
-> >  	}
-> >  #endif
-> >  
-> > -	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
-> > -
-> > -	/* Switch the timer base, if necessary: */
-> > -	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
-> > -
-> >  	timer_stats_hrtimer_set_start_info(timer);
-> >  
-> >  	leftmost = enqueue_hrtimer(timer, new_base);
-> > --- END ---
-> > 
-> > or something else?
-> > 
-> > Ben.
-> > 
-> 
-> 
+The related warning (allmodconfig with score):
+
+    CC [M]  drivers/md/raid1.o
+  In file included from drivers/md/raid1.c:42:0:
+  drivers/md/bitmap.h:93:0: warning: "COUNTER" redefined
+   #define COUNTER(x) (((bitmap_counter_t) x) & COUNTER_MAX)
+   ^
+  In file included from ./arch/score/include/asm/ptrace.h:4:0,
+                   from include/linux/sched.h:31,
+                   from include/linux/blkdev.h:4,
+                   from drivers/md/raid1.c:36:
+  ./arch/score/include/uapi/asm/ptrace.h:13:0: note: this is the location of the previous definition
+   #define COUNTER  38
 
 
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ arch/score/include/uapi/asm/ptrace.h | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/arch/score/include/uapi/asm/ptrace.h b/arch/score/include/uapi/asm/ptrace.h
+index f59771a..7a0ead9 100644
+--- a/arch/score/include/uapi/asm/ptrace.h
++++ b/arch/score/include/uapi/asm/ptrace.h
+@@ -4,16 +4,16 @@
+ #define PTRACE_GETREGS		12
+ #define PTRACE_SETREGS		13
+ 
+-#define PC		32
+-#define CONDITION	33
+-#define ECR		34
+-#define EMA		35
+-#define CEH		36
+-#define CEL		37
+-#define COUNTER		38
+-#define LDCR		39
+-#define STCR		40
+-#define PSR		41
++#define SCORE_PC		32
++#define SCORE_CONDITION		33
++#define SCORE_ECR		34
++#define SCORE_EMA		35
++#define SCORE_CEH		36
++#define SOCRE_CEL		37
++#define SCORE_COUNTER		38
++#define SCORE_LDCR		39
++#define SCORE_STCR		40
++#define SCORE_PSR		41
+ 
+ #define SINGLESTEP16_INSN	0x7006
+ #define SINGLESTEP32_INSN	0x840C8000
+-- 
+1.9.2.459.g68773ac
