@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978AbaFVIXZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 04:23:25 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:50245 "EHLO
+	id S1752032AbaFVIXh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 04:23:37 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:34088 "EHLO
 	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441AbaFVIXV (ORCPT
+	with ESMTP id S1751441AbaFVIXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 04:23:21 -0400
+	Sun, 22 Jun 2014 04:23:33 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 13/42] staging: rtl8188eu: Remove rtw_is_list_empty(), wrapper for list_emty()
-Date: Sun, 22 Jun 2014 13:49:33 +0530
-Message-Id: <1403425202-11942-14-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 14/42] staging: rtl8188eu: Remove _rtw_init_listhead(), wrapper for INIT_LIST_HEAD()
+Date: Sun, 22 Jun 2014 13:49:34 +0530
+Message-Id: <1403425202-11942-15-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1403425202-11942-1-git-send-email-navin.patidar@gmail.com>
 References: <1403425202-11942-1-git-send-email-navin.patidar@gmail.com>
@@ -23,205 +23,395 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_cmd.c          |    2 +-
- drivers/staging/rtl8188eu/core/rtw_mlme_ext.c     |   12 ++++++------
+ drivers/staging/rtl8188eu/core/rtw_ap.c           |    6 +++---
+ drivers/staging/rtl8188eu/core/rtw_cmd.c          |   12 ++++++------
+ drivers/staging/rtl8188eu/core/rtw_mlme.c         |    6 +++---
+ drivers/staging/rtl8188eu/core/rtw_mlme_ext.c     |   10 +++++-----
+ drivers/staging/rtl8188eu/core/rtw_mp.c           |    2 +-
  drivers/staging/rtl8188eu/core/rtw_recv.c         |    4 ++--
- drivers/staging/rtl8188eu/core/rtw_sta_mgt.c      |    4 ++--
- drivers/staging/rtl8188eu/core/rtw_xmit.c         |    2 +-
+ drivers/staging/rtl8188eu/core/rtw_sta_mgt.c      |   14 +++++++-------
+ drivers/staging/rtl8188eu/core/rtw_xmit.c         |   12 ++++++------
  drivers/staging/rtl8188eu/include/osdep_service.h |    1 -
+ drivers/staging/rtl8188eu/include/rtw_cmd.h       |    2 +-
  drivers/staging/rtl8188eu/os_dep/ioctl_linux.c    |    2 +-
- drivers/staging/rtl8188eu/os_dep/osdep_service.c  |   19 +------------------
- 8 files changed, 14 insertions(+), 32 deletions(-)
+ drivers/staging/rtl8188eu/os_dep/osdep_service.c  |    7 +------
+ drivers/staging/rtl8188eu/os_dep/usb_ops_linux.c  |    2 +-
+ 13 files changed, 37 insertions(+), 43 deletions(-)
 
+diff --git a/drivers/staging/rtl8188eu/core/rtw_ap.c b/drivers/staging/rtl8188eu/core/rtw_ap.c
+index 7682115..c3c4649 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_ap.c
++++ b/drivers/staging/rtl8188eu/core/rtw_ap.c
+@@ -1170,7 +1170,7 @@ int rtw_acl_add_sta(struct adapter *padapter, u8 *addr)
+ 		paclnode = &pacl_list->aclnode[i];
+ 
+ 		if (!paclnode->valid) {
+-			_rtw_init_listhead(&paclnode->list);
++			INIT_LIST_HEAD(&paclnode->list);
+ 
+ 			memcpy(paclnode->addr, addr, ETH_ALEN);
+ 
+@@ -1910,11 +1910,11 @@ void start_ap_mode(struct adapter *padapter)
+ 	pmlmepriv->p2p_probe_resp_ie = NULL;
+ 
+ 	/* for ACL */
+-	_rtw_init_listhead(&(pacl_list->acl_node_q.queue));
++	INIT_LIST_HEAD(&(pacl_list->acl_node_q.queue));
+ 	pacl_list->num = 0;
+ 	pacl_list->mode = 0;
+ 	for (i = 0; i < NUM_ACL; i++) {
+-		_rtw_init_listhead(&pacl_list->aclnode[i].list);
++		INIT_LIST_HEAD(&pacl_list->aclnode[i].list);
+ 		pacl_list->aclnode[i].valid = false;
+ 	}
+ }
 diff --git a/drivers/staging/rtl8188eu/core/rtw_cmd.c b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-index 0bcd8a8..1f6587b 100644
+index 1f6587b..29f45e8 100644
 --- a/drivers/staging/rtl8188eu/core/rtw_cmd.c
 +++ b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-@@ -155,7 +155,7 @@ struct	cmd_obj	*_rtw_dequeue_cmd(struct __queue *queue)
+@@ -651,7 +651,7 @@ u8 rtw_getbbreg_cmd(struct adapter  *padapter, u8 offset, u8 *pval)
+ 		return _FAIL;
+ 	}
  
+-	_rtw_init_listhead(&ph2c->list);
++	INIT_LIST_HEAD(&ph2c->list);
+ 	ph2c->cmdcode = GEN_CMD_CODE(_GetBBReg);
+ 	ph2c->parmbuf = (unsigned char *)prdbbparm;
+ 	ph2c->cmdsz =  sizeof(struct readBB_parm);
+@@ -715,7 +715,7 @@ u8 rtw_getrfreg_cmd(struct adapter  *padapter, u8 offset, u8 *pval)
+ 		goto exit;
+ 	}
  
- 	spin_lock_irqsave(&queue->lock, irqL);
--	if (rtw_is_list_empty(&(queue->queue))) {
-+	if (list_empty(&(queue->queue))) {
- 		obj = NULL;
- 	} else {
- 		obj = container_of((&queue->queue)->next, struct cmd_obj, list);
+-	_rtw_init_listhead(&ph2c->list);
++	INIT_LIST_HEAD(&ph2c->list);
+ 	ph2c->cmdcode = GEN_CMD_CODE(_GetRFReg);
+ 	ph2c->parmbuf = (unsigned char *)prdrfparm;
+ 	ph2c->cmdsz =  sizeof(struct readRF_parm);
+@@ -774,7 +774,7 @@ u8 rtw_createbss_cmd(struct adapter  *padapter)
+ 		goto exit;
+ 	}
+ 
+-	_rtw_init_listhead(&pcmd->list);
++	INIT_LIST_HEAD(&pcmd->list);
+ 	pcmd->cmdcode = _CreateBss_CMD_;
+ 	pcmd->parmbuf = (unsigned char *)pdev_network;
+ 	pcmd->cmdsz = get_wlan_bssid_ex_sz((struct wlan_bssid_ex *)pdev_network);
+@@ -801,7 +801,7 @@ u8 rtw_createbss_cmd_ex(struct adapter  *padapter, unsigned char *pbss, unsigned
+ 		goto exit;
+ 	}
+ 
+-	_rtw_init_listhead(&pcmd->list);
++	INIT_LIST_HEAD(&pcmd->list);
+ 	pcmd->cmdcode = GEN_CMD_CODE(_CreateBss);
+ 	pcmd->parmbuf = pbss;
+ 	pcmd->cmdsz =  sz;
+@@ -944,7 +944,7 @@ u8 rtw_joinbss_cmd(struct adapter  *padapter, struct wlan_network *pnetwork)
+ 
+ 	pcmd->cmdsz = get_wlan_bssid_ex_sz(psecnetwork);/* get cmdsz before endian conversion */
+ 
+-	_rtw_init_listhead(&pcmd->list);
++	INIT_LIST_HEAD(&pcmd->list);
+ 	pcmd->cmdcode = _JoinBss_CMD_;/* GEN_CMD_CODE(_JoinBss) */
+ 	pcmd->parmbuf = (unsigned char *)psecnetwork;
+ 	pcmd->rsp = NULL;
+@@ -1194,7 +1194,7 @@ u8 rtw_getrttbl_cmd(struct adapter  *padapter, struct getratable_rsp *pval)
+ 		goto exit;
+ 	}
+ 
+-	_rtw_init_listhead(&ph2c->list);
++	INIT_LIST_HEAD(&ph2c->list);
+ 	ph2c->cmdcode = GEN_CMD_CODE(_GetRaTable);
+ 	ph2c->parmbuf = (unsigned char *)pgetrttblparm;
+ 	ph2c->cmdsz =  sizeof(struct getratable_parm);
+diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme.c b/drivers/staging/rtl8188eu/core/rtw_mlme.c
+index 2fc294e..f0ad0c5 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_mlme.c
++++ b/drivers/staging/rtl8188eu/core/rtw_mlme.c
+@@ -72,7 +72,7 @@ int _rtw_init_mlme_priv(struct adapter *padapter)
+ 	pnetwork = (struct wlan_network *)pbuf;
+ 
+ 	for (i = 0; i < MAX_BSS_CNT; i++) {
+-		_rtw_init_listhead(&(pnetwork->list));
++		INIT_LIST_HEAD(&(pnetwork->list));
+ 
+ 		list_add_tail(&(pnetwork->list), &(pmlmepriv->free_bss_pool.queue));
+ 
+@@ -1685,7 +1685,7 @@ int rtw_set_auth(struct adapter *adapter, struct security_priv *psecuritypriv)
+ 	pcmd->cmdsz =  (sizeof(struct setauth_parm));
+ 	pcmd->rsp = NULL;
+ 	pcmd->rspsz = 0;
+-	_rtw_init_listhead(&pcmd->list);
++	INIT_LIST_HEAD(&pcmd->list);
+ 	RT_TRACE(_module_rtl871x_mlme_c_, _drv_err_,
+ 		 ("after enqueue set_auth_cmd, auth_mode=%x\n",
+ 		 psecuritypriv->dot11AuthAlgrthm));
+@@ -1766,7 +1766,7 @@ int rtw_set_key(struct adapter *adapter, struct security_priv *psecuritypriv, in
+ 	pcmd->cmdsz =  (sizeof(struct setkey_parm));
+ 	pcmd->rsp = NULL;
+ 	pcmd->rspsz = 0;
+-	_rtw_init_listhead(&pcmd->list);
++	INIT_LIST_HEAD(&pcmd->list);
+ 	res = rtw_enqueue_cmd(pcmdpriv, pcmd);
+ 	return res;
+ 
 diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c b/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c
-index 418fb21..8b678b7 100644
+index 8b678b7..6244555 100644
 --- a/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c
 +++ b/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c
-@@ -817,7 +817,7 @@ unsigned int OnAuth(struct adapter *padapter, struct recv_frame *precv_frame)
- 		pstat->auth_seq = 0;
- 	} else {
- 		spin_lock_bh(&pstapriv->asoc_list_lock);
--		if (!rtw_is_list_empty(&pstat->asoc_list)) {
-+		if (!list_empty(&pstat->asoc_list)) {
- 			rtw_list_delete(&pstat->asoc_list);
- 			pstapriv->asoc_list_cnt--;
- 		}
-@@ -829,7 +829,7 @@ unsigned int OnAuth(struct adapter *padapter, struct recv_frame *precv_frame)
+@@ -7066,7 +7066,7 @@ void report_survey_event(struct adapter *padapter,
+ 		return;
  	}
  
- 	spin_lock_bh(&pstapriv->auth_list_lock);
--	if (rtw_is_list_empty(&pstat->auth_list)) {
-+	if (list_empty(&pstat->auth_list)) {
- 		list_add_tail(&pstat->auth_list, &pstapriv->auth_list);
- 		pstapriv->auth_list_cnt++;
+-	_rtw_init_listhead(&pcmd_obj->list);
++	INIT_LIST_HEAD(&pcmd_obj->list);
+ 
+ 	pcmd_obj->cmdcode = GEN_CMD_CODE(_Set_MLME_EVT);
+ 	pcmd_obj->cmdsz = cmdsz;
+@@ -7118,7 +7118,7 @@ void report_surveydone_event(struct adapter *padapter)
+ 		return;
  	}
-@@ -1407,14 +1407,14 @@ unsigned int OnAssocReq(struct adapter *padapter, struct recv_frame *precv_frame
- 	pstat->state |= WIFI_FW_ASSOC_SUCCESS;
  
- 	spin_lock_bh(&pstapriv->auth_list_lock);
--	if (!rtw_is_list_empty(&pstat->auth_list)) {
-+	if (!list_empty(&pstat->auth_list)) {
- 		rtw_list_delete(&pstat->auth_list);
- 		pstapriv->auth_list_cnt--;
+-	_rtw_init_listhead(&pcmd_obj->list);
++	INIT_LIST_HEAD(&pcmd_obj->list);
+ 
+ 	pcmd_obj->cmdcode = GEN_CMD_CODE(_Set_MLME_EVT);
+ 	pcmd_obj->cmdsz = cmdsz;
+@@ -7164,7 +7164,7 @@ void report_join_res(struct adapter *padapter, int res)
+ 		return;
  	}
- 	spin_unlock_bh(&pstapriv->auth_list_lock);
  
- 	spin_lock_bh(&pstapriv->asoc_list_lock);
--	if (rtw_is_list_empty(&pstat->asoc_list)) {
-+	if (list_empty(&pstat->asoc_list)) {
- 		pstat->expire_to = pstapriv->expire_to;
- 		list_add_tail(&pstat->asoc_list, &pstapriv->asoc_list);
- 		pstapriv->asoc_list_cnt++;
-@@ -1600,7 +1600,7 @@ unsigned int OnDeAuth(struct adapter *padapter, struct recv_frame *precv_frame)
- 			u8 updated = 0;
+-	_rtw_init_listhead(&pcmd_obj->list);
++	INIT_LIST_HEAD(&pcmd_obj->list);
  
- 			spin_lock_bh(&pstapriv->asoc_list_lock);
--			if (!rtw_is_list_empty(&psta->asoc_list)) {
-+			if (!list_empty(&psta->asoc_list)) {
- 				rtw_list_delete(&psta->asoc_list);
- 				pstapriv->asoc_list_cnt--;
- 				updated = ap_free_sta(padapter, psta, false, reason);
-@@ -1664,7 +1664,7 @@ unsigned int OnDisassoc(struct adapter *padapter, struct recv_frame *precv_frame
- 			u8 updated = 0;
+ 	pcmd_obj->cmdcode = GEN_CMD_CODE(_Set_MLME_EVT);
+ 	pcmd_obj->cmdsz = cmdsz;
+@@ -7217,7 +7217,7 @@ void report_del_sta_event(struct adapter *padapter, unsigned char *MacAddr, unsi
+ 		return;
+ 	}
  
- 			spin_lock_bh(&pstapriv->asoc_list_lock);
--			if (!rtw_is_list_empty(&psta->asoc_list)) {
-+			if (!list_empty(&psta->asoc_list)) {
- 				rtw_list_delete(&psta->asoc_list);
- 				pstapriv->asoc_list_cnt--;
- 				updated = ap_free_sta(padapter, psta, false, reason);
+-	_rtw_init_listhead(&pcmd_obj->list);
++	INIT_LIST_HEAD(&pcmd_obj->list);
+ 
+ 	pcmd_obj->cmdcode = GEN_CMD_CODE(_Set_MLME_EVT);
+ 	pcmd_obj->cmdsz = cmdsz;
+@@ -7272,7 +7272,7 @@ void report_add_sta_event(struct adapter *padapter, unsigned char *MacAddr, int
+ 		return;
+ 	}
+ 
+-	_rtw_init_listhead(&pcmd_obj->list);
++	INIT_LIST_HEAD(&pcmd_obj->list);
+ 
+ 	pcmd_obj->cmdcode = GEN_CMD_CODE(_Set_MLME_EVT);
+ 	pcmd_obj->cmdsz = cmdsz;
+diff --git a/drivers/staging/rtl8188eu/core/rtw_mp.c b/drivers/staging/rtl8188eu/core/rtw_mp.c
+index af1be19..2469a82 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_mp.c
++++ b/drivers/staging/rtl8188eu/core/rtw_mp.c
+@@ -971,7 +971,7 @@ void _rtw_mp_xmit_priv(struct xmit_priv *pxmitpriv)
+ 	pxmitbuf = (struct xmit_buf *)pxmitpriv->pxmit_extbuf;
+ 
+ 	for (i = 0; i < num_xmit_extbuf; i++) {
+-		_rtw_init_listhead(&pxmitbuf->list);
++		INIT_LIST_HEAD(&pxmitbuf->list);
+ 
+ 		pxmitbuf->priv_data = NULL;
+ 		pxmitbuf->padapter = padapter;
 diff --git a/drivers/staging/rtl8188eu/core/rtw_recv.c b/drivers/staging/rtl8188eu/core/rtw_recv.c
-index 8adfa7e..3371c7c 100644
+index 3371c7c..a2bdcd7 100644
 --- a/drivers/staging/rtl8188eu/core/rtw_recv.c
 +++ b/drivers/staging/rtl8188eu/core/rtw_recv.c
-@@ -1810,7 +1810,7 @@ static int recv_indicatepkts_in_order(struct adapter *padapter, struct recv_reor
+@@ -82,7 +82,7 @@ int _rtw_init_recv_priv(struct recv_priv *precvpriv, struct adapter *padapter)
+ 	precvframe = (struct recv_frame *)precvpriv->precv_frame_buf;
  
- 	/*  Handling some condition for forced indicate case. */
- 	if (bforced) {
--		if (rtw_is_list_empty(phead))
-+		if (list_empty(phead))
- 			return true;
+ 	for (i = 0; i < NR_RECVFRAME; i++) {
+-		_rtw_init_listhead(&(precvframe->list));
++		INIT_LIST_HEAD(&(precvframe->list));
  
- 		prhdr = container_of(plist, struct recv_frame, list);
-@@ -1820,7 +1820,7 @@ static int recv_indicatepkts_in_order(struct adapter *padapter, struct recv_reor
+ 		list_add_tail(&(precvframe->list),
+ 				     &(precvpriv->free_recv_queue.queue));
+@@ -169,7 +169,7 @@ struct recv_frame *rtw_alloc_recvframe(struct __queue *pfree_recv_queue)
+ void rtw_init_recvframe(struct recv_frame *precvframe, struct recv_priv *precvpriv)
+ {
+ 	/* Perry: This can be removed */
+-	_rtw_init_listhead(&precvframe->list);
++	INIT_LIST_HEAD(&precvframe->list);
  
- 	/*  Prepare indication list and indication. */
- 	/*  Check if there is any packet need indicate. */
--	while (!rtw_is_list_empty(phead)) {
-+	while (!list_empty(phead)) {
- 		prhdr = container_of(plist, struct recv_frame, list);
- 		prframe = (struct recv_frame *)prhdr;
- 		pattrib = &prframe->attrib;
+ 	precvframe->len = 0;
+ }
 diff --git a/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c b/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-index 39cc197..7bb2fa8 100644
+index 7bb2fa8..60f2482 100644
 --- a/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
 +++ b/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-@@ -362,7 +362,7 @@ u32	rtw_free_stainfo(struct adapter *padapter , struct sta_info *psta)
- 		phead =		get_list_head(ppending_recvframe_queue);
- 		plist = phead->next;
+@@ -32,8 +32,8 @@ static void _rtw_init_stainfo(struct sta_info *psta)
+ 	memset((u8 *)psta, 0, sizeof (struct sta_info));
  
--		while (!rtw_is_list_empty(phead)) {
-+		while (!list_empty(phead)) {
- 			prhdr = container_of(plist, struct recv_frame, list);
- 			prframe = (struct recv_frame *)prhdr;
+ 	 spin_lock_init(&psta->lock);
+-	_rtw_init_listhead(&psta->list);
+-	_rtw_init_listhead(&psta->hash_list);
++	INIT_LIST_HEAD(&psta->list);
++	INIT_LIST_HEAD(&psta->hash_list);
+ 	_rtw_init_queue(&psta->sleep_q);
+ 	psta->sleepq_len = 0;
  
-@@ -382,7 +382,7 @@ u32	rtw_free_stainfo(struct adapter *padapter , struct sta_info *psta)
+@@ -42,9 +42,9 @@ static void _rtw_init_stainfo(struct sta_info *psta)
+ 
  #ifdef CONFIG_88EU_AP_MODE
  
- 	spin_lock_bh(&pstapriv->auth_list_lock);
--	if (!rtw_is_list_empty(&psta->auth_list)) {
-+	if (!list_empty(&psta->auth_list)) {
- 		rtw_list_delete(&psta->auth_list);
- 		pstapriv->auth_list_cnt--;
- 	}
+-	_rtw_init_listhead(&psta->asoc_list);
++	INIT_LIST_HEAD(&psta->asoc_list);
+ 
+-	_rtw_init_listhead(&psta->auth_list);
++	INIT_LIST_HEAD(&psta->auth_list);
+ 
+ 	psta->expire_to = 0;
+ 
+@@ -98,7 +98,7 @@ u32	_rtw_init_sta_priv(struct	sta_priv *pstapriv)
+ 	for (i = 0; i < NUM_STA; i++) {
+ 		_rtw_init_stainfo(psta);
+ 
+-		_rtw_init_listhead(&(pstapriv->sta_hash[i]));
++		INIT_LIST_HEAD(&(pstapriv->sta_hash[i]));
+ 
+ 		list_add_tail(&psta->list, get_list_head(&pstapriv->free_sta_queue));
+ 
+@@ -110,8 +110,8 @@ u32	_rtw_init_sta_priv(struct	sta_priv *pstapriv)
+ 	pstapriv->sta_dz_bitmap = 0;
+ 	pstapriv->tim_bitmap = 0;
+ 
+-	_rtw_init_listhead(&pstapriv->asoc_list);
+-	_rtw_init_listhead(&pstapriv->auth_list);
++	INIT_LIST_HEAD(&pstapriv->asoc_list);
++	INIT_LIST_HEAD(&pstapriv->auth_list);
+ 	spin_lock_init(&pstapriv->asoc_list_lock);
+ 	spin_lock_init(&pstapriv->auth_list_lock);
+ 	pstapriv->asoc_list_cnt = 0;
 diff --git a/drivers/staging/rtl8188eu/core/rtw_xmit.c b/drivers/staging/rtl8188eu/core/rtw_xmit.c
-index 4b763bc..faecfda 100644
+index faecfda..8f380f3 100644
 --- a/drivers/staging/rtl8188eu/core/rtw_xmit.c
 +++ b/drivers/staging/rtl8188eu/core/rtw_xmit.c
-@@ -1618,7 +1618,7 @@ s32 rtw_xmit_classifier(struct adapter *padapter, struct xmit_frame *pxmitframe)
+@@ -31,7 +31,7 @@ static u8 RFC1042_OUI[P80211_OUI_LEN] = { 0x00, 0x00, 0x00 };
  
- 	ptxservq = rtw_get_sta_pending(padapter, psta, pattrib->priority, (u8 *)(&ac_index));
+ static void _init_txservq(struct tx_servq *ptxservq)
+ {
+-	_rtw_init_listhead(&ptxservq->tx_pending);
++	INIT_LIST_HEAD(&ptxservq->tx_pending);
+ 	_rtw_init_queue(&ptxservq->sta_pending);
+ 	ptxservq->qcnt = 0;
+ }
+@@ -44,8 +44,8 @@ void	_rtw_init_sta_xmit_priv(struct sta_xmit_priv *psta_xmitpriv)
+ 	_init_txservq(&psta_xmitpriv->bk_q);
+ 	_init_txservq(&psta_xmitpriv->vi_q);
+ 	_init_txservq(&psta_xmitpriv->vo_q);
+-	_rtw_init_listhead(&psta_xmitpriv->legacy_dz);
+-	_rtw_init_listhead(&psta_xmitpriv->apsd);
++	INIT_LIST_HEAD(&psta_xmitpriv->legacy_dz);
++	INIT_LIST_HEAD(&psta_xmitpriv->apsd);
  
--	if (rtw_is_list_empty(&ptxservq->tx_pending))
-+	if (list_empty(&ptxservq->tx_pending))
- 		list_add_tail(&ptxservq->tx_pending, get_list_head(phwxmits[ac_index].sta_queue));
+ }
  
- 	list_add_tail(&pxmitframe->list, get_list_head(&ptxservq->sta_pending));
+@@ -100,7 +100,7 @@ s32	_rtw_init_xmit_priv(struct xmit_priv *pxmitpriv, struct adapter *padapter)
+ 	pxframe = (struct xmit_frame *)pxmitpriv->pxmit_frame_buf;
+ 
+ 	for (i = 0; i < NR_XMITFRAME; i++) {
+-		_rtw_init_listhead(&(pxframe->list));
++		INIT_LIST_HEAD(&(pxframe->list));
+ 
+ 		pxframe->padapter = padapter;
+ 		pxframe->frame_tag = NULL_FRAMETAG;
+@@ -138,7 +138,7 @@ s32	_rtw_init_xmit_priv(struct xmit_priv *pxmitpriv, struct adapter *padapter)
+ 	pxmitbuf = (struct xmit_buf *)pxmitpriv->pxmitbuf;
+ 
+ 	for (i = 0; i < NR_XMITBUFF; i++) {
+-		_rtw_init_listhead(&pxmitbuf->list);
++		INIT_LIST_HEAD(&pxmitbuf->list);
+ 
+ 		pxmitbuf->priv_data = NULL;
+ 		pxmitbuf->padapter = padapter;
+@@ -178,7 +178,7 @@ s32	_rtw_init_xmit_priv(struct xmit_priv *pxmitpriv, struct adapter *padapter)
+ 	pxmitbuf = (struct xmit_buf *)pxmitpriv->pxmit_extbuf;
+ 
+ 	for (i = 0; i < num_xmit_extbuf; i++) {
+-		_rtw_init_listhead(&pxmitbuf->list);
++		INIT_LIST_HEAD(&pxmitbuf->list);
+ 
+ 		pxmitbuf->priv_data = NULL;
+ 		pxmitbuf->padapter = padapter;
 diff --git a/drivers/staging/rtl8188eu/include/osdep_service.h b/drivers/staging/rtl8188eu/include/osdep_service.h
-index d047b00..0a2a499 100644
+index 0a2a499..23b75fc 100644
 --- a/drivers/staging/rtl8188eu/include/osdep_service.h
 +++ b/drivers/staging/rtl8188eu/include/osdep_service.h
-@@ -200,7 +200,6 @@ void *rtw_malloc2d(int h, int w, int size);
+@@ -199,7 +199,6 @@ void *rtw_malloc2d(int h, int w, int size);
+ 
  void _rtw_memcpy(void *dec, void *sour, u32 sz);
  
- void _rtw_init_listhead(struct list_head *list);
--u32  rtw_is_list_empty(struct list_head *phead);
+-void _rtw_init_listhead(struct list_head *list);
  void rtw_list_delete(struct list_head *plist);
  
  u32  _rtw_down_sema(struct semaphore *sema);
+diff --git a/drivers/staging/rtl8188eu/include/rtw_cmd.h b/drivers/staging/rtl8188eu/include/rtw_cmd.h
+index 66467f7..c478bde 100644
+--- a/drivers/staging/rtl8188eu/include/rtw_cmd.h
++++ b/drivers/staging/rtl8188eu/include/rtw_cmd.h
+@@ -77,7 +77,7 @@ struct	evt_priv {
+ 
+ #define init_h2fwcmd_w_parm_no_rsp(pcmd, pparm, code) \
+ do {\
+-	_rtw_init_listhead(&pcmd->list);\
++	INIT_LIST_HEAD(&pcmd->list);\
+ 	pcmd->cmdcode = code;\
+ 	pcmd->parmbuf = (u8 *)(pparm);\
+ 	pcmd->cmdsz = sizeof(*pparm);\
 diff --git a/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c b/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c
-index 1443d4a..acce512 100644
+index acce512..15748a5 100644
 --- a/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c
 +++ b/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c
-@@ -5176,7 +5176,7 @@ static int rtw_del_sta(struct net_device *dev, struct ieee_param *param)
- 	psta = rtw_get_stainfo(pstapriv, param->sta_addr);
- 	if (psta) {
- 		spin_lock_bh(&pstapriv->asoc_list_lock);
--		if (!rtw_is_list_empty(&psta->asoc_list)) {
-+		if (!list_empty(&psta->asoc_list)) {
- 			rtw_list_delete(&psta->asoc_list);
- 			pstapriv->asoc_list_cnt--;
- 			updated = ap_free_sta(padapter, psta, true, WLAN_REASON_DEAUTH_LEAVING);
+@@ -4801,7 +4801,7 @@ static int set_group_key(struct adapter *padapter, u8 *key, u8 alg, int keyid)
+ 	pcmd->rsp = NULL;
+ 	pcmd->rspsz = 0;
+ 
+-	_rtw_init_listhead(&pcmd->list);
++	INIT_LIST_HEAD(&pcmd->list);
+ 
+ 	res = rtw_enqueue_cmd(pcmdpriv, pcmd);
+ 
 diff --git a/drivers/staging/rtl8188eu/os_dep/osdep_service.c b/drivers/staging/rtl8188eu/os_dep/osdep_service.c
-index da283f8..ba5531f 100644
+index ba5531f..1ef9c49 100644
 --- a/drivers/staging/rtl8188eu/os_dep/osdep_service.c
 +++ b/drivers/staging/rtl8188eu/os_dep/osdep_service.c
-@@ -94,23 +94,6 @@ void _rtw_init_listhead(struct list_head *list)
- 	INIT_LIST_HEAD(list);
+@@ -89,11 +89,6 @@ void *rtw_malloc2d(int h, int w, int size)
+ 	return a;
  }
  
--/*
--For the following list_xxx operations,
--caller must guarantee the atomic context.
--Otherwise, there will be racing condition.
--*/
--u32	rtw_is_list_empty(struct list_head *phead)
+-void _rtw_init_listhead(struct list_head *list)
 -{
--	if (list_empty(phead))
--		return true;
--	else
--		return false;
+-	INIT_LIST_HEAD(list);
 -}
--
--/*
--Caller must check if the list is empty before calling rtw_list_delete
--*/
 -
  u32 _rtw_down_sema(struct semaphore *sema)
  {
  	if (down_interruptible(sema))
-@@ -127,7 +110,7 @@ void	_rtw_init_queue(struct __queue *pqueue)
+@@ -104,7 +99,7 @@ u32 _rtw_down_sema(struct semaphore *sema)
  
- u32	  _rtw_queue_empty(struct __queue *pqueue)
+ void	_rtw_init_queue(struct __queue *pqueue)
  {
--	return rtw_is_list_empty(&(pqueue->queue));
-+	return list_empty(&(pqueue->queue));
+-	_rtw_init_listhead(&(pqueue->queue));
++	INIT_LIST_HEAD(&(pqueue->queue));
+ 	spin_lock_init(&(pqueue->lock));
  }
  
- inline u32 rtw_systime_to_ms(u32 systime)
+diff --git a/drivers/staging/rtl8188eu/os_dep/usb_ops_linux.c b/drivers/staging/rtl8188eu/os_dep/usb_ops_linux.c
+index db8aab3..8015c3a 100644
+--- a/drivers/staging/rtl8188eu/os_dep/usb_ops_linux.c
++++ b/drivers/staging/rtl8188eu/os_dep/usb_ops_linux.c
+@@ -76,7 +76,7 @@ static int recvbuf2recvframe(struct adapter *adapt, struct sk_buff *pskb)
+ 			goto _exit_recvbuf2recvframe;
+ 		}
+ 
+-		_rtw_init_listhead(&precvframe->list);
++		INIT_LIST_HEAD(&precvframe->list);
+ 		precvframe->len = 0;
+ 
+ 		update_recvframe_attrib_88e(precvframe, prxstat);
 -- 
 1.7.10.4
 
