@@ -1,116 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181AbaFVBEi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 21:04:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54664 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751400AbaFVBEh (ORCPT
+	id S1752218AbaFVBGS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 21:06:18 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:55700 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751273AbaFVBGQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 21:04:37 -0400
-Message-ID: <1403399065.23472.77.camel@deadeye.wl.decadent.org.uk>
-Subject: Latency histogram broken after "hrtimer: Set expiry time before
- switch_hrtimer_base()"
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Carsten Emde <C.Emde@osadl.org>, Thomas Gleixner <tglx@linutronix.de>
-Cc: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Sun, 22 Jun 2014 02:04:25 +0100
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-DgxBcqBuZ0TkEdYciRyx"
-X-Mailer: Evolution 3.12.2-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sat, 21 Jun 2014 21:06:16 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AugGAIcrplN5LC2v/2dsb2JhbABZgw2DSFGnNAEBAQEBAQaZKgGBBBd1hAMBAQUjDwEjIxAIAQIYAgIFIQICDwUlAyETiEGNK5wlnXUXFoEUhDiDYIU0B4J3gUwEmkOTW4NUKw
+Date: Sun, 22 Jun 2014 11:06:00 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Daniel Phillips <daniel@phunq.net>,
+        =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>,
+        Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC] Tux3 for review
+Message-ID: <20140622010600.GX9508@dastard>
+References: <20140520031802.GF18954@dastard>
+ <20140613103216.GA4589@amd.pavel.ucw.cz>
+ <02d3b094-808c-4b17-903d-1280d451704b@phunq.net>
+ <20140613202039.GA23872@amd.pavel.ucw.cz>
+ <b67e55e1-af54-4f34-802c-95749771aca4@phunq.net>
+ <1402932354.2197.61.camel@dabdike.int.hansenpartnership.com>
+ <20140619082129.GA4309@xo-6d-61-c0.localdomain>
+ <alpine.LFD.2.00.1406191117240.2182@localhost.localdomain>
+ <ad0baf8f-091f-45d0-8d9f-f72d78d0d1ff@phunq.net>
+ <1403378941.2177.24.camel@dabdike.int.hansenpartnership.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1403378941.2177.24.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Jun 21, 2014 at 12:29:01PM -0700, James Bottomley wrote:
+> On Thu, 2014-06-19 at 14:58 -0700, Daniel Phillips wrote:
+> > On Thursday, June 19, 2014 2:26:48 AM PDT, Lukáš Czerner wrote:
+> > > Let me remind you some more important problems Dave brought up,
+> > > including page forking:
+> > >
+> > > "
+> > >  The hacks around VFS and MM functionality need to have demonstrated
+> > >  methods for being removed.
+> > 
+> > We already removed 450 lines of core kernel workarounds from Tux3 with an 
+> > approach that was literally cut and pasted from one of Dave's emails. Then 
+> > Dave changed his mind. Now the Tux3 team has been assigned a research 
+> > project to improve core kernel writeback instead of simply adapting the 
+> > approach that is already proven to work well enough. That is a rather 
+> > blatant example of "perfect is the enemy of good enough". Please read the 
+> > thread.
+> 
+> That's a bit disingenuous: the concern has always been how page forking
+> interacted with writeback.  It's not new, it was one of the major things
+> brought up at LSF 14 months ago, so you weren't just assigned this.
 
---=-DgxBcqBuZ0TkEdYciRyx
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+BTW, it's worth noting that reviewers are *allowed* to change their
+mind at any time during a discussion or during review cycles.
+Indeed, this occurs quite commonly. It's no different to multiple
+reviewers disagreeing on what the best way to make the improvement
+is - sometimes it takes an implementation to solidify opinion on the
+best approach to solving a problem.
 
-In an rt-kernel with CONFIG_MISSED_TIMER_OFFSETS_HIST enabled,
-__hrtimer_start_range_ns() now crashes, as new_base is not assigned
-before it is used.
+i.e. it took an implementation of the writeback hook tailored
+specifically to tux3's requirements to understand the best way to
+solve the infrastructure problem for *everyone*. This is how review
+is supposed to work - take an idea, and refine it into something
+better that works for everyone.
 
-I'm not sure how this should be fixed; is it:
+We'd have been stuck way up the creek without a paddle a long time
+ago if reviewers weren't allowed to change their minds....
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1108,7 +1108,7 @@ int __hrtimer_start_range_ns(struct hrti
-=20
- #ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
- 	{
--		ktime_t now =3D new_base->get_time();
-+		ktime_t now =3D base->get_time();
-=20
- 		if (ktime_to_ns(tim) < ktime_to_ns(now))
- 			timer->praecox =3D now;
---- END ---
+Cheers,
 
-or:
-
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1106,6 +1106,11 @@ int __hrtimer_start_range_ns(struct hrti
- #endif
- 	}
-=20
-+	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
-+
-+	/* Switch the timer base, if necessary: */
-+	new_base =3D switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED)=
-;
-+
- #ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
- 	{
- 		ktime_t now =3D new_base->get_time();
-@@ -1117,11 +1122,6 @@ int __hrtimer_start_range_ns(struct hrti
- 	}
- #endif
-=20
--	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
--
--	/* Switch the timer base, if necessary: */
--	new_base =3D switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED)=
-;
--
- 	timer_stats_hrtimer_set_start_info(timer);
-=20
- 	leftmost =3D enqueue_hrtimer(timer, new_base);
---- END ---
-
-or something else?
-
-Ben.
-
---=20
-Ben Hutchings
-73.46% of all statistics are made up.
-
---=-DgxBcqBuZ0TkEdYciRyx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUAU6Yrnee/yOyVhhEJAQqhKxAA0fqRU9I+r5DHVYXa/1f9y6sg6ecVNx72
-w1JVg/MPUpA+VCIXEJtuHASQEVr82xW/6LGcbvAgjj1HhB/kpQMGS+554USkLHJb
-jGqCGQbfZhqIr+Fq5BOxWEkoWWMQaJTHl+YKeMQwvSUcbKxLTczPZI1itxQ0mIQV
-qv32ldo7/fs/VxFubBeaOXzz+IuMmjuzmAIp0dQ9ngI3JSxY4pQbLEczao41DdaU
-uuzVfLZFShgDjGWJnsVJyLR77OG8oWUZthNDKAmsobp4mpggiuG1P2+J55nLaQYN
-N/p1FNZ+C9uGRMQF0pgu5caoJdDi5iniNyVQfWwx7tOtupvSSs7/dHaOpzHCi8SH
-x8z2JGLY1Igyh91x/WmdMH8zlr9JEPVee8YL+eRc3Q4lHCBfmFynfGSHavReZxFM
-5R3XxpxuV1Ga+Zc5umE0JRMy+ewSmjDMYbguprZzpQbIOPw1EKvUaGo0i2aau5DA
-PXe1pP0aaDdT7BJ0VFIu3dch+6zqZArsZsolNG6mF0jUlDIhAKy26rz6OYoW9swY
-Gw/PytHPNAd9ojOLpwAioxm8rR/7p2+n9ZkE0l80+PaoW5nOR3/qCn0qQrQFrN6T
-o07IA3aXkxGYRda7dJDyo2m8BT8yK6weRJPzXwm6ZZDM6sOzUD7Ela11lzQSrPvt
-5nWOgV2LVzc=
-=EPgs
------END PGP SIGNATURE-----
-
---=-DgxBcqBuZ0TkEdYciRyx--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
