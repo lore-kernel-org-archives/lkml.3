@@ -1,177 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751240AbaFVHS0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 03:18:26 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:65340 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145AbaFVHSY (ORCPT
+	id S1751251AbaFVHaS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 03:30:18 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:40483 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027AbaFVHaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 03:18:24 -0400
-Date: Sun, 22 Jun 2014 12:47:51 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] usb: gadget: pxa25x_udc: use devm_ functions
-Message-ID: <20140622071751.GA5904@himangi-Dell>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 22 Jun 2014 03:30:17 -0400
+From: James A Shackleford <shack@linux.com>
+To: gregkh@linuxfoundation.org, alan@linux.intel.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: James A Shackleford <shack@linux.com>
+Subject: [PATCH] staging: goldfish: fix direct copy_to_user() from __iomem
+Date: Sun, 22 Jun 2014 03:29:38 -0400
+Message-Id: <1403422178-20833-1-git-send-email-shack@linux.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the use of devm_request_irq, devm_gpio_request,
-devm_clk_get etc. instead of the corresponding unmanaged interfaces. The
-calls to the functions like free_irq to free the allocated resources are
-removed as they are no longer required. Some labels in the probe function
-are also done away with and the name of the label err_gpio_pullup is
-changed to make it less specific to the context.
+This patch allocates a few pages and performs an ioread8_rep() from the bus
+address, which are then copied to userspace.  This fixes the sparse warning:
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+drivers/staging/goldfish/goldfish_audio.c:136:43: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/goldfish/goldfish_audio.c:136:43:    expected void const *from
+drivers/staging/goldfish/goldfish_audio.c:136:43:    got char [noderef] <asn:2>*read_buffer
+
+which was a result of performing a copy_to_user() directly from the bus address
+to the userspace, which can be unsafe across some architectures.
+
+Signed-off-by: James A Shackleford <shack@linux.com>
 ---
- drivers/usb/gadget/pxa25x_udc.c | 73 +++++++++++++----------------------------
- 1 file changed, 22 insertions(+), 51 deletions(-)
+ drivers/staging/goldfish/goldfish_audio.c |   19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/gadget/pxa25x_udc.c b/drivers/usb/gadget/pxa25x_udc.c
-index 9984437..f1a5cdc 100644
---- a/drivers/usb/gadget/pxa25x_udc.c
-+++ b/drivers/usb/gadget/pxa25x_udc.c
-@@ -2105,11 +2105,9 @@ static int pxa25x_udc_probe(struct platform_device *pdev)
- 	if (irq < 0)
+diff --git a/drivers/staging/goldfish/goldfish_audio.c b/drivers/staging/goldfish/goldfish_audio.c
+index a166424..535ed20 100644
+--- a/drivers/staging/goldfish/goldfish_audio.c
++++ b/drivers/staging/goldfish/goldfish_audio.c
+@@ -118,10 +118,17 @@ static ssize_t goldfish_audio_read(struct file *fp, char __user *buf,
+ 	struct goldfish_audio *data = fp->private_data;
+ 	int length;
+ 	int result = 0;
++	unsigned int order;
++	void *read_buffer;
+ 
+ 	if (!data->read_supported)
  		return -ENODEV;
  
--	dev->clk = clk_get(&pdev->dev, NULL);
--	if (IS_ERR(dev->clk)) {
--		retval = PTR_ERR(dev->clk);
--		goto err_clk;
--	}
-+	dev->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(dev->clk))
-+		return PTR_ERR(dev->clk);
++	order = get_order(READ_BUFFER_SIZE);
++	read_buffer = (void *)__get_free_pages(GFP_KERNEL, order);
++	if (!read_buffer)
++		return -ENOMEM;
++
+ 	while (count > 0) {
+ 		length = (count > READ_BUFFER_SIZE ? READ_BUFFER_SIZE : count);
+ 		AUDIO_WRITE(data, AUDIO_START_READ, length);
+@@ -129,17 +136,21 @@ static ssize_t goldfish_audio_read(struct file *fp, char __user *buf,
+ 		wait_event_interruptible(data->wait,
+ 			(data->buffer_status & AUDIO_INT_READ_BUFFER_FULL));
  
- 	pr_debug("%s: IRQ %d%s%s\n", driver_name, irq,
- 		dev->has_cfr ? "" : " (!cfr)",
-@@ -2120,15 +2118,16 @@ static int pxa25x_udc_probe(struct platform_device *pdev)
- 	dev->dev = &pdev->dev;
- 	dev->mach = dev_get_platdata(&pdev->dev);
+-		length = AUDIO_READ(data,
+-						AUDIO_READ_BUFFER_AVAILABLE);
++		length = AUDIO_READ(data, AUDIO_READ_BUFFER_AVAILABLE);
  
--	dev->transceiver = usb_get_phy(USB_PHY_TYPE_USB2);
-+	dev->transceiver = devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
+ 		/* copy data to user space */
+-		if (copy_to_user(buf, data->read_buffer, length))
+-			return -EFAULT;
++		ioread8_rep(data->read_buffer, read_buffer, length);
++		if (copy_to_user(buf, read_buffer, length)) {
++			result = -EFAULT;
++			goto error;
++		}
  
- 	if (gpio_is_valid(dev->mach->gpio_pullup)) {
--		if ((retval = gpio_request(dev->mach->gpio_pullup,
--				"pca25x_udc GPIO PULLUP"))) {
-+		retval = devm_gpio_request(&pdev->dev, dev->mach->gpio_pullup,
-+					   "pca25x_udc GPIO PULLUP");
-+		if (retval) {
- 			dev_dbg(&pdev->dev,
- 				"can't get pullup gpio %d, err: %d\n",
- 				dev->mach->gpio_pullup, retval);
--			goto err_gpio_pullup;
-+			goto err;
- 		}
- 		gpio_direction_output(dev->mach->gpio_pullup, 0);
+ 		result += length;
+ 		buf += length;
+ 		count -= length;
  	}
-@@ -2146,30 +2145,32 @@ static int pxa25x_udc_probe(struct platform_device *pdev)
- 	dev->vbus = 0;
- 
- 	/* irq setup after old hardware state is cleaned up */
--	retval = request_irq(irq, pxa25x_udc_irq,
--			0, driver_name, dev);
-+	retval = devm_request_irq(&pdev->dev, irq, pxa25x_udc_irq, 0,
-+				  driver_name, dev);
- 	if (retval != 0) {
- 		pr_err("%s: can't get irq %d, err %d\n",
- 			driver_name, irq, retval);
--		goto err_irq1;
-+		goto err;
- 	}
- 	dev->got_irq = 1;
- 
- #ifdef CONFIG_ARCH_LUBBOCK
- 	if (machine_is_lubbock()) {
--		retval = request_irq(LUBBOCK_USB_DISC_IRQ, lubbock_vbus_irq,
--				     0, driver_name, dev);
-+		retval = devm_request_irq(&pdev->dev, LUBBOCK_USB_DISC_IRQ,
-+					  lubbock_vbus_irq, 0, driver_name,
-+					  dev);
- 		if (retval != 0) {
- 			pr_err("%s: can't get irq %i, err %d\n",
- 				driver_name, LUBBOCK_USB_DISC_IRQ, retval);
--			goto err_irq_lub;
-+			goto err;
- 		}
--		retval = request_irq(LUBBOCK_USB_IRQ, lubbock_vbus_irq,
--				     0, driver_name, dev);
-+		retval = devm_request_irq(&pdev->dev, LUBBOCK_USB_IRQ,
-+					  lubbock_vbus_irq, 0, driver_name,
-+					  dev);
- 		if (retval != 0) {
- 			pr_err("%s: can't get irq %i, err %d\n",
- 				driver_name, LUBBOCK_USB_IRQ, retval);
--			goto lubbock_fail0;
-+			goto err;
- 		}
- 	} else
- #endif
-@@ -2180,22 +2181,9 @@ static int pxa25x_udc_probe(struct platform_device *pdev)
- 		return retval;
- 
- 	remove_debug_files(dev);
--#ifdef	CONFIG_ARCH_LUBBOCK
--lubbock_fail0:
--	free_irq(LUBBOCK_USB_DISC_IRQ, dev);
-- err_irq_lub:
--	free_irq(irq, dev);
--#endif
-- err_irq1:
--	if (gpio_is_valid(dev->mach->gpio_pullup))
--		gpio_free(dev->mach->gpio_pullup);
-- err_gpio_pullup:
--	if (!IS_ERR_OR_NULL(dev->transceiver)) {
--		usb_put_phy(dev->transceiver);
-+ err:
-+	if (!IS_ERR_OR_NULL(dev->transceiver))
- 		dev->transceiver = NULL;
--	}
--	clk_put(dev->clk);
-- err_clk:
- 	return retval;
++error:
++	__free_pages(read_buffer, order);
+ 	return result;
  }
  
-@@ -2217,25 +2205,8 @@ static int pxa25x_udc_remove(struct platform_device *pdev)
- 
- 	remove_debug_files(dev);
- 
--	if (dev->got_irq) {
--		free_irq(platform_get_irq(pdev, 0), dev);
--		dev->got_irq = 0;
--	}
--#ifdef CONFIG_ARCH_LUBBOCK
--	if (machine_is_lubbock()) {
--		free_irq(LUBBOCK_USB_DISC_IRQ, dev);
--		free_irq(LUBBOCK_USB_IRQ, dev);
--	}
--#endif
--	if (gpio_is_valid(dev->mach->gpio_pullup))
--		gpio_free(dev->mach->gpio_pullup);
--
--	clk_put(dev->clk);
--
--	if (!IS_ERR_OR_NULL(dev->transceiver)) {
--		usb_put_phy(dev->transceiver);
-+	if (!IS_ERR_OR_NULL(dev->transceiver))
- 		dev->transceiver = NULL;
--	}
- 
- 	the_controller = NULL;
- 	return 0;
 -- 
-1.9.1
+1.7.9.5
 
