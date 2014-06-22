@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207AbaFVNGe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 09:06:34 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:58004 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751883AbaFVNGc (ORCPT
+	id S1752158AbaFVNPT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 09:15:19 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:38296 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751659AbaFVNPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 09:06:32 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Kevin Hilman <khilman@linaro.org>, Allen Yu <alleny@nvidia.com>,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] PM / Runtime: let rpm_resume fail if rpm disabled and device suspended.
-Date: Sun, 22 Jun 2014 15:24:13 +0200
-Message-ID: <14478118.lYVMpnPKI2@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.44L0.1406201043420.1160-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1406201043420.1160-100000@iolanthe.rowland.org>
+	Sun, 22 Jun 2014 09:15:14 -0400
+Date: Sun, 22 Jun 2014 14:14:52 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: LABBE Corentin <clabbe.montjoie@gmail.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, maxime.ripard@free-electrons.com,
+        herbert@gondor.apana.org.au, davem@davemloft.net,
+        grant.likely@linaro.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCH v3 1/4] crypto: Add Allwinner Security System crypto
+	accelerator
+Message-ID: <20140622131452.GF32514@n2100.arm.linux.org.uk>
+References: <1402404197-4236-1-git-send-email-clabbe.montjoie@gmail.com> <1402404197-4236-2-git-send-email-clabbe.montjoie@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402404197-4236-2-git-send-email-clabbe.montjoie@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 20, 2014 10:48:09 AM Alan Stern wrote:
-> On Fri, 20 Jun 2014, Rafael J. Wysocki wrote:
-> 
-> > > For a general device, the fact that dev->power.is_suspended is set
-> > > means the device _has_ been powered down.  Even though the
-> > > runtime_status may not have changed, the PM core has to assume the
-> > > device is not available for use.
-> > 
-> > This seems to go a bit too far.  What power.is_suspended actually means is
-> > that __device_suspend() has run for the device successfully.  What the
-> > implications of that are depends on the bus type (or subsystem in general)
-> > and device driver.
-> > 
-> > > While your I2C devices may be useable even after the ->suspend callback
-> > > returns, for most devices this isn't true.  So we shouldn't allow
-> > > rpm_resume() to return imediately when is_suspended is set.
-> > 
-> > I can agree with that.
-> 
-> We really do need to decide more precisely how runtime PM and system PM 
-> will interact.  Should ->runtime_resume callbacks be allowed after 
-> ->suspend has returned?
-> 
-> Kevin has stated that some devices do need this ability.  But most
-> don't.  The PM core needs to handle these conflicting requirements
-> somehow.
+On Tue, Jun 10, 2014 at 02:43:14PM +0200, LABBE Corentin wrote:
+> +int sunxi_aes_poll(struct ablkcipher_request *areq)
+> +{
+...
+> +	if (areq->src == NULL || areq->dst == NULL) {
+> +		dev_err(ss->dev, "ERROR: Some SGs are NULL %u\n", areq->nbytes);
+> +		return -1;
 
-I agree.
+You return -1 from here quite frequently.  Have you verified that there
+is no way for this return value to get to userspace?
 
-I guess we'll have to introduce a separate opt-in flag for drivers with this
-specific need.  At least I don't see any other way to take that into account.
+Even if it can't get to userspace now, what if someone modifies the code
+so it can be returned?
 
-> Note: this is a separate issue from the meaning of disabled_depth > 0.
+I detest crap that's written with "return -1" in it because it looks like
+there is no care with the established error handling semantics for the
+kernel (small negative numbers are errno codes.)
 
-Yes, it is.
-
-Rafael
-
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
