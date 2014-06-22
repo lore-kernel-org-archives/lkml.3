@@ -1,71 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751267AbaFVHiO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 03:38:14 -0400
-Received: from s3.sipsolutions.net ([5.9.151.49]:41612 "EHLO sipsolutions.net"
+	id S1751309AbaFVIAk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 04:00:40 -0400
+Received: from mga02.intel.com ([134.134.136.20]:18721 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751027AbaFVHiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 03:38:13 -0400
-Message-ID: <1403422685.4418.4.camel@jlt4.sipsolutions.net>
-Subject: Re: [RFC][PATCH 1/3] trace_seq: Move the trace_seq code to lib/
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Anderson <anderson@redhat.com>, Petr Mladek <pmladek@suse.cz>
-Date: Sun, 22 Jun 2014 09:38:05 +0200
-In-Reply-To: <20140620125823.5acb12dd@gandalf.local.home>
-References: <20140619213329.478113470@goodmis.org>
-	 <20140619213952.058255809@goodmis.org>
-	 <20140619220607.c6da2540.akpm@linux-foundation.org>
-	 <20140620125823.5acb12dd@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1 
-Mime-Version: 1.0
+	id S1751199AbaFVIAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jun 2014 04:00:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,523,1400050800"; 
+   d="scan'208";a="561394190"
+Message-ID: <53A68D1F.5050101@intel.com>
+Date: Sun, 22 Jun 2014 16:00:31 +0800
+From: "Chen, Tiejun" <tiejun.chen@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+CC: "Nikula, Jani" <jani.nikula@linux.intel.com>,
+        Dave Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        xen-devel@lists.xensource.com, qemu-devel@nongnu.org
+Subject: Re: [RFC][PATCH] gpu:drm:i915:intel_detect_pch: back to check devfn
+ instead of check class type
+References: <1403171631-3452-1-git-send-email-tiejun.chen@intel.com>	<53A40198.6020007@intel.com> <CAKMK7uGr=Mn13eRO-AZBM7aEBrNEp7Zn+5mQyEbuoq9XeqT-pQ@mail.gmail.com>
+In-Reply-To: <CAKMK7uGr=Mn13eRO-AZBM7aEBrNEp7Zn+5mQyEbuoq9XeqT-pQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-06-20 at 12:58 -0400, Steven Rostedt wrote:
+On 2014/6/20 20:32, Daniel Vetter wrote:
+> Well I have no clue about forwarding the intel gpu to virtualized
+> hosts and also no idea who could review this really. There's been a
+> bit a discussion around the iommu mapping forwarding and similar
 
-> > > +#define HEX_CHARS		(MAX_MEMHEX_BYTES*2 + 1)
-> > > +
-> > > +int trace_seq_putmem_hex(struct trace_seq *s, const void *mem, size_t len)
-> > > +{
-> > > +	unsigned char hex[HEX_CHARS];
-> > > +	const unsigned char *data = mem;
-> > > +	int i, j;
-> > > +
-> > > +	if (s->full)
-> > > +		return 0;
-> > 
-> > What's this ->full thing all about anyway?  Some central comment which
-> > explains the design is needed.
-> 
-> Comment? What? Git blame isn't good enough for ya? ;-)
-> 
-> > 
-> > Is this test really needed?  trace_seq_putmem() will handle this.
-> 
-> It was added as an optimization, because once it filled up, you could
-> still have multiple calls to the trace_seq() functions that would waste
-> time trying to write the buffer.
-> 
-> It seemed like a good idea at the time. I Cc'd Johannes Berg as he's
-> the one that implemented.
-> 
-> Johannes, is this really needed, should we bother keeping it?
+No, this doesn't affect IOMMU mapping.
 
-Honestly, I don't remember, sorry.
+> topics though. So I really wonder how well our driver works in this
+> use case ...
 
-Looking at the code though, I'm not sure it's a pure optimisation - if
-you do say putc() after a failed puts(), without this code the putc()
-would succeed? I can't tell right now if that's really a problem, but it
-seems you could get some odd behaviour out of it.
+In native case the truth is intel_detect_pch() needs to probe the 
+00:15.0 to determine what type current pch is, then the i915 driver can 
+be initialized correctly. Actually the 00:15.0 is just a ISA bridge.
 
-johannes
+In virtualized case we thought this ISA bridge mayn't be represented 
+with 00:15.0 originally by qemu-xen-traditional. So instead of checking 
+devfn, the i915 driver check the class type to get this ISA bridge.
 
+But with my investigation,qemu-xen-traditional always set 00:15.0 
+explicitly to represent this ISA bridge. And especially, we wouldn't 
+provide that ISA bridge with an explicit class type in qemu-upstream, so 
+we need to the i915 driver to probe pch by checking devfn.
+
+This should work both on the native case and the virtualized case.
+
+Thanks
+Tiejun
+
+> -Daniel
+>
+> On Fri, Jun 20, 2014 at 11:40 AM, Chen, Tiejun <tiejun.chen@intel.com> wrote:
+>> Just ping, any comments?
+>>
+>> Thanks
+>> Tiejun
+>>
+>>
+>> On 2014/6/19 17:53, Tiejun Chen wrote:
+>>>
+>>> Originally the reason to probe ISA bridge instead of Dev31:Fun0
+>>> is to make graphics device passthrough work easy for VMM, that
+>>> only need to expose ISA bridge to let driver know the real
+>>> hardware underneath. This is a requirement from virtualization
+>>> team. Especially in that virtualized environments, XEN, there
+>>> is irrelevant ISA bridge in the system with that legacy qemu
+>>> version specific to xen, qemu-xen-traditional. So to work
+>>> reliably, we should scan through all the ISA bridge devices
+>>> and check for the first match, instead of only checking the
+>>> first one.
+>>>
+>>> But actually, qemu-xen-traditional, is always enumerated with
+>>> Dev31:Fun0, 00:1f.0 as follows:
+>>>
+>>> hw/pt-graphics.c:
+>>>
+>>> intel_pch_init()
+>>>       |
+>>>       + pci_isa_bridge_init(bus, PCI_DEVFN(0x1f, 0), ...);
+>>>
+>>> so this mean that isa bridge is still represented with Dev31:Func0
+>>> like the native OS. Furthermore, currently we're pushing VGA
+>>> passthrough support into qemu upstream, and with some discussion,
+>>> we wouldn't set the bridge class type and just expose this devfn.
+>>>
+>>> So we just go back to check devfn to make life normal.
+>>>
+>>> Signed-off-by: Tiejun Chen <tiejun.chen@intel.com>
+>>> ---
+>>>    drivers/gpu/drm/i915/i915_drv.c | 19 +++----------------
+>>>    1 file changed, 3 insertions(+), 16 deletions(-)
+>>>
+>>> diff --git a/drivers/gpu/drm/i915/i915_drv.c
+>>> b/drivers/gpu/drm/i915/i915_drv.c
+>>> index 651e65e..cb2526e 100644
+>>> --- a/drivers/gpu/drm/i915/i915_drv.c
+>>> +++ b/drivers/gpu/drm/i915/i915_drv.c
+>>> @@ -417,18 +417,8 @@ void intel_detect_pch(struct drm_device *dev)
+>>>                  return;
+>>>          }
+>>>
+>>> -       /*
+>>> -        * The reason to probe ISA bridge instead of Dev31:Fun0 is to
+>>> -        * make graphics device passthrough work easy for VMM, that only
+>>> -        * need to expose ISA bridge to let driver know the real hardware
+>>> -        * underneath. This is a requirement from virtualization team.
+>>> -        *
+>>> -        * In some virtualized environments (e.g. XEN), there is
+>>> irrelevant
+>>> -        * ISA bridge in the system. To work reliably, we should scan
+>>> trhough
+>>> -        * all the ISA bridge devices and check for the first match,
+>>> instead
+>>> -        * of only checking the first one.
+>>> -        */
+>>> -       while ((pch = pci_get_class(PCI_CLASS_BRIDGE_ISA << 8, pch))) {
+>>> +       pch = pci_get_bus_and_slot(0, PCI_DEVFN(0x1f, 0));
+>>> +       if (pch) {
+>>>                  if (pch->vendor == PCI_VENDOR_ID_INTEL) {
+>>>                          unsigned short id = pch->device &
+>>> INTEL_PCH_DEVICE_ID_MASK;
+>>>                          dev_priv->pch_id = id;
+>>> @@ -462,10 +452,7 @@ void intel_detect_pch(struct drm_device *dev)
+>>>                                  DRM_DEBUG_KMS("Found LynxPoint LP PCH\n");
+>>>                                  WARN_ON(!IS_HASWELL(dev));
+>>>                                  WARN_ON(!IS_ULT(dev));
+>>> -                       } else
+>>> -                               continue;
+>>> -
+>>> -                       break;
+>>> +                       }
+>>>                  }
+>>>          }
+>>>          if (!pch)
+>>>
+>>
+>
+>
+>
