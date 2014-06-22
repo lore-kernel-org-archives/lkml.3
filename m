@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751511AbaFVJTg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 05:19:36 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:50151 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938AbaFVJTe (ORCPT
+	id S1751670AbaFVJUx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 05:20:53 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38125 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751554AbaFVJUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 05:19:34 -0400
-Date: Sun, 22 Jun 2014 12:19:27 +0300
-From: Gleb Natapov <gleb@kernel.org>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, pbonzini@redhat.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, mgorman@suse.de,
-        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, laijs@cn.fujitsu.com, kvm@vger.kernel.org,
-        linux-mm@kvack.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        Avi Kivity <avi.kivity@gmail.com>
-Subject: Re: [RFC PATCH 1/1] Move two pinned pages to non-movable node in kvm.
-Message-ID: <20140622091927.GA18167@minantech.com>
-References: <1403070600-6083-1-git-send-email-tangchen@cn.fujitsu.com>
- <20140618061230.GA10948@minantech.com>
- <53A136C4.5070206@cn.fujitsu.com>
- <20140619092031.GA429@minantech.com>
- <20140619190024.GA3887@amt.cnet>
- <20140620111509.GE20764@minantech.com>
- <20140620125326.GA22283@amt.cnet>
- <20140620142622.GA28698@minantech.com>
- <20140620203146.GA6580@amt.cnet>
+	Sun, 22 Jun 2014 05:20:51 -0400
+Date: Sun, 22 Jun 2014 11:20:48 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ingo Molnar <mingo@kernel.org>
+cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch V4 00/10] rtmutex: Code clarification and optimization
+In-Reply-To: <20140622084507.GB13974@gmail.com>
+Message-ID: <alpine.DEB.2.10.1406221118570.5170@nanos>
+References: <20140611182944.108526809@linutronix.de> <20140622084507.GB13974@gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140620203146.GA6580@amt.cnet>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 20, 2014 at 05:31:46PM -0300, Marcelo Tosatti wrote:
-> > > Same with the APIC access page.
-> > APIC page is always mapped into guest's APIC base address 0xfee00000.
-> > The way it works is that when vCPU accesses page at 0xfee00000 the access
-> > is translated to APIC access page physical address. CPU sees that access
-> > is for APIC page and generates APIC access exit instead of memory access.
-> > If address 0xfee00000 is not mapped by EPT then EPT violation exit will
-> > be generated instead, EPT mapping will be instantiated, access retired
-> > by a guest and this time will generate APIC access exit.
+On Sun, 22 Jun 2014, Ingo Molnar wrote:
+> * Thomas Gleixner <tglx@linutronix.de> wrote:
 > 
-> Right, confused with the other APIC page which the CPU writes (the vAPIC page) 
-> to.
+> > Hopefully the last iteration of this.
+> > 
+> > I addressed all the review comments and added the following new ones:
+> > 
+> > 1/n: plug unlock race.
+> >    
+> > 	Patch was separately posted already in the safety of
+> >    	*mutex_unlock() thread.
+> > 
+> > 2/n: Document and simplify the trylock path
+> > 
+> > 3/n: Document and simplify try_to_take_rtmutex()
 > 
-That one is allocated with kmalloc.
+> JFYI, the Blackfin cross-build fails with:
+> 
+> /home/mingo/tip/kernel/locking/rtmutex.c: In function 'rt_mutex_adjust_prio_chain':
+> /home/mingo/tip/kernel/locking/rtmutex.c:739: error: unable to find a register to spill in class 'CCREGS'
+> /home/mingo/tip/kernel/locking/rtmutex.c:739: error: this is the insn:
+> (insn 82 75 107 2 /home/mingo/tip/kernel/locking/rtmutex.c:487 (set 
+> (reg:BI 186)
+>         (eq:BI (reg/v/f:SI 9 P1 [orig:85 top_waiter ] [85])
+>             (const_int 0 [0x0]))) 111 {compare_eq} (nil))
+> /home/mingo/tip/kernel/locking/rtmutex.c:739: confused by earlier errors, bailing out
 
---
-			Gleb.
+https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.6.3/x86_64-gcc-4.6.3-nolibc_bfin-uclinux.tar.xz
+
+compiles that file nicely.
+
+Thanks,
+
+	tglx
