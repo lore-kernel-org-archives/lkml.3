@@ -1,86 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218AbaFVBGS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 21:06:18 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:55700 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751273AbaFVBGQ (ORCPT
+	id S1751920AbaFVBOI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 21:14:08 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:53431 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422AbaFVBOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 21:06:16 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AugGAIcrplN5LC2v/2dsb2JhbABZgw2DSFGnNAEBAQEBAQaZKgGBBBd1hAMBAQUjDwEjIxAIAQIYAgIFIQICDwUlAyETiEGNK5wlnXUXFoEUhDiDYIU0B4J3gUwEmkOTW4NUKw
-Date: Sun, 22 Jun 2014 11:06:00 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Daniel Phillips <daniel@phunq.net>,
-        =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>,
-        Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC] Tux3 for review
-Message-ID: <20140622010600.GX9508@dastard>
-References: <20140520031802.GF18954@dastard>
- <20140613103216.GA4589@amd.pavel.ucw.cz>
- <02d3b094-808c-4b17-903d-1280d451704b@phunq.net>
- <20140613202039.GA23872@amd.pavel.ucw.cz>
- <b67e55e1-af54-4f34-802c-95749771aca4@phunq.net>
- <1402932354.2197.61.camel@dabdike.int.hansenpartnership.com>
- <20140619082129.GA4309@xo-6d-61-c0.localdomain>
- <alpine.LFD.2.00.1406191117240.2182@localhost.localdomain>
- <ad0baf8f-091f-45d0-8d9f-f72d78d0d1ff@phunq.net>
- <1403378941.2177.24.camel@dabdike.int.hansenpartnership.com>
+	Sat, 21 Jun 2014 21:14:06 -0400
+Date: Sat, 21 Jun 2014 21:13:54 -0400
+From: Jeff Layton <jlayton@poochiereds.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: bfields@fieldses.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] please pull file locking bugfixes for v3.16 (pile #2)
+Message-ID: <20140621211354.291ea285@tlielax.poochiereds.net>
+X-Mailer: Claws Mail 3.10.0 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1403378941.2177.24.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/rIw.iHc00tPgsf8WpDwxdtC"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 21, 2014 at 12:29:01PM -0700, James Bottomley wrote:
-> On Thu, 2014-06-19 at 14:58 -0700, Daniel Phillips wrote:
-> > On Thursday, June 19, 2014 2:26:48 AM PDT, Lukáš Czerner wrote:
-> > > Let me remind you some more important problems Dave brought up,
-> > > including page forking:
-> > >
-> > > "
-> > >  The hacks around VFS and MM functionality need to have demonstrated
-> > >  methods for being removed.
-> > 
-> > We already removed 450 lines of core kernel workarounds from Tux3 with an 
-> > approach that was literally cut and pasted from one of Dave's emails. Then 
-> > Dave changed his mind. Now the Tux3 team has been assigned a research 
-> > project to improve core kernel writeback instead of simply adapting the 
-> > approach that is already proven to work well enough. That is a rather 
-> > blatant example of "perfect is the enemy of good enough". Please read the 
-> > thread.
-> 
-> That's a bit disingenuous: the concern has always been how page forking
-> interacted with writeback.  It's not new, it was one of the major things
-> brought up at LSF 14 months ago, so you weren't just assigned this.
+--Sig_/rIw.iHc00tPgsf8WpDwxdtC
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-BTW, it's worth noting that reviewers are *allowed* to change their
-mind at any time during a discussion or during review cycles.
-Indeed, this occurs quite commonly. It's no different to multiple
-reviewers disagreeing on what the best way to make the improvement
-is - sometimes it takes an implementation to solidify opinion on the
-best approach to solving a problem.
+The following changes since commit 64b2d1fbbfda07765dae3f601862796a61b2c451:
 
-i.e. it took an implementation of the writeback hook tailored
-specifically to tux3's requirements to understand the best way to
-solve the infrastructure problem for *everyone*. This is how review
-is supposed to work - take an idea, and refine it into something
-better that works for everyone.
+  Merge tag 'for-f2fs-3.16' of git://git.kernel.org/pub/scm/linux/kernel/gi=
+t/jaegeuk/f2fs (2014-06-09 19:11:44 -0700)
 
-We'd have been stuck way up the creek without a paddle a long time
-ago if reviewers weren't allowed to change their minds....
+are available in the git repository at:
 
-Cheers,
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+  git://git.samba.org/jlayton/linux.git tags/locks-v3.16-2
+
+for you to fetch changes up to 0c27362998a8357f199501aa401e99c51c2eb46e:
+
+  locks: set fl_owner for leases back to current->files (2014-06-10 12:29:0=
+5 -0400)
+
+----------------------------------------------------------------
+(from the branch description for locks-3.16 local branch)
+
+File locking related bugfixes for v3.16 (pile #2)
+
+Nothing too earth-shattering here. A fix for a potential regression
+due to a patch in pile #1, and the addition of a memory barrier to
+prevent a race condition between break_deleg and generic_add_lease.
+
+----------------------------------------------------------------
+Jeff Layton (2):
+      locks: add missing memory barrier in break_deleg
+      locks: set fl_owner for leases back to current->files
+
+ fs/locks.c         | 2 +-
+ include/linux/fs.h | 6 ++++++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+--=20
+Jeff Layton <jlayton@poochiereds.net>
+
+--Sig_/rIw.iHc00tPgsf8WpDwxdtC
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTpi3YAAoJEAAOaEEZVoIVwWQQAKjDxZcS67EYMcsxGmiSOLeW
+JSoPbXH9ULVHnJJ/M8cEVdi80QDJltvJ4p/wOzkmB+OaRlrWEDyJTVSkBYgUiPah
+QsvRvBFMnltU9I0/+74zKewyjUp5ZjPWdP2QO9kO8ft/fC5dR1sSr0ZF9CoSImGl
+UVRT4OeHFMERpcFglhHnmM+2pOU4DO8IRezCnlGBEGimQ2aBz9r8yfi5WdLt5YDU
+Ks+PD6zsGtKa87UoblDARz0XFZnZUiI+6abI/pYD9qif2NrfukjN6mTUiGz5DdMe
+wLUo7CeMbNNYHJHv5ZX8NUzW49gOEF5VmEKZy71anRS8Kh4ndfg/aWMERBl6WAxV
+GczziznQgtAh0vouBUJStkVIJnYR626ZTjSu8msjkeF2VNR+F8dkITdSeppI1dgQ
+TyqFd8MuGzZcAu32J5ZTEy8F0+NlYueFyH+ydunpB1+m6QCs7gJcRmggeLImEdYR
+KLG8/SyYysdAaWqCSq2hkX8AJaeEWKBmJmqYajf/daNRtoSFiapK6Gq9cYakZ6QF
+gdCw+vLdMDSKK/yTCZYTeFJ2elegtocgr1TSVRv3POaik/y0NR/pEOsjE9RR/jfD
+b3NIBh6fB3z+AiiblsXzikgtW/SPrUkzfIqnChevDO1tSecwQBEFo+ayZYsydmAA
+q5H69/e9o2H/fCdu/BTU
+=982K
+-----END PGP SIGNATURE-----
+
+--Sig_/rIw.iHc00tPgsf8WpDwxdtC--
