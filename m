@@ -1,127 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750862AbaFVWAm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 18:00:42 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:40993 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708AbaFVWAl (ORCPT
+	id S1750940AbaFVWrQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 18:47:16 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:54888 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744AbaFVWrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 18:00:41 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
-Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        "Daniel M. Weeks" <dan@danweeks.net>, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3] initramfs: Support initrd that is bigger than 2GiB
-Date: Sun, 22 Jun 2014 15:00:24 -0700
-Message-Id: <1403474424-7555-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4.5
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Sun, 22 Jun 2014 18:47:15 -0400
+From: Mathias Krause <minipli@googlemail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Joe Perches <joe@perches.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jason Baron <jbaron@redhat.com>,
+        Mathias Krause <minipli@googlemail.com>
+Subject: [RFC PATCH 0/3] Mark literal strings in __init / __exit code
+Date: Mon, 23 Jun 2014 00:46:46 +0200
+Message-Id: <1403477209-14612-1-git-send-email-minipli@googlemail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When initrd (compressed or not) is used, kernel report data corrupted
-with /dev/ram0.
+This RFC series tries to address the problem of dangling strings of
+__init functions after initialization, as well as __exit strings for
+code not even included in the final kernel image. The code might get
+freed, but the format strings are not.
 
-The root cause:
-During initramfs checking, if it is initrd, it will be transferred to
-/initrd.image with sys_write.
-sys_write only support 2G-4K write, so if the initrd ram is more than
-that, /initrd.image will not complete at all.
+One solution to the problem might be to declare variables in the code
+and mark those variables as __initconst. That, though, makes the code
+ugly, as can be seen, e.g., in drivers/hwmon/w83627ehf.c -- a pile of
+'static const char[] __initconst' lines just for the pr_info() call.
 
-Add local xwrite to loop calling sys_write to workaround the
-problem.
+To be able to mark strings easily patch 1 adds macros to init.h to do so
+without the need to explicitly define variables in the code. Internally
+it'll declare ones nonetheless, as this seem to be the only way to
+attach an __attribute__() to a verbatim string. That's already enough to
+solve the problem -- mark the corresponding stings by using these
+macros. But patch 2 adds some syntactical sugar for the most popular use
+case, by providing pr_<level> alike macros, namely pi_<level> for __init
+code and pe_<level> for __exit code. This hides the use of the marker
+macros behind the commonly known printing functions -- with just a
+single character changed.
 
-Also need to use xwrite in write_buffer() to handle:
-image is uncompressed cpio and there is one big file (>2G) in it.
-   unpack_to_rootfs ===> write_buffer ===> actions[]/do_copy
+Patch 3 exemplarily changes all strings and format strings in
+arch/x86/kernel/acpi/boot.c to use the new macros. It also addresses a
+few styling issues, though. But this already leads to ~1.7 kB of r/o
+data moved to the .init.rodata section, marking it for release after
+init.
 
-At the same time, we don't need to worry about sys_read/sys_write in
-do_mounts_rd.c::crd_load. As decompressor will have fill/flush and
-local buffer that is smaller than 2G.
 
-Test with uncompressed initrd, and compressed ones with gz, bz2, lzma,xz,
-lzop.
+Open issues with this approach:
 
--v2: according to HPA, change name to xwrite.
--v3: change xwrite to HPA's version. The normal behavior of xwrite(),
-     like fwrite() and write(), is to return the total number of bytes
-     written if any bytes are written at all.
+1/ When CONFIG_DYNAMIC_DEBUG is enabled, pi_debug() and pe_debug()
+fall-back to pr_debug() as there is currently no way of removing the
+dynamic entries from the dynamic debug code after init.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Acked-by: H. Peter Anvin <hpa@zytor.com>
+2/ The variables used in the macros of patch 1 will pollute the symtab
+with unneeded entries. That'll be a problem in the KALLSYMS_ALL case
+only, though. But the symtab will be huge then, anyway. However,
+filtering those even in this case might be desirable.
 
----
- init/initramfs.c |   36 ++++++++++++++++++++++++++++++++----
- 1 file changed, 32 insertions(+), 4 deletions(-)
+3/ It only seamlessly integrates for the pr_<level>() kind of use cases.
+For other literal strings it gets slightly less readable, e.g. this:
 
-Index: linux-2.6/init/initramfs.c
-===================================================================
---- linux-2.6.orig/init/initramfs.c
-+++ linux-2.6/init/initramfs.c
-@@ -19,6 +19,29 @@
- #include <linux/syscalls.h>
- #include <linux/utime.h>
- 
-+static ssize_t __init xwrite(int fd, const char *p, size_t count)
-+{
-+	ssize_t out = 0;
-+
-+	/* sys_write only can write MAX_RW_COUNT aka 2G-4K bytes at most */
-+	while (count) {
-+		ssize_t rv = sys_write(fd, p, count);
-+
-+		if (rv < 0) {
-+			if (rv == -EINTR || rv == -EAGAIN)
-+				continue;
-+			return out ? out : rv;
-+		} else if (rv == 0)
-+			break;
-+
-+		p += rv;
-+		out += rv;
-+		count -= rv;
-+	}
-+
-+	return out;
-+}
-+
- static __initdata char *message;
- static void __init error(char *x)
- {
-@@ -346,7 +369,7 @@ static int __init do_name(void)
- static int __init do_copy(void)
- {
- 	if (count >= body_len) {
--		sys_write(wfd, victim, body_len);
-+		xwrite(wfd, victim, body_len);
- 		sys_close(wfd);
- 		do_utime(vcollected, mtime);
- 		kfree(vcollected);
-@@ -354,7 +377,7 @@ static int __init do_copy(void)
- 		state = SkipIt;
- 		return 0;
- 	} else {
--		sys_write(wfd, victim, count);
-+		xwrite(wfd, victim, count);
- 		body_len -= count;
- 		eat(count);
- 		return 1;
-@@ -603,8 +626,13 @@ static int __init populate_rootfs(void)
- 		fd = sys_open("/initrd.image",
- 			      O_WRONLY|O_CREAT, 0700);
- 		if (fd >= 0) {
--			sys_write(fd, (char *)initrd_start,
--					initrd_end - initrd_start);
-+			long written = xwrite(fd, (char *)initrd_start,
-+						initrd_end - initrd_start);
-+
-+			if (written != initrd_end - initrd_start)
-+				pr_err("/initrd.image: incomplete write (%ld != %ld)\n",
-+				       written, initrd_end - initrd_start);
-+
- 			sys_close(fd);
- 			free_initrd();
- 		}
+   strncmp(str, "s4_nohwsig", 10)
+
+becomes this:
+
+   strncmp(str, __init_str("s4_nohwsig"), 10)
+
+That might be okay, though, as it marks the string clearly as an init
+string, so might actually increase the understanding of the life time of
+the string literal.
+
+
+So, is there interest in having such macros and markings? Patch 3 shows,
+that there's actual value in it. A hacked up script, dully changing
+pr_<level> to pi_<level> for __init functions under arch/x86/ already is
+able to move ~8kB of r/o data into the .init section. The script,
+though, is dump. It does not handle any of the printk() calls, nor does
+it handle panic() calls or other strings used only in initialization
+code. So there's more to squeeze out. I just want to get some feedback
+first.
+
+Also documentation of the new macros is missing, maybe even a
+checkpatch.pl change to propose using the new macros instead of pr_*()
+or plain printk() in __init / __exit functions.
+
+What do you think?
+
+Regards,
+Mathias
+
+Mathias Krause (3):
+  init.h: Add __init_str / __exit_str macros
+  printk: Provide pi_<level> / pe_<level> macros for __init / __exit
+    code
+  x86, acpi: Mark __init strings as such
+
+ arch/x86/kernel/acpi/boot.c |  162 ++++++++++++++++++++-----------------------
+ include/linux/init.h        |   18 +++++
+ include/linux/printk.h      |   52 ++++++++++++++
+ 3 files changed, 144 insertions(+), 88 deletions(-)
+
+-- 
+1.7.10.4
+
