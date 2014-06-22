@@ -1,95 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751377AbaFVIJq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 04:09:46 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:55795 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199AbaFVIJl (ORCPT
+	id S1751366AbaFVIU5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 04:20:57 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:36105 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224AbaFVIUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 04:09:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <53A66000.4010208@gmail.com>
-References: <53A66000.4010208@gmail.com>
-Date: Sun, 22 Jun 2014 16:09:40 +0800
-Message-ID: <CAF0htA7jReHGSL+K_rh9CMN_Wsyy=nL-TsN3T2L+FQUpAEXyrg@mail.gmail.com>
-Subject: Re: [PATCH] arch/score/include/uapi/asm/ptrace.h: Add prefix 'SCORE_'
- for related macros
-From: Lennox Wu <lennox.wu@gmail.com>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: Liqin Chen <liqin.linux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 22 Jun 2014 04:20:55 -0400
+From: navin patidar <navin.patidar@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
+Subject: [PATCH 00/42] Remove dummy and wrapper functions.
+Date: Sun, 22 Jun 2014 13:49:20 +0530
+Message-Id: <1403425202-11942-1-git-send-email-navin.patidar@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chen,
-Do you find other modules except device modules cause issues of compiling?
-The applications of Score are limited. Acutally, some errors never occur
-in the limited applications, for example, the conbination consists of
-Score and the timer of SuperH. I'm not sure we should handle this kind
-of error.
-If the rule is that we should make sure "all" modules can be compiled
-with Score, we will do it.
-However, we still thanks for your check.
+navin patidar (42):
+  staging: rtl8188eu: Remove dummy function odm_DynamicTxPower()
+  staging: rtl8188eu: Remove dummy function CheckFwRsvdPageContent()
+  staging: rtl8188eu: Remove dummy rtl8188e_GetHalODMVar() and its
+    wrapper
+  staging: rtl8188eu: Remove dummy rtl8188e_start_thread() and its
+    wrapper
+  staging: rtl8188eu: Remove dummy rtl8188e_stop_thread() and its
+    wrapper
+  staging: rtl8188eu: Remove dummy function Hal_InitChannelPlan()
+  staging: rtl8188eu: Remove dummy rtl8188eu_free_xmit_priv() and its
+    wrapper
+  staging: rtl8188eu: Remove function _rtw_memset()
+  staging: rtl8188eu: Remove rtw_mfree2d(), wrapper for kfree()
+  staging: rtl8188eu: Remove unused function rtw_list_insert_head()
+  staging: rtl8188eu: Remove rtw_list_insert_tail(), wrapper for
+    list_add_tail()
+  staging: rtl8188eu: Remove function rtw_end_of_queue_search()
+  staging: rtl8188eu: Remove rtw_is_list_empty(), wrapper for
+    list_emty()
+  staging: rtl8188eu: Remove _rtw_init_listhead(), wrapper for
+    INIT_LIST_HEAD()
+  staging: rtl8188eu: Remove unused function rtw_sleep_schedulable()
+  staging: rtl8188eu: Use kstrtoul() for string to long conversion
+  staging: rtl8188eu:Remove rtw_zmalloc(), wrapper for kzalloc()
+  staging: rtl8188eu: Remove unused function rtw_division64()
+  staging: rtl8188eu: Remove unused function rtw_get_time_interval_ms()
+  staging: rtl8188eu: osdep_service.h: Remove unused macro, enum and
+    variables
+  staging: rtl8188eu: Replace rtw_list_delete() with list_del_init()
+  staging: rtl8188eu: osdep_service.c: Remove unused macro
+  staging: rtl8188eu: Replace _rtw_queue_empty() with list_empty()
+  staging: rtl8188eu: Replace _cancel_workitem_sync() with
+    cancel_work_sync()
+  staging: rtl8188eu: Remove unused inline function _RND512()
+  staging: rtl8188eu: Replace _cancel_timer_ex() with del_timer_sync()
+  staging: rtl8188eu: Use cpu_to_be32() instead of RTW_PUT_BE32()
+  staging: rtl8188eu: Use cpu_to_be16() instead of RTW_PUT_BE16()
+  staging: rtl8188eu: Use get_unaligned_be16() instead of
+    RTW_GET_BE16()
+  staging: rtl8188eu: Remove unused inline function bitshift()
+  staging: rtl8188eu: Use get_unaligned_le16() instead of
+    RTW_GET_LE16()
+  staging: rtl8188eu: Use cpu_to_le16() insted of RTW_PUT_LE16()
+  staging: rtl8188eu: osdep_service.h: Remove unused function
+    definations
+  staging: rtl8188eu: Remove unused inline function _RND256()
+  staging: rtl8188eu: Use round_up() instead of _RND128()
+  staging: rtl8188eu: Use round_up() instead of _RND8()
+  staging: rtl8188eu: Use round_up() instead of _RND4()
+  staging: rtl8188eu: osdep_service.h: Remove unused macros
+  staging: rtl8188eu: Use round_up() instead of RND4()
+  staging: rtl8188eu: Remove function thread_enter()
+  staging: rtl8188eu: Remove function flush_signals_thread()
+  staging: rtl8188eu: Replace _cancel_timer() with del_timer_sync()
 
-Best,
-Lennox
+ drivers/staging/rtl8188eu/core/rtw_ap.c           |   52 ++---
+ drivers/staging/rtl8188eu/core/rtw_cmd.c          |  159 ++++++++--------
+ drivers/staging/rtl8188eu/core/rtw_debug.c        |    2 +-
+ drivers/staging/rtl8188eu/core/rtw_efuse.c        |   24 +--
+ drivers/staging/rtl8188eu/core/rtw_ieee80211.c    |   33 ++--
+ drivers/staging/rtl8188eu/core/rtw_ioctl_set.c    |   18 +-
+ drivers/staging/rtl8188eu/core/rtw_led.c          |   52 ++---
+ drivers/staging/rtl8188eu/core/rtw_mlme.c         |   85 ++++-----
+ drivers/staging/rtl8188eu/core/rtw_mlme_ext.c     |  188 +++++++++---------
+ drivers/staging/rtl8188eu/core/rtw_mp.c           |   28 +--
+ drivers/staging/rtl8188eu/core/rtw_p2p.c          |  142 ++++++--------
+ drivers/staging/rtl8188eu/core/rtw_recv.c         |   52 ++---
+ drivers/staging/rtl8188eu/core/rtw_security.c     |   34 ++--
+ drivers/staging/rtl8188eu/core/rtw_sta_mgt.c      |   54 +++---
+ drivers/staging/rtl8188eu/core/rtw_wlan_util.c    |    8 +-
+ drivers/staging/rtl8188eu/core/rtw_xmit.c         |  115 ++++++------
+ drivers/staging/rtl8188eu/hal/hal_com.c           |    2 +-
+ drivers/staging/rtl8188eu/hal/hal_intf.c          |   29 ---
+ drivers/staging/rtl8188eu/hal/odm.c               |   14 --
+ drivers/staging/rtl8188eu/hal/rtl8188e_cmd.c      |   12 +-
+ drivers/staging/rtl8188eu/hal/rtl8188e_dm.c       |    4 +-
+ drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c |   21 +--
+ drivers/staging/rtl8188eu/hal/rtl8188e_rxdesc.c   |    2 +-
+ drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c    |    4 +-
+ drivers/staging/rtl8188eu/hal/rtl8188eu_xmit.c    |   24 +--
+ drivers/staging/rtl8188eu/hal/usb_halinit.c       |    7 +-
+ drivers/staging/rtl8188eu/include/hal_intf.h      |   12 --
+ drivers/staging/rtl8188eu/include/odm_precomp.h   |    1 -
+ drivers/staging/rtl8188eu/include/osdep_service.h |  161 ----------------
+ drivers/staging/rtl8188eu/include/rtl8188e_cmd.h  |    1 -
+ drivers/staging/rtl8188eu/include/rtl8188e_hal.h  |    1 -
+ drivers/staging/rtl8188eu/include/rtl8188e_xmit.h |    1 -
+ drivers/staging/rtl8188eu/include/rtw_cmd.h       |    2 +-
+ drivers/staging/rtl8188eu/os_dep/ioctl_linux.c    |  209 +++++++++------------
+ drivers/staging/rtl8188eu/os_dep/mlme_linux.c     |    8 +-
+ drivers/staging/rtl8188eu/os_dep/os_intfs.c       |   18 +-
+ drivers/staging/rtl8188eu/os_dep/osdep_service.c  |  110 +----------
+ drivers/staging/rtl8188eu/os_dep/recv_linux.c     |    4 +-
+ drivers/staging/rtl8188eu/os_dep/usb_intf.c       |    4 +-
+ drivers/staging/rtl8188eu/os_dep/usb_ops_linux.c  |    8 +-
+ drivers/staging/rtl8188eu/os_dep/xmit_linux.c     |    4 +-
+ 41 files changed, 638 insertions(+), 1071 deletions(-)
 
-2014-06-22 12:48 GMT+08:00 Chen Gang <gang.chen.5i5j@gmail.com>:
-> 'COUNTER' and other same kind macros are too common to use, and easy to
-> get conflict with other modules. So add prefix for them.
->
-> The related warning (allmodconfig with score):
->
->     CC [M]  drivers/md/raid1.o
->   In file included from drivers/md/raid1.c:42:0:
->   drivers/md/bitmap.h:93:0: warning: "COUNTER" redefined
->    #define COUNTER(x) (((bitmap_counter_t) x) & COUNTER_MAX)
->    ^
->   In file included from ./arch/score/include/asm/ptrace.h:4:0,
->                    from include/linux/sched.h:31,
->                    from include/linux/blkdev.h:4,
->                    from drivers/md/raid1.c:36:
->   ./arch/score/include/uapi/asm/ptrace.h:13:0: note: this is the location of the previous definition
->    #define COUNTER  38
->
->
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> ---
->  arch/score/include/uapi/asm/ptrace.h | 20 ++++++++++----------
->  1 file changed, 10 insertions(+), 10 deletions(-)
->
-> diff --git a/arch/score/include/uapi/asm/ptrace.h b/arch/score/include/uapi/asm/ptrace.h
-> index f59771a..7a0ead9 100644
-> --- a/arch/score/include/uapi/asm/ptrace.h
-> +++ b/arch/score/include/uapi/asm/ptrace.h
-> @@ -4,16 +4,16 @@
->  #define PTRACE_GETREGS         12
->  #define PTRACE_SETREGS         13
->
-> -#define PC             32
-> -#define CONDITION      33
-> -#define ECR            34
-> -#define EMA            35
-> -#define CEH            36
-> -#define CEL            37
-> -#define COUNTER                38
-> -#define LDCR           39
-> -#define STCR           40
-> -#define PSR            41
-> +#define SCORE_PC               32
-> +#define SCORE_CONDITION                33
-> +#define SCORE_ECR              34
-> +#define SCORE_EMA              35
-> +#define SCORE_CEH              36
-> +#define SOCRE_CEL              37
-> +#define SCORE_COUNTER          38
-> +#define SCORE_LDCR             39
-> +#define SCORE_STCR             40
-> +#define SCORE_PSR              41
->
->  #define SINGLESTEP16_INSN      0x7006
->  #define SINGLESTEP32_INSN      0x840C8000
-> --
-> 1.9.2.459.g68773ac
+--
+1.7.10.4
+
