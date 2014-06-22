@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467AbaFVLmE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 07:42:04 -0400
-Received: from nbd.name ([46.4.11.11]:43174 "EHLO nbd.name"
+	id S1752320AbaFVLuX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 07:50:23 -0400
+Received: from imap.thunk.org ([74.207.234.97]:51770 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751835AbaFVLmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 07:42:02 -0400
-Message-ID: <53A6C0FF.9090104@openwrt.org>
-Date: Sun, 22 Jun 2014 13:41:51 +0200
-From: Felix Fietkau <nbd@openwrt.org>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751927AbaFVLuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jun 2014 07:50:16 -0400
+Date: Sun, 22 Jun 2014 07:50:07 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@fb.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: 32-bit bug in iovec iterator changes
+Message-ID: <20140622115007.GA5333@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Al Viro <viro@ZenIV.linux.org.uk>,
+	James Bottomley <James.Bottomley@HansenPartnership.com>,
+	Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@fb.com>,
+	linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+References: <20140619223820.GN4453@dastard>
+ <20140621035144.GA8526@thunk.org>
+ <20140621055306.GP18016@ZenIV.linux.org.uk>
+ <20140621230922.GA13188@thunk.org>
+ <20140621234913.GQ18016@ZenIV.linux.org.uk>
+ <1403395400.2592.4.camel@jarvis.lan>
+ <20140622002618.GR18016@ZenIV.linux.org.uk>
+ <1403397164.2177.40.camel@dabdike.int.hansenpartnership.com>
+ <20140622005352.GS18016@ZenIV.linux.org.uk>
+ <20140622010032.GT18016@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Rostislav Lisovy <lisovy@gmail.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
-        jan-niklas.meier@volkswagen.de,
-        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-Subject: Re: [PATCH 2/2] cfg80211: Use 5MHz bandwidth by default when checking
- usable channels
-References: <1397565476-4348-1-git-send-email-rostislav.lisovy@fel.cvut.cz> <1397565476-4348-3-git-send-email-rostislav.lisovy@fel.cvut.cz>
-In-Reply-To: <1397565476-4348-3-git-send-email-rostislav.lisovy@fel.cvut.cz>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140622010032.GT18016@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-04-15 14:37, Rostislav Lisovy wrote:
-> Current code checks if the 20MHz bandwidth is allowed for
-> particular channel -- if it is not, the channel is disabled.
-> Since we need to use 5/10 MHz channels, this code is modified in
-> the way that the default bandwidth to check is 5MHz. If the
-> maximum bandwidth allowed by the channel is smaller than 5MHz,
-> the channel is disabled. Otherwise the channel is used and the
-> flags are set according to the bandwidth allowed by the channel.
+On Sun, Jun 22, 2014 at 02:00:32AM +0100, Al Viro wrote:
 > 
-> Signed-off-by: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-This change causes a regression and needs to be reverted or fixed.
-It leaves Channel 12 enabled for US regdomain and does not prevent
-bringing up AP mode on it (IEEE80211_CHAN_NO_20MHZ does not get set).
+> PS: I agree that it's worth careful commenting, obviously, but
+> before sending it to Linus (*with* comments) I want to get a
+> confirmation that this one-liner actually fixes what Ted is seeing.
+> I have reproduced it here, and that change makes the breakage go
+> away in my testing, but I'd like to make sure that we are seeing the
+> same thing.  Ted?
 
-I think the main problem with this change is that max_bandwidth_khz
-(which is used to derive the no-10mhz and no-20mhz flags) does not
-consider the frequency when calculating the max bandwidth.
+Hep, that fixes things.  Thanks for explaining what was going on!
 
-- Felix
+     	  		 	    	       - Ted
