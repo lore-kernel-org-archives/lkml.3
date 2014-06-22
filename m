@@ -1,62 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751670AbaFVJUx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 05:20:53 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38125 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554AbaFVJUv (ORCPT
+	id S1751704AbaFVJ1n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 05:27:43 -0400
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:46352 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042AbaFVJ1l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 05:20:51 -0400
-Date: Sun, 22 Jun 2014 11:20:48 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ingo Molnar <mingo@kernel.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch V4 00/10] rtmutex: Code clarification and optimization
-In-Reply-To: <20140622084507.GB13974@gmail.com>
-Message-ID: <alpine.DEB.2.10.1406221118570.5170@nanos>
-References: <20140611182944.108526809@linutronix.de> <20140622084507.GB13974@gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Sun, 22 Jun 2014 05:27:41 -0400
+X-IronPort-AV: E=Sophos;i="5.01,523,1400050800"; 
+   d="scan'208";a="35944649"
+Message-ID: <53A6A189.1020401@broadcom.com>
+Date: Sun, 22 Jun 2014 11:27:37 +0200
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+CC: Brett Rudley <brudley@broadcom.com>, <linux-wireless@vger.kernel.org>,
+        <brcm80211-dev-list@broadcom.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] net/wireless/brcm80211/brcmfmac: Make return type
+ and name reflect actual semantics
+References: <1403299923-21533-1-git-send-email-linux@rasmusvillemoes.dk> <1403391326-28086-1-git-send-email-linux@rasmusvillemoes.dk>
+In-Reply-To: <1403391326-28086-1-git-send-email-linux@rasmusvillemoes.dk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 22 Jun 2014, Ingo Molnar wrote:
-> * Thomas Gleixner <tglx@linutronix.de> wrote:
-> 
-> > Hopefully the last iteration of this.
-> > 
-> > I addressed all the review comments and added the following new ones:
-> > 
-> > 1/n: plug unlock race.
-> >    
-> > 	Patch was separately posted already in the safety of
-> >    	*mutex_unlock() thread.
-> > 
-> > 2/n: Document and simplify the trylock path
-> > 
-> > 3/n: Document and simplify try_to_take_rtmutex()
-> 
-> JFYI, the Blackfin cross-build fails with:
-> 
-> /home/mingo/tip/kernel/locking/rtmutex.c: In function 'rt_mutex_adjust_prio_chain':
-> /home/mingo/tip/kernel/locking/rtmutex.c:739: error: unable to find a register to spill in class 'CCREGS'
-> /home/mingo/tip/kernel/locking/rtmutex.c:739: error: this is the insn:
-> (insn 82 75 107 2 /home/mingo/tip/kernel/locking/rtmutex.c:487 (set 
-> (reg:BI 186)
->         (eq:BI (reg/v/f:SI 9 P1 [orig:85 top_waiter ] [85])
->             (const_int 0 [0x0]))) 111 {compare_eq} (nil))
-> /home/mingo/tip/kernel/locking/rtmutex.c:739: confused by earlier errors, bailing out
+On 06/22/14 00:55, Rasmus Villemoes wrote:
+> Applying ++ to a bool is equivalent to setting it true, regardless of
+> its initial value (bools are not uint1_t). Hence the function
+> wl_get_vif_state_all can only ever return true/false. The only in-tree
+> caller uses its return value as a boolean. So update its return type,
+> and since the list traversal and bit testing have no side effects,
+> just return true immediately. Its return value tells if any vif is up,
 
-https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.6.3/x86_64-gcc-4.6.3-nolibc_bfin-uclinux.tar.xz
+Now I may be really nit-picking, but the return value if any vif is *in 
+the specified state*.
 
-compiles that file nicely.
+Regards,
+Arend
 
-Thanks,
+> so also rename it to brcmf_get_vif_state_any.
+>
+> Reviewed-by: Arend van Spriel<arend@broadcom.com>
+> Signed-off-by: Rasmus Villemoes<linux@rasmusvillemoes.dk>
+> ---
+>
+> Notes:
+>      v2: Rename wl_get_vif_state_all =>  brcmf_get_vif_state_any as
+>          requested by Arend.
+>
+>   drivers/net/wireless/brcm80211/brcmfmac/p2p.c         | 2 +-
+>   drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c | 7 +++----
+>   drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.h | 2 +-
+>   3 files changed, 5 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
+> index f3445ac..588fdbd 100644
+> --- a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
+> +++ b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
+> @@ -708,7 +708,7 @@ static s32 brcmf_p2p_escan(struct brcmf_p2p_info *p2p, u32 num_chans,
+>   		active = P2PAPI_SCAN_SOCIAL_DWELL_TIME_MS;
+>   	else if (num_chans == AF_PEER_SEARCH_CNT)
+>   		active = P2PAPI_SCAN_AF_SEARCH_DWELL_TIME_MS;
+> -	else if (wl_get_vif_state_all(p2p->cfg, BRCMF_VIF_STATUS_CONNECTED))
+> +	else if (brcmf_get_vif_state_any(p2p->cfg, BRCMF_VIF_STATUS_CONNECTED))
+>   		active = -1;
+>   	else
+>   		active = P2PAPI_SCAN_DWELL_TIME_MS;
+> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+> index d8fa276..93b1809 100644
+> --- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+> +++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+> @@ -5625,16 +5625,15 @@ enum nl80211_iftype brcmf_cfg80211_get_iftype(struct brcmf_if *ifp)
+>   	return wdev->iftype;
+>   }
+>
+> -u32 wl_get_vif_state_all(struct brcmf_cfg80211_info *cfg, unsigned long state)
+> +bool brcmf_get_vif_state_any(struct brcmf_cfg80211_info *cfg, unsigned long state)
+>   {
+>   	struct brcmf_cfg80211_vif *vif;
+> -	bool result = 0;
+>
+>   	list_for_each_entry(vif,&cfg->vif_list, list) {
+>   		if (test_bit(state,&vif->sme_state))
+> -			result++;
+> +			return true;
+>   	}
+> -	return result;
+> +	return false;
+>   }
+>
+>   static inline bool vif_event_equals(struct brcmf_cfg80211_vif_event *event,
+> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.h b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.h
+> index 283c525..f9fb109 100644
+> --- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.h
+> +++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.h
+> @@ -477,7 +477,7 @@ const struct brcmf_tlv *
+>   brcmf_parse_tlvs(const void *buf, int buflen, uint key);
+>   u16 channel_to_chanspec(struct brcmu_d11inf *d11inf,
+>   			struct ieee80211_channel *ch);
+> -u32 wl_get_vif_state_all(struct brcmf_cfg80211_info *cfg, unsigned long state);
+> +bool brcmf_get_vif_state_any(struct brcmf_cfg80211_info *cfg, unsigned long state);
+>   void brcmf_cfg80211_arm_vif_event(struct brcmf_cfg80211_info *cfg,
+>   				  struct brcmf_cfg80211_vif *vif);
+>   bool brcmf_cfg80211_vif_event_armed(struct brcmf_cfg80211_info *cfg);
 
-	tglx
