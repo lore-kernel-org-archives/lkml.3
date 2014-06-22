@@ -1,104 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107AbaFVPdh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 11:33:37 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:54067 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501AbaFVPdW (ORCPT
+	id S1751915AbaFVPxk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 11:53:40 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:37229 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129AbaFVPxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 11:33:22 -0400
-From: Beniamino Galvani <b.galvani@gmail.com>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-Cc: Wenyou Yang <wenyou.yang@atmel.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+	Sun, 22 Jun 2014 11:53:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <539ED472.5020102@gmail.com>
+References: <1402464739-19044-1-git-send-email-tushar.b@samsung.com>
+	<1402464739-19044-3-git-send-email-tushar.b@samsung.com>
+	<CABxcv=kX07pNCd-YPYp6J8S5hHzG1rsoer1YRfdPE0g-xFqZnQ@mail.gmail.com>
+	<539ED472.5020102@gmail.com>
+Date: Sun, 22 Jun 2014 21:23:37 +0530
+X-Google-Sender-Auth: o4KpWVbfySbp_FPDcHUEwRhIVvM
+Message-ID: <CAC5m3Byht1TRGu28Y-_mRY8iZT+=rrzpQS1jx5rxQaJ7XLKxTw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] ARM: dts: Update the parent for Audss clocks in Exynos5420
+From: Tushar Behera <tushar.b@samsung.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Javier Martinez Canillas <javier@dowhile0.org>,
+        Tushar Behera <tushar.b@samsung.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Heiko Stuebner <heiko@sntech.de>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Beniamino Galvani <b.galvani@gmail.com>
-Subject: [PATCH 1/5] regulator: act8865: fix parsing of platform data
-Date: Sun, 22 Jun 2014 17:31:41 +0200
-Message-Id: <1403451105-31929-2-git-send-email-b.galvani@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1403451105-31929-1-git-send-email-b.galvani@gmail.com>
-References: <1403451105-31929-1-git-send-email-b.galvani@gmail.com>
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Doug Anderson <dianders@google.com>,
+        Shaik Ameer Basha <shaik.ameer@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver loops through all available regulators (ACT8865_REG_NUM)
-and accesses pdata->regulators[i].platform_data without checking the
-actual value of num_regulators in platform data, potentially causing a
-invalid memory access.
+On Mon, Jun 16, 2014 at 4:56 PM, Tushar Behera <trblinux@gmail.com> wrote:
+> On 06/11/2014 09:28 PM, Javier Martinez Canillas wrote:
+>> On Wed, Jun 11, 2014 at 7:32 AM, Tushar Behera <tushar.b@samsung.com> wrote:
+>>> Currently CLK_FOUT_EPLL was set as one of the parents of AUDSS mux.
+>>> As per the user manual, it should be CLK_MAU_EPLL.
+>>>
+>>> The problem surfaced when the bootloader in Peach-pit board set
+>>> the EPLL clock as the parent of AUDSS mux. While booting the kernel,
+>>> we used to get a system hang during late boot if CLK_MAU_EPLL was
+>>> disabled.
+>>>
+>>> Signed-off-by: Tushar Behera <tushar.b@samsung.com>
+>>> Signed-off-by: Shaik Ameer Basha <shaik.ameer@samsung.com>
+>>> Reported-by: Kevin Hilman <khilman@linaro.org>
+>>> ---
+>>>  arch/arm/boot/dts/exynos5420.dtsi |    2 +-
+>>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
+>>> index e385322..79e9119 100644
+>>> --- a/arch/arm/boot/dts/exynos5420.dtsi
+>>> +++ b/arch/arm/boot/dts/exynos5420.dtsi
+>>> @@ -167,7 +167,7 @@
+>>>                 compatible = "samsung,exynos5420-audss-clock";
+>>>                 reg = <0x03810000 0x0C>;
+>>>                 #clock-cells = <1>;
+>>> -               clocks = <&clock CLK_FIN_PLL>, <&clock CLK_FOUT_EPLL>,
+>>> +               clocks = <&clock CLK_FIN_PLL>, <&clock CLK_MAU_EPLL>,
+>>>                          <&clock CLK_SCLK_MAUDIO0>, <&clock CLK_SCLK_MAUPCM0>;
+>>>                 clock-names = "pll_ref", "pll_in", "sclk_audio", "sclk_pcm_in";
+>>>         };
+>>> --
+>>> 1.7.9.5
+>>>
+>>> --
+>>
+>> Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+>>
+>
+> Kukjin,
+>
+> Would you please take this patch as a fix for 3.16?
+>
+> --
+> Tushar Behera
 
-Fix this and look up the regulator init_data by id in platform data.
+Kukjin,
 
-Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
----
- drivers/regulator/act8865-regulator.c |   29 +++++++++++++++++++++--------
- 1 file changed, 21 insertions(+), 8 deletions(-)
+Please pick this patch for 3.16. This is an essential fix required for
+Peach-pit/Peach-pi board.
 
-diff --git a/drivers/regulator/act8865-regulator.c b/drivers/regulator/act8865-regulator.c
-index b92d7dd..fe2c038 100644
---- a/drivers/regulator/act8865-regulator.c
-+++ b/drivers/regulator/act8865-regulator.c
-@@ -252,6 +252,22 @@ static inline int act8865_pdata_from_dt(struct device *dev,
- }
- #endif
- 
-+static struct regulator_init_data
-+*act8865_get_init_data(int id, struct act8865_platform_data *pdata)
-+{
-+	int i;
-+
-+	if (!pdata)
-+		return NULL;
-+
-+	for (i = 0; i < pdata->num_regulators; i++) {
-+		if (pdata->regulators[i].id == id)
-+			return pdata->regulators[i].platform_data;
-+	}
-+
-+	return NULL;
-+}
-+
- static int act8865_pmic_probe(struct i2c_client *client,
- 			   const struct i2c_device_id *i2c_id)
- {
-@@ -261,7 +277,7 @@ static int act8865_pmic_probe(struct i2c_client *client,
- 	struct regulator_config config = { };
- 	struct act8865 *act8865;
- 	struct device_node *of_node[ACT8865_REG_NUM];
--	int i, id;
-+	int i;
- 	int ret = -EINVAL;
- 	int error;
- 
-@@ -299,20 +315,17 @@ static int act8865_pmic_probe(struct i2c_client *client,
- 
- 	/* Finally register devices */
- 	for (i = 0; i < ACT8865_REG_NUM; i++) {
--
--		id = pdata->regulators[i].id;
-+		const struct regulator_desc *desc = &act8865_reg[i];
- 
- 		config.dev = dev;
--		config.init_data = pdata->regulators[i].platform_data;
-+		config.init_data = act8865_get_init_data(desc->id, pdata);
- 		config.of_node = of_node[i];
- 		config.driver_data = act8865;
- 		config.regmap = act8865->regmap;
- 
--		rdev = devm_regulator_register(&client->dev, &act8865_reg[i],
--					       &config);
-+		rdev = devm_regulator_register(&client->dev, desc, &config);
- 		if (IS_ERR(rdev)) {
--			dev_err(dev, "failed to register %s\n",
--				act8865_reg[id].name);
-+			dev_err(dev, "failed to register %s\n", desc->name);
- 			return PTR_ERR(rdev);
- 		}
- 	}
--- 
-1.7.10.4
-
+--
+Tushar Behera
