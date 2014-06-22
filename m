@@ -1,48 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751619AbaFVKB0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 06:01:26 -0400
-Received: from ns.gsystem.sk ([62.176.172.50]:59604 "EHLO ns.gsystem.sk"
+	id S1751891AbaFVKWE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 06:22:04 -0400
+Received: from mout.gmx.net ([212.227.15.19]:52899 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751123AbaFVKBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 06:01:25 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Grant Grundler <grundler@parisc-linux.org>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] tulip: Poll link status more frequently for Comet chips
-Date: Sun, 22 Jun 2014 12:01:12 +0200
-Message-Id: <1403431272-2569-1-git-send-email-linux@rainbow-software.org>
+	id S1751570AbaFVKWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jun 2014 06:22:01 -0400
+From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+To: michal.simek@xilinx.com
+Cc: anirudh@xilinx.com, John.Linn@xilinx.com, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+Subject: [PATCH] xilinx: Fix compiler warning
+Date: Sun, 22 Jun 2014 12:21:01 +0200
+Message-Id: <1403432461-18296-1-git-send-email-manuel.schoelling@gmx.de>
 X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:90eigVzhjJmcve+34tusurv0BWv57ho5e+AuxQ1/PH00HW/Qi7l
+ rc9tYF50f7ZW6mDMbQV8DC6wSNhejK4p6hxj2JQQTbNSD7l0nNL7MJ0aqAzNPa+wGcXOWlP
+ NZ2ykPoduDsp4NRDXyufHnsBaldzE86pgAmRZqD1cC3VHRGMcH53+j2A7a40QiysdroQBSb
+ irxtZ3CK76orUYEiGZ6wg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It now takes up to 60 seconds to detect cable (un)plug on ADMtek Comet chips.
-That's too slow and might cause people to think that it doesn't work at all.
+The time comparsion functions require arguments of type unsigned long
+instead of (signed) long.
 
-Poll link status every 2 seconds instead of 60 for ADMtek Comet chips.
-That should be fast enough while not stressing the system too much.
-
-Tested with ADMtek AN983B.
-
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
 ---
- drivers/net/ethernet/dec/tulip/timer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/xilinx/ll_temac_main.c       |    2 +-
+ drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c |    2 +-
+ drivers/net/ethernet/xilinx/xilinx_emaclite.c     |    2 +-
+ init/do_mounts.c                                  |    1 -
+ 4 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/dec/tulip/timer.c b/drivers/net/ethernet/dec/tulip/timer.c
-index 768379b..523d9dd 100644
---- a/drivers/net/ethernet/dec/tulip/timer.c
-+++ b/drivers/net/ethernet/dec/tulip/timer.c
-@@ -158,7 +158,7 @@ void comet_timer(unsigned long data)
- {
- 	struct net_device *dev = (struct net_device *)data;
- 	struct tulip_private *tp = netdev_priv(dev);
--	int next_tick = 60*HZ;
-+	int next_tick = 2*HZ;
+diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
+index 4ef818a..8a6e5c2 100644
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -72,7 +72,7 @@ void temac_iow(struct temac_local *lp, int offset, u32 value)
  
- 	if (tulip_debug > 1)
- 		netdev_dbg(dev, "Comet link status %04x partner capability %04x\n",
+ int temac_indirect_busywait(struct temac_local *lp)
+ {
+-	long end = jiffies + 2;
++	unsigned long end = jiffies + 2;
+ 
+ 	while (!(temac_ior(lp, XTE_RDY0_OFFSET) & XTE_RDY0_HARD_ACS_RDY_MASK)) {
+ 		if (time_before_eq(end, jiffies)) {
+diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c b/drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c
+index d4abf47..3b67d60 100644
+--- a/drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c
++++ b/drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c
+@@ -19,7 +19,7 @@
+ /* Wait till MDIO interface is ready to accept a new transaction.*/
+ int axienet_mdio_wait_until_ready(struct axienet_local *lp)
+ {
+-	long end = jiffies + 2;
++	unsigned long end = jiffies + 2;
+ 	while (!(axienet_ior(lp, XAE_MDIO_MCR_OFFSET) &
+ 		 XAE_MDIO_MCR_READY_MASK)) {
+ 		if (time_before_eq(end, jiffies)) {
+diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
+index 8c4aed3..782bb93 100644
+--- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
++++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
+@@ -695,7 +695,7 @@ static irqreturn_t xemaclite_interrupt(int irq, void *dev_id)
+ 
+ static int xemaclite_mdio_wait(struct net_local *lp)
+ {
+-	long end = jiffies + 2;
++	unsigned long end = jiffies + 2;
+ 
+ 	/* wait for the MDIO interface to not be busy or timeout
+ 	   after some time.
+diff --git a/init/do_mounts.c b/init/do_mounts.c
+index 60c4196..2d069a3 100644
+--- a/init/do_mounts.c
++++ b/init/do_mounts.c
+@@ -351,7 +351,6 @@ static void __init get_fs_names(char *page)
+ 				continue;
+ 			line++;
+ 
+-			/* append fsname */
+ 			memmove(fsnames, line, strlen(line)+1);
+ 			fsnames += strlen(fsnames)+1;
+ 		} while (page != NULL);
 -- 
-Ondrej Zary
+1.7.10.4
 
