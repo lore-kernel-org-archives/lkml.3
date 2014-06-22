@@ -1,83 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752333AbaFVTNA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 15:13:00 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56639 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752041AbaFVTM6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 15:12:58 -0400
-Date: Sun, 22 Jun 2014 20:12:48 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Nick Krause <xerofoify@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>, akpm@linux-foundation.org,
-        fabf@skynet.be, kirill.shutemov@linux.intel.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Check for Null return of function of affs_bread in
- function affs_truncate
-Message-ID: <20140622191248.GU18016@ZenIV.linux.org.uk>
-References: <1403129285-5038-1-git-send-email-xerofoify@gmail.com>
- <20140619052128.GV5015@mwanda>
- <CAPDOMVgwT2=iWAHOhgHSBY1B+KoWHQgCdK4idD2miwB=_eMs5Q@mail.gmail.com>
- <alpine.DEB.2.10.1406210143030.5170@nanos>
+	id S1752386AbaFVTlx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 15:41:53 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48950 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752177AbaFVTlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jun 2014 15:41:51 -0400
+Message-ID: <53A73110.60405@ti.com>
+Date: Sun, 22 Jun 2014 15:40:00 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1406210143030.5170@nanos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rob Herring <robherring2@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Fabio Estevam <festevam@gmail.com>,
+        Shawn Guo <shawn.guo@freescale.com>
+Subject: Re: [PATCH] dt/documentation: add specification of dma bus information
+References: <1401981720-6946-1-git-send-email-santosh.shilimkar@ti.com> <CAL_JsqJAtWnHKPVpDsdOOzT_X=npc3hroLNTGqULM2SJr=1OEg@mail.gmail.com> <53A46CB7.1030109@ti.com> <4193075.zZSpRTFEYz@wuerfel> <53A48553.2080504@ti.com> <CAL_JsqLYho6dRA=-ovKqF7H4EGHJcH_aN3ywd+76oXSprfTMbQ@mail.gmail.com>
+In-Reply-To: <CAL_JsqLYho6dRA=-ovKqF7H4EGHJcH_aN3ywd+76oXSprfTMbQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 21, 2014 at 01:59:15AM +0200, Thomas Gleixner wrote:
-> > > The problem is that we don't know if we should return here or break
-> > > here.  If you don't understand the code, then it's best to just leave it
-> > > alone.
+On Friday 20 June 2014 03:46 PM, Rob Herring wrote:
+> On Fri, Jun 20, 2014 at 2:02 PM, Santosh Shilimkar
+> <santosh.shilimkar@ti.com> wrote:
+>> On Friday 20 June 2014 02:56 PM, Arnd Bergmann wrote:
+>>> On Friday 20 June 2014 13:17:43 Santosh Shilimkar wrote:
+>>>>>> +                       dma-coherent;
+>>>>>> +                       dma-ranges;
+>>>>>> +
+>>>>>> +                       dwc3@2690000 {
+>>>>>> +                               compatible = "synopsys,dwc3";
+>>>>>> +                               [...]
+>>>>>> +                       };
+>>>>>
+>>>>> This example is a bit strange. I don't understand the relationship
+>>>>> between keystone-dwc3 and synopsys,dwc3, nor do I want to. I'd prefer
+>>>>> to see a simple example here.
+>>>
+>>>
+>>>>> dma-ranges is a property of the parent which you show, but
+>>>>> dma-coherent originally was a property of the bus master itself. While
+>>>>> we need to support that, are we changing that? We need to be clear on
+>>>>> where the property belongs even if the kernel is more lax.
+>>>>>
+>>>> I don't think we are changing it fundamentally but may be I missing
+>>>> your point. The dma-coherent as is now a per-device property.
+>>>> USB is one of the bus master supports coherency and hence showed
+>>>> up in above example.
+>>>
+>>> I think it's enough if you just drop the "synopsys,dwc3" node and the
+>>> intermediate dma-ranges property from the example, leaving the
+>>> dma-coherent property in the "ti,keystone-dwc3" node.
+>>>
+>> Thanks Arnd. That should avoid the confusion. Just to see if Rob is
+>> fine by it, the example will look like below.
 > 
-> Dan, what kind of attitude is that?
->
-> Nick certainly found an issue where a possible NULL return from
-> affs_bread() can cause havoc.
-
-Yes.  No arguments here.
-
-> Do YOU understand that code?
+> Yes. Looks fine.
 > 
-> If yes, you better explain, WHY Nicks finding is a false positive
-> instead of just telling him off in a very inpolite way.
+Great. Updated version 2 below.
 
-It's not a false positive at all.
+>From 7df26004fe11b7d3ef9592161205c69e1fb663be Mon Sep 17 00:00:00 2001
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Date: Fri, 20 Jun 2014 11:01:54 -0400
+Subject: [PATCH v2] dt/documentation: add specification of dma bus information
 
-> If not, you better refrain from telling a reporter that he does not
-> understand the code and should stay away.
+Recently we introduced the generic device tree infrastructure for couple of DMA
+bus parameter, dma-ranges and dma-coherent. Update the documentation so that
+its useful for future users.
 
-Tone aside, he does have a point - namely, that patch in question doesn't
-contain any analysis of the bug and recovery strategy, turning a bug into
-something that is much harder to spot on inspection.
+The "dma-ranges" property is intended to be used for describing the
+configuration of DMA bus RAM addresses and its offset w.r.t CPU addresses.
 
-If nothing else, such patches should contain a loud printk added on
-the b0rken codepath, along with a big fat warning in the source.
+The "dma-coherent" property is intended to be used for identifying devices
+supported coherent DMA operations.
 
-I'm not saying that "fuck off unless you understand the code" is a sane
-policy - it's not.  But "anything's better than an oops" is also wrong.
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Acked-by: Shawn Guo <shawn.guo@freescale.com>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+ Documentation/devicetree/booting-without-of.txt |   53 +++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
 
-> > > The problem is that we don't know if we should return here or break
-> > > here.
-> 
-> The problem here is that proceeding with a known NULL pointer is wrong
-> to begin with. It does not matter at all whether break or return is
-> the proper thing to do. What matters is that proceeding with a NULL
-> pointer is wrong to begin with, no matter what.
-> 
-> So either explain why this is a non issue and the NULL pointer return
-> cannot happen or shut up and try to find a proper solution for that
-> "return" vs. "break" issue.
+diff --git a/Documentation/devicetree/booting-without-of.txt b/Documentation/devicetree/booting-without-of.txt
+index 1f013bd..7768518 100644
+--- a/Documentation/devicetree/booting-without-of.txt
++++ b/Documentation/devicetree/booting-without-of.txt
+@@ -51,6 +51,8 @@ Table of Contents
+ 
+   VIII - Specifying device power management information (sleep property)
+ 
++  IX - Specifying dma bus information
++
+   Appendix A - Sample SOC node for MPC8540
+ 
+ 
+@@ -1332,6 +1334,57 @@ reasonably grouped in this manner, then create a virtual sleep controller
+ (similar to an interrupt nexus, except that defining a standardized
+ sleep-map should wait until its necessity is demonstrated).
+ 
++IX - Specifying dma bus information
++
++Some devices may have DMA memory range shifted relatively to the beginning of
++RAM, or even placed outside of kernel RAM. For example, the Keystone 2 SoC
++worked in LPAE mode with 4G memory has:
++- RAM range: [0x8 0000 0000, 0x8 FFFF FFFF]
++- DMA range: [  0x8000 0000,   0xFFFF FFFF]
++and DMA range is aliased into first 2G of RAM in HW.
++
++In such cases, DMA addresses translation should be performed between CPU phys
++and DMA addresses. The "dma-ranges" property is intended to be used
++for describing the configuration of such system in DT.
++
++In addition, each DMA master device on the DMA bus may or may not support
++coherent DMA operations. The "dma-coherent" property is intended to be used
++for identifying devices supported coherent DMA operations in DT.
++
++* DMA Bus master
++Optional property:
++- dma-ranges: <prop-encoded-array> encoded as arbitrary number of triplets of
++	(child-bus-address, parent-bus-address, length). Each triplet specified
++	describes a contiguous DMA address range.
++	The dma-ranges property is used to describe the direct memory access (DMA)
++	structure of a memory-mapped bus whose device tree parent can be accessed
++	from DMA operations originating from the bus. It provides a means of
++	defining a mapping or translation between the physical address space of
++	the bus and the physical address space of the parent of the bus.
++	(for more information see ePAPR specification)
++
++* DMA Bus child
++Optional property:
++- dma-ranges: <empty> value. if present - It means that DMA addresses
++	translation has to be enabled for this device.
++- dma-coherent: Present if dma operations are coherent
++
++Example:
++soc {
++		compatible = "ti,keystone","simple-bus";
++		ranges = <0x0 0x0 0x0 0xc0000000>;
++		dma-ranges = <0x80000000 0x8 0x00000000 0x80000000>;
++
++		[...]
++
++		usb: usb@2680000 {
++			compatible = "ti,keystone-dwc3";
++
++			[...]
++			dma-coherent;
++		};
++};
++
+ Appendix A - Sample SOC node for MPC8540
+ ========================================
+ 
+-- 
+1.7.9.5
 
-return vs. break here is the difference between discarding preallocated blocks
-and leaking them as well.  The thing is, it's either severe OOM or a corrupted
-image.  I'd *probably* go for "affs_error() and return" here, but that's
-not the only question - we probably ought to make it return an error, instead
-of having it void.  And callers tend to do that affs_free_prealloc(), so
-much that I'm not sure if we actually want to keep it in affs_truncate() at
-all.
