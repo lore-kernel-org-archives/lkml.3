@@ -1,67 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208AbaFVSv1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 14:51:27 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:51773 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743AbaFVSv0 (ORCPT
+	id S1752363AbaFVSwM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 14:52:12 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:62011 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264AbaFVSwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 14:51:26 -0400
-From: Jerry Stralko <gerb.stralko@gmail.com>
-To: greg@kroah.com, linux-kernel@vger.kernel.org
-Cc: swetland@google.com, Jerry Stralko <gerb.stralko@gmail.com>
-Subject: [PATCH] stagging: android: logger: code cleanup
-Date: Sun, 22 Jun 2014 14:51:08 -0400
-Message-Id: <1403463068-21850-1-git-send-email-gerb.stralko@gmail.com>
-X-Mailer: git-send-email 1.9.3
+	Sun, 22 Jun 2014 14:52:10 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Arend van Spriel <arend@broadcom.com>, Brett Rudley <brudley@broadcom.com>
+Cc: linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Subject: [PATCH v3] net/wireless/brcm80211/brcmfmac: Make return type and name reflect actual semantics
+Date: Sun, 22 Jun 2014 20:50:40 +0200
+Message-Id: <1403463040-29168-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1403391326-28086-1-git-send-email-linux@rasmusvillemoes.dk>
+References: <1403391326-28086-1-git-send-email-linux@rasmusvillemoes.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the unlikey macro to the return value of nonseekable_open,
-since it always returns successfully.
+Applying ++ to a bool is equivalent to setting it true, regardless of
+its initial value (bools are not uint1_t). Hence the function
+wl_get_vif_state_all can only ever return true/false. The only in-tree
+caller uses its return value as a boolean. So update its return type,
+and since the list traversal and bit testing have no side effects,
+just return true immediately. Its return value tells if any vif is in
+the specified state, so also rename it to brcmf_get_vif_state_any.
 
-Fixed up some checkpatch warnings.
-
-Signed-off-by: Jerry Stralko <gerb.stralko@gmail.com>
+Reviewed-by: Arend van Spriel<arend@broadcom.com>
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 ---
- drivers/staging/android/logger.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
-index 2772e01..b98d181 100644
---- a/drivers/staging/android/logger.c
-+++ b/drivers/staging/android/logger.c
-@@ -110,8 +110,8 @@ static inline struct logger_log *file_get_log(struct file *file)
- 		struct logger_reader *reader = file->private_data;
- 
- 		return reader->log;
--	} else
--		return file->private_data;
-+	}
-+	return file->private_data;
+Notes:
+    v3: Fix thinko in commit message.
+    
+    v2: Rename wl_get_vif_state_all => brcmf_get_vif_state_any as
+        requested by Arend.
+
+ drivers/net/wireless/brcm80211/brcmfmac/p2p.c         | 2 +-
+ drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c | 7 +++----
+ drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.h | 2 +-
+ 3 files changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
+index f3445ac..588fdbd 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
+@@ -708,7 +708,7 @@ static s32 brcmf_p2p_escan(struct brcmf_p2p_info *p2p, u32 num_chans,
+ 		active = P2PAPI_SCAN_SOCIAL_DWELL_TIME_MS;
+ 	else if (num_chans == AF_PEER_SEARCH_CNT)
+ 		active = P2PAPI_SCAN_AF_SEARCH_DWELL_TIME_MS;
+-	else if (wl_get_vif_state_all(p2p->cfg, BRCMF_VIF_STATUS_CONNECTED))
++	else if (brcmf_get_vif_state_any(p2p->cfg, BRCMF_VIF_STATUS_CONNECTED))
+ 		active = -1;
+ 	else
+ 		active = P2PAPI_SCAN_DWELL_TIME_MS;
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+index d8fa276..93b1809 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+@@ -5625,16 +5625,15 @@ enum nl80211_iftype brcmf_cfg80211_get_iftype(struct brcmf_if *ifp)
+ 	return wdev->iftype;
  }
  
- /*
-@@ -159,8 +159,7 @@ static size_t get_user_hdr_len(int ver)
+-u32 wl_get_vif_state_all(struct brcmf_cfg80211_info *cfg, unsigned long state)
++bool brcmf_get_vif_state_any(struct brcmf_cfg80211_info *cfg, unsigned long state)
  {
- 	if (ver < 2)
- 		return sizeof(struct user_logger_entry_compat);
--	else
--		return sizeof(struct logger_entry);
-+	return sizeof(struct logger_entry);
+ 	struct brcmf_cfg80211_vif *vif;
+-	bool result = 0;
+ 
+ 	list_for_each_entry(vif, &cfg->vif_list, list) {
+ 		if (test_bit(state, &vif->sme_state))
+-			result++;
++			return true;
+ 	}
+-	return result;
++	return false;
  }
  
- static ssize_t copy_header_to_user(int ver, struct logger_entry *entry,
-@@ -552,7 +551,7 @@ static int logger_open(struct inode *inode, struct file *file)
- 	int ret;
- 
- 	ret = nonseekable_open(inode, file);
--	if (ret)
-+	if (unlikely(ret))
- 		return ret;
- 
- 	log = get_log_from_minor(MINOR(inode->i_rdev));
+ static inline bool vif_event_equals(struct brcmf_cfg80211_vif_event *event,
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.h b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.h
+index 283c525..f9fb109 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.h
++++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.h
+@@ -477,7 +477,7 @@ const struct brcmf_tlv *
+ brcmf_parse_tlvs(const void *buf, int buflen, uint key);
+ u16 channel_to_chanspec(struct brcmu_d11inf *d11inf,
+ 			struct ieee80211_channel *ch);
+-u32 wl_get_vif_state_all(struct brcmf_cfg80211_info *cfg, unsigned long state);
++bool brcmf_get_vif_state_any(struct brcmf_cfg80211_info *cfg, unsigned long state);
+ void brcmf_cfg80211_arm_vif_event(struct brcmf_cfg80211_info *cfg,
+ 				  struct brcmf_cfg80211_vif *vif);
+ bool brcmf_cfg80211_vif_event_armed(struct brcmf_cfg80211_info *cfg);
 -- 
-1.9.3
+1.9.2
 
