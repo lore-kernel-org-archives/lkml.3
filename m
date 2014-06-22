@@ -1,37 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303AbaFVCWq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 22:22:46 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41041 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708AbaFVCWo (ORCPT
+	id S1750878AbaFVDOQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 23:14:16 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:48044 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725AbaFVDOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 22:22:44 -0400
-Date: Sat, 21 Jun 2014 19:22:43 -0700 (PDT)
-Message-Id: <20140621.192243.435372238194944118.davem@davemloft.net>
-To: joe@perches.com
-Cc: fabf@skynet.be, bjorn@mork.no, linux-kernel@vger.kernel.org,
-        grant.likely@linaro.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 1/1] net/dsa/dsa.c: remove null test before kfree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1403359806.4076.50.camel@joe-AO725>
-References: <b991e868-c253-4b1a-8c95-56106c36d512@email.android.com>
-	<20140621113653.6b2dd148b35a6ecfb7c08cce@skynet.be>
-	<1403359806.4076.50.camel@joe-AO725>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Sat, 21 Jun 2014 23:14:15 -0400
+Message-ID: <53A649FB.3090808@gmail.com>
+Date: Sun, 22 Jun 2014 11:14:03 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: anton@tuxera.com
+CC: linux-ntfs-dev@lists.sourceforge.net,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
+Subject: [PATCH] fs/ntfs: Use '%lx' instead of '%zx'
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sat, 21 Jun 2014 19:22:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Sat, 21 Jun 2014 07:10:06 -0700
+For subtraction between 2 pointers, the result's type is 'long', so
+need use '%lx' instead of '%zx'.
 
-> In this case, it seems the simple substitution of
-> "unnecessary null" to the subject would have been
-> enough validation.
+The related warning (allmodconfig under unicore32):
 
-Agreed.
+    CC [M]  fs/ntfs/compress.o
+  fs/ntfs/compress.c: In function 'ntfs_decompress':
+  fs/ntfs/compress.c:207:2: warning: format '%zx' expects argument of type 'size_t', but argument 5 has type 'long int' [-Wformat=]
+    ntfs_debug("Beginning sub-block at offset = 0x%zx in the cb.",
+    ^
+    CC [M]  fs/ntfs/dir.o
+  fs/ntfs/dir.c: In function 'ntfs_readdir':
+  fs/ntfs/dir.c:1197:3: warning: format '%zx' expects argument of type 'size_t', but argument 5 has type 'long int' [-Wformat=]
+     ntfs_debug("In index root, offset 0x%zx.", (u8*)ie - (u8*)ir);
+     ^
+
+Also let the related code match linux kernel styles which is found by
+'scripts/checkpatch.pl'.
+
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ fs/ntfs/compress.c | 2 +-
+ fs/ntfs/dir.c      | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fs/ntfs/compress.c b/fs/ntfs/compress.c
+index f82498c..51abeb3 100644
+--- a/fs/ntfs/compress.c
++++ b/fs/ntfs/compress.c
+@@ -204,7 +204,7 @@ static int ntfs_decompress(struct page *dest_pages[], int *dest_index,
+ 
+ 	ntfs_debug("Entering, cb_size = 0x%x.", cb_size);
+ do_next_sb:
+-	ntfs_debug("Beginning sub-block at offset = 0x%zx in the cb.",
++	ntfs_debug("Beginning sub-block at offset = 0x%lx in the cb.",
+ 			cb - cb_start);
+ 	/*
+ 	 * Have we reached the end of the compression block or the end of the
+diff --git a/fs/ntfs/dir.c b/fs/ntfs/dir.c
+index 9e38daf..cf85530 100644
+--- a/fs/ntfs/dir.c
++++ b/fs/ntfs/dir.c
+@@ -1194,7 +1194,7 @@ static int ntfs_readdir(struct file *file, struct dir_context *actor)
+ 	 * or signals an error (both covered by the rc test).
+ 	 */
+ 	for (;; ie = (INDEX_ENTRY*)((u8*)ie + le16_to_cpu(ie->length))) {
+-		ntfs_debug("In index root, offset 0x%zx.", (u8*)ie - (u8*)ir);
++		ntfs_debug("In index root, offset 0x%lx.", (u8 *)ie - (u8 *)ir);
+ 		/* Bounds checks. */
+ 		if (unlikely((u8*)ie < (u8*)ir || (u8*)ie +
+ 				sizeof(INDEX_ENTRY_HEADER) > index_end ||
+-- 
+1.9.2.459.g68773ac
