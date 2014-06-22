@@ -1,87 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920AbaFVBOI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jun 2014 21:14:08 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:53431 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422AbaFVBOG (ORCPT
+	id S1752120AbaFVCWY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jun 2014 22:22:24 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:41035 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751597AbaFVCWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jun 2014 21:14:06 -0400
-Date: Sat, 21 Jun 2014 21:13:54 -0400
-From: Jeff Layton <jlayton@poochiereds.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: bfields@fieldses.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] please pull file locking bugfixes for v3.16 (pile #2)
-Message-ID: <20140621211354.291ea285@tlielax.poochiereds.net>
-X-Mailer: Claws Mail 3.10.0 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/rIw.iHc00tPgsf8WpDwxdtC"; protocol="application/pgp-signature"
+	Sat, 21 Jun 2014 22:22:22 -0400
+Date: Sat, 21 Jun 2014 19:22:18 -0700 (PDT)
+Message-Id: <20140621.192218.1801115154664681697.davem@davemloft.net>
+To: grantgrundler@gmail.com
+Cc: linux@rainbow-software.org, grundler@parisc-linux.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tulip: Poll link status more frequently for Comet chips
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAP6odjjE3hYXPggagPvF+hYm7nGHQqLqeQ3Ls9jzd=DVBLcJ4w@mail.gmail.com>
+References: <1403382541-7129-1-git-send-email-linux@rainbow-software.org>
+	<CAP6odjjE3hYXPggagPvF+hYm7nGHQqLqeQ3Ls9jzd=DVBLcJ4w@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sat, 21 Jun 2014 19:22:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/rIw.iHc00tPgsf8WpDwxdtC
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+From: Grant Grundler <grantgrundler@gmail.com>
+Date: Sat, 21 Jun 2014 15:59:30 -0700
 
-The following changes since commit 64b2d1fbbfda07765dae3f601862796a61b2c451:
+> Hi Ondrej,
+> 
+> On Sat, Jun 21, 2014 at 1:29 PM, Ondrej Zary <linux@rainbow-software.org> wrote:
+>> Poll link status every 2 seconds instead of 60 for ADMtek Comet chips.
+> 
+> Why use 2 seconds for the polling interval?
+> 
+> I'm sure you have a good reason for this and it should be in the
+> commit message or as a comment in the code.
+> 
+> I otherwise have no objection to this change.
 
-  Merge tag 'for-f2fs-3.16' of git://git.kernel.org/pub/scm/linux/kernel/gi=
-t/jaegeuk/f2fs (2014-06-09 19:11:44 -0700)
+Agreed, please post this with a better commit message, specifically
+make sure you explain why the interval is being changed and why
+2*HZ is specifically being choosen.
 
-are available in the git repository at:
-
-
-  git://git.samba.org/jlayton/linux.git tags/locks-v3.16-2
-
-for you to fetch changes up to 0c27362998a8357f199501aa401e99c51c2eb46e:
-
-  locks: set fl_owner for leases back to current->files (2014-06-10 12:29:0=
-5 -0400)
-
-----------------------------------------------------------------
-(from the branch description for locks-3.16 local branch)
-
-File locking related bugfixes for v3.16 (pile #2)
-
-Nothing too earth-shattering here. A fix for a potential regression
-due to a patch in pile #1, and the addition of a memory barrier to
-prevent a race condition between break_deleg and generic_add_lease.
-
-----------------------------------------------------------------
-Jeff Layton (2):
-      locks: add missing memory barrier in break_deleg
-      locks: set fl_owner for leases back to current->files
-
- fs/locks.c         | 2 +-
- include/linux/fs.h | 6 ++++++
- 2 files changed, 7 insertions(+), 1 deletion(-)
-
---=20
-Jeff Layton <jlayton@poochiereds.net>
-
---Sig_/rIw.iHc00tPgsf8WpDwxdtC
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTpi3YAAoJEAAOaEEZVoIVwWQQAKjDxZcS67EYMcsxGmiSOLeW
-JSoPbXH9ULVHnJJ/M8cEVdi80QDJltvJ4p/wOzkmB+OaRlrWEDyJTVSkBYgUiPah
-QsvRvBFMnltU9I0/+74zKewyjUp5ZjPWdP2QO9kO8ft/fC5dR1sSr0ZF9CoSImGl
-UVRT4OeHFMERpcFglhHnmM+2pOU4DO8IRezCnlGBEGimQ2aBz9r8yfi5WdLt5YDU
-Ks+PD6zsGtKa87UoblDARz0XFZnZUiI+6abI/pYD9qif2NrfukjN6mTUiGz5DdMe
-wLUo7CeMbNNYHJHv5ZX8NUzW49gOEF5VmEKZy71anRS8Kh4ndfg/aWMERBl6WAxV
-GczziznQgtAh0vouBUJStkVIJnYR626ZTjSu8msjkeF2VNR+F8dkITdSeppI1dgQ
-TyqFd8MuGzZcAu32J5ZTEy8F0+NlYueFyH+ydunpB1+m6QCs7gJcRmggeLImEdYR
-KLG8/SyYysdAaWqCSq2hkX8AJaeEWKBmJmqYajf/daNRtoSFiapK6Gq9cYakZ6QF
-gdCw+vLdMDSKK/yTCZYTeFJ2elegtocgr1TSVRv3POaik/y0NR/pEOsjE9RR/jfD
-b3NIBh6fB3z+AiiblsXzikgtW/SPrUkzfIqnChevDO1tSecwQBEFo+ayZYsydmAA
-q5H69/e9o2H/fCdu/BTU
-=982K
------END PGP SIGNATURE-----
-
---Sig_/rIw.iHc00tPgsf8WpDwxdtC--
+Thanks.
