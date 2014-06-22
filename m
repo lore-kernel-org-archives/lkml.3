@@ -1,99 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064AbaFVKZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 06:25:59 -0400
-Received: from toro.web-alm.net ([62.245.132.31]:42401 "EHLO toro.web-alm.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751569AbaFVKZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 06:25:57 -0400
-X-Greylist: delayed 3873 seconds by postgrey-1.27 at vger.kernel.org; Sun, 22 Jun 2014 06:25:57 EDT
-Message-ID: <53A69F09.9000202@osadl.org>
-Date: Sun, 22 Jun 2014 11:16:57 +0200
-From: Carsten Emde <C.Emde@osadl.org>
-Organization: Open Source Automation Development Lab (OSADL)
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751958AbaFVKrY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 06:47:24 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53358 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569AbaFVKrW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jun 2014 06:47:22 -0400
+Date: Sun, 22 Jun 2014 11:47:08 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Andy Gross <agross@codeaurora.org>
+Cc: linux-spi@vger.kernel.org, Sagar Dharia <sdharia@codeaurora.org>,
+        Daniel Sneddon <dsneddon@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Message-ID: <20140622104708.GK24291@sirena.org.uk>
+References: <1402601652-24641-1-git-send-email-agross@codeaurora.org>
+ <1402601652-24641-2-git-send-email-agross@codeaurora.org>
+ <20140621101303.GE5099@sirena.org.uk>
+ <20140621185646.GA2601@qualcomm.com>
 MIME-Version: 1.0
-To: Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaQ==?= =?UTF-8?B?Zw==?= 
-	<u.kleine-koenig@pengutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: Latency histogram broken after "hrtimer: Set expiry time before
- switch_hrtimer_base()"
-References: <1403399065.23472.77.camel@deadeye.wl.decadent.org.uk>	 <1403410224.5115.26.camel@marge.simpson.net> <1403411049.5115.28.camel@marge.simpson.net>
-In-Reply-To: <1403411049.5115.28.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qDymnuGqqhW10CwH"
+Content-Disposition: inline
+In-Reply-To: <20140621185646.GA2601@qualcomm.com>
+X-Cookie: This is NOT a repeat.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [Patch v2 1/3] spi: qup: Remove chip select function
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2014 06:24 AM, Mike Galbraith wrote:
-> [..]
-> On Sun, 2014-06-22 at 06:10 +0200, Mike Galbraith wrote:
->> On Sun, 2014-06-22 at 02:04 +0100, Ben Hutchings wrote:
->>> In an rt-kernel with CONFIG_MISSED_TIMER_OFFSETS_HIST enabled,
->>> __hrtimer_start_range_ns() now crashes, as new_base is not assigned
->>> before it is used.
->>
->> Oh yeah, forgot about this.
->>
->>> I'm not sure how this should be fixed; is it:
->>
->> My (3.12-ish tree) merge resolution was the later, but it shouldn't
->> matter which you choose, what's stored where is unchanged pre/post.
-I can confirm that 3.12.22-rt34 systems with 
-CONFIG_MISSED_TIMER_OFFSETS_HIST enabled crash at an early boot stage. 
-After applying Ben's second patch proposal, all is back to normal.
 
->>
->>> --- a/kernel/hrtimer.c
->>> +++ b/kernel/hrtimer.c
->>> @@ -1108,7 +1108,7 @@ int __hrtimer_start_range_ns(struct hrti
->>>
->>>   #ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
->>>   	{
->>> -		ktime_t now = new_base->get_time();
->>> +		ktime_t now = base->get_time();
->>>
->>>   		if (ktime_to_ns(tim) < ktime_to_ns(now))
->>>   			timer->praecox = now;
->>> --- END ---
->>>
->>> or:
-Didn't use this one.
+--qDymnuGqqhW10CwH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->>> --- a/kernel/hrtimer.c
->>> +++ b/kernel/hrtimer.c
->>> @@ -1106,6 +1106,11 @@ int __hrtimer_start_range_ns(struct hrti
->>>   #endif
->>>   	}
->>>
->>> +	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
->>> +
->>> +	/* Switch the timer base, if necessary: */
->>> +	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
->>> +
->>>   #ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
->>>   	{
->>>   		ktime_t now = new_base->get_time();
->>> @@ -1117,11 +1122,6 @@ int __hrtimer_start_range_ns(struct hrti
->>>   	}
->>>   #endif
->>>
->>> -	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
->>> -
->>> -	/* Switch the timer base, if necessary: */
->>> -	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
->>> -
->>>   	timer_stats_hrtimer_set_start_info(timer);
->>>
->>>   	leftmost = enqueue_hrtimer(timer, new_base);
->>> --- END ---
->>> or something else?
-Tested-by: Carsten Emde <C.Emde@osadl.org>
+On Sat, Jun 21, 2014 at 01:56:46PM -0500, Andy Gross wrote:
+> On Sat, Jun 21, 2014 at 11:13:03AM +0100, Mark Brown wrote:
+> > On Thu, Jun 12, 2014 at 02:34:10PM -0500, Andy Gross wrote:
 
-Thanks,
-	-Carsten.
+> > > This patch removes the chip select function.  Chip select should instead be
+> > > supported using GPIOs, defining the DT entry "cs-gpios", and letting the SPI
+> > > core assert/deassert the chip select as it sees fit.
+
+> > Why?
+
+> The chip select control inside the controller is buggy.  It is supposed to
+> automatically assert the chip select based on the activity in the controller,
+> but it is buggy and doesn't work at all.  So instead we elect to use GPIOs.
+
+OK, though it was in manual mode.
+
+--qDymnuGqqhW10CwH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTprQpAAoJELSic+t+oim937IP/RApkLGTVuPPN1kQlVhJt8Bu
+11N0da/sCNYBdiHXgH/HMMXsEZSrXQGDfjjlSMm2XirJxDHJ3s68qkgE82ooP9hD
+regLghKR5S6qVtLGlfl/30sTXION6xhaVsnqRmGsad4knNH9o85snu00GWtcjOEN
+OBK6V+/Ei+W8ngcxD3huj/Dsy/dEZsFl1wmlAZ5FiXEe9JDYBcGjJLYr2UcwHm4C
+OIf0c0KAmYVGUegawErAUaYOw+7vlIXjyfy+z0Rw+22FTDLpeBckVMhCKrQcOE/r
+fcIY9R9pW1SSpoeaYpp/X9S7Eg5ZQwMDm+QMoZMFLCqQhEKjjQaLVKAvK3TZOSUs
+aMrk4x1OXMF/gsXGJDsIhdOxLxlCiz5/yhVL+Z4tjp1/tj67tqzJJTB4MxcO341/
+DMRIvDNDjC9mM+Ulr0I9fmKWndyqWKYhG0sE5X5fMiQ+0Zwy7aCPsCTy/5oZI2NQ
+jl70VSTpbnxMSZhKsrD8WHUneDjDPcnQ7YMj8Mqex1DxfrUgW3kwGBM/qG9fL2v9
+Wn0cPost2iUBIIRFhDcVu44gnjkmq0NAqPiWA5NpYC9y/NeYjmYtdceLtc4e9PcK
+6GBm+h6SMsAU6M2gkbILhjcxtT34saLThai01qOh6lIMhh1pYDDqvyJ0rdREFele
+oaBSeZZ0Prfs8jHowqht
+=5fWX
+-----END PGP SIGNATURE-----
+
+--qDymnuGqqhW10CwH--
