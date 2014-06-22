@@ -1,66 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995AbaFVM3N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 08:29:13 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:56248 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468AbaFVM3M (ORCPT
+	id S1752225AbaFVMaV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 08:30:21 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:53560 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751608AbaFVMaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 08:29:12 -0400
-Message-ID: <53A6CC0E.5010000@gmail.com>
-Date: Sun, 22 Jun 2014 20:29:02 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Sun, 22 Jun 2014 08:30:19 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Miao Xie <miaox@cn.fujitsu.com>, Chris Mason <clm@fb.com>,
+        Josef Bacik <jbacik@fb.com>
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] Btrfs: Refactor btrfs_lock_cluster() to kill compiler warning
+Date: Sun, 22 Jun 2014 14:30:09 +0200
+Message-Id: <1403440209-13370-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-To: Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arch/score/include/asm/uaccess.h: Use standard clear_user()
- prototype
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use standard clear_user() just like another architectures, also match
-__clear_user() under score.
+fs/btrfs/extent-tree.c: In function ‘btrfs_lock_cluster’:
+fs/btrfs/extent-tree.c:6399: warning: ‘used_bg’ may be used uninitialized in this function
 
-The related warning (allmodconfig under score):
+  - Replace "again: ... goto again;" by standard C "while (1) { ... }",
+  - Move block not processed during the first iteration of the loop to the
+    end of the loop, which allows to kill the "locked" variable,
 
-    CC [M]  drivers/md/dm-ioctl.o
-  drivers/md/dm-ioctl.c: In function 'copy_params':
-  drivers/md/dm-ioctl.c:1728:33: warning: passing argument 1 of 'clear_user' from incompatible pointer type
-     if (secure_data && clear_user(user, param_kernel->data_size))
-                                   ^
-  In file included from include/linux/uaccess.h:5:0,
-                   from include/linux/highmem.h:8,
-                   from include/linux/bio.h:23,
-                   from include/linux/device-mapper.h:11,
-                   from drivers/md/dm.h:14,
-                   from drivers/md/dm-ioctl.c:8:
-  ./arch/score/include/asm/uaccess.h:364:29: note: expected 'char *' but argument is of type 'struct dm_ioctl *'
-   static inline unsigned long clear_user(char *src, unsigned long size)
-                               ^
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- arch/score/include/asm/uaccess.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Please review, compile tested only.
+---
+ fs/btrfs/extent-tree.c | 42 ++++++++++++++++++++----------------------
+ 1 file changed, 20 insertions(+), 22 deletions(-)
 
-diff --git a/arch/score/include/asm/uaccess.h b/arch/score/include/asm/uaccess.h
-index ab66ddd..259a539 100644
---- a/arch/score/include/asm/uaccess.h
-+++ b/arch/score/include/asm/uaccess.h
-@@ -361,7 +361,8 @@ copy_in_user(void *to, const void *from, unsigned long len)
-  */
- extern unsigned long __clear_user(void __user *src, unsigned long size);
- 
--static inline unsigned long clear_user(char *src, unsigned long size)
-+static inline unsigned long __must_check clear_user(void __user *src,
-+							unsigned long size)
+diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
+index 99c253918208..e151c4a73d7b 100644
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -6397,36 +6397,34 @@ btrfs_lock_cluster(struct btrfs_block_group_cache *block_group,
+ 		   int delalloc)
  {
- 	if (access_ok(VERIFY_WRITE, src, size))
- 		return __clear_user(src, size);
+ 	struct btrfs_block_group_cache *used_bg;
+-	bool locked = false;
+-again:
++
+ 	spin_lock(&cluster->refill_lock);
+-	if (locked) {
+-		if (used_bg == cluster->block_group)
+-			return used_bg;
++	while (1) {
++		used_bg = cluster->block_group;
++		if (!used_bg)
++			return NULL;
+ 
+-		up_read(&used_bg->data_rwsem);
+-		btrfs_put_block_group(used_bg);
+-	}
++		if (used_bg == block_group)
++			return used_bg;
+ 
+-	used_bg = cluster->block_group;
+-	if (!used_bg)
+-		return NULL;
++		btrfs_get_block_group(used_bg);
+ 
+-	if (used_bg == block_group)
+-		return used_bg;
++		if (!delalloc)
++			return used_bg;
+ 
+-	btrfs_get_block_group(used_bg);
++		if (down_read_trylock(&used_bg->data_rwsem))
++			return used_bg;
+ 
+-	if (!delalloc)
+-		return used_bg;
++		spin_unlock(&cluster->refill_lock);
++		down_read(&used_bg->data_rwsem);
+ 
+-	if (down_read_trylock(&used_bg->data_rwsem))
+-		return used_bg;
++		spin_lock(&cluster->refill_lock);
++		if (used_bg == cluster->block_group)
++			return used_bg;
+ 
+-	spin_unlock(&cluster->refill_lock);
+-	down_read(&used_bg->data_rwsem);
+-	locked = true;
+-	goto again;
++		up_read(&used_bg->data_rwsem);
++		btrfs_put_block_group(used_bg);
++	}
+ }
+ 
+ static inline void
 -- 
-1.9.2.459.g68773ac
+1.9.1
+
