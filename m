@@ -1,94 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751891AbaFVKWE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 06:22:04 -0400
-Received: from mout.gmx.net ([212.227.15.19]:52899 "EHLO mout.gmx.net"
+	id S1752001AbaFVKYg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 06:24:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8087 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751570AbaFVKWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 06:22:01 -0400
-From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
-To: michal.simek@xilinx.com
-Cc: anirudh@xilinx.com, John.Linn@xilinx.com, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
-Subject: [PATCH] xilinx: Fix compiler warning
-Date: Sun, 22 Jun 2014 12:21:01 +0200
-Message-Id: <1403432461-18296-1-git-send-email-manuel.schoelling@gmx.de>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751551AbaFVKYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jun 2014 06:24:34 -0400
+Date: Sun, 22 Jun 2014 13:24:48 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-api@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [PATCH v1 2/2] block: virtio-blk: support multi virt queues per
+ virtio-blk device
+Message-ID: <20140622102448.GB17067@redhat.com>
+References: <1403278181-28455-1-git-send-email-ming.lei@canonical.com>
+ <1403278181-28455-3-git-send-email-ming.lei@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:90eigVzhjJmcve+34tusurv0BWv57ho5e+AuxQ1/PH00HW/Qi7l
- rc9tYF50f7ZW6mDMbQV8DC6wSNhejK4p6hxj2JQQTbNSD7l0nNL7MJ0aqAzNPa+wGcXOWlP
- NZ2ykPoduDsp4NRDXyufHnsBaldzE86pgAmRZqD1cC3VHRGMcH53+j2A7a40QiysdroQBSb
- irxtZ3CK76orUYEiGZ6wg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403278181-28455-3-git-send-email-ming.lei@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The time comparsion functions require arguments of type unsigned long
-instead of (signed) long.
+On Fri, Jun 20, 2014 at 11:29:40PM +0800, Ming Lei wrote:
+> Firstly this patch supports more than one virtual queues for virtio-blk
+> device.
+> 
+> Secondly this patch maps the virtual queue to blk-mq's hardware queue.
+> 
+> With this approach, both scalability and performance can be improved.
+> 
+> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> ---
+>  drivers/block/virtio_blk.c |   70 +++++++++++++++++++++++++++++++-------------
+>  1 file changed, 50 insertions(+), 20 deletions(-)
+> 
+> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+> index f63d358..7c3d686 100644
+> --- a/drivers/block/virtio_blk.c
+> +++ b/drivers/block/virtio_blk.c
+> @@ -16,6 +16,8 @@
+>  
+>  #define PART_BITS 4
+>  
+> +#define MAX_NUM_VQ 16
+> +
+>  static int major;
+>  static DEFINE_IDA(vd_index_ida);
+>  
 
-Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
----
- drivers/net/ethernet/xilinx/ll_temac_main.c       |    2 +-
- drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c |    2 +-
- drivers/net/ethernet/xilinx/xilinx_emaclite.c     |    2 +-
- init/do_mounts.c                                  |    1 -
- 4 files changed, 3 insertions(+), 4 deletions(-)
+Does it work much worse if we just use as many queues as
+hardware supports, allocating as much memory as necessary?
 
-diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
-index 4ef818a..8a6e5c2 100644
---- a/drivers/net/ethernet/xilinx/ll_temac_main.c
-+++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
-@@ -72,7 +72,7 @@ void temac_iow(struct temac_local *lp, int offset, u32 value)
- 
- int temac_indirect_busywait(struct temac_local *lp)
- {
--	long end = jiffies + 2;
-+	unsigned long end = jiffies + 2;
- 
- 	while (!(temac_ior(lp, XTE_RDY0_OFFSET) & XTE_RDY0_HARD_ACS_RDY_MASK)) {
- 		if (time_before_eq(end, jiffies)) {
-diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c b/drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c
-index d4abf47..3b67d60 100644
---- a/drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c
-+++ b/drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c
-@@ -19,7 +19,7 @@
- /* Wait till MDIO interface is ready to accept a new transaction.*/
- int axienet_mdio_wait_until_ready(struct axienet_local *lp)
- {
--	long end = jiffies + 2;
-+	unsigned long end = jiffies + 2;
- 	while (!(axienet_ior(lp, XAE_MDIO_MCR_OFFSET) &
- 		 XAE_MDIO_MCR_READY_MASK)) {
- 		if (time_before_eq(end, jiffies)) {
-diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-index 8c4aed3..782bb93 100644
---- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-+++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-@@ -695,7 +695,7 @@ static irqreturn_t xemaclite_interrupt(int irq, void *dev_id)
- 
- static int xemaclite_mdio_wait(struct net_local *lp)
- {
--	long end = jiffies + 2;
-+	unsigned long end = jiffies + 2;
- 
- 	/* wait for the MDIO interface to not be busy or timeout
- 	   after some time.
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index 60c4196..2d069a3 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -351,7 +351,6 @@ static void __init get_fs_names(char *page)
- 				continue;
- 			line++;
- 
--			/* append fsname */
- 			memmove(fsnames, line, strlen(line)+1);
- 			fsnames += strlen(fsnames)+1;
- 		} while (page != NULL);
--- 
-1.7.10.4
 
+> @@ -24,8 +26,8 @@ static struct workqueue_struct *virtblk_wq;
+>  struct virtio_blk
+>  {
+>  	struct virtio_device *vdev;
+> -	struct virtqueue *vq;
+> -	spinlock_t vq_lock;
+> +	struct virtqueue *vq[MAX_NUM_VQ];
+> +	spinlock_t vq_lock[MAX_NUM_VQ];
+
+array of struct {
+    *vq;
+    spinlock_t lock;
+}
+would use more memory but would get us better locality.
+It might even make sense to add padding to avoid
+cacheline sharing between two unrelated VQs.
+Want to try?
+
+>  
+>  	/* The disk structure for the kernel. */
+>  	struct gendisk *disk;
+> @@ -47,6 +49,9 @@ struct virtio_blk
+>  
+>  	/* Ida index - used to track minor number allocations. */
+>  	int index;
+> +
+> +	/* num of vqs */
+> +	int num_vqs;
+>  };
+>  
+>  struct virtblk_req
+> @@ -133,14 +138,15 @@ static void virtblk_done(struct virtqueue *vq)
+>  {
+>  	struct virtio_blk *vblk = vq->vdev->priv;
+>  	bool req_done = false;
+> +	int qid = vq->index;
+>  	struct virtblk_req *vbr;
+>  	unsigned long flags;
+>  	unsigned int len;
+>  
+> -	spin_lock_irqsave(&vblk->vq_lock, flags);
+> +	spin_lock_irqsave(&vblk->vq_lock[qid], flags);
+>  	do {
+>  		virtqueue_disable_cb(vq);
+> -		while ((vbr = virtqueue_get_buf(vblk->vq, &len)) != NULL) {
+> +		while ((vbr = virtqueue_get_buf(vblk->vq[qid], &len)) != NULL) {
+>  			blk_mq_complete_request(vbr->req);
+>  			req_done = true;
+>  		}
+> @@ -151,7 +157,7 @@ static void virtblk_done(struct virtqueue *vq)
+>  	/* In case queue is stopped waiting for more buffers. */
+>  	if (req_done)
+>  		blk_mq_start_stopped_hw_queues(vblk->disk->queue, true);
+> -	spin_unlock_irqrestore(&vblk->vq_lock, flags);
+> +	spin_unlock_irqrestore(&vblk->vq_lock[qid], flags);
+>  }
+>  
+>  static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
+> @@ -160,6 +166,7 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
+>  	struct virtblk_req *vbr = blk_mq_rq_to_pdu(req);
+>  	unsigned long flags;
+>  	unsigned int num;
+> +	int qid = hctx->queue_num;
+>  	const bool last = (req->cmd_flags & REQ_END) != 0;
+>  	int err;
+>  	bool notify = false;
+> @@ -202,12 +209,12 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
+>  			vbr->out_hdr.type |= VIRTIO_BLK_T_IN;
+>  	}
+>  
+> -	spin_lock_irqsave(&vblk->vq_lock, flags);
+> -	err = __virtblk_add_req(vblk->vq, vbr, vbr->sg, num);
+> +	spin_lock_irqsave(&vblk->vq_lock[qid], flags);
+> +	err = __virtblk_add_req(vblk->vq[qid], vbr, vbr->sg, num);
+>  	if (err) {
+> -		virtqueue_kick(vblk->vq);
+> +		virtqueue_kick(vblk->vq[qid]);
+>  		blk_mq_stop_hw_queue(hctx);
+> -		spin_unlock_irqrestore(&vblk->vq_lock, flags);
+> +		spin_unlock_irqrestore(&vblk->vq_lock[qid], flags);
+>  		/* Out of mem doesn't actually happen, since we fall back
+>  		 * to direct descriptors */
+>  		if (err == -ENOMEM || err == -ENOSPC)
+> @@ -215,12 +222,12 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
+>  		return BLK_MQ_RQ_QUEUE_ERROR;
+>  	}
+>  
+> -	if (last && virtqueue_kick_prepare(vblk->vq))
+> +	if (last && virtqueue_kick_prepare(vblk->vq[qid]))
+>  		notify = true;
+> -	spin_unlock_irqrestore(&vblk->vq_lock, flags);
+> +	spin_unlock_irqrestore(&vblk->vq_lock[qid], flags);
+>  
+>  	if (notify)
+> -		virtqueue_notify(vblk->vq);
+> +		virtqueue_notify(vblk->vq[qid]);
+>  	return BLK_MQ_RQ_QUEUE_OK;
+>  }
+>  
+> @@ -377,12 +384,35 @@ static void virtblk_config_changed(struct virtio_device *vdev)
+>  static int init_vq(struct virtio_blk *vblk)
+>  {
+>  	int err = 0;
+> +	int i;
+> +	vq_callback_t *callbacks[MAX_NUM_VQ];
+> +	const char *names[MAX_NUM_VQ];
+> +	unsigned short num_vqs;
+> +	struct virtio_device *vdev = vblk->vdev;
+>  
+> -	/* We expect one virtqueue, for output. */
+> -	vblk->vq = virtio_find_single_vq(vblk->vdev, virtblk_done, "requests");
+> -	if (IS_ERR(vblk->vq))
+> -		err = PTR_ERR(vblk->vq);
+> +	err = virtio_cread_feature(vdev, VIRTIO_BLK_F_MQ,
+> +				   struct virtio_blk_config, num_queues,
+> +				   &num_vqs);
+> +	if (err)
+> +		num_vqs = 1;
+> +	if (num_vqs > MAX_NUM_VQ)
+> +		num_vqs = MAX_NUM_VQ;
+>  
+> +	for (i = 0; i < num_vqs; i++) {
+> +		callbacks[i] = virtblk_done;
+> +		names[i] = "requests";
+> +	}
+> +
+
+This will name all VQs the same which makes debugging harder.
+Better give each one a distinct name.
+
+> +	/* Discover virtqueues and write information to configuration.  */
+> +	err = vdev->config->find_vqs(vdev, num_vqs, vblk->vq,
+> +			callbacks, names);
+> +	if (err)
+> +		goto out;
+> +
+> +	for (i = 0; i < num_vqs; i++)
+> +		spin_lock_init(&vblk->vq_lock[i]);
+> +	vblk->num_vqs = num_vqs;
+> +out:
+>  	return err;
+>  }
+>  
+> @@ -551,7 +581,6 @@ static int virtblk_probe(struct virtio_device *vdev)
+>  	err = init_vq(vblk);
+>  	if (err)
+>  		goto out_free_vblk;
+> -	spin_lock_init(&vblk->vq_lock);
+>  
+>  	/* FIXME: How many partitions?  How long is a piece of string? */
+>  	vblk->disk = alloc_disk(1 << PART_BITS);
+> @@ -562,7 +591,7 @@ static int virtblk_probe(struct virtio_device *vdev)
+>  
+>  	/* Default queue sizing is to fill the ring. */
+>  	if (!virtblk_queue_depth) {
+> -		virtblk_queue_depth = vblk->vq->num_free;
+> +		virtblk_queue_depth = vblk->vq[0]->num_free;
+>  		/* ... but without indirect descs, we use 2 descs per req */
+>  		if (!virtio_has_feature(vdev, VIRTIO_RING_F_INDIRECT_DESC))
+>  			virtblk_queue_depth /= 2;
+> @@ -570,7 +599,6 @@ static int virtblk_probe(struct virtio_device *vdev)
+>  
+>  	memset(&vblk->tag_set, 0, sizeof(vblk->tag_set));
+>  	vblk->tag_set.ops = &virtio_mq_ops;
+> -	vblk->tag_set.nr_hw_queues = 1;
+>  	vblk->tag_set.queue_depth = virtblk_queue_depth;
+>  	vblk->tag_set.numa_node = NUMA_NO_NODE;
+>  	vblk->tag_set.flags = BLK_MQ_F_SHOULD_MERGE;
+> @@ -578,6 +606,7 @@ static int virtblk_probe(struct virtio_device *vdev)
+>  		sizeof(struct virtblk_req) +
+>  		sizeof(struct scatterlist) * sg_elems;
+>  	vblk->tag_set.driver_data = vblk;
+> +	vblk->tag_set.nr_hw_queues = vblk->num_vqs;
+>  
+>  	err = blk_mq_alloc_tag_set(&vblk->tag_set);
+>  	if (err)
+> @@ -777,7 +806,8 @@ static const struct virtio_device_id id_table[] = {
+>  static unsigned int features[] = {
+>  	VIRTIO_BLK_F_SEG_MAX, VIRTIO_BLK_F_SIZE_MAX, VIRTIO_BLK_F_GEOMETRY,
+>  	VIRTIO_BLK_F_RO, VIRTIO_BLK_F_BLK_SIZE, VIRTIO_BLK_F_SCSI,
+> -	VIRTIO_BLK_F_WCE, VIRTIO_BLK_F_TOPOLOGY, VIRTIO_BLK_F_CONFIG_WCE
+> +	VIRTIO_BLK_F_WCE, VIRTIO_BLK_F_TOPOLOGY, VIRTIO_BLK_F_CONFIG_WCE,
+> +	VIRTIO_BLK_F_MQ,
+>  };
+>  
+>  static struct virtio_driver virtio_blk = {
+> -- 
+> 1.7.9.5
