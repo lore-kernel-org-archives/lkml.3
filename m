@@ -1,86 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726AbaFVPLP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 11:11:15 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38187 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751364AbaFVPLN (ORCPT
+	id S1751835AbaFVPdW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 11:33:22 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:54374 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbaFVPdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 11:11:13 -0400
-Date: Sun, 22 Jun 2014 17:11:11 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Subject: regression: 3.16, i915: less colors in X?, caused by
- 773875bfb6737982903c42d1ee88cf60af80089c
-Message-ID: <20140622151111.GA4090@amd.pavel.ucw.cz>
-References: <alpine.LNX.2.00.1405151727380.16459@pobox.suse.cz>
- <CAKMK7uFEjDGSpdB0xDPL09GZ8N7aFrNA530HbRLyfTPx5SkLQw@mail.gmail.com>
- <20140607120614.GB5309@amd.pavel.ucw.cz>
- <20140607231124.GA3611@amd.pavel.ucw.cz>
- <CAKMK7uEALofLiEA3m-QKjygC=YZNjaEtUMfbpbXinMoim1ygkw@mail.gmail.com>
- <20140609102328.GA25332@amd.pavel.ucw.cz>
- <alpine.LNX.2.00.1406091302560.20782@pobox.suse.cz>
- <20140621202901.GA3840@amd.pavel.ucw.cz>
- <20140621210652.GA14025@nuc-i3427.alporthouse.com>
- <20140622142622.GA4107@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140622142622.GA4107@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 22 Jun 2014 11:33:20 -0400
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+Cc: Wenyou Yang <wenyou.yang@atmel.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Heiko Stuebner <heiko@sntech.de>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Beniamino Galvani <b.galvani@gmail.com>
+Subject: [PATCH 0/5] regulator: act8865: add support for act8846
+Date: Sun, 22 Jun 2014 17:31:40 +0200
+Message-Id: <1403451105-31929-1-git-send-email-b.galvani@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+This patchset adds support for the Active-Semi act8846 PMU [1] to the
+existing driver for act8865.
 
-> > > I just test-booted 3.16-rc1, and background in X looked just wrong --
-> > > very noticeable bands on the background gradient. I thought that maybe
-> > > it is just my eyes, but I went back to older kernel, and background is
-> > > ok now.
-> > > 
-> > > I'm trying to figure out how to ask X what color depth it is using...?
-> > > 
-> > > This is thinkpad x60 with Debian 6.0.9.
-> > > 
-> > > Any ideas?
-> > 
-> > That suggests that the panel dithering changed. Compare intel_reg_dumper
-> > output for both kernels, especially PIPE.CONF.
+A dts which enables the act8846 on Radxa Rock is available at [2].
 
-intel_reg_dumper has so many dependencies that it is basically
-impossible to get working :-(.
+[1] http://www.active-semi.com/products/power-management-units/act88xx/
+[2] https://github.com/bengal/linux/tree/act88xx-regulator
 
-Anyway, this seems to be the problem; if I revert it, my colors are
-back.
+Beniamino Galvani (5):
+  regulator: act8865: fix parsing of platform data
+  regulator: act8865: set correct number of regulators in pdata
+  regulator: act8865: prepare support for other act88xx devices
+  regulator: act8865: add support for act8846
+  regulator: act8865: add act8846 to DT binding documentation
 
-commit 773875bfb6737982903c42d1ee88cf60af80089c
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Mon Jan 27 10:00:30 2014 +0100
+ .../bindings/regulator/act8865-regulator.txt       |    7 +-
+ drivers/regulator/act8865-regulator.c              |  308 +++++++++++---------
+ include/linux/regulator/act8865.h                  |   23 +-
+ 3 files changed, 200 insertions(+), 138 deletions(-)
 
-    drm/i915: Don't set the 8to6 dither flag when not scaling
-    
-    Apparently we really only need this when the pfit is enabled, at
-    least
-    I couldn't dicern any difference here. Furthermore the hacks we
-    have
-    to reconstruct this bit is a bit glaring, and probably only works
-    because we can't move the lvds port to any other pipe than pipe B
-    on
-    gen2/3.
-    
-    So let's just rip this out.
-    
-    Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=77137 (the
-    LVDS
-    WARNING log, not the main "VGA can't be turned on" issue).
-    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-
-									Pavel
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.10.4
+
