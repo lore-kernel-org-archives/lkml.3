@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752214AbaFVIxE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 04:53:04 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:62023 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389AbaFVIxB (ORCPT
+	id S1752249AbaFVIxJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 04:53:09 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:58868 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752216AbaFVIxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 04:53:01 -0400
+	Sun, 22 Jun 2014 04:53:06 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 39/42] staging: rtl8188eu: Use round_up() instead of RND4()
-Date: Sun, 22 Jun 2014 14:21:43 +0530
-Message-Id: <1403427107-12744-11-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 40/42] staging: rtl8188eu: Remove function thread_enter()
+Date: Sun, 22 Jun 2014 14:21:44 +0530
+Message-Id: <1403427107-12744-12-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1403427107-12744-1-git-send-email-navin.patidar@gmail.com>
 References: <1403427107-12744-1-git-send-email-navin.patidar@gmail.com>
@@ -23,91 +23,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_security.c     |    6 +++---
- drivers/staging/rtl8188eu/core/rtw_xmit.c         |    4 ++--
- drivers/staging/rtl8188eu/hal/rtl8188eu_xmit.c    |    2 +-
- drivers/staging/rtl8188eu/include/osdep_service.h |    2 --
- 4 files changed, 6 insertions(+), 8 deletions(-)
+ drivers/staging/rtl8188eu/core/rtw_cmd.c          |    3 +--
+ drivers/staging/rtl8188eu/core/rtw_mp.c           |    2 +-
+ drivers/staging/rtl8188eu/include/osdep_service.h |    5 -----
+ 3 files changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_security.c b/drivers/staging/rtl8188eu/core/rtw_security.c
-index 1b64cb6..d78def5 100644
---- a/drivers/staging/rtl8188eu/core/rtw_security.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_security.c
-@@ -189,7 +189,7 @@ void rtw_wep_encrypt(struct adapter *padapter, u8 *pxmitframe)
- 				arcfour_encrypt(&mycontext, payload+length, crc, 4);
+diff --git a/drivers/staging/rtl8188eu/core/rtw_cmd.c b/drivers/staging/rtl8188eu/core/rtw_cmd.c
+index 343a6ca..e65d8ef 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_cmd.c
++++ b/drivers/staging/rtl8188eu/core/rtw_cmd.c
+@@ -285,8 +285,7 @@ int rtw_cmd_thread(void *context)
+ 	struct adapter *padapter = (struct adapter *)context;
+ 	struct cmd_priv *pcmdpriv = &(padapter->cmdpriv);
  
- 				pframe += pxmitpriv->frag_len;
--				pframe = (u8 *)RND4((size_t)(pframe));
-+				pframe = (u8 *) round_up((size_t)(pframe), 4);
- 			}
- 		}
- 	}
-@@ -628,7 +628,7 @@ u32	rtw_tkip_encrypt(struct adapter *padapter, u8 *pxmitframe)
- 					arcfour_encrypt(&mycontext, payload+length, crc, 4);
+-
+-	thread_enter("RTW_CMD_THREAD");
++	allow_signal(SIGTERM);
  
- 					pframe += pxmitpriv->frag_len;
--					pframe = (u8 *)RND4((size_t)(pframe));
-+					pframe = (u8 *) round_up((size_t)(pframe), 4);
- 				}
- 			}
- 		} else {
-@@ -1242,7 +1242,7 @@ u32	rtw_aes_encrypt(struct adapter *padapter, u8 *pxmitframe)
+ 	pcmdbuf = pcmdpriv->cmd_buf;
  
- 					aes_cipher(prwskey, pattrib->hdrlen, pframe, length);
- 					pframe += pxmitpriv->frag_len;
--					pframe = (u8 *)RND4((size_t)(pframe));
-+					pframe = (u8 *) round_up((size_t)(pframe), 8);
- 				}
- 			}
- 		} else{
-diff --git a/drivers/staging/rtl8188eu/core/rtw_xmit.c b/drivers/staging/rtl8188eu/core/rtw_xmit.c
-index 3a40b2a..95c508a 100644
---- a/drivers/staging/rtl8188eu/core/rtw_xmit.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_xmit.c
-@@ -692,7 +692,7 @@ static s32 xmitframe_addmic(struct adapter *padapter, struct xmit_frame *pxmitfr
- 			payload = pframe;
+diff --git a/drivers/staging/rtl8188eu/core/rtw_mp.c b/drivers/staging/rtl8188eu/core/rtw_mp.c
+index ca323db..919c4c2 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_mp.c
++++ b/drivers/staging/rtl8188eu/core/rtw_mp.c
+@@ -597,7 +597,7 @@ static int mp_xmit_packet_thread(void *context)
+ 	padapter = pmp_priv->papdater;
+ 	pxmitpriv = &(padapter->xmitpriv);
  
- 			for (curfragnum = 0; curfragnum < pattrib->nr_frags; curfragnum++) {
--				payload = (u8 *)RND4((size_t)(payload));
-+				payload = (u8 *) round_up((size_t)(payload), 4);
- 				RT_TRACE(_module_rtl871x_xmit_c_, _drv_err_,
- 					 ("=== curfragnum=%d, pframe = 0x%.2x, 0x%.2x, 0x%.2x, 0x%.2x, 0x%.2x, 0x%.2x, 0x%.2x, 0x%.2x,!!!\n",
- 					 curfragnum, *payload, *(payload+1),
-@@ -1099,7 +1099,7 @@ s32 rtw_xmitframe_coalesce(struct adapter *padapter, struct sk_buff *pkt, struct
+-	thread_enter("RTW_MP_THREAD");
++	allow_signal(SIGTERM);
  
- 		addr = (size_t)(pframe);
- 
--		mem_start = (unsigned char *)RND4(addr) + hw_hdr_offset;
-+		mem_start = (unsigned char *) round_up(addr, 4) + hw_hdr_offset;
- 		memcpy(mem_start, pbuf_start + hw_hdr_offset, pattrib->hdrlen);
- 	}
- 
-diff --git a/drivers/staging/rtl8188eu/hal/rtl8188eu_xmit.c b/drivers/staging/rtl8188eu/hal/rtl8188eu_xmit.c
-index 902bbe0..7004e0b 100644
---- a/drivers/staging/rtl8188eu/hal/rtl8188eu_xmit.c
-+++ b/drivers/staging/rtl8188eu/hal/rtl8188eu_xmit.c
-@@ -401,7 +401,7 @@ static s32 rtw_dump_xframe(struct adapter *adapt, struct xmit_frame *pxmitframe)
- 
- 		mem_addr += w_sz;
- 
--		mem_addr = (u8 *)RND4(((size_t)(mem_addr)));
-+		mem_addr = (u8 *) round_up((size_t)mem_addr, 4);
- 	}
- 
- 	rtw_free_xmitframe(pxmitpriv, pxmitframe);
+ 	/* DBG_88E("%s:pkTx Start\n", __func__); */
+ 	while (1) {
 diff --git a/drivers/staging/rtl8188eu/include/osdep_service.h b/drivers/staging/rtl8188eu/include/osdep_service.h
-index e335471..6c3234b 100644
+index 6c3234b..e7bbc28 100644
 --- a/drivers/staging/rtl8188eu/include/osdep_service.h
 +++ b/drivers/staging/rtl8188eu/include/osdep_service.h
-@@ -175,8 +175,6 @@ static inline void flush_signals_thread(void)
- 		flush_signals(current);
- }
+@@ -164,11 +164,6 @@ u32  rtw_systime_to_ms(u32 systime);
+ u32  rtw_ms_to_systime(u32 ms);
+ s32  rtw_get_passing_time_ms(u32 start);
  
--#define RND4(x)	(((x >> 2) + (((x & 3) == 0) ?  0 : 1)) << 2)
+-static inline void thread_enter(char *name)
+-{
+-	allow_signal(SIGTERM);
+-}
 -
- struct rtw_netdev_priv_indicator {
- 	void *priv;
- 	u32 sizeof_priv;
+ static inline void flush_signals_thread(void)
+ {
+ 	if (signal_pending(current))
 -- 
 1.7.10.4
 
