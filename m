@@ -1,68 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141AbaFVKw0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 06:52:26 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53383 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570AbaFVKwZ (ORCPT
+	id S1752118AbaFVK4o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 06:56:44 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50268 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751577AbaFVK4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 06:52:25 -0400
-Date: Sun, 22 Jun 2014 11:52:05 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20140622105205.GM24291@sirena.org.uk>
-References: <1402238742.32652.1.camel@phoenix>
+	Sun, 22 Jun 2014 06:56:43 -0400
+Message-ID: <53A6B658.6030709@pengutronix.de>
+Date: Sun, 22 Jun 2014 12:56:24 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, Wolfgang Grandegger <wg@grandegger.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] can: c_can: convert to use devm * api
+References: <1403265574-12923-1-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1403265574-12923-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Enigmail-Version: 1.6
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FxlYARId5dseejUu"
-Content-Disposition: inline
-In-Reply-To: <1402238742.32652.1.camel@phoenix>
-X-Cookie: This is NOT a repeat.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] regulator: ab8500: Remove ab8500_regulator_of_probe()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+ protocol="application/pgp-signature";
+ boundary="fgMfhWC7AtGXTHDrHh2UnqpNvTOg1N88w"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--fgMfhWC7AtGXTHDrHh2UnqpNvTOg1N88w
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
---FxlYARId5dseejUu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 06/20/2014 01:59 PM, Lad, Prabhakar wrote:
+> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+>=20
+> this patch uses devm_* APIs as they are device managed
+> and make code simpler.
+>=20
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-On Sun, Jun 08, 2014 at 10:45:42PM +0800, Axel Lin wrote:
-> Now this is a DT-only driver because non-devicetree probe path is removed,
-> so merge ab8500_regulator_of_probe() into ab8500_regulator_probe().
+Thanks for the patch. Applied to can-next with minor change (see inline).=
 
-Applied both, thanks.
 
---FxlYARId5dseejUu
+> ---
+>  Note: This patch is compile tested only.
+> =20
+>  drivers/net/can/c_can/c_can_platform.c | 41 ++++++++------------------=
+--------
+>  1 file changed, 9 insertions(+), 32 deletions(-)
+>=20
+> diff --git a/drivers/net/can/c_can/c_can_platform.c b/drivers/net/can/c=
+_can/c_can_platform.c
+> index 1df0b32..e0dcbcf 100644
+> --- a/drivers/net/can/c_can/c_can_platform.c
+> +++ b/drivers/net/can/c_can/c_can_platform.c
+> @@ -157,40 +157,31 @@ static int c_can_plat_probe(struct platform_devic=
+e *pdev)
+>  	}
+> =20
+>  	/* get the appropriate clk */
+> -	clk =3D clk_get(&pdev->dev, NULL);
+> +	clk =3D devm_clk_get(&pdev->dev, NULL);
+>  	if (IS_ERR(clk)) {
+> -		dev_err(&pdev->dev, "no clock defined\n");
+> -		ret =3D -ENODEV;
+> +		ret =3D PTR_ERR(clk);
+>  		goto exit;
+>  	}
+> =20
+>  	/* get the platform data */
+>  	mem =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	irq =3D platform_get_irq(pdev, 0);
+> -	if (!mem || irq <=3D 0) {
+> -		ret =3D -ENODEV;
+> -		goto exit_free_clk;
+> -	}
+> -
+> -	if (!request_mem_region(mem->start, resource_size(mem),
+> -				KBUILD_MODNAME)) {
+> -		dev_err(&pdev->dev, "resource unavailable\n");
+> +	if (irq <=3D 0) {
+>  		ret =3D -ENODEV;
+> -		goto exit_free_clk;
+> +		goto exit;
+>  	}
+> =20
+> -	addr =3D ioremap(mem->start, resource_size(mem));
+> -	if (!addr) {
+> -		dev_err(&pdev->dev, "failed to map can port\n");
+> -		ret =3D -ENOMEM;
+> -		goto exit_release_mem;
+
+I've moved the mem =3D platform_get_resource() for slightly better
+readability here....
+
+> +	addr =3D devm_ioremap_resource(&pdev->dev, mem);
+> +	if (IS_ERR(addr)) {
+> +		ret =3D  PTR_ERR(addr);
+> +		goto exit;
+>  	}
+
+Thanks,
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--fgMfhWC7AtGXTHDrHh2UnqpNvTOg1N88w
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
 
-iQIcBAEBAgAGBQJTprVSAAoJELSic+t+oim9I2YP/0AyWlIYm4h8xP2CO67YsA+h
-dpPEli2PMNyO1aOwwMADBsrQJear4xkxrsHXmIF/sjuVbb4aWoFiQidjlEIdvfrF
-z8hPraOjfEH7KLZGqPWUZbdiz23FUItuiHrSUeip4ZHRrj2Evr02Yuy96QgVPvD/
-uqSMAZsruGlq3TMecOROfzslxV/K9V4N5OupS8ek/EHhWVghgtXTwQSdJgueo/mb
-6BARSDIfhsdlYxwdr09SJM1MPYabrj/VYHUYT+rzSH0TGS4aE8Ei9fBJAkjpJoaF
-WjV9Zqb/1DyHe7xkp21OtmQLZelcg6DSmXUAp7zejZ0S/zkJrOUbuntiU718X3ZS
-cp5hm/kAlSsk7aNQH2G+ovGPtfbRwRrAH1SHFYSDT0/sxc/n/NGQxHpcTpbyck2s
-d9y98Y/CjNugrQsZsBMda2D5S4FMPxsK5679cc6Ar0xd/q0KQtNPnXeDpvKEDHA4
-xhhUGvFGJvH08lE2gCP4Hi7skKgvV1ULwch0y2z6TJVBZwqjHxp9yQS627IhZlaj
-TNpY88tQ86W9GUjuRr4diw2pD4WBatC/CpT0onP6Z5P6dNAAupc4YajzM6twCttB
-aPgO61JxPkiPfRJW4ymKrz/wzyxn26MPgmYrcvmBXZ6mZDIobJ+v0jYxCNzy5suF
-SKkybBCn04rYCAUw0J5T
-=i4d9
+iEYEARECAAYFAlOmtlsACgkQjTAFq1RaXHNXSgCfQi30zV/CnoMzok0XdmLDaAED
+gaUAn2UX++T09aAp1w/KiL4CMBSirhD6
+=c4pQ
 -----END PGP SIGNATURE-----
 
---FxlYARId5dseejUu--
+--fgMfhWC7AtGXTHDrHh2UnqpNvTOg1N88w--
