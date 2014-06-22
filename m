@@ -1,120 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752400AbaFVIxn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 04:53:43 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:50004 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348AbaFVIxk (ORCPT
+	id S1751511AbaFVJTg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 05:19:36 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:50151 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750938AbaFVJTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 04:53:40 -0400
-From: navin patidar <navin.patidar@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 42/42] staging: rtl8188eu: Replace _cancel_timer() with del_timer_sync()
-Date: Sun, 22 Jun 2014 14:21:46 +0530
-Message-Id: <1403427107-12744-14-git-send-email-navin.patidar@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1403427107-12744-1-git-send-email-navin.patidar@gmail.com>
-References: <1403427107-12744-1-git-send-email-navin.patidar@gmail.com>
+	Sun, 22 Jun 2014 05:19:34 -0400
+Date: Sun, 22 Jun 2014 12:19:27 +0300
+From: Gleb Natapov <gleb@kernel.org>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, pbonzini@redhat.com,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, mgorman@suse.de,
+        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, laijs@cn.fujitsu.com, kvm@vger.kernel.org,
+        linux-mm@kvack.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        Avi Kivity <avi.kivity@gmail.com>
+Subject: Re: [RFC PATCH 1/1] Move two pinned pages to non-movable node in kvm.
+Message-ID: <20140622091927.GA18167@minantech.com>
+References: <1403070600-6083-1-git-send-email-tangchen@cn.fujitsu.com>
+ <20140618061230.GA10948@minantech.com>
+ <53A136C4.5070206@cn.fujitsu.com>
+ <20140619092031.GA429@minantech.com>
+ <20140619190024.GA3887@amt.cnet>
+ <20140620111509.GE20764@minantech.com>
+ <20140620125326.GA22283@amt.cnet>
+ <20140620142622.GA28698@minantech.com>
+ <20140620203146.GA6580@amt.cnet>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140620203146.GA6580@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: navin patidar <navin.patidar@gmail.com>
----
- drivers/staging/rtl8188eu/core/rtw_cmd.c          |    3 +--
- drivers/staging/rtl8188eu/core/rtw_mlme.c         |    8 ++------
- drivers/staging/rtl8188eu/core/rtw_p2p.c          |    4 +---
- drivers/staging/rtl8188eu/include/osdep_service.h |    6 ------
- 4 files changed, 4 insertions(+), 17 deletions(-)
+On Fri, Jun 20, 2014 at 05:31:46PM -0300, Marcelo Tosatti wrote:
+> > > Same with the APIC access page.
+> > APIC page is always mapped into guest's APIC base address 0xfee00000.
+> > The way it works is that when vCPU accesses page at 0xfee00000 the access
+> > is translated to APIC access page physical address. CPU sees that access
+> > is for APIC page and generates APIC access exit instead of memory access.
+> > If address 0xfee00000 is not mapped by EPT then EPT violation exit will
+> > be generated instead, EPT mapping will be instantiated, access retired
+> > by a guest and this time will generate APIC access exit.
+> 
+> Right, confused with the other APIC page which the CPU writes (the vAPIC page) 
+> to.
+> 
+That one is allocated with kmalloc.
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_cmd.c b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-index 556d17d..aeaa873 100644
---- a/drivers/staging/rtl8188eu/core/rtw_cmd.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-@@ -2084,7 +2084,6 @@ void rtw_joinbss_cmd_callback(struct adapter *padapter,  struct cmd_obj *pcmd)
- 
- void rtw_createbss_cmd_callback(struct adapter *padapter, struct cmd_obj *pcmd)
- {
--	u8 timer_cancelled;
- 	struct sta_info *psta = NULL;
- 	struct wlan_network *pwlan = NULL;
- 	struct	mlme_priv *pmlmepriv = &padapter->mlmepriv;
-@@ -2097,7 +2096,7 @@ void rtw_createbss_cmd_callback(struct adapter *padapter, struct cmd_obj *pcmd)
- 		_set_timer(&pmlmepriv->assoc_timer, 1);
- 	}
- 
--	_cancel_timer(&pmlmepriv->assoc_timer, &timer_cancelled);
-+	del_timer_sync(&pmlmepriv->assoc_timer);
- 
- 	spin_lock_bh(&pmlmepriv->lock);
- 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme.c b/drivers/staging/rtl8188eu/core/rtw_mlme.c
-index c03442d..0cb9e15 100644
---- a/drivers/staging/rtl8188eu/core/rtw_mlme.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_mlme.c
-@@ -725,10 +725,7 @@ void rtw_surveydone_event_callback(struct adapter	*adapter, u8 *pbuf)
- 	RT_TRACE(_module_rtl871x_mlme_c_, _drv_info_, ("rtw_surveydone_event_callback: fw_state:%x\n\n", get_fwstate(pmlmepriv)));
- 
- 	if (check_fwstate(pmlmepriv, _FW_UNDER_SURVEY)) {
--		u8 timer_cancelled;
--
--		_cancel_timer(&pmlmepriv->scan_to_timer, &timer_cancelled);
--
-+		del_timer_sync(&pmlmepriv->scan_to_timer);
- 		_clr_fwstate_(pmlmepriv, _FW_UNDER_SURVEY);
- 	} else {
- 		RT_TRACE(_module_rtl871x_mlme_c_, _drv_err_, ("nic status=%x, survey done event comes too late!\n", get_fwstate(pmlmepriv)));
-@@ -1103,7 +1100,6 @@ static void rtw_joinbss_update_network(struct adapter *padapter, struct wlan_net
- 
- void rtw_joinbss_event_prehandle(struct adapter *adapter, u8 *pbuf)
- {
--	u8 timer_cancelled;
- 	struct sta_info *ptarget_sta = NULL, *pcur_sta = NULL;
- 	struct	sta_priv *pstapriv = &adapter->stapriv;
- 	struct	mlme_priv	*pmlmepriv = &(adapter->mlmepriv);
-@@ -1196,7 +1192,7 @@ void rtw_joinbss_event_prehandle(struct adapter *adapter, u8 *pbuf)
- 				}
- 
- 			/* s5. Cancle assoc_timer */
--			_cancel_timer(&pmlmepriv->assoc_timer, &timer_cancelled);
-+			del_timer_sync(&pmlmepriv->assoc_timer);
- 
- 			RT_TRACE(_module_rtl871x_mlme_c_, _drv_info_, ("Cancle assoc_timer\n"));
- 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_p2p.c b/drivers/staging/rtl8188eu/core/rtw_p2p.c
-index 6023a85..e1fd198 100644
---- a/drivers/staging/rtl8188eu/core/rtw_p2p.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_p2p.c
-@@ -1404,9 +1404,7 @@ u8 process_p2p_group_negotation_confirm(struct wifidirect_info *pwdinfo, u8 *pfr
- 			result = attr_content;
- 
- 			if (attr_content == P2P_STATUS_SUCCESS) {
--				u8	bcancelled = 0;
--
--				_cancel_timer(&pwdinfo->restore_p2p_state_timer, &bcancelled);
-+				del_timer_sync(&pwdinfo->restore_p2p_state_timer);
- 
- 				/*	Commented by Albert 20100911 */
- 				/*	Todo: Need to handle the case which both Intents are the same. */
-diff --git a/drivers/staging/rtl8188eu/include/osdep_service.h b/drivers/staging/rtl8188eu/include/osdep_service.h
-index 2d07dea..95131fe 100644
---- a/drivers/staging/rtl8188eu/include/osdep_service.h
-+++ b/drivers/staging/rtl8188eu/include/osdep_service.h
-@@ -90,12 +90,6 @@ static inline void _set_timer(struct timer_list *ptimer, u32 delay_time)
- 	mod_timer(ptimer , (jiffies+(delay_time*HZ/1000)));
- }
- 
--static inline void _cancel_timer(struct timer_list *ptimer, u8 *bcancelled)
--{
--	del_timer_sync(ptimer);
--	*bcancelled = true;/* true ==1; false==0 */
--}
--
- #define RTW_TIMER_HDL_ARGS void *FunctionContext
- #define RTW_TIMER_HDL_NAME(name) rtw_##name##_timer_hdl
- #define RTW_DECLARE_TIMER_HDL(name) \
--- 
-1.7.10.4
-
+--
+			Gleb.
