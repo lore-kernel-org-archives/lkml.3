@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716AbaFVIwM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 04:52:12 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:61840 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751533AbaFVIwH (ORCPT
+	id S1751790AbaFVIwP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 04:52:15 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:55809 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533AbaFVIwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 04:52:07 -0400
+	Sun, 22 Jun 2014 04:52:12 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 31/42] staging: rtl8188eu: Use get_unaligned_le16() instead of RTW_GET_LE16()
-Date: Sun, 22 Jun 2014 14:21:35 +0530
-Message-Id: <1403427107-12744-3-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 32/42] staging: rtl8188eu: Use cpu_to_le16() insted of RTW_PUT_LE16()
+Date: Sun, 22 Jun 2014 14:21:36 +0530
+Message-Id: <1403427107-12744-4-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1403427107-12744-1-git-send-email-navin.patidar@gmail.com>
 References: <1403427107-12744-1-git-send-email-navin.patidar@gmail.com>
@@ -23,112 +23,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_ap.c           |    4 ++--
- drivers/staging/rtl8188eu/core/rtw_ieee80211.c    |    8 ++++----
- drivers/staging/rtl8188eu/core/rtw_mlme_ext.c     |    6 +++---
- drivers/staging/rtl8188eu/include/osdep_service.h |    1 -
- 4 files changed, 9 insertions(+), 10 deletions(-)
+ drivers/staging/rtl8188eu/core/rtw_ieee80211.c    |    7 +++---
+ drivers/staging/rtl8188eu/core/rtw_p2p.c          |   24 +++++++--------------
+ drivers/staging/rtl8188eu/include/osdep_service.h |    6 ------
+ 3 files changed, 11 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_ap.c b/drivers/staging/rtl8188eu/core/rtw_ap.c
-index 1987185..768a359 100644
---- a/drivers/staging/rtl8188eu/core/rtw_ap.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_ap.c
-@@ -900,10 +900,10 @@ int rtw_check_beacon_data(struct adapter *padapter, u8 *pbuf,  int len)
- 
- 	/* beacon interval */
- 	p = rtw_get_beacon_interval_from_ie(ie);/* 8: TimeStamp, 2: Beacon Interval 2:Capability */
--	pbss_network->Configuration.BeaconPeriod = RTW_GET_LE16(p);
-+	pbss_network->Configuration.BeaconPeriod = get_unaligned_le16(p);
- 
- 	/* capability */
--	cap = RTW_GET_LE16(ie);
-+	cap = get_unaligned_le16(ie);
- 
- 	/* SSID */
- 	p = rtw_get_ie(ie + _BEACON_IE_OFFSET_, _SSID_IE_, &ie_len, (pbss_network->IELength - _BEACON_IE_OFFSET_));
 diff --git a/drivers/staging/rtl8188eu/core/rtw_ieee80211.c b/drivers/staging/rtl8188eu/core/rtw_ieee80211.c
-index 9eb198a..d264847 100644
+index d264847..54ebf34 100644
 --- a/drivers/staging/rtl8188eu/core/rtw_ieee80211.c
 +++ b/drivers/staging/rtl8188eu/core/rtw_ieee80211.c
-@@ -551,7 +551,7 @@ int rtw_parse_wpa_ie(u8 *wpa_ie, int wpa_ie_len, int *group_cipher, int *pairwis
+@@ -206,8 +206,8 @@ inline u8 *rtw_set_ie_mesh_ch_switch_parm(u8 *buf, u32 *buf_len, u8 ttl,
  
- 	/* pairwise_cipher */
- 	if (left >= 2) {
--		count = RTW_GET_LE16(pos);
-+		count = get_unaligned_le16(pos);
- 		pos += 2;
- 		left -= 2;
+ 	ie_data[0] = ttl;
+ 	ie_data[1] = flags;
+-	RTW_PUT_LE16((u8 *)&ie_data[2], reason);
+-	RTW_PUT_LE16((u8 *)&ie_data[4], precedence);
++	*(u16 *)(ie_data+2) = cpu_to_le16(reason);
++	*(u16 *)(ie_data+4) = cpu_to_le16(precedence);
  
-@@ -619,7 +619,7 @@ int rtw_parse_wpa2_ie(u8 *rsn_ie, int rsn_ie_len, int *group_cipher, int *pairwi
+ 	return rtw_set_ie(buf, 0x118,  6, ie_data, buf_len);
+ }
+@@ -1310,8 +1310,7 @@ u32 rtw_set_p2p_attr_content(u8 *pbuf, u8 attr_id, u16 attr_len, u8 *pdata_attr)
  
- 	/* pairwise_cipher */
- 	if (left >= 2) {
--		count = RTW_GET_LE16(pos);
-+		count = get_unaligned_le16(pos);
- 		pos += 2;
- 		left -= 2;
+ 	*pbuf = attr_id;
  
-@@ -1179,7 +1179,7 @@ void dump_p2p_ie(u8 *ie, u32 ie_len)
- 	pos += 6;
- 	while (pos-ie < ie_len) {
- 		id = *pos;
--		len = RTW_GET_LE16(pos+1);
-+		len = get_unaligned_le16(pos+1);
- 		DBG_88E("%s ID:%u, LEN:%u\n", __func__, id, len);
- 		pos += (3+len);
- 	}
-@@ -1253,7 +1253,7 @@ u8 *rtw_get_p2p_attr(u8 *p2p_ie, uint p2p_ielen, u8 target_attr_id , u8 *buf_att
- 	while (attr_ptr - p2p_ie < p2p_ielen) {
- 		/*  3 = 1(Attribute ID) + 2(Length) */
- 		u8 attr_id = *attr_ptr;
--		u16 attr_data_len = RTW_GET_LE16(attr_ptr + 1);
-+		u16 attr_data_len = get_unaligned_le16(attr_ptr + 1);
- 		u16 attr_len = attr_data_len + 3;
+-	/* u16*)(pbuf + 1) = cpu_to_le16(attr_len); */
+-	RTW_PUT_LE16(pbuf + 1, attr_len);
++	*(u16 *)(pbuf + 1) = cpu_to_le16(attr_len);
  
- 		if (attr_id == target_attr_id) {
-diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c b/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c
-index 1b855b4..dc194324 100644
---- a/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c
-@@ -1053,7 +1053,7 @@ unsigned int OnAssocReq(struct adapter *padapter, struct recv_frame *precv_frame
- 		goto asoc_class2_error;
- 	}
+ 	if (pdata_attr)
+ 		memcpy(pbuf + 3, pdata_attr, attr_len);
+diff --git a/drivers/staging/rtl8188eu/core/rtw_p2p.c b/drivers/staging/rtl8188eu/core/rtw_p2p.c
+index c7bceae..6023a85 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_p2p.c
++++ b/drivers/staging/rtl8188eu/core/rtw_p2p.c
+@@ -487,8 +487,7 @@ u32 build_probe_resp_p2p_ie(struct wifidirect_info *pwdinfo, u8 *pbuf)
+ 	p2pie[p2pielen++] = P2P_ATTR_CAPABILITY;
  
--	capab_info = RTW_GET_LE16(pframe + WLAN_HDR_A3_LEN);
-+	capab_info = get_unaligned_le16(pframe + WLAN_HDR_A3_LEN);
+ 	/*	Length: */
+-	/* u16*) (p2pie + p2pielen) = cpu_to_le16(0x0002); */
+-	RTW_PUT_LE16(p2pie + p2pielen, 0x0002);
++	*(u16 *) (p2pie + p2pielen) = cpu_to_le16(0x0002);
+ 	p2pielen += 2;
  
- 	left = pkt_len - (IEEE80211_3ADDR_LEN + ie_offset);
- 	pos = pframe + (IEEE80211_3ADDR_LEN + ie_offset);
-@@ -1788,7 +1788,7 @@ unsigned int OnAction_back(struct adapter *padapter, struct recv_frame *precv_fr
- 				issue_action_BA(padapter, addr, RTW_WLAN_ACTION_ADDBA_RESP, 37);/* reject ADDBA Req */
- 			break;
- 		case RTW_WLAN_ACTION_ADDBA_RESP: /* ADDBA response */
--			status = RTW_GET_LE16(&frame_body[3]);
-+			status = get_unaligned_le16(&frame_body[3]);
- 			tid = ((frame_body[5] >> 2) & 0x7);
- 			if (status == 0) {	/* successful */
- 				DBG_88E("agg_enable for TID=%d\n", tid);
-@@ -1802,7 +1802,7 @@ unsigned int OnAction_back(struct adapter *padapter, struct recv_frame *precv_fr
- 			if ((frame_body[3] & BIT(3)) == 0) {
- 				psta->htpriv.agg_enable_bitmap &= ~(1 << ((frame_body[3] >> 4) & 0xf));
- 				psta->htpriv.candidate_tid_bitmap &= ~(1 << ((frame_body[3] >> 4) & 0xf));
--				reason_code = RTW_GET_LE16(&frame_body[4]);
-+				reason_code = get_unaligned_le16(&frame_body[4]);
- 			} else if ((frame_body[3] & BIT(3)) == BIT(3)) {
- 				tid = (frame_body[3] >> 4) & 0x0F;
- 				preorder_ctrl =  &psta->recvreorder_ctrl[tid];
+ 	/*	Value: */
+@@ -516,19 +515,16 @@ u32 build_probe_resp_p2p_ie(struct wifidirect_info *pwdinfo, u8 *pbuf)
+ 	p2pie[p2pielen++] = P2P_ATTR_EX_LISTEN_TIMING;
+ 
+ 	/*	Length: */
+-	/* u16*) (p2pie + p2pielen) = cpu_to_le16(0x0004); */
+-	RTW_PUT_LE16(p2pie + p2pielen, 0x0004);
++	*(u16 *) (p2pie + p2pielen) = cpu_to_le16(0x0004);
+ 	p2pielen += 2;
+ 
+ 	/*	Value: */
+ 	/*	Availability Period */
+-	/* u16*) (p2pie + p2pielen) = cpu_to_le16(0xFFFF); */
+-	RTW_PUT_LE16(p2pie + p2pielen, 0xFFFF);
++	*(u16 *) (p2pie + p2pielen) = cpu_to_le16(0xFFFF);
+ 	p2pielen += 2;
+ 
+ 	/*	Availability Interval */
+-	/* u16*) (p2pie + p2pielen) = cpu_to_le16(0xFFFF); */
+-	RTW_PUT_LE16(p2pie + p2pielen, 0xFFFF);
++	*(u16 *) (p2pie + p2pielen) = cpu_to_le16(0xFFFF);
+ 	p2pielen += 2;
+ 
+ 
+@@ -544,8 +540,7 @@ u32 build_probe_resp_p2p_ie(struct wifidirect_info *pwdinfo, u8 *pbuf)
+ 	/*	Length: */
+ 	/*	21 -> P2P Device Address (6bytes) + Config Methods (2bytes) + Primary Device Type (8bytes) */
+ 	/*	+ NumofSecondDevType (1byte) + WPS Device Name ID field (2bytes) + WPS Device Name Len field (2bytes) */
+-	/* u16*) (p2pie + p2pielen) = cpu_to_le16(21 + pwdinfo->device_name_len); */
+-	RTW_PUT_LE16(p2pie + p2pielen, 21 + pwdinfo->device_name_len);
++	*(u16 *) (p2pie + p2pielen) = cpu_to_le16(21 + pwdinfo->device_name_len);
+ 	p2pielen += 2;
+ 
+ 	/*	Value: */
+@@ -624,8 +619,7 @@ u32 build_prov_disc_request_p2p_ie(struct wifidirect_info *pwdinfo, u8 *pbuf, u8
+ 	p2pie[p2pielen++] = P2P_ATTR_CAPABILITY;
+ 
+ 	/*	Length: */
+-	/* u16*) (p2pie + p2pielen) = cpu_to_le16(0x0002); */
+-	RTW_PUT_LE16(p2pie + p2pielen, 0x0002);
++	*(u16 *) (p2pie + p2pielen) = cpu_to_le16(0x0002);
+ 	p2pielen += 2;
+ 
+ 	/*	Value: */
+@@ -646,8 +640,7 @@ u32 build_prov_disc_request_p2p_ie(struct wifidirect_info *pwdinfo, u8 *pbuf, u8
+ 	/*	Length: */
+ 	/*	21 -> P2P Device Address (6bytes) + Config Methods (2bytes) + Primary Device Type (8bytes) */
+ 	/*	+ NumofSecondDevType (1byte) + WPS Device Name ID field (2bytes) + WPS Device Name Len field (2bytes) */
+-	/* u16*) (p2pie + p2pielen) = cpu_to_le16(21 + pwdinfo->device_name_len); */
+-	RTW_PUT_LE16(p2pie + p2pielen, 21 + pwdinfo->device_name_len);
++	*(u16 *) (p2pie + p2pielen) = cpu_to_le16(21 + pwdinfo->device_name_len);
+ 	p2pielen += 2;
+ 
+ 	/*	Value: */
+@@ -703,8 +696,7 @@ u32 build_prov_disc_request_p2p_ie(struct wifidirect_info *pwdinfo, u8 *pbuf, u8
+ 		p2pie[p2pielen++] = P2P_ATTR_GROUP_ID;
+ 
+ 		/*	Length: */
+-		/* u16*) (p2pie + p2pielen) = cpu_to_le16(ETH_ALEN + ussidlen); */
+-		RTW_PUT_LE16(p2pie + p2pielen, ETH_ALEN + ussidlen);
++		*(u16 *) (p2pie + p2pielen) = cpu_to_le16(ETH_ALEN + ussidlen);
+ 		p2pielen += 2;
+ 
+ 		/*	Value: */
 diff --git a/drivers/staging/rtl8188eu/include/osdep_service.h b/drivers/staging/rtl8188eu/include/osdep_service.h
-index 0b54856..bbb46cb 100644
+index bbb46cb..1fb92c6 100644
 --- a/drivers/staging/rtl8188eu/include/osdep_service.h
 +++ b/drivers/staging/rtl8188eu/include/osdep_service.h
-@@ -242,7 +242,6 @@ u64 rtw_modular64(u64 x, u64 y);
+@@ -242,12 +242,6 @@ u64 rtw_modular64(u64 x, u64 y);
  
  /* Macros for handling unaligned memory accesses */
  
--#define RTW_GET_LE16(a) ((u16) (((a)[1] << 8) | (a)[0]))
- #define RTW_PUT_LE16(a, val)			\
- 	do {					\
- 		(a)[1] = ((u16) (val)) >> 8;	\
+-#define RTW_PUT_LE16(a, val)			\
+-	do {					\
+-		(a)[1] = ((u16) (val)) >> 8;	\
+-		(a)[0] = ((u16) (val)) & 0xff;	\
+-	} while (0)
+-
+ #define RTW_GET_BE24(a) ((((u32) (a)[0]) << 16) | (((u32) (a)[1]) << 8) | \
+ 			 ((u32) (a)[2]))
+ 
 -- 
 1.7.10.4
 
