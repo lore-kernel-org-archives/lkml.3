@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389AbaFVTuI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 15:50:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60843 "EHLO mx2.suse.de"
+	id S1752468AbaFVUHI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 16:07:08 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49378 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752027AbaFVTuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 15:50:06 -0400
-From: =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>
-To: linux-samsung-soc@vger.kernel.org
-Cc: Tarek Dakhran <t.dakhran@samsung.com>, Kevin Hilman <khilman@linaro.org>,
-        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org (moderated list:ARM/SAMSUNG ARM
-	A...),
-        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] ARM: dts: exynos5410: Fill in CPU clock-frequency
-Date: Sun, 22 Jun 2014 21:49:55 +0200
-Message-Id: <1403466596-3347-1-git-send-email-afaerber@suse.de>
-X-Mailer: git-send-email 1.9.3
+	id S1752122AbaFVUHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jun 2014 16:07:06 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: <arm@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Kevin Hilman <khilman@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH] MAINTAINERS: Add few more Keystone drivers
+Date: Sun, 22 Jun 2014 16:06:22 -0400
+Message-ID: <1403467582-7933-1-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's 1.6 GHz for the Cortex-A15.
+Update MAINTAINERS file for recently added reset controller, AEMIF
+and clocksource driver for Keystone SOCs.
 
-Avoids warnings like "/cpus/cpu@0 missing clock-frequency property".
+The EMIF memory controller driver is also added along with AEMIF.
 
-Signed-off-by: Andreas Färber <afaerber@suse.de>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- arch/arm/boot/dts/exynos5410.dtsi | 4 ++++
- 1 file changed, 4 insertions(+)
+ MAINTAINERS |   26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/exynos5410.dtsi b/arch/arm/boot/dts/exynos5410.dtsi
-index 3839c26..9d0b8cc 100644
---- a/arch/arm/boot/dts/exynos5410.dtsi
-+++ b/arch/arm/boot/dts/exynos5410.dtsi
-@@ -28,24 +28,28 @@
- 			device_type = "cpu";
- 			compatible = "arm,cortex-a15";
- 			reg = <0x0>;
-+			clock-frequency = <1600000000>;
- 		};
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 3f2e171..ae6d967 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1052,9 +1052,33 @@ M:	Santosh Shilimkar <santosh.shilimkar@ti.com>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ S:	Maintained
+ F:	arch/arm/mach-keystone/
+-F:	drivers/clk/keystone/
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/ssantosh/linux-keystone.git
  
- 		CPU1: cpu@1 {
- 			device_type = "cpu";
- 			compatible = "arm,cortex-a15";
- 			reg = <0x1>;
-+			clock-frequency = <1600000000>;
- 		};
- 
- 		CPU2: cpu@2 {
- 			device_type = "cpu";
- 			compatible = "arm,cortex-a15";
- 			reg = <0x2>;
-+			clock-frequency = <1600000000>;
- 		};
- 
- 		CPU3: cpu@3 {
- 			device_type = "cpu";
- 			compatible = "arm,cortex-a15";
- 			reg = <0x3>;
-+			clock-frequency = <1600000000>;
- 		};
- 	};
- 
++ARM/TEXAS INSTRUMENT KEYSTONE CLOCK FRAMEWORK
++M:	Santosh Shilimkar <santosh.shilimkar@ti.com>
++L:	linux-kernel@vger.kernel.org
++S:	Maintained
++F:	drivers/clk/keystone/
++
++ARM/TEXAS INSTRUMENT KEYSTONE ClOCKSOURCE
++M:	Santosh Shilimkar <santosh.shilimkar@ti.com>
++L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
++L:	linux-kernel@vger.kernel.org
++S:	Maintained
++F:	drivers/clocksource/timer-keystone.c
++
++ARM/TEXAS INSTRUMENT KEYSTONE RESET DRIVER
++M:	Santosh Shilimkar <santosh.shilimkar@ti.com>
++L:	linux-kernel@vger.kernel.org
++S:	Maintained
++F:	drivers/power/reset/keystone-reset.c
++
++ARM/TEXAS INSTRUMENT AEMIF/EMIF DRIVERS
++M:	Santosh Shilimkar <santosh.shilimkar@ti.com>
++L:	linux-kernel@vger.kernel.org
++S:	Maintained
++F:	drivers/memory/*emif*
++
+ ARM/LOGICPD PXA270 MACHINE SUPPORT
+ M:	Lennert Buytenhek <kernel@wantstofly.org>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
 -- 
-1.9.3
+1.7.9.5
 
