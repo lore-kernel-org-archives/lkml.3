@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750940AbaFVWrQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 18:47:16 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:54888 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744AbaFVWrP (ORCPT
+	id S1751129AbaFVWrW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 18:47:22 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:48533 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaFVWrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 18:47:15 -0400
+	Sun, 22 Jun 2014 18:47:16 -0400
 From: Mathias Krause <minipli@googlemail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -16,96 +16,60 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Jason Baron <jbaron@redhat.com>,
         Mathias Krause <minipli@googlemail.com>
-Subject: [RFC PATCH 0/3] Mark literal strings in __init / __exit code
-Date: Mon, 23 Jun 2014 00:46:46 +0200
-Message-Id: <1403477209-14612-1-git-send-email-minipli@googlemail.com>
+Subject: [RFC PATCH 1/3] init.h: Add __init_str / __exit_str macros
+Date: Mon, 23 Jun 2014 00:46:47 +0200
+Message-Id: <1403477209-14612-2-git-send-email-minipli@googlemail.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1403477209-14612-1-git-send-email-minipli@googlemail.com>
+References: <1403477209-14612-1-git-send-email-minipli@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This RFC series tries to address the problem of dangling strings of
-__init functions after initialization, as well as __exit strings for
-code not even included in the final kernel image. The code might get
-freed, but the format strings are not.
+Add macros to be able to mark string literals used in __init / __exit
+functions.
 
-One solution to the problem might be to declare variables in the code
-and mark those variables as __initconst. That, though, makes the code
-ugly, as can be seen, e.g., in drivers/hwmon/w83627ehf.c -- a pile of
-'static const char[] __initconst' lines just for the pr_info() call.
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+---
+ include/linux/init.h |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-To be able to mark strings easily patch 1 adds macros to init.h to do so
-without the need to explicitly define variables in the code. Internally
-it'll declare ones nonetheless, as this seem to be the only way to
-attach an __attribute__() to a verbatim string. That's already enough to
-solve the problem -- mark the corresponding stings by using these
-macros. But patch 2 adds some syntactical sugar for the most popular use
-case, by providing pr_<level> alike macros, namely pi_<level> for __init
-code and pe_<level> for __exit code. This hides the use of the marker
-macros behind the commonly known printing functions -- with just a
-single character changed.
-
-Patch 3 exemplarily changes all strings and format strings in
-arch/x86/kernel/acpi/boot.c to use the new macros. It also addresses a
-few styling issues, though. But this already leads to ~1.7 kB of r/o
-data moved to the .init.rodata section, marking it for release after
-init.
-
-
-Open issues with this approach:
-
-1/ When CONFIG_DYNAMIC_DEBUG is enabled, pi_debug() and pe_debug()
-fall-back to pr_debug() as there is currently no way of removing the
-dynamic entries from the dynamic debug code after init.
-
-2/ The variables used in the macros of patch 1 will pollute the symtab
-with unneeded entries. That'll be a problem in the KALLSYMS_ALL case
-only, though. But the symtab will be huge then, anyway. However,
-filtering those even in this case might be desirable.
-
-3/ It only seamlessly integrates for the pr_<level>() kind of use cases.
-For other literal strings it gets slightly less readable, e.g. this:
-
-   strncmp(str, "s4_nohwsig", 10)
-
-becomes this:
-
-   strncmp(str, __init_str("s4_nohwsig"), 10)
-
-That might be okay, though, as it marks the string clearly as an init
-string, so might actually increase the understanding of the life time of
-the string literal.
-
-
-So, is there interest in having such macros and markings? Patch 3 shows,
-that there's actual value in it. A hacked up script, dully changing
-pr_<level> to pi_<level> for __init functions under arch/x86/ already is
-able to move ~8kB of r/o data into the .init section. The script,
-though, is dump. It does not handle any of the printk() calls, nor does
-it handle panic() calls or other strings used only in initialization
-code. So there's more to squeeze out. I just want to get some feedback
-first.
-
-Also documentation of the new macros is missing, maybe even a
-checkpatch.pl change to propose using the new macros instead of pr_*()
-or plain printk() in __init / __exit functions.
-
-What do you think?
-
-Regards,
-Mathias
-
-Mathias Krause (3):
-  init.h: Add __init_str / __exit_str macros
-  printk: Provide pi_<level> / pe_<level> macros for __init / __exit
-    code
-  x86, acpi: Mark __init strings as such
-
- arch/x86/kernel/acpi/boot.c |  162 ++++++++++++++++++++-----------------------
- include/linux/init.h        |   18 +++++
- include/linux/printk.h      |   52 ++++++++++++++
- 3 files changed, 144 insertions(+), 88 deletions(-)
-
+diff --git a/include/linux/init.h b/include/linux/init.h
+index 2df8e8dd10..0a425b296e 100644
+--- a/include/linux/init.h
++++ b/include/linux/init.h
+@@ -35,6 +35,18 @@
+  * Don't forget to initialize data not at file scope, i.e. within a function,
+  * as gcc otherwise puts the data into the bss section and not into the init
+  * section.
++ *
++ * For messages printed in __init / __exit functions the __init_str() /
++ * __exit_str() macros will take care of marking the strings accordingly so
++ * they can be freed, too. Otherwise the strings would resist in memory, even
++ * though they are no longer referenced.
++ *
++ * Use them like this:
++ *
++ * static void __init initme(void)
++ * {
++ *    printk(__init_str(KERN_INFO "I am fully initialized, now\n"));
++ * }
+  */
+ 
+ /* These are for everybody (although not all archs will actually
+@@ -45,6 +57,12 @@
+ #define __exitdata	__section(.exit.data)
+ #define __exit_call	__used __section(.exitcall.exit)
+ 
++/* Those can be used to mark strings used in __init / __exit functions. */
++#define __init_str(str)	__mark_str(str, __UNIQUE_ID(_init_str_), __initconst)
++#define __exit_str(str)	__mark_str(str, __UNIQUE_ID(_exit_str_), __exitdata)
++#define __mark_str(str, var, __section) \
++	({ static const char var[] __section __aligned(1) = str; var; })
++
+ /*
+  * Some architecture have tool chains which do not handle rodata attributes
+  * correctly. For those disable special sections for const, so that other
 -- 
 1.7.10.4
 
