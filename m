@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754445AbaFWODg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jun 2014 10:03:36 -0400
-Received: from smtprelay0037.hostedemail.com ([216.40.44.37]:33264 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753393AbaFWODd (ORCPT
+	id S1754821AbaFWOGY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jun 2014 10:06:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58246 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753967AbaFWOGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jun 2014 10:03:33 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2551:2553:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:4250:4321:5007:7652:10004:10400:10848:11026:11232:11658:11914:12050:12114:12517:12519:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: love24_1eb7fc15d0947
-X-Filterd-Recvd-Size: 1313
-Message-ID: <1403532208.18747.58.camel@joe-AO725>
-Subject: Re: [PATCH 01/22] pci-dma-compat: Add pci_zalloc_consistent helper
-From: Joe Perches <joe@perches.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Date: Mon, 23 Jun 2014 07:03:28 -0700
-In-Reply-To: <4279380.YmNJ3E7DEi@wuerfel>
-References: <cover.1403530604.git.joe@perches.com>
-	 <2248b3ffe86cd8995a809bf7e2871f38039979c1.1403530604.git.joe@perches.com>
-	 <4279380.YmNJ3E7DEi@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	Mon, 23 Jun 2014 10:06:23 -0400
+Message-ID: <53A8346A.80905@gmail.com>
+Date: Mon, 23 Jun 2014 08:06:34 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stanislav Fomichev <stfomichev@yandex-team.ru>
+CC: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        jolsa@redhat.com, xiaoguangrong@linux.vnet.ibm.com,
+        yangds.fnst@cn.fujitsu.com, adrian.hunter@intel.com,
+        namhyung@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/7] perf kvm: move perf_kvm__mmap_read into session utils
+References: <1403261389-13423-1-git-send-email-stfomichev@yandex-team.ru> <1403261389-13423-7-git-send-email-stfomichev@yandex-team.ru> <20140620144427.GF31524@kernel.org>
+In-Reply-To: <20140620144427.GF31524@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-23 at 15:53 +0200, Arnd Bergmann wrote:
-> On Monday 23 June 2014 06:41:29 Joe Perches wrote:
-> > Add this helper for consistency with pci_zalloc_coherent
-> > and the ability to remove unnecessary memset(,0,) uses.
+On 6/20/14, 8:44 AM, Arnaldo Carvalho de Melo wrote:
+> Em Fri, Jun 20, 2014 at 02:49:48PM +0400, Stanislav Fomichev escreveu:
+>> It will be reused by perf trace in the following commit.
+>
+> I know this is needed, but one of the goals when I started builtin-trace
+> was not to use perf_session at all, as it initially was just about the
+> live mode.
+>
+> record/replay came later and ended up needing it,
 
-> Shouldn't these drivers just use the normal dma-mapping API now?
+perf-kvm does not use the session code because I kept tripping over the 
+out of order timestamp problem. By limiting the number of events read in 
+a single pass I was able to smooth out the load and avoided hitting it 
+as often. As I mentioned before the final piece was using the perf_clock 
+timestamp at the start of the round to ensure I never hit it.
 
-Maybe.  I wouldn't mind.
+Stanislav: are you seeing out of order timestamp errors or just trying 
+to reuse the live code from perf-kvm?
 
-They do seem to have a trivial bit of unnecessary overhead for 
-
-hwdev == NULL ? NULL : &hwdev->dev
-
-
+David
