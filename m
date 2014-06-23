@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732AbaFWBgL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 22 Jun 2014 21:36:11 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:39749 "EHLO fiona.linuxhacker.ru"
+	id S1752777AbaFWBgi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 22 Jun 2014 21:36:38 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:39745 "EHLO fiona.linuxhacker.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751894AbaFWBcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 22 Jun 2014 21:32:48 -0400
+	id S1751964AbaFWBcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 22 Jun 2014 21:32:47 -0400
 From: Oleg Drokin <green@linuxhacker.ru>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Cc: Dmitry Eremin <dmitry.eremin@intel.com>,
+Cc: "Alexander.Boyko" <alexander_boyko@xyratex.com>,
         Oleg Drokin <oleg.drokin@intel.com>
-Subject: [PATCH 04/18] staging/lustre: fix frong ldlm flags type used
-Date: Sun, 22 Jun 2014 21:32:08 -0400
-Message-Id: <1403487142-4880-5-git-send-email-green@linuxhacker.ru>
+Subject: [PATCH 08/18] staging/lustre/ptlrpc: race at req processing
+Date: Sun, 22 Jun 2014 21:32:12 -0400
+Message-Id: <1403487142-4880-9-git-send-email-green@linuxhacker.ru>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1403487142-4880-1-git-send-email-green@linuxhacker.ru>
 References: <1403487142-4880-1-git-send-email-green@linuxhacker.ru>
@@ -21,249 +21,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Eremin <dmitry.eremin@intel.com>
+From: "Alexander.Boyko" <alexander_boyko@xyratex.com>
 
-Fixed implicit conversion from 'unsigned long long' to 'int'.
+Race between ptlrpc_resend_req() and ptlrpc_check_set().
+1 thread do ptlrpc_check_set()->after_reply()
+2 thread do ptlrpc_resend_req()
+The result is request with rq_resend = 1 and MSG_REPLY flag.
+When this request will came to server it will cause client eviction.
+The patch skip ptlrpc_resend_req logic if rq_replied is set,
+and clear rq_resend flag at reply_in_callback() when client got
+reply.
 
-Signed-off-by: Dmitry Eremin <dmitry.eremin@intel.com>
-Reviewed-on: http://review.whamcloud.com/7799
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-4023
+Signed-off-by: Alexander Boyko <alexander_boyko@xyratex.com>
+Xyratex-bug-id: MRP-1888
+Reviewed-on: http://review.whamcloud.com/10471
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-5116
 Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
+Reviewed-by: Mike Pershin <mike.pershin@intel.com>
+Reviewed-by: Chris Horn <hornc@cray.com>
 Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
 ---
- drivers/staging/lustre/lustre/include/lustre_dlm.h |  2 +-
- drivers/staging/lustre/lustre/include/obd_class.h  |  2 +-
- drivers/staging/lustre/lustre/include/obd_ost.h    |  4 ++++
- drivers/staging/lustre/lustre/ldlm/ldlm_request.c  |  2 +-
- drivers/staging/lustre/lustre/llite/file.c         |  6 +++---
- drivers/staging/lustre/lustre/lmv/lmv_obd.c        |  2 +-
- drivers/staging/lustre/lustre/lov/lov_internal.h   |  2 +-
- drivers/staging/lustre/lustre/lov/lov_request.c    | 10 +++-------
- drivers/staging/lustre/lustre/osc/osc_internal.h   |  2 +-
- drivers/staging/lustre/lustre/osc/osc_page.c       |  2 +-
- drivers/staging/lustre/lustre/osc/osc_request.c    | 10 +++++-----
- 11 files changed, 22 insertions(+), 22 deletions(-)
+ drivers/staging/lustre/lustre/ptlrpc/client.c | 11 ++++++++++-
+ drivers/staging/lustre/lustre/ptlrpc/events.c |  2 ++
+ drivers/staging/lustre/lustre/ptlrpc/niobuf.c |  2 ++
+ 3 files changed, 14 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/lustre/lustre/include/lustre_dlm.h b/drivers/staging/lustre/lustre/include/lustre_dlm.h
-index 0c6b784..bf5b2cb 100644
---- a/drivers/staging/lustre/lustre/include/lustre_dlm.h
-+++ b/drivers/staging/lustre/lustre/include/lustre_dlm.h
-@@ -1390,7 +1390,7 @@ int ldlm_cli_cancel_req(struct obd_export *exp, struct list_head *head,
- int ldlm_cancel_resource_local(struct ldlm_resource *res,
- 			       struct list_head *cancels,
- 			       ldlm_policy_data_t *policy,
--			       ldlm_mode_t mode, int lock_flags,
-+			       ldlm_mode_t mode, __u64 lock_flags,
- 			       ldlm_cancel_flags_t cancel_flags, void *opaque);
- int ldlm_cli_cancel_list_local(struct list_head *cancels, int count,
- 			       ldlm_cancel_flags_t flags);
-diff --git a/drivers/staging/lustre/lustre/include/obd_class.h b/drivers/staging/lustre/lustre/include/obd_class.h
-index e265820..f8a9d7c 100644
---- a/drivers/staging/lustre/lustre/include/obd_class.h
-+++ b/drivers/staging/lustre/lustre/include/obd_class.h
-@@ -1818,7 +1818,7 @@ static inline int md_enqueue(struct obd_export *exp,
- 			     struct lustre_handle *lockh,
- 			     void *lmm, int lmmsize,
- 			     struct ptlrpc_request **req,
--			     int extra_lock_flags)
-+			     __u64 extra_lock_flags)
+diff --git a/drivers/staging/lustre/lustre/ptlrpc/client.c b/drivers/staging/lustre/lustre/ptlrpc/client.c
+index 7246e8c..d806257 100644
+--- a/drivers/staging/lustre/lustre/ptlrpc/client.c
++++ b/drivers/staging/lustre/lustre/ptlrpc/client.c
+@@ -2530,10 +2530,19 @@ EXPORT_SYMBOL(ptlrpc_cleanup_client);
+ void ptlrpc_resend_req(struct ptlrpc_request *req)
  {
- 	int rc;
- 
-diff --git a/drivers/staging/lustre/lustre/include/obd_ost.h b/drivers/staging/lustre/lustre/include/obd_ost.h
-index af89843..54ef540 100644
---- a/drivers/staging/lustre/lustre/include/obd_ost.h
-+++ b/drivers/staging/lustre/lustre/include/obd_ost.h
-@@ -87,6 +87,10 @@ struct osc_enqueue_args {
- 	unsigned int	      oa_agl:1;
- };
- 
-+extern void osc_update_enqueue(struct lustre_handle *lov_lockhp,
-+			       struct lov_oinfo *loi, __u64 flags,
-+			       struct ost_lvb *lvb, __u32 mode, int rc);
+ 	DEBUG_REQ(D_HA, req, "going to resend");
++	spin_lock(&req->rq_lock);
 +
- #if 0
- int osc_extent_blocking_cb(struct ldlm_lock *lock,
- 			   struct ldlm_lock_desc *new, void *data,
-diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_request.c b/drivers/staging/lustre/lustre/ldlm/ldlm_request.c
-index fcc7a99..3accbce 100644
---- a/drivers/staging/lustre/lustre/ldlm/ldlm_request.c
-+++ b/drivers/staging/lustre/lustre/ldlm/ldlm_request.c
-@@ -1768,7 +1768,7 @@ int ldlm_cancel_lru(struct ldlm_namespace *ns, int nr,
- int ldlm_cancel_resource_local(struct ldlm_resource *res,
- 			       struct list_head *cancels,
- 			       ldlm_policy_data_t *policy,
--			       ldlm_mode_t mode, int lock_flags,
-+			       ldlm_mode_t mode, __u64 lock_flags,
- 			       ldlm_cancel_flags_t cancel_flags, void *opaque)
- {
- 	struct ldlm_lock *lock;
-diff --git a/drivers/staging/lustre/lustre/llite/file.c b/drivers/staging/lustre/lustre/llite/file.c
-index 716e1ee..660fd4d 100644
---- a/drivers/staging/lustre/lustre/llite/file.c
-+++ b/drivers/staging/lustre/lustre/llite/file.c
-@@ -290,7 +290,7 @@ static int ll_md_close(struct obd_export *md_exp, struct inode *inode,
- 	   we can skip talking to MDS */
- 	if (file->f_dentry->d_inode) { /* Can this ever be false? */
- 		int lockmode;
--		int flags = LDLM_FL_BLOCK_GRANTED | LDLM_FL_TEST_LOCK;
-+		__u64 flags = LDLM_FL_BLOCK_GRANTED | LDLM_FL_TEST_LOCK;
- 		struct lustre_handle lockh;
- 		struct inode *inode = file->f_dentry->d_inode;
- 		ldlm_policy_data_t policy = {.l_inodebits={MDS_INODELOCK_OPEN}};
-@@ -2623,7 +2623,7 @@ ll_file_flock(struct file *file, int cmd, struct file_lock *file_lock)
- 	struct md_op_data *op_data;
- 	struct lustre_handle lockh = {0};
- 	ldlm_policy_data_t flock = {{0}};
--	int flags = 0;
-+	__u64 flags = 0;
- 	int rc;
- 	int rc2 = 0;
++	/* Request got reply but linked to the import list still.
++	   Let ptlrpc_check_set() to process it. */
++	if (ptlrpc_client_replied(req)) {
++		spin_unlock(&req->rq_lock);
++		DEBUG_REQ(D_HA, req, "it has reply, so skip it");
++		return;
++	}
++
+ 	lustre_msg_set_handle(req->rq_reqmsg, &(struct lustre_handle){ 0 });
+ 	req->rq_status = -EAGAIN;
  
-@@ -2708,7 +2708,7 @@ ll_file_flock(struct file *file, int cmd, struct file_lock *file_lock)
- 	if (IS_ERR(op_data))
- 		return PTR_ERR(op_data);
+-	spin_lock(&req->rq_lock);
+ 	req->rq_resend = 1;
+ 	req->rq_net_err = 0;
+ 	req->rq_timedout = 0;
+diff --git a/drivers/staging/lustre/lustre/ptlrpc/events.c b/drivers/staging/lustre/lustre/ptlrpc/events.c
+index aa85239..9f9b8d1 100644
+--- a/drivers/staging/lustre/lustre/ptlrpc/events.c
++++ b/drivers/staging/lustre/lustre/ptlrpc/events.c
+@@ -145,6 +145,8 @@ void reply_in_callback(lnet_event_t *ev)
+ 		/* Real reply */
+ 		req->rq_rep_swab_mask = 0;
+ 		req->rq_replied = 1;
++		/* Got reply, no resend required */
++		req->rq_resend = 0;
+ 		req->rq_reply_off = ev->offset;
+ 		req->rq_nob_received = ev->mlength;
+ 		/* LNetMDUnlink can't be called under the LNET_LOCK,
+diff --git a/drivers/staging/lustre/lustre/ptlrpc/niobuf.c b/drivers/staging/lustre/lustre/ptlrpc/niobuf.c
+index ef18639..f760504 100644
+--- a/drivers/staging/lustre/lustre/ptlrpc/niobuf.c
++++ b/drivers/staging/lustre/lustre/ptlrpc/niobuf.c
+@@ -505,6 +505,8 @@ int ptl_send_rpc(struct ptlrpc_request *request, int noreply)
+ 	/* If this is a re-transmit, we're required to have disengaged
+ 	 * cleanly from the previous attempt */
+ 	LASSERT(!request->rq_receiving_reply);
++	LASSERT(!((lustre_msg_get_flags(request->rq_reqmsg) & MSG_REPLAY) &&
++		(request->rq_import->imp_state == LUSTRE_IMP_FULL)));
  
--	CDEBUG(D_DLMTRACE, "inode=%lu, pid=%u, flags=%#x, mode=%u, "
-+	CDEBUG(D_DLMTRACE, "inode=%lu, pid=%u, flags=%#llx, mode=%u, "
- 	       "start="LPU64", end="LPU64"\n", inode->i_ino, flock.l_flock.pid,
- 	       flags, einfo.ei_mode, flock.l_flock.start, flock.l_flock.end);
- 
-diff --git a/drivers/staging/lustre/lustre/lmv/lmv_obd.c b/drivers/staging/lustre/lustre/lmv/lmv_obd.c
-index 4edf8a3..c17a49e 100644
---- a/drivers/staging/lustre/lustre/lmv/lmv_obd.c
-+++ b/drivers/staging/lustre/lustre/lmv/lmv_obd.c
-@@ -1715,7 +1715,7 @@ static int
- lmv_enqueue_remote(struct obd_export *exp, struct ldlm_enqueue_info *einfo,
- 		   struct lookup_intent *it, struct md_op_data *op_data,
- 		   struct lustre_handle *lockh, void *lmm, int lmmsize,
--		   int extra_lock_flags)
-+		   __u64 extra_lock_flags)
- {
- 	struct ptlrpc_request      *req = it->d.lustre.it_data;
- 	struct obd_device	  *obd = exp->exp_obd;
-diff --git a/drivers/staging/lustre/lustre/lov/lov_internal.h b/drivers/staging/lustre/lustre/lov/lov_internal.h
-index 38508a5..2232643 100644
---- a/drivers/staging/lustre/lustre/lov/lov_internal.h
-+++ b/drivers/staging/lustre/lustre/lov/lov_internal.h
-@@ -252,7 +252,7 @@ int lov_prep_match_set(struct obd_export *exp, struct obd_info *oinfo,
- 		       ldlm_policy_data_t *policy, __u32 mode,
- 		       struct lustre_handle *lockh,
- 		       struct lov_request_set **reqset);
--int lov_fini_match_set(struct lov_request_set *set, __u32 mode, int flags);
-+int lov_fini_match_set(struct lov_request_set *set, __u32 mode, __u64 flags);
- int lov_prep_cancel_set(struct obd_export *exp, struct obd_info *oinfo,
- 			struct lov_stripe_md *lsm,
- 			__u32 mode, struct lustre_handle *lockh,
-diff --git a/drivers/staging/lustre/lustre/lov/lov_request.c b/drivers/staging/lustre/lustre/lov/lov_request.c
-index bd6490d..984f4c3 100644
---- a/drivers/staging/lustre/lustre/lov/lov_request.c
-+++ b/drivers/staging/lustre/lustre/lov/lov_request.c
-@@ -39,8 +39,8 @@
- #include <linux/libcfs/libcfs.h>
- 
- #include <obd_class.h>
-+#include <obd_ost.h>
- #include <lustre/lustre_idl.h>
--
- #include "lov_internal.h"
- 
- static void lov_init_set(struct lov_request_set *set)
-@@ -194,13 +194,9 @@ out:
- 	return rc;
- }
- 
--extern void osc_update_enqueue(struct lustre_handle *lov_lockhp,
--			       struct lov_oinfo *loi, int flags,
--			       struct ost_lvb *lvb, __u32 mode, int rc);
--
- static int lov_update_enqueue_lov(struct obd_export *exp,
- 				  struct lustre_handle *lov_lockhp,
--				  struct lov_oinfo *loi, int flags, int idx,
-+				  struct lov_oinfo *loi, __u64 flags, int idx,
- 				  struct ost_id *oi, int rc)
- {
- 	struct lov_obd *lov = &exp->exp_obd->u.lov;
-@@ -443,7 +439,7 @@ out_set:
- 	return rc;
- }
- 
--int lov_fini_match_set(struct lov_request_set *set, __u32 mode, int flags)
-+int lov_fini_match_set(struct lov_request_set *set, __u32 mode, __u64 flags)
- {
- 	int rc = 0;
- 
-diff --git a/drivers/staging/lustre/lustre/osc/osc_internal.h b/drivers/staging/lustre/lustre/osc/osc_internal.h
-index efc5db4..9c4a189 100644
---- a/drivers/staging/lustre/lustre/osc/osc_internal.h
-+++ b/drivers/staging/lustre/lustre/osc/osc_internal.h
-@@ -112,7 +112,7 @@ int osc_cancel_base(struct lustre_handle *lockh, __u32 mode);
- 
- int osc_match_base(struct obd_export *exp, struct ldlm_res_id *res_id,
- 		   __u32 type, ldlm_policy_data_t *policy, __u32 mode,
--		   int *flags, void *data, struct lustre_handle *lockh,
-+		   __u64 *flags, void *data, struct lustre_handle *lockh,
- 		   int unref);
- 
- int osc_setattr_async_base(struct obd_export *exp, struct obd_info *oinfo,
-diff --git a/drivers/staging/lustre/lustre/osc/osc_page.c b/drivers/staging/lustre/lustre/osc/osc_page.c
-index 96cb6e2..71a2447 100644
---- a/drivers/staging/lustre/lustre/osc/osc_page.c
-+++ b/drivers/staging/lustre/lustre/osc/osc_page.c
-@@ -70,7 +70,7 @@ static int osc_page_is_dlocked(const struct lu_env *env,
- 	struct lustre_handle   *lockh;
- 	ldlm_policy_data_t     *policy;
- 	ldlm_mode_t	     dlmmode;
--	int		     flags;
-+	__u64                   flags;
- 
- 	might_sleep();
- 
-diff --git a/drivers/staging/lustre/lustre/osc/osc_request.c b/drivers/staging/lustre/lustre/osc/osc_request.c
-index 294db84..5804104 100644
---- a/drivers/staging/lustre/lustre/osc/osc_request.c
-+++ b/drivers/staging/lustre/lustre/osc/osc_request.c
-@@ -635,7 +635,7 @@ static int osc_sync(const struct lu_env *env, struct obd_export *exp,
-  * locks added to @cancels list. */
- static int osc_resource_get_unused(struct obd_export *exp, struct obdo *oa,
- 				   struct list_head *cancels,
--				   ldlm_mode_t mode, int lock_flags)
-+				   ldlm_mode_t mode, __u64 lock_flags)
- {
- 	struct ldlm_namespace *ns = exp->exp_obd->obd_namespace;
- 	struct ldlm_res_id res_id;
-@@ -2398,7 +2398,7 @@ static int osc_enqueue_interpret(const struct lu_env *env,
- }
- 
- void osc_update_enqueue(struct lustre_handle *lov_lockhp,
--			struct lov_oinfo *loi, int flags,
-+			struct lov_oinfo *loi, __u64 flags,
- 			struct ost_lvb *lvb, __u32 mode, int rc)
- {
- 	struct ldlm_lock *lock = ldlm_handle2lock(lov_lockhp);
-@@ -2462,7 +2462,7 @@ int osc_enqueue_base(struct obd_export *exp, struct ldlm_res_id *res_id,
- 	struct obd_device *obd = exp->exp_obd;
- 	struct ptlrpc_request *req = NULL;
- 	int intent = *flags & LDLM_FL_HAS_INTENT;
--	int match_lvb = (agl != 0 ? 0 : LDLM_FL_LVB_READY);
-+	__u64 match_lvb = (agl != 0 ? 0 : LDLM_FL_LVB_READY);
- 	ldlm_mode_t mode;
- 	int rc;
- 
-@@ -2613,11 +2613,11 @@ static int osc_enqueue(struct obd_export *exp, struct obd_info *oinfo,
- 
- int osc_match_base(struct obd_export *exp, struct ldlm_res_id *res_id,
- 		   __u32 type, ldlm_policy_data_t *policy, __u32 mode,
--		   int *flags, void *data, struct lustre_handle *lockh,
-+		   __u64 *flags, void *data, struct lustre_handle *lockh,
- 		   int unref)
- {
- 	struct obd_device *obd = exp->exp_obd;
--	int lflags = *flags;
-+	__u64 lflags = *flags;
- 	ldlm_mode_t rc;
- 
- 	if (OBD_FAIL_CHECK(OBD_FAIL_OSC_MATCH))
+ 	if (unlikely(obd != NULL && obd->obd_fail)) {
+ 		CDEBUG(D_HA, "muting rpc for failed imp obd %s\n",
 -- 
 1.9.0
 
